@@ -21,6 +21,7 @@ Updated: 2026-09-05 — M17 HAR-LJ-Asym round-3 calibration (PR #14592, prefligh
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM `msg-20260905T001520`, 3/6 PASS / 3/6 PARTIAL) : test OOS multi-fold discriminant `test_walk_forward_lj_asym_oos_target_invariance_multi_fold` (n_splits=3, biais per-fold **distincts**, invariance per-fold bit-identique rtol 1e-12, folds antérieurs inchangés, folds postérieurs = expanding-window retrain légitime asserté comme sensibilité, train-tail > 1.0 par fold) + provenance `bounds_train_test` (`{train_end_idx = n_splits·(n//(n_splits+1)), oos_start_idx = train_end+horizon, oos_end_idx}`) relayée par `_eval_one_coin` / `aggregate_verdicts` / manifeste (`bounds_per_coin_horizon`, `fc_lj_hash_per_fold` alignés sur `per_fold_bias`) ; placeholder `if False else None` supprimé. Tests 22 → 24 verts, suite 1194 passed / 0 failed. **[M17 HAR-LJ-Asym BTC run] LIVRÉ (round-4 code) — `python har_lj_asym.py --coins BTC-USD --skip-remote --debias --horizons 1 5 10 --seeds 0 7 42 99` en 467.9 s** : h=1 **BEATS 4/4** vs HAR et M12 (p<1e-6, mean_loss_diff<0, `_coherent_beats()` strict ✓) ; h=5/h=10 INCONCLUSIVE 0/4 (p>0.05, mean_loss_diff>0 ⇒ cohérent INCONCLUSIVE). Bornes effectives BTC : `train_end=1890` (5 folds × 378 jours), `n_oos=378-382`, `n_total=2272` jours. Bit-identity cross-seed OK (`per_fold_bias` et `fc_lj_hash_per_fold` identiques sur les 4 seeds, `bounds_consistent_across_seeds=True`). Précédent c.953 `h=1 BEATS p=0.839708` réfuté — sous round-3+4 calibration le verdict reste BEATS mais devient réellement significatif. Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Live BTC run (concern b — this PR) ». Manifest `scripts/results/m17_har_lj_asym.json` régénéré ; meta `manifest_m17_har_lj_asym.json` mis à jour avec `concern_addressing` round-3 + round-4.
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
 Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
+Updated: 2026-09-06 — iTransformer BTC log-RV revalidé contre HAR débiaisé train-only (#14860, lane myia-po-2026:CoursIA-2) : h=1/h=5/h=10 **NO BEATS** (4/4 seeds battues et DM p<0,05) ; var_ratio > 1 aux trois horizons — l'attention inversée (variable-as-token) ne bat pas la baseline HAR simple sur log-RV ; voir section §C iTransformer ci-dessous.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -427,6 +428,40 @@ h=5 et h=10 réfutent l'edge deep-seq, respectivement 3/4 et 4/4 seeds significa
 - **Run** : `python scripts/btc_patchtst.py --device cpu --horizons 1 5 10 --seeds 0 1 7 42 --n-splits 5 --seq-len 64 --patch-len 16 --stride 8 --d-model 32 --n-heads 4 --n-layers 1 --epochs 10 --batch-size 32 --out-json results/btc_patchtst_har_debiased_cpu_20260901.json` — 115,9 s CPU, 12/12 combinaisons, 5 folds chacune.
 - **Vérification** : 12 lignes JSON, 1 890 / 1 870 / 1 845 prédictions alignées par seed selon h ; longueurs erreurs/prédictions/timestamps identiques ; `MSE = biais² + variance` recalculé à tolérance numérique sur chaque ligne.
 - **Verdict §C** : **0/3 BEATS, 1/3 INCONCLUSIVE, 2/3 NO BEATS**. Mesure de prévision uniquement : aucune stratégie de trading ni claim après coûts.
+
+## iTransformer BTC log-RV — revalidation hors biais (2026-09-06) — issue #14860
+
+Seconde revalidation de deep-seq contre la baseline HAR débiaisée train-only ; la première
+était PatchTST (#14081). Le harnais `scripts/btc_itransformer.py` réutilise la **classe**
+`iTransformerModel` de `train_itransformer.py` (Li et al., ICLR 2024) mais porte sa propre
+cible log-RV et son walk-forward expanding, comme `btc_patchtst.py` : le CLI directionnel
+historique (SPY, cible direction/rendement) ne saisit pas cette cible et ne débiaise pas.
+
+**Protocole réel** : BTC Bitstamp hourly 2014→2024, 2 278 jours de RV (2018-05-15→2024-08-08) ;
+5 folds expanding, seeds {0,1,7,42}, horizons {1,5,10}, cible = moyenne du log-RV futur.
+Config CPU par défaut du harnais : `seq_len=64`, `d_model=64`, 4 heads, 2 couches, 30 epochs,
+`dropout=0.2`, `ff_dropout=0.2`, batch 32. Un modèle par fold et seed ; normalisation et
+sélection du meilleur epoch sur le train uniquement (aucune fuite du bloc test). HAR estime
+son biais signé sur une queue de calibration antérieure au test (`calibrate_bias=True`) —
+aucun target du bloc test ne calibre sa propre baseline. DM sur erreurs recentrées avec
+`loss_fn="mse"` (jambe de précision).
+
+| Horizon | edge iTransformer vs HAR débiaisé | σ cross-seed | dm_p_median recentré | var_ratio iTrans/HAR | seeds BEATEN | Verdict |
+|---|---:|---:|---:|---:|---:|---|
+| h=1  | −13,50 %  | 2,49 pt | 0,00151 | 1,133 | 4/4 | **NO BEATS** |
+| h=5  | −32,73 %  | 3,20 pt | 0,000037 | 1,327 | 4/4 | **NO BEATS** |
+| h=10 | −39,59 %  | 5,54 pt | 0,000072 | 1,395 | 4/4 | **NO BEATS** |
+
+**Biais signés moyens iTransformer / HAR débiaisé** : h=1 +0,01447 / −0,00388 ; h=5 −0,01093 /
+−0,00155 ; h=10 −0,00861 / −0,00242. HAR est effectivement recalé ; l'écart vient de la
+variance — iTransformer porte une variance supérieure aux trois horizons (`var_ratio > 1`),
+et sa dégradation croît avec l'horizon (comme PatchTST). Contrairement à un edge de biais
+réfuté (M4/M15), ici l'edge est **négatif ET significatif** (4/4 seeds battues, DM p<0,05 à
+chaque horizon) : le deep-seq ne rivalise pas avec la baseline HAR simple sur log-RV.
+
+- **Run** : `python scripts/btc_itransformer.py --device cpu --horizons 1 5 10 --seeds 0 1 7 42 --n-splits 5` — 697,0 s CPU, 12/12 combinaisons, 5 folds chacune.
+- **Vérification** : 12 lignes JSON, 1 890 / 1 870 / 1 845 prédictions alignées par seed selon h ; longueurs erreurs/prédictions/timestamps identiques ; `MSE = biais² + variance` recalculé à max |diff| 2,2e-16 (tolérance 1e-9) sur chaque ligne.
+- **Verdict §C** : **0/3 BEATS, 0/3 INCONCLUSIVE, 3/3 NO BEATS**. Mesure de prévision uniquement : aucune stratégie de trading ni claim après coûts.
 
 ## M5 HMM regime-switching HAR — entrée §C + revalidation hors biais (2026-09-02) — Epic #1454
 
