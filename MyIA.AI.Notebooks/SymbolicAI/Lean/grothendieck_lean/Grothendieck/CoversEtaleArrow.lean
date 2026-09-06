@@ -93,13 +93,17 @@ seulement si le pullback `S.pullback f` contient une famille d'applications
 étales conjointement surjectives (une `Scheme.Cover.{u} Scheme.etalePrecoverage Y`).
 -/
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 /-- Pont de définition : la topologie étale est la topologie engendrée par
     la prétopologie étale — le miroir exact de `zariskiTopology_eq`.
-    Preuve : `Precoverage.toGrothendieck_toPretopology_eq_toGrothendieck`
-    relie les deux chemins de génération. -/
+    Preuve : `Scheme.grothendieckTopology_eq_inf` et `Scheme.pretopology_eq_inf`
+    relient les deux chemins de génération. -/
 theorem etale_topology_eq_pretopology :
-    Scheme.etaleTopology.{u} = Scheme.etalePretopology.toGrothendieck :=
-  Precoverage.toGrothendieck_toPretopology_eq_toGrothendieck.symm
+    Scheme.etaleTopology.{u} = Scheme.etalePretopology.toGrothendieck := by
+  rw [Scheme.etaleTopology, Scheme.etalePretopology]
+  rw [Scheme.grothendieckTopology_eq_inf]
+  rw [Scheme.pretopology_eq_inf]
 
 /-- Forme flèche de la topologie étale : `etaleTopology.Covers S f` si et
     seulement s'il existe une couverture étale `𝒰` de `Y` dont la famille
