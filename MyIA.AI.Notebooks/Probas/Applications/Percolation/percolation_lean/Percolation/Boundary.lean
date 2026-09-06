@@ -223,12 +223,24 @@ theorem two_le_boundary_C4 : ∀ A : Finset (Fin 4), A.Nonempty → A ≠ Finset
     2 ≤ #(boundary C4 full4 A) := by
   decide
 
-/-- **Atteinte du minimum `C₄`** : le singleton `{0}` a une frontière exactement `2` (les arêtes
-`0—1` et `0—3`), si bien que `min_{|A|=k}|∂A| = 2` est **atteint** sur le carré — le profil
-isopérimétrique vaut `2` aux trois cardinaux `k ∈ {1,2,3}`. -/
+/-- **Atteinte du minimum `C₄` (cardinal `1`)** : le singleton `{0}` a une frontière exactement `2`
+(les arêtes `0—1` et `0—3`) — la valeur minimale au cardinal `k = 1`. Les cardinaux `k = 2` et
+`k = 3` sont atteints par les témoins `{0,1}` (`boundary_card_C4_adjacent`) et `{0,1,2}`
+(`boundary_card_C4_triple`), si bien qu'avec `two_le_boundary_C4` le profil `min_{|A|=k}|∂A| = 2`
+est établi pour tout `1 ≤ k ≤ 3`. -/
 theorem boundary_attains_min_C4 :
     ∃ A : Finset (Fin 4), A.Nonempty ∧ A ≠ Finset.univ ∧ #(boundary C4 full4 A) = 2 := by
   refine ⟨{0}, by simp, by simp, by decide⟩
+
+/-- **Carré : paire adjacente** : `{0,1}` a une frontière de cardinal `2` (arêtes `1—2` et `0—3`) —
+le témoin qui atteint le minimum au cardinal `k = 2`. -/
+theorem boundary_card_C4_adjacent : #(boundary C4 full4 ({0, 1} : Finset (Fin 4))) = 2 := by
+  decide
+
+/-- **Carré : triplet** : `{0,1,2}` a une frontière de cardinal `2` (arêtes `2—3` et `0—3`) —
+le témoin qui atteint le minimum au cardinal `k = 3`. -/
+theorem boundary_card_C4_triple : #(boundary C4 full4 ({0, 1, 2} : Finset (Fin 4))) = 2 := by
+  decide
 
 /-- **Carré : paire opposée** : `{0,2}` (extrémités opposées, non adjacentes) a une frontière de
 cardinal `4` — les quatre arêtes `0—1`, `0—3`, `2—1`, `2—3` quittent `A`. Ce cas **exerce** l'absence

@@ -223,12 +223,24 @@ theorem two_le_boundary_C4 : ∀ A : Finset (Fin 4), A.Nonempty → A ≠ Finset
     2 ≤ #(boundary C4 full4 A) := by
   decide
 
-/-- **Attainment of the `C₄` minimum**: the singleton `{0}` has boundary exactly `2` (the edges
-`0—1` and `0—3`), so `min_{|A|=k}|∂A| = 2` is **attained** on the square — the isoperimetric
-profile is `2` at all three cardinals `k ∈ {1,2,3}`. -/
+/-- **Attainment of the `C₄` minimum (cardinal `1`)**: the singleton `{0}` has boundary exactly `2`
+(the edges `0—1` and `0—3`) — the minimum value at cardinal `k = 1`. The cardinals `k = 2` and
+`k = 3` are attained by the witnesses `{0,1}` (`boundary_card_C4_adjacent`) and `{0,1,2}`
+(`boundary_card_C4_triple`), so together with `two_le_boundary_C4` the profile `min_{|A|=k}|∂A| = 2`
+is established for every `1 ≤ k ≤ 3`. -/
 theorem boundary_attains_min_C4 :
     ∃ A : Finset (Fin 4), A.Nonempty ∧ A ≠ Finset.univ ∧ #(boundary C4 full4 A) = 2 := by
   refine ⟨{0}, by simp, by simp, by decide⟩
+
+/-- **Square: adjacent pair**: `{0,1}` has boundary cardinality `2` (edges `1—2` and `0—3`) —
+the witness attaining the minimum at cardinal `k = 2`. -/
+theorem boundary_card_C4_adjacent : #(boundary C4 full4 ({0, 1} : Finset (Fin 4))) = 2 := by
+  decide
+
+/-- **Square: triple**: `{0,1,2}` has boundary cardinality `2` (edges `2—3` and `0—3`) —
+the witness attaining the minimum at cardinal `k = 3`. -/
+theorem boundary_card_C4_triple : #(boundary C4 full4 ({0, 1, 2} : Finset (Fin 4))) = 2 := by
+  decide
 
 /-- **Square: opposite pair**: `{0,2}` (opposite, non-adjacent endpoints) has boundary cardinality
 `4` — the four edges `0—1`, `0—3`, `2—1`, `2—3` leave `A`. This case **exercises** the absence of a
