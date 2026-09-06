@@ -43,9 +43,28 @@ def md(source: str) -> dict:
 # NOTE ON THE LITERALS BELOW: a SINGLE backslash in these Python strings is
 # the defect's ghost -- `\t` is a real TAB (what Python left of `\theta`),
 # `\r` a real CR, `\f` a real FF, `\v` a real VT, `\b` a real BS, `\n` a
-# real LF. The cell therefore carries exactly the bytes found in the
-# measured corpus. Double backslashes (`\\text`) are real LaTeX, kept to
-# prove the detector is not just matching any backslash.
+# real LF, `\a` a real BEL. The cell therefore carries exactly the bytes
+# found in the measured corpus. Double backslashes (`\\text`) are real
+# LaTeX, kept to prove the detector is not just matching any backslash.
+
+
+class TestTableCoversAllSevenPythonEscapes(unittest.TestCase):
+    """#14900 acceptance 1: the CTRL table is checked against THE SEVEN
+    Python escape sequences (`\\a \\b \\f \\n \\r \\t \\v`), not against a
+    hand-copied enumeration of itself. The original table was written by
+    hand and omitted BEL -- a table re-copied from it would re-omit it the
+    same way."""
+
+    def test_ctrl_is_exactly_the_seven_escapes(self):
+        seven = {"\a", "\b", "\f", "\n", "\r", "\t", "\v"}
+        self.assertEqual(set(clc.CTRL), seven,
+                         "CTRL must cover exactly the seven Python escapes")
+
+    def test_every_ctrl_entry_has_a_queue_row(self):
+        for _, (_, first) in clc.CTRL.items():
+            self.assertIn(first, clc.QUEUES,
+                          f"CTRL entry '{first}' has no QUEUES row")
+
 
 class TestPositiveControls(unittest.TestCase):
 
@@ -88,6 +107,23 @@ class TestPositiveControls(unittest.TestCase):
         hits = clc.find_defects("donne $\binom{n-1}{k-1}$ et $\beta_i(v)$")
         self.assertEqual([h["command"] for h in hits], ["\\binom", "\\beta"])
 
+    def test_bel_pprox_inline(self):
+        # #14900: GameTheory-15 cell 13 -- `$20 \cdot 2^{19} <BEL>pprox 10^7$`
+        # (`\a` is the seventh Python escape; the CTRL table omitted it and
+        # this exact measured defect went undetected -- the false negative
+        # the original table's hand-enumeration was guaranteed to repeat)
+        h = self.hit("ca fait $20 \\cdot 2^{19} \x07pprox 10^7$ -- long mais")
+        self.assertEqual(h["command"], "\\approx")
+
+    def test_bel_pprox_second_measured_line(self):
+        h = self.hit("ca fait $20 \\cdot 2^{29} \x07pprox 10^{10}$ -- impraticable")
+        self.assertEqual(h["command"], "\\approx")
+
+    def test_bel_queue_word_boundary(self):
+        # BEL + "pproximation" is NOT \approx (queue must end the word)
+        hits = clc.find_defects("$n \x07pproximation directe$")
+        self.assertEqual(hits, [])
+
     def test_tab_o_to_with_word_boundary(self):
         # Planners-4 tranche2-fd-intro: `$<TAB>o$ SAS+` = \to
         h = self.hit("translation domaine $\to$ SAS+")
@@ -97,7 +133,6 @@ class TestPositiveControls(unittest.TestCase):
 # --- Negative controls: shapes a looser detector gets wrong ----------------
 
 class TestNegativeControls(unittest.TestCase):
-
     def test_code_cell_newline_else_never_scanned(self):
         # discriminant 1: code cells are out of scope (`\nelse:` was the
         # first version's false-positive flood)

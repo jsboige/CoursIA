@@ -56,10 +56,14 @@ CTRL = {
     "\f": ("FF", "f"),
     "\v": ("VT", "v"),
     "\x08": ("BS", "b"),
+    "\x07": ("BEL", "a"),
 }
 # queues = command name minus its first letter (the escape ate both).
 # Superset of the issue's table: `eq` (\neq) and `arnothing` (\varnothing)
-# are measured defects the issue's own list omitted.
+# are measured defects the issue's own list omitted. The `a` row covers the
+# seventh Python escape (#14900): a hand-copied table had omitted BEL and
+# two measured `\approx` went undetected -- the coverage test compares
+# against the seven escapes, never against this table.
 QUEUES = {
     "t": {"heta", "imes", "ext", "op", "au", "ilde", "o"},
     "n": {"eg", "abla", "otin", "ewline", "eq", "e", "u"},
@@ -67,6 +71,8 @@ QUEUES = {
     "f": {"orall", "rac", "rown", "lat"},
     "v": {"ee", "dash", "arphi", "ec", "ert", "arnothing"},
     "b": {"eta", "egin", "igcup", "ot", "ar", "inom"},
+    "a": {"pprox", "lpha", "ngle", "leph", "st", "top",
+          "rccos", "rcsin", "rctan", "rray", "malg"},
 }
 MAXQ = 10
 EXCLUDED_DIRS = ("/_archive/", "/.ipynb_checkpoints/", "/.lake/")
