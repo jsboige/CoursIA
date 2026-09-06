@@ -82,6 +82,12 @@
       csharp_sha: 0659fbfc20089ec587396d082f41f0e69f7067ef
       content_python_sha: c3a52965ee910f18838363e1b905043e1b8280ef1fc5e48b8439e398ada21167
       content_csharp_sha: 2c2a2a8103e09629a8afb2f0f9f64346a72a9578356bf40c624e2798fe29a060
+    - date: "2026-09-07"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 80a1932df45e14d055ad0350867db5bb8a050bbd
+      csharp_sha: 0659fbfc20089ec587396d082f41f0e69f7067ef
+      content_python_sha: 848b8b925e5cfc084f7242d6b5ba8c00c3ec8a37a136a6f715e71dd422572116
+      content_csharp_sha: 2c2a2a8103e09629a8afb2f0f9f64346a72a9578356bf40c624e2798fe29a060
   known_differences:
     - '2026-09-07 : MERGE DE MAIN DANS LA PR #14958 (lane myia-po-2026:CoursIA-2) -- la base a integre #14923 (re-qualification kernelspec gametheory-wsl -> python3, re-execution complete) qui a RE-EXECUTE tous les outputs de la cellule code du cote Python. Le merge conserve : (a) mes 5 cellules markdown « Lecture du resultat » (PR #14958, enrichment) et (b) les sorties re-executees de #14923 (verite d''execution). Les valeurs citees par les interpretations (gap 2.0, point-selle (R3,C1)=2.0, RPS v=0 [0.3333]x3, Blotto 15 strategies (0,2,2)/(2,0,2)/(2,2,0)=0.333) sont toutes presentes dans les sorties re-executees. Aucune cellule code source modifiee par la PR (C.3 : on ne re-execute pas). La contrepartie C# est INCHANGEE (0 fichier touche).'
     - '2026-09-06 : ENRICHISSEMENT MARKDOWN-ONLY COTE PYTHON (commit d149f89bc3d7, lane myia-po-2026:CoursIA-2) -- densite 943 -> 1647 c/cell sur GameTheory-05-ZeroSum-Minimax.ipynb (seuil #11601 round-2 >=1500 atteint). AJOUT de 5 cellules markdown « Lecture du resultat » (point-selle maximin/minimax en pur (R3,C1)=2.0 ; LP PFJ strategies mixtes uniformes [0.3333]x3 valeur 0 ; jeu asymetrique lecture de la figure ; dualite forte v*=w*=0 ; Colonel Blotto 15 strategies) + 6 paragraphes de cadrage pedagogique. La contrepartie C# GameTheory-05-ZeroSum-Minimax-Csharp.ipynb est INCHANGEE par la PR (aucun fichier touche). La parite lib-vs-lib native-both (Tranche 1/2/3 : Dantzig vs Glop vs Gambit) n''est PAS affectee : les cellules de calcul sont inchangees. PORTEE DU DIFF (comparaison des JSON parses base d9bc769a53af -> HEAD d149f89bc3d7) : markdown uniquement, +5 cellules markdown (19 -> 24), 0 cellule code touchee (14/14 source+outputs byte-identiques), 0 sortie modifiee, 0 execution_count deplace, 0 cellule code ajoutee ou retiree.'
