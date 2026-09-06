@@ -28,6 +28,7 @@ from generate_catalog import (
     analyze_notebook,
     check_errors,
     classify_maturity,
+    classify_reproducibility,
     classify_scientific_review,
     count_todos,
     detect_kernel,
@@ -1615,6 +1616,64 @@ class TestEditorialReviewPromotion:
             json.dumps({"d": rd})
         finally:
             tmp.unlink()
+
+
+class TestClassifyReproducibility:
+    """Axe 2 (reproductibilite) — le label REPRODUCED exige une attestation.
+
+    #14814 : une reference jamais executee ne doit JAMAIS sortir REPRODUCED ;
+    le chemin nominal (EXECUTED + attestation) doit rester atteignable.
+    """
+
+    def test_reference_never_reproduced(self):
+        # REFERENCE (qc_reference==true) est un type de document, pas une
+        # reproductibilite. Meme avec des champs d'attestation fournis, un
+        # notebook jamais execute ne sort pas REPRODUCED.
+        assert classify_reproducibility("REFERENCE") == "UNTESTED"
+        assert classify_reproducibility(
+            "REFERENCE",
+            last_success_sha="abc1234",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="abc1234",
+        ) == "UNTESTED"
+
+    def test_never_executed_is_untested(self):
+        assert classify_reproducibility("C_NEVER_EXECUTED") == "UNTESTED"
+        assert classify_reproducibility("D_HAS_ERRORS") == "UNTESTED"
+        assert classify_reproducibility(None) == "UNTESTED"
+
+    def test_executed_without_attestation_stays_executed(self):
+        # EXECUTE sans SHA/date coherent -> EXECUTED (pas REPRODUCED)
+        assert classify_reproducibility("A_ALL_EXEC_OK") == "EXECUTED"
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK", last_success_sha="abc1234",
+        ) == "EXECUTED"
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK", executed_at="2026-09-01T00:00:00Z",
+        ) == "EXECUTED"
+
+    def test_executed_mismatched_sha_not_reproduced(self):
+        # SHA differents -> pas de coherence -> EXECUTED
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="abc1234",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="zzz9999",
+        ) == "EXECUTED"
+
+    def test_positive_control_reproduced_with_attestation(self):
+        # CONTROLE POSITIF (le chemin nominal, qui n'a jamais tourne) :
+        # EXECUTE + attestation (SHA coherent + executed_at) -> REPRODUCED.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="abc1234",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="abc1234",
+        ) == "REPRODUCED"
+
+    def test_partial_exec_is_static_ok(self):
+        assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
+        assert classify_reproducibility("NO_CODE") == "STATIC_OK"
 
 
 if __name__ == "__main__":

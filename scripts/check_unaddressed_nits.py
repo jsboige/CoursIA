@@ -195,6 +195,31 @@ _OVERRIDE_LANE = re.compile(
 )
 OVERRIDE_LANE = _OVERRIDE_LANE
 
+# #14461 -- un marqueur d'override EN TÊTE est TOUT token bracketé dont
+# l'étiquette porte OVERRIDE, quel que soit le garde émetteur : `[OVERRIDE]`,
+# `[G-VAR-3 OVERRIDE]`, et les futurs overrides de gardes adjacents. Le
+# `startswith("[OVERRIDE]")` (une seule graphie) ne reconnaissait pas la forme
+# canonique `[G-VAR-3 OVERRIDE]` de variation_adjacency_guard.py : un override
+# correctement posé devenait une émission de hold (BOT-CONCERN) et bloquait la
+# PR qu'il venait de débloquer — les deux instruments de déblocage se bloquaient
+# l'un l'autre. Reconnaissance par MOTIF (bracketé portant OVERRIDE), pas par
+# graphie. GARDE-FOU d'EN-TÊTE : les appelants ne font que `.match` (ancrage
+# position 0) — un `[OVERRIDE]` MENTIONNÉ en milieu de tête (ex. « pas de merge
+# tant que [OVERRIDE] lane n'est pas posé ») n'est PAS un arbitrage posé et doit
+# rester un blocage (cf test_13083_blocage_reel_conditionnel). Partagé par
+# `_block_emitted` (point A) et `_coordinator_emission_informal`.
+# #14461 tranche 2 (adjoint po-2025) : un override est une AFFIRMATION, jamais
+# une negation. `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` /
+# `[NOT AN OVERRIDE]` disent l'inverse d'un arbitrage ; les croire overrides
+# SUPPRIMERAIT une injonction reelle. Lookahead negatif : un mot de negation
+# (EN/FR) present avant OVERRIDE dans le crochet = pas un override. Formes
+# positives (`[OVERRIDE]`, `[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`) intactes.
+_OVERRIDE_HEAD_RE = re.compile(
+    r"\[\s*(?![^\]]*\b(?:no|not|nor|none|never|sans|pas|aucun|aucune)\b[^\]]*\bOVERRIDE\b)"
+    r"[^\]]*\bOVERRIDE\b[^\]]*\]",
+    re.IGNORECASE,
+)
+
 # #13083 — le symetrique de #11639 : un coordinateur BLOQUE aussi, et l'organe
 # ne le modelisait pas. Même contrainte de pose stricte que le durcissement de
 # la citation (#13030) : le marqueur est POSE — ancre debut de ligne (seule
@@ -2107,7 +2132,7 @@ def _block_emitted(body: str) -> bool:
         return True
     head = normalised[:60]
     uhead = head.upper()
-    if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
+    if _OVERRIDE_HEAD_RE.match(head.lstrip(" \t*_").upper()):
         return False
     m_hold = HOLD_HEAD.match(head)
     if m_hold and _hold_head_is_emission(head, m_hold.end()):
@@ -2274,11 +2299,14 @@ def _coordinator_emission_informal(body: str) -> bool:
     # injonctions sont suivies d'un participe de levee, c'est une levee.
     if _every_injunction_followed_by_lift(normalised):
         return False
-    # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
-    # jamais une reserve — garde-fou de l'override, deja documente en
-    # `_block_emitted` point A.
+    # Un override pose en tete (arbitrage tiers de B.0, quelle que soit sa
+    # graphie — `[OVERRIDE]`, `[G-VAR-3 OVERRIDE]`, et les futurs overrides de
+    # gardes) EMET une levee, jamais une reserve — garde-fou de l'override,
+    # deja documente en `_block_emitted` point A. #14461 : le
+    # `startswith("[OVERRIDE]")` ne reconnaissait pas la forme canonique
+    # d'adjacence, un override correctement pose redevenait une emission.
     head = normalised[:60].lstrip(" \t*_").upper()
-    if head.startswith("[OVERRIDE]"):
+    if _OVERRIDE_HEAD_RE.match(head):
         return False
     return True
 

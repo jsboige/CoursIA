@@ -21,7 +21,7 @@ Discriminators pinned
    (the prose-discriminator: a list bullet ``- x = y`` next to ``y = 2``
    is still a list, not code).
 
-The acceptance for #12064 is ``PT_11_grpo_qwen_rlvr_on_verifiers.ipynb``
+The acceptance for #12064 is ``PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb``
 cell 5 — a markdown cell tagged ``parameters`` carrying two assignments
 (``LOAD_MODEL_AND_TRAIN`` and ``RUN_SEED``). Both rules must trigger.
 
