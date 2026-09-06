@@ -20,7 +20,7 @@ inputs:
     description: 'How to count sorry: raw | prose-header | standalone-tactic | real'
     required: true
   build-jobs:
-    description: 'Optional lake parallelism cap, passed as `-j N`. Empty = lake default (all cores). `-j 1` serialises elaboration when sibling modules peak together inside ONE job (knot_lean Conway/Conway_en, #14821 exit 137 with cross-job contention refuted).'
+    description: 'Optional lake job-parallelism cap, applied as LEAN_NUM_THREADS. Empty = default (all cores). Lake 5.0.0 (Lean 4.32.1) has NO -j/--jobs CLI flag (`-J` is JSON output; jobs are BaseIO.asTask tasks on the Lean runtime pool, sized by LEAN_NUM_THREADS). `1` serialises elaboration when sibling modules peak together inside ONE job (knot_lean Conway/Conway_en, #14821).'
     required: false
     default: ''
 
@@ -162,14 +162,18 @@ runs:
       shell: bash
       working-directory: ${{ inputs.project-path }}
       env:
-        # `${VAR:+-j "$VAR"}` expands to nothing when unset/empty, so callers
-        # that do not pass build-jobs get the exact same command line as before.
+        # See the build-jobs input description: the cap goes through
+        # LEAN_NUM_THREADS (Lake 5.0 task pool), NOT a CLI flag — `lake -R
+        # build -j 1` dies with "unknown short option '-j'" (#14821 run
+        # 34037681207). Empty input = no export = default behavior, so
+        # callers that do not pass build-jobs are unaffected.
         LAKE_BUILD_JOBS: ${{ inputs.build-jobs }}
       run: |
         set -o pipefail   # propagate lake's exit code through the pipeline — without this a
                           # FAILED lake build reports exit 0 (tail always succeeds), and the
                           # CI step passes regardless. See incident conway_lean HashlifeCorrectness
                           # L1058 (rfl fail masked as CI PASS, 2026-06-14).
+        if [ -n "$LAKE_BUILD_JOBS" ]; then export LEAN_NUM_THREADS="$LAKE_BUILD_JOBS"; fi
         lake exe cache get || true
         # `tail` keeps the SUCCESS path terse, but on FAILURE it also truncates the
         # `File.lean:L:C: error:` line — lake builds in parallel and pushes an early
@@ -177,7 +181,7 @@ runs:
         # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
         # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
         # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
-        if lake -R build ${LAKE_BUILD_JOBS:+-j "$LAKE_BUILD_JOBS"} 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
           :
         else
           rc=$?

@@ -148,9 +148,11 @@ jobs:
           # d'elaboration des siblings Conway/Conway_en DANS le meme job —
           # la contention entre jobs est REFUTEE (Proof integrity mort seul,
           # 18 min apres liberation de l'autre job, DM ai-01 2026-09-06).
-          # `-j 1` d'abord comme INSTRUMENT DE MESURE : si ca passe, c'est
-          # aussi le remede court terme ; si ca OOM, le pic d'un Conway seul
-          # depasse la boite (reco ai-01, msg-20260906T133912-j6rlew).
+          # Serialisation d'abord comme INSTRUMENT DE MESURE (reco ai-01,
+          # msg-20260906T133912-j6rlew) : si ca passe, c'est aussi le remede
+          # court terme ; si ca OOM, le pic d'un Conway seul depasse la boite.
+          # NB: Lake 5.0 n'a pas de -j (tentative 1 = run 34037681207, mort
+          # a l'option parsing) — le cap passe par LEAN_NUM_THREADS.
           build-jobs: "1"
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
