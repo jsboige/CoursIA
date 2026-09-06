@@ -1359,6 +1359,10 @@ def test_two_lanes_conflict_class(tmp_path, old_form):
     _git("config", "user.email", "t@t")
     _git("config", "user.name", "t")
     _git("config", "commit.gpgsign", "false")
+    # Portabilite CI : le nom de la branche initiale depend de init.defaultBranch
+    # (system config Git-for-Windows = "main", runner ubuntu = compile "master").
+    # Jamais coder "main" en dur -- decouvrir le nom (pattern l.1013).
+    base_branch = _git("symbolic-ref", "--short", "HEAD").stdout.strip()
 
     slug = _slug("T-Conflit")
     pair_dir = tmp_path / "registry" / slug
@@ -1389,7 +1393,7 @@ def test_two_lanes_conflict_class(tmp_path, old_form):
     _git("commit", "-qm", "base")
 
     def _lane_append(branch, name, date, sha):
-        _git("checkout", "-q", "-b", branch, "main")
+        _git("checkout", "-q", "-b", branch, base_branch)
         if old_form:
             with open(pair_file, "a", encoding="utf-8") as fh:
                 fh.write(f'    - date: "{date}"\n      by: lane-{name}\n'
@@ -1408,11 +1412,11 @@ def test_two_lanes_conflict_class(tmp_path, old_form):
     _lane_append("lane-A", "T-Conflit", "2026-08-04", "e" * 40)
     _lane_append("lane-B", "T-Conflit", "2026-08-05", "f" * 40)
 
-    # Merge lane-A sur main : fast-forward (main = ancestor de lane-A) -> pas de
-    # conflit. Puis merge lane-B : main = base+auditA, lane-B = base+auditB,
-    # merge-base = BASE -> les DEUX branches ont modifie la meme region de queue
-    # -> c'est LA la classe de conflit a prouver.
-    _git("checkout", "-q", "main")
+    # Merge lane-A sur la branche de base : fast-forward (base = ancestor de
+    # lane-A) -> pas de conflit. Puis merge lane-B : base = base+auditA,
+    # lane-B = base+auditB, merge-base = BASE -> les DEUX branches ont modifie
+    # la meme region de queue -> c'est LA la classe de conflit a prouver.
+    _git("checkout", "-q", base_branch)
     r1 = _git("merge", "--no-edit", "lane-A")
     assert r1.returncode == 0, "premier merge (fast-forward) doit reussir"
     r2 = _git("merge", "--no-edit", "lane-B")
