@@ -9,6 +9,14 @@ Windows-side jupyter_client cannot connect to WSL kernels because
 WSL strips backslashes from connection file paths. WSL mode runs
 papermill natively inside WSL, avoiding the cross-OS boundary entirely.
 
+The WSL execution venv is ``~/coursia-wsl`` by default. Since the kernel
+identity of a WSL kernelspec is decided by the active venv (the ``argv`` of
+the WSL kernelspecs carries a bare ``python``), a notebook declaring a kernelspec
+whose interpreter lives in another venv would silently execute in the wrong
+environment. Use ``--venv <path>`` to run in a specific venv; without it the
+tool derives the venv the notebook's kernelspec declares (from its ``kernel.json``)
+and prints a divergence warning on stdout instead of diverging silently (#14908).
+
 Prerequisites (WSL, one-time setup):
     wsl -e bash -c "python3 -m venv ~/coursia-wsl"
     wsl -e bash -c "source ~/coursia-wsl/bin/activate && pip install nashpy matplotlib papermill ipykernel scipy numpy"
@@ -19,8 +27,8 @@ Prerequisites (native macOS/Linux):
     (plus any notebook-specific dependencies: nashpy, matplotlib, numpy, scipy, etc.)
 
 Usage:
-    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto]
-    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto]
+    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto] [--venv <path>]
+    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto] [--venv <path>]
     python wsl_papermill.py check-env [--mode auto]
 
 Examples:
@@ -36,10 +44,9 @@ import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 WSL_VENV = "~/coursia-wsl"
-WSL_PAPERMILL_CMD = f"source {WSL_VENV}/bin/activate && papermill"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
@@ -86,6 +93,91 @@ def run_wsl(cmd: str, timeout: int = 300) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
+# =============================================================================
+# WSL venv resolution (#14908) — derive the execution venv from the kernel spec
+# =============================================================================
+
+_WSL_KERNEL_JSON_CANDIDATES = (
+    "~/.local/share/jupyter/kernels/{name}/kernel.json",
+    "/usr/local/share/jupyter/kernels/{name}/kernel.json",
+    "/usr/share/jupyter/kernels/{name}/kernel.json",
+    "/etc/jupyter/kernels/{name}/kernel.json",
+)
+
+
+def _venv_from_interpreter(interpreter: str | None) -> str | None:
+    """Derive a venv path from a kernel interpreter path ``<venv>/bin/python3``.
+
+    Returns ``None`` for system interpreters (``/usr/bin/python3``, ``/bin/python3``)
+    and bare names (``python3``), where no venv can be inferred.
+    """
+    if not interpreter:
+        return None
+    p = PurePosixPath(interpreter)
+    if not p.name.startswith("python"):
+        return None
+    if p.parent.name != "bin":
+        return None
+    venv = p.parent.parent
+    if str(venv) in ("/", "/usr", "/usr/local"):
+        return None
+    return str(venv)
+
+
+def _declared_venv_from_kernel_json(kernel_json: dict | None) -> str | None:
+    """Extract the venv a kernel declares from its parsed ``kernel.json``."""
+    if not kernel_json or not isinstance(kernel_json, dict):
+        return None
+    argv = kernel_json.get("argv")
+    if not isinstance(argv, list) or not argv:
+        return None
+    return _venv_from_interpreter(argv[0])
+
+
+def _find_kernel_json_wsl(kernel_name: str) -> dict | None:
+    """Read the ``kernel.json`` for a kernelspec registered in WSL."""
+    for tmpl in _WSL_KERNEL_JSON_CANDIDATES:
+        path = tmpl.format(name=kernel_name)
+        rc, out, _ = run_wsl(f"cat {path} 2>/dev/null")
+        if rc == 0 and out.strip():
+            try:
+                return json.loads(out)
+            except json.JSONDecodeError:
+                return None
+    return None
+
+
+def _normalize_venv(path: str | None, home: str = "") -> str:
+    """Normalize a venv path for comparison (expand ``~/``, strip trailing ``/``)."""
+    if not path:
+        return ""
+    if path.startswith("~/") and home:
+        path = home + path[1:]
+    return str(PurePosixPath(path)).rstrip("/")
+
+
+def _venv_mismatch_message(kernel: str, use_venv: str, declared_venv: str | None,
+                           home: str = "") -> str | None:
+    """One-line warning when the venv in use differs from the one the kernel declares."""
+    if not declared_venv:
+        return None
+    if _normalize_venv(use_venv, home) == _normalize_venv(declared_venv, home):
+        return None
+    return (f"[!] kernel '{kernel}' declares venv {declared_venv}; executing in "
+            f"{use_venv} -- pass --venv {declared_venv} to match")
+
+
+def _wsl_home() -> str:
+    """Return the WSL home dir (for ``~``-normalization in the venv comparison)."""
+    _, out, _ = run_wsl("echo $HOME")
+    return out.strip()
+
+
+def _papermill_cmd(venv: str) -> str:
+    """Build the WSL papermill activation command for a venv."""
+    return f"source {venv}/bin/activate && papermill"
+
+
 def check_env_wsl() -> bool:
     """Verify WSL papermill environment is set up."""
     print("Checking WSL papermill environment...")
@@ -114,8 +206,13 @@ def check_env_wsl() -> bool:
 
 def execute_notebook_wsl(notebook: str, output: str | None = None,
                          kernel: str = "python3", timeout: int = 300,
-                         in_place: bool = False) -> int:
-    """Execute a single notebook via WSL papermill."""
+                         in_place: bool = False, venv: str | None = None) -> int:
+    """Execute a single notebook via WSL papermill.
+
+    ``venv`` overrides the execution venv (default ``~/coursia-wsl``, unchanged).
+    When the kernelspec the notebook declares points to a different venv, the
+    divergence is printed on stdout instead of diverging silently (#14908).
+    """
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
         print(f"ERROR: {nb_path} not found")
@@ -130,7 +227,18 @@ def execute_notebook_wsl(notebook: str, output: str | None = None,
     else:
         wsl_output = f"/tmp/{nb_path.stem}_wsl_output.ipynb"
 
-    cmd = f'{WSL_PAPERMILL_CMD} --kernel {kernel} "{wsl_input}" "{wsl_output}"'
+    use_venv = venv or WSL_VENV
+    if _WIN_DRIVE_RE.match(use_venv):
+        use_venv = win_to_wsl_path(use_venv)
+
+    declared = _declared_venv_from_kernel_json(_find_kernel_json_wsl(kernel))
+    if declared:
+        msg = _venv_mismatch_message(kernel, use_venv, declared, _wsl_home())
+        if msg:
+            print(msg)
+    print(f"[info] venv: {use_venv}")
+
+    cmd = f'{_papermill_cmd(use_venv)} --kernel {kernel} "{wsl_input}" "{wsl_output}"'
     print(f"Executing (WSL): {nb_path.name} ...")
 
     start = time.time()
@@ -212,8 +320,12 @@ def _find_papermill() -> str | None:
 
 def execute_notebook_native(notebook: str, output: str | None = None,
                             kernel: str = "python3", timeout: int = 300,
-                            in_place: bool = False) -> int:
-    """Execute a single notebook via native papermill (macOS/Linux)."""
+                            in_place: bool = False, venv: str | None = None) -> int:
+    """Execute a single notebook via native papermill (macOS/Linux).
+
+    ``venv`` is accepted for API symmetry with the WSL path but ignored: in
+    native mode the interpreter is ``sys.executable`` (the current venv).
+    """
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
         print(f"ERROR: {nb_path} not found")
@@ -285,15 +397,16 @@ def _validate_output(nb_path: Path, elapsed: float) -> int:
 
 def execute_notebook(notebook: str, output: str | None = None,
                      kernel: str = "python3", timeout: int = 300,
-                     in_place: bool = False, mode: str = "auto") -> int:
+                     in_place: bool = False, mode: str = "auto",
+                     venv: str | None = None) -> int:
     """Execute a single notebook, dispatching to native or WSL mode."""
     if mode == "auto":
         mode = _default_mode()
 
     if mode == "wsl":
-        return execute_notebook_wsl(notebook, output, kernel, timeout, in_place)
+        return execute_notebook_wsl(notebook, output, kernel, timeout, in_place, venv)
     elif mode == "native":
-        return execute_notebook_native(notebook, output, kernel, timeout, in_place)
+        return execute_notebook_native(notebook, output, kernel, timeout, in_place, venv)
     else:
         print(f"ERROR: unknown mode '{mode}' (use 'wsl', 'native', or 'auto')")
         return 1
@@ -301,7 +414,7 @@ def execute_notebook(notebook: str, output: str | None = None,
 
 def batch_execute(directory: str, pattern: str = "*.ipynb",
                   kernel: str = "python3", timeout: int = 300,
-                  mode: str = "auto") -> int:
+                  mode: str = "auto", venv: str | None = None) -> int:
     """Execute all matching notebooks in a directory."""
     nb_dir = Path(directory).resolve()
     if not nb_dir.exists():
@@ -319,7 +432,7 @@ def batch_execute(directory: str, pattern: str = "*.ipynb",
     for i, nb in enumerate(notebooks, 1):
         print(f"\n[{i}/{len(notebooks)}] {nb.name}")
         rc = execute_notebook(str(nb), kernel=kernel, timeout=timeout,
-                              in_place=True, mode=mode)
+                              in_place=True, mode=mode, venv=venv)
         if rc == 0:
             results["ok"] += 1
         elif rc == 2:
@@ -362,6 +475,10 @@ def main():
     p_exec.add_argument("--mode", default="auto",
                         choices=["auto", "wsl", "native"],
                         help="Execution mode (default: auto-detected)")
+    p_exec.add_argument("--venv", default=None,
+                        help="WSL venv to execute in (default: ~/coursia-wsl). "
+                             "If omitted, the venv derived from the notebook's "
+                             "kernelspec is compared and a divergence is printed.")
 
     # batch
     p_batch = sub.add_parser("batch", help="Execute all notebooks in directory")
@@ -372,6 +489,10 @@ def main():
     p_batch.add_argument("--mode", default="auto",
                          choices=["auto", "wsl", "native"],
                          help="Execution mode (default: auto-detected)")
+    p_batch.add_argument("--venv", default=None,
+                        help="WSL venv to execute in (default: ~/coursia-wsl). "
+                             "If omitted, the venv derived from each notebook's "
+                             "kernelspec is compared and a divergence is printed.")
 
     # check-env
     p_check = sub.add_parser("check-env", help="Check papermill environment")
@@ -382,10 +503,10 @@ def main():
     args = parser.parse_args()
     if args.command == "execute":
         sys.exit(execute_notebook(args.notebook, args.output, args.kernel,
-                                  args.timeout, mode=args.mode))
+                                  args.timeout, mode=args.mode, venv=args.venv))
     elif args.command == "batch":
         sys.exit(batch_execute(args.directory, args.pattern, args.kernel,
-                               args.timeout, mode=args.mode))
+                               args.timeout, mode=args.mode, venv=args.venv))
     elif args.command == "check-env":
         sys.exit(0 if check_env(args.mode) else 1)
     else:

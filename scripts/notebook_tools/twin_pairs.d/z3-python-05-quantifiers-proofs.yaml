@@ -39,6 +39,13 @@
       csharp_sha: 1934af8e843c3bc8359671b0f47f0614b2af126b
       content_python_sha: b80e45b44ea5b6a531a371716d7ab3c487f258d7ba0cd569691e5142cf84797b
       content_csharp_sha: 426c6c7837711d69d4c1d011a2a178d3e2234b5f0180094963c32192c40c5583
+    - date: "2026-09-06"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 2ad0124c1141c5d26f8e0574184a3270e47fda3f
+      csharp_sha: ea0d17698a9a37051aaeb6d1ed1d5e42f62b8bc4
+      content_python_sha: b80e45b44ea5b6a531a371716d7ab3c487f258d7ba0cd569691e5142cf84797b
+      content_csharp_sha: 97fab73a374aafda9ae3d00cf9e5d2dd71023a3ff195ae913981c35b4a798199
+      reason: "Enrichissement densite (#13410) du twin C# (622 -> 1490 c/cell, markdown-only) : 8 cellules d'interpretation + intros. Les 13 cellules code et tous les outputs restent byte-identiques a main (verifie code_identity.py) ; le twin Python inchange. Parity native-both tenue : meme moteur Z3, memes concepts, seuls la prose d'interpretation et le numeroteur de cellules divergent. Rebaseline apres audit firsthand par la lane auteure."
   known_differences:
     - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
     - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."

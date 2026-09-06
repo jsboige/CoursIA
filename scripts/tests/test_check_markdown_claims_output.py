@@ -1041,6 +1041,84 @@ class TestFoundingFixtures:
         )
 
 
+class TestCoordinateTupleFilter:
+    """c.NNN (#14905): token '(N,N)' avec un chiffre UNIQUE de part et
+    d'autre de la virgule, entre parentheses, est un tuple positionnel
+    (grille), PAS un decimal francais. `_normalize_num` collapsait
+    '(2,2)' -> '2.2', donc le detecteur cherchait un '2.2' inexistant
+    dans la sortie d'une grille 3x3 et flaguait une prose pedagogique
+    legitime comme fabriquee (DecPyMC-7 md[67]). Criteres d'acceptation
+    (#14905) : '(0,75)' -- deux chiffres apres la virgule -- reste un
+    vrai decimal (eligibile), et une VRAIE fabrication reste attrapee.
+    """
+
+    def _scan_tmp(self, tmp_path, cells):
+        import json as _json
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture.ipynb"
+        p.write_text(_json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    def test_grid_coordinates_clean(self, tmp_path):
+        """Founding case: DecPyMC-7 md[67] -- cible/obstacle positions on a
+        3x3 grid. Prose cites '(2,2)' and '(1,1)'; the grid output never
+        prints '2.2' nor '1.1'. BEFORE (issue #14905) this returned
+        FABRICATION_DETECTED; AFTER the filter it is CLEAN."""
+        cells = [
+            _code_cell(
+                "g = {(2,2):'B', (1,1):'O'}\n"
+                "for r in range(3):\n"
+                "    for c in range(3):\n"
+                "        print(r, c, '->', 'B' if (r,c) in g else 'E')\n",
+                [_stream_output(
+                    "0 0 -> E\n0 1 -> E\n0 2 -> E\n"
+                    "1 0 -> E\n1 1 -> O\n1 2 -> E\n"
+                    "2 0 -> E\n2 1 -> E\n2 2 -> B\n"
+                )],
+            ),
+            _md_cell(
+                "Dans une grille 3x3, la cible est un but en (2,2) et "
+                "un obstacle en (1,1).\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", (
+            f"Expected CLEAN after #14905 coordinate-tuple filter, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_parenthesized_short_decimal_still_eligible(self, tmp_path):
+        """'(0,75)' has TWO digits after the comma -- a genuine decimal,
+        not a single-digit coordinate. Acceptance criterion #14905: this
+        must stay eligible (a real fabrication here is still flagged).
+        Output prints nothing close to '0.75', so it is FABRICATION."""
+        cells = [
+            _code_cell("print('loss=0.23')", [_stream_output("loss=0.23")]),
+            _md_cell("La precision mesuree est (0,75).\n"),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", (
+            f"Expected FABRICATION_DETECTED for '(0,75)' (two digits, real "
+            f"decimal), got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_real_fabrication_still_detected(self, tmp_path):
+        """CONTROLE POSITIF (cf TestFounderPreserved): the c.290 pathologie
+        -- prose cites a magnitude ABSENT from the output -- must STILL be
+        flagged after the coordinate filter. Guards the false-negative
+        edge: '~1,2 M' / '0,09 %' remain detected."""
+        cells = [
+            _code_cell("print('trainable params: 3,145,728 (0.24%)')", [
+                _stream_output("trainable params: 3,145,728 (0.24%)"),
+            ]),
+            _md_cell("On attend ~1,2 M de parametres entrainnables, soit ~0,09 %."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        norms = {f["normalized"] for f in result["findings"]}
+        assert "0.09" in norms, result
+
+
 # -----------------------------------------------------------------------
 # c.415 (#11873) -- integration: REAL fabrication still detected
 # -----------------------------------------------------------------------

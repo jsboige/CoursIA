@@ -1,0 +1,73 @@
+name: Lean CI (percolation_lean)
+
+# CI for percolation_lean (MyIA.AI.Notebooks/Probas/Applications/Percolation).
+# Finite percolation kernel: connectivity/increasing events (Harris-Kleitman
+# finite FKG), isoperimetric profile. 0 sorry (raw=0, verified), fully proven.
+# Wired per ai-01 dispatch / #14904: B.3 "non applicable" was an absence of
+# measurement, not a green -- this file closes the gap. Template: lean-sensitivity.yml
+# (small lake, sorry-filter-mode: real).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run the gate
+      # (same rationale as lean-galois.yml / lean-conway.yml, cf #8951).
+      - '.github/workflows/lean-percolation.yml'
+      - '.github/workflows/lean-axiom.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it (cf #8712).
+      - '.github/workflows/lean-percolation.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-percolation-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean
+      display-name: percolation_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Wired per ai-01 dispatch / #14904: the lake had NO dedicated workflow, so
+  # B.3 read "non applicable" -- which is the absence of a measurement, not a
+  # green. The `#print axioms` footprint measured on the percolation lake
+  # (#14897 / #14907 bodies: [propext, Classical.choice, Quot.sound]) is a
+  # subset of the reusable-workflow defaults, so allow-axioms stays "". A NEW
+  # axiom (native_decide, sorryAx) = a red, which is exactly the point.
+  # fail-on-sorry: true -- sorry-baseline is 0, the lake is fully proven.
+  # target-modules: "*" (issue #10889) -- the module list is derived at runtime
+  # from the lake walk, so it cannot drift out of view. The `_en` i18n siblings
+  # are EXCLUDED by default (FR-only measurement; the byte-parity of the i18n
+  # pair is covered structurally by `lean-i18n-drift.yml`, #10007).
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean
+      display-name: percolation_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true
