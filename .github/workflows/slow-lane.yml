@@ -1,4 +1,4 @@
-name: Slow lane (voie asynchrone, tranche 1 #12856)
+name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 
 # VOIE LENTE — execution asynchrone sur main, hebdomadaire.
 #
@@ -43,6 +43,39 @@ name: Slow lane (voie asynchrone, tranche 1 #12856)
 # REVERSIBILITE : `git revert` d'un seul commit retire `slow-lane.yml` et
 # restaure le regime actuel. Aucun fichier d'origine n'est modifie dans
 # cette PR, donc la reversibilite est triviale.
+#
+# TRANCHE 2 (cette PR) : PREMIER MOUVEMENT REEL — CodeQL vers la voie lente.
+#
+#   Sortie de tranche 1 constatee : run schedule 33463688662 (2026-09-01
+#   02:44 UTC) conclusion success, step "Publish verdict" success ; workflow
+#   en production depuis ~1 semaine sans faux vert ni faux rouge.
+#
+#   Mesure 24h (niveau ETAPE, instrument du commentaire ai-01 2026-08-24 —
+#   jamais run- ou job-level, contamines par l'attente en file) : le default
+#   setup CodeQL a tire **78 runs `pull_request` en 24 h** (matrice x4 =
+#   ~312 jobs Analyze, ~14 min/run github-hosted), y compris sur des PR
+#   100 % docs/markdown qui ne touchent ni C#, ni JS, ni workflows — ~18 h
+#   de runner par jour pour une detection qui n'est pas un check requis
+#   (seul `PR gate` l'est, cf. #12856). Tout le reste du top step-level est
+#   soit paths-filtre sur la surface touchee (Scripts Tests 9,2 min/run,
+#   Notebook Validation 5,4, ML Tests 5,2, Quarto 3,7 post-scoping #14429,
+#   golden-set 3,1 = regime H.7), soit hors scope (PR gate), soit deja
+#   mutualise (Always-on guards). Deplacer ces derniers serait une
+#   regression de couverture, pas une economie (#12856 : "a instruire, pas
+#   a bouger a l'aveugle").
+#
+#   COT ADMIN — POINT DE COORDINATION AU MERGE (le trigger a retirer ne vit
+#   pas dans un fichier) : CodeQL per-PR vient du DEFAULT SETUP
+#   (`dynamic/github-code-scanning/codeql`, settings repo), inatteignable
+#   par commit. La bascule COMPLETE = desactiver le default setup AU MERGE
+#   de cette PR : Settings > Code security and analysis > Code scanning >
+#   Default setup > Disable (ou `gh api -X PATCH
+#   repos/jsboige/CoursIA/code-scanning/default-setup -f state=not-configured`).
+#   Sans ce toggle, le default setup continue de tirer sur chaque PR EN PLUS
+#   du schedule = double cout. Ne merger cette jambe qu'avec le toggle.
+#
+#   Reversibilite tranche 2 : `git revert` du commit + reactiver le default
+#   setup restaurent le regime per-PR.
 
 on:
   # Schedule hebdo (mardi 02:30 UTC, apres le pic push europeen) — une seule
@@ -114,4 +147,57 @@ jobs:
             echo "::error title=Slow-lane ICT-Series pilot (rouge delibere)::La suite ICT-Series a echoue en mode slow-lane (exit=${PYTEST_EXIT}). Verdict : a investiguer. tail : ${TAIL}"
           else
             echo "::notice title=Slow-lane ICT-Series pilot (PASS)::La suite ICT-Series a reussi en mode slow-lane (tranche 1 #12856). Ce job sera re-run chaque mardi 02:30 UTC."
+          fi
+
+  # TRANCHE 2 (#12856) — CodeQL hebdomadaire contre main, meme matrice x4 que
+  # le default setup (actions, csharp, javascript-typescript, python). La
+  # suppression du per-PR vit cote settings (voir en-tete TRANCHE 2).
+  codeql-scheduled:
+    name: Slow-lane CodeQL (${{ matrix.language }})
+    # GitHub-hosted : CodeQL est gratuit sur repo public et ne concurrence pas
+    # le pool self-hosted (check_self_hosted_runner_policy : ubuntu-latest =
+    # baseline autorisee, hors allowlist). Declencheurs schedule/dispatch
+    # uniquement = refs possedees par le repo, aucune garde same-repo requise
+    # (cf en-tete du scanner).
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Job-level : le workflow reste contents: read ; seul ce job uploade du
+    # SARIF vers code scanning.
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, csharp, javascript-typescript, python]
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Init CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+
+      # Autobuild est un no-op documente pour les langues interpretees ;
+      # pour csharp il construit la solution (meme chemin que le default
+      # setup, dont les runs csharp passent deja, ex. 6m34s sur #14746).
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Analyze
+        id: analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
+
+      - name: Publish verdict
+        if: always()
+        env:
+          ANALYZE_OUTCOME: "${{ steps.analyze.outcome }}"
+        run: |
+          if [ "${ANALYZE_OUTCOME}" = "success" ]; then
+            echo "::notice title=Slow-lane CodeQL (${{ matrix.language }}) (PASS)::Analyse CodeQL ${{ matrix.language }} terminee en voie lente (tranche 2 #12856). Fournnee hebdo, mardi 02:30 UTC."
+          else
+            echo "::error title=Slow-lane CodeQL (${{ matrix.language }}) (rouge)::Analyse CodeQL ${{ matrix.language }} a echoue en voie lente (outcome=${ANALYZE_OUTCOME}). Verdict : a investiguer."
           fi
