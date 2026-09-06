@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py gpu --detailed | Reason: Absorbe dans commands/gpu.py
+#
 """
 Script de validation GPU et CUDA pour ComfyUI Docker
 Créé pour la validation du démarrage ComfyUI - 2025-11-06
@@ -11,7 +14,7 @@ import sys
 def run_command(cmd):
     """Exécute une commande et retourne le résultat"""
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
         return result.returncode == 0, result.stdout, result.stderr
     except Exception as e:
         return False, "", str(e)

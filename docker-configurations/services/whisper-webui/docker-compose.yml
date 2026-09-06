@@ -50,7 +50,7 @@ services:
       - --username
       - "${WHISPER_USER:-admin}"
       - --password
-      - "${WHISPER_PASSWORD:-changeme}"
+      - "${WHISPER_PASSWORD:?WHISPER_PASSWORD must be set in this service .env (no committed default, it would be a published credential)}"
       - --whisper_type
       - "${WHISPER_TYPE:-insanely_fast_whisper}"
 

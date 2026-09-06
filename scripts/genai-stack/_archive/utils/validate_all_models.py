@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py validate --full | Reason: Remplace par validate_stack.py --full
+#
 """
 validate_all_models.py - Script de validation unifié pour les moteurs GenAI (Images)
 
