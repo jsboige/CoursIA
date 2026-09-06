@@ -108,6 +108,20 @@ def read_kernelspec_name(nb_path: Path) -> str:
     return spec.get("name") or "python3"
 
 
+def _payload_chars(value) -> int:
+    """Character volume of one MIME payload as nbformat stores it.
+
+    Rich outputs carry either a single string (``image/png`` base64) or a list
+    of lines (``text/html``); both conventions occur, sometimes mixed across
+    keys of the same ``data`` dict.
+    """
+    if isinstance(value, str):
+        return len(value)
+    if isinstance(value, list):
+        return sum(len(s) for s in value if isinstance(s, str))
+    return 0
+
+
 def _output_census(nb_path: Path) -> dict:
     """Count the outputs and embedded images a notebook currently carries.
 
@@ -120,21 +134,42 @@ def _output_census(nb_path: Path) -> dict:
     does not need to know *why* the run degraded, which is what makes it worth
     having over a detector tied to one mechanism.
 
+    The census also totals the character volume per MIME type (``mime_chars``):
+    counting alone is blind to a payload replaced by a stub -- a missing
+    ``dot`` turns six factor graphs into six ``<strong>Graphviz non
+    disponible.</strong>`` lines, which reads as output count *rising* (#14356
+    gap, measured 2026-09-03: ``text/html`` 194 409 -> 6 856 chars).
+
     An unreadable notebook yields ``readable: False`` so the comparison
     abstains rather than accuses.
     """
+    empty = {"readable": False, "outputs": 0, "images": 0, "mime_chars": {}}
     try:
         data = json.loads(nb_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-        return {"readable": False, "outputs": 0, "images": 0}
+        return empty
     outputs = 0
     images = 0
+    mime_chars: dict = {}
     for cell in data.get("cells", []):
         for out in cell.get("outputs") or []:
             outputs += 1
-            if "image/png" in (out.get("data") or {}):
-                images += 1
-    return {"readable": True, "outputs": outputs, "images": images}
+            for mime, value in (out.get("data") or {}).items():
+                if mime == "image/png":
+                    images += 1
+                mime_chars[mime] = mime_chars.get(mime, 0) + _payload_chars(value)
+    return {"readable": True, "outputs": outputs, "images": images,
+            "mime_chars": mime_chars}
+
+
+# A payload below this baseline is too small to distinguish a stub from
+# legitimate variation (a shorter table, a terser repr) -- flagging it would
+# be noise. The measured stub collapse starts from six-figure baselines.
+_MIME_VOLUME_FLOOR = 2000
+
+# A division shallower than this is normal re-render variation; the measured
+# stub case divides by 28, far past any reasonable threshold.
+_MIME_VOLUME_FACTOR = 10
 
 
 def _degradation(before: dict, after: dict) -> str:
@@ -145,6 +180,12 @@ def _degradation(before: dict, after: dict) -> str:
     carried no images to begin with gives no baseline -- the guard stays silent
     there instead of inventing one, which is why it catches regressions and not
     absences.
+
+    The same abstention applies to MIME volume: only a dramatic collapse of an
+    established payload (at least ``_MIME_VOLUME_FLOOR`` chars divided by more
+    than ``_MIME_VOLUME_FACTOR``) is named. A stub replacing rich ``text/html``
+    collapses volume while *raising* the output count, so the volume axis sees
+    what the count axis cannot.
     """
     if not (before["readable"] and after["readable"]):
         return ""
@@ -152,6 +193,12 @@ def _degradation(before: dict, after: dict) -> str:
         return "images %d -> 0" % before["images"]
     if before["outputs"] > 0 and after["outputs"] * 2 < before["outputs"]:
         return "outputs %d -> %d" % (before["outputs"], after["outputs"])
+    before_mimes = before.get("mime_chars") or {}
+    after_mimes = after.get("mime_chars") or {}
+    for mime in sorted(before_mimes):
+        b, a = before_mimes[mime], after_mimes.get(mime, 0)
+        if b >= _MIME_VOLUME_FLOOR and a * _MIME_VOLUME_FACTOR < b:
+            return "%s %d -> %d" % (mime, b, a)
     return ""
 
 

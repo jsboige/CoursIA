@@ -71,4 +71,4 @@ La publication **ne rapporte pas** le phénomène à plusieurs tailles de modèl
 
 - [README.md](README.md) — index de la série ICT.
 - Issue **#5105** — suivi du capstone ICT-25 (claim de lane, build plan, verdict #9881).
-- `MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb` — pont GRPO/RLVR (la stack trl 1.9.2 + rewardspy opérationnelle à 0.5B).
+- `MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb` — pont GRPO/RLVR (la stack trl 1.9.2 + rewardspy opérationnelle à 0.5B).

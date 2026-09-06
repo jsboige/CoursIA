@@ -1,4 +1,7 @@
 # encoding: utf-8
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py validate | Reason: Importe token_manager + comfyui_client_helper (legacy)
+#
 """
 Fichier consolidé de tests pour le système Qwen ComfyUI.
 Ce fichier regroupe tous les tests pour faciliter la maintenance et la simplification.
@@ -209,7 +212,7 @@ def run_docker_command(command: str) -> Optional[str]:
     """Exécute une commande Docker via Windows CLI."""
     try:
         full_command = f"docker exec {CONTAINER_NAME} {command}"
-        result = subprocess.run(["pwsh", "-c", full_command], capture_output=True, text=True, check=True)
+        result = subprocess.run(["pwsh", "-c", full_command], capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
         print(f"   - Erreur Docker: {e.stderr.strip()}")
@@ -221,7 +224,7 @@ def copy_image_from_container(filename_prefix):
         # Lister les images dans le conteneur
         list_cmd = f"ls -t /workspace/ComfyUI/output/{filename_prefix}* 2>/dev/null | head -1"
         result = subprocess.run(["pwsh", "-c", f"docker exec {CONTAINER_NAME} bash -c '{list_cmd}'"],
-                           capture_output=True, text=True, check=False)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
         
         if result.returncode == 0 and result.stdout.strip():
             image_name = result.stdout.strip()

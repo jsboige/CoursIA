@@ -5248,3 +5248,139 @@ def test_13083_instance3_tete_h1_neutralise_toujours():
         f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
     )
 
+
+def test_14461_gvar3_override_est_reconnu_comme_arbitrage() -> None:
+    """#14461 : un [G-VAR-3 OVERRIDE] pose en tete EMET une levee, pas un hold.
+
+    Cas fondateur (PR #14345) : le coordinateur pose l'override d'adjacence
+    canonique `[G-VAR-3 OVERRIDE] lane <m:w> -- next: <genre>` pour debloquer
+    le garde d'adjacence, mais la phrase qui suit (« tant que ... n'est pas
+    sur main ») est lue comme une injonction -> classify = BOT-CONCERN ->
+    la PR que l'override venait de debloquer reste bloquee. Les deux
+    instruments de deblocage du depot se bloquaient l'un l'autre.
+
+    Controle a variable unique (tableau de l'issue) : meme corps, meme auteur,
+    seul le marqueur d'en-tete change. B vs C isole la cause a une seule
+    variable (l'orthographe du marqueur). D (vraie injonction) et E (anodin)
+    rendent le controle non vacuous : la correction ne desarme PAS la
+    detection de hold reelle — un predicat qui ne porte que B serait permissif
+    et passerait inapercu.
+    """
+    phrase = "Tant que #14345 n'est pas sur `main`, chaque levee de la flotte porte ce risque."
+    cases = [
+        ("A phrase seule", phrase, True),
+        (
+            "B sous [G-VAR-3 OVERRIDE]",
+            f"[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}",
+            False,
+        ),
+        (
+            "C sous [OVERRIDE]",
+            f"[OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}",
+            False,
+        ),
+        ("D vraie injonction", "Ne pas merger tant que le run GPU n'est pas rendu.", True),
+        ("E commentaire anodin", "Vu, merci.", False),
+    ]
+    for label, body, expected in cases:
+        got = mod._coordinator_emission_informal(body)
+        assert got is expected, (
+            f"#14461 {label}: _coordinator_emission_informal attendu "
+            f"{expected}, got {got!r}"
+        )
+    # Integration (symptome mesure sur #14345) : un override d'adjacence pose
+    # par un LIFT_OVERRIDE_LOGINS ne doit plus classifier BOT-CONCERN (la PR que
+    # l'override debloque reste bloquee). Il doit rendre None (pas de reserve).
+    body_b = (
+        f"[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}"
+    )
+    assert mod.classify("myia-ai-01", body_b) is None, (
+        f"#14461: classify(myia-ai-01, [G-VAR-3 OVERRIDE] + phrase) attendu "
+        f"None (pas de BOT-CONCERN vivant), got "
+        f"{mod.classify('myia-ai-01', body_b)!r}"
+    )
+    assert mod._block_emitted(body_b) is False, (
+        "#14461: l'override d'adjacence n'emet pas non plus un BLOCAGE "
+        "(point A de _block_emitted, garde-fou du jumeau)."
+    )
+
+
+def test_14461_t2_negation_d_override_ne_supprime_rien() -> None:
+    """#14461 tranche 2 (adjoint po-2025, 2026-09-05) : un override est une
+    AFFIRMATION, jamais une negation.
+
+    `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` / `[NOT AN
+    OVERRIDE]` disent l'inverse d'un arbitrage. Le motif bracketé
+    `_OVERRIDE_HEAD_RE` (qui ne portait qu'OVERRIDE) les reconnaissait quand
+    meme et SUPPRIMAIT une injonction reelle posee juste apres : `_block_emitted`
+    (point A) et `_coordinator_emission_informal` retombaient a False
+    (arbitrage) et `classify` rendait None sur un corps portant un BLOCAGE.
+    Lookahead negatif : un mot de negation (EN/FR) avant OVERRIDE dans le
+    crochet = pas un override. Controles positifs : les formes canoniques
+    (`[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`, `[OVERRIDE]`) restent des
+    arbitrages (non-regression).
+    """
+    injonction = "**BLOCAGE MERGE (ai-01)** — Ne pas merger tant que le run GPU n'est pas rendu."
+    negs = ["[NO OVERRIDE]", "[PAS D'OVERRIDE]", "[SANS OVERRIDE]", "[NOT AN OVERRIDE]"]
+    for marker in negs:
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is True, (
+            f"#14461-T2 {marker!r}: le BLOCAGE doit rester emis — la negation ne "
+            f"desarme pas le point A de _block_emitted, got "
+            f"{mod._block_emitted(body)!r}"
+        )
+        assert mod._coordinator_emission_informal(body) is True, (
+            f"#14461-T2 {marker!r}: l'injonction doit rester une emission — la "
+            f"negation ne la supprime pas, got "
+            f"{mod._coordinator_emission_informal(body)!r}"
+        )
+        assert mod.classify("myia-ai-01", body) == "BLOCK", (
+            f"#14461-T2 {marker!r}: classify doit rendre BLOCK, pas None (la "
+            f"negation n'est pas un arbitrage), got "
+            f"{mod.classify('myia-ai-01', body)!r}"
+        )
+        assert not mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif ne doit pas matcher une negation."
+        )
+    for marker in ("[G-VAR-3 OVERRIDE]", "[G-VAR-2 OVERRIDE]", "[OVERRIDE]"):
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is False
+        assert mod._coordinator_emission_informal(body) is False
+        assert mod.classify("myia-ai-01", body) is None
+        assert mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif doit matcher une forme positive."
+        )
+
+
+def test_14793_troncature_60_crochet_non_ferme_est_pin() -> None:
+    """#14793 acceptance 3 : la troncature de tete a 60 caracteres, quand le
+    crochet OVERRIDE s'ouvre mais ne se ferme pas avant la limite, ne desarme
+    pas le garde (pin, comportement hereditaire accepte par la review de #14788).
+
+    Un en-tete dont le crochet s'ouvre dans les 60 premiers chars mais ne se
+    ferme pas avant la limite n'est PAS un override pose : le motif regu une
+    tete sans `]` et ne matche pas, le BLOCAGE reste une emission (garde arme),
+    pas un arbitrage muet. Valeurs mesurees sur `_OVERRIDE_HEAD_RE` a pos 0
+    (`.match`), `_coordinator_emission_informal`, `_block_emitted` et `classify`.
+    """
+    body = (
+        "**BLOCAGE MERGE (ai-01)** — Au tour precedent, l'ordre [OVERRIDE lane "
+        "myia-po-2024:CoursIA-2 -- justifier longuement que le crochet ne se "
+        "referme pas avant la limite de soixante caracteres]\n\nNe pas merger "
+        "tant que le run GPU n'est pas rendu."
+    )
+    head60 = body[:60]
+    assert not mod._OVERRIDE_HEAD_RE.match(head60.upper()), (
+        "#14793-TRUNC: un crochet non ferme dans les 60 premiers chars ne doit "
+        "pas matcher le motif d'override (le garde n'est pas desarme)."
+    )
+    assert mod._coordinator_emission_informal(body) is True, (
+        "#14793-TRUNC: l'injonction doit rester une emission."
+    )
+    assert mod._block_emitted(body) is True, (
+        "#14793-TRUNC: le BLOCAGE (point A) reste emis sous un crochet non ferme."
+    )
+    assert mod.classify("myia-ai-01", body) == "BLOCK", (
+        "#14793-TRUNC: classify doit rendre BLOCK, pas None/arbitrage."
+    )
+

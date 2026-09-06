@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: abandoned | Successor: (none) | Reason: Hardcode login/password, auth par cookie obsolete
+#
 """
 Script de benchmark pour ComfyUI Qwen
 Mesure les temps de génération d'images et monitor l'utilisation du GPU
@@ -84,7 +87,7 @@ class ComfyUIBenchmark:
                 result = subprocess.run([
                     'nvidia-smi', '--query-gpu=memory.used,memory.total,utilization.gpu,temperature.gpu',
                     '--format=csv,noheader,nounits'
-                ], capture_output=True, text=True, timeout=2)
+                ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=2)
                 
                 if result.returncode == 0:
                     lines = result.stdout.strip().split('\n')
