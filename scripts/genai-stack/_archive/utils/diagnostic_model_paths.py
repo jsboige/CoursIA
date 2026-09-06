@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: abandoned | Successor: (none) | Reason: Script one-shot Phase 29, probleme resolu
+#
 """
 Script de Diagnostic Complet : Chemins des Modèles Qwen + Corruption Potentielle
 ================================================================================
@@ -80,7 +83,7 @@ def run_docker_command(command: str) -> Optional[str]:
         result = subprocess.run(
             ["pwsh", "-c", full_command],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=True
         )
         return result.stdout.strip()

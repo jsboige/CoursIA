@@ -757,3 +757,58 @@ TRANCHE6: list[Guard] = [
         warn_rc=(1, 2),  # rc=2 = findings (signale sans bloquer) ; rc=1 = vacuous
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 7 -- detecteur de prose repetee intra-notebook (« radotage »).
+# Origine : demande user 2026-09-05 (« est-ce qu'on est en mesure de se doter
+# d'un organe qui repèrera les notebooks qui radotent, sans exploser le temps
+# de CI ? »), incident fondateur = les puces « ponts » de la section 5 de
+# Search-09c paraphrasaient la table « ponts » de la section 7 (fix PR #14794).
+#
+# Forme moteur : iterate_paths per-notebook, MEME CABINE que TRANCHE6 (le
+# detecteur rend rc=2 sur --fail-on-findings, rc=1 sur illisible/vacuue).
+# Le pre-controle --self-test epingle le temoin fondateur en fixture : un
+# detecteur qu'on ne peut pas montrer en train de tirer est indiscernable
+# d'un detecteur debranche (lecon #11685/#12817, cf pre_argv TRANCHE2).
+#
+# Pourquoi advisory, pas bloquant : la dette corpus mesuree au cablage est
+# de 999 findings / 1228 notebooks (sweep 4,5 s), dominée par le miroir
+# intro-plan / conclusion-recap -- du radotage structurel réel mais a
+# trancher par l'humain notebook par notebook. Bloquer rougirait toute PR
+# touchant un notebook porteur de dette heritee. Cout CI negligeable :
+# quelques millisecondes par notebook touche (scan texte pur, jamais un
+# sweep repo-wide dans le slot per-PR).
+#
+# INCIDENT DE CABLAGE corrige dans la meme PR : TRANCHE6 (#14469) avait ete
+# enregistre ici SANS etre importe/agrege par fast_lane.py -- le garde
+# deaccent etait donc muet sur toutes les PRs malgre son `absorbed=True`.
+# Cette tranche ajoute le test de parite registre->moteur
+# (test_every_tranche_in_the_registry_is_run_by_the_engine) qui rend
+# l'oubli impossible pour les tranches futures.
+# ---------------------------------------------------------------------------
+TRANCHE7: list[Guard] = [
+    Guard(
+        name="Repeated-prose advisory (per-notebook, non-blocking)",
+        source="repeated-prose-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_repeated_prose.py",
+            "scripts/notebook_tools/tests/test_detect_repeated_prose.py",
+            ".github/workflows/repeated-prose-advisory.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/notebook_tools/detect_repeated_prose.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_repeated_prose.py",
+            "--json", "--fail-on-findings", "{changed_paths}",
+        ],
+        blocking=False,  # advisory : signale le radotage, ne rougit jamais
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(1, 2),  # rc=2 = findings ; rc=1 = illisible/vacuue
+    ),
+]

@@ -461,6 +461,153 @@ class TestGetWorktreeInfoPorcelain:
 
 
 # ---------------------------------------------------------------------------
+# Enregistrement mort -- le checkout a disparu du disque (#14195)
+# ---------------------------------------------------------------------------
+
+
+class TestDeadRegistration14195:
+    """Un enregistrement dont le CHECKOUT a disparu se lit comme du travail.
+
+    Mesure ai-01 du 2026-09-05 : 26 des 51 enregistrements du registre
+    pointaient un repertoire vide, tous sur le volume systeme, vides par
+    le nettoyage de Temp de Windows. `.git/worktrees/<nom>` survit, donc
+    `git status` rend des MILLIERS de fichiers tracks supprimes, donc
+    `has_source_dirty`, donc `uncommitted_source_changes` : le predicat 2a
+    refuse, et il refusera toujours. La preuve de la mort est exactement
+    ce qui rendait le cadavre irrecuperable.
+
+    Le predicat separe la mort du travail par DEUX conditions
+    CONJONCTIVES, et aucune ne suffit seule :
+      (a) toute modification tracked est une suppression d'arbre ;
+      (b) au moins DEAD_TREE_RATIO de l'index a disparu.
+    Les deux controles negatifs ci-dessous pinnent chacune des deux : une
+    lane qui supprime deliberement des fichiers reste REFUSE.
+    """
+
+    @staticmethod
+    def _deleted(n: int) -> str:
+        """Porcelain de `n` fichiers supprimes cote ARBRE DE TRAVAIL."""
+        return "".join(" D src/f%d.py\n" % i for i in range(n))
+
+    @staticmethod
+    def _stub_index(monkeypatch, total: int, rc: int = 0):
+        """Stub `git ls-files` : `total` chemins tracks dans l'index."""
+        listing = "".join("src/f%d.py\n" % i for i in range(total))
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(rc, listing))
+
+    # -- parse_porcelain : la colonne ARBRE 'D' se collecte a part ------
+
+    def test_worktree_deletion_collected_apart_from_staged(self):
+        out = pmw.parse_porcelain(" D a.py\n M b.py\nD  c.py\n")
+        # ' D' = supprime cote arbre de travail : le cas du cadavre.
+        # 'D ' = suppression STAGEE : un geste delibere, jamais une
+        # disparition -- elle compte comme modification, pas comme
+        # deletion d'arbre. Le predicat (a) la lira donc comme du travail.
+        assert out["tracked_deleted"] == ["a.py"]
+        assert out["tracked_modified"] == ["a.py", "b.py", "c.py"]
+
+    # -- controle positif : l'arbre entier a disparu --------------------
+
+    def test_whole_tree_deleted_is_a_dead_registration(self, monkeypatch):
+        self._stub_index(monkeypatch, total=9000)
+        parsed = pmw.parse_porcelain(self._deleted(9000))
+        assert len(parsed["tracked_deleted"]) == 9000
+        assert pmw._is_dead_registration("C:/gone", parsed) is True
+
+    # -- controle negatif (b) : suppression deliberee, sous le seuil ----
+
+    def test_partial_deletion_is_work_not_death(self, monkeypatch):
+        # 200 suppressions sur 9000 tracks = 2,2 %. Une lane qui retire
+        # deliberement un repertoire doit rester REFUSE : sans le ratio,
+        # tout `git rm -r` d'un sous-arbre partirait au retrait.
+        self._stub_index(monkeypatch, total=9000)
+        parsed = pmw.parse_porcelain(self._deleted(200))
+        assert pmw._is_dead_registration("C:/wt", parsed) is False
+
+    # -- controle negatif (a) : une seule edition reelle suffit ---------
+
+    def test_one_real_edit_among_deletions_is_work(self, monkeypatch):
+        # 8900 suppressions sur 9000 = 98,9 %, AU-DESSUS du seuil : le
+        # ratio seul aurait rendu True. Une edition non-suppression
+        # coexiste, donc c'est du travail en cours -- et la condition (a)
+        # tranche SANS meme lire l'index (run_git leve si appele).
+        def _no_git(*a, **k):
+            raise AssertionError(
+                "condition (a) doit court-circuiter : une edition reelle "
+                "tranche sans que l'index soit lu"
+            )
+
+        monkeypatch.setattr(pmw, "run_git", _no_git)
+        parsed = pmw.parse_porcelain(self._deleted(8900) + " M src/keep.py\n")
+        assert len(parsed["tracked_deleted"]) == 8900
+        assert len(parsed["tracked_modified"]) == 8901
+        assert pmw._is_dead_registration("C:/wt", parsed) is False
+
+    # -- fail-closed : une mesure impossible n'est pas un cadavre -------
+
+    def test_unreadable_index_fails_closed(self, monkeypatch):
+        self._stub_index(monkeypatch, total=9000, rc=128)
+        parsed = pmw.parse_porcelain(self._deleted(9000))
+        assert pmw._is_dead_registration("C:/gone", parsed) is False
+
+    def test_empty_index_fails_closed(self, monkeypatch):
+        # Index vide : le ratio serait une division par zero. Un
+        # enregistrement dont l'index ne rend aucun chemin n'est pas un
+        # cadavre MESURE, c'est une mesure absente -- donc REFUSE.
+        self._stub_index(monkeypatch, total=0)
+        parsed = pmw.parse_porcelain(self._deleted(3))
+        assert pmw._is_dead_registration("C:/gone", parsed) is False
+
+    # -- aval : le verdict precede les predicats de salete --------------
+
+    def test_diagnose_removes_dead_registration_without_gh(self, monkeypatch):
+        info = dict(
+            branch="fix/X", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[],
+            tracked_modified=["src/f0.py"], has_source_dirty=True,
+            has_submodules=False, is_current=False, dead_registration=True,
+        )
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+
+        def _no_gh(*a):
+            raise AssertionError(
+                "aucun appel gh : il n'y a plus d'arbre a proteger, quel "
+                "que soit l'etat de la PR"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/gone", "C:/other")
+        # has_source_dirty est VRAI (les suppressions) : sans le predicat
+        # 1bis place AVANT le 2a, ce worktree rendait
+        # `uncommitted_source_changes` -- le refus perpetuel mesure.
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+        assert s.dead_registration is True
+
+    # -- aval : --force est CIBLE, jamais general -----------------------
+
+    def test_force_is_reserved_to_dead_registrations(self, monkeypatch):
+        seen: list[list[str]] = []
+
+        def fake_run_git(cwd, *args, **kwargs):
+            seen.append(list(args))
+            return _fake_proc(0, "")
+
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+
+        ok, err = pmw.apply_removal(
+            _make_status(path="C:/gone", dead_registration=True))
+        assert ok is True and err == ""
+        assert seen[-1] == ["worktree", "remove", "--force", "C:/gone"]
+
+        pmw.apply_removal(_make_status(path="C:/live"))
+        # Worktree ordinaire : PAS de --force. Le refus de git reste le
+        # dernier garde-fou si la classification s'est trompee.
+        assert seen[-1] == ["worktree", "remove", "C:/live"]
+
+
+# ---------------------------------------------------------------------------
 # same_worktree_path -- le drapeau is_current se CALCULE
 # ---------------------------------------------------------------------------
 
@@ -864,10 +1011,50 @@ class TestToleratedCleanup14619:
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "contains_submodules"
 
-    def test_no_force_in_source(self):
+    def test_no_unconditional_force(self):
+        """Regle 3 durcie (#14195) : `--force` existe, mais SOUS TEST.
+
+        La propriete d'origine etait l'absence du litteral dans la source.
+        Le predicat 1bis l'a rendue intenable : un enregistrement dont
+        l'arbre a disparu ne se retire pas sans --force, et l'organe
+        annoncerait alors un REMOVE qu'il ne peut pas executer.
+
+        Ce qui comptait n'a jamais ete l'absence du mot -- c'est que le
+        REFUS DE GIT reste opposable a un worktree vivant, seule
+        verification externe du dispositif. On pinne donc la structure :
+        chaque apparition de `--force` doit etre gardee par un test sur
+        `dead_registration`. Un `--force` inconditionnel (le raccourci qui
+        ferait passer n'importe quelle mauvaise classification) echoue.
+        """
+        import ast
         src = Path(pmw.__file__).read_text(encoding="utf-8")
-        assert '"--force"' not in src and "'--force'" not in src, (
-            "la propriété no-force (docstring règle 3) doit tenir"
+        tree = ast.parse(src)
+
+        def _force_ids(node):
+            return {
+                id(n) for n in ast.walk(node)
+                if isinstance(n, ast.Constant) and n.value == "--force"
+            }
+
+        guarded: set[int] = set()
+        for stmt in ast.walk(tree):
+            if not isinstance(stmt, ast.If):
+                continue
+            names = {
+                n.attr for n in ast.walk(stmt.test)
+                if isinstance(n, ast.Attribute)
+            } | {
+                n.id for n in ast.walk(stmt.test) if isinstance(n, ast.Name)
+            }
+            if "dead_registration" in names:
+                guarded |= _force_ids(stmt)
+
+        total = _force_ids(tree)
+        assert total, "le --force cible du predicat 1bis a disparu"
+        assert total == guarded, (
+            f"{len(total - guarded)} occurrence(s) de --force hors garde "
+            "`dead_registration` : la regle 3 exige que le refus de git "
+            "reste opposable a un worktree vivant"
         )
 
 

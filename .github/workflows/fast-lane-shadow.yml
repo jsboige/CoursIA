@@ -59,7 +59,9 @@ name: Fast lane (ombre)
 # check-run que rendait son workflow source (contrainte #12175 : un rename
 # casse la protection de branche).
 #
-# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE3 1 + TRANCHE4 5 = 22 gardes.
+# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE3 1 + TRANCHE4 5
+#   + TRANCHE6 1 (deaccent, cablage complete ici : oubli d'import #14469
+#   corrige) + TRANCHE7 1 (repeated-prose) = 24 gardes.
 # NB collision #13203 : ce depot en parallele ouvre TRANCHE3 (1 garde) sur
 # les memes fichiers -- le merge des deux ajuste le compteur a 22.
 

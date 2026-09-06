@@ -757,6 +757,34 @@ def test_absorbed_workflows_of_tranche2_no_longer_trigger_on_pull_request():
             f"{guard.name} est absorbe : double execution + zero run sauve")
 
 
+def test_every_tranche_in_the_registry_is_run_by_the_engine():
+    """Incident de cablage #14469 (constate 2026-09-05, corrige avec
+    TRANCHE7) : TRANCHE6 etait definie dans fast_lane_registry.py mais
+    JAMAIS importee ni agregree par fast_lane.py -- le garde deaccent
+    etait enregistre, `absorbed=True`, workflow dispatch-only... et muet
+    sur toutes les PRs. Un organe enregistre mais non branche est
+    indiscernable d'un organe absent (lecon #11685). Ce test epingle la
+    parite registre -> moteur sur les DEUX moities du cablage : l'import
+    (hasattr) ET l'agregat de selection dans main()."""
+    import re as _re
+    import fast_lane_registry as registry
+    engine_src = Path(fast_lane.__file__).read_text(encoding="utf-8")
+    names = sorted(k for k in vars(registry)
+                   if _re.fullmatch(r"TRANCHE\d+", k))
+    assert names, "aucune TRANCHE trouvee : introspection cassee"
+    m = _re.search(r"guards = \[g for g in ([^\]]+)\]", engine_src, _re.S)
+    assert m, "agregat `guards = [g for g in ...]` introuvable dans main()"
+    aggregate = m.group(1)
+    for name in names:
+        assert hasattr(fast_lane, name), (
+            f"{name} est definie dans fast_lane_registry.py mais pas "
+            f"importee par fast_lane.py : garde enregistre et muet "
+            f"(incident #14469)")
+        assert _re.search(rf"\b{name}\b", aggregate), (
+            f"{name} est importee mais absente de l'agregat de main() : "
+            f"ses gardes ne tournent jamais")
+
+
 def test_warn_rc_is_success_everywhere(monkeypatch):
     """Un rc=2 declare en warn_rc doit etre un SUCCES coherant sur les TROIS
     surfaces : conclusion du check-run, titre, et rouge du job -- sinon le
