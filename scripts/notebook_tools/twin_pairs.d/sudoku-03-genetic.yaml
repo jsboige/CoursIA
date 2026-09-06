@@ -51,6 +51,12 @@
       csharp_sha: 17aecdf0848db10e216746e35f9fa94d0f023f77
       content_python_sha: 5852697fc3e7d89d6562986ead057f32859f5095f3aa1202f35ecf1b110ea67b
       content_csharp_sha: e68fe4eba7def9d7f78aa2a55d25acf9e6999493c06f8c485ab767458234fcf4
+    - date: "2026-09-05"
+      by: myia-po-2025:CoursIA
+      python_sha: 6c75a0e2f0b9848515d96cb2c8554f715ebb4786
+      csharp_sha: ff2960fca3daf0af172cdd8868e046c72fdbe4b1
+      content_python_sha: baf9bbd11aaf1ec6c10e935b614fb223fee8bacd869b6aba315a8c9c2d817e52
+      content_csharp_sha: 5451a0791f82ca512a89c721e039058797826de628234f793fd55ed1e9457158
   known_differences:
     - "2026-09-02 (PR #14266, myia-po-2027:CoursIA) : normalisation nbformat du champ source string->liste (tranche Sudoku de #14209) -- forme seule, les DEUX jumeaux (Python + C#). Contenu rejoint byte-identique (digest sha1 par cellule, 0 divergence), outputs/execution_count/nb de cellules inchanges, pas de re-exec (C.3). Les blob SHAs et content SHAs deplaces dans l audit ci-dessus sont des artefacts de forme (le content_sha hashe la structure JSON des cellules, forme du champ source incluse), pas une divergence pedagogique."
     - "Rebaseline 2026-08-14 : cote Python deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."

@@ -1,7 +1,7 @@
-- name: "Search-4 LocalSearch"
+- name: "Search-04 LocalSearch"
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch-Csharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Recursion/classique in-scratch pedagogique Local Search (hill-climbing, simulated annealing, local beam search) portee sur paysages discrets (StdLib Python + numpy helper, BCL pure C# avec System.Random.Shared .NET 9). Les DEUX cotes implementent les MEMES algorithmes locaux (AIMA ch.4) en from-scratch -- la portabilite cross-lang est dans le pseudo-code specifique par Russell/Norvig. Pas de lib SOTA Python `simanneal` est un jouet non-maintained, aucun moteur Local Search SOTA de reference n'existe dans l'un ou l'autre ecosysteme pour ce paradigme. Verdict SOTA-OK (solver-free by design des deux cotes, aucune asymetrie a corriger)."
@@ -34,6 +34,12 @@
       csharp_sha: 17dc92abed5f6b4b1ddfd9960e8d1d51dafb3d78
       content_python_sha: dddab5b007203cb73db9a7a6bb64eb31deb4d4da2a3a33ef87fc9ecf19aafe8b
       content_csharp_sha: 74f9300152cb6aebe49afe5ce2e718ab215aa8b31c57f0eac5375811ffebcc8a
+    - date: "2026-09-05"
+      by: myia-po-2025:CoursIA
+      python_sha: b6d9ee5b1f53fada2648fdeee9ca9a06ccb99aeb
+      csharp_sha: 0ef1b579134c5d8e23918eefdf9f689deca81dc4
+      content_python_sha: 4438cf671655dc1ac7765409a8fa1d31d9a8266c1b18d03d7cc7e761be39bb8f
+      content_csharp_sha: 0565d616d297301a621f07c29c52939f3895e30bdb89281befce61118d2b86ca
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie Search-4-LocalSearch.ipynb (Python), 39 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : metaheuristiques de recherche locale — Hill Climbing (variations steepest/first-improvement + diagnosis plateau/ridge), Simulated Annealing (schema de refroidissement, critere de Metropolis), Tabu Search (liste tabou, memoire a court terme). Comparaison empirique sur N-Reines. Les deux twins implementent les 3 algorithmes from-scratch (parite algorithmique, pas seulement narratif)."

@@ -1,7 +1,7 @@
-- name: "Search-1 StateSpace"
+- name: "Search-01 StateSpace"
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "2026-08-16 (po-2025) : design-gate tranche (option a) -- networkx 3.6.1 installe et bridge dans Search-1-StateSpace.ipynb (section 'Verification de l'optimalite avec networkx' : Dijkstra + centralite d'intermediarite, sorties re-executees C.2). Les DEUX cotes invoquent desormais un moteur SOTA-tier (Python = networkx, C# = QuikGraph 2.5.0) : verdict SOTA-OK. parity_level conserve a semantic : la divergence structurelle (11 vs 13 villes) rend la paire non-native sous la lecture 'cellule-par-cellule' du _schema.yaml, et la semantique de native-both reste a trancher (#11200). --- Etat precedent (2026-08-16 ai-01) : la clause 'pas de lib SOTA-tier' ci-dessous est FALSIFIEE cote C#. QuikGraph 2.5.0 (portage .NET de Boost.Graph) s'installe et s'invoque sans obstacle sur la section 'Recherche d'itineraire' ; le pont est livre et execute (Dijkstra sur le franceGraph existant). Cote C# : desormais SOTA-OK. Cote Python : toujours stdlib pure -- networkx n'est PAS installe dans l'env courant, et la question de savoir si Search-1 doit le bridger ou si le role revient a Search-02b-NetworkX (meme repertoire) est un design-gate ouvert, d'ou le maintien de parity_level: semantic (l'enum ne porte pas de valeur 'native d'un seul cote'). Verdict RECOVERABLE-LOCAL maintenu : le gap residuel est cote Python et il est local. --- Etat anterieur (2026-08-01..14, conserve pour tracabilite) : Python = stdlib only (collections.deque BFS + copy.deepcopy state cloning + math/numpy helper viz). Pas de lib SOTA-tier pour state-space search en Python pur (la reference AIMA 3e ed. est pedagogique from-scratch). C# = BCL pure (Queue<T> BFS + Stack<T> DFS + LinkedList<T> state space from-scratch, 0 NuGet SOTA tiers)."
@@ -45,6 +45,12 @@
       csharp_sha: 6dae97fd46083e33673cc86dc6f8c2f8a010f639
       content_python_sha: 8a59f897141b3c3ffea04ef66685798daa29e1ed63bb6de9338a352d98672fdc
       content_csharp_sha: a41953be68a00545830f37a784fa54f88195fc63105b5a44ece187b1ada59e05
+    - date: "2026-09-05"
+      by: myia-po-2025:CoursIA
+      python_sha: 1cb6989a7971fed20ec326efa681a4a45c585108
+      csharp_sha: da090a35e5255400c66203f61762ee0f4e14fce8
+      content_python_sha: ea060ed3e37b6e9eb9ae5c7a10494f22cdf0538671dc726c01e6f25ddd8fcd2e
+      content_csharp_sha: c5b396e3d3aca5f87ec7d226dfab05675e7d357f608b35f68e99b8441b88f802
   known_differences:
     - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
     - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."

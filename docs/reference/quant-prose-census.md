@@ -150,7 +150,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial.ipynb` | 58 |
 | `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-Csharp.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-11-Metaheuristics.ipynb` | 34 |
-| `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-9-LinearProgramming.ipynb` | 34 |
+| `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-09-LinearProgramming.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-3-Advanced.ipynb` | 30 |
 
 ### Sudoku (drainable total = 851)

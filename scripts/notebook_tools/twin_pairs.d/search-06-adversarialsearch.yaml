@@ -1,7 +1,7 @@
-- name: Search-6 AdversarialSearch
+- name: Search-06 AdversarialSearch
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-6-AdversarialSearch.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-6-AdversarialSearch-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-Csharp.ipynb
   parity_level: semantic
   audits:
   - date: '2026-07-29'
@@ -32,6 +32,12 @@
     csharp_sha: f70926fc62cc6c9ee92e4e6b5576239eab2d8590
     content_python_sha: 773ac22b23913c6fe1b6e4215f8e45a261b17e922694ce9830f93bd94fad3eea
     content_csharp_sha: bca1f9c4bcb8b84909ec8f3b2c00412640e4865b9be93bedfc65259175a8db92
+  - date: "2026-09-05"
+    by: myia-po-2025:CoursIA
+    python_sha: 0a8c3c78da0a8489acefa1ac772002134d8700c5
+    csharp_sha: ef71b72d2eb9929899ca48a5207d45267bd08854
+    content_python_sha: 47558871a13948d38d2ee782cb5cd7fc382b9e8f1b5517722b27744b55fc92fc
+    content_csharp_sha: bfc09b849c4499b9b3add0aa7f3ebc8e849720a87c611b50b405d610776ccb05
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = numpy/matplotlib + dict/list from-scratch (minimax, alpha-beta, transposition table). C# = BCL (System.Collections.Generic Dictionary/Stack pour l''arbre de jeu, 0 NuGet). Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure concluat ''no third-party solver invoked, no SOTA bridge applicable (minimax is the sujet)'', qui contredit RECOVERABLE-LOCAL. Verifie firsthand : 9 imports Python / 4 using C#, aucun moteur tiers des deux cotes. Le coeur algorithmique (minimax, alpha-beta, iterative deepening) EST le sujet pedagogique -- il n''existe pas de lib de reference pour l''arbre de jeu adversarial dans un des deux ecosystemes que le chapitre devrait invoquer. From-scratch assumé des deux cotes, precedent GT-15 (PR #12312). parity_level preserve.'
   known_differences:

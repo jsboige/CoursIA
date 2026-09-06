@@ -63,7 +63,7 @@ notebooks:
   # --- Search : fondations exploration informee/non-informee (series Search) ---
   # State-space search sur graphes networkx generes + stdlib. 0 solver externe
   # (pas ortools/z3/constraint), 0 JVM. CPU, deterministic.
-  - path: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
+  - path: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb
     series: Search
     title: "Search-1 - Espaces d'etats (BFS/DFS/A*)"
     kernel: python3
