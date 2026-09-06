@@ -15,7 +15,7 @@ services:
       - CUDA_VISIBLE_DEVICES=0
       - WEB_USER=${FORGE_USER:-admin}
       - WEB_PASSWORD=${FORGE_PASSWORD:?FORGE_PASSWORD must be set in this service .env (no committed default, it would be a published credential)}
-      - FORGE_ARGS=--ui-settings-file config-turbo.json --api --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:?FORGE_PASSWORD must be set in this service .env (no committed default, it would be a published credential)} --gpu-device-id 0 --xformers --skip-install
+      - FORGE_ARGS=--ui-settings-file config-turbo.json --api --api-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:?FORGE_PASSWORD must be set in this service .env (no committed default, it would be a published credential)} --api-log --listen --gradio-auth ${FORGE_USER:-admin}:${FORGE_PASSWORD:?FORGE_PASSWORD must be set in this service .env (no committed default, it would be a published credential)} --gpu-device-id 0 --xformers --skip-install
     volumes:
       # Checkpoint models (SDXL Lightning, etc.)
       - ../../shared/models/checkpoints:/opt/stable-diffusion-webui-forge/models/Stable-diffusion
