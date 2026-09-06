@@ -26,7 +26,7 @@ hmmlearn>=0.3                # Hidden Markov Models
 scikit-learn>=1.2            # StandardScaler (HMM), LatentDirichletAllocation (PyMC-9)
 
 # === Optional (not imported but used indirectly) ===
-# networkx>=3.0              # Graph utilities
+networkx>=3.0              # Graph utilities
 
 # === DoWhy (DoWhy-1-Estimand-et-Intervention) ===
 dowhy>=0.12                  # Identification causale (estimand backdoor/frontdoor + refuters)
