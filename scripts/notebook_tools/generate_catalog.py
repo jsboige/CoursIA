@@ -728,7 +728,14 @@ _FORENSIC_CATEGORY_REPRO = {
     "D_HAS_ERRORS": "UNTESTED",
     "NO_CODE": "STATIC_OK",
     "PARSE_ERROR": "UNTESTED",
-    "REFERENCE": "REPRODUCED",  # notebook de reference, jamais execute par design
+    # REFERENCE (`metadata.qc_reference == true`) = QC Cloud / full-QCAlgorithm
+    # reference notebook, never executed locally by design (#3776). It is a
+    # DOCUMENT TYPE carried by `forensic_category`, NOT a reproducibility claim.
+    # The execution axis (axe 2) values what the real forensic says: a reference
+    # notebook with no output / no execution_count is UNTESTED, never REPRODUCED
+    # (#14814). REPRODUCED requires the attestation proof (executed_at +
+    # last_success_sha == head_sha), which a never-executed reference lacks.
+    "REFERENCE": "UNTESTED",
 }
 
 
@@ -742,7 +749,9 @@ def classify_reproducibility(
     """Axe 2 — reproductibilite (UNTESTED/STATIC_OK/EXECUTED/REPRODUCED).
 
     Cf docs/PARCOURS.md. La categorie de base vient du forensic scan ; REPRODUCED
-    n'est emis que si `last_success_sha` correspond au SHA HEAD (coherence).
+    n'est emis que si `last_success_sha` correspond au SHA HEAD (coherence),
+    c'est-a-dire une attestation d'execution (`executed_at` + SHA coherent),
+    jamais le seul type de document (#14814).
     """
     if not forensic_category:
         return "UNTESTED"

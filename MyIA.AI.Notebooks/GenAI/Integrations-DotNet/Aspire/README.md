@@ -25,6 +25,8 @@ paradigme de test absent du dépôt, démontré réel ».
 | [`IntegrationTests/`](IntegrationTests/) | Projet de tests auto-contenu (TUnit 1.65 + Testcontainers.PostgreSql 4.14 + EF Core 10 sur `net10.0`) : `dotnet test` démarre un vrai Postgres 18, 5/5 tests verts, conteneur auto-purgé |
 | [`06-Aspire-GardeFous-Roslyn.ipynb`](06-Aspire-GardeFous-Roslyn.ipynb) | Notebook #10473 (axe Roslyn) : **analyseurs Roslyn comme garde-fous du code d'agent** — `DiagnosticAnalyzer` AGENTGUARD001 (blocage synchrone `.Result`/`.Wait()` d'une Task), verdict rendu par `dotnet build` lui-même + canal API (Verifier par compilation Roslyn en mémoire), contraste Python (ruff hors compilation), 3 exercices |
 | [`AgentGuard.Analyzers/`](AgentGuard.Analyzers/) · [`AgentGuard.Demo/`](AgentGuard.Demo/) · [`AgentGuard.Verifier/`](AgentGuard.Verifier/) | Projets du notebook 06 : l'analyseur (netstandard2.0, chargé par `OutputItemType="Analyzer"`), le terrain fautif (copie de démo du motif notebook 04 avec `.Result` injecté — 2 avertissements au build), et le vérificateur de verdicts (compilation `CSharpCompilation` + `WithAnalyzers` sur les ref packs du SDK) |
+| [`09-Aspire-Harness-CopilotSdk.ipynb`](09-Aspire-Harness-CopilotSdk.ipynb) | Notebook #10473 (axe Copilot SDK, veille #10475) : **le harness des Copilot coding agents en C#** — `GitHub.Copilot.SDK` 1.0.13 (runtime agent embarqué, aucune CLI externe), `CopilotClient` avec auth héritée de `gh` (aucune clé dans le code), catalogue des 15 modèles servis (`ListModelsAsync`), tour complet `SendAndWaitAsync` (réponse réelle), cycle de vie `SessionEvent` observé (histogramme du tour + contenu ré-assemblé), 3 exercices |
+| [`CopilotHarness.App/`](CopilotHarness.App/) | Projet .NET 10 du notebook 09 : console à quatre modes (`auth`/`models`/`ask`/`events`) pilotant le harness réel — dépendance unique `GitHub.Copilot.SDK` 1.0.13 |
 | [`assets/echantillon-test-fr.wav`](assets/echantillon-test-fr.wav) | Échantillon audio FR de test (synthèse SAPI Windows) envoyé au service orchestré |
 
 ## Prérequis
@@ -36,6 +38,7 @@ paradigme de test absent du dépôt, démontré réel ».
 - Pour le notebook 02 (#10857) : la **pile réelle** joignable — conteneur `comfyui-qwen` démarré (8188) et `VLLM_API_KEY` rendu dans `GenAI/.env` (modèle : [`.env.example`](../../.env.example)) via `scripts/secrets/render_envs.py` depuis `master.env`
 - Pour le notebook 04 (#11516) : **aucun Docker requis** — `StreamingAgent.App` compile avec le SDK .NET 10 seul (`dotnet build`), puis le notebook le lance et l'interroge (port local 5128)
 - Pour le notebook 05 / `IntegrationTests/` (#11516 Grain 2) : Docker suffit — l'image `postgres:18` est tirée au premier `dotnet test` (~30 s), les conteneurs de test s'auto-purgent
+- Pour le notebook 09 / `CopilotHarness.App/` (#10473) : **aucune installation** — le package embarque son runtime ; l'authentification passe par la session `gh` locale (abonnement Copilot requis) ; compter ~2 requêtes premium par passage complet du notebook
 
 ## Démarrage rapide
 
