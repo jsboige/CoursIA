@@ -24,7 +24,6 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 57 (7 LangChain + 14 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning + 3 vision) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -75,12 +74,12 @@ Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent
 
 ```
 DataScienceWithAgents/
-├── 01-PythonForDataScience/    # Fondations Python (2 notebooks)
+├── 01-PythonForDataScience/    # Fondations Python
 │   └── notebooks/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-├── 02-ML-Cours/                # Fondations ML canoniques (21 notebooks)
+├── 02-ML-Cours/                # Fondations ML canoniques
 │   ├── 2.1-Workflow-ML.ipynb
 │   ├── 2.2-Descente-de-gradient.ipynb
 │   ├── 2.3-Regression-lineaire-logistique.ipynb
@@ -103,7 +102,7 @@ DataScienceWithAgents/
 │   ├── 2.12-Donnees-Desequilibrees.ipynb
 │   └── 2.13-Analyse-Erreurs.ipynb
 │
-├── 03-DeepLearning/            # Deep learning from scratch (10 notebooks)
+├── 03-DeepLearning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
 │   ├── 3.1-Retropropagation.ipynb
 │   ├── 3.2-Optimisateurs.ipynb
@@ -116,17 +115,17 @@ DataScienceWithAgents/
 │   └── 3.8-Representations-Contrastives.ipynb
 │
 │
-├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning (3 notebooks)
+├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning
 │   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
 │   ├── 4.2-ConvNet-Profonde-Residuelles.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
 │
-├── Track1-LangChain/ # Track LangChain (7 labs)
+├── Track1-LangChain/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
 │   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
-└── Track2-GoogleADK/         # Track Google ADK (14 labs)
+└── Track2-GoogleADK/         # Track Google ADK
     ├── Day4-Foundations/       # Introduction ADK
     ├── Day5-DS-Star/           # Data Science autonome
     ├── Day6-MLE-Star/          # ML Engineering

@@ -55,13 +55,13 @@ Six figures illustrent les trois fils de la série : les fondations Python (Pand
 
 ## Parcours d'apprentissage
 
-### Track A : ML.NET (.NET/C#, 10 notebooks C# — 9 du parcours ML-1 à ML-9 + 1 TP capstone — et leurs 9 jumeaux Python scikit-learn, ~7h)
+### Track A : ML.NET (.NET/C#, parcours ML-1 à ML-9 + TP capstone, et leurs jumeaux Python scikit-learn, ~7h)
 
 Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML) — son **leaderboard AutoML** (cell 12-13) rend visible la discrimination entre entraîneurs : sur données quadratiques, `LightGbmRegression` gagne avec un RMSE de 90 262 contre 30,5 millions pour `FastTreeRegression`, soit un écart de **plus de 300×** qu'aucun tableau `Console.WriteLine` ne fait ressortir. Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
-### Track B : Data Science with Agents (Python, 57 notebooks, ~21h)
+### Track B : Data Science with Agents (Python, ~21h)
 
-Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), 21 notebooks scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions et pont génératif, ensembles, biais-variance/calibration/équité, non supervisé, théorie PAC et ses compagnons formels, grokking, puis optimisation d'hyperparamètres, régularisation sparse et classes déséquilibrées — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-18, extensions 12b-12d) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Deux volets spécialisés complètent le parcours : [03-DeepLearning](DataScienceWithAgents/03-DeepLearning/) (10 notebooks PyTorch) et [04-Vision](DataScienceWithAgents/04-Vision/) (3 notebooks, dont transfer learning ResNet). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions et pont génératif, ensembles, biais-variance/calibration/équité, non supervisé, théorie PAC et ses compagnons formels, grokking, puis optimisation d'hyperparamètres, régularisation sparse et classes déséquilibrées — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-18, extensions 12b-12d) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Deux volets spécialisés complètent le parcours : [03-DeepLearning](DataScienceWithAgents/03-DeepLearning/) (PyTorch) et [04-Vision](DataScienceWithAgents/04-Vision/) (dont le transfer learning ResNet). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
 
 ## Progression recommandée
 
@@ -126,8 +126,8 @@ ML/
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
 │   │   ├── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie PAC)
 │   │   └── 2.8d-Lean-Novikoff-Convergence.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie Perceptron)
-│   ├── 03-DeepLearning/              # Deep learning PyTorch (10 notebooks)
-│   ├── 04-Vision/                    # Vision par ordinateur (3 notebooks)
+│   ├── 03-DeepLearning/              # Deep learning PyTorch
+│   ├── 04-Vision/                    # Vision par ordinateur
 │   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
 │   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-18, extensions 12b-12d)
 │
