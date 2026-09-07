@@ -628,7 +628,7 @@ def _is_math_parameter_definition(prose: str, match_pos: int, match_end: int) ->
       symbol LHS, stays checked;
     - a greek symbol holding an ESTIMATED value (`$\\mu = 20.8$` read off a
       plot) is a citation too -- no definition verb on the line, stays
-      checked. The verb gate separates 'Avec $\gamma = 0.9$' (founding
+      checked. The verb gate separates 'Avec $\\gamma = 0.9$' (founding
       instance, DecPyMC-7 md[15]/md[19]) from it.
     """
     span = _nearest_math_span(prose, match_pos)
