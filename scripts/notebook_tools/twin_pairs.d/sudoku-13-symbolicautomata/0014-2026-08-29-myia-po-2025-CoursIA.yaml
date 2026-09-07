@@ -1,0 +1,13 @@
+date: '2026-08-29'
+by: myia-po-2025:CoursIA
+python_sha: 2b2723319e6f701beed14734f6924b0f6319241b
+csharp_sha: b903cc5fce838320fadc3d016143f7de4e524902
+content_python_sha: 48c7c5a685b64aff0d09c568a5eef72b541133103c1a03afe31f87a80ae9537b
+content_csharp_sha: b91c57aaa59e6eedb4cea90817c78cb9912c03a741c959127e421474251a35ed
+reason: 'Annexe S11 livree (issue #10382, tranche BDD) : pont pythonnet 3.1.0 -> CPython
+  -> dd 0.6.0, LE MEME MOTEUR que la section 9 du jumeau Python. Encodage verbatim
+  (6 variables booleennes) ; chiffres identiques aux outputs des DEUX jumeaux : 90
+  noeuds, 6 lignes valides (3!), modele (2, 1, 3). Contre-verification exhaustive
+  des 64 lignes menee independamment cote C# et cote Python : accord True avec le
+  pick_iter du BDD (preuve cross-twin dans les outputs committes). Re-exec complete
+  20/20 cellules (dotnet_executor), 0 erreur. Twin Python byte-identique (2b2723319e).'

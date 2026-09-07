@@ -5,29 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: fc662a501dc293442f03ed0736cb5d77680c5358
-      csharp_sha: 1780a6871a8dd4eb0d5fbc8a8a137c229bf67ae7
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 81c45947b4322974083d5dedaff85a5aa8dc97d8
-      csharp_sha: 1780a6871a8dd4eb0d5fbc8a8a137c229bf67ae7
-    - date: "2026-08-13"
-      by: myia-ai-01:CoursIA
-      python_sha: fc662a501dc293442f03ed0736cb5d77680c5358
-      csharp_sha: 1780a6871a8dd4eb0d5fbc8a8a137c229bf67ae7
-      content_python_sha: 540ed1f01cccd6ae7e9373ba529535efbf3296d5a37657c69583870facf3f730
-      content_csharp_sha: fa14bf0b264bfabdcc190ba03c58b8a2e6de6528d621d23eeec83956932e5cb5
-    - date: "2026-08-31"
-      by: myia-po-2027:CoursIA-2
-      reason: "Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit) ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en dernier (#8957)."
-      python_sha: 6ae20cf23cf25705d6aebdc8b2acb42be7fabafe
-      csharp_sha: 080ceb6f0b2cf947b8616062fa95a98b5a0973d4
-      content_python_sha: 540ed1f01cccd6ae7e9373ba529535efbf3296d5a37657c69583870facf3f730
-      content_csharp_sha: c5048e008063cfe9669ad7f6482bffc5362f34d9a34b70bd52a3d5cd824dece8
   known_differences:
   - 'Socle pedagogique commun : modeles de sequences (chaines de Markov cachees / HMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

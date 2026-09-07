@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 93
-breakdown: root=85, SocialChoice=8
-maturity: BETA=88, ALPHA=3, DRAFT=2
+pedagogical_count: 96
+breakdown: root=88, SocialChoice=8
+maturity: BETA=91, ALPHA=3, DRAFT=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -215,6 +215,7 @@ flowchart TD
 | 2 (C#) | [GameTheory-02-NormalForm-Csharp](GameTheory-02-NormalForm-Csharp.ipynb) | C# (.NET) | Jumeau C# : forme normale et équilibres de Nash from-scratch | 45 min |
 | 2 (C#, suite) | [GameTheory-02-NormalForm-Csharp-Part2](GameTheory-02-NormalForm-Csharp-Part2.ipynb) | C# (.NET) | Suite du jumeau C# : support enumeration et jeux N×N | 50 min |
 | 2b | [GameTheory-02b-Lean-Definitions](GameTheory-02b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
+| 2c | [GameTheory-02c-Travelers-Dilemma](GameTheory-02c-Travelers-Dilemma.ipynb) | Python | Le dilemme du voyageur (Basu 1994) : annonce $2–$100, la compagnie paie le montant le plus bas, +$2 au moins-disant / −$2 au plus-disant — l'élimination itérée des stratégies strictement dominées converge vers l'unique équilibre (2,2), que contredisent les comportements humains (~$100), et la sensibilité au bonus révèle le seuil r* = 1 où le paradoxe se dissout (contre-claim : robustesse du paradoxe au bonus mineur) | 45 min |
 | 3 | [GameTheory-03-Topology2x2](GameTheory-03-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
 | 3 (C#) | [GameTheory-03-Topology2x2-Csharp](GameTheory-03-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
 | 3a | [GameTheory-03a-Chemins-de-Swaps](GameTheory-03a-Chemins-de-Swaps.ipynb) | Python + Lean | Plus courts chemins de swaps sur les 576 jeux : BFS générateur et certificat Lean indépendant | 45 min |
@@ -224,11 +225,12 @@ flowchart TD
 | 3e | [GameTheory-03e-Meta-Actions-Tarifees](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées : changer les règles comme action payante — NE/BR sur les 576 jeux (72 injouables), coût en échelons de rang avec seuil de migration 56→16→8→4 %, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe du Dilemme EST un équilibre (3,3), 4 échecs de coordination dur (chantier 4 #12207, versant D4) | 45 min |
 | 3f | [GameTheory-03f-Parcours-Complet](GameTheory-03f-Parcours-Complet.ipynb) | Python | Parcours complet du jeu nommé au coût de la méta-action | 45 min |
 | 3h | [GameTheory-03h-Deux-Especes-de-Fleches](GameTheory-03h-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
-| 4 | [GameTheory-04-NashEquilibrium](GameTheory-04-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique, marchandage asymétrique §8 : faisceau de dépendance multi-composantes et point de désaccord — le principe du moindre intérêt réfuté comme loi, conservé comme effet partiel (#12682) | 60 min |
+| 4 | [GameTheory-04-NashEquilibrium](GameTheory-04-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique, marchandage asymétrique §8 : faisceau de dépendance multi-composantes et point de désaccord — le principe du moindre intérêt réfuté comme loi, conservé comme effet partiel (#12682) ; aperçu intégré — **deep-dive autonome en 4d** (#14442) | 60 min |
 | 4 (C#) | [GameTheory-04-NashEquilibrium-Csharp](GameTheory-04-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
 | 4b | [GameTheory-04b-Lean-NashExistence](GameTheory-04b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
 | 4c | [GameTheory-04c-NashExistence-Python](GameTheory-04c-NashExistence-Python.ipynb) | Python | **Point fixe Brouwer discriminant** — `perturbed_br` (regret ⇒ déplacement), double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664] | 35 min |
 | 4c | [GameTheory-04c-NashExistence-Csharp](GameTheory-04c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
+| 4d | [GameTheory-04d-Marchandage-Asymetrique](GameTheory-04d-Marchandage-Asymetrique.ipynb) | Python | **Marchandage asymétrique (strate-7)** — point de désaccord (Nash 1950), faisceau de dépendance multi-composantes (#12682), contre-exemple au principe du moindre intérêt, robustesse au générateur de poids (endogène/exogène/constant, #13313) et dissociation (#14442 tranche D1) | 40 min |
 | 4e | [GameTheory-04e-Reflective-Oracles](GameTheory-04e-Reflective-Oracles.ipynb) | Python | **Oracles réflexifs** — Fallenstein/Taylor/Christiano 2015 (arXiv 1508.04145) : boucle / contradiction diagonale sur Matching Pennies déterministe, requête `(M,p)` et menteur probabiliste `M^O() = 1 − O(M, 1/2)` (moyenne empirique → 1/2), théorèmes 3.1/4.1/5.1 esquissés, **frontière explicite résultat fini ↔ oracle universel** (#14450, squelette multi-cycle) | 60 min |
 | 5 | [GameTheory-05-ZeroSum-Minimax](GameTheory-05-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5 (C#) | [GameTheory-05-ZeroSum-Minimax-Csharp](GameTheory-05-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
@@ -803,6 +805,7 @@ GameTheory/
 ├── GameTheory-02-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
 ├── GameTheory-02-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
 ├── GameTheory-02-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
+├── GameTheory-02c-Travelers-Dilemma.ipynb           # Dilemme du voyageur (Basu 1994) : paradoxe de l'élimination itérée, seuil r* = 1
 ├── GameTheory-03-Topology2x2.ipynb
 ├── GameTheory-03-Topology2x2-Csharp.ipynb           # Jumeau C# — classification ordinale 2×2 from-scratch
 ├── GameTheory-03a-Chemins-de-Swaps.ipynb            # Extensions littérales 3a→3f de la géométrie ordinale
@@ -852,6 +855,7 @@ GameTheory/
 ├── GameTheory-17d-Lean-Screening-Signaling.ipynb     # Les 4 autres modules du lake exécutés — visibilité #11703
 ├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 6d, 8c, 15c)
 ├── GameTheory-04c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
+├── GameTheory-04d-Marchandage-Asymetrique.ipynb     # Side track strate-7 — marchandage asymétrique, dissociation du §8 GT-04 (#14442 tranche D1)
 ├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
 ├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
@@ -872,6 +876,7 @@ GameTheory/
 ├── GameTheory-25-Loi-II-Translateur-Life.ipynb
 ├── GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb
 ├── GameTheory-27-Munkres-Assignment.ipynb
+├── GameTheory-28-Humour-Banc.ipynb                 # Banc de calibration : humour, forme partagée vs stimulus
 ├── SocialChoice/                                   # Sous-série Choix Social (8 notebooks : 5 pères Python/Lean + 3 twins C#, parité #4956)
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 01-Arrow-Impossibility-Theorem-Csharp.ipynb

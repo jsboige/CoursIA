@@ -1,0 +1,13 @@
+date: '2026-09-06'
+by: myia-po-2024:CoursIA
+python_sha: cfcc4a51911ca3586899300f2f54e1fde242d397
+csharp_sha: 940800ff40629e5af73e8d7fbdefe81fe0997667
+content_python_sha: 1446bc993deb8be4de716bbe3fbc986be56a0cabbb2459501773b5cc25890044
+content_csharp_sha: 2b558f97f24ed8882e30e6001b8de0e243c041ebf37c79cbb2980b0daea8a19d
+reason: 'Re-attestation apres PR #14854 (#14817, stubs d''exercice ne rendent plus
+  une verite en dur) : cote Python corrige (base pre-commit verifiee au detecteur
+  : 1 fautif, cellule 23 has_unique_solution rendait un literal True) ; cote C# :
+  diff outputs/metadata papermill uniquement (0 ligne source, 0 execution_count modifie).
+  Les 5 return true; du C# (cellules 6/17/20/46/48) sont des fins d''implementations
+  reelles de solveurs, 0 marqueur exercice. Defaut unilatereal Python ; detect_stub_truth_returns
+  0/0 post-fix ; parity_level native-both inchange.'

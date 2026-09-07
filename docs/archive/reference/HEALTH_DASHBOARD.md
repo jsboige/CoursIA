@@ -4,40 +4,40 @@
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1111** notebooks référencés au catalogue.
+**1123** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 941 | 84.7% |
-| DEMO | 168 | 15.1% |
+| READY | 951 | 84.7% |
+| DEMO | 170 | 15.1% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 699 |
+| **local** (exécutable sans GPU/cloud/WSL) | 708 |
 | WSL requis | 76 |
-| GPU requis | 125 |
-| Cloud requis (QC / GenAI Docker) | 113 |
-| API key requise | 175 |
+| GPU requis | 126 |
+| Cloud requis (QC / GenAI Docker) | 114 |
+| API key requise | 176 |
 
 ## Distribution par série
 
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| GameTheory | 92 | 1 | 0 | 93 | 99% |
-| GenAI | 106 | 106 | 2 | 214 | 50% |
+| GameTheory | 95 | 1 | 0 | 96 | 99% |
+| GenAI | 107 | 106 | 2 | 215 | 50% |
 | IIT | 71 | 1 | 0 | 72 | 99% |
-| ML | 73 | 5 | 0 | 78 | 94% |
-| Probas | 67 | 0 | 0 | 67 | 100% |
-| QuantConnect | 66 | 43 | 0 | 109 | 61% |
-| RL | 21 | 3 | 0 | 24 | 88% |
-| Search | 147 | 0 | 0 | 147 | 100% |
-| Sudoku | 36 | 1 | 0 | 37 | 97% |
+| ML | 73 | 7 | 0 | 80 | 91% |
+| Probas | 69 | 0 | 0 | 69 | 100% |
+| QuantConnect | 67 | 43 | 0 | 110 | 61% |
+| RL | 22 | 3 | 0 | 25 | 88% |
+| Search | 148 | 0 | 0 | 148 | 100% |
+| Sudoku | 37 | 1 | 0 | 38 | 97% |
 | SymbolicAI | 255 | 8 | 0 | 263 | 97% |
 | cross-series | 1 | 0 | 0 | 1 | 100% |
 
@@ -45,17 +45,17 @@
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 715 |
-| .NET (C#) | 257 |
+| Python 3 | 730 |
+| .NET (C#) | 259 |
 | Lean 4 (WSL) | 38 |
 | Python 3 (ipykernel) | 33 |
 | Python (coursia-ml-training) | 12 |
-| Python (GameTheory WSL + OpenSpiel) | 8 |
 | Python 3 (WSL) | 7 |
 | Python 3 (coursia-ml-training) | 7 |
 | coursia-ml-training | 6 |
 | Python 3 (PyPhi/IIT) | 5 |
 | Lean 4 | 3 |
+| Python (GameTheory WSL + OpenSpiel) | 2 |
 | Coursia ML Training | 2 |
 | Python 3 (coursia2) | 2 |
 | unknown | 2 |
@@ -65,6 +65,7 @@
 | Python (dia-tts) | 1 |
 | Python 3 (coursia-sae) | 1 |
 | pyphi | 1 |
+| Lean 4 (WSL, percolation) | 1 |
 | .venv (3.14.3) | 1 |
 | .venv (3.12.3) | 1 |
 | cours-ia | 1 |

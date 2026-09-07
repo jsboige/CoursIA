@@ -1,0 +1,18 @@
+date: '2026-08-29'
+by: myia-po-2026:CoursIA
+python_sha: ae3dda4dda933cd53642a8c7a686b4dbfc5a47f3
+csharp_sha: 047acbda3706e65b8646327e025a7df8b0d8d174
+content_python_sha: 67166e3dffe4084bf23da95a309583368d8d6d7b62ca95096f954216bfb8d30c
+content_csharp_sha: 86532bf20f3f1ec07581367c98841c67926ca368d260f72e0642038f4822918a
+reason: 'Audit de PAIRE #13497 : les deux blob SHA mesures par git ls-tree sur le
+  MEME arbre de tete de branche (post-rebase sur 700748f9a = merge de #13081 -- la
+  premiere passe, faite sur base stale 33 cellules/13 code, aurait reverte la section
+  8 statique comparative et a ete rejouee). Entree appuyee sur une re-execution reelle
+  des DEUX cotes sous ce head : Python papermill kernel python3 36 cellules / 14 code,
+  14/14 executes, 0 erreur ; C# nbclient kernel .net-csharp 22 cellules / 9 code,
+  9/9, 0 erreur. Sources byte-identiques (0 cellule modifiee), textes d''outputs et
+  PNG identiques aux valeurs commitees (verifie cellule par cellule) ; le diff = bloc
+  papermill frais + metadata language_info + metadata de cellules. L entree precedente
+  (30eef0a9/f8809299, PR #13081) enregistrait le csharp SHA de main sans re-executer
+  ce cote -- le motif exact que #13497 demande de cesser. Aucune normalisation outillee
+  apres ce --update (lecon #8957).'

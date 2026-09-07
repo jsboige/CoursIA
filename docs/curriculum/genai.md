@@ -20,9 +20,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 199 |
+| Notebooks | 200 |
 | PRODUCTION | 0 |
-| BETA | 180 |
+| BETA | 181 |
 | ALPHA | 19 |
 
 ## GenAI/00-GenAI-Environment (6 notebooks)
@@ -125,7 +125,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une… | ALPHA | Non |
 
-## GenAI/Integrations-DotNet (10 notebooks)
+## GenAI/Integrations-DotNet (11 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -137,8 +137,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 6 | Aspire : garde-fous du code d'agent — l'analyseur… | ALPHA | Oui |
 | 7 | Aspire : le routeur MultiConnector — vetting en ligne,… | BETA | Non |
 | 8 | Aspire : l'asynchrone aux frontieres natives -… | BETA | Oui |
-| 9 | GitHub Copilot SDK en C# : binding, streaming, Scrutor | BETA | Non |
-| 10 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
+| 9 | Aspire : le harness Copilot SDK — CopilotClient,… | BETA | Oui |
+| 10 | GitHub Copilot SDK en C# : binding, streaming, Scrutor | BETA | Non |
+| 11 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
 
 ## GenAI/Plateformes-Conversationnelles (20 notebooks)
 
@@ -179,10 +180,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 8 | PT-08 — GRPO from scratch : la mécanique du signal de… | BETA | Non |
 | 9 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch :… | BETA | Oui |
 | 10 | PT-10 — GAE from scratch : pourquoi un mini-critic ?… | BETA | Non |
-| 11 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série… | BETA | Non |
-| 12 | PT-11 — RLVR sur VRAI LLM (Qwen3.5-0.8B) +… | BETA | Non |
-| 13 | PT-11b — RLVR multi-seed sur Qwen3.5-0.8B (4 seeds ×… | ALPHA | Non |
-| 14 | PT-11c — RLVR sur Qwen3-1.7B/2B (cran au-dessus de… | ALPHA | Non |
+| 11 | PT-11a — GRPO + RLVR sur Qwen3.5-0.8B : la série… | BETA | Non |
+| 12 | PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) +… | BETA | Non |
+| 13 | PT-11c — RLVR sur Qwen3-1.7B/2B (cran au-dessus de… | ALPHA | Non |
+| 14 | PT-11d — RLVR multi-seed sur Qwen3.5-0.8B (4 seeds ×… | ALPHA | Non |
 | 15 | PT-12 — Crédit différé multi-step : GAE-λ sur un… | ALPHA | Oui |
 | 16 | PT-13 — Les trois biais du loss GRPO et leurs… | ALPHA | Oui |
 

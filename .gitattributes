@@ -10,6 +10,14 @@
 # comparison is platform-independent (issue #1056). Limited to the exact files
 # the check reads, to avoid a wide renormalization of unrelated .md files.
 COURSE_CATALOG.generated.json text eol=lf
+# Meme motif pour l'etat de dedup du monitor qc-research (#11698) : le fichier est
+# reecrit par `qc-research-monitor.yml` (runner Linux, donc LF) alors que le blob sur
+# main est en CRLF. Mesure sur la PR #14994 : UNE entree ajoutee (`21195`, 144 -> 145,
+# zero retrait, zero valeur modifiee, ordre preserve) rend un diff de 874+/868- --
+# les 868 lignes different toutes par leur seule fin de ligne. Le body de la PR
+# demande au reviewer de refuser "si le diff touche autre chose" : sans cette regle,
+# ce critere est illisible a chaque run. Meme remede que le catalogue ci-dessus.
+docs/qc/qc-research-seeded.json text eol=lf
 # Notebooks Markdown : la regle precedente `MyIA.AI.Notebooks/*/README.md` ne
 # matchait qu'1 niveau de profondeur et ratait 296 READMEs profonds (cf #14570).
 # `**` matche profondeur arbitraire et remplace les 2 lignes en une seule, plus
@@ -29,6 +37,7 @@ MyIA.AI.Notebooks/**/*.md text eol=lf
 # no explicit eol rule is set. Found 5x (i18n *.en.md c.268, *.sh + .env c.281).
 *.lean text eol=lf
 *.sh text eol=lf
+*.service text eol=lf
 .env text eol=lf
 .env.example text eol=lf
 *.en.md text eol=lf
@@ -65,13 +74,23 @@ slides/**/*.md text eol=lf
 # GitHub). Ne PAS le re-ajouter : le filet de securite structural est desormais
 # scripts/notebook_tools/tests/test_twin_registry_integrity.py (file-per-entry).
 #
+# #14911 (file-per-audit) retire la DERNIERE classe de conflit, celle DANS une
+# paire : deux lanes qui appendent au MEME bloc `audits:` de la meme paire
+# touchaient le meme point d'ancrage (la fin de la liste) -> conflit git meme
+# pour des dates differentes (controle negatif #14911). Chaque audit vit
+# desormais dans `twin_pairs.d/<slug>/<date>-<lane>.yaml` : deux lanes ecrivent
+# des fichiers differentes, le merge serveur n'a rien a fusionner.
+#
 # EOL (meme motif "L268" que ci-dessus) : le registre est reecrit par
 # `check_twin_parity.py --update`, donc par des agents dont la moitie tourne
 # sous Windows. Sans regle explicite, un rebaseline d'UNE paire y basculait le
 # fichier entier en CRLF et le diff passait de 2 lignes a tout le fichier
 # (#8709, #8713). L'ecrivain est corrige cote outil (`write_registry_text`) ;
 # cette regle est le second filet, qui vaut pour n'importe quel ecrivain.
+# Profondeur 1 (fichier d'intention `<pair>.yaml`) ET profondeur 2 (fichiers
+# d'audit `<pair>/<date>-<lane>.yaml`, #14911).
 scripts/notebook_tools/twin_pairs.d/*.yaml text eol=lf
+scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
 
 # Snapshots verbatim des taxonomies Argumentum (amont : ArgumentumGames/Argumentum).
 # Ces deux CSV ne sont PAS edites ici : ils sont recopies octet pour octet depuis

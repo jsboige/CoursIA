@@ -6,6 +6,12 @@ Usage:
     python run_prover_bg.py --file path/to.lean --line 563 --mode autonomous --iterations 8
 
 Supports both demo-based (from prover/__init__.py DEMOS) and direct file/line targeting.
+
+Signal lines (same tokens as the root agent_tests/run_prover_bg.py launcher):
+    [CALIBRATION_STUB] theorem=<name> line=<n>   (#1453 sorry_replacement
+                     target: approved proof stubbed in place, original
+                     restored on exit — paired with [CALIBRATION_RESTORE])
+    [CALIBRATION_RESTORE] approved proof restored
 """
 import argparse
 import asyncio
@@ -24,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from prover import DEMOS, PROVED_DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
 from prover.config import create_client
-from prover.lean_utils import count_real_sorries
+from prover.lean_utils import count_real_sorries, stub_theorem_proof
 from prover.tree_lock import (
     acquire_tree_lock,
     find_lean_project_root,
@@ -33,6 +39,16 @@ from prover.tree_lock import (
 
 TRACES_DIR = Path(__file__).parent / "traces"
 TRACES_DIR.mkdir(exist_ok=True)
+
+
+def _peek_sorry_count(filepath: str) -> int:
+    # Same contract as the root launcher: count REAL sorry tokens
+    # (comment-stripped, word-bounded, #9402) from the file on disk; -1 on
+    # read failure so callers comparing `== 0` never stub an unreadable file.
+    try:
+        return count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
+    except OSError:
+        return -1
 
 
 def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
@@ -266,7 +282,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         return {"name": name, "result_kind": "locked", "reason": lock_msg}
     print(f"[TREE_LOCK] {lock_path}")
     try:
-        return _run_prover_locked(
+        return _run_with_calibration_stub(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
             tactic_provider, use_diagnosis_agent, concurrent_search_count,
@@ -275,10 +291,67 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         release_tree_lock(lock_path)
 
 
+def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
+                               provider, local_provider, director_provider,
+                               coordinator_provider, tactic_provider,
+                               use_diagnosis_agent, concurrent_search_count):
+    """Run body under the tree lock, with #1453 calibration preparation.
+
+    Port of the root launcher mechanism (#13907, agent_tests/run_prover_bg.py
+    ``_run_locked``): a DEMO declaring ``sorry_type: sorry_replacement``
+    targets scaffolding committed WITH its approved proof — that proof is the
+    ground truth the prover must reproduce, not a state to keep. Without this
+    step, ``_run_prover_locked``'s pre-flight counts 0 real sorry and returns
+    a false ``already_solved`` in seconds: the Conway calibration gradient
+    (DEMOS 39-52) was dead-on-arrival through THIS launcher on demo 39
+    (#1453).
+
+    The stub is written in place BEFORE the pre-flight/spawn (0 -> 1 sorry)
+    and the original bytes are restored in ``finally`` — bytes I/O, no
+    newline translation — so the restore survives any exception path. The
+    tree lock held by the caller already serialises in-place mutation
+    (#6790). A ``stub_theorem_proof`` failure (unknown declaration, no ``:=``)
+    raises BEFORE any write: a calibration run must fail loud rather than
+    stub the wrong region.
+    """
+    calibration_target = None
+    if (
+        demo.get("sorry_type") == "sorry_replacement"
+        and demo.get("file")
+        and demo.get("theorem_name")
+        and _peek_sorry_count(demo["file"]) == 0
+    ):
+        target_path = Path(demo["file"])
+        original = target_path.read_bytes()
+        stubbed = stub_theorem_proof(
+            original.decode("utf-8"), demo["theorem_name"]
+        )
+        target_path.write_bytes(stubbed.encode("utf-8"))
+        calibration_target = (target_path, original)
+        print(
+            f"[CALIBRATION_STUB] theorem={demo['theorem_name']} "
+            f"line={demo.get('line')} - approved proof stubbed to sorry, "
+            f"original restored on exit"
+        )
+
+    calibration = calibration_target is not None
+    try:
+        return _run_prover_locked(
+            demo, name, filepath, line, mode, iterations, provider,
+            local_provider, director_provider, coordinator_provider,
+            tactic_provider, use_diagnosis_agent, concurrent_search_count,
+            calibration=calibration,
+        )
+    finally:
+        if calibration_target is not None:
+            calibration_target[0].write_bytes(calibration_target[1])
+            print("[CALIBRATION_RESTORE] approved proof restored")
+
+
 def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
                        local_provider, director_provider, coordinator_provider,
                        tactic_provider, use_diagnosis_agent,
-                       concurrent_search_count):
+                       concurrent_search_count, calibration=False):
     """The original run body, executed while holding the tree lock."""
     original = Path(filepath).read_text(encoding="utf-8")
     original_sorry = count_real_sorries(original)
@@ -312,6 +385,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             "final_sorry": 0,
             "sorry_delta": 0,
             "result_kind": "already_solved",
+            "calibration": calibration,
             "elapsed_s": 0.0,
             "result": {"status": "already_solved",
                        "reason": "0 sorry in target file (pre-check, no prover spawn)"},
@@ -403,6 +477,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
         # structural_only | provider_outage | no_progress | crashed |
         # already_solved | heartbeat_budget_exceeded | decomposition_regression.
         "result_kind": result_kind,
+        "calibration": calibration,
         "elapsed_s": round(elapsed, 1),
         "result": result,
         "trace_file": trace_path,

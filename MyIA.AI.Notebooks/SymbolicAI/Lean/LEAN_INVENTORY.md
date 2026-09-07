@@ -14,7 +14,9 @@ toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `standalone-tacti
 **Date de refresh** : 2026-08-27 (commit `dbcedc9599`, cycle c.649). Refresh précédent :
 2026-07-15 (avant convergence 4.32.1). Ajout ponctuel 2026-09-05 : ligne
 `hecke_lean` (#14784, premier lake sur la cible 4.33.0 de #14773 — port pédagogique
-FLT, autonomous, 0 sorry) sans refresh complet des autres lignes.
+FLT, autonomous, 0 sorry) sans refresh complet des autres lignes. Ajout ponctuel
+2026-09-06 : ligne `formal_groups_lean` (#14785, deuxième lake 4.33.0 — même ancrage
+FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 
 ## Résumé
 
@@ -30,7 +32,8 @@ FLT, autonomous, 0 sorry) sans refresh complet des autres lignes.
 | `calibration_lean` | v4.32.1 | 0³ | 9 | 1 | HARNESS | #1764 |
 | `mathlib_examples` | v4.32.1 | 0 | 4 | 0 | REF | référence |
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
-| **Total** | — | **12** | **253** | — | — | — |
+| `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
+| **Total** | — | **12** | **263** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans
 `Conway/Life/HashlifeCorrectness.lean` — sous-but auto-contenu destiné au harnais de preuve

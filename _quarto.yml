@@ -942,6 +942,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb"
+    - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"

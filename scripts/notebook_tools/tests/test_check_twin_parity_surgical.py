@@ -144,7 +144,7 @@ def test_comments_survive_surgical_rebaseline():
     assert "  # commentaire interne, au milieu du bloc" in new_raw
 
 
-def test_diff_limited_to_target_block(registry_backup):
+def test_diff_limited_to_target_block():
     """Seul le bloc d'audit de la paire ciblee bouge ; le reste est intact.
 
     Depuis #9399 (volet a, migration at-rest), le registre est en forme
@@ -154,26 +154,42 @@ def test_diff_limited_to_target_block(registry_backup):
     (name/family/python/csharp/parity_level/known_differences) ne change
     (anti-regression : on ne jette pas l'historique d'audit).
 
-    Robuste au multi-enregistrement (#9581) : la fixture est le premier fichier
-    du registre reel, qui peut legitimement porter >= 2 audits (c'est le POINT
-    de l'append-only). L'ancienne assertion `audits[0] == ancien latest` ne
-    valait que pour un fichier mono-enregistrement.
+    Note : ce test exerce `surgical_rebaseline` comme FONCTION PURE sur un
+    raw inline fabrique, independamment de l'etat du registre reel (migre en
+    file-per-audit, #14911 : les paires reelles n'ont plus de `audits:` inline).
+    La garantie de isolation file-per-audit (un audit = un fichier, rien
+    n'ecrase l'historique) est couverte par test_twin_registry_integrity.
     """
     import yaml
 
-    pfile = registry_backup[0]
-    raw = pfile.read_text(encoding="utf-8")
-    name = _pair_name(pfile)
+    raw = (
+        "- name: Paire-Temoin\n"
+        "  family: Test\n"
+        "  python: a.ipynb\n"
+        "  csharp: b.ipynb\n"
+        "  parity_level: full\n"
+        "  audits:\n"
+        "    - date: \"2026-01-01\"\n"
+        "      by: auditeur-precedent\n"
+        "      python_sha: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n"
+        "      csharp_sha: 0f1e2d3c4b5a0f1e2d3c4b5a0f1e2d3c4b5a0f1e\n"
+        "    - date: \"2026-02-01\"\n"
+        "      by: auditeur-second\n"
+        "      python_sha: b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3\n"
+        "      csharp_sha: 1f2e3d4c5b6a1f2e3d4c5b6a1f2e3d4c5b6a1f2e\n"
+        "  known_differences:\n"
+        "    - 'sibling qui ne doit pas bouger'\n"
+    )
     before = yaml.safe_load(raw)[0]
     old_audit = ctp._latest_audit(before)
-    before_audits = before.get("audits") or [before["last_audit"]]
+    before_audits = before["audits"]
 
     # SHA python change -> append a new entry (registry is audits: since the
-    # #9399 volet a at-rest migration). The lazy legacy->audits migration of a
-    # still-legacy yaml is covered by test_comments_survive_surgical_rebaseline.
+    # #9399 volet a at-rest migration).
     new_raw, touched = ctp.surgical_rebaseline(
-        raw, {name: {"date": "1999-01-01", "by": "sentinelle-c8570",
-                     "python_sha": "f" * 40, "csharp_sha": old_audit["csharp_sha"]}}
+        raw, {"Paire-Temoin": {"date": "1999-01-01", "by": "sentinelle-c8570",
+                               "python_sha": "f" * 40,
+                               "csharp_sha": old_audit["csharp_sha"]}}
     )
     assert touched == 1
     after = yaml.safe_load(new_raw)[0]
@@ -191,7 +207,7 @@ def test_diff_limited_to_target_block(registry_backup):
     assert audits[-1]["by"] == "sentinelle-c8570"
 
 
-def test_noop_is_byte_identical(registry_backup):
+def test_noop_is_byte_identical():
     """Rebaseliner vers les valeurs deja en place ne produit aucun churn.
 
     Sans cette garantie, un rebaseline sur une paire a jour normaliserait le
@@ -202,15 +218,27 @@ def test_noop_is_byte_identical(registry_backup):
     et que le candidat ne les a pas, `_cmp_pair_shas` compare content-sha vs
     blob-sha -> faux drift -> append parasite. Un vrai rebaseline recalcule
     toujours les deux familles de SHAs ; le test doit faire pareil.
+
+    Exerce `surgical_rebaseline` en fonction pure sur un raw inline fabrique
+    (le registre reel est migre file-per-audit, #14911).
     """
     import yaml
 
-    pfile = registry_backup[0]
-    raw = pfile.read_text(encoding="utf-8")
-    name = _pair_name(pfile)
-
+    raw = (
+        "- name: Paire-Noop\n"
+        "  family: Test\n"
+        "  python: a.ipynb\n"
+        "  csharp: b.ipynb\n"
+        "  audits:\n"
+        "    - date: \"2026-01-01\"\n"
+        "      by: lane:CoursIA\n"
+        "      python_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "      csharp_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+        "      content_python_sha: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\n"
+        "      content_csharp_sha: dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\n"
+    )
     data = yaml.safe_load(raw)
-    entry = data[0] if isinstance(data, list) else data
+    entry = data[0]
     audit = ctp._latest_audit(entry)
 
     noop = {"date": str(audit["date"]), "by": audit["by"],
@@ -219,7 +247,7 @@ def test_noop_is_byte_identical(registry_backup):
         if k in audit:
             noop[k] = audit[k]
 
-    new_raw, touched = ctp.surgical_rebaseline(raw, {name: noop})
+    new_raw, touched = ctp.surgical_rebaseline(raw, {"Paire-Noop": noop})
     assert touched == 0
     assert new_raw == raw, "un no-op doit etre byte-identique"
 
@@ -238,30 +266,46 @@ def test_update_pair_stamps_fresh_provenance():
     )
 
 
-def test_other_pair_files_untouched(registry_backup):
-    """Rebaseliner une paire ne doit rien changer aux 115 autres FICHIERS.
+def test_other_pair_files_untouched(tmp_path):
+    """Rebaseliner une paire ne doit rien changer aux FICHIERS des autres paires.
 
     Rejoue la boucle de production (`--update` en mode repertoire) : lire le
     fichier de la paire, `surgical_rebaseline`, reecrire ce fichier-la seul.
+    Ici on fabrique un registre synthetique (`tmp_path`) pour verifier la
+    garantie d'isolation sans dependre de l'etat du registre reel (migre en
+    file-per-audit, #14911 : les cours file-per-audit ne touchent plus du tout
+    les autres paires -- un audit s'ecrit dans son propre `<pair>/`).
     """
-    files = registry_backup
-    assert len(files) > 1, "registre trop petit pour tester l'isolation"
+    reg = tmp_path / "twin_pairs.d"
+    reg.mkdir()
+    # 3 paires inline (chaque fichier porte son propre `audits:`).
+    for idx, name in enumerate(("Alpha", "Beta", "Gamma"), start=1):
+        (reg / f"pair-{name.lower()}.yaml").write_text(
+            f"- name: {name}\n"
+            f"  family: Test\n"
+            f"  python: a{idx}.ipynb\n"
+            f"  csharp: b{idx}.ipynb\n"
+            f"  audits:\n"
+            f"    - date: \"2026-01-01\"\n"
+            f"      by: lane:CoursIA\n"
+            f"      python_sha: {name.lower() * 40}\n"
+            f"      csharp_sha: {name.upper() * 40}\n",
+            encoding="utf-8",
+        )
+    target = reg / "pair-alpha.yaml"
+    others = {f: f.read_bytes() for f in reg.glob("*.yaml") if f != target}
+    assert len(others) >= 2, "trop peu de paires pour tester l'isolation"
 
-    target = files[0]
-    name = _pair_name(target)
-    others_before = {f: f.read_bytes() for f in files[1:]}
-
-    # Entree complete (SHA python change) -> migration legacy -> audits: bien formee.
+    # Entree complete (SHA python change) -> append un enregistrement.
     new_raw, _ = ctp.surgical_rebaseline(
-        target.read_text(encoding="utf-8"), {name: {
-            "date": "1999-01-01", "by": "sentinelle-c8570",
-            "python_sha": "f" * 40, "csharp_sha": "e" * 40,
-        }}
+        target.read_text(encoding="utf-8"),
+        {"Alpha": {"date": "1999-01-01", "by": "sentinelle-c8570",
+                   "python_sha": "f" * 40, "csharp_sha": "e" * 40}},
     )
-    target.write_text(new_raw, encoding="utf-8")
+    ctp.write_registry_text(target, new_raw)
 
     assert "sentinelle-c8570" in target.read_text(encoding="utf-8")
-    for f, content in others_before.items():
+    for f, content in others.items():
         assert f.read_bytes() == content, f"fichier {f.name} modifie a tort"
 
 
@@ -346,7 +390,7 @@ def test_registry_blobs_are_lf_only():
 
     out = subprocess.run(
         ["git", "ls-files", "--eol", str(REGISTRY_DIR)],
-        capture_output=True, text=True, cwd=SCRIPT_DIR,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=SCRIPT_DIR,
     )
     if out.returncode != 0:
         pytest.skip("hors depot git")
@@ -601,18 +645,17 @@ def test_touched_zero_when_header_genuinely_absent():
     assert out == raw, "aucun header => byte-identique (la CLI le signale en AVERTISSEMENT)"
 
 
-def test_cli_exit_nonzero_when_header_missing(tmp_path):
-    """#10430 acceptance residuelle : la CLI doit exit 1 (pas 0) quand une
-    paire demandee n'a pas pu etre ecrite parce que son bloc audit est absent.
+def test_cli_first_audit_file_written_for_never_audited_pair(tmp_path):
+    """Une paire jamais auditée recoit son PREMIER fichier d'audit (#14911).
 
-    C'est la moitie de l'acceptance que PR #10434 n'a pas livree : elle a
-    corrige le regex + loud-fail imprimant AVERTISSEMENT, mais le return 0
-    final laisse le worker conclure « rien a faire » quand le scanner est
-    aveugle. Le residu est comble ici : exit=1 si `missing_header`,
-    exit=0 sinon (no_op legit tolere).
+    #10430 posait que la CLI devait exit 1 quand un bloc d'audit inline etait
+    introuvable (scanner aveugle par regex). En forme file-per-audit (#14911),
+    il n'y a plus de header inline a manquer : les audits sont des fichiers,
+    donc `--update` sur une paire sans aucun audit ecrit legitimement son
+    premier fichier (`0001-<date>-<lane>.yaml`) et sort 0. C'est le
+    comportement nominal d'un premier audit, pas un echec.
 
-    Le notebook existe dans git ; seul le YAML de la paire perd son bloc
-    audit. C'est exactement le scenario #10430 (`app-10-portfolio`).
+    Le notebook existe dans git (sinon la paire serait `skipped`).
     """
     import subprocess
 
@@ -632,7 +675,7 @@ def test_cli_exit_nonzero_when_header_missing(tmp_path):
         encoding="utf-8",
     )
     # git init + commit pour que `_git_blob_sha` puisse rendre un SHA non-None
-    # (sinon la CLI court-circuite en skipped -> 'Ignorees' -> pas loud-fail).
+    # (sinon la CLI court-circuite en skipped -> 'Ignorees').
     _git_init_commit(repo)
 
     out = subprocess.run(
@@ -640,23 +683,24 @@ def test_cli_exit_nonzero_when_header_missing(tmp_path):
          "--repo-root", str(repo),
          "--registry", str(reg),
          "--update", "--pair", "NoAuditPair", "--by", "test-lane"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
-    # AVERTISSEMENT loud doit etre sur stderr.
-    assert "AVERTISSEMENT" in out.stderr or "AVERTISSEMENT" in out.stdout, (
-        f"AVERTISSEMENT attendu ; stdout={out.stdout!r} stderr={out.stderr!r}"
+    # Pas de loud-fail : cette paire est auditée pour la premiere fois.
+    assert "AVERTISSEMENT" not in out.stderr and "AVERTISSEMENT" not in out.stdout, (
+        f"AVERTISSEMENT inattendu ; stdout={out.stdout!r} stderr={out.stderr!r}"
     )
-    # Exit code NON-ZERO : c'est la moitie manquante du fix #10430.
-    assert out.returncode == 1, (
-        f"exit code attendu = 1 (header introuvable), "
+    assert out.returncode == 0, (
+        f"premier audit d'une paire sans audit doit sortir 0, "
         f"obtenu = {out.returncode}. stdout={out.stdout!r} stderr={out.stderr!r}"
     )
-    # Et le fichier n'a pas ete reecrit (no write on silent fail).
-    assert "NoAuditPair" in target.read_text(encoding="utf-8")
-    assert "audits:" not in target.read_text(encoding="utf-8"), (
-        "le scanner n'aurait pas du inventer un bloc audit sur un fichier qui "
-        "n'en avait pas -- exit 1 sans ecriture"
-    )
+    # Un fichier d'audit 0001-<date>-<lane>.yaml a ete cree dans <slug>/.
+    audit_dir = reg / "noauditpair"
+    assert audit_dir.is_dir(), f"repertoire d'audit absent : {audit_dir}"
+    files = sorted(audit_dir.glob("*.yaml"))
+    assert len(files) == 1, f"un seul audit attendu, got {[f.name for f in files]}"
+    assert files[0].name.startswith("0001-"), files[0].name
+    # L'intention ne porte pas de bloc audits inline (elle n'en a jamais eu).
+    assert "audits:" not in target.read_text(encoding="utf-8")
 
 
 def test_cli_exit_zero_when_header_present_noop(tmp_path):
@@ -695,7 +739,7 @@ def test_cli_exit_zero_when_header_present_noop(tmp_path):
          "--repo-root", str(repo),
          "--registry", str(reg),
          "--update", "--pair", "OkPair", "--by", "test-lane"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     # Pas d'AVERTISSEMENT loud-fail, pas d'exit non-zero.
     assert "AVERTISSEMENT" not in out.stderr, (

@@ -1,0 +1,9 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: cbc900f8f22beb0592eaa099bacf62497faafad6
+csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib) : Python atteint OR-Tools CP-SAT
+  (ortools), C# atteint Google.OrTools (le meme moteur, portage officiel .NET). bridge_verdict_reason
+  inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies
+  firsthand sur les notebooks de la paire (re-grep 2026-08-18).'

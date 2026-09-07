@@ -5,41 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 246ba905ee53e1dcbae37a711e47a1622eac72b7
-      csharp_sha: cd3a596713c655135eb79b91dabd651fa03f0d35
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 246ba905ee53e1dcbae37a711e47a1622eac72b7
-      csharp_sha: bc9a5dc802eb397cff7bc8aa0e7dc270c3e0f8d4
-    - date: "2026-08-15"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 246ba905ee53e1dcbae37a711e47a1622eac72b7
-      csharp_sha: cd3a596713c655135eb79b91dabd651fa03f0d35
-      content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
-      content_csharp_sha: 4969d2c94028ae4c3a0bc56e4a46155bc47d87c5bba59422e3b3a2b3e2b1425e
-    - date: "2026-08-20"
-      by: myia-po-2024:CoursIA
-      python_sha: 246ba905ee53e1dcbae37a711e47a1622eac72b7
-      csharp_sha: bd40c841e1432ae51fe6b34fa7c6977569c5feb3
-      content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
-      content_csharp_sha: fc82fa1b910d12205b6c3c197b690f2e57d212a4457ec0f0585f62c7c4c80fb4
-    - date: "2026-08-20"
-      by: myia-ai-01:CoursIA
-      python_sha: 246ba905ee53e1dcbae37a711e47a1622eac72b7
-      csharp_sha: efce50915b827a78caa4fd913531b0aaf26d3169
-      content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
-      content_csharp_sha: fc82fa1b910d12205b6c3c197b690f2e57d212a4457ec0f0585f62c7c4c80fb4
-    - date: "2026-09-04"
-      by: myia-po-2024:CoursIA
-      python_sha: 63cc13a5a31bf8292992ac7572736d921a5efff8
-      csharp_sha: e08092311f50cb904f6c268445534db3bdda3c9b
-      content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
-      content_csharp_sha: 43d3935e7d14ef2c13aa001de75b8249a35544ee904405d40abdf3bceb438ac9
-      reason: "Re-baseline #14572 (tranche #11962) : conversion flowchart ASCII -> Mermaid cell md 10 (DAG Honest Worker), markdown-only cote C#, aucune cellule code touchee, python_sha unchanged, parite native-both preservee."
   known_differences:
   - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie sources entre jumeaux -- Infer-13 portait une
     cellule "Sources canoniques" (table Raykar 2010, Karger 2011, Dawid-Skene 1979, Whitehill 2009, Kim-Ghahramani

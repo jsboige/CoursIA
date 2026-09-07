@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 109
-breakdown: Python=54, projects=49, ML-Training-Pipeline=4, kelly_lean=2
-maturity: BETA=84, ALPHA=12, DRAFT=12, TEMPLATE=1
+pedagogical_count: 110
+breakdown: Python=55, projects=49, ML-Training-Pipeline=4, kelly_lean=2
+maturity: BETA=61, DRAFT=36, ALPHA=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :

@@ -1,0 +1,9 @@
+date: '2026-08-16'
+by: myia-po-2026:CoursIA-2
+python_sha: 94d90a0461447759bcbe0029b70b8985527349f1
+csharp_sha: a18ba874a5e4c005d2ab34eb7d25f144d95cd75a
+reason: 'Re-exec seq only (#11112 etage 3): csharp DUPLICATE -> CLEAN 1..10 (dotnet_executor,
+  Google.OrTools), sources byte-identiques, 0 erreur, outputs deterministes (0 derive),
+  probe banner strip L532. Cote python non touche.'
+content_python_sha: cdd2d4c542af4a175ee483624f05abe745a6a8a0283eb1082b24b7fbc6be2a1f
+content_csharp_sha: e632c8b243ed22203671ec0dad4a8bcc54df2ae108f9afefcdfd7574de5f3816

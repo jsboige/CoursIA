@@ -217,7 +217,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | **smartcontracts/** | 2 | validate_sc_notebooks.py |
 | **extract-titles (top-level)** | 4 | extract_pptx_titles.py, extract_slidev_titles.py, extract_titles.py, extract_readme_figures.py |
 | **ml/** | 1 | garch_baseline |
-| **autres (top-level + misc)** | 26 | check_docs_links, convert_print_to_deploy, regen_quarto_render, render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_sudoku_python, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, repair_genai_notebooks, validation_dispatch |
+| **autres (top-level + misc)** | 27 | check_docs_links, convert_print_to_deploy, regen_quarto_render, quarto_render_timing (mesure phases #14597), render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_sudoku_python, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, repair_genai_notebooks, validation_dispatch |
 
 Lancer la suite : `python -m pytest scripts/tests/ -v` (depuis la racine du repo).
 

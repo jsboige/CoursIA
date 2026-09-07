@@ -1,0 +1,14 @@
+date: '2026-08-26'
+by: myia-po-2026:CoursIA
+python_sha: db926de6b20bfe82bb1d9fdfca94550f224c9434
+csharp_sha: 73ab35bd966b8167cbb04a87a72b8e4dcc9f32ef
+content_python_sha: c4031b237010ac4ce2e6a9e68068bdb1d740be06adcaab5a8651a4dd4692cb9e
+content_csharp_sha: 12beec15b4f3cf88794c383e4a1c89fbcb1d4268e4d69f089fbe228f4e7b6d6b
+reason: 'PR #13098 (#13034) : sections OOS miroirs ajoutees aux 2 twins (grid 8x8
+  seed 42 partagee, masque 4/2/2, baselines GM/UIBI byte-identiques, modele g+bU+bI+U.V
+  k=1). C# Infer/EP = latente effondree (max|U|=max|V|=0, test 1.989 ~= GM) ; Python
+  PyMC/NUTS 4 chaines + score predictif bayesien = structure apprise (test 1.106,
+  pairwise 1.000). Re-exec complet des 2 notebooks (papermill in-place, exec_counts
+  1..N, 0 erreur, probe banner 0, machine path 0, papermill basename). Sections ajoutees
+  de facon miroir -> parite semantic preservee; moteurs distincts (EP vs NUTS) attestes
+  comme la difference de resultats, conforme parity_level native-both.'

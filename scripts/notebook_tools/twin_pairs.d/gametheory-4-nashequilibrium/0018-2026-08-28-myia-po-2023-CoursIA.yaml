@@ -1,0 +1,17 @@
+date: '2026-08-28'
+by: myia-po-2023:CoursIA
+python_sha: 45c99c2f0df6f3d10730809eacc12af822490b9c
+csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+content_python_sha: 1485f4b096fd430419a5891c719712c621f8943d36bffb4a3a7465eb6e771252
+content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+reason: 'fix(gt,#13287) PR #13287 review response (ai-01 CHANGES_REQUESTED 2026-08-28T05:03Z)
+  : cellule In[16] f-string `donne un levier "prononce" (0.746)` portait des guillemets
+  doubles NON escapes dans le champ de substitution f-string -- SyntaxError PEP 701,
+  le notebook ne s executait PAS de bout en bout (papermill gate FAIL In[16]). STOP
+  & REPAIR (secrets-hygiene regle 6) : JAMAIS hand-editer une sortie de cellule commitee.
+  Fix source : remplacer "prononce" par guillemets francais «prononcé» (immune a l
+  escape), re-executer la cellule, committer les outputs FRAIS. Verification : papermill
+  kernel python3 SUCCESS 45/45 (kernel gametheory-wsl injoignable, comme note dans
+  le PR body), 18/18 cellules code avec execution_count et outputs reels, 0 forbidden
+  pattern (C.1), 0 SyntaxError. C# twin inchange (cote reseau bridge nashpy/Gambit
+  touche par PR parente #12737, sans impact sur la cellule fixee).'

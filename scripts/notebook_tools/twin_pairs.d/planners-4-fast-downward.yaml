@@ -5,45 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = `unified-planning` + `urllib.request` POST sur le conteneur Docker `jsboige/coursia-fast-downward` (API HTTP port 8200, JSON PDDL domain+problem -> plan+cost) ; unified-planning wrap en interne Fast Downward 24.06.1. C# = Tranche 1 from-scratch BCL .NET (representation SAS+ planning graphs, heuristiques h^max/h^FF, recherche A*/GBFS/EHC sur la Tranche 1 SAS+, cells 0-27) + Tranche 2 Fast Downward natif via `System.Net.Http.HttpClient` sur le MEME conteneur Docker (meme API, port 8200, depuis 2026-08-11). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 App tranche 4 lib-vs-lib + PR #10401 Planners-4 Tranche 2 MERGED substance Fast Downward validee firsthand instance Blocks World : plan optimal = 2 actions pick-up+stack, cout = 2, des deux cotes) : les DEUX cotes invoquent LE MEME moteur de production Fast Downward natif (meme solveur C++ natif, API symetrique entre les bindings Python urllib + C# HttpClient), bridge direct sans glue non-SOTA. Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382 : enseignement des mecanismes SAS+ avant l'invocation du moteur. `parity_level: native-both` preserve : parite engine + from-scratch pedagogique."
-  audits:
-    - date: "2026-07-23"
-      by: po-2023
-      python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
-      csharp_sha: 71b179583900de65dc00fbe28ada0f088ec57253
-    - date: "2026-08-11"
-      by: myia-po-2024:CoursIA
-      python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
-      csharp_sha: defc0e484993e6dd8f966430dea7ea5c8f7430bc
-    - date: "2026-08-20"
-      by: myia-po-2026:CoursIA
-      python_sha: f4d9805d65d94e6a1b0eb318e146a12172c30b18
-      csharp_sha: defc0e484993e6dd8f966430dea7ea5c8f7430bc
-      content_python_sha: dd50d7c01a403f3d99b637be524bdb8ffd3ce78f092e9e86dde4e1ac70b2d3e2
-      content_csharp_sha: f9d39130590fea705a6fe028c15e6e43cb0ec1a74d0251fae8a85cc92e9e469f
-    - date: "2026-08-21"
-      by: myia-po-2023:CoursIA-2 (PR #12119, remedes unclosed_bold PY only, sibling CS sain verifie firsthand)
-      python_sha: 0353c4b3441d8a8cc0176c104544ee882fec8738
-      csharp_sha: defc0e484993e6dd8f966430dea7ea5c8f7430bc
-      content_python_sha: ab27cda5ddec5f8a1d557db0d21925e45ecc01dd5291d36de61c8d1f21f1ea6f
-      content_csharp_sha: f9d39130590fea705a6fe028c15e6e43cb0ec1a74d0251fae8a85cc92e9e469f
-    - date: "2026-08-29"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 90853b19dc0d5375a47c21372a4664aa4bff5786
-      csharp_sha: 57c2555a1b978c066c1fa3954a4c536ec2f1be63
-      content_python_sha: e2274aa89c2aca8823dd3cc1b2f8a5e3f61158a6fd9f3847251e11ddaa97d551
-      content_csharp_sha: e1a7b9d0d6fd86c42228c274b2b64e71bf0077688bc8064fe4886575345e4f34
-    - date: "2026-09-05"
-      by: myia-po-2026:CoursIA
-      python_sha: 90853b19dc0d5375a47c21372a4664aa4bff5786
-      csharp_sha: 3887376451809de0518da2be25cd8d7db564d62a
-      content_python_sha: e2274aa89c2aca8823dd3cc1b2f8a5e3f61158a6fd9f3847251e11ddaa97d551
-      content_csharp_sha: f1d8de005f9fe6c34793bd21ea3fac02bf1286642ddaedd931c7db98eab64804
-    - date: "2026-09-06"
-      by: myia-po-2026:CoursIA
-      python_sha: 90853b19dc0d5375a47c21372a4664aa4bff5786
-      csharp_sha: 7f6f725e5eae0899abc0f6406a84415dec82b572
-      content_python_sha: e2274aa89c2aca8823dd3cc1b2f8a5e3f61158a6fd9f3847251e11ddaa97d551
-      content_csharp_sha: c41dbab69ba0f9b5effb31a37ca0aea1d2637b9e90a42d0f1415b488ac2a5adc
   known_differences:
     - "2026-09-06 (myia-po-2026:CoursIA) #14859 / PR #14885 : reparation markdown-only de 2 escapes LaTeX manges par une chaine Python non-raw dans le jumeau C# (Planners-4-Fast-Downward-Csharp.ipynb, cellule d'intro SAS+) ; 0 cellule code touchee (execution_counts intacts, 13/13). Rebaseline = attestation du blob post-reparation, pas une reparation de parite."
     - "2026-08-20 : conversion markdown-only ASCII->Mermaid du diagramme de pipeline Fast Downward (PDDL->Translator->Preprocessor->Search->Plan, cell 3 cote python, PR #12011 / #11962) - 0 cellule code touchee, parite engine native-both intacte, rebaseline d'attestation."

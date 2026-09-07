@@ -1,0 +1,14 @@
+date: '2026-08-21'
+by: myia-po-2024:CoursIA-2
+python_sha: c3ac50e7637d00fc0a751cbf54e2f4a7c956e7f7
+csharp_sha: 80686b43ab3c6b10b34f89c73251faf900b24fe4
+content_python_sha: 396ad1bd18ec6b80ed1f65ee8b7778ce9f8b46c9b94a8aba7f5352521e64a6b2
+content_csharp_sha: 0251ee56d09d34b417198db12b63cd5c9fa75ffb80f8a9aa187fc845b721af53
+section_added: 'Fuzzy CSP via Choco (cellules idx=17 markdown + idx=18 code : planification
+  de vacances, degres ∈ [0,1000], min combination, max-min fairness, optimum = Rome
+  en Juillet sat_min=800/1000)'
+parity_note: 'Surface amelioree cote C# : ajout d''une section Fuzzy reelle sur Choco
+  (model.element + model.min + model.setObjective), comblant partiellement l''asymetrie
+  documentee 2026-08-19. Le Python reste superieur en couverture (4 paradigmes : Semiring
+  + Fuzzy + Weighted + OR-Tools CP-SAT), le C# ajoute la 2e section soft (Weighted
+  + Fuzzy), il manque Semiring CSP sur les deux moteurs. parity_level=surface preserve.'

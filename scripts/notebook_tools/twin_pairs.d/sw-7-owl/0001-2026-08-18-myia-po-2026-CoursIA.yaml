@@ -1,0 +1,12 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 95f6fb513c53bb133e9f47966e26e812ba86ad11
+csharp_sha: 25c773f11a9fcdf9c6d03d88a3c3a39102399095
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint dotNetRDF (VDS.RDF.*,
+  librairie RDF/OWL de reference de l''ecosysteme .NET), Python atteint rdflib (moteur
+  RDF natif de reference de l''ecosysteme Python) ; cas particulier sw-7 : Python
+  atteint owlready2, moteur OWL de reference en Python (documente dans le verdict
+  existant). bridge_verdict_reason inchangee -- le bridge etait deja documente dans
+  le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep
+  2026-08-18).'

@@ -1,0 +1,15 @@
+date: '2026-08-11'
+by: myia-po-2023:CoursIA
+python_sha: b3bd262cde2415bb2c9fccc4e8bd2c81558356e9
+csharp_sha: dc7a108e1f0c0e3cbabc3110d248b992cd435b67
+reason: 'Reclassification #10459 : verdict INTRINSIC bucket-3 (#10382) requalifie
+  RECOVERABLE-LOCAL pour OpenSpiel CFR. Axe PythonNet omis de la taxonomie corrige
+  (calque GT-17 annexe S10, #10464). Annexe section 7 ajoutee au notebook C# : pont
+  .NET -> pyspiel demontre (pyspiel.CFRSolver 100 iters + exploitability = 0.008226
+  mesure depuis C#, sortie commitee). Conclusion (cell 21) requalifiee dans les 2
+  paragraphes (Pont Python + Parite #4956). From-scratch CFR (cells 0-20) byte-identique
+  (source + outputs + exec_count intacts). csharp_sha avance 6f7fb500 -> dc7a108e,
+  python_sha unchanged b3bd262c. content_*_sha omis pour cette entree : le helper
+  de content-fingerprint utilise par les entrees precedentes n''est pas present dans
+  le depot (aucun scripts/notebook_tools/check_twin_parity.py ni CI twin-parity ;
+  le csharp_sha whole-blob ci-dessus est l''attestation autoritaire du changement).'

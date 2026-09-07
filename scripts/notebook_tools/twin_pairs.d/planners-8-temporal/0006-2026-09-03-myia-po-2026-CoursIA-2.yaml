@@ -1,0 +1,11 @@
+date: '2026-09-03'
+by: myia-po-2026:CoursIA-2
+python_sha: 8c055d62310f1d303096fbf18bbf54dd1adbedbc
+csharp_sha: 91e719eb433c502dcf1e0b3993ec4d288db4fe98
+content_python_sha: f63b6e84aed0102eec91e0d3e02ccf70424bb7df8937a4ce59dbf4c56254ac0e
+content_csharp_sha: e917a9bb27b010e0e989a11d7fd04dc676bc0e0b83d334933e08f6daf16770c2
+reason: 'rebaseline post-enrichissement c.898/c.913 (#14410) -- papermill reformat
+  + density enrichment 1428 c/cell. python_sha change car la re-exec papermill a normalise
+  les cles JSON, content_python_sha change pour la meme raison (substance pedagogique
+  inchangee : unified-planning temporal + CP-SAT + Gantt chart identiques). csharp_sha
+  inchangee car la PR ne touche pas le jumeau C# (Tranche 2 deja native-both via Google.OrTools).'

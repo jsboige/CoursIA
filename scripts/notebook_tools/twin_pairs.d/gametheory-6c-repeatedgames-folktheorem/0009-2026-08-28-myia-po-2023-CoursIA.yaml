@@ -1,0 +1,13 @@
+date: '2026-08-28'
+by: myia-po-2023:CoursIA
+python_sha: 3b4a84b0e34afa3d6a66c7f35c43a934943ee9c4
+csharp_sha: f880929979f9904c887c79be8b39febd95a83a8c
+content_python_sha: 8b55628bc79aeb5250532092b508a68ad598a6cee65a4b2d2fefb0fa3a0084c4
+content_csharp_sha: a9c2683300f3834ef94023c142ce1741569d1580d93cc01fec5134e3ebd07f25
+reason: 'fix(gametheory,#12683) PR #13302 (c.596) : rebaseline twin_pair post PR atomique
+  GT-06c section 7 — retrait de punition : folk vs sympathie vs engagement. Cherry-pick
+  de #12709 (commit 28006af65) sur main c9811ce1f. Drift Python : content_sha 762f03c3
+  -> 8b55628bc7 (modification contenu pedagogique section 7 : punition -> engagement).
+  C# twin inchange (csharp_sha et content_csharp_sha constants). Verification : check_twin_parity.py
+  --check --per-pair --base origin/main = 157 OK / 0 DRIFT / 0 PRE. Anti-régression
+  : 0 cellule supprimée, 0 stub ajouté.'

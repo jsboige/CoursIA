@@ -6,46 +6,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
-      csharp_sha: 4024549ae3bb76a1fa276174a77c6602fa9671c2
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-07-29"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 5929bd4bbe321ca89056a4d92209fdb5b30bc821
-      csharp_sha: fa2c2ffdbc5dc5aaff9bfe03316c262cd926f150
-    - date: "2026-08-16"
-      by: myia-ai-01:CoursIA
-      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
-      csharp_sha: 4024549ae3bb76a1fa276174a77c6602fa9671c2
-      content_python_sha: 2e3a92140ef42a21c65bcf464d784e37b9e2856902c779b303310de7c682b0dc
-      content_csharp_sha: 9718209c7ab6079d9f258fe5571077662ff7ad00d63ff0e41d721d5da085f595
-    - date: "2026-08-18"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
-      csharp_sha: bb769dc0f648c8bda93141b4cb556384ef92ecc4
-      content_python_sha: 2e3a92140ef42a21c65bcf464d784e37b9e2856902c779b303310de7c682b0dc
-      content_csharp_sha: f7c96cad59f5bf8bed861d5f622a9bc244c6ed9e64141e8f22c5c6369b29ca20
-    - date: "2026-08-19"
-      by: myia-ai-01
-      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
-      csharp_sha: a04788dfccb1330a63c264e4c18726943f4a03aa
-      content_python_sha: 2e3a92140ef42a21c65bcf464d784e37b9e2856902c779b303310de7c682b0dc
-      content_csharp_sha: 4516c2c0a108f167aea626ccb6ce18b2a32c4ff8f2b92383fb6b8ab2c516a426
-    - date: "2026-08-25"
-      by: myia-po-2026:CoursIA-2
-      python_sha: 7a7c6b93e60fadaee124a52c1b288723522bd9c6
-      csharp_sha: a04788dfccb1330a63c264e4c18726943f4a03aa
-      content_python_sha: 9f4909cdefb53a713ddaf508d83c3216955d802bbb46be4f4b4830b3e8d54789
-      content_csharp_sha: 4516c2c0a108f167aea626ccb6ce18b2a32c4ff8f2b92383fb6b8ab2c516a426
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: e9a6cbf26aeeace5cd678d123f81f6b1fda6e07b
-      csharp_sha: a04788dfccb1330a63c264e4c18726943f4a03aa
-      content_python_sha: eaaa5547149fcb21b01fbf9a65772347fdde035cc254324edf15c89ab2217d17
-      content_csharp_sha: 4516c2c0a108f167aea626ccb6ce18b2a32c4ff8f2b92383fb6b8ab2c516a426
   known_differences:
   - '2026-08-19 (myia-ai-01) #11685 : REBASELINE cote C# apres reparation. Le merge 9881553 (#11622) avait re-execute Infer-3 sur une machine sans Graphviz -- le helper .NET imprime l''echec au lieu de lever, donc 6 bannieres "Problem with converting DOT to SVG" + chemins machine se sont retrouves dans les sorties, et l''audit precedent a enregistre un csharp_sha (bb769dc0f648) qui n''a JAMAIS ete le blob du fichier (test_twin_registry_integrity rouge sur main depuis ce merge). Repare par re-execution reelle avec dot sur le PATH (Graphviz 14.1.3 present sur ai-01, seulement absent du PATH) puis strip_probe_banner.py, --update en DERNIER (#8957). Volume de rendu verifie contre la base de fusion : blocs SVG 13356 -> 13362 et 28948 -> 28954 B, svg 2 -> 2 -- aucun livrable rendu perdu. content_python_sha inchange : le jumeau Python n''est pas touche.'
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
