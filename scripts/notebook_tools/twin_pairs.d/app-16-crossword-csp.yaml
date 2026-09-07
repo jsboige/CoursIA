@@ -3,57 +3,6 @@
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb
   parity_level: native-both
-  audits:
-    - date: "2026-08-03"
-      by: po-2026
-      python_sha: e24fce0a7a9e69057a9ceab84319f5f933a0f238
-      csharp_sha: 210ee14839bb9260ab115cabbc6cb5de4b897c23
-    - date: "2026-08-11"
-      by: myia-po-2024:CoursIA
-      python_sha: e24fce0a7a9e69057a9ceab84319f5f933a0f238
-      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
-      content_python_sha: a704ada4e839ed0d263cffa38cacd6f9ed3022a8e93f514085cf6f5a7f34b1bb
-      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
-    - date: "2026-08-13"
-      by: myia-po-2024:CoursIA
-      python_sha: a6733573c722547623fddc53e5d4cb14634355ed
-      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
-      content_python_sha: d081a160111fa93aba8c24c288d713b51547167a83232d6687e8a9da6d6b9d2e
-      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: 545e286364ec3fafa8f68bef6e998b3cfc500dd3
-      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
-      content_python_sha: d0127ea15e15a4a5cbad5b47b3fea6ec4a91ca3395bf6037f9d5ef26b20f2fdd
-      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
-      reason: "Re-attestation apres PR #14134 (App-16 Crossword CSP enrich Python) : markdown-only — 5 nouvelles cellules md (16->21), 0 changement de cellule code ; signature sha256 des (source, execution_count, outputs) des 12 cellules code byte-identique base->HEAD (0ccd53430085da89). Cote C# App-16-Crossword-CSP-Csharp.ipynb non touche. parity_level native-both intacte."
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: c3eabdf097a1f7187c011981e36fcdc0d095c25a
-      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
-      content_python_sha: 9ea31048401b196f0bdfbee75ac6edc1fe0d051bbb7df73fb4f8ab4ee8eadb06
-      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
-      reason: "Re-attestation apres fix navlinks #14134 (2 occurrences du lien ../CSP-8-Temporal-Csharp.ipynb -> ../../Part2-CSP/CSP-8-Temporal-Csharp.ipynb, cell0 L35 + cell32 L36, cible resolue contre l arbre) : markdown-only, cellules code toujours byte-identiques. check_notebook_navlinks --check OK."
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: 67f25e05a73be5f173247f292eadfb2ed78be67c
-      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
-      content_python_sha: 86dbdb99d94f520a44ec24b6145c71e578e33ab927c627f9b2c9afd511baee83
-      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
-      reason: "Re-attestation apres fix enrich #14134 (2 HREF_MISSING ../Part2-CSP/ + ../Part3-Advanced/ rescrits ../../, 1 SOLUTION_LEAK fence deplacee en cellule dediee, md 21->22) : markdown-only, 12 cellules code byte-identiques base->HEAD. enrich_quality_ci + detect_markdown_rendering OK."
-    - date: "2026-09-04"
-      by: myia-po-2023:CoursIA (fix #14624 lot Search)
-      python_sha: 67f25e05a73be5f173247f292eadfb2ed78be67c
-      csharp_sha: d75099aa55fd458813bcc44ff7199b39056cf835
-      content_python_sha: 86dbdb99d94f520a44ec24b6145c71e578e33ab927c627f9b2c9afd511baee83
-      content_csharp_sha: 034d5297e56734eba63d7bd6c07612183fd2d80487adea2863bc18facb9bc81b
-    - date: "2026-09-06"
-      by: myia-po-2024:CoursIA
-      python_sha: 31610a1a8cc2be4f8d3e82b7f38327ad05e2a692
-      csharp_sha: d75099aa55fd458813bcc44ff7199b39056cf835
-      content_python_sha: 205d4cc7c2024f6de21848d1672b499b339e408c371a1163cbfaa8c7c499907c
-      content_csharp_sha: 034d5297e56734eba63d7bd6c07612183fd2d80487adea2863bc18facb9bc81b
-      reason: "Re-attestation apres PR #14854 (#14817, stubs d'exercice ne rendent plus une verite en dur) : cote Python corrige, cote C# non touche (csharp_sha et content_csharp_sha inchanges depuis l'entree du 2026-09-04). Audit firsthand post-fix : detect_stub_truth_returns 0/0 sur les deux jumeaux ; contre-verification grep direct du C# : 0 literal True dans une cellule stub. Defaut initial unilateral Python ; known_differences et parity_level inchanges."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + AddElement/inter constraints, dataclass) + numpy + matplotlib (11 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (System.Linq/Text, 0 NuGet) PRESERVEE (12 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur grids 15x15 -- exact SOLUTION_OPTIMAL, backtracking from-scratch timeout sur les grands grilles -- discrimination mesuree. Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."
   known_differences:

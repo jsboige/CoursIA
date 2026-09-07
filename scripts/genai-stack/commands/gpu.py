@@ -10,14 +10,21 @@ Sous-commandes :
     genai.py gpu profile current       # Detecter le profil actuel
     genai.py gpu check-fit <vram_mb>   # Verifier si un modele tient en VRAM
     genai.py gpu schedule <group>      # Appliquer le profil pour un groupe de notebooks
+    genai.py gpu lock on               # Poser le verrou de clocks GPU (undervolt lock)
+    genai.py gpu lock off              # Retirer le verrou de clocks GPU
+    genai.py gpu lock status           # Afficher les clocks GPU courantes/max
+    genai.py gpu lock register         # Planifier la tache au demarrage ([INTERACTIVE-ONLY])
 """
 
 import subprocess
 import csv
 import io
 import json
+import os
+import re
 import sys
 import time
+from datetime import datetime
 import logging
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -418,6 +425,225 @@ def schedule_group(group_name: str) -> bool:
 
 
 # ============================================================================
+# Verrou de clocks GPU (undervolt lock) - persistant au demarrage
+# ============================================================================
+
+GPU_LOCK_MIN_MHZ = 210
+GPU_LOCK_MAX_MHZ = 1800
+GPU_LOCK_CLOCKS = f"{GPU_LOCK_MIN_MHZ},{GPU_LOCK_MAX_MHZ}"
+
+
+def _gpu_lock_log_path() -> Path:
+    """Chemin absolu du journal du verrou GPU (user-scope, hors repo)."""
+    base = os.environ.get("LOCALAPPDATA") or os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
+    log_dir = Path(base) / "myia"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir / "gpu_lock.log"
+
+
+def _gpu_lock_journal(action: str, state: str, detail: str) -> str:
+    """Ajoute une ligne horodatee au journal du verrou GPU. Retourne la ligne."""
+    ts = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    line = f"[{ts}] {action} -> {state} | {detail}"
+    try:
+        with open(_gpu_lock_log_path(), "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError as e:
+        logger.warning("gpu-lock: journal inecrivable: %s", e)
+    print(line)
+    return line
+
+
+def _parse_mhz(value: str) -> Optional[int]:
+    """Extrait une valeur entiere en MHz ('1230 MHz' -> 1230, sinon None)."""
+    m = re.search(r"(\d+)\s*MHz", value, re.IGNORECASE)
+    return int(m.group(1)) if m else None
+
+
+_GPU_HEADER_RE = re.compile(r"^GPU \S+")
+
+
+def _parse_clocks_stdout(stdout: str) -> list:
+    """Extrait, par GPU, les clocks Graphics de `nvidia-smi -q -d CLOCK`.
+
+    Retourne une liste d'un dict par GPU (index = ordre d'apparition des en-tetes
+    ``GPU <pci>``, 0-based) :
+
+        [{"index": 0, "current_mhz": 1230, "max_mhz": 2100}, ...]
+
+    Une sortie sans en-tete ``GPU <pci>`` (legacy / tests) produit un unique GPU
+    implicite (index 0), de sorte que le parseur ne rend jamais une liste vide
+    quand il y a des clocks. #14975 : le parseur precedent ne retenait que le
+    DERNIER GPU rencontre (``-lgc`` sans ``-i`` verrouille toutes les cartes mais
+    la verification n'en sondait qu'une, en silence).
+    """
+    gpus: list = []
+    cur: Optional[dict] = None
+    section: Optional[str] = None
+    for line in stdout.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if _GPU_HEADER_RE.match(s):
+            # Nouvelle carte : clore le GPU courant et ouvrir le suivant.
+            if cur is not None:
+                gpus.append(cur)
+            cur = {"index": len(gpus), "current_mhz": None, "max_mhz": None}
+            section = None
+            continue
+        if ":" not in s:
+            # En-tete de section (libelle indente sans deux-points), ex: "Clocks", "Max Clocks".
+            section = s
+            continue
+        label, _, value = s.partition(":")
+        label = label.strip()
+        value = value.strip()
+        if label != "Graphics":
+            continue
+        mhz = _parse_mhz(value)
+        if mhz is None:
+            continue
+        if cur is None:
+            cur = {"index": len(gpus), "current_mhz": None, "max_mhz": None}
+        if section == "Clocks":
+            cur["current_mhz"] = mhz
+        elif section == "Max Clocks":
+            cur["max_mhz"] = mhz
+    if cur is not None:
+        gpus.append(cur)
+    return gpus
+
+
+def _print_lock_status(index: int, current: Optional[int], max_clock: Optional[int]):
+    """Affiche les clocks Graphics d'une carte (courantes et max)."""
+    cur_txt = f"{current} MHz" if current is not None else "indisponible"
+    max_txt = f"{max_clock} MHz" if max_clock is not None else "indisponible"
+    print(f"  GPU {index} - Clocks Graphics (courant) :", cur_txt)
+    print(f"  GPU {index} - Max Clocks Graphics (max)  :", max_txt)
+
+
+def gpu_lock_status() -> Optional[list]:
+    """Lit `nvidia-smi -q -d CLOCK`; retourne une liste de dicts par GPU.
+
+    Chaque dict porte ``index``/``current_mhz``/``max_mhz`` (cf
+    ``_parse_clocks_stdout``). Rend ``None`` si la commande echoue, jamais ``[]``
+    des qu'il y a au moins un en-tete ``GPU <pci>``.
+    """
+    ok, stdout, stderr = _run_cmd("nvidia-smi -q -d CLOCK")
+    if not ok:
+        print("[gpu-lock] ECHEC: nvidia-smi -q -d CLOCK a retourne un code non nul:")
+        print("  " + (stderr.strip() or stdout.strip() or "rc != 0"))
+        return None
+    gpus = _parse_clocks_stdout(stdout)
+    for g in gpus:
+        _print_lock_status(g["index"], g["current_mhz"], g["max_mhz"])
+    return gpus
+
+
+def _verify_lock(enable: bool, current: Optional[int], max_clock: Optional[int]) -> str:
+    """Verdict du verrou : OK / ECHEC / INDETERMINE selon les clocks observees."""
+    if enable:
+        # Verrou pose : la butee max appliquee ne doit pas depasser la butee configuree.
+        if max_clock is not None:
+            return "OK" if max_clock <= GPU_LOCK_MAX_MHZ else "ECHEC"
+        return "INDETERMINE"
+    # off : la limite max doit redevenir libre (au-dela de la butee).
+    if max_clock is not None:
+        return "OK" if max_clock > GPU_LOCK_MAX_MHZ else "ECHEC"
+    return "INDETERMINE"
+
+
+def _verify_lock_all(enable: bool, gpus: list) -> str:
+    """Verdict agrege du verrou sur toutes les cartes.
+
+    ECHEC des qu'UNE carte echoue (le verrou porte sur toutes, cf ``-lgc`` sans
+    ``-i``) ; INDETERMINE si aucune n'echoue mais qu'au moins une reste indeterminee ;
+    OK sinon. #14975 : le verdict precedent ne refletait que la derniere carte.
+    """
+    verdicts = [_verify_lock(enable, g.get("current_mhz"), g.get("max_mhz"))
+                for g in gpus]
+    if any(v == "ECHEC" for v in verdicts):
+        return "ECHEC"
+    if any(v == "INDETERMINE" for v in verdicts):
+        return "INDETERMINE"
+    return "OK"
+
+
+def gpu_lock_apply(enable: bool, clocks: str = GPU_LOCK_CLOCKS) -> bool:
+    """Applique (enable=True, `nvidia-smi -lgc`) ou retire (False, `nvidia-smi -rgc`) le verrou.
+
+    Journalise la commande, le rc et la verification dans _gpu_lock_log_path().
+    #14975 R2 : rc=0 (True) sur OK, rc=1 (False) sur ECHEC. INDETERMINE (commande
+    nvidia-smi reussie mais relecture aveugle) retourne True rc=0 avec avertissement :
+    un defaut de relecture n'est pas un echec du verrou, la tache de boot ne doit pas
+    crasher sur une relecture transitoire. Le choix est justifie par ecrit (#14975 R2).
+    """
+    if enable:
+        cmd = f"nvidia-smi -lgc {clocks}"
+        action = f"lock-on {clocks}"
+    else:
+        cmd = "nvidia-smi -rgc"
+        action = "lock-off"
+    ok, stdout, stderr = _run_cmd(cmd)
+    if not ok:
+        _gpu_lock_journal(action, "ECHEC", "cmd=%s rc!=0: %s" % (cmd, (stderr.strip() or stdout.strip())[:200]))
+        print(f"[gpu-lock] ECHEC: {cmd}")
+        print("  " + (stderr.strip() or stdout.strip()))
+        return False
+    status = gpu_lock_status()
+    if status is None:
+        _gpu_lock_journal(action, "INDETERMINE", "cmd=%s verif: nvidia-smi -q -d CLOCK invalide" % cmd)
+        # INDETERMINE = la commande nvidia-smi a reussi (rc=0), seule la relecture
+        # est aveugle. Ce n'est pas un echec du verrou : on ne fait pas echouer la
+        # tache de boot (rc=1) sur un defaut de relecture transitoire. rc=0 + warning.
+        print("[gpu-lock] INDETERMINE (relecture invalide) : pas un echec du verrou, rc=0")
+        return True
+    detail = "; ".join(
+        "GPU %s courant=%sMHz max=%sMHz" % (g["index"], g["current_mhz"], g["max_mhz"])
+        for g in status)
+    verdict = _verify_lock_all(enable, status)
+    _gpu_lock_journal(action, verdict, "cmd=%s || %s" % (cmd, detail))
+    print("  Verification:", verdict, "(cartes verifiees:", len(status), ")")
+    for g in status:
+        print("    GPU", g["index"], "->", _verify_lock(enable, g["current_mhz"], g["max_mhz"]))
+    print("  Journal   :", _gpu_lock_log_path())
+    if verdict != "OK":
+        # #14975 R2 : le verrou porte sur toutes les cartes ; UNE carte en ECHEC
+        # fait echouer la tache (rc=1). S'il ne restait qu'un GPU a verifier la
+        # regle serait differente, mais `-lgc` sans `-i` verrouille tout le systeme.
+        print("[gpu-lock] Verrou NON effectif (verdict", verdict + ") : rc=1")
+        return False
+    return True
+
+
+def gpu_lock_register() -> None:
+    """Affiche (sans l'executer) la commande de planification de la tache au demarrage.
+
+    La planification touche UAC (elevation) => [INTERACTIVE-ONLY] : ce dry-run ne fait
+    que preparer la commande a recoller dans une invite Administrateur.
+    """
+    genai_py = _script_dir / "genai.py"
+    print("=" * 70)
+    print("  PLANIFICATION TACHE AUTO - VERROU CLOCKS AU DEMARRAGE")
+    print("  [INTERACTIVE-ONLY] : execution requiert une invite Administrateur (UAC)")
+    print("  Aucune action n'a ete effectuee (dry-run).")
+    print("=" * 70)
+    print()
+    print("  Version boot (onstart, SYSTEM, privilege HIGHEST) :")
+    inner = '\\"python\\" \\"%s\\" gpu lock on' % genai_py
+    print('    schtasks /create /tn "MyIA_GPUUndervoltClockLock" /tr "%s" /sc onstart /ru SYSTEM /rl HIGHEST /f' % inner)
+    print()
+    print("  Alternative logon (onlogon, utilisateur connecte) :")
+    print('    schtasks /create /tn "MyIA_GPUUndervoltClockLock" /tr "%s" /sc onlogon /rl HIGHEST /f' % inner)
+    print()
+    print("  Pour supprimer la tache plus tard :")
+    print('    schtasks /delete /tn "MyIA_GPUUndervoltClockLock" /f')
+    print()
+    print("  NOTE : adapter le chemin python si besoin (ex: full path python.exe / py -3.11).")
+    print("  La tache journalise dans", _gpu_lock_log_path())
+
+
+# ============================================================================
 # CLI
 # ============================================================================
 
@@ -456,6 +682,16 @@ def register(subparsers):
     p_schedule.add_argument('group', choices=list(GROUP_GPU_PROFILE.keys()),
                            help='Groupe de notebooks')
 
+    # gpu lock
+    p_lock = sub.add_parser('lock', help='Verrou de clocks GPU (undervolt, persistant au boot)')
+    lock_sub = p_lock.add_subparsers(dest='lock_action')
+    p_lock_on = lock_sub.add_parser('on', help='Appliquer le verrou (nvidia-smi -lgc)')
+    p_lock_on.add_argument('--clocks', default=GPU_LOCK_CLOCKS,
+                          help='Plage MIN,MAX en MHz (defaut: 210,1800)')
+    lock_sub.add_parser('off', help='Retirer le verrou (nvidia-smi -rgc)')
+    lock_sub.add_parser('status', help='Afficher l etat des clocks GPU')
+    lock_sub.add_parser('register', help='Planifier la tache au demarrage ([INTERACTIVE-ONLY])')
+
 
 def execute(args) -> int:
     """Execute la commande gpu."""
@@ -484,6 +720,21 @@ def execute(args) -> int:
     elif action == 'schedule':
         ok = schedule_group(args.group)
         return 0 if ok else 1
+
+    elif action == 'lock':
+        lock_action = getattr(args, 'lock_action', None)
+        if lock_action == 'on':
+            ok = gpu_lock_apply(True, clocks=args.clocks)
+            return 0 if ok else 1
+        elif lock_action == 'off':
+            ok = gpu_lock_apply(False)
+            return 0 if ok else 1
+        elif lock_action == 'status':
+            st = gpu_lock_status()
+            return 0 if st is not None else 1
+        else:  # lock (sans sous-commande) ou register
+            gpu_lock_register()
+            return 0
 
     # Commande gpu sans sous-commande : comportement original
     if getattr(args, 'detailed', False):

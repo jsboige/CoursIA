@@ -89,6 +89,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Sample runner-park occupation (#14597)
+        # Covariable d'occupation (dispatch ai-01 2026-09-07) : busy/online du
+        # parc au DEMARRAGE du job, fusionne dans le tableau du step "Report
+        # render phase timings". Mesure pas gate : 403 -> "not sampled".
+        # Doit tourner AVANT le rendu (~20 min) : le compte doit decrire le
+        # parc au moment ou le job demarre, pas ou il finit.
+        env:
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+
       - name: Set up Quarto
         # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
         # elle installe un .deb via `sudo apt -y install`, et l'image du pool self-hosted est
@@ -145,9 +156,26 @@ jobs:
         # .ipynb (execute.enabled: false) : ils sont RENDUS en HTML statique avec
         # echo:true (EPIC #10921, #10923) — code affiché + outputs déjà validés et
         # commités par les workers (règle C.2), sans kernel.
-        run: quarto render --to html
+        # #14597 : le pipeline horodate chaque ligne (builtin bash, zéro fork) et
+        # garde une copie pour le step "Report render phase timings" -- la phase
+        # post-rendu (assemblage du site : index de recherche sur 3122 pages,
+        # manifests) est muette dans le log, mesurable 2:56-15:09 selon le pool.
+        run: |
+          set -o pipefail
+          quarto render --to html 2>&1 \
+            | while IFS= read -r line; do printf '%(%H:%M:%S)T %s\n' -1 "$line"; done \
+            | tee render-timed.log
         # Pas de --execute : sinon ça tente de ré-exécuter les notebooks = impossible
         # sans kernels .NET Interactive / Lean 4 / conda Python spécialisés.
+
+      - name: Report render phase timings
+        # Mesure (#14597), pas une gate : exit 0 toujours, "not found" si un
+        # marqueur manque (changement de format de log Quarto = rapport dégradé,
+        # pas un build rouge). Ajoute le tableau de phases au job summary.
+        # --occupation : busy/online echantillonne au demarrage (step amont) ;
+        # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
+        # greppable "#14597-covariates:" pour la moisson multi-runs.
+        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
@@ -271,6 +299,16 @@ jobs:
             --head "${{ github.event.pull_request.head.sha }}" \
             --apply --github-output
 
+      - name: Sample runner-park occupation (#14597)
+        # Meme covariable qu'en jambe build, echantillonnee au plus tot APRES
+        # le scope : seul un rendu COMPLET (mode full) sera rapporte, inutile
+        # de consommer un appel API sur un rendu scope.
+        if: steps.scope.outputs.mode == 'full'
+        env:
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
@@ -286,8 +324,21 @@ jobs:
         # `quarto render` SANS argument de fichier rend tout ce que la liste
         # porte : c'est pourquoi le mode `empty` saute le step au lieu de lancer
         # un rendu sur une liste vide, qui rendrait le site entier.
+        # Horodatage + tee comme le job `build` (#14597).
         if: steps.scope.outputs.mode != 'empty'
-        run: quarto render --to html
+        run: |
+          set -o pipefail
+          quarto render --to html 2>&1 \
+            | while IFS= read -r line; do printf '%(%H:%M:%S)T %s\n' -1 "$line"; done \
+            | tee render-timed.log
+
+      - name: Report render phase timings
+        # #14597 : en jambe PR, le rapport n'a de sens que sur un rendu COMPLET
+        # (mode full = config/theme/scripts touches) -- le cas exact qui tuait
+        # des runs a 53 min (#14225). Sur un rendu scope (1-2 documents), la
+        # phase post-rendu n'est pas representative et le rapport resterait muet.
+        if: steps.scope.outputs.mode == 'full'
+        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'

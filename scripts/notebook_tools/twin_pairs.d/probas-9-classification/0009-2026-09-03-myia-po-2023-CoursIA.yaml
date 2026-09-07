@@ -1,0 +1,10 @@
+date: '2026-09-03'
+by: myia-po-2023:CoursIA
+reason: 'Rebaseline twin PR #14399 (lane myia-po-2023:CoursIA-2) : jumeau C# Infer-9
+  passe display(HTML(x)) -> x.DisplayAs("text/html") pour 5 CS1701 -> 0, reexecute
+  bout-en-bout (epic #14122 T2). Jumeau Python NON touche : content_python_sha identique.
+  Attestation croisee posee par la lane CoursIA de la meme machine.'
+python_sha: 497372252a1246bf5a1e5337ea725f42511b28d6
+csharp_sha: 750e1ac5e3beded312fbbadca07868d18ec81c43
+content_python_sha: 35c8f13f17d22879ce88977d01077403c6e298279b600e9f1f67b3aa47b9b7e8
+content_csharp_sha: 04e774d05b152982c2b2cb0b350cd40cbf070be697b30e88427d1410f25d3e33

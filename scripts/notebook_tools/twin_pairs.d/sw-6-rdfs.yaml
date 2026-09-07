@@ -5,28 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (#10382, comme PyMC/Infer.NET) : C# = dotNetRDF 3.2.1 (NuGet officiel `#r \"nuget: dotNetRDF, 3.2.1\"` + espaces VDS.RDF.*, native .NET) et Python = rdflib (from rdflib import *, native Python). Chaque cote atteint le moteur SOTA de son ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# VDS.RDF refs + execution_count, Python rdflib imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 9e4785fc0879d45754e3e40fd0ae418ca2462993
-      csharp_sha: f7a8a4f6cd60d8ce6484a1eac41072fe304e60f5
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint dotNetRDF (VDS.RDF.*, librairie RDF/OWL de reference de l'ecosysteme .NET), Python atteint rdflib (moteur RDF natif de reference de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 9e4785fc0879d45754e3e40fd0ae418ca2462993
-      csharp_sha: f7a8a4f6cd60d8ce6484a1eac41072fe304e60f5
-    - date: "2026-08-20"
-      by: myia-po-2024:CoursIA
-      python_sha: 325d376f5d3bb5e1c14a301b3384b3cf607d478e
-      csharp_sha: 93eb76a616ba3d85c2bbdaa1fd7bad835ab19ee0
-      content_python_sha: c4b4da294c207503a7dcd07d4b8adee7f14667b7db033bd5faa7e0248156e8ef
-      content_csharp_sha: a4e72f4267783581896e65f5bde1a1c418500305e091b16c9f486f697e252fe5
-    - date: "2026-08-21"
-      by: myia-po-2024:CoursIA
-      python_sha: cf014b45a20936b0f5c89e8385e98ce14406539f
-      csharp_sha: c8c9fd270d99996ebb2561726bb6859d70ebcf48
-      content_python_sha: d15b8834e7cd5fcfa7a98589d37449a53e9707f9f5e2e24bb443ee510fa503d8
-      content_csharp_sha: ded9fd5a567ce787bdf82f7ce86c61ab67c6e9452bba5f08a8d85188483ec883
   known_differences:
     - "Socle commun : raisonnement RDFS (subClassOf, subPropertyOf, inference de hierarchies)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` OntologyGraph + `VDS.RDF.Query`). Python = `rdflib` + `owlrl` (moteur de closure RDFS/OWL-RL, derive les triplets inferes). Approche legerement differente : C# expose le modele ontologique oriente-objet ; Python deroule la closure de raisonnement explicitement."

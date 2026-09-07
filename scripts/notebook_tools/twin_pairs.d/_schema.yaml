@@ -13,6 +13,20 @@
 #     (`audits[-1]` ou `last_audit`). La migration legacy -> audits: est paresseuse
 #     (a la volee, sur le 1er drift reel) -- pas de reecriture massive.
 #
+# Depuis #14911 (file-per-audit), les audits ne vivent PLUS dans le fichier
+# d'intention `<pair>.yaml` : chaque audit est un fichier separe dans le
+# sous-repertoire `twin_pairs.d/<slug>/<idx>-<date>-<lane>.yaml` (le prefixe
+# sequence zero-padded preserve l'ordre d'append : le tri par nom restitue
+# l'ordre de la liste `audits:` d'origine, donc `_latest_audit` designe le meme
+# audit). Le reader (`load_registry`) reconstitue `audits:` depuis ces fichiers ;
+# les deux formes inline restent lues en retro-compat (paires pas encore migrees).
+# Raison : deux lanes qui appendaient au MEME bloc `audits:` de la meme paire
+# touchaient le meme point d'ancrage -> conflit git meme pour des dates
+# differentes (controle negatif #14911). Un fichier par audit = deux lanes
+# ecrivent des fichiers differentes, le merge serveur n'a rien a fusionner.
+# Migration : `check_twin_parity.py --migrate-audits` (selecteur obligatoire
+# --pair / --family / --yes-all-pairs, meme politique que --update, cf #8508).
+#
 # Depuis #9399 volet (c), chaque enregistrement porte en plus
 # `content_python_sha` / `content_csharp_sha` (SHA-256 du notebook SANS
 # `nb["metadata"]` -- cost, papermill, kernelspec, language_info). Le verdict

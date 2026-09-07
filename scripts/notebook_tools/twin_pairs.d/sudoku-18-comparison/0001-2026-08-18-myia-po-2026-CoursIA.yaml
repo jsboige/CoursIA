@@ -1,0 +1,10 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 3290e802a2543319399e78f1c8e0cea2263a50be
+csharp_sha: 616510b87ff6246b70d595aa5dd363969e6b0046
+reason: 'parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option
+  A, parite de moteur lib-vs-lib) : Python atteint ortools, C# atteint Google.OrTools
+  (#r ''nuget: Google.OrTools'') -- notebook de comparaison multi-solveurs, les moteurs
+  compares (OrTools/Z3/Infer.NET) sont branches nativement des deux cotes. Imports/invocations
+  verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18).
+  bridge_verdict_reason inchangee.'

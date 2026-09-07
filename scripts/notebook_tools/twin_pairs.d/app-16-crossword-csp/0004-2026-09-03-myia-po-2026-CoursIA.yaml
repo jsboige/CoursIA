@@ -1,0 +1,11 @@
+date: '2026-09-03'
+by: myia-po-2026:CoursIA
+python_sha: 545e286364ec3fafa8f68bef6e998b3cfc500dd3
+csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
+content_python_sha: d0127ea15e15a4a5cbad5b47b3fea6ec4a91ca3395bf6037f9d5ef26b20f2fdd
+content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+reason: 'Re-attestation apres PR #14134 (App-16 Crossword CSP enrich Python) : markdown-only
+  — 5 nouvelles cellules md (16->21), 0 changement de cellule code ; signature sha256
+  des (source, execution_count, outputs) des 12 cellules code byte-identique base->HEAD
+  (0ccd53430085da89). Cote C# App-16-Crossword-CSP-Csharp.ipynb non touche. parity_level
+  native-both intacte.'

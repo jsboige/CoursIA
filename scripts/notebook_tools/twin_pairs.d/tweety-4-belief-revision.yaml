@@ -5,32 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (revision des croyances AGM, contraction/revision) : C# branche IKVM 8.15.0 + tweety-beliefdynamics.dll (tracked) + 8 refs `org.tweetyproject.*` actifs (3 cellules avec using explicite + classes Java `SimpleKbReiter`, `DefaultRevisionOperator` invoquees). Python branche JPype + `from java.util import ArrayList, HashSet` + `from org.tweetyproject.beliefdynamics.* import` + meme bibliotheque Java TweetyProject. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : les deux cotes operent sur la meme base de connaissances Java (BeliefSet) avec les memes operateurs de revision, pont IKVM-bytecode vs JPype-JVM-runtime."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
-      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
-      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint TweetyProject via JPype (10 imports + 44 references) et z3 pour les modeles epistemiques, C# atteint les DLLs Tweety compilees IKVM (16 references). Meme moteur Tweety des deux cotes. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: a4518639c3bc575395b112d7cf3d57f4518ec09d
-      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
-    - date: "2026-08-04"
-      by: myia-po-2024:CoursIA
-      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
-      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
-    - date: "2026-08-12"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
-      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
-      content_python_sha: 3397c3499d41f331f9917039d1b006be638d069490079ec8567b04cd826c64c4
-      content_csharp_sha: 56beaf6154fcb031066bc2c38ade50dc672fd7a8ff2d70e419c6b78d2f56a20b
-    - date: "2026-08-18"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
-      csharp_sha: 2fe788ad0ec751afb1ea6c14d763f8af543ce6a9
-      content_python_sha: 3397c3499d41f331f9917039d1b006be638d069490079ec8567b04cd826c64c4
-      content_csharp_sha: a584b14de637f6800f8809a29b243c09a0dd4bebdd7ab37b5a9cd1eb9cc72ff0
   known_differences:
     - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."

@@ -1,0 +1,106 @@
+{
+  "notebook": "App-31-RCPSP-Max-Feasibility-Bounds",
+  "objet": "RCPSP/max : faisabilite, circuits de poids positif, hierarchie de bornes",
+  "source_distillee": {
+    "auteurs": [
+      "Arthur Gallier",
+      "Nicolas Naegelen"
+    ],
+    "projet": "B4 - Ordonnancement industriel",
+    "pull_request": 51,
+    "commit": "8b91a736",
+    "snapshot": "b5f3f0351dbd41f3a76f047cf02e9c93e81192f3",
+    "licence": "MIT"
+  },
+  "environnement": {
+    "python": "3.13.14",
+    "platform": "Windows",
+    "ortools": "9.15.6755",
+    "numpy": "2.4.4",
+    "pandas": "2.3.3"
+  },
+  "instances": "generees dans le notebook avec des graines fixes ; aucune instance externe redistribuee",
+  "observations_psplib": [
+    {
+      "instance": "j30/j3010_1",
+      "sha256_16": "4fae4197791f2ee8",
+      "chemin_critique": 41,
+      "optimum_recalcule": 42,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.06
+    },
+    {
+      "instance": "j30/j3010_10",
+      "sha256_16": "5b704056bfd6531d",
+      "chemin_critique": 37,
+      "optimum_recalcule": 41,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.05
+    },
+    {
+      "instance": "j30/j3010_2",
+      "sha256_16": "108f260686ec9353",
+      "chemin_critique": 52,
+      "optimum_recalcule": 56,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.04
+    },
+    {
+      "instance": "j30/j3010_3",
+      "sha256_16": "de28125e10ed4379",
+      "chemin_critique": 61,
+      "optimum_recalcule": 62,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.03
+    },
+    {
+      "instance": "j30/j3010_4",
+      "sha256_16": "5526e62c26ae880e",
+      "chemin_critique": 53,
+      "optimum_recalcule": 58,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.05
+    },
+    {
+      "instance": "j60/j6010_1",
+      "sha256_16": "9c400697268fac68",
+      "chemin_critique": 85,
+      "optimum_recalcule": 85,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.05
+    },
+    {
+      "instance": "j60/j6010_10",
+      "sha256_16": "11793a5c0a25c3a1",
+      "chemin_critique": 73,
+      "optimum_recalcule": 73,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.04
+    },
+    {
+      "instance": "j60/j6010_2",
+      "sha256_16": "bd14308ea049193b",
+      "chemin_critique": 62,
+      "optimum_recalcule": 62,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.04
+    },
+    {
+      "instance": "j120/j12010_1",
+      "sha256_16": "99dd309553f879c2",
+      "chemin_critique": 111,
+      "optimum_recalcule": 111,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.07
+    },
+    {
+      "instance": "j120/j12010_10",
+      "sha256_16": "6620267bb213583b",
+      "chemin_critique": 66,
+      "optimum_recalcule": 66,
+      "statut": "OPTIMAL",
+      "temps_verification_s": 0.08
+    }
+  ],
+  "verification_source": "les 10 makespans publies par le banc d'essai source ont ete recalcules avec un modele independant : les 10 concordent, tous OPTIMAL"
+}

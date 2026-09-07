@@ -1,0 +1,10 @@
+date: '2026-08-29'
+by: myia-po-2026:CoursIA
+python_sha: 6a38b61b2c754511513922466155023c4a39ae78
+csharp_sha: e4f0c1ecc753255b13cc3e4abfe76598e3805506
+content_python_sha: c2795ee971045d3f85e185e6c42fa0633230a70d5ea936b46b060eec49df0775
+content_csharp_sha: d44b27b8348bcdf60427a301d88c55d36e83ab2f1e3e3bffac9bdb8c44a917bb
+reason: 'rebaseline post-merge origin/main : le notebook Python de la PR #12512 (contre-exemple
+  h non admissible -> sous-optimalite A*, #12465) change le content SHA ; la baseline
+  po-2024 du 2026-08-28 decrivait main pre-PR. Csharp_sha unchanged, parite (surface)
+  preservee.'

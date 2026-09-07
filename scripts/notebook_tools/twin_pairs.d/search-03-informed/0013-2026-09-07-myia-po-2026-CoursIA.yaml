@@ -1,0 +1,11 @@
+date: '2026-09-07'
+by: myia-po-2026:CoursIA
+python_sha: 262eb2daab28ef942cf281d8cf527a0ae200ae48
+csharp_sha: 1810b37571f1cc28a8d7cce934cedee33328b469
+content_python_sha: d76c6973ae30afa9730eedc02ca951184dd5a626684fdbbcf88e2f44e117a904
+content_csharp_sha: 9266001db0b3b03023c359584137b11b9b93900aa45a641257ec0bd57ac6dc5b
+reason: 'PR #14824 (issue) : theoreme admissible=>optimal limite a la consistance
+  (variante Graph-Search sans re-open). Python : enonces c19/c25/c38/c39/c54/c70 corriges
+  + 3 cellules contre-exemple (graphe 4 noeuds, h admissible exhaustive, A* rend 4.0
+  vs optimum Dijkstra 3.5), re-exec papermill complete. C# : enonces c0/c9/c20/c24/c34
+  corriges (markdown-only, outputs precedents valides, pas de re-exec requis).'

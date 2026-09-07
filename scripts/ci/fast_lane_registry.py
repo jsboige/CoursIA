@@ -391,7 +391,9 @@ TRANCHE1: list[Guard] = [
 # ---------------------------------------------------------------------------
 # TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
 # canonique, conclusion reelle, workflow d'origine retire de pull_request),
-# trois formes moteur nouvelles par rapport a la tranche 1 :
+# trois formes moteur nouvelles par rapport a la tranche 1, portees par
+# QUATRE gardes (deux instances du ratchet autonome : failure-text puis
+# output-flood, #14959) :
 #
 #   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
 #     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
@@ -424,6 +426,31 @@ TRANCHE2: list[Guard] = [
         ],
         argv=[
             "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # Output-object flood ratchet: the sibling above watches text banners and
+    # machine paths; nothing counted output OBJECTS per cell, so a notebook
+    # could grow to 45k lines of dot-output objects while every other gate
+    # stayed green (Sudoku-15, user report 2026-09-06).
+    # Source : notebook-output-flood-ratchet.yml (job `ratchet`).
+    Guard(
+        name="Output-flood ratchet (base vs PR)",
+        source="notebook-output-flood-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_flood.py",
+            ".github/workflows/notebook-output-flood-ratchet.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_flood.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_output_flood.py",
             "{base_ref}",
         ],
         blocking=True,

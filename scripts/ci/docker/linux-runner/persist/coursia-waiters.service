@@ -1,0 +1,30 @@
+# Unite systemd de persistance du POOL D'ATTENTE PR-gate (label coursia-waiter).
+# Jumelle de coursia-runner.service, qui ne porte que la jambe d'EXECUTION
+# (`start N`, label coursia-linux). Les deux jambes sont independantes : state
+# dirs distincts, sentinelles d'arret distinctes, prefixes de nom distincts.
+#
+# Deploiement ai-01 (2026-09-07, #14612/#14846) : copie de reference -- l'original
+# vit dans la distro Ubuntu de l'hote, sous /etc/systemd/system/.
+#
+# N slots porte par l'argument ExecStart (ai-01 -> 12, l'effectif d'avant la chute).
+[Unit]
+Description=CoursIA PR-gate waiter pool (coursia-waiter slots)
+# Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
+# un docker.service en echec au boot doit retarder le service et le laisser
+# retenter, pas le sortir de la liste des unites.
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/coursia-waiters-start.sh 12
+ExecStop=/usr/local/bin/coursia-waiters-start.sh stop
+Restart=always
+RestartSec=30
+Nice=10
+# Un slot d'attente ne porte jamais de build long : 120 s suffisent la ou la
+# jambe d'execution demande 900 s pour laisser finir un lake build.
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

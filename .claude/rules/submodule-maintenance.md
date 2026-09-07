@@ -30,15 +30,30 @@ Un gitlink en retard rend **invisible depuis CoursIA** du travail déjà mergé 
 cd <racine CoursIA>
 for P in $(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}'); do
   U=$(git config -f .gitmodules --get "submodule.$P.url")
+  B=$(git config -f .gitmodules --get "submodule.$P.branch" 2>/dev/null)
+  REF=${B:+refs/heads/$B}; REF=${REF:-HEAD}
   L=$(git ls-tree origin/main "$P" | awk '{print substr($3,1,12)}')
-  R=$(git ls-remote "$U" HEAD 2>/dev/null | awk '{print substr($1,1,12)}')
-  [ "$L" != "$R" ] && printf "DERIVE %-56s %s -> %s\n" "$P" "$L" "$R"
+  R=$(git ls-remote "$U" "$REF" 2>/dev/null | awk '{print substr($1,1,12)}')
+  [ -z "$R" ] && { printf "INJOIGNABLE %-56s (ref %s)\n" "$P" "$REF"; continue; }
+  [ "$L" != "$R" ] && printf "DERIVE %-56s %s -> %s (ref %s)\n" "$P" "$L" "$R" "$REF"
 done
 ```
 
+La référence de comparaison est la **branche déclarée** quand `.gitmodules` porte un `branch =` (`refs/heads/` explicite, pour ne jamais résoudre un tag homonyme), `HEAD` sinon — `HEAD` résout la branche par défaut et déclare « DERIVE » un gitlink qui est exactement sur sa branche déclarée (#14872 : faux positif permanent sur `semantic-fleet`). Et un `ls-remote` muet (ref injoignable, 403 d'org, réseau) s'affiche `INJOIGNABLE`, jamais comme une égalité — la même leçon que celle du `403` de la mesure de gate ci-dessous.
+
 **Ordre obligatoire** (déjà porté par le `CLAUDE.md` global) : commiter **dedans** d'abord, pousser, **puis** bumper le pointeur parent. Jamais l'inverse.
 
-**Un `branch =` dans `.gitmodules` n'est pas le gitlink.** `semantic-fleet` déclare `branch = stable-from-v0343` alors que son gitlink pointe ailleurs et que son `main` est ailleurs encore : **trois références divergentes** qui se lisent comme un seul état. Réconcilier explicitement avant de conclure quoi que ce soit sur le retard d'un sous-module.
+**Un `branch =` dans `.gitmodules` n'est pas la branche par défaut du dépôt distant.** `semantic-fleet` déclare `branch = stable-from-v0343`, et sa branche par défaut est `main` : **deux** références, pas trois. Mesure du 2026-09-07 :
+
+| Référence | SHA |
+|---|---|
+| gitlink sur `origin/main` | `9df360374e1c` |
+| tip de la branche déclarée `stable-from-v0343` | `9df360374e1c` — **identique** |
+| `HEAD` distant (branche par défaut `main`) | `168fd5d8bef5` |
+
+Le gitlink est **exactement sur sa branche déclarée**. C'est l'état *nominal* d'un sous-module épinglé, pas une dérive à réconcilier — et c'est précisément ce que le paragraphe ci-dessus établit depuis #14872 en nommant le faux positif permanent. La phrase que ces lignes remplacent disait l'inverse (« son gitlink pointe ailleurs », « trois références divergentes ») : elle envoyait le lecteur chercher une troisième divergence qui n'existe pas, et lui faisait lire comme un retard ce qui est le fonctionnement attendu.
+
+Ce qui reste vrai, et qui est le seul point à retenir : **`HEAD` distant n'est pas la référence de comparaison** quand un `branch =` est déclaré. Comparer le gitlink à `HEAD` fabrique une dérive. Comparer à `refs/heads/<branch déclarée>` mesure la vraie.
 
 ## Règle HARD 3 — l'absence de gate est le défaut, pas les PRs qui dorment
 
@@ -80,8 +95,8 @@ done
 | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | **Câblé, jamais déclenché sur pile** (3 workflows actifs, 5 runs totaux, dernier build vert 2026-09-04) | n/a sur pile | OUI | #14566 (#14558, c.14463) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | agent permanent dédié (hors-org) | n/a dédié | OUI (gate hors-org, voir §Argumentum dédiée) | n/a hors-org |
-| `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | **Câblé, déclenché, rouge récent** (18 workflows, 15 actifs, 538 runs totaux, 2 failure `dotnet-format` + `dotnet-integration-tests` à 2026-09-04T04:20Z sur `fix/c716-7225-multiconnector-tests-rewrite`) | non-vert | OUI (jusqu'à un run vert) | #14566 (#14558, c.14463) |
+| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | **Câblé, déclenché, vert récent** (5 workflows / 5 actifs, 4479 runs totaux, `Build` success 2026-09-07T04:08:13Z sur `master` SHA `bab289c05bb6` ; master HEAD courant `f5acc7bedd05`, build re-déclenché 2026-09-07T09:21:11Z) | vert | NON | #15007 (c.956, 2026-09-07) |
+| `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | **Câblé, déclenché, rouge récent** (18 workflows, 17 actifs, 553 runs totaux, dernier `Python Integration Tests` failure 2026-09-07T01:29:00Z sur `main`) | non-vert | OUI (jusqu'à un run vert) | #15007 (c.956, 2026-09-07) |
 
 **Application concrète** : une PR de bump sur `MetaGeneticSharp` qui se contente de citer un SHA upstream **manque R3** tant que A2 n'est pas acquis (#14408). Une PR de bump qui cite un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer à `MetaGeneticSharp` (les bumps suivants peuvent omettre les deux vérifications). Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml` sur `jsboige/MetaGeneticSharp`), suivi d'une **mise à jour du tableau ci-dessus** dans une PR sur CoursIA-2.
 

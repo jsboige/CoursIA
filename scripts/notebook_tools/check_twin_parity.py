@@ -236,6 +236,61 @@ def _pair_file(registry_dir: Path, name: str) -> Path:
     return registry_dir / f"{_slug(name)}.yaml"
 
 
+def _audit_dir(registry_dir: Path, slug: str) -> Path:
+    """Repertoire des audits file-per-audit d'une paire (nouvelle forme #14911).
+
+    Nouvelle forme : `twin_pairs.d/<slug>/` contient UN fichier par audit
+    (`<date>-<lane>.yaml`). Retourne le chemin, meme si le repertoire n'existe
+    pas encore (la migration avance a la volee).
+    """
+    return registry_dir / slug
+
+
+def _audit_lane_slug(by: str | None) -> str:
+    """Slug d'une identite de lane (`myia-po-2024:CoursIA-2`) -> nom de fichier
+    (safe : pas de `:` ni de `/`). Vide -> 'manual'."""
+    s = re.sub(r"[^a-z0-9A-Z]+", "-", str(by or "manual")).strip("-")
+    return s or "manual"
+
+
+def _audit_filename(date: str, by: str | None, index: int = 0) -> str:
+    """Nom de fichier d'un audit : `<idx:04d>-<date ISO>-<slug de lane>.yaml`.
+
+    Le prefixe sequentiel zero-padded N'EST PAS un luxe : il preserve l'ordre
+    d'append de la liste `audits:` d'origine. Un simple `<date>-<lane>.yaml`
+    trie mal les audits qui partagent la meme date ET la meme lane (#14911 :
+    70 paires exposees, cf tests) -- la collision serait resolue par suffixe
+    `-2` qui se trie AVANT le fichier de base (`-` < `.` en ASCII), inversant
+    l'ordre et faussant `_latest_audit` (audits[-1]). Le prefixe d'index fait
+    que le tri par nom == ordre d'append.
+    """
+    name = f"{date}-{_audit_lane_slug(by)}.yaml"
+    return f"{index:04d}-{name}"
+
+
+def _load_audits_from_files(registry_dir: Path, slug: str) -> list[dict]:
+    """Reconstitue la liste `audits:` depuis les fichiers d'audit separes.
+
+    Nouvelle forme (#14911) : `twin_pairs.d/<slug>/<idx>-<date>-<lane>.yaml`,
+    un fichier par audit. Le tri par nom de fichier (index zero-padded en tete)
+    restitue l'ordre d'append de la liste `audits:` d'origine, donc `_latest_audit`
+    (audits[-1]) designe le MEME audit qu'en forme inline. Rerto-compat : si le
+    repertoire n'existe pas, retourne [] (le `audits:`/`last_audit:` du fichier
+    de paire est alors la source, comme avant).
+    """
+    d = _audit_dir(registry_dir, slug)
+    if not d.is_dir():
+        return []
+    audits: list[dict] = []
+    for f in sorted(d.glob("*.yaml")):
+        data = yaml.safe_load(f.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            audits.append(data)
+        elif isinstance(data, list):
+            audits.extend(data)
+    return audits
+
+
 def _twin_base_number(rel_path: str) -> str | None:
     """Numero de base d'un jumeau depuis son chemin DECLARE (EPIC #12933).
 
@@ -472,18 +527,65 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
     )
     entries: list = []
     if r_ls.returncode == 0 and r_ls.stdout.strip():
+        # Separe les fichiers de paire (profondeur 1 : `<reg_rel>/<slug>.yaml`)
+        # des fichiers d'audit (profondeur 2 : `<reg_rel>/<slug>/<date>-<lane>.yaml`,
+        # nouvelle forme #14911). La liste `git ls-tree -r` aplatit les deux ;
+        # sans cette separation, un fichier d'audit serait lu comme une "paire".
+        pair_lines: list[tuple[str, str]] = []   # (slug, ligne git)
+        audit_lines: dict[str, list[str]] = {}   # slug -> [lignes git]
+        prefix = f"{reg_rel}/"
         for line in r_ls.stdout.splitlines():
-            fname = line.split("/")[-1]
-            if not fname.endswith(".yaml") or fname.startswith("_"):
-                continue
+            sub = line[len(prefix):] if line.startswith(prefix) else line
+            parts = sub.split("/")
+            if len(parts) == 1:
+                fname = parts[0]
+                if fname.endswith(".yaml") and not fname.startswith("_"):
+                    pair_lines.append((fname[:-5], line))
+            elif len(parts) == 2 and parts[1].endswith(".yaml"):
+                audit_lines.setdefault(parts[0], []).append(line)
+        for slug, line in sorted(pair_lines):
             txt = _git_show_file(repo_root, git_ref, line)
             if txt is None:
                 continue
             data = yaml.safe_load(txt)
             if isinstance(data, dict):
+                audits = []
+                for aline in sorted(audit_lines.get(slug, [])):
+                    atxt = _git_show_file(repo_root, git_ref, aline)
+                    if atxt is None:
+                        continue
+                    ad = yaml.safe_load(atxt)
+                    if isinstance(ad, dict):
+                        audits.append(ad)
+                    elif isinstance(ad, list):
+                        audits.extend(ad)
+                if audits:
+                    data = dict(data)
+                    data["audits"] = audits
+                    data.pop("last_audit", None)
                 entries.append(data)
             elif isinstance(data, list):
-                entries.extend(data)
+                # Forme liste d'un dict : reconstitue AUSSI les audits
+                # file-per-audit (#14911) depuis `<slug>/` (le `slug` de la
+                # ligne git = le nom de fichier de paire, cf separation plus haut).
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    audits = []
+                    for aline in sorted(audit_lines.get(slug, [])):
+                        atxt = _git_show_file(repo_root, git_ref, aline)
+                        if atxt is None:
+                            continue
+                        ad = yaml.safe_load(atxt)
+                        if isinstance(ad, dict):
+                            audits.append(ad)
+                        elif isinstance(ad, list):
+                            audits.extend(ad)
+                    if audits:
+                        item = dict(item)
+                        item["audits"] = audits
+                        item.pop("last_audit", None)
+                    entries.append(item)
         if entries:
             return entries
         # repertoire present mais vide de paires -> on continue vers le legacy
@@ -535,9 +637,34 @@ def load_registry(path: Path) -> list:
                 continue
             data = yaml.safe_load(f.read_text(encoding="utf-8"))
             if isinstance(data, dict):
+                # Nouvelle forme file-per-audit (#14911) : si un sous-repertoire
+                # `<slug>/` porte des fichiers d'audit, reconstitue `audits:` et
+                # retombe sur le `last_audit` legacy si present. Le reste du
+                # script (check_pair, _latest_audit, verify, per-pair) consomme
+                # ainsi `pair["audits"]` sans changement.
+                audits = _load_audits_from_files(path, f.stem)
+                if audits:
+                    data = dict(data)
+                    data["audits"] = audits
+                    data.pop("last_audit", None)
                 entries.append(data)
             elif isinstance(data, list):
-                entries.extend(data)
+                # Forme liste d'un dict (tranches verbatim de l'ancien
+                # mono-fichier). On reconstitue AUSSI les audits file-per-audit
+                # (#14911) : un fichier de paire sous forme `<slug>/<date>-<lane>.yaml`
+                # porte desormais les audits, et `audits:`/`last_audit:` a ete
+                # retire du fichier d'intention. Sans cette reconstitution pour la
+                # forme liste, un registre migre renverrait des paires SANS audits
+                # -> check_pair/_latest_audit/verify sortiraient NO_AUDIT.
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    audits = _load_audits_from_files(path, f.stem)
+                    if audits:
+                        item = dict(item)
+                        item["audits"] = audits
+                        item.pop("last_audit", None)
+                    entries.append(item)
             # None (fichier de commentaires) ou autre type -> ignore
         return entries
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -1170,6 +1297,182 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict], force: bool = False)
     return "".join(out), len(touched)
 
 
+def _strip_audits_from_yaml(raw: str) -> str:
+    """Retire le bloc `audits:` / `last_audit:` d'un fichier de paire.
+
+    Nouvelle forme file-per-audit (#14911) : le fichier `<pair>.yaml` ne porte
+    plus la liste d'audits (desormais un fichier par audit dans `<pair>/`).
+    Ce complement de `surgical_rebaseline` supprime LA liste en preservant
+    commentaires, ordre, quoting et espacement des autres cles (meme heuristique
+    de detection du bloc : continuation = strictement plus indente que la cle,
+    OU un item de sequence a indent >= cle).
+
+    Retourne le texte sans le bloc audits (si present, sinon inchange).
+    """
+    lines = raw.splitlines(keepends=True)
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        m_hdr = re.match(r"^(\s{2,})(last_audit|audits):\s*$", line)
+        if m_hdr:
+            hdr_indent = len(m_hdr.group(1))
+            j = i + 1
+            while j < n:
+                nxt = lines[j]
+                if not nxt.strip():
+                    break
+                lead = len(nxt) - len(nxt.lstrip(" "))
+                is_seq = nxt.lstrip(" ").startswith("-")
+                if lead > hdr_indent or (is_seq and lead >= hdr_indent):
+                    j += 1
+                else:
+                    break
+            i = j  # saute tout le bloc audits
+            continue
+        out.append(line)
+        i += 1
+    return "".join(out)
+
+
+def _inline_audits_of(raw: str) -> list[dict]:
+    """Extrait les audits inline (`audits:`/`last_audit:`) d'un fichier de paire.
+
+    Utilise par le mode directory de `--update` (#14911) pour migrer les audits
+    encore inline d'une paire NON migree avant d'appender le nouvel audit --
+    sinon `_strip_audits_from_yaml` retirerait la liste entiere et les audits
+    existants seraient perdus (anti-regression).
+    """
+    data = yaml.safe_load(raw)
+    if isinstance(data, list):
+        data = data[0] if data and isinstance(data[0], dict) else {}
+    if not isinstance(data, dict):
+        return []
+    audits = list(data.get("audits") or [])
+    la = data.get("last_audit")
+    if la and isinstance(la, dict):
+        audits.append(la)
+    return audits
+
+
+def _dump_audit_yaml(audit: dict) -> str:
+    """Serie un dict d'audit au style du registre (date quotee, SHA nus).
+
+    Un fichier d'audit separe (#14911) est un NOUVEAU fichier, donc un dump
+    propre est acceptable (pas de commentaires a preserver). On reproduit le
+    style des entrees existantes : `date: "2026-09-06"`, `by: myia-...:CoursIA`,
+    SHAs hex nus, `null` explicite.
+    """
+    # Normalise les dates non-str (un `date: 2026-08-04` non quote se charge en
+    # datetime.date) vers l'ISO string, pour que le fichier porte
+    # `date: "2026-08-04"` et se re-charge en str (le schema du registre attend
+    # une str ; un datetime.date casserait les lectures et egalites de cles).
+    normalized = {}
+    for k, v in audit.items():
+        if isinstance(v, _dt.date) and not isinstance(v, _dt.datetime):
+            normalized[k] = v.isoformat()
+        else:
+            normalized[k] = v
+    try:
+        # safe_dump gere l'echappement (un `reason` contenant `"`, `:`, `\n`,
+        # ou un `[` de tete serait casse par une citation naive `"..."`).
+        # sort_keys=False preserve l'ordre de la source (date, by, shas, reason).
+        return yaml.safe_dump(
+            normalized, allow_unicode=True, sort_keys=False, default_flow_style=False
+        )
+    except Exception:
+        # Repli minimal si un type non-serialisable (ex. `content_sha` absent
+        # ou un type exotique) : on aplatit en str sans echappement exotique.
+        lines: list[str] = []
+        for k, v in normalized.items():
+            if v is None:
+                lines.append(f"{k}: null")
+            else:
+                lines.append(f"{k}: {v}")
+        return "\n".join(lines) + "\n"
+
+
+def _write_audit_file(registry_dir: Path, name: str, audit: dict,
+                      used_names: set[str] | None = None,
+                      index: int | None = None) -> Path:
+    """Ecrit un audit dans un fichier separe `<pair>/<idx>-<date>-<lane>.yaml`.
+
+    Nouvelle forme (#14911). `index` (optionnel) place l'audit dans l'ordre
+    d'append : a la migration on passe l'index d'origine (1-base), a l'ajout
+    d'un nouvel audit (`--update`) il prend `count+1` pour trier en derniere
+    position (= plus recent). `used_names` suit les noms deja pris pour suffixer
+    `-2`, `-3`... en secours si un index venait a collider. Retourne le chemin.
+    """
+    slug = _slug(name)
+    d = _audit_dir(registry_dir, slug)
+    d.mkdir(parents=True, exist_ok=True)
+    date = str(audit.get("date") or _dt.date.today().isoformat())
+    by = audit.get("by")
+    if index is None:
+        index = len(list(d.glob("*.yaml"))) + 1
+    base = _audit_filename(date, by, index)
+    stem = base[:-5]  # retire ".yaml"
+    used = used_names if used_names is not None else set()
+    cand = base
+    k = 2
+    while cand in used:
+        cand = f"{stem}-{k}.yaml"
+        k += 1
+    used.add(cand)
+    path = d / cand
+    path.write_text(_dump_audit_yaml(audit), encoding="utf-8", newline="")
+    return path
+
+
+def migrate_registry_files_per_audit(registry_dir: Path,
+                                     names: set[str] | None = None) -> dict:
+    """Migre le registre vers la forme file-per-audit (#14911).
+
+    Pour chaque paire (optionnellement restreinte a `names`) : extrait `audits:`
+    (ou `last_audit:` legacy), ecrit un fichier d'audit separe dans `<pair>/`,
+    puis retire la liste du fichier d'intention `<pair>.yaml`. Les
+    commentaires/ordre des autres cles sont preserves par `_strip_audits_from_yaml`.
+    Retourne {migrated, audits_moved} ; les fichiers sont ecrits sur disque
+    (le caller commit).
+    """
+    if yaml is None:
+        raise SystemExit("PyYAML requis pour --migrate-audits.")
+    migrated = 0
+    audits_moved = 0
+    for f in sorted(registry_dir.glob("*.yaml")):
+        if f.name.startswith("_"):
+            continue
+        raw = f.read_text(encoding="utf-8")
+        data = yaml.safe_load(raw)
+        # Les fichiers de paire sont soit un dict, soit une liste d'un dict
+        # (tranches verbatim de l'ancien mono-fichier). On normalise a l'entree.
+        if isinstance(data, list):
+            if not data or not isinstance(data[0], dict):
+                continue
+            data = data[0]
+        if not isinstance(data, dict):
+            continue
+        audits = data.get("audits") or []
+        la = data.get("last_audit")
+        if la and isinstance(la, dict):
+            audits = list(audits) + [la]
+        if not audits:
+            continue
+        name = data.get("name", f.stem)
+        if names is not None and name not in names:
+            continue
+        used: set[str] = set()
+        for idx, a in enumerate(audits, start=1):
+            _write_audit_file(registry_dir, name, a, used_names=used, index=idx)
+            audits_moved += 1
+        new_raw = _strip_audits_from_yaml(raw)
+        if new_raw != raw:
+            write_registry_text(f, new_raw)
+        migrated += 1
+    return {"migrated": migrated, "audits_moved": audits_moved}
+
+
 def _classify_per_pair(base_status: str, head_status: str) -> str:
     """Verdict per-pair pour le mode --per-pair (compare HEAD vs base-ref).
 
@@ -1273,6 +1576,13 @@ def main(argv=None) -> int:
                         "correspondent aux SHA recalcules a HEAD (git ls-tree + "
                         "SHA-256 metadata-immune). Exit 1 si MISMATCH sur au moins "
                         "une paire (avec --check). Mode read-only : n'ecrit rien.")
+    p.add_argument("--migrate-audits", action="store_true",
+                   help="Reecrit le registre en forme file-per-audit (#14911) : "
+                        "chaque audit migre vers `twin_pairs.d/<pair>/<date>-<lane>.yaml` "
+                        "et la liste `audits:`/`last_audit:` est retiree du fichier "
+                        "d'intention. Exige un selecteur (--pair / --family / "
+                        "--yes-all-pairs) pour eviter une invocation nue qui "
+                        "reecrirait les 157 paires (cf #8508).")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
@@ -1298,6 +1608,15 @@ def main(argv=None) -> int:
                 "OU --yes-all-pairs. Le defaut '--update' seul reecrirait le last_audit "
                 "de TOUTES les paires du registre, ce qui masque des DRIFTs legitimes "
                 "(cf issue #8508 + lecons L963/L974).")
+    # --migrate-audits est un mode de reecriture structurelle exclusive (#14911) :
+    # le selecteur est deja obligatoire (bloc d'execution), et il est incompatible
+    # avec les autres modes d'ecriture/conservation.
+    if args.migrate_audits and (args.update or args.per_pair or args.base
+                                or args.verify_recorded_sha or args.coverage
+                                or args.summary_by_verdict or args.ci_strict):
+        p.error("--migrate-audits est un mode exclusif : incompatible avec "
+                "--update / --per-pair / --base / --verify-recorded-sha / "
+                "--coverage / --summary-by-verdict / --ci-strict.")
     # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
@@ -1590,47 +1909,51 @@ def main(argv=None) -> int:
             if is_noop and args.force:
                 forced_no_op.append(pp.get("name", "?"))
             updates[pp["name"]] = audit
-        # Rebaseline CHIRURGICAL (#8570) : seules les lignes `last_audit` des
-        # paires ciblees changent. En mode file-per-entry (#8542), on applique
-        # surgical_rebaseline a CHAQUE fichier d'une paire ciblee -- un fichier,
-        # une entree, le code est le meme, le diff vaut les lignes changees.
-        # (Un yaml.safe_dump complet reformaterait et supprimerait les
-        # commentaires + casserait le quoting `date: "..."` -> datetime.date.)
+        # Rebaseline CHIRURGICAL (#8570) : seules les lignes d'audit des paires
+        # ciblees changent. En mode file-per-entry (#8542) + file-per-audit
+        # (#14911), on ecrit CHAQUE audit dans son propre fichier
+        # `<pair>/<idx>-<date>-<lane>.yaml` (un ajout, pas un remplacement
+        # d'historique) et on retire la liste `audits:` du fichier d'intention.
+        # Pour le mono-fichier legacy, on conserve `surgical_rebaseline`
+        # (append chirurgical au bloc d'audit inline).
         if reg_path.is_dir():
             written = 0
-            missing_header = []
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
                     print(f"Aucun fichier pour la paire '{name}' "
                           f"(attendu : {pfile.name}).", file=sys.stderr)
                     continue
+                # Nouvelle forme file-per-audit (#14911) : on ecrit chaque audit
+                # dans un fichier separe `<pair>/<idx>-<date>-<lane>.yaml`, puis
+                # on retire la liste `audits:`/`last_audit:` du fichier
+                # d'intention `<pair>.yaml` (le lecteur reconstitue `audits:`
+                # depuis les fichiers separes -- voir `load_registry`).
+                #
+                # Anti-regression (paire non encore migree) : si le fichier
+                # d'intention porte ENCORE des audits inline, on les migre
+                # d'abord vers des fichiers (indices 1..N) AVANT d'appender le
+                # nouvel audit (sinon `_strip_audits_from_yaml` les perdrait :
+                # seuls les fichiers restants seraient relus). Sur une paire deja
+                # migree (intention sans audits), `_write_audit_file` appende au
+                # prochain slot (index=None -> count+1).
                 raw = pfile.read_text(encoding="utf-8")
-                # On capture `touched` (#10430) : avant, le compteur etait jete
-                # (`_`) et « header introuvable » (indent non reconnue, paire
-                # absente du fichier) produisait exactement la meme sortie qu'un
-                # no-op legit (« SHAs deja a jour ») -- un organe d'attestation
-                # qui echoue en silence. Les paires no-op legit sont deja
-                # filtree en amont (branche `no_op`/`forced_no_op`), donc
-                # touched==0 ici signifie reellement « header non reconnu ».
-                new_raw, touched = surgical_rebaseline(raw, {name: audit}, force=args.force)
-                if touched == 0:
-                    missing_header.append(name)
-                    continue
+                inline = _inline_audits_of(raw)
+                if inline:
+                    used: set[str] = set()
+                    # Migre les audits inline existants (1..len(inline)).
+                    for idx, a in enumerate(inline, start=1):
+                        _write_audit_file(reg_path, name, a,
+                                          used_names=used, index=idx)
+                    _write_audit_file(reg_path, name, audit,
+                                      used_names=used, index=len(inline) + 1)
+                else:
+                    _write_audit_file(reg_path, name, audit)
+                new_raw = _strip_audits_from_yaml(raw)
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)
-                    written += 1
+                written += 1
             updated = written
-            if missing_header:
-                print(
-                    f"AVERTISSEMENT : {len(missing_header)} paire(s) a rebaseliner "
-                    f"MAIS aucun bloc d'audit reconnu (audits:/last_audit: "
-                    f"introuvable ou indentation non reconnue) dans leur fichier "
-                    f"-- rebaseline IGNORE. Ce N'est PAS un no-op legit (les "
-                    f"SHAs different). Verifier l'indentation du fichier : "
-                    f"{', '.join(missing_header)}",
-                    file=sys.stderr,
-                )
         else:
             # mono-fichier legacy (--registry <file.yaml>)
             raw = reg_path.read_text(encoding="utf-8")
@@ -1698,12 +2021,58 @@ def main(argv=None) -> int:
         # Garder la garde sur les paires skippees (`notebook absent de git`)
         # en dehors de cette logique : ce n'est PAS un failed-rebaseline, juste
         # une mise en garde environnementale.
-        if reg_path.is_dir():
-            if missing_header:
+        # #10430 exit 1 : un rebaseline IGNORE (header d'audit introuvable /
+        # indentation non reconnue) ne doit pas laisser le worker conclure
+        # « rien a faire ». Ce mode d'echec est propre au mono-fichier legacy :
+        # en mode file-per-audit (#14911) il n'existe plus de header inline a
+        # manquer -- les audits sont des fichiers (glob, jamais aveugles).
+        if not reg_path.is_dir() and updated < len(updates):
+            return 1
+        return 0
+
+    # --- Mode --migrate-audits : reecriture file-per-audit (#14911) ---
+    if args.migrate_audits:
+        # Selecteur obligatoire (replique la politique --update, cf #8508) :
+        # une invocation nue reecrirait les 157 paires du registre. L'invocation
+        # --pair / --family / --yes-all-pairs borne la migration (migrer une
+        # tranche est utile pour tester la forme sur une seule famille avant
+        # de committer l'ensemble).
+        if not (args.family or args.pair or args.yes_all_pairs):
+            p.error("--migrate-audits exige un selecteur explicite : --family <f>, "
+                    "--pair <name>, OU --yes-all-pairs. Une invocation nue "
+                    "reecrirait les 157 paires (cf #8508).")
+        if reg_path is None or not reg_path.is_dir():
+            p.error("--migrate-audits ne s'applique qu'au registre en forme "
+                    "file-per-entry (--registry <dir> avec twin_pairs.d/) ; "
+                    "le mono-fichier legacy n'a pas de sous-repertoires.")
+        all_pairs = load_registry(reg_path)
+        if args.pair:
+            target = [pp for pp in all_pairs if pp.get("name") == args.pair]
+            if not target:
+                names = sorted({pp.get("name", "?") for pp in all_pairs})
+                print(
+                    f"Aucune paire nommee '{args.pair}'. "
+                    f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
+                    file=sys.stderr,
+                )
                 return 1
+            sel_names = {args.pair}
+        elif args.family:
+            target = [pp for pp in all_pairs if pp.get("family") == args.family]
+            if not target:
+                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+                return 1
+            sel_names = {pp.get("name") for pp in target}
         else:
-            if updated < len(updates):
-                return 1
+            target = all_pairs
+            sel_names = None
+        result = migrate_registry_files_per_audit(reg_path, names=sel_names)
+        print(
+            f"Registre migre vers file-per-audit (#14911) : "
+            f"{result['migrated']} paire(s) traitee(s), "
+            f"{result['audits_moved']} audit(s) deplace(s) vers "
+            f"{reg_path}/<pair>/<date>-<lane>.yaml."
+        )
         return 0
 
     # --- Mode --verify-recorded-sha : gate CI (#9399 volet b) ---

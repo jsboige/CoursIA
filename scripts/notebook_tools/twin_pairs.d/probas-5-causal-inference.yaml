@@ -6,54 +6,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
-      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-07-29"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
-      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-    - date: "2026-08-23"
-      by: myia-po-2024:CoursIA
-      python_sha: 6e57837153c85d2e220f068750d55c29d550d2bb
-      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-      content_python_sha: 7982b837250567bfcb6ea251dcc50c02a9c86977ed91b0774f1bc9ba1ecea800
-      content_csharp_sha: a0f227fe94560563b68715671c05d1add944a7620260f56b850caa97b58464b6
-    - date: "2026-08-30"
-      by: myia-po-2023:CoursIA
-      python_sha: 6e57837153c85d2e220f068750d55c29d550d2bb
-      csharp_sha: fb451b2558aa9cedf8ba583926bd7fb9d6b8d2c0
-      content_python_sha: 7982b837250567bfcb6ea251dcc50c02a9c86977ed91b0774f1bc9ba1ecea800
-      content_csharp_sha: 1bd5d0be313fb5b8fc0c2ee24504aae7c21b5d1b0a2766035bf200b94958f33b
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: 5f08cdce5b5a352cde2040da17ec720e9b52cb15
-      csharp_sha: a9994421484ddf512dcf380c582b3ba8a14744e7
-      content_python_sha: e6f81df80b812e7b6f54573f12cbfe0c5f53dea2f60484dad064d7b66e58cf0e
-      content_csharp_sha: a02fdf845c8c1ed3ef662f3374b3ddad7a9809c8a29b35a22d6e156879a41df0
-    - date: "2026-08-31"
-      by: myia-po-2027:CoursIA-2
-      reason: "Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit) ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en dernier (#8957)."
-      python_sha: 4cecffa24d110c020f5d59fc1b7430cd20e6a92f
-      csharp_sha: 9cf206efaa5feacea5e42311add4ed99ff68837d
-      content_python_sha: e6f81df80b812e7b6f54573f12cbfe0c5f53dea2f60484dad064d7b66e58cf0e
-      content_csharp_sha: 4b99b6834c86238b1602de1d0795ee13b0c173a457c743d8a015fb22d5df8a62
-    - date: "2026-09-02"
-      by: myia-po-2027:CoursIA-2
-      reason: "Attestation post-#14051 (PR #14163) : le jumeau Python importe desormais enumerate_scm et FRONT_SCM/p_y_given_m_x depuis le module canonique pymc_causal_organs.py au lieu de les redefinir, pour que le notebook et ict.bridges.pymc_enumerate observent la MEME implementation. Re-audit firsthand : structure identique avant/apres (35 cellules Python, 14 code / 21 markdown ; sections 1 a 10 en regard des memes sections du jumeau C#), seules les cellules code 5 et 20 changent, et la visibilite pedagogique y est preservee par inspect.getsource(enumerate_scm) et la lecture des CPT sur l'objet importe. Jumeau C# NON touche : content_csharp_sha identique a l'audit du 2026-08-31. Le moteur reste inline cote C# -- asymetrie de factorisation consignee en tete de known_differences. --update en dernier, aucun strip outille applique apres (#8957)."
-      python_sha: 093bb4584f619e18c4f1c4b470ecd014b5803aee
-      csharp_sha: 9cf206efaa5feacea5e42311add4ed99ff68837d
-      content_python_sha: ea8259fafa11a8718f512ce1aedf4df4b648eac21c88243947090cf6daa3c561
-      content_csharp_sha: 4b99b6834c86238b1602de1d0795ee13b0c173a457c743d8a015fb22d5df8a62
-    - date: "2026-09-05"
-      by: myia-po-2026:CoursIA
-      python_sha: 093bb4584f619e18c4f1c4b470ecd014b5803aee
-      csharp_sha: 77fc0aa7f620a494a24f9f5adbffbb3f0327fdbc
-      content_python_sha: ea8259fafa11a8718f512ce1aedf4df4b648eac21c88243947090cf6daa3c561
-      content_csharp_sha: 3aaa52c642f8e64059b27b5ee16f66d9920e9c618a9677d18886e255243dc1f3
   known_differences:
   - 'Asymetrie de FACTORISATION introduite par #14051 (PR #14163), sans effet sur le contenu enseigne :
     cote Python le moteur enumerate_scm et le SCM front-door vivent dans le module canonique

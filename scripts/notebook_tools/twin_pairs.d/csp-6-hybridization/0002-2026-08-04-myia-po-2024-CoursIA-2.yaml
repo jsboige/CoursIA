@@ -1,0 +1,7 @@
+date: '2026-08-04'
+by: myia-po-2024:CoursIA-2
+python_sha: fd2931b15681647be5458c009420315234cba14b
+csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
+reason: 'c.1127 #8052 Python c34 code mislabeled Exercice 3->Exemple resolu (sister
+  guide-cells c26/30/38 convention) + c37 anchor Exercice 1->1b (PY exercises are
+  1b/2b/3b/4b, no Exercice 1); C# twin preserved'
