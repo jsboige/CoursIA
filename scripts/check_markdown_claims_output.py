@@ -564,23 +564,171 @@ def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
     return bool(_THRESHOLD_OP_RE.search(span))
 
 
-def _is_coordinate_tuple(src: str, match_pos: int, match_end: int) -> bool:
-    """Family D (#14905): a SINGLE digit on each side of a comma wrapped in
-    parentheses -- '(2,2)' / '(1,1)' -- is a grid-coordinate tuple, not a
-    francophone decimal. _normalize_num collapses '(2,2)' -> '2.2', so the
-    detector hunts for a '2.2' that never exists in the 3x3-grid code output
-    and flags a legitimate prose coordinate as fabricated (DecPyMC-7 md[67]:
-    'un but en (2,2) et un obstacle en (1,1)'). Suppressing this match
-    requires BOTH: the token is exactly '<digit>,<digit>' AND it is wrapped
-    by an immediately-enclosing parenthesized pair. '(0,75)' -- two digits
-    after the comma -- is a genuine decimal and stays eligible.
+# ---------------------------------------------------------------------------
+# #14905 Family D -- input numbers: legitimately absent from the output
+# because they are inputs (hyperparameters, problem specifications). A class
+# distinct from the coordinate fix (different cause, separate filter -- the
+# issue pins this separation). Measured instances on DecPyMC-7:
+#   md[15]/md[19]  '$\gamma = 0.9$' / '$V_1 = \gamma(0.8 + 0.2\,V_1)$'
+#   md[36]         '`[0.2, 0.4, 0.6, 0.8, 0.5]`' (arm means = problem spec)
+#   md[38]         'Bras 1=0.3, Bras 2=0.5' (enumerated environment spec)
+# ---------------------------------------------------------------------------
+
+# Greek macros name parameters (gamma, lambda, ...), not cited metrics.
+_GREEK_MACRO_RE = re.compile(
+    r"\\(?:alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|"
+    r"vartheta|iota|kappa|lambda|mu|nu|xi|rho|varrho|sigma|varsigma|"
+    r"tau|upsilon|phi|varphi|chi|psi|omega)\b"
+)
+
+
+def _nearest_math_span(prose: str, pos: int) -> str | None:
+    """Walk `$` delimiters around `pos` to find the enclosing inline math
+    span; return its content or None (same walk as
+    `_nearest_inline_code_span`, for `$`)."""
+    WIN = 200
+    lo = max(0, pos - WIN)
+    hi = min(len(prose), pos + WIN)
+    window = prose[lo:hi]
+    dollars = [lo + i for i, c in enumerate(window) if c == "$"]
+    pos_idx = -1
+    for i, d in enumerate(dollars):
+        if d <= pos:
+            pos_idx = i
+        else:
+            break
+    if pos_idx < 0 or pos_idx + 1 >= len(dollars):
+        return None
+    open_pos = dollars[pos_idx]
+    close_pos = dollars[pos_idx + 1]
+    if open_pos >= pos or close_pos <= pos:
+        return None
+    return prose[open_pos + 1:close_pos]
+
+
+# Definition-introduction context for D1. A greek assignment is an INPUT only
+# when the prose introduces it as such; the same form carries a CITED
+# posterior elsewhere (fleet collateral, PyMC-08 md[11] '(perdant,
+# $\mu = 20.8$)' -- an estimated TrueSkill mean, absent from the output
+# window: flagging it is the organ's job, not a FP). Gate on the line.
+_MATH_DEF_HINT_RE = re.compile(
+    r"(?i)\b(?:avec|soit|posons|fixons|fix\w*|choisis\w*|"
+    r"param\w*|hyperparam\w*|valeur\s+de|d[ée]fini\w*)\b"
+)
+
+
+def _is_math_parameter_definition(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D1 (#14905): the match sits inside a `$...$` span that is a
+    parameter DEFINITION -- an `=` whose LHS is a greek macro
+    (`$\\gamma = 0.9$`) or a subscripted symbol (`$V_1 = ...$`), introduced
+    by a definition verb on the line ('avec', 'soit', 'fixe', 'parametre').
+
+    Two measured discriminators, both from fleet collateral:
+    - a latin unsubscripted metric (`$R^2 = 0.85$`) is a citation -- no
+      symbol LHS, stays checked;
+    - a greek symbol holding an ESTIMATED value (`$\\mu = 20.8$` read off a
+      plot) is a citation too -- no definition verb on the line, stays
+      checked. The verb gate separates 'Avec $\gamma = 0.9$' (founding
+      instance, DecPyMC-7 md[15]/md[19]) from it.
     """
-    token = src[match_pos:match_end].strip()
-    if not re.fullmatch(r"\d,\d", token):
+    span = _nearest_math_span(prose, match_pos)
+    if span is None or "=" not in span:
         return False
-    start = max(0, match_pos - 1)
-    end = min(len(src), match_end + 1)
-    return bool(_COORD_TUPLE_RE.search(src[start:end]))
+    lhs = span.partition("=")[0]
+    if not (_GREEK_MACRO_RE.search(lhs) or re.search(r"\w_\{?\w", lhs)):
+        return False
+    line = _line_around(prose, match_pos, match_end)
+    return bool(_MATH_DEF_HINT_RE.search(line))
+
+
+def _is_numeric_list_literal(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D2 (#14905): the match sits inside a `[...]` group whose whole
+    content is a comma-separated list of numerics ('[0.2, 0.4, 0.6, 0.8,
+    0.5]') -- a specification vector echoed in prose, not a citation from
+    the output. A single-element bracket is not a list: require >= 1 comma.
+    """
+    open_pos = prose.rfind("[", 0, match_pos)
+    if open_pos < 0:
+        return False
+    if prose.find("]", open_pos + 1, match_pos) >= 0:
+        return False
+    close_pos = prose.find("]", match_end)
+    if close_pos < 0:
+        return False
+    inner = prose[open_pos + 1:close_pos]
+    return bool(re.fullmatch(r"\s*[\d.]+(?:\s*,\s*[\d.]+)+\s*", inner))
+
+
+def _is_labeled_enumeration_value(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D3 (#14905): the match is the value side of a labeled
+    enumeration in prose -- 'Bras 1=0.3', 'Couche 2=0.5' (a word, a numeral,
+    then `=`). The founding instance is DecPyMC-7 md[38] 'Bras 1=0.3, Bras
+    2=0.5': the environment's arm means, given as spec, never printed.
+
+    The word+numeral LHS is the discriminator: 'accuracy=0.9' (no numeral in
+    the label) and 'l'accuracy est de 0.9' (prose citation) stay checked.
+
+    Fleet collateral (DecInfer-01 md[24]): inside a math span,
+    '\\times 60 = 52.7' wears the same shape ('word numeral ='). Numbers
+    inside `$...$` are formula content, never prose enumerations -- excluded
+    -- and the label must be >= 2 chars so a LaTeX macro fragment ('s' from
+    '\\times') cannot pose as one.
+    """
+    if _nearest_math_span(prose, match_pos) is not None:
+        return False
+    pre = prose[max(0, match_pos - 30):match_pos]
+    if "\n" in pre:
+        pre = pre.rsplit("\n", 1)[-1]
+    return bool(re.search(r"[A-Za-zÀ-ÿ]{2,}\s+\d+\s*=\s*$", pre))
+
+
+def _is_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D umbrella (#14905): the number is an INPUT (hyperparameter,
+    specification, enumerated environment value) -- legitimately absent from
+    the previous code cell's output because nothing measured it.
+
+    A fourth candidate form was measured and REJECTED: the bare paren
+    apposition ('(moyenne 0.8)' spec vs '(ecart-type 74.93)' cited
+    statistic -- Lab1 fleet collateral) is indistinguishable by form, so it
+    stays flagged.
+    """
+    return (
+        _is_math_parameter_definition(prose, match_pos, match_end)
+        or _is_numeric_list_literal(prose, match_pos, match_end)
+        or _is_labeled_enumeration_value(prose, match_pos, match_end)
+    )
+
+
+# ---------------------------------------------------------------------------
+# #14905 -- coordinate pairs: (2,2) is a grid position, not a decimal
+# ---------------------------------------------------------------------------
+
+
+def _is_coordinate_tuple(prose: str, match_pos: int, match_end: int) -> bool:
+    """#14905: a numeric match wrapped in parentheses with a SINGLE digit on
+    each side of the comma ('(2,2)', '(1,1)', '(1,2,3)') is a coordinate /
+    tuple element, not a francophone decimal.
+
+    The founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en
+    (1,1)' -- cells of a 3x3 grid, flattened by `_normalize_num` into the
+    '2.2' / '1.1' decimals, then reported as fabricated because no output
+    contains them. The discriminator is deliberately tight: every integer
+    group inside the parentheses must be ONE digit. '(0,75)' (two-digit
+    group) stays a francophone decimal, '(10,25)' stays out of scope until
+    a measured instance demands it -- extend on evidence, not anticipation.
+    """
+    open_pos = prose.rfind("(", 0, match_pos)
+    if open_pos < 0:
+        return False
+    # A ')' between the '(' and the match means the match sits outside that
+    # group ('(voir section 3) place le but en 2,2' must not be filtered).
+    if prose.find(")", open_pos + 1, match_pos) >= 0:
+        return False
+    close_pos = prose.find(")", match_end)
+    if close_pos < 0:
+        return False
+    inner = prose[open_pos + 1:close_pos]
+    return bool(re.fullmatch(r"\d\s*(?:,\s*\d)+", inner))
 
 
 def _is_scalar(value: object) -> bool:
@@ -882,7 +1030,13 @@ def check_notebook(path: Path) -> dict:
                 continue
             if _is_threshold_expression(prose, match_pos, match_end):
                 continue
+            # #14905 (two distinct causes, two distinct filters):
+            # (2,2) is a grid coordinate, not the decimal 2.2.
             if _is_coordinate_tuple(prose, match_pos, match_end):
+                continue
+            # Family D: hyperparameters / specifications are inputs, never
+            # printed by the code cell that follows them.
+            if _is_input_specification(prose, match_pos, match_end):
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
