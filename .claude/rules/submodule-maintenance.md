@@ -30,11 +30,16 @@ Un gitlink en retard rend **invisible depuis CoursIA** du travail déjà mergé 
 cd <racine CoursIA>
 for P in $(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}'); do
   U=$(git config -f .gitmodules --get "submodule.$P.url")
+  B=$(git config -f .gitmodules --get "submodule.$P.branch" 2>/dev/null)
+  REF=${B:+refs/heads/$B}; REF=${REF:-HEAD}
   L=$(git ls-tree origin/main "$P" | awk '{print substr($3,1,12)}')
-  R=$(git ls-remote "$U" HEAD 2>/dev/null | awk '{print substr($1,1,12)}')
-  [ "$L" != "$R" ] && printf "DERIVE %-56s %s -> %s\n" "$P" "$L" "$R"
+  R=$(git ls-remote "$U" "$REF" 2>/dev/null | awk '{print substr($1,1,12)}')
+  [ -z "$R" ] && { printf "INJOIGNABLE %-56s (ref %s)\n" "$P" "$REF"; continue; }
+  [ "$L" != "$R" ] && printf "DERIVE %-56s %s -> %s (ref %s)\n" "$P" "$L" "$R" "$REF"
 done
 ```
+
+La référence de comparaison est la **branche déclarée** quand `.gitmodules` porte un `branch =` (`refs/heads/` explicite, pour ne jamais résoudre un tag homonyme), `HEAD` sinon — `HEAD` résout la branche par défaut et déclare « DERIVE » un gitlink qui est exactement sur sa branche déclarée (#14872 : faux positif permanent sur `semantic-fleet`). Et un `ls-remote` muet (ref injoignable, 403 d'org, réseau) s'affiche `INJOIGNABLE`, jamais comme une égalité — la même leçon que celle du `403` de la mesure de gate ci-dessous.
 
 **Ordre obligatoire** (déjà porté par le `CLAUDE.md` global) : commiter **dedans** d'abord, pousser, **puis** bumper le pointeur parent. Jamais l'inverse.
 
