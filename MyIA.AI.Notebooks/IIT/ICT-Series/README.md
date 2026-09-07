@@ -61,7 +61,7 @@ Le package `ict/` (installable en mode editable, issue [#8076](https://github.co
 
 **Deux suites de tests CI** valident le package (couverture ≈ un test par module) :
 
-- **`tests/`** — suite principale (pytest), un fichier `test_<module>.py` par module `ict/` (54 fichiers, 1019 tests collectés). Validation des calculs et des gates falsifiables de chaque strate.
+- **`tests/`** — suite principale (pytest), un fichier `test_<module>.py` par module `ict/`. Validation des calculs et des gates falsifiables de chaque strate.
 - **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini`), tests de cohérence transversaux (`test_argumentation`, `test_lens_agreement`, `test_reversibility_budget`, `test_time_arrow`).
 
 ```bash
