@@ -170,6 +170,7 @@ def test_calibration_stub_runs_prover_and_restores(tmp_path, monkeypatch, capsys
     # Not the false already_solved: the preflight saw the STUBBED state.
     assert summary["result_kind"] != "already_solved"
     assert summary["result_kind"] == "sorry_decreased"
+    assert summary["calibration"] is True
     assert summary["original_sorry"] == 1  # 0 -> 1 before the preflight
     assert summary["final_sorry"] == 0
     # The spawn itself saw exactly one sorry on disk (and the stubbed file,
@@ -223,6 +224,7 @@ def test_clean_target_outside_calibration_keeps_skip(tmp_path, monkeypatch, caps
     summary = _run(monkeypatch, tmp_path, demo)
 
     assert summary["result_kind"] == "already_solved"
+    assert summary["calibration"] is False
     assert calls["constructed"] == 0  # skip: no prover spawned
     out = capsys.readouterr().out
     assert "CALIBRATION_STUB" not in out

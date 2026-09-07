@@ -334,11 +334,13 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
             f"original restored on exit"
         )
 
+    calibration = calibration_target is not None
     try:
         return _run_prover_locked(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
             tactic_provider, use_diagnosis_agent, concurrent_search_count,
+            calibration=calibration,
         )
     finally:
         if calibration_target is not None:
@@ -349,7 +351,7 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
 def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
                        local_provider, director_provider, coordinator_provider,
                        tactic_provider, use_diagnosis_agent,
-                       concurrent_search_count):
+                       concurrent_search_count, calibration=False):
     """The original run body, executed while holding the tree lock."""
     original = Path(filepath).read_text(encoding="utf-8")
     original_sorry = count_real_sorries(original)
@@ -383,6 +385,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             "final_sorry": 0,
             "sorry_delta": 0,
             "result_kind": "already_solved",
+            "calibration": calibration,
             "elapsed_s": 0.0,
             "result": {"status": "already_solved",
                        "reason": "0 sorry in target file (pre-check, no prover spawn)"},
@@ -474,6 +477,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
         # structural_only | provider_outage | no_progress | crashed |
         # already_solved | heartbeat_budget_exceeded | decomposition_regression.
         "result_kind": result_kind,
+        "calibration": calibration,
         "elapsed_s": round(elapsed, 1),
         "result": result,
         "trace_file": trace_path,
