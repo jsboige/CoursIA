@@ -4,6 +4,7 @@
 series: IIT-ICT-Series
 pedagogical_count: 67
 breakdown: ICT-Series=67
+maturity: BETA=58, DRAFT=8, ALPHA=1
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -60,8 +61,8 @@ Le package `ict/` (installable en mode editable, issue [#8076](https://github.co
 
 **Deux suites de tests CI** valident le package (couverture ≈ un test par module) :
 
-- **`tests/`** — suite principale (pytest), un fichier `test_<module>.py` par module `ict/` (55 fichiers, 1050 tests collectés — mesuré 2026-09-06). Validation des calculs et des gates falsifiables de chaque strate.
-- **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini`), tests de cohérence transversaux : 39 fichiers de test (mesuré 2026-09-06), dont `test_argumentation`, `test_lens_agreement`, `test_reversibility_budget`, `test_time_arrow`.
+- **`tests/`** — suite principale (pytest), un fichier `test_<module>.py` par module `ict/`. Validation des calculs et des gates falsifiables de chaque strate.
+- **`ict/tests/`** — suite interne au package (pytest, `conftest.py` + `pytest.ini`), tests de cohérence transversaux (`test_argumentation`, `test_lens_agreement`, `test_reversibility_budget`, `test_time_arrow`).
 
 ```bash
 # Depuis MyIA.AI.Notebooks/IIT/ICT-Series/
