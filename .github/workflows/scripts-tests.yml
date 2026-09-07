@@ -245,7 +245,6 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
-            MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             GradeBookApp \
@@ -272,6 +271,22 @@ jobs:
             exit 1
           fi
           echo "OK: $N tests collected (floor=$AUDIT_TESTS_FLOOR)."
+
+      - name: Run ADK contract tests (isolated session)
+        # #15058 : les 52 tests du Track2-GoogleADK (contrats C4-C7 de
+        # #13572 + runtime + llm_client) tournent dans un process SEPARE.
+        # Raison : le track expose des noms de modules generiques au niveau
+        # racine (config/, utils/), et la session combinee ci-dessus collecte
+        # scripts/tests D'ABORD -- une suite y important un module `config`
+        # (non-package) pollue sys.modules pour tout le reste : la collecte
+        # du track meurt sur "No module named 'config.providers'; 'config'
+        # is not a package" (mesure sur le premier run de cette PR, job
+        # 101799171419). Process dedie = session hermetique dans les DEUX
+        # sens (le track ne pollue personne, personne ne le pollue), meme
+        # job, meme runner. Le plancher de collecte ci-dessous reste la
+        # garde deux-signaux de ce run.
+        run: |
+          pytest MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils --tb=short -q
 
       - name: ADK contract tests collection floor (52)
         # Companion guard of the #15058 re-cabling, same two-signal semantics
