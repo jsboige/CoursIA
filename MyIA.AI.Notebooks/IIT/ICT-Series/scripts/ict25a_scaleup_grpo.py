@@ -16,6 +16,7 @@ Usage :
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import os
 import re
@@ -109,6 +110,14 @@ def run_seed(model_name, arm, seed, steps, ds):
 
     set_seed(seed)
     holder = {"records": [], "step": 0}
+    # `del model, trainer` ne suffit pas : le modele survit dans un cycle de
+    # references (trainer <-> modele peft), et `empty_cache()` ne rend au pilote
+    # que les blocs CACHES, jamais une allocation vivante. Sans `gc.collect()`,
+    # la graine n+1 charge ses poids PAR-DESSUS ceux de la graine n -- mesure du
+    # 2026-09-07 : vram_load double exactement d'une graine a l'autre, sur les
+    # trois paliers (1.18->2.35 Go, 5.69->11.28 Go, 10.08->20.09 Go).
+    gc.collect()
+    torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
     print(f"\n[ict25a:{arm}] === SEED {seed} : chargement 4-bit QLoRA frais ({model_name}) ===",
           flush=True)
@@ -151,6 +160,7 @@ def run_seed(model_name, arm, seed, steps, ds):
           f"hack early={m['hack_early']:.3f} late={m['hack_late']:.3f} | "
           f"reward early={m['reward_early']:.3f} late={m['reward_late']:.3f}", flush=True)
     del model, trainer
+    gc.collect()
     torch.cuda.empty_cache()
     return m
 
