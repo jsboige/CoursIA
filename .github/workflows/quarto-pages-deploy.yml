@@ -85,9 +85,20 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read  # #14597 : lister les self-hosted runners (covariable d'occupation)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Sample runner-park occupation (#14597)
+        # Covariable d'occupation (dispatch ai-01 2026-09-07) : busy/online du
+        # parc au DEMARRAGE du job, fusionne dans le tableau du step "Report
+        # render phase timings". Mesure pas gate : 403 -> "not sampled".
+        # Doit tourner AVANT le rendu (~20 min) : le compte doit decrire le
+        # parc au moment ou le job demarre, pas ou il finit.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
 
       - name: Set up Quarto
         # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
@@ -161,7 +172,10 @@ jobs:
         # Mesure (#14597), pas une gate : exit 0 toujours, "not found" si un
         # marqueur manque (changement de format de log Quarto = rapport dégradé,
         # pas un build rouge). Ajoute le tableau de phases au job summary.
-        run: python scripts/quarto_render_timing.py render-timed.log
+        # --occupation : busy/online echantillonne au demarrage (step amont) ;
+        # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
+        # greppable "#14597-covariates:" pour la moisson multi-runs.
+        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
@@ -230,6 +244,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read  # #14597 : lister les self-hosted runners (covariable d'occupation)
       pull-requests: write  # pour poster le commentaire de gate
     steps:
       - name: Checkout
@@ -285,6 +300,15 @@ jobs:
             --head "${{ github.event.pull_request.head.sha }}" \
             --apply --github-output
 
+      - name: Sample runner-park occupation (#14597)
+        # Meme covariable qu'en jambe build, echantillonnee au plus tot APRES
+        # le scope : seul un rendu COMPLET (mode full) sera rapporte, inutile
+        # de consommer un appel API sur un rendu scope.
+        if: steps.scope.outputs.mode == 'full'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
@@ -314,7 +338,7 @@ jobs:
         # des runs a 53 min (#14225). Sur un rendu scope (1-2 documents), la
         # phase post-rendu n'est pas representative et le rapport resterait muet.
         if: steps.scope.outputs.mode == 'full'
-        run: python scripts/quarto_render_timing.py render-timed.log
+        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'

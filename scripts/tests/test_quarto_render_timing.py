@@ -18,6 +18,7 @@ observed on run 34074565982 (2026-09-07):
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -97,3 +98,76 @@ def test_cr_segment_without_timestamp_is_not_its_own_event():
     r = qrt.analyse("03:00:00 \x1b[1m\x1b[34m\r[  1/900] a.ipynb\x1b[39m\n03:09:00 Output created: _site/index.html\n")
     assert r["doc_count"] == 900
     assert qrt._fmt((r["output_created"][0] - r["last_doc"][0]).total_seconds()) == "9:00"
+
+
+# --- runner-park occupation covariate (dispatch ai-01 2026-09-07) ---
+
+OCC = {"sampled_at": "2026-09-07T05:20:00Z", "total": 28, "online": 26, "busy": 2}
+
+
+def test_parse_runners_pages_counts_across_pages():
+    # Shape of GET /repos/{repo}/actions/runners (runners[] per page, Link
+    # pagination handled by the caller): busy counts only busy==true, online
+    # only status=="online", offline runners still count toward total.
+    pages = [
+        {"total_count": 3, "runners": [
+            {"name": "a", "status": "online", "busy": True},
+            {"name": "b", "status": "online", "busy": False},
+        ]},
+        {"total_count": 3, "runners": [
+            {"name": "c", "status": "offline", "busy": False},
+        ]},
+    ]
+    assert qrt.parse_runners_pages(pages) == {"total": 3, "online": 2, "busy": 1}
+
+
+def test_occupation_row_rendered_when_sampled():
+    report = qrt.render_report(qrt.analyse(LOG), occupation=OCC, runner="ai-01-wsl-3")
+    assert "| park busy/online at start | 2/26 (sampled 2026-09-07T05:20:00Z) |" in report
+    assert "| runner | ai-01-wsl-3 |" in report
+
+
+def test_occupation_missing_degrades_to_not_sampled():
+    report = qrt.render_report(qrt.analyse(LOG))
+    assert "| park busy/online at start | not sampled |" in report
+    assert "| runner |" not in report
+
+
+def test_covariates_line_harvestable():
+    # The record must stay one line, comma-separated, "na" on missing pieces,
+    # so >=6 runs can be grepped from job logs and regressed as CSV.
+    line = qrt.covariates_line(qrt.analyse(LOG), OCC, "ai-01-linux-docker-5")
+    assert line == ("#14597-covariates: runner=ai-01-linux-docker-5,busy=2,"
+                    "online=26,total=28,doc_s=929,post_s=767,total_s=1696")
+    # no occupation, no markers at all -> all na, still one line
+    empty = qrt.covariates_line(qrt.analyse("nope\n"), None, None)
+    assert empty == ("#14597-covariates: runner=na,busy=na,online=na,"
+                     "total=na,doc_s=na,post_s=na,total_s=na")
+
+
+def test_covariates_line_runner_sanitized():
+    # commas/spaces in a runner name would break CSV harvesting
+    line = qrt.covariates_line(qrt.analyse(LOG), None, "foo bar,baz")
+    assert "runner=foo-bar;baz," in line
+
+
+def test_load_occupation_rejects_unusable(tmp_path):
+    good = tmp_path / "occ.json"
+    good.write_text('{"sampled_at": "x", "total": 1, "online": 1, "busy": 0}', encoding="utf-8")
+    assert qrt.load_occupation(str(good))["busy"] == 0
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json", encoding="utf-8")
+    assert qrt.load_occupation(str(bad)) is None
+    assert qrt.load_occupation(str(tmp_path / "absent.json")) is None
+    assert qrt.load_occupation(None) is None
+
+
+def test_sample_occupation_without_env_writes_error_and_exits_zero(tmp_path, monkeypatch):
+    # No GITHUB_REPOSITORY/GITHUB_TOKEN -> no HTTP attempt, error recorded,
+    # exit 0 (measurement, never a gate).
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    out = tmp_path / "occupation.json"
+    assert qrt.sample_occupation(str(out)) == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert "error" in data and "sampled_at" in data
