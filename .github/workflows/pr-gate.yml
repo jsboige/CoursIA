@@ -158,7 +158,41 @@ jobs:
     # under the 60-min ceiling.
     timeout-minutes: 52
     steps:
+      # #15091 : sparse-checkout en mode cone. Ce job est le SEUL route sur le
+      # label coursia-waiter, et ce pool n a deliberement aucun volume (ni
+      # _work, ni toolcache, conteneurs --rm) sous la premisse "un slot qui
+      # attend ne coute rien" (#13363). La premisse tombe pendant les ~2
+      # premieres minutes : un checkout nu materialise 10 387 fichiers /
+      # 1,14 GiB, puis les detruit -- ~291 runs/jour, soit de l ordre de
+      # 330 GiB ecrits par jour, sans jamais rien amortir. Le cone rend
+      # 2 460 fichiers / 16,71 MiB (facteur 70).
+      #
+      # Pourquoi le sparse est sur CE pool, et sur lui seul. #14385 a etabli
+      # que le sparse-checkout empoisonne un _work PERSISTANT : une config
+      # sparse survivant entre deux jobs tronque l arbre du job suivant, et
+      # entrypoint.sh porte depuis une boucle de purge pour ca. Mot exact de
+      # #14385 : "Condition habilitante : le volume _work persistant par slot
+      # (#14285/#14288). Sans lui, chaque job repartait d un _work vide."
+      # Le pool d attente n a aucun volume persistant : le mode de defaillance
+      # y est structurellement impossible. Sur la branche de repli
+      # ubuntu-latest (PRs de forks), la VM est neuve a chaque job -- meme
+      # immunite, autre raison.
+      #
+      # Cone et non pas non-cone, malgre un facteur 15x moins bon (149
+      # fichiers / 1,09 MiB) : le mode non-cone est EXACTEMENT celui qui a
+      # empoisonne les slots dans #14385, et un cone sur scripts/ ne peut pas
+      # casser au premier import voisin ajoute a pr_gate.py. Le cone inclut
+      # aussi les fichiers de la racine, ce qui suffit au reste du job.
+      #
+      # Perimetre requis, mesure : pr_gate.py n importe que la stdlib plus
+      # yaml en import paresseux, et son seul chemin est
+      # DEFAULT_WORKFLOWS_DIR = <repo>/.github/workflows, que
+      # derive_always_on_jobs et derive_advisory_jobs globent (canari regle 8).
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts
+            .github/workflows
 
       - uses: actions/setup-python@v5
         with:
