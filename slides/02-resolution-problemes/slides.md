@@ -363,6 +363,8 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 - Bidirectionnelle
 
+<small>**Corpus** — implémentations Python+C# comparées dans [`Search-02-Uninformed.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb) (BFS, UCS, DFS, DLS, IDS, bidirectionnelle sur taquin et graphe Roumanie). 9 notebooks de cette famille (Search-01 à Search-09b) documentent les variantes et leurs complexités mesurées.</small>
+
 ---
 
 # Exploration en largeur d'abord (BFS)
@@ -864,6 +866,8 @@ layout: section
 
 </div>
 
+<small>**Corpus** — Hill / Recuit simulé / Beam / Algorithmes génétiques dans [`Search-04-LocalSearch.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb) (N-Queens, TSP). Métaheuristiques avancées dans [`Search-11-Metaheuristics.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) et le deep-dive [`Search-11b-Metaheuristiques-Deep.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) (parties 2-4). Programmation linéaire et espaces continus : [`Search-09-LinearProgramming.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb).</small>
+
 ---
 layout: section
 ---
@@ -1007,6 +1011,8 @@ fonction LRTA*-Agent(s') retourne une action
 - Observations partielles -> prévisions, exploration en ligne
 
 </div>
+
+<small>**Corpus** — gloutonne / A* / heuristiques documentées dans [`Search-03-Informed.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb) (comparaison BFS / gloutonne / A* sur taquin avec mesure de noeuds développés vs qualité de la solution). Variantes : [`Search-03b-PatternDatabases.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb), [`Search-03c-LimitedDiscrepancySearch.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb), [`Search-03d-WeightedAstar.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb), [`Search-03e-AStar-Optimality.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb).</small>
 
 ---
 layout: section
@@ -1277,6 +1283,8 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 - **Jeux stochastiques** : valeur Minimax esperee (noeuds chance)
 - **Jeux partiellement observables** : état de croyance
 - **MCTS** : méthode générale qui scale à de très grands jeux (Go, Échecs, Poker)
+
+<small>**Corpus** — Minimax / Alpha-Beta / décisions imparfaites documentés dans [`Search-06-AdversarialSearch.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb) (tic-tac-toe, othello avec élagage mesuré). MCTS : [`Search-07-MCTS-And-Beyond.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb) (Go 9×9, UCB1, variantes PUCT/AlphaZero). Dancing Links pour contraintes denses : [`Search-08-DancingLinks.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb).</small>
 
 ---
 layout: section
@@ -1634,6 +1642,8 @@ layout: section
 - **Décomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes indépendants
 - **Symétrie des valeurs** : éliminer les solutions symmetriques réduit l'espace de recherche
 
+<small>**Corpus** — backtracking / forward-checking / propagation dans [`CSP-1-Fundamentals.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (coloriage Australie, cryptarithmes). Heuristiques MRV / LCV et AC-3 : [`CSP-2-Consistency.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb). Applications N-Queens / Send+More=Money / planification : [`App-1-NQueens`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) et 30 autres dans `Search/Applications/CSP/`. Contexte ludique : [`Sudoku-01-Backtracking-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb).</small>
+
 ---
 layout: section
 ---
@@ -1644,6 +1654,34 @@ layout: section
 # TP
 
 ## PKP service web CSPs
+
+Le TP de fin de semestre propose de coder un service web de résolution de CSPs — l'étudiant choisit une variante (backtracking, propagation, exploration locale) et la branche sur un problème de son choix. Le corpus fournit **plusieurs points d'entrée documentés** (cf. ancres in-slide dans les sections ci-dessus) : exploration informée, exploration locale, CSPs et Sudoku. Pour un démarrage rapide, [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) implémente déjà trois solveurs (backtracking, min-conflicts, CP-SAT via OR-Tools) et compare leur passage à l'échelle N=8, 10, 12.
+
+---
+
+# N-Queens : ce que le corpus démontre
+
+## Trois solveurs, trois profils de passage à l'échelle
+
+Mesures relevées dans [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) (sorties de cellules exécutées, `seed=42` pour min-conflicts) :
+
+| N | Backtracking simple | Backtracking FC+MRV | Min-Conflicts | CP-SAT (OR-Tools) |
+|---:|---:|---:|---:|---:|
+| 8 | 1,1 ms / 876 nœuds | 1,0 ms / 75 nœuds | 0,9 ms / 15 itérations | 40,6 ms |
+| 50 | >30 s (hors table) | 51,5 ms | 264,6 ms / 152 itérations | 767,7 ms |
+| 100 | — | — | ~700 ms (mesure cellule 26) | ~10 s (borne `time_limit`) |
+| 500 | — | — | < 1 s (mesure cellule 26) | ~40 s |
+
+## Ce qu'on en tire
+
+- **MRV + Forward Checking** divisent par ~12 le nombre de nœuds dès N=8 (876 → 75), puis par ~1000× à N=16 (160 712 → 39) : c'est l'effet *propagation*, pas la *recherche*.
+- **Min-Conflicts** reste sub-second jusqu'à N=500 mais perd la garantie de preuve d'optimalité : c'est l'*exploration locale*, brillante pour les grands N quand une solution suffit.
+- **CP-SAT** est le seul qui passe vraiment à l'échelle (énumère les 92 solutions de N=8, valide N=500) au prix d'un overhead constant ~30-40 ms sur les petites instances — c'est l'effet *solveur général*, pas l'algorithme dédié.
+- Le **seuil de croisement** BT/Min-Conflicts (cellule 45) se situe autour de **N=12-14** : en deça, le backtracking gagne ; au-delà, l'exploration locale prend le relais.
+
+Les notebooks Search/02 et suivants ne démontrent pas seulement *comment* coder un solveur — ils démontrent *quand* chacun devient le bon choix. C'est ce qu'attend le jury du TP PKP.
+
+---
 
 ---
 layout: end
