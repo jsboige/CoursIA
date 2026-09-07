@@ -68,6 +68,17 @@ runs:
         sudo swapon /mnt/lean-swap
         free -h
 
+    - name: Authenticate lake's git clones
+      shell: bash
+      run: |
+        # Anonymous clones of lake deps die under a rafale of concurrent Lean jobs:
+        # GitHub demands credentials and git (no TTY) exits code 128, and the package
+        # that drops is whoever crosses the window (See #14886). Route every
+        # github.com clone through the job token so no clone goes anonymous.
+        git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
+        # Confirm the rewrite is in effect without ever printing the job token.
+        git config --global --get-regexp 'url\..*\.insteadof' | sed -E 's#x-access-token:[^@]+@#x-access-token:***@#g'
+
     - name: Lake build
       shell: bash
       working-directory: ${{ inputs.project-path }}
