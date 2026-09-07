@@ -63,9 +63,9 @@ TEXT = (
 )
 
 INSTRUCTIONS = (
-    "Voix masculine fran\\u00e7aise, timbre litt\\u00e9raire neutre, "
-    "rythme narratif pos\\u00e9, prosodie expressive avec variation de "
-    "hauteur et d'intensit\\u00e9, pas monotone, style lecture audiobook."
+    "Voix masculine française, timbre littéraire neutre, "
+    "rythme narratif posé, prosodie expressive avec variation de "
+    "hauteur et d'intensité, pas monotone, style lecture audiobook."
 )
 
 GATEWAY_URL = "http://localhost:8196"
@@ -187,7 +187,7 @@ def main() -> int:
     # Convert to MP3 (consistent with p5 pipeline)
     mp3_vd = out_dir / "voicedesign.mp3"
     _wav_to_mp3(vd_path, mp3_vd)
-    results["voicedesign"]["mp3_sha256"] = _sha256(mp3_path.read_bytes() if False else mp3_vd.read_bytes())
+    results["voicedesign"]["mp3_sha256"] = _sha256(mp3_vd.read_bytes())
     results["voicedesign"]["mp3_bytes"] = mp3_vd.stat().st_size
 
     # Motion + flat via syllable_pitch
@@ -238,9 +238,9 @@ def main() -> int:
                 "wav_bytes": len(wav_fa),
                 "syllable_pitch": {
                     "n_syllables": a_fa.get("n_syllables"),
-                    "motion_st_per_syll": a_fa.get("motion"),
-                    "flat_pct": a_fa.get("flat_pct"),
-                    "verdict_motion": verdict_motion(a_fa.get("motion")),
+                    "motion_st_per_syll": a_fa.get("mean_abs_interval_st"),
+                    "flat_pct": a_fa.get("pct_flat_transitions"),
+                    "verdict_motion": verdict_motion(a_fa.get("mean_abs_interval_st")),
                 },
                 "measure_melody": {
                     "effective_notes": m_fa.get("effective_notes"),
