@@ -5,40 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: d951123eb5200aee5cac92f2e6401364fdc2e3c2
-      csharp_sha: 87c507d543517e61008fb47bb65b833b56ef4717
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: d4ab43338f4c2f7ace1f3377830af97bed5acf4b
-      csharp_sha: 8f48b984561f4a441c9b3f68fb0cb6c301c71323
-    - date: "2026-08-16"
-      by: myia-po-2024:CoursIA-2
-      python_sha: d951123eb5200aee5cac92f2e6401364fdc2e3c2
-      csharp_sha: 87c507d543517e61008fb47bb65b833b56ef4717
-      content_python_sha: ab44bbbb641e84b34f0bcc57ed59ff16f6055f772426d40528b53ab606e7fa8d
-      content_csharp_sha: dbd7fcbbfeaf720f9eddc3d2d02a6344d823915fa078ab0429df4107500ae77e
-    - date: "2026-08-26"
-      by: myia-po-2023:CoursIA-2
-      python_sha: c18c2fa0ba1b1ec46ae6a0f86f44c34d0e813219
-      csharp_sha: 92e5954a29ac7b797c3289ef13159861791f69bd
-      content_python_sha: bfdb8b534bf5feb56b44a163809b9334dd8a8a1914d9177e4fa6f7f8a2673c4c
-      content_csharp_sha: d080d92a5d5a73308a8fd8ba70379befc60e438b38d0f45f53f00c7fd3faaeca
-    - date: "2026-08-29"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 8b2901a6914e123f9698fd6645530af7634c42d8
-      csharp_sha: 92e5954a29ac7b797c3289ef13159861791f69bd
-      content_python_sha: cd618a16dbae2a64deb7485504dbd113b6d1d236b460f5b5b0d43840c6d570c4
-      content_csharp_sha: d080d92a5d5a73308a8fd8ba70379befc60e438b38d0f45f53f00c7fd3faaeca
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: 9c7b13eb77e3ebc2c32cd0bc16a313d8b910a847
-      csharp_sha: 92e5954a29ac7b797c3289ef13159861791f69bd
-      content_python_sha: 7fc7f6dee93122914865cd23b85a9570dcce40616376912692ab8507a9ee43a7
-      content_csharp_sha: d080d92a5d5a73308a8fd8ba70379befc60e438b38d0f45f53f00c7fd3faaeca
   known_differences:
   - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

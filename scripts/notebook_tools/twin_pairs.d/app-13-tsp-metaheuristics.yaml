@@ -3,66 +3,6 @@
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb
   parity_level: native-both
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
-      csharp_sha: c1aa93b3ef1995aad5abe0f24e07b8fa3efff577
-    - date: "2026-08-08"
-      by: myia-po-2024:CoursIA
-      python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
-      csharp_sha: 941ceed1e298290c5e1fb3df4a29b34ec5066eeb
-      content_python_sha: aae53d11e5d1de51e10fd7c4e699e9c844a44976628360a4472015e4a40b0b13
-      content_csharp_sha: 1eaef55790de690842740d1c89cde1e542cca34bae710ea8b3b45bb80339c28b
-    - date: "2026-08-11"
-      by: myia-po-2024:CoursIA
-      python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
-      csharp_sha: b17271a454b54b83a47460384889200704d6bef7
-      content_python_sha: aae53d11e5d1de51e10fd7c4e699e9c844a44976628360a4472015e4a40b0b13
-      content_csharp_sha: de07350515378b0d9026e524bb069fe4a44fab21970329dd8b615a6e489232f6
-    - date: "2026-08-31"
-      by: myia-ai-01:CoursIA
-      python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
-      csharp_sha: d8d5171046c954064398c37fa90dc4ab89b0a70e
-      content_python_sha: aae53d11e5d1de51e10fd7c4e699e9c844a44976628360a4472015e4a40b0b13
-      content_csharp_sha: bbc531e701c1413689a7d6e1ceb87d0eb0a70e056622f0384b31e0970d9c09ce
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: 2813d4d9e1c428138999e743d90b24239a29cbf3
-      csharp_sha: d8d5171046c954064398c37fa90dc4ab89b0a70e
-      content_python_sha: f4a3e753fa0c6ed5e2691ed7601aadb5cc71742b0cbfdaadcc49e9914ac4b4bc
-      content_csharp_sha: bbc531e701c1413689a7d6e1ceb87d0eb0a70e056622f0384b31e0970d9c09ce
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: 6dd748467412afa6344edd29d552597786ab822a
-      csharp_sha: d8d5171046c954064398c37fa90dc4ab89b0a70e
-      content_python_sha: d880f42b6a13e60001c5b51f9a8a06deed6cf04e8c9a27615fb709a08e971e33
-      content_csharp_sha: bbc531e701c1413689a7d6e1ceb87d0eb0a70e056622f0384b31e0970d9c09ce
-      reason: "Re-attestation apres fix markdown-loss #14109 (nav finale reecrite par l enrichissement avait perdu le lien [<< Portfolio](../Hybrid/App-10-Portfolio.ipynb), restaure depuis main) : markdown-only — signature sha256 des (source, execution_count, outputs) des 22 cellules code byte-identique base->HEAD (2b547f9e9b96bb17), md 28->32. detect_md_content_loss --check findings=0, check_notebook_navlinks --check OK. Cote C# App-13b non touche. parity_level native-both intacte."
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: 7167b99dfa4a80bfd8247bc53946c4a678960aad
-      csharp_sha: d8d5171046c954064398c37fa90dc4ab89b0a70e
-      content_python_sha: a55722e21d69984106cdc08dcf56befb39409d74e348ff3ee62d8c94758eb736
-      content_csharp_sha: bbc531e701c1413689a7d6e1ceb87d0eb0a70e056622f0384b31e0970d9c09ce
-    - date: "2026-09-05"
-      by: myia-po-2025:CoursIA
-      python_sha: 7167b99dfa4a80bfd8247bc53946c4a678960aad
-      csharp_sha: 84dac7e9dceb62cabcdd92cc17c26578e08341f3
-      content_python_sha: a55722e21d69984106cdc08dcf56befb39409d74e348ff3ee62d8c94758eb736
-      content_csharp_sha: 4d4eb493c1b89bbb53996e84fb315a964303b6c71a2fc742f4654a1efa7d7982
-    - date: "2026-09-05"
-      by: myia-po-2024:CoursIA-2
-      python_sha: dd4a71af2fd0dfdd8052f118286c9d6441a67622
-      csharp_sha: d8d5171046c954064398c37fa90dc4ab89b0a70e
-      content_python_sha: 4c5c8a247af6f9a23385f9c3748dcd6adac0a522a411893d17abacb9ef90a9da
-      content_csharp_sha: bbc531e701c1413689a7d6e1ceb87d0eb0a70e056622f0384b31e0970d9c09ce
-    - date: "2026-09-06"
-      by: myia-ai-01:CoursIA
-      python_sha: dd4a71af2fd0dfdd8052f118286c9d6441a67622
-      csharp_sha: 84dac7e9dceb62cabcdd92cc17c26578e08341f3
-      content_python_sha: 4c5c8a247af6f9a23385f9c3748dcd6adac0a522a411893d17abacb9ef90a9da
-      content_csharp_sha: 4d4eb493c1b89bbb53996e84fb315a964303b6c71a2fc742f4654a1efa7d7982
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools constraint_solver routing (pywrapcp.RoutingModel + GLS Guided Local Search, OR-Tools 9.11) + numpy + matplotlib + itertools (22 cellules code). C# = Google.OrTools.ConstraintSolver (NuGet, C# binding du MEME engine OR-Tools 9.11) + Tranche 1 from-scratch BCL pure (System.*, 0 NuGet) PRESERVEE (11 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur OR-Tools routing 9.11 (pywrapcp.RoutingModel <-> Google.OrTools.ConstraintSolver.RoutingModel). Prong-B (#3801) : discrimination metaheuristique vs exact (GLS ameliore significativement les couts vs nearest-neighbor from-scratch). Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."
   known_differences:

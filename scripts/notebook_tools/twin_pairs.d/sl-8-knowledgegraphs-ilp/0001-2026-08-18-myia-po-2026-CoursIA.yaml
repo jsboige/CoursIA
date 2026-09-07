@@ -1,0 +1,9 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
+csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
+reason: 'parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option
+  A, parite de moteur lib-vs-lib) : Python atteint rdflib, C# atteint dotNetRDF 3.4.1
+  (#r nuget + using VDS.RDF / VDS.RDF.Parsing). Les deux bibliotheques RDF de reference
+  de leur ecosysteme. Imports/invocations verifies firsthand sur les notebooks de
+  la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee.'

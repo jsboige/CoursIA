@@ -1,0 +1,13 @@
+date: '2026-08-21'
+by: myia-po-2025:CoursIA-2
+python_sha: b321beef63337c53105fcc916ec22c0f66ea1f91
+csharp_sha: ed58f8768b32326e363e07830feeac9c7fdae212
+content_python_sha: 6c015bc6
+content_csharp_sha: f63bd5e2fbb49b05ef259fbd36a56e72b85757668b96befbf47ec95d7d4b5e70
+reason: 'fix(gametheory,#9434) PR #11966 (c.1301+284 lane po-2025:CoursIA-2) drain
+  de 13 claims artifactuels (#9377 cadence : CI tient les compteurs quantitatifs,
+  prose tient le prédicat). Sur cette paire, strip ''(607 lignes)'' et ''(2024 lignes)''
+  depuis ''Lien avec la formalisation Lean'' (GT-15 cell#54) -- Lean module sizes
+  drift à chaque edit, aucune source dynamique. csharp_sha inchange (twin C# non touché
+  par le drain, fichier identique au commit précedent). twin parity rebaseline (script
+  check_twin_parity.py --update, leçon #11966).'

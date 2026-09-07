@@ -1,0 +1,11 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
+csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET
+  (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l''ecosysteme .NET, EP/VMP),
+  Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l''ecosysteme
+  Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans
+  le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic,
+  re-grep 2026-08-18).'

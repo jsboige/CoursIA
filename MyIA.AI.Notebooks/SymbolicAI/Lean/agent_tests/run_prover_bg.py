@@ -205,8 +205,11 @@ async def _run_locked(
             f"original restored on exit"
         )
 
+    calibration = calibration_target is not None
     try:
-        return await _run_calibration_ready(args, demo, file_target)
+        return await _run_calibration_ready(
+            args, demo, file_target, calibration=calibration
+        )
     finally:
         if calibration_target is not None:
             calibration_target[0].write_bytes(calibration_target[1])
@@ -214,7 +217,10 @@ async def _run_locked(
 
 
 async def _run_calibration_ready(
-    args: argparse.Namespace, demo: dict, file_target: str
+    args: argparse.Namespace,
+    demo: dict,
+    file_target: str,
+    calibration: bool = False,
 ) -> int:
     """The original run body, executed while holding the tree lock."""
     pre_sorry = _peek_sorry_count(file_target) if demo.get("file") else None
@@ -258,6 +264,7 @@ async def _run_calibration_ready(
             _bg(f"DELTA {pre_sorry - post_sorry}")
 
     _bg(f"RESULT_KEYS {sorted(result.keys())}")
+    _bg(f"RESULT_CALIBRATION {calibration}")
     _bg(f"RESULT_SUCCESS {result.get('success')}")
     # #1453: success=True with already_solved=True and 0 iterations is a NO-OP
     # exit, not a proof — make the distinction parseable for harvest scripts

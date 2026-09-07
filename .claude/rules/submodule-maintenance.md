@@ -30,15 +30,30 @@ Un gitlink en retard rend **invisible depuis CoursIA** du travail déjà mergé 
 cd <racine CoursIA>
 for P in $(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}'); do
   U=$(git config -f .gitmodules --get "submodule.$P.url")
+  B=$(git config -f .gitmodules --get "submodule.$P.branch" 2>/dev/null)
+  REF=${B:+refs/heads/$B}; REF=${REF:-HEAD}
   L=$(git ls-tree origin/main "$P" | awk '{print substr($3,1,12)}')
-  R=$(git ls-remote "$U" HEAD 2>/dev/null | awk '{print substr($1,1,12)}')
-  [ "$L" != "$R" ] && printf "DERIVE %-56s %s -> %s\n" "$P" "$L" "$R"
+  R=$(git ls-remote "$U" "$REF" 2>/dev/null | awk '{print substr($1,1,12)}')
+  [ -z "$R" ] && { printf "INJOIGNABLE %-56s (ref %s)\n" "$P" "$REF"; continue; }
+  [ "$L" != "$R" ] && printf "DERIVE %-56s %s -> %s (ref %s)\n" "$P" "$L" "$R" "$REF"
 done
 ```
 
+La référence de comparaison est la **branche déclarée** quand `.gitmodules` porte un `branch =` (`refs/heads/` explicite, pour ne jamais résoudre un tag homonyme), `HEAD` sinon — `HEAD` résout la branche par défaut et déclare « DERIVE » un gitlink qui est exactement sur sa branche déclarée (#14872 : faux positif permanent sur `semantic-fleet`). Et un `ls-remote` muet (ref injoignable, 403 d'org, réseau) s'affiche `INJOIGNABLE`, jamais comme une égalité — la même leçon que celle du `403` de la mesure de gate ci-dessous.
+
 **Ordre obligatoire** (déjà porté par le `CLAUDE.md` global) : commiter **dedans** d'abord, pousser, **puis** bumper le pointeur parent. Jamais l'inverse.
 
-**Un `branch =` dans `.gitmodules` n'est pas le gitlink.** `semantic-fleet` déclare `branch = stable-from-v0343` alors que son gitlink pointe ailleurs et que son `main` est ailleurs encore : **trois références divergentes** qui se lisent comme un seul état. Réconcilier explicitement avant de conclure quoi que ce soit sur le retard d'un sous-module.
+**Un `branch =` dans `.gitmodules` n'est pas la branche par défaut du dépôt distant.** `semantic-fleet` déclare `branch = stable-from-v0343`, et sa branche par défaut est `main` : **deux** références, pas trois. Mesure du 2026-09-07 :
+
+| Référence | SHA |
+|---|---|
+| gitlink sur `origin/main` | `9df360374e1c` |
+| tip de la branche déclarée `stable-from-v0343` | `9df360374e1c` — **identique** |
+| `HEAD` distant (branche par défaut `main`) | `168fd5d8bef5` |
+
+Le gitlink est **exactement sur sa branche déclarée**. C'est l'état *nominal* d'un sous-module épinglé, pas une dérive à réconcilier — et c'est précisément ce que le paragraphe ci-dessus établit depuis #14872 en nommant le faux positif permanent. La phrase que ces lignes remplacent disait l'inverse (« son gitlink pointe ailleurs », « trois références divergentes ») : elle envoyait le lecteur chercher une troisième divergence qui n'existe pas, et lui faisait lire comme un retard ce qui est le fonctionnement attendu.
+
+Ce qui reste vrai, et qui est le seul point à retenir : **`HEAD` distant n'est pas la référence de comparaison** quand un `branch =` est déclaré. Comparer le gitlink à `HEAD` fabrique une dérive. Comparer à `refs/heads/<branch déclarée>` mesure la vraie.
 
 ## Règle HARD 3 — l'absence de gate est le défaut, pas les PRs qui dorment
 

@@ -1,0 +1,13 @@
+date: '2026-08-29'
+by: myia-po-2023:CoursIA-2
+python_sha: 812d8bf14ea8f78d3bc8902ff31c7184a5e9d669
+csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+content_python_sha: 8bc3cf8e09e1a2cfb0ab2455d661185a33850073acc2a6b8c202b4a22d69f4b8
+content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+reason: 'feat(gt,#13313) robustesse de la refutation au generateur de poids (reserve
+  Hermes sur #12737), branche empilee sur feature/12682-gt4-desir : partage_nash +=
+  controle poids_constants (degrade, xi_B=0.5), nouvelle cellule 3 generateurs (endogene
+  sigmoid / exogene ratio z / constant) + sensibilite 200 instances + verdict markdown
+  ROBUSTE (endo 199/199, exo 199/199, constant 0/199). Re-exec papermill end-to-end
+  kernel python3 local (pattern #13287, kernel WSL declare non requis : imports numpy/scipy/matplotlib/nashpy
+  seulement). csharp inchange. Verdict ROBUSTE -> item ARTEFACT (#12737bis) non declenche.'

@@ -1,0 +1,10 @@
+date: '2026-08-02'
+by: myia-po-2024:CoursIA-2
+python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
+csharp_sha: 3702afa3bac062ae4d142e0debd3ffce521940ab
+reason: 'rebaseline csharp apres fix citation-title (#8052) : reference Hastie/Tibshirani/Friedman
+  (2009) -- le titre anglais The Elements of Statistical Learning etait corrupt par
+  francisation (le mot Elements remplace par le mot francais equivalent a capitale
+  accentuee) -> restore titre canonique EN. Springer 2009 2e ed. Python twin unchanged,
+  python_sha preserve. Parite surface preservee (citation bibliographique, pas de
+  valeur calculee).'

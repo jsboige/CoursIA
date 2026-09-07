@@ -1,0 +1,18 @@
+date: '2026-08-28'
+by: myia-po-2023:CoursIA
+python_sha: 82d340a8a11f87b05c61a2955dfef8cda2fd02c1
+csharp_sha: 2ff2ee84eb18b38c3f47a1be58870f81dbaefe14
+content_python_sha: e4caf560038b382c40ab2988dd04e8b1cd2c35ec4d71c4123fe368f33e98f0a5
+content_csharp_sha: 95036dc6de8a212cd129574ceb8466c2838ee09f90e06120c9b4f7ba9522ab0d
+reason: 'fix(gametheory,#12683) PR #12709 review response: statut canonique de alpha
+  comme PARAMETRE LIBRE NON IDENTIFIE par les donnees du banc. Frontiere d''indiscernabilite
+  alpha* = 0.667 affichee comme TELLE (pas comme seuil de diagnostic). Section 7d
+  retitree ''ce que l''utilite explique SOUS UN ALPHA DONNE''. Nouvelle cellule markdown
+  statut (entre 7c et 7d) + cellule code retitree + verdict contre-interet affiche
+  ''CANDIDAT engagement au sens de Sen (pas la seule lecture possible)''. Le verdict
+  du classifieur reste determine par le choix d''alpha par l''analyste -- il REPORTE
+  la consequence d''une hypothese, il ne distingue PAS empiriquement. Issue de suivi
+  pour statique comparative (faire varier les gains d''autrui seuls a gains propres
+  fixes) ouverte par ai-01 dans la review, hors scope de cette PR. Re-execution kernel
+  python3 (gametheory-wsl injoignable), 14/14 cellules code avec exec_count et outputs
+  coherents, 0 forbidden pattern (C.1). C# twin inchange.'

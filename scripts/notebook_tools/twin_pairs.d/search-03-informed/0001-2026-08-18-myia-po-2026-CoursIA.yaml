@@ -1,0 +1,10 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: d6ff88e23eddb736cf456cabbab154902b36468a
+csharp_sha: e4f0c1ecc753255b13cc3e4abfe76598e3805506
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib) : Python atteint NetworkX (librairie
+  graphes de reference en Python), C# atteint QuikGraph (librairie graphes de reference
+  de l''ecosysteme .NET). bridge_verdict_reason inchangee -- le bridge etait deja
+  documente dans le verdict existant. Imports verifies firsthand sur les notebooks
+  de la paire (re-grep 2026-08-18).'

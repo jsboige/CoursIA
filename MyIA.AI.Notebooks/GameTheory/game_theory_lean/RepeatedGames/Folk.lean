@@ -71,6 +71,35 @@ def Feasible (g : PrisonersDilemma) (u_row u_col : ℝ) : Prop :=
     u_row = pCC * g.R + pCD * g.S + pDC * g.T + pDD * g.P ∧
     u_col = pCC * g.R + pCD * g.T + pDC * g.S + pDD * g.P
 
+/-- Convexité de l'ensemble faisable (#14990) : toute combinaison convexe de
+    deux vecteurs de paiements faisables est faisable. Première brique du
+    théorème de Folk — la construction Fudenberg–Maskin interpole entre
+    l'action jointe cible et une phase de punition, elle exige donc que
+    l'ensemble des paiements réalisables soit stable par barycentre. Preuve
+    directe sur l'existentiel `Feasible` (pas de `convexHull` de Mathlib) :
+    les poids témoins se combinent en `lam * p + (1 - lam) * q`, qui reste
+    non négatif (produits de non négatifs) et somme à un (combinaison affine
+    des deux sommes unité). -/
+theorem feasible_convex (g : PrisonersDilemma) (lam : ℝ)
+    (u1_row u1_col u2_row u2_col : ℝ)
+    (h1 : Feasible g u1_row u1_col) (h2 : Feasible g u2_row u2_col)
+    (hlam : 0 ≤ lam) (hlam1 : lam ≤ 1) :
+    Feasible g (lam * u1_row + (1 - lam) * u2_row)
+                (lam * u1_col + (1 - lam) * u2_col) := by
+  obtain ⟨pCC1, pCD1, pDC1, pDD1, hs1, ha1, ha2, ha3, ha4, hr1, hc1⟩ := h1
+  obtain ⟨pCC2, pCD2, pDC2, pDD2, hs2, hb1, hb2, hb3, hb4, hr2, hc2⟩ := h2
+  have h1l : 0 ≤ 1 - lam := by nlinarith
+  refine ⟨lam * pCC1 + (1 - lam) * pCC2, lam * pCD1 + (1 - lam) * pCD2,
+    lam * pDC1 + (1 - lam) * pDC2, lam * pDD1 + (1 - lam) * pDD2,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · linear_combination lam * hs1 + (1 - lam) * hs2
+  · exact add_nonneg (mul_nonneg hlam ha1) (mul_nonneg h1l hb1)
+  · exact add_nonneg (mul_nonneg hlam ha2) (mul_nonneg h1l hb2)
+  · exact add_nonneg (mul_nonneg hlam ha3) (mul_nonneg h1l hb3)
+  · exact add_nonneg (mul_nonneg hlam ha4) (mul_nonneg h1l hb4)
+  · linear_combination lam * hr1 + (1 - lam) * hr2
+  · linear_combination lam * hc1 + (1 - lam) * hc2
+
 /-- Paiement actualisé du joueur de référence (ligne) sous une trajectoire
     d'actions conjointes `a` et facteur d'escompte `δ`. Généralise
     `coopValue` / `deviateValue` (cas particuliers stationnaires) à une

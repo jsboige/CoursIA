@@ -1,0 +1,12 @@
+date: '2026-08-29'
+by: myia-po-2023:CoursIA-2
+python_sha: fd7ecbbf977e83681bb3301934ae2355e0b70eae
+csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+content_python_sha: 7b85ca74e22c73acd3e1204fb04cfb149690e4b0544200b54f6247c4098ad377
+content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+reason: 'Resolution du conflit #12737 vs main (union #13287 x #13313) : merge origin/main
+  dans feature/12682-gt4-desir, cellule def partage_nash fusionnee (docstring statut
+  HYPOTHESE de main + controle poids_constants de la branche), 2 cellules main (statut
+  + kappa) + 2 cellules branche (robustesse + verdict ROBUSTE) a leurs positions respectives.
+  Re-exec papermill kernel python3 47/47, 0 erreur. csharp_sha inchange -- la section
+  bargaining reste Python-only (asymetrie structurelle documentee en known_differences).'

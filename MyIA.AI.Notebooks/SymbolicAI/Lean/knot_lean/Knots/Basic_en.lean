@@ -155,14 +155,18 @@ def trefoil : Knot where
 
 /- The figure-eight knot (4_1), the simplest knot with crossing number 4.
 
-PD-code from KnotInfo: [[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]
+PD-code derived from KnotInfo DT-code [4, 6, 8, 2]: [[8,3,1,4],[2,5,3,6],[4,7,5,8],[6,1,7,2]].
+Each edge {1,..,8} appears exactly once as an under-strand and once as an
+over-strand, and the edge trace forms a single loop. The previous wiring
+([[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]) was in fact a two-component
+link, not a knot.
 -/
 def figureEightDiagram : KnotDiagram where
   crossings := [
-    ⟨1, 5, 2, 4⟩,
-    ⟨3, 8, 4, 2⟩,
-    ⟨5, 1, 6, 7⟩,
-    ⟨7, 3, 8, 6⟩
+    ⟨8, 3, 1, 4⟩,
+    ⟨2, 5, 3, 6⟩,
+    ⟨4, 7, 5, 8⟩,
+    ⟨6, 1, 7, 2⟩
   ]
   numEdges := 8
 

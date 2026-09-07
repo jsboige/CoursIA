@@ -77,7 +77,7 @@ bg_id = Bash(
 
 ## Honest reporting
 
-- `DELTA > 0 AND ok=True` → real progress. Open PR with `lake build` log.
+- `DELTA > 0 AND ok=True` → real progress. Open PR with `lake build` log, sauf si `RESULT_CALIBRATION True` : le lanceur restaure alors la preuve approuvée byte-exactement, donc un `sorry_decreased` de calibration n'a volontairement aucun diff disque.
 - `DELTA == 0 AND ok=False` → no progress (typical for very_hard targets).
   This is **expected**, not a failure of the infrastructure. Report as
   `iter N: 0/M sorrys eliminated` in dashboard, do not claim "DONE".

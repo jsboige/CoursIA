@@ -1,0 +1,16 @@
+date: '2026-08-23'
+by: myia-po-2024:CoursIA
+python_sha: c3ac50e7637d00fc0a751cbf54e2f4a7c956e7f7
+csharp_sha: c71f75e07eddce6a23fae20e55eb44317c6123ed
+content_python_sha: 396ad1bd18ec6b80ed1f65ee8b7778ce9f8b46c9b94a8aba7f5352521e64a6b2
+content_csharp_sha: 4013e43e206919939b8df3ca380489c9682db5f55890eaa970c7f772ad0cf906
+section_added: 'Semiring CSP (section 5, PR #12616 : cellules idx 19-25 -- cadre algebrique
+  Bistarelli-Montanari-Rossi 1997, interface ISemiring<T> + instances Boolean/Fuzzy/Weighted,
+  classe SoftCsp<T> generique, demo vacances floues 9 combinaisons, accord numerique
+  exact framework vs moteur Choco Rome/Juillet 0.8)'
+parity_note: 'Gap Semiring COMBLE cote C# : le framework algebrique (from-scratch
+  sur interface generique, miroir de abc.ABC Python) est porte en section 5 avec accord
+  verifie contre l encodage max-min Choco de la section 4. Gap residuel unique : le
+  fil Hierarchical CSP (sans equivalent C#). parity_level=surface preserve (Hierarchical
+  manquant). NB : entree generee par check_twin_parity.py --update avec une indentation
+  a 4 espaces cassant le YAML (bug outil, corrige a la main ici -- a signaler).'

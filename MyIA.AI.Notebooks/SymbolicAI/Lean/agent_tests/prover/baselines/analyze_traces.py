@@ -36,6 +36,9 @@ _parser = argparse.ArgumentParser(
 _parser.add_argument(
     "--since", default=None, metavar="YYYY-MM-DD",
     help="Only include traces whose companion *_result.json timestamp is >= this date.")
+_parser.add_argument(
+    "--result-dir", default=None, metavar="PATH",
+    help="Read *_result.json wrappers from PATH (defaults to the detected traces directory).")
 _args = _parser.parse_args()
 
 jsonl_files_all = sorted(glob.glob(os.path.join(TRACE_DIR, "*.spans.jsonl")))
@@ -565,8 +568,14 @@ print("="*80)
 # the macro signal a coordinator dispatches on carries a real termination
 # taxonomy (sorry_decreased / structural_only / provider_outage / crashed /
 # no_progress / ...) instead of a 53%-delta-0 blob.
-result_files = sorted(glob.glob(os.path.join(RESULT_DIR, "*_result.json")))
-_verdicts = defaultdict(lambda: {"count": 0, "elapsed": [], "preset": 0, "rederived": 0})
+_result_dir = _args.result_dir or RESULT_DIR
+result_files = sorted(glob.glob(os.path.join(_result_dir, "*_result.json")))
+_by_population = {
+    population: defaultdict(
+        lambda: {"count": 0, "elapsed": [], "preset": 0, "rederived": 0}
+    )
+    for population in ("calibration", "real", "legacy_unknown")
+}
 _by_mode = defaultdict(lambda: defaultdict(int))
 _total = 0
 for _rf in result_files:
@@ -580,7 +589,21 @@ for _rf in result_files:
         if _ts and _ts < _args.since:
             continue
     _mode = str(_d.get("mode", ""))
-    _mode = "auto" if _mode.startswith("auto") else "multi" if _mode.startswith("multi") else "custom"
+    _mode = (
+        "auto"
+        if _mode.startswith("auto")
+        else "multi"
+        if _mode.startswith("multi")
+        else "custom"
+    )
+    _calibration = _d.get("calibration")
+    if _calibration is True:
+        _population = "calibration"
+    elif _calibration is False:
+        _population = "real"
+    else:
+        _population = "legacy_unknown"
+    _verdicts = _by_population[_population]
     _preset = _d.get("result_kind")
     if _preset:
         _kind = _preset
@@ -595,8 +618,14 @@ for _rf in result_files:
     _by_mode[_mode][_kind] += 1
     _total += 1
 
-_preset_n = sum(v["preset"] for v in _verdicts.values())
-_rederived_n = sum(v["rederived"] for v in _verdicts.values())
+_preset_n = sum(
+    v["preset"] for population in _by_population.values() for v in population.values()
+)
+_rederived_n = sum(
+    v["rederived"]
+    for population in _by_population.values()
+    for v in population.values()
+)
 print(f"\n{_total} result files classified ({_preset_n} preset result_kind, "
       f"{_rederived_n} re-derived from legacy wrappers lacking the field).")
 _VERDICT_ORDER = [
@@ -604,19 +633,26 @@ _VERDICT_ORDER = [
     "heartbeat_budget_exceeded", "decomposition_regression",
     "reasoning_budget_exceeded", "provider_outage", "crashed", "no_progress",
 ]
-print(f"\n{'Verdict':<28} {'Count':>6} {'MeanEl':>9} {'Preset':>7} {'Rederived':>10}")
-print("-" * 70)
-for _kind in _VERDICT_ORDER + [k for k in _verdicts if k not in _VERDICT_ORDER]:
-    _v = _verdicts.get(_kind)
-    if not _v or _v["count"] == 0:
-        continue
-    _mean = sum(_v["elapsed"]) / len(_v["elapsed"]) if _v["elapsed"] else 0
-    print(f"{_kind:<28} {_v['count']:>6} {_mean:>8.0f}s {_v['preset']:>7} {_v['rederived']:>10}")
-if _total:
-    _delta0_share = _verdicts.get("no_progress", {}).get("count", 0) / _total * 100
-    print(f"\nno_progress share: {_delta0_share:.0f}% of {_total} — previously the "
-          f"undifferentiated 'sorry_delta==0' bucket; structural_only / "
-          f"provider_outage / heartbeat_budget_exceeded above now sub-classify it.")
+for _population in ("calibration", "real", "legacy_unknown"):
+    _verdicts = _by_population[_population]
+    print(f"\n{_population.upper()} VERDICTS")
+    print(f"{'Verdict':<28} {'Count':>6} {'MeanEl':>9} {'Preset':>7} {'Rederived':>10}")
+    print("-" * 70)
+    for _kind in _VERDICT_ORDER + [k for k in _verdicts if k not in _VERDICT_ORDER]:
+        _v = _verdicts.get(_kind)
+        if not _v or _v["count"] == 0:
+            continue
+        _mean = sum(_v["elapsed"]) / len(_v["elapsed"]) if _v["elapsed"] else 0
+        print(f"{_kind:<28} {_v['count']:>6} {_mean:>8.0f}s {_v['preset']:>7} {_v['rederived']:>10}")
+    _population_total = sum(v["count"] for v in _verdicts.values())
+    _no_progress = _verdicts.get("no_progress", {}).get("count", 0)
+    if _population_total:
+        print(f"  no_progress share: {_no_progress / _population_total * 100:.0f}% "
+              f"of {_population_total}")
+    else:
+        print("  no results")
 if _by_mode:
-    print("By mode: " + " | ".join(
-        f"{_m}={sum(_by_mode[_m].values())}" for _m in sorted(_by_mode)))
+    print("\nBy mode: " + " | ".join(
+        f"{_mode}={sum(_by_mode[_mode].values())}"
+        for _mode in sorted(_by_mode)
+    ))

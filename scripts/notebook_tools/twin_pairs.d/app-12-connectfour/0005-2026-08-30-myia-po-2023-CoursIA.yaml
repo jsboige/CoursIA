@@ -1,0 +1,9 @@
+date: '2026-08-30'
+by: myia-po-2023:CoursIA
+python_sha: c9b7c3be5aae2b71f96dc7c17b5adb48395db79f
+csharp_sha: 3ad054d24fa455f15d20468f2c2524c5a56d7235
+reason: 'Density tranche #13410 (markdown-only pattern #10488): 13 interpretation
+  cells inserted after their code cells, anchored on committed outputs; density 500
+  -> 1501 c/cell (plancher 1200, vise 1500). Code cells and outputs byte-identical
+  to origin/main (check_papermill_ratchet OUTPUTS_UNCHANGED); no re-exec. Python twin
+  untouched (1037, separate tranche).'

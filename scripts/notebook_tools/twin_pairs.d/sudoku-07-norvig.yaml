@@ -5,47 +5,6 @@
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Bucket 3 de l'EPIC #10382 (from-scratch = la contrepartie, a ecrire comme telle). Verifie firsthand : Python = stdlib pur (pathlib/time/typing, 0 lib tierce, 0 numpy) ; C# = pur System.* (0 NuGet, 0 Assembly ref, BCL pure). Les DEUX cotes portent le MEME algorithme Norvig from-scratch (assign + eliminate + search backtracking avec propagation de contraintes, port direct de https://norvig.com/sudoku.html). Il n'existe PAS de lib SOTA-tier pour le solveur Norvig : la reference EST le code Norvig 2006 lui-meme (les forks PyPI comme sudoku-solver ne sont pas maintained et n'apportent rien de plus que le from-scratch ; aucun package .NET n'implemente Norvig specifiquement). La parite cross-twin est dans l'ALGO specifie par Norvig (les deux jumeaux codent assign/eliminate/search manuellement), pas dans une lib externe -- c'est exactement le cas bucket 3 : pas d'equivalent .NET (ni Python), le from-scratch EST la contrepartie. L'ancien verdict RECOVERABLE-LOCAL contredisait sa propre raison (qui disait deja 'lib SOTA non requise pour cet algo specifie') -- RECOVERABLE-LOCAL signifie 'installable, pas installe', mais il n'y a rien a installer. Flip RECOVERABLE-LOCAL -> SOTA-OK (from-scratch from-scratch assume, bucket 3, parite semantique dans l'algo Norvig)."
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 953832780bf8b101e6fcba553c9deeb30cc4cef1
-      csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: c8977d56354726ca6349bb2b47fa67bd1f2b16e2
-      csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
-      content_python_sha: 1da65bd6906c2ecba081c7c39516840e26ba9fb8b73f060d48adbf22ea0a27fa
-      content_csharp_sha: 8ae8347f665729ac29554fd252aeb26e2b3d3195d4e45ef6e68680f80c23ba0e
-    - date: "2026-08-14"
-      by: myia-po-2024:CoursIA
-      python_sha: c8977d56354726ca6349bb2b47fa67bd1f2b16e2
-      csharp_sha: b158670a31d10d9a71a33e3d9fac94c5870b175a
-      content_python_sha: 1da65bd6906c2ecba081c7c39516840e26ba9fb8b73f060d48adbf22ea0a27fa
-      content_csharp_sha: bc1fdea1895a2a608a1f3608f7b6d41a6f7e4bc734e095524b5dd038af59ab9c
-    - date: "2026-08-16"
-      by: myia-po-2025:CoursIA
-      python_sha: 3aab3c2ceb2e00086af53a96c7cca8cc99cdc80d
-      csharp_sha: b52ba0fdd1c9f3738a5d863d5c0ce9ec03295a1f
-      content_python_sha: 37adb017f13b00bf40850f32a22dc23247341f5064ea5830a54f809a0f150d47
-      content_csharp_sha: 1248533b87848396497d3726182df99b9cc5b87a362e6c5de694cb9053dd8ecd
-    - date: "2026-08-28"
-      by: myia-po-2024:CoursIA
-      python_sha: 8554d2cb9b268f2cd0c03d2652b7477f22869a4f
-      csharp_sha: 95bdee547c50057ec5a8105b1912613e1c950cfd
-      content_python_sha: bfbf0439da28b8ce73b0edabb79e1e7df48f8196725641b3c18fd0b5ac4b5cd4
-      content_csharp_sha: 606bdaa62cbd0e1a3afe0961f0d548a1214a0bc36bae5e3b5f5e767dbed9ab88
-    - date: "2026-08-30"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 8554d2cb9b268f2cd0c03d2652b7477f22869a4f
-      csharp_sha: d694e666492052acd9cea0b616f7ecb8c9cb110d
-      content_python_sha: bfbf0439da28b8ce73b0edabb79e1e7df48f8196725641b3c18fd0b5ac4b5cd4
-      content_csharp_sha: d97bd73dcb18398ba74a50d71affb70f27039456e0ad7dcfc9033d553302358c
-    - date: "2026-09-02"
-      by: myia-po-2027:CoursIA
-      python_sha: 8554d2cb9b268f2cd0c03d2652b7477f22869a4f
-      csharp_sha: 7276a4680a9fd43cd1b2aeb84390e3441f510243
-      content_python_sha: bfbf0439da28b8ce73b0edabb79e1e7df48f8196725641b3c18fd0b5ac4b5cd4
-      content_csharp_sha: 6b74947753cb29d85f6a78d64dda07f90c7ba1b8169ca798340eac7d6222e87d
   known_differences:
     - "2026-09-02 (PR #14266, myia-po-2027:CoursIA) : normalisation nbformat du champ source string->liste (tranche Sudoku de #14209) -- forme seule, jumeau C# seul (Python non touche). Contenu rejoint byte-identique (digest sha1 par cellule, 0 divergence), outputs/execution_count/nb de cellules inchanges, pas de re-exec (C.3). Les blob SHAs et content SHAs deplaces dans l audit ci-dessus sont des artefacts de forme (le content_sha hashe la structure JSON des cellules, forme du champ source incluse), pas une divergence pedagogique."
     - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."

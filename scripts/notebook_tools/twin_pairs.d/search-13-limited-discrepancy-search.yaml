@@ -3,51 +3,6 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-Csharp.ipynb
   parity_level: semantic
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 78a207157e912197358a83086ab8428e3847ca0e
-      csharp_sha: c371375a5fcdabb870072c6db55fbc42c42e210b
-    - date: "2026-08-28"
-      by: myia-po-2024:CoursIA
-      python_sha: 78a207157e912197358a83086ab8428e3847ca0e
-      csharp_sha: 02fdf7e0c18d54e3830f97bae1cf4cf3a6bfccb9
-      content_python_sha: 2beb1168661559d6a1c3e1dbd65f86bb227eba88418ef725d0e317baa1fbf8fb
-      content_csharp_sha: e00dfeebe195a3ab537442866fe9dabe51c1088675dca632197371f160923b62
-    - date: "2026-09-03"
-      by: myia-po-2025:CoursIA
-      python_sha: 78a207157e912197358a83086ab8428e3847ca0e
-      csharp_sha: 02fdf7e0c18d54e3830f97bae1cf4cf3a6bfccb9
-      content_python_sha: 2beb1168661559d6a1c3e1dbd65f86bb227eba88418ef725d0e317baa1fbf8fb
-      content_csharp_sha: e00dfeebe195a3ab537442866fe9dabe51c1088675dca632197371f160923b62
-    - date: "2026-09-03"
-      by: myia-po-2025:CoursIA
-      python_sha: 0070631130d0da4763db25fae58da389350f9cf5
-      csharp_sha: ea455f7b966877ef4bbbcfe9e06648dbc668e316
-    - date: "2026-09-03"
-      by: myia-po-2025:CoursIA
-      python_sha: 1a7d5dbed265e7b15615cb6d91c27a5b3a8c0e57
-      csharp_sha: 58189a2c3e9ffea712786f7e81c84355427b03e7
-      content_python_sha: bd71f8a50b6400d6bba04cd96d87333981af4b14d1dc9756b9de8af5e1900c91
-      content_csharp_sha: 40fc26c4f719eed6e904450b698a81b2b9369cb37ce34162312b227327bccdcb
-    - date: "2026-09-04"
-      by: myia-po-2023:CoursIA (fix #14624 lot Search)
-      python_sha: 1280e039cd54ff22f031204b7c9655c54cdd82f1
-      csharp_sha: 58189a2c3e9ffea712786f7e81c84355427b03e7
-      content_python_sha: f4fa7fe84fa936ac85c2aea32e8871a3fe9f3f8c45e92bc387a65bb0200355f8
-      content_csharp_sha: 40fc26c4f719eed6e904450b698a81b2b9369cb37ce34162312b227327bccdcb
-    - date: "2026-09-04"
-      by: myia-po-2023:CoursIA (fix #14624 lot Search -- re-attestation apres edition miroir C#, --update en dernier)
-      python_sha: 1280e039cd54ff22f031204b7c9655c54cdd82f1
-      csharp_sha: ed59fd094d9c79981cbe04fbe4f0361b4b469ced
-      content_python_sha: f4fa7fe84fa936ac85c2aea32e8871a3fe9f3f8c45e92bc387a65bb0200355f8
-      content_csharp_sha: cc73e67f63fd1338a71a568df262775643df9623846d9e3fd00fef347fa3469c
-    - date: "2026-09-05"
-      by: myia-po-2025:CoursIA
-      python_sha: 7243f4c2b7701205258723863a3c39f8387135b0
-      csharp_sha: 09c839ff55add3a5c3f56672cc0807faf8917d48
-      content_python_sha: 22ff5f69261302b637cb07a633dcf7e95f0c07028ed1cfed30b0766b982a809d
-      content_csharp_sha: 026a2f850e8446d9a13e36f5f75edcc3787f1293f3aa34573c5283f7935def3f
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Bucket 3 de l'EPIC #10382 (from-scratch = la contrepartie, a ecrire comme telle). Verifie firsthand : Python = stdlib pur (`from itertools import product`, 0 lib tierce) ; C# = pur System.* (0 NuGet, 0 #r, 0 Assembly ref, BCL pure). Les DEUX cotes codent LDS from-scratch (greedy_knapsack + lds borne les ecarts a l'heuristique gloutonne ratio valeur/poids). Il n'existe PAS de lib SOTA-tier pour LDS : c'est un algorithme pedagogique (Harvey & Ginsberg 1995), pas un solveur tiers a brancher (aucun package PyPI ou NuGet n'expose LDS comme lib appelable -- LDS est par construction un exercice d'exploration d'arbre heuristique, implemente a la main). Cas bucket 3 : pas d'equivalent .NET (ni Python), le from-scratch EST la contrepartie. Asymetrie d'instance (Python 7 objets A-G dont F+G pieges, C# 5 objets A-E coeur) assumee conceptual parity. L'ancien verdict RECOVERABLE-LOCAL contredisait sa propre raison (qui disait deja 'pas de SOTA tier, pas de solveur tiers applicable') -- RECOVERABLE-LOCAL signifie 'installable, pas installe', mais il n'y a rien a installer. Flip RECOVERABLE-LOCAL -> SOTA-OK (both from-scratch assume, bucket 3, parite semantique dans l'algo LDS).
