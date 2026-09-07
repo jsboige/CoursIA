@@ -1,6 +1,6 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow), Lean 4
 
-Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant deux résultats
+Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
 (cf `decision_theory_lean` qui co-localise Gittins + Utility + Coherence) :
 
@@ -17,6 +17,14 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + union
    bound, `PacFiniteBound.lean`) ainsi que la **borne de généralisation
    agnostic** (`Agnostic.lean`, itération 2) — toutes deux **0-sorry**.
+3. **Module `GradientFlow`** — digestion #13106 (forme formalisation) :
+   mécanique du **gradient profond** du notebook
+   `4.2-ConvNet-Profonde-Residuelles`. Si chaque bloc contracte la dérivée
+   (`|f'_k| ≤ c`), une pile *plain* voit sa dérivée bornée par `c ^ n`
+   (évanouissement exponentiel, ancre `0,4 ^ 20 < 1e-7`) tandis qu'une pile de
+   blocs *résiduels* `h ↦ h + f h` la voit **minorée** par `(1-c) ^ n` (survie,
+   ancre `3e-5 < 0,6 ^ 20`) — le raccourci identité (He et al. 2015) rend
+   géométriquement improbable ce que la pile plain tue géométriquement.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -33,14 +41,15 @@ argument ERM dans `ERM`).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`)
+- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`)
 - **Sorry** : **0** sur tout le module (comptage code-only, voir § Modules).
   Côté Perceptron, la borne `novikoff_mistake_bound` (`n · γ² ≤ R²`), le Lemme A
   d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme (`‖wₖ‖² ≤ kR²`) sont
   entièrement prouvés, ainsi que le **serrage** `novikoff_bound_is_sharp` (témoin
   sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
   phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry.
-- **Build** : `lake build Perceptron` / `lake build PacLearning` (dépend de Mathlib4)
+- **Build** : `lake build Perceptron` / `lake build PacLearning` /
+  `lake build GradientFlow` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -144,6 +153,14 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `PacLearning/ERM.lean` | 0 | Argument ERM (Empirical Risk Minimization) — brique agnostic 6/6. |
 | `PacLearning.lean` | 0 | Imports parapluie + doc de statut. |
 
+### Module `GradientFlow` (digestion #13106 — gradient profond plain vs résiduel)
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `GradientFlow/Plain.lean` | 0 | Pile « plain » `plainStack` (composition sans raccourci) : lemme central par induction (`plainStack_deriv_bound`), **majoration** `abs_deriv_plainStack_le` (`\|f'_{n-1} ∘ … \| ≤ c ^ n`), évanouissement exponentiel `plainStack_gradient_vanishes` (`c ^ n → 0`), ancre numérique du cours `two_fifths_pow_twenty_lt` (`0,4 ^ 20 < 1e-7`). |
+| `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
+| `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
@@ -155,7 +172,8 @@ fichiers `_en` couvrent l'intégralité des 18 modules feuilles + agrégateurs :
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
-`Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`.
+`Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
+`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -200,10 +218,15 @@ déclaration dans un notebook :
   (1984).
 - S. Shalev-Shwartz & S. Ben-David, *Understanding Machine Learning*, Cambridge
   University Press (2014), §2 (classes finies) et §6 (VC dimension).
+- K. He, X. Zhang, S. Ren & J. Sun, *Deep Residual Learning for Image
+  Recognition*, arXiv:1512.03385 (2015) — le raccourci identité.
+- A. Veit, M. Wilber & S. Belongie, *Residual Networks Behave Like Ensembles of
+  Relatively Shallow Networks*, arXiv:1605.06431 (2016) — la lecture ensembliste.
 
 ## Voir aussi
 
 - **Issue #4051** — création du lake + module Perceptron (roadmap Lean #4038, Tier 2 « first ML theorem »)
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
+- **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
