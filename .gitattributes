@@ -29,6 +29,7 @@ MyIA.AI.Notebooks/**/*.md text eol=lf
 # no explicit eol rule is set. Found 5x (i18n *.en.md c.268, *.sh + .env c.281).
 *.lean text eol=lf
 *.sh text eol=lf
+*.service text eol=lf
 .env text eol=lf
 .env.example text eol=lf
 *.en.md text eol=lf

@@ -271,6 +271,34 @@ Routage (décision coordinateur) — **tranche 1 portée par #14148, MERGED le 2
 
 Si l'empreinte mesurée pendant un job gêne la workstation (training GPU, sessions interactives), on **réduit les caps ou on arrête**, et on le signale à ai-01.
 
+### Persistance du POOL D'ATTENTE — `coursia-waiters.service`, déployée sur ai-01 (#14612, #14846)
+
+La section ci-dessous décrit la persistance de la jambe d'**exécution** (`start N`, label `coursia-linux`). La jambe **d'attente** (`waiters N`, label `coursia-waiter`) n'en avait aucune, **sur aucune machine** : ni unité installée, ni même copie de référence dans `persist/`. Elle était lancée à la main dans une session et mourait avec elle — la panne que la section suivante existe pour supprimer, restée entière sur l'autre jambe.
+
+**Ce que ça a coûté, mesuré le 2026-09-07.** Les 12 waiters d'ai-01 étaient morts depuis 15:40Z la veille (dernier `Listening for Jobs`, zéro conteneur sur l'hôte, 12 inscriptions `offline` fantômes côté GitHub). po-2024 était donc **fournisseur unique** du label. Quand ses conteneurs se sont mis à être fauchés à ~10 min, le `PR gate` — check **requis** — a échoué **6 fois sur 6** entre 00:06Z et 00:40Z : gel de tous les merges de la flotte. C'est très exactement le point unique de défaillance que **#14612** nomme, et la deuxième occurrence du gel décrit par **#14846**.
+
+**L'unité.** `coursia-waiters.service` est la jumelle de `coursia-runner.service` (mêmes `Wants=docker.service`, `Restart=always`, `Nice=10`), avec trois écarts délibérés :
+
+| | Jambe d'exécution | Jambe d'attente |
+|---|---|---|
+| Commande | `supervise.sh start N` | `supervise.sh waiters N` |
+| Label servi | `coursia-linux` | `coursia-waiter` |
+| `STATE_DIR` | `/var/lib/coursia-runner` | **`/var/lib/coursia-waiters`** |
+| `TimeoutStopSec` | 900 s (un `lake build` en vol) | 120 s (un slot d'attente ne porte pas de build long) |
+
+**Le `STATE_DIR` dédié n'est pas cosmétique — c'est la seule subtilité du montage.** `supervise.sh` pose sa sentinelle d'arrêt gracieux en `"$STATE_DIR/stop"`, et `cmd_waiters` **refuse de démarrer** tant qu'elle est présente (`sentinel STOP pose -- arreter d'abord`). Partager le state dir aurait donc fait qu'un `systemctl stop coursia-runner` empêche le pool d'attente de redémarrer : deux jambes conçues comme indépendantes, couplées en silence par un fichier, et un couplage qui ne se serait manifesté qu'au pire moment — pendant un arrêt de maintenance de l'autre jambe.
+
+**Acceptance — elle se mesure au registre, jamais au service.** `systemctl is-active` rend `active` dès que la boucle tourne, y compris si aucun conteneur ne s'enregistre (token illisible, mauvais `DOCKER_HOST`, plafond de runners du plan atteint). Le seul contrôle qui répond est le compte de runners **en ligne** :
+
+```bash
+GH_TOKEN=$(gh auth token --user jsboige --hostname github.com)   gh api "repos/jsboige/CoursIA/actions/runners?per_page=100"   --jq '[.runners[] | select(.name|startswith("myia-ai-01-linux-waiter"))]
+        | "online=\([.[]|select(.status=="online")]|length)"'
+```
+
+Mesure au déploiement (2026-09-07T00:39Z) : **`online=12`**, 12 conteneurs `Up` sur l'hôte, et deux slots `busy` dans la minute suivante.
+
+**Déploiement sur une autre machine** : copier les deux fichiers de `persist/` vers `/usr/local/bin/` et `/etc/systemd/system/`, ajuster `COURSIA_RUNNER_WAITER_NAME_PREFIX` (défaut `myia-ai-01-linux-waiter`) et le `N` de l'`ExecStart`, puis `systemctl enable --now`. Ne **pas** relancer `supervise.sh waiters` à la main en session : c'est précisément ce que cette unité remplace.
+
 ### Persistance du superviseur — déployée sur po-2024 (systemd dans Ubuntu + holder WSL)
 
 `supervise.sh` vit dans une session : si elle meurt, les slots en ligne consomment leur inscription au prochain job et rien ne les relance. Le déploiement durable est **posé et mesuré sur po-2024** (2026-09-02, mandat user « Il faut du persistant !!! ») : les slots ont quitté Docker Desktop pour la distro **Ubuntu sous systemd**, et le réveil de la distro est **tenu** par un processus holder Windows. Copies de référence committées dans `scripts/ci/docker/linux-runner/persist/`.

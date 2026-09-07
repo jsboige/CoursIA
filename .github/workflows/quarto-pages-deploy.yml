@@ -145,9 +145,23 @@ jobs:
         # .ipynb (execute.enabled: false) : ils sont RENDUS en HTML statique avec
         # echo:true (EPIC #10921, #10923) — code affiché + outputs déjà validés et
         # commités par les workers (règle C.2), sans kernel.
-        run: quarto render --to html
+        # #14597 : le pipeline horodate chaque ligne (builtin bash, zéro fork) et
+        # garde une copie pour le step "Report render phase timings" -- la phase
+        # post-rendu (assemblage du site : index de recherche sur 3122 pages,
+        # manifests) est muette dans le log, mesurable 2:56-15:09 selon le pool.
+        run: |
+          set -o pipefail
+          quarto render --to html 2>&1 \
+            | while IFS= read -r line; do printf '%(%H:%M:%S)T %s\n' -1 "$line"; done \
+            | tee render-timed.log
         # Pas de --execute : sinon ça tente de ré-exécuter les notebooks = impossible
         # sans kernels .NET Interactive / Lean 4 / conda Python spécialisés.
+
+      - name: Report render phase timings
+        # Mesure (#14597), pas une gate : exit 0 toujours, "not found" si un
+        # marqueur manque (changement de format de log Quarto = rapport dégradé,
+        # pas un build rouge). Ajoute le tableau de phases au job summary.
+        run: python scripts/quarto_render_timing.py render-timed.log
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
@@ -286,8 +300,21 @@ jobs:
         # `quarto render` SANS argument de fichier rend tout ce que la liste
         # porte : c'est pourquoi le mode `empty` saute le step au lieu de lancer
         # un rendu sur une liste vide, qui rendrait le site entier.
+        # Horodatage + tee comme le job `build` (#14597).
         if: steps.scope.outputs.mode != 'empty'
-        run: quarto render --to html
+        run: |
+          set -o pipefail
+          quarto render --to html 2>&1 \
+            | while IFS= read -r line; do printf '%(%H:%M:%S)T %s\n' -1 "$line"; done \
+            | tee render-timed.log
+
+      - name: Report render phase timings
+        # #14597 : en jambe PR, le rapport n'a de sens que sur un rendu COMPLET
+        # (mode full = config/theme/scripts touches) -- le cas exact qui tuait
+        # des runs a 53 min (#14225). Sur un rendu scope (1-2 documents), la
+        # phase post-rendu n'est pas representative et le rapport resterait muet.
+        if: steps.scope.outputs.mode == 'full'
+        run: python scripts/quarto_render_timing.py render-timed.log
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'

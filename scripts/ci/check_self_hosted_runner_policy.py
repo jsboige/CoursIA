@@ -214,6 +214,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "md-content-loss-gate.yml",
     "ml-tests.yml",
     "notebook-output-failure-ratchet.yml",
+    # jumeau output-flood (#14959, meme forme moteur que le failure-ratchet
+    #   ci-dessus : garde Python pur stdlib, garde same-repo au niveau job,
+    #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
+    "notebook-output-flood-ratchet.yml",
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",

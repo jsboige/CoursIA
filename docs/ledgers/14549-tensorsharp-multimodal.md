@@ -378,3 +378,35 @@ Chaque run porte `RuntimeWarning: invalid value encountered in cast` (`nodes.py:
 **Effet acceptance #14549 critère 4** : la jambe ComfyUI passe de "non mesuré" à "mesuré + bloqué par défaut de stack documenté" (#14808). La clôture définitive du critère attend le fix #14808 (parité même-modèle) — geste séparé, lane genai-stack.
 
 **Méthodo** : scripts scratchpad (workflow ComfyUI API-format, matrix NaN, discriminants E/F) ; artefacts `c272_*.png` conservés dans `C:/Users/jsboi/tensorsharp-investigation/` (hors repo) ; pics VRAM échantillonnés 3 s côté hôte pendant les runs ; timings server extraits de `/history` (execution_start→execution_success) et conciliés avec le wall client (écart < 1 s).
+
+## c.273 — Fix #14808 livré : le GGUF du conteneur était corrompu (pas la stack) — parité même-modèle DÉBLOQUÉE et mesurée
+
+**Date** : 2026-09-07 (lane myia-po-2023:CoursIA-2, issue #14808). Reprise du probe c.272 à l'identique : même conteneur `comfyui-qwen`, même RTX 3090 (`cuda:0`), même entrée `test_input_c272.png` (768×512), même prompt "Add a small red heart in the upper-right corner", latents 1248×832, workflow extrait des métadonnées PNG du run NaN r1 (seed 42, LoRA Lightning 4 steps cfg 1 shift 3.1, `TextEncodeQwenImageEditPlus`).
+
+### Diagnostic — la cause racine est le FICHIER, pas la stack
+
+1. **Update custom node d'abord (exonération)** : ComfyUI-GGUF `01f8845 → 6ea2651` (13 commits, dont les fixes dequant `a57094a`/`8493db6`/`795e451` ; le patch local gemma préservé en stash, désormais couvert upstream par `9ecc3c4`). Restart conteneur, re-run probe seed 42 : **NaN persiste** (std=0, 244 s froid). Le custom node n'est pas la cause.
+2. **Sonde indépendante** : déquant numpy de référence (`gguf.quants.dequantize`, implémentation gguf-py indépendante du code torch du custom node) sur le GGUF du volume : **NaN/Inf dans les blocs Q4_K/Q5_K de tensors de modulation adaLN** (`transformer_blocks.*.img_mod.1.weight`, `txt_mod.1.weight`, `txt_mlp.net.*`, `attn.add_q/add_v_proj.weight`…), absmax 5,3e7 — un seul de ces tensors suffit à contaminer tout le forward (adaLN). La corruption est dans les **bytes du fichier**.
+3. **Les « deux » GGUF n'en étaient qu'un nommé** : SHA256 de la copie TensorSharp (fonctionnelle, c.266/c.270) = `8677bac9…` ; SHA256 du fichier du volume ComfyUI = `b25fe1f5…`. **L'affirmation c.272 « le même GGUF » était fausse** — deux téléchargements distincts, et la contre-preuve tenait au mauvais. Contre-scan de la copie `8677bac9` par la même sonde numpy : **846 tensors quantifiés, 0 corrompus**.
+4. Conséquence pour l'isolement c.272 : le point « le fichier GGUF n'est pas corrompu » était exact pour la copie TensorSharp, inexact pour celle du conteneur. ComfyUI 0.25.0 (`dc3f8f31`), la détection 2511 (marqueur `__index_timestep_zero__` présent), le dtype bf16 au chargement, le TE fp16 (exonéré par le contraste 2509) : tous rétablis dans leurs droits.
+
+### Fix appliqué + re-run probe (acceptance #14808)
+
+- **Fix** : remplacement du fichier du volume par la copie saine `8677bac9` (l'ancienne conservée le temps du diagnostic sous `*.corrupt-b25fe1f5.gguf`, puis purgée) ; custom node laissé à `6ea2651` (hygiène). Restart conteneur (purge du cache mémoire).
+- **Re-run seed 42 (froid)** : 274,8 s client — **édition réelle** : std **44,76** (vs 0), scène préservée (diff vs input mean 3,54/255, max 186), **19 168 px rouges dont 2 519 dans le quintile supérieur droit** — l'objet demandé par le prompt est au bon endroit. Plus aucun `invalid value encountered in cast`.
+- **Run chaud (seed 43, cache cassé — le premier essai seed 42 a répondu 0,02 s depuis le node-cache)** : **35,70 s server / 42,4 s client**, std 44,71, 3 819 px rouges UR. Édition valide.
+
+### Verdict parité — critère 4 de #14549 : CLÔTURÉ sur ce datapoint
+
+| Voie | Modèle | Recette | Latence (chaud) | Source |
+|---|---|---|---|---|
+| ComfyUI 0.25.0 + ComfyUI-GGUF `6ea2651` | 2511 Q4_K_M (`8677bac9`) + Lightning 4-step | 4 steps cfg 1 shift 3.1 | **35,70 s server** | ce grain (c.273) |
+| TensorSharp.Cli | 2511 Q4_K_M (`8677bac9`) + même LoRA Lightning | 4 steps | denoise 38,8-46,7 s ; **≈ 81 s wall/invocation** (rechargement inclus) | c.266/c.270 |
+
+**À modèle, quant, LoRA et recette identiques, la latence d'édition ComfyUI (35,7 s) et TensorSharp (38,8-46,7 s de denoise) sont du même ordre** ; l'avantage TensorSharp (~81 s wall par invocation) tenait au rechargement par invocation, pas au moteur. L'ancienne ligne §5 "ComfyUI ~25-30 s" est définitivement invalidée : ces 28-29 s caractérisaient un chemin à NaN. VRAM comparable (c.272 : pic 20 755 MiB ComfyUI vs 22 169 MiB TensorSharp A2, même 3090).
+
+**QA visuel** : l'analyse pixel (std, diff localisé, comptage rouge positionnel) est livrée ci-dessus ; le regard œil-sur-image reste à router vers une lane à vision (MiniMax/ai-01, cf `model-delegation.md` §Capacité vision) au merge-gate — la lane exécutante (GLM) ne voit pas.
+
+**Leçon ops** : un NaN uniforme multi-configurations sur un modèle quantifié se sonde AVANT toute hypothèse de stack — `sha256sum` du fichier + déquant de référence numpy par tensor (quelques minutes) discriminait fichier-vs-chemin dès le départ. Deux « mêmes » fichiers téléchargés séparément ne sont pas le même fichier : le hash fait foi, pas le nom.
+
+**Méthodo** : scripts scratchpad (`c272_replay.py` + variante seed 43, workflow API-format extrait des métadonnées PNG du run NaN r1 — le replay est ainsi garanti identique) ; sonde `gguf.quants.dequantize` numpy par tensor ; artefacts `c273_replay_fixed_00002_.png` (seed 42) et `c273_warm_s43_00001_.png` (seed 43) dans `C:/Users/jsboi/tensorsharp-investigation/` (hors repo) ; timings server extraits des logs (`Prompt executed in …`).
