@@ -39,7 +39,7 @@
 | `04-6-Audiobook-Pipeline.ipynb` | 6 | 0 | 0 | 2 |
 | `Sudoku-18-Comparison-Csharp.ipynb` | 2 | 0 | 3 | 0 |
 | `Sudoku-18-Comparison-Python.ipynb` | 1 | 2 | 2 | 0 |
-| `Infer-101.ipynb` | 0 | 0 | 4 | 10 |
+| `Infer-1b-Premiers-Modeles.ipynb` | 0 | 0 | 4 | 10 |
 | `QC-Py-26-LLM-Trading-Signals.ipynb` | 0 | 0 | 4 | 0 |
 | `Sudoku-10-ORTools-Csharp.ipynb` | 0 | 0 | 4 | 0 |
 | `App-2b-GraphColoring-CSharp.ipynb` | 0 | 0 | 3 | 0 |

@@ -3,19 +3,22 @@ import Astar.Graph
 import Astar.Heuristic
 
 /-!
-# Astar.Optimality — admissible ⇒ optimal (lemme abstrait d'optimalité)
+# Astar.Optimality — borne en `f` (lemme abstrait : borne de suffixe)
 
-Théorème phare de la série (issue #4048, registre #3801 — prong B « problème
-non-trivial »). On prouve la **borne en `f`** qui est le mécanisme exact d'optimalité
-de A* : sous une heuristique admissible, `h(start)` ne dépasse jamais le coût d'un
-chemin réalisé jusqu'au but. Appliquée à chaque suffixe du chemin optimal, cette borne
-donne `f(nœud) = g(nœud) + h(nœud) ≤ coût optimal` en tout point du chemin optimal —
-donc A* (qui déploie le nœud de `f` minimal) ne dépasse jamais la frontière du coût
-optimal et renvoie un chemin de coût optimal (Hart, Nilsson & Raphael, 1968).
+Brique de la série (issue #4048, registre #3801 — prong B « problème non-trivial »).
+On prouve la **borne en `f`** : sous une heuristique admissible, pour tout nœud
+`p.get i` d'un chemin `p` allant au but, `h(p.get i)` ne dépasse jamais le coût du
+suffixe restant `pathCost (p.drop i)`. C'est le cœur mathématique de l'argument
+d'optimalité de A* (Hart, Nilsson & Raphael, 1968) — mais **seulement ce cœur**,
+sous forme abstraite.
 
-On prouve la **forme abstraite** (sans modéliser la file de priorité complète), comme
-suggéré par #4048 : `hStar` est un « vrai coût optimal restant » satisfaisant la
-propriété de borne inférieure `IsTrueRemainingCost`.
+Le lake ne modélise **pas** l'algorithme A* (ni file de priorité, ni ensemble fermé,
+ni chemin retourné) : il n'y a donc **aucun théorème d'optimalité d'A*** ici. La
+garantie « heuristique admissible ⇒ A* renvoie un chemin de coût optimal » — **fausse**
+pour la variante Graph-Search sans ré-ouverture (cf #14824) — n'est pas prouvée.
+
+`hStar` est un « vrai coût optimal restant » : propriété de borne inférieure
+`IsTrueRemainingCost` (la forme abstraite, cf #4048).
 -/
 
 namespace Astar
@@ -53,7 +56,7 @@ lemma suffix_pathFrom (p : Path V) (i : Fin p.length) (start goal : V)
     rw [List.getLast?_drop, if_neg hne]
     exact hlast
 
-/-! ## Théorème phare : borne en `f` et optimalité -/
+/-! ## Théorème phare : borne en `f` (borne de suffixe) -/
 
 /-- **Borne en `f` au départ.** Heuristique admissible + `hStar` borne inférieure ⇒
     `h(start) ≤ pathCost(p)` pour tout chemin `p` allant au but depuis `start`.
@@ -63,28 +66,22 @@ theorem admissible_head_bound (h hStar : V → NNReal) (hAdm : Admissible h hSta
     (hp : PathFrom start goal p) : h start ≤ pathCost G p :=
   le_trans (hAdm start) (hStar_lb start p hp)
 
-/-- **A* admissible ⇒ optimal (lemme abstrait).** Théorème phare (issue #4048,
-    registre #3801).
+/-- **Borne en `f` sur un suffixe (heuristique admissible).** Pour tout nœud
+    `p.get i` d'un chemin `p` allant au but, `h(p.get i) ≤ pathCost(p.drop i)` :
+    la valeur de l'heuristique admissible ne dépasse jamais le coût du suffixe
+    restant. C'est la borne en `f` (`f = g + h`) en chaque nœud — le cœur abstrait
+    de l'argument d'optimalité de A* (Hart, Nilsson & Raphael, 1968).
 
-    Sous une heuristique **admissible**, pour tout nœud `p.get i` d'un chemin `p`
-    allant au but, l'heuristique ne dépasse jamais le coût du suffixe restant
-    `pathCost (p.drop i)`. C'est la **borne en `f`** en chaque nœud : combinée à
-    `f(nœud) = g(nœud) + h(nœud)` et au fait que `g + suffixCost = pathCost`, elle
-    donne `f(nœud) ≤ pathCost(optimal)` le long du chemin optimal — le mécanisme
-    exact d'optimalité de A* (déploiement du `f` minimal ⇒ la frontière du coût
-    optimal n'est jamais dépassée). Voir Hart, Nilsson & Raphael (1968). -/
-theorem admissible_implies_optimal (h hStar : V → NNReal) (hAdm : Admissible h hStar)
+    **Portée — ce que ce théorème ne dit pas.** Il borne l'heuristique par le coût
+    du suffixe ; il ne prouve **pas** qu'A* renvoie un chemin de coût optimal. Le
+    lake ne modélise ni file de priorité, ni ensemble fermé, ni chemin retourné :
+    la garantie « heuristique admissible ⇒ A* optimal » (fausse pour la variante
+    Graph-Search sans ré-ouverture, cf #14824) n'est pas un théorème de ce lake. -/
+theorem admissible_le_suffix_cost (h hStar : V → NNReal) (hAdm : Admissible h hStar)
     (goal start : V) (p : Path V) (hStar_lb : IsTrueRemainingCost G hStar goal)
     (hp : PathFrom start goal p) (i : Fin p.length) :
     h (p.get i) ≤ pathCost G (p.drop i.val) := by
   apply le_trans (hAdm (p.get i))
   exact hStar_lb (p.get i) (p.drop i.val) (suffix_pathFrom p i start goal hp)
-
-/-- **Corollaire : borne globale au départ.** Cas particulier `i = 0`
-    (le nœud de départ) : `h(start) ≤ pathCost(p)`. -/
-theorem admissible_implies_optimal_start (h hStar : V → NNReal) (hAdm : Admissible h hStar)
-    (goal start : V) (p : Path V) (hStar_lb : IsTrueRemainingCost G hStar goal)
-    (hp : PathFrom start goal p) : h start ≤ pathCost G p :=
-  admissible_head_bound G h hStar hAdm goal start p hStar_lb hp
 
 end Astar

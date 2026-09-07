@@ -46,7 +46,14 @@
       csharp_sha: 267bb2f17b420891cf8a8327a400b0108c042af8
       content_python_sha: c6385a26111765afb7ec553f91383737de2e0188f9c99d0e2bbfbd0a27d9fbae
       content_csharp_sha: 37f7a9e8af4f5d223100fd335a54cd978c1ca3a883adf7bb03c45f0fc25ab953
+    - date: "2026-09-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 8ed15781f03bc2bb782134efa55f0d5d0f4191ac
+      csharp_sha: 0247f31ba702944e4dcb2674983decc60d59ae6f
+      content_python_sha: 711df3c6b7bb45c7a060eee06d420c8aee70e2e6d79c60705a36ca41b7451bd9
+      content_csharp_sha: 5b6820f9dbe7ab7670aa8993591325528b715cdc4c2209adf6792b811312bf67
   known_differences:
+    - 'PR #14874 (2026-09-06, myia-po-2023:CoursIA-2) : les DEUX jumeaux edites symetriquement -- garde degenerescence vide h_max (Python max(default=0) / C# DefaultIfEmpty(0).Max()) + landmarks intersection des achieveurs (Python set.intersection(*) / C# Aggregate+IntersectWith) + re-exec outputs des deux cotes (#14835). Attestation de parite apres re-audit firsthand (aucun max()/.Max() nu restant, intersection presente aux deux cotes) ; le drift etait le blob SHA des deux notebooks bouges, pas un desaxage semantique.'
     - 'PR #12108 (2026-08-22, reprise #12104) : cote C#, normalisation source_list_missing_newlines (backslash-n manquants sur elements de liste source, 16 cellules NO_AUTO_FIX reprises manuellement) -- drift de forme JSON uniquement, contenu pedagogique et cellules code inchanges.'
     - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."
     - "Python : unified-planning + pyperplan (engine production, cell 46). C# : Tranche 1 from-scratch (h_max/h_add/h_FF/landmarks) + Tranche 2 Fast Downward via API Docker (cell 6.2)."

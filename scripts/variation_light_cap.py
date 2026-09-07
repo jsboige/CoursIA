@@ -39,7 +39,12 @@ Modes
                        same lane-day. Emits `cap_reached` (the union, when the
                        candidate carries the LIGHT-genre motif, #10341),
                        `tier_cap_reached`, `cap_exceeded_by_genre`, `lane`,
-                       `consumed_by`, and a `counts: "tier+genre"` disclosure.
+                       `consumed_by`, `budget_spent_by` (#14899: a ready-made
+                       citation of the grain(s) that spent the budget -- the
+                       merged LIGHT for the TIER axis, the merged light-genre
+                       grains for the GENRE axis -- so the guard's message
+                       never falls back to naming nothing), and a
+                       `counts: "tier+genre"` disclosure.
 
 Parsing
 -------
@@ -1165,10 +1170,31 @@ def compute_signals(
 _GH_DEFAULT_PAGE = 30
 
 
+class CapInputError(Exception):
+    """The merged-PR replay file is absent, unreadable, or not a JSON array.
+
+    #14849: this is an UNKNOWN verdict, never a permissive False. Pre-fix,
+    _load crashed (or sys.exit'd) before any JSON hit stdout, the workflow's
+    `|| echo "False"` reader turned the crash into "cap not reached", and a
+    LIGHT over budget was silently re-authorized. Raising lets main() emit
+    {"cap_reached": null, "verdict": "unknown"} so the workflow can warn and
+    leave labels untouched instead of guessing.
+    """
+
+
 def _load(path: str) -> list[dict]:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as e:
+        raise CapInputError(f"replay file absent/unreadable: {path} ({e})") from e
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as e:
+        raise CapInputError(f"replay file is not valid JSON: {path} ({e})") from e
     if not isinstance(data, list):
-        sys.exit(f"--replay/--check-pr expects a JSON array, got {type(data).__name__}")
+        raise CapInputError(
+            f"--replay/--check-pr expects a JSON array, got {type(data).__name__}"
+        )
     if len(data) == _GH_DEFAULT_PAGE:
         print(
             f"AVERTISSEMENT: le jeu de comptage fait exactement {_GH_DEFAULT_PAGE} "
@@ -1223,7 +1249,18 @@ def main(argv: list[str] | None = None) -> int:
     if not args.replay:
         p.error("--replay FILE (the merged-PR set) is required")
 
-    merged = _load(args.replay)
+    try:
+        merged = _load(args.replay)
+    except CapInputError as e:
+        # #14849: unassessable input = UNKNOWN verdict (same family as the
+        # no-Grain-tag / no-lane paths: cap_reached null), never a permissive
+        # False. Advisory organ -> exit 0; the workflow surfaces ::warning::
+        # and leaves labels untouched. A valid empty array `[]` still computes
+        # a legitimate False (it goes through _load without raising).
+        print(f"ENTREE NON EXPLOITABLE : {e} -- verdict UNKNOWN, cap non calcule.",
+              file=sys.stderr)
+        print(json.dumps({"cap_reached": None, "verdict": "unknown", "reason": str(e)}))
+        return 0
 
     if args.check_pr is not None:
         # CI mode: the current PR is OPEN, so its body is NOT in the merged set.
@@ -1359,6 +1396,34 @@ def main(argv: list[str] | None = None) -> int:
         picker_cmd = None
         if vein_runs_list:
             picker_cmd = picker_command_for_vein(vein_runs_list[0], lane)
+        # #14899 : the workflow's "budget deja consomme" message must NAME the
+        # grain(s) that spent it. `consumed_by` only knows the TIER axis
+        # (earliest merged LIGHT); when the GENRE axis is what fired (MED/readme,
+        # MED/guard, ... -- "light-genre, quel que soit le tier declare"), it is
+        # null and the message fell back to "une LIGHT anterieure de cette
+        # lane", naming nothing. That anonymity is what forced the manual
+        # forensics behind #14899 (and the misread that followed).
+        if status["consumed_by"]:
+            budget_spent_by = (
+                f"#{status['consumed_by']['number']} "
+                f"(merge a {status['consumed_by']['mergedAt']})"
+            )
+        else:
+            genre_consumers = [
+                r for r in _candidate_record(merged, lane) if r["is_light_genre"]
+            ]
+            if genre_consumers:
+                detail = ", ".join(
+                    f"#{r['number']} ({r['tier']}/{r['genre']}, "
+                    f"merge a {r['mergedAt']})"
+                    for r in genre_consumers
+                )
+                budget_spent_by = (
+                    "axe genre G-VAR-2/3 (light-genre, quel que soit le "
+                    f"tier declare) : {detail}"
+                )
+            else:
+                budget_spent_by = None
         print(json.dumps({
             "pr": args.check_pr,
             "lane": lane,
@@ -1375,6 +1440,7 @@ def main(argv: list[str] | None = None) -> int:
             "genre_cap": genre_cap,
             "lane_grains": status["lane_grains"],
             "consumed_by": status["consumed_by"],
+            "budget_spent_by": budget_spent_by,
             "counts": "tier+genre+vein",
         }))
         return 0

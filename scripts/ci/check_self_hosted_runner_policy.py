@@ -214,6 +214,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "md-content-loss-gate.yml",
     "ml-tests.yml",
     "notebook-output-failure-ratchet.yml",
+    # jumeau output-flood (#14959, meme forme moteur que le failure-ratchet
+    #   ci-dessus : garde Python pur stdlib, garde same-repo au niveau job,
+    #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
+    "notebook-output-flood-ratchet.yml",
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
@@ -284,6 +288,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   waiter pool (1 vCPU / 1 GiB, #14303) is exactly the third term that
     #   removes the objection. Rollback = revert of the routing PR.
     "pr-gate.yml",
+    # #14859 (owner myia-po-2026:CoursIA) : garde advisory pur-Python sur les
+    #   caracteres de controle ayant mange un escape LaTeX dans les portees
+    #   math des notebooks. pull_request/push filtrant **.ipynb + detecteur +
+    #   workflow ; scan PR-diff (check_latex_control_chars.py, stdlib-only) ;
+    #   occurrences = ::warning:: + exit 0 (jamais bloquant), exit 2 (notebook
+    #   illisible) = warning UNKNOWN nomme + exit 1 (#14849). Aucun secret,
+    #   aucun GITHUB_TOKEN cote job, garde same-repo universelle parenthesee
+    #   au niveau job (#13874). Runner = jambe Linux containerisee
+    #   (LINUX_RUNNER_LABELS, meme profil que notebook-cell-source-parses.yml
+    #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist).
+    "notebook-latex-control-chars.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

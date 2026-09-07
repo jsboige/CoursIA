@@ -41,14 +41,18 @@ The script does NOT touch:
     output format is opaque to a regex)
 
 The script is read-only on the notebook: it does NOT edit, only classifies.
-Verdicts: CLEAN / FABRICATION_DETECTED / SKIPPED-LITERATURE / ERROR.
+Notebook verdicts: CLEAN / FABRICATION_DETECTED / CONTRADICTION_DETECTED /
+CLAIM_UNPROVEN / ERROR. Individual relational claims are classified as
+SUPPORTED / CONTRADICTED / UNPROVEN.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
+from decimal import Decimal
 import sys
 from pathlib import Path
 
@@ -73,6 +77,17 @@ NUMERIC_RE = re.compile(
     """,
     re.VERBOSE | re.IGNORECASE,
 )
+
+# Optional machine-readable contract for claims that cannot be checked by
+# numeric presence alone. Code outputs expose named scalar metrics and the
+# adjacent markdown states an explicit relation. JSON is parsed as data only;
+# no expression is evaluated.
+METRICS_RE = re.compile(r"(?m)^\s*CLAIM_METRICS\s+(\{[^\r\n]*\})\s*$")
+CLAIM_CHECK_RE = re.compile(
+    r"<!--\s*claim-check\s*:\s*(.*?)\s*-->",
+    re.IGNORECASE | re.DOTALL,
+)
+RELATIONAL_OPERATORS = {"<", "<=", ">", ">=", "==", "!="}
 
 
 def _normalize_num(token: str) -> str:
@@ -139,7 +154,11 @@ def _output_text(outputs: list) -> str:
             continue
         ot = out.get("output_type") or out.get("type")
         if ot == "stream":
-            chunks.append(str(out.get("text", "")))
+            value = out.get("text", "")
+            if isinstance(value, list):
+                chunks.append("".join(str(item) for item in value))
+            else:
+                chunks.append(str(value))
         elif ot in ("execute_result", "display_data"):
             data = out.get("data", {}) or {}
             for k in ("text/plain", "text/html", "application/vnd.jupyter.widget-view+json"):
@@ -188,23 +207,26 @@ def _is_md_heading_line(line: str) -> bool:
     return line.lstrip().startswith("#")
 
 
-def _strip_md_structure(src: str) -> str:
-    """Drop heading lines + code fences + table-headers so we only scan prose
-    sentences. Code fences are STATEFUL (a ``` line opens and closes a block)."""
+def _strip_fenced_blocks(src: str) -> str:
+    """Drop fenced examples while preserving ordinary markdown prose."""
     kept: list[str] = []
     in_fence = False
     for line in src.splitlines():
         if line.strip().startswith("```"):
             in_fence = not in_fence
             continue
-        if in_fence:
-            continue
-        if _is_md_heading_line(line):
-            continue
-        if line.lstrip().startswith("|"):
-            continue
-        kept.append(line)
+        if not in_fence:
+            kept.append(line)
     return "\n".join(kept)
+
+
+def _strip_md_structure(src: str) -> str:
+    """Drop headings, fenced examples, and table rows before scanning prose."""
+    return "\n".join(
+        line
+        for line in _strip_fenced_blocks(src).splitlines()
+        if not _is_md_heading_line(line) and not line.lstrip().startswith("|")
+    )
 
 
 # Tokens that, when appearing immediately before a number, mark the
@@ -442,6 +464,16 @@ _THRESHOLD_OP_RE = re.compile(
     r"[<>≤≥]=?\s*\d|\d\s*[<>≤≥]=?",
 )
 
+# Family D (#14905): grid coordinates inside parentheses, like
+# '(2,2)' / '(1,1)', are TUPLES (cell positions), not francophone decimals.
+# _normalize_num collapses '(2,2)' -> '2.2', so the detector searches for a
+# '2.2' that never exists in the 3x3-grid code output and flags a legitimate
+# prose coordinate as fabricated (DecPyMC-7 md[67]: 'un but en (2,2) et un
+# obstacle en (1,1)'). Criterion (acceptance #14905): a SINGLE digit on each
+# side of a comma, wrapped in a parenthesized pair. '(0,75)' -- two digits
+# after the comma -- is a genuine decimal and stays eligible.
+_COORD_TUPLE_RE = re.compile(r"\(\s*\d\s*,\s*\d\s*\)")
+
 
 def _line_around(src: str, match_pos: int, match_end: int) -> str:
     """Return the source line containing the [match_pos, match_end) span.
@@ -532,6 +564,364 @@ def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
     return bool(_THRESHOLD_OP_RE.search(span))
 
 
+# ---------------------------------------------------------------------------
+# #14905 Family D -- input numbers: legitimately absent from the output
+# because they are inputs (hyperparameters, problem specifications). A class
+# distinct from the coordinate fix (different cause, separate filter -- the
+# issue pins this separation). Measured instances on DecPyMC-7:
+#   md[15]/md[19]  '$\gamma = 0.9$' / '$V_1 = \gamma(0.8 + 0.2\,V_1)$'
+#   md[36]         '`[0.2, 0.4, 0.6, 0.8, 0.5]`' (arm means = problem spec)
+#   md[38]         'Bras 1=0.3, Bras 2=0.5' (enumerated environment spec)
+# ---------------------------------------------------------------------------
+
+# Greek macros name parameters (gamma, lambda, ...), not cited metrics.
+_GREEK_MACRO_RE = re.compile(
+    r"\\(?:alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|"
+    r"vartheta|iota|kappa|lambda|mu|nu|xi|rho|varrho|sigma|varsigma|"
+    r"tau|upsilon|phi|varphi|chi|psi|omega)\b"
+)
+
+
+def _nearest_math_span(prose: str, pos: int) -> str | None:
+    """Walk `$` delimiters around `pos` to find the enclosing inline math
+    span; return its content or None (same walk as
+    `_nearest_inline_code_span`, for `$`)."""
+    WIN = 200
+    lo = max(0, pos - WIN)
+    hi = min(len(prose), pos + WIN)
+    window = prose[lo:hi]
+    dollars = [lo + i for i, c in enumerate(window) if c == "$"]
+    pos_idx = -1
+    for i, d in enumerate(dollars):
+        if d <= pos:
+            pos_idx = i
+        else:
+            break
+    if pos_idx < 0 or pos_idx + 1 >= len(dollars):
+        return None
+    open_pos = dollars[pos_idx]
+    close_pos = dollars[pos_idx + 1]
+    if open_pos >= pos or close_pos <= pos:
+        return None
+    return prose[open_pos + 1:close_pos]
+
+
+# Definition-introduction context for D1. A greek assignment is an INPUT only
+# when the prose introduces it as such; the same form carries a CITED
+# posterior elsewhere (fleet collateral, PyMC-08 md[11] '(perdant,
+# $\mu = 20.8$)' -- an estimated TrueSkill mean, absent from the output
+# window: flagging it is the organ's job, not a FP). Gate on the line.
+_MATH_DEF_HINT_RE = re.compile(
+    r"(?i)\b(?:avec|soit|posons|fixons|fix\w*|choisis\w*|"
+    r"param\w*|hyperparam\w*|valeur\s+de|d[ée]fini\w*)\b"
+)
+
+
+def _is_math_parameter_definition(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D1 (#14905): the match sits inside a `$...$` span that is a
+    parameter DEFINITION -- an `=` whose LHS is a greek macro
+    (`$\\gamma = 0.9$`) or a subscripted symbol (`$V_1 = ...$`), introduced
+    by a definition verb on the line ('avec', 'soit', 'fixe', 'parametre').
+
+    Two measured discriminators, both from fleet collateral:
+    - a latin unsubscripted metric (`$R^2 = 0.85$`) is a citation -- no
+      symbol LHS, stays checked;
+    - a greek symbol holding an ESTIMATED value (`$\\mu = 20.8$` read off a
+      plot) is a citation too -- no definition verb on the line, stays
+      checked. The verb gate separates 'Avec $\gamma = 0.9$' (founding
+      instance, DecPyMC-7 md[15]/md[19]) from it.
+    """
+    span = _nearest_math_span(prose, match_pos)
+    if span is None or "=" not in span:
+        return False
+    lhs = span.partition("=")[0]
+    if not (_GREEK_MACRO_RE.search(lhs) or re.search(r"\w_\{?\w", lhs)):
+        return False
+    line = _line_around(prose, match_pos, match_end)
+    return bool(_MATH_DEF_HINT_RE.search(line))
+
+
+def _is_numeric_list_literal(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D2 (#14905): the match sits inside a `[...]` group whose whole
+    content is a comma-separated list of numerics ('[0.2, 0.4, 0.6, 0.8,
+    0.5]') -- a specification vector echoed in prose, not a citation from
+    the output. A single-element bracket is not a list: require >= 1 comma.
+    """
+    open_pos = prose.rfind("[", 0, match_pos)
+    if open_pos < 0:
+        return False
+    if prose.find("]", open_pos + 1, match_pos) >= 0:
+        return False
+    close_pos = prose.find("]", match_end)
+    if close_pos < 0:
+        return False
+    inner = prose[open_pos + 1:close_pos]
+    return bool(re.fullmatch(r"\s*[\d.]+(?:\s*,\s*[\d.]+)+\s*", inner))
+
+
+def _is_labeled_enumeration_value(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D3 (#14905): the match is the value side of a labeled
+    enumeration in prose -- 'Bras 1=0.3', 'Couche 2=0.5' (a word, a numeral,
+    then `=`). The founding instance is DecPyMC-7 md[38] 'Bras 1=0.3, Bras
+    2=0.5': the environment's arm means, given as spec, never printed.
+
+    The word+numeral LHS is the discriminator: 'accuracy=0.9' (no numeral in
+    the label) and 'l'accuracy est de 0.9' (prose citation) stay checked.
+
+    Fleet collateral (DecInfer-01 md[24]): inside a math span,
+    '\\times 60 = 52.7' wears the same shape ('word numeral ='). Numbers
+    inside `$...$` are formula content, never prose enumerations -- excluded
+    -- and the label must be >= 2 chars so a LaTeX macro fragment ('s' from
+    '\\times') cannot pose as one.
+    """
+    if _nearest_math_span(prose, match_pos) is not None:
+        return False
+    pre = prose[max(0, match_pos - 30):match_pos]
+    if "\n" in pre:
+        pre = pre.rsplit("\n", 1)[-1]
+    return bool(re.search(r"[A-Za-zÀ-ÿ]{2,}\s+\d+\s*=\s*$", pre))
+
+
+def _is_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
+    """Family D umbrella (#14905): the number is an INPUT (hyperparameter,
+    specification, enumerated environment value) -- legitimately absent from
+    the previous code cell's output because nothing measured it.
+
+    A fourth candidate form was measured and REJECTED: the bare paren
+    apposition ('(moyenne 0.8)' spec vs '(ecart-type 74.93)' cited
+    statistic -- Lab1 fleet collateral) is indistinguishable by form, so it
+    stays flagged.
+    """
+    return (
+        _is_math_parameter_definition(prose, match_pos, match_end)
+        or _is_numeric_list_literal(prose, match_pos, match_end)
+        or _is_labeled_enumeration_value(prose, match_pos, match_end)
+    )
+
+
+# ---------------------------------------------------------------------------
+# #14905 -- coordinate pairs: (2,2) is a grid position, not a decimal
+# ---------------------------------------------------------------------------
+
+
+def _is_coordinate_tuple(prose: str, match_pos: int, match_end: int) -> bool:
+    """#14905: a numeric match wrapped in parentheses with a SINGLE digit on
+    each side of the comma ('(2,2)', '(1,1)', '(1,2,3)') is a coordinate /
+    tuple element, not a francophone decimal.
+
+    The founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en
+    (1,1)' -- cells of a 3x3 grid, flattened by `_normalize_num` into the
+    '2.2' / '1.1' decimals, then reported as fabricated because no output
+    contains them. The discriminator is deliberately tight: every integer
+    group inside the parentheses must be ONE digit. '(0,75)' (two-digit
+    group) stays a francophone decimal, '(10,25)' stays out of scope until
+    a measured instance demands it -- extend on evidence, not anticipation.
+    """
+    open_pos = prose.rfind("(", 0, match_pos)
+    if open_pos < 0:
+        return False
+    # A ')' between the '(' and the match means the match sits outside that
+    # group ('(voir section 3) place le but en 2,2' must not be filtered).
+    if prose.find(")", open_pos + 1, match_pos) >= 0:
+        return False
+    close_pos = prose.find(")", match_end)
+    if close_pos < 0:
+        return False
+    inner = prose[open_pos + 1:close_pos]
+    return bool(re.fullmatch(r"\d\s*(?:,\s*\d)+", inner))
+
+
+def _is_scalar(value: object) -> bool:
+    """Return whether value is a finite JSON scalar supported by claims."""
+    if isinstance(value, bool):
+        return True
+    if isinstance(value, int):
+        return True
+    return isinstance(value, float) and math.isfinite(value)
+
+
+def _extract_claim_metrics(
+    output_texts: list[tuple[int, str]],
+) -> tuple[dict[str, object], dict[str, int]]:
+    """Extract nearest named metrics and their code-cell provenance."""
+    metrics: dict[str, object] = {}
+    sources: dict[str, int] = {}
+    for code_idx, text in output_texts:
+        for match in METRICS_RE.finditer(text):
+            try:
+                payload = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            for name, value in payload.items():
+                if (
+                    isinstance(name, str)
+                    and name
+                    and _is_scalar(value)
+                    and name not in metrics
+                ):
+                    metrics[name] = value
+                    sources[name] = code_idx
+    return metrics, sources
+
+
+def _resolve_operand(
+    operand: object,
+    metrics: dict[str, object],
+) -> tuple[object | None, str | None]:
+    """Resolve a metric-name operand or accept a scalar constant."""
+    if isinstance(operand, str):
+        if operand not in metrics:
+            return None, f"metric {operand!r} is absent from the local output window"
+        return metrics[operand], None
+    if _is_scalar(operand):
+        return operand, None
+    return None, "operand must be a metric name or a finite numeric/boolean constant"
+
+
+def _compare_relation(
+    left: object,
+    op: str,
+    right: object,
+    tolerance: int | float,
+) -> bool:
+    """Evaluate one closed relation without evaluating arbitrary code."""
+    if op in {"<", "<=", ">", ">="}:
+        if (
+            isinstance(left, bool)
+            or isinstance(right, bool)
+            or not isinstance(left, (int, float))
+            or not isinstance(right, (int, float))
+        ):
+            raise TypeError("ordered comparisons require numeric operands")
+        return {
+            "<": left < right,
+            "<=": left <= right,
+            ">": left > right,
+            ">=": left >= right,
+        }[op]
+
+    left_numeric = isinstance(left, (int, float)) and not isinstance(left, bool)
+    right_numeric = isinstance(right, (int, float)) and not isinstance(right, bool)
+    if left_numeric and right_numeric:
+        equal = abs(Decimal(str(left)) - Decimal(str(right))) <= Decimal(str(tolerance))
+    elif left_numeric != right_numeric:
+        raise TypeError("equality requires operands of compatible types")
+    else:
+        equal = type(left) is type(right) and left == right
+    return equal if op == "==" else not equal
+
+
+def _check_relational_claims(
+    source: str,
+    markdown_cell: int,
+    metrics: dict[str, object],
+    metric_sources: dict[str, int],
+    window: list[int],
+) -> list[dict]:
+    """Classify explicit claim-check contracts as supported/contradicted/unproven."""
+    results: list[dict] = []
+    for ordinal, match in enumerate(CLAIM_CHECK_RE.finditer(source), start=1):
+        raw_contract = match.group(1)
+        claim: object
+        try:
+            claim = json.loads(raw_contract)
+        except json.JSONDecodeError as exc:
+            results.append({
+                "id": f"markdown-{markdown_cell}-{ordinal}",
+                "status": "UNPROVEN",
+                "reason": f"invalid claim-check JSON: {exc.msg}",
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        generated_id = f"markdown-{markdown_cell}-{ordinal}"
+        supplied_id = claim.get("id") if isinstance(claim, dict) else None
+        claim_id = supplied_id if isinstance(supplied_id, str) and supplied_id else generated_id
+        if not isinstance(claim, dict):
+            results.append({
+                "id": claim_id,
+                "status": "UNPROVEN",
+                "reason": "claim-check must be a JSON object",
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        allowed = {"id", "left", "op", "right", "tolerance"}
+        unknown = sorted(set(claim) - allowed)
+        op = claim.get("op")
+        tolerance = claim.get("tolerance", 0.0)
+        reason = None
+        if unknown:
+            reason = f"unknown claim-check fields: {', '.join(unknown)}"
+        elif not isinstance(supplied_id, str) or not supplied_id:
+            reason = "claim-check id must be a non-empty string"
+        elif "left" not in claim or "right" not in claim:
+            reason = "claim-check requires left and right operands"
+        elif op not in RELATIONAL_OPERATORS:
+            reason = f"unsupported operator: {op!r}"
+        elif (
+            isinstance(tolerance, bool)
+            or not isinstance(tolerance, (int, float))
+            or (isinstance(tolerance, float) and not math.isfinite(tolerance))
+            or tolerance < 0
+        ):
+            reason = "tolerance must be a finite non-negative number"
+        elif op in {"<", "<=", ">", ">="} and tolerance != 0:
+            reason = "tolerance is supported only for equality comparisons"
+
+        left = right = None
+        if reason is None:
+            left, reason = _resolve_operand(claim["left"], metrics)
+        if reason is None:
+            right, reason = _resolve_operand(claim["right"], metrics)
+
+        if reason is not None:
+            results.append({
+                "id": claim_id,
+                "status": "UNPROVEN",
+                "reason": reason,
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        try:
+            supported = _compare_relation(left, op, right, tolerance)
+        except TypeError as exc:
+            results.append({
+                "id": claim_id,
+                "status": "UNPROVEN",
+                "reason": str(exc),
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        metric_names = [
+            operand
+            for operand in (claim["left"], claim["right"])
+            if isinstance(operand, str)
+        ]
+        results.append({
+            "id": claim_id,
+            "status": "SUPPORTED" if supported else "CONTRADICTED",
+            "left": claim["left"],
+            "left_value": left,
+            "op": op,
+            "right": claim["right"],
+            "right_value": right,
+            "tolerance": tolerance,
+            "markdown_cell": markdown_cell,
+            "code_cells": sorted({metric_sources[name] for name in metric_names}),
+            "window": window,
+        })
+    return results
+
+
 def check_notebook(path: Path) -> dict:
     """Scan a single notebook. Returns a structured dict compatible with
     JSON serialization (so the script can be consumed by CI gates)."""
@@ -543,10 +933,12 @@ def check_notebook(path: Path) -> dict:
             "verdict": "ERROR",
             "errors": [f"json.loads failed: {e}"],
             "findings": [],
+            "relational_claims": [],
         }
 
     cells = nb.get("cells", []) or []
     findings: list[dict] = []
+    relational_claims: list[dict] = []
     skipped_lit = 0
     skipped_no_prev = 0
     skipped_no_output = 0
@@ -555,34 +947,48 @@ def check_notebook(path: Path) -> dict:
         if cell.get("cell_type") != "markdown":
             continue
         src = "".join(cell.get("source", []) if isinstance(cell.get("source"), list) else [str(cell.get("source", ""))])
-        if not src or _lit_skip(src):
+        if not src:
             skipped_lit += 1
             continue
-        # Drop heading lines + table-headers + code fences from the prose
-        # we scan (structurals are not quantitative claims).
-        prose = _strip_md_structure(src)
-        # Find the previous code cells (within window) with output
+        # Find the previous code cells (within window) with output.
         prev_code_idxs: list[int] = []
         for j in range(idx - 1, -1, -1):
             if cells[j].get("cell_type") == "code":
                 prev_code_idxs.append(j)
                 if len(prev_code_idxs) >= WINDOW:
                     break
+
+        output_texts: list[tuple[int, str]] = []
+        for j in prev_code_idxs:
+            outputs = cells[j].get("outputs") or []
+            output_texts.append((j, _output_text(outputs)))
+
+        metrics, metric_sources = _extract_claim_metrics(output_texts)
+        relational_claims.extend(
+            _check_relational_claims(
+                _strip_fenced_blocks(src),
+                idx,
+                metrics,
+                metric_sources,
+                prev_code_idxs,
+            )
+        )
+
+        # The literature heuristic suppresses only noisy numeric extraction.
+        # Explicit claim-check contracts remain checkable in long prose cells.
+        if _lit_skip(src):
+            skipped_lit += 1
+            continue
+        # Drop heading lines + table-headers + code fences from the prose
+        # we scan (structurals are not quantitative claims).
+        prose = CLAIM_CHECK_RE.sub("", _strip_md_structure(src))
         if not prev_code_idxs:
             skipped_no_prev += 1
             continue
-        # Concat outputs of the previous code cells (within window)
-        out_chunks: list[str] = []
-        any_output = False
-        for j in prev_code_idxs:
-            outs = cells[j].get("outputs") or []
-            if outs:
-                any_output = True
-            out_chunks.append(_output_text(outs))
-        if not any_output:
+        if not any(text for _, text in output_texts):
             skipped_no_output += 1
             continue
-        raw_out_text = "\n".join(out_chunks)
+        raw_out_text = "\n".join(text for _, text in output_texts)
         # #12076: the direct search compares normalized claim vs normalized
         # output; the fuzzy fallback keeps the RAW text (its comma-gate, clause
         # (c), reads large-number signals from the commas themselves).
@@ -624,6 +1030,14 @@ def check_notebook(path: Path) -> dict:
                 continue
             if _is_threshold_expression(prose, match_pos, match_end):
                 continue
+            # #14905 (two distinct causes, two distinct filters):
+            # (2,2) is a grid coordinate, not the decimal 2.2.
+            if _is_coordinate_tuple(prose, match_pos, match_end):
+                continue
+            # Family D: hyperparameters / specifications are inputs, never
+            # printed by the code cell that follows them.
+            if _is_input_specification(prose, match_pos, match_end):
+                continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
             if norm not in out_text and not _fuzzy_present(norm, raw_out_text):
@@ -636,16 +1050,28 @@ def check_notebook(path: Path) -> dict:
                     "context": _excerpt(src, raw),
                 })
 
-    n_findings = len(findings)
-    verdict = "CLEAN" if n_findings == 0 else "FABRICATION_DETECTED"
+    relational_counts = {
+        status: sum(1 for claim in relational_claims if claim["status"] == status)
+        for status in ("SUPPORTED", "CONTRADICTED", "UNPROVEN")
+    }
+    if findings:
+        verdict = "FABRICATION_DETECTED"
+    elif relational_counts["CONTRADICTED"]:
+        verdict = "CONTRADICTION_DETECTED"
+    elif relational_counts["UNPROVEN"]:
+        verdict = "CLAIM_UNPROVEN"
+    else:
+        verdict = "CLEAN"
     return {
         "path": str(path),
         "verdict": verdict,
         "findings": findings,
+        "relational_claims": relational_claims,
         "stats": {
             "skipped_literature": skipped_lit,
             "skipped_no_prev_code": skipped_no_prev,
             "skipped_no_output": skipped_no_output,
+            "relational_claims": relational_counts,
         },
     }
 
@@ -742,6 +1168,19 @@ def render(result: dict) -> str:
                 f"raw={f['raw']!r} normalized={f['normalized']!r}"
             )
             lines.append(f"      context: ...{f['context']}...")
+    for claim in result.get("relational_claims", []):
+        relation = ""
+        if "op" in claim:
+            relation = (
+                f" {claim['left']!r}={claim['left_value']!r} "
+                f"{claim['op']} {claim['right']!r}={claim['right_value']!r}"
+            )
+        lines.append(
+            f"  claim {claim['id']!r}: {claim['status']} at "
+            f"md[{claim['markdown_cell']}]{relation}"
+        )
+        if claim.get("reason"):
+            lines.append(f"    reason: {claim['reason']}")
     return "\n".join(lines)
 
 
@@ -752,8 +1191,8 @@ def main() -> int:
             "previous code cell's output (c.290 pathologie, C.5 violation)."
         ),
         epilog=(
-            "Exit: 0 CLEAN, 1 FABRICATION_DETECTED, 2 ERROR. "
-            "Use --json for CI gate consumption."
+            "Exit: 0 CLEAN, 1 advisory finding (numeric, contradicted, or "
+            "unproven), 2 ERROR. Use --json for CI consumption."
         ),
     )
     ap.add_argument("notebooks", nargs="+", help="paths to .ipynb files")
@@ -772,6 +1211,7 @@ def main() -> int:
                 "verdict": "ERROR",
                 "errors": [f"file not found: {p}"],
                 "findings": [],
+                "relational_claims": [],
             })
             continue
         results.append(check_notebook(p))
@@ -783,11 +1223,19 @@ def main() -> int:
             print(render(r))
             print()
 
-    fabricated = sum(1 for r in results if r["verdict"] == "FABRICATION_DETECTED")
-    errored = sum(1 for r in results if r["verdict"] == "ERROR")
+    advisory = sum(
+        1
+        for result in results
+        if result["verdict"] in {
+            "FABRICATION_DETECTED",
+            "CONTRADICTION_DETECTED",
+            "CLAIM_UNPROVEN",
+        }
+    )
+    errored = sum(1 for result in results if result["verdict"] == "ERROR")
     if errored:
         return 2
-    return 1 if fabricated else 0
+    return 1 if advisory else 0
 
 
 if __name__ == "__main__":

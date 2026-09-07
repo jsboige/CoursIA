@@ -109,7 +109,13 @@ class TestBaselines:
             m18._rolling_predictions("ewma", log_rv, rv, [100], horizon=1)
 
     def test_har_rv_constant_series_forecasts_its_level(self):
-        # constant RV -> OLS recovers the level; iterated path stays flat
+        # NOT a discriminating test for the #14791 defect: on a CONSTANT RV the
+        # contemporaneous identity fit and a properly-lagged HAR both forecast
+        # the constant level (2.0), so this passes on either alignment. It
+        # guards a real invariant (level recovery on a flat series), but the
+        # tests that actually REJECT #14791 are in TestHarRvAlignment — their
+        # fixtures (a persistent series, not a constant) are the ones that go
+        # red under the contemporaneous alignment (see its docstring).
         idx = pd.date_range("2020-01-01", periods=200, freq="D")
         rv = pd.Series(np.exp(2.0), index=idx)
         model = m18.HarRvModel().fit(rv)
@@ -173,7 +179,7 @@ class TestHarRvAlignment:
         har = m18._rolling_predictions("har_rv", log_rv, rv, idx, horizon=5)
         sep = m18.assert_baselines_distinct(
             {"persistence": pers, "har_rv": har})
-        assert sep >= 1e-6
+        assert sep["max"] >= 1e-6
 
 
 class TestBaselineDistinctnessGuard:
@@ -190,14 +196,30 @@ class TestBaselineDistinctnessGuard:
         sep = m18.assert_baselines_distinct(
             {"persistence": a, "ewma": b, "log_har": c})
         # weakest pair is a-vs-b: max rel diff = 0.1/0.9... ~ 1e-1 scale
-        assert sep > 1e-2
+        assert sep["max"] > 1e-2
+        assert sep["median"] > 1e-2
 
     def test_tsfm_excluded_from_the_guard(self):
         a = np.array([-9.1, -9.0])
         same_as_a = a.copy()
         sep = m18.assert_baselines_distinct(
             {"persistence": a, "tsfm": same_as_a})
-        assert sep == np.inf  # no baseline pair -> nothing to compare
+        # no baseline pair -> nothing to compare -> both aggregations are inf
+        assert sep["max"] == np.inf
+        assert sep["median"] == np.inf
+
+    def test_median_surfaces_partial_degeneracy_the_max_hides(self):
+        # Two of three OOS points agree to ~1e-8 (below the 1e-6 floor) while a
+        # single divergent point keeps the max (the abort signal) at 0.625 — the
+        # guard correctly does NOT abort (it only detects agreement-everywhere),
+        # but the recorded median (~1.4e-8) exposes the near-total agreement
+        # that the max alone would obscure (#14823).
+        a = np.array([-8.0, -7.0, -8.0])
+        b = np.array([-8.0 + 1e-7, -7.0 + 1e-7, -3.0])
+        sep = m18.assert_baselines_distinct(
+            {"persistence": a, "har_rv": b})
+        assert sep["max"] > 1e-6
+        assert sep["median"] < sep["max"]
 
 
 # ---------------------------------------------------------------------------

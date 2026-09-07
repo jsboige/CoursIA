@@ -53,9 +53,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from check_markdown_claims_output import (  # noqa: E402
     _fuzzy_present,
+    _is_coordinate_tuple,
     _is_imperative_list_value,
+    _is_input_specification,
+    _is_labeled_enumeration_value,
     _is_legend_equation,
+    _is_math_parameter_definition,
     _is_md_heading_line,
+    _is_numeric_list_literal,
     _is_section_reference,
     _is_threshold_expression,
     _is_version_token,
@@ -205,6 +210,15 @@ class TestOutputExtraction:
     def test_stream_output(self):
         text = _output_output = _output_text([_stream_output("hello 0.24")])
         assert "hello 0.24" in text
+
+    def test_stream_output_nbformat_line_list(self):
+        output = _stream_output("unused")
+        output["text"] = [
+            "progress complete\n",
+            'CLAIM_METRICS {"first_optimal_sweep": 1}\n',
+        ]
+        text = _output_text([output])
+        assert "progress complete\nCLAIM_METRICS" in text
 
     def test_execute_result_output(self):
         text = _output_text([_exec_output("Params: 3,145,728")])
@@ -939,6 +953,207 @@ class TestThresholdExpression:
 
 
 # -----------------------------------------------------------------------
+# #14905 -- coordinate pairs vs francophone decimals (side by side)
+# -----------------------------------------------------------------------
+
+
+class TestCoordinateTupleFilter:
+    """#14905: '(2,2)' is a grid coordinate, not the decimal 2.2.
+
+    Founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en (1,1)'
+    -- grid cells flattened into '2.2' / '1.1' then reported as fabricated.
+    The discriminator is one digit per comma-separated group inside the
+    parentheses; '(0,75)' (two-digit group) stays a francophone decimal.
+    """
+
+    def test_founding_pair(self):
+        src = "L'evaluation avec un but en (2,2) et un obstacle en (1,1)."
+        pos = src.find("2,2")
+        end = pos + len("2,2")
+        assert _is_coordinate_tuple(src, pos, end)
+
+    def test_triple_single_digits(self):
+        src = "un chemin passant par (1,2,3) sur la grille."
+        pos = src.find("1,2,3")
+        end = pos + len("1,2,3")
+        assert _is_coordinate_tuple(src, pos, end)
+
+    def test_two_digit_group_is_decimal(self):
+        src = "un taux proche de (0,75) ici."
+        pos = src.find("0,75")
+        end = pos + len("0,75")
+        assert not _is_coordinate_tuple(src, pos, end)
+
+    def test_unwrapped_number_not_filtered(self):
+        src = "La case 2,2 du plateau est un piege."
+        pos = src.find("2,2")
+        end = pos + len("2,2")
+        assert not _is_coordinate_tuple(src, pos, end)
+
+    def test_paren_closed_before_match_not_filtered(self):
+        """A '(' that closes BEFORE the match does not wrap it."""
+        src = "(voir section 3) place le but en 2,2 apres coup."
+        pos = src.find("2,2")
+        end = pos + len("2,2")
+        assert not _is_coordinate_tuple(src, pos, end)
+
+    def test_side_by_side_with_french_decimal(self, tmp_path: Path):
+        """Acceptance #14905-2: both forms in ONE cell -- the coordinate is
+        not a number, the French decimal keeps its decimal reading and still
+        flags when absent from the output.
+        """
+        nb = _mk_nb([
+            _code_cell("print('rien a voir')", [_stream_output("aucun nombre")]),
+            _md_cell("Un but en (2,2) et un taux reel de 0,75 observe."),
+        ])
+        nb_path = tmp_path / "side_by_side.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "FABRICATION_DETECTED", res
+        norms = {f["normalized"] for f in res["findings"]}
+        assert norms == {"0.75"}, res["findings"]
+
+
+# -----------------------------------------------------------------------
+# #14905 Family D -- input numbers (hyperparameters, specifications)
+# -----------------------------------------------------------------------
+
+
+class TestInputSpecificationFilter:
+    """#14905 Family D: inputs are legitimately absent from the output
+    because nothing measured them. Three tight form signals, each measured on
+    DecPyMC-7: math parameter definitions (md[15]/md[19]), spec vectors
+    (md[36]), labeled enumerations (md[38]). A fourth form (bare paren
+    apposition) was measured on fleet collateral and deliberately REJECTED:
+    spec restatement and cited statistic share the same shape.
+    """
+
+    # --- D1: math parameter definitions ---
+
+    def test_greek_definition(self):
+        src = "Avec $\\gamma = 0.9$, le signal decroit par case."
+        pos = src.find("0.9")
+        end = pos + len("0.9")
+        assert _is_math_parameter_definition(src, pos, end)
+
+    def test_subscripted_symbol_formula(self):
+        src = "$V_1 = \\gamma(0.8 + 0.2\\,V_1)$ fixe la valeur du couloir."
+        for tok in ("0.8", "0.2"):
+            pos = src.find(tok)
+            assert _is_math_parameter_definition(src, pos, pos + len(tok))
+
+    def test_latin_metric_stays_checked(self):
+        """'$R^2 = 0.85$' cites a latin metric, not a parameter."""
+        src = "Le modele atteint $R^2 = 0.85$ sur le jeu de test."
+        pos = src.find("0.85")
+        end = pos + len("0.85")
+        assert not _is_math_parameter_definition(src, pos, end)
+
+    def test_math_without_equals_stays_checked(self):
+        src = "soit $p \\approx 0.75$ d'apres le test."
+        pos = src.find("0.75")
+        end = pos + len("0.75")
+        assert not _is_math_parameter_definition(src, pos, end)
+
+    # --- D2: numeric list literals ---
+
+    def test_spec_vector(self):
+        src = "moyennes inconnues `[0.2, 0.4, 0.6, 0.8, 0.5]` pour l'exercice."
+        pos = src.find("0.6")
+        end = pos + len("0.6")
+        assert _is_numeric_list_literal(src, pos, end)
+
+    def test_prose_number_outside_list_stays_checked(self):
+        src = "Le bras optimal est le numero 3 avec 0.8 de moyenne observee."
+        pos = src.find("0.8")
+        end = pos + len("0.8")
+        assert not _is_numeric_list_literal(src, pos, end)
+
+    # --- D3: labeled enumeration values ---
+
+    def test_bras_enumeration(self):
+        src = "moyennes : Bras 1=0.3, Bras 2=0.5, Bras 3=0.7."
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert _is_labeled_enumeration_value(src, pos, end)
+
+    def test_bold_label(self):
+        src = "**Bras 3=0.7** dans la spec de l'environnement."
+        pos = src.find("0.7")
+        end = pos + len("0.7")
+        assert _is_labeled_enumeration_value(src, pos, end)
+
+    def test_plain_assignment_stays_checked(self):
+        """'accuracy=0.9' (no numeral in the label) reads as a citation."""
+        src = "le modele donne accuracy=0.9 au final."
+        pos = src.find("0.9")
+        end = pos + len("0.9")
+        assert not _is_labeled_enumeration_value(src, pos, end)
+
+    def test_prose_citation_stays_checked(self):
+        src = "l'accuracy est de 0.9 sur ce jeu."
+        pos = src.find("0.9")
+        end = pos + len("0.9")
+        assert not _is_labeled_enumeration_value(src, pos, end)
+
+    # --- stays-checked controls grounded in fleet collateral ---
+
+    def test_statistic_apposition_stays_checked(self):
+        """Fleet collateral (Lab1-PythonForDataScience md[6]): '(ecart-type
+        74.93)' cites a computed statistic. The bare apposition form is
+        indistinguishable from a spec restatement -- it must stay flagged.
+        """
+        src = "une moyenne de 114.37 (ecart-type 74.93) sur la distribution."
+        pos = src.find("74.93")
+        end = pos + len("74.93")
+        assert not _is_input_specification(src, pos, end)
+
+    def test_posterior_greek_stays_checked(self):
+        """Fleet collateral (PyMC-08-TrueSkill md[11]): '(perdant,
+        $\\mu = 20.8$)' cites an ESTIMATED posterior mean read off a plot --
+        greek symbol, but no definition verb on the line."""
+        src = "et la rouge (perdant, $\\mu = 20.8$) vers la gauche, quasi symetriquement."
+        pos = src.find("20.8")
+        end = pos + len("20.8")
+        assert not _is_math_parameter_definition(src, pos, end)
+
+    # --- umbrella integration ---
+
+    def test_founding_cell_clean(self, tmp_path: Path):
+        """The #14905 founding prose forms in one cell, output lacking every
+        number: no finding post-fix (D1/D2/D3 all fire).
+
+        NB: no ':' before 'moyennes' -- a colon there would trip the Family B
+        line gate ('[=:]\\s*moyen') and suppress the gamma/Bras numbers
+        pre-fix too, hiding what this fixture pins.
+        """
+        nb = _mk_nb([
+            _code_cell("# env spec", [_stream_output("Bandit avec 4 bras")]),
+            _md_cell(
+                "Un bandit a 5 bras avec moyennes inconnues `[0.2, 0.4, 0.6, 0.8, 0.5]`. "
+                "Avec $\\gamma = 0.9$ et Bras 1=0.3 dans la spec initiale."
+            ),
+        ])
+        nb_path = tmp_path / "inputs.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "CLEAN", res
+
+    def test_real_citation_still_flagged(self, tmp_path: Path):
+        """Negative control: a bare measured-value citation absent from the
+        output stays flagged -- the D filters must not over-suppress."""
+        nb = _mk_nb([
+            _code_cell("print('run')", [_stream_output("aucun chiffre")]),
+            _md_cell("Le regret cumule constate est 22.4 sur cette instance."),
+        ])
+        nb_path = tmp_path / "real.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "FABRICATION_DETECTED", res
+        assert "22.4" in {f["normalized"] for f in res["findings"]}
+
+
+# -----------------------------------------------------------------------
 # c.415 (#11873) -- integration: full notebook scan on founder fixtures
 # -----------------------------------------------------------------------
 
@@ -1032,6 +1247,84 @@ class TestFoundingFixtures:
         )
 
 
+class TestCoordinateTupleFilter:
+    """c.NNN (#14905): token '(N,N)' avec un chiffre UNIQUE de part et
+    d'autre de la virgule, entre parentheses, est un tuple positionnel
+    (grille), PAS un decimal francais. `_normalize_num` collapsait
+    '(2,2)' -> '2.2', donc le detecteur cherchait un '2.2' inexistant
+    dans la sortie d'une grille 3x3 et flaguait une prose pedagogique
+    legitime comme fabriquee (DecPyMC-7 md[67]). Criteres d'acceptation
+    (#14905) : '(0,75)' -- deux chiffres apres la virgule -- reste un
+    vrai decimal (eligibile), et une VRAIE fabrication reste attrapee.
+    """
+
+    def _scan_tmp(self, tmp_path, cells):
+        import json as _json
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture.ipynb"
+        p.write_text(_json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    def test_grid_coordinates_clean(self, tmp_path):
+        """Founding case: DecPyMC-7 md[67] -- cible/obstacle positions on a
+        3x3 grid. Prose cites '(2,2)' and '(1,1)'; the grid output never
+        prints '2.2' nor '1.1'. BEFORE (issue #14905) this returned
+        FABRICATION_DETECTED; AFTER the filter it is CLEAN."""
+        cells = [
+            _code_cell(
+                "g = {(2,2):'B', (1,1):'O'}\n"
+                "for r in range(3):\n"
+                "    for c in range(3):\n"
+                "        print(r, c, '->', 'B' if (r,c) in g else 'E')\n",
+                [_stream_output(
+                    "0 0 -> E\n0 1 -> E\n0 2 -> E\n"
+                    "1 0 -> E\n1 1 -> O\n1 2 -> E\n"
+                    "2 0 -> E\n2 1 -> E\n2 2 -> B\n"
+                )],
+            ),
+            _md_cell(
+                "Dans une grille 3x3, la cible est un but en (2,2) et "
+                "un obstacle en (1,1).\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", (
+            f"Expected CLEAN after #14905 coordinate-tuple filter, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_parenthesized_short_decimal_still_eligible(self, tmp_path):
+        """'(0,75)' has TWO digits after the comma -- a genuine decimal,
+        not a single-digit coordinate. Acceptance criterion #14905: this
+        must stay eligible (a real fabrication here is still flagged).
+        Output prints nothing close to '0.75', so it is FABRICATION."""
+        cells = [
+            _code_cell("print('loss=0.23')", [_stream_output("loss=0.23")]),
+            _md_cell("La precision mesuree est (0,75).\n"),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", (
+            f"Expected FABRICATION_DETECTED for '(0,75)' (two digits, real "
+            f"decimal), got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_real_fabrication_still_detected(self, tmp_path):
+        """CONTROLE POSITIF (cf TestFounderPreserved): the c.290 pathologie
+        -- prose cites a magnitude ABSENT from the output -- must STILL be
+        flagged after the coordinate filter. Guards the false-negative
+        edge: '~1,2 M' / '0,09 %' remain detected."""
+        cells = [
+            _code_cell("print('trainable params: 3,145,728 (0.24%)')", [
+                _stream_output("trainable params: 3,145,728 (0.24%)"),
+            ]),
+            _md_cell("On attend ~1,2 M de parametres entrainnables, soit ~0,09 %."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        norms = {f["normalized"] for f in result["findings"]}
+        assert "0.09" in norms, result
+
+
 # -----------------------------------------------------------------------
 # c.415 (#11873) -- integration: REAL fabrication still detected
 # -----------------------------------------------------------------------
@@ -1077,3 +1370,282 @@ class TestRealFabricationStillDetected:
         assert any("0,09" in r or "0.09" in r for r in raws), (
             f"Expected '0,09' / '0.09' substring in findings, got {raws}"
         )
+
+
+class TestRelationalClaims:
+    """Explicit named relations distinguish evidence from contradiction."""
+
+    @staticmethod
+    def _claim(**payload) -> str:
+        return (
+            "Conclusion calculée.\n"
+            f"<!-- claim-check: {json.dumps(payload)} -->"
+        )
+
+    @staticmethod
+    def _scan(tmp_path: Path, cells: list[dict]):
+        path = tmp_path / "relational.ipynb"
+        path.write_text(json.dumps(_mk_nb(cells)), encoding="utf-8")
+        return check_notebook(path)
+
+    def test_contradicted_acceleration_14_vs_16(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("compare()", [
+                _stream_output(
+                    'CLAIM_METRICS {"plain_iterations": 14, '
+                    '"shaped_iterations": 16}\n'
+                ),
+            ]),
+            _md_cell(self._claim(
+                id="shaping-accelerates",
+                left="shaped_iterations",
+                op="<",
+                right="plain_iterations",
+            )),
+        ])
+
+        assert result["verdict"] == "CONTRADICTION_DETECTED"
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "CONTRADICTED"
+        assert claim["left_value"] == 16
+        assert claim["right_value"] == 14
+        assert claim["code_cells"] == [0]
+
+    def test_supported_relation_and_boolean(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("compare()", [
+                _exec_output(
+                    'CLAIM_METRICS {"plain_sweep": 8, "shaped_sweep": 3, '
+                    '"final_policy_equal": true}'
+                ),
+            ]),
+            _md_cell(
+                self._claim(
+                    id="earlier-policy",
+                    left="shaped_sweep",
+                    op="<",
+                    right="plain_sweep",
+                )
+                + "\n"
+                + self._claim(
+                    id="policy-preserved",
+                    left="final_policy_equal",
+                    op="==",
+                    right=True,
+                )
+            ),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert [c["status"] for c in result["relational_claims"]] == [
+            "SUPPORTED",
+            "SUPPORTED",
+        ]
+        assert result["stats"]["relational_claims"]["SUPPORTED"] == 2
+
+    def test_missing_metric_is_unproven(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("compare()", [
+                _stream_output('CLAIM_METRICS {"plain_iterations": 14}\n'),
+            ]),
+            _md_cell(self._claim(
+                id="missing-shaped",
+                left="shaped_iterations",
+                op="<",
+                right="plain_iterations",
+            )),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "UNPROVEN"
+        assert "shaped_iterations" in claim["reason"]
+
+    @pytest.mark.parametrize(
+        ("actual", "tolerance", "status"),
+        [(0.301, 0.01, "SUPPORTED"), (0.32, 0.01, "CONTRADICTED")],
+    )
+    def test_numeric_equality_tolerance(
+        self,
+        tmp_path: Path,
+        actual: float,
+        tolerance: float,
+        status: str,
+    ):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output(
+                    f'CLAIM_METRICS {{"measured_regret": {actual}}}\n'
+                ),
+            ]),
+            _md_cell(self._claim(
+                id="regret-target",
+                left="measured_regret",
+                op="==",
+                right=0.3,
+                tolerance=tolerance,
+            )),
+        ])
+
+        assert result["relational_claims"][0]["status"] == status
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"id": "bad-op", "left": "x", "op": "approximately", "right": 1},
+            {"id": "unknown-field", "left": "x", "op": "==", "right": 1,
+             "expression": "x == 1"},
+            {"left": "x", "op": "==", "right": 1},
+            {"id": "", "left": "x", "op": "==", "right": 1},
+            {"id": 7, "left": "x", "op": "==", "right": 1},
+            {"id": "ordered-tolerance", "left": "x", "op": "<", "right": 2,
+             "tolerance": 0.1},
+        ],
+    )
+    def test_invalid_contract_is_unproven_without_crash(
+        self,
+        tmp_path: Path,
+        payload: dict,
+    ):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(self._claim(**payload)),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        assert result["relational_claims"][0]["status"] == "UNPROVEN"
+
+    def test_huge_integer_metric_and_tolerance_do_not_crash(self, tmp_path: Path):
+        huge = 10**400
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output(f'CLAIM_METRICS {{"huge": {huge}}}\n'),
+            ]),
+            _md_cell(self._claim(
+                id="huge-int",
+                left="huge",
+                op="==",
+                right=huge,
+                tolerance=huge,
+            )),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert result["relational_claims"][0]["status"] == "SUPPORTED"
+
+    def test_boolean_numeric_equality_is_unproven(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"flag": true}\n'),
+            ]),
+            _md_cell(self._claim(
+                id="typed-equality",
+                left="flag",
+                op="==",
+                right=1,
+            )),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        assert result["relational_claims"][0]["status"] == "UNPROVEN"
+
+    def test_fenced_claim_example_is_not_evaluated(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(
+                "Exemple de syntaxe :\n```html\n"
+                + self._claim(id="example", left="x", op="==", right=2)
+                + "\n```"
+            ),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert result["relational_claims"] == []
+
+    def test_malformed_json_is_unproven(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(
+                "Conclusion calculée.\n"
+                '<!-- claim-check: {"id":"broken","left":"x" -->'
+            ),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "UNPROVEN"
+        assert "invalid claim-check JSON" in claim["reason"]
+
+    def test_explicit_claim_in_long_prose_is_still_checked(self, tmp_path: Path):
+        long_prose = "## Bibliographie\n" + "Contexte pédagogique détaillé. " * 50
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(
+                long_prose
+                + "\n"
+                + self._claim(id="long-cell", left="x", op="==", right=1)
+            ),
+        ])
+
+        assert result["relational_claims"][0]["status"] == "SUPPORTED"
+        assert result["stats"]["skipped_literature"] == 1
+
+    def test_distant_metric_outside_window_does_not_prove_claim(self, tmp_path: Path):
+        cells = [
+            _code_cell("old_measure()", [
+                _stream_output('CLAIM_METRICS {"score": 0.9}\n'),
+            ]),
+            _code_cell("step_1()", [_stream_output("step one\n")]),
+            _code_cell("step_2()", [_stream_output("step two\n")]),
+            _code_cell("step_3()", [_stream_output("step three\n")]),
+            _md_cell(self._claim(
+                id="local-only",
+                left="score",
+                op=">",
+                right=0.5,
+            )),
+        ]
+        result = self._scan(tmp_path, cells)
+
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "UNPROVEN"
+        assert claim["window"] == [3, 2, 1]
+
+    def test_numeric_finding_and_relation_coexist(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output(
+                    'observed=0.24\nCLAIM_METRICS {"final_policy_equal": true}\n'
+                ),
+            ]),
+            _md_cell(
+                "La valeur observée est 0,09.\n"
+                + self._claim(
+                    id="policy-preserved",
+                    left="final_policy_equal",
+                    op="==",
+                    right=True,
+                )
+            ),
+        ])
+
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert result["findings"]
+        assert result["relational_claims"][0]["status"] == "SUPPORTED"
+
+    def test_plain_unannotated_prose_keeps_legacy_behavior(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("print_domain()", [_stream_output("three actions\n")]),
+            _md_cell("Le domaine comprend trois actions possibles."),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert result["relational_claims"] == []

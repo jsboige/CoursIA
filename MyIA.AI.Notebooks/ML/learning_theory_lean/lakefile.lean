@@ -46,3 +46,12 @@ Frère de `Perceptron` dans le lake ML généraliste `learning_theory_lean` (cf
 @[default_target]
 lean_lib «PacLearning» where
   globs := #[.submodules `PacLearning, `PacLearning_en]
+
+/-- Module `GradientFlow` — digestion #13106 (forme formalisation) :
+évanouissement du gradient `c ^ n` dans une pile plain vs survie `(1-c) ^ n`
+dans une pile résiduelle (raccourci identité, He et al. 2016), ancres
+numériques du notebook 4.2-ConvNet-Profonde-Residuelles (facteur 0,4/bloc).
+Frère de `Perceptron` et `PacLearning`. -/
+@[default_target]
+lean_lib «GradientFlow» where
+  globs := #[.submodules `GradientFlow, `GradientFlow_en]

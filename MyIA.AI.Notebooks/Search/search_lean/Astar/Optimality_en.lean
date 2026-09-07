@@ -3,7 +3,7 @@ import Astar.Graph
 import Astar.Heuristic
 
 /-!
-# Astar.Optimality — admissible ⇒ optimal (abstract optimality lemma)
+# Astar.Optimality — f-bound (abstract lemma: suffix bound)
 
 English mirror of `AStar/Optimality.lean` (FR-first canonical), tranche 3 EPIC #4980
 (search_lean). Convention i18n Lean ratified by ai-01 (2026-07-04, #4980
@@ -11,17 +11,19 @@ comment-4881909354): distinct FR + EN sibling files in the same lake, both compi
 namespace `Astar_en` (anti-collision with FR `Astar`); non-docstring content
 byte-identical (CI drift-detectable); EN docstrings manually translated.
 
-Headline theorem of the series (issue #4048, register #3801 — prong B "non-trivial
-problem"). We prove the **f-bound** which is the exact optimality mechanism of A*:
-under an admissible heuristic, `h(start)` never exceeds the cost of a realised path
-to the goal. Applied to each suffix of the optimal path, this bound yields
-`f(node) = g(node) + h(node) ≤ optimal cost` at every point of the optimal path —
-so A* (which expands the node of minimal `f`) never crosses the frontier of the
-optimal cost and returns a path of optimal cost (Hart, Nilsson & Raphael, 1968).
+Brick of the series (issue #4048, register #3801 — prong B "non-trivial problem").
+We prove the **f-bound**: under an admissible heuristic, for any node `p.get i` of a
+path `p` to the goal, `h(p.get i)` never exceeds the cost of the remaining suffix
+`pathCost (p.drop i)`. This is the mathematical core of the A* optimality argument
+(Hart, Nilsson & Raphael, 1968) — but **only that core**, in abstract form.
 
-We prove the **abstract form** (without modelling the full priority queue), as
-suggested by #4048: `hStar` is a "true remaining optimal cost" satisfying the
-lower-bound property `IsTrueRemainingCost`.
+The lake does **not** model the A* algorithm (no priority queue, no closed set, no
+returned path): there is therefore **no A* optimality theorem** here. The guarantee
+"admissible heuristic ⇒ A* returns a path of optimal cost" — **false** for the
+Graph-Search variant without re-opening (cf #14824) — is not proved.
+
+`hStar` is a "true remaining optimal cost": the lower-bound property
+`IsTrueRemainingCost` (the abstract form, cf #4048).
 -/
 
 namespace Astar_en
@@ -61,7 +63,7 @@ lemma suffix_pathFrom (p : Path V) (i : Fin p.length) (start goal : V)
     rw [List.getLast?_drop, if_neg hne]
     exact hlast
 
-/-! ## Headline theorem: f-bound and optimality -/
+/-! ## Headline theorem: f-bound (suffix bound) -/
 
 /-- **f-bound at the start.** Admissible heuristic + `hStar` lower bound ⇒
     `h(start) ≤ pathCost(p)` for any path `p` going to the goal from `start`.
@@ -71,28 +73,24 @@ theorem admissible_head_bound (h hStar : V → NNReal) (hAdm : Admissible h hSta
     (hp : PathFrom start goal p) : h start ≤ pathCost G p :=
   le_trans (hAdm start) (hStar_lb start p hp)
 
-/-- **A* admissible ⇒ optimal (abstract lemma).** Headline theorem (issue #4048,
-    register #3801).
+/-- **f-bound on a suffix (admissible heuristic).** For any node `p.get i` of a path
+    `p` to the goal, `h(p.get i) ≤ pathCost(p.drop i)`: the admissible heuristic
+    value never exceeds the cost of the remaining suffix. This is the f-bound
+    (`f = g + h`) at each node — the abstract core of the A* optimality argument
+    (Hart, Nilsson & Raphael, 1968).
 
-    Under an **admissible** heuristic, for any node `p.get i` of a path `p` going to
-    the goal, the heuristic never exceeds the cost of the remaining suffix
-    `pathCost (p.drop i)`. This is the **f-bound** at each node: combined with
-    `f(node) = g(node) + h(node)` and the fact that `g + suffixCost = pathCost`, it
-    yields `f(node) ≤ pathCost(optimal)` along the optimal path — the exact
-    optimality mechanism of A* (expansion of the minimal `f` ⇒ the frontier of the
-    optimal cost is never crossed). See Hart, Nilsson & Raphael (1968). -/
-theorem admissible_implies_optimal (h hStar : V → NNReal) (hAdm : Admissible h hStar)
+    **Scope — what this theorem does not say.** It bounds the heuristic by the
+    suffix cost; it does **not** prove that A* returns a path of optimal cost. The
+    lake models neither a priority queue, nor a closed set, nor a returned path:
+    the guarantee "admissible heuristic ⇒ A* optimal" (false for the Graph-Search
+    variant without re-opening, cf #14824) is not a theorem of this lake. -/
+theorem admissible_le_suffix_cost (h hStar : V → NNReal) (hAdm : Admissible h hStar)
     (goal start : V) (p : Path V) (hStar_lb : IsTrueRemainingCost G hStar goal)
     (hp : PathFrom start goal p) (i : Fin p.length) :
     h (p.get i) ≤ pathCost G (p.drop i.val) := by
   apply le_trans (hAdm (p.get i))
   exact hStar_lb (p.get i) (p.drop i.val) (suffix_pathFrom p i start goal hp)
 
-/-- **Corollary: global bound at the start.** Special case `i = 0` (the start node):
-    `h(start) ≤ pathCost(p)`. -/
-theorem admissible_implies_optimal_start (h hStar : V → NNReal) (hAdm : Admissible h hStar)
-    (goal start : V) (p : Path V) (hStar_lb : IsTrueRemainingCost G hStar goal)
-    (hp : PathFrom start goal p) : h start ≤ pathCost G p :=
-  admissible_head_bound G h hStar hAdm goal start p hStar_lb hp
+
 
 end Astar_en

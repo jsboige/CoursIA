@@ -2040,3 +2040,178 @@ def test_light_guard_on_spent_tier_budget_still_caps_13632():
     )
     assert out["tier_cap_reached"] is True
     assert out["cap_reached"] is True
+
+
+# --- #14849 : verrou 3 etats, never a permissive False -------------------
+#
+# Controles POSITIFS du detecteur : un detecteur se valide par ses faux
+# negatifs. Pre-fix, un replay absent/vide/garbage faisait crasher _load
+# (ou sys.exit) AVANT toute sortie JSON ; le reader workflow
+# `|| echo "False"` transformait le crash en "cap non atteint" et
+# re-autorisait silencieusement une LIGHT over budget. Chaque test
+# ci-dessous echoue sur le code pre-fix (crash au lieu d'un verdict).
+
+
+_LIGHT_CANDIDATE_BODY = "Grain: LIGHT/readme -- lane myia-po-2026:CoursIA"
+
+
+def test_replay_absent_yields_unknown_not_false(tmp_path, capsys):
+    # Le cas mesure par l'issue : gh pr list echoue, merged.json n'existe pas.
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4242",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None  # pas False : on ne sait PAS
+    assert out["verdict"] == "unknown"
+    assert "reason" in out
+
+
+def test_replay_empty_file_yields_unknown_not_false(tmp_path, capsys):
+    # Fichier present mais vide (ex: redirection > avant echec d'ecriture).
+    (tmp_path / "merged.json").write_text("", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4243",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None
+    assert out["verdict"] == "unknown"
+
+
+def test_replay_garbage_yields_unknown_not_false(tmp_path, capsys):
+    # JSON invalide (download tronque, page d'erreur HTML du hub, ...).
+    (tmp_path / "merged.json").write_text("{not json", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4244",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None
+    assert out["verdict"] == "unknown"
+
+
+def test_replay_non_array_yields_unknown_not_false(tmp_path, capsys):
+    # JSON valide mais pas un tableau : pre-fix c'etait sys.exit(1) sans
+    # sortie JSON -> meme fabrique permissive "False" cote workflow.
+    (tmp_path / "merged.json").write_text('{"items": []}', encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4245",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None
+    assert out["verdict"] == "unknown"
+
+
+def test_replay_valid_empty_array_still_computes_legitimate_false(tmp_path, capsys):
+    # Controle du controle : un [] VALIDE n'est pas un unknown. C'est une
+    # vraie journee a zero mergees -> cap = max(1, 0//3) = 1, budget intact,
+    # premiere LIGHT de la lane legitime. Confondre ce cas avec unknown
+    # serait la regression inverse (paralysie du garde).
+    (tmp_path / "merged.json").write_text("[]", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4246",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is False  # calcule, pas fabrique
+    assert out.get("verdict", "assessed") == "assessed"
+
+
+# --- #14899 : the cap message NAMES the grain that spent the budget ---------
+#
+# Incident (2026-09-06, lane myia-ai-01:CoursIA): the guard labeled #14898
+# (LIGHT/readme) with "(une LIGHT anterieure de cette lane)" -- naming
+# nothing. The manual forensics that followed concluded that a dependabot
+# bump (#14848, untagged) had been attributed to the merger's lane and had
+# consumed the budget. The replay of the exact dataset refuted that premise:
+# the TIER axis had counted ZERO merged LIGHTs (spent=0; #14848 is invisible
+# -- untagged PRs are dropped from numerator AND denominator), and the label
+# had fired on the GENRE axis (#10480): #14727 (MED/guard) + the candidate's
+# own readme = light_genre 2 > cap 1. The REAL defect the incident exposes is
+# the anonymous fallback: a cap message that names nothing forces forensics,
+# and forensics without data invent mechanisms. These tests pin BOTH facts:
+# the bot-PR invisibility (issue acceptance 1-2, satisfied by existing
+# behavior -- this is the positive control the issue asked for, in its honest
+# form) and budget_spent_by citing the counted PR(s) (acceptance 3, delivered).
+
+
+def test_check_pr_untagged_bot_pr_is_invisible_to_both_axes(tmp_path, capsys):
+    # The 2026-09-06 replay, pinned. A dependabot-shaped PR (no Grain tag)
+    # sits in the merged set beside two tagged MEDs of the lane; the open
+    # candidate is LIGHT/readme. The untagged PR must count NOWHERE.
+    lane = "myia-ai-01:CoursIA"
+    merged = [
+        {"number": 14727, "body": f"Grain: MED/guard -- lane {lane}",
+         "mergedAt": "2026-09-06T04:12:56Z"},
+        {"number": 14877, "body": f"Grain: MED/notebook-python -- lane {lane}",
+         "mergedAt": "2026-09-06T12:12:23Z"},
+        {"number": 14848, "body": "Bumps js-yaml from 3.15.0 to 3.15.2.",
+         "mergedAt": "2026-09-06T11:17:29Z"},  # dependabot, no tag
+    ]
+    body = f"Grain: LIGHT/readme -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    # Denominator = 2 tagged MEDs + the candidate. The bot PR is absent.
+    assert res["lane_grains"] == 3
+    assert res["spent"] == 0                    # ZERO merged LIGHT counted
+    assert res["tier_cap_reached"] is False     # the tier axis consumed nothing
+    # The GENRE axis is what fires (#10480): #14727 MED/guard + candidate.
+    assert res["cap_exceeded_by_genre"] is True
+    assert res["cap_reached"] is True
+
+
+def test_check_pr_budget_spent_by_names_the_genre_grain(tmp_path, capsys):
+    # Same day, one grain merged: the message must NAME #14727 with its
+    # tier and genre. Pre-fix, the genre-axis firing left consumed_by null
+    # and the workflow printed the anonymous "une LIGHT anterieure".
+    lane = "myia-ai-01:CoursIA"
+    merged = [
+        {"number": 14727, "body": f"Grain: MED/guard -- lane {lane}",
+         "mergedAt": "2026-09-06T04:12:56Z"},
+    ]
+    body = f"Grain: LIGHT/readme -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is True
+    assert res["consumed_by"] is None           # tier axis empty -- genre fired
+    named = res["budget_spent_by"]
+    assert named is not None
+    assert "#14727" in named
+    assert "MED/guard" in named
+    assert "2026-09-06T04:12:56Z" in named
+
+
+def test_check_pr_budget_spent_by_names_tier_light_when_present(tmp_path, capsys):
+    # TIER-axis firing keeps the historical naming: the earliest merged
+    # LIGHT, same citation the workflow message always built from consumed_by.
+    lane = "myia-po-2023:CoursIA"
+    merged = [
+        {"number": 7, "body": f"Grain: LIGHT/tooling -- lane {lane}",
+         "mergedAt": "2026-09-06T05:00:00Z"},
+    ]
+    body = f"Grain: LIGHT/tooling -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is True
+    assert res["consumed_by"]["number"] == 7
+    assert "#7" in res["budget_spent_by"]
+    assert "2026-09-06T05:00:00Z" in res["budget_spent_by"]
+
+
+def test_check_pr_budget_spent_by_none_when_nothing_merged(tmp_path, capsys):
+    # Nothing merged, candidate is the lane's first grain: no consumption to
+    # cite on either axis -> budget_spent_by is None (and cap_reached False;
+    # the workflow's fallback text remains its own business).
+    lane = "myia-po-2023:CoursIA"
+    rc, res = _check_pr(tmp_path, [], f"Grain: LIGHT/readme -- lane {lane}",
+                        capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is False
+    assert res["budget_spent_by"] is None

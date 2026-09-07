@@ -57,6 +57,7 @@ Tous les verdicts de la table ci-dessous sont **GREEN-par-grep** / **RED-par-gre
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 25 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean` | 6 | 0 | 0 | 0 | 0 | **GREEN mesuré** (hors périmètre de la mesure initiale du 2026-07-29 — lake ajouté après coup ; mesuré firsthand 2026-08-26 au câblage CI #13139 : `real sorry` = 0 sur les 6 modules non-`_en`, clôture `#print axioms` = `propext`+`Quot.sound` sur les 51 déclarations) |
+| `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` | 6 | 0 | 0 | 0 | 0 | **GREEN** (mesuré 2026-09-06 au câblage CI #14904 : `distinct_code_sorry = 0` sur 13 fichiers, 0 `native_decide`, clôture `#print axioms` = `[propext, Classical.choice, Quot.sound]` — cf. #14896/#14897/#14907) |
 
 ## 3. Lecture par verdict
 
@@ -201,6 +202,7 @@ forbidden union : []
 | `grothendieck_lean` | `lean-grothendieck.yml` | OUI (post-#8941) | GREEN avec `Classical.choice` whitelisté explicitement (théorie intrinsèquement non-constructive, §3.5) |
 | `sensitivity_lean` | `lean-sensitivity.yml` | OUI (c.101) | GREEN (0 `native_decide`, `Classical.choice` whitelist par défaut) |
 | `asymmetric_information_lean` | `lean-asymmetric-information.yml` | OUI (#13139, 2026-08-26) | **GREEN mesuré** (exécution locale du step exact du gate, 2026-08-26 : 51 déclarations sur 6 modules, clôture axiomatique = `propext` + `Quot.sound` seulement, 0 `sorryAx`, 0 `native_decide`, 0 `Classical.choice`) ; `target-modules: "*"` + `fail-on-sorry: true` cohérent avec baseline 0. **Premier lake du dépôt avec un `[[require]]` cross-lake par chemin** (`../lean_game_defs_ext`) : le caller déclenche aussi sur les sources de la dépendance — un gate aveugle à la moitié de ses entrées n'est pas un gate. `lake build` local WSL SUCCESS (28 jobs, toolchain v4.32.1) |
+| `percolation_lean` | `lean-percolation.yml` | OUI (#14904, 2026-09-06) | **GREEN mesuré** — `distinct_code_sorry = 0` (`count_code_sorry.py --json`, 13 fichiers), 0 `native_decide` / 0 `sorryAx` (grep FR + `#print axioms` des tranches #14896/#14897/#14907 = `[propext, Classical.choice, Quot.sound]`, sous-ensemble des défauts du workflow réutilisable). `target-modules: "*"` (dérivation runtime #10889, `_en` exclus par défaut) + `fail-on-sorry: true` cohérent avec baseline 0. **Contrôle positif HARD exécuté** : mutation `sorry` temporaire sur `probe/*` → `proof-integrity` ROUGE, retirée → vert sur la tête propre |
 | 15 autres lacs | workflows existants | **NON** | GREEN si câblés (sauf 3 borderline sur `Classical.choice` : `sudoku_lean`, `learning_theory_lean`, `decision_theory_lean`) |
 
 Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté). Voir #11699 pour la roadmap tranche-par-tranche des 15 restants (mimo_lean = tranche 1 livrée par PR de cette PR).

@@ -3121,8 +3121,32 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         return False
 
     def _lift_eligible(lift_author: str, nit_author: str,
-                       lift_body: str = "") -> bool:
+                       lift_body: str = "", nit_body: str = "") -> bool:
         if lift_author == nit_author:
+            # #14947 -- meme login n'est pas meme voix. `jsboige` est A LA FOIS
+            # le compte du user et l'identite de poussee des personas (#13316).
+            # Une levee marquee `[Hermes]` / `[NanoClaw]` signe la revue de la
+            # persona sur SON propre travail ; elle ne repond pas a une remarque
+            # ecrite en voix nue par le user sous le meme login. B.0 : « se lever
+            # soi-meme une reserve d'autrui n'est pas y repondre, c'est la
+            # declarer repondue ».
+            #
+            # Le discriminant n'est pas neuf : #13609 tient deja le marqueur de
+            # persona pour une identite CROSS-login (la persona leve sa propre
+            # reserve sous l'autre login). Il vaut a fortiori SAME-login, ou la
+            # borne d'auteur #11145 ne discrimine plus rien.
+            #
+            # Incident fondateur #14937 : nit user 19:20:05Z (« Concern: le
+            # notebook ne devrait-il pas etre une accretion... »), review
+            # `[Hermes]` a 19:26:40Z terminee par un « RAS » nu -- six minutes
+            # plus tard, sur un tout autre objet (re-execution des cellules).
+            # Le RAS eteignait le nit : rc=0, PR mergeable, remarque user perdue.
+            # La levee etant PAR PR et non par reserve, un acquit de routine de
+            # la persona suffisait a solder la voix du user.
+            if (_PERSONA_MARKERS_RE.search(_strip_quoted(lift_body or ""))
+                    and not _PERSONA_MARKERS_RE.search(
+                        _strip_quoted(nit_body or ""))):
+                return False
             return True
         # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
         # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
@@ -3392,7 +3416,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # NLP documentee dans can_lift.
             lifted = (_approved_lifts_reserve(login, when, pr_author)
                       or any(when < t < cutoff
-                             and _lift_eligible(lifter, login, lift_body)
+                             and _lift_eligible(lifter, login, lift_body, body)
                              for (t, lifter, lift_body) in explicit_lifts)
                       # #14218 conditions 5+6 — voir commentaire `followup_lifts`
                       or any(when < t < cutoff and namer in (login, pr_author)
@@ -3413,7 +3437,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         elif kind == "BLOCK":
             if (any(
                     when < t < cutoff
-                    and _lift_eligible(lift_author, login, lift_body)
+                    and _lift_eligible(lift_author, login, lift_body, body)
                     and (lift_author != pr_author
                          or bool(OVERRIDE_LANE.search(lift_body)))
                     for (t, lift_author, lift_body) in explicit_lifts)
@@ -3440,7 +3464,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # OU une re-review APPROVED de l'auteur de la reserve (etat natif
         # GitHub, phrase de levee au sens fort).
         elif (any(
-                  when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
+                  when < t < cutoff and _lift_eligible(lift_author, login, lift_body, body)
                   for (t, lift_author, lift_body) in explicit_lifts
               ) or _approved_lifts_reserve(login, when, pr_author)
               or any(when < t < cutoff and namer in (login, pr_author)
