@@ -1,0 +1,10 @@
+date: '2026-09-07'
+by: myia-po-2026:CoursIA
+python_sha: ec9d88aaa9c3ed3eb3b0f12534e0c8b0d4d06636
+csharp_sha: 31bfe385f948f0f69d3cda54067f73696607447d
+content_python_sha: 9da03367b8539cc3ab4f15db67dacc44673b998593db12ff0347219536ce7592
+content_csharp_sha: d478f19b813a60e9da0fadd408ccb81e5055cec5f4108bd13cdb26350986349c
+reason: 'PR #14824 (issue) : Search-03d c0 une ligne reconciliee (A* optimal exige
+  h consistante pour la variante sans re-ouverture). Markdown-only, outputs precedents
+  valides. C# 03d inchange : ses phrasings c3/c4 (''W=1 -> A* optimal, admissible'')
+  signales en residuel dans le body PR, hors enumeration de l''issue.'
