@@ -46,8 +46,8 @@ import re
 import sys
 from datetime import datetime
 
-TS_RE = re.compile(r"^(\d{2}:\d{2}:\d{2})\s?(.*)$")
-DOC_RE = re.compile(r"\[(\d+)/(\d+)\]")
+TS_RE = re.compile(r"^(\d{2}:\d{2}:\d{2})\s?")
+DOC_RE = re.compile(r"\[\s*(\d+)\s*/\s*(\d+)\s*\]")
 OUTPUT_RE = re.compile(r"Output created:\s*(\S+)")
 
 
@@ -62,37 +62,58 @@ def _fmt(delta: float) -> str:
     return f"{seconds // 60}:{seconds % 60:02d}"
 
 
-def analyse(lines: list[str]) -> dict[str, object]:
-    """Extract phase timestamps from timestamped render-log lines."""
-    events: list[tuple[datetime, str]] = []
-    for line in lines:
-        m = TS_RE.match(line.rstrip("\n"))
-        if m:
-            try:
-                events.append((_parse(m.group(1)), m.group(2)))
-            except ValueError:
-                continue
-    first_ts = events[0][0] if events else None
+def _physical_lines(raw: str) -> list[list[str]]:
+    """Split raw log bytes into \\n-lines, each further split on \\r.
+
+    Quarto's document-progress lines are \\r-separated segments riding inside
+    one \\n-terminated line (ANSI color prefix, then ``\\r`` + one
+    ``[  N/M]`` per document). Python text mode would translate those ``\\r``
+    into newlines and divorce each progress segment from the line's timestamp
+    prefix, so the file is decoded manually and segments stay grouped with
+    their timestamp.
+    """
+    return [line.split("\r") for line in raw.split("\n")]
+
+
+def analyse(raw: str) -> dict[str, object]:
+    """Extract phase timestamps from a timestamped render log."""
+    first_ts = None
     last_doc = None
     doc_count = None
     output_created = None
     site_path = None
-    for ts, text in events:
-        m = DOC_RE.search(text)
-        if m:
-            last_doc = (ts, text.strip())
-            doc_count = int(m.group(2))
-        m = OUTPUT_RE.search(text)
-        if m and output_created is None:
-            output_created = (ts, text.strip())
-            site_path = m.group(1)
+    n_lines = 0
+    for segments in _physical_lines(raw):
+        ts = None
+        for seg in segments:
+            m = TS_RE.match(seg)
+            if m:
+                try:
+                    ts = _parse(m.group(1))
+                except ValueError:
+                    continue
+                break
+        if ts is None:
+            continue
+        if first_ts is None:
+            first_ts = ts
+        n_lines += 1
+        for seg in segments:
+            m = DOC_RE.search(seg)
+            if m:
+                last_doc = (ts, seg.strip())
+                doc_count = int(m.group(2))
+            m = OUTPUT_RE.search(seg)
+            if m and output_created is None:
+                output_created = (ts, seg.strip())
+                site_path = m.group(1)
     return {
         "first": first_ts,
         "last_doc": last_doc,
         "doc_count": doc_count,
         "output_created": output_created,
         "site_path": site_path,
-        "n_lines": len(events),
+        "n_lines": n_lines,
     }
 
 
@@ -133,13 +154,13 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     try:
-        with open(args.log, encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
+        with open(args.log, "rb") as fh:
+            raw = fh.read().decode("utf-8", errors="replace")
     except OSError as exc:
         print(f"quarto_render_timing: cannot read {args.log}: {exc}", file=sys.stderr)
         return 0
 
-    report = render_report(analyse(lines))
+    report = render_report(analyse(raw))
     print(report)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
