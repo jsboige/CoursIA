@@ -55,7 +55,7 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          CHANGED=$(git diff --name-only -M "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
           if [ -z "$CHANGED" ]; then
             echo "::notice title=Enrich-quality gate::No notebooks changed — clean."
             exit 0
