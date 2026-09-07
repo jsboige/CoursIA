@@ -452,6 +452,18 @@ theorem det_two_aux (M : Matrix (Fin 2) (Fin 2) (Polynomial ℤ)) :
   simp [Matrix.det_unique, Fin.sum_univ_two]
   ring
 
+/-- Déterminant 3×3 générique (même esprit que `det_two_aux` : expansion de
+Laplace le long de la première colonne, les mineurs 2×2 étant traités par
+`det_two_aux`). -/
+theorem det_three_aux (A : Matrix (Fin 3) (Fin 3) (Polynomial ℤ)) :
+    A.det = A 0 0 * (A 1 1 * A 2 2 - A 1 2 * A 2 1)
+          - A 1 0 * (A 0 1 * A 2 2 - A 0 2 * A 2 1)
+          + A 2 0 * (A 0 1 * A 1 2 - A 0 2 * A 1 1) := by
+  rw [Matrix.det_succ_column_zero]
+  simp (config := { decide := true }) [Fin.sum_univ_succ]
+  simp (config := { decide := true }) [det_two_aux, Matrix.submatrix_apply, Fin.succAbove]
+  ring
+
 /-- Contrôle positif : le trèfle retrouve la valeur classique t² − t + 1
 sous la normalisation désignée (mineur sans première ligne ni dernière
 colonne). -/
@@ -490,6 +502,33 @@ theorem alexander_trefoilMutant :
   dsimp [trefoilMutantDiagram, mutateWindow, KleinRot.apply, trefoilDiagram]
   simp (config := { decide := true })
   rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Contrôle de discrimination sur le nœud en huit (4_1) : sous la
+normalisation désignée (mineur sans première ligne ni dernière colonne), la
+fonction rend −2·t² + 2·t − 1 sur le câblage brut corrigé.
+
+Remarque d'honnêteté : cette valeur n'est PAS le polynôme d'Alexander
+classique de 4_1 (qui vaut ±t² ∓ 3·t ± 1, soit t² − 3·t + 1 à un facteur
+unité près) ; le théorème mesure la valeur réellement produite par la
+fonction désignée sur un câblage à 4 croisements qui forme une boucle
+unique. Le trèfle (t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1)
+sont bien reproduits, mais la forme du polynôme diverge du classique sur la
+classe à 4 croisements — anomalie documentée exhaustivement (2736 câblages
+orientés testés, dont le câblage DT [4,6,8,2]) dans l'issue de suivi ouverte
+avec ce PR.
+-/
+theorem alexander_figureEight :
+    alexanderPolynomial figureEight =
+      - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X - 1 := by
+  have hp : arcPartition figureEightDiagram = [[3, 4], [5, 6], [7, 8], [1, 2]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, figureEight, hp]
+  simp only [figureEightDiagram]
+  simp (config := { decide := true })
+  rw [det_three_aux]
   simp only [Matrix.of_apply]
   simp (config := { decide := true }) [alexanderEntry]
   ring

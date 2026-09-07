@@ -95,7 +95,7 @@ Commit UNIQUEMENT les notebooks dont la source a change (`git diff <nb> | grep -
 |--------|---------|----------|
 | **Structurel** | `2^225` combinaisons → speedup `~2.8e24x` ; nombre de contraintes ; complexité | **GARDER** — stable d'une machine à l'autre, c'est du contenu pédagogique réel |
 | **Machine-dépendant** | temps absolus (`~21 s`, `24-127 ms`) | **RETIRER** — renvoi à la cellule de mesure ; si le coût relatif porte le propos, l'écrire en **rapport** (cf ci-dessous) |
-| **Donnée en unité de temps (data-unit)** | moyenne de trajet `15.33 min` (Infer-101) ; durée de contenu `30 sec` ; estimation pédagogique `Durée : ~2 h` | **GARDER** — c'est une *donnée* déterministe (statistique, longueur de contenu, estimation humaine), pas un runtime ; ne dérive pas à la re-exécution |
+| **Donnée en unité de temps (data-unit)** | moyenne de trajet `15.33 min` (Infer-1b) ; durée de contenu `30 sec` ; estimation pédagogique `Durée : ~2 h` | **GARDER** — c'est une *donnée* déterministe (statistique, longueur de contenu, estimation humaine), pas un runtime ; ne dérive pas à la re-exécution |
 | **Env-dépendant (observé)** | table de versions `NumPy 2.4.2` écrite à la main | **RETIRER** quand une cellule imprime déjà la version (source unique = l'output) |
 | **Env-dépendant (exigé)** | `Python 3.10+`, `.NET 9.0` | **GARDER** — c'est une **décision de projet**, pas une observation ; ne dérive pas |
 | **Stochastique seedé** | fitness d'un GA à `seed=42` | **GARDER** — reproductible, donc stable |
