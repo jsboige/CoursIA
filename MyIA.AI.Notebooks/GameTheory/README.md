@@ -215,6 +215,7 @@ flowchart TD
 | 2 (C#) | [GameTheory-02-NormalForm-Csharp](GameTheory-02-NormalForm-Csharp.ipynb) | C# (.NET) | Jumeau C# : forme normale et équilibres de Nash from-scratch | 45 min |
 | 2 (C#, suite) | [GameTheory-02-NormalForm-Csharp-Part2](GameTheory-02-NormalForm-Csharp-Part2.ipynb) | C# (.NET) | Suite du jumeau C# : support enumeration et jeux N×N | 50 min |
 | 2b | [GameTheory-02b-Lean-Definitions](GameTheory-02b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
+| 2c | [GameTheory-02c-Travelers-Dilemma](GameTheory-02c-Travelers-Dilemma.ipynb) | Python | Le dilemme du voyageur (Basu 1994) : annonce $2–$100, la compagnie paie le montant le plus bas, +$2 au moins-disant / −$2 au plus-disant — l'élimination itérée des stratégies strictement dominées converge vers l'unique équilibre (2,2), que contredisent les comportements humains (~$100), et la sensibilité au bonus révèle le seuil r* = 1 où le paradoxe se dissout (contre-claim : robustesse du paradoxe au bonus mineur) | 45 min |
 | 3 | [GameTheory-03-Topology2x2](GameTheory-03-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
 | 3 (C#) | [GameTheory-03-Topology2x2-Csharp](GameTheory-03-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
 | 3a | [GameTheory-03a-Chemins-de-Swaps](GameTheory-03a-Chemins-de-Swaps.ipynb) | Python + Lean | Plus courts chemins de swaps sur les 576 jeux : BFS générateur et certificat Lean indépendant | 45 min |
@@ -804,6 +805,7 @@ GameTheory/
 ├── GameTheory-02-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
 ├── GameTheory-02-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
 ├── GameTheory-02-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
+├── GameTheory-02c-Travelers-Dilemma.ipynb           # Dilemme du voyageur (Basu 1994) : paradoxe de l'élimination itérée, seuil r* = 1
 ├── GameTheory-03-Topology2x2.ipynb
 ├── GameTheory-03-Topology2x2-Csharp.ipynb           # Jumeau C# — classification ordinale 2×2 from-scratch
 ├── GameTheory-03a-Chemins-de-Swaps.ipynb            # Extensions littérales 3a→3f de la géométrie ordinale
@@ -874,6 +876,7 @@ GameTheory/
 ├── GameTheory-25-Loi-II-Translateur-Life.ipynb
 ├── GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb
 ├── GameTheory-27-Munkres-Assignment.ipynb
+├── GameTheory-28-Humour-Banc.ipynb                 # Banc de calibration : humour, forme partagée vs stimulus
 ├── SocialChoice/                                   # Sous-série Choix Social (8 notebooks : 5 pères Python/Lean + 3 twins C#, parité #4956)
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 01-Arrow-Impossibility-Theorem-Csharp.ipynb
