@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 168 |
+| Notebooks | 170 |
 | PRODUCTION | 0 |
-| BETA | 168 |
+| BETA | 170 |
 | ALPHA | 0 |
 
-## Search/Applications (53 notebooks)
+## Search/Applications (54 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -76,57 +76,58 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 45 | App-27 — Sparse index tracking | BETA | Oui |
 | 46 | App-28 — Learning to branch | BETA | Oui |
 | 47 | App-29 — Équilibrage de chaîne d'assemblage (SALBP) | BETA | Oui |
-| 48 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
-| 49 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
-| 50 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
-| 51 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
-| 52 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
-| 53 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
+| 48 | App-30 — Ordonnancement d'assemblage orbital | BETA | Oui |
+| 49 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
+| 50 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
+| 51 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
+| 52 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
+| 53 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
+| 54 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
 
 ## Search/Part1-Foundations (40 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Search-02b : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
-| 2 | Search-02b-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
-| 3 | Search-02c-QuikGraph : bibliotheque de graphes pour… | BETA | Oui |
-| 4 | Search-03b (C#) — Bases de données de motifs (Pattern… | BETA | Oui |
-| 5 | Search-03b — Bases de données de motifs (Pattern… | BETA | Oui |
-| 6 | Search-03c (C#) — Recherche à écart limité (Limited… | BETA | Oui |
-| 7 | Search-03c — Recherche à écart limité (Limited… | BETA | Oui |
-| 8 | Search-03d (C#) — Weighted A\* : recherche à… | BETA | Oui |
-| 9 | Search-03d — Weighted A\* : recherche à sous-optimalité… | BETA | Oui |
-| 10 | Search-03e : A* et l'optimalité sous heuristique… | BETA | Non |
-| 11 | Search-09b : Minima fallacieux — le paysage de la… | BETA | Oui |
-| 12 | Search-09c — Discrépance combinatoire : colorier ±1… | BETA | Oui |
-| 13 | Search-09d — Discrépance combinatoire : la couche… | BETA | Oui |
-| 14 | Search-1 : Espaces d'etats et formalisation de… | BETA | Oui |
-| 15 | Search-1 : Espaces d'etats et formulation de problemes | BETA | Oui |
-| 16 | Search-10 (C#) : Automates Finis Classiques — jumeau… | BETA | Oui |
-| 17 | Search-10 : Automates Symboliques avec Z3 | BETA | Oui |
-| 18 | Search-11 (C#) : Métaheuristiques — Optimisation par… | BETA | Oui |
-| 19 | Search-11-métaheuristiques : Optimisation avec MEALPy | BETA | Oui |
-| 20 | Search-11b (Part 2) : Particle Swarm Optimization (C# /… | BETA | Oui |
-| 21 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
-| 22 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
-| 23 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
-| 24 | Search-11c — Sélection empirique d'algorithmes : deux… | BETA | Oui |
-| 25 | Search-02-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
-| 26 | Search-02-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
-| 27 | Search-03-Informed (C#) : Recherche Informée | BETA | Oui |
-| 28 | Search-03-Informed : Algorithmes de Recherche Informée | BETA | Oui |
-| 29 | Search-04-LocalSearch (C#) : Recherche Locale et… | BETA | Oui |
-| 30 | Search-04-LocalSearch : Recherche Locale et… | BETA | Oui |
-| 31 | Search-05-GeneticAlgorithms-Csharp : Algorithmes… | BETA | Oui |
-| 32 | Search-5 : Algorithmes génétiques | BETA | Oui |
-| 33 | Search-6 — Recherche adversariale (jeux à somme nulle)… | BETA | Oui |
-| 34 | Search-06-AdversarialSearch : Recherche Adversariale | BETA | Oui |
-| 35 | Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree Search… | BETA | Oui |
-| 36 | Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et… | BETA | Oui |
-| 37 | Search-08-DancingLinks-Csharp : L'algorithme X et… | BETA | Oui |
-| 38 | Search-08-DancingLinks : L'algorithme X et Dancing Links… | BETA | Oui |
-| 39 | Search-9 : Programmation Linéaire et Simplexe (C# /… | BETA | Oui |
-| 40 | Search-09-LinearProgramming : Programmation Lineaire et… | BETA | Oui |
+| 1 | Search-1 : Espaces d'etats et formalisation de… | BETA | Oui |
+| 2 | Search-1 : Espaces d'etats et formulation de problemes | BETA | Oui |
+| 3 | Search-02-Uninformed (C#) : Algorithmes de Recherche… | BETA | Oui |
+| 4 | Search-02-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
+| 5 | Search-02b : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
+| 6 | Search-02b-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
+| 7 | Search-02c-QuikGraph : bibliotheque de graphes pour… | BETA | Oui |
+| 8 | Search-03-Informed (C#) : Recherche Informée | BETA | Oui |
+| 9 | Search-03-Informed : Algorithmes de Recherche Informée | BETA | Oui |
+| 10 | Search-03b (C#) — Bases de données de motifs (Pattern… | BETA | Oui |
+| 11 | Search-03b — Bases de données de motifs (Pattern… | BETA | Oui |
+| 12 | Search-03c (C#) — Recherche à écart limité (Limited… | BETA | Oui |
+| 13 | Search-03c — Recherche à écart limité (Limited… | BETA | Oui |
+| 14 | Search-03d (C#) — Weighted A\* : recherche à… | BETA | Oui |
+| 15 | Search-03d — Weighted A\* : recherche à sous-optimalité… | BETA | Oui |
+| 16 | Search-03e : A* et l'optimalité sous heuristique… | BETA | Non |
+| 17 | Search-04-LocalSearch (C#) : Recherche Locale et… | BETA | Oui |
+| 18 | Search-04-LocalSearch : Recherche Locale et… | BETA | Oui |
+| 19 | Search-05-GeneticAlgorithms-Csharp : Algorithmes… | BETA | Oui |
+| 20 | Search-5 : Algorithmes génétiques | BETA | Oui |
+| 21 | Search-6 — Recherche adversariale (jeux à somme nulle)… | BETA | Oui |
+| 22 | Search-06-AdversarialSearch : Recherche Adversariale | BETA | Oui |
+| 23 | Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree… | BETA | Oui |
+| 24 | Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et… | BETA | Oui |
+| 25 | Search-08-DancingLinks-Csharp : L'algorithme X et… | BETA | Oui |
+| 26 | Search-08-DancingLinks : L'algorithme X et Dancing… | BETA | Oui |
+| 27 | Search-9 : Programmation Linéaire et Simplexe (C# /… | BETA | Oui |
+| 28 | Search-09-LinearProgramming : Programmation Lineaire et… | BETA | Oui |
+| 29 | Search-09b : Minima fallacieux — le paysage de la… | BETA | Oui |
+| 30 | Search-09c — Discrépance combinatoire : colorier ±1… | BETA | Oui |
+| 31 | Search-09d — Discrépance combinatoire : la couche… | BETA | Oui |
+| 32 | Search-10 (C#) : Automates Finis Classiques — jumeau… | BETA | Oui |
+| 33 | Search-10 : Automates Symboliques avec Z3 | BETA | Oui |
+| 34 | Search-11 (C#) : Métaheuristiques — Optimisation par… | BETA | Oui |
+| 35 | Search-11-métaheuristiques : Optimisation avec MEALPy | BETA | Oui |
+| 36 | Search-11b (Part 2) : Particle Swarm Optimization (C# /… | BETA | Oui |
+| 37 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
+| 38 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
+| 39 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
+| 40 | Search-11c — Sélection empirique d'algorithmes : deux… | BETA | Oui |
 
 ## Search/Part2-CSP (17 notebooks)
 
@@ -176,7 +177,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 20 | MGS-25 : WhaleOptimisation MGS contre mealpy — le WOA… | BETA | Oui |
 | 21 | MGS-29 : GA MGS compose "Default" contre BaseGA mealpy… | BETA | Oui |
 
-## Sudoku (37 notebooks)
+## Sudoku (38 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -205,15 +206,16 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 23 | Notebook 11: Résolution de Sudoku avec Choco Constraint… | BETA | Oui |
 | 24 | Sudoku-12 : Résolution avec Z3 SMT Solver (C#) | BETA | Oui |
 | 25 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | BETA | Oui |
-| 26 | Sudoku-13 : Le Sudoku comme Regex Symbolique -… | BETA | Oui |
-| 27 | Sudoku-13 : Le Sudoku comme Regex Symbolique — twin… | BETA | Oui |
-| 28 | Sudoku-14 : Automates avec BDD/MDD - Approche Pure | BETA | Oui |
-| 29 | Sudoku-14 : Automates avec BDD/MDD - Approche Pure… | BETA | Oui |
-| 30 | Résolution de Sudoku avec Infer.NET | BETA | Oui |
-| 31 | Sudoku-15-Infer-Python : Resolution Probabiliste avec… | BETA | Oui |
-| 32 | Sudoku-16 : Résolution par Réseaux de Neurones | BETA | Non |
-| 33 | Notebook 17: Resolution de Sudoku avec Large Language… | BETA | Non |
-| 34 | Comparaison des Solveurs de Sudoku | BETA | Oui |
+| 26 | Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de 81… | BETA | Oui |
+| 27 | Sudoku-13 : Le Sudoku comme Regex Symbolique -… | BETA | Oui |
+| 28 | Sudoku-13 : Le Sudoku comme Regex Symbolique — twin… | BETA | Oui |
+| 29 | Sudoku-14 : Automates avec BDD/MDD - Approche Pure | BETA | Oui |
+| 30 | Sudoku-14 : Automates avec BDD/MDD - Approche Pure… | BETA | Oui |
+| 31 | Résolution de Sudoku avec Infer.NET | BETA | Oui |
+| 32 | Sudoku-15-Infer-Python : Resolution Probabiliste avec… | BETA | Oui |
+| 33 | Sudoku-16 : Résolution par Réseaux de Neurones | BETA | Non |
+| 34 | Notebook 17: Resolution de Sudoku avec Large Language… | BETA | Non |
 | 35 | Comparaison des Solveurs de Sudoku | BETA | Oui |
-| 36 | Sudoku-18b - Comparaison statistique honnête de… | BETA | Oui |
-| 37 | Sudoku-7b — Soundness de la propagation de contraintes… | BETA | Oui |
+| 36 | Comparaison des Solveurs de Sudoku | BETA | Oui |
+| 37 | Sudoku-18b - Comparaison statistique honnête de… | BETA | Oui |
+| 38 | Sudoku-19 — Soundness de la propagation de contraintes… | BETA | Oui |

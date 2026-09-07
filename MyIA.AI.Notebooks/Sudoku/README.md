@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 37
-breakdown: root=37
-maturity: BETA=37
+pedagogical_count: 38
+breakdown: root=38
+maturity: BETA=38
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (37 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 08/08/2026 :
