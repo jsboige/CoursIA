@@ -54,4 +54,7 @@ numériques du notebook 4.2-ConvNet-Profonde-Residuelles (facteur 0,4/bloc).
 Frère de `Perceptron` et `PacLearning`. -/
 @[default_target]
 lean_lib «GradientFlow» where
-  globs := #[.submodules `GradientFlow, `GradientFlow_en]
+  -- `.submodules `GradientFlow` ne couvre que GradientFlow.*, pas le module
+  -- racine : sans le glob nu, `lake build` ne produit jamais GradientFlow.olean
+  -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
+  globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]

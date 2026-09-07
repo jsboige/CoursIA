@@ -203,11 +203,13 @@ Exposition par la moitié :
 
 - **Moitié `Perceptron`** — [`02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) (companion natif, kernel `lean4-wsl`) : la borne de Novikoff, ses deux lemmes de croissance et le témoin de saturation `#check`és et exécutés en direct depuis le lake, avec la dynamique rejouée sur des entiers (issue #13199). [`2.8c`](../DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) en simule le témoin en Python.
 - **Moitié `PacLearning`** — [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) (companion natif, kernel `lean4-wsl`) : Hoeffding, borne de l'union, ERM, complexité d'échantillon, déclaration par déclaration ; le pendant empirique en est [`2.8-Theorie-PAC`](../DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (issue #4294).
+- **Moitié `GradientFlow`** — [`04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb`](../DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) (companion natif, kernel `lean4-wsl`) : la paire plafond/plancher `c ^ n` vs `(1-c) ^ n`, l'anti-inégalité triangulaire et les ancres numériques `#check`és depuis le lake, avec le balayage en profondeur rejoué en `Float` (See #13106). [`4.2-ConvNet-Profonde-Residuelles`](../DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) en mesure le facteur ≈ 0,4/bloc.
 
 **Compagnons kernel Lean (`lean4-wsl`)** — le lake exécuté déclaration par
 déclaration dans un notebook :
 
 - [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) — côté série ML : modèle, échantillon, concentration uniforme (EPIC #11703) ;
+- [`04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb`](../DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) — côté série Vision : évanouissement `c ^ n` vs survie `(1-c) ^ n`, table Float du balayage en profondeur et 3 exercices (See #13106) ;
 - [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) — côté série SymbolicAI : chaîne complète des bornes (Valiant classe finie, agnostique, Hoeffding-Chernoff) et branche perceptron (Novikoff + serrage), avec 3 exercices de preuve (See #11703).
 
 ## Référence
