@@ -3,53 +3,6 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Csharp.ipynb
   parity_level: semantic
-  audits:
-    - date: "2026-08-21"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 3d4b140a8231f9587bdea85b1862003db12ba56d
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-      content_python_sha: b9dad499
-      content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
-      reason: "fix(gametheory,#9434) PR #11966 (c.1301+284 lane po-2025:CoursIA-2) drain de 13 claims artifactuels. Sur cette paire, GT-4c cell#18/#37/#38 : strip '(~3000 lignes)' / '(~1000 lignes)' / '(~900 lignes)' / '(~600 lignes)' / '(38 cellules, kernel Lean 4)' depuis les cellules d'interpretation -- Lean module sizes drift. csharp_sha inchange. twin parity rebaseline (script check_twin_parity.py --update, leçon #11966)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: c6db511801c503cacd18a0af26ffe0182d0b70f8
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: d961920fe442d4cd9e6948327d5cd72c79f0c36b
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 8b006e3260363e251379e3629401d7bbc49a7782
-      csharp_sha: 0cc0403bd9de958a52e3fa3a3c318e3cf3d8ddd4
-      content_python_sha: fc4746498c529d0f9befe4aadc97686ce38e5b7301795815bcb93518baf80dd1
-      content_csharp_sha: 5aedf36d46460381bc005e1d451d8ca00cf0f023aa900261c9d1460672c148e3
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: d961920fe442d4cd9e6948327d5cd72c79f0c36b
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-      content_python_sha: 85820028c0c456b7522c80315ee04d794c1ef827fc3ed227a466e1b70d316dd6
-      content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
-    - date: "2026-08-21"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 3d4b140a8231f9587bdea85b1862003db12ba56d
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-      content_python_sha: b9dad4992333ea37bb9f86e94cf89ed9575a798b2eeb9a59fbf3663fe6ee5491
-      content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
-    - date: "2026-08-23"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 8170ace98ade213f6e12e63c83d3ef0032b66ae1
-      csharp_sha: 77eb6de57dc7f7a821c41b5c1fce803e379d26b5
-      content_python_sha: e1dc742c697ec440681ed14b9e43c226f546781bea5d8f4553c8b566656b2d74
-      content_csharp_sha: 97244140ce32c3968b0993745e2f1d1f1e49c48bc2eb9232e67a34e1c0c4b225
-    - date: "2026-09-06"
-      by: myia-po-2024:CoursIA
-      python_sha: 789d31707c8111372dc38d546401ddd932fdb24e
-      csharp_sha: 77eb6de57dc7f7a821c41b5c1fce803e379d26b5
-      content_python_sha: 18ba497d59027c27129127d0f36da8a6ffdac10fd397502940cbd75d8ff58a58
-      content_csharp_sha: 97244140ce32c3968b0993745e2f1d1f1e49c48bc2eb9232e67a34e1c0c4b225
-      reason: "Re-attestation apres PR #14854 (#14817, stubs d'exercice ne rendent plus une verite en dur) : cote Python corrige, cote C# non touche. Audit firsthand post-fix : detect_stub_truth_returns 0/0 sur les deux jumeaux ; contre-verification grep direct du C# : 0 literal True dans une cellule stub. Defaut initial unilateral Python ; known_differences et parity_level inchanges."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Tri du residu #10382 (2026-08-16, lane myia-po-2024:CoursIA-2) : FAUX POSITIF de la liste des 51 -- le jumeau Python n'embarque AUCUN moteur SOTA (imports mesures firsthand : numpy/matplotlib/typing uniquement, 0 nashpy). numpy = signal faible au sens de l'issue (helper numerique, pas un moteur de jeu), les DEUX jumeaux font la demonstration constructive du point fixe from-scratch. Verdict reformule : pas d'asymetrie lib-vs-lib a combler ; asymetrie de machinerie seulement (visualisation numpy/matplotlib vs System.* + SVG zero-dependance). parity_level semantic preserve (gel #11200)."
   known_differences:

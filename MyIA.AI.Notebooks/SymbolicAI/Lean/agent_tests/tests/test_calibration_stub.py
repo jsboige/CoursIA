@@ -14,6 +14,13 @@ prover run stubs that file in place, and a test reading it races the run
 state and failed on a sorry count of 2 vs 1).
 """
 
+import asyncio
+import json
+import subprocess
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
 import pytest
 
 from prover.lean_utils import count_real_sorries, stub_theorem_proof
@@ -112,3 +119,118 @@ def test_stub_statement_without_assign_raises():
     source = "theorem broken : Nat\n\ntheorem next : True := trivial\n"
     with pytest.raises(ValueError, match="no ':='"):
         stub_theorem_proof(source, "broken")
+
+
+def test_root_launcher_marks_applied_calibration(tmp_path, monkeypatch):
+    """The root launcher's parseable result carries the applied-stub flag."""
+    import run_prover_bg as launcher
+
+    target = tmp_path / "Nim.lean"
+    target.write_text(NIM_FIXTURE, encoding="utf-8", newline="\n")
+    original_bytes = target.read_bytes()
+    demo = {
+        "file": str(target),
+        "theorem_name": "isWinningNim_345",
+        "sorry_type": "sorry_replacement",
+        "line": 22,
+    }
+    seen = []
+
+    async def _record(_args, _demo, _file_target, calibration=False):
+        seen.append(calibration)
+        return 0
+
+    monkeypatch.setattr(launcher, "_run_calibration_ready", _record)
+    args = SimpleNamespace()
+    assert asyncio.run(launcher._run_locked(args, demo, str(target))) == 0
+    assert seen == [True]
+    assert target.read_bytes() == original_bytes
+
+
+@pytest.mark.parametrize("calibration", [True, False])
+def test_root_launcher_emits_calibration_result(
+    tmp_path, monkeypatch, capsys, calibration
+):
+    """The root launcher's result protocol exposes the population flag."""
+    import run_prover_bg as launcher
+
+    target = tmp_path / "Nim.lean"
+    source = (
+        stub_theorem_proof(NIM_FIXTURE, "isWinningNim_345")
+        if calibration
+        else NIM_FIXTURE
+    )
+    target.write_text(source, encoding="utf-8", newline="\n")
+
+    class _FakeProver:
+        def __init__(self, **_kwargs):
+            pass
+
+        async def prove_sorry(self, _demo, **_kwargs):
+            return {"success": True, "iterations": 1}
+
+    monkeypatch.setattr(launcher, "MultiAgentSorryProver", _FakeProver)
+    monkeypatch.setattr(launcher, "TraceLogger", lambda **_kwargs: object())
+    args = SimpleNamespace(
+        provider="local",
+        local_provider="local",
+        director_provider=None,
+        coordinator_provider=None,
+        tactic_provider=None,
+        search_provider=None,
+        critic_provider=None,
+        max_iter=1,
+        workflow_timeout=1,
+    )
+
+    assert asyncio.run(
+        launcher._run_calibration_ready(
+            args,
+            {"file": str(target)},
+            str(target),
+            calibration=calibration,
+        )
+    ) == 0
+    assert f"[BG] RESULT_CALIBRATION {calibration}" in capsys.readouterr().out
+
+
+def test_analyzer_separates_calibration_and_real_successes(tmp_path):
+    """Positive control: equal verdicts land in separate populations."""
+    for name, calibration in (
+        ("calibration", True),
+        ("real", False),
+        ("legacy", None),
+    ):
+        (tmp_path / f"{name}_result.json").write_text(
+            json.dumps({
+                "mode": "multi",
+                "result_kind": "sorry_decreased",
+                "calibration": calibration,
+                "original_sorry": 1,
+                "final_sorry": 0,
+                "elapsed_s": 1.0,
+                "result": {"success": True},
+                "timestamp": "2026-09-07T00:00:00Z",
+            }),
+            encoding="utf-8",
+        )
+
+    analyzer = (
+        Path(__file__).resolve().parent.parent
+        / "prover" / "baselines" / "analyze_traces.py"
+    )
+    completed = subprocess.run(
+        [sys.executable, str(analyzer), "--result-dir", str(tmp_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    calibration_section, remainder = completed.stdout.split(
+        "CALIBRATION VERDICTS", 1
+    )[1].split("REAL VERDICTS", 1)
+    real_section, legacy_section = remainder.split("LEGACY_UNKNOWN VERDICTS", 1)
+    assert "sorry_decreased" in calibration_section
+    assert "sorry_decreased" in real_section
+    assert "sorry_decreased" in legacy_section

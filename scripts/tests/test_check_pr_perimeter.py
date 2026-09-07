@@ -3668,3 +3668,50 @@ def test_14292_ghost_fail_shape_becomes_signal(monkeypatch, capsys):
         "l'assertion pretend 5 fichier(s), la liste effective en compte 0" in out
     ), "la détection doit rester visible sous SIGNAL, pas être effacée"
     assert "VERDICT: OK" in out
+
+
+# ---------------------------------------------------------------------------
+# #14911 — `gh pr diff` 406 sur une PR > 300 fichiers.
+# ---------------------------------------------------------------------------
+def test_pr_diff_text_passes_through_normal_diff(monkeypatch):
+    """A normal PR diff is returned verbatim for baseline-move detection."""
+    import check_pr_perimeter as cpp
+
+    diff = "diff --git a/x.py b/x.py\n@@ ... @@\n-old\n+new\n"
+    monkeypatch.setattr(cpp, "_run_gh_rc", lambda args: (0, diff, ""))
+    assert cpp._pr_diff_text(101) == diff
+
+
+def test_pr_diff_text_falls_back_empty_on_300_file_cap(monkeypatch):
+    """#14911: `gh pr diff` caps at 300 files (HTTP 406), a hard crash on a
+    legitimate large migration PR. Baseline-move detection is advisory in
+    --scan-thread, so the guard must NOT crash: it returns an empty diff
+    (moves == []) and warns, while the blocking perimeter checks continue off
+    the paginated /pulls/<pr>/files list (which has no such cap)."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        assert args[:2] == ["pr", "diff"]
+        assert args[-1] == "14940"
+        return 1, "", (
+            "gh error: could not find pull request diff: HTTP 406: Sorry, the "
+            "diff exceeded the maximum number of files (300). Consider using "
+            "'List pull requests files' API or locally cloning the repository "
+            "instead."
+        )
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(14940) == ""
+
+
+def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
+    """Any OTHER `gh pr diff` failure keeps the fail-closed behaviour -- only
+    the 300-file cap is degraded to an empty diff."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", "gh: authentication failed"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    with pytest.raises(SystemExit):
+        cpp._pr_diff_text(101)

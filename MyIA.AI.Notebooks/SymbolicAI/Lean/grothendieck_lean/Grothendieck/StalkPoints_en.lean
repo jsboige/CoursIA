@@ -144,6 +144,10 @@ theorem germ_stalkToFiber (U : Opens T) (hx : x ∈ U) :
       (opensPoint T x).toPresheafFiber U ⟨⟨hx⟩⟩ F :=
   colimit.ι_desc _ _
 
+section
+
+set_option backward.isDefEq.respectTransparency false
+
 /-- The round trip stalk → fiber → stalk is the identity: two morphisms
 out of the stalk coincide as soon as they coincide after every germ
 (`stalk_hom_ext`), and the triangle closes via the two characterizations
@@ -169,6 +173,8 @@ theorem fiberToStalk_comp_stalkToFiber :
   rw [← Category.assoc, toPresheafFiber_fiberToStalk, germ_stalkToFiber,
     Category.comp_id]
 
+end
+
 /-- **The stalk is the fiber functor of the attached point**: canonical iso
 between the fiber of any presheaf `F` at the site point `opensPoint T x`
 and the topological stalk of `F` at `x`. This iso is the explicit TODO of
@@ -181,6 +187,8 @@ noncomputable def stalkFiberIso :
   hom_inv_id := fiberToStalk_comp_stalkToFiber T x F
   inv_hom_id := stalkToFiber_comp_fiberToStalk T x F
 
+set_option backward.defeqAttrib.useBackward true in
+set_option backward.isDefEq.respectTransparency false in
 /-- The iso `stalkFiberIso` is natural in the presheaf: it intertwines
 `presheafFiber.map` and `stalkFunctor.map`. -/
 theorem stalkFiberIso_naturality {G : TopCat.Presheaf (Type u) (TopCat.of T)} (f : F ⟶ G) :
@@ -189,28 +197,11 @@ theorem stalkFiberIso_naturality {G : TopCat.Presheaf (Type u) (TopCat.of T)} (f
         (TopCat.Presheaf.stalkFunctor (Type u) (X := TopCat.of T) x).map f := by
   apply (opensPoint T x).presheafFiber_hom_ext
   intro U p
-  obtain ⟨⟨h⟩⟩ := p
-  calc (opensPoint T x).toPresheafFiber U ⟨⟨h⟩⟩ F ≫
-          ((opensPoint T x).presheafFiber.map f ≫ fiberToStalk T x G)
-      = ((opensPoint T x).toPresheafFiber U ⟨⟨h⟩⟩ F ≫ (opensPoint T x).presheafFiber.map f) ≫
-          fiberToStalk T x G := (Category.assoc _ _ _).symm
-    _ = (f.app (op U) ≫ (opensPoint T x).toPresheafFiber U ⟨⟨h⟩⟩ G) ≫ fiberToStalk T x G :=
-        congrArg (· ≫ fiberToStalk T x G) ((opensPoint T x).toPresheafFiber_naturality f U ⟨⟨h⟩⟩)
-    _ = f.app (op U) ≫
-          ((opensPoint T x).toPresheafFiber U ⟨⟨h⟩⟩ G ≫ fiberToStalk T x G) :=
-        Category.assoc _ _ _
-    _ = f.app (op U) ≫ TopCat.Presheaf.germ (X := TopCat.of T) G U x h :=
-        congrArg (f.app (op U) ≫ ·) (toPresheafFiber_fiberToStalk T x G U ⟨⟨h⟩⟩)
-    _ = TopCat.Presheaf.germ (X := TopCat.of T) F U x h ≫
-          (TopCat.Presheaf.stalkFunctor (Type u) x).map f :=
-        (TopCat.Presheaf.stalkFunctor_map_germ (X := TopCat.of T) U x h f).symm
-    _ = ((opensPoint T x).toPresheafFiber U ⟨⟨h⟩⟩ F ≫ fiberToStalk T x F) ≫
-          (TopCat.Presheaf.stalkFunctor (Type u) x).map f :=
-        congrArg (· ≫ (TopCat.Presheaf.stalkFunctor (Type u) x).map f)
-          (toPresheafFiber_fiberToStalk T x F U ⟨⟨h⟩⟩).symm
-    _ = (opensPoint T x).toPresheafFiber U ⟨⟨h⟩⟩ F ≫
-          (fiberToStalk T x F ≫ (TopCat.Presheaf.stalkFunctor (Type u) x).map f) :=
-        Category.assoc _ _ _
+  rw [← Category.assoc, (opensPoint T x).toPresheafFiber_naturality f U p, Category.assoc]
+  rw [toPresheafFiber_fiberToStalk T x G U p]
+  rw [← Category.assoc, toPresheafFiber_fiberToStalk T x F U p]
+  exact (@TopCat.Presheaf.stalkFunctor_map_germ (Type u) _ _ (X := TopCat.of T)
+    F G U x p.down.down f).symm
 
 end Contenu
 

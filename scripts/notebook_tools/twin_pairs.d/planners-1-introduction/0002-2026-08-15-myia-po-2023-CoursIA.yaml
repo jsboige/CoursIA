@@ -1,0 +1,14 @@
+date: '2026-08-15'
+by: myia-po-2023:CoursIA
+python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
+csharp_sha: f32eddbaf89841702a25a8d9049b2bfb89f7d295
+content_python_sha: 53fe5088b0ee89543ae4f92fa27f69ce20e31c9313ed91e71b2a9739509aa3bb
+content_csharp_sha: 24ba00b8e94024171f0a435eff1e9d00d28ccccae4baf574b3c9ab9e18cd5571
+reason: 'Tranche 2 FD bridge (Epic #10382 lib-vs-lib) : 7 cellules inserees avant
+  conclusion (header + client FD HttpClient + multi-interrupteurs + livraison + interpretation),
+  cell 0 et conclusion mises a jour. C#-only (python_sha/content_python_sha inchanges
+  -- le jumeau Python n''a pas bouge). Les 28 cellules Tranche 1 sont preservees integralement
+  (source + outputs identiques au precedent, seule la cellule 4 porte un stream vide
+  kernel supplementaire sans contenu). Re-exec papermill .net-csharp end-to-end 35/35,
+  0 erreur, execution_count 11-13 sur les nouvelles cellules. parity_level semantic
+  -> native-both, bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK.'

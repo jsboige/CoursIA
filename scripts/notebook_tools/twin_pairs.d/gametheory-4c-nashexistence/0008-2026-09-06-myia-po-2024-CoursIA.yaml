@@ -1,0 +1,11 @@
+date: '2026-09-06'
+by: myia-po-2024:CoursIA
+python_sha: 789d31707c8111372dc38d546401ddd932fdb24e
+csharp_sha: 77eb6de57dc7f7a821c41b5c1fce803e379d26b5
+content_python_sha: 18ba497d59027c27129127d0f36da8a6ffdac10fd397502940cbd75d8ff58a58
+content_csharp_sha: 97244140ce32c3968b0993745e2f1d1f1e49c48bc2eb9232e67a34e1c0c4b225
+reason: 'Re-attestation apres PR #14854 (#14817, stubs d''exercice ne rendent plus
+  une verite en dur) : cote Python corrige, cote C# non touche. Audit firsthand post-fix
+  : detect_stub_truth_returns 0/0 sur les deux jumeaux ; contre-verification grep
+  direct du C# : 0 literal True dans une cellule stub. Defaut initial unilateral Python
+  ; known_differences et parity_level inchanges.'

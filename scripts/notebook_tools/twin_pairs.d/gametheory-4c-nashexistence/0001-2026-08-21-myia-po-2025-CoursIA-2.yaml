@@ -1,0 +1,12 @@
+date: '2026-08-21'
+by: myia-po-2025:CoursIA-2
+python_sha: 3d4b140a8231f9587bdea85b1862003db12ba56d
+csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
+content_python_sha: b9dad499
+content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
+reason: 'fix(gametheory,#9434) PR #11966 (c.1301+284 lane po-2025:CoursIA-2) drain
+  de 13 claims artifactuels. Sur cette paire, GT-4c cell#18/#37/#38 : strip ''(~3000
+  lignes)'' / ''(~1000 lignes)'' / ''(~900 lignes)'' / ''(~600 lignes)'' / ''(38 cellules,
+  kernel Lean 4)'' depuis les cellules d''interpretation -- Lean module sizes drift.
+  csharp_sha inchange. twin parity rebaseline (script check_twin_parity.py --update,
+  leçon #11966).'

@@ -1,0 +1,16 @@
+date: '2026-08-26'
+by: myia-po-2026:CoursIA
+python_sha: db926de6b20bfe82bb1d9fdfca94550f224c9434
+csharp_sha: 5e4acf3dc0d5b5119a0c6e1cede03b74954c4dd2
+content_python_sha: c4031b237010ac4ce2e6a9e68068bdb1d740be06adcaab5a8651a4dd4692cb9e
+content_csharp_sha: 2a0c52e6a68d5c62eb5e186df559d66e3a10b8bde641bb7830cea166999ae79f
+reason: 'PR #13130 : 3bis C# renommee ''Correction'' -> ''Diagnostic'' (la latente
+  EP s''effondre a exactement zero, le titre enseignait l''inverse de l''output).
+  Cause MESUREE dans le notebook, 3 configurations EP deterministes : (A) InitialiseTo
+  asymetrique -> retour EXACT au point fixe symetrique (attracteur EP, l''initialisation
+  ne suffit pas) ; (B) ConstrainPositive trait 0 -> s''echappe (max|U|=1.52, RMSE
+  0.95) mais structure INVERSEE (croisements entre clusters predits hauts, user 2
+  -> item 1 = 5.26). Explication ''ratio donnees insuffisant'' retiree (refutee par
+  NUTS, ratio ~1). Mouvement unilateral C# legitime (parity_level native-both) ; jumeau
+  PyMC inchange au SHA atteste. Re-exec complet exec_dotnet_persist (32 cellules,
+  0 erreur, exec_counts 1..32, machine path 0).'

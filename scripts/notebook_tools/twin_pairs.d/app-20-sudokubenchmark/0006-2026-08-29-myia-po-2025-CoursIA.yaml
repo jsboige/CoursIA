@@ -1,0 +1,18 @@
+date: '2026-08-29'
+by: myia-po-2025:CoursIA
+python_sha: 5dc1d80261b6d0ce9b05e329889c2add5ec130e7
+csharp_sha: 544fbc8be4cdb2ead8f7a4d2b6addbe97124ef3c
+content_python_sha: e41e1e2858796b7fbe07ddaa7f1fd8cf9e80ab5237db8662487251dd06fc3cc7
+content_csharp_sha: 69a7ebea7341c29420e702f78d873d8ad137c2d8ed9275319155f6cc75bcee4d
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib), implementation #10382 tranche
+  CP-SAT : tranche 2 clairement separee ajoutee aux DEUX twins (socle from-scratch
+  4 solveurs preserve integralement), Python atteint OR-Tools CP-SAT (pip ortools
+  9.15.6755), C# atteint Google.OrTools (NuGet 9.15.6755 epingle, meme moteur, portage
+  officiel .NET). Registre mis a jour APRES execution prouvant les deux moteurs reels
+  : re-exec fraiche des deux notebooks (Papermill python3 cote Python, kernel .net-csharp
+  cote C#), outputs + execution_count commites, 0 erreur, et concordance exacte des
+  invariants branches/conflicts/propagations sur les 3 grilles x 2 configurations
+  (presolve) — la comparabilite exige la meme version des deux cotes, d''ou l''epingle
+  NuGet 9.15.6755 (repo precedent App-16 = 9.11.4210, different de l''ortools pip
+  local).'

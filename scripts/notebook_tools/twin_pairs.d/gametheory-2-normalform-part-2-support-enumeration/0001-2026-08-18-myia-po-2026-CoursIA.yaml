@@ -1,0 +1,13 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 13c27d9afd12ca9f9f5dc96c00aa761d8d5bb87c
+csharp_sha: 10b8e4e17ac1cc612830d0c1f188cb9b8531bdea
+reason: 'parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option
+  A, parite de moteur lib-vs-lib) : Python atteint nashpy (import nashpy + nash.Game(g.U1,
+  g.U2), cell23), C# atteint l''oracle Gambit gambit-enummixed via Process.Start (cell24,
+  McKelvey-McLennan-Page, comparaison numerique from-scratch vs Gambit sur 4 jeux
+  canoniques). Meme configuration de parite moteur que GameTheory-4 bascule en Vague
+  5 (nashpy <-> Gambit). NB : le hit ''IKVM'' du detecteur etait un commentaire ''AUCUNE
+  IKVM'' documentant l''axe binding CLI pur (#10459) -- artefact. Usage verifie firsthand
+  sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason
+  inchangee.'

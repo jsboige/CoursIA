@@ -1,0 +1,14 @@
+date: '2026-08-28'
+by: myia-po-2023:CoursIA
+python_sha: 50679f9de88b70e8d1db15d3e838b8f766b4ba4a
+csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+content_python_sha: 08cbf427b23de47f7758f4dafa71d772b335f5be91e07f87c889a2876d34352e
+content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+reason: 'fix(gt,#12682) PR #12737 review response: statut explicite de partage_nash
+  comme HYPOTHESE DE MODELISATION (sigmoide non derivee de Nash 1950/Rubinstein 1982,
+  kappa=6.0 parametre libre fixe arbitrairement) + ajout d''un sweep kappa (0,1,2,4,6,8,12,20)
+  qui montre que le renversement (A desire plus et A capture plus) tient pour tout
+  kappa>0 -- c''est une propriete du SIGNE de (D_B - D_A), pas du parametre. Le MECANISME
+  est robuste ; l''INTENSITE du levier, non. Re-execution kernel python3 (kernel gametheory-wsl
+  injoignable), 18/18 cellules code, 0 erreur, 0 forbidden pattern (C.1). C# twin
+  inchange.'

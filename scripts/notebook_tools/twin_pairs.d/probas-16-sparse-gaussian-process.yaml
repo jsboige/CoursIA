@@ -5,50 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 4a3d89cb84ea32e95a307f04396253f9291800a4
-      csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 5743c084f9060ed197a7acf541bf2611f89c7505
-      csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
-    - date: "2026-08-08"
-      by: myia-po-2025:CoursIA
-      python_sha: 18bff0a5981fa0f4cec591766a2e42dde21a19ed
-      csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
-      content_python_sha: f95fb8bc9c28d5c311b113abfa35fbcdcfec5ac07bf332477c8977f59b77b6e3
-      content_csharp_sha: 0e1a73ae33cfba37a8d37a4e9bc0fba25b2e1271a32255817ba4949bbaca8926
-    - date: "2026-08-15"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 31f80b0c8aed23f21abce70e7e86783740fef83f
-      csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
-      content_python_sha: 67de2ad2b0ad91f092d75c731686df7886571e78704ebe86612360e27257f2ee
-      content_csharp_sha: 0e1a73ae33cfba37a8d37a4e9bc0fba25b2e1271a32255817ba4949bbaca8926
-    - date: "2026-08-16"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 4a3d89cb84ea32e95a307f04396253f9291800a4
-      csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
-      content_python_sha: 983a0833c9b9bc93277790e1af261dda2f6046236b8e9816ab670bb5da1a23fc
-      content_csharp_sha: c06adb667122f19581de02736f25c0a67ea4c39ab6c9138614847edd6f11b586
-    - date: "2026-08-26"
-      by: myia-po-2026:CoursIA
-      python_sha: 9302e5d15339c9f4e5f2d05059882745e7e02ccb
-      csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
-      content_python_sha: ad13e23ae43dc6c0faf113a907d0073acb57094ba585f1e79ff9746257e20f40
-      content_csharp_sha: c06adb667122f19581de02736f25c0a67ea4c39ab6c9138614847edd6f11b586
-      reason: "#13044 : le bras scalable PyMC est desormais EXECUTE (section 6, pm.gp.HSGP
-        m=[10,10]/[20,20] a N=200 puis m=[20,20] a N=1200, NUTS + conditional + PPC, temps
-        et OOS mesures) -- le notebook n'executait auparavant que le GP dense Latent. Cote
-        C# inchange (SparseGP basis set, deja execute). Rebaseline python_sha uniquement."
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: 7488aaea28d901011cf0d38fa1acb51ecce9d67d
-      csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
-      content_python_sha: 78589a5bc09ba1f74b9d0f57b0585dd56b3e0f67002bc47813a3a131f352ba50
-      content_csharp_sha: c06adb667122f19581de02736f25c0a67ea4c39ab6c9138614847edd6f11b586
   known_differences:
   - 'Socle pedagogique commun : GP scalable REELLEMENT EXECUTE des deux cotes, par deux familles
     d''approximation : C# Infer.NET = points induits (SparseGP basis set, 4 inducteurs vs full, section 7) ;

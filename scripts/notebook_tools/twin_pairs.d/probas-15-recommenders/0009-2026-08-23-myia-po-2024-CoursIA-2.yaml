@@ -1,0 +1,11 @@
+date: '2026-08-23'
+by: myia-po-2024:CoursIA-2
+python_sha: 5df64dfe60e2b2165b2db9954fe6ff88abf95205
+csharp_sha: 8515db78ca285f0803e3ea0aee906ce3f2f5fa13
+content_python_sha: e868d0d1ddbd98d3d70f13f4fc91a6dcda77beb0b949e15aa9c545729239d8d1
+content_csharp_sha: f69bbe91c49e074db37fe5763c3c10ae8898f0ae939119c551a30c53e7c5627b
+reason: 'PR #12595 (#12578) : lecture az.summary + diagnostic honnete de la convergence
+  cote Python (PyMC-15-Recommenders), re-exec validee (exec counts non nuls, 0 erreur).
+  Mouvement unilateral legitime (parity_level native-both, moteurs distincts PyMC
+  vs Infer.NET) ; jumeau C# inchange et au SHA atteste. Aucun strip outille en attente
+  (probe 0, machine path 0, papermill basename).'

@@ -5,29 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
-      csharp_sha: 92b4291a20d6eb88ec9d57ca862419d518c2f87f
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft.ML (moteur ML SOTA de l'ecosysteme .NET), Python atteint scikit-learn/lightgbm (moteurs ML SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant."
-    - date: "2026-08-02"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
-      csharp_sha: 3702afa3bac062ae4d142e0debd3ffce521940ab
-      reason: "rebaseline csharp apres fix citation-title (#8052) : reference Hastie/Tibshirani/Friedman (2009) -- le titre anglais The Elements of Statistical Learning etait corrupt par francisation (le mot Elements remplace par le mot francais equivalent a capitale accentuee) -> restore titre canonique EN. Springer 2009 2e ed. Python twin unchanged, python_sha preserve. Parite surface preservee (citation bibliographique, pas de valeur calculee)."
-    - date: "2026-08-15"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
-      csharp_sha: 92b4291a20d6eb88ec9d57ca862419d518c2f87f
-      content_python_sha: 36bceb666806321584194492099cacff733e410b9bfaa50ba9cd4a0a09fa1527
-      content_csharp_sha: 1946e40f94e98ed72ccdbf29416bb2ed4f01a96ca857807f39acaa04d3643cdd
-    - date: "2026-08-24"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
-      csharp_sha: b48ea1ff0f91dcedf1675adf0d43feccd9526646
-      content_python_sha: 36bceb666806321584194492099cacff733e410b9bfaa50ba9cd4a0a09fa1527
-      content_csharp_sha: ed243e7f82c986c34b4ac09b035cd91b96a9f9b4cb1664b059da09ec9a082b56
   known_differences:
     - "2026-08-24 c.1331p450 REPAIR (PR #12526 / lane myia-po-2024:CoursIA-2) : cellule c54 cote C# modifiee (join par idx + projection RSquared.StandardError, suite au faux-classement PFI ML-4). Python twin inchange. SHA blob C# change (csharp_sha 92b42... -> b48ea..., content_csharp_sha 1946e4... -> ed243e...). Surface de parite preservee : meme modele C# PFI, memes resultats semantiques (trip_distance -0,510078 / trip_time_in_secs -0,209370 / rate_code -0,204760). drift_introduced ATTESTE par cette ligne."
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."

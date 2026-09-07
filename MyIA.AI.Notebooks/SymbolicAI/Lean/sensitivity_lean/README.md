@@ -11,9 +11,9 @@ Mini-projet complet : **0 sorry, 0 axiome** au-delà des axiomes du cœur de Lea
 
 ## Statut
 
-- **Toolchain** : `v4.32.1` (point release soundness noyau, #11256 ; migrée depuis `v4.31.0-rc1` par #10997 ; Mathlib pin `v4.32.1`)
+- **Toolchain** : `v4.33.0` (migrée par #14773 ; depuis `v4.32.1`, point release soundness noyau, #11256 ; migrée depuis `v4.31.0-rc1` par #10997 ; Mathlib pin `db584cd6d46c92f209a44c0f1c829460d327499d`)
 - **Sorry** : **0** — chaque preuve est close
-- **Build** : `lake build Sensitivity` — SUCCESS (v4.32.1, #11256 ; 1970 jobs v4.32.0, #10997) ; `#print axioms Sensitivity.huang_degree_theorem` (+ `_en`) = `[propext, Classical.choice, Quot.sound]` — zéro `sorryAx`
+- **Build** : `lake build Sensitivity` — SUCCESS (v4.33.0, #14773 ; 1975 jobs v4.32.0, #10997) ; `#print axioms Sensitivity.huang_degree_theorem` (+ `_en`) = `[propext, Classical.choice, Quot.sound]` — zéro `sorryAx`
 - **Dépendances** : Mathlib4
 - **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 5 fichiers `.lean` FR canoniques (racine agrégatrice + 4 modules) + 5 siblings `*_en.lean` miroirs sur `main` (`Sensitivity_en.lean`, `Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
 

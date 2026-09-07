@@ -1,0 +1,614 @@
+{
+  "coursia-orbital-m6-s11": {
+    "digest": "9561a6bad9f3485d526b01c678090c096f2679dbc7d0055b095462536dc1c6f2",
+    "budget": 818,
+    "lexico_mk": 69,
+    "lexico_fuel": 789,
+    "repartition_mk": 75,
+    "repartition_fuel": 739,
+    "points": [
+      {
+        "eps": 0,
+        "cap": 69,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 69,
+        "propellant": 789,
+        "wall_s": 0.044975499999964086,
+        "audit_valid": true
+      },
+      {
+        "eps": 2,
+        "cap": 71,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 71,
+        "propellant": 690,
+        "wall_s": 0.04340200000024197,
+        "audit_valid": true
+      },
+      {
+        "eps": 4,
+        "cap": 73,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 73,
+        "propellant": 684,
+        "wall_s": 0.042501399999764544,
+        "audit_valid": true
+      },
+      {
+        "eps": 6,
+        "cap": 75,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 75,
+        "propellant": 681,
+        "wall_s": 0.04386419999991631,
+        "audit_valid": true
+      },
+      {
+        "eps": 8,
+        "cap": 77,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 77,
+        "propellant": 676,
+        "wall_s": 0.04317959999980303,
+        "audit_valid": true
+      },
+      {
+        "eps": 10,
+        "cap": 79,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 78,
+        "propellant": 675,
+        "wall_s": 0.04336940000030154,
+        "audit_valid": true
+      },
+      {
+        "eps": 12,
+        "cap": 81,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 80,
+        "propellant": 672,
+        "wall_s": 0.042604799999935494,
+        "audit_valid": true
+      },
+      {
+        "eps": 14,
+        "cap": 83,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 83,
+        "propellant": 672,
+        "wall_s": 0.04411619999973482,
+        "audit_valid": true
+      },
+      {
+        "eps": 16,
+        "cap": 85,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 85,
+        "propellant": 672,
+        "wall_s": 0.04249070000014399,
+        "audit_valid": true
+      },
+      {
+        "eps": 18,
+        "cap": 87,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 83,
+        "propellant": 672,
+        "wall_s": 0.029915000000073633,
+        "audit_valid": true
+      },
+      {
+        "eps": 20,
+        "cap": 89,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 83,
+        "propellant": 672,
+        "wall_s": 0.04497480000009091,
+        "audit_valid": true
+      },
+      {
+        "eps": 22,
+        "cap": 91,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 91,
+        "propellant": 672,
+        "wall_s": 0.026618300000336603,
+        "audit_valid": true
+      },
+      {
+        "eps": 24,
+        "cap": 93,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 83,
+        "propellant": 672,
+        "wall_s": 0.02888940000002549,
+        "audit_valid": true
+      }
+    ]
+  },
+  "coursia-orbital-m8-s22": {
+    "digest": "3c2fd6cd73e7e5a52a16b8e99bc47e9cf620338dde91d8a3c8e35e9bc75b91e8",
+    "budget": 1231,
+    "lexico_mk": 89,
+    "lexico_fuel": 1136,
+    "repartition_mk": 92,
+    "repartition_fuel": 1209,
+    "points": [
+      {
+        "eps": 0,
+        "cap": 89,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 89,
+        "propellant": 1136,
+        "wall_s": 0.05884070000001884,
+        "audit_valid": true
+      },
+      {
+        "eps": 2,
+        "cap": 91,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 91,
+        "propellant": 1135,
+        "wall_s": 0.06187559999989389,
+        "audit_valid": true
+      },
+      {
+        "eps": 4,
+        "cap": 93,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 93,
+        "propellant": 1033,
+        "wall_s": 0.04992470000024696,
+        "audit_valid": true
+      },
+      {
+        "eps": 6,
+        "cap": 95,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 95,
+        "propellant": 1032,
+        "wall_s": 0.0634712999999465,
+        "audit_valid": true
+      },
+      {
+        "eps": 8,
+        "cap": 97,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 97,
+        "propellant": 1025,
+        "wall_s": 0.05647610000005443,
+        "audit_valid": true
+      },
+      {
+        "eps": 10,
+        "cap": 99,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 98,
+        "propellant": 1025,
+        "wall_s": 0.070239500000298,
+        "audit_valid": true
+      },
+      {
+        "eps": 12,
+        "cap": 101,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 101,
+        "propellant": 1018,
+        "wall_s": 0.0431456999999682,
+        "audit_valid": true
+      },
+      {
+        "eps": 14,
+        "cap": 103,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 101,
+        "propellant": 1018,
+        "wall_s": 0.05779840000013792,
+        "audit_valid": true
+      },
+      {
+        "eps": 16,
+        "cap": 105,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 105,
+        "propellant": 1012,
+        "wall_s": 0.04201240000020334,
+        "audit_valid": true
+      },
+      {
+        "eps": 18,
+        "cap": 107,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 105,
+        "propellant": 1012,
+        "wall_s": 0.058900700000322104,
+        "audit_valid": true
+      },
+      {
+        "eps": 20,
+        "cap": 109,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 105,
+        "propellant": 1012,
+        "wall_s": 0.02773059999981342,
+        "audit_valid": true
+      },
+      {
+        "eps": 22,
+        "cap": 111,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 105,
+        "propellant": 1012,
+        "wall_s": 0.04593440000007831,
+        "audit_valid": true
+      },
+      {
+        "eps": 24,
+        "cap": 113,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 105,
+        "propellant": 1012,
+        "wall_s": 0.05552089999991949,
+        "audit_valid": true
+      }
+    ]
+  },
+  "coursia-orbital-m10-s44": {
+    "digest": "f051cd599c24471a6ac28b27f65e608405cb1871d534bc7256a7211e9b85eb08",
+    "budget": 1302,
+    "lexico_mk": 99,
+    "lexico_fuel": 1109,
+    "repartition_mk": 118,
+    "repartition_fuel": 1301,
+    "points": [
+      {
+        "eps": 0,
+        "cap": 99,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 99,
+        "propellant": 1109,
+        "wall_s": 0.095325899999807,
+        "audit_valid": true
+      },
+      {
+        "eps": 2,
+        "cap": 101,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 101,
+        "propellant": 1104,
+        "wall_s": 0.0733872999999221,
+        "audit_valid": true
+      },
+      {
+        "eps": 4,
+        "cap": 103,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 103,
+        "propellant": 1090,
+        "wall_s": 0.0918509000002814,
+        "audit_valid": true
+      },
+      {
+        "eps": 6,
+        "cap": 105,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 105,
+        "propellant": 1080,
+        "wall_s": 0.0729631999997764,
+        "audit_valid": true
+      },
+      {
+        "eps": 8,
+        "cap": 107,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 107,
+        "propellant": 1074,
+        "wall_s": 0.08744890000025407,
+        "audit_valid": true
+      },
+      {
+        "eps": 10,
+        "cap": 109,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 109,
+        "propellant": 1069,
+        "wall_s": 0.10258299999986775,
+        "audit_valid": true
+      },
+      {
+        "eps": 12,
+        "cap": 111,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 111,
+        "propellant": 1067,
+        "wall_s": 0.07250639999983832,
+        "audit_valid": true
+      },
+      {
+        "eps": 14,
+        "cap": 113,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 113,
+        "propellant": 1065,
+        "wall_s": 0.07324719999996887,
+        "audit_valid": true
+      },
+      {
+        "eps": 16,
+        "cap": 115,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 115,
+        "propellant": 1064,
+        "wall_s": 0.07860560000017358,
+        "audit_valid": true
+      },
+      {
+        "eps": 18,
+        "cap": 117,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 117,
+        "propellant": 1064,
+        "wall_s": 0.057878900000105205,
+        "audit_valid": true
+      },
+      {
+        "eps": 20,
+        "cap": 119,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 117,
+        "propellant": 1064,
+        "wall_s": 0.08379239999976562,
+        "audit_valid": true
+      },
+      {
+        "eps": 22,
+        "cap": 121,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 117,
+        "propellant": 1064,
+        "wall_s": 0.057560799999919254,
+        "audit_valid": true
+      },
+      {
+        "eps": 24,
+        "cap": 123,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 122,
+        "propellant": 1064,
+        "wall_s": 0.08126749999973981,
+        "audit_valid": true
+      }
+    ]
+  },
+  "coursia-orbital-m12-s33": {
+    "digest": "6dbd5ce52666769a27531ec1fe2feb99da8b7002a531569f5a2d38c036b34260",
+    "budget": 1661,
+    "lexico_mk": 114,
+    "lexico_fuel": 1413,
+    "repartition_mk": 126,
+    "repartition_fuel": 1661,
+    "points": [
+      {
+        "eps": 0,
+        "cap": 114,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 114,
+        "propellant": 1413,
+        "wall_s": 0.08317660000011529,
+        "audit_valid": true
+      },
+      {
+        "eps": 2,
+        "cap": 116,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 116,
+        "propellant": 1407,
+        "wall_s": 0.08903079999981856,
+        "audit_valid": true
+      },
+      {
+        "eps": 4,
+        "cap": 118,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 118,
+        "propellant": 1396,
+        "wall_s": 0.10174520000009579,
+        "audit_valid": true
+      },
+      {
+        "eps": 6,
+        "cap": 120,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 120,
+        "propellant": 1390,
+        "wall_s": 0.10968450000018493,
+        "audit_valid": true
+      },
+      {
+        "eps": 8,
+        "cap": 122,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 122,
+        "propellant": 1380,
+        "wall_s": 0.103583499999786,
+        "audit_valid": true
+      },
+      {
+        "eps": 10,
+        "cap": 124,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 122,
+        "propellant": 1380,
+        "wall_s": 0.09174809999967692,
+        "audit_valid": true
+      },
+      {
+        "eps": 12,
+        "cap": 126,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 126,
+        "propellant": 1373,
+        "wall_s": 0.11641499999996086,
+        "audit_valid": true
+      },
+      {
+        "eps": 14,
+        "cap": 128,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 127,
+        "propellant": 1373,
+        "wall_s": 0.08773380000002362,
+        "audit_valid": true
+      },
+      {
+        "eps": 16,
+        "cap": 130,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 130,
+        "propellant": 1369,
+        "wall_s": 0.08753999999998996,
+        "audit_valid": true
+      },
+      {
+        "eps": 18,
+        "cap": 132,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 132,
+        "propellant": 1369,
+        "wall_s": 0.0870399999998881,
+        "audit_valid": true
+      },
+      {
+        "eps": 20,
+        "cap": 134,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 134,
+        "propellant": 1367,
+        "wall_s": 0.09870189999992363,
+        "audit_valid": true
+      },
+      {
+        "eps": 22,
+        "cap": 136,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 136,
+        "propellant": 1365,
+        "wall_s": 0.08659170000009908,
+        "audit_valid": true
+      },
+      {
+        "eps": 24,
+        "cap": 138,
+        "status": "OPTIMAL",
+        "feasible": true,
+        "certified": true,
+        "makespan": 137,
+        "propellant": 1365,
+        "wall_s": 0.10545259999980772,
+        "audit_valid": true
+      }
+    ]
+  }
+}

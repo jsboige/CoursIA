@@ -1,0 +1,86 @@
+name: Notebook Output Flood Ratchet
+
+# #147xx / user report 2026-09-06 — a re-execution must not let a notebook's
+# OUTPUT-OBJECT count explode per cell or in totality.
+#
+# Founding incident: Sudoku-15-Infer-Csharp.ipynb grew from 29 665 to 45 434
+# lines after a re-execution where InferenceEngine.ShowProgress defaulted to
+# true. Every Infer.NET run emitted one dot PER ITERATION, and the .net-csharp
+# kernel turns each Console.Write(".") into a separate stream output object.
+# Measured on the committed artifact: 5 992 objects for the whole notebook,
+# 2 900 of them single dot characters (cells 27/25/34 carrying 3018/2243/376,
+# the flood family starting at 55).
+#
+# The three surfaces consulted at merge time all returned CLEAN: output_type==
+# "error" was 0 (the flood is stdout, not an exception); the failure-text /
+# machine-path ratchet found 0 (a dot is neither a banner nor a path); and
+# every cell carried a real execution_count. Nothing counted OUTPUT OBJECTS.
+# This file closes that hole.
+#
+# Ratchet, not a sweep: only notebooks CHANGED between the merge base and the
+# PR head are judged, and only classes whose count GREW (CELL a cell over
+# CELL_CAP that grew, or TOTAL a notebook whose summed count grew over
+# TOTAL_CAP). A notebook ADDED by the branch has no baseline and is reported
+# advisory, never gated.
+
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 2) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `Output-flood ratchet (base vs PR)`, meme nom que ce job). Ce fichier
+# garde `workflow_dispatch`. Les `paths:` d'origine vivent dans
+# `scripts/ci/fast_lane_registry.py` (TRANCHE2).
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to ratchet against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-output-flood-ratchet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratchet:
+    name: Output-flood ratchet (base vs PR)
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The self-test runs FIRST and gates the gate: it asserts every witness
+      # string is matched, that benign sub-cap growth stays silent, and that
+      # replaying the founding commit (954d1cd7fef5) still fires. A detector
+      # that cannot be shown to fire is indistinguishable from one that is
+      # unplugged -- which is exactly how the surfaces above passed this
+      # through.
+      - name: Detector self-test (positive + negative control)
+        run: python scripts/notebook_tools/check_output_flood.py --self-test
+
+      - name: Output-flood axis unit tests
+        run: python -m pytest scripts/notebook_tools/tests/test_check_output_flood.py -q
+
+      # Refs reach the script via env, never inline in the run script
+      # (script-injection guard, same as notebook-papermill-ratchet.yml).
+      - name: Ratchet check
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/notebook_tools/check_output_flood.py "$BASE"

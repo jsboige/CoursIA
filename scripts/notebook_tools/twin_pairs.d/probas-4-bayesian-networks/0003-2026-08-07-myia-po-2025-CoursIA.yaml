@@ -1,0 +1,8 @@
+date: '2026-08-07'
+by: myia-po-2025:CoursIA
+python_sha: 1eaf878c9bd25b664c687b12d6e61bc68eb20533
+csharp_sha: bbfcf43d83f053ef1bc88295a57ae78a839648a9
+note: 'Rebaseline apres correctif markdown cell[16] (formule factorisee -> enumeration
+  jointe exacte P(W=T)=0.647 + explication de l''approximation EP 0.598). Parite semantic
+  preservee : PyMC-4 (MCMC, output P(WetGrass)=0.643) confirme la valeur exacte ;
+  la nuance EP = difference moteur C#-only deja documentee.'

@@ -11,9 +11,9 @@ Complete mini-project: **0 sorry, 0 axiom** beyond Lean core axioms.
 
 ## Status
 
-- **Toolchain**: `v4.32.1` (kernel soundness point release, #11256 ; migrated from `v4.31.0-rc1` by #10997 ; Mathlib pin `v4.32.1`)
+- **Toolchain**: `v4.33.0` (migrated by #14773 ; from `v4.32.1`, kernel soundness point release, #11256 ; migrated from `v4.31.0-rc1` by #10997 ; Mathlib pin `db584cd6d46c92f209a44c0f1c829460d327499d`)
 - **Sorry**: **0** — every proof is closed
-- **Build**: `lake build Sensitivity` — SUCCESS (v4.32.1, #11256 ; 1970 jobs v4.32.0, #10997) ; `#print axioms Sensitivity.huang_degree_theorem` (+ `_en`) = `[propext, Classical.choice, Quot.sound]` — zero `sorryAx`
+- **Build**: `lake build Sensitivity` — SUCCESS (v4.33.0, #14773 ; 1975 jobs v4.32.0, #10997) ; `#print axioms Sensitivity.huang_degree_theorem` (+ `_en`) = `[propext, Classical.choice, Quot.sound]` — zero `sorryAx`
 - **Dependencies**: Mathlib4
 - **i18n coverage (EPIC #4980)**: lake fully bilingual FR/EN — 5 FR-canonical `.lean` files (root aggregator + 4 modules) + 5 `*_en.lean` mirror siblings on `main` (`Sensitivity_en.lean`, `Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A: docstrings `/-- ... -/` and `-- ...` comments differ between FR and EN, signatures and proofs remain byte-identical.
 
