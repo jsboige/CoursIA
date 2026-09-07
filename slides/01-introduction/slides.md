@@ -738,15 +738,15 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 # Pour aller plus loin : Notebooks
 
-Chaque chapitre du cours est accompagne de travaux pratiques sous forme de notebooks Jupyter :
+Chaque chapitre du cours est accompagne de travaux pratiques sous forme de notebooks Jupyter (`MyIA.AI.Notebooks/`, ~1230 notebooks) :
 
-- **Exploration** : `Search/Part1-Foundations/` (11 notebooks), `Search/Part2-CSP/` (9 notebooks), `Sudoku/` (16 notebooks) -- recherche, CSP, algorithmes génétiques, optimisation
-- **Logique** : `SymbolicAI/` -- Z3, Tweety, Lean 4, argumentation, smart-contracts
-- **Probabilités** : `Probas/Infer/` -- inference bayesienne, reseaux de decision (Infer.NET)
-- **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL (OpenSpiel)
-- **Apprentissage** : `ML/` -- classification, regression, renforcement (ML.NET)
-- **IA Generative** : `GenAI/` -- Image (19 notebooks), Audio (16), Video (16), Texte (10)
-- **Trading** : `QuantConnect/` -- 28 notebooks + 67 stratégies backtestees
+- **Exploration** : `Search/Part1-Foundations/` (40 notebooks), `Search/Part2-CSP/` (18 notebooks), `Sudoku/` (38 notebooks) -- recherche, CSP, algorithmes génétiques, optimisation. Entrée : [Search-01-StateSpace](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb)
+- **Logique** : `SymbolicAI/` -- Z3, Tweety, Lean 4, argumentation, smart-contracts. Entrée : [Z3-Python-01-Introduction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb)
+- **Probabilités** : `Probas/Infer/` (69 notebooks) -- inference bayesienne, reseaux de decision (Infer.NET). Entrée : [Infer-1b-Premiers-Modeles](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb)
+- **Jeux** : `GameTheory/` (96 notebooks) -- equilibres de Nash, jeux bayesiens, MARL (OpenSpiel). Entrée : [GameTheory-02-NormalForm](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb)
+- **Apprentissage** : `ML/` (81 notebooks) -- classification, regression, renforcement (ML.NET). Entrée : [ML-Cours-2.1-Workflow](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb)
+- **IA Generative** : `GenAI/` -- Image (20 notebooks), Audio (32), Video (22), Texte (32). Entrée : [Texte-1_OpenAI_Intro](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb)
+- **Trading** : `QuantConnect/` -- cours partenaire + pipelines de recherche, stratégies backtestées via QC Cloud. Entrée : [research-ML-RandomForest](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb)
 
 > **Depot :** `github.com/jsboige/CoursIA` > dossier `MyIA.AI.Notebooks/`
 
