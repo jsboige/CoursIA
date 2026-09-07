@@ -1,0 +1,15 @@
+date: '2026-08-19'
+by: myia-ai-01:CoursIA
+python_sha: fcf86dde45e77d2ab336b26420852669e50ea6d3
+csharp_sha: bb5e960f34d3078ab2c857945c5f368e57c988a3
+content_python_sha: 5c150caadf433625cc764cd5cb0748861e3aed2ee5150a42487836b63eda07bd
+content_csharp_sha: 6135e55132a90ce9267ffbc973570b98629bc4bbdf7d8fdacb22686ec8da4214
+reason: 'Re-execution du seul cote Python (#11522, PyMC-2 sequence UNORDERED -> CLEAN
+  1..11) : le blob SHA se deplace a chaque edition, y compris quand le contenu pedagogique
+  ne bouge pas. csharp_sha ET content_csharp_sha sont inchanges (bb5e9603 / 6135e551)
+  -- la parite n''a pas ete reparee, elle a ete RE-ATTESTEE apres un mouvement unilateral.
+  Controle anti-#11351 avant attestation : volume de rendu mesure base-de-fusion (947ce428)
+  -> tete de PR, 4 blocs image/png preserves, 152789 -> 148096 octets (variance de
+  re-rendu, aucun bloc perdu), 11/11 execution_count non nuls, 0 erreur. Aucun strip
+  outille en attente (0 chemin machine, papermill deja en basename) : l''attestation
+  ne sera pas invalidee apres coup (#8957).'

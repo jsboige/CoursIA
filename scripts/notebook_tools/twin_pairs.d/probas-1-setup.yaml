@@ -6,39 +6,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: d7f6c2180b23d7ba10cbf84c317130a14bad28e5
-      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-07-29"
-      by: myia-po-2023:CoursIA-2
-      python_sha: d66cca0ab2869a855a3d57c7a23072d9409c9ab5
-      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: d7f6c2180b23d7ba10cbf84c317130a14bad28e5
-      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-    - date: "2026-08-23"
-      by: myia-po-2026:CoursIA-2
-      python_sha: eae44608e5a1e231aa0c7e3ac4a16e7194f50225
-      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-      content_python_sha: 791398bd5d741550f545b084a1a7fcf86919ac99eb5201e7607f22e060ec4111
-      content_csharp_sha: c0cfff158c8768a38630883982a0ca2ff97acd1dc3c5a1e51dba982ec3c4ec91
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: 494639720f1f1ca0b3316effbc7b8777508ef84d
-      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-      content_python_sha: 9478370899ab42dbdec23c1006497dc3120aacdbca6ecf1a5002fced71da5e75
-      content_csharp_sha: c0cfff158c8768a38630883982a0ca2ff97acd1dc3c5a1e51dba982ec3c4ec91
-    - date: "2026-08-31"
-      by: myia-po-2027:CoursIA-2
-      reason: "Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit) ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en dernier (#8957)."
-      python_sha: a55adf6c97556308798c88226fbe36345eb6c479
-      csharp_sha: 4c00a5909d1dd98d9083a35780fbdbf2d63d8d09
-      content_python_sha: 9478370899ab42dbdec23c1006497dc3120aacdbca6ecf1a5002fced71da5e75
-      content_csharp_sha: a97fa5f76e065564d2100e4d9273799030d0cceb4d16e9a7f7395c95e083032b
   known_differences:
   - "Premier modele partage : les deux notebooks demarrent par le modele classique des deux pieces (Two Coins) -- prior Beta, vraisemblance Bernoulli, inference du biais de la piece. Socle pedagogique commun au-dela de la dimension setup (installation Infer.NET cote C# vs PyMC cote Python). Note : #8183 avait initialement exclu cette paire comme 'env-config mecanique, pas de demonstration de concept' (analogue ML-6 ONNX) ; relecture firsthand (ai-01 c.36, po-2023 c.941) confirme la presence substantive du modele Two Coins dans les DEUX notebooks (Infer-1-Setup : piece x15 / Bernoulli x10 / Beta x8 ; PyMC-01-Setup : coin x6 / piece x13 / Beta x12) -> la rationale d'exclusion initiale etait incomplete, paire re-enregistree."
   - "Moteurs d'inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation, modele compile en code d'inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC) + ADVI sur backend PyTensor. Memes concepts (Beta-Bernoulli two-coins), paradigmes d'inference differents -- les ecarts numeriques attendus (point estimate EP vs posterior samples NUTS) ne sont pas des defauts."

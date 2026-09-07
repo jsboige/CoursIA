@@ -5,46 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (#10382, comme PyMC/Infer.NET) : C# = dotNetRDF 3.2.1 (NuGet officiel `#r \"nuget: dotNetRDF, 3.2.1\"` + espaces VDS.RDF.*, native .NET) et Python = rdflib (from rdflib import *, native Python). Chaque cote atteint le moteur SOTA de son ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# VDS.RDF refs + execution_count, Python rdflib imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
-      csharp_sha: d61ac744c1807390a7625d78dd533ffa0511eea3
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint dotNetRDF (VDS.RDF.*, librairie RDF/OWL de reference de l'ecosysteme .NET), Python atteint rdflib (moteur RDF natif de reference de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
-      csharp_sha: 3caa1ec0ce4787f1c7b8a222a370c0cca24e8dbe
-    - date: "2026-08-11"
-      by: myia-po-2024:CoursIA
-      python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
-      csharp_sha: cebabdcadc7ff30a695dd7cc780b1b0e0d6929c7
-      content_python_sha: 0f6206639ecbb79a2c4dd7411309972e7e73545f9a7469f54b6a48efbc513ee9
-      content_csharp_sha: a8760e6e1ca7234c6a557248c2fd6fd71db7d391c6e643d475ed61709833661a
-    - date: "2026-08-12"
-      by: myia-po-2025:CoursIA
-      python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
-      csharp_sha: d61ac744c1807390a7625d78dd533ffa0511eea3
-      content_python_sha: 0f6206639ecbb79a2c4dd7411309972e7e73545f9a7469f54b6a48efbc513ee9
-      content_csharp_sha: 176272347fcfa9a9a2bc7c1a1a0fb3944e59bdb045faa1141c0a7b62c8ec6bc9
-    - date: "2026-08-30"
-      by: myia-po-2026:CoursIA
-      python_sha: da3142efa2d665de3f50baf1c96b0f33f3eceeda
-      csharp_sha: d61ac744c1807390a7625d78dd533ffa0511eea3
-      content_python_sha: 988c346b165ddef55e1cd0e7a5f55655d4403abb7fef9fc3dbf359387f2b5f1d
-      content_csharp_sha: 176272347fcfa9a9a2bc7c1a1a0fb3944e59bdb045faa1141c0a7b62c8ec6bc9
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: da3142efa2d665de3f50baf1c96b0f33f3eceeda
-      csharp_sha: e5c09951f33a5fccf877cb41278a17d1896a8963
-      content_python_sha: 988c346b165ddef55e1cd0e7a5f55655d4403abb7fef9fc3dbf359387f2b5f1d
-      content_csharp_sha: 092a612b0439394c21ed8657899975efb6555f59b040fdf7c11e9fffd897bb32
-    - date: "2026-09-03"
-      by: myia-po-2026:CoursIA
-      python_sha: da3142efa2d665de3f50baf1c96b0f33f3eceeda
-      csharp_sha: c590743d1a4e71df9aea984f911e29fe290d70a5
-      content_python_sha: 988c346b165ddef55e1cd0e7a5f55655d4403abb7fef9fc3dbf359387f2b5f1d
-      content_csharp_sha: dd5ba4f98f359703a0bd632b3721d747f981ad94385d48a62fb5bee66bcda448
   known_differences:
     - "2026-08-30 : PR #13577 (tranche densite #13410) -- 18 cellules d interpretation markdown ancrees ajoutees cote Python uniquement (593 -> 1455 c/cellule). Le jumeau C# reste a 1070 (lui aussi sous le plancher 1200, a enrichir dans une tranche dediee). Asymetrie PROSE pure : code/outputs byte-identiques des deux cotes, la parite native-both (moteurs rdflib/dotNetRDF sur les memes donnees) est intacte."
     - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."

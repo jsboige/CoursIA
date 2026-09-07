@@ -1,0 +1,11 @@
+date: '2026-08-21'
+by: myia-po-2025:CoursIA-2
+python_sha: 33b1d7bc743d45430a959d8b55280f40285c25bd
+csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+content_python_sha: c08914b5
+content_csharp_sha: 22b635165857585f64e21f62348f41f83e1d7193105a71e0efe5534b571aefbc
+reason: 'fix(gametheory,#9434) PR #11966 (c.1301+284 lane po-2025:CoursIA-2) drain
+  de 13 claims artifactuels. Sur cette paire, GT-4 cell#33 : strip ''(44 cellules,
+  kernel Lean 4)'' depuis la cross-reference GT-4b -- claim drifte (le GT-4b actuel
+  = 44 cellules, le claim était 38). csharp_sha inchange. twin parity rebaseline (script
+  check_twin_parity.py --update, leçon #11966).'

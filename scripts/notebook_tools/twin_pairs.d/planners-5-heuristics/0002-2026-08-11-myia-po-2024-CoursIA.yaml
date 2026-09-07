@@ -1,0 +1,7 @@
+date: '2026-08-11'
+by: myia-po-2024:CoursIA
+python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
+csharp_sha: da470fa5549ed8ee1cb3c8c8182f10f0686f3663
+note: 'Tranche 2 (#10382) : C# invoque Fast Downward (API Docker, HttpClient.PostAsync)
+  sur Blocks World h*=4, compare lmcut/hmax/ff/add en noeuds expanses. Python = pyperplan
+  (unified-planning). Les DEUX cotes appelent un engine de production -> native-both.'

@@ -5,48 +5,6 @@
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
-  audits:
-    - date: "2026-08-01"
-      by: myia-po-2024:CoursIA-2
-      python_sha: f076193833b42af315e24fa5c0c599582d348d2d
-      csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
-      reason: "rebaseline python apres fix cross-reference cellule 2 (#8052) : la section 1.2 disait 'Le paradoxe de la chaine de magasins (Notebook 8)' mais le paradoxe est couvert dans le Notebook 9 (BackwardInduction section 4 + code create_chain_store_game + ancres Selten 1978 / Rosenthal 1981), pas le Notebook 8 (Combinatorial Games). Fix (Notebook 8)->(Notebook 9). Python-only, csharp_sha unchanged, parite semantique preservee."
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 3325b084bf9e3212dfb76ea8d3839e0735cab87a
-      csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
-      content_python_sha: 80a1788f70b28618c8ccfaaf1ba1c9cd3374362bdf31700f85b6a5fc1e6d1e3a
-      content_csharp_sha: f7ddc0d8a5bcf736054db534ecb6c3dd8400b660517e2c99e41bbc551869a30d
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: f076193833b42af315e24fa5c0c599582d348d2d
-      csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
-      content_python_sha: c2ddea196ff10b47a322101b679c750010012729ac02e145ba068e97309a5d8a
-      content_csharp_sha: f7ddc0d8a5bcf736054db534ecb6c3dd8400b660517e2c99e41bbc551869a30d
-    - date: "2026-08-11"
-      by: myia-ai-01:CoursIA
-      python_sha: 123d7ca9e97743eeff91d045e08808e6287a4477
-      csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
-      content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
-      content_csharp_sha: f7ddc0d8a5bcf736054db534ecb6c3dd8400b660517e2c99e41bbc551869a30d
-    - date: "2026-08-23"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 123d7ca9e97743eeff91d045e08808e6287a4477
-      csharp_sha: 84850c992cc56c4fd28ab991b8f32fe47722fc00
-      content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
-      content_csharp_sha: ca4f3eed4b2592017f7ffc717e1e22e7560c442969be324e67b6b5f41b4ca378
-    - date: "2026-08-31"
-      by: myia-ai-01:CoursIA
-      python_sha: 123d7ca9e97743eeff91d045e08808e6287a4477
-      csharp_sha: bf5c55984da9d05f08e98c8179bdbe4790201ef3
-      content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
-      content_csharp_sha: 8dc04b16383a2427f2f09cd862c5f1b59d165e8abd4320e11f376dd5f9abb1fd
-    - date: "2026-09-05"
-      by: myia-po-2026:CoursIA
-      python_sha: a8be56cc2f0841d67c4fb225a29433126b3dd556
-      csharp_sha: c6e594d716de7c5a05987a7f0a9cb1a13cf8a641
-      content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
-      content_csharp_sha: 6c2bad996a09f2cfb3432fd4dc4485ccd0921287a31506879e01e86ace4e0f1b
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie GameTheory-12-ReputationGames.ipynb (Python), 16 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : jeux de reputation dans les interactions repetees sous information incomplete -- pourquoi la reputation change tout, cheap talk (communication non couteuse), modele de Kreps-Wilson (reputation du « tough incumbent » dans la chaine de magasins), Gang of Four / KMRW (cooperation emergente dans le dilemme du prisonnier fini), equilibre bayesien parfait (PBE). Suit naturellement le GT-11 (jeux bayesiens) en appliquant le BNE aux dynamiques de reputation."

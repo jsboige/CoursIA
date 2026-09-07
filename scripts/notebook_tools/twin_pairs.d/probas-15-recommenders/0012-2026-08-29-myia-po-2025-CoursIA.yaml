@@ -1,0 +1,15 @@
+date: '2026-08-29'
+by: myia-po-2025:CoursIA
+python_sha: 078ccae9bc00a64086ed54e0ebf06a6a72894229
+csharp_sha: 5e4acf3dc0d5b5119a0c6e1cede03b74954c4dd2
+content_python_sha: 526299f6b8dd18d0154947eab6d9a650b952d18bf992503980ffb853faaff836
+content_csharp_sha: 2a0c52e6a68d5c62eb5e186df559d66e3a10b8bde641bb7830cea166999ae79f
+reason: '#12476 : fonction reutilisable rapport_diagnostic_strict (divergences=0,
+  r_hat<1.01, ess_bulk>400, ess_tail>400) appliquee aux 6 traces NUTS cote Python,
+  remplacant les diagnostics partiels inline ; trace_mf passait de az.summary(sigma)
+  seul au rapport complet. Re-exec complet (nbconvert in-place, kernel pymc18-jsboi,
+  PyMC 5.28.5, seed 42 ; exec_counts 1..29, 0 erreur, machine path 0). Prose re-alignee
+  sur les sorties fraiches (divergences corrige 1->5, RMSE test 1.097, corr cold-start
+  0.726) + 3 cellules de transition OOS (advisory consecutive-code-cells run 4 ->
+  0). Mouvement unilateral Python legitime (parity_level native-both) ; jumeau C#
+  inchange au SHA atteste (5e4acf3d). Aucun strip outille en attente.'

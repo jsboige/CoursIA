@@ -1765,16 +1765,56 @@ def format_report(report: Report, assertion: Optional[str], carried: Optional[Ca
     return "\n".join(lines)
 
 
-def _run_gh(args: list[str]) -> str:
+def _run_gh_rc(args: list[str]) -> tuple[int, str, str]:
+    """Run ``gh`` and return ``(returncode, stdout, stderr)`` without exiting.
+
+    Callers that must inspect a failure (rather than lose the guard to it)
+    use this; ``_run_gh`` keeps the fail-closed past behaviour for everything
+    else.
+    """
     gh = shutil.which("gh")
     if not gh:
         print("gh introuvable", file=sys.stderr)
         sys.exit(2)
-    proc = subprocess.run([gh, *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if proc.returncode != 0:
-        print(f"gh error: {proc.stderr.strip()[:400]}", file=sys.stderr)
+    proc = subprocess.run(
+        [gh, *args], capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def _run_gh(args: list[str]) -> str:
+    rc, stdout, stderr = _run_gh_rc(args)
+    if rc != 0:
+        print(f"gh error: {stderr.strip()[:400]}", file=sys.stderr)
         sys.exit(2)
-    return proc.stdout
+    return stdout
+
+
+def _pr_diff_text(pr: int) -> str:
+    """The PR unified diff, for baseline-move detection only.
+
+    ``gh pr diff`` asks GitHub to compute the whole diff, which is capped at
+    300 files (HTTP 406) -- a hard crash on legitimate large PRs such as a
+    data migration that touches >1000 registry files (#14911). Baseline moves
+    are ADVISORY (they never block in ``--scan-thread``, the CI wiring): when
+    the diff is unavailable because of the size cap we return an empty diff
+    (moves == []) and warn -- the blocking perimeter checks run off the
+    paginated ``/pulls/<pr>/files`` list, which has no such cap and is
+    unaffected. Any other ``gh pr diff`` failure stays fail-closed.
+    """
+    rc, stdout, stderr = _run_gh_rc(["pr", "diff", str(pr)])
+    if rc == 0:
+        return stdout
+    if "maximum number of files" in (stderr or ""):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (diff > 300 fichiers) : "
+            "detection des baseline-moves retractee a vide ; le perimetre est lu "
+            f"via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    print(f"gh error: {(stderr or '').strip()[:400]}", file=sys.stderr)
+    sys.exit(2)
 
 
 def _normalize_rest_files(items: list[dict]) -> list[dict]:
@@ -1974,7 +2014,7 @@ def fetch_report(pr: int) -> Report:
     carried = _classify_carried(pr, files)
     if carried.charries:
         files = carried.propres
-    diff = _run_gh(["pr", "diff", str(pr)])
+    diff = _pr_diff_text(pr)
     return Report(files=files, moves=extract_baseline_moves(diff), carried=carried)
 
 

@@ -1,0 +1,10 @@
+date: '2026-08-17'
+by: myia-po-2023:CoursIA
+python_sha: db6e66674e180e9146b7698a17549da121b99df1
+csharp_sha: e20cd3d4db92085a84d61b5a7941f91b0d8a079b
+content_python_sha: 9ea706f03d4f0eb8408bda6760ace8de24c999a3bdc75019d713633ad2031ad1
+content_csharp_sha: ae1a73913b8814a0c8840c8c1e6a2d5ffa3c60a40cefc92b383b43dc02c75ba1
+reason: 'Tranche densite #11224 markdown-only sur le cote C# (PR #11338, c.310 cycle
+  relecture) : 10 cellules code byte-identiques au twin Python + 1 cellule markdown
+  enrichie + squelettes densifies. Parite de contenu intacte (re-exec confirme les
+  deux cotes bit-stable), rebaseline d''attestation.'

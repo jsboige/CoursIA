@@ -1,0 +1,11 @@
+date: '2026-09-03'
+by: myia-po-2026:CoursIA
+python_sha: 91c69994024084bea93a0823230255624b828ce1
+csharp_sha: 2c0cb1d80d65c6992fbd17bad1cc1a202c25cf35
+content_python_sha: 5987578811b52065f3590de667a2b537865694536b85274c2105cb21b101ff02
+content_csharp_sha: f51b8e09529bc973c8c75bfa09d5b38a1846198c3ffbe5e683bc880fa4d5b5e7
+reason: 'Re-attestation apres fix markdown-loss #14168 (prerequis cell0 lie [SW-2-RDFBasics]
+  redevenu texte plat + ligne Navigation finale perdue, restaures depuis main) : markdown-only
+  — signature sha256 des (source, execution_count, outputs) des 20 cellules code byte-identique
+  base->HEAD (b02bc8424b40c621). detect_md_content_loss --check findings=0, check_notebook_navlinks
+  --check OK. Jumeau Python SW-3b non touche. parity_level native-both intacte.'

@@ -1,0 +1,12 @@
+date: '2026-08-15'
+by: myia-po-2023:CoursIA
+python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
+csharp_sha: 6c10bba6cbdf6afb8f60a6e56567a273e0eb8e34
+content_python_sha: 53fe5088b0ee89543ae4f92fa27f69ce20e31c9313ed91e71b2a9739509aa3bb
+content_csharp_sha: 6f667c0b3ea21776c9ee58f81ba3f6fed750f7b6d8148ea7e77ac7fe55009e39
+reason: 'Rebaseline C# apres strip du banner kernel-injected probeAddresses (commit
+  6a8b31317, #11114) : la re-exec papermill Tranche 2 avait reinjecte le JS probe
+  (loadDotnetInteractiveApi, interfaces IPv6 host) en tete de cellule -- strip via
+  l''outil dedie scripts/notebook_tools/strip_probe_banner.py --apply (9 lignes, output-only,
+  sanctionne). Python inchange. Ordre #8957 respecte : strip commite PUIS --update
+  en dernier.'

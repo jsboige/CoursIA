@@ -1,0 +1,10 @@
+date: '2026-09-03'
+by: myia-po-2026:CoursIA
+python_sha: 67f25e05a73be5f173247f292eadfb2ed78be67c
+csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
+content_python_sha: 86dbdb99d94f520a44ec24b6145c71e578e33ab927c627f9b2c9afd511baee83
+content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+reason: 'Re-attestation apres fix enrich #14134 (2 HREF_MISSING ../Part2-CSP/ + ../Part3-Advanced/
+  rescrits ../../, 1 SOLUTION_LEAK fence deplacee en cellule dediee, md 21->22) :
+  markdown-only, 12 cellules code byte-identiques base->HEAD. enrich_quality_ci +
+  detect_markdown_rendering OK.'

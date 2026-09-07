@@ -104,6 +104,8 @@ def _run_update(*extra_args: str) -> subprocess.CompletedProcess:
         [sys.executable, str(SCRIPT), "--update", *extra_args],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=str(REPO_ROOT),
     )
 
@@ -183,21 +185,23 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     # bogus) AVANT --update. Ainsi --update a TOUJOURS du travail, et les
     # assertions ci-dessous (SHA == HEAD blob apres rebaseline, autres paires
     # intactes) verifient le comportement reel -- pas un accident d'etat.
-    import re as _re
-    target_yaml = next(
-        (yf for yf in sorted(REGISTRY_DIR.glob("*.yaml"))
-         if target_name in yf.read_text(encoding="utf-8")),
-        None,
-    )
-    assert target_yaml is not None, (
-        f"Aucun yaml dans {REGISTRY_DIR} pour la paire {target_name!r}."
-    )
+    import yaml as _yaml
     _BOGUS_SHA = "0" * 40
-    _raw = target_yaml.read_text(encoding="utf-8")
-    _raw = _re.sub(r'(date: )"?(\d{4}-\d{2}-\d{2})"?', r'\g<1>"2020-01-01"', _raw)
-    _raw = _re.sub(r'(python_sha: )[0-9a-f]{40}', rf'\g<1>{_BOGUS_SHA}', _raw)
-    _raw = _re.sub(r'(csharp_sha: )[0-9a-f]{40}', rf'\g<1>{_BOGUS_SHA}', _raw)
-    target_yaml.write_text(_raw, encoding="utf-8")
+    # Depuis #14911 (file-per-audit), les SHAs vivent dans le sous-repertoire
+    # `<slug>/` (un fichier par audit), plus dans le fichier d'intention
+    # `<slug>.yaml` (qui n'a plus que name/family/python/csharp/...). Pour rendre
+    # la cible DETERMINISTEMENT stale, on corrompt les SHAs (blob ET content) du
+    # DERNIER fichier d'audit -- sinon `_shas_match` (content d'abord) verrait
+    # « rien n'a change » et --update refuserait en no-op.
+    slug = ctp._slug(target_name)
+    audit_dir = ctp._audit_dir(REGISTRY_DIR, slug)
+    _audit_files = sorted(audit_dir.glob("*.yaml"))
+    assert _audit_files, f"aucun audit file-per-audit pour {target_name!r} : {audit_dir}"
+    last_audit_file = _audit_files[-1]
+    _audit_d = _yaml.safe_load(last_audit_file.read_text(encoding="utf-8"))
+    for _k in ("python_sha", "csharp_sha", "content_python_sha", "content_csharp_sha"):
+        _audit_d[_k] = _BOGUS_SHA
+    last_audit_file.write_text(ctp._dump_audit_yaml(_audit_d), encoding="utf-8")
 
     result = _run_update("--pair", target_name)
     assert result.returncode == 0, (

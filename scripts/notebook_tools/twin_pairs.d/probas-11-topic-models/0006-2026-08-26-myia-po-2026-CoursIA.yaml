@@ -1,0 +1,11 @@
+date: '2026-08-26'
+by: myia-po-2026:CoursIA
+python_sha: e439ab7295b68f71c6a18d5ff5451a31f53ee10a
+csharp_sha: 322e80f0cf7381c86b0968ef9cc1d593da5b24e2
+content_python_sha: 3819950200111868b548f99d265bafc28941ca88cf451379d3dcf6b0f6a7c6b3
+content_csharp_sha: b5edecdfccb44727545e24ea7762c7b0809223f123aa90f6cd097502f6e60d8e
+reason: 'sections miroirs ajoutees (Infer-11 8bis / PyMC-11 5bis, issue #13036) :
+  exemple guide K-selection K=2..6 sur corpus controle 4 themes x 4 mots + 3 partages,
+  coherence UMass sur phi appris + redondance JS + completion held-out, re-exec papermill
+  EXEC_PROVED des deux twins, verdict honnete divergent dans chaque memoire. Rebaseline
+  post-commit (derniere op, blobs a HEAD).'

@@ -1,0 +1,10 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 6bbc77e5c678aa6808a639631e7fb5486c97bc1a
+csharp_sha: c2e75a81a961f86d0b228d91d50ae869b5c4b151
+reason: 'parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option
+  A, parite de moteur lib-vs-lib) : Python atteint pygad (cell1 `import pygad`), C#
+  atteint GeneticSharp (#r ''nuget: GeneticSharp'' + using). Les deux bibliotheques
+  genetiques de reference de leur ecosysteme. NB : le hit ''stan'' du detecteur etait
+  un faux positif. Imports/invocations verifies firsthand sur les notebooks de la
+  paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee.'

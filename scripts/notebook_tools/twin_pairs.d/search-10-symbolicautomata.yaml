@@ -3,53 +3,6 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb
   parity_level: surface
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 5542ba3e5ac011dbb7e9af495067833f0f75e28c
-      csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
-    - date: "2026-08-09"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 00f8753cfa5921b66e93958f53acacadfabd18fb
-      csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
-      content_python_sha: b7da5dd5ae15529afa95589d98d31e864e2c8fbde05d7bb531e2ab5b783ff3bb
-      content_csharp_sha: 8f166b1cf589204f6537ad628c8ac9be581b9d18522316f60b2c192fa69f6c68
-    - date: "2026-08-13"
-      by: myia-po-2024:CoursIA
-      python_sha: 7bf9093bbdd11dd4bd2da915147c72fa27f74c18
-      csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
-      content_python_sha: dbbd16cb8518ee7b8720e87c1d468726cd1889bb4a476cc70bba62b988fa3045
-      content_csharp_sha: 8f166b1cf589204f6537ad628c8ac9be581b9d18522316f60b2c192fa69f6c68
-    - date: "2026-08-14"
-      by: myia-po-2025:CoursIA-2
-      python_sha: e7bd18db7aa63e7c1411ad2af929f2a2ee2b3266
-      csharp_sha: 65354016f65d59259765704ea31e344e94d52f31
-      content_python_sha: 82f0c84d519abd7dab300234fc7d23f26728a03b4ff1b13ee3373d27249fa627
-      content_csharp_sha: 695278c64e13afe6ac857793a943da692abe3fe90cc6dd9670d15e66a133c4c7
-    - date: "2026-08-22"
-      by: myia-po-2025:CoursIA
-      python_sha: e7bd18db7aa63e7c1411ad2af929f2a2ee2b3266
-      csharp_sha: 911401d464fb507ef92e7745c4933b07ede8398d
-      content_python_sha: 82f0c84d519abd7dab300234fc7d23f26728a03b4ff1b13ee3373d27249fa627
-      content_csharp_sha: 32219915124b21efffa62b503207dcd45417aaeb62da824ed0861dc4336952c3
-    - date: "2026-08-28"
-      by: myia-po-2024:CoursIA
-      python_sha: e7bd18db7aa63e7c1411ad2af929f2a2ee2b3266
-      csharp_sha: ead448415d9038a45baa202e3b64a850fed32db5
-      content_python_sha: 82f0c84d519abd7dab300234fc7d23f26728a03b4ff1b13ee3373d27249fa627
-      content_csharp_sha: 11e0ca4f559dbceee9456575d1b4569ecd7ccdf807a72cab460a7975991f1985
-    - date: "2026-08-28"
-      by: myia-po-2024:CoursIA
-      python_sha: e7bd18db7aa63e7c1411ad2af929f2a2ee2b3266
-      csharp_sha: 965ef5ce71d03b3d449d4c8fbdd6358ae0f06452
-      content_python_sha: 82f0c84d519abd7dab300234fc7d23f26728a03b4ff1b13ee3373d27249fa627
-      content_csharp_sha: cc6c86def1c429665bed1fda8af5f8c0c8548931fe7b5f25f80233b6b33176ca
-    - date: "2026-09-05"
-      by: myia-po-2025:CoursIA
-      python_sha: dbcc898294058c4926a42d7410a02c40c2d489d1
-      csharp_sha: 593bef65e781ebec8e74cb5ab0d00f39ec5cea90
-      content_python_sha: 86579adec495eae074bf4906269ca42689735897de09451bb8c16e88dc2cfbe4
-      content_csharp_sha: a379da8f095b32abdd93b1b9ce9e40e82bf7cf00224ff946eaa99398ef4b4710
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Adjudication 2026-08-19 (dispatch #10382, comment 5335643895, lane myia-po-2026:CoursIA), rendue PAR AXES. AXE SYMBOLIQUE (Z3) = SOTA-OK : Microsoft.Z3 (NuGet 4.12.2, C#) et z3-solver (Python) sont le meme solveur C++ natif des deux cotes, meme version majeure. AXE AUTOMATES FINIS (automata-lib) = pas de moteur .NET natif SOTA : le seul candidat connu, Automata.Net, est evalue et REJETE dans la section 7 du notebook Python lui-meme ("Automata.Net - Pourquoi Pas ?" : plus de mise a jour depuis 2017-2018, bug #6 ouvert depuis des annees sans correction, alphabet fini uniquement sans predicats symboliques, integration .NET Interactive complexe) -- le verdict INTRINSIC-en-prose de la section 7 devient ici structurel et cite. RECOVERABLE-LOCAL maintenu pour la voie restante : le pont inverse pythonnet C# -> CPython -> automata-lib est ouvert, precedents dans ce depot (GT-7 pyspiel #10585, GT-4 nashpy CLI #11061). parity_level surface CONFIRME pour l'etat livre : le C# reimplemente DFA/NFA a la main (non natif sur cet axe) et couvre les paragraphes 1-4 sur 1-9 (39 cellules C# vs 91 Python), tranche 1 assumee par conception (titre + conclusion "Bilan (tranches 1 + 2)").

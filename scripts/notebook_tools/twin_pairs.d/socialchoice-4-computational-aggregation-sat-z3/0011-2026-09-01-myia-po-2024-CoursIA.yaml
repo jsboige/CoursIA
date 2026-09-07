@@ -1,0 +1,13 @@
+date: '2026-09-01'
+by: myia-po-2024:CoursIA
+python_sha: e4e52f1aa26a74489d32aa139be58865fa7e001d
+csharp_sha: b212c0ca53e5989948a6d75056558b760f69626f
+content_python_sha: cea8a3418acb764ce63024917f6546c58f81e1105c6434a16d3e9047b797ef50
+content_csharp_sha: 0938daf7b8b4a4b9b8b047ccd981d7dad39b43575eaaca7f0e58bdd797edc5b5
+reason: 'Re-baseline apres levee des nits review #13860 (commit e3afc96187) + merge
+  origin/main : coquilles cellule 6 (satise->distingue, ennumerale->enumere), header
+  Partie 2 dedouble fusionne dans la cellule 36 existante (66->65 cellules, cellule
+  sc04-part2-header supprimee), prose enrichie SAT vs SMT. Markdown-only cote Python
+  : aucune cellule de code touchee, execution_count et outputs preserves, C# non modifie
+  (drift parite-preserving, precedent re-baseline 2026-08-01). Merge apporte le navlink
+  01b-Lean et les separateurs *** de main.'

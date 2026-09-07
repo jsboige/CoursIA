@@ -1,0 +1,16 @@
+date: '2026-09-03'
+by: myia-po-2023:CoursIA-2
+reason: 'See #14122 : suppression des 6 CS1701 du jumeau C# en cessant de lier IHtmlContent
+  -- display(HTML(x)) -> x.DisplayAs("text/html") sur les 6 cellules d''affichage
+  de graphe (15/34/41/49/53/63), plus le docstring de FactorGraphHelper qui recommandait
+  la forme fautive. Substitution du mecanisme d''affichage, contenu pedagogique INCHANGE
+  : 75 cellules avant comme apres, 52 cellules markdown identiques au caractere pres,
+  6 cellules code modifiees d''une seule ligne chacune, toutes la meme. Jumeau Python
+  NON touche -- python_sha et content_python_sha identiques. Re-execution papermill
+  SUCCESS 25 s ; les 6 graphes de facteurs sont intacts (class="node" 18/19/63/16/16/33
+  des deux cotes), regeneres par Graphviz 16.0.0 la ou main portait du 14.1.2. --update
+  en dernier, apres les strips pre-commit (#8957).'
+python_sha: 378707a64be71dac488e45e2d9962cca1d1bb44f
+csharp_sha: 36808d55b1fcc3ee3259b5c7b4421ed5d5a47b69
+content_python_sha: 81fde360a3cab1a935f7d0afbb20a8a88c0a18e02cdbf280f15403e60b709476
+content_csharp_sha: 58b6a8f101b25c8087f4a075c76e4dee32019bb817d630d9eab916c32d9f01cd

@@ -1,0 +1,13 @@
+date: '2026-08-19'
+by: myia-po-2024:CoursIA
+python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
+csharp_sha: 36ca7b50578a5542b02bca9420fb4466af2580e1
+content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
+content_csharp_sha: 4ffaaa236984ff55f5aa3b583c74431ee53c8d6e6c59e41f20c3141006af7e88
+reason: 'Tranche lib-vs-lib #10382 : reconciliation du twin C# avec son moteur reel.
+  L''audit 2026-08-01 decrivait un C# Choco/IKVM que le code n''a jamais contenu (modeles
+  CpModel depuis #5067). Retrait des 2 cellules config IKVM mortes + branding/prose/indices
+  d''exercices alignes sur l''API CP-SAT executee + re-exec 8/8 (console project Google.OrTools
+  9.15, makespans 11/10/42 = jumeau Python). Verdict flip RECOVERABLE-LOCAL -> SOTA-OK,
+  parity_level semantic -> native-both. Refs ''cellule N'' renumerotees 8/10/12 ->
+  6/8/10 (inverse du fix #9169).'

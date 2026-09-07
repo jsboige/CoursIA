@@ -1,0 +1,6 @@
+date: '2026-08-01'
+by: myia-po-2024:CoursIA-2
+python_sha: adee0d476742b82cc2efb931e778f4fba271be35
+reason: 'c.1125 #8052 Python c44 stale pre-rename self-label Search-18->CSP-9-Distributed
+  (C# twin already correct); print-literal src+out atomic'
+csharp_sha: 8324939a7b714bb232440bac11de6c84c0981a70

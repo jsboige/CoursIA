@@ -1,0 +1,12 @@
+date: '2026-08-31'
+by: myia-po-2027:CoursIA-2
+reason: 'Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging
+  -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties
+  INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls
+  la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit)
+  ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en
+  dernier (#8957).'
+python_sha: 497372252a1246bf5a1e5337ea725f42511b28d6
+csharp_sha: d6e61fdc7ee5bc9555696df1f6f322c415f958e3
+content_python_sha: 35c8f13f17d22879ce88977d01077403c6e298279b600e9f1f67b3aa47b9b7e8
+content_csharp_sha: a12a541c41534c8d492bdb080b4623c6ba447729504e41c10d9a1c22a138acf0

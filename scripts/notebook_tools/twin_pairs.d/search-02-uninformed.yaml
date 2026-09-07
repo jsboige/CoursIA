@@ -5,42 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = stdlib + networkx (moteur Python de production pour la construction du graphe et la visualisation) + heapq (priority queue native pour UCS). C# = BCL (Queue<T> BFS, Stack<T> DFS, PriorityQueue<T> UCS) EN TETE DE NOTEBOOK (tranche 1, reimplementation pedagogique from-scratch) PUIS QuikGraph 2.5.0 (moteur .NET natif de production : BreadthFirstSearchAlgorithm, DepthFirstSearchAlgorithm, DijkstraShortestPathAlgorithm) en tranche 2 sur la MEME instance (13 villes, 80 arcs, memes poids). La tranche 2 verifie la parite chiffre-a-chiffre : BFS et UCS (Dijkstra) identiques a la tranche 1 sur les 5 trajets ; DFS differe par strategie de parcours (iteratif LIFO vs recursif premier-voisin), ecart documente en known_differences. Chaque cote atteint un moteur de production de son ecosysteme : networkx (Python) vs QuikGraph (.NET) = parite lib-vs-lib, critere native-both satisfait (issue #10382)."
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: bd3d87d8d9a4e4dc00e53a306cbd1979dc8e4901
-      csharp_sha: b2370d89b77a1eca64d780900798e9b02ba8a06f
-      reason: "c.1123 #8052 C# c19 IDDFS depth/iteration count (profondeur 3->2, 4->3 itérations); Python twin clean (generic d-table)"
-    - date: "2026-08-14"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 9fab1a819cb10727d3003902bcfcbf0d849a98bc
-      csharp_sha: c92b053064e00cf25d2b57b2a4a27dc84a3be7cb
-      content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
-      content_csharp_sha: 2f849cf4ceac487315fccc97ecde0f5323bbb2cb24e9b819102151f3435bf6bf
-    - date: "2026-08-15"
-      by: myia-po-2026:CoursIA-2
-      python_sha: 9fab1a819cb10727d3003902bcfcbf0d849a98bc
-      csharp_sha: ffab0d9c69b1a35c7d5dc050730c27c20d79af16
-      content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
-      content_csharp_sha: 944773973aef369b09851dd2ee95e41ec9fdf477af6c7048bf35e6cd181a4574
-    - date: "2026-08-15"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 9fab1a819cb10727d3003902bcfcbf0d849a98bc
-      csharp_sha: 9926874c4fc2564c9b8b29a02c648b0015cb15db
-      content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
-      content_csharp_sha: 187b633fe65735f81f375e735fa2b0ae95dfaf23117c50950f4cd83a67ea3eb1
-    - date: "2026-08-31"
-      by: myia-po-2024:CoursIA
-      python_sha: 9fab1a819cb10727d3003902bcfcbf0d849a98bc
-      csharp_sha: 3dc09f842d2dfbdaa764caf508f26b7104897f53
-      content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
-      content_csharp_sha: cfe8c773fc7b7f3ac37fafe17ec739f3cc40dc78851a93c05570c1c9f7da6855
-    - date: "2026-09-05"
-      by: myia-po-2025:CoursIA
-      python_sha: 71b8013cd1208a406ed1197145d81a927766ef7c
-      csharp_sha: 2b04acfeef202f1a394910789fa1952b27737d48
-      content_python_sha: 44a1215ba4f3a6efec2d6ebc6788bbff2d59ccee15ef0b0f99ea5700b782c3fa
-      content_csharp_sha: f1fad1650678c6b359237e572004c86dc7a837b536f184968db6d8ed762b7fd3
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."

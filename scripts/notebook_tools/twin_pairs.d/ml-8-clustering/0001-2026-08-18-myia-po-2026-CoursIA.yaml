@@ -1,0 +1,9 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 98249788bd0a3541acd82d2f47e1dd645ac154b1
+csharp_sha: 9406692311322fed00c51c257131dfe204399768
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft.ML (moteur
+  ML SOTA de l''ecosysteme .NET), Python atteint scikit-learn/lightgbm (moteurs ML
+  SOTA de l''ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait
+  deja documente dans le verdict existant.'

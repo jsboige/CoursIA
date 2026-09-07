@@ -5,37 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Resolved 2026-08-19 (myia-po-2024:CoursIA, tranche lib-vs-lib #10382). Les DEUX twins invoquent le meme moteur -- OR-Tools CP-SAT (coeur C++ Google) -- via le binding natif de leur ecosysteme : Python = `ortools.sat.python.cp_model` (pip), C# = `Google.OrTools.Sat` (NuGet officiel, design option b #4956, en place depuis la creation #5067). Le verdict RECOVERABLE-LOCAL de l'audit 2026-08-01 decrivait un C# Choco/IKVM (`org.chocosolver.solver.Model` + `findSchedule()`) que le code n'a JAMAIS contenu -- les modeles C# tournent sur `CpModel`/`AddNoOverlap`/`AddCumulative`(builder fluent)/`Minimize` depuis la creation. Le twin C# portait pourtant le branding Choco (titre, doc config, 2 cellules config IKVM mortes, prose Modelisation Choco, indices d'exercices en API Choco non compilable) : la tranche reconcilie prose/config/exercices avec l'API reellement executee et re-execoute le notebook (8/8 cellules, Google.OrTools 9.15) -- makespans 11/10/42 exactement identiques au jumeau Python (convergence native-both verifiee sur grandeur observable). La route Choco/IKVM reste demontree dans CSP-1/2/3/5/7 et Sudoku-11-Choco-Csharp. `parity_level` passe semantic -> native-both : les deux twins invoquent le solveur natif de leur ecosysteme (precedent app-6 minesweeper)."
-  audits:
-    - date: "2026-08-01"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 20b459c9021a688c4bb67adc3bbf36c273d6445d
-      csharp_sha: 1453d9a535aaad7d4c4f8d72b9fdff44c9dbbba3
-      reason: "c.1126 #8052 C# c13/15/16/17 exercise+verdict cell-ref off-by-2 (cellule 6/8/10 -> 8/10/12 after OR-Tools config cells inserted); PY twin clean (0 cellule refs)"
-    - date: "2026-08-14"
-      by: myia-po-2025:CoursIA-2
-      python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
-      csharp_sha: 1453d9a535aaad7d4c4f8d72b9fdff44c9dbbba3
-      content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
-      content_csharp_sha: ccebfcc545376a4aeadcbce8882f698c2cd1e35845b06a2e4afbae139a680ebf
-    - date: "2026-08-19"
-      by: myia-po-2024:CoursIA
-      python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
-      csharp_sha: 36ca7b50578a5542b02bca9420fb4466af2580e1
-      content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
-      content_csharp_sha: 4ffaaa236984ff55f5aa3b583c74431ee53c8d6e6c59e41f20c3141006af7e88
-      reason: "Tranche lib-vs-lib #10382 : reconciliation du twin C# avec son moteur reel. L'audit 2026-08-01 decrivait un C# Choco/IKVM que le code n'a jamais contenu (modeles CpModel depuis #5067). Retrait des 2 cellules config IKVM mortes + branding/prose/indices d'exercices alignes sur l'API CP-SAT executee + re-exec 8/8 (console project Google.OrTools 9.15, makespans 11/10/42 = jumeau Python). Verdict flip RECOVERABLE-LOCAL -> SOTA-OK, parity_level semantic -> native-both. Refs 'cellule N' renumerotees 8/10/12 -> 6/8/10 (inverse du fix #9169)."
-    - date: "2026-08-30"
-      by: myia-po-2024:CoursIA-2
-      python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
-      csharp_sha: dec6fbb66cf2869576080c746195a5b51b4e806d
-      content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
-      content_csharp_sha: 54bf49004ff44c749b2b32ca49adb6a94c2998420f4e1f41111489b4b79ae401
-    - date: "2026-09-02"
-      by: myia-po-2023:CoursIA
-      python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
-      csharp_sha: 75ec7aa8288229651af4572ccbc6b039420afca3
-      content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
-      content_csharp_sha: f9f04e74c7510cfad667ae013c3be8221c3f813b0a8cd253db396875d0cd4566
   known_differences:
     - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
     - "Meme moteur des deux cotes (OR-Tools CP-SAT, coeur C++) via bindings natifs distincts : pip `ortools` (Python) vs NuGet `Google.OrTools` (C#/.NET). Differences d'idiomes documentees dans la table de comparaison du notebook : AddCumulative liste (PY) vs builder fluent .AddDemands (CS), sum() natif vs LinearExpr.Sum."

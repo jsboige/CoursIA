@@ -1,0 +1,20 @@
+date: '2026-08-28'
+by: myia-ai-01:CoursIA
+python_sha: 3e1bc6be7547fb86063d32386d331ea2db6ecf47
+csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+content_python_sha: 6ffbd8853222175d6e87be0e722dbf0d96c1e523ba6881d6d5e478c16af5f759
+content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+reason: 'Re-attestation APRES le fix demande par ma propre CHANGES_REQUESTED (#13287,
+  2026-08-28T05:03Z). Defaut de SEQUENCE, pas de substance : po-2023 avait atteste
+  au commit 78a8cada3 (contenu 1485f4b0), puis le notebook a bouge deux fois -- 7adc2693d
+  (statut d hypothese + sensibilite kappa) et 541b287a7 (le fix f-string que ma review
+  exigeait). L attestation est donc passee AVANT les editions alors que le gate impose
+  --update EN DERNIER (#8957), et l edition qui l a invalidee est celle que j ai demandee
+  : le rouge twin-parity est une consequence de ma review, pas un manquement de la
+  lane. Audit firsthand refait avant d attester : le jumeau C# ne porte AUCUN pendant
+  de la section editee (0 occurrence de partage_nash / partage de Nash / Nash bargaining
+  / hypoth / axiomatique ; les 6 hits ''Sen'' sont des artefacts de sous-chaine --
+  sens, utilisent, representation, essentiel). La section bargaining est Python-only,
+  donc re-attester ne consacre aucune asymetrie de parite. Notebook re-execute firsthand
+  : papermill --kernel python3, 45/45 cellules, RC=0 ; 18/18 cellules code compilent
+  ; sortie committee de In[16] byte-identique a la sortie fraiche. csharp_sha inchange.'

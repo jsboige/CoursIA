@@ -1,0 +1,12 @@
+date: '2026-08-11'
+by: myia-po-2025:CoursIA
+python_sha: 6d4e6bfdf2ca676926c76abda7da505698185020
+csharp_sha: fcea9bfbc914f113a7448e2511941ec09908d787
+content_python_sha: e4d4864ac6c5e54c934f445af44401718ecfb82dde43fa1c434ed0c706697440
+content_csharp_sha: d2471f19c3459505386a13bb7974735deed73ae2b9c4684db8da68111c197c5d
+reason: 'Enrichissement Python-only (#2161): ajout section 7 SPARQL (Exemple guide
+  3 resolu SELECT + Exercice 3 stub COUNT) avant l''Exercice de synthese qui exigeait
+  une requete SPARQL jamais introduite (pedagogical gap). SPARQL = standard W3C, independant
+  de rdflib ; le jumeau C# SW-2 couvre le meme socle RDF via dotNetRDF et le SPARQL
+  a sa paire dediee SW-4. 4 new cells (39 existing byte-identical), C# unchanged (csharp_sha
+  preserved). Notebook now 4 exercices (was 2).'

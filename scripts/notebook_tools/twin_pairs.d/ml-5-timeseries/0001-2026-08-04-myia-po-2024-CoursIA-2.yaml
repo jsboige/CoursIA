@@ -1,0 +1,11 @@
+date: '2026-08-04'
+by: myia-po-2024:CoursIA-2
+python_sha: 5e863ede175ce3bf689752df4e3750ac08f2a71f
+csharp_sha: 111b1731ff6a189ae30eb3202fc4f6a2f9781d45
+reason: 'rebaseline csharp apres fix Note CELL[5] (#8052) : la Note technique disait
+  faussement que les cellules Partie 1-4 "requierent [package] non resolu par le kernel
+  .NET Interaction local" (avec des trous de texte : nom de package et adjectif manquants)
+  alors que TOUTES les cellules code ont tourne (execution_count + outputs : CELL[14]
+  "Modele entraine avec succes", CELL[17] MAE/RMSE). Voie(B) : prose honnete alignee
+  sur les sorties committées, aucun nombre fabrique. Csharp-only, python_sha unchanged,
+  parite (surface) preservee.'

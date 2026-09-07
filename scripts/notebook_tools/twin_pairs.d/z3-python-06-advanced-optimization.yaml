@@ -5,16 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 optimization (MaxSAT / objectifs hierarchiques / front de Pareto) branchee NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkOptimize/MkMaximize/MkAssertSoft) et pyz3 (`from z3 import *`, Optimize/maximize/assert_soft) sont les deux bindings officiels du meme coeur C++ Z3 — pas un pont intermediaire. Concept porte au twin C# c.8052/#3801 (capstone budget 100->80, cas non-degenere, DRIFT resorbe). Aucune asymetrie de machinerie a corriger."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
-      csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
-      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint z3-solver (from z3 import *, optimization avancee), C# atteint Microsoft.Z3 (using Microsoft.Z3 + new Context()). Meme moteur Z3 via les bindings officiels. Entree issue du bucket AMBIGUOUS du detecteur -- parite Z3 confirmee firsthand. Usage verifie firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
-      csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."

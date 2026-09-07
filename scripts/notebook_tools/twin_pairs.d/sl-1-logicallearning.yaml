@@ -3,35 +3,6 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb
   parity_level: native-both
-  audits:
-    - date: "2026-08-01"
-      by: myia-po-2023:CoursIA
-      python_sha: 54e32cb14b4791558f1017d16974ea0ee19d62af
-      csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
-    - date: "2026-08-13"
-      by: myia-po-2025:CoursIA
-      python_sha: c0395f1f0ee82f67cc1827cb9c0323f4def48635
-      csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
-      content_python_sha: d041e06781b2ed2e041cfcca3786d08777a4a503fbfb12283e79eb0b6841e0ca
-      content_csharp_sha: 152ac61c16a03acd5a6729fbbb165e870cfbef28e5ced2d1b4931f87bf3ead79
-    - date: "2026-08-20"
-      by: myia-po-2026:CoursIA
-      python_sha: c0395f1f0ee82f67cc1827cb9c0323f4def48635
-      csharp_sha: dda5fd3102a097a455af919218a7038472ace4fc
-      content_python_sha: d041e06781b2ed2e041cfcca3786d08777a4a503fbfb12283e79eb0b6841e0ca
-      content_csharp_sha: 8e1eae85db55d6d5bc392ea4a4216c045adaf45a6ae9a09667fe2090b06536a0
-    - date: "2026-08-28"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 6478b42d8d9a33302fbe1df7e7117017367f08bc
-      csharp_sha: dda5fd3102a097a455af919218a7038472ace4fc
-      content_python_sha: 3d10f41e15375dfbae0d0a64b572e88aa214e36c2a79ca759f4c422d377fcb35
-      content_csharp_sha: 8e1eae85db55d6d5bc392ea4a4216c045adaf45a6ae9a09667fe2090b06536a0
-    - date: "2026-09-05"
-      by: myia-po-2026:CoursIA
-      python_sha: 6478b42d8d9a33302fbe1df7e7117017367f08bc
-      csharp_sha: 46a408620adbc5b189ba37b79508fbc2e9338fb4
-      content_python_sha: 3d10f41e15375dfbae0d0a64b572e88aa214e36c2a79ca759f4c422d377fcb35
-      content_csharp_sha: 43c8ec183654ff0567abba904c7ff24bdd4c3c55c62af84227f6cfc6abc31173
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = BCL from-scratch pour CBH/Candidate Elimination/Version Space sur domaine restaurant + section 9 confrontant le CBH a l'implementation de reference aima-python (`reference/aima_knowledge.py`, knowledge.py Fig 19.2, MIT, Russell/Norvig). C# = BCL .NET from-scratch (`Dictionary` + `HashSet` + `List<T>`) pour CBH + Candidate Elimination. NB : l'ancienne raison invoquait matplotlib cote Python -- verification firsthand (tranche 2026-08-20) : AUCUN matplotlib dans le jumeau Python, la vraie asymetrie etait la section 9 aima-python. Verdict initial RECOVERABLE-LOCAL (2026-08-01) REVOQUE par la tranche sl-1 (epic #10382, 2026-08-20) : le jumeau C# branche le pendant exact de la section 9 Python -- un pont **PythonNet** (.NET -> CPython, pythonnet 3.0.5 NuGet) invoque le MEME module vendore `reference/aima_knowledge.py`, meme graine (42), meme hypothese initiale (premier exemple positif), memes 12 exemples convertis au format GOAL (section 6bis) : les 5 disjonctions D1-D5 sont byte-identiques a la sortie de la section 9 du jumeau Python, accuracy 12/12 des deux cotes. Le pont est un plus, jamais un remplacement : les sections 4-6 gardent le CBH et le Candidate Elimination codes a la main (sujet du notebook) ; la reference externe joue le role d'arbitre, exactement comme la section 9 Python. Axes binding #10459 : PythonNet = le canal (pythonnet 3.0.5, pas de reimplementation), NuGet = canal du package pythonnet lui-meme, P/Invoke N/A, CLI N/A, IKVM N/A. `parity_level: native-both` : les deux jumeaux referencent le meme moteur de reference (aima_knowledge : import direct cote Python, pont PythonNet cote C#) autour du from-scratch conserve."
   known_differences:

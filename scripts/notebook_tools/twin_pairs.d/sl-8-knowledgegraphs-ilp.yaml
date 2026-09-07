@@ -3,28 +3,6 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb
   parity_level: native-both
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
-      csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
-      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint rdflib, C# atteint dotNetRDF 3.4.1 (#r nuget + using VDS.RDF / VDS.RDF.Parsing). Les deux bibliotheques RDF de reference de leur ecosysteme. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
-      csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
-    - date: "2026-08-19"
-      by: myia-po-2024:CoursIA-2
-      python_sha: b61e421c9f6e34cd45a65a5cc7d455486fa4991f
-      csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
-      content_python_sha: a4cb6261332d629e4f68debf9afaba0d0854e0eac50b97f217a6d1357bfc4665
-      content_csharp_sha: ff9ccf6409955dd1f32569ef2e80375696a70c4951075ca7b2c289de3c915fef
-    - date: "2026-08-28"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 6320c7a6844b53da0dac2b34e701abc6ee4a2a7f
-      csharp_sha: 8bcf9057816b41768564a9119bc0de79433cc585
-      content_python_sha: 4283a0a77ecae620f63bd5dbb3dd39bc7703c1284a290c8aaefd841d2e09f05c
-      content_csharp_sha: 5b950035bc8765757b1ecdcd034f7fb42a96e219e04e4df0c6296992960b1471
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = `rdflib` (Python KG/OWL/RDF library, MIT, Krech/Davey/ettwig 2024) pour construction/manipulation RDF + `AMIE` (rule mining SOTA, Gal?rraga/Te formulas 2015) pour decouverte de regles de Horn. C# = `dotNetRDF` (equivalent .NET de rdflib, MIT/LGPL, Rob Vesse 2009-2024) + `AMIE`. Verdict SOTA-OK (lib-vs-lib) : les deux cotes invoquent de vraies librairies KG SOTA (rdflib ? dotNetRDF sont equivalents par construction, AMIE est partage). Le C# inclut une section explicite 'Correspondance Python <-> C#' cartographiant les API rdflib <-> dotNetRDF -- intention de parite declaree. L'asymetrie de couverture (Python 62 cells / 22 code vs C# 32 cells / 15 code) est sur la prose pedagogique et la visualisation (ASCII vs matplotlib), pas sur la machinerie SOTA. C'est le twin le plus proche lib-vs-lib de la famille SL : KG foundations = manipuler les vraies librairies (rdflib/dotNetRDF + AMIE) avant d'ecrire from-scratch. `parity_level: semantic` preserve."
   known_differences:

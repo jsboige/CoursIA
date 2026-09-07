@@ -1,0 +1,10 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: 51d488274798ccf06956376bdd355d9fbc753515
+csharp_sha: 7023d3ba7fe5e0ce0624ee2806ea06851c4e382e
+reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01 2026-08-16
+  sur #11200 Option A (parite de moteur, lib-vs-lib) : Python atteint pygad (moteur
+  genetique de reference en Python), C# atteint GeneticSharp (moteur genetique de
+  reference de l''ecosysteme .NET). bridge_verdict_reason inchangee -- le bridge etait
+  deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks
+  de la paire (re-grep 2026-08-18).'

@@ -1,0 +1,15 @@
+date: '2026-08-29'
+by: myia-po-2025:CoursIA
+python_sha: f86d1c7fda26f57c5234c99dbf0cccd2ffd19af7
+csharp_sha: 544fbc8be4cdb2ead8f7a4d2b6addbe97124ef3c
+content_python_sha: 7140e5b56223b62bb6edde17a53cc7da79ab980f572cf194037663577043c34c
+content_csharp_sha: 69a7ebea7341c29420e702f78d873d8ad137c2d8ed9275319155f6cc75bcee4d
+reason: 'review fix #13456 : le twin Python epinglait la version uniquement cote C#
+  (NuGet) sans l''imposer a l''import — la cellule d''import definit desormais EXPECTED_ORTOOLS_VERSION
+  = 9.15.6755 avec assertion runtime immediatement apres l''import (pas de %pip install),
+  et le markdown amont precise que les compteurs deterministes CP-SAT ne sont reproductibles
+  que pour cette version epinglee du moteur. Re-exec fraiche complete (kernel python3,
+  12/12 cellules, 0 erreur) apres le changement de source : invariants deterministes
+  identiques a la baseline (Hard presolve=off : 5 branches / 2 conflicts / 790 prop.bin
+  / 213 prop.int), seuls les temps machine-dep bougent ; twin C# inchange (memes SHA
+  que l''audit precedent), d''ou rebaseline Python seul.'

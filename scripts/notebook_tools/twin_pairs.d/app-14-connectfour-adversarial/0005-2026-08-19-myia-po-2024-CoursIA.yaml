@@ -1,0 +1,14 @@
+date: '2026-08-19'
+by: myia-po-2024:CoursIA
+python_sha: 439f3f3eed868b39ebe6a17eb568c5df27890468
+csharp_sha: 2ec088ff8d391f7e8bc39e967730ca6c7c821b01
+content_python_sha: f100151580be3258af1eb05e86786741742ef6b709972d50c115a18347137e05
+content_csharp_sha: 05c4ceeb8195f16696d454bfeeebb757fcd886c9e2edab6240dcb96f6cff148b
+reason: 'Mouvement unilateral du cote Python (PR #11482 : prose quantitative alignee
+  sur les sorties seedees, puis nit Hermes cellule 25 qualifie ~lineaire, 2,4-2,5
+  ms/iteration mesures) — csharp_sha et content_csharp_sha inchanges (2ec088ff / 05c4ceeb)
+  : la parite na pas ete reparee, elle a ete RE-ATTESTEE. Controle anti-#11351 mesure
+  par ai-01 base-de-fusion 947ce428 -> tete de PR : image/png 1 bloc -> 1 bloc (57
+  538 -> 57 033 octets), stream/html/text inchanges, 18/18 execution_count non nuls,
+  0 erreur. Attestation posee en DERNIER apres figeage du notebook, aucun strip outille
+  en attente (papermill deja en basename, #8957).'

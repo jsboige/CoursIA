@@ -6,48 +6,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 11375befea475f214935935283ae3a1da08ec3eb
-      csharp_sha: 605d0f4b203dcabe7969c33da632779c0e3fef7f
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-07-29"
-      by: myia-po-2023:CoursIA-2
-      python_sha: f1f4080df62766027a4583aaee04b435dd931374
-      csharp_sha: b878dadd1b0836b518e89e16642e88265d490669
-    - date: "2026-08-06"
-      by: myia-ai-01:CoursIA
-      python_sha: 11375befea475f214935935283ae3a1da08ec3eb
-      csharp_sha: b878dadd1b0836b518e89e16642e88265d490669
-      content_python_sha: 5107358535723f2ea0404f53a1330f63aac57b82dbcc72a3dcd5bc163b09ba05
-      content_csharp_sha: 6e4dfa8286e5f4e8d94d4d02d009e36716f45fc260909ad86c7f80fa177fb831
-    - date: "2026-08-16"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 11375befea475f214935935283ae3a1da08ec3eb
-      csharp_sha: 605d0f4b203dcabe7969c33da632779c0e3fef7f
-      content_python_sha: 5107358535723f2ea0404f53a1330f63aac57b82dbcc72a3dcd5bc163b09ba05
-      content_csharp_sha: c6300fdd8aa7a07f68303807a60824ba587f7c17b7829369b7dc60913de8a83b
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: 420f7c835253b8813b23365cdb981c6cf7f25fd0
-      csharp_sha: 605d0f4b203dcabe7969c33da632779c0e3fef7f
-      content_python_sha: 81fde360a3cab1a935f7d0afbb20a8a88c0a18e02cdbf280f15403e60b709476
-      content_csharp_sha: c6300fdd8aa7a07f68303807a60824ba587f7c17b7829369b7dc60913de8a83b
-    - date: "2026-08-31"
-      by: myia-po-2027:CoursIA-2
-      reason: "Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit) ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en dernier (#8957)."
-      python_sha: 378707a64be71dac488e45e2d9962cca1d1bb44f
-      csharp_sha: b3b109def79703b68add789b5b44ea1501ec34a4
-      content_python_sha: 81fde360a3cab1a935f7d0afbb20a8a88c0a18e02cdbf280f15403e60b709476
-      content_csharp_sha: 4d560f59dc09d87060d09801e4b323292fec62c5c7b4107c40b4161f530e93d8
-    - date: "2026-09-03"
-      by: myia-po-2023:CoursIA-2
-      reason: "See #14122 : suppression des 6 CS1701 du jumeau C# en cessant de lier IHtmlContent -- display(HTML(x)) -> x.DisplayAs(\"text/html\") sur les 6 cellules d'affichage de graphe (15/34/41/49/53/63), plus le docstring de FactorGraphHelper qui recommandait la forme fautive. Substitution du mecanisme d'affichage, contenu pedagogique INCHANGE : 75 cellules avant comme apres, 52 cellules markdown identiques au caractere pres, 6 cellules code modifiees d'une seule ligne chacune, toutes la meme. Jumeau Python NON touche -- python_sha et content_python_sha identiques. Re-execution papermill SUCCESS 25 s ; les 6 graphes de facteurs sont intacts (class=\"node\" 18/19/63/16/16/33 des deux cotes), regeneres par Graphviz 16.0.0 la ou main portait du 14.1.2. --update en dernier, apres les strips pre-commit (#8957)."
-      python_sha: 378707a64be71dac488e45e2d9962cca1d1bb44f
-      csharp_sha: 36808d55b1fcc3ee3259b5c7b4421ed5d5a47b69
-      content_python_sha: 81fde360a3cab1a935f7d0afbb20a8a88c0a18e02cdbf280f15403e60b709476
-      content_csharp_sha: 58b6a8f101b25c8087f4a075c76e4dee32019bb817d630d9eab916c32d9f01cd
   known_differences:
   - '2026-09-03 (myia-po-2023) See #14122 : csharp_sha rebaseline suite a la suppression des 6 avertissements
     CS1701 du jumeau C# -- display(HTML(x)) remplace par x.DisplayAs("text/html"). CS1701 nomme le CONSOMMATEUR

@@ -1,0 +1,6 @@
+date: '2026-08-04'
+by: myia-po-2024:CoursIA-2
+python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
+csharp_sha: f249f653b3d7572d14f7c5cb1ec12a3da74a4cb8
+reason: 'rebase c.1241: Python prose-difficulty fix (cells 20/25, #8052) + C# c31
+  COUNT off-by-one 10->9 (cell 27 loop t=1..9); both twins fixed, parity preserved'

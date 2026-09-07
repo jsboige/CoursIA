@@ -1,0 +1,9 @@
+date: '2026-09-04'
+by: myia-po-2024:CoursIA
+python_sha: 63cc13a5a31bf8292992ac7572736d921a5efff8
+csharp_sha: e08092311f50cb904f6c268445534db3bdda3c9b
+content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
+content_csharp_sha: 43d3935e7d14ef2c13aa001de75b8249a35544ee904405d40abdf3bceb438ac9
+reason: 'Re-baseline #14572 (tranche #11962) : conversion flowchart ASCII -> Mermaid
+  cell md 10 (DAG Honest Worker), markdown-only cote C#, aucune cellule code touchee,
+  python_sha unchanged, parite native-both preservee.'
