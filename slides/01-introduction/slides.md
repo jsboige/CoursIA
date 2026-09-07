@@ -734,6 +734,8 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 <li>Presentations des projets</li>
 </ol>
 
+> **TP associés :** 2 → `Search/Part1-Foundations/` + `Sudoku/` · 3 → `SymbolicAI/` · 4 → `Probas/Infer/` · 5 → `GameTheory/` · 6 → `ML/` · 7 → `GenAI/Texte/`
+
 ---
 
 # Pour aller plus loin : Notebooks
