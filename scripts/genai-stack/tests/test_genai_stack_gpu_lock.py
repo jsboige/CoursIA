@@ -184,12 +184,26 @@ class TestGpuLockApply(unittest.TestCase):
     @patch("commands.gpu._gpu_lock_journal")
     @patch("commands.gpu.gpu_lock_status")
     @patch("commands.gpu._run_cmd")
-    def test_apply_on_not_capped_journalized_echac(self, mock_run, mock_status, mock_journal):
+    def test_apply_on_not_capped_returns_echac(self, mock_run, mock_status, mock_journal):
+        # #14975 R2 : le verdict ECHEC (une carte refuse la butee) fait echouer la
+        # tache — rc=1. C'est un echec du verrou, pas un simple avertissement.
         from commands.gpu import gpu_lock_apply
         mock_run.return_value = (True, "", "")
         mock_status.return_value = [{"index": 0, "current_mhz": 1380, "max_mhz": 2100}]
-        self.assertTrue(gpu_lock_apply(True))
+        self.assertFalse(gpu_lock_apply(True))
         self.assertEqual(mock_journal.call_args[0][1], "ECHEC")
+
+    @patch("commands.gpu._gpu_lock_journal")
+    @patch("commands.gpu.gpu_lock_status")
+    @patch("commands.gpu._run_cmd")
+    def test_apply_on_unreadable_status_returns_true_with_warning(self, mock_run, mock_status, mock_journal):
+        # #14975 R2 : INDETERMINE (commande nvidia-smi reussie, relecture invalide)
+        # retourne True rc=0 avec avertissement — pas un echec du verrou.
+        from commands.gpu import gpu_lock_apply
+        mock_run.return_value = (True, "", "")
+        mock_status.return_value = None
+        self.assertTrue(gpu_lock_apply(True))
+        self.assertEqual(mock_journal.call_args[0][1], "INDETERMINE")
 
     @patch("commands.gpu.gpu_lock_status")
     @patch("commands.gpu._run_cmd")

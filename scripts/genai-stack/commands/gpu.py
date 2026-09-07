@@ -573,7 +573,10 @@ def gpu_lock_apply(enable: bool, clocks: str = GPU_LOCK_CLOCKS) -> bool:
     """Applique (enable=True, `nvidia-smi -lgc`) ou retire (False, `nvidia-smi -rgc`) le verrou.
 
     Journalise la commande, le rc et la verification dans _gpu_lock_log_path().
-    Retourne True si la commande a reussi (le verdict de verification est journalise + affiche).
+    #14975 R2 : rc=0 (True) sur OK, rc=1 (False) sur ECHEC. INDETERMINE (commande
+    nvidia-smi reussie mais relecture aveugle) retourne True rc=0 avec avertissement :
+    un defaut de relecture n'est pas un echec du verrou, la tache de boot ne doit pas
+    crasher sur une relecture transitoire. Le choix est justifie par ecrit (#14975 R2).
     """
     if enable:
         cmd = f"nvidia-smi -lgc {clocks}"
@@ -590,6 +593,10 @@ def gpu_lock_apply(enable: bool, clocks: str = GPU_LOCK_CLOCKS) -> bool:
     status = gpu_lock_status()
     if status is None:
         _gpu_lock_journal(action, "INDETERMINE", "cmd=%s verif: nvidia-smi -q -d CLOCK invalide" % cmd)
+        # INDETERMINE = la commande nvidia-smi a reussi (rc=0), seule la relecture
+        # est aveugle. Ce n'est pas un echec du verrou : on ne fait pas echouer la
+        # tache de boot (rc=1) sur un defaut de relecture transitoire. rc=0 + warning.
+        print("[gpu-lock] INDETERMINE (relecture invalide) : pas un echec du verrou, rc=0")
         return True
     detail = "; ".join(
         "GPU %s courant=%sMHz max=%sMHz" % (g["index"], g["current_mhz"], g["max_mhz"])
@@ -600,6 +607,12 @@ def gpu_lock_apply(enable: bool, clocks: str = GPU_LOCK_CLOCKS) -> bool:
     for g in status:
         print("    GPU", g["index"], "->", _verify_lock(enable, g["current_mhz"], g["max_mhz"]))
     print("  Journal   :", _gpu_lock_log_path())
+    if verdict != "OK":
+        # #14975 R2 : le verrou porte sur toutes les cartes ; UNE carte en ECHEC
+        # fait echouer la tache (rc=1). S'il ne restait qu'un GPU a verifier la
+        # regle serait differente, mais `-lgc` sans `-i` verrouille tout le systeme.
+        print("[gpu-lock] Verrou NON effectif (verdict", verdict + ") : rc=1")
+        return False
     return True
 
 
