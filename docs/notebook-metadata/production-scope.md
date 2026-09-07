@@ -43,7 +43,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | GenAI Audio — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-TTS-Intro.ipynb` | 5 | |
 | GenAI Video — Foundation | EPF GenAI Bachelor 3A | `01-1-Video-Operations-Basics.ipynb` | 5 | |
 | GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `1_OpenAI_Intro.ipynb` | 8 | |
-| Search — Part 1 Foundations | EPITA Programmation par Contraintes | `Search-1-StateSpace.ipynb` | 13 | |
+| Search — Part 1 Foundations | EPITA Programmation par Contraintes | `Search-01-StateSpace.ipynb` | 13 | |
 | Search — Part 2 CSP | EPITA Programmation par Contraintes | `CSP-1-Fundamentals.ipynb` | 9 | |
 | Argument Analysis | EPITA IA Symbolique | `Argument_Analysis_Toulmin_Model.ipynb` | 4 | |
 | Tweety | EPITA IA Symbolique | `Tweety-2-Basic-Logics.ipynb` | 6 | |
@@ -128,15 +128,15 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 ### EPITA — Programmation par Contraintes (22)
 
 <!-- MyIA.AI.Notebooks/Search/Part1-Foundations -->
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-6-AdversarialSearch.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-9-LinearProgramming.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb`

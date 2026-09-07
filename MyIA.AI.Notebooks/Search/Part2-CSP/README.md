@@ -101,7 +101,7 @@ flowchart LR
     SOCLE --> IND
 ```
 
-Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-1-StateSpace.html)) et backtracking ([Search-2](../Part1-Foundations/Search-2-Uninformed.html)).
+Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-01-StateSpace.html)) et backtracking ([Search-2](../Part1-Foundations/Search-02-Uninformed.html)).
 
 ## Prérequis & environnement
 
@@ -125,8 +125,8 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 ## Ponts vers SymbolicAI
 
 Les notebooks CSP nécessitent une compréhension préalable de :
-- **[Search-1 (StateSpace)](../Part1-Foundations/Search-1-StateSpace.html)** : formalisation des problèmes
-- **[Search-2 (Uninformed)](../Part1-Foundations/Search-2-Uninformed.html)** : backtracking = DFS avec retour arrière
+- **[Search-1 (StateSpace)](../Part1-Foundations/Search-01-StateSpace.html)** : formalisation des problèmes
+- **[Search-2 (Uninformed)](../Part1-Foundations/Search-02-Uninformed.html)** : backtracking = DFS avec retour arrière
 
 ## Progression recommandée
 
@@ -198,7 +198,7 @@ Le véritable enseignement est une **sensibilité à la modélisation** : le mê
 
 - **Les applications** : les [40 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
 - **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
-- **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-2-Uninformed.html) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
+- **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-02-Uninformed.html) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
 - **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
 
 ### Le fil rouge

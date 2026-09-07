@@ -65,6 +65,13 @@
       csharp_sha: 69c867eee3346d7730883efabe2d3679e1564ad8
       content_python_sha: 11166d394b4553790bc50e57f64845af83684b933855f352508f4e82c2d5b705
       content_csharp_sha: 9422b4fab31e58b5d6c0d8c1f14e108150d17883a3d6db4d96b74783ef5cdd0f
+    - date: "2026-09-06"
+      by: myia-po-2024:CoursIA
+      python_sha: cfcc4a51911ca3586899300f2f54e1fde242d397
+      csharp_sha: 940800ff40629e5af73e8d7fbdefe81fe0997667
+      content_python_sha: 1446bc993deb8be4de716bbe3fbc986be56a0cabbb2459501773b5cc25890044
+      content_csharp_sha: 2b558f97f24ed8882e30e6001b8de0e243c041ebf37c79cbb2980b0daea8a19d
+      reason: "Re-attestation apres PR #14854 (#14817, stubs d'exercice ne rendent plus une verite en dur) : cote Python corrige (base pre-commit verifiee au detecteur : 1 fautif, cellule 23 has_unique_solution rendait un literal True) ; cote C# : diff outputs/metadata papermill uniquement (0 ligne source, 0 execution_count modifie). Les 5 return true; du C# (cellules 6/17/20/46/48) sont des fins d'implementations reelles de solveurs, 0 marqueur exercice. Defaut unilatereal Python ; detect_stub_truth_returns 0/0 post-fix ; parity_level native-both inchange."
   known_differences:
     - "Rebaseline 2026-08-29 (#13045, PR #13069) : DEUX cotes deplaces. Cote Python = RE-EXECUTION reelle (papermill 2.7.0, 2026-08-29T10:51:00Z -> 10:55:06Z, 246,1 s, exception None, 25 cellules code, 0 execution_count nul, 0 erreur) apres reecriture du benchmark en protocole a mediane censuree ; les sorties committees sont celles de ce run. Cote C# = restauration d'une idee pedagogique (difficulte humaine vs difficulte algorithmique) perdue par la reecriture, plus la conversion de 3 separateurs decoratifs par le hook fix-hr-separator. Les DEUX cotes ont en outre recu la renumerotation zero-pad de #13357 (liens de navigation, cellules 1 et 4, reprise telle quelle depuis main). Parite structurelle inchangee (68 cellules par cote). Attestations = nouveaux blob SHAs des deux cotes."
     - "Rebaseline 2026-08-14 : DEUX cotes deplaces par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans 2 cellules markdown par cote). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche). Attestations = nouveaux blob SHAs des deux cotes."

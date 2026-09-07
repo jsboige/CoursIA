@@ -69,6 +69,12 @@
       csharp_sha: 3f2db3ce96f3711878be04f0eede760e2ead53ac
       content_python_sha: 68264fddff413639300a0e785befddc3b3c1779c2bb9151b0d285ce1624d3d9c
       content_csharp_sha: ae6e685e922ec0ebb2c4719b7c3f64138c946122e172420693053b5072e0fb22
+    - date: "2026-09-06"
+      by: myia-po-2027:CoursIA
+      python_sha: 4f795d52b28c6704651d6ab072480265f20fdc77
+      csharp_sha: 3f2db3ce96f3711878be04f0eede760e2ead53ac
+      content_python_sha: a75f50b8b56033dd423e18180a947e9d10127824c8e10b4f7b505d05b4209543
+      content_csharp_sha: ae6e685e922ec0ebb2c4719b7c3f64138c946122e172420693053b5072e0fb22
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = numpy + matplotlib + module local `cooperative_games` + itertools (54 cellules dont 25 code). C# = BCL .NET 9 pur (System.Linq, System.Collections.Generic, 0 NuGet, convention marathon #4956). Tranche 2026-08-22 (PR #12312, c.1301+334, myia-po-2025:CoursIA-2, issue #10382) : les sections legislatives 2024 (Python cellules 33-45 : donnees officielles NFP Ministere de l'Interieur, fonction de valeur sieges avec synergies calibrees, Shapley NFP, contributions marginales par coalition d'accueil, scenarios contrefactuels, comparaison sieges/pouvoir de vote/negociation) ET la comparaison exact vs Monte Carlo (Python cellules 12-13 : jeu de vote pondere 8 actionnaires [51; 25,20,15,12,10,8,6,4], exact 8! = 40320 permutations en 111 ms vs MC 10 000 echantillons graine 42, erreur max 0.0030) sont desormais portees cote C# (section 7, 7 cellules code ajoutees executees, 24/24 notebook complet, 0 erreur, nbconvert .net-csharp). Resultats cles : LFI 37.0% du Shapley vs 46.1% du poids electoral NFP (-9.1 pts, sur-estime dans le debat public), PS +7.5 pts (capte les reports du centre), perdre LFI ou PS coute symetriquement 95 sieges, somme Shapley = 180 = v(N) (efficacite). Residuel : visualisations matplotlib remplacees par tableaux numeriques (convention BCL 0-NuGet, documentee, precedent sweeps numeriques). Verdict SOTA-OK : pas de moteur tiers applicable par convention from-scratch assumee des deux cotes (marathon #4956), couverture legislative + Monte Carlo paritaire, asymetrie uniquement visuelle et documentee."
   known_differences:
