@@ -5,6 +5,17 @@ Converts 4 student solutions into labeled "Exemple resolu" cells
 and creates new exercise stubs with variant data.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb
+#   (PR #472; reworked for issue #464 by commit 171e7862a; label fix PR #9171)
+# - Verdict recorded in : PR #472 and archive PR #9575
+#
+# Per-function disposition :
+# - main() : one-shot notebook transform delivered by PR #472, reworked for
+#   issue #464 by commit 171e7862a, then refined by PR #9171; retained only
+#   as historical source.
+
 import json
 
 
