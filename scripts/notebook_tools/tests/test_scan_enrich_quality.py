@@ -96,6 +96,27 @@ class TestDiacritics:
         head = [_md("theorie")]
         assert scan_diacritics(head, base) == []
 
+    def test_removed_content_is_silent(self):
+        # #14795: a PR that splits accented cells out of a notebook collapses
+        # the file total (375 -> 96 chars) while every SURVIVING line keeps
+        # its accents -- removal is not de-accentation, must stay silent.
+        kept = ["La théorie de l'apprentissage était mesurée.",
+                "L'équilibre décrit un comportement décentralisé."]
+        base = [_md(kept[0]), _md("Le point de désaccord dérive, mesuré sur γ."),
+                _md(kept[1]), _md("Sensibilité κ paramétrée par défaut.")]
+        head = [_md(kept[0]), _md(kept[1])]
+        assert scan_diacritics(head, base) == []
+
+    def test_surviving_deaccented_line_fires(self):
+        # Same split, but one surviving line came back de-accented: the
+        # skeleton matches, the accents are gone -- the real class (c) defect.
+        base = [_md("La théorie de l'apprentissage était mesurée."),
+                _md("Le point de désaccord dérive, mesuré sur γ.")]
+        head = [_md("La theorie de l'apprentissage etait mesuree."),
+                _md("Le point de désaccord dérive, mesuré sur γ.")]
+        f = scan_diacritics(head, base)
+        assert _cats(f) == {"DIACRITICS_LOSS"} and f[0]["severity"] == "MED"
+
 
 # ---------------------------------------------------------------------------
 # Class (b): survival

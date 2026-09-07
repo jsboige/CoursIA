@@ -1,0 +1,78 @@
+name: Lean CI (formal_groups_lean)
+
+# CI for formal_groups_lean (SymbolicAI/Lean/formal_groups_lean).
+# Multivariate formal groups: structure, commutativity, morphisms, additive
+# law, iterates / linear part / finite height — pedagogical port of
+# anthropics/fermats-last-theorem Definitions/Def_MvFormalGroup_BasicV2.lean
+# (#14785, sub-grain of #14771). 0 sorry by construction. Target Lean
+# v4.33.0 / Mathlib db584cd6 (anchor #14773); the lake is autonomous.
+# Same thin-dispatcher form as lean-hecke.yml (same FLT-port family).
+# Note: no `needs:` between the two jobs — the per-IP anonymous-git burst
+# of #14921 is specific to the self-hosted pool behind one residential IP;
+# GitHub-hosted jobs each get their own runner IP.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run the gate
+      # (same rationale as lean-hecke.yml, cf #8712 / #8951).
+      - '.github/workflows/lean-formal-groups.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - '.github/workflows/lean-formal-groups.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-formal-groups-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean
+      display-name: formal_groups_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # The #14785 anchor measures the upstream decls (MvFormalGroup structure,
+  # Hom.comp, FiniteHeight) at [propext, Classical.choice, Quot.sound]; this
+  # gate re-plays the #print axioms measurement on every PR touching the lake.
+  # allow-axioms: "" -- the measured footprint must stay within the
+  # reusable-workflow defaults; a NEW axiom (native_decide, sorryAx) = red.
+  # fail-on-sorry: true -- sorry-baseline is 0, the lake is fully proven.
+  # target-modules: "*" (issue #10889) -- module list derived at runtime from
+  # the lake walk; the `_en` i18n siblings are excluded by default (FR-only
+  # measurement, byte-parity covers the EN side structurally, cf #10997).
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean
+      display-name: formal_groups_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true

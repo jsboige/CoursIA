@@ -464,6 +464,16 @@ _THRESHOLD_OP_RE = re.compile(
     r"[<>≤≥]=?\s*\d|\d\s*[<>≤≥]=?",
 )
 
+# Family D (#14905): grid coordinates inside parentheses, like
+# '(2,2)' / '(1,1)', are TUPLES (cell positions), not francophone decimals.
+# _normalize_num collapses '(2,2)' -> '2.2', so the detector searches for a
+# '2.2' that never exists in the 3x3-grid code output and flags a legitimate
+# prose coordinate as fabricated (DecPyMC-7 md[67]: 'un but en (2,2) et un
+# obstacle en (1,1)'). Criterion (acceptance #14905): a SINGLE digit on each
+# side of a comma, wrapped in a parenthesized pair. '(0,75)' -- two digits
+# after the comma -- is a genuine decimal and stays eligible.
+_COORD_TUPLE_RE = re.compile(r"\(\s*\d\s*,\s*\d\s*\)")
+
 
 def _line_around(src: str, match_pos: int, match_end: int) -> str:
     """Return the source line containing the [match_pos, match_end) span.
