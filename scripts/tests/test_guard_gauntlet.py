@@ -400,23 +400,30 @@ def test_sandbox_path_with_spaces(tmp_path: Path) -> None:
     le chemin SOURCE pouvait contenir des espaces, pas que la substitution
     {path} -> chemin sandbox quoté fonctionnait quand le SANDBOX lui-meme
     avait des espaces. Ici on force --sandbox-parent dans un dossier quoté,
-    et le check imprime le chemin recu en argv[1] : il DOIT etre byte-identique
-    au chemin sandbox reel.
+    et le check ecrit le sys.argv[1] recu dans un fichier SURVIVANT (hors
+    TemporaryDirectory) -- on le relit apres cleanup du sandbox et on le
+    compare byte-pour-byte au chemin sandbox attendu. Si la substitution
+    {path} avait ete cassee par les espaces (argv tronque), la valeur
+    ecrite differerait du chemin reel et le test echouerait. La preuve est
+    explicite (sentinel_path.is_file + assertion de la valeur), pas
+    indirecte (REPAIR proof-assertions po-2025 addendum 5573579453 item 2).
     """
     target = _write_target(tmp_path, "espace test marker\n")
     sandbox_parent = tmp_path / "espace test sandbox"
     sandbox_parent.mkdir()
 
-    sentinel = "sandbox-chemin-recu.txt"
+    # Fichier survivant : le runner nettoie son sandbox via TemporaryDirectory
+    # a la sortie du `with`, mais tmp_path / sentinel_path est hors du sandbox.
+    # On y stocke sys.argv[1] exact tel que recu par le check, puis on le
+    # relit depuis le test (pas dans le sandbox). Si le runner sandbox avait
+    # un chemin different de ce que {path} a transmis, l'assertion echoue.
+    sentinel_path = tmp_path / "received_argv_path.txt"
 
     check = _make_check_py(
         tmp_path,
         (
-            "import sys, os\n"
-            "p = sys.argv[1]\n"
-            "name = os.path.basename(p)\n"
-            "real = os.path.realpath(p)\n"
-            f"open(os.path.dirname(real) + '/{sentinel}', 'w').write(name)\n"
+            "import sys\n"
+            f"open(r'{sentinel_path}', 'w', encoding='utf-8').write(sys.argv[1])\n"
             "sys.exit(0)\n"
         ),
         name="echo_sandbox_path.py",
@@ -450,18 +457,31 @@ def test_sandbox_path_with_spaces(tmp_path: Path) -> None:
     sandbox_str = payload["diagnostics"]["sandbox"]
     assert "espace test sandbox" in sandbox_str, sandbox_str
 
-    # Le check a recu {path} = sandbox_target byte-identique au sandbox cree.
-    # On verifie par effet de bord : le check ecrit /<sandbox_dir>/<sentinel>.
-    # sandbox_str est le `<gauntlet-XXX>` direct ; son parent DOIT etre
-    # sandbox_parent / "espace test sandbox".
-    sentinel_path = Path(sandbox_str).parent / sentinel
-    # Le sandbox a ete nettoye, mais le sentinel peut etre disparu --
-    # ici on ne fait que valider que le chemin sandbox etait bien quoté
-    # en passant par argv. La preuve indirecte : stdout_preview n'a pas
-    # plante (pas de split sur espaces).
+    # La matrice de verdict est NO_FAULT (cible saine, check exit 0).
     assert payload["status"] == "NO_FAULT", payload
-    # Le stdin/argv du check n'a pas ete casse par les espaces -- preuve
-    # que shlex.quote a fait son travail sur le {path}.
+
+    # PREUVE DISCRIMINANTE : le check a bien recu {path} = sandbox_target.
+    # Le sentinel a ete ecrit hors du TemporaryDirectory (dans tmp_path), donc
+    # il survit au cleanup. On relit exactement le sys.argv[1] transmis et on
+    # le compare au chemin sandbox attendu. Si shlex.quote avait coupe sur
+    # les espaces, sys.argv[1] aurait ete different et l'assertion aurait
+    # rate. Si le sentinel n'existe pas (chemin mort, runner ignore, ...),
+    # l'assertion explicite le dit -- pas de "preuve indirecte" muette
+    # (REPAIR proof-assertions po-2025 addendum 5573579453 item 2).
+    assert sentinel_path.is_file(), (
+        f"sentinel survivant absent : {sentinel_path}. Le check n'a pas pu "
+        f"ecrire sys.argv[1] ; la preuve de substitution {path} est invalide."
+    )
+    received = sentinel_path.read_text(encoding="utf-8")
+    expected_sandbox_target = Path(sandbox_str) / target.name
+    assert received == str(expected_sandbox_target), (
+        f"sys.argv[1] recu par le check != chemin sandbox attendu.\n"
+        f"  recu     = {received!r}\n"
+        f"  attendu  = {str(expected_sandbox_target)!r}\n"
+        f"shlex.quote a-t-il malencontreusement coupe sur les espaces ?"
+    )
+
+    # La cible source n'est pas touchee par le run.
     assert target.read_bytes() == b"espace test marker\n"
 
 
@@ -529,6 +549,22 @@ def test_baseline_failed_when_check_exits_nonzero_on_clean_target(tmp_path: Path
 # -------- Validator reel preexistant (REPAIR #15073 item 1) ----------------------
 
 
+# Validator REEL préexistant : chemin ABSOLU obligatoire.
+# Le runner execute le check avec `cwd=str(sandbox_dir)`, donc un chemin
+# relatif "scripts/check_subprocess_encoding.py" résoudrait contre le
+# sandbox (où le script n'existe pas) et Python sortirait non-zéro pour
+# une raison qui n'a rien a voir avec le validator -- faux positif HELD /
+# BASELINE_FAILED. La commande du smoke (guard_gauntlet_smoke.py) utilise
+# deja le chemin absolu ; on l'aligne dans les tests pour eviter la
+# derive (REPAIR proof-assertions po-2025 addendum 5573579453 item 1).
+REAL_VALIDATOR = REPO_ROOT / "scripts" / "check_subprocess_encoding.py"
+# Signature stdout du validator : "f.py:line: text=True without encoding= :: ..."
+# Si la sortie du runner contient cette signature, on sait que le validator
+# REEL a effectivement examine la cible et detecte la violation -- pas
+# seulement un crash Python sur chemin introuvable.
+VALIDATOR_SIGNATURE = "text=True without encoding="
+
+
 def test_real_validator_check_subprocess_encoding(tmp_path: Path) -> None:
     """Le runner passe un validator REEL du depot (pas un mini-validator dédie).
 
@@ -537,9 +573,14 @@ def test_real_validator_check_subprocess_encoding(tmp_path: Path) -> None:
     ``scripts/check_subprocess_encoding.py`` (gate #12811, mitigation
     cp1252 / UnicodeDecodeError).
 
-    Cas : cible saine, fault=replace injectant un appel
-    ``subprocess.run(..., text=True)`` (sans encoding=). Le validator reel
-    detecte la violation et sort en 1 -> status HELD.
+    Cas : cible SAINE qui contient deja une violation ``subprocess.run(...,
+    text=True)`` sans encoding. Le validator reel detecte la violation et
+    sort en 1 -> comme fault=none et exit != 0, status = BASELINE_FAILED
+    (REPAIR item 4 : pas un HELD, c'est la baseline qui rouge).
+
+    La preuve discriminante : stdout_preview contient la signature verbatim
+    du validator. Sans cette assertion, n'importe quel crash Python sur
+    chemin introuvable declencherait artificiellement le verdict.
     """
     target = _write_target(
         tmp_path,
@@ -554,7 +595,7 @@ def test_real_validator_check_subprocess_encoding(tmp_path: Path) -> None:
         sys.executable,
         str(RUNNER),
         "--check",
-        f'"{sys.executable}" scripts/check_subprocess_encoding.py {{path}}',
+        f'"{sys.executable}" "{REAL_VALIDATOR}" {{path}}',
         "--target",
         str(target),
         "--fault",
@@ -571,15 +612,29 @@ def test_real_validator_check_subprocess_encoding(tmp_path: Path) -> None:
     payload = _parse_stdout_json(proc)
     # Cible SAINE et le validator detecte la violation : exit != 0.
     # Comme fault=none et exit != 0, on attend BASELINE_FAILED par item 4.
-    # Pour tester HELD, on mute la cible et on attend HELD :
     assert payload["status"] == "BASELINE_FAILED", payload  # baseline rouge, pas HELD
     assert payload["fault"] == "none"
     assert payload["check_exit"] != 0
+    # PREUVE DISCRIMINANTE : le validator reel a tourne, pas un crash Python.
+    # Si la commande passait par un chemin relatif que Python ne trouvait
+    # pas, stdout_preview ne contiendrait PAS cette signature -- mais
+    # check_exit serait != 0 aussi, d'ou le faux-positif ferme par item 1
+    # du REPAIR proof-assertions.
+    assert VALIDATOR_SIGNATURE in payload["diagnostics"]["stdout_preview"], (
+        f"stdout_preview manque la signature du validator reel "
+        f"({VALIDATOR_SIGNATURE!r}); la detection vient peut-etre d'un crash "
+        f"Python sur chemin introuvable.\n"
+        f"stdout_preview={payload['diagnostics']['stdout_preview']!r}"
+    )
 
 
 def test_real_validator_held_after_injecting_subprocess_violation(tmp_path: Path) -> None:
-    """HELD sur le validator REEL : mutation = replace avec une violation
+    """HELD sur le validator REEL : mutation = replace injectant une violation
     detectee par le validator preexistant.
+
+    On part d'une cible SAINE (pas de violation) ; on injecte via replace un
+    contenu qui CONTIENT une violation ; le validator reel detecte et sort
+    en 1 ; comme fault=replace et exit != 0, status = HELD.
     """
     target = _write_target(
         tmp_path,
@@ -601,7 +656,7 @@ def test_real_validator_held_after_injecting_subprocess_violation(tmp_path: Path
         sys.executable,
         str(RUNNER),
         "--check",
-        f'"{sys.executable}" scripts/check_subprocess_encoding.py {{path}}',
+        f'"{sys.executable}" "{REAL_VALIDATOR}" {{path}}',
         "--target",
         str(target),
         "--fault",
@@ -622,6 +677,13 @@ def test_real_validator_held_after_injecting_subprocess_violation(tmp_path: Path
     assert payload["fault"] == "replace"
     assert payload["check_exit"] != 0
     assert payload["diagnostics"]["original_intact"] is True
+    # Meme preuve discriminante que ci-dessus : la sortie du validator reel
+    # doit etre visible dans stdout_preview, pas seulement un crash Python.
+    assert VALIDATOR_SIGNATURE in payload["diagnostics"]["stdout_preview"], (
+        f"stdout_preview manque la signature du validator reel ; "
+        f"le verdict HELD vient peut-etre d'un crash Python.\n"
+        f"stdout_preview={payload['diagnostics']['stdout_preview']!r}"
+    )
 
 
 # -------- Sanity : env minimal ---------------------------------------------------

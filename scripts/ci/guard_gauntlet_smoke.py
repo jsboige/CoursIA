@@ -108,6 +108,47 @@ def main(argv: list[str] | None = None) -> int:
             ("ESCAPED", _run(trunc, "truncate", "")),
         ]
 
+    # Matrice ATTENDUE -- le smoke est auto-validant (REPAIR proof-assertions
+    # po-2025 addendum 5573579453 item 3). Toute divergence (status,
+    # check_exit, original_intact) fait echouer le smoke avec rc=1 et un
+    # diagnostic explicite -- pas un rc=0 muet qui laisserait passer une
+    # regression (chemin relatif mort, validator casse, etc.).
+    expected_matrix = {
+        # label     : (status,          check_exit, original_intact)
+        "NO_FAULT": ("NO_FAULT",       0,          True),
+        "HELD":     ("HELD",           "nonzero",  True),
+        "ESCAPED":  ("ESCAPED",        0,          True),
+    }
+    divergences: list[str] = []
+    for label, result in results:
+        expected_status, expected_exit_kind, expected_intact = expected_matrix[label]
+        actual_status = result["status"]
+        actual_exit = result["check_exit"]
+        actual_intact = result["original_intact"]
+        if actual_status != expected_status:
+            divergences.append(
+                f"  - {label}: status attendu={expected_status!r}, "
+                f"observe={actual_status!r}"
+            )
+        if actual_exit is None:
+            divergences.append(
+                f"  - {label}: check_exit attendu={expected_exit_kind!r}, "
+                f"observe=None"
+            )
+        elif expected_exit_kind == "nonzero" and actual_exit == 0:
+            divergences.append(
+                f"  - {label}: check_exit attendu !=0, observe={actual_exit!r}"
+            )
+        elif expected_exit_kind == 0 and actual_exit != 0:
+            divergences.append(
+                f"  - {label}: check_exit attendu=0, observe={actual_exit!r}"
+            )
+        if actual_intact is not expected_intact:
+            divergences.append(
+                f"  - {label}: original_intact attendu={expected_intact!r}, "
+                f"observe={actual_intact!r}"
+            )
+
     out = {
         "issue": "#15067",
         "validator": str(VALIDATOR.relative_to(REPO_ROOT)),
@@ -126,6 +167,16 @@ def main(argv: list[str] | None = None) -> int:
     scratch_dir.mkdir(parents=True, exist_ok=True)
     out_path = scratch_dir / f"15067-gauntlet-smoke-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json"
     out_path.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    if divergences:
+        sys.stderr.write(
+            "[FAIL] smoke gauntlet diverge de la matrice attendue :\n"
+            + "\n".join(divergences)
+            + f"\nSortie JSON : {out_path}\n"
+        )
+        print(f"Wrote {out_path}")
+        return 1
+    print(f"[OK] smoke gauntlet matrice conforme (NO_FAULT/HELD/ESCAPED)")
     print(f"Wrote {out_path}")
     return 0
 
