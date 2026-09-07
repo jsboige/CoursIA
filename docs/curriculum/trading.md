@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 240 |
+| Notebooks | 221 |
 | PRODUCTION | 0 |
-| BETA | 223 |
-| ALPHA | 17 |
+| BETA | 203 |
+| ALPHA | 18 |
 
-## ML/DataScienceWithAgents (54 notebooks)
+## ML/DataScienceWithAgents (56 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -76,13 +76,15 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 45 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
 | 46 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
 | 47 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
-| 48 | Lab 14 : Tracabilite de la consommation — le contrat C6… | BETA | Non |
-| 49 | Lab 18: Persistance d'etat de session - une… | BETA | Non |
-| 50 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
-| 51 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
-| 52 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
-| 53 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
-| 54 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
+| 48 | Lab 12b : Désignation séquentielle — le contrat C4,… | BETA | Non |
+| 49 | Lab 12c : Handoff entre agents — le contrat C5, le… | BETA | Non |
+| 50 | Lab 12d : Tracabilite de la consommation — le contrat… | BETA | Non |
+| 51 | Lab 12e: Persistance d'etat de session - une… | BETA | Non |
+| 52 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
+| 53 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
+| 54 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
+| 55 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
+| 56 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
 
 ## ML/ML.Net (23 notebooks)
 
@@ -112,12 +114,18 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 22 | ML-9 : Detection d'anomalies avec Randomized PCA | BETA | Oui |
 | 23 | TP : Prevision des ventes d'assurance | BETA | Oui |
 
-## Probas (2 notebooks)
+## Probas (1 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Infer-1b : Introduction a Infer.NET | BETA | Oui |
-| 2 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
+| 1 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
+
+## Probas/Applications (2 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | Percolation-Lean — le noyau fini de percolation, prouvé… | BETA | Oui |
+| 2 | Percolation supercritique : le géant au-dessus du seuil | ALPHA | Oui |
 
 ## Probas/DecisionTheory (26 notebooks)
 
@@ -150,7 +158,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 25 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
 | 26 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
 
-## Probas/Infer (20 notebooks)
+## Probas/Infer (21 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -165,15 +173,16 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 9 | Infer-17 — Filtre de Kalman : systèmes dynamiques… | BETA | Oui |
 | 10 | Infer-18 — Détection de Rupture (Change-Point) :… | BETA | Oui |
 | 11 | Infer-19 — Analyse de survie / fiabilite bayesienne :… | BETA | Oui |
-| 12 | Infer-2-Gaussian-Mixtures : Distributions Gaussiennes… | BETA | Oui |
-| 13 | Infer-20 — Quotients, fibres et recollement : ce qui… | BETA | Oui |
-| 14 | Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting… | BETA | Oui |
-| 15 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | BETA | Oui |
-| 16 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | BETA | Oui |
-| 17 | Infer-5-Causal-Inference : Inférence Causale et… | BETA | Oui |
-| 18 | Infer-7-Skills-IRT : Evaluation de Competences et… | BETA | Oui |
-| 19 | Infer-8-TrueSkill : Système de Classement et… | BETA | Oui |
-| 20 | Infer-9-Classification : Classification Bayesienne | BETA | Oui |
+| 12 | Infer-1b : Introduction a Infer.NET | BETA | Oui |
+| 13 | Infer-2-Gaussian-Mixtures : Distributions Gaussiennes… | BETA | Oui |
+| 14 | Infer-20 — Quotients, fibres et recollement : ce qui… | BETA | Oui |
+| 15 | Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting… | BETA | Oui |
+| 16 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | BETA | Oui |
+| 17 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | BETA | Oui |
+| 18 | Infer-5-Causal-Inference : Inférence Causale et… | BETA | Oui |
+| 19 | Infer-7-Skills-IRT : Evaluation de Competences et… | BETA | Oui |
+| 20 | Infer-8-TrueSkill : Système de Classement et… | BETA | Oui |
+| 21 | Infer-9-Classification : Classification Bayesienne | BETA | Oui |
 
 ## Probas/PyMC (19 notebooks)
 
@@ -205,57 +214,34 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |---|----------|----------|------------|
 | 1 | M16 — HAR asymétrique débiaisé : le signal survit-il… | BETA | Non |
 
-## QuantConnect/Python (47 notebooks)
+## QuantConnect/Python (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | QC-Py-01 : Configuration et Premier Backtest… | BETA | Non |
-| 2 | QC-Py-02 : QuantConnect Platform Fundamentals -… | BETA | Non |
-| 3 | QC-Py-03 - Data Management in QuantConnect | BETA | Non |
-| 4 | Objectifs d'Apprentissage | BETA | Non |
+| 2 | Objectifs d'Apprentissage | BETA | Non |
+| 3 | QC-Py-12b - Validité du backtest et signification… | BETA | Non |
+| 4 | QC-Py-18 - Feature Engineering pour Machine Learning… | ALPHA | Non |
 | 5 | Objectifs d'Apprentissage | BETA | Non |
-| 6 | QC-Py-06 : Options Trading dans QuantConnect | BETA | Non |
-| 7 | QC-Py-07 : Futures et Forex Trading dans QuantConnect | BETA | Non |
-| 8 | QC-Py-08 - Multi-Asset Portfolio Stratégies | BETA | Non |
-| 9 | QC-Py-09 : Types d'Ordres et Order Management dans… | BETA | Non |
-| 10 | Objectifs d'Apprentissage | BETA | Non |
-| 11 | QC-Py-11 - Indicateurs Techniques dans QuantConnect | BETA | Non |
-| 12 | QC-Py-12 - Backtesting et Analyse de Performance | BETA | Non |
-| 13 | QC-Py-12b - Validité du backtest et signification… | BETA | Non |
-| 14 | QC-Py-13 - Alpha Models et Algorithm Framework | BETA | Non |
-| 15 | QC-Py-14 - Portfolio Construction et Exécution Models | BETA | Non |
-| 16 | Objectifs d'Apprentissage | BETA | Non |
-| 17 | QC-Py-16 - Alternative Data dans QuantConnect | BETA | Non |
-| 18 | Objectifs d'Apprentissage | BETA | Non |
-| 19 | QC-Py-18 - Feature Engineering pour Machine Learning… | ALPHA | Non |
-| 20 | Objectifs d'Apprentissage | BETA | Non |
-| 21 | Objectifs d'Apprentissage | BETA | Non |
-| 22 | QC-Py-21 - Portfolio Optimization avec Machine Learning | BETA | Non |
-| 23 | Objectifs d'Apprentissage | BETA | Non |
-| 24 | QC-Py-23 — State Space Models pour Séries Temporelles… | BETA | Non |
-| 25 | QC-Py-23b - PatchTST et iTransformer pour Prevision… | BETA | Non |
-| 26 | QC-Py-24 - Modèles Génératifs pour Anomaly Detection et… | BETA | Non |
-| 27 | Objectifs d'Apprentissage | BETA | Non |
-| 28 | Objectifs d'Apprentissage | BETA | Non |
-| 29 | QC-Py-27 - Production Deployment | BETA | Non |
-| 30 | QC-Py-28 - Market Regime Detection | BETA | Non |
-| 31 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | BETA | Non |
-| 32 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | ALPHA | Non |
-| 33 | QC-Py-32 - Reinforcement Learning DQN pour le Trading | BETA | Non |
-| 34 | QC-Py-33 - Reinforcement Learning PPO pour le Trading | BETA | Non |
-| 35 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL pour le… | BETA | Non |
-| 36 | QC-Py-35 - Reinforcement Learning pour la Construction… | ALPHA | Non |
-| 37 | QC-Py-40 : Paper Trading Binance - Mean Reversion… | BETA | Non |
-| 38 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | BETA | Non |
-| 39 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC… | ALPHA | Non |
-| 40 | QC-Py-Cloud-02 : Classification de Texte et Sentiment… | ALPHA | Non |
-| 41 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | BETA | Non |
-| 42 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP) | ALPHA | Non |
-| 43 | Value Factor Z-Score — Sélection multi-facteurs… | BETA | Non |
-| 44 | Option Wheel — Le paradoxe du win-rate eleve | BETA | Non |
-| 45 | QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading | ALPHA | Non |
-| 46 | QC-Py-Cloud-14 — Dual Momentum : Asset Sélection… | BETA | Non |
-| 47 | Workflow : Téléchargement et gestion des datasets | ALPHA | Non |
+| 6 | QC-Py-23b - PatchTST et iTransformer pour Prevision… | BETA | Non |
+| 7 | QC-Py-23c — Modèles de fondation pour séries… | BETA | Non |
+| 8 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | BETA | Non |
+| 9 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | ALPHA | Non |
+| 10 | QC-Py-32 - Reinforcement Learning DQN pour le Trading | BETA | Non |
+| 11 | QC-Py-33 - Reinforcement Learning PPO pour le Trading | BETA | Non |
+| 12 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL pour le… | BETA | Non |
+| 13 | QC-Py-35 - Reinforcement Learning pour la Construction… | ALPHA | Non |
+| 14 | QC-Py-40 : Paper Trading Binance - Mean Reversion… | BETA | Non |
+| 15 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | BETA | Non |
+| 16 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC… | ALPHA | Non |
+| 17 | QC-Py-Cloud-02 : Classification de Texte et Sentiment… | ALPHA | Non |
+| 18 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | BETA | Non |
+| 19 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP) | ALPHA | Non |
+| 20 | Value Factor Z-Score — Sélection multi-facteurs… | BETA | Non |
+| 21 | Option Wheel — Le paradoxe du win-rate eleve | BETA | Non |
+| 22 | QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading | ALPHA | Non |
+| 23 | QC-Py-Cloud-14 — Dual Momentum : Asset Sélection… | BETA | Non |
+| 24 | Workflow : Téléchargement et gestion des datasets | ALPHA | Non |
 
 ## QuantConnect/kelly_lean (2 notebooks)
 
