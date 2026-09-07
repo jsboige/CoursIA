@@ -26,6 +26,26 @@ This is a measurement, not a gate: the script always exits 0 and reports
 ``not found`` for any marker absent from the log, so a Quarto log-format
 change degrades the report rather than breaking the build.
 
+Runner-park occupation covariate (dispatch ai-01 2026-09-07)
+------------------------------------------------------------
+The post-render amplification (2:56 vs 15:09) correlated with WHEN the run
+happened, not WHERE: the same runners show both regimes across days. The
+surviving covariate is park OCCUPATION (busy/online at job start, cf #14429
+19/22 busy during the slow window vs 0/28 during the fast one). The workflow
+samples it in a FIRST step (before the ~20 min render -- the count must
+describe the park when the job started, not when it finished)::
+
+    python scripts/quarto_render_timing.py --sample-occupation occupation.json
+
+then the report step merges it into the table and prints a one-line
+machine-readable record (greppable across >=6 runs for the two regressions:
+runner name vs occupation)::
+
+    #14597-covariates: runner=...,busy=...,online=...,total=...,doc_s=...,post_s=...,total_s=...
+
+Both paths degrade, never gate: an HTTP 403 or a missing occupation file
+reports ``not sampled``/``na`` and the build stays green.
+
 Local usage
 -----------
 The same format is produced outside CI by::
@@ -41,14 +61,19 @@ options).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
-from datetime import datetime
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
 
 TS_RE = re.compile(r"^(\d{2}:\d{2}:\d{2})\s?")
 DOC_RE = re.compile(r"\[\s*(\d+)\s*/\s*(\d+)\s*\]")
 OUTPUT_RE = re.compile(r"Output created:\s*(\S+)")
+LINK_NEXT_RE = re.compile(r'<([^>]+)>;\s*rel="next"')
+MAX_RUNNER_PAGES = 10
 
 
 def _parse(ts: str) -> datetime:
@@ -117,7 +142,94 @@ def analyse(raw: str) -> dict[str, object]:
     }
 
 
-def render_report(r: dict[str, object]) -> str:
+def parse_runners_pages(pages: list[dict]) -> dict[str, int]:
+    """Count total/online/busy across ``/actions/runners`` API pages."""
+    runners = [r for page in pages for r in page.get("runners", [])]
+    return {
+        "total": len(runners),
+        "online": sum(1 for r in runners if r.get("status") == "online"),
+        "busy": sum(1 for r in runners if r.get("busy") is True),
+    }
+
+
+def sample_occupation(out_path: str) -> int:
+    """Fetch the repo's self-hosted runner park now; write counts to OUT.
+
+    Measurement, never a gate: any failure (missing token, HTTP error, bad
+    JSON) still writes a JSON file carrying the error and exits 0, so the
+    report step degrades to ``not sampled`` instead of redding the build.
+    """
+    api = os.environ.get("GITHUB_API_URL", "https://api.github.com")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    # Listing self-hosted runners is an admin-scoped endpoint: GITHUB_TOKEN
+    # gets a 403 there even with actions:read (confirmed on the first
+    # instrumented run, 34086099812). The repo convention is the read-only
+    # RUNNERS_READ_AT secret (cf scripts/ci/check_runner_starvation.py and
+    # linux-runner-starvation-advisory.yml) -- prefer it, keep GITHUB_TOKEN
+    # as a fallback so local/manual runs still work with a plain token.
+    token = (os.environ.get("RUNNERS_READ_PAT")
+             or os.environ.get("GITHUB_TOKEN"))
+    sampled = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    result: dict[str, object] = {"sampled_at": sampled}
+    if repo and token:
+        url = f"{api}/repos/{repo}/actions/runners?per_page=100"
+        pages: list[dict] = []
+        try:
+            for _ in range(MAX_RUNNER_PAGES):
+                req = urllib.request.Request(
+                    url, headers={"Authorization": f"Bearer {token}",
+                                  "Accept": "application/vnd.github+json"})
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    pages.append(json.loads(resp.read().decode("utf-8")))
+                nxt = LINK_NEXT_RE.search(resp.headers.get("Link", "") or "")
+                if not nxt:
+                    break
+                url = nxt.group(1)
+            result.update(parse_runners_pages(pages))
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            result["error"] = str(exc)
+    else:
+        result["error"] = "GITHUB_REPOSITORY/RUNNERS_READ_PAT/GITHUB_TOKEN not set"
+    try:
+        with open(out_path, "w", encoding="utf-8") as fh:
+            json.dump(result, fh)
+        # One diagnostic line in the job log: the first instrumented run
+        # failed silently (occupation.json was only ever read at the END of
+        # the job, 20 min later) -- the cause was invisible in the log.
+        if "error" in result:
+            print(f"[occupation] not sampled: {result['error']}")
+        else:
+            print(f"[occupation] busy={result['busy']} online={result['online']} "
+                  f"total={result['total']} at {result['sampled_at']}")
+    except OSError as exc:
+        print(f"quarto_render_timing: cannot write {out_path}: {exc}", file=sys.stderr)
+    return 0
+
+
+def load_occupation(path: str | None) -> dict[str, object] | None:
+    """Read an occupation.json written by --sample-occupation; None if unusable."""
+    if not path:
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _secs(a: datetime | None, b: datetime | None) -> int | None:
+    if a is None or b is None:
+        return None
+    delta = (b - a).total_seconds()
+    if delta < 0:  # same midnight-wrap rule as _fmt
+        delta += 86400
+    return int(round(delta))
+
+
+def render_report(r: dict[str, object],
+                  occupation: dict[str, object] | None = None,
+                  runner: str | None = None) -> str:
     first = r["first"]
     last_doc = r["last_doc"]
     output_created = r["output_created"]
@@ -138,6 +250,13 @@ def render_report(r: dict[str, object]) -> str:
         f"| post-render (silent) | {phase(last_doc[0] if last_doc else None, output_created[0] if output_created else None)} |",
         f"| total to `Output created` | {phase(first, output_created[0] if output_created else None)} |",
     ]
+    if occupation and "busy" in occupation:
+        lines.append(f"| park busy/online at start "
+                     f"| {occupation['busy']}/{occupation['online']} (sampled {occupation.get('sampled_at', '?')}) |")
+    else:
+        lines.append("| park busy/online at start | not sampled |")
+    if runner:
+        lines.append(f"| runner | {runner} |")
     if last_doc:
         lines.append("")
         lines.append(f"last document line: `{last_doc[1]}`")
@@ -146,12 +265,46 @@ def render_report(r: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def covariates_line(r: dict[str, object],
+                    occupation: dict[str, object] | None,
+                    runner: str | None) -> str:
+    """One greppable record so >=6 runs can be harvested from job logs and
+    regressed on BOTH covariates (runner identity vs park occupation)."""
+    def or_na(value):
+        return value if value is not None else "na"
+    doc = _secs(r["first"], r["last_doc"][0] if r["last_doc"] else None)
+    post = _secs(r["last_doc"][0] if r["last_doc"] else None,
+                 r["output_created"][0] if r["output_created"] else None)
+    total = _secs(r["first"], r["output_created"][0] if r["output_created"] else None)
+    runner = (runner or "na").replace(",", ";").replace(" ", "-")
+    if occupation and "busy" in occupation:
+        busy, online, tot = occupation["busy"], occupation["online"], occupation["total"]
+    else:
+        busy = online = tot = "na"
+    return (f"#14597-covariates: runner={runner},busy={busy},online={online},"
+            f"total={tot},doc_s={or_na(doc)},post_s={or_na(post)},total_s={or_na(total)}")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Report doc-phase vs post-render timings from a "
                     "timestamped `quarto render` log (measurement, never a gate).")
-    ap.add_argument("log", help="path to the timestamped render log")
+    ap.add_argument("log", nargs="?", help="path to the timestamped render log")
+    ap.add_argument("--sample-occupation", metavar="OUT",
+                    help="instead of reporting, query the repo runner park now "
+                         "and write busy/online counts to OUT (early workflow step)")
+    ap.add_argument("--occupation", metavar="PATH",
+                    help="occupation.json written by --sample-occupation "
+                         "(merged into the report as the park covariate)")
+    ap.add_argument("--runner-name", default=os.environ.get("RUNNER_NAME"),
+                    help="runner identity for the covariate record "
+                         "(defaults to $RUNNER_NAME)")
     args = ap.parse_args(argv)
+
+    if args.sample_occupation:
+        return sample_occupation(args.sample_occupation)
+    if not args.log:
+        ap.error("log path required unless --sample-occupation is given")
 
     try:
         with open(args.log, "rb") as fh:
@@ -160,8 +313,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"quarto_render_timing: cannot read {args.log}: {exc}", file=sys.stderr)
         return 0
 
-    report = render_report(analyse(raw))
+    occupation = load_occupation(args.occupation)
+    r = analyse(raw)
+    report = render_report(r, occupation=occupation, runner=args.runner_name)
     print(report)
+    print(covariates_line(r, occupation, args.runner_name))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as fh:
