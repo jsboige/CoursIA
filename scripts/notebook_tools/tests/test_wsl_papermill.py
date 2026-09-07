@@ -10,8 +10,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from wsl_papermill import (
+    _declared_venv_from_kernel_json,
     _default_mode,
+    _normalize_venv,
     _validate_output,
+    _venv_from_interpreter,
+    _venv_mismatch_message,
     batch_execute,
     check_env,
     check_env_native,
@@ -203,6 +207,95 @@ class TestCheckEnvDispatch:
 
     def test_invalid_mode(self):
         assert check_env("invalid") is False
+
+
+# --- venv derivation from kernelspec (#14908) ---
+
+
+class TestVenvFromInterpreter:
+    def test_venv_python3(self):
+        assert _venv_from_interpreter("/home/jesse/.lean4-venv/bin/python3") == "/home/jesse/.lean4-venv"
+
+    def test_venv_python(self):
+        assert _venv_from_interpreter("/home/jesse/x/bin/python") == "/home/jesse/x"
+
+    def test_system_python_none(self):
+        assert _venv_from_interpreter("/usr/bin/python3") is None
+
+    def test_bin_python_none(self):
+        assert _venv_from_interpreter("/bin/python3") is None
+
+    def test_bare_python_none(self):
+        assert _venv_from_interpreter("python3") is None
+
+    def test_none(self):
+        assert _venv_from_interpreter(None) is None
+
+
+class TestDeclaredVenvFromKernelJson:
+    def test_extracts_argv_interpreter(self):
+        kj = {"argv": ["/home/jesse/x/bin/python3", "-m", "ipykernel_launcher"]}
+        assert _declared_venv_from_kernel_json(kj) == "/home/jesse/x"
+
+    def test_bare_python_returns_none(self):
+        assert _declared_venv_from_kernel_json({"argv": ["python", "-m", "x"]}) is None
+
+    def test_empty_returns_none(self):
+        assert _declared_venv_from_kernel_json({}) is None
+
+    def test_none_returns_none(self):
+        assert _declared_venv_from_kernel_json(None) is None
+
+
+class TestNormalizeVenv:
+    def test_expands_tilde(self):
+        assert _normalize_venv("~/coursia-wsl", "/home/jesse") == "/home/jesse/coursia-wsl"
+
+    def test_strips_trailing_slash(self):
+        assert _normalize_venv("/home/jesse/coursia-wsl/", "/home/jesse") == "/home/jesse/coursia-wsl"
+
+    def test_empty_none(self):
+        assert _normalize_venv(None) == ""
+
+
+class TestVenvMismatchMessage:
+    def test_mismatch_returns_message(self):
+        msg = _venv_mismatch_message("python3-wsl", "~/coursia-wsl", "/home/jesse/.lean4-venv", "/home/jesse")
+        assert msg is not None and ".lean4-venv" in msg and "--venv" in msg
+
+    def test_same_venv_no_message(self):
+        assert _venv_mismatch_message("k", "~/coursia-wsl", "/home/jesse/coursia-wsl", "/home/jesse") is None
+
+    def test_no_declared_no_message(self):
+        assert _venv_mismatch_message("k", "~/coursia-wsl", None, "/home/jesse") is None
+
+
+class TestExecuteNotebookWslVenv:
+    def _write_nb(self, tmp_path):
+        nb = {"cells": [], "nbformat": 4}
+        p = tmp_path / "t.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        return p
+
+    def test_warns_on_declared_mismatch(self, tmp_path, capsys):
+        p = self._write_nb(tmp_path)
+        kj = {"argv": ["/home/jesse/.lean4-venv/bin/python3", "-m", "ipykernel_launcher"]}
+        with patch("wsl_papermill._find_kernel_json_wsl", return_value=kj), \
+             patch("wsl_papermill._wsl_home", return_value="/home/jesse"), \
+             patch("wsl_papermill.run_wsl", return_value=(0, "", "")):
+            rc = execute_notebook_wsl(str(p), kernel="python3-wsl")
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert ".lean4-venv" in out  # divergence is printed, not silent
+
+    def test_default_venv_unchanged(self, tmp_path, capsys):
+        p = self._write_nb(tmp_path)
+        with patch("wsl_papermill._find_kernel_json_wsl", return_value=None), \
+             patch("wsl_papermill.run_wsl", return_value=(0, "", "")):
+            rc = execute_notebook_wsl(str(p), kernel="python3-wsl")
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "~/coursia-wsl" in out  # default venv in use, no silent divergence
 
 
 # --- batch_execute mode propagation ---

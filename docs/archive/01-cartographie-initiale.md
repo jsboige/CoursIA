@@ -29,7 +29,7 @@ Voici une liste des principaux thèmes couverts, avec des liens vers les contenu
 
 ### 🔍 Autres thèmes
 - **Algorithmes de recherche :** Résolution de problèmes (Sudoku) et optimisation ([génétique](../../MyIA.AI.Notebooks/Search/GeneticSharp-EdgeDetection.ipynb)).
-- **Probabilités :** Introduction à l'inférence probabiliste ([Infer-101.ipynb](../../MyIA.AI.Notebooks/Probas/Infer-101.ipynb)).
+- **Probabilités :** Introduction à l'inférence probabiliste ([Infer-1b-Premiers-Modeles.ipynb](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb)).
 
 ## 3. Évaluation et analyse
 
