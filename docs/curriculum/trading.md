@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 221 |
+| Notebooks | 222 |
 | PRODUCTION | 0 |
-| BETA | 203 |
+| BETA | 204 |
 | ALPHA | 18 |
 
-## ML/DataScienceWithAgents (56 notebooks)
+## ML/DataScienceWithAgents (57 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -63,28 +63,29 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 32 | Représentations contrastives modernes — du skip-gram… | BETA | Oui |
 | 33 | 4.1 — Le neurone convolutif from scratch : kernel… | BETA | Oui |
 | 34 | 4.2 — ConvNet profonde : pourquoi les résiduelles | BETA | Non |
-| 35 | 4.3 — Transfer learning : réutiliser un ResNet18… | BETA | Non |
-| 36 | Lab 1 - Les Bases de la Data Science en Python | BETA | Oui |
-| 37 | Lab 2 - Analyser un Appel d'Offre avec l'IA | BETA | Non |
-| 38 | Lab 3 - Pré-qualifier des Candidats avec l'IA | BETA | Non |
-| 39 | Lab 4 - Le Nettoyage de Données avec Pandas | BETA | Oui |
-| 40 | Lab 5 - De la Visualisation au Machine Learning | BETA | Oui |
-| 41 | Lab 6 - Anatomie de votre premier Agent d'IA | ALPHA | Non |
-| 42 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
-| 43 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
-| 44 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
-| 45 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
-| 46 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
-| 47 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
-| 48 | Lab 12b : Désignation séquentielle — le contrat C4,… | BETA | Non |
-| 49 | Lab 12c : Handoff entre agents — le contrat C5, le… | BETA | Non |
-| 50 | Lab 12d : Tracabilite de la consommation — le contrat… | BETA | Non |
-| 51 | Lab 12e: Persistance d'etat de session - une… | BETA | Non |
-| 52 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
-| 53 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
-| 54 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
-| 55 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
-| 56 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
+| 35 | Le gradient qui s'évanouit, le gradient qui survit :… | BETA | Oui |
+| 36 | 4.3 — Transfer learning : réutiliser un ResNet18… | BETA | Non |
+| 37 | Lab 1 - Les Bases de la Data Science en Python | BETA | Oui |
+| 38 | Lab 2 - Analyser un Appel d'Offre avec l'IA | BETA | Non |
+| 39 | Lab 3 - Pré-qualifier des Candidats avec l'IA | BETA | Non |
+| 40 | Lab 4 - Le Nettoyage de Données avec Pandas | BETA | Oui |
+| 41 | Lab 5 - De la Visualisation au Machine Learning | BETA | Oui |
+| 42 | Lab 6 - Anatomie de votre premier Agent d'IA | ALPHA | Non |
+| 43 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
+| 44 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
+| 45 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
+| 46 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
+| 47 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
+| 48 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
+| 49 | Lab 12b : Désignation séquentielle — le contrat C4,… | BETA | Non |
+| 50 | Lab 12c : Handoff entre agents — le contrat C5, le… | BETA | Non |
+| 51 | Lab 12d : Tracabilite de la consommation — le contrat… | BETA | Non |
+| 52 | Lab 12e: Persistance d'etat de session - une… | BETA | Non |
+| 53 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
+| 54 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
+| 55 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
+| 56 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
+| 57 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
 
 ## ML/ML.Net (23 notebooks)
 

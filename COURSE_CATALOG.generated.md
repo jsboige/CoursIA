@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-09-07 03:03
-Total notebooks: 1123
+Generated: 2026-09-07 08:37
+Total notebooks: 1124
 
 ## Status Summary
 
-- **READY**: 951
+- **READY**: 952
 - **DEMO**: 170
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,7 +13,7 @@ Total notebooks: 1123
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 991
+- **BETA**: 992
 - **TEMPLATE**: 4
 - **ALPHA**: 57
 - **DRAFT**: 71
@@ -393,7 +393,7 @@ Total notebooks: 1123
 | 147 | MGS-30 : Scatter Search MGS contre son ombre — la… | .NET (C#) | READY | DRAFT | 45min | po-2025 |
 | 148 | MGS-31 : Synthèse croisée MGS contre mealpy — neuf… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
 
-### ML (80 notebooks) — DEMO:7, READY:73 | ALPHA:5, BETA:74, DRAFT:1
+### ML (81 notebooks) — DEMO:7, READY:74 | ALPHA:5, BETA:75, DRAFT:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -432,51 +432,52 @@ Total notebooks: 1123
 | 33 | Représentations contrastives modernes — du… | Python 3 | READY | BETA | 30min | po-2023 |
 | 34 | 4.1 — Le neurone convolutif from scratch : kernel… | Python 3 | READY | BETA | 30min | po-2023 |
 | 35 | 4.2 — ConvNet profonde : pourquoi les résiduelles | Python 3 | READY | BETA | 45min | po-2023 |
-| 36 | 4.3 — Transfer learning : réutiliser un ResNet18… | Python 3 | READY | BETA | 45min | po-2023 |
-| 37 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | BETA | 30min | po-2023 |
-| 38 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 39 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
-| 40 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
-| 41 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
-| 42 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 30min | po-2023 |
-| 43 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | BETA | 30min | po-2023 |
-| 44 | Lab 8: Introduction au Framework ADK et… | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 45 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
-| 46 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
-| 47 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | ALPHA | 45min | po-2023 |
-| 48 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 45min | po-2023 |
-| 49 | Lab 12b : Désignation séquentielle — le contrat… | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 50 | Lab 12c : Handoff entre agents — le contrat C5, le… | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 51 | Lab 12d : Tracabilite de la consommation — le… | Python 3 | READY | BETA | 30min | po-2023 |
-| 52 | Lab 12e: Persistance d'etat de session - une… | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2023 |
-| 53 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | Python 3 | READY | BETA | 30min | po-2023 |
-| 54 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 55 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
-| 56 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 57 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | ALPHA | 45min | po-2023 |
-| 58 | ML-1 (Python) : Introduction au Machine Learning… | Python 3 | READY | BETA | 30min | po-2023 |
-| 59 | ML-1 : Introduction au Machine Learning avec… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 60 | ML-10 (Python) : l'illusion de progression en… | Python 3 | READY | BETA | 30min | po-2023 |
-| 61 | ML-11 : le Matrix Profile multidimensionnel, une… | Python 3 | READY | BETA | 45min | po-2023 |
-| 62 | ML-2 : Préparation des données et ingénierie des… | Python 3 | READY | BETA | 30min | po-2023 |
-| 63 | ML-2 : Préparation des données et ingénierie des… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 64 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 65 | ML-3 (Python) : Entraînement et AutoML | Python 3 | READY | BETA | 30min | po-2023 |
-| 66 | ML-4 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | BETA | 30min | po-2023 |
-| 67 | ML-4 : Evaluation des modèles | .NET (C#) | READY | BETA | 2h+ | po-2023 |
-| 68 | ML-4b : Validité statistique des comparaisons de… | Python 3 | READY | BETA | 30min | po-2023 |
-| 69 | ML-5 (Python) : Prévision de séries temporelles… | Python 3 | READY | BETA | 30min | po-2023 |
-| 70 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 71 | ML-5b (Python) : Séries temporelles classiques —… | Python 3 | READY | BETA | 30min | po-2023 |
-| 72 | ML-6 (Python) : Intégration de modèles ONNX… | Python (coursia-ml-training) | READY | BETA | 30min | po-2023 |
-| 73 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 74 | ML-7 (Python) : Systèmes de recommandation par… | Python 3 | READY | BETA | 30min | po-2023 |
-| 75 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 76 | ML-8 (Python) : Clustering non-supervisé avec… | Python 3 | READY | BETA | 30min | po-2023 |
-| 77 | ML-8 : Clustering non-supervise avec K-Means | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 78 | ML-9 (Python) : Détection d'anomalies par PCA… | Python 3 | READY | BETA | 30min | po-2023 |
-| 79 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 80 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 36 | Le gradient qui s'évanouit, le gradient qui survit… | Lean 4 (WSL) | READY | BETA | 30min | po-2023 |
+| 37 | 4.3 — Transfer learning : réutiliser un ResNet18… | Python 3 | READY | BETA | 45min | po-2023 |
+| 38 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | BETA | 30min | po-2023 |
+| 39 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 40 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
+| 41 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
+| 42 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
+| 43 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 30min | po-2023 |
+| 44 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | BETA | 30min | po-2023 |
+| 45 | Lab 8: Introduction au Framework ADK et… | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 46 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
+| 47 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
+| 48 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | ALPHA | 45min | po-2023 |
+| 49 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 45min | po-2023 |
+| 50 | Lab 12b : Désignation séquentielle — le contrat… | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 51 | Lab 12c : Handoff entre agents — le contrat C5, le… | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 52 | Lab 12d : Tracabilite de la consommation — le… | Python 3 | READY | BETA | 30min | po-2023 |
+| 53 | Lab 12e: Persistance d'etat de session - une… | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2023 |
+| 54 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | Python 3 | READY | BETA | 30min | po-2023 |
+| 55 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | Python 3 | READY | ALPHA | 30min | po-2023 |
+| 56 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
+| 57 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | ALPHA | 30min | po-2023 |
+| 58 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | ALPHA | 45min | po-2023 |
+| 59 | ML-1 (Python) : Introduction au Machine Learning… | Python 3 | READY | BETA | 30min | po-2023 |
+| 60 | ML-1 : Introduction au Machine Learning avec… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 61 | ML-10 (Python) : l'illusion de progression en… | Python 3 | READY | BETA | 30min | po-2023 |
+| 62 | ML-11 : le Matrix Profile multidimensionnel, une… | Python 3 | READY | BETA | 45min | po-2023 |
+| 63 | ML-2 : Préparation des données et ingénierie des… | Python 3 | READY | BETA | 30min | po-2023 |
+| 64 | ML-2 : Préparation des données et ingénierie des… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 65 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 66 | ML-3 (Python) : Entraînement et AutoML | Python 3 | READY | BETA | 30min | po-2023 |
+| 67 | ML-4 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | BETA | 30min | po-2023 |
+| 68 | ML-4 : Evaluation des modèles | .NET (C#) | READY | BETA | 2h+ | po-2023 |
+| 69 | ML-4b : Validité statistique des comparaisons de… | Python 3 | READY | BETA | 30min | po-2023 |
+| 70 | ML-5 (Python) : Prévision de séries temporelles… | Python 3 | READY | BETA | 30min | po-2023 |
+| 71 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 72 | ML-5b (Python) : Séries temporelles classiques —… | Python 3 | READY | BETA | 30min | po-2023 |
+| 73 | ML-6 (Python) : Intégration de modèles ONNX… | Python (coursia-ml-training) | READY | BETA | 30min | po-2023 |
+| 74 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 75 | ML-7 (Python) : Systèmes de recommandation par… | Python 3 | READY | BETA | 30min | po-2023 |
+| 76 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 77 | ML-8 (Python) : Clustering non-supervisé avec… | Python 3 | READY | BETA | 30min | po-2023 |
+| 78 | ML-8 : Clustering non-supervise avec K-Means | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 79 | ML-9 (Python) : Détection d'anomalies par PCA… | Python 3 | READY | BETA | 30min | po-2023 |
+| 80 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 81 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
 ### SymbolicAI (263 notebooks) — DEMO:8, READY:255 | ALPHA:6, BETA:253, DRAFT:4
 
@@ -1193,4 +1194,4 @@ Total notebooks: 1123
 - **GPU**: 126 notebooks
 - **Cloud**: 114 notebooks
 - **WSL**: 76 notebooks
-- **Local**: 708 notebooks
+- **Local**: 709 notebooks
