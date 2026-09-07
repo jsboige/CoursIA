@@ -67,6 +67,11 @@ on:
       # its own subject (#10416 pattern, flagged A2 by Hermes on #11845).
       # Mirrored under pull_request: below.
       - '.github/workflows/pr-gate-rerun.yml'
+      # #15058 ADK contract tests (C4-C7): the measurement organ of #13572
+      # lives in Track2-GoogleADK/utils but ran in no CI job -- a contract
+      # change could land un-rattled. Wire the whole track subtree (the
+      # contracts are also exercised by labs). Mirrored under pull_request:.
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
       # #12704 self-hosted policy: fork PR tokens cannot publish the fast-lane
       # check-runs. Keep one ordinary CI surface that executes the scanner for
       # every workflow change, including workflow-only PRs from forks.
@@ -96,6 +101,8 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
+      # #15058 ADK contract tests (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
       - '.github/workflows/**'
   workflow_dispatch:
@@ -180,6 +187,17 @@ jobs:
           # them at collection time (famille 5 de #14615). The test guards with
           # importorskip, but wiring it into this run means running it for real.
           pip install rapidfuzz unidecode openpyxl
+          # #15058 Track2-GoogleADK contract tests (C4-C7): the measurement
+          # organ of #13572. The two pins are the compatibility chain verified
+          # 2026-09-03 in Track2-GoogleADK/requirements.txt (#13948). Both are
+          # needed AT COLLECTION: test_adk_runtime_contracts.py imports
+          # google.adk, and utils/adk_runtime.py imports
+          # google.adk.models.lite_llm.LiteLlm, which imports litellm at module
+          # level. Without them the suite dies as a collection error -- the
+          # exact failure mode this workflow exists to prevent (issue #15058).
+          # pydantic-settings: config/providers.py imports BaseSettings at
+          # module level (same collection-time requirement).
+          pip install litellm==1.93.2 google-adk==2.8.0 pydantic-settings
 
       - name: Run tests
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
@@ -227,6 +245,7 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
+            MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             GradeBookApp \
@@ -253,6 +272,27 @@ jobs:
             exit 1
           fi
           echo "OK: $N tests collected (floor=$AUDIT_TESTS_FLOOR)."
+
+      - name: ADK contract tests collection floor (52)
+        # Companion guard of the #15058 re-cabling, same two-signal semantics
+        # as the audit floor above: 0 collected = collection crash (import
+        # error masking the whole suite), below floor = coverage regression.
+        # The organ that does not collect cannot go red (#15058).
+        if: always()
+        env:
+          ADK_CONTRACTS_FLOOR: 52
+        run: |
+          N=$(python -m pytest MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then
+            echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."
+            exit 1
+          fi
+          if [ "$N" -lt "$ADK_CONTRACTS_FLOOR" ]; then
+            echo "::error::Coverage regression: $N tests collected, floor=$ADK_CONTRACTS_FLOOR."
+            echo "::error::If the drop is intentional, lower ADK_CONTRACTS_FLOOR in the same PR."
+            exit 1
+          fi
+          echo "OK: $N tests collected (floor=$ADK_CONTRACTS_FLOOR)."
       # CI-EXCLUDED — testpaths pytest.ini non couverts par ce run, garde #10903.
       # Retirer la ligne du répertoire câblé (et l'ajouter au run ci-dessus) quand
       # l'herméticité est démontrée sur runner nu. scripts/audit/tests a été
