@@ -783,6 +783,512 @@ theorem hashlife_correct_margin_of_period (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_period _ (canonical_sortDedup _) hT0 hper hdiv t)
 
+/-! ## Translation invariance of the reconstruction (tranche 3, step 7, brick 1)
+
+Step-7 scoping identifies the missing brick for the **spaceship** class
+(`evolve p g = shift v g`, drift + period): the reconstruction
+`gridToMacroCellWithOffset` is **invariant under translation** — translating the
+grid shifts the frame offset but leaves the MacroCell (the quadtree) unchanged.
+This is what reduces a spaceship trajectory to its `p` phases: every
+`evolve t g` is a `shift` of some phase, and the `shift` vanishes when entering
+the reconstruction. The chain: translated bounding-box bounds
+(`gridRowMin_shift` etc., via attainment witnesses and `mem_shift`), then the
+frame follows (`gridFrame_shift`: offset translated, level unchanged since the
+spans are invariant), then the quadtree follows (`buildFromGrid_shift`, by
+induction on the level via `elem`/`mem_shift`), hence the reconstructed
+MacroCell is the same (`gridToMacroCellWithOffset_shift`). -/
+
+/-- The image of a live cell is live in the translated grid: direct form
+    (the ← direction of `mem_shift`), explicit witness. -/
+theorem mem_shift_image (v : Int × Int) (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    (p.1 + v.1, p.2 + v.2) ∈ shift v g := by
+  rw [mem_shift]
+  have heq : (p.1 + v.1 - v.1, p.2 + v.2 - v.2) = p := by ext <;> omega
+  rw [heq]; exact hp
+
+/-- Translation preserves non-emptiness: the image of a live cell witnesses
+    that `shift v g` is not empty. -/
+theorem shift_ne_nil (v : Int × Int) (g : Grid) (hg : g ≠ []) : shift v g ≠ [] := by
+  obtain ⟨p, hp⟩ : ∃ p, p ∈ g := by
+    cases g with
+    | nil => exact absurd rfl hg
+    | cons p ps => exact ⟨p, by simp⟩
+  intro hnil
+  have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+  rw [hnil] at himg
+  exact absurd himg (by simp)
+
+/-- **Generic helper: a `foldl` of `max` (via `proj`) is *attained*** — the
+    result is either the seed `acc` or the projection of a list element.
+    Twin of `foldl_proj_min_attained` (MacroCell L572) for the max, with the
+    `le_total` branches swapped. -/
+theorem foldl_proj_max_attained (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
+    ps.foldl (fun m q => max m (proj q)) acc = acc ∨
+    ∃ p ∈ ps, ps.foldl (fun m q => max m (proj q)) acc = proj p := by
+  induction ps generalizing acc with
+  | nil => left; rfl
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    rcases ih (max acc (proj q)) with h | ⟨p, hp, hval⟩
+    · rcases le_total acc (proj q) with hle | hle
+      · right; exact ⟨q, by simp, by rw [h]; omega⟩
+      · left; rw [h]; omega
+    · right; exact ⟨p, by simp [hp], hval⟩
+
+/-- The row maximum of a non-empty grid is *attained* by a live cell.
+    Row twin of `gridRowMax_mem`'s column siblings of `gridRowMin_mem`
+    (MacroCell L590). -/
+theorem gridRowMax_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.1 = gridRowMax g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMax]
+    rcases foldl_proj_max_attained ps (·.1) p₀.1 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
+/-- The column minimum of a non-empty grid is *attained* by a live cell.
+    Column twin of `gridRowMin_mem`. -/
+theorem gridColMin_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.2 = gridColMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMin]
+    rcases foldl_proj_min_attained ps (·.2) p₀.2 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
+/-- The column maximum of a non-empty grid is *attained* by a live cell.
+    Column twin of `gridRowMin_mem`. -/
+theorem gridColMax_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.2 = gridColMax g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMax]
+    rcases foldl_proj_max_attained ps (·.2) p₀.2 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
+/-- The bounding box follows the translation: row minimum translated by
+    `v.1`. Each direction closes by the attainment witness on one side
+    (`gridRowMin_mem`), the global bound on the other
+    (`gridRowMin_lower_bound`, step 5). -/
+theorem gridRowMin_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridRowMin (shift v g) = gridRowMin g + v.1 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · obtain ⟨p, hp, hval⟩ := gridRowMin_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := gridRowMin_le_of_mem _ _ himg
+    omega
+  · apply gridRowMin_lower_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := gridRowMin_le_of_mem g _ hpre
+    omega
+
+/-- The bounding box follows the translation: row maximum translated by
+    `v.1`. Mirror of `gridRowMin_shift` with `gridRowMax_mem` (attainment)
+    and `gridRowMax_upper_bound` (bound, step 5). -/
+theorem gridRowMax_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridRowMax (shift v g) = gridRowMax g + v.1 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · apply gridRowMax_upper_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := le_gridRowMax_of_mem g _ hpre
+    omega
+  · obtain ⟨p, hp, hval⟩ := gridRowMax_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := le_gridRowMax_of_mem _ _ himg
+    omega
+
+/-- The bounding box follows the translation: column minimum translated by
+    `v.2`. Column mirror of `gridRowMin_shift`. -/
+theorem gridColMin_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridColMin (shift v g) = gridColMin g + v.2 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · obtain ⟨p, hp, hval⟩ := gridColMin_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := gridColMin_le_of_mem _ _ himg
+    omega
+  · apply gridColMin_lower_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := gridColMin_le_of_mem g _ hpre
+    omega
+
+/-- The bounding box follows the translation: column maximum translated by
+    `v.2`. Column mirror of `gridRowMax_shift`. -/
+theorem gridColMax_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridColMax (shift v g) = gridColMax g + v.2 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · apply gridColMax_upper_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := le_gridColMax_of_mem g _ hpre
+    omega
+  · obtain ⟨p, hp, hval⟩ := gridColMax_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := le_gridColMax_of_mem _ _ himg
+    omega
+
+/-- The leaf test of `buildFromGrid` is translation-invariant: `elem` at the
+    translated point of the translated grid equals `elem` at the original
+    point of the original grid. Both directions of `mem_shift` close the
+    mixed cases. -/
+theorem elem_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) :
+    (shift v g).elem (r0 + v.1, c0 + v.2) = g.elem (r0, c0) := by
+  by_cases h : (r0, c0) ∈ g
+  · rw [List.elem_iff.mpr h]
+    exact List.elem_iff.mpr (mem_shift_image v g _ h)
+  · have hf : g.elem (r0, c0) = false := by
+      rcases hbool : g.elem (r0, c0) with
+      | true => exact absurd (List.elem_iff.mp hbool) h
+      | false => rfl
+    have hf' : (shift v g).elem (r0 + v.1, c0 + v.2) = false := by
+      rcases hbool : (shift v g).elem (r0 + v.1, c0 + v.2) with
+      | true =>
+        exact absurd (fun hh => h (by
+          have hpre := (mem_shift v g _).mp (List.elem_iff.mp hbool)
+          have heq : (r0 + v.1 - v.1, c0 + v.2 - v.2) = (r0, c0) := by ext <;> omega
+          rw [heq] at hpre
+          exact hpre)) (fun hn => hh hn)
+      | false => rfl
+    rw [hf', hf]
+
+/-- **The quadtree follows the translation**: rebuilding the translated grid
+    from the translated origin gives back the original quadtree. Induction on
+    the level — leaf by `elem_shift`, node by IH on the four quadrants (the
+    quadrant offsets `(r0 + v.1) + 2^n` re-associate to `(r0 + 2^n) + v.1` by
+    `ring` on the casts). -/
+theorem buildFromGrid_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) (lvl : Nat) :
+    MacroCell.buildFromGrid (shift v g) (r0 + v.1) (c0 + v.2) lvl
+      = MacroCell.buildFromGrid g r0 c0 lvl := by
+  induction lvl generalizing r0 c0 with
+  | zero =>
+    simp only [MacroCell.buildFromGrid]
+    rw [elem_shift]
+  | succ n ih =>
+    simp only [MacroCell.buildFromGrid]
+    rw [show (c0 : Int) + v.2 + (2 ^ n : Nat) = c0 + (2 ^ n : Nat) + v.2 from by
+        push_cast; ring,
+        show (r0 : Int) + v.1 + (2 ^ n : Nat) = r0 + (2 ^ n : Nat) + v.1 from by
+        push_cast; ring,
+        ih r0 c0, ih r0 (c0 + (2 ^ n : Nat)),
+        ih (r0 + (2 ^ n : Nat)) c0, ih (r0 + (2 ^ n : Nat)) (c0 + (2 ^ n : Nat))]
+
+/-- **The frame follows the translation**: `gridFrame` of the translated grid
+    equals the original frame with translated offset and the **same level** —
+    the spans `(rMax + v) - (rMin + v)` are invariant, so height, width and
+    `ceilLog2` coincide. -/
+theorem gridFrame_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) (lvl : Nat)
+    (hframe : gridFrame g = ((r0, c0), lvl)) (hne : g ≠ []) :
+    gridFrame (shift v g) = ((r0 + v.1, c0 + v.2), lvl) := by
+  cases g with
+  | nil => exact absurd rfl hne
+  | cons p₀ ps =>
+    have hne' : p₀ :: ps ≠ [] := List.cons_ne_nil p₀ ps
+    have hsne : shift v (p₀ :: ps) ≠ [] := shift_ne_nil v _ hne'
+    obtain ⟨q₀, qs, hq⟩ : ∃ q₀ qs, shift v (p₀ :: ps) = q₀ :: qs := by
+      cases h : shift v (p₀ :: ps) with
+      | nil => exact absurd h hsne
+      | cons q₀ qs => exact ⟨q₀, qs, rfl⟩
+    have h1 : gridRowMin (q₀ :: qs) = gridRowMin (p₀ :: ps) + v.1 :=
+      gridRowMin_shift v _ hne'
+    have h2 : gridRowMax (q₀ :: qs) = gridRowMax (p₀ :: ps) + v.1 :=
+      gridRowMax_shift v _ hne'
+    have h3 : gridColMin (q₀ :: qs) = gridColMin (p₀ :: ps) + v.2 :=
+      gridColMin_shift v _ hne'
+    have h4 : gridColMax (q₀ :: qs) = gridColMax (p₀ :: ps) + v.2 :=
+      gridColMax_shift v _ hne'
+    have hfr : gridFrame (p₀ :: ps)
+        = ((gridRowMin (p₀ :: ps) - 2, gridColMin (p₀ :: ps) - 2),
+           MacroCell.ceilLog2 (max (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat
+                                    (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) := rfl
+    rw [hfr] at hframe
+    obtain ⟨hp, hlvl⟩ := Prod.mk.injEq.mp hframe
+    obtain ⟨hr0, hc0⟩ := Prod.mk.injEq.mp hp
+    rw [hq]
+    have hfr' : gridFrame (q₀ :: qs)
+        = ((gridRowMin (q₀ :: qs) - 2, gridColMin (q₀ :: qs) - 2),
+           MacroCell.ceilLog2 (max (gridRowMax (q₀ :: qs) - gridRowMin (q₀ :: qs) + 5).toNat
+                                    (gridColMax (q₀ :: qs) - gridColMin (q₀ :: qs) + 5).toNat)) := rfl
+    rw [hfr']
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ hne'
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ hne'
+    refine Prod.ext (Prod.ext ?_ ?_) ?_
+    · omega
+    · omega
+    · have hH : (gridRowMax (q₀ :: qs) - gridRowMin (q₀ :: qs) + 5).toNat
+          = (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat := by omega
+      have hW : (gridColMax (q₀ :: qs) - gridColMin (q₀ :: qs) + 5).toNat
+          = (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat := by omega
+      rw [hH, hW, hlvl]
+
+/-- **The reconstruction is translation-invariant** (conclusion of brick 1):
+    the MacroCell rebuilt from a translated grid is exactly the one of the
+    original grid — only the frame offset moves. Empty case: both
+    reconstructions are the dead level-0 leaf. Non-empty case:
+    `gridFrame_shift` + `buildFromGrid_shift`. -/
+theorem gridToMacroCellWithOffset_shift (v : Int × Int) (g : Grid) :
+    (gridToMacroCellWithOffset (shift v g)).2 = (gridToMacroCellWithOffset g).2 := by
+  by_cases hg : g = []
+  · subst hg
+    simp [shift]
+  · obtain ⟨r0, c0, lvl, hframe⟩ : ∃ r0 c0 lvl, gridFrame g = ((r0, c0), lvl) :=
+      ⟨(gridFrame g).1.1, (gridFrame g).1.2, (gridFrame g).2, rfl⟩
+    have hframe' := gridFrame_shift v g r0 c0 lvl hframe hg
+    simp only [gridToMacroCellWithOffset, hframe, hframe']
+    exact buildFromGrid_shift v g r0 c0 lvl
+
+/-! ## L3 spaceship class — hcap of spaceships (tranche 3, step 7)
+
+Third L3 link **entirely closed**: the spaceship class
+(`evolve p g = shift v g` — the `IsSpaceship p v g` API of HashlifeCorrectness
+unfolds to exactly `0 < p ∧ Canonical g ∧ evolve p g = shift v g`, so these
+statements apply verbatim to the bestiary spaceships: glider `p = 4`,
+`v = (1, -1)`, LWSS `p = 4`, `v = (0, 2)`).
+
+The composition that the po-2025 adjoint explicitly reserved to po-2024:
+drift replaces the oscillator fixed point, so the capture combines
+(i) the **reduction to the residue modulo `p` with drift** — `evolve t g` is a
+`shift ((t/p)•v)` of the phase `evolve (t%p) g`; (ii) **translation invariance
+of the reconstruction** (brick 1) — the `shift` vanishes inside
+`gridToMacroCellWithOffset`, reducing the capture to the `p` phases only;
+(iii) **the jump window absorbs the drift** — the padded content lives in
+`[3·2^(k-1), 5·2^(k-1))` and `q = 2^k/p` periods drift it by `q•v`, so the
+test window `[2^k, 2^k + 2^(k+1))²` contains the final generation iff
+`|q·v.i| ≤ 2^(k-1)`, i.e. **`2·|v.i| ≤ p` — speed at most c/2**. LWSS
+(`v = (0, 2)`, `p = 4`) attains the bound exactly; the glider (`v = (1, -1)`,
+`p = 4`) satisfies it strictly. -/
+
+/-- **Every phase of a spaceship is a spaceship.** If
+    `evolve p g = shift v g`, then every phase `evolve r g` satisfies the same
+    relation: evolution commutes with itself and with the shift. Exact mirror
+    of `evolve_phase_fix` with the fixed point replaced by the drift
+    relation. -/
+theorem evolve_spaceship_phase {p : Nat} (g : Grid) (v : Int × Int)
+    (hship : evolve p g = shift v g) (r : Nat) :
+    evolve p (evolve r g) = shift v (evolve r g) := by
+  rw [← evolve_add, Nat.add_comm p r, evolve_add, hship, evolve_shift]
+
+/-- **`m` spaceship periods drift by `m•v`.** Adapted local copy of
+    `evolve_mulF_of_period`: `evolve (m * p) g = shift (m•v) g`, by induction
+    on `m` via `evolve_add`, `evolve_shift` and `shift_shift`. The base case
+    requires `shift_zero` (canonical grid). -/
+theorem evolve_spaceship_mulF {p : Nat} (g : Grid) (hg : Canonical g) (v : Int × Int)
+    (hship : evolve p g = shift v g) (m : Nat) :
+    evolve (m * p) g = shift (((m : Int) * v.1), ((m : Int) * v.2)) g := by
+  induction m with
+  | zero =>
+    rw [Nat.zero_mul, evolve_zero, Nat.cast_zero, Int.zero_mul,
+        Nat.cast_zero, Int.zero_mul]
+    exact (shift_zero hg).symm
+  | succ m ih =>
+    have hsplit : (m + 1) * p = m * p + p := by ring
+    rw [hsplit, evolve_add, hship, ← evolve_shift, ih, shift_shift]
+    have h1 : v.1 + ((m : Int) * v.1) = ((m + 1 : Nat) : Int) * v.1 := by
+      rw [Nat.cast_succ]; ring
+    have h2 : v.2 + ((m : Int) * v.2) = ((m + 1 : Nat) : Int) * v.2 := by
+      rw [Nat.cast_succ]; ring
+    rw [h1, h2]
+
+/-- **Trajectory reduction to the residue modulo `p`, with drift.** For a
+    spaceship, `evolve t g = shift ((t/p)•v) (evolve (t % p) g)` — the
+    quotient `t / p` of complete periods becomes a componentwise translation,
+    the residue `t % p` carries the phase. Mirror of `evolve_mod_period`
+    where the quotient did not vanish but became a shift. -/
+theorem evolve_spaceship_mod {p : Nat} (g : Grid) (hg : Canonical g) (v : Int × Int)
+    (hship : evolve p g = shift v g) (t : Nat) :
+    evolve t g = shift (((t / p : Nat) : Int) * v.1, ((t / p : Nat) : Int) * v.2)
+      (evolve (t % p) g) := by
+  have hsplit : t = p * (t / p) + t % p := (Nat.div_add_mod t p).symm
+  conv_lhs => rw [hsplit, evolve_add, Nat.mul_comm]
+  exact evolve_spaceship_mulF _ (evolve_spaceship_phase g hship _) _
+
+/-- **Interface (c) tranche 3, step 7 — the spaceship class of speed ≤ c/2 is
+    captured.** `jumpCapturedF` version of the spaceship criterion: any
+    pattern `evolve p (c.toGrid (0,0)) = shift v (c.toGrid (0,0))` carried by
+    a well-formed cell of level `k ≥ 1`, with `p ∣ 2^k` and the speed bound
+    `2·|v.i| ≤ p` (both signs, each coordinate), satisfies the capture
+    predicate. The final generation of the jump is the padded content drifted
+    by `q•v` (`q = 2^k/p`): the content lives in
+    `[3·2^(k-1), 5·2^(k-1))²` (geometry `padCenter2` + `cellWfF_toGrid_bounds`),
+    the drift moves it by at most `2^(k-1)` per coordinate, so it stays inside
+    the test window `[2^k, 2^k + 2^(k+1))²`. Product monotonicity
+    `q·(2·v.i) ≤ q·p = 2^k` turns the speed bound into a drift bound — the
+    only non-linear step, established explicitly. -/
+theorem jumpCapturedF_of_spaceship (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {p : Nat} (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hdiv : p ∣ 2 ^ c.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF c = true := by
+  obtain ⟨hspd1a, hspd1b⟩ := hspd1
+  obtain ⟨hspd2a, hspd2b⟩ := hspd2
+  obtain ⟨q, hq⟩ := hdiv
+  have hcw : cellWf c := cellWf_of_wf c hwf
+  have hcan : Canonical (c.toGrid (0, 0)) := canonical_sortDedup _
+  have hmul : evolve (2 ^ c.level) (c.toGrid (0, 0))
+      = shift ((q : Int) * v.1, (q : Int) * v.2) (c.toGrid (0, 0)) := by
+    rw [hq, Nat.mul_comm]
+    exact evolve_spaceship_mulF _ hcan hship q
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int) + (q : Int) * v.1,
+               (3 * 2 ^ (c.level - 1) : Int) + (q : Int) * v.2)
+          (c.toGrid (0, 0)) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hmul, shift_shift]
+  rw [jumpCapturedF_iff]
+  intro p' hp'
+  rw [hfinal, mem_shift] at hp'
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWfF_toGrid_bounds hcw 0 0 hp'
+  dsimp only at hb1 hb2 hb3 hb4
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  have hqnn : (0 : Int) ≤ (q : Nat) := by positivity
+  have hcast : ((q : Nat) : Int) * ((p : Nat) : Int) = ((2 ^ c.level : Nat) : Int) := by
+    rw [Nat.cast_mul, hq]
+  have hbridge : ((2 ^ c.level : Nat) : Int) = (2 ^ c.level : Int) :=
+    (Nat.cast_pow 2 c.level).symm
+  have hqA : 2 * ((q : Int) * v.1) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (2 * v.1) ≤ (q : Int) * ((p : Nat) : Int) :=
+      mul_le_mul_of_nonneg_left hspd1b hqnn
+    have e1 : (q : Int) * (2 * v.1) = 2 * ((q : Int) * v.1) := by ring
+    omega
+  have hqB : 2 * (-((q : Int) * v.1)) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (-(2 * v.1)) ≤ (q : Int) * ((p : Nat) : Int) := by
+      have hneg : -(2 * v.1) = 2 * (-v.1) := by ring
+      have e0' := mul_le_mul_of_nonneg_left (b := (2 : Int) * (-v.1)) hspd1a hqnn
+      omega
+    have e1 : (q : Int) * (-(2 * v.1)) = 2 * (-((q : Int) * v.1)) := by ring
+    omega
+  have hqC : 2 * ((q : Int) * v.2) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (2 * v.2) ≤ (q : Int) * ((p : Nat) : Int) :=
+      mul_le_mul_of_nonneg_left hspd2b hqnn
+    have e1 : (q : Int) * (2 * v.2) = 2 * ((q : Int) * v.2) := by ring
+    omega
+  have hqD : 2 * (-((q : Int) * v.2)) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (-(2 * v.2)) ≤ (q : Int) * ((p : Nat) : Int) := by
+      have hneg : -(2 * v.2) = 2 * (-v.2) := by ring
+      have e0' := mul_le_mul_of_nonneg_left (b := (2 : Int) * (-v.2)) hspd2a hqnn
+      omega
+    have e1 : (q : Int) * (-(2 * v.2)) = 2 * (-((q : Int) * v.2)) := by ring
+    omega
+  omega
+
+/-- **Transport of the spaceship relation to the reconstruction (rendered at
+    the origin).** The analogue of `periodic_fix_toGrid_zero` for drift: if
+    `g` is canonical and satisfies `evolve p g = shift v g`, the MacroCell
+    rebuilt at the origin satisfies the same relation — `toGrid_shift_grid`
+    shuttle, `evolve_shift` commutation, EQUALITY round-trip. -/
+theorem spaceship_step_toGrid_zero (g : Grid) (hg : Canonical g) {p : Nat}
+    (v : Int × Int) (hship : evolve p g = shift v g) :
+    evolve p ((gridToMacroCellWithOffset g).2.toGrid (0, 0))
+      = shift v ((gridToMacroCellWithOffset g).2.toGrid (0, 0)) := by
+  have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+      = g := toGrid_gridToMacroCellWithOffset_eq g hg
+  have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset g).1.1,
+               0 - (gridToMacroCellWithOffset g).1.2)
+          ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  rw [hshift, ← evolve_shift, hrt, hship]
+
+/-- **Capture of the reconstruction of a spaceship.** For every canonical
+    phase `g` of a spaceship (`evolve p g = shift v g`), whose reconstruction
+    level divides the jump horizon (`p ∣ 2^level`) and whose speed satisfies
+    `2·|v.i| ≤ p`, the reconstruction satisfies the jump predicate —
+    `jumpCapturedF_of_spaceship` consumed at the reconstruction level, with
+    wf (`buildFromGrid_wf`), level (`1 ≤ lvl` as soon as `g ≠ []`, n-aware
+    bound) and the transported drift relation
+    (`spaceship_step_toGrid_zero`). Empty case: the reconstruction is a dead
+    level-0 leaf, decided by the kernel. -/
+theorem jumpCapturedF_reconstruction_of_spaceship (g : Grid) (hg : Canonical g)
+    {p : Nat} (v : Int × Int) (hship : evolve p g = shift v g)
+    (hdiv : p ∣ 2 ^ (gridToMacroCellWithOffset g).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    exact jumpCapturedF_of_spaceship _ hwf hlvl v
+      (spaceship_step_toGrid_zero g hg hship) hdiv hspd1 hspd2
+
+/-- **hcap of the spaceship class, full trajectory.** For a canonical
+    spaceship of period `p > 0`, whose **every phase** has a reconstruction
+    level divisible by `p` and whose speed satisfies `2·|v.i| ≤ p`, every
+    instant `t` is captured: the trajectory reduces to the phase `t % p`
+    **drifted** by `(t/p)•v` (`evolve_spaceship_mod`), the translation
+    vanishes in the reconstruction (`gridToMacroCellWithOffset_shift`,
+    brick 1), and the phase — canonical, itself a spaceship
+    (`evolve_spaceship_phase`) — is captured. The divisibility and speed
+    premises are finite: they concern the `p` phases only. -/
+theorem hcap_of_spaceship (g : Grid) (hg : Canonical g) {p : Nat} (hp0 : 0 < p)
+    (v : Int × Int) (hship : evolve p g = shift v g)
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i g)).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_spaceship_mod g hg hship t, gridToMacroCellWithOffset_shift]
+  have hr : t % p < p := Nat.mod_lt _ hp0
+  have hcan : Canonical (evolve (t % p) g) := by
+    rcases Nat.eq_zero_or_pos (t % p) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  exact jumpCapturedF_reconstruction_of_spaceship _ hcan v
+    (evolve_spaceship_phase g hship _) (hdiv _ hr) hspd1 hspd2
+
+/-- **L3 closed for the spaceship class of speed ≤ c/2: Hashlife correctness
+    of spaceships.** Assembly corollary — the third case of the P4.4
+    decomposition where the L3 link is **fully proven**, and the composition
+    that the scoping reserved to this lane: for every MacroCell whose grid
+    rendered at the origin is a spaceship `p > 0` of speed `2·|v.i| ≤ p`
+    (every phase of level divisible by `p`), the global equality
+    `hashlife_correctN` applies at every horizon `2^k` under `centralCorrect`.
+    The class covers glider (`p = 4`, `v = (1, -1)`) and LWSS (`p = 4`,
+    `v = (0, 2)`, the exact bound) as soon as the level reaches `log₂ p = 2`. -/
+theorem hashlife_correct_margin_of_spaceship (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_spaceship _ (canonical_sortDedup _) hp0 v hship hdiv hspd1 hspd2 t)
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,

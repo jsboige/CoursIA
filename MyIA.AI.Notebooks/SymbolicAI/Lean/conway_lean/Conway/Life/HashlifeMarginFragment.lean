@@ -782,6 +782,509 @@ theorem hashlife_correct_margin_of_period (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_period _ (canonical_sortDedup _) hT0 hper hdiv t)
 
+/-! ## Invariance par translation de la reconstruction (tranche 3, étape 7, brique 1)
+
+Le scoping étape 7 identifie la brique manquante pour la classe des **vaisseaux**
+(`evolve p g = shift v g`, dérive + période) : la reconstruction
+`gridToMacroCellWithOffset` est **invariante par translation** — translater la
+grille décale l'offset du cadre mais laisse la MacroCell (le quadtree) inchangée.
+C'est ce qui réduira la trajectoire d'un vaisseau à ses `p` phases : chaque
+`evolve t g` est un `shift` d'une phase, et le `shift` disparaît au passage dans
+la reconstruction. La chaîne : bornes min/max de la boîte translatées
+(`gridRowMin_shift` etc., via les témoins d'atteinte et `mem_shift`), puis le
+cadre suit (`gridFrame_shift` : offset translaté, niveau inchangé car les
+portées sont invariantes), puis le quadtree suit (`buildFromGrid_shift`, par
+induction sur le niveau via `elem`/`mem_shift`), d'où la MacroCell reconstruite
+est la même (`gridToMacroCellWithOffset_shift`). -/
+
+/-- L'image d'une cellule vivante est vivante dans la grille translatée :
+    forme directe (direction ← de `mem_shift`), temoin explicite. -/
+theorem mem_shift_image (v : Int × Int) (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    (p.1 + v.1, p.2 + v.2) ∈ shift v g := by
+  rw [mem_shift]
+  have heq : (p.1 + v.1 - v.1, p.2 + v.2 - v.2) = p := by ext <;> omega
+  rw [heq]; exact hp
+
+/-- La translation préserve la non-vacuité : l'image d'une cellule vivante
+    témoigne que `shift v g` n'est pas vide. -/
+theorem shift_ne_nil (v : Int × Int) (g : Grid) (hg : g ≠ []) : shift v g ≠ [] := by
+  obtain ⟨p, hp⟩ : ∃ p, p ∈ g := by
+    cases g with
+    | nil => exact absurd rfl hg
+    | cons p ps => exact ⟨p, by simp⟩
+  intro hnil
+  have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+  rw [hnil] at himg
+  exact absurd himg (by simp)
+
+/-- **Aide générique : un `foldl` de `max` (via `proj`) est *atteint*** — le
+    résultat est soit le départ `acc`, soit la projection d'un élément de la
+    liste. Jumeau de `foldl_proj_min_attained` (MacroCell L572) pour le max,
+    avec les branches de `le_total` échangées. -/
+theorem foldl_proj_max_attained (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
+    ps.foldl (fun m q => max m (proj q)) acc = acc ∨
+    ∃ p ∈ ps, ps.foldl (fun m q => max m (proj q)) acc = proj p := by
+  induction ps generalizing acc with
+  | nil => left; rfl
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    rcases ih (max acc (proj q)) with h | ⟨p, hp, hval⟩
+    · rcases le_total acc (proj q) with hle | hle
+      · right; exact ⟨q, by simp, by rw [h]; omega⟩
+      · left; rw [h]; omega
+    · right; exact ⟨p, by simp [hp], hval⟩
+
+/-- Le maximum de ligne d'une grille non vide est *atteint* par une cellule
+    vivante. Jumeau colonne-ligne de `gridRowMin_mem` (MacroCell L590). -/
+theorem gridRowMax_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.1 = gridRowMax g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMax]
+    rcases foldl_proj_max_attained ps (·.1) p₀.1 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
+/-- Le minimum de colonne d'une grille non vide est *atteint* par une cellule
+    vivante. Jumeau de `gridRowMin_mem` sur les colonnes. -/
+theorem gridColMin_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.2 = gridColMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMin]
+    rcases foldl_proj_min_attained ps (·.2) p₀.2 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
+/-- Le maximum de colonne d'une grille non vide est *atteint* par une cellule
+    vivante. Jumeau de `gridRowMin_mem` sur les colonnes. -/
+theorem gridColMax_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.2 = gridColMax g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMax]
+    rcases foldl_proj_max_attained ps (·.2) p₀.2 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
+/-- La boîte englobante suit la translation : minimum de ligne translaté
+    de `v.1`. Chaque direction se ferme par le temoin d'atteinte d'un côté
+    (`gridRowMin_mem`), la borne globale de l'autre
+    (`gridRowMin_lower_bound`, étape 5). -/
+theorem gridRowMin_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridRowMin (shift v g) = gridRowMin g + v.1 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · obtain ⟨p, hp, hval⟩ := gridRowMin_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := gridRowMin_le_of_mem _ _ himg
+    omega
+  · apply gridRowMin_lower_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := gridRowMin_le_of_mem g _ hpre
+    omega
+
+/-- La boîte englobante suit la translation : maximum de ligne translaté
+    de `v.1`. Miroir de `gridRowMin_shift` avec `gridRowMax_mem` (atteinte)
+    et `gridRowMax_upper_bound` (borne, étape 5). -/
+theorem gridRowMax_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridRowMax (shift v g) = gridRowMax g + v.1 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · apply gridRowMax_upper_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := le_gridRowMax_of_mem g _ hpre
+    omega
+  · obtain ⟨p, hp, hval⟩ := gridRowMax_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := le_gridRowMax_of_mem _ _ himg
+    omega
+
+/-- La boîte englobante suit la translation : minimum de colonne translaté
+    de `v.2`. Miroir colonne de `gridRowMin_shift`. -/
+theorem gridColMin_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridColMin (shift v g) = gridColMin g + v.2 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · obtain ⟨p, hp, hval⟩ := gridColMin_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := gridColMin_le_of_mem _ _ himg
+    omega
+  · apply gridColMin_lower_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := gridColMin_le_of_mem g _ hpre
+    omega
+
+/-- La boîte englobante suit la translation : maximum de colonne translaté
+    de `v.2`. Miroir colonne de `gridRowMax_shift`. -/
+theorem gridColMax_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
+    gridColMax (shift v g) = gridColMax g + v.2 := by
+  have hsne : shift v g ≠ [] := shift_ne_nil v g hg
+  apply le_antisymm
+  · apply gridColMax_upper_bound _ _ hsne
+    rintro r ⟨hr⟩
+    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
+    have := le_gridColMax_of_mem g _ hpre
+    omega
+  · obtain ⟨p, hp, hval⟩ := gridColMax_mem g hg
+    have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
+    have := le_gridColMax_of_mem _ _ himg
+    omega
+
+/-- Le test de feuille de `buildFromGrid` est invariant par translation :
+    `elem` au point translaté de la grille translatée egal `elem` au point
+    original de la grille originale. Les deux sens de `mem_shift` ferment
+    les cas mixtes. -/
+theorem elem_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) :
+    (shift v g).elem (r0 + v.1, c0 + v.2) = g.elem (r0, c0) := by
+  by_cases h : (r0, c0) ∈ g
+  · rw [List.elem_iff.mpr h]
+    exact List.elem_iff.mpr (mem_shift_image v g _ h)
+  · have hf : g.elem (r0, c0) = false := by
+      rcases hbool : g.elem (r0, c0) with
+      | true => exact absurd (List.elem_iff.mp hbool) h
+      | false => rfl
+    have hf' : (shift v g).elem (r0 + v.1, c0 + v.2) = false := by
+      rcases hbool : (shift v g).elem (r0 + v.1, c0 + v.2) with
+      | true =>
+        exact absurd (fun hh => h (by
+          have hpre := (mem_shift v g _).mp (List.elem_iff.mp hbool)
+          have heq : (r0 + v.1 - v.1, c0 + v.2 - v.2) = (r0, c0) := by ext <;> omega
+          rw [heq] at hpre
+          exact hpre)) (fun hn => hh hn)
+      | false => rfl
+    rw [hf', hf]
+
+/-- **Le quadtree suit la translation** : reconstruire la grille translatée
+    depuis l'origine translatée redonne le quadtree original. Induction sur le
+    niveau — feuille par `elem_shift`, noeud par IH sur les quatre quadrants
+    (les offsets de quadrant `(r0 + v.1) + 2^n` se réassocient vers
+    `(r0 + 2^n) + v.1` par `ring` sur les casts). -/
+theorem buildFromGrid_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) (lvl : Nat) :
+    MacroCell.buildFromGrid (shift v g) (r0 + v.1) (c0 + v.2) lvl
+      = MacroCell.buildFromGrid g r0 c0 lvl := by
+  induction lvl generalizing r0 c0 with
+  | zero =>
+    simp only [MacroCell.buildFromGrid]
+    rw [elem_shift]
+  | succ n ih =>
+    simp only [MacroCell.buildFromGrid]
+    rw [show (c0 : Int) + v.2 + (2 ^ n : Nat) = c0 + (2 ^ n : Nat) + v.2 from by
+        push_cast; ring,
+        show (r0 : Int) + v.1 + (2 ^ n : Nat) = r0 + (2 ^ n : Nat) + v.1 from by
+        push_cast; ring,
+        ih r0 c0, ih r0 (c0 + (2 ^ n : Nat)),
+        ih (r0 + (2 ^ n : Nat)) c0, ih (r0 + (2 ^ n : Nat)) (c0 + (2 ^ n : Nat))]
+
+/-- **Le cadre suit la translation** : `gridFrame` de la grille translatée
+    egale le cadre original avec l'offset translaté et le **même niveau** —
+    les portées `(rMax + v) - (rMin + v)` sont invariantes, donc hauteur,
+    largeur et `ceilLog2` coïncident. -/
+theorem gridFrame_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) (lvl : Nat)
+    (hframe : gridFrame g = ((r0, c0), lvl)) (hne : g ≠ []) :
+    gridFrame (shift v g) = ((r0 + v.1, c0 + v.2), lvl) := by
+  cases g with
+  | nil => exact absurd rfl hne
+  | cons p₀ ps =>
+    have hne' : p₀ :: ps ≠ [] := List.cons_ne_nil p₀ ps
+    have hsne : shift v (p₀ :: ps) ≠ [] := shift_ne_nil v _ hne'
+    obtain ⟨q₀, qs, hq⟩ : ∃ q₀ qs, shift v (p₀ :: ps) = q₀ :: qs := by
+      cases h : shift v (p₀ :: ps) with
+      | nil => exact absurd h hsne
+      | cons q₀ qs => exact ⟨q₀, qs, rfl⟩
+    have h1 : gridRowMin (q₀ :: qs) = gridRowMin (p₀ :: ps) + v.1 :=
+      gridRowMin_shift v _ hne'
+    have h2 : gridRowMax (q₀ :: qs) = gridRowMax (p₀ :: ps) + v.1 :=
+      gridRowMax_shift v _ hne'
+    have h3 : gridColMin (q₀ :: qs) = gridColMin (p₀ :: ps) + v.2 :=
+      gridColMin_shift v _ hne'
+    have h4 : gridColMax (q₀ :: qs) = gridColMax (p₀ :: ps) + v.2 :=
+      gridColMax_shift v _ hne'
+    have hfr : gridFrame (p₀ :: ps)
+        = ((gridRowMin (p₀ :: ps) - 2, gridColMin (p₀ :: ps) - 2),
+           MacroCell.ceilLog2 (max (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat
+                                    (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) := rfl
+    rw [hfr] at hframe
+    obtain ⟨hp, hlvl⟩ := Prod.mk.injEq.mp hframe
+    obtain ⟨hr0, hc0⟩ := Prod.mk.injEq.mp hp
+    rw [hq]
+    have hfr' : gridFrame (q₀ :: qs)
+        = ((gridRowMin (q₀ :: qs) - 2, gridColMin (q₀ :: qs) - 2),
+           MacroCell.ceilLog2 (max (gridRowMax (q₀ :: qs) - gridRowMin (q₀ :: qs) + 5).toNat
+                                    (gridColMax (q₀ :: qs) - gridColMin (q₀ :: qs) + 5).toNat)) := rfl
+    rw [hfr']
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ hne'
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ hne'
+    refine Prod.ext (Prod.ext ?_ ?_) ?_
+    · omega
+    · omega
+    · have hH : (gridRowMax (q₀ :: qs) - gridRowMin (q₀ :: qs) + 5).toNat
+          = (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat := by omega
+      have hW : (gridColMax (q₀ :: qs) - gridColMin (q₀ :: qs) + 5).toNat
+          = (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat := by omega
+      rw [hH, hW, hlvl]
+
+/-- **La reconstruction est invariante par translation** (conclusion de la
+    brique 1) : la MacroCell reconstruite d'une grille translatée est
+    exactement celle de la grille originale — seul l'offset du cadre bouge.
+    Cas vide : les deux reconstructions sont la feuille morte de niveau 0.
+    Cas non vide : `gridFrame_shift` + `buildFromGrid_shift`. -/
+theorem gridToMacroCellWithOffset_shift (v : Int × Int) (g : Grid) :
+    (gridToMacroCellWithOffset (shift v g)).2 = (gridToMacroCellWithOffset g).2 := by
+  by_cases hg : g = []
+  · subst hg
+    simp [shift]
+  · obtain ⟨r0, c0, lvl, hframe⟩ : ∃ r0 c0 lvl, gridFrame g = ((r0, c0), lvl) :=
+      ⟨(gridFrame g).1.1, (gridFrame g).1.2, (gridFrame g).2, rfl⟩
+    have hframe' := gridFrame_shift v g r0 c0 lvl hframe hg
+    simp only [gridToMacroCellWithOffset, hframe, hframe']
+    exact buildFromGrid_shift v g r0 c0 lvl
+
+/-! ## L3 classe des vaisseaux — hcap des spaceships (tranche 3, étape 7)
+
+Troisième maillon L3 **entièrement clos** : la classe des vaisseaux
+(`evolve p g = shift v g` — l'API `IsSpaceship p v g` de HashlifeCorrectness
+déplie exactement `0 < p ∧ Canonical g ∧ evolve p g = shift v g`, donc ces
+énoncés s'appliquent mot pour mot aux vaisseaux du bestiaire : glider
+`p = 4, v = (1, -1)`, LWSS `p = 4, v = (0, 2)`).
+
+La composition que l'adjoint po-2025 réservait explicitement à po-2024 : la
+dérive remplace le point fixe des oscillateurs, donc la capture combine
+(i) la **réduction au résidu modulo `p` avec dérive** — `evolve t g` est un
+`shift ((t/p)•v)` de la phase `evolve (t%p) g` ; (ii) **l'invariance par
+translation de la reconstruction** (brique 1) — le `shift` disparaît dans
+`gridToMacroCellWithOffset`, ramenant la capture aux seules `p` phases ;
+(iii) la **fenêtre du saut absorbe la dérive** — le contenu paddé vit dans
+`[3·2^(k-1), 5·2^(k-1))` et `q = 2^k/p` périodes le dérivent de `q•v`, donc
+le test `[2^k, 2^k + 2^(k+1))²` contient la génération finale ssi
+`|q·v.i| ≤ 2^(k-1)`, i.e. **`2·|v.i| ≤ p` — vitesse au plus c/2**. LWSS
+(`v = (0, 2)`, `p = 4`) atteint la borne exactement ; le glider
+(`v = (1, -1)`, `p = 4`) la vérifie strictement. -/
+
+/-- **Chaque phase d'un vaisseau est un vaisseau.** Si `evolve p g = shift v g`,
+    alors toute phase `evolve r g` vérifie la même relation : l'évolution
+    commute à elle-même et au shift. Miroir exact de `evolve_phase_fix` avec
+    le point fixe remplacé par la relation de dérive. -/
+theorem evolve_spaceship_phase {p : Nat} (g : Grid) (v : Int × Int)
+    (hship : evolve p g = shift v g) (r : Nat) :
+    evolve p (evolve r g) = shift v (evolve r g) := by
+  rw [← evolve_add, Nat.add_comm p r, evolve_add, hship, evolve_shift]
+
+/-- **`m` périodes de vaisseau dérivent de `m•v`.** Copie locale adaptée de
+    `evolve_mulF_of_period` : `evolve (m * p) g = shift (m•v) g`, par
+    induction sur `m` via `evolve_add`, `evolve_shift` et `shift_shift`.
+    Le cas de base exige `shift_zero` (grille canonique). -/
+theorem evolve_spaceship_mulF {p : Nat} (g : Grid) (hg : Canonical g) (v : Int × Int)
+    (hship : evolve p g = shift v g) (m : Nat) :
+    evolve (m * p) g = shift (((m : Int) * v.1), ((m : Int) * v.2)) g := by
+  induction m with
+  | zero =>
+    rw [Nat.zero_mul, evolve_zero, Nat.cast_zero, Int.zero_mul,
+        Nat.cast_zero, Int.zero_mul]
+    exact (shift_zero hg).symm
+  | succ m ih =>
+    have hsplit : (m + 1) * p = m * p + p := by ring
+    rw [hsplit, evolve_add, hship, ← evolve_shift, ih, shift_shift]
+    have h1 : v.1 + ((m : Int) * v.1) = ((m + 1 : Nat) : Int) * v.1 := by
+      rw [Nat.cast_succ]; ring
+    have h2 : v.2 + ((m : Int) * v.2) = ((m + 1 : Nat) : Int) * v.2 := by
+      rw [Nat.cast_succ]; ring
+    rw [h1, h2]
+
+/-- **Réduction de la trajectoire au résidu modulo `p`, avec dérive.** Pour un
+    vaisseau, `evolve t g = shift ((t/p)•v) (evolve (t % p) g)` — le quotient
+    `t / p` de périodes complètes devient une translation composante par
+    composante, le résidu `t % p` porte la phase. Miroir de `evolve_mod_period`
+    où le quotient ne disparaissait pas mais devenait un shift. -/
+theorem evolve_spaceship_mod {p : Nat} (g : Grid) (hg : Canonical g) (v : Int × Int)
+    (hship : evolve p g = shift v g) (t : Nat) :
+    evolve t g = shift (((t / p : Nat) : Int) * v.1, ((t / p : Nat) : Int) * v.2)
+      (evolve (t % p) g) := by
+  have hsplit : t = p * (t / p) + t % p := (Nat.div_add_mod t p).symm
+  conv_lhs => rw [hsplit, evolve_add, Nat.mul_comm]
+  exact evolve_spaceship_mulF _ (evolve_spaceship_phase g hship _) _
+
+/-- **Interface (c) tranche 3, étape 7 — la classe des vaisseaux de vitesse
+    ≤ c/2 est capturée.** Version `jumpCapturedF` du critère vaisseau : tout
+    motif `evolve p (c.toGrid (0,0)) = shift v (c.toGrid (0,0))` porté par une
+    cellule bien formée de niveau `k ≥ 1`, avec `p ∣ 2^k` et la borne de
+    vitesse `2·|v.i| ≤ p` (les deux signes, chaque coordonnée), satisfait le
+    prédicat de capture. La génération finale du jump est le contenu paddé
+    dérivé de `q•v` (`q = 2^k/p`) : le contenu vit dans `[3·2^(k-1), 5·2^(k-1))²`
+    (géométrie `padCenter2` + `cellWfF_toGrid_bounds`), la dérive le déplace
+    d'au plus `2^(k-1)` par coordonnée, donc il reste dans la fenêtre du test
+    `[2^k, 2^k + 2^(k+1))²`. La monotonicité du produit `q·(2·v.i) ≤ q·p = 2^k`
+    transforme la borne de vitesse en borne de dérive — le seul pas non
+    linéaire, établi explicitement. -/
+theorem jumpCapturedF_of_spaceship (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {p : Nat} (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hdiv : p ∣ 2 ^ c.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF c = true := by
+  obtain ⟨hspd1a, hspd1b⟩ := hspd1
+  obtain ⟨hspd2a, hspd2b⟩ := hspd2
+  obtain ⟨q, hq⟩ := hdiv
+  have hcw : cellWf c := cellWf_of_wf c hwf
+  have hcan : Canonical (c.toGrid (0, 0)) := canonical_sortDedup _
+  have hmul : evolve (2 ^ c.level) (c.toGrid (0, 0))
+      = shift ((q : Int) * v.1, (q : Int) * v.2) (c.toGrid (0, 0)) := by
+    rw [hq, Nat.mul_comm]
+    exact evolve_spaceship_mulF _ hcan hship q
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int) + (q : Int) * v.1,
+               (3 * 2 ^ (c.level - 1) : Int) + (q : Int) * v.2)
+          (c.toGrid (0, 0)) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hmul, shift_shift]
+  rw [jumpCapturedF_iff]
+  intro p' hp'
+  rw [hfinal, mem_shift] at hp'
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWfF_toGrid_bounds hcw 0 0 hp'
+  dsimp only at hb1 hb2 hb3 hb4
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  have hqnn : (0 : Int) ≤ (q : Nat) := by positivity
+  have hcast : ((q : Nat) : Int) * ((p : Nat) : Int) = ((2 ^ c.level : Nat) : Int) := by
+    rw [Nat.cast_mul, hq]
+  have hbridge : ((2 ^ c.level : Nat) : Int) = (2 ^ c.level : Int) :=
+    (Nat.cast_pow 2 c.level).symm
+  have hqA : 2 * ((q : Int) * v.1) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (2 * v.1) ≤ (q : Int) * ((p : Nat) : Int) :=
+      mul_le_mul_of_nonneg_left hspd1b hqnn
+    have e1 : (q : Int) * (2 * v.1) = 2 * ((q : Int) * v.1) := by ring
+    omega
+  have hqB : 2 * (-((q : Int) * v.1)) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (-(2 * v.1)) ≤ (q : Int) * ((p : Nat) : Int) := by
+      have hneg : -(2 * v.1) = 2 * (-v.1) := by ring
+      have e0' := mul_le_mul_of_nonneg_left (b := (2 : Int) * (-v.1)) hspd1a hqnn
+      omega
+    have e1 : (q : Int) * (-(2 * v.1)) = 2 * (-((q : Int) * v.1)) := by ring
+    omega
+  have hqC : 2 * ((q : Int) * v.2) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (2 * v.2) ≤ (q : Int) * ((p : Nat) : Int) :=
+      mul_le_mul_of_nonneg_left hspd2b hqnn
+    have e1 : (q : Int) * (2 * v.2) = 2 * ((q : Int) * v.2) := by ring
+    omega
+  have hqD : 2 * (-((q : Int) * v.2)) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
+    have e0 : (q : Int) * (-(2 * v.2)) ≤ (q : Int) * ((p : Nat) : Int) := by
+      have hneg : -(2 * v.2) = 2 * (-v.2) := by ring
+      have e0' := mul_le_mul_of_nonneg_left (b := (2 : Int) * (-v.2)) hspd2a hqnn
+      omega
+    have e1 : (q : Int) * (-(2 * v.2)) = 2 * (-((q : Int) * v.2)) := by ring
+    omega
+  omega
+
+/-- **Transport de la relation de vaisseau à la reconstruction (rendue à
+    l'origine).** L'analogue de `periodic_fix_toGrid_zero` pour la dérive :
+    si `g` est canonique et vérifie `evolve p g = shift v g`, la MacroCell
+    reconstruite rendue à l'origine vérifie la même relation — navette
+    `toGrid_shift_grid`, commutation `evolve_shift`, round-trip ÉGALITÉ. -/
+theorem spaceship_step_toGrid_zero (g : Grid) (hg : Canonical g) {p : Nat}
+    (v : Int × Int) (hship : evolve p g = shift v g) :
+    evolve p ((gridToMacroCellWithOffset g).2.toGrid (0, 0))
+      = shift v ((gridToMacroCellWithOffset g).2.toGrid (0, 0)) := by
+  have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+      = g := toGrid_gridToMacroCellWithOffset_eq g hg
+  have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset g).1.1,
+               0 - (gridToMacroCellWithOffset g).1.2)
+          ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  rw [hshift, ← evolve_shift, hrt, hship]
+
+/-- **Capture de la reconstruction d'un vaisseau.** Pour toute phase canonique
+    `g` d'un vaisseau (`evolve p g = shift v g`), dont le niveau de
+    reconstruction divise l'horizon du saut (`p ∣ 2^level`) et dont la vitesse
+    vérifie `2·|v.i| ≤ p`, la reconstruction satisfait le prédicat de saut —
+    `jumpCapturedF_of_spaceship` consommé au niveau de la reconstruction, avec
+    wf (`buildFromGrid_wf`), niveau (`1 ≤ lvl` dès `g ≠ []`, borne n-aware) et
+    relation de dérive transportée (`spaceship_step_toGrid_zero`). Cas vide :
+    la reconstruction est une feuille morte de niveau 0, décidée par le noyau. -/
+theorem jumpCapturedF_reconstruction_of_spaceship (g : Grid) (hg : Canonical g)
+    {p : Nat} (v : Int × Int) (hship : evolve p g = shift v g)
+    (hdiv : p ∣ 2 ^ (gridToMacroCellWithOffset g).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    exact jumpCapturedF_of_spaceship _ hwf hlvl v
+      (spaceship_step_toGrid_zero g hg hship) hdiv hspd1 hspd2
+
+/-- **hcap de la classe des vaisseaux, trajectoire complète.** Pour un vaisseau
+    canonique de période `p > 0`, dont **chaque phase** a un niveau de
+    reconstruction divisible par `p` et dont la vitesse vérifie `2·|v.i| ≤ p`,
+    tout instant `t` est capturé : la trajectoire se réduit à la phase `t % p`
+    **dérivée** de `(t/p)•v` (`evolve_spaceship_mod`), la translation
+    disparaît dans la reconstruction (`gridToMacroCellWithOffset_shift`,
+    brique 1), et la phase — canonique, vaisseau elle-même
+    (`evolve_spaceship_phase`) — est capturée. La prémisses de divisibilité et
+    de vitesse sont finies : elles portent sur les `p` phases seulement. -/
+theorem hcap_of_spaceship (g : Grid) (hg : Canonical g) {p : Nat} (hp0 : 0 < p)
+    (v : Int × Int) (hship : evolve p g = shift v g)
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i g)).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_spaceship_mod g hg hship t, gridToMacroCellWithOffset_shift]
+  have hr : t % p < p := Nat.mod_lt _ hp0
+  have hcan : Canonical (evolve (t % p) g) := by
+    rcases Nat.eq_zero_or_pos (t % p) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  exact jumpCapturedF_reconstruction_of_spaceship _ hcan v
+    (evolve_spaceship_phase g hship _) (hdiv _ hr) hspd1 hspd2
+
+/-- **L3 clos pour la classe des vaisseaux de vitesse ≤ c/2 : correction
+    Hashlife des spaceships.** Corollaire d'assemblage — le troisième cas de
+    la décomposition P4.4 où le maillon L3 est **entièrement prouvé**, et la
+    composition que le scoping réservait à cette lane : pour toute MacroCell
+    dont la grille rendue à l'origine est un vaisseau `p > 0` de vitesse
+    `2·|v.i| ≤ p` (chaque phase de niveau divisible par `p`), l'égalité globale
+    `hashlife_correctN` s'applique à tout horizon `2^k` sous `centralCorrect`.
+    La classe couvre glider (`p = 4`, `v = (1, -1)`) et LWSS (`p = 4`,
+    `v = (0, 2)`, la borne exacte) dès que le niveau atteint `log₂ p = 2`. -/
+theorem hashlife_correct_margin_of_spaceship (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (hship : evolve p (c.toGrid (0, 0)) = shift v (c.toGrid (0, 0)))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_spaceship _ (canonical_sortDedup _) hp0 v hship hdiv hspd1 hspd2 t)
+
 /-! ## Sanity-checks sur le bestiaire
 
 Le fragment `supportInMargin` est **décidable** (instance `Decidable (BoxAssezGrandN)`,
