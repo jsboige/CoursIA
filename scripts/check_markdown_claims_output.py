@@ -464,6 +464,16 @@ _THRESHOLD_OP_RE = re.compile(
     r"[<>≤≥]=?\s*\d|\d\s*[<>≤≥]=?",
 )
 
+# Family D (#14905): grid coordinates inside parentheses, like
+# '(2,2)' / '(1,1)', are TUPLES (cell positions), not francophone decimals.
+# _normalize_num collapses '(2,2)' -> '2.2', so the detector searches for a
+# '2.2' that never exists in the 3x3-grid code output and flags a legitimate
+# prose coordinate as fabricated (DecPyMC-7 md[67]: 'un but en (2,2) et un
+# obstacle en (1,1)'). Criterion (acceptance #14905): a SINGLE digit on each
+# side of a comma, wrapped in a parenthesized pair. '(0,75)' -- two digits
+# after the comma -- is a genuine decimal and stays eligible.
+_COORD_TUPLE_RE = re.compile(r"\(\s*\d\s*,\s*\d\s*\)")
+
 
 def _line_around(src: str, match_pos: int, match_end: int) -> str:
     """Return the source line containing the [match_pos, match_end) span.
@@ -552,6 +562,25 @@ def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
     post_end = min(len(src), match_end + 5)
     span = src[pre_start:post_end]
     return bool(_THRESHOLD_OP_RE.search(span))
+
+
+def _is_coordinate_tuple(src: str, match_pos: int, match_end: int) -> bool:
+    """Family D (#14905): a SINGLE digit on each side of a comma wrapped in
+    parentheses -- '(2,2)' / '(1,1)' -- is a grid-coordinate tuple, not a
+    francophone decimal. _normalize_num collapses '(2,2)' -> '2.2', so the
+    detector hunts for a '2.2' that never exists in the 3x3-grid code output
+    and flags a legitimate prose coordinate as fabricated (DecPyMC-7 md[67]:
+    'un but en (2,2) et un obstacle en (1,1)'). Suppressing this match
+    requires BOTH: the token is exactly '<digit>,<digit>' AND it is wrapped
+    by an immediately-enclosing parenthesized pair. '(0,75)' -- two digits
+    after the comma -- is a genuine decimal and stays eligible.
+    """
+    token = src[match_pos:match_end].strip()
+    if not re.fullmatch(r"\d,\d", token):
+        return False
+    start = max(0, match_pos - 1)
+    end = min(len(src), match_end + 1)
+    return bool(_COORD_TUPLE_RE.search(src[start:end]))
 
 
 def _is_scalar(value: object) -> bool:
@@ -852,6 +881,8 @@ def check_notebook(path: Path) -> dict:
             if _is_legend_equation(prose, match_pos, match_end):
                 continue
             if _is_threshold_expression(prose, match_pos, match_end):
+                continue
+            if _is_coordinate_tuple(prose, match_pos, match_end):
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")

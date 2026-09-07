@@ -13,7 +13,7 @@ maturity: BETA=67
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy). Elle totalise **67 notebooks** — **28 en C#/.NET Interactive**, **37 en Python**, **2 en Lean 4** (voir le marqueur `CATALOG-STATUS` ci-dessus pour le décompte autoritatif). Le versant Infer.NET se scinde en **19 notebooks bayésiens** ([`Infer/`](Infer/README.md)) — fondements (distributions, graphes de facteurs), modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) — plus **8 notebooks C# de l'arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) : utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-10) et le standalone **Infer-101**. Le versant PyMC porte ces modèles en Python avec l'échantillonnage NUTS : **19 notebooks corpus** ([`PyMC/`](PyMC/README.md), en parité 1:1 avec Infer — fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et **12 miroirs de l'arc décision** ([`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md), renumérotés 1-12, dont la **jambe actuarielle** 8-12). L'arc décision est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](decision_theory_lean/)) et ses **2 notebooks à kernel Lean** (DecInfer-02, utilité espérée vNM ; DecInfer-09, indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib. Enfin, un **pont causal** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md), 4 notebooks Python via kernel `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/).
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy). Elle totalise **67 notebooks** — **28 en C#/.NET Interactive**, **37 en Python**, **2 en Lean 4** (voir le marqueur `CATALOG-STATUS` ci-dessus pour le décompte autoritatif). Le versant Infer.NET se scinde en **19 notebooks bayésiens** ([`Infer/`](Infer/README.md)) — fondements (distributions, graphes de facteurs), modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) — plus **8 notebooks C# de l'arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) : utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-10) et l'accretion de premier modèle **Infer-1b** ([`Infer/`](Infer/README.md)). Le versant PyMC porte ces modèles en Python avec l'échantillonnage NUTS : **19 notebooks corpus** ([`PyMC/`](PyMC/README.md), en parité 1:1 avec Infer — fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et **12 miroirs de l'arc décision** ([`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md), renumérotés 1-12, dont la **jambe actuarielle** 8-12). L'arc décision est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](decision_theory_lean/)) et ses **2 notebooks à kernel Lean** (DecInfer-02, utilité espérée vNM ; DecInfer-09, indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib. Enfin, un **pont causal** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md), 4 notebooks Python via kernel `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/).
 
 ## Pourquoi cette série
 
@@ -155,7 +155,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). Infer-101.ipynb est également une introduction standalone, mais en **C#/.NET** (voir la table « Notebooks racine » ci-dessous).
+Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). En **C#/.NET**, l'introduction est `Infer-1b` (`Infer/Infer-1b-Premiers-Modeles.ipynb`), le premier modèle avec les fondations de [`Infer/`](Infer/README.md).
 
 #### Parcours PyMC complet (31 notebooks, ~21h)
 
@@ -171,7 +171,7 @@ flowchart TD
     START --> Q3{"Indécis ?<br/>Découverte rapide"}
     Q1 -->|"oui"| INFER["<b>Infer.NET</b><br/>API C# native · Roslyn ·<br/>factor graphs · message passing<br/>déterministe (EP/VMP/Gibbs)"]
     Q2 -->|"oui"| PYMC["<b>PyMC</b><br/>with pm.Model() · NUTS ·<br/>écosystème pandas/arviz"]
-    Q3 --> IN101["<b>Infer-101</b><br/>(standalone, 45 min)"]
+    Q3 --> IN101["<b>Infer-1b</b><br/>(premier modèle, 1h)"]
     INFER --> PIVOT1{"Modèle trop complexe<br/>ou pipeline Python ?"}
     PYMC --> PIVOT2{"Besoin de message passing<br/>déterministe (VMP/EP) ou .NET ?"}
     PIVOT1 -->|"oui"| PYMC
@@ -202,9 +202,9 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 | Critère | Recommandation |
 |---------|---------------|
-| Juste découvrir la programmation probabiliste | **Infer-101.ipynb** (standalone, 45 min) |
+| Juste découvrir la programmation probabiliste | **Infer-1b** (`Infer/Infer-1b-Premiers-Modeles.ipynb`) |
 | Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
-| Un premier modèle qui marche | **Infer-101** ou **PyMC-01-Setup** |
+| Un premier modèle qui marche | **Infer-1b** ou **PyMC-01-Setup** |
 | Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-11 LDA** |
 | Comparer les deux approches | Suivre la table "inférence comparée" ci-dessus |
 | Production data science | **PyMC** (écosystème Python, NUTS, arviz) |
@@ -214,15 +214,15 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
-├── Infer-101.ipynb              # Introduction C#/.NET (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
 ├── GeneratedSource/             # Sources Infer.NET compilées (Model0_EP.cs ... Model10_VMP.cs)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco/GP (14-16) + frontières (17-19)
 │   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
 │   └── README.md                # Documentation détaillée de la série PyMC
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; héberge les preuves VNM et Coherence/Dutch Book
-├── Infer/                       # Corpus bayésien Infer.NET (19 notebooks)
+├── Infer/                       # Corpus bayésien Infer.NET (19 notebooks + accretion Infer-1b)
 │   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
+│   ├── Infer-1b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   ├── Infer-Glossary.md        # Glossaire des termes Infer.NET
 │   ├── FactorGraphHelper.cs     # Helper visualisation graphes de facteurs
@@ -294,10 +294,10 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 | Notebook | Kernel | Contenu | Durée |
 |----------|--------|---------|-------|
-| [Infer-101](Infer-101.ipynb) | .NET (C#) | Introduction Infer.NET, Two Coins, Cyclist | 1h |
+| [Infer-1b](Infer/Infer-1b-Premiers-Modeles.ipynb) | .NET (C#) | Premier modèle Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 30 min |
 
-### Infer-101.ipynb
+### Infer-1b-Premiers-Modeles.ipynb
 
 Point d'entrée accessible pour la programmation probabiliste :
 - Concepts de base (variables aléatoires, modèles probabilistes)
@@ -409,7 +409,7 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la thé
 
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
-| [Infer-101](Infer-101.ipynb) | .NET (C#) | Introduction Infer.NET, Two Coins, Cyclist | 1h |
+| [Infer-1b](Infer/Infer-1b-Premiers-Modeles.ipynb) | .NET (C#) | Premier modèle Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
 
 ## Prerequisites
@@ -556,7 +556,7 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 
 ### Kernels : un par sous-série, jamais mélangés
 
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour `Infer/` et `Infer-101`, `Python 3` pour `PyMC/` et `Pyro_RSA`. Aucun notebook ne mélange les deux kernels. (Historiquement, `Infer-101` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET autonome.)
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour `Infer/` (dont `Infer-1b`), `Python 3` pour `PyMC/` et `Pyro_RSA`. Aucun notebook ne mélange les deux kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 

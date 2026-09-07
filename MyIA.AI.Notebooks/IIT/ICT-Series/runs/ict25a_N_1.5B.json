@@ -1,0 +1,56 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "arm": "N",
+  "steps": 120,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "seeds": [
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "seed": 0,
+      "steps": 120,
+      "train_s": 901.1140303611755,
+      "vram_load_gb": 1.179743232,
+      "vram_peak_gb": 1.639399936,
+      "n_records": 240,
+      "hack_early": 0.21666666666666667,
+      "hack_late": 0.225,
+      "mc_early": 0.3333333333333333,
+      "mc_late": 0.325,
+      "reward_early": 0.6666666666666666,
+      "reward_late": 0.6833333333333333
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "seed": 1,
+      "steps": 120,
+      "train_s": 870.9012317657471,
+      "vram_load_gb": 2.354236416,
+      "vram_peak_gb": 2.354236416,
+      "n_records": 240,
+      "hack_early": 0.24166666666666667,
+      "hack_late": 0.23333333333333334,
+      "mc_early": 0.35833333333333334,
+      "mc_late": 0.35,
+      "reward_early": 0.7333333333333333,
+      "reward_late": 0.7416666666666667
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "seed": 42,
+      "steps": 120,
+      "train_s": 1047.450376033783,
+      "vram_load_gb": 2.355416064,
+      "vram_peak_gb": 2.355416064,
+      "n_records": 240,
+      "hack_early": 0.18333333333333332,
+      "hack_late": 0.20833333333333334,
+      "mc_early": 0.31666666666666665,
+      "mc_late": 0.3,
+      "reward_early": 0.625,
+      "reward_late": 0.6666666666666666
+    }
+  ]
+}
