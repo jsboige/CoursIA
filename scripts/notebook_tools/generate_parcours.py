@@ -125,8 +125,14 @@ def filter_for_parcours(entries: list[dict], parcours_id: str) -> list[dict]:
 def generate_parcours_page(
     parcours_id: str,
     entries: list[dict],
+    unresolved: list[str] | None = None,
 ) -> str:
-    """Generate markdown page for a single parcours."""
+    """Generate markdown page for a single parcours.
+
+    ``unresolved`` (optional) collects the ``path`` of every catalog entry whose
+    notebook is absent from disk; such entries get a BARE label (no markdown
+    link) rather than an href that 404s until the next catalogue regeneration.
+    """
     config = PARCOURS[parcours_id]
     lines = [
         "<!--",
@@ -186,10 +192,20 @@ def generate_parcours_page(
             # link label; quote() percent-encodes spaces/accents in paths
             # (e.g. "Créateur de mail personnalisé.ipynb") for markdown hrefs.
             label = name.replace("[", "\\[").replace("]", "\\]")
-            href = quote(f"../../MyIA.AI.Notebooks/{e['path']}")
             maturity = e.get("maturity", "?")
             exe = "Oui" if e.get("executable_locally") else "Non"
-            lines.append(f"| {i} | [{label}]({href}) | {maturity} | {exe} |")
+            # Harden against the regen window (#14880): between a rename landing
+            # on `main` and the next catalogue regeneration, an entry's path can
+            # be absent from disk. Emit a BARE label (no href) rather than a
+            # link that 404s, and collect it for the stderr report.
+            if (REPO_ROOT / "MyIA.AI.Notebooks" / e["path"]).exists():
+                href = quote(f"../../MyIA.AI.Notebooks/{e['path']}")
+                cell = f"[{label}]({href})"
+            else:
+                cell = label
+                if unresolved is not None:
+                    unresolved.append(e["path"])
+            lines.append(f"| {i} | {cell} | {maturity} | {exe} |")
         lines.append("")
 
     return "\n".join(lines)
@@ -247,9 +263,10 @@ def main():
 
     targets = [args.parcours] if args.parcours else list(PARCOURS.keys())
 
+    unresolved: list[str] = []
     for pid in targets:
         filtered = filter_for_parcours(entries, pid)
-        page = generate_parcours_page(pid, filtered)
+        page = generate_parcours_page(pid, filtered, unresolved)
 
         if args.dry_run:
             print(f"\n{'='*60}")
@@ -265,6 +282,15 @@ def main():
             # 100%+ line churn on every regen. Force LF so regen is byte-clean.
             out_path.write_text(page, encoding="utf-8", newline="\n")
             print(f"  {pid}: {out_path} ({len(filtered)} notebooks)")
+
+    if unresolved:
+        print(
+            "WARNING: catalog entries whose notebook path is absent from disk "
+            f"(emitted as bare label, {len(set(unresolved))} unique):",
+            file=sys.stderr,
+        )
+        for p in sorted(set(unresolved)):
+            print(f"  {p}", file=sys.stderr)
 
     if not args.dry_run and not args.parcours:
         print(f"\nGenerated {len(targets)} parcours pages in {PARCOURS_DIR}")
