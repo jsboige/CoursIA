@@ -63,6 +63,13 @@ que le banc d'essai source sélectionne effectivement sont identifiées ci-desso
 SHA-256, avec les mesures recalculées pour cet audit. Le notebook rejoue le *phénomène* sur des
 instances générées, jamais sur ces fichiers.
 
+**Second passage (2026-09-07).** À la demande de la revue de la PR CoursIA, la colonne
+« Optimum recalculé » a été rejouée en bloc à partir d'un parseur `.sm` et d'un modèle CP-SAT
+réécrits indépendamment de ceux du notebook. Les dix optima et les dix chemins critiques se
+reproduisent à l'identique, tous certifiés `OPTIMAL`. Le contrôle a en revanche relevé une
+empreinte mal transcrite sur `j12010_10` (`…5837` au lieu de `…583b`, un caractère), corrigée
+ici et dans le notebook. Aucune valeur de makespan n'était affectée.
+
 | Instance | SHA-256 (tronqué) | Chemin critique | Optimum recalculé |
 |---|---|---|---|
 | `j30/j3010_1`   | `4fae4197791f2ee8` | 41  | 42  |
@@ -74,7 +81,7 @@ instances générées, jamais sur ces fichiers.
 | `j60/j6010_10`  | `11793a5c0a25c3a1` | 73  | 73  |
 | `j60/j6010_2`   | `bd14308ea049193b` | 62  | 62  |
 | `j120/j12010_1` | `99dd309553f879c2` | 111 | 111 |
-| `j120/j12010_10`| `6620267bb2135837` | 66  | 66  |
+| `j120/j12010_10`| `6620267bb213583b` | 66  | 66  |
 
 ## Le point de protocole que cette distillation mûrit
 

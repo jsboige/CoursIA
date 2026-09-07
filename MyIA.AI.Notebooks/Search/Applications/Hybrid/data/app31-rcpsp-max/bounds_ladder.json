@@ -14,7 +14,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 17.6,
       "borne_active": "charge",
-      "secondes": 0.927,
+      "secondes": 0.566,
       "densite": 0.1,
       "graine": 0
     },
@@ -27,7 +27,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 9.7,
       "borne_active": "charge",
-      "secondes": 0.075,
+      "secondes": 0.046,
       "densite": 0.1,
       "graine": 1
     },
@@ -40,7 +40,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 22.6,
       "borne_active": "charge",
-      "secondes": 0.09,
+      "secondes": 0.065,
       "densite": 0.1,
       "graine": 2
     },
@@ -53,7 +53,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 37.9,
       "borne_active": "charge",
-      "secondes": 2.209,
+      "secondes": 1.965,
       "densite": 0.1,
       "graine": 3
     },
@@ -66,7 +66,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 17.6,
       "borne_active": "charge",
-      "secondes": 0.05,
+      "secondes": 0.036,
       "densite": 0.18,
       "graine": 0
     },
@@ -79,7 +79,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 16.1,
       "borne_active": "charge",
-      "secondes": 0.426,
+      "secondes": 0.398,
       "densite": 0.18,
       "graine": 1
     },
@@ -105,7 +105,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 48.3,
       "borne_active": "charge",
-      "secondes": 0.659,
+      "secondes": 0.581,
       "densite": 0.18,
       "graine": 3
     },
@@ -118,7 +118,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 20.6,
       "borne_active": "charge",
-      "secondes": 0.029,
+      "secondes": 0.028,
       "densite": 0.28,
       "graine": 0
     },
@@ -131,7 +131,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 19.4,
       "borne_active": "charge",
-      "secondes": 0.091,
+      "secondes": 0.098,
       "densite": 0.28,
       "graine": 1
     },
@@ -144,7 +144,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 25.8,
       "borne_active": "charge",
-      "secondes": 0.029,
+      "secondes": 0.03,
       "densite": 0.28,
       "graine": 2
     },
@@ -157,7 +157,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 48.3,
       "borne_active": "charge",
-      "secondes": 0.248,
+      "secondes": 0.216,
       "densite": 0.28,
       "graine": 3
     },
@@ -170,7 +170,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 26.5,
       "borne_active": "charge",
-      "secondes": 0.029,
+      "secondes": 0.028,
       "densite": 0.4,
       "graine": 0
     },
@@ -196,7 +196,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 35.5,
       "borne_active": "charge",
-      "secondes": 0.03,
+      "secondes": 0.031,
       "densite": 0.4,
       "graine": 2
     },
@@ -209,7 +209,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 45.5,
       "borne_active": "chemin critique",
-      "secondes": 0.033,
+      "secondes": 0.038,
       "densite": 0.4,
       "graine": 3
     },
@@ -222,7 +222,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 15.4,
       "borne_active": "chemin critique",
-      "secondes": 0.029,
+      "secondes": 0.028,
       "densite": 0.55,
       "graine": 0
     },
@@ -235,7 +235,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 32.3,
       "borne_active": "charge",
-      "secondes": 0.029,
+      "secondes": 0.014,
       "densite": 0.55,
       "graine": 1
     },
@@ -261,7 +261,7 @@
       "statut": "OPTIMAL",
       "ecart_borne_combinee_pct": 17.1,
       "borne_active": "chemin critique",
-      "secondes": 0.036,
+      "secondes": 0.017,
       "densite": 0.55,
       "graine": 3
     }
