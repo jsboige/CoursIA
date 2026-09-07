@@ -10,8 +10,10 @@ FishAudio server and reduce generation time from ~19h (sequential) to
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
+import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
@@ -38,6 +40,39 @@ _MAX_TTS_CHARS = 500  # Truncation limit for the composed text
 _BATCH_SIZE = 8
 _MAX_WORKERS = 1  # FishAudio S2-Pro is single-threaded; concurrent requests cause timeouts
 _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
+
+# ---------------------------------------------------------------------------
+# F6 — Narrator routing to Qwen3-TTS VoiceDesign (Issue #15002, EPIC #1028)
+# ---------------------------------------------------------------------------
+# The FishAudio S2-Pro narrator clone (v4_narrator_male_neutral) renders as a
+# monotone bourdon ("DRONE" verdict) on Boule de Suif. A measured alternative
+# is the Qwen3-TTS VoiceDesign task on the self-hosted gateway :8196, which
+# delivers `EXPRESSIVE` prosody on the same passage (~110 Hz, expressive
+# intonation, motion >= 2.0 st/syll). The acceptance of #15002 is to ROUTE
+# narrator segments to Qwen while leaving every other speaker unchanged on
+# FishAudio clone.
+#
+# Activation: env flag NARRATOR_QWEN_ROUTING (default "1"). Set "0" to fall
+# back to the FishAudio narrator clone (legacy path).
+#
+# Disabled-by-env safety: if the gateway is unreachable / 4xx, the narrator
+# branch returns status="failed" with reference_id="qwen-voicedesign-narrator-fr-literary"
+# — we do NOT silently fall back to FishAudio (that would defeat the
+# measurement in #1028). The pipeline-level run() surfaces the failure per
+# acceptance #6 of #15002.
+_NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "1") == "1"
+_QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
+
+# VoiceDesign `instructions` prompt — describes the desired voice and delivery
+# for a 19th-century French audiobook narrator. Tuned from prosody_lab A/B
+# measurements (Issue #11624 / #1028, melody partition verdict EXPRESSIVE).
+# Must stay <= 500 chars (server-side cap, enforced by qwen_tts_client).
+_QWEN_NARRATOR_INSTRUCTIONS: str = (
+    "Une voix masculine francaise, posee, legerement grave, avec une "
+    "ironie douce et distante, un rythme mesure et une prosodie expressive "
+    "du XIXe siecle, registre audiobook litteraire de Maupassant, "
+    "ni monotone ni theatrale."
+)
 # S2-Pro processes bracketed tags sequentially; beyond ~4, later tags tend to
 # be ignored or to degrade prosody quality (observed during Act 2 multi-tag
 # testing, session 25/05/2026). The cap also keeps the prefix short enough
@@ -650,13 +685,20 @@ def _concat_audio_parts(audio_parts: list[bytes]) -> bytes:
         return b"".join(audio_parts)
 
 
-def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult:
-    """Synthesize a single segment, handling long text by splitting."""
-    reference_id = _resolve_voice(seg)
-    seed = 42 + seg.seg_index
-    mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
-    current_hash = _text_hash(fishaudio_text)
+def _synthesize_fishaudio_path(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    reference_id: str,
+    seed: int,
+    mp3_path: Path,
+    current_hash: str,
+) -> TTSResult:
+    """Legacy FishAudio S2-Pro synthesis path (Issue #1600 / F4 mapping).
 
+    Extracted from _synthesize_segment on 2026-09-07 (Issue #15002) so the
+    narrator-routing branch can delegate to it from tests without touching
+    the Qwen gateway. Non-narrator speakers always go through this path.
+    """
     if mp3_path.exists():
         # Check if TTS text changed since last generation
         cached_hash = ""
@@ -790,6 +832,145 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
         status="generated",
         attempts=attempts,
         text_hash=current_hash,
+    )
+
+
+def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult:
+    """Synthesize a single segment, dispatching narrateur -> Qwen VoiceDesign.
+
+    F6 (Issue #15002): narrator segments are routed to Qwen3-TTS VoiceDesign
+    when NARRATOR_QWEN_ROUTING is ON (default). Every other speaker stays on
+    the legacy FishAudio S2-Pro path. On Qwen gateway failure the narrator
+    branch raises NarratorQwenUnavailable — there is no silent fallback to
+    FishAudio (acceptance #6 of #15002).
+    """
+    reference_id = _resolve_voice(seg)
+    seed = 42 + seg.seg_index
+    mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
+    current_hash = _text_hash(fishaudio_text)
+
+    # F6 (Issue #15002): narrator-only routing to Qwen3-TTS VoiceDesign.
+    # Runs BEFORE the cache check so a stale FishAudio MP3 cannot shadow a
+    # narrator reroute.
+    if _should_route_narrator_to_qwen(seg):
+        return _synthesize_narrator_qwen(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            mp3_path=mp3_path,
+            seed=seed,
+            text_hash=current_hash,
+        )
+
+    return _synthesize_fishaudio_path(
+        seg=seg,
+        fishaudio_text=fishaudio_text,
+        reference_id=reference_id,
+        seed=seed,
+        mp3_path=mp3_path,
+        current_hash=current_hash,
+    )
+
+
+# ---------------------------------------------------------------------------
+# F6 — Narrator routing to Qwen3-TTS VoiceDesign (Issue #15002)
+# ---------------------------------------------------------------------------
+
+class NarratorQwenUnavailable(RuntimeError):
+    """Raised when the Qwen3-TTS gateway is unreachable or returns audio of
+    unexpected shape. The pipeline surfaces this as a hard failure per
+    acceptance #6 of #15002 — we never silently swap back to FishAudio
+    because that would mask the regression #1028 measured.
+    """
+
+
+def _strip_brackets_for_qwen(text: str) -> str:
+    """Strip FishAudio S2-Pro bracket tags before sending to Qwen VoiceDesign.
+
+    VoiceDesign does NOT interpret [whispering]/[sad]/[emphasis] — it
+    receives a single `instructions` prompt and renders the `input` text as
+    natural speech. Brackets would either be ignored or, worse, vocalized
+    (S2-Pro regression #1277/#1485 — WER explosion on bracket text).
+    """
+    # Drop content in [brackets] and any leading tag prefix block.
+    return re.sub(r"\[[^\]]+\]\s*", "", text).strip()
+
+
+def _synthesize_narrator_qwen(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via Qwen3-TTS VoiceDesign (port :8196).
+
+    Returns a TTSResult with status="generated" on success or
+    status="failed" on Qwen gateway failure (never silently falls back to
+    FishAudio — see NarratorQwenUnavailable for the rationale).
+    """
+    # Imported here (not at module top) so that this module remains usable
+    # even if the prosody_lab package is absent in a slim environment.
+    from .prosody_lab.qwen_tts_client import qwen_tts_voicedesign_chunked
+
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorQwenUnavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+
+    wav_bytes = qwen_tts_voicedesign_chunked(
+        plain_text,
+        instructions=_QWEN_NARRATOR_INSTRUCTIONS,
+        language="French",
+        speed=1.0,
+        max_chars=_MAX_CHUNK_CHARS,
+        per_chunk_timeout=290,
+        gap_ms=120,
+    )
+    if not wav_bytes:
+        raise NarratorQwenUnavailable(
+            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable "
+            f"or render failed)"
+        )
+
+    # VoiceDesign returns WAV; downstream pipeline writes MP3 (same naming
+    # convention as FishAudio path). Convert via pydub at 192 kbps to match.
+    try:
+        from pydub import AudioSegment
+        audio = AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
+        buf = io.BytesIO()
+        audio.export(buf, format="mp3", bitrate="192k")
+        mp3_bytes = buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorQwenUnavailable(
+            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
+        ) from exc
+
+    mp3_path.write_bytes(mp3_bytes)
+    duration = audio_duration_mp3(mp3_bytes)
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_QWEN_NARRATOR_REFERENCE_ID,
+        mp3_path=str(mp3_path),
+        duration_s=duration,
+        seed=seed,
+        status="generated",
+        attempts=1,
+        text_hash=text_hash,
+    )
+
+
+def _should_route_narrator_to_qwen(seg: AnnotatedSegment) -> bool:
+    """Decide whether a segment is routed to Qwen VoiceDesign.
+
+    Acceptance #1 of #15002: routing is explicit, testable, and limited to
+    the narrator. All other speakers stay on FishAudio clone.
+    """
+    return (
+        _NARRATOR_QWEN_ROUTING
+        and seg.speaker == "narrateur"
     )
 
 
