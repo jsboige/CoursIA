@@ -112,7 +112,7 @@ MyIA.AI.Notebooks/GenAI/
 │   ├── 00-3-API-Endpoints-Configuration.ipynb
 │   └── 00-4-Environment-Validation.ipynb
 │
-├── tutorials/                        # 📚 Guides — dupliqués dans Image/tutorials/ (cf. #13581 T3)
+├── tutorials/                        # 📚 Guides transversaux (FR canonique, source autoritaire)
 │
 └── Image/                            # 🖼️ Écosystème Images — racine de ce document
     │
@@ -145,12 +145,6 @@ MyIA.AI.Notebooks/GenAI/
     │   ├── science-diagrams.ipynb
     │   ├── history-geography.ipynb
     │   └── literature-visual.ipynb
-    │
-    ├── tutorials/                    # 📚 Guides Complets (copie locale)
-    │   ├── dalle3-complete-guide.md
-    │   ├── gpt5-image-analysis-guide.md
-    │   ├── openrouter-ecosystem-guide.md
-    │   └── educational-workflows.md
     │
     ├── INDEX.md                      # 📑 Ce document
     ├── DEPLOYMENT.md                 # 🚀 Guide production
