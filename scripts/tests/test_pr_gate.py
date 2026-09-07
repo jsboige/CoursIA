@@ -73,7 +73,60 @@ def test_unreadable_api_exits_one(monkeypatch):
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
     pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])
-    assert pending == ["Odd"] and not bad and not ok
+    assert pending == ["Odd [completed/none]"] and not bad and not ok
+
+
+# --- #14976 -- frozen check-runs: conclusion is authoritative -----------------
+#
+# Measured on #14967 (2026-09-06): `Detect notebook changes` (check-run
+# 101568709885) sat at `status=in_progress` with `conclusion=success` for
+# 90 min past its own job's completed_at, confirmed on two independent
+# endpoints. The status-first test (status pending OR no conclusion) polled
+# that green job until the 45-min budget burned and the verdict came back
+# STARVED on a PR where nothing was red. Conclusion is authoritative; status
+# only speaks when conclusion is null.
+
+
+def test_frozen_check_with_terminal_conclusion_settles_14976():
+    """Positive control (#14976 acceptance 2): RED on the pre-fix classify,
+    GREEN after. The frozen shape -- `status=in_progress` carrying
+    `conclusion=success` -- must land in `ok`, not `pending`."""
+    checks = [
+        run("Detect notebook changes", "success", status="in_progress", rid=1),
+        run("Lean CI", "success", rid=2),
+    ]
+    pending, bad, ok, _adv = pr_gate.classify(checks, "PR gate")
+    assert pending == [] and bad == []
+    assert ok == ["Detect notebook changes", "Lean CI"]
+
+
+def test_frozen_check_with_failure_conclusion_is_bad_14976():
+    """The frozen shape with a red conclusion must fail fast, not STARVE: a
+    wedged record carrying `failure` is a real red the operator must see."""
+    checks = [run("Detect notebook changes", "failure", status="in_progress")]
+    pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    assert bad == ["Detect notebook changes"] and pending == []
+
+
+def test_pending_labels_carry_the_observed_couple_14976():
+    """Acceptance 3: a pending constituent renders with the status/conclusion
+    actually observed, else a green-but-wedged check is indistinguishable
+    from a slow-but-alive one (the 90-minute #14967 diagnosis)."""
+    checks = [run("Slow CI", None, status="in_progress")]
+    pending, _bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    assert pending == ["Slow CI [in_progress/none]"]
+
+
+def test_starved_message_documents_the_child_rerun_repair_14976():
+    """Acceptance 4: the repair gesture -- rerun the CHILD run carrying the
+    frozen check-run, never the aggregator -- lives in the starvation message
+    the operator actually reads."""
+    code, msg = pr_gate.verdict(
+        pending=["Slow CI [in_progress/success]"], bad=[], settled=False
+    )
+    assert code == 1
+    assert msg.startswith("STARVED")
+    assert "child" in msg.lower()
 
 
 # --- 2. de-duplication by check name ----------------------------------------
@@ -175,7 +228,7 @@ def test_the_9858_outage_shape_fails():
 
     A gate that verdicts PASS on this shape is the exact failure mode that let
     175 PRs through unpoliced. Both sub-cases must land in `pending` (classify:
-    `status in STATUS_PENDING or not conclusion`) and the verdict must FAIL --
+    no conclusion) and the verdict must FAIL --
     the bias-to-fail rule (rule 1) applied to the outage, parallel to the #9762
     replay above (which pins the failure-side, this pins the no-verdict-side).
     """
@@ -530,7 +583,7 @@ def test_pending_legacy_status_blocks_settling():
          "started_at": "2026-08-07T00:00:00Z", "id": 9},
     ]
     pending, _bad, _ok, _adv = pr_gate.classify(checks)
-    assert pending == ["legacy/lint"]
+    assert pending == ["legacy/lint [in_progress/none]"]
 
 
 # --- fork exemption (issue #10072) -------------------------------------------
@@ -970,7 +1023,7 @@ def test_inflight_required_check_settles_to_pass_on_reroll():
 
     # Rollup 1: guard still in flight -> pending -> verdict timed out (FAIL).
     pending1, bad1, ok1, _adv = pr_gate.classify([inflight], pr_gate.DEFAULT_SELF_NAME)
-    assert pending1 == [name] and not bad1 and not ok1
+    assert pending1 == [name + " [in_progress/none]"] and not bad1 and not ok1
     code1, _msg1 = pr_gate.verdict(pending1, bad1, settled=False)
     assert code1 == 1
 
