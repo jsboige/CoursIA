@@ -161,7 +161,14 @@ def sample_occupation(out_path: str) -> int:
     """
     api = os.environ.get("GITHUB_API_URL", "https://api.github.com")
     repo = os.environ.get("GITHUB_REPOSITORY")
-    token = os.environ.get("GITHUB_TOKEN")
+    # Listing self-hosted runners is an admin-scoped endpoint: GITHUB_TOKEN
+    # gets a 403 there even with actions:read (confirmed on the first
+    # instrumented run, 34086099812). The repo convention is the read-only
+    # RUNNERS_READ_AT secret (cf scripts/ci/check_runner_starvation.py and
+    # linux-runner-starvation-advisory.yml) -- prefer it, keep GITHUB_TOKEN
+    # as a fallback so local/manual runs still work with a plain token.
+    token = (os.environ.get("RUNNERS_READ_PAT")
+             or os.environ.get("GITHUB_TOKEN"))
     sampled = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     result: dict[str, object] = {"sampled_at": sampled}
     if repo and token:
@@ -182,10 +189,18 @@ def sample_occupation(out_path: str) -> int:
         except (urllib.error.URLError, OSError, ValueError) as exc:
             result["error"] = str(exc)
     else:
-        result["error"] = "GITHUB_REPOSITORY/GITHUB_TOKEN not set"
+        result["error"] = "GITHUB_REPOSITORY/RUNNERS_READ_PAT/GITHUB_TOKEN not set"
     try:
         with open(out_path, "w", encoding="utf-8") as fh:
             json.dump(result, fh)
+        # One diagnostic line in the job log: the first instrumented run
+        # failed silently (occupation.json was only ever read at the END of
+        # the job, 20 min later) -- the cause was invisible in the log.
+        if "error" in result:
+            print(f"[occupation] not sampled: {result['error']}")
+        else:
+            print(f"[occupation] busy={result['busy']} online={result['online']} "
+                  f"total={result['total']} at {result['sampled_at']}")
     except OSError as exc:
         print(f"quarto_render_timing: cannot write {out_path}: {exc}", file=sys.stderr)
     return 0

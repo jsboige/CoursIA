@@ -85,7 +85,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-      actions: read  # #14597 : lister les self-hosted runners (covariable d'occupation)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -97,6 +96,7 @@ jobs:
         # Doit tourner AVANT le rendu (~20 min) : le compte doit decrire le
         # parc au moment ou le job demarre, pas ou il finit.
         env:
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
 
@@ -244,7 +244,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-      actions: read  # #14597 : lister les self-hosted runners (covariable d'occupation)
       pull-requests: write  # pour poster le commentaire de gate
     steps:
       - name: Checkout
@@ -306,6 +305,7 @@ jobs:
         # de consommer un appel API sur un rendu scope.
         if: steps.scope.outputs.mode == 'full'
         env:
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
 
