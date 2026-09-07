@@ -10,6 +10,14 @@
 # comparison is platform-independent (issue #1056). Limited to the exact files
 # the check reads, to avoid a wide renormalization of unrelated .md files.
 COURSE_CATALOG.generated.json text eol=lf
+# Meme motif pour l'etat de dedup du monitor qc-research (#11698) : le fichier est
+# reecrit par `qc-research-monitor.yml` (runner Linux, donc LF) alors que le blob sur
+# main est en CRLF. Mesure sur la PR #14994 : UNE entree ajoutee (`21195`, 144 -> 145,
+# zero retrait, zero valeur modifiee, ordre preserve) rend un diff de 874+/868- --
+# les 868 lignes different toutes par leur seule fin de ligne. Le body de la PR
+# demande au reviewer de refuser "si le diff touche autre chose" : sans cette regle,
+# ce critere est illisible a chaque run. Meme remede que le catalogue ci-dessus.
+docs/qc/qc-research-seeded.json text eol=lf
 # Notebooks Markdown : la regle precedente `MyIA.AI.Notebooks/*/README.md` ne
 # matchait qu'1 niveau de profondeur et ratait 296 READMEs profonds (cf #14570).
 # `**` matche profondeur arbitraire et remplace les 2 lignes en une seule, plus
