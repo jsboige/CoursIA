@@ -57,9 +57,10 @@ Lake = livrable formel, `lake build` = preuve d'exécution (convention des lakes
 
 ## Prérequis
 
-- **Lean 4** `v4.31.0-rc1` (`leanprover/lean4`) — toolchain.
-- **Mathlib4** `v4.31.0-rc1` — théorie des `Finset`, injectivité sur un ensemble,
-  images finies.
+- **Lean 4** `v4.33.0` (`leanprover/lean4`) — toolchain (migrée par #14773 ; le README
+  documentait encore `v4.31.0-rc1` alors que le fichier portait `v4.32.1`).
+- **Mathlib4** `db584cd6d46c92f209a44c0f1c829460d327499d` (pin FLT, #14773) — théorie des
+  `Finset`, injectivité sur un ensemble, images finies.
 - **`lake`** (via `elan`) — orchestrateur de build.
 - **WSL** requis pour un build complet sur Windows (WDAC workaround sur le filesystem
   natif). Depuis WSL : `lake build Sudoku`.
@@ -245,11 +246,11 @@ ouverte documentée**.
 
 ### Statut
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
+- **Toolchain** : `leanprover/lean4:v4.33.0` (migrée par #14773)
 - **Sorry** : **0** sur l'ensemble du module.
 - **Build** : `lake build Sudoku` (dépend de Mathlib4)
-- **Dépendances** : Mathlib4 (`v4.31.0-rc1`) — théorie des `Finset`, injectivité sur un
-  ensemble, images finies.
+- **Dépendances** : Mathlib4 (`db584cd6d46c92f209a44c0f1c829460d327499d`, pin FLT #14773) —
+  théorie des `Finset`, injectivité sur un ensemble, images finies.
 - **Axiomes** : `[propext, Classical.choice, Quot.sound]` (standards Mathlib, pas de
   `sorryAx`) sur les trois théorèmes.
 

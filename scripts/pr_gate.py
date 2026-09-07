@@ -140,9 +140,6 @@ CONCLUSION_BAD = frozenset(
     {"failure", "timed_out", "cancelled", "action_required", "stale", "startup_failure"}
 )
 
-# GitHub check_run.status values that mean "not finished".
-STATUS_PENDING = frozenset({"queued", "in_progress", "waiting", "pending", "requested"})
-
 DEFAULT_SELF_NAME = "PR gate"
 
 # Substring that marks a check as advisory (see rule 6). Matched
@@ -415,6 +412,18 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     return [entry[1] for entry in best.values()]
 
 
+def _pending_label(name: str, status: str, conclusion: str) -> str:
+    """Render a pending constituent with its observed status/conclusion couple.
+
+    #14976 acceptance 3: a STARVED message that names `X` without saying what X
+    actually reported is indistinguishable from a real wedge. The frozen record
+    that cost the 90-minute diagnosis on #14967 (`Detect notebook changes`
+    [`in_progress/success`]) looked identical to a slow-but-alive check until
+    the couple was printed.
+    """
+    return f"{name} [{status or 'none'}/{conclusion or 'none'}]"
+
+
 def classify(
     checks: Sequence[dict],
     self_name: str = DEFAULT_SELF_NAME,
@@ -450,6 +459,14 @@ def classify(
     NOT that classify mishandles in-flight checks (it waits on them correctly)
     but that the *workflow trigger* never asks it to look again -- that trigger
     fix lives in pr-gate.yml, not here.
+
+    #14976 nuance: `conclusion` is authoritative. A check-run can carry a
+    terminal conclusion while `status` is still `in_progress` (frozen record,
+    measured on #14967). Such a check is SETTLED by its conclusion -- never
+    held in `pending` because of a stale status. `status` only decides when
+    `conclusion` is null, and then the check is pending regardless (see
+    ``_pending_label`` for why the observed couple is carried into the wait
+    log and the starvation message).
     """
     pending: list[str] = []
     bad: list[str] = []
@@ -480,8 +497,17 @@ def classify(
                 ok.append(name)
             continue
 
-        if status in STATUS_PENDING or not conclusion:
-            pending.append(name)
+        # #14976: conclusion is authoritative. A check-run can freeze at
+        # `status=in_progress` while already carrying a terminal conclusion --
+        # measured on #14967, `Detect notebook changes` sat at
+        # `in_progress/success` 90 min past its own job's `completed_at`,
+        # confirmed on two endpoints. The old status-first test (status
+        # pending OR no conclusion) polled that green job until the budget
+        # burned and verdicted STARVED on a PR where nothing was red. Status
+        # only speaks when conclusion is null -- and then the check is pending
+        # regardless of what `status` claims.
+        if not conclusion:
+            pending.append(_pending_label(name, status, conclusion))
         elif conclusion in CONCLUSION_OK:
             ok.append(name)
         elif conclusion in CONCLUSION_BAD:
@@ -516,6 +542,13 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
     unknown), but the driver renders it as CANCELLED, not FAILURE, so the
     stale-sweep re-drives the leg instead of a human reading a red lie.
 
+    #14976 acceptance 4: each pending constituent renders as ``name [status/
+    conclusion]`` (see ``_pending_label``), so a green-but-wedged record
+    (`Detect notebook changes [in_progress/success]`) is distinguishable from
+    a slow-but-alive one. The message also names the repair gesture -- rerun
+    the CHILD run carrying the frozen check-run, never the aggregator gate --
+    because that is what actually clears the wedge (#14967 measured it).
+
     Note (#11751): the wait loop now re-reads the check set one last time at
     the deadline; an empty `pending` AND empty `bad` at that point is treated
     as `settled=True` BEFORE this function is reached, so this `not settled`
@@ -528,7 +561,12 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
         return 1, "FAIL -- failing checks: " + ", ".join(bad)
     if not settled:
         if pending:
-            return 1, "STARVED -- timed out waiting for: " + ", ".join(pending)
+            return 1, (
+                "STARVED -- timed out waiting for: " + ", ".join(pending)
+                + " -- a constituent showing a terminal conclusion above is "
+                "wedged, not slow: rerun its CHILD run (gh run rerun <id>), "
+                "never the gate (#14976)"
+            )
         return 1, (
             "FAIL -- timed out with empty wait set (gate bug, see #11751)"
         )
