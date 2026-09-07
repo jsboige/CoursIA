@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
 """Smoke proof pour le pilote guard_gauntlet (issue #15067).
 
-Ce script produit **sur disque** les sorties verbatim d'un run gauntlet
-contre un mini-validator fichier-par-fichier integre au repo, en guise
-de preuve HELD + ESCAPED + NO_FAULT.
+Ce script produit **sur disque** (scratchpad, pas sous ``docs/``) les
+sorties verbatim d'un run gauntlet contre un validator **REEL du depot**
+(= pas un mini-validator dedie, conformement au REPAIR po-2025 #15073
+item 1), en guise de preuve NO_FAULT + HELD + ESCAPED.
 
-Usage (depuis la racine du repo) ::
+Validator cible : ``scripts/check_subprocess_encoding.py`` (gate #12811,
+mitigation cp1252 / UnicodeDecodeError des subprocess cp1252).
+
+Cibles :
+  - NO_FAULT : module Python SANS violation (subprocess.run sans text=True)
+  - HELD     : module baseline SANS violation + fault=replace injectant une
+               violation (subprocess.run avec text=True sans encoding=)
+  - ESCAPED  : module baseline SANS violation + fault=truncate ; le validator
+               ne lit pas la longueur (il detecte text=True/encoding=, pas la
+               taille), donc exit=0 sur cible tronquee -> ESCAPED.
+
+Usage ::
 
     python scripts/ci/guard_gauntlet_smoke.py
-    # ecrit docs/ci/15067-gauntlet-smoke-<TS>.json avec les 3 sorties
+    # ecrit <scratchpad>/15067-gauntlet-smoke-<TS>.json avec les 3 sorties
 
-Le validator integre est ``scripts/ci/_gauntlet_demo_validator.py`` :
-un mini-check qui refuse tout fichier contenant le marqueur ``@FAIL_HELD``.
-C'est volontairement hors domaine (le depot n'utilise pas ce marqueur),
-donc NO_FAULT doit passer et HELD doit etre declenche par l'injection.
-ESCAPED est verifie en injectant un fault hors de la portee du check
-(le check ne lit pas la longueur, le truncate passe inapercu).
+Aucun fichier daté sous ``docs/`` (harness-hygiene #15067 item 5 : la
+preuve ephemere va sur le scratchpad, pas dans le repo).
 """
 
 from __future__ import annotations
@@ -30,33 +38,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 RUNNER = REPO_ROOT / "scripts" / "ci" / "guard_gauntlet.py"
-VALIDATOR = REPO_ROOT / "scripts" / "ci" / "_gauntlet_demo_validator.py"
+VALIDATOR = REPO_ROOT / "scripts" / "check_subprocess_encoding.py"
 
 
-def _ensure_validator() -> None:
-    """Cree le mini-validator (hors du repo code path par defaut)."""
-    body = '''#!/usr/bin/env python3
-"""Mini-validator pour proof gauntlet (#15067).
-
-Lit un fichier (sys.argv[1]) et :
-  - exit 0 si le contenu NE contient PAS le marqueur "@FAIL_HELD"
-  - exit 1 si le contenu CONTIENT le marqueur
-N'inspecte PAS la longueur du fichier (=> ESCAPED sous fault=truncate).
-"""
-import sys
-TARGET = b"@FAIL_HELD"
-try:
-    data = open(sys.argv[1], "rb").read()
-except Exception as exc:
-    print(f"validator error: {exc}", file=sys.stderr)
-    sys.exit(2)
-sys.exit(1 if TARGET in data else 0)
-'''
-    if not VALIDATOR.exists() or VALIDATOR.read_text(encoding="utf-8") != body:
-        VALIDATOR.write_text(body, encoding="utf-8")
-
-
-def _run(target: Path, fault: str, content: str) -> dict:
+def _run(target: Path, fault: str, replace_content: str) -> dict:
     """Execute un run gauntlet, retourne le JSON stdout + rc."""
     cmd = [
         sys.executable,
@@ -70,7 +55,7 @@ def _run(target: Path, fault: str, content: str) -> dict:
         "--timeout-sec",
         "10",
         "--replace-content",
-        content,
+        replace_content,
     ]
     proc = subprocess.run(
         cmd, cwd=str(REPO_ROOT), env=os.environ.copy(),
@@ -84,7 +69,7 @@ def _run(target: Path, fault: str, content: str) -> dict:
             break
     return {
         "fault": fault,
-        "replace_content": content,
+        "replace_content": replace_content,
         "rc": proc.returncode,
         "status": payload["status"] if payload else None,
         "check_exit": payload["check_exit"] if payload else None,
@@ -96,39 +81,52 @@ def _run(target: Path, fault: str, content: str) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    _ensure_validator()
-
-    # Trois cibles jetables : NO_FAULT (saine), HELD (marqueur injecte),
-    # ESCAPED (truncate, le validator ne lit pas la longueur).
-    with tempfile.TemporaryDirectory() as tmp:
-        clean = Path(tmp) / "clean.txt"
-        clean.write_bytes(b"# clean file\nno marker here\n")
-        marker = Path(tmp) / "marker.txt"
-        marker.write_bytes(b"# file with marker\n@FAIL_HELD should fail\n")
-        trunc = Path(tmp) / "trunc.txt"
+    # Trois cibles jetables : NO_FAULT (saine), HELD (mutation injecte une
+    # violation), ESCAPED (truncate, le validator ignore la longueur).
+    with tempfile.TemporaryDirectory(prefix="gauntlet-smoke-") as tmp:
+        clean = Path(tmp) / "clean.py"
+        clean.write_bytes(
+            b"import subprocess\n"
+            b"subprocess.run(['echo'])\n"
+        )
+        marker = Path(tmp) / "marker.py"
+        marker.write_bytes(
+            b"import subprocess\n"
+            b"subprocess.run(['echo'])\n"
+        )
+        trunc = Path(tmp) / "trunc.py"
         trunc.write_bytes(b"# truncate target\n" + b"x" * 1024)
 
         results = [
             ("NO_FAULT", _run(clean, "none", "")),
-            ("HELD", _run(marker, "replace", "@FAIL_HELD injected by smoke proof\n")),
+            ("HELD", _run(
+                marker,
+                "replace",
+                "import subprocess\n"
+                "subprocess.run(['echo'], text=True)\n"
+            )),
             ("ESCAPED", _run(trunc, "truncate", "")),
         ]
 
     out = {
         "issue": "#15067",
         "validator": str(VALIDATOR.relative_to(REPO_ROOT)),
-        "validator_strategy": "refuse any file containing '@FAIL_HELD'",
+        "validator_strategy": "scripts/check_subprocess_encoding.py -- refuse subprocess.run(..., text=True) sans encoding=",
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "results": [
             {"label": label, **result} for label, result in results
         ],
     }
 
-    target_dir = REPO_ROOT / "docs" / "ci"
-    target_dir.mkdir(parents=True, exist_ok=True)
-    out_path = target_dir / f"15067-gauntlet-smoke-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json"
+    # Ecriture sur SCRATCHPAD (hors-repo), pas sous docs/.
+    scratch_dir = Path(os.environ.get(
+        "TEMP",
+        tempfile.gettempdir(),
+    )) / "gauntlet-smoke"
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    out_path = scratch_dir / f"15067-gauntlet-smoke-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json"
     out_path.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"Wrote {out_path.relative_to(REPO_ROOT)}")
+    print(f"Wrote {out_path}")
     return 0
 
 

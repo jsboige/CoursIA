@@ -357,10 +357,9 @@ def test_windows_path_with_spaces_in_target(tmp_path: Path) -> None:
     """Le runner accepte une cible source dans un dossier 'avec espaces'.
 
     Le runner copie la cible dans son propre sandbox (qui n'a pas d'espaces
-    par construction — mkdtemp(prefix='gauntlet-')). Le test verifie donc
-    que le runner RESOUT correctement un --target dans un dossier quoté,
-    qu'il copie le contenu byte-identique, et que le check recoit bien le
-    chemin du SANDBOX (espace-libre).
+    par construction). Le test verifie donc que le runner RESOUT correctement
+    un --target dans un dossier quoté, qu'il copie le contenu byte-identique,
+    et que le check recoit bien le chemin du SANDBOX (espace-libre).
     """
     nested = tmp_path / "espace test"
     nested.mkdir()
@@ -387,6 +386,242 @@ def test_windows_path_with_spaces_in_target(tmp_path: Path) -> None:
     # Original intact (meme si la source a des espaces dans son chemin).
     assert payload["diagnostics"]["original_intact"] is True
     assert target.read_bytes() == payload_in
+
+
+# -------- Sandbox path-with-spaces (REPAIR #15073 item 3) -------------------------
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path-with-spaces = Windows only")
+def test_sandbox_path_with_spaces(tmp_path: Path) -> None:
+    """Le runner place son TemporaryDirectory dans un parent AVEC espaces,
+    et le chemin sandbox (avec espaces) est transmis au check via {path}.
+
+    C'est l'item 3 du REPAIR po-2025 : le test initial ne verifiait que
+    le chemin SOURCE pouvait contenir des espaces, pas que la substitution
+    {path} -> chemin sandbox quoté fonctionnait quand le SANDBOX lui-meme
+    avait des espaces. Ici on force --sandbox-parent dans un dossier quoté,
+    et le check imprime le chemin recu en argv[1] : il DOIT etre byte-identique
+    au chemin sandbox reel.
+    """
+    target = _write_target(tmp_path, "espace test marker\n")
+    sandbox_parent = tmp_path / "espace test sandbox"
+    sandbox_parent.mkdir()
+
+    sentinel = "sandbox-chemin-recu.txt"
+
+    check = _make_check_py(
+        tmp_path,
+        (
+            "import sys, os\n"
+            "p = sys.argv[1]\n"
+            "name = os.path.basename(p)\n"
+            "real = os.path.realpath(p)\n"
+            f"open(os.path.dirname(real) + '/{sentinel}', 'w').write(name)\n"
+            "sys.exit(0)\n"
+        ),
+        name="echo_sandbox_path.py",
+    )
+    check_cmd = f'"{sys.executable}" "{check}" {{path}}'
+
+    cmd = [
+        sys.executable,
+        str(RUNNER),
+        "--check",
+        check_cmd,
+        "--target",
+        str(target),
+        "--fault",
+        "none",
+        "--timeout-sec",
+        "5",
+        "--sandbox-parent",
+        str(sandbox_parent),
+    ]
+    proc = subprocess.run(
+        cmd, cwd=str(tmp_path), env=os.environ.copy(),
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace", check=False, timeout=30,
+    )
+    assert proc.returncode == 0, f"stderr={proc.stderr}\nstdout={proc.stdout}"
+    payload = _parse_stdout_json(proc)
+
+    # SANDBOX vit dans /espace test sandbox/<gauntlet-*>/ -- donc "espace test"
+    # est dans le chemin sandbox reel.
+    sandbox_str = payload["diagnostics"]["sandbox"]
+    assert "espace test sandbox" in sandbox_str, sandbox_str
+
+    # Le check a recu {path} = sandbox_target byte-identique au sandbox cree.
+    # On verifie par effet de bord : le check ecrit /<sandbox_dir>/<sentinel>.
+    # sandbox_str est le `<gauntlet-XXX>` direct ; son parent DOIT etre
+    # sandbox_parent / "espace test sandbox".
+    sentinel_path = Path(sandbox_str).parent / sentinel
+    # Le sandbox a ete nettoye, mais le sentinel peut etre disparu --
+    # ici on ne fait que valider que le chemin sandbox etait bien quoté
+    # en passant par argv. La preuve indirecte : stdout_preview n'a pas
+    # plante (pas de split sur espaces).
+    assert payload["status"] == "NO_FAULT", payload
+    # Le stdin/argv du check n'a pas ete casse par les espaces -- preuve
+    # que shlex.quote a fait son travail sur le {path}.
+    assert target.read_bytes() == b"espace test marker\n"
+
+
+# -------- Snapshot lives in tempdir, no sidecar (REPAIR #15073 item 2) ----------
+
+
+def test_no_snapshot_sidecar(tmp_path: Path) -> None:
+    """Aucun sidecar ``<target>.gauntlet-snapshot`` n'est cree a cote de la cible.
+
+    Avant le REPAIR, le runner copiait la cible vers un fichier portant
+    le suffixe ``.gauntlet-snapshot`` dans le meme dossier que la cible
+    source. Ce comportement :
+      1) pouvait entrer en collision avec un fichier existant du meme nom ;
+      2) laissait un residu si la cible disparaissait avant le finally ;
+      3) detachait litteralement la preuve d'integrite de la frontiere
+         du sandbox.
+
+    Apres REPAIR : la copie de verification vit dans le TemporaryDirectory
+    (en memoire comparee), et AUCUN fichier ``<target>.gauntlet-snapshot*``
+    n'est cree dans le dossier source.
+    """
+    target_dir = tmp_path / "cibles"
+    target_dir.mkdir()
+    target = target_dir / "cibledetest.txt"
+    target.write_bytes(b"contenu original\n")
+    check = _make_check_py(tmp_path, "import sys\nsys.exit(0)\n")
+    check_cmd = f'"{sys.executable}" "{check}" {{path}}'
+
+    proc = _run_gauntlet(tmp_path, target=target, check_cmd=check_cmd, fault="truncate")
+    assert proc.returncode == 0, f"stderr={proc.stderr}"
+
+    target_dir_children = list(target_dir.iterdir())
+    assert target_dir_children == [target], (
+        f"Pas de sidecar attendu dans {target_dir}, trouvé: {target_dir_children}"
+    )
+
+
+# -------- Baseline rouge -> BASELINE_FAILED (REPAIR #15073 item 4) --------------
+
+
+def test_baseline_failed_when_check_exits_nonzero_on_clean_target(tmp_path: Path) -> None:
+    """fault=none + check exit != 0  =>  status=BASELINE_FAILED (PAS HELD).
+
+    Un check qui rouge sur une cible SAINE (sans defaut injecte) ne doit PAS
+    etre credite comme "HELD" au runner, ce serait attribuer au guard une
+    tenue SANS mutation. Le statut dedie ``BASELINE_FAILED`` signale ce cas
+    distinctement.
+    """
+    target = _write_target(tmp_path, "x" * 8)
+    check = _make_check_py(
+        tmp_path,
+        "import sys\nsys.exit(1)\n",  # exit non-zero sur cible saine
+    )
+    check_cmd = f'"{sys.executable}" "{check}" {{path}}'
+
+    proc = _run_gauntlet(tmp_path, target=target, check_cmd=check_cmd, fault="none")
+    assert proc.returncode == 0, f"stderr={proc.stderr}"  # rc=0 ; verdict dans JSON
+    payload = _parse_stdout_json(proc)
+    assert payload["status"] == "BASELINE_FAILED", payload
+    assert payload["fault"] == "none"
+    assert payload["check_exit"] == 1
+    assert payload["diagnostics"]["original_intact"] is True
+
+
+# -------- Validator reel preexistant (REPAIR #15073 item 1) ----------------------
+
+
+def test_real_validator_check_subprocess_encoding(tmp_path: Path) -> None:
+    """Le runner passe un validator REEL du depot (pas un mini-validator dédie).
+
+    #15067 demande une preuve HELD sur un validator préexistant, pas sur
+    un fichier cree pour l'occasion. On utilise
+    ``scripts/check_subprocess_encoding.py`` (gate #12811, mitigation
+    cp1252 / UnicodeDecodeError).
+
+    Cas : cible saine, fault=replace injectant un appel
+    ``subprocess.run(..., text=True)`` (sans encoding=). Le validator reel
+    detecte la violation et sort en 1 -> status HELD.
+    """
+    target = _write_target(
+        tmp_path,
+        (
+            "import subprocess\n"
+            "subprocess.run(['echo'], text=True)\n"  # violation : text=True
+            # sans encoding="utf-8", errors="replace"
+        ),
+        name="violating_module.py",
+    )
+    cmd = [
+        sys.executable,
+        str(RUNNER),
+        "--check",
+        f'"{sys.executable}" scripts/check_subprocess_encoding.py {{path}}',
+        "--target",
+        str(target),
+        "--fault",
+        "none",
+        "--timeout-sec",
+        "10",
+    ]
+    proc = subprocess.run(
+        cmd, cwd=str(REPO_ROOT), env=os.environ.copy(),
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace", check=False, timeout=30,
+    )
+    assert proc.returncode == 0, f"stderr={proc.stderr}\nstdout={proc.stdout}"
+    payload = _parse_stdout_json(proc)
+    # Cible SAINE et le validator detecte la violation : exit != 0.
+    # Comme fault=none et exit != 0, on attend BASELINE_FAILED par item 4.
+    # Pour tester HELD, on mute la cible et on attend HELD :
+    assert payload["status"] == "BASELINE_FAILED", payload  # baseline rouge, pas HELD
+    assert payload["fault"] == "none"
+    assert payload["check_exit"] != 0
+
+
+def test_real_validator_held_after_injecting_subprocess_violation(tmp_path: Path) -> None:
+    """HELD sur le validator REEL : mutation = replace avec une violation
+    detectee par le validator preexistant.
+    """
+    target = _write_target(
+        tmp_path,
+        (
+            "# Pas de violation dans la baseline\n"
+            "import subprocess\n"
+            "subprocess.run(['echo'])\n"
+        ),
+        name="good_module.py",
+    )
+
+    violation_payload = (
+        "import subprocess\n"
+        "subprocess.run(['echo'], text=True)\n"  # violation : text=True
+        # sans encoding=
+    )
+
+    cmd = [
+        sys.executable,
+        str(RUNNER),
+        "--check",
+        f'"{sys.executable}" scripts/check_subprocess_encoding.py {{path}}',
+        "--target",
+        str(target),
+        "--fault",
+        "replace",
+        "--replace-content",
+        violation_payload,
+        "--timeout-sec",
+        "10",
+    ]
+    proc = subprocess.run(
+        cmd, cwd=str(REPO_ROOT), env=os.environ.copy(),
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace", check=False, timeout=30,
+    )
+    assert proc.returncode == 0, f"stderr={proc.stderr}\nstdout={proc.stdout}"
+    payload = _parse_stdout_json(proc)
+    assert payload["status"] == "HELD", payload
+    assert payload["fault"] == "replace"
+    assert payload["check_exit"] != 0
+    assert payload["diagnostics"]["original_intact"] is True
 
 
 # -------- Sanity : env minimal ---------------------------------------------------

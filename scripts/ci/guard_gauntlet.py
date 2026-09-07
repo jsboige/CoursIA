@@ -113,6 +113,7 @@ MAX_DIAGNOSTIC_BYTES = 4096
 
 class Status(enum.Enum):
     NO_FAULT = "NO_FAULT"
+    BASELINE_FAILED = "BASELINE_FAILED"
     HELD = "HELD"
     ESCAPED = "ESCAPED"
     USAGE = "USAGE"
@@ -192,6 +193,16 @@ def parse_argv(argv: Sequence[str]) -> argparse.Namespace:
         default=0,
         help="Pour fault=bitflip : offset du byte a flipper (0 par defaut).",
     )
+    p.add_argument(
+        "--sandbox-parent",
+        default=None,
+        type=Path,
+        help=(
+            "Repertoire PARENT du TemporaryDirectory. Par defaut, tempfile "
+            "utilise gettempdir(). Utile pour les tests qui veulent "
+            "verifier le passage du chemin sandbox avec espaces / accents."
+        ),
+    )
     return p.parse_args(list(argv))
 
 
@@ -221,6 +232,24 @@ def apply_fault(target: Path, fault: Fault, replace_content: str, bitflip_byte: 
         target.write_text(replace_content or "garbage mutation content\n", encoding="utf-8")
         return
     raise ValueError(f"fault inconnue: {fault!r}")
+
+
+class _NoOpContext:
+    """No-op context manager : juste pour que `with X as Y: ...` ait une
+    forme symetrique quand on n'a PAS besoin de creer un repertoire parent
+    (cas --sandbox-parent fourni par l'appelant ; le repertoire existe deja).
+
+    Rend ``str(self.path)`` a `__enter__` ; ne fait rien a `__exit__`.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+
+    def __enter__(self) -> str:
+        return str(self.path)
+
+    def __exit__(self, *exc: object) -> None:
+        return None
 
 
 def _quote_path_for_shell(path: str) -> str:
@@ -291,13 +320,23 @@ def run_check(
     return proc.returncode, proc.stdout, proc.stderr, False
 
 
-def verify_original_intact(original: Path, snapshot_path: Path) -> bool:
-    """Verifie que le fichier source n'a pas ete modifie par le runner."""
-    if not snapshot_path.exists():
+def verify_original_intact(original: Path, expected_bytes: bytes) -> bool:
+    """Verifie que le fichier source n'a pas ete modifie par le runner.
+
+    Compare le contenu actuel de la cible avec le snapshot capture AVANT
+    la mise en sandbox (le snapshot vit dans le TemporaryDirectory, pas
+    en sidecar a cote de la cible -- #15067 acceptance).
+
+    Renvoie True si la cible est byte-identique au snapshot, False sinon.
+    Si la cible n'existe plus (cas pathologique), renvoie False.
+    """
+    if not original.exists():
         return False
-    a = original.read_bytes()
-    b = snapshot_path.read_bytes()
-    return a == b
+    try:
+        a = original.read_bytes()
+    except OSError:
+        return False
+    return a == expected_bytes
 
 
 def main(argv: Sequence[str]) -> int:
@@ -315,118 +354,121 @@ def main(argv: Sequence[str]) -> int:
 
     fault = Fault(args.fault)
 
-    # Snapshot du fichier source AVANT toute mutation. Sert a verifier que
-    # la cible n'a pas ete modifiee par le runner (acceptance : original
-    # byte-identique).
-    snapshot = target.with_suffix(target.suffix + ".gauntlet-snapshot")
-
+    # Snapshot du contenu de la cible AVANT toute mutation (evalue en
+    # memoire, pas en sidecar : #15067 acceptance -- pas d'ecriture
+    # <target>.gauntlet-snapshot a cote de la source). Sert a verifier
+    # que la cible n'a pas ete modifiee par le runner.
     try:
-        shutil.copy2(target, snapshot)
+        original_bytes = target.read_bytes()
     except OSError as exc:
-        sys.stderr.write(f"[INTERNAL] Echec snapshot de la cible: {exc}\n")
+        sys.stderr.write(f"[INTERNAL] Lecture cible impossible: {exc}\n")
         return 4
 
-    original_bytes = target.read_bytes()
-
-    sandbox_dir: Path
-    sandbox_target: Path
-    try:
-        sandbox_dir = Path(tempfile.mkdtemp(prefix="gauntlet-"))
-        sandbox_target = sandbox_dir / target.name
-        shutil.copy2(target, sandbox_target)
-    except OSError as exc:
-        sys.stderr.write(f"[INTERNAL] Echec creation sandbox: {exc}\n")
-        snapshot.unlink(missing_ok=True)
-        return 4
-
-    try:
-        try:
-            apply_fault(sandbox_target, fault, args.replace_content, args.bitflip_byte)
-        except (OSError, ValueError) as exc:
-            sys.stderr.write(f"[INTERNAL] Echec application fault: {exc}\n")
-            return 4
-
-        run_t0 = time.monotonic()
-        try:
-            exit_code, stdout, stderr, timed_out = run_check(
-                args.check, sandbox_target, args.timeout_sec
-            )
-        except ValueError as exc:
-            sys.stderr.write(f"[USAGE] {exc}\n")
-            return 2
-        elapsed_sec = round(time.monotonic() - run_t0, 3)
-
-        if timed_out:
-            status = Status.TIMEOUT
-            check_exit: int | None = None
-        else:
-            check_exit = exit_code
-            # Le verdict NO_FAULT / HELD / ESCAPED est *a la charge de l'appelant* :
-            # le runner ne peut pas savoir si le check a reussi "a raison" ou
-            # "par accident". On rapporte juste l'exit code. L'appelant (CI ou
-            # humain) decide du mapping exit_code -> verdict.
-            # Pour le pilote, on utilise une convention simple :
-            #   fault=NONE          -> NO_FAULT (exit doit etre 0 si le check est OK)
-            #   fault=truncate/etc  -> HELD si exit != 0, ESCAPED sinon
-            # Cette convention est documentee dans le body PR et surchargeable
-            # par --expected-exit si besoin (non implemente dans le pilote).
-            if fault is Fault.NONE:
-                status = Status.NO_FAULT if exit_code == 0 else Status.HELD
-            else:
-                status = Status.HELD if exit_code != 0 else Status.ESCAPED
-
-        # Verifier que la cible source n'a pas ete modifiee.
-        intact = verify_original_intact(target, snapshot)
-
-        result = Result(
-            status=status,
-            fault=fault,
-            check_exit=check_exit,
-            diagnostics={
-                "sandbox": str(sandbox_dir),
-                "elapsed_sec": elapsed_sec,
-                "stdout_bytes": len(stdout),
-                "stderr_bytes": len(stderr),
-                "stdout_preview": stdout[:MAX_DIAGNOSTIC_BYTES] if stdout else "",
-                "stderr_preview": stderr[:MAX_DIAGNOSTIC_BYTES] if stderr else "",
-                "original_intact": intact,
-                "original_sha256_before": _sha256_bytes(original_bytes),
-                "original_sha256_after": _sha256_bytes(target.read_bytes()),
-            },
-        )
-
-        # Sortie humaine sur stderr.
-        human = (
-            f"[{status.value}] fault={fault.value} exit={check_exit} "
-            f"sandbox={sandbox_dir.name} original_intact={intact}\n"
-        )
-        sys.stderr.write(human)
-
-        # Sortie JSON sur stdout.
-        json.dump(result.to_jsonable(), sys.stdout, ensure_ascii=False, sort_keys=True)
-        sys.stdout.write("\n")
-
-        # Exit code du runner : 0 si verdict clair, 2/3/4 si probleme.
-        if status in (Status.USAGE,):
-            return 2
-        if status is Status.TIMEOUT:
-            return 3
-        if status is Status.INTERNAL:
-            return 4
-        return 0
-    finally:
-        # Nettoyage : on supprime TOUJOURS le sandbox. La cible source n'est
-        # jamais touchee (acceptance : original byte-identique).
-        shutil.rmtree(sandbox_dir, ignore_errors=True)
-        # Restaurer le snapshot vers la cible si jamais le check l'a modifiee
-        # par accident. (Defensif : le runner ne modifie pas la cible, mais
-        # si jamais un check detourne via GAUNTLET_TARGET, on revert.)
-        if target.exists() and snapshot.exists():
+    # Le sandbox EST le TemporaryDirectory -- on n'ouvre AUCUN fichier
+    # source dans le process principal, on ne cree AUCUN sidecar. La
+    # copie sandbox vit et meurt dans ce bloc contextuel. Le parent du
+    # tmpdir peut etre surcharge via --sandbox-parent pour tester les
+    # espaces (cf. test_sandbox_path_with_spaces).
+    sandbox_parent_ctx = (
+        tempfile.TemporaryDirectory(prefix="gauntlet-parent-")
+        if args.sandbox_parent is None
+        else _NoOpContext(args.sandbox_parent)
+    )
+    with sandbox_parent_ctx as sandbox_parent_str:
+        with tempfile.TemporaryDirectory(
+            prefix="gauntlet-", dir=sandbox_parent_str
+        ) as sandbox_dir_str:
+            sandbox_dir = Path(sandbox_dir_str)
+            sandbox_target = sandbox_dir / target.name
             try:
-                if target.read_bytes() != original_bytes:
-                    shutil.copy2(snapshot, target)
-            finally:
-                snapshot.unlink(missing_ok=True)
+                shutil.copy2(target, sandbox_target)
+            except OSError as exc:
+                sys.stderr.write(f"[INTERNAL] Echec copie sandbox: {exc}\n")
+                return 4
+
+            try:
+                apply_fault(sandbox_target, fault, args.replace_content, args.bitflip_byte)
+            except (OSError, ValueError) as exc:
+                sys.stderr.write(f"[INTERNAL] Echec application fault: {exc}\n")
+                return 4
+
+            run_t0 = time.monotonic()
+            try:
+                exit_code, stdout, stderr, timed_out = run_check(
+                    args.check, sandbox_target, args.timeout_sec
+                )
+            except ValueError as exc:
+                sys.stderr.write(f"[USAGE] {exc}\n")
+                return 2
+            elapsed_sec = round(time.monotonic() - run_t0, 3)
+
+            if timed_out:
+                status = Status.TIMEOUT
+                check_exit: int | None = None
+            else:
+                check_exit = exit_code
+                # Le verdict HELD/ESCAPED est a la charge de l'appelant ;
+                # le runner rapporte l'exit code, l'appelant decide du mapping.
+                # Convention du pilote (#15067) :
+                #   fault=NONE           + exit=0  -> NO_FAULT
+                #   fault=NONE           + exit!=0 -> BASELINE_FAILED
+                #                            (le check rouge sur cible saine
+                #                             n'est PAS un HELD -- ce serait
+                #                             crediter au guard une tenue sans
+                #                             mutation ; c'est un defaut du
+                #                             check lui-meme).
+                #   fault=truncate/etc   + exit!=0 -> HELD
+                #   fault=truncate/etc   + exit=0  -> ESCAPED
+                if fault is Fault.NONE:
+                    if exit_code == 0:
+                        status = Status.NO_FAULT
+                    else:
+                        status = Status.BASELINE_FAILED
+                else:
+                    status = Status.HELD if exit_code != 0 else Status.ESCAPED
+
+            # Verifier que la cible source n'a pas ete modifiee pendant le run.
+            # On compare l'etat actuel de la cible au snapshot d'avant (bytes).
+            intact = verify_original_intact(target, original_bytes)
+
+            result = Result(
+                status=status,
+                fault=fault,
+                check_exit=check_exit,
+                diagnostics={
+                    "sandbox": str(sandbox_dir),
+                    "elapsed_sec": elapsed_sec,
+                    "stdout_bytes": len(stdout),
+                    "stderr_bytes": len(stderr),
+                    "stdout_preview": stdout[:MAX_DIAGNOSTIC_BYTES] if stdout else "",
+                    "stderr_preview": stderr[:MAX_DIAGNOSTIC_BYTES] if stderr else "",
+                    "original_intact": intact,
+                    "original_sha256_before": _sha256_bytes(original_bytes),
+                    "original_sha256_after": _sha256_bytes(target.read_bytes()),
+                },
+            )
+
+            # Sortie humaine sur stderr.
+            human = (
+                f"[{status.value}] fault={fault.value} exit={check_exit} "
+                f"sandbox={sandbox_dir.name} original_intact={intact}\n"
+            )
+            sys.stderr.write(human)
+
+            # Sortie JSON sur stdout.
+            json.dump(result.to_jsonable(), sys.stdout, ensure_ascii=False, sort_keys=True)
+            sys.stdout.write("\n")
+
+            # Exit code du runner : 0 pour verdict clair (meme BASELINE_FAILED
+            # -- l'appelant lit le statut dans le JSON), 2/3/4 pour les
+            # problemes d'invocation/exec.
+            if status is Status.USAGE:
+                return 2
+            if status is Status.TIMEOUT:
+                return 3
+            if status is Status.INTERNAL:
+                return 4
+            return 0
 
 
 def _sha256_bytes(b: bytes) -> str:
