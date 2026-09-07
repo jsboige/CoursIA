@@ -70,9 +70,11 @@ class TestGpuLockParse(unittest.TestCase):
 
     def test_parse_clocks_stdout_real_format(self):
         from commands.gpu import _parse_clocks_stdout
-        current, max_clock = _parse_clocks_stdout(CLOCK_OUTPUT)
-        self.assertEqual(current, 1230)
-        self.assertEqual(max_clock, 2100)
+        gpus = _parse_clocks_stdout(CLOCK_OUTPUT)
+        self.assertEqual(len(gpus), 1)
+        self.assertEqual(gpus[0]["index"], 0)
+        self.assertEqual(gpus[0]["current_mhz"], 1230)
+        self.assertEqual(gpus[0]["max_mhz"], 2100)
 
     def test_parse_clocks_stdout_ignores_other_sections(self):
         # Une valeur Graphics sous une section non ciblee ne doit pas ecraser.
@@ -80,15 +82,35 @@ class TestGpuLockParse(unittest.TestCase):
         out = ("    Clocks\n        Graphics : 1230 MHz\n"
                "    Max Clocks\n        Graphics : 2100 MHz\n"
                "    Max Customer Boost Clocks\n        Graphics : N/A\n")
-        current, max_clock = _parse_clocks_stdout(out)
-        self.assertEqual(current, 1230)
-        self.assertEqual(max_clock, 2100)
+        gpus = _parse_clocks_stdout(out)
+        self.assertEqual(gpus[0]["current_mhz"], 1230)
+        self.assertEqual(gpus[0]["max_mhz"], 2100)
 
     def test_parse_clocks_stdout_no_graphics(self):
         from commands.gpu import _parse_clocks_stdout
-        current, max_clock = _parse_clocks_stdout("    Clocks\n        SM : 1230 MHz\n")
-        self.assertIsNone(current)
-        self.assertIsNone(max_clock)
+        self.assertEqual(_parse_clocks_stdout("    Clocks\n        SM : 1230 MHz\n"), [])
+
+    def test_parse_clocks_stdout_multigpu_returns_each_card(self):
+        # #14975 : le parseur precedent ne gardait que le DERNIER GPU rencontree.
+        # Sur une sortie 2-GPU (meme forme que la machine cible po-2023), il faut
+        # un record par carte, chacun avec SES clocks, jamais l'ecrasement du
+        # premier par le dernier.
+        from commands.gpu import _parse_clocks_stdout
+        out = ("Attached GPUs                             : 2\n"
+               "GPU 00000000:01:00.0\n"
+               "    Clocks\n        Graphics : 1590 MHz\n"
+               "    Max Clocks\n        Graphics : 1800 MHz\n"
+               "GPU 00000000:06:00.0\n"
+               "    Clocks\n        Graphics : 210 MHz\n"
+               "    Max Clocks\n        Graphics : 2100 MHz\n")
+        gpus = _parse_clocks_stdout(out)
+        self.assertEqual(len(gpus), 2)
+        self.assertEqual(gpus[0]["index"], 0)
+        self.assertEqual(gpus[0]["current_mhz"], 1590)
+        self.assertEqual(gpus[0]["max_mhz"], 1800)
+        self.assertEqual(gpus[1]["index"], 1)
+        self.assertEqual(gpus[1]["current_mhz"], 210)
+        self.assertEqual(gpus[1]["max_mhz"], 2100)
 
 
 class TestGpuLockStatus(unittest.TestCase):
@@ -99,7 +121,7 @@ class TestGpuLockStatus(unittest.TestCase):
         from commands.gpu import gpu_lock_status
         mock_run.return_value = (True, CLOCK_OUTPUT, "")
         st = gpu_lock_status()
-        self.assertEqual(st, {"current_mhz": 1230, "max_mhz": 2100})
+        self.assertEqual(st, [{"index": 0, "current_mhz": 1230, "max_mhz": 2100}])
 
     @patch("commands.gpu._run_cmd")
     def test_status_nvidia_fail_returns_none(self, mock_run):
@@ -123,6 +145,26 @@ class TestGpuLockVerify(unittest.TestCase):
         self.assertEqual(_verify_lock(False, 1380, 1800), "ECHEC")
         self.assertEqual(_verify_lock(False, 1380, None), "INDETERMINE")
 
+    def test_verify_lock_all_ok_when_every_card_passes(self):
+        from commands.gpu import _verify_lock_all
+        gpus = [{"index": 0, "current_mhz": 1800, "max_mhz": 1800},
+                {"index": 1, "current_mhz": 1800, "max_mhz": 1800}]
+        self.assertEqual(_verify_lock_all(True, gpus), "OK")
+
+    def test_verify_lock_all_echac_when_any_card_fails(self):
+        # #14975 : le verrou porte sur toutes les cartes (`-lgc` sans `-i`), donc
+        # une seule carte refusant le verrou doit faire ECHEC, jamais OK.
+        from commands.gpu import _verify_lock_all
+        gpus = [{"index": 0, "current_mhz": 1380, "max_mhz": 1800},
+                {"index": 1, "current_mhz": 1380, "max_mhz": 2100}]
+        self.assertEqual(_verify_lock_all(True, gpus), "ECHEC")
+
+    def test_verify_lock_all_indeterminate_if_any_unknown(self):
+        from commands.gpu import _verify_lock_all
+        gpus = [{"index": 0, "current_mhz": 1800, "max_mhz": 1800},
+                {"index": 1, "current_mhz": None, "max_mhz": None}]
+        self.assertEqual(_verify_lock_all(True, gpus), "INDETERMINE")
+
 
 class TestGpuLockApply(unittest.TestCase):
     """gpu_lock_apply (nvidia-smi -lgc / -rgc, mocke)."""
@@ -133,7 +175,7 @@ class TestGpuLockApply(unittest.TestCase):
     def test_apply_on_verified_capped(self, mock_run, mock_status, mock_journal):
         from commands.gpu import gpu_lock_apply
         mock_run.return_value = (True, "", "")
-        mock_status.return_value = {"current_mhz": 1800, "max_mhz": 1800}
+        mock_status.return_value = [{"index": 0, "current_mhz": 1800, "max_mhz": 1800}]
         self.assertTrue(gpu_lock_apply(True))
         self.assertIn("-lgc 210,1800", mock_run.call_args_list[0][0][0])
         # journalise le verdict OK
@@ -145,7 +187,7 @@ class TestGpuLockApply(unittest.TestCase):
     def test_apply_on_not_capped_journalized_echac(self, mock_run, mock_status, mock_journal):
         from commands.gpu import gpu_lock_apply
         mock_run.return_value = (True, "", "")
-        mock_status.return_value = {"current_mhz": 1380, "max_mhz": 2100}
+        mock_status.return_value = [{"index": 0, "current_mhz": 1380, "max_mhz": 2100}]
         self.assertTrue(gpu_lock_apply(True))
         self.assertEqual(mock_journal.call_args[0][1], "ECHEC")
 
@@ -154,7 +196,7 @@ class TestGpuLockApply(unittest.TestCase):
     def test_apply_on_cmd_fail_returns_false(self, mock_run, mock_status):
         from commands.gpu import gpu_lock_apply
         mock_run.return_value = (False, "", "rc!=0")
-        mock_status.return_value = {"current_mhz": 1380, "max_mhz": 2100}
+        mock_status.return_value = [{"index": 0, "current_mhz": 1380, "max_mhz": 2100}]
         self.assertFalse(gpu_lock_apply(True))
         # si la commande echoue, on ne relit pas l'etat
         self.assertEqual(mock_status.call_count, 0)
@@ -165,7 +207,7 @@ class TestGpuLockApply(unittest.TestCase):
     def test_apply_off_uncapped(self, mock_run, mock_status, mock_journal):
         from commands.gpu import gpu_lock_apply
         mock_run.return_value = (True, "", "")
-        mock_status.return_value = {"current_mhz": 1380, "max_mhz": 2100}
+        mock_status.return_value = [{"index": 0, "current_mhz": 1380, "max_mhz": 2100}]
         self.assertTrue(gpu_lock_apply(False))
         self.assertIn("-rgc", mock_run.call_args_list[0][0][0])
         self.assertEqual(mock_journal.call_args[0][1], "OK")
