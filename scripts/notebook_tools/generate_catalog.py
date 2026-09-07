@@ -331,6 +331,15 @@ def determine_status(
     if _is_research_path(nb_path):
         return "RESEARCH"
 
+    # No code cells at all → NO_CODE, not READY. `all([])` is True by vacuous
+    # truth, so without this guard a markdown-only notebook (01-1b-Video-Slideshow
+    # -Bonus: 2 markdown cells, `forensic_category: NO_CODE`) would be labeled
+    # READY -- "executed" with nothing to execute. Reuse the existing
+    # `forensic_category` vocabulary rather than inventing a new status
+    # (#15080 D01, acceptance 1).
+    if not code_cells:
+        return "NO_CODE"
+
     # Check for errors in outputs
     all_errors = []
     for cell in code_cells:
