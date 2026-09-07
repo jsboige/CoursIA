@@ -91,6 +91,35 @@ def Feasible (g : PrisonersDilemma) (u_row u_col : ℝ) : Prop :=
     u_row = pCC * g.R + pCD * g.S + pDC * g.T + pDD * g.P ∧
     u_col = pCC * g.R + pCD * g.T + pDC * g.S + pDD * g.P
 
+/-- Convexity of the feasible set (#14990): any convex combination of two
+    feasible payoff vectors is feasible. First brick of the Folk theorem —
+    the Fudenberg–Maskin construction interpolates between the target joint
+    action and a punishment phase, so it requires the set of realizable
+    payoffs to be stable under barycentres. Direct proof on the `Feasible`
+    existential (no Mathlib `convexHull`): the witness weights combine as
+    `lam * p + (1 - lam) * q`, which stays non-negative (product of
+    non-negatives) and sums to one (affine combination of the two unit
+    sums). -/
+theorem feasible_convex (g : PrisonersDilemma) (lam : ℝ)
+    (u1_row u1_col u2_row u2_col : ℝ)
+    (h1 : Feasible g u1_row u1_col) (h2 : Feasible g u2_row u2_col)
+    (hlam : 0 ≤ lam) (hlam1 : lam ≤ 1) :
+    Feasible g (lam * u1_row + (1 - lam) * u2_row)
+                (lam * u1_col + (1 - lam) * u2_col) := by
+  obtain ⟨pCC1, pCD1, pDC1, pDD1, hs1, ha1, ha2, ha3, ha4, hr1, hc1⟩ := h1
+  obtain ⟨pCC2, pCD2, pDC2, pDD2, hs2, hb1, hb2, hb3, hb4, hr2, hc2⟩ := h2
+  have h1l : 0 ≤ 1 - lam := by nlinarith
+  refine ⟨lam * pCC1 + (1 - lam) * pCC2, lam * pCD1 + (1 - lam) * pCD2,
+    lam * pDC1 + (1 - lam) * pDC2, lam * pDD1 + (1 - lam) * pDD2,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · linear_combination lam * hs1 + (1 - lam) * hs2
+  · exact add_nonneg (mul_nonneg hlam ha1) (mul_nonneg h1l hb1)
+  · exact add_nonneg (mul_nonneg hlam ha2) (mul_nonneg h1l hb2)
+  · exact add_nonneg (mul_nonneg hlam ha3) (mul_nonneg h1l hb3)
+  · exact add_nonneg (mul_nonneg hlam ha4) (mul_nonneg h1l hb4)
+  · linear_combination lam * hr1 + (1 - lam) * hr2
+  · linear_combination lam * hc1 + (1 - lam) * hc2
+
 /-- Discounted payoff of the reference (row) player under a trajectory of
     joint actions `a` and discount factor `δ`. Generalizes `coopValue` /
     `deviateValue` (stationary special cases) to an arbitrary trajectory:
