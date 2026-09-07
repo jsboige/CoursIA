@@ -55,7 +55,6 @@ listing:
     page-size: 24
   - id: standalone-root
     contents:
-      - "Infer-101.ipynb"
       - "Pyro_RSA_Hyperbole.ipynb"
     type: grid
     sort: "filename"
@@ -74,12 +73,12 @@ La série Probas comporte **4 sous-séries principales + 1 racine standalone**, 
 
 | Sous-série | Notebooks | Stack | Focus |
 |------------|-----------|-------|-------|
-| **[Infer](Infer/README.md) (C#/.NET Interactive)** | 19 (+ Setup + _output.ipynb) | Infer.NET, EP/VMP | Corpus bayésien : fondations, modèles classiques (IRT, TrueSkill, LDA, HMM), frontières (causalité, GP, hiérarchiques, Kalman, change-point, survie) |
+| **[Infer](Infer/README.md) (C#/.NET Interactive)** | 19 (+ Setup + accretion Infer-1b + _output.ipynb) | Infer.NET, EP/VMP | Corpus bayésien : fondations, modèles classiques (IRT, TrueSkill, LDA, HMM), frontières (causalité, GP, hiérarchiques, Kalman, change-point, survie) |
 | **[PyMC](PyMC/README.md) (Python)** | 14 (+ Setup) | PyMC, NUTS | Mêmes modèles qu'Infer, en MCMC : NUTS, diagnostics (R-hat, ESS), posterior predictive checks |
 | **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 2, 9) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
 | **[DecisionTheory/PyMC](DecisionTheory/PyMC/README.md) (Python)** | 7 | PyMC | Mêmes modèles de décision, en sampling |
 | **[DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
-| **Racine (standalone)** | 2 | Python | Infer-101 (intro complète Infer.NET), Pyro_RSA_Hyperbole (Pyro RSA) |
+| **Racine (standalone)** | 1 | Python | Pyro_RSA_Hyperbole (Pyro RSA) |
 
 **Kernels** : `dotnet-csharp` · `python3` · `lean4` (side tracks Lean via WSL, cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md)) · **GPU** : non (Infer.NET/PyMC CPU-only) · **Prérequis** : algèbre linéaire, probabilités de base (variables aléatoires, Bayes), Python intermédiaire.
 
@@ -148,10 +147,11 @@ Notebook passerelle entre Probas, Search (CSP/SMT) et SymbolicAI : encode le Do-
 
 ## Racine — Notebooks standalone
 
-Deux notebooks applicatifs à la racine de la série, indépendants des deux arcs :
+Un notebook applicatif à la racine de la série, indépendant des deux arcs :
 
-- **Infer-101** : tutoriel Infer.NET "from scratch" (hors-numérotation 1-19).
 - **Pyro_RSA_Hyperbole** : Rational Speech Acts bayésien en Pyro (sémantique pragmatique).
+
+L'entrée Infer.NET du corpus bayésien est **Infer-1b** (accretion du premier modèle, ex-Infer-101), dans [`Infer/`](Infer/README.md).
 
 ::: {#standalone-root}
 :::
@@ -190,7 +190,7 @@ jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 
 ## Note sur le rendu Quarto (.NET + Lean + Python)
 
-Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causal-Bridges + Infer-101 + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/DecInfer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
+Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causal-Bridges + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/DecInfer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
 
 ## Pour aller plus loin
 
@@ -215,7 +215,7 @@ pymc_advanced: 5 (10-14)
 dt_infer: 10 (Lean: 2, 9)
 dt_pymc: 7
 dt_causal_bridges: 1
-standalone_root: 2 (Infer-101 + Pyro_RSA)
+standalone_root: 1 (Pyro_RSA)
 listing_pattern: 4-sous-series + setup + standalone (sub-range-split pour corpus long)
 render_local: success
 -->

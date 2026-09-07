@@ -63,12 +63,12 @@ theorem exists_eigenvalue (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
     rw [rank_range_of_injective (g m) g_injective]
     apply dim_V
   have dimW : dim W = Fintype.card H := by
-    have li : LinearIndependent ℝ (H.restrict e) := by
+    have li : LinearIndependent ℝ (H.domRestrict e) := by
       convert (dualBases_e_ε m.succ).basis.linearIndependent.comp _ Subtype.val_injective
       rw [(dualBases_e_ε _).coe_basis]
       all_goals rfl
     have hdW := rank_span li
-    rw [Set.range_restrict] at hdW
+    rw [Set.range_domRestrict] at hdW
     convert hdW
     rw [← (dualBases_e_ε _).coe_basis, Cardinal.mk_image_eq (dualBases_e_ε _).basis.injective,
       Cardinal.mk_fintype]
@@ -117,7 +117,8 @@ theorem huang_degree_theorem (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
     _ = ∑ p ∈ (coeffs y).support, |coeffs y p| * ite (p ∈ q.adjacent) 1 0 := by
       simp only [abs_mul, f_matrix]
     _ = ∑ p ∈ (coeffs y).support with q.adjacent p, |coeffs y p| := by
-      simp [sum_filter]; rfl
+      simp only [mul_ite, mul_one, mul_zero]
+      exact (Finset.sum_filter (p := fun a => a ∈ q.adjacent) (f := fun p => |coeffs y p|)).symm
     _ ≤ ∑ p ∈ (coeffs y).support with q.adjacent p, |coeffs y q| := sum_le_sum fun p _ ↦ H_max p
     _ = Finset.card {p ∈ (coeffs y).support | q.adjacent p} * |coeffs y q| := by
       rw [sum_const, nsmul_eq_mul]

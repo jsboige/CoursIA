@@ -40,6 +40,12 @@
       csharp_sha: 3e53680775740ebf95b2c86dcc5c4800d95cc4ad
       content_python_sha: 11ece7581ff40536788a8fc0e306ca40f3390713890a443479d5f9e7b3591b4d
       content_csharp_sha: 433e313c65cbf5f5067e6d06c0c15848678ef1881787e9d25a9e11c1bbaa2df1
+    - date: "2026-09-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 96011a985e3236fe97c1a7ebe18ebedcc14c3e15
+      csharp_sha: 3e53680775740ebf95b2c86dcc5c4800d95cc4ad
+      content_python_sha: 131b3efb6a51d3475f03e9b1b94bc7e10d38775c79ed4b44b42fdac9d2b198f6
+      content_csharp_sha: 433e313c65cbf5f5067e6d06c0c15848678ef1881787e9d25a9e11c1bbaa2df1
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie GameTheory-08-CombinatorialGames.ipynb (Python), 15 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : theorie des jeux combinatoires impartiaux (positions P/N, jeu de Nim, nim-sum / theoreme de Bouton 1901, fonction mex (minimum excludant), valeurs de Grundy, theoreme de Sprague-Grundy, jeux de soustraction). Mathematique pure sans solveur tiers (les deux cotes implementent mex + Grundy + nim-sum from-scratch)."
