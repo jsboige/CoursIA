@@ -683,6 +683,80 @@ echo "Test 19 : cmd_stop rend != 0 quand le sentinel n'a PAS pu etre pose (#1509
 )
 echo ""
 
+# --- Test 20 : prefixes derives de l'hote, pas po-2024 en dur (#15152) ------
+# Le defaut historique des trois prefixes etait le nom d'UNE machine
+# (myia-po-2024) : tout autre hote s'enregistrait sous l'identite de po-2024.
+# On stubbe `hostname` (MAJUSCULES volontaires : la derivation doit passer
+# le tr 'A-Z' 'a-z') et on verifie les trois familles + les surcharges.
+echo "Test 20 : les 3 prefixes se derivent du hostname, surcharges intactes (#15152)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  unset COURSIA_RUNNER_NAME_PREFIX COURSIA_RUNNER_WAITER_NAME_PREFIX \
+        COURSIA_LEAN_RUNNER_NAME_PREFIX COURSIA_RUNNER_MACHINE_ID
+  cat > "$TEST_DIR/bin/hostname" <<'STUB'
+#!/usr/bin/env bash
+echo "MYIA-TEST-99"
+STUB
+  chmod +x "$TEST_DIR/bin/hostname"
+  source_supervise
+
+  if [ "${MACHINE_ID:-}" = "myia-test-99" ]; then
+    ok "MACHINE_ID derive du hostname, majuscules normalisees (myia-test-99)"
+  else
+    ko "MACHINE_ID attendu myia-test-99, obtenu : ${MACHINE_ID:-vide}"
+  fi
+  if [ "${NAME_PREFIX:-}" = "myia-test-99-linux-docker" ]; then
+    ok "docker : NAME_PREFIX derive (myia-test-99-linux-docker)"
+  else
+    ko "docker : attendu myia-test-99-linux-docker, obtenu : ${NAME_PREFIX:-vide}"
+  fi
+  if [ "${WAITER_NAME_PREFIX:-}" = "myia-test-99-linux-waiter" ]; then
+    ok "waiter : WAITER_NAME_PREFIX derive (myia-test-99-linux-waiter)"
+  else
+    ko "waiter : attendu myia-test-99-linux-waiter, obtenu : ${WAITER_NAME_PREFIX:-vide}"
+  fi
+  if [ "${LEAN_NAME_PREFIX:-}" = "myia-test-99-lean-docker" ]; then
+    ok "lean : LEAN_NAME_PREFIX derive (myia-test-99-lean-docker)"
+  else
+    ko "lean : attendu myia-test-99-lean-docker, obtenu : ${LEAN_NAME_PREFIX:-vide}"
+  fi
+  case "$NAME_PREFIX$WAITER_NAME_PREFIX$LEAN_NAME_PREFIX" in
+    *myia-po-2024*)
+      ko "un prefixe porte encore po-2024 par defaut"
+      ;;
+    *)
+      ok "aucun des trois defauts ne porte po-2024"
+      ;;
+  esac
+
+  # Surcharges explicites : les trois env gardent la priorite sur la
+  # derivation (les wrappers persist/ s'appuient dessus, ex myia-ai-01-wsl).
+  export COURSIA_RUNNER_NAME_PREFIX="explicit-docker-20"
+  export COURSIA_RUNNER_WAITER_NAME_PREFIX="explicit-waiter-20"
+  export COURSIA_LEAN_RUNNER_NAME_PREFIX="explicit-lean-20"
+  source_supervise
+  if [ "${NAME_PREFIX:-}" = "explicit-docker-20" ]; then
+    ok "surcharge COURSIA_RUNNER_NAME_PREFIX prioritaire"
+  else
+    ko "surcharge docker ignoree, obtenu : ${NAME_PREFIX:-vide}"
+  fi
+  if [ "${WAITER_NAME_PREFIX:-}" = "explicit-waiter-20" ]; then
+    ok "surcharge COURSIA_RUNNER_WAITER_NAME_PREFIX prioritaire"
+  else
+    ko "surcharge waiter ignoree, obtenu : ${WAITER_NAME_PREFIX:-vide}"
+  fi
+  if [ "${LEAN_NAME_PREFIX:-}" = "explicit-lean-20" ]; then
+    ok "surcharge COURSIA_LEAN_RUNNER_NAME_PREFIX prioritaire"
+  else
+    ko "surcharge lean ignoree, obtenu : ${LEAN_NAME_PREFIX:-vide}"
+  fi
+
+  # Le stub hostname ne doit pas fuir sur un futur test ajoute apres celui-ci.
+  rm -f "$TEST_DIR/bin/hostname"
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au

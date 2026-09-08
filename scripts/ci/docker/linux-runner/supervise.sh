@@ -73,7 +73,14 @@ set -uo pipefail
 REPO="${COURSIA_RUNNER_REPO:-jsboige/CoursIA}"
 IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.337.0}"
 LABELS="${COURSIA_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-linux}"
-NAME_PREFIX="${COURSIA_RUNNER_NAME_PREFIX:-myia-po-2024-linux-docker}"
+# #15152 : le defaut des trois prefixes etait le nom d'UNE machine
+# (myia-po-2024) -- tout autre hote s'enregistrait cote GitHub sous
+# l'identite de po-2024 : inventaire menteur (un coordinateur attribue le
+# travail a la mauvaise machine) et collision de noms si po-2024 remonte
+# ses propres runners. Le defaut se derive de l'hote ; les surcharges
+# explicites par famille restent disponibles et prioritaires.
+MACHINE_ID="${COURSIA_RUNNER_MACHINE_ID:-$(hostname | tr 'A-Z' 'a-z')}"
+NAME_PREFIX="${COURSIA_RUNNER_NAME_PREFIX:-${MACHINE_ID}-linux-docker}"
 STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-$HOME/.coursia-runner}"
 STOP_FILE="$STATE_DIR/stop"
 
@@ -114,7 +121,7 @@ WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
 # de volume toolcache/_work : aucun job d'execution ne doit leur atterrir,
 # le gate bascule dessus uniquement (item B, ai-01).
 WAITER_LABELS="${COURSIA_RUNNER_WAITER_LABELS:-self-hosted,coursia-waiter}"
-WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-myia-po-2024-linux-waiter}"
+WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-${MACHINE_ID}-linux-waiter}"
 WAITER_CPUS="${COURSIA_RUNNER_WAITER_CPUS:-1}"
 WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-1g}"
 WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
@@ -138,7 +145,7 @@ WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
 # survivent aux conteneurs, lake build devient incremental.
 LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.337.0}"
 LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
-LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
+LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-${MACHINE_ID}-lean-docker}"
 LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"
 # 2 slots * 6 cpus = 12 des 16 coeurs au pire ; l'hote workstation prime
 # (cf CONTRAINTE en tete de fichier) -- baisser N ou les caps si la machine
