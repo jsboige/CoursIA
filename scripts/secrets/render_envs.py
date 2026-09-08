@@ -165,6 +165,15 @@ SECRET_KEYS: frozenset[str] = frozenset({
     # centralized here so notebook consumers stay in lock-step with the server on
     # rotation. Both names MUST carry the same value.
     "QDRANT_API_KEY",
+    # claudish proxy -- CLIENT side (consumers authenticate to the proxy with the
+    # claudish security header instead of carrying the provider key, #14926). The
+    # proxy SERVER compose lives OUTSIDE CoursIA; only the CLIENT key is
+    # centralized here so notebook consumers stay in lock-step with the server on
+    # rotation. The proxy auth middleware accepts THREE input headers --
+    # ``x-proxy-key``, ``x-api-key`` and ``Authorization: Bearer`` -- all carrying
+    # the same value (verified firsthand: Bearer and x-proxy-key both return 200
+    # on a live completion).
+    "CLAUDISH_PROXY_KEY",
     # OWUI native API (NB-20, #417) + TTS multi-voice gateway (#16, po-2023)
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree).

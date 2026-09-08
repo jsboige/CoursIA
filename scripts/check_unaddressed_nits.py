@@ -3684,6 +3684,29 @@ def _print_sha_notes(result: dict) -> None:
               f"(absent des commits, non rattaché à cette PR) — non bloquant")
 
 
+def analyse_pr(pr: int) -> dict:
+    """Analyse pre-merge d'une PR ouverte, SANS impression — point d'entree
+    partage avec le picker (#15139).
+
+    `gate()` reste l'entree CLI (impression + rc) et couvre aussi l'audit
+    retro (cutoff = mergedAt). Ce wrapper couvre le cas pre-merge (cutoff =
+    now) pour les appelants programmeurs : jusqu'ici chacun re-assemblait
+    l'appel `analyse(...)` avec ses propres kwargs, et la derive de signature
+    entre les deux assemblages rendait la delegation du picker morte en
+    silence (TypeError avale -> dict vide -> la cause « point de review non
+    leve » ne se declenchait jamais). Un seul point d'entree, un seul
+    assemblage : ce qui diverge ici casse le merge-gate lui-meme et devient
+    visible immediatement.
+    """
+    data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
+    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
+    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
+    return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+                   issue_info=gh_issue_info,
+                   dismissed_improperly=improper_dismissals(pr))
+
+
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
