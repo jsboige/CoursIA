@@ -135,8 +135,12 @@ fingerprint() {
 }
 
 run_sut() {   # $1 = fixture, reste = arguments ; sortie combinee dans $OUTPUT
+  # FX_PATH_PREFIX permet a un cas de faire gagner un faux binaire sur PATH.
+  # Non defini -- le cas nominal -- PATH est rendu inchange : aucun test
+  # existant ne change de comportement.
   local fx="$1"; shift
-  OUTPUT="$(COURSIA_DRYRUN_ROOT="$fx" \
+  OUTPUT="$(PATH="${FX_PATH_PREFIX:+$FX_PATH_PREFIX:}$PATH" \
+            COURSIA_DRYRUN_ROOT="$fx" \
             COURSIA_DRYRUN_SYSTEMCTL="$fx/bin/systemctl" \
             COURSIA_DRYRUN_OUT="$fx/bundle" \
             bash "$SUT" "$@" 2>&1)"
@@ -561,21 +565,108 @@ FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/10-sizing.conf" \
   run_sut "$TMP/fxp" --slots 1 --cpus 2
 expect_succes "K4 la cible se reconnait a son chemin (controle negatif)"
 
-# K5/K6. Les refus symlink et ACL ne sont PAS exercables sur cette plateforme,
-# et le dire vaut mieux qu un test qui certifie le vide. Mesure faite ici, pas
-# supposee : « ln -s » sur Git Bash fabrique une COPIE, donc « [ -L ] » est
-# faux et le refus ne serait jamais atteint -- le test passerait sans rien
-# exercer. Idem pour les ACL etendues, qu on ne sait pas poser ici.
+# K5/K6. DEUX capacites distinctes, donc DEUX conditions distinctes.
+#
+# La version precedente les suspendait au meme « if » : le skip K6 vivait dans
+# le « else » du test de capacite symlink. Mesure du 2026-09-08, la meme suite
+# sur les deux plateformes :
+#   Git Bash : reussis=72 echoues=0 non-exercables=2   (K5 et K6 declares)
+#   WSL      : reussis=72 echoues=1 non-exercables=0   (K6 : ZERO occurrence)
+# Sur une plateforme capable de liens reels, la non-couverture ACL ne se
+# degradait pas -- elle disparaissait de la sortie. La ligne finale « ils
+# restent NON couverts, ce n est pas un succes » ne pouvait alors plus la
+# nommer, faute de compteur. Un aveu qui s efface est pire qu un aveu bruyant.
+
+# --- capacite 1 : « ln -s » fabrique-t-il un VRAI lien ? --------------------
+_symlink_ok=0
 if ln -s "$TMP/_lnsrc" "$TMP/_lndst" 2>/dev/null && [ -L "$TMP/_lndst" ]; then
-  rm -f "$TMP/_lndst"
-  ko "K5 refus symlink : a exercer" "plateforme capable, test a ecrire"
+  _symlink_ok=1
+fi
+rm -f "$TMP/_lndst" 2>/dev/null || true
+
+if [ "$_symlink_ok" -eq 1 ]; then
+  # K5a. La CIBLE est un lien. « install -D » ecrirait a travers le lien, donc
+  # ailleurs ; le rollback reposerait ensuite un fichier reel la ou il y avait
+  # un lien. Le fichier pointe est une copie conforme du drop-in nominal, pour
+  # qu aucun autre refus ne se declenche avant celui qu on teste.
+  make_fixture s1
+  _T="$FX/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+  cp "$_T" "$FX/etc/systemd/system/ailleurs.conf"
+  ln -sf "$FX/etc/systemd/system/ailleurs.conf" "$_T"
+  run_sut "$FX" --slots 1 --cpus 2
+  expect_refus "K5a la cible est un lien symbolique : refus" \
+    "la cible est un LIEN SYMBOLIQUE"
+
+  # K5b. Le REPERTOIRE .d est un lien, et la cible dedans est un fichier reel :
+  # « [ -L cible ] » est donc FAUX ici, et c est le SECOND garde qui doit
+  # mordre. Sans ce cas, un seul des deux refus serait exerce.
+  make_fixture s2
+  _D="$FX/etc/systemd/system/coursia-runner.service.d"
+  mkdir -p "$FX/etc/systemd/system/reel.d"
+  cp "$_D/10-sizing.conf" "$FX/etc/systemd/system/reel.d/10-sizing.conf"
+  rm -rf "$_D"
+  ln -s "$FX/etc/systemd/system/reel.d" "$_D"
+  run_sut "$FX" --slots 1 --cpus 2
+  expect_refus "K5b le repertoire .d est un lien symbolique : refus" \
+    "repertoire .d de la cible est un LIEN SYMBOLIQUE"
 else
-  rm -f "$TMP/_lndst" 2>/dev/null || true
   skip "K5 refus symlink (cible et repertoire .d)" \
     "ln -s rend une copie sur cette plateforme : [ -L ] faux, refus jamais atteint"
-  skip "K6 refus ACL etendues" \
-    "aucune ACL etendue posable ici : le motif ls -ld ... + ne serait jamais produit"
 fi
+
+# --- capacite 2 : sait-on poser une ACL etendue VISIBLE dans « ls -ld » ? ---
+# La capacite se mesure par son EFFET -- le « + » apparait-il ? -- pas par la
+# presence de setfacl : un setfacl present mais inoperant sur le systeme de
+# fichiers du scratch rendrait un test vert sans rien exercer.
+_acl_ok=0
+if command -v setfacl >/dev/null 2>&1; then
+  mkdir -p "$TMP/_aclprobe"
+  if setfacl -m "u:$(id -un):rwx" "$TMP/_aclprobe" 2>/dev/null \
+     && ls -ld "$TMP/_aclprobe" | cut -c1-11 | grep -q '+'; then
+    _acl_ok=1
+  fi
+  rm -rf "$TMP/_aclprobe"
+fi
+
+if [ "$_acl_ok" -eq 1 ]; then
+  # K6a. Le cas fort : une ACL etendue REELLE posee sur la cible.
+  make_fixture a1
+  _T="$FX/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+  setfacl -m "u:$(id -un):rwx" "$_T"
+  run_sut "$FX" --slots 1 --cpus 2
+  expect_refus "K6a cible portant une ACL etendue REELLE : refus" "ACL etendues"
+else
+  skip "K6a refus sur ACL etendue REELLE" \
+    "aucune ACL etendue posable ici (setfacl absent, ou sans effet sur ce FS) : le « + » de ls -ld ne serait jamais produit"
+fi
+
+# K6b/K6c. Exercables PARTOUT, parce qu ils ne demandent aucune ACL : un faux
+# « ls » fournit la ligne de mode. « ls » n est appele qu a UN endroit du
+# script de controle -- le test ACL lui-meme -- donc le faux est chirurgical.
+#
+# Ce que ces deux cas prouvent  : le predicat « *+ » est bien branche sur un
+#   « die », et il ne mord QUE sur le « + ».
+# Ce qu ils ne prouvent PAS     : que « ls -ld » rende un « + » face a une
+#   vraie ACL. Cela, seul K6a le montre -- d ou son skip explicite ci-dessus.
+#
+# K6c est indispensable : un script qui refuserait TOUJOURS passerait K6b sans
+# rien prouver. C est le defaut du marqueur printf sous une autre forme -- une
+# assertion qui ne peut pas echouer n atteste rien.
+make_fixture a2
+{ echo '#!/usr/bin/env bash'
+  echo 'echo "-rw-r--r--+ 1 u g 42 Jan  1 00:00 cible"'
+} > "$FX/bin/ls"
+chmod 0755 "$FX/bin/ls"
+FX_PATH_PREFIX="$FX/bin" run_sut "$FX" --slots 1 --cpus 2
+expect_refus "K6b le « + » de ls -ld declenche le refus" "ACL etendues"
+
+make_fixture a3
+{ echo '#!/usr/bin/env bash'
+  echo 'echo "-rw-r--r--  1 u g 42 Jan  1 00:00 cible"'
+} > "$FX/bin/ls"
+chmod 0755 "$FX/bin/ls"
+FX_PATH_PREFIX="$FX/bin" run_sut "$FX" --slots 1 --cpus 2
+expect_succes "K6c CONTROLE NEGATIF : sans « + », le meme faux ls ne refuse rien"
 echo
 printf 'reussis=%d  echoues=%d  non-exercables=%d\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ] || exit 1
