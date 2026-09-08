@@ -404,16 +404,35 @@ def mode_summarize() -> int:
 
     if "minicpm5" in summary["per_model"] and "qwen35" in summary["per_model"]:
         mini, qwen = summary["per_model"]["minicpm5"], summary["per_model"]["qwen35"]
-        healthy = all(
-            r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in loaded
-        )
-        beats = mini["delta_mean"] > qwen["delta_mean"] and (
-            mini["delta_mean"] - mini["delta_std"] > qwen["delta_mean"] + qwen["delta_std"]
-        )
+
+        def curves_healthy(model_key: str) -> bool:
+            rl = [r for r in loaded if r["model_key"] == model_key]
+            improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
+            def seg(vals):
+                n = len(vals)
+                return (sum(vals[: n // 4]) / max(1, n // 4), sum(vals[-n // 4:]) / max(1, n // 4))
+            no_collapse = True
+            for r in rl:
+                ln = [e["completions/mean_length"] for e in r["log_history"]
+                      if "completions/mean_length" in e]
+                if ln:
+                    a, b = seg(ln)
+                    if b < 0.8 * a:  # effondrement de longueur > 20 %
+                        no_collapse = False
+            return improved and no_collapse
+
+        mini_ok = curves_healthy("minicpm5")
+        qwen_ok = curves_healthy("qwen35")
+        disjoint = (mini["delta_mean"] - mini["delta_std"]
+                    > qwen["delta_mean"] + qwen["delta_std"])
+        beats = bool(mini_ok and disjoint)
         summary["verdict"] = {
-            "curves_healthy": healthy,
-            "beats": bool(beats and healthy),
-            "rule": "BEATS si delta eval moyen mini > qwen avec intervalles ±1std disjoints ET courbes saines",
+            "mini_curves_healthy": mini_ok,
+            "qwen_curves_healthy": qwen_ok,
+            "delta_intervals_disjoint": disjoint,
+            "beats": beats,
+            "rule": ("BEATS si courbes MiniCPM5 saines (post>pre par seed, pas d'effondrement de longueur) "
+                     "ET delta eval moyen > qwen avec intervalles ±1std disjoints (≥2 seeds par modèle)"),
         }
     fig.tight_layout()
     png = REPO_RESULTS / "curves.png"
