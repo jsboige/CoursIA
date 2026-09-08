@@ -6,6 +6,12 @@ S'applique à **tous les reviewers**, humains et bots (clusterManager-Myia, jsbo
 
 **Contexte, incidents fondateurs, workflow ai-01, anti-patterns détaillés** : [docs/reference/pr-review-context.md](../../docs/reference/pr-review-context.md).
 
+## Émission du verdict — un point qui tient le merge porte un marqueur (HARD, #14682)
+
+Toute review (bot ou humaine) dont le corps formule **un point tenant le merge** porte un **marqueur reconnu** : préfixe de verdict (`[Hermes] COMMENT_WITH_CONCERNS`, `CHANGES_REQUESTED`) ou glyphe de sévérité (🟡, 🔴). L'organe B.0 (`scripts/check_unaddressed_nits.py`, `CONCERN_MARKERS`) ne lit **que** ces marqueurs : une réserve bloquante posée en prose libre **sans** marqueur lui est invisible et rend `rc=0` — instance fondatrice **#14658** (réserve qualifiée « le seul point bloquant pour un LGTM plein », prose française sans marqueur, `rc=0`).
+
+La réciproque est tranchée par mesure (**#14682**, scan de 80 PRs mergées) : **ne pas élargir** `CONCERN_MARKERS` à des mots de prose (« bloquant », « à corriger », « est faux ») — un tel filet sur-accuse d'un facteur 5 (4 des 5 détections : de la prose qui *décrit* un blocage de job ou de garde, pas qui *pose* une réserve). Le contrat est côté émission, pas côté filet.
+
 ## Critères CHANGES_REQUESTED obligatoires (HARD)
 
 Un reviewer **DOIT** poster `state: CHANGES_REQUESTED` (pas COMMENTED, pas APPROVED) si **un seul** point est violé. APPROVED malgré violation = **complicité de complaisance**.
