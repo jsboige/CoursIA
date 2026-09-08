@@ -1,0 +1,595 @@
+{
+ "meta": {
+  "issue": 15099,
+  "probe": "A",
+  "version": 1,
+  "description": "Banc fixe du duel MiniCPM5-2B vs Qwen3-4B (probe A, issue #15099). 70 prompts en 3 axes : 30 Q&A pedagogiques FR, 20 math, 20 code-gen. Deterministe : meme bench, meme sampling (temperature=1.0, top_p=0.95, seed fixe par item), GPU identique. Le correcteur tiers ne voit JAMAIS le nom du modele evalue (anti-biais).",
+  "parity_rule": "Parite sur un axe = score moyen MiniCPM >= 0.95 x score moyen Qwen sur cet axe. Acceptance (issue) : parite sur >= 2 axes/3, OU parite globale (>= 0.95 x sur les 70 items) avec win >= 30 % sur VRAM peak OU tokens/s."
+ },
+ "sampling": {
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "max_tokens": {
+   "qa": 512,
+   "math": 640,
+   "code": 768
+  },
+  "seed": 15099
+ },
+ "qa": [
+  {
+   "id": "qa01",
+   "q": "Explique en trois phrases ce qu'est la tokenisation et pourquoi un meme mot peut etre coupe differemment selon la langue.",
+   "keys": [
+    "decoupage en unites (tokens/bpe/sous-mots)",
+    "vocabulaire fini/statistique",
+    "dependance a la langue/au corpus d'entrainement"
+   ]
+  },
+  {
+   "id": "qa02",
+   "q": "Quelle est la difference entre temperature et top_p dans l'echantillonnage d'un LLM ? Donne un exemple d'effet concret de chacun.",
+   "keys": [
+    "temperature = aplatissement/durcissement de la distribution",
+    "top_p = troncature du noyau cumulatif",
+    "effet creativite vs determinisme"
+   ]
+  },
+  {
+   "id": "qa03",
+   "q": "Pourquoi le RAG reduit-il les hallucinations par rapport a un simple prompt long ? Deux mecanismes suffisent.",
+   "keys": [
+    "ancrage dans des documents retires/verifiables",
+    "separation connaissances parametrique vs contextuelle",
+    "citation/traçabilite possible"
+   ]
+  },
+  {
+   "id": "qa04",
+   "q": "Explique la difference entre un embedding de phrase et une representation cachee d'un transformer (hidden state).",
+   "keys": [
+    "embedding = projection finale dediee a la similarite (ex. mean pooling normalise)",
+    "hidden state = activiation interne dependante de la couche",
+    "objectifs/applications differents (recherche vs analyse interne)"
+   ]
+  },
+  {
+   "id": "qa05",
+   "q": "Qu'est-ce que le context window d'un LLM et que se passe-t-il quand on depasse sa longueur maximale ?",
+   "keys": [
+    "nombre max de tokens traites (entree+sortie selon convention)",
+    "troncature ou erreur selon l'implementation",
+    "pas de memoire au-dela"
+   ]
+  },
+  {
+   "id": "qa06",
+   "q": "Explique en francais ce qu'est le quantization d'un modele (INT8/INT4) et son compromis principal.",
+   "keys": [
+    "reduction de la precision numerique des poids",
+    "gain memoire/latence",
+    "perte potentielle de qualite"
+   ]
+  },
+  {
+   "id": "qa07",
+   "q": "Quelle est la difference entre fine-tuning complet, LoRA et le prompting ? Une phrase chacun.",
+   "keys": [
+    "complet : tous les poids modifies, couteux",
+    "LoRA : petits rangs injectes, poids bases gels",
+    "prompting : aucun poids modifie"
+   ]
+  },
+  {
+   "id": "qa08",
+   "q": "Pourquoi un modele de langue predit-il un token a la fois et comment produit-il des phrases longues ?",
+   "keys": [
+    "distribution de probabilite sur le vocabulaire a chaque pas",
+    "boucle autoregressive (le token emis rejoint l'entree)",
+    "arret sur token special/limite"
+   ]
+  },
+  {
+   "id": "qa09",
+   "q": "Explique ce qu'est une attention head et pourquoi le mecanisme est dit 'multi-head'.",
+   "keys": [
+    "projection QKV + score d'attention pondere",
+    "plusieurs tetes = sous-espaces de relations differents",
+    "parallelisme des têtes concatenees"
+   ]
+  },
+  {
+   "id": "qa10",
+   "q": "Qu'est-ce que le cache KV et pourquoi accelere-t-il la generation ?",
+   "keys": [
+    "memorisation des cles/valeurs des tokens passes",
+    "evite le recalcul des couches pour le prefixe",
+    "gain quadratique->lineaire sur le passe"
+   ]
+  },
+  {
+   "id": "qa11",
+   "q": "Donne deux differences entre une API de chat-completion et une API de completion brute (text completion).",
+   "keys": [
+    "structure de messages/roles vs texte libre",
+    "template de chat applique cote serveur",
+    "gestion du contexte systeme"
+   ]
+  },
+  {
+   "id": "qa12",
+   "q": "Explique la difference entre zero-shot, one-shot et few-shot avec un exemple de tache de classification.",
+   "keys": [
+    "nombre d'exemples dans le prompt",
+    "le motif attendu est imite",
+    "plus d'exemples = contrainte plus forte mais prompt plus long"
+   ]
+  },
+  {
+   "id": "qa13",
+   "q": "Qu'est-ce qu'un system prompt et en quoi differe-t-il d'un user prompt dans une conversation ?",
+   "keys": [
+    "instruction cadre persistante",
+    "priorite/ton/format imposes",
+    "place en tete de la conversation"
+   ]
+  },
+  {
+   "id": "qa14",
+   "q": "Explique pourquoi la similarite cosinus est preferee au produit scalaire brut pour comparer des embeddings.",
+   "keys": [
+    "normalisation par les normes",
+    "independant de la magnitude/norme du vecteur",
+    "mesure d'orientation (semantique)"
+   ]
+  },
+  {
+   "id": "qa15",
+   "q": "Qu'est-ce que le mode 'thinking'/'raisonnement' d'un modele comme Qwen3 et quel est son cout ?",
+   "keys": [
+    "generation de raisonnement intermediaire avant la reponse",
+    "ameliore les taches multi-etapes",
+    "consomme des tokens/sortie supplementaires (latence+cout)"
+   ]
+  },
+  {
+   "id": "qa16",
+   "q": "Explique la difference entre un agent LLM et une simple chaine d'appels d'API scriptee.",
+   "keys": [
+    "boucle de decision (le modele choisit l'action suivante)",
+    "outils disponibles exposes au modele",
+    "arret/condition determines par le modele ou l'etat"
+   ]
+  },
+  {
+   "id": "qa17",
+   "q": "Qu'est-ce qu'un stop sequence et pourquoi en specifier une lors d'une generation batch ?",
+   "keys": [
+    "chaine qui termine la generation",
+    "evite le gaspillage de tokens apres la reponse utile",
+    "determinisme du decoupage"
+   ]
+  },
+  {
+   "id": "qa18",
+   "q": "Explique la notion de temperature=0 : est-ce une garantie de determinisme absolu ? Pourquoi ?",
+   "keys": [
+    "argmax (distribution degenerée)",
+    "pas de garantie absolue (arithmetique flottante, batching, materiel)",
+    "determinisme pratique, pas theorique"
+   ]
+  },
+  {
+   "id": "qa19",
+   "q": "Quelle est la difference entre perplexite et accuracy pour evaluer un modele de langue ?",
+   "keys": [
+    "perplexite = mesure continue sur la distribution (exp de la loss)",
+    "accuracy = mesure discretaire de tache",
+    "perplexite sans reference de tache, accuracy depend du benchmark"
+   ]
+  },
+  {
+   "id": "qa20",
+   "q": "Explique ce qu'est une attaque par injection de prompt dans un systeme RAG et donne une parade.",
+   "keys": [
+    "contenu hostile dans les documents recuperes",
+    "le modele execute une instruction cachee",
+    "parade : isolation/delimitation des sources, filtrage, schema de sortie contraint"
+   ]
+  },
+  {
+   "id": "qa21",
+   "q": "Pourquoi les modeles ont-ils une limite de sortie (max_tokens) distincte de la limite de contexte ?",
+   "keys": [
+    "entree vs sortie budgetees separement",
+    "controle du cout/latence",
+    "la sortie consomme la fenetre restante"
+   ]
+  },
+  {
+   "id": "qa22",
+   "q": "Explique la difference entre un tokenizer BPE et un tokenizer au niveau mot, avec un avantage du BPE.",
+   "keys": [
+    "BPE fusionne des sous-mots appris par frequence",
+    "niveau mot : vocabulaire enorme et mots inconnus (OOV)",
+    "BPE compresse mieux et gere les mots rares"
+   ]
+  },
+  {
+   "id": "qa23",
+   "q": "Qu'est-ce que le batching dans un serveur d'inference et pourquoi ameliore-t-il le debit sans forcement degrader la latence ?",
+   "keys": [
+    "plusieurs requetes traitees ensemble",
+    "saturation des GPU (operations paralleles)",
+    "decoupage continu/ordonnancement (continuous batching)"
+   ]
+  },
+  {
+   "id": "qa24",
+   "q": "Explique ce qu'est le distillation de modeles et son interet pedagogique-industriel.",
+   "keys": [
+    "un modele eleve (teacher) genere des cibles pour un eleve",
+    "l'eleve apprend des distributions, pas seulement des etiquettes",
+    "compression avec retention partielle des performances"
+   ]
+  },
+  {
+   "id": "qa25",
+   "q": "Quelle est la difference entre un modele de base (base) et un modele ajuste par instructions (instruct/chat) ?",
+   "keys": [
+    "base = continuation de texte brut",
+    "instruct = ajuste sur des dialogues/instructions",
+    "usage et formatage d'appel differents"
+   ]
+  },
+  {
+   "id": "qa26",
+   "q": "Explique pourquoi on normalise souvent les textes (minuscules, accents) avant une comparaison lexicale, et pourquoi ce n'est PAS necessaire avant un embedding neural.",
+   "keys": [
+    "comparaison lexicale = correspondance exacte de chaines",
+    "embedding capte la semantique au-dela de la casse",
+    "normalisation destructive peut meme nuire"
+   ]
+  },
+  {
+   "id": "qa27",
+   "q": "Qu'est-ce qu'un function call / tool call dans une API de LLM et comment la reponse est-elle structuree ?",
+   "keys": [
+    "declaration d'outils avec schema",
+    "le modele emet un appel structure (nom+arguments JSON)",
+    "le resultat est reinjecte pour un tour suivant"
+   ]
+  },
+  {
+   "id": "qa28",
+   "q": "Explique le compromis entre une fenetre de contexte longue et la qualite d'attention au milieu du contexte ('lost in the middle').",
+   "keys": [
+    "attention degrades au milieu des longs contextes",
+    "l'information en debut/fin est mieux retiree",
+    "longueur != comprehension uniforme"
+   ]
+  },
+  {
+   "id": "qa29",
+   "q": "Pourquoi un serveur vLLM est-il plus rapide qu'une boucle transformers.generate locale pour beaucoup de requetes ?",
+   "keys": [
+    "pagedattention/gestion memoire du cache KV efficace",
+    "continuous batching serveur",
+    "optimisations noyau/compilation"
+   ]
+  },
+  {
+   "id": "qa30",
+   "q": "Explique ce qu'est un benchmark LLM 'contamine' et comment un protocole propre l'evite.",
+   "keys": [
+    "les donnees de test ont ete vues a l'entrainement",
+    "scores gonfles sans capacite reelle",
+    "jeux de test prives/recents/renaissances (nouveaux items)"
+   ]
+  }
+ ],
+ "math": [
+  {
+   "id": "m01",
+   "q": "Un magasin applique une remise de 15 pourcent sur un article a 80 euros, puis une remise supplementaire de 10 pourcent sur le prix remise. Quel est le prix final en euros ?",
+   "golden": "61.20"
+  },
+  {
+   "id": "m02",
+   "q": "Calcule 7/8 + 3/4 et donne le resultat sous forme de fraction irreductible.",
+   "golden": "13/8"
+  },
+  {
+   "id": "m03",
+   "q": "Un train roule a 120 km/h. Combien de secondes met-il pour parcourir 500 metres ?",
+   "golden": "15"
+  },
+  {
+   "id": "m04",
+   "q": "Resous l'equation 3x - 7 = 2x + 5. Donne la valeur de x.",
+   "golden": "12"
+  },
+  {
+   "id": "m05",
+   "q": "Quel est le reste de la division de 7^3 par 13 ?",
+   "golden": "5"
+  },
+  {
+   "id": "m06",
+   "q": "Une classe de 28 eleves a une moyenne de 12/20. Si on retire les 3 meilleurs (moyenne 18), quelle est la moyenne des 25 restants ? Arrondis au centieme.",
+   "golden": "11.28"
+  },
+  {
+   "id": "m07",
+   "q": "Combien y a-t-il de multiples de 3 ou de 5 strictement inferieurs a 50 ?",
+   "golden": "23"
+  },
+  {
+   "id": "m08",
+   "q": "Un capital de 1000 euros est place a interets composes de 2 pourcent par an. Quel est le montant apres 3 ans, arrondi au centieme ?",
+   "golden": "1061.21"
+  },
+  {
+   "id": "m09",
+   "q": "Resous le systeme : 2x + y = 10 et x - y = 2. Donne x puis y.",
+   "golden": "x=4, y=2"
+  },
+  {
+   "id": "m10",
+   "q": "Quelle est la somme des 20 premiers entiers pairs strictement positifs (2+4+...+40) ?",
+   "golden": "420"
+  },
+  {
+   "id": "m11",
+   "q": "Une recette pour 4 personnes demande 300 g de farine. Combien pour 7 personnes, en grammes ?",
+   "golden": "525"
+  },
+  {
+   "id": "m12",
+   "q": "Si je lance deux des a six faces, quelle est la probabilite (fraction irreductible) que la somme fasse 7 ?",
+   "golden": "1/6"
+  },
+  {
+   "id": "m13",
+   "q": "Le perimetre d'un rectangle est 34 cm et sa longueur vaut le double de sa largeur. Quelle est son aire en cm2 ?",
+   "golden": "72"
+  },
+  {
+   "id": "m14",
+   "q": "Combien de zeros y a-t-il a la fin de 25 factoriel (25!) ?",
+   "golden": "6"
+  },
+  {
+   "id": "m15",
+   "q": "Un prix augmente de 20 pourcent puis baisse de 20 pourcent. Quelle est la variation totale en pourcent ?",
+   "golden": "-4 pourcent"
+  },
+  {
+   "id": "m16",
+   "q": "Resous : log2(x) = 5. Donne x.",
+   "golden": "32"
+  },
+  {
+   "id": "m17",
+   "q": "Dans un triangle rectangle, les cotes de l'angle droit mesurent 9 et 12. Quelle est la longueur de l'hypotenuse ?",
+   "golden": "15"
+  },
+  {
+   "id": "m18",
+   "q": "Trois machines font un travail en 6, 3 et 2 heures respectivement. Combien d'heures faut-il si elles travaillent ensemble ? Donne la fraction irreductible.",
+   "golden": "1"
+  },
+  {
+   "id": "m19",
+   "q": "Quelle est la moyenne des nombres premiers strictement compris entre 10 et 30 ?",
+   "golden": "20"
+  },
+  {
+   "id": "m20",
+   "q": "Une suite arithmetique commence a 7 avec une raison de 4. Quel est le 15e terme ?",
+   "golden": "63"
+  }
+ ],
+ "code": [
+  {
+   "id": "c01",
+   "q": "Ecris une fonction Python est_palindrome(s) qui renvoie True si la chaine s est un palindrome, en ignorant la casse et les caracteres non alphanumeriques. Donne uniquement le code.",
+   "golden": "def est_palindrome(s): t = [c.lower() for c in s if c.isalnum()]; return t == t[::-1]",
+   "tests": [
+    "est_palindrome('Esope reste ici et se repose') == True",
+    "est_palindrome('Bonjour') == False",
+    "est_palindrome('') == True"
+   ]
+  },
+  {
+   "id": "c02",
+   "q": "Ecris une fonction Python fizzbuzz(n) qui renvoie la liste des chaines pour 1..n selon les regles FizzBuzz classiques. Donne uniquement le code.",
+   "golden": "def fizzbuzz(n): return ['FizzBuzz' if i%15==0 else 'Fizz' if i%3==0 else 'Buzz' if i%5==0 else str(i) for i in range(1,n+1)]",
+   "tests": [
+    "fizzbuzz(15)[-1] == 'FizzBuzz'",
+    "fizzbuzz(3)[2] == 'Fizz'",
+    "fizzbuzz(5)[4] == 'Buzz'"
+   ]
+  },
+  {
+   "id": "c03",
+   "q": "Ecris une fonction Python compte_voyelles(s) qui renvoie le nombre de voyelles (a,e,i,o,u, insensible a la casse et aux accents via normalisation) dans s. Donne uniquement le code.",
+   "golden": "import unicodedata\ndef compte_voyelles(s):\n n = unicodedata.normalize('NFD', s.lower())\n return sum(1 for c in n if c in 'aeiou')",
+   "tests": [
+    "compte_voyelles('Hello') == 2",
+    "compte_voyelles('École à Paris') == 6",
+    "compte_voyelles('xyz') == 0"
+   ]
+  },
+  {
+   "id": "c04",
+   "q": "Ecris une fonction Python second_max(lst) qui renvoie le deuxieme plus grand element DISTINCT d'une liste, ou None s'il n'existe pas. Donne uniquement le code.",
+   "golden": "def second_max(lst): u = sorted(set(lst)); return u[-2] if len(u) >= 2 else None",
+   "tests": [
+    "second_max([3,1,4,1,5]) == 4",
+    "second_max([7,7,7]) is None",
+    "second_max([2]) is None"
+   ]
+  },
+  {
+   "id": "c05",
+   "q": "Ecris une fonction Python anagrammes(a, b) qui renvoie True si a et b sont des anagrammes (insensible a la casse, en ignorant les espaces). Donne uniquement le code.",
+   "golden": "def anagrammes(a, b): return sorted(a.replace(' ','').lower()) == sorted(b.replace(' ','').lower())",
+   "tests": [
+    "anagrammes('Chien', 'Niche') == True",
+    "anagrammes('Le chien', 'Niche le') == True",
+    "anagrammes('abc', 'abd') == False"
+   ]
+  },
+  {
+   "id": "c06",
+   "q": "Ecris une fonction Python somme_chiffres(n) qui renvoie la somme des chiffres de l'entier positif n. Donne uniquement le code.",
+   "golden": "def somme_chiffres(n): return sum(int(c) for c in str(n))",
+   "tests": [
+    "somme_chiffres(12345) == 15",
+    "somme_chiffres(0) == 0",
+    "somme_chiffres(999) == 27"
+   ]
+  },
+  {
+   "id": "c07",
+   "q": "Ecris une fonction Python binary_search(lst, x) qui renvoie l'index de x dans la liste triee lst, ou -1. Donne uniquement le code, sans utiliser index().",
+   "golden": "def binary_search(lst, x):\n lo, hi = 0, len(lst)-1\n while lo <= hi:\n  m = (lo+hi)//2\n  if lst[m] == x: return m\n  if lst[m] < x: lo = m+1\n  else: hi = m-1\n return -1",
+   "tests": [
+    "binary_search([1,3,5,7,9], 7) == 3",
+    "binary_search([1,3,5], 4) == -1",
+    "binary_search([], 1) == -1"
+   ]
+  },
+  {
+   "id": "c08",
+   "q": "Ecris une fonction Python puissance_rapide(b, e) qui calcule b puissance e (e entier >= 0) par exponentiation binaire, sans utiliser ** ni pow. Donne uniquement le code.",
+   "golden": "def puissance_rapide(b, e): \n r, p = 1, b\n while e:\n  if e & 1: r *= p\n  p *= p; e >>= 1\n return r",
+   "tests": [
+    "puissance_rapide(2, 10) == 1024",
+    "puissance_rapide(3, 0) == 1",
+    "puissance_rapide(5, 3) == 125"
+   ]
+  },
+  {
+   "id": "c09",
+   "q": "Ecris une fonction Python compresse(s) realisant un encodage RLE : 'aaabbc' -> 'a3b2c1'. Donne uniquement le code.",
+   "golden": "import itertools\ndef compresse(s):\n return ''.join(f'{c}{len(list(g))}' for c, g in itertools.groupby(s))",
+   "tests": [
+    "compresse('aaabbc') == 'a3b2c1'",
+    "compresse('') == ''",
+    "compresse('z') == 'z1'"
+   ]
+  },
+  {
+   "id": "c10",
+   "q": "Ecris une fonction Python indices_somme(lst, cible) qui renvoie les indices i < j des deux premiers elements distincts dont la somme vaut cible, ou None. Donne uniquement le code.",
+   "golden": "def indices_somme(lst, cible): \n vus = {}\n for i, v in enumerate(lst):\n  if cible - v in vus: return (vus[cible-v], i)\n  vus[v] = i\n return None",
+   "tests": [
+    "indices_somme([2,7,11,15], 9) == (0,1)",
+    "indices_somme([1,2,3], 10) is None",
+    "indices_somme([3,3], 6) == (0,1)"
+   ]
+  },
+  {
+   "id": "c11",
+   "q": "Ecris une fonction Python matrice_identite(n) qui renvoie la matrice identite n x n sous forme de listes de listes. Donne uniquement le code.",
+   "golden": "def matrice_identite(n): return [[1 if i == j else 0 for j in range(n)] for i in range(n)]",
+   "tests": [
+    "matrice_identite(3) == [[1,0,0],[0,1,0],[0,0,1]]",
+    "matrice_identite(1) == [[1]]",
+    "matrice_identite(0) == []"
+   ]
+  },
+  {
+   "id": "c12",
+   "q": "Ecris une fonction Python transposee(m) qui renvoie la transposee d'une matrice rectangulaire. Donne uniquement le code.",
+   "golden": "def transposee(m): return [list(t) for t in zip(*m)]",
+   "tests": [
+    "transposee([[1,2],[3,4],[5,6]]) == [[1,3,5],[2,4,6]]",
+    "transposee([[1]]) == [[1]]",
+    "transposee([[1,2,3]]) == [[1],[2],[3]]"
+   ]
+  },
+  {
+   "id": "c13",
+   "q": "Ecris une fonction Python frequence_mots(phrase) qui renvoie un dictionnaire mot -> nombre d'occurrences, en minuscules et sans ponctuation. Donne uniquement le code.",
+   "golden": "import re\nfrom collections import Counter\ndef frequence_mots(p):\n return dict(Counter(re.findall(r'[a-z0-9à-ÿ]+', p.lower())))",
+   "tests": [
+    "frequence_mots('Le chat, le chien.') == {'le': 2, 'chat': 1, 'chien': 1}",
+    "frequence_mots('') == {}",
+    "frequence_mots('Hello hello') == {'hello': 2}"
+   ]
+  },
+  {
+   "id": "c14",
+   "q": "Ecris une fonction Python est_bissextile(a) qui renvoie True si l'annee a est bissextile (regles gregoriennes completes). Donne uniquement le code.",
+   "golden": "def est_bissextile(a): return a % 4 == 0 and (a % 100 != 0 or a % 400 == 0)",
+   "tests": [
+    "est_bissextile(2000) == True",
+    "est_bissextile(1900) == False",
+    "est_bissextile(2024) == True"
+   ]
+  },
+  {
+   "id": "c15",
+   "q": "Ecris une fonction Python pgcd(a, b) par l'algorithme d'Euclide iteratif. Donne uniquement le code.",
+   "golden": "def pgcd(a, b): \n while b: a, b = b, a % b\n return a",
+   "tests": [
+    "pgcd(48, 18) == 6",
+    "pgcd(17, 5) == 1",
+    "pgcd(0, 7) == 7"
+   ]
+  },
+  {
+   "id": "c16",
+   "q": "Ecris une fonction Python camel_vers_snake(s) convertissant 'maVariableTest' en 'ma_variable_test'. Donne uniquement le code.",
+   "golden": "import re\ndef camel_vers_snake(s):\n return re.sub(r'(?<!^)(?=[A-Z])', '_', s).lower()",
+   "tests": [
+    "camel_vers_snake('maVariableTest') == 'ma_variable_test'",
+    "camel_vers_snake('x') == 'x'",
+    "camel_vers_snake('unMot') == 'un_mot'"
+   ]
+  },
+  {
+   "id": "c17",
+   "q": "Ecris une fonction Python valide_parentheses(s) qui renvoie True si les parentheses, crochets et accolades de s sont correctement imbriques. Donne uniquement le code.",
+   "golden": "def valide_parentheses(s):\n p = {')':'(', ']':'[', '}':'{'}; pile = []\n for c in s:\n  if c in '([{': pile.append(c)\n  elif c in p:\n   if not pile or pile.pop() != p[c]: return False\n return not pile",
+   "tests": [
+    "valide_parentheses('()[]{}') == True",
+    "valide_parentheses('([)]') == False",
+    "valide_parentheses('') == True"
+   ]
+  },
+  {
+   "id": "c18",
+   "q": "Ecris une fonction Python moyenne_mobile(lst, k) qui renvoie la liste des moyennes de chaque fenetre consecutive de k elements. Donne uniquement le code.",
+   "golden": "def moyenne_mobile(lst, k): return [sum(lst[i:i+k])/k for i in range(len(lst)-k+1)]",
+   "tests": [
+    "moyenne_mobile([1,2,3,4], 2) == [1.5, 2.5, 3.5]",
+    "moyenne_mobile([5], 1) == [5.0]",
+    "moyenne_mobile([1,2,3], 3) == [2.0]"
+   ]
+  },
+  {
+   "id": "c19",
+   "q": "Ecris une fonction Python top_k(lst, k) qui renvoie les k elements les plus frequents par ordre decroissant de frequence puis d'apparition. Donne uniquement le code.",
+   "golden": "from collections import Counter\ndef top_k(lst, k):\n c = Counter(lst)\n return sorted(c, key=lambda x: (-c[x], lst.index(x)))[:k]",
+   "tests": [
+    "top_k([1,1,2,3,3,3], 2) == [3,1]",
+    "top_k(['a'], 1) == ['a']",
+    "top_k([1,2], 0) == []"
+   ]
+  },
+  {
+   "id": "c20",
+   "q": "Ecris une fonction Python distance_levenshtein(a, b) (programmatique, programmation dynamique) qui renvoie la distance d'edition entre deux chaines. Donne uniquement le code.",
+   "golden": "def distance_levenshtein(a, b):\n m, n = len(a), len(b)\n prev = list(range(n+1))\n for i in range(1, m+1):\n  cur = [i] + [0]*n\n  for j in range(1, n+1):\n   cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1] != b[j-1]))\n  prev = cur\n return prev[n]",
+   "tests": [
+    "distance_levenshtein('chat', 'chats') == 1",
+    "distance_levenshtein('', 'abc') == 3",
+    "distance_levenshtein('kitten', 'sitting') == 3"
+   ]
+  }
+ ]
+}
