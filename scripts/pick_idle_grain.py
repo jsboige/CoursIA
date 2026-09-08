@@ -1520,6 +1520,25 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     return out
 
 
+# #14706 — vehicules d'automatisation EXCLUS de la file d'orphelines.
+# Le cron catalogue ouvre une PR PERMANENTE sans tag `Grain:` par conception
+# (appartient a l'automatisation, cf catalog-pr-hygiene.md / #14577). Elle n'a
+# aucune disposition valide : lui coller une lane la rendrait comptable dans le
+# cap de variation d'une lane qui ne l'a pas produite ; la reparer est ecrase
+# par le cron quotidien ; la fermer casse le cycle open/close du bot. Predicat
+# ETROIT : auteur bot ET branche `chore/*-pending`. Un bot hors ce motif, ou une
+# lane humaine sur une telle branche, restent visibles (controles negatifs).
+AUTOMATION_AUTHORS = {"app/github-actions", "github-actions[bot]", "github-actions"}
+AUTOMATION_BRANCH_RE = re.compile(r"^chore/[\w-]+-pending$")
+
+
+def is_automation_vehicle(pr: dict) -> bool:
+    """Vrai si la PR est un vehicule d'automatisation (auteur bot ET branche chore/*-pending)."""
+    author = ((pr.get("author") or {}).get("login")) or ""
+    branch = pr.get("headRefName") or ""
+    return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -1533,11 +1552,19 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     un constat sans destinataire n'est pas un routage (#13086). Les untagged
     SANS causes bloquantes ne comptent pas : seule la file qui pourrit est
     routee, pas les PRs en cours de CI.
+
+    Les vehicules d'automatisation (auteur bot sur branche `chore/*-pending`,
+    #14706) sont exclus : aucune lane n'a a etre renvoyee dessus et aucune
+    disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
+    (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
+    ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
-                if not pr.get("isDraft") and parse_grain_tag(pr.get("body") or "") is None]
+                if not pr.get("isDraft")
+                and parse_grain_tag(pr.get("body") or "") is None
+                and not is_automation_vehicle(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:

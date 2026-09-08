@@ -1848,3 +1848,58 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
         f"auto-apply absent. Sortie: {captured[:400]}"
     )
     assert "tooling" in captured
+
+
+def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
+    """PR synthetique untagged non-draft, pour `unattributed_blocked_prs`."""
+    created = (pig.NOW - pig.dt.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"number": n, "title": f"pr {n}", "body": "pas de tag\n",
+            "createdAt": created, "isDraft": False,
+            "author": {"login": author}, "headRefName": branch}
+
+
+def test_is_automation_vehicle_requires_both_conditions():
+    """#14706 : bot ET branche chore/*-pending, pas l'une sans l'autre."""
+    assert pig.is_automation_vehicle({
+        "author": {"login": "app/github-actions"},
+        "headRefName": "chore/catalog-refresh-pending"}) is True
+    assert pig.is_automation_vehicle({
+        "author": {"login": "app/github-actions"},
+        "headRefName": "feature/other"}) is False
+    assert pig.is_automation_vehicle({
+        "author": {"login": "jsboige"},
+        "headRefName": "chore/x-pending"}) is False
+
+
+def test_automation_vehicle_excluded_from_orphans_report(monkeypatch):
+    """#14706 : le vehicule du bot (chore/*-pending) sort de la file d'orphelines."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(1, author="app/github-actions", branch="chore/catalog-refresh-pending"),
+    ], {1: red})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_human_lane_stays(monkeypatch):
+    """Controle positif : une untagged bloquee d'une lane humaine reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_untagged_pr(7, author="jsboige", branch="feature/x")], {7: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [7]
+
+
+def test_orphan_report_neg1_bot_off_pattern_stays(monkeypatch):
+    """Controle negatif 1 : un bot sur branche HORS chore/*-pending reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(8, author="github-actions[bot]", branch="feature/catalog-fix"),
+    ], {8: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [8]
+
+
+def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
+    """Controle negatif 2 : un humain sur branche chore/*-pending reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
+    ], {9: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
