@@ -858,7 +858,8 @@ jobs:
 
           # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
           python3 scripts/ci/variation_adjacency_guard.py \
-            --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG \
+            --body-file /tmp/pr_body.txt --pr-number "$PR_NUMBER" \
+            $COMMENTS_ARG $MERGED_ARG \
             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
