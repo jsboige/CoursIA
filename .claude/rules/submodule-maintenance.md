@@ -70,7 +70,7 @@ Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est *
 
 **Cinq états de gate** (mesurés firsthand par la commande de la colonne « vérifié le ») :
 
-1. **Absent** (`MetaGeneticSharp`, `Automata`) — aucun workflow, aucun run. Substitution R3 active par défaut.
+1. **Absent** (`Automata`) — aucun workflow, aucun run. Substitution R3 active par défaut.
 2. **Câblé, jamais déclenché sur pile en cours** (`Z3.Linq`) — workflows existent et sont actifs, mais le déclenchement ne couvre pas les PRs/processus visés (base de stack hors-trigger). Substitution R3 **active**, et le **déclencheur** doit être qualifié pour cesser (pas seulement le câblage).
 3. **Câblé, déclenché, vert récent** (cas général à viser) — un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer.
 4. **Drift / perte de gate** — un submod listé en (3) qui perd son workflow (suppression, mise hors-service) **redevient** soumis à la substitution. Bascule trackée.
@@ -92,7 +92,7 @@ done
 
 | Submodule | Workflow CI | Run vert récent | Substitution R3 | Vérifié le (PR) |
 |---|---|---|---|---|
-| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
+| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Câblé, déclenché, vert récent** (1 workflow / 1 actif, matrix multi-OS Windows + Linux, run `34179637581` 2026-09-08T02:19:08Z sur branche `feature/dotnet-ci-gate` SHA `102eec8c` — Windows tous tests verts, Linux build + tests hors System.Drawing verts) | vert | NON | #15133 (c.985, 2026-09-08, PR jsboige/MetaGeneticSharp#53) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | **Câblé, jamais déclenché sur pile** (3 workflows actifs, 5 runs totaux, dernier build vert 2026-09-04) | n/a sur pile | OUI | #14566 (#14558, c.14463) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
 | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | **Câblé, déclenché, vert récent** (5 workflows / 5 actifs, 4479 runs totaux, `Build` success 2026-09-07T04:08:13Z sur `master` SHA `bab289c05bb6` ; master HEAD courant `f5acc7bedd05`, build re-déclenché 2026-09-07T09:21:11Z) | vert | NON | #15007 (c.956, 2026-09-07) |
