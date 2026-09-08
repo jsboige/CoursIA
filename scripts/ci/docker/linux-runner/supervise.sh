@@ -71,7 +71,7 @@
 set -uo pipefail
 
 REPO="${COURSIA_RUNNER_REPO:-jsboige/CoursIA}"
-IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.336.0}"
+IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.337.0}"
 LABELS="${COURSIA_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-linux}"
 NAME_PREFIX="${COURSIA_RUNNER_NAME_PREFIX:-myia-po-2024-linux-docker}"
 STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-$HOME/.coursia-runner}"
@@ -136,7 +136,7 @@ WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
 # Le .lake chaud vit dans le volume _work PAR SLOT au prefixe dedie
 # coursia-runner-work-lean-{N} (pattern #14285) : .lake/packages et .lake/build
 # survivent aux conteneurs, lake build devient incremental.
-LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.336.0}"
+LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.337.0}"
 LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
 LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
 LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"

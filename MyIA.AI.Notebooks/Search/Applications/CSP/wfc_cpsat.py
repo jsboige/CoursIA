@@ -110,6 +110,10 @@ class PureWFC:
         return best
 
     def solve(self) -> Optional[np.ndarray]:
+        # Singleton domains still need adjacency propagation: no collapse will
+        # trigger it when the tileset contains only one tile.
+        if self.n_tiles == 1 and not self._propagate(0, 0):
+            return None
         stack = []
         while True:
             cell = self._pick_cell()
