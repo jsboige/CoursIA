@@ -20,7 +20,15 @@ and prints a divergence warning on stdout instead of diverging silently (#14908)
 Prerequisites (WSL, one-time setup):
     wsl -e bash -c "python3 -m venv ~/coursia-wsl"
     wsl -e bash -c "source ~/coursia-wsl/bin/activate && pip install nashpy matplotlib papermill ipykernel scipy numpy"
-    wsl -e bash -c "source ~/coursia-wsl/bin/activate && python3 -m ipykernel install --user --name python3"
+    # IMPORTANT: the registered kernel name MUST match metadata.kernelspec.name of the
+    # notebook you intend to execute. Otherwise the kernelspec resolves nothing and
+    # papermill fails with NoSuchKernel *after* a setup that looked successful (#14908).
+    # Inspect your target notebooks, e.g.:
+    #   grep -rh '"kernelspec".*"name":' MyIA.AI.Notebooks/GameTheory/ | sort -u
+    # then register one kernel per declared name. Example for GameTheory's "gametheory-wsl":
+    wsl -e bash -c "source ~/coursia-wsl/bin/activate && python3 -m ipykernel install --user --name gametheory-wsl --display-name 'Python (GameTheory WSL)'"
+    # `check-env --mode wsl` lists kernelspecs the active venv sees and warns on kernelspecs
+    # the corpus declares but the venv does not register (#14908 followup).
 
 Prerequisites (native macOS/Linux):
     pip install papermill ipykernel
@@ -200,6 +208,46 @@ def check_env_wsl() -> bool:
         else:
             print(f"  {pkg}: MISSING")
             ok = False
+
+    # List kernelspecs registered in the active venv (#14908 followup).
+    # The docstring above warns that the registered name MUST match the notebook's
+    # metadata.kernelspec.name — surfacing the gap here lets `check-env` catch it
+    # at setup time, not at the first NoSuchKernel during execution.
+    rc, kspec_out, _ = run_wsl(
+        f"source {WSL_VENV}/bin/activate && jupyter kernelspec list 2>/dev/null"
+    )
+    if rc == 0 and kspec_out.strip():
+        # `jupyter kernelspec list` output:
+        #   Available kernels:
+        #     python3    /usr/local/share/jupyter/kernels/python3
+        #     gametheory-wsl    /home/jesse/.local/share/jupyter/kernels/gametheory-wsl
+        # Kernelspec lines start with whitespace (column 2+); the first whitespace-
+        # separated token is the registered name. Skip the header and blanks.
+        names = []
+        for line in kspec_out.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("Available"):
+                continue
+            if not line.startswith(" "):
+                continue
+            token = stripped.split()[0]
+            if token:
+                names.append(token)
+        if names:
+            print(f"  kernelspecs registered in venv ({len(names)}): {', '.join(names)}")
+            # Heuristic: warn if no python-prefixed kernel is registered. A notebook
+            # whose kernelspec name is `gametheory-wsl` etc. will fail with NoSuchKernel
+            # until that name is registered with `ipykernel install --name <that-name>`.
+            # A bare `python3` registration does NOT satisfy `gametheory-wsl` lookups.
+            if all(name not in ("python3", "python3-wsl") for name in names):
+                print("  WARNING: no python-prefixed kernelspec registered — notebooks "
+                      "declaring `python3` or `python3-wsl` will hit NoSuchKernel.")
+        else:
+            print("  kernelspecs: NONE — register with `ipykernel install --user --name <kernelspec.name>`")
+            ok = False
+    else:
+        print("  kernelspecs: jupyter kernelspec list unavailable (jupyter not installed?)")
+        # Not fatal — pip-list still passes if all pkgs above are OK
 
     return ok
 
