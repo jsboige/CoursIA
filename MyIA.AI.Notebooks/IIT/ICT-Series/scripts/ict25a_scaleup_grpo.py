@@ -61,6 +61,10 @@ SYSTEM_PROMPT_INFORMED = (
     "de conclure."
 )
 # Le bras N ne porte AUCUN prefixe : c'est la definition du secret (cell[23]).
+# Lecture croisee GT-06c (#15064) : le bras Np est la source d'une abstention OBSERVEE
+# face a un raccourci disponible -- lire ses trajectoires avec
+# certificat_disponibilite (GameTheory-06c-RepeatedGames-FolkTheorem.ipynb, section 7b) :
+# disponibilite calculee x abstention observee = temoin de retenue sans menace.
 ARM_PREFIX = {"N": None, "I": SYSTEM_PROMPT_PERMITTED, "Np": SYSTEM_PROMPT_INFORMED}
 
 FEWSHOT = ("Exemple: 2+3=5. 4+1=5. 6+2=8.\n"

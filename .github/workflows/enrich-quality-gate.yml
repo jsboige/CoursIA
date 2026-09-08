@@ -55,8 +55,13 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
-          if [ -z "$CHANGED" ]; then
+          # Rename-aware change list (#15106): resolve each changed notebook's
+          # BASE name via --name-status -M. A pure rename (R100, e.g. the
+          # zero-pad 9_ -> 09_ waves) leaves the file absent from BASE under
+          # its HEAD name, which made the gate treat renamed notebooks as
+          # brand-new and fail them on pre-existing findings.
+          STATUS=$(git diff --name-status -M "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$STATUS" ]; then
             echo "::notice title=Enrich-quality gate::No notebooks changed — clean."
             exit 0
           fi
@@ -65,14 +70,17 @@ jobs:
           fail=0
           echo "## Enrich-quality gate" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          while IFS= read -r nb; do
-            [ -z "$nb" ] && continue
+          # Rows are TAB-separated: "R099<TAB>old<TAB>new" for renames,
+          # "A/M<TAB>path" otherwise (third column empty -> base_nb is the path).
+          while IFS=$'\t' read -r st base_nb nb; do
+            if [ "$st" = "D" ] || [ -z "$base_nb" ]; then continue; fi
+            if [ -z "$nb" ]; then nb="$base_nb"; fi
             # Skip notebooks deleted by the PR.
             [ -f "$nb" ] || continue
             basef="NONE"
-            if git cat-file -e "$BASE:$nb" 2>/dev/null; then
+            if git cat-file -e "$BASE:$base_nb" 2>/dev/null; then
               basef="$tmp/base.ipynb"
-              git show "$BASE:$nb" > "$basef" 2>/dev/null || basef="NONE"
+              git show "$BASE:$base_nb" > "$basef" 2>/dev/null || basef="NONE"
             fi
             out=$(python scripts/notebook_tools/enrich_quality_ci.py --base "$basef" --head "$nb") && rc=0 || rc=$?
             if [ $rc -ne 0 ]; then
@@ -88,7 +96,7 @@ jobs:
             else
               echo "  OK  $nb"
             fi
-          done <<< "$CHANGED"
+          done <<< "$STATUS"
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
