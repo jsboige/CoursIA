@@ -423,11 +423,60 @@ head1 "7. drop-in propose (dans le bundle, PAS dans /etc)"
 # qu'un autre surcharge, c'est proposer un no-op tout en rendant un verdict
 # affirmatif. On enumere les drop-ins EFFECTIFS et on refuse s'il en existe un
 # qui soit lu apres la cible.
+# Ordre de precedence des racines de drop-ins, du plus FORT au plus faible, tel
+# que le rend « systemd-analyze unit-paths » (mesure sur systemd 255) et que le
+# documente systemd.unit(5). Deux regles distinctes, souvent confondues :
+#   - a nom de fichier EGAL, la racine la plus forte l'emporte (masquage) ;
+#   - a noms DIFFERENTS, la fusion est lexicographique sur le nom de fichier,
+#     quelle que soit la racine.
+# Le classement ne sert qu'a la premiere. La seconde est traitee plus bas, et
+# c'est bien pour cela qu'elle ne regarde pas le repertoire.
+rank_of() {
+  case "$1" in
+    /etc/systemd/system.control/*)  echo 1 ;;
+    /run/systemd/system.control/*)  echo 2 ;;
+    /run/systemd/transient/*)       echo 3 ;;
+    /etc/systemd/system/*)          echo 4 ;;
+    /run/systemd/system/*)          echo 5 ;;
+    /usr/local/lib/systemd/system/*) echo 6 ;;
+    /usr/lib/systemd/system/*)      echo 7 ;;
+    # Racine inconnue : on ne sait pas la classer, donc on la traite comme la
+    # plus forte. L'erreur va vers le REFUS, jamais vers l'approbation.
+    *)                              echo 0 ;;
+  esac
+}
+
 TARGET_BASE="$(basename "$TARGET")"
+TARGET_REL="${TARGET#"$ROOT"}"
 LATER=""
 for D in $(sc_show coursia-runner.service DropInPaths); do
   DB="$(basename "$D")"
-  [ "$DB" = "$TARGET_BASE" ] && continue
+  # La cible se reconnait a son CHEMIN, jamais a son seul basename. Sauter tout
+  # homonyme revenait a ignorer un fichier qu'on ne controle pas, en le prenant
+  # pour soi. Les chemins sont compares hors racine d'inspection : sous
+  # COURSIA_DRYRUN_ROOT la cible est prefixee, pas ce que rend DropInPaths.
+  [ "${D#"$ROOT"}" = "$TARGET_REL" ] && continue
+  if [ "$DB" = "$TARGET_BASE" ]; then
+    # A nom de fichier EGAL, c'est la racine de plus haute precedence qui
+    # l'emporte -- pas le dernier lu. Un homonyme d'une racine plus FAIBLE est
+    # donc masque par la cible : l'ignorer est correct. Refuser sur tout
+    # homonyme, comme le faisait la version precedente, bloquait une
+    # configuration parfaitement definie. Seul l'homonyme d'une racine plus
+    # FORTE est dangereux : il masquerait la cible, et le verdict porterait sur
+    # un fichier que le processus ne verra jamais.
+    R_HOME="$(rank_of "${D#"$ROOT"}")"
+    R_CIBLE="$(rank_of "$TARGET_REL")"
+    if [ "$R_HOME" -lt "$R_CIBLE" ]; then
+      die "drop-in HOMONYME dans une racine de precedence SUPERIEURE :
+  $D                (rang $R_HOME)
+  cible inspectee : $TARGET   (rang $R_CIBLE)
+A nom de fichier egal, systemd retient celui de la racine la plus forte : cet
+homonyme MASQUE la cible. Le verdict porterait sur un fichier que le processus
+ne verra pas. Refus."
+    fi
+    # Homonyme plus faible : masque par la cible, sans effet. On passe.
+    continue
+  fi
   if [ "$(printf '%s\n%s\n' "$TARGET_BASE" "$DB" | LC_ALL=C sort | tail -1)" = "$DB" ]; then
     LATER="$LATER $D"
   fi
@@ -445,13 +494,24 @@ fi
 # porte d'autres, l'ecrire A LA PLACE les perdrait en silence. Les reconduire
 # serait un choix de configuration, pas une transformation mecanique que ce
 # script puisse s'autoriser.
+#
+# L'ExecStart se compare par sa VALEUR, jamais en jetant la ligne. La version
+# precedente filtrait « ^ExecStart= » en bloc : une cible portant un AUTRE
+# binaire rendait EXTRA vide, donc « rien n'est perdu » -- alors que la
+# proposition emet « ExecStart= » (reset) puis SON binaire, remplacant la liste
+# entiere. Le trou vivait dans le garde meme cense l'attraper. Ne sont donc
+# tolerees que les deux formes que la proposition reproduit a l'identique : la
+# ligne de reset, et l'invocation du wrapper avec un unique argument. Tout le
+# reste -- autre binaire, arguments supplementaires, prefixes systemd (- @ + !)
+# -- survit au filtre et fait refuser. L'erreur va vers le REFUS.
 if [ "$TARGET_STATE" = "PRESENT" ]; then
   EXTRA="$(sed -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$TARGET" \
     | grep -v '^$' \
     | grep -v '^\[Service\]$' \
     | grep -v '^Environment=COURSIA_RUNNER_MEMORY=' \
     | grep -v '^Environment=COURSIA_RUNNER_CPUS=' \
-    | grep -v '^ExecStart=' || true)"
+    | grep -v '^ExecStart=$' \
+    | grep -v '^ExecStart=/usr/local/bin/coursia-runner-start\.sh [^ ]*$' || true)"
   if [ -n "$EXTRA" ]; then
     die "la cible vivante porte des directives que la proposition ne reconduit pas :
 $EXTRA

@@ -17,10 +17,35 @@ SUT="$HERE/dryrun-sizing-control.sh"
 [ -x "$SUT" ] || [ -r "$SUT" ] || { echo "introuvable : $SUT" >&2; exit 2; }
 
 TMP="$(mktemp -d)"
+SKIP=0
+
+# --- Garde d isolation : les faux doivent GAGNER sur PATH -------------------
+# Toute l isolation de ce harnais repose la-dessus. Avec un TMPDIR en forme
+# Windows (C:/...), l entree PATH est inexploitable : systemctl devient absent
+# et c est le VRAI chown qui est appele -- mesure sur cette suite, 61/64 au lieu
+# de 64/64. Le symptome n avait alors rien qui le nomme. On ne teste pas la
+# forme de TMPDIR (un proxy) mais l effet : le faux l emporte-t-il ?
+mkdir -p "$TMP/_probe/bin"
+printf '#!/bin/sh\nexit 0\n' > "$TMP/_probe/bin/systemctl"
+chmod 0755 "$TMP/_probe/bin/systemctl"
+_probe_resolved="$(PATH="$TMP/_probe/bin:$PATH" command -v systemctl 2>/dev/null || true)"
+case "$_probe_resolved" in
+  "$TMP"/_probe/bin/systemctl) : ;;
+  *) printf 'ABANDON : les faux ne gagnent pas sur PATH.\n' >&2
+     printf '  TMPDIR    = %s\n' "${TMPDIR-<non defini>}" >&2
+     printf '  attendu   = %s\n' "$TMP/_probe/bin/systemctl" >&2
+     printf '  resolu    = %s\n' "${_probe_resolved:-<rien>}" >&2
+     printf 'Sans cette garantie la suite appelle les VRAIS binaires : le vrai\n' >&2
+     printf 'chown, et systemctl absent. Elle rendrait des echecs qui ne\n' >&2
+     printf 'parlent pas de ce quelle teste. Utiliser un TMPDIR POSIX.\n' >&2
+     exit 2 ;;
+esac
+rm -rf "$TMP/_probe"
 trap 'rm -rf "$TMP"' EXIT
 PASS=0; FAIL=0
 
 ok()   { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
+skip() { SKIP=$((SKIP+1)); printf '  --   %s\n       motif : %s\n' "$1" "$2"; }
 ko()   { FAIL=$((FAIL+1)); printf '  KO   %s\n' "$1"; [ -n "${2:-}" ] && printf '       %s\n' "$2"; }
 
 # --- Fabrique de fixtures ---------------------------------------------------
@@ -464,7 +489,75 @@ else
     || ko "rollback J2 : le repertoire .d cree a ete retire"
 fi
 
+
+# --- K. Les cas concrets releves par coursia-1d sur c9f3cfcd5 ---------------
 echo
-printf 'reussis=%d  echoues=%d\n' "$PASS" "$FAIL"
+echo "K. bornage des cas releves en contre-verification"
+
+# K1. Un ExecStart dont le BINAIRE differe doit refuser. C etait le trou : le
+# filtre jetait la ligne, donc « rien n est perdu » -- alors que la proposition
+# remplace la liste entiere.
+make_fixture p
+sed -i 's|^ExecStart=/usr/local/bin/coursia-runner-start\.sh.*|ExecStart=/usr/local/bin/autre-lanceur.sh 4|' \
+  "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "K1 ExecStart a binaire different : refus" "ne reconduit pas"
+
+# K2. Controle negatif indispensable : l ExecStart NOMINAL ne doit pas refuser,
+# sinon K1 prouverait seulement que le script refuse tout.
+make_fixture p
+run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_succes "K2 ExecStart nominal : pas de refus (controle negatif)"
+
+# K3. Homonyme dans une racine plus FAIBLE (/run alors que la cible est en
+# /etc) : la cible le masque, il est sans effet. Ne doit PAS refuser. C'est le
+# controle qui empeche de re-durcir ce refus au-dela du cas dangereux -- ma
+# premiere version refusait ici, et aurait bloque une configuration saine.
+make_fixture p
+FX_DROPINS="/run/systemd/system/coursia-runner.service.d/10-sizing.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_succes "K3 homonyme d une racine plus faible : masque, pas de refus"
+
+# K3b. Le cas reellement dangereux : homonyme dans une racine plus FORTE
+# (system.control, ou ecrit « systemctl set-property »). Il masque la cible :
+# refus.
+make_fixture p
+FX_DROPINS="/etc/systemd/system.control/coursia-runner.service.d/10-sizing.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "K3b homonyme d une racine plus forte : refus" "precedence SUPERIEURE"
+
+# K3c. Racine inconnue au classement : non classable, donc traitee comme la
+# plus forte -- l erreur va vers le refus. Sans ce test, le « *) echo 0 » ne
+# serait qu une intention ecrite en commentaire.
+make_fixture p
+FX_DROPINS="/opt/ailleurs/coursia-runner.service.d/10-sizing.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "K3c homonyme en racine inconnue : refus (fail-closed)" "precedence SUPERIEURE"
+
+# K4. Controle negatif : la cible elle-meme, rendue par DropInPaths a son propre
+# chemin, reste reconnue comme soi et ne declenche rien.
+make_fixture p
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/10-sizing.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_succes "K4 la cible se reconnait a son chemin (controle negatif)"
+
+# K5/K6. Les refus symlink et ACL ne sont PAS exercables sur cette plateforme,
+# et le dire vaut mieux qu un test qui certifie le vide. Mesure faite ici, pas
+# supposee : « ln -s » sur Git Bash fabrique une COPIE, donc « [ -L ] » est
+# faux et le refus ne serait jamais atteint -- le test passerait sans rien
+# exercer. Idem pour les ACL etendues, qu on ne sait pas poser ici.
+if ln -s "$TMP/_lnsrc" "$TMP/_lndst" 2>/dev/null && [ -L "$TMP/_lndst" ]; then
+  rm -f "$TMP/_lndst"
+  ko "K5 refus symlink : a exercer" "plateforme capable, test a ecrire"
+else
+  rm -f "$TMP/_lndst" 2>/dev/null || true
+  skip "K5 refus symlink (cible et repertoire .d)" \
+    "ln -s rend une copie sur cette plateforme : [ -L ] faux, refus jamais atteint"
+  skip "K6 refus ACL etendues" \
+    "aucune ACL etendue posable ici : le motif ls -ld ... + ne serait jamais produit"
+fi
+echo
+printf 'reussis=%d  echoues=%d  non-exercables=%d\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ] || exit 1
 echo "TOUS LES TESTS PASSENT -- aucune machine reelle touchee, aucun redemarrage."
+[ "$SKIP" -eq 0 ] || printf '(%d refus non exercables sur cette plateforme, motifs ci-dessus :\n ils restent NON couverts, ce n est pas un succes.)\n' "$SKIP"
