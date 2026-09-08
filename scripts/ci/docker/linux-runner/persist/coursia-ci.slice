@@ -1,0 +1,82 @@
+# Budget AGREGE de toutes les familles de conteneurs runner (#15091 piece 4).
+#
+# CE QUE CETTE SLICE FERME
+# ------------------------
+# supervise.sh documente lui-meme le trou, dans cmd_lean :
+#
+#   « La somme des caps CPU des familles actives n'est gardee par RIEN --
+#     c'est l'operateur qui dimensionne. »
+#
+# Le garde `supervisor_pids()` ne matche que `supervise.sh start` : les
+# familles `start`, `waiters` et `lean` coexistent donc sans plafond commun.
+# Les caps `--cpus` / `--memory` de docker sont PAR CONTENEUR : 12 waiters a
+# 1 vCPU chacun sont conformes un par un et prennent 12 coeurs ensemble.
+#
+# Un plafond par conteneur ne peut pas borner une flotte. Un cgroup PARENT le
+# peut : les conteneurs y sont imbriques, et les limites du parent s'appliquent
+# a leur SOMME. C'est le seul endroit ou un budget inter-familles existe.
+#
+# COMMENT LES CONTENEURS Y ENTRENT
+# --------------------------------
+# Par le defaut du daemon, pas par un drapeau que chaque appelant devrait
+# penser a passer -- `/etc/docker/daemon.json` porte `"cgroup-parent":
+# "coursia-ci.slice"` (copie de reference dans persist/daemon.json). Tout
+# conteneur du daemon docker-ce y atterrit, y compris ceux lances a la main
+# pour un debug, y compris ceux d'une famille future que personne n'aura pense
+# a cabler. Un garde qui depend de la memoire de son appelant n'est pas un
+# garde.
+#
+# systemd imbrique une slice sur son nom : `coursia-ci.slice` vit sous
+# `coursia.slice`. Le chemin cgroup reel est donc
+# /sys/fs/cgroup/coursia.slice/coursia-ci.slice/ -- c'est la qu'on lit io.max.
+#
+# MESURE (ai-01, 2026-09-07, controle apparie a trois conteneurs simultanes
+# ecrivant 400 Mio chacun en oflag=direct sur leur volume _work) :
+#
+#   sans la slice : 5,4 + 5,9 + 5,6 GB/s  =  16,9 GB/s cumules
+#   sous la slice :  77,6 + 72,0 + 71,5 MB/s = 221 MB/s cumules
+#
+# soit un facteur 76, pour un plafond declare a 209,7 MB/s (ecart 5,4 %, la
+# tolerance attendue du throttling cgroup v2 sur des rafales en direct I/O).
+# io.max relu sur le cgroup pendant la mesure :
+#   8:64 rbps=419430400 wbps=209715200 riops=max wiops=max
+# 8:64 est /dev/sde, le device qui porte /var/lib/docker du daemon docker-ce.
+#
+# POURQUOI PAS IOWriteBandwidthMax SUR LES UNITES DU SUPERVISEUR
+# --------------------------------------------------------------
+# Parce que ce serait un garde de facade. Le superviseur parle au daemon par
+# le socket : les conteneurs sont ses NEVEUX, pas ses enfants -- ils ne sont
+# pas dans son cgroup. Un plafond d'I/O pose sur coursia-runner.service ne
+# borne que ce que le superviseur ecrit lui-meme, c'est-a-dire ses journaux.
+# Les unites gardent IOAccounting + IOWeight, qui eux sont honnetes a cette
+# place ; le plafond dur vit ici, ou vivent les conteneurs.
+[Unit]
+Description=CoursIA CI runner containers -- aggregate budget (all families)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+Before=slices.target
+
+[Slice]
+CPUAccounting=yes
+# 8 coeurs sur les 16 de la machine. L'hote prime (clause en tete de
+# supervise.sh) : la workstation garde la moitie de ses coeurs quoi que fasse
+# la CI, meme si trois familles tournent ensemble.
+CPUQuota=800%
+
+IOAccounting=yes
+IOWeight=50
+# Plafond DUR, agrege, sur le device qui porte /var/lib/docker.
+#
+# 200 Mio/s en ecriture. Le point de comparaison est la mesure de la lane
+# roo-extensions pendant le gel du 2026-09-07 : une boucle a 96 Mo/s soutenus.
+# Ce plafond ne l'interdit pas -- il interdit qu'elle PASSE L'ECHELLE. Le
+# defaut qui a gele la machine deux fois n'etait pas un pic, c'etait un debit
+# soutenu sans borne superieure ; ici la borne existe, et l'hote garde de quoi
+# repondre a l'interactif et aux trainings GPU sur le meme disque.
+#
+# La valeur se re-mesure quand la charge change ; elle ne se devine pas. Le
+# controle est celui documente en tete : trois conteneurs, dd en direct I/O,
+# somme des debits comparee au plafond.
+IOWriteBandwidthMax=/var/lib/docker 209715200
+IOReadBandwidthMax=/var/lib/docker 419430400
+
+MemoryAccounting=yes

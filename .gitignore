@@ -279,6 +279,9 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Slidev QA render artefacts (Playwright captures — diagnostic only, never committed)
+slides/slide-renders*/
+
 # Visual Studio 6 build log
 *.plg
 
@@ -1036,4 +1039,11 @@ scripts/ci/snapshots/
 # uniquement : hors de ce scope, le nom `pt11c_multiseed_output` est trop generique
 # pour risquer un ignore non-intentionnel.
 MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
+
+# Tranche 2 #15002 measurement artifacts (issue #15002 / PR upcoming):
+# the live VoiceDesign WAV/MP3 + results.json used to verify acceptance
+# criterion #2 (motion/motifs3) live on disk during a run; re-generated
+# from `prosody_lab/measure_voicedesign_narrator.py --out-json ...`. Keep
+# the script in the repo; the artefacts out.
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 

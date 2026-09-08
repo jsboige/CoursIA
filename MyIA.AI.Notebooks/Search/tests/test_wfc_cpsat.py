@@ -23,6 +23,7 @@ seulement l'absence de crash :
 Run with: pytest tests/test_wfc_cpsat.py -v
 """
 
+import itertools
 import json
 import sys
 from pathlib import Path
@@ -119,6 +120,35 @@ class TestGenerateRandom:
 class TestPureWFC:
     """PureWFC : solveur par propagation de contraintes. L'invariant cle est
     que toute solution respecte les regles d'adjacence."""
+
+    @pytest.mark.parametrize("rows,cols", [(1, 1), (1, 2), (2, 1), (2, 2)])
+    @pytest.mark.parametrize("compatible", [False, True])
+    def test_singleton_satisfiability(self, rows, cols, compatible):
+        """Compare to exhaustive assignments, without solver/metric helpers.
+
+        Forbidden self-adjacency makes any grid with an edge unsatisfiable;
+        an isolated cell remains valid. Allowed self-adjacency is the control.
+        """
+        rules = [[compatible]]
+        tileset = {
+            "tiles": [{"id": 0, "name": "floor"}],
+            "weights": [1.0],
+            "adjacency": {"rules": {"0": rules[0]}},
+        }
+        solutions = [
+            assignment
+            for assignment in itertools.product(range(len(rules)), repeat=rows * cols)
+            if all(
+                rules[assignment[r * cols + c]][assignment[nr * cols + nc]]
+                for r in range(rows) for c in range(cols)
+                for nr, nc in ((r + 1, c), (r, c + 1))
+                if nr < rows and nc < cols
+            )
+        ]
+        grid = PureWFC(rows, cols, tileset, seed=42).solve()
+        assert (grid is not None) == bool(solutions)
+        if grid is not None:
+            assert tuple(grid.flat) in solutions
 
     def test_returns_grid(self, tileset):
         wfc = PureWFC(6, 6, tileset, seed=0)

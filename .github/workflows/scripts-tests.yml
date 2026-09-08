@@ -71,6 +71,13 @@ on:
       # check-runs. Keep one ordinary CI surface that executes the scanner for
       # every workflow change, including workflow-only PRs from forks.
       - '.github/workflows/**'
+      # #15058 ADK contracts: the 16 runtime-contract tests that #13572 makes
+      # its measuring organ (Track2-GoogleADK/utils/test_adk_runtime_contracts.py,
+      # C1-C7 on the REAL ADK runtime, scripted LLM, offline) never ran in any
+      # CI job -- the reading #13572 prescribes was unavailable. The
+      # adk-contracts job below runs them; this entry fires it when the track
+      # sources move. Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
   pull_request:
     branches: [main]
     paths:
@@ -98,6 +105,8 @@ on:
       - '.github/workflows/pr-gate-rerun.yml'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
       - '.github/workflows/**'
+      # #15058 ADK contracts (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
   workflow_dispatch:
 
 permissions:
@@ -304,3 +313,54 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
+
+  adk-contracts:
+    name: ADK runtime contracts (16)
+    # #15058: #13572 makes Track2-GoogleADK/utils/test_adk_runtime_contracts.py
+    # (C1-C7, REAL ADK 2.8 runtime with a scripted LLM -- offline, no key, no
+    # network) its measuring organ, but no CI job ran it: portage was
+    # established by declaration, exactly what #13572's clause wanted to
+    # prevent. Dedicated job, NOT an entry in scripts-tests' shared pytest
+    # list: the collection imports litellm + google-adk at module level
+    # (utils/__init__ -> llm_client -> litellm; adk_runtime ->
+    # google.adk.models.lite_llm, whose import guard demands litellm), and
+    # installing that chain into the shared env would risk pin conflicts with
+    # the 1600+ existing tests. Isolated env = zero blast radius.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # Exact pin chain of Track2-GoogleADK/requirements.txt (the verified
+        # compatibility chain, #13948): litellm 1.93.2 + openai 2.24.0 +
+        # google-adk 2.8.0 + pydantic 2.12.5. Measured firsthand on a clean
+        # venv with exactly these pins: 16/16 green in ~10 s, no conflicts.
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest "litellm==1.93.2" "openai==2.24.0" "google-adk==2.8.0" "pydantic==2.12.5" pydantic-settings python-dotenv
+
+      - name: Run ADK runtime contracts
+        run: |
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --tb=short -q
+
+      - name: Contracts collection floor (16)
+        # Same two-signal semantics as the audit (455) / secrets (148) /
+        # GradeBook (15) floors above: 0 collected = collection crash (import
+        # error -- the exact failure mode a naive wiring of these tests into
+        # the shared job would have caused), below floor = a contract test
+        # was deleted, which is a coverage regression, never housekeeping.
+        if: always()
+        env:
+          ADK_CONTRACTS_FLOOR: 16
+        run: |
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
+          if [ "$N" -lt "$ADK_CONTRACTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_CONTRACTS_FLOOR. Removing a contract test is a contract change, not housekeeping."; exit 1; fi
+          echo "OK: $N tests collected (floor=$ADK_CONTRACTS_FLOOR)."
