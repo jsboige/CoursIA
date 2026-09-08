@@ -145,7 +145,35 @@ par :
 - **Présence chat** : les crons postent un jalon `[OK]` même quand tout va bien,
   pour prouver que la boucle tourne
 - **Détection de staleness** : un workspace sans activité récente est flaggué
-- **Cadence** : surveillance 6h (compromis économie tokens / réactivité)
+- **Cadence** : cluster-tour 12h + self-check 2×/jour (compromis économie tokens
+  / réactivité), doublés côté hôte par des watchdogs 15–30 min (voir ci-dessous)
+
+### Vérifier ce que les bots PEUVENT FAIRE et DISENT
+
+L'incident le plus instructif du domaine (août 2026, ~3,5 jours) : le backend
+MCP derrière le proxy est mort **en gardant un handshake vert** — processes,
+ports et freshness tous OK, pendant que chaque appel d'outil échouait en silence.
+Les deux bots du cluster ont **dit** (« bus down, 40+ cycles ») et personne ne
+lisait leurs messages. Depuis, la surveillance est **capability-first** :
+
+1. **Capability** : sonder le chemin d'écriture réel (appel d'outil, pas le
+   handshake) — c'est le rôle de `mcp-chain-watchdog` côté ai-01
+2. **Parole** : lire ce que les bots rapportent (regex `bus down|undelivered|
+   fallback|write failed` sur leurs messages) — c'est le check 8 de la routine
+   opérateur
+3. **Jamais attribuer un post manquant au prompt-skip** avant d'avoir écarté un
+   bus mort (l'attribution erronée d'août a coûté 3 jours de diagnostic)
+
+### La surcouche opérateur (session Claude Code hôte)
+
+En plus du bot, une **session Claude Code sur la machine hôte** porte un cron de
+surveillance 12h (`17 */12`, self-re-arming) qui exécute une routine à 8
+vérifications : container/gateway, fraîcheur des crons, activité reviews,
+watchdogs, NanoClaw, tour global, **lecture des messages des bots**. L'escalade
+est volontairement bornée à 5 critères durs (container down, reviews >4h,
+NanoClaw >36h, global >36h, bus MCP down) — tout le reste est [INFO], pas
+[ALERT]. Cette discipline évite la fatigue d'alerte, le vrai tueur des systèmes
+de surveillance.
 
 Voir [08-Multi-Bot-Coordination.md](08-Multi-Bot-Coordination.md) pour le
 concret de la coordination Hermes ↔ NanoClaw, et

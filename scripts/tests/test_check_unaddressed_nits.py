@@ -5491,3 +5491,65 @@ def test_ras_word_bound_rasoir_ne_leve_pas():
             "body": "Une couche ras de terre recouvre le chemin, mais la conclusion tient."}
     assert run([reserve, lift])["blocked"] is True
 
+
+
+# --- #15139 : analyse_pr, point d'entree pre-merge partage avec le picker ---
+
+def test_analyse_pr_assemble_comme_gate(monkeypatch):
+    """`analyse_pr` est l'assemblage pre-merge que `gate()` fait pour le CLI :
+    fetch + resolution #13639 des SHAs cites-absents + analyse a `now`, avec
+    le kwarg `issue_info` (le BON nom -- la delegation du picker appelait
+    `issue_created`, disparu de la signature, et son TypeError aval produisait
+    un dict vide silencieux).
+    """
+    payload = {
+        "number": 15139,
+        "title": "t",
+        "author": {"login": "jsboige"},
+        "comments": [USER_NIT],
+        "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+        "mergedAt": None,
+    }
+    captured = {}
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: dict(payload))
+    monkeypatch.setattr(mod, "_resolve_absent_sha_messages",
+                        lambda data, cap=5: {"abc123": "corps du message"})
+    monkeypatch.setattr(mod, "review_threads", lambda pr: [])
+    monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
+
+    def fake_issue_info(n):
+        return None
+
+    monkeypatch.setattr(mod, "gh_issue_info", fake_issue_info)
+
+    real_analyse = mod.analyse
+
+    def spy_analyse(data, threads, cutoff, issue_info=None,
+                    dismissed_improperly=None):
+        captured.update(data=data, threads=threads, cutoff=cutoff,
+                        issue_info=issue_info, dismissed=dismissed_improperly)
+        return real_analyse(data, threads, cutoff, issue_info=issue_info,
+                            dismissed_improperly=dismissed_improperly)
+
+    monkeypatch.setattr(mod, "analyse", spy_analyse)
+
+    result = mod.analyse_pr(15139)
+
+    # Le nit user non leve traverse l'assemblage complet : le verdict du
+    # picker est celui du merge-gate sur les memes donnees.
+    assert result["blocked"] is True
+    # Resolution #13639 appliquee AVANT analyse (sinon la classe #13557
+    # serait invisible au pre-tirage).
+    assert captured["data"]["_absent_sha_messages"] == {"abc123": "corps du message"}
+    assert captured["threads"] == []
+    # Le kwarg transmis est `issue_info`, et c'est la fonction de l'organe
+    # telle que l'appelant la voit (monkeypatchee ici -> prouvee transmise
+    # telle quelle, jamais re-enveloppee).
+    assert captured["issue_info"] is fake_issue_info
+    assert captured["dismissed"] == []
+    # cutoff = now (pre-merge), pas mergedAt (None ici, mais l'assertion
+    # tiendrait aussi pour une PR mergee : analyse_pr est pre-merge).
+    delta = abs((captured["cutoff"] - datetime.now(timezone.utc)).total_seconds())
+    assert delta < 30

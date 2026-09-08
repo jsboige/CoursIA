@@ -17,8 +17,11 @@ from pathlib import Path
 
 # Insert `scripts/ci/` so the script under test is importable from a flat
 # `import variation_prev_guard` (same convention as test_variation_tag_required.py).
+# Insert `scripts/` too: the mask under test lives in grain_tag since #14780.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import grain_tag as gt  # noqa: E402
 import variation_prev_guard as vpg  # noqa: E402
 
 
@@ -620,7 +623,7 @@ def test_multiline_backtick_span_is_one_mask():
         "#14592` in backticks inside a numbered list, with NO `Grain:` "
         "line of its own."
     )
-    masked = vpg._mask_code_spans(multiline)
+    masked = gt.mask_code_spans(multiline)
     # The whole span (L4 backtick + newline + L5 leading `#14592` + L5
     # backtick) is replaced by spaces -- nothing for the regex to match.
     assert "14592" not in masked
@@ -639,7 +642,7 @@ def test_single_line_backtick_span_still_masked():
     # the working case BEFORE the fix and must remain working AFTER. If it
     # ever breaks, the fix has widened the regex too far.
     single = ("citing `prev: MED/training #14592` in backticks")
-    masked = vpg._mask_code_spans(single)
+    masked = gt.mask_code_spans(single)
     assert "14592" not in masked
     assert len(masked) == len(single)
     assert vpg.find_prev_self_references(single, current_pr=14592) == []
@@ -655,7 +658,7 @@ def test_adjacent_backticks_do_not_merge_into_one_span():
     # current regex is non-greedy and bounded by the FIRST closing
     # backtick, so they stay distinct.
     text = "`a`\n`b`"
-    masked = vpg._mask_code_spans(text)
+    masked = gt.mask_code_spans(text)
     # Two spans masked independently -- `` `a` `` (3) + newline (1) +
     # `` `b` `` (3) -- total 7 chars, all blanks except the newline.
     assert masked == "   \n   "

@@ -17,6 +17,7 @@ Two mechanisms produced that degradation, and these tests pin both shut:
 Run:
     python -m pytest scripts/tests/test_fetch_merged_prs_since.py
 """
+import io
 import shutil
 import subprocess
 import sys
@@ -128,6 +129,28 @@ def test_main_returns_1_when_the_fetch_raises():
         assert fmps.main(["--days", "3"]) == 1
     finally:
         fmps.fetch = original
+
+
+def test_main_writes_utf8_on_cp1252_stdout(monkeypatch):
+    """#15184: Windows stdout is cp1252 -- a PR body with a non-cp1252
+    character (e.g. '→') raised UnicodeEncodeError and the whole window was
+    lost, silently degrading the adjacency guard to `prev: declared`.
+    main() must force UTF-8 so the window is always consumable."""
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", stream)
+
+    original = fmps.fetch
+    fmps.fetch = lambda since: [
+        {"number": 1, "body": "a → b", "mergedAt": "2026-09-08T00:00:00Z"}
+    ]
+    try:
+        assert fmps.main(["--days", "3"]) == 0
+    finally:
+        fmps.fetch = original
+
+    stream.flush()
+    data = stream.buffer.getvalue().decode("utf-8")
+    assert "a → b" in data
 
 
 @pytest.mark.skipif(shutil.which("gh") is None, reason="gh binary absent")
