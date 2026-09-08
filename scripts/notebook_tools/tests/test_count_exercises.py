@@ -1452,3 +1452,116 @@ class TestPathFormInvariance:
         assert _classify(
             root / "GradeBook.ipynb", standard_threshold=3, root=root,
         ) == ("tooling", None)
+
+
+# ---------------------------------------------------------------------------
+# #15080 D01 -- a complete solution carrying a leftover `# TODO etudiant` is NOT
+# an open exercise; a header with no following code cell is a declared subject
+# with no write-space (distinguishable from "no exercise at all").
+# ---------------------------------------------------------------------------
+
+class TestD01CompletedSolutionWithTodo:
+    def test_complete_solution_with_todo_comment_is_not_a_stub(self, tmp_path):
+        """R05 c30/c32/c34 each render a full implementation below a surviving
+        `# TODO etudiant` comment (issue #15080 D01, acceptance 2). The counter
+        must NOT read them as open exercises -- this is the inversion the finding
+        names. Validated by its false negative: none of the three is counted.
+        """
+        c30 = (
+            "def mur_latence_exo(dims=64, sizes=(10**4, 10**5), seed=0):\n"
+            "    # TODO etudiant : completer la mesure -- reutiliser exact_knn, renvoyer [(n, ms)].\n"
+            "    rows = []\n"
+            "    rng = np.random.default_rng(seed)\n"
+            "    for n in sizes:\n"
+            "        db = rng.random((n, dims), dtype=np.float32)\n"
+            "        q = rng.random(dims).astype(np.float32)\n"
+            "        t0 = time.perf_counter()\n"
+            "        for _ in range(3):\n"
+            "            exact_knn(db, q)\n"
+            "        rows.append((n, (time.perf_counter() - t0) / 3 * 1000))\n"
+            "    return rows\n"
+            "\n"
+            'result = mur_latence_exo(dims=128)\n'
+            'print("Exercice 1 : latence dims=128 :", [(n, round(ms, 1)) for n, ms in result])\n'
+        )
+        # The header precedes the complete solution: it is a SOLVED example
+        # (corrige), not an orphan -- so count 0 AND unpaired 0.
+        nb = _write_nb(
+            tmp_path / "r05_solution.ipynb",
+            [
+                _md("## Exercice 1 : latence vs dimension"),
+                _code(c30),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "A complete solution with a leftover '# TODO etudiant' must not count "
+            "as an open exercise (got %d)" % result.count
+        )
+        assert result.unpaired_markdown_instances == 0, (
+            "A header followed by a complete solution is a solved example, not an "
+            "orphaned subject"
+        )
+
+    def test_todo_with_passthrough_or_skeleton_remains_a_stub(self):
+        """The override must NOT swallow genuine stubs: a `# TODO` above a
+        passthrough return or a multi-line scaffold with no computed result stays
+        a stub (guard on the existing scaffolded C#/Lean tests)."""
+        passthrough = "def solve(grid):\n    # TODO etudiant : completer\n    return grid\n"
+        assert _is_stub_code(passthrough) is True, (
+            "A passthrough return (unchanged parameter) is a placeholder stub"
+        )
+        skeleton = (
+            "// Exercice 1 : Artificial Bee Colony (ABC).\n"
+            "// TODO etudiant : implementez ABC\n"
+            "public class ABC\n"
+            "{\n"
+            "    public double[] Best;\n"
+            "    public double BestFitness = double.MaxValue;\n"
+            "}\n"
+        )
+        assert _is_stub_code(skeleton) is True, (
+            "A scaffolded C# skeleton with // TODO is a student stub"
+        )
+
+
+class TestD01UnpairedHeaders:
+    def test_headers_with_no_code_cell_are_declared_instances(self, tmp_path):
+        """CSK (01-GitHub-Copilot-SDK-Binding) holds three exercise headings whose
+        `csharp` blocks live INSIDE markdown -- no code cell exists to write in.
+        The counter must report them as declared-but-empty, distinct from a
+        notebook with genuinely no exercise (R05b demo), which renders 0 with no
+        declared instances (#15080 D01, acceptance 3).
+        """
+        nb = _write_nb(
+            tmp_path / "csk_detached.ipynb",
+            [
+                _md("# Titre CSK"),
+                _md("## Exercice 1 : utiliser le binding\n```csharp\n// sk\n```"),
+                _md("## Exercice 2 : ...\n```csharp\n// ...\n```"),
+                _md("## Exercice 3 : ...\n```csharp\n// ...\n```"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0
+        assert result.unpaired_markdown_instances == 3, (
+            "Three exercise headings with no code cell below them are declared "
+            "subjects with no write-space (got %d)" % result.unpaired_markdown_instances
+        )
+
+    def test_no_exercise_notebook_has_zero_declared_instances(self, tmp_path):
+        """R05b (05b-Stockage-Vectoriel-Serveur) has no exercise word at all --
+        a demonstration of method. It must render 0 count AND 0 declared
+        instances, so it is distinguishable from the CSK detached-headings case.
+        """
+        nb = _write_nb(
+            tmp_path / "demo.ipynb",
+            [
+                _md("# Demo de methode"),
+                _md("## Methode"),
+                _code("x = 1\nprint(x)"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0
+        assert result.unpaired_markdown_instances == 0
