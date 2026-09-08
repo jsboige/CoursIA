@@ -199,6 +199,66 @@ pour les chiffres courants).
 
 ---
 
+## Périmètre GenAI — versionnés / catalogue / parcours
+
+**Date** : 2026-09-07 · **SHA** : `eec8365c5b` · **Issues** : [#15047](https://github.com/jsboige/CoursIA/issues/15047) (fille de l'audit Astra [#15035](https://github.com/jsboige/CoursIA/issues/15035))
+
+Les trois compteurs ci-dessus sont **repo-entiers**. La famille GenAI rejoue le
+même piège **à l'échelle d'une série** : trois nombres proches (220 / 215 / 200)
+répondent à trois questions différentes. Depuis la correction du protocole TP
+(#15035), le périmètre où les **groupes d'étudiants piochent est le catalogue** —
+le nombre qui compte pour la pédagogie est le **215**.
+
+| Source | Compte | Instrument | Répond à la question |
+|--------|-------:|------------|----------------------|
+| **Versionnés** | **220** | `git ls-files 'MyIA.AI.Notebooks/GenAI/**/*.ipynb'` (piped dans `wc -l`) | « Combien de `.ipynb` GenAI sont suivis par git ? » |
+| **Catalogue** | **215** | [`count_notebooks_by_series.py`](../../scripts/notebook_tools/count_notebooks_by_series.py) (ligne GenAI) = marqueur `CATALOG-STATUS` de `MyIA.AI.Notebooks/GenAI/README.md` | « Combien le dépôt présente-t-il publiquement ? » — **le périmètre TP** |
+| **Parcours** | **200** | [`generate_parcours.py`](../../scripts/notebook_tools/generate_parcours.py) → page générée [`docs/curriculum/genai.md`](../curriculum/genai.md) | « Combien sont dans le parcours étudiant genai ? » |
+
+### Réconciliation exacte : 220 → 215 → 200
+
+- `220 (versionnés) − 5 (exclusions pédagogiques) = 215 (catalogue)` : `Audio/_archive/` (1) + `Image/examples/` (3) + `_research/` (1) — les mêmes exclusions `EXCLUDE_PEDAGOGICAL` que le compteur repo-entier. Vérifié fichier-près, l'écart se referme exactement.
+- `215 (catalogue) → 200 (parcours)` : le générateur de parcours filtre en outre les gabarits et jumeaux non retenus pour le parcours (effet série-par-série : voir SemanticKernel ci-dessous).
+
+### SemanticKernel : 20, pas 25
+
+Le « 25 » qui a circulé ne sort d'aucun instrument. Au même SHA :
+
+- **Versionnés = catalogue : 20** — `git ls-files 'MyIA.AI.Notebooks/GenAI/SemanticKernel/*.ipynb'` compte 20 fichiers, cohérent avec le marqueur `SemanticKernel=20` du `CATALOG-STATUS` GenAI.
+- **Parcours : 15** — la page parcours en retient 15 ; les 5 non listés sont des gabarits/jumeaux (`Notebook-Template`, `Workbook-Template`, `Workbook-Template-Python`, `10a`-batch, `fort-boyard-csharp`). Ce n'est pas un bug : deux périmètres, deux nombres.
+
+### Le « 224 » ne se reproduit pas
+
+Re-mesuré le 2026-09-07 : aucun des trois instruments ci-dessus ne produit 224,
+et un `grep` du dépôt ne trouve ce nombre nulle part comme compteur de
+notebooks — sa seule occurrence est l'exemple interne du détecteur
+[`check_prose_quantitative_claims.py`](../../scripts/notebook_tools/check_prose_quantitative_claims.py),
+qui prend précisément cette forme comme celle qu'il refuse en prose. Le 224 ne
+répond à aucune question documentée : artefact d'un recopiage sans périmètre.
+
+### Vérification reproductible
+
+```bash
+# Versionnés (220)
+git ls-files 'MyIA.AI.Notebooks/GenAI/**/*.ipynb' | wc -l
+
+# Catalogue (215) — l'outil pédagogique converge avec le marqueur CATALOG-STATUS
+python scripts/notebook_tools/count_notebooks_by_series.py | grep GenAI
+
+# Parcours (200) — page générée docs/curriculum/genai.md (régénérée par catalog-cron)
+python scripts/notebook_tools/generate_parcours.py --check
+
+# SemanticKernel versionnés (20) vs parcours (15)
+git ls-files 'MyIA.AI.Notebooks/GenAI/SemanticKernel/*.ipynb' | wc -l
+```
+
+> **Périmètre TP (#15035)** : pour tout chiffrage pédagogique (effectifs de TP,
+> trous à combler, couverture), citer le **catalogue** (215) — jamais l'arbre
+> versionné (220) ni le parcours (200). Les trous G06 / §5.1 de l'audit se
+> mesurent sur le 215.
+
+---
+
 ## Voir aussi
 
 - [`notebook-counts-reconciliation.md`](../archive/reference/notebook-counts-reconciliation.md) — doc sœur (**archivée 2026-08-08**, 2026-07-23, `#8050`) : 4 dénominateurs (forensic/catalogue/disque/snapshot) au SHA `be59980`. **Chiffres périmés** (946/944/830) ; la présente doc la supersede pour l'état courant et les 3 sources de `#9857`.

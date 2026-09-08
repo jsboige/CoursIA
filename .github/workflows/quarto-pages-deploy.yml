@@ -72,12 +72,32 @@ jobs:
     # check_self_hosted_runner_policy) ; la selection push-only suit en &&.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'push'
     name: Build Quarto site
-    # Routage #14283 fin de chantier (feu vert ai-01 2026-09-02) : setup
-    # Quarto par tarball auto-contenu (voir le step Set up Quarto). Garde
-    # push-only = jamais de contexte fork ici. runs-on STATIQUE.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de
-    # l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # RETOUR ARRIERE du routage #14283 pour CE job seulement (#15202).
+    # Le chemin de retour etait deja documente ici ; il est emprunte parce que
+    # le rendu complet ne tient plus dans le cap memoire du pool.
+    #
+    # Mesure (run 34217750689, tete 8732ccaf4a8d) : le rendu meurt a
+    # 1145/1276 notebooks sur `Killed` + exit 137 (SIGKILL de l'OOM killer),
+    # apres 18 min 2 s -- donc tres loin du timeout de 60 min. Ce n'est pas un
+    # timeout, c'est un OOM. Il se reproduit a 3072 Mo (07/09 23:02Z) comme a
+    # 1536 Mo (08/09) : le job ne tient plus depuis le resserrement du parc.
+    #
+    # Le cap du pool est JUSTE et reste inchange : il vaut ~10x le pic mesure
+    # des jobs ordinaires (38 et 160 MiB). Ce qui manquait a la mesure de
+    # dimensionnement, c'est CE job -- 1276 notebooks rendus dans un seul
+    # process Deno n'est pas du meme ordre. On ne regonfle donc pas le parc
+    # pour un seul job : on sort le job du parc.
+    #
+    # C'est aussi le meilleur choix sur les trois axes mesurables : le rendu
+    # est PLUS RAPIDE ici (19-24 min contre 25-31 min sur le pool), il ne
+    # prend AUCUNE RAM au serveur familial, et les minutes hosted sont
+    # gratuites (depot public).
+    #
+    # `validate-pr` RESTE sur le pool : il porte un step « Scope render list to
+    # this PR's changed documents » et ne rend que le diff, donc il est borne
+    # par construction. L'entree d'allowlist du workflow reste NECESSAIRE pour
+    # lui -- ne pas la retirer en croyant suivre la note d'origine.
+    runs-on: ubuntu-latest
     # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
     # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
     # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
