@@ -165,6 +165,36 @@ s'applique reellement -- la distinction qui a coute 6 h 35 le 2026-09-08."
   fi
 done
 
+# Bornage explicite des formes de configuration SUPPORTEES.
+# « systemctl show -p Environment » rend les Environment= INLINE. Il ne rend PAS
+# le CONTENU des EnvironmentFile=, que systemd lit a l'execution : une valeur
+# posee par ce biais serait INVISIBLE a env_value(), on retomberait sur le
+# defaut du wrapper, et le budget lu serait faux DANS LE SENS PERMISSIF. Meme
+# classe de defaut pour une valeur quotee : le decoupage par espaces la
+# couperait en deux. On refuse dans les deux cas -- un verdict que l'instrument
+# ne sait pas etayer ne vaut pas mieux que pas de verdict, il vaut moins.
+DQ='"'
+for U in coursia-runner.service coursia-waiters.service; do
+  EF="$(sc_show "$U" EnvironmentFiles)"
+  if [ -n "$EF" ]; then
+    die "configuration NON SUPPORTEE : $U declare EnvironmentFile.
+  $EF
+Ce script lit l'Environment par « systemctl show -p Environment », qui ne rend
+que les Environment= inline. Le contenu d'un EnvironmentFile lui est invisible :
+une valeur qui y serait posee (budget, memoire, cpus) serait lue comme ABSENTE,
+et le script retomberait sur le defaut du wrapper. Le verdict porterait alors
+sur une valeur que le processus ne verra jamais, et l'erreur irait dans le sens
+permissif. Bornage delibere : lire ces fichiers n'est pas de ce ressort."
+  fi
+  case "$(sc_show "$U" Environment)" in
+    *"$DQ"*)
+      die "configuration NON SUPPORTEE : l'Environment effectif de $U porte une
+valeur quotee. env_value() decoupe sur les espaces : une valeur quotee contenant
+un espace serait tronquee en silence, donc mal lue -- sans que rien ne le
+signale. Refus, plutot qu'une lecture approximative." ;;
+  esac
+done
+
 # Dernier argument de l'ExecStart effectif = nombre de slots.
 exec_last_arg() {
   sc_show "$1" ExecStart \
@@ -387,6 +417,50 @@ say "  les modifie pas, donc les reinstaller serait un geste hors perimetre."
 
 # --- 7. Le drop-in propose ---------------------------------------------------
 head1 "7. drop-in propose (dans le bundle, PAS dans /etc)"
+
+# systemd fusionne les drop-ins dans l'ordre LEXICOGRAPHIQUE de leur nom. Un
+# drop-in lu apres la cible ecraserait ce qu'elle declare : proposer un fichier
+# qu'un autre surcharge, c'est proposer un no-op tout en rendant un verdict
+# affirmatif. On enumere les drop-ins EFFECTIFS et on refuse s'il en existe un
+# qui soit lu apres la cible.
+TARGET_BASE="$(basename "$TARGET")"
+LATER=""
+for D in $(sc_show coursia-runner.service DropInPaths); do
+  DB="$(basename "$D")"
+  [ "$DB" = "$TARGET_BASE" ] && continue
+  if [ "$(printf '%s\n%s\n' "$TARGET_BASE" "$DB" | LC_ALL=C sort | tail -1)" = "$DB" ]; then
+    LATER="$LATER $D"
+  fi
+done
+if [ -n "$LATER" ]; then
+  die "drop-in(s) lus APRES la cible, donc susceptibles de l'ecraser :$LATER
+systemd fusionne les drop-ins par ordre lexicographique des noms de fichiers.
+« $TARGET_BASE » etant lu avant eux, ce que la proposition declare pourrait
+etre surcharge -- et le verdict porterait sur une configuration qui ne
+s'appliquerait pas. Refus : la resolution (renommer la cible, ou retirer la
+surcharge) est une decision de configuration, pas un ajustement de ce script."
+fi
+
+# Le drop-in propose porte exactement trois directives. Si la cible vivante en
+# porte d'autres, l'ecrire A LA PLACE les perdrait en silence. Les reconduire
+# serait un choix de configuration, pas une transformation mecanique que ce
+# script puisse s'autoriser.
+if [ "$TARGET_STATE" = "PRESENT" ]; then
+  EXTRA="$(sed -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$TARGET" \
+    | grep -v '^$' \
+    | grep -v '^\[Service\]$' \
+    | grep -v '^Environment=COURSIA_RUNNER_MEMORY=' \
+    | grep -v '^Environment=COURSIA_RUNNER_CPUS=' \
+    | grep -v '^ExecStart=' || true)"
+  if [ -n "$EXTRA" ]; then
+    die "la cible vivante porte des directives que la proposition ne reconduit pas :
+$EXTRA
+Le drop-in propose serait ecrit a la place du fichier existant : ces lignes
+seraient perdues sans que rien ne l'indique. Refus -- statuer sur leur sort est
+une decision deliberee, pas un effet de bord d'un controle de dimensionnement."
+  fi
+fi
+
 mkdir -p "$OUT/proposed" || die "mkdir $OUT/proposed echoue"
 PROP="$OUT/proposed/10-sizing.conf"
 {
@@ -419,10 +493,40 @@ fi
 # --- 8. Le rollback, borne aux cibles reellement changees -------------------
 head1 "8. rollback (borne a la CIBLE, metadonnees conservees)"
 RB="$OUT/rollback.sh"
+# Deux chemins, et les confondre est un defaut de surete :
+#   TARGET_ABS  = chemin CANONIQUE (racine retiree) -- c'est la clef sous
+#                 laquelle les octets vivent dans le bundle ;
+#   TARGET_DEST = destination REELLE, telle que le controle l'a inspectee.
+# En production ROOT est vide, les deux coincident et rien ne change. Sous une
+# racine de test, les confondre faisait ecrire le rollback vers le VRAI /etc :
+# un rollback qui restaure ailleurs que la ou il a mesure est pire qu'absent.
 TARGET_ABS="${TARGET#"$ROOT"}"
-TARGET_DIR_ABS="$(dirname "$TARGET_ABS")"
+TARGET_DEST="$TARGET"
+TARGET_DIR_DEST="$(dirname "$TARGET_DEST")"
 DIR_STATE="$(state_of "$(dirname "$TARGET")")"
 TARGET_MODE="$(stat -c '%a' "$TARGET" 2>/dev/null || printf '0644')"
+TARGET_OWN="$(stat -c '%U:%G' "$TARGET" 2>/dev/null || printf 'root:root')"
+
+# Le rollback rend des OCTETS et des METADONNEES. Trois formes sortent de ce
+# qu'il sait restituer a l'identique. On les refuse : un rollback qui restaure
+# approximativement est pire qu'un refus, parce qu'il a l'air d'avoir marche.
+if [ -L "$TARGET" ]; then
+  die "la cible est un LIEN SYMBOLIQUE : $TARGET
+« install -D » ecrirait a travers le lien, donc dans sa cible ; le rollback
+reposerait ensuite un fichier reel la ou il y avait un lien. Non supporte."
+fi
+if [ -L "$(dirname "$TARGET")" ]; then
+  die "le repertoire .d de la cible est un LIEN SYMBOLIQUE : $(dirname "$TARGET")
+Meme raison : ni le controle ni le rollback ne raisonnent a travers un lien."
+fi
+if [ "$TARGET_STATE" = "PRESENT" ]; then
+  case "$(ls -ld "$TARGET" 2>/dev/null | cut -c1-11)" in
+    *+) die "la cible porte des ACL etendues : $TARGET
+Le rollback ne restitue que le mode et le proprietaire. Restaurer une cible
+ACL-ee avec le seul mode rendrait un fichier d'apparence correcte et de droits
+differents -- un rollback qui ment sur ce qu'il a fait. Non supporte." ;;
+  esac
+fi
 {
   printf '#!/usr/bin/env bash\n'
   printf '# Rollback genere le %s.\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -433,15 +537,16 @@ TARGET_MODE="$(stat -c '%a' "$TARGET" 2>/dev/null || printf '0644')"
   printf 'B="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/live"\n'
   if [ "$TARGET_STATE" = "PRESENT" ]; then
     printf '[ -r "$B%s" ] || { echo "octets captures introuvables" >&2; exit 1; }\n' "$TARGET_ABS"
-    printf 'install -D -m %s "$B%s" "%s"\n' "$TARGET_MODE" "$TARGET_ABS" "$TARGET_ABS"
-    printf 'echo "  restaure %s (mode %s)"\n' "$TARGET_ABS" "$TARGET_MODE"
+    printf 'install -D -m %s "$B%s" "%s"\n' "$TARGET_MODE" "$TARGET_ABS" "$TARGET_DEST"
+    printf 'chown %s "%s"\n' "$TARGET_OWN" "$TARGET_DEST"
+    printf 'echo "  restaure %s (mode %s, %s)"\n' "$TARGET_DEST" "$TARGET_MODE" "$TARGET_OWN"
   else
     printf '# La cible etait ABSENTE avant le controle : la restaurer, c est la SUPPRIMER.\n'
-    printf 'rm -f "%s"\n' "$TARGET_ABS"
-    printf 'echo "  supprime %s (absent avant le controle)"\n' "$TARGET_ABS"
+    printf 'rm -f "%s"\n' "$TARGET_DEST"
+    printf 'echo "  supprime %s (absent avant le controle)"\n' "$TARGET_DEST"
     if [ "$DIR_STATE" = "ABSENT" ]; then
       printf '# Le repertoire .d n existait pas non plus : le retirer s il est vide.\n'
-      printf 'rmdir "%s" 2>/dev/null || true\n' "$TARGET_DIR_ABS"
+      printf 'rmdir "%s" 2>/dev/null || true\n' "$TARGET_DIR_DEST"
     fi
   fi
   printf 'systemctl daemon-reload\n'
@@ -449,8 +554,8 @@ TARGET_MODE="$(stat -c '%a' "$TARGET" 2>/dev/null || printf '0644')"
 } > "$RB" || die "ecriture du rollback echouee"
 chmod 0755 "$RB" || die "chmod du rollback echoue"
 say "  ecrit  : $RB"
-say "  cible  : $TARGET_ABS  (etat avant controle : $TARGET_STATE)"
-say "  action : $([ "$TARGET_STATE" = PRESENT ] && echo "restaurer les octets, mode $TARGET_MODE" || echo "SUPPRIMER le fichier cree")"
+say "  cible  : $TARGET_DEST  (etat avant controle : $TARGET_STATE)"
+say "  action : $([ "$TARGET_STATE" = PRESENT ] && echo "restaurer les octets, mode $TARGET_MODE, $TARGET_OWN" || echo "SUPPRIMER le fichier cree")"
 
 # --- 9. Auto-verification du bundle -----------------------------------------
 head1 "9. auto-verification du bundle"

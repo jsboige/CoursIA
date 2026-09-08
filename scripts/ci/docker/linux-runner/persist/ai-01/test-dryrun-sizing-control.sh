@@ -54,8 +54,10 @@ make_fixture() {
   FAKE="$FX/bin/systemctl"
   {
     printf '#!/usr/bin/env bash\n'
+    printf '[ -n "${FX_SYSTEMCTL_LOG:-}" ] && printf "%%s\\n" "$*" >> "$FX_SYSTEMCTL_LOG"\n'
     printf '[ "${FX_SYSTEMCTL_DEAD:-0}" = "1" ] && exit 1\n'
     printf 'cmd="$1"; shift\n'
+    printf '[ "$cmd" = "daemon-reload" ] && exit 0\n'
     printf 'unit="$1"; shift\n'
     printf 'case "$cmd" in\n'
     printf '  is-active) echo active; exit 0 ;;\n'
@@ -74,10 +76,28 @@ make_fixture() {
     printf '  coursia-runner.service:Environment) echo "${FX_START_ENV-COURSIA_RUNNER_MEMORY=6g}" ;;\n'
     printf '  coursia-waiters.service:Environment) echo "${FX_WAIT_ENV-COURSIA_RUNNER_WAITER_CPUS=1}" ;;\n'
     printf '  *:ExecMainStartTimestamp) echo "Mon 2026-09-08 07:29:40 UTC" ;;\n'
+    printf '  coursia-runner.service:EnvironmentFiles) echo "${FX_START_EF-}" ;;\n'
+    printf '  coursia-waiters.service:EnvironmentFiles) echo "${FX_WAIT_EF-}" ;;\n'
+    printf '  coursia-runner.service:DropInPaths) echo "${FX_DROPINS-}" ;;\n'
     printf '  *) echo "" ;;\n'
     printf 'esac\n'
   } > "$FAKE"
   chmod 0755 "$FAKE"
+
+  # Faux chown. Sur Git Bash (Windows) `stat -c %U:%G` rend « MYIA:UNKNOWN »,
+  # que chown refuse -- mesure faite, pas supposee. Le rollback est donc
+  # execute avec ce faux, qui ENREGISTRE ce qu'on lui demande.
+  # Ce que cela prouve   : le rollback DEMANDE la restauration du proprietaire
+  #                        exactement tel que stat l'a releve.
+  # Ce que cela ne prouve PAS : que chown reussisse ici. Sur la cible Linux il
+  #                        est reel, et c'est la seule machine ou le rollback
+  #                        a vocation a tourner.
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf 'printf "%%s\\n" "$1" >> "${FX_CHOWN_LOG:-/dev/null}"\n'
+    printf 'exit 0\n'
+  } > "$FX/bin/chown"
+  chmod 0755 "$FX/bin/chown"
 }
 
 # Empreinte de l'arbre fixture : chemin + taille + sha, tries. Sert de temoin
@@ -238,7 +258,11 @@ rmdir "$TMP/fxk/etc/systemd/system/coursia-runner.service.d"
 run_sut "$TMP/fxk" --slots 1 --cpus 2
 expect_succes "cible absente : execution nominale"
 RB="$TMP/fxk/bundle/rollback.sh"
-grep -q 'rm -f "/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"' "$RB" \
+# NB : la racine n est plus codee en dur ici -- le rollback vise desormais la
+# racine INSPECTEE (correctif du defaut latent : sous COURSIA_DRYRUN_ROOT il
+# pointait sur le vrai /etc). La verification forte est en J1/J2, qui EXECUTENT
+# le rollback et constatent l effet dans la fixture.
+grep -q 'rm -f ".*/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"' "$RB" \
   && ok "rollback SUPPRIME un drop-in initialement absent" \
   || ko "rollback SUPPRIME un drop-in initialement absent" "$(grep -E '^(install|rm)' "$RB" | tr '\n' ' ')"
 grep -q 'install -D' "$RB" \
@@ -305,6 +329,139 @@ if printf "%s" "$OUTPUT" | grep -q -- "-> passe"; then
   ko "budget=0 n imprime jamais « passe »" "un garde desarme a ete lu comme une approbation"
 else
   ok "budget=0 n imprime jamais « passe »"
+fi
+
+echo "=== I. Bornage des configurations supportees ==="
+# Review coursia-1d : `systemctl show -p Environment` ne voit ni les
+# EnvironmentFile ni une valeur quotee ; un drop-in lu apres la cible peut
+# ecraser la proposition ; remplacer une cible qui porte d'autres directives
+# les perd. Ces quatre formes doivent REFUSER -- et deux controles negatifs
+# verifient que le refus ne se declenche pas sur la forme nominale.
+
+make_fixture p
+FX_START_EF="/etc/coursia/runner.env" run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "EnvironmentFile sur le runner : refus" "EnvironmentFile"
+
+make_fixture p
+FX_WAIT_EF="/etc/coursia/waiters.env" run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "EnvironmentFile sur les waiters : refus" "EnvironmentFile"
+
+make_fixture p
+FX_START_ENV='COURSIA_RUNNER_MEMORY="6 g"' run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "valeur quotee dans l Environment : refus" "valeur quotee"
+
+make_fixture p
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/20-autre.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "drop-in lu APRES la cible : refus" "lus APRES la cible"
+
+# Controle negatif : un drop-in lu AVANT ne peut pas ecraser la proposition.
+make_fixture p
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/05-base.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_succes "drop-in lu AVANT la cible : pas de refus (controle negatif)"
+
+# Une directive que la proposition ne reconduit pas doit bloquer.
+make_fixture p
+printf 'CPUQuota=300%%\n' \
+  >> "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "directive supplementaire dans la cible : refus" "ne reconduit pas"
+
+# Controle negatif : la cible nominale ne porte que les trois directives.
+make_fixture p
+run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_succes "cible nominale : pas de refus (controle negatif)"
+
+echo "=== J. Rollback REELLEMENT execute ==="
+# La version precedente de ces tests grepait le TEXTE du rollback. Un
+# detecteur se valide par ses faux negatifs, jamais par ses hits : un rollback
+# syntaxiquement present peut ne rien restaurer. On l'EXECUTE donc sur une
+# fixture, et on compare les octets.
+
+# J1 -- cible PRESENTE : le rollback doit rendre les octets d'origine.
+make_fixture q
+TGT="$TMP/fxq/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+cp -p "$TGT" "$TMP/fxq.avant"
+run_sut "$TMP/fxq" --slots 1 --cpus 2
+expect_succes "rollback J1 : le controle s execute (cible PRESENTE)"
+RBS="$TMP/fxq/bundle/rollback.sh"
+if [ ! -r "$RBS" ]; then
+  ko "rollback J1 : script genere"
+else
+  ok "rollback J1 : script genere"
+  # Le rollback doit viser la fixture, jamais le vrai /etc de cet hote.
+  if grep -q "$TMP/fxq" "$RBS"; then
+    ok "rollback J1 : la destination est la racine inspectee"
+  else
+    ko "rollback J1 : la destination est la racine inspectee" \
+       "le rollback pointe hors de la fixture -- il ecrirait sur le systeme reel"
+  fi
+  # On simule l application : la cible est remplacee par la proposition.
+  cp "$TMP/fxq/bundle/proposed/10-sizing.conf" "$TGT"
+  if cmp -s "$TMP/fxq.avant" "$TGT"; then
+    ko "rollback J1 : temoin, la cible a bien change avant rollback" \
+       "proposition identique a l original : le test ne prouverait rien"
+  else
+    ok "rollback J1 : temoin, la cible a bien change avant rollback"
+  fi
+  FX_CHOWN_LOG="$TMP/fxq.chown" FX_SYSTEMCTL_LOG="$TMP/fxq.systemctl" \
+    PATH="$TMP/fxq/bin:$PATH" bash "$RBS" > "$TMP/fxq.rbout" 2>&1
+  RBRC=$?
+  [ "$RBRC" -eq 0 ] \
+    && ok "rollback J1 : execution rc=0" \
+    || ko "rollback J1 : execution rc=0" "rc=$RBRC : $(tail -2 "$TMP/fxq.rbout")"
+  cmp -s "$TMP/fxq.avant" "$TGT" \
+    && ok "rollback J1 : octets restaures a l identique" \
+    || ko "rollback J1 : octets restaures a l identique"
+  # Controle POSITIF du temoin : sans lui, l egalite ci-dessus pourrait venir
+  # d une comparaison qui ne compare rien.
+  printf 'mutation deliberee\n' >> "$TGT"
+  cmp -s "$TMP/fxq.avant" "$TGT" \
+    && ko "rollback J1 : controle positif, cmp detecte une divergence" \
+    || ok "rollback J1 : controle positif, cmp detecte une divergence"
+  # Le proprietaire releve doit etre celui que stat a rendu, pas un defaut.
+  ATTENDU="$(stat -c '%U:%G' "$TMP/fxq.avant" 2>/dev/null)"
+  if [ -s "$TMP/fxq.chown" ] && grep -qx "$ATTENDU" "$TMP/fxq.chown"; then
+    ok "rollback J1 : le proprietaire demande est celui releve ($ATTENDU)"
+  else
+    ko "rollback J1 : le proprietaire demande est celui releve ($ATTENDU)" \
+       "journal chown : $(cat "$TMP/fxq.chown" 2>/dev/null)"
+  fi
+  # Aucun redemarrage : seul daemon-reload est admis.
+  if grep -qE '^(restart|start|stop|reload-or-restart) ' "$TMP/fxq.systemctl" 2>/dev/null; then
+    ko "rollback J1 : ne redemarre RIEN" "$(cat "$TMP/fxq.systemctl")"
+  else
+    ok "rollback J1 : ne redemarre RIEN"
+  fi
+fi
+
+# J2 -- cible ABSENTE : restaurer, c est SUPPRIMER, et retirer le .d cree.
+make_fixture r
+rm -rf "$TMP/fxr/etc/systemd/system/coursia-runner.service.d"
+run_sut "$TMP/fxr" --slots 1 --cpus 2
+expect_succes "rollback J2 : le controle s execute (cible ABSENTE)"
+RBS2="$TMP/fxr/bundle/rollback.sh"
+if [ ! -r "$RBS2" ]; then
+  ko "rollback J2 : script genere"
+else
+  ok "rollback J2 : script genere"
+  # On simule l application : le fichier et son repertoire sont crees.
+  mkdir -p "$TMP/fxr/etc/systemd/system/coursia-runner.service.d"
+  cp "$TMP/fxr/bundle/proposed/10-sizing.conf" \
+     "$TMP/fxr/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+  FX_SYSTEMCTL_LOG="$TMP/fxr.systemctl" PATH="$TMP/fxr/bin:$PATH" \
+    bash "$RBS2" > "$TMP/fxr.rbout" 2>&1
+  RBRC2=$?
+  [ "$RBRC2" -eq 0 ] \
+    && ok "rollback J2 : execution rc=0" \
+    || ko "rollback J2 : execution rc=0" "rc=$RBRC2 : $(tail -2 "$TMP/fxr.rbout")"
+  [ ! -e "$TMP/fxr/etc/systemd/system/coursia-runner.service.d/10-sizing.conf" ] \
+    && ok "rollback J2 : le fichier cree a ete supprime" \
+    || ko "rollback J2 : le fichier cree a ete supprime"
+  [ ! -d "$TMP/fxr/etc/systemd/system/coursia-runner.service.d" ] \
+    && ok "rollback J2 : le repertoire .d cree a ete retire" \
+    || ko "rollback J2 : le repertoire .d cree a ete retire"
 fi
 
 echo
