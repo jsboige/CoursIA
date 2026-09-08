@@ -211,6 +211,21 @@ CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-0}"
 # pour ne jamais devenir la fuite disque qu'on pretend surveiller.
 LOG_MAX_BYTES="${COURSIA_RUNNER_LOG_MAX_BYTES:-33554432}"
 
+# #15095 Anti-emballement borne. Incident 07/09 (ai-01, 2 gels machine en
+# 90 min) : docker.service arrete + Restart=always => chaque slot recreait
+# un runner et rejouait son bootstrap 4 a 8 fois par minute (journal :
+# « conteneur termine (rc=0) » en boucle), ecriture ext4.vhdx 94-96 Mo/s,
+# load 69. L'ancien garde `[ rc -ne 0 ] && sleep 15 || sleep 2` etait plat
+# et traitait differemment rc=0 et rc!=0 alors que le martelement observe
+# etait precisement la branche rc=0. Le nouveau garde ne regarde PAS le
+# code de retour mais la DUREE DE VIE du conteneur : un cycle plus court
+# que HEALTHY_CYCLE_SECS est anormal (le bootstrap seul depasse), et la
+# respiration suit un backoff exponentiel plafonne, remis a zero uniquement
+# apres un cycle ayant vecu assez longtemps.
+HEALTHY_CYCLE_SECS="${COURSIA_RUNNER_HEALTHY_CYCLE_SECS:-60}"
+BACKOFF_BASE="${COURSIA_RUNNER_BACKOFF_BASE:-15}"
+BACKOFF_CAP="${COURSIA_RUNNER_BACKOFF_CAP:-900}"
+
 # Backoff exponentiel des boucles de slot (#15091 : « de vrais gardes surtout
 # en cas de panne »).
 #
@@ -253,6 +268,38 @@ export MSYS_NO_PATHCONV=1
 export MSYS2_ARG_CONV_EXCL='*'
 
 die() { echo "ERREUR: $*" >&2; exit 1; }
+
+# #15095 Garde de disponibilite du demon. Avant cette garde, un daemon
+# docker arrete laissait chaque cmd_* echouer sur image inspect / volume
+# create puis se faire relancer par Restart=always -- le superviseur ne
+# devait jamais marteler un daemon absent (cf incident en tete du bloc
+# HEALTHY_CYCLE_SECS). `docker info` sur le DOCKER_HOST epingle (le wrapper
+# persist/ l'exporte) est le probe le plus proche de ce que fera docker run.
+assert_docker_daemon() {
+  if ! docker info >/dev/null 2>&1; then
+    die "demon Docker indisponible sur DOCKER_HOST='${DOCKER_HOST:-default}' (docker info echoue, #15095) -- ne pas marteler : reparer le daemon, puis relancer. Le service systemd est BindsTo=docker.service (fail-closed)."
+  fi
+}
+
+# #15095 Backoff post-cycle partage par slot_loop et waiter_loop. La duree
+# de vie (pas le rc) classe le cycle : court = anormal, exponentiel plafonne
+# (15,30,60,...,900 s) ; sain = respiration courte et remise a zero. Le rc
+# n'est plus qu'informatif -- l'incident 07/09 etait des rc=0 en rafale.
+cycle_backoff() {
+  local tag="$1" lifetime="$2" rc="$3"
+  if [ "$lifetime" -lt "$HEALTHY_CYCLE_SECS" ]; then
+    SHORT_CYCLES=$(( SHORT_CYCLES + 1 ))
+    local d=$(( BACKOFF_BASE * (2 ** (SHORT_CYCLES - 1)) ))
+    [ "$d" -gt "$BACKOFF_CAP" ] && d="$BACKOFF_CAP"
+    echo "$tag cycle court (rc=$rc, ${lifetime}s, consecutifs=$SHORT_CYCLES) -- backoff ${d}s (#15095)" >&2
+    sleep "$d"
+  else
+    SHORT_CYCLES=0
+    echo "$tag conteneur termine sainement (rc=$rc, ${lifetime}s)"
+    sleep 2
+  fi
+}
+SHORT_CYCLES=0
 
 # Contexte de build du runner : le dossier qui porte ce script porte aussi
 # Dockerfile et entrypoint.sh -- le garde de fraicheur compare le sibling du
@@ -565,6 +612,10 @@ slot_loop() {
       continue
     fi
     rotate_log "$STATE_DIR/$name.log"
+    # #15095 : la duree de vie du conteneur (pas son rc) pilote le backoff
+    # post-cycle (cf cycle_backoff) -- l'incident 07/09 etait des rc=0 en
+    # boucle sur un daemon arrete.
+    local t0=$SECONDS
     # --rm : le conteneur disparait avec le job. --ephemeral (dans l'entrypoint)
     # desenregistre le runner cote GitHub. Un cycle = un job, proprement --
     # mais le cache de depot (volume par slot) survit au conteneur (#14285).
@@ -585,22 +636,7 @@ slot_loop() {
       "$image" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
     echo "[slot $slot] conteneur termine (rc=$rc)"
-    # Anti-emballement (#15091). La forme precedente etait un delai FIXE de
-    # 15 s : sous panne durable, N slots produisaient N/15 e appels
-    # registration-token par seconde -- ~48/min a 12 slots -- indefiniment,
-    # pendant que rien ne pouvait aboutir. Une panne devenait une charge
-    # soutenue sur l'API et sur le daemon. Le backoff double le delai a chaque
-    # echec consecutif jusqu'au plafond, et le jitter disperse les N slots qui
-    # sans lui repartiraient tous dans la meme seconde.
-    if [ "$rc" -ne 0 ]; then
-      fails=$(( fails + 1 ))
-      wait_s="$(backoff_delay "$fails")"
-      echo "[slot $slot] echec consecutif #$fails -- attente ${wait_s}s avant relance" >&2
-      sleep "$wait_s"
-    else
-      fails=0
-      sleep 2
-    fi
+    cycle_backoff "[slot $slot]" "$(( SECONDS - t0 ))" "$rc"
   done
   echo "[slot $slot] arret demande, boucle terminee"
 }
@@ -616,6 +652,7 @@ cmd_start() {
   [ "${2:-}" = "--force" ] && force=1
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
@@ -814,6 +851,8 @@ waiter_loop() {
       continue
     fi
     rotate_log "$STATE_DIR/$name.log"
+    # #15095 : duree de vie du cycle, pas rc (cf cycle_backoff).
+    local t0=$SECONDS
     docker run --rm \
       --name "$name" \
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
@@ -827,15 +866,7 @@ waiter_loop() {
       "$IMAGE" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
     echo "[waiter $slot] conteneur termine (rc=$rc)"
-    if [ "$rc" -ne 0 ]; then
-      fails=$(( fails + 1 ))
-      wait_s="$(backoff_delay "$fails")"
-      echo "[waiter $slot] echec consecutif #$fails -- attente ${wait_s}s avant relance" >&2
-      sleep "$wait_s"
-    else
-      fails=0
-      sleep 2
-    fi
+    cycle_backoff "[waiter $slot]" "$(( SECONDS - t0 ))" "$rc"
   done
   echo "[waiter $slot] arret demande, boucle terminee"
 }
@@ -844,6 +875,7 @@ cmd_waiters() {
   local n="${1:-24}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
@@ -879,6 +911,7 @@ cmd_lean() {
   local n="${1:-2}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  assert_docker_daemon
   docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
     || die "image $LEAN_IMAGE absente -- construire d'abord :
     docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"

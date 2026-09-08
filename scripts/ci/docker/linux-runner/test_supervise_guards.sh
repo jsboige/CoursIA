@@ -719,6 +719,239 @@ echo "Test 20 : start refuse si work_cache_health.sh de l'image != checkout (#15
 )
 echo ""
 
+# --- Test 21 : daemon Docker indisponible -> start refuse AVANT tout (#15095)
+echo "Test 21 : start refuse si docker info echoue, avant gh et avant docker run"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin11" "$TEST_DIR/state-11"
+  cat > "$TEST_DIR/bin11/docker" <<'STUB'
+#!/usr/bin/env bash
+echo "$1" >> "$DOCKER_CALLS_LOG"
+if [ "$1" = "info" ]; then exit 1; fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin11/docker"
+  cat > "$TEST_DIR/bin11/gh" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$GH_CALLS_LOG"
+if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin11/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin11/ps"
+  export PATH="$TEST_DIR/bin11:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-11"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-11"
+  export DOCKER_CALLS_LOG="$TEST_DIR/docker11.calls"
+  export GH_CALLS_LOG="$TEST_DIR/gh11.calls"
+  : > "$DOCKER_CALLS_LOG"
+  : > "$GH_CALLS_LOG"
+  out="$(bash "$SCRIPT_DIR/supervise.sh" start 1 2>"$TEST_DIR/err11.log")"
+  rc=$?
+  if [ "$rc" != "0" ] && grep -q "demon Docker indisponible" "$TEST_DIR/err11.log"; then
+    ok "start refuse (rc=$rc), message nomme le daemon absent"
+  else
+    ko "refus attendu, rc=$rc err=$(cat "$TEST_DIR/err11.log")"
+  fi
+  if [ "$(cat "$DOCKER_CALLS_LOG")" = "info" ]; then
+    ok "docker n'a ete appele QUE pour le probe info (pas de run/inspect)"
+  else
+    ko "appels docker inattendus : $(cat "$DOCKER_CALLS_LOG")"
+  fi
+  if [ ! -s "$GH_CALLS_LOG" ]; then
+    ok "aucun appel gh -- le registration token n'est jamais solicite"
+  else
+    ko "gh appele malgre daemon absent : $(cat "$GH_CALLS_LOG")"
+  fi
+)
+echo ""
+
+# --- Test 22 : cycles courts -> backoff exponentiel plafonne, rc-agnostique
+echo "Test 22 : backoff exponentiel 3,6,12,24... plafonne 24, identique rc=0 et rc!=0"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin12" "$TEST_DIR/state-12"
+  cat > "$TEST_DIR/bin12/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  if [ "\$RUNS" -ge "\${STUB_STOP_AFTER:-8}" ]; then touch "\$STUB_STOP_FILE"; fi
+  exit "\${STUB_DOCKER_RC:-0}"
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin12/docker"
+  cat > "$TEST_DIR/bin12/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin12/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin12/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin12/ps"
+  run_case() {
+    local rc="$1"
+    rm -f "$TEST_DIR/state-12/stop" "$TEST_DIR/state-12/pids" "$TEST_DIR/run12.count"
+    : > "$TEST_DIR/sleep12.log"
+    (
+      export PATH="$TEST_DIR/bin12:$PATH"
+      export COURSIA_RUNNER_NAME_PREFIX="test-prefix-12"
+      export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-12"
+      export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+      export COURSIA_RUNNER_BACKOFF_BASE=3
+      export COURSIA_RUNNER_BACKOFF_CAP=24
+      export STUB_STOP_FILE="$TEST_DIR/state-12/stop"
+      export STUB_RUN_COUNT="$TEST_DIR/run12.count"
+      export SLEEP_LOG="$TEST_DIR/sleep12.log"
+      export STUB_DOCKER_RC="$rc"
+      timeout --kill-after=2 20 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err12.log"
+    )
+    paste -sd, "$TEST_DIR/sleep12.log"
+  }
+  seq0="$(run_case 0)"
+  seq1="$(run_case 1)"
+  if [ "$seq0" = "3,6,12,24,24,24,24,24" ]; then
+    ok "rc=0 : 3,6,12 puis plafond 24 jusqu'a la 8e -- plus de rafale 4-8/min"
+  else
+    ko "rc=0 : attendu 3,6,12,24,24,24,24,24, obtenu [$seq0] err=$(head -3 "$TEST_DIR/err12.log")"
+  fi
+  if [ "$seq0" = "$seq1" ]; then
+    ok "rc=1 : sequence identique -- la duree de vie pilote, pas le rc"
+  else
+    ko "divergence rc : [$seq1] vs [$seq0]"
+  fi
+  if grep -q "cycle court" "$TEST_DIR/err12.log"; then
+    ok "le journal nomme les cycles courts (backoff observable)"
+  else
+    ko "ligne 'cycle court' absente de stderr"
+  fi
+)
+echo ""
+
+# --- Test 23 : plafond BACKOFF_CAP effectif (queue du test 12) -------------
+echo "Test 23 : le plafond CAP borne la file (entries 4+ toutes = CAP)"
+(
+  # Derive direct du test 12 : avec BASE=3/CAP=24, les cycles 4 a 8 valent
+  # tous 24 -- 5 valeurs consecutives egales au cap prouvent le clamp sans
+  # avoir besoin d'attendre 15*2^N secondes avec les vrais defauts.
+  if [ "$(tail -5 "$TEST_DIR/sleep12.log" | sort -u)" = "24" ]; then
+    ok "5 respirations consecutives au plafond 24 -- clamp effectif"
+  else
+    ko "queue incoherente : $(tail -5 "$TEST_DIR/sleep12.log" | tr '\n' ' ')"
+  fi
+)
+echo ""
+
+# --- Test 24 : un cycle sain remet le compteur de backoff a zero -----------
+echo "Test 24 : cycle ayant vecu >= HEALTHY_CYCLE_SECS -> reset + sleep 2"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin14" "$TEST_DIR/state-14"
+  cat > "$TEST_DIR/bin14/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  if [ "\$RUNS" -ge "\${STUB_STOP_AFTER:-6}" ]; then touch "\$STUB_STOP_FILE"; fi
+  if [ "\$RUNS" = "\${STUB_BURN_AT:-3}" ]; then
+    start=\$(date +%s)
+    while [ \$(( \$(date +%s) - start )) -lt "\${STUB_BURN_SECS:-2}" ]; do :; done
+  fi
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin14/docker"
+  cat > "$TEST_DIR/bin14/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin14/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin14/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin14/ps"
+  rm -f "$TEST_DIR/state-14/stop" "$TEST_DIR/state-14/pids" "$TEST_DIR/run14.count"
+  : > "$TEST_DIR/sleep14.log"
+  (
+    export PATH="$TEST_DIR/bin14:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-14"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-14"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=1
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=999
+    export STUB_STOP_FILE="$TEST_DIR/state-14/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run14.count"
+    export SLEEP_LOG="$TEST_DIR/sleep14.log"
+    export STUB_BURN_AT=3
+    export STUB_BURN_SECS=2
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14.log" 2>"$TEST_DIR/err14.log"
+  )
+  seq="$(paste -sd, "$TEST_DIR/sleep14.log")"
+  if [ "$seq" = "3,6,2,3,6,12" ]; then
+    ok "reset prouve : 3,6 -> cycle sain (2) -> REPART a 3,6 (le 3e cycle de 2s a vecu >= HEALTHY=1)"
+  else
+    ko "attendu 3,6,2,3,6,12, obtenu [$seq]"
+  fi
+  if grep -q "conteneur termine sainement" "$TEST_DIR/out14.log"; then
+    ok "le cycle long est journalise comme sain (pas comme echec)"
+  else
+    ko "ligne 'termine sainement' absente : $(head -3 "$TEST_DIR/out14.log")"
+  fi
+)
+echo ""
+
+# --- Test 25 : persist/ -- unit systemd fail-closed + garde wrapper ---------
+echo "Test 25 : checks textuels persist/ (unit systemd + wrapper) et bash -n"
+(
+  cd "$SCRIPT_DIR"
+  svc="$SCRIPT_DIR/persist/coursia-runner.service"
+  wrap="$SCRIPT_DIR/persist/coursia-runner-start.sh"
+  # Unicite reelle des directives de rafale (#15166) : une paire dupliquee
+  # (ex. residue 600 apres un merge) rend la derniere lue maîtresse -- la
+  # garde ne doit jamais tolerer deux blocs.
+  n_interval="$(grep -c '^StartLimitIntervalSec=' "$svc")"
+  n_burst="$(grep -c '^StartLimitBurst=' "$svc")"
+  if grep -q '^Requires=docker.service' "$svc" && grep -q '^BindsTo=docker.service' "$svc" \
+     && [ "$n_interval" = "1" ] && [ "$n_burst" = "1" ] \
+     && grep -q '^StartLimitIntervalSec=300' "$svc" && grep -q '^StartLimitBurst=5' "$svc" \
+     && ! grep -q '^Wants=docker.service' "$svc"; then
+    ok "unit : Requires+BindsTo + UNE seule paire 300/5, Wants retire (inversion #14347)"
+  else
+    ko "unit systemd non conforme a #15095 (StartLimitIntervalSec x$n_interval, StartLimitBurst x$n_burst)"
+  fi
+  if grep -q 'start 12' "$svc"; then
+    ok "unit : ExecStart porte start 12 (bump #15313 preserve)"
+  else
+    ko "ExecStart start 12 absent -- regression du bump 8->12 (#15313)"
+  fi
+  if grep -q 'docker info' "$wrap" && grep -q 'FATAL: demon Docker indisponible' "$wrap"; then
+    ok "wrapper : garde docker info avec message FATAL avant l'exec du superviseur"
+  else
+    ko "garde docker info absente du wrapper"
+  fi
+  if bash -n "$SCRIPT_DIR/supervise.sh" && bash -n "$wrap"; then
+    ok "bash -n : syntaxe OK sur supervise.sh et wrapper"
+  else
+    ko "erreur de syntaxe detectee par bash -n"
+  fi
+)
+echo ""
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au
