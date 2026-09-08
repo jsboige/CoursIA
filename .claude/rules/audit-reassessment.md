@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Audit Reassessment Protocol
 
 **Source:** Issue #499 — vérification obligatoire avant tout fix sur NanoClaw (#488) finding.

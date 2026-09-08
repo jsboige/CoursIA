@@ -40,7 +40,17 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 ## Règles modulaires `.claude/rules/`
 
-**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés — `notebook-conventions`, `cell-interpretation-ordering`, `exercise-example-labeling`, `three-exercises-per-notebook` (notebooks) · `genai-config` (GenAI) · `wsl-kernels`, `lean-merge-discipline` (Lean/GameTheory). **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les §C de ce fichier en sont le précis toujours chargé, pas une redondance. Inventaire complet : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
+**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés :
+
+| Domaine | Règles path-gatées | Ce qu'un lecteur doit savoir sans les avoir chargées |
+|---|---|---|
+| Notebooks | `notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-reassessment` · `audit-cross-source-distillation` · `notebook-accretion-numbering` | C.1/C.2/C.3 sont précisés au §C ci-dessous. Un notebook **ne se renomme pas sans un argument pédagogique écrit** (`notebook-accretion-numbering`) ; un finding d'audit automatisé **se re-vérifie avant tout fix** (`audit-reassessment`, ~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre (`audit-cross-source-distillation`, déjà porté par §A). |
+| Catalogue & README | `catalog-pr-hygiene` · `readme-french-first` | **Le catalogue appartient à l'automatisation** : `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature — laisser byte-identique à `main`. Toute prose de doc **ajoutée ou réécrite** est en français, même dans un fichier anglais. |
+| GenAI | `genai-config` | — |
+| Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` | — |
+| Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
+
+**Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; le tableau ci-dessus et le §C de ce fichier en sont le précis toujours chargé, pas une redondance. Inventaire complet : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
 
 ---
 

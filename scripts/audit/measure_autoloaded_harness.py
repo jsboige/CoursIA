@@ -43,6 +43,7 @@ que personne ne l'a cable.
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -50,6 +51,13 @@ from pathlib import Path
 
 RULES_GLOB = ".claude/rules/*.md"
 PROJECT_ROOT_FILE = "CLAUDE.md"
+
+# Octets par token, CALIBRE et non estime : le client affiche le compte de tokens
+# de MEMORY.md, le rapport a sa taille en octets donne le ratio du corpus reel
+# (francais dense + liens [[...]]). Mesure du 2026-09-08 : 24705 o pour 11,1k
+# tokens. A re-calibrer si le corpus change de nature (plus de code, plus
+# d'anglais, moins de liens) -- passer --ratio.
+DEFAULT_RATIO = 2.25
 
 
 def is_path_gated(text):
@@ -88,8 +96,15 @@ class RefUnavailable(Exception):
 
 def _read_ref(root, ref):
     def git(*args):
+        # encoding explicite (#12811) : sans lui, un hote cp1252 decode les
+        # regles -- toutes accentuees -- avec la mauvaise table. Ici l'enjeu
+        # n'est pas seulement le crash : `len(text.encode("utf-8"))` d'un texte
+        # mal decode rend un AUTRE nombre, donc une mesure --ref fausse et
+        # silencieuse.
         return subprocess.run(["git", "-C", str(root), *args],
-                              capture_output=True, text=True, check=True).stdout
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace",
+                              check=True).stdout
 
     try:
         listing = git("ls-tree", "-r", "--name-only", ref, "--", ".claude/rules")
@@ -104,7 +119,56 @@ def _read_ref(root, ref):
         pass
 
 
-def measure(root, ref=None):
+def machine_surfaces(root, memory_file=None):
+    """Surfaces auto-chargees qui vivent HORS du depot, sur la machine.
+
+    Trois d'entre elles pesent autant que la moitie des regles du depot et
+    n'apparaissent dans aucun ref git : le CLAUDE.md global, les regles globales
+    de ~/.claude/rules/, et le MEMORY.md par machine. Les omettre rend un total
+    plus petit que ce qu'une session recoit vraiment -- c'est-a-dire un chiffre
+    rassurant et faux.
+
+    Rend (entrees, manquants). Une surface introuvable est RENDUE COMME TELLE,
+    jamais comptee zero : la doctrine de ce fichier est qu'une mesure vide n'est
+    pas une mesure a zero, et elle vaut pour chaque surface prise a part.
+    """
+    home = Path(os.path.expanduser("~"))
+    entries, missing = [], []
+
+    def take(surface, path):
+        if path.is_file():
+            text = path.read_text(encoding="utf-8", errors="replace")
+            entries.append({
+                "surface": surface,
+                "name": path.name,
+                "path": str(path),
+                "bytes": len(text.encode("utf-8")),
+                "gated": is_path_gated(text),
+            })
+        else:
+            missing.append({"surface": surface, "path": str(path)})
+
+    take("CLAUDE.md global", home / ".claude" / "CLAUDE.md")
+    rules_dir = home / ".claude" / "rules"
+    if rules_dir.is_dir():
+        for f in sorted(rules_dir.glob("*.md")):
+            take("rule globale", f)
+    else:
+        missing.append({"surface": "rules globales", "path": str(rules_dir)})
+
+    if memory_file is None:
+        # Le repertoire de memoire est nomme d'apres le chemin du PROJET, pas
+        # d'apres le worktree courant : mesurer depuis /d/wt<N> chercherait un
+        # slug qui n'existe pas. --memory-file leve l'ambiguite.
+        drive = (root.drive[:1].lower() if root.drive else "")
+        slug = drive + "--" + root.name
+        memory_file = home / ".claude" / "projects" / slug / "memory" / "MEMORY.md"
+    take("MEMORY.md (par machine)", Path(memory_file))
+
+    return entries, missing
+
+
+def measure(root, ref=None, machine=False, memory_file=None):
     auto, gated = [], []
     root_file = None
     reader = _read_ref(root, ref) if ref else _read_worktree(root)
@@ -116,6 +180,13 @@ def measure(root, ref=None):
             gated.append({"name": name, "bytes": size})
         else:
             auto.append({"name": name, "bytes": size})
+
+    machine_entries, machine_missing = ([], [])
+    if machine:
+        machine_entries, machine_missing = machine_surfaces(Path(root), memory_file)
+        for e in machine_entries:
+            (gated if e["gated"] else auto).append(
+                {"name": e["name"], "bytes": e["bytes"], "surface": e["surface"]})
 
     auto.sort(key=lambda e: -e["bytes"])
     gated.sort(key=lambda e: -e["bytes"])
@@ -134,6 +205,9 @@ def measure(root, ref=None):
         "root_file_bytes": root_bytes,
         "autoloaded_total_bytes": auto_bytes + root_bytes,
         "all_rules_bytes": auto_bytes + gated_bytes,
+        "machine_surfaces_included": bool(machine),
+        "machine_surfaces": machine_entries,
+        "machine_surfaces_missing": machine_missing,
     }
 
 
@@ -174,8 +248,15 @@ def self_check():
     return 0
 
 
-def render(m, top):
+def render(m, top, ratio=DEFAULT_RATIO, budget_tokens=None):
     print("Harnais auto-charge -- ref %s" % m["ref"])
+    if m.get("machine_surfaces_included"):
+        print("  (surfaces machine incluses : CLAUDE.md global, ~/.claude/rules/,"
+              " MEMORY.md -- elles ne vivent dans aucun ref git)")
+    for miss in m.get("machine_surfaces_missing") or []:
+        print("  MANQUANTE  %-24s %s"
+              % (miss["surface"], miss["path"]))
+        print("             non comptee -- et PAS comptee zero")
     print()
     print("  %3d regles auto-chargees   %8d o"
           % (m["n_autoloaded"], m["autoloaded_rules_bytes"]))
@@ -183,7 +264,20 @@ def render(m, top):
           % (m["n_path_gated"], m["path_gated_rules_bytes"]))
     if m["root_file"]:
         print("      %-20s   %8d o" % (PROJECT_ROOT_FILE, m["root_file_bytes"]))
-    print("      TOTAL AUTO-CHARGE      %8d o" % m["autoloaded_total_bytes"])
+    total = m["autoloaded_total_bytes"]
+    print("      TOTAL AUTO-CHARGE      %8d o   ~%.1fk tokens"
+          % (total, total / ratio / 1000))
+    print("      tokens DERIVES du ratio %.2f o/tok -- pas produits par un"
+          " tokenizer (cf --ratio)" % ratio)
+    if budget_tokens is not None:
+        budget_bytes = int(budget_tokens * ratio)
+        delta = total - budget_bytes
+        verdict = ("SOUS LA CIBLE de %d o (%.1fk tok de marge)"
+                   % (-delta, -delta / ratio / 1000)) if delta <= 0 else (
+                  "AU-DESSUS de %d o (%.1fk tok a retirer)"
+                  % (delta, delta / ratio / 1000))
+        print("      cible %d tok = %d o : %s"
+              % (budget_tokens, budget_bytes, verdict))
     print("      (total brut des rules  %8d o -- la valeur qu'on obtient en"
           " oubliant le gating)" % m["all_rules_bytes"])
     print()
@@ -207,13 +301,29 @@ def main():
                     help="valider l'instrument et sortir (0 = sain, 2 = invalide)")
     ap.add_argument("--max-bytes", type=int,
                     help="exit 1 si le total auto-charge depasse ce seuil")
+    ap.add_argument("--with-machine", action="store_true",
+                    help="inclure les surfaces machine (CLAUDE.md global,"
+                         " ~/.claude/rules/, MEMORY.md). Elles ne vivent dans"
+                         " aucun ref git : avec --ref, le total melange alors un"
+                         " arbre versionne et l'etat courant de CETTE machine")
+    ap.add_argument("--memory-file",
+                    help="chemin du MEMORY.md par machine (defaut : deduit du nom"
+                         " du projet ; a passer explicitement depuis un worktree,"
+                         " dont le nom ne correspond a aucun slug de memoire)")
+    ap.add_argument("--ratio", type=float, default=DEFAULT_RATIO,
+                    help="octets par token pour la derivation (defaut : %.2f,"
+                         " calibre le 2026-09-08)" % DEFAULT_RATIO)
+    ap.add_argument("--budget-tokens", type=int,
+                    help="exit 1 si le total derive depasse ce budget en tokens"
+                         " -- jumeau de --max-bytes, dans l'unite du mandat")
     args = ap.parse_args()
 
     if args.self_check:
         return self_check()
 
     try:
-        m = measure(Path(args.root), args.ref)
+        m = measure(Path(args.root), args.ref, machine=args.with_machine,
+                    memory_file=args.memory_file)
     except RefUnavailable as exc:
         print("ref %r inatteignable (%s) -- mesure impossible." % (args.ref, exc),
               file=sys.stderr)
@@ -225,18 +335,30 @@ def main():
                          " pas une mesure a zero\n" % RULES_GLOB)
         return 2
 
+    m["ratio_bytes_per_token"] = args.ratio
+    m["autoloaded_total_tokens_derived"] = round(
+        m["autoloaded_total_bytes"] / args.ratio)
+    m["tokens_are_derived_not_tokenized"] = True
+
     if args.json_out:
         Path(args.json_out).write_text(
             json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
     if args.json:
         print(json.dumps(m, indent=2, ensure_ascii=False))
     else:
-        render(m, args.top)
+        render(m, args.top, args.ratio, args.budget_tokens)
 
     if args.max_bytes is not None and m["autoloaded_total_bytes"] > args.max_bytes:
         sys.stderr.write("\nDEPASSEMENT : %d o > seuil %d o\n"
                          % (m["autoloaded_total_bytes"], args.max_bytes))
         return 1
+    if args.budget_tokens is not None:
+        budget_bytes = int(args.budget_tokens * args.ratio)
+        if m["autoloaded_total_bytes"] > budget_bytes:
+            sys.stderr.write("\nDEPASSEMENT : %d o > budget %d tok = %d o\n"
+                             % (m["autoloaded_total_bytes"], args.budget_tokens,
+                                budget_bytes))
+            return 1
     return 0
 
 
