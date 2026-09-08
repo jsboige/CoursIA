@@ -12,8 +12,11 @@ name: Slides Composition PR Relay
 #
 # Contrôle positif obligatoire (#14226 crit. 3) : le mécanisme doit
 # démontrer qu'il RELAIE le verdict, pas qu'il le maquille — un test
-# local sur un artefact réel (run 33466784484, S3-acculturation slide
-# 58) couvre cette exigence.
+# local sur un artefact réel (run 34100662765 du 2026-09-07T08:27Z,
+# S3-acculturation `n_hors_canvas: 1` sur slide 42 IMG bbox
+# [48, 334, 348, 608]) couvre cette exigence : la chaîne
+# `steps.resolve.outputs.has_decks == 'true'` → step 2 → step 4
+# publie le verdict sur la PR déclenchante.
 
 on:
   pull_request:
@@ -45,6 +48,7 @@ jobs:
 
     steps:
       - name: Resolve touched deck paths from PR diff
+        id: resolve
         env:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -76,14 +80,23 @@ jobs:
           done
           N=$(wc -l < /tmp/touched_decks.tsv | tr -d ' ')
           echo "Touched decks: ${N:-0}"
+          # #14226 -- le `if: hashFiles(...)` qui guardait les steps 3-4 était
+          # structurellement faux : hashFiles() est évalué à la phase de planning,
+          # bien avant que ce step ne crée /tmp/touched_decks.tsv, et le résultat
+          # est toujours ''. Conséquence : steps 3 et 4 skipped sur 100% des PRs,
+          # commentaire diagnostique jamais posté. Solution canonique : exposer
+          # le verdict via $GITHUB_OUTPUT (id: resolve) et baser les gardes
+          # sur steps.resolve.outputs.has_decks.
           if [ "${N:-0}" -eq 0 ]; then
             echo "Aucun deck slides.md touché par ce diff." >> "$GITHUB_STEP_SUMMARY"
+            echo "has_decks=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           cat /tmp/touched_decks.tsv >> "$GITHUB_STEP_SUMMARY"
+          echo "has_decks=true" >> "$GITHUB_OUTPUT"
 
       - name: Download last nocturne artifact (slides-composition-nocturne)
-        if: hashFiles('/tmp/touched_decks.tsv') != ''
+        if: steps.resolve.outputs.has_decks == 'true'
         env:
           GH_REPO: ${{ github.repository }}
         run: |
@@ -119,7 +132,7 @@ jobs:
           ls /tmp/comp_night/ >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: Build sticky PR comment from verdict (#14226)
-        if: hashFiles('/tmp/comp_night/_manifest.tsv') != '' && hashFiles('/tmp/touched_decks.tsv') != ''
+        if: steps.resolve.outputs.has_decks == 'true'
         env:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
