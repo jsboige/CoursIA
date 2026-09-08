@@ -285,18 +285,58 @@ assert_docker_daemon() {
 # de vie (pas le rc) classe le cycle : court = anormal, exponentiel plafonne
 # (15,30,60,...,900 s) ; sain = respiration courte et remise a zero. Le rc
 # n'est plus qu'informatif -- l'incident 07/09 etait des rc=0 en rafale.
+# Review #15166 (3 durecissements) :
+# (1) l'exponentiel SATURE AVANT l'exponentiation : 15*2^60 deborde
+#     l'arithmetique signee 64 bits de bash -- cycle 61 negatif, cycle 65+
+#     nul, et le plafond n'atteint jamais ces valeurs (sleep 0 = retour du
+#     martellement ; StartLimitBurst ne couvre pas cette boucle interne) ;
+# (2) un cycle court qui a REELLEMENT execute un job (log du cycle portant
+#     l'execution) est du travail utile, pas une boucle vide -- il ne nourrit
+#     pas l'exponentiel ;
+# (3) un cycle long avec rc!=0 n'est PAS automatiquement sain -- compteur
+#     de courts conserve, respiration intermediaire, pas de "sainement".
 cycle_backoff() {
-  local tag="$1" lifetime="$2" rc="$3"
+  local tag="$1" lifetime="$2" rc="$3" work_log="${4:-}" log_off="${5:-0}"
+  local worked=0
+  if [ -n "$work_log" ] && [ -f "$work_log" ]; then
+    # Le log du cycle est CUMULATIF (rotate_log ne borne que par taille) :
+    # le signal de travail ne lit que la portion ecrite PAR CE cycle, a
+    # partir de l'offset capture avant le docker run.
+    if tail -c "+$(( log_off + 1 ))" "$work_log" 2>/dev/null | grep -q "Running job"; then
+      worked=1
+    fi
+  fi
   if [ "$lifetime" -lt "$HEALTHY_CYCLE_SECS" ]; then
+    if [ "$worked" -eq 1 ]; then
+      SHORT_CYCLES=0
+      echo "$tag cycle court AVEC travail (rc=$rc, ${lifetime}s) -- travail reel, pas une boucle vide : pas de backoff (#15166)" >&2
+      sleep 2
+      return
+    fi
     SHORT_CYCLES=$(( SHORT_CYCLES + 1 ))
-    local d=$(( BACKOFF_BASE * (2 ** (SHORT_CYCLES - 1)) ))
+    # Saturation AVANT l'exponentiation : tout exposant >= cap_exp donne le
+    # MEME delai plafonne, et cap_exp est le plus petit exposant tel que
+    # BASE*2^cap_exp > CAP. Le probe double p depuis BASE sans jamais
+    # depasser 2^62 (BASE*2^k ne peut pas egaliser une puissance de deux
+    # exacte, donc pas de debordement du probe lui-meme).
+    local exp=$(( SHORT_CYCLES - 1 ))
+    local cap_exp=0 p="$BACKOFF_BASE"
+    while [ "$p" -le "$BACKOFF_CAP" ] && [ "$p" -le 4611686018427387904 ]; do
+      p=$(( p * 2 ))
+      cap_exp=$(( cap_exp + 1 ))
+    done
+    [ "$exp" -gt "$cap_exp" ] && exp="$cap_exp"
+    local d=$(( BACKOFF_BASE * (2 ** exp) ))
     [ "$d" -gt "$BACKOFF_CAP" ] && d="$BACKOFF_CAP"
     echo "$tag cycle court (rc=$rc, ${lifetime}s, consecutifs=$SHORT_CYCLES) -- backoff ${d}s (#15095)" >&2
     sleep "$d"
-  else
+  elif [ "$rc" -eq 0 ]; then
     SHORT_CYCLES=0
     echo "$tag conteneur termine sainement (rc=$rc, ${lifetime}s)"
     sleep 2
+  else
+    echo "$tag cycle long mais rc=$rc (${lifetime}s) -- non qualifie sain, compteur de courts conserve a $SHORT_CYCLES (#15166)" >&2
+    sleep "$BACKOFF_MIN_SEC"
   fi
 }
 SHORT_CYCLES=0
@@ -612,11 +652,13 @@ slot_loop() {
       continue
     fi
     rotate_log "$STATE_DIR/$name.log"
-    # #15095 : la duree de vie du conteneur (pas son rc) pilote le backoff
-    # post-cycle (cf cycle_backoff) -- l'incident 07/09 etait des rc=0 en
-    # boucle sur un daemon arrete.
-    local t0=$SECONDS
-    # --rm : le conteneur disparait avec le job. --ephemeral (dans l'entrypoint)
+    # Offset du log au debut du cycle : le signal de travail de cycle_backoff
+    # ne doit lire QUE ce que CE cycle ecrit (le log est cumulatif, cf le
+    # commentaire dans cycle_backoff).
+    local log_off
+    log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
+    log_off="${log_off:-0}"
+    # --rm : le conteneur disparaît avec le job. --ephemeral (dans l'entrypoint)
     # desenregistre le runner cote GitHub. Un cycle = un job, proprement --
     # mais le cache de depot (volume par slot) survit au conteneur (#14285).
     docker run --rm \
@@ -635,8 +677,21 @@ slot_loop() {
       -e ACTIONS_RUNNER_INPUT_LABELS="$labels" \
       "$image" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
-    echo "[slot $slot] conteneur termine (rc=$rc)"
-    cycle_backoff "[slot $slot]" "$(( SECONDS - t0 ))" "$rc"
+    # #15095 : la duree de vie du conteneur, pas son rc, pilote la
+    # respiration du cycle (cf cycle_backoff) -- un cycle court rc=0
+    # martelait docker 4-8 fois/min sur l'incident 07/09, exactement le
+    # trou que le compteur d'echecs rc!=0 laisse passer par construction.
+    local lifetime=$(( SECONDS - t0 ))
+    # #15091 : le compteur d'echecs consecutifs reste tenu a jour (il
+    # alimente le backoff du chemin token ci-dessus) ; la respiration
+    # post-run est deleguee a cycle_backoff, qui couvre les deux branches
+    # (cycle court quelle que soit rc, cycle sain) sans double sommeil.
+    if [ "$rc" -ne 0 ]; then
+      fails=$(( fails + 1 ))
+    else
+      fails=0
+    fi
+    cycle_backoff "[slot $slot]" "$lifetime" "$rc" "$STATE_DIR/$name.log" "$log_off"
   done
   echo "[slot $slot] arret demande, boucle terminee"
 }
@@ -851,8 +906,9 @@ waiter_loop() {
       continue
     fi
     rotate_log "$STATE_DIR/$name.log"
-    # #15095 : duree de vie du cycle, pas rc (cf cycle_backoff).
-    local t0=$SECONDS
+    local log_off
+    log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
+    log_off="${log_off:-0}"
     docker run --rm \
       --name "$name" \
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
@@ -865,8 +921,15 @@ waiter_loop() {
       -e ACTIONS_RUNNER_INPUT_LABELS="$WAITER_LABELS" \
       "$IMAGE" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
-    echo "[waiter $slot] conteneur termine (rc=$rc)"
-    cycle_backoff "[waiter $slot]" "$(( SECONDS - t0 ))" "$rc"
+    # #15095 + #15091 composes (cf boucle slot) : duree de vie pilote la
+    # respiration, compteur d'echecs tenu pour le chemin token.
+    local lifetime=$(( SECONDS - t0 ))
+    if [ "$rc" -ne 0 ]; then
+      fails=$(( fails + 1 ))
+    else
+      fails=0
+    fi
+    cycle_backoff "[waiter $slot]" "$lifetime" "$rc" "$STATE_DIR/$name.log" "$log_off"
   done
   echo "[waiter $slot] arret demande, boucle terminee"
 }
