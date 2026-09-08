@@ -1,0 +1,98 @@
+name: Twin attestation name guard
+
+# Purpose
+# -------
+# BLOCKING guard for the MAX_PATH defect (#15112, migration registre twin
+# #14940) : une attestation agentiquement nommee par son RECIT a atteint 244
+# caracteres, ce qui casse `git worktree add` / clone frais sur Windows
+# (composant pres de la limite NTFS 255, chemin complet > MAX_PATH 260 des
+# qu'on quitte le checkout canonique le plus court). Le runner CI Linux ne
+# materialise pas le defect (il ne voit jamais le chemin long) : le break est
+# Windows-only et invisible en CI, d'ou ce garde EXPLICITE.
+#
+# Convention imposee : aucun composant de chemin sous
+#   scripts/notebook_tools/twin_pairs.d/**
+# ne depasse 150 caracteres. Le seuil 150 (et non 180) est le plafond
+# defensif : 180 casse tout Windows un peu profond, 150 est "a la marge" selon
+# la profondeur (#15112). Toute nouvelle attestation doit donc etre nommee
+# court (horodatage + lane + hash) - le RECIT complet vit DEJA dans le YAML,
+# pas dans le nom de fichier.
+#
+# Correction d'une attestation existante trop longue : `git mv` vers un nom
+# court deterministe = prefixe semantique + recit tronque + `-<sha8>-` ou
+# sha8 = 8 hex de sha256(nom_complet) (la table old->new reste reversible),
+# contenu inchange (R100). Exemple de bonne forme (123 chars) :
+#   0008-2026-08-24-CoursIA-2-DRIFT-INTRODUCED-ESS-Maynard-Smith-7x7-...-<sha8>-metadata-immune.yaml
+#
+# Lecture depuis `git ls-tree` (arbre committe), PAS depuis le working tree :
+# independant de la materialisation (un checkout Windows echoue silencieusement
+# a materialiser le composant long, `git ls-files` le montrerait absent).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/notebook_tools/twin_pairs.d/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: twin-attestation-name-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  attestation-name:
+    name: "No twin_pairs.d component >150 chars (#15112)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Gate twin_pairs.d component lengths
+        run: |
+          set -uo pipefail
+          # Composants >150 chars sous twin_pairs.d, depuis l'arbre committe.
+          # `git ls-tree` independant de la materialisation (un checkout Windows
+          # echoue silencieusement a materialiser un composant long, `git ls-files`
+          # le montrerait absent).
+          python - <<'PY'
+          import subprocess
+          import sys
+
+          LIMIT = 150
+          out = subprocess.run(
+              ["git", "ls-tree", "-r", "--name-only", "HEAD", "--", "scripts/notebook_tools/twin_pairs.d/"],
+              capture_output=True, text=True, check=True,
+          ).stdout
+
+          bad = []
+          seen = set()
+          for p in out.splitlines():
+              for comp in p.split("/"):
+                  if len(comp) > LIMIT and comp not in seen:
+                      seen.add(comp)
+                      bad.append((len(comp), comp))
+
+          if not bad:
+              print("::notice title=Twin attestation name guard::twin_pairs.d clean - no component exceeds %d chars." % LIMIT)
+              sys.exit(0)
+
+          print("::error title=twin_pairs.d component >%d chars::" % LIMIT)
+          for n, c in sorted(bad, reverse=True):
+              print("%4d chars  %s" % (n, c))
+          print("A Windows checkout/clone/worktree-add casse (MAX_PATH) sur un composant pres de la limite NTFS 255 et un chemin complet > 260 (#15112).")
+          sys.exit(1)
+          PY
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "## Twin attestation name guard" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Le(s) composant(s) ci-dessus depassent 150 caracteres sous \`twin_pairs.d/\`. Ce plafond est la ligne de defense contre le defect MAX_PATH Windows (#15112) : par etudiant un clone frais du depot public echoue au checkout, et toutes les lanes Windows (\`po-2023..po-2027\`) cassent en worktree frais." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Correctif** : \`git mv\` vers un nom court deterministe (prefixe semantique + recit tronque + \`-<sha8>-\` hash du nom complet, contenu inchange). Le RECIT complet vit deja dans le YAML de l'attestation." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
