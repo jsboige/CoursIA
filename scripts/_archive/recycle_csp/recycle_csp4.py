@@ -6,6 +6,15 @@ Pattern: fix_issue_420.py (PR #453, Issue #420)
 Reference: Issue #463
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb (PR #470)
+# - Verdict recorded in : PR #470 and archive PR #9575
+#
+# Per-function disposition :
+# - <module> : one-shot notebook transform delivered by PR #470; retained only
+#   as the historical source of the split examples and new exercise stubs.
+
 import json
 
 path = "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb"
