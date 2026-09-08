@@ -79,4 +79,60 @@ IOWeight=50
 IOWriteBandwidthMax=/var/lib/docker 209715200
 IOReadBandwidthMax=/var/lib/docker 419430400
 
+# ---------------------------------------------------------------------------
+# AXE MEMOIRE (ajoute 2026-09-07, mandat user apres le 4e redemarrage physique)
+# ---------------------------------------------------------------------------
+# Cette section fermait, jusqu'a ce jour, sur la seule ligne
+# `MemoryAccounting=yes`. Compter n'est pas plafonner : la slice bornait le CPU
+# (CPUQuota) et l'I/O (IOWriteBandwidthMax) et laissait la memoire libre. Le
+# 2026-09-07 le superviseur a porte 8 slots + 12 waiters sur ai-01 et la
+# machine a swappe jusqu'a devoir etre redemarree a la main -- la 4e fois de
+# la journee, chacune exigeant un deplacement physique jusqu'a la machine.
+#
+# LA CHAINE CAUSALE, telle que le user l'a nommee : RAM saturee -> le disque
+# swappe -> GDrive tombe -> ROOSYNC_SHARED_PATH devient inaccessible -> et
+# toute la coordination de la flotte avec lui. La perte du montage `G:` que
+# j'ai passe la journee a diagnostiquer comme une panne independante etait ma
+# propre consequence.
+#
+# TROIS TROUS MESURES, et ce que chaque ligne ci-dessous ferme :
+#
+#   1. `--memory` borne le cgroup d'UN conteneur, jamais la somme des familles.
+#      `start`, `waiters` et `lean` ont des prefixes distincts, donc le garde
+#      PPID de supervise.sh ne les voit pas l'une l'autre : 8x4g + 12x1g = 44 Go
+#      DECLARES pour ~70 Go OBSERVES par les autres agents.
+#      -> MemoryMax borne la somme, quoi que declarent les conteneurs.
+#
+#   2. `--memory` ne borne pas le PAGE CACHE que la VM WSL retient. En cgroup v2
+#      le cache est bien impute au cgroup qui le faute : c'est donc MemoryHigh,
+#      pas MemoryMax, qui est l'organe -- il declenche la RECUPERATION avant le
+#      mur, au lieu de tuer le job dessus.
+#      -> MemoryHigh met sous pression a 12 Go ; MemoryMax ne tue qu'a 16 Go.
+#
+#   3. Le swap des conteneurs est un FICHIER SUR LE DISQUE WINDOWS. Un seul
+#      slot Lean a `--memory-swap 24g` peut y pousser 16 Go -- litteralement le
+#      thrash. Le besoin est reel et mesure (Hashlife de conway_lean depasse
+#      16 Go au build a froid, exit 137 sous --memory 8g), donc on ne le
+#      supprime pas : on le borne a UN slot Lean a la fois.
+#      -> MemorySwapMax=16G plafonne le swap de TOUTE la CI, pas par conteneur.
+#
+# POURQUOI 12 / 16 ET PAS PLUS. La mesure qui fait autorite est celle de l'hote
+# Windows, jamais celle de /proc/meminfo dans la VM (cf. le meme raisonnement en
+# tete de supervise.sh, fonction host_free_gb) :
+#
+#   Total Windows ........................ 191,8 Go
+#   Libre, flotte CI ARMEE ................ 39,3 Go
+#   Libre, flotte CI DESARMEE ............ 120,6 Go
+#
+# Les ~81 Go d'ecart sont l'empreinte de cette slice. 16 Go de plafond dur la
+# ramenent a un cinquieme, et laissent >100 Go a l'hote -- qui porte ~80 % des
+# services de la flotte ET reste la workstation interactive du user. « Il y a
+# de la place pour tout le monde si on y fait attention. »
+#
+# CE PLAFOND EST UN CONTRAT AVEC LES AUTRES SERVICES, PAS UN REGLAGE DE PERF.
+# Le monter demande la meme chose que le poser : une mesure cote hote, et une
+# raison ecrite. Le baisser ne demande rien.
 MemoryAccounting=yes
+MemoryHigh=12G
+MemoryMax=16G
+MemorySwapMax=16G
