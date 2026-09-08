@@ -73,5 +73,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nCRASH: {e}", flush=True)
         traceback.print_exc()
+        sys.exit(1)
 
     print("Done.", flush=True)
