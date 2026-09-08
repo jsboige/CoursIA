@@ -40,8 +40,18 @@ usage: dryrun-sizing-control.sh [options]
   -h, --help
 
 La memoire par conteneur n'est PAS un parametre : le controle la reconduit a sa
-valeur vivante. Une seule variable bouge a la fois, sinon l'avant/apres
-n'attribue rien.
+valeur vivante, ce qui retire UNE variable du plan -- pas toutes.
+
+Ce controle n'est PAS univarie, et il ne faut pas le lire comme tel : DEUX
+facteurs de capacite bougent ensemble, le nombre de slots (4 -> 1) et le cap CPU
+par slot (3 -> 2). Un avant/apres a deux cellules dont deux variables ont bouge
+n'attribue aucune difference observee a l'une plutot qu'a l'autre.
+
+Ce qu'il peut trancher malgre ca, et qui est tout ce qu'on lui demande, est
+BINAIRE : la famille franchit-elle le garde et demarre-t-elle, et un slot unique
+reclame-t-il un job. Ces deux reponses ne demandent aucune attribution. Tout
+jugement de DEBIT ou de performance tire de ce controle serait, lui, confondu --
+ne pas en tirer un.
 USAGE
 }
 
@@ -172,6 +182,14 @@ if [ -d "$SLICE_CG" ]; then
   say "     DIRECT : la tache qui alloue stalle elle-meme pour liberer. C'est"
   say "     le chemin par lequel une contrainte memoire devient de la latence"
   say "     et des relectures disque (cf. la tempete d'I/O de #15095)."
+  say ""
+  say "  CE QUE CES COMPTEURS NE DISENT PAS -- a lire avant d'en tirer une cause."
+  say "  Ils sont CUMULATIFS depuis la creation du cgroup, et rendus ici sans"
+  say "  fenetre temporelle. Ils etablissent donc une STRUCTURE (ou la pression"
+  say "  s'exerce : au cap par conteneur, jamais au plafond agrege) et rien de"
+  say "  plus. Ils n'attribuent aucun de ces hits a un incident particulier, et"
+  say "  ne peuvent pas en etablir la cause. Pour dater la pression il faut deux"
+  say "  releves horodates et leur difference -- ce script n'en prend qu'un."
 else
   warn "slice absente du cgroupfs : $SLICE_CG"
 fi
@@ -234,9 +252,12 @@ PROP="$OUT/proposed/10-sizing.conf"
   printf '# Controle de dimensionnement borne -- protocole #15095, « un slot\n'
   printf '# avant plusieurs ». Genere par dryrun-sizing-control.sh le %s.\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   printf '#\n'
-  printf '# UNE SEULE dimension bouge par rapport au vivant : le nombre de slots\n'
-  printf '# et le cap CPU. La MEMOIRE est reconduite telle quelle (%s) --\n' "${LIVE_START_MEM:-defaut}"
-  printf '# deplacer deux variables a la fois rend un avant/apres qui n%s attribue rien.\n' "'"
+  printf '# DEUX facteurs de capacite bougent ici : le nombre de slots et le cap CPU\n'
+  printf '# par slot. La MEMOIRE est reconduite telle quelle (%s), ce qui retire\n' "${LIVE_START_MEM:-defaut}"
+  printf '# une troisieme variable -- sans rendre le plan univarie pour autant.\n'
+  printf '# Consequence a assumer : ce controle tranche un BINAIRE (la famille\n'
+  printf '# demarre-t-elle, un slot reclame-t-il un job), il n%s attribue AUCUNE\n' "'"
+  printf '# difference de debit a l%s un ou l%s autre des deux facteurs.\n' "'" "'"
   printf '#\n'
   printf '# Budget : %s x %s (start) + %s x %s (waiters) = %s / %s vCPU.\n' \
     "$SLOTS" "$CPUS" "${LIVE_WAIT_N:-0}" "$EFF_WAIT_CPUS" "$NEW_TOT" "$BUDGET"
