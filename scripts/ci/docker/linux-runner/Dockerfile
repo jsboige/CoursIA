@@ -15,9 +15,9 @@
 
 FROM ubuntu:24.04
 
-ARG RUNNER_VERSION=2.336.0
-# Checksum officiel de la release v2.336.0 (notes de release actions/runner).
-ARG RUNNER_SHA256=04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d
+ARG RUNNER_VERSION=2.337.0
+# Checksum officiel de la release v2.337.0 (notes de release actions/runner).
+ARG RUNNER_SHA256=70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613
 
 ENV DEBIAN_FRONTEND=noninteractive
 # python-is-python3 : les workflows stdlib-only appellent `python` nu
