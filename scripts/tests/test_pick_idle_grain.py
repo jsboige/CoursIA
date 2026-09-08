@@ -1903,3 +1903,60 @@ def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
         _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
     ], {9: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+# --- #15139 : delegation a l'organe check_unaddressed_nits -----------------
+# Incident fondateur (2026-09-07, mesure sur myia-po-2027:CoursIA-2) : la lane
+# portait trois PRs a remarques non levees dont deux du user, et le picker
+# passait directement au tirage. La delegation re-assemblait l'appel
+# `analyse(...)` avec un kwarg `issue_created` disparu de la signature ->
+# TypeError sur CHAQUE PR, avale par le `except Exception: continue` ->
+# dict vide silencieux -> la cause « point de review non leve » ne pouvait
+# plus se declencher, pour aucune lane, pendant que le merge-gate (appel
+# correct) refusait les memes PRs.
+
+def test_unaddressed_review_points_delegue_a_analyse_pr(monkeypatch):
+    """La delegation passe par le point d'entree `analyse_pr` de l'organe --
+    un seul assemblage des kwargs, celui du merge-gate."""
+    import check_unaddressed_nits as nits
+    calls = []
+
+    def fake_analyse_pr(n):
+        calls.append(n)
+        return {"blocked": True, "blocking": [{"kind": "BLOCK"}, {"kind": "NIT"}]}
+
+    monkeypatch.setattr(nits, "analyse_pr", fake_analyse_pr)
+    assert pig.unaddressed_review_points([15049, 15081]) == {15049: 2, 15081: 2}
+    assert calls == [15049, 15081]
+
+
+def test_unaddressed_review_points_derive_de_contrat_visible(monkeypatch):
+    """Un TypeError de l'organe (derive de contrat) est RELANCE, pas classe
+    « PR illisible » : le bug d'appel doit rester visible (nits_unavailable
+    via red_backlog) au lieu d'un dict vide muet."""
+    import check_unaddressed_nits as nits
+
+    def broken_analyse_pr(n):
+        raise TypeError("analyse() got an unexpected keyword argument")
+
+    monkeypatch.setattr(nits, "analyse_pr", broken_analyse_pr)
+    import pytest
+    with pytest.raises(TypeError):
+        pig.unaddressed_review_points([15049])
+
+
+def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeypatch):
+    """Une PR illisible (gh en erreur) reste avalee par PR : la panne d'UNE
+    PR ne doit pas empecher la detection sur les autres."""
+    import check_unaddressed_nits as nits
+    calls = []
+
+    def flaky_analyse_pr(n):
+        calls.append(n)
+        if n == 15049:
+            raise RuntimeError("gh: connection reset")
+        return {"blocked": True, "blocking": [{"kind": "NIT"}]}
+
+    monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
+    assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
+    assert calls == [15049, 15081]

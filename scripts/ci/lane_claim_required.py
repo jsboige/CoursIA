@@ -246,20 +246,23 @@ def check(
     regex_nums = sorted({h["number"] for h in closing})
 
     # #10323: for a PR BODY, GitHub's closingIssuesReferences is authoritative.
-    # The regex finder matches closing keywords even inside code spans, fenced
-    # blocks, or negations ("NOT closing #N") that GitHub's parser ignores. Only
-    # numbers GitHub actually resolved as closing refs can block; regex-only
-    # matches are logged IGNORED_BY_GITHUB and do not block. The regex stays the
-    # source of truth for COMMIT messages (scanned by pr_close_keyword_guard.py),
-    # which GitHub does not pre-resolve and where the squash trap is real.
+    # The regex finder used to match closing keywords even inside code spans,
+    # fenced blocks, or negations ("NOT closing #N") that GitHub's parser
+    # ignores; only numbers GitHub actually resolved as closing refs could
+    # block, and regex-only matches were logged IGNORED_BY_GITHUB. Since #14780
+    # the finder masks code spans itself (citation != declaration), so the
+    # IGNORED_BY_GITHUB residue is the NEGATION case -- the cross-check below
+    # still absorbs it. The regex stays the source of truth for COMMIT messages
+    # (scanned by pr_close_keyword_guard.py), which GitHub does not pre-resolve
+    # and where the squash trap is real.
     if pr_closing_refs is None:
         # Cross-check unavailable (fetch failed / older caller) -> fall back to
         # the regex finder. Do NOT disarm the gate on a network blip: a real
-        # closing ref still blocks; only the code-span FP resurfaces, and it is
+        # closing ref still blocks; only the negation FP resurfaces, and it is
         # warned so the gap is visible.
         warnings.append(
             "closingIssuesReferences unavailable -- using regex finder only; a "
-            "closing keyword in a code span/negation may false-positive (#10323)"
+            "closing keyword in a negation may false-positive (#10323)"
         )
         confirmed_nums = regex_nums
     else:
