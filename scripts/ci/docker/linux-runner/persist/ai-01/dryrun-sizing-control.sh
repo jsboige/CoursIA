@@ -338,9 +338,16 @@ NEW_START="$(mul "$SLOTS" "$CPUS")"
 NEW_TOT="$(sum "$NEW_START" "$CUR_WAIT")"
 
 verdict_of() {
-  if [ "$BUDGET" -eq 0 ]; then printf 'garde desactive (budget=0)'
-  elif over "$1" "$BUDGET";  then printf '-> REFUSE'
-  else                            printf '-> passe'
+  # Le marqueur passe en ARGUMENT de « %s », jamais en chaine de format : une
+  # chaine de format qui commence par « - » est lue comme une OPTION par
+  # printf, qui refuse et n'imprime RIEN. C'est ce qui s'est produit ici --
+  # la ligne rendait « TOTAL 16.00 / 8 » sans son verdict, sur la machine
+  # reelle, pendant que le harnais restait vert. Mesure du 2026-09-08 :
+  # identique en Git Bash 5.2.37 et en bash 5.2.21 sous Ubuntu, ce n'est donc
+  # pas un ecart de plateforme.
+  if [ "$BUDGET" -eq 0 ]; then printf '%s' 'garde desactive (budget=0)'
+  elif over "$1" "$BUDGET";  then printf '%s' '-> REFUSE'
+  else                            printf '%s' '-> passe'
   fi
 }
 printf '  %-40s %s\n' "actuel  : start $EFF_START_N x $EFF_START_CPUS" "$CUR_START"

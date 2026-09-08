@@ -194,6 +194,10 @@ make_fixture c
 printf '#!/usr/bin/env bash\necho pas de budget ici\n' > "$TMP/fxc/usr/local/bin/coursia-runner-start.sh"
 run_sut "$TMP/fxc"
 expect_refus "budget introuvable dans le wrapper : refus, jamais « passe »" "COURSIA_RUNNER_CPU_BUDGET introuvable"
+# Assertion NEGATIVE : elle ne vaut que parce que les deux controles positifs
+# de la section D prouvent, dans le meme harnais, que ces marqueurs PEUVENT
+# s'imprimer. Sans eux elle serait verte meme si le marqueur etait mort --
+# c'est exactement ce qui s'est passe jusqu'au 2026-09-08.
 if printf '%s' "$OUTPUT" | grep -q -- "-> passe"; then
   ko "budget introuvable n'imprime aucun « passe »" "un verdict permissif a ete rendu malgre l'absence de budget"
 else
@@ -228,10 +232,24 @@ expect_refus "proposition au-dessus du budget refusee" "serait refusee par le ga
 make_fixture i
 run_sut "$TMP/fxi" --slots 1 --cpus 2
 expect_succes "proposition sous le budget acceptee (1x2 + 4x1 = 6 <= 8)"
+# L'arithmetique ET le marqueur. La version precedente grepait « 16.00 / 8 »
+# -- les NOMBRES -- puis s'intitulait « rendu comme REFUSE » : elle nommait un
+# verdict qu'elle ne testait pas, et elle est restee verte pendant que le
+# marqueur ne s'imprimait jamais.
 printf '%s' "$OUTPUT" | grep -q "actuel  : TOTAL" \
   && printf '%s' "$OUTPUT" | grep -q "16.00 / 8" \
-  && ok "l'etat actuel est rendu comme REFUSE (4x3 + 4x1 = 16 > 8)" \
-  || ko "l'etat actuel est rendu comme REFUSE" "$(printf '%s' "$OUTPUT" | grep 'TOTAL' || true)"
+  && ok "l'arithmetique de l'etat actuel est rendue (4x3 + 4x1 = 16)" \
+  || ko "l'arithmetique de l'etat actuel est rendue" "$(printf '%s' "$OUTPUT" | grep 'TOTAL' || true)"
+
+printf '%s' "$OUTPUT" | grep -q -- "actuel  : TOTAL.*-> REFUSE" \
+  && ok "CONTROLE POSITIF : le marqueur « -> REFUSE » s imprime vraiment" \
+  || ko "CONTROLE POSITIF : le marqueur « -> REFUSE » s imprime vraiment" \
+        "$(printf '%s' "$OUTPUT" | grep 'actuel  : TOTAL' || true)"
+
+printf '%s' "$OUTPUT" | grep -q -- "propose : TOTAL.*-> passe" \
+  && ok "CONTROLE POSITIF : le marqueur « -> passe » s imprime vraiment" \
+  || ko "CONTROLE POSITIF : le marqueur « -> passe » s imprime vraiment" \
+        "$(printf '%s' "$OUTPUT" | grep 'propose : TOTAL' || true)"
 
 echo "=== E. Bundle et rollback ==="
 
@@ -350,6 +368,8 @@ expect_succes "budget=0 : execution nominale"
 printf "%s" "$OUTPUT" | grep -q "GARDE DESACTIVE" \
   && ok "budget=0 est rendu comme GARDE DESACTIVE" \
   || ko "budget=0 est rendu comme GARDE DESACTIVE"
+# Meme remarque qu'en section C : negative, donc adossee aux controles
+# positifs de la section D.
 if printf "%s" "$OUTPUT" | grep -q -- "-> passe"; then
   ko "budget=0 n imprime jamais « passe »" "un garde desarme a ete lu comme une approbation"
 else
