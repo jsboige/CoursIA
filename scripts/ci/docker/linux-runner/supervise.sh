@@ -302,7 +302,13 @@ cycle_backoff() {
     # Le log du cycle est CUMULATIF (rotate_log ne borne que par taille) :
     # le signal de travail ne lit que la portion ecrite PAR CE cycle, a
     # partir de l'offset capture avant le docker run.
-    if tail -c "+$(( log_off + 1 ))" "$work_log" 2>/dev/null | grep -q "Running job"; then
+    # #15166 : `grep -q` sort des la premiere ligne et FERME le pipe pendant
+    # que tail ecrit encore -> SIGPIPE 141 -> sous `set -uo pipefail` la
+    # pipeline est non nulle et un cycle AYANT travaille est classe en boucle
+    # vide (backoff au lieu de sleep 2). Un gros log de cycle (>> tampon ~64
+    # Ko, cf test 28) revele la faute. `grep ... >/dev/null` lit tout jusqu'a
+    # EOF : tail se termine proprement, rc=0 sur match.
+    if tail -c "+$(( log_off + 1 ))" "$work_log" 2>/dev/null | grep "Running job" >/dev/null; then
       worked=1
     fi
   fi

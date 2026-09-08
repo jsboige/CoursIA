@@ -1109,6 +1109,79 @@ STUB
 )
 echo ""
 
+# --- Test 28 : grand log de cycle -- grep -q tuait tail en SIGPIPE (#15166) --
+echo "Test 28 : cycle court AVEC travail sur un log de cycle >64 Ko -- le travail est reconnu malgre le volume (review #15166)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin28" "$TEST_DIR/state-28"
+  cat > "$TEST_DIR/bin28/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  # Le signal de travail en tete, puis un corps volumineux (>> tampon pipe
+  # ~64 Ko) : avec l'ancien grep -q, grep sortait des la premiere ligne pendant
+  # que tail ecrivait encore le corps -> SIGPIPE 141 -> pipeline non nul ->
+  # worked=0 -> un cycle AYANT travaille etait classe en boucle vide et partait
+  # en backoff. Le corps doit depasser largement le tampon pour que tail soit
+  # encore a ecrire quand grep -q se retire.
+  echo "  Running job: test-job-\$RUNS"
+  if [ "\${STUB_BIG_LOG:-0}" = "1" ]; then
+    yes x | head -c 1048576
+  fi
+  if [ "\$RUNS" -ge "\${STUB_STOP_AFTER:-3}" ]; then touch "\$STUB_STOP_FILE"; fi
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin28/docker"
+  cat > "$TEST_DIR/bin28/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin28/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin28/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin28/ps"
+  rm -f "$TEST_DIR/state-28/stop" "$TEST_DIR/state-28/pids" "$TEST_DIR/run28.count"
+  : > "$TEST_DIR/sleep28.log"
+  (
+    export PATH="$TEST_DIR/bin28:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-28"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-28"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=24
+    export STUB_STOP_FILE="$TEST_DIR/state-28/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run28.count"
+    export SLEEP_LOG="$TEST_DIR/sleep28.log"
+    export STUB_BIG_LOG=1
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err28.log"
+  )
+  seq="$(paste -sd, "$TEST_DIR/sleep28.log")"
+  # 3 cycles courts portant un gros log AVEC le signal de travail : chacun
+  # doit etre reconnu -> sleep 2 sans backoff. L'ancien grep -q (SIGPIPE 141
+  # -> worked=0) donnait 3,6,12 : le travail etait rejete en boucle vide.
+  if [ "$seq" = "2,2,2" ]; then
+    ok "3 cycles AVEC travail sur un grand log -> sleep 2 sans backoff (travail reconnu malgre le volume)"
+  else
+    ko "attendu 2,2,2, obtenu [$seq] -- un cycle a gros log portant du travail n'est PAS reconnu (grep -q / SIGPIPE 141 ?)"
+  fi
+  if grep -q "cycle court AVEC travail" "$TEST_DIR/err28.log"; then
+    ok "les cycles a gros log sont bien journalises comme travailles"
+  else
+    ko "ligne 'cycle court AVEC travail' absente pour un cycle a gros log : $(head -3 "$TEST_DIR/err28.log")"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au
