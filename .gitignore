@@ -279,6 +279,9 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Slidev QA render artefacts (Playwright captures — diagnostic only, never committed)
+slides/slide-renders*/
+
 # Visual Studio 6 build log
 *.plg
 
