@@ -22,17 +22,19 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (une version ad-hoc de 283 octets, sans documentation, occupe la place) |
 | `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **a deployer** (le fichier n'existe pas encore) |
-| `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) |
+| `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
+| `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- c'est lui qui tient la machine debout (cf. correction 4) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
 
-## Les trois corrections dues sur #15091 / #15094
+## Les quatre corrections dues sur #15091 / #15094
 
-Ces trois points ont ete etablis firsthand sur ai-01 le 2026-09-07 (lecture des
-fichiers vivants via `wsl.exe -d Ubuntu -u root --`). Ils corrigent des choses que
+Les trois premiers ont ete etablis firsthand sur ai-01 le 2026-09-07, le
+quatrieme le 2026-09-08 (lecture des fichiers vivants via
+`wsl.exe -d Ubuntu -u root --`). Ils corrigent des choses que
 j'avais annoncees ou laissees entendre, et qui etaient fausses.
 
 ### 1. La PR #15094 patche une copie qui ne tourne pas sur ai-01
@@ -225,3 +227,37 @@ differents, qui remplissaient chacun le meme disque.
 - **#15091** -- revision du design du superviseur (traffic disque, isolation)
 - **#14385** -- volumes `_work` par slot -- les waiters n'en montent pas, le test 17 le garde
 - **#14801** -- fraicheur de l'image, verifiee par empreinte de l'entrypoint
+
+### 4. La copie 8-slots est marquee « a deployer » -- et la deployer seule rallume la panne
+
+Etabli firsthand sur ai-01 le 2026-09-08 (`wsl.exe -d Ubuntu`).
+
+`ai-01/coursia-runner.service` declare `ExecStart=... 8` et **aucun**
+`COURSIA_RUNNER_MEMORY`. Or `supervise.sh` l.82 lit
+`MEMORY="${COURSIA_RUNNER_MEMORY:-4g}"`. Huit slots sans cap, c'est donc
+**8 x 4096 = 32768 Mo** nominal demandes contre un budget de slice de
+**12288 Mo** : le garde de budget refuse, `Restart=always` reboucle toutes les
+30 s, et le pool ne monte jamais.
+
+Ce que la machine execute reellement n'est pas ce fichier seul, mais ce fichier
+**plus un drop-in** qui le corrige :
+
+| | slots | cap par slot | nominal | budget |
+|---|---:|---:|---:|---:|
+| `coursia-runner.service` seul | 8 | *(defaut 4g)* | 32768 Mo | 12288 Mo -- **refuse** |
+| avec `10-sizing.conf` | 4 | 1536 Mo | 6144 Mo | 12288 Mo -- passe |
+
+Le drop-in etait **untracked** jusqu'a #15091 : il vivait sur la machine et
+nulle part ailleurs. La table ci-dessus marquait la copie 8-slots « a
+deployer » sans mentionner qu'un deuxieme fichier etait indispensable a cote --
+un deploiement fidele a la consigne reproduisait donc la panne a l'identique.
+
+C'est la panne qui a impose quatre redemarrages manuels de la machine dans la
+meme journee, chacun par une intervention sur site. Les deux fichiers partent
+desormais ensemble, ou aucun.
+
+Mesure du fichier vivant au moment de la copie : 762 octets, unite `active`,
+`NRestarts=0`, `ExecMainStatus=0`. La strophe operante du fichier tracke est
+**byte-identique** au fichier vivant ; seul un en-tete de provenance a ete
+ajoute au-dessus, conformement a la convention des autres copies de ce
+repertoire.
