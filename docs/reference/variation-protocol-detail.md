@@ -101,7 +101,7 @@ Deux entrées étaient au contraire de **vraies lacunes** de l'énumération, et
 - **`tooling`** (5 usages) — script ou helper qui n'est **pas** une porte : ni `guard` (rien ne peut rougir), ni `refactor` (ne restructure pas de l'existant).
 - **`research-code`** — module/bibliothèque de recherche produisant un résultat falsifiable ; `notebook-python` est faux dès que le livrable n'est pas un notebook.
 
-**Critère d'entrée dans la liste LIGHT de G-VAR-3** (celle qui porte le ban absolu des deux-consécutifs) : un genre y entre dès **≥ 2 grains LIGHT mergés**, jamais sur intuition — l'y ajouter à l'aveugle bloquerait du travail substantiel. Au 2026-07-30, `tooling` était à **5 MED sur 5** et `research-code` à **1 DEEP sur 1** : aucun ne qualifiait. Ils y entreront d'eux-mêmes si la mesure change.
+**Critère d'entrée dans la liste LIGHT de G-VAR-3** (celle qui porte le ban des deux-consécutifs, sauf exception mécanique #14357) : un genre y entre dès **≥ 2 grains LIGHT mergés**, jamais sur intuition — l'y ajouter à l'aveugle bloquerait du travail substantiel. Au 2026-07-30, `tooling` était à **5 MED sur 5** et `research-code` à **1 DEEP sur 1** : aucun ne qualifiait. Ils y entreront d'eux-mêmes si la mesure change.
 
 **Un alias n'est pas une violation.** Le worker qui écrit `documentation` ou `lean-ci` n'est ni HOLD ni repris : le coordinateur normalise silencieusement et applique les gates au genre canonique (l'adjacence de `LIGHT/refs` se calcule contre `docs`). Ce qui compte est que deux grains du même travail soient **comptés comme le même genre**, pas que le worker ait mémorisé la liste.
 
@@ -109,9 +109,11 @@ Deux entrées étaient au contraire de **vraies lacunes** de l'énumération, et
 
 Le ban « pas deux fois le même genre » appliqué uniformément aurait bloqué un spécialiste Lean enchaînant deux preuves DEEP **distinctes** (ex. #7649 puis #2159 Grothendieck) — l'exact opposé de la monoculture visée, et une sanction du travail le plus difficile du dépôt.
 
-D'où la ligne de partage : ban **absolu** sur les genres LIGHT (`guard` · `ledger` · `docs` · `readme` · `test`), où la vague se forme dès 2 (ce qui durcit le « après 3 grains similaires » de R6, trop laxiste) ; **tolérance** sur DEEP/MED dans le domaine-cœur d'une lane spécialiste, à condition que chaque grain soit une substance genuinement distincte.
+D'où la ligne de partage : ban sur les genres LIGHT (`guard` · `ledger` · `docs` · `readme` · `test`), où la vague se forme dès 2 (ce qui durcit le « après 3 grains similaires » de R6, trop laxiste) ; **exception mécanique #14357** — deux consécutifs d'un même genre LIGHT passent **si et seulement si** le second grain est MED/DEEP **et** les deux PRs ne partagent **aucun fichier** (intersection vide, calculée par `variation_light_cap.py`, clé `exempt_runs`, fail-CLOSED quand les `files` sont illisibles).
 
-Le litmus LIGHT reste l'arbitre dans les deux sens : générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
+L'ancienne formulation — « tolérance » sur DEEP/MED dans le domaine-cœur « à condition que chaque grain soit une substance genuinement distincte » — était un jugement humain sans organe, et vivait en conflit direct avec le ban absolu sur les cinq genres LIGHT : un grain `MED/guard` tombait sous les deux clauses, et l'organe ne suivait que le ban (#14357, mesure po-2026 du 2026-09-02 : le couple #13869 → #14330, deux fixes de guards sur fichiers disjoints, bloqué puis overridé à la main par le coordinateur — un aller-retour par occurrence). L'intersection vide des fichiers est le **proxy observable** de la « substance distincte » : deux grains qui ne touchent aucune même partie de l'arbre ne sont pas la vague scannée-générée que G-VAR-3 vise.
+
+Le litmus LIGHT reste l'arbitre dans les deux sens : générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP** (l'exception exige la disjointure de fichiers, pas un tag de tier).
 
 ## 8. Champ `lane` — pourquoi son absence est un HOLD dur
 
