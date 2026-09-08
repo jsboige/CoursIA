@@ -65,11 +65,15 @@ If a required field is missing or contradictory, stop and return `CONTRACT_INCOM
 Before any edit:
 
 1. Read the target directly and load all path-gated rules for `DOMAIN`.
-2. Run the L898 collision checks: worktrees, matching branches, open and merged PRs by topic, and open PR files intersecting `PATHS`.
-3. Verify the path-scoped claim with `scripts/check_lane_claim.py` or the repository's current claim organ.
-4. Read the complete body and all comments of the coordination issue or epic before relying on its claim.
-5. In `REASSESSMENT`, read the complete issue body, all comments, linked PR bodies, comments, reviews, inline threads, files, and relevant diffs.
-6. In `DISCOVERY`, search existing open and merged issues/PRs for each candidate finding before classifying it as novel.
+2. Read the complete body and all comments of the coordination issue or epic before relying on its claim.
+3. Run the claim reducer (`scripts/check_lane_claim.py` or its successor) on the exact proposed paths and retain its machine-readable verdict.
+4. Inspect worktrees and branches, then search open PRs both by subject and by path intersection.
+5. Search merged PRs, linked issues, and the relevant subject or symbol.
+6. Compare the affected hunk or corrected content identity across `origin/main`, candidate PRs, and the proposed corrected form.
+7. In `REASSESSMENT`, also read the complete issue, linked PR bodies, comments, reviews, inline threads, files, and relevant diffs.
+8. In `DISCOVERY`, repeat the issue/PR search for every candidate finding before classifying it as novel.
+
+A raw `[CLAIMED]` marker, a touched file, or a similar title is not sufficient evidence of collision or coverage. Before returning `COLLISION`, `ALREADY_COVERED`, or `NOVEL`, explain how the reducer verdict and content comparison support that status. Cite the merged delivery when corrected content is already present.
 
 If another live work item intersects `PATHS`, stop with `COLLISION`. Do not merely rename the branch or restate the finding.
 
@@ -91,6 +95,28 @@ Generate candidate findings, then try to disprove each one. A plausible concern 
 ### Reassessment mode
 
 Reproduce or refute `AUDIT_CLAIM` from the real artifact. Do not trust the audit label, issue title, previous agent verdict, or stale notebook output.
+
+### Evidence discipline
+
+Label each material claim in the handoff and PR body:
+
+- `OBSERVATION`: direct source, artifact, or command output, cited precisely;
+- `INFERENCE`: conclusion from named premises, with uncertainty stated;
+- `CAUSALITY`: reproduced causal link or comparison against a negative/counterexample case.
+
+An unreproduced causal explanation remains an explicit hypothesis and cannot justify a patch. Do not add technical or pedagogical prose whose claims have not been re-read against the evidence after the patch.
+
+A pivot number is any number that changes the verdict, scope, or acceptance decision. Measure every pivot first with the canonical instrument and then independently by direct parsing, a second script, or a targeted source count. Keep these counters separate:
+
+```text
+findings_detected
+findings_fixable
+findings_applied
+findings_escalated
+files_changed
+```
+
+Never substitute one counter for another in prose. If two measurements disagree without an intervening edit, stop with `EVIDENCE_CONFLICT` and report both methods and values.
 
 ### Classification
 
@@ -123,7 +149,7 @@ For `FALSE_POSITIVE` or `ALREADY_COVERED`, make no edit and open no PR.
 
 If several independent local findings exist in one target, include only those forming one coherent correction. Split unrelated findings into separate future grains.
 
-## Phase 3 — Repair and validate with real tools
+## Phase 3 — Repair, challenge, and validate
 
 Use the tools named in `SPECIALISTS` and `EXECUTION`; do not reinvent their workflow.
 
@@ -134,6 +160,16 @@ Use the tools named in `SPECIALISTS` and `EXECUTION`; do not reinvent their work
 - Run domain validators and regression searches after the final edit.
 - Compare the final diff and status against `PATHS` before staging.
 - Stop kernels and processes that could lock notebook files before Git operations.
+
+After drafting the patch and PR body, run a second self-falsification pass distinct from the initial finding check:
+
+1. Extract every new material assertion from the diff and body and label it `OBSERVATION`, `INFERENCE`, or `CAUSALITY`.
+2. Try to refute it against source, outputs, and at least one relevant negative or counterexample case.
+3. Recompute all pivot numbers independently.
+4. Verify that the patch repairs the stated cause rather than a plausible neighboring explanation.
+5. Remove or qualify every assertion that remains unsupported.
+
+Record the counter-check method, `CONFIDENCE`, and `RESIDUAL_UNCERTAINTY` in the handoff.
 
 If real validation cannot be completed, return the applicable SOTA verdict and stop before commit unless `ACCEPTANCE` explicitly authorizes a non-code, non-output change.
 
@@ -149,7 +185,7 @@ For a confirmed and validated coherent correction:
 6. Use `See #N` or `Part of #N` for partial delivery. Use `Closes #N` only when the complete acceptance criteria of that issue are demonstrably satisfied.
 7. For reassessed findings, include `Reassessed by <agent>: CONFIRMED <type>`.
 8. For discoveries, include `Discovered and verified by <agent>: CONFIRMED <type>` plus the deconfliction evidence.
-9. Include exact post-fix execution evidence, scope, limitations, and the applicable SOTA/drift verdict.
+9. Include exact post-fix execution evidence, scope, limitations, assertion labels, counter-checks, confidence, residual uncertainty, and the applicable SOTA/drift verdict.
 10. Push and open the PR. Do not merge, review, or close.
 
 ## Stop conditions
@@ -157,6 +193,7 @@ For a confirmed and validated coherent correction:
 Stop without editing or delivery when any of these applies:
 
 - incomplete mission contract;
+- `EVIDENCE_CONFLICT`;
 - GitHub surfaces required for deconfliction cannot be read;
 - active claim or PR collision;
 - required GPU, vision, auth, kernel, service, or source is unavailable and cannot be repaired or routed;
@@ -171,15 +208,16 @@ Return a precise blocker and the smallest next action. Do not conceal a blocker 
 
 Return a compact table:
 
-| Finding | Verdict | Evidence | Action | Validation | PR/Next step |
-|---|---|---|---|---|---|
+| Finding | Verdict | Assertion type | Evidence | Counter-check | Deconfliction | Action | Validation | Confidence | Residual uncertainty | PR/Next step |
+|---|---|---|---|---|---|---|---|---|---|---|
 
 Then report:
 
+- `findings_detected`, `findings_fixable`, `findings_applied`, `findings_escalated`, and `files_changed`;
 - exact files changed;
 - commands run and their final results;
 - commit SHA and PR URL, if any;
 - false positives and already-covered findings;
 - issue-ready deep findings not fixed;
-- residual uncertainty and required capability;
+- required capability;
 - confirmation that no merge, close, reserved review state, secret, or audit report was produced.

@@ -1,6 +1,6 @@
 # Sous-agents spécialistes — référence + mandat d'usage side-tracks
 
-Les 22 sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
+Les 23 sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
 
 **3 spécialistes side-track créés 2026-05-23** (corollaire du mandat Epics) : `prover-forensic` (#1453, comble le GAP prover), `training-specialist` + skill `train-model` (#1454), `genai-iterator` + skill `genai-iterate` (#1385). Chacun encode les artefacts réels du dépôt (pipeline, CLI, configs) — voir leur fiche.
 
@@ -14,10 +14,11 @@ Les 22 sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont d
 | `notebook-iterative-builder` | Orchestre les cycles création/amélioration d'**un** notebook (design → execute → validate → enrich → fix) jusqu'à convergence qualité | Travail profond multi-étapes sur un notebook complexe (nouvelles séries) |
 | `training-specialist` | Orchestre l'entraînement ML (RL/PPO, Decision Transformer, LSTM, transformer, mamba, PatchTST, MoE, GNN), thermal-safe GPU + walk-forward/multi-seed/DM + registry | **#1454** Training & Post-Training — runs GPU longs en BG pendant la main track |
 | `genai-iterator` | Itère sur les notebooks GenAI contre la stack auto-hébergée (ComfyUI/Qwen, Forge, vLLM) via le CLI genai-stack : auth, sous-domaines, quantization, GPU/VRAM | **#1385** GenAI series + hosting — itération batch async |
-| `corrective-auditor` | Audite une cible bornée en mode `DISCOVERY` (findings à découvrir) ou `REASSESSMENT` (finding à revérifier), déconflitte, corrige les défauts locaux confirmés, valide avec les spécialistes du domaine et livre une PR atomique | Audits Astra paramétrés — le prompt fournit `TARGET`, `PATHS`, axes, outils, capacités et acceptance |
+| `corrective-auditor` | Audite en profondeur **une cible** en mode `DISCOVERY` (findings à découvrir librement) ou `REASSESSMENT` (finding à revérifier), puis corrige seulement les défauts locaux confirmés | Audit Astra sémantique mono-cible — preuves contradictoires, déconfliction par contenu, validation réelle et PR atomique |
+| `corrective-sweeper` | Balaie **plusieurs notebooks** et applique uniquement des fixers mécaniques explicitement allowlistés, avec compteurs réconciliés et invariants | Première passe Astra precision-first — tout signal sémantique, d'ordre ou ambigu reste advisory et part en audit profond |
 | `prover-forensic` | **Read-only** forensic des traces du harness prover Lean (mappe pathologies → code, propose deltas bornés ROI-rankés) | **#1453** harness co-evolution — survey async pendant les BG iter prover |
 
-Distinction : `series-improver` = grain **série** (batch + resume) ; `notebook-iterative-builder` = grain **notebook** (convergence profonde). Complémentaires, pas redondants.
+Distinction : `corrective-auditor` = audit sémantique profond d'une cible ; `corrective-sweeper` = corrections mécaniques allowlistées sur un lot ; `series-improver` = amélioration itérative d'une série avec scoring et reprise ; `notebook-iterative-builder` = convergence profonde d'un notebook. Ces quatre rôles sont complémentaires, pas interchangeables.
 
 ## Mapping side-track Epic → sous-agents mandatés
 
