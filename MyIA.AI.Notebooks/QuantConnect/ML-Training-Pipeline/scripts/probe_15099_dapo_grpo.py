@@ -33,10 +33,15 @@ DATASET_SNAPSHOT_GLOB = (
 )
 
 MAX_STEPS = 100
-EVAL_N_PROMPTS = 60
+EVAL_N_PROMPTS = 40
 EVAL_GENS = 4
 TRAIN_POOL = 4000
 SPLIT_SEED = 15099
+
+# Mode par defaut : non-thinking (les 2 modeles pensent >1024 tok sur DAPO —
+# budget incompatible ; DAPO papier entraine egalement des modeles non-thinking).
+CHAT_KWARGS: dict[str, Any] = {}
+MAX_COMPLETION = 384
 
 MODELS: dict[str, dict[str, str]] = {
     "minicpm5": {
@@ -170,7 +175,9 @@ def load_dapo_split() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 # ---------------------------------------------------------------------------
 
 
-def build_trainer(model_key: str, seed: int, steps: int, train_rows: list[dict[str, Any]]):
+def build_trainer(
+    model_key: str, seed: int, steps: int, train_rows: list[dict[str, Any]]
+):
     import torch
     from datasets import Dataset
     from peft import LoraConfig
@@ -205,7 +212,7 @@ def build_trainer(model_key: str, seed: int, steps: int, train_rows: list[dict[s
         per_device_train_batch_size=8,
         gradient_accumulation_steps=4,  # 32 completions/step = 4 prompts x 8 generations
         num_generations=8,
-        max_completion_length=384,
+        max_completion_length=MAX_COMPLETION,
         temperature=1.0,
         top_p=1.0,
         loss_type="dapo",
@@ -220,6 +227,7 @@ def build_trainer(model_key: str, seed: int, steps: int, train_rows: list[dict[s
         save_strategy="no",
         report_to=[],
         use_cache=False,
+        chat_template_kwargs=dict(CHAT_KWARGS),
     )
     trainer = GRPOTrainer(
         model=str(model_path),
@@ -251,16 +259,18 @@ def evaluate(trainer: Any, eval_rows: list[dict[str, Any]], seed: int) -> dict[s
                 add_generation_prompt=True,
                 return_tensors="pt",
                 return_dict=True,  # transformers 5.x : dict {input_ids, attention_mask}
+                **CHAT_KWARGS,
             )
             enc = {k: v.to(device) for k, v in enc.items()}
             n_in = enc["input_ids"].shape[1]
             out = model.generate(
                 **enc,
-                max_new_tokens=384,
+                max_new_tokens=MAX_COMPLETION,
                 do_sample=True,
                 temperature=1.0,
                 top_p=1.0,
                 pad_token_id=tokenizer.pad_token_id,
+                num_return_sequences=EVAL_GENS,
             )
             texts = tokenizer.batch_decode(out[:, n_in:], skip_special_tokens=True)
             for t in texts:
@@ -301,7 +311,7 @@ def mode_selftest() -> int:
     return 1 if fails else 0
 
 
-def mode_run(model_key: str, seed: int, steps: int) -> dict[str, Any]:
+def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False) -> dict[str, Any]:
     train_rows, eval_rows = load_dapo_split()
     t0 = time.time()
     trainer, model_path = build_trainer(model_key, seed, steps, train_rows)
@@ -325,6 +335,8 @@ def mode_run(model_key: str, seed: int, steps: int) -> dict[str, Any]:
     result = {
         "module": "ML-Training-Pipeline",
         "issue": 15099,
+        "chat_mode": "thinking" if not CHAT_KWARGS else "nonthinking",
+        "max_completion_length": MAX_COMPLETION,
         "model": MODELS[model_key]["label"],
         "model_key": model_key,
         "seed": seed,
@@ -335,8 +347,9 @@ def mode_run(model_key: str, seed: int, steps: int) -> dict[str, Any]:
         "log_history": log_history,
         "wallclock_s": round(time.time() - t0, 1),
     }
-    REPO_RESULTS.mkdir(parents=True, exist_ok=True)
-    out = REPO_RESULTS / f"{model_key}_seed{seed}.json"
+    out_dir = RUNS_ROOT if smoke else REPO_RESULTS
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"{model_key}_seed{seed}{'_smoke' if smoke else ''}.json"
     out.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"result -> {out}")
     return result
@@ -418,7 +431,19 @@ def main() -> int:
     ap.add_argument("--model", choices=list(MODELS), default="minicpm5")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=MAX_STEPS)
+    ap.add_argument(
+        "--thinking",
+        action="store_true",
+        help="mode thinking (enable_thinking=True laisse au template, budget completion 1024)",
+    )
     args = ap.parse_args()
+
+    if not args.thinking:
+        CHAT_KWARGS.clear()
+        CHAT_KWARGS["enable_thinking"] = False
+    else:
+        global MAX_COMPLETION
+        MAX_COMPLETION = 1024
 
     if args.mode == "selftest":
         return mode_selftest()
@@ -429,7 +454,7 @@ def main() -> int:
     if args.mode == "smoke":
         EVAL_N_PROMPTS, TRAIN_POOL = 8, 16
     RUNS_ROOT.mkdir(parents=True, exist_ok=True)
-    mode_run(args.model, args.seed, steps)
+    mode_run(args.model, args.seed, steps, smoke=args.mode == "smoke")
     return 0
 
 
