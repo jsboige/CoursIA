@@ -64,7 +64,7 @@ jobs:
   # are EXCLUDED by default (FR-only measurement; the byte-parity of the i18n
   # pair is covered structurally by `lean-i18n-drift.yml`, #10007).
   proof-integrity:
-    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize after `ci` to halve anonymous git burst on cold cache
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean
