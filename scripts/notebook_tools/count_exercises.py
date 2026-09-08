@@ -400,6 +400,119 @@ EMPTY_RETURN_PATTERNS = [
     re.compile(r"\breturn\s+''(?!\w)"),
 ]
 
+# Indices of STUB_PATTERNS that are COMMENT markers (# TODO, # Indice, // TODO,
+# -- TODO). A leftover comment marker in an otherwise COMPLETE body is not itself
+# a stub signal: `# TODO etudiant` above a full implementation is an instructor's
+# residual comment, and counting the cell as an open exercise inverts the truth
+# (#15080 D01 -- R05 c30/c32/c34). The executable markers below (pass, return
+# None, result=None, empty-typed return, "Exercice a completer" print/display,
+# raise, assert) are NOT in this set: they are unambiguously stubs even when a
+# body happens to carry one. The `# a completer` LINE-COMMENT form (index 13) is
+# also excluded: it introduces a SEPARATE skeleton after a complete function in
+# a mixed cell (Search-11 cell 43 -- a complete `profit_function` plus a
+# truncated `# A COMPLETER` Problem skeleton), which must stay a stub.
+COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
+
+
+def _effective_code_lines(source: str) -> list[str]:
+    """Non-comment, non-import code lines of a cell (mirrors the filtering in
+    ``_is_stub_code``: `#` Python/F#, `//` C#, `--` Lean/Haskell)."""
+    lines = [
+        ln.strip()
+        for ln in source.strip().split("\n")
+        if ln.strip()
+        and not ln.strip().startswith("#")
+        and not ln.strip().startswith("//")
+        and not ln.strip().startswith("--")
+    ]
+    return [
+        ln for ln in lines
+        if not ln.startswith("import ") and not ln.startswith("from ")
+        and not ln.startswith("using ")
+    ]
+
+
+def _function_param_names(source: str) -> set[str]:
+    """Names bound by ``def`` signatures in the cell (for passthrough detection).
+
+    A ``return grid`` echoing an unchanged parameter is a placeholder stub, not a
+    computed result; a ``return rows`` where ``rows`` is assigned in the body is a
+    real solution. We need the parameter names to tell the two apart.
+    """
+    names: set[str] = set()
+    for m in re.finditer(
+        r"^\s*def\s+\w+\s*\((.*?)\)\s*(?:->[^:]+)?\s*:", source, re.MULTILINE
+    ):
+        for raw in m.group(1).split(","):
+            p = raw.strip()
+            if not p:
+                continue
+            # strip default (`x=1`) and annotation (`x: int`); accept *args/**kwargs
+            p = re.split(r"[:=]", p)[0].lstrip("*").strip()
+            if re.match(r"^[A-Za-z_]\w*$", p):
+                names.add(p)
+    return names
+
+
+def _return_is_derived(return_stmt: str, code_lines: list[str], params: set[str]) -> bool:
+    """True when a ``return`` statement yields a computed value, not a stub shape.
+
+    A derived return is an internal variable assigned in the body, a call, a
+    subscript, an attribute, a binary expression, or a non-empty literal. None,
+    an empty-typed literal (``[]``/``{}``/``()``/``0``/``""``/``set()``), or a
+    pass-through of an unchanged parameter are the stub shapes.
+    """
+    m = re.match(r"^return\b(.*)$", return_stmt.strip())
+    if not m:
+        return False
+    operand = m.group(1).strip()
+    if not operand or operand.lower().startswith("none"):
+        return False
+    if any(p.search(return_stmt) for p in EMPTY_RETURN_PATTERNS):
+        return False
+    if re.match(r"^[\[{]", operand):  # a list/dict literal -- computed when non-empty
+        return operand not in ("[]", "{}")
+    if re.match(r"""^["']""", operand):  # a returned string is a solved value
+        return True
+    if re.match(r"^[A-Za-z_]\w*\(", operand):  # call `f(...)`
+        return True
+    if re.match(r"^[A-Za-z_]\w*\.", operand):  # attribute `obj.attr`
+        return True
+    if re.match(r"^[A-Za-z_]\w*\[", operand):  # subscript `x[i]`
+        return True
+    if re.match(r"^[A-Za-z_]\w*$", operand):  # bare name
+        base = operand
+        if base in params:
+            return False  # unchanged parameter passthrough = placeholder stub
+        body = "\n".join(code_lines)
+        if re.search(rf"\b{re.escape(base)}\s*[+*/%]?=", body):
+            return True  # assigned in the body (loop-built local, etc.)
+        return False
+    if re.search(r"[+\-*/%]|\b(?:and|or|in)\b|\bis\s+not\b", operand):
+        return True  # binary expression
+    return False
+
+
+def _body_computes_result(source: str) -> bool:
+    """True when a cell's body computes a real result (a solution, not a stub).
+
+    Gates the comment-marker override in ``_is_stub_code``. A cell needs at
+    least three effective code lines AND a derived return to be a solution; a
+    one-line ``return grid`` (passthrough), a scaffolded skeleton with no
+    return, or an empty-typed return remains a stub. This keeps the scaffolded
+    C#/Lean exercises (which carry ``// TODO``/``-- TODO`` above a partial
+    skeleton with no computed return) counted as stubs.
+    """
+    code_lines = _effective_code_lines(source)
+    if len(code_lines) < 3:
+        return False
+    params = _function_param_names(source)
+    for ln in code_lines:
+        if re.match(r"^return\b", ln.strip()):
+            if _return_is_derived(ln, code_lines, params):
+                return True
+    return False
+
 
 @dataclass
 class ExerciseHit:
@@ -439,6 +552,12 @@ class NotebookCount:
 
     path: Path
     exercises: list[ExerciseHit] = field(default_factory=list)
+    #: Markdown exercise_instance lines that named a subject but found no paired
+    #: stub ("declared subject with no write-space"). Distinguishes a notebook
+    #: whose three exercise headers are all orphans (CSK: 01-GitHub-Copilot-SDK
+    #: -Binding) from one with genuinely no exercise at all (R05b demo): both
+    #: render `count == 0` but mean opposite things (#15080 D01, acceptance 3).
+    unpaired_markdown_instances: int = 0
     parse_error: str | None = None
 
     @property
@@ -459,8 +578,15 @@ def _is_stub_code(source: str) -> bool:
     """
     if not source.strip():
         return True
-    for pat in STUB_PATTERNS:
+    for idx, pat in enumerate(STUB_PATTERNS):
         if pat.search(source):
+            # A leftover COMMENT marker (# / // / -- TODO / Indice / "a completer")
+            # above a body that COMPUTES a result is a complete solution, not an
+            # open stub (#15080 D01: R05 c30/c32/c34). The executable markers
+            # (pass / return None / result=None / empty-typed return / "Exercice
+            # a completer" print / raise / assert) stay unconditional.
+            if idx in COMMENT_STUB_PATTERN_IDX and _body_computes_result(source):
+                continue
             return True
     lines = [
         ln.strip()
@@ -658,18 +784,17 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         header_num = _exercise_number(header_source)
         # Forward (common): the stub just below the header, within 3 cells.
         forward_stub: int | None = None
+        forward_has_code_cell = False
         for j in range(idx + 1, min(idx + 4, len(cells))):
             jcell = cells[j]
             if jcell.get("cell_type") != "code":
                 continue
+            forward_has_code_cell = True
             j_source = "".join(jcell.get("source", []))
             if _is_stub_code(j_source):
                 forward_stub = j
                 paired_code_indices.add(j)
                 break
-            # First code cell in the window is NOT a stub -> stop the search;
-            # any later code cell is unlikely to be the paired exercise (#6051
-            # Bug 1's original pairing policy is preserved here).
             break
         # Backward (stub-then-header layout): the nearest preceding code cell,
         # absorbed only when it is itself a stub. NUMBERED headers additionally
@@ -716,7 +841,17 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         # while still dropping the GT-20 numbered-header-with-solution case.
         if forward_stub is None and backward_stub is None:
             if header_num is not None:
-                # NUMBERED header without a paired stub: silently dropped.
+                # NUMBERED header without a paired stub: NOT an exercise (a title
+                # whose paired cell is a complete solution or missing is dropped,
+                # cf #12305). But a header with NO code cell at all in its window
+                # named a subject with notng to write in -- count it as an
+                # unpaired instance so "3 detached exercise headings" (CSK,
+                # `csharp` blocks inside markdown) is distinguishable from "no
+                # exercise at all" (R05b demo) and from "solved example" (R05,
+                # whose complete-solution cell follows the header) (#15080 D01,
+                # acceptance 3). The counter alone renders all three as 0.
+                if not forward_has_code_cell:
+                    result.unpaired_markdown_instances += instance_count
                 continue
             # NUMBERLESS header without a paired stub: counted (conservative).
         for _ in range(instance_count):
@@ -915,6 +1050,11 @@ def _run_text(
         for nb_path, cnt, kind, effective in sub_threshold:
             rel = _display_path(nb_path)
             print(f"\n[{cnt.count}/{effective}] ({kind}) {rel}")
+            if cnt.unpaired_markdown_instances:
+                print(
+                    f"    ! {cnt.unpaired_markdown_instances} exercise heading(s) "
+                    f"with no paired stub (subject declared, no cell to write in)"
+                )
             for hit in cnt.exercises:
                 print(f"    cell {hit.cell_index:>3} ({hit.cell_type:<8} {hit.detected_by}): {hit.preview}")
     else:
@@ -947,6 +1087,11 @@ def _run_json(
         entry = {
             "path": str(_display_path(nb_path)),
             "count": cnt.count,
+            #: Exercise-instance headers with no paired stub -- a subject declared
+            #: but no cell to write in. Distinguishes `count == 0` for a notebook
+            #: whose exercises are detached headings (CSK) from one with no
+            #: exercise at all (R05b demo) (#15080 D01, acceptance 3).
+            "declared_markdown_instances": cnt.unpaired_markdown_instances,
             "kind": kind,
             # None => outside the pedagogical corpus, so never sub-threshold.
             "effective_threshold": effective,

@@ -42,6 +42,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Tranche 6B-3 (BackTesting.cs) : FileHelpers pour l'export CSV des resultats
+         (FileHelperEngine<BacktestResult>, 2 sites : sauvegarde et chargement des runs).
+         3.4.1 alignee sur MyIA.Trading.Converter (meme package, version unique en solution). -->
+    <PackageReference Include="FileHelpers" Version="3.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MyIA.AI.Shared\MyIA.AI.Shared.csproj" />
     <ProjectReference Include="..\MyIA.Trading.Converter\MyIA.Trading.Converter.csproj" />
   </ItemGroup>
