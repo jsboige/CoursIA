@@ -1191,3 +1191,163 @@ def test_fetch_checks_stops_on_empty_page(monkeypatch):
     checks = pr_gate.fetch_checks("o/r", "deadbeef")
     assert len(checks) == 1
     assert checks[0]["name"] == "a"
+
+
+# --- plancher de merge (--dwell-min, mandat user 2026-09-07) ------------------
+#
+# Le plancher lui-meme est teste dans test_merge_dwell.py (logique pure +
+# lecture d'API). Ce qui suit epingle son CABLAGE dans le gate, c'est-a-dire
+# les quatre facons dont il pourrait mal se brancher :
+#
+#   1. gater une PR etudiante de fork -- la politique bienveillante de
+#      student-pr-reviews.md l'interdit, et aujourd'hui c'est l'ORDRE des
+#      lignes qui l'empeche (le `return 0` du fork precede le bloc dwell).
+#      Un invariant qui ne tient que par un ordre de lignes se casse au
+#      premier refactor sans que rien ne rougisse ;
+#   2. masquer un rouge de CI derriere un rouge de plancher ;
+#   3. exploser sur `--pr ""` (un `workflow_dispatch` rend la chaine vide) ;
+#   4. rendre vert quand l'etat du plancher est ILLISIBLE.
+
+
+def _no_dwell_module(monkeypatch):
+    monkeypatch.setattr(pr_gate, "_merge_dwell", None, raising=False)
+
+
+class _FakeDwell:
+    """Double de `scripts/ci/merge_dwell` : compte ses appels et rend un verdict."""
+
+    DwellError = RuntimeError
+
+    def __init__(self, verdict=(True, "dwell ecoule"), raises=None):
+        self.verdict = verdict
+        self.raises = raises
+        self.calls = []
+
+    def check(self, repo, sha, pr, dwell_min):
+        self.calls.append((repo, sha, pr, dwell_min))
+        if self.raises is not None:
+            raise self.raises
+        return self.verdict
+
+
+def test_fork_pr_is_never_held_by_the_dwell_floor(monkeypatch):
+    """Une PR de fork sort avant le plancher, meme avec --dwell-min actif."""
+    fake = _FakeDwell(verdict=(False, "tete du ..., reste 119 min"))
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide", lambda *_a, **_kw: (0, "PASS")
+    )
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--is-fork",
+         "--pr", "42", "--dwell-min", "120"]
+    )
+    assert code == 0
+    assert fake.calls == [], "le plancher ne doit pas etre consulte sur un fork"
+
+    # Controle positif : le MEME plancher, la MEME PR jeune, sans --is-fork,
+    # rend bien 1. Sans cette moitie, le test ci-dessus serait aussi vert si
+    # le plancher etait globalement inerte.
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef",
+         "--pr", "42", "--dwell-min", "120"]
+    )
+    assert code == 1
+    assert fake.calls == [("o/r", "deadbeef", 42, 120.0)]
+
+
+def test_dwell_does_not_run_when_ci_is_red(monkeypatch):
+    """Un rouge de CI garde son message : le plancher ne le recouvre pas.
+
+    Deux axes partagent un seul rouge (sante CI, age de la tete) ; c'est le
+    compromis assume de loger le plancher dans le gate. Le minimum est que le
+    message dise LEQUEL des deux a parle -- sinon une lane repare un plancher
+    la ou sa CI est cassee.
+    """
+    fake = _FakeDwell(verdict=(False, "reste 119 min"))
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(
+        pr_gate,
+        "wait_and_decide",
+        lambda *_a, **_kw: (1, "FAIL -- failing checks: Lean CI"),
+    )
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef",
+         "--pr", "42", "--dwell-min", "120", "--no-self-cancel"]
+    )
+    assert code == 1
+    assert fake.calls == [], "plancher consulte alors que la CI est rouge"
+
+
+def test_dwell_red_is_prefixed_so_the_cause_is_readable(capsys, monkeypatch):
+    fake = _FakeDwell(verdict=(False, "tete du 2026-09-07T11:55:00Z, reste 115 min"))
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_kw: (0, "PASS"))
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
+    )
+    assert code == 1
+    assert "DWELL -- tete du 2026-09-07T11:55:00Z" in capsys.readouterr().out
+
+
+def test_empty_pr_argument_means_no_pr(monkeypatch):
+    """`--pr ""` (workflow_dispatch) ne doit pas faire exploser argparse.
+
+    `${{ github.event.pull_request.number }}` rend la chaine vide hors
+    contexte de PR. Un `type=int` y leverait SystemExit et rendrait le gate
+    rouge pour une raison etrangere a la PR.
+    """
+    fake = _FakeDwell()
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_kw: (0, "PASS"))
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "", "--dwell-min", "120"]
+    )
+    assert code == 0
+    assert fake.calls == [("o/r", "deadbeef", None, 120.0)]
+
+
+def test_unreadable_dwell_state_fails_closed(monkeypatch):
+    """Rule 1 du gate : un etat illisible refuse, il ne passe pas."""
+    fake = _FakeDwell(raises=RuntimeError("gh api a echoue (exit 1)"))
+    fake.DwellError = RuntimeError
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_kw: (0, "PASS"))
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
+    )
+    assert code == 1
+
+
+def test_missing_dwell_module_says_so_instead_of_passing_silently(capsys, monkeypatch):
+    """Module absent = defaut de deploiement, dit a voix haute, pas un vert muet.
+
+    L'import de `merge_dwell` est defensif a dessein : `pr_gate.py` est le seul
+    check requis de `main`, et une ImportError y bloquerait 100 % des PRs. Le
+    prix de ce choix est qu'un deploiement incomplet n'applique plus le
+    plancher -- ce test garantit que le log le DIT, pour qu'un vert ne se lise
+    jamais comme un plancher tenu.
+    """
+    _no_dwell_module(monkeypatch)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_kw: (0, "PASS"))
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
+    )
+    assert code == 0
+    assert "plancher NON applique" in capsys.readouterr().out
+
+
+def test_dwell_disabled_by_default(monkeypatch):
+    """Sans --dwell-min, aucun plancher : le defaut reste le gate d'avant."""
+    fake = _FakeDwell(verdict=(False, "reste 119 min"))
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_kw: (0, "PASS"))
+
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--pr", "7"])
+    assert code == 0
+    assert fake.calls == []
