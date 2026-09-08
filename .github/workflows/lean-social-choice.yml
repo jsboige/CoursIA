@@ -110,7 +110,14 @@ jobs:
   # SocialChoice/CERTIFIED.txt by
   # scripts/tests/test_check_certified_sorry.py::test_workflow_targets_match_manifest.
   proof-integrity:
-    needs: certified-no-sorry  # c.306 parity with knot_lean (#14922) requires `ci` job, but this workflow uses `certified-no-sorry` instead -- serialize after the cheap text-level gate (Hermes review c.322 #5580896587)
+    # c.327 (ai-01 CHANGES_REQUESTED 2026-09-08): the two REAL compiles (`build`
+    # and `proof-integrity`) must serialize. Depending only on the cheap
+    # text-level gate `certified-no-sorry` left both full builds running in
+    # parallel. Serialize `proof-integrity` behind `build` (which itself needs
+    # the cheap gate). This ORDERS the two compiles; it does NOT share their
+    # Lake caches (lean-axiom.yml and the `build` Mathlib cache use distinct
+    # keys) nor halve the clone count -- ai-01 flagged both as unproven.
+    needs: build
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/GameTheory/game_theory_lean
@@ -123,9 +130,9 @@ jobs:
   build:
     name: "Lake build"
     runs-on: ubuntu-latest
-    # Serialized only behind the CHEAP text-level gate (fail fast before
-    # spending a Mathlib build); proof-integrity (lean-axiom.yml) runs its own
-    # full build in parallel rather than doubling this one in series.
+    # Serialized behind the CHEAP text-level gate (fail fast before spending a
+    # Mathlib build). proof-integrity now depends on THIS job (c.327) so the two
+    # full compiles run in series instead of in parallel.
     needs: certified-no-sorry
     defaults:
       run:
