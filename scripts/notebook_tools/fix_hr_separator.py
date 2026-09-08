@@ -122,11 +122,12 @@ def _raw_decode(text: str, i: int):
 
 
 def _parse_spans(text: str):
-    """Parse la JSON du notebook et enregistre les offsets bytes de chaque string literal.
+    """Parse la JSON du notebook et enregistre les offsets de caracteres de chaque string literal.
 
     Retourne ``(nb, literal_spans)`` ou ``literal_spans`` est une liste de tuples
-    ``(start, end, decoded, path)`` : ``start``/``end`` sont les offsets bytes du
-    literal dans ``text``, ``decoded`` sa valeur decodee, ``path`` son chemin JSON
+    ``(start, end, decoded, path)`` : ``start``/``end`` sont les offsets de CARACTERES
+    du literal dans ``text`` (la chaine decodee — ce ne sont PAS des offsets bytes),
+    ``decoded`` sa valeur decodee, ``path`` son chemin JSON
     (ex. ``("cells", 3, "source", 1)`` pour l'element 1 de la source de la cellule 3).
     """
     literal_spans = []
@@ -185,12 +186,16 @@ def _parse_spans(text: str):
 
 
 def _literal_offset_map(lit: str, decoded: str) -> list[int]:
-    """Map index de char decode -> offset byte dans ``lit`` (le literal, guillemets inclus).
+    """Map index de char decode -> offset de caractere dans ``lit`` (le literal, guillemets inclus).
 
-    ``lit`` est la tranche brute ``text[start:end]`` du literal JSON ; ``decoded`` sa
-    valeur decodee. Retourne une liste de longueur ``len(decoded)`` : le k-ième élément
-    est l'offset byte (dans ``lit``) du k-ième caractère décodé. Les paires de
-    surrogates (``\\uD800\\uDC00``) comptent pour un seul caractère décodé.
+    ``lit`` est la tranche ``text[start:end]`` du literal JSON ; ``decoded`` sa
+    valeur decodee. Retourne une liste de longueur ``len(decoded)`` : le k-ième
+    element est l'offset de CARACTERE (dans ``lit``) du k-ième caractère décodé.
+    Ces offsets sont des offsets de caracteres dans la chaine decodee, PAS des
+    offsets bytes : la preservation octet-a-octet provient de l'echange binaire,
+    du remplacement ASCII de meme longueur et de l'encode utf-8 final, pas de ces
+    offsets. Les paires de surrogates (``\\uD800\\uDC00``) comptent pour un seul
+    caractère décodé.
     """
     inner = lit[1:-1]
     out = []
@@ -227,31 +232,33 @@ def _source_spans_by_cell(literal_spans: list) -> dict:
 
 
 def _cell_edits(raw: str, old_src, new_src, spans: list):
-    """Calcule les edits bytes ``(start, end, replacement)`` pour une cellule.
+    """Calcule les edits ``(start, end, replacement)`` (offsets de CARACTERES) pour une cellule.
 
     Compare la source decodee aplatie avant/après conversion et ne retient que les
-    positions exactes ou ``---`` devient ``***``. Retourne ``None`` si la longueur
-    ne se réconcilie pas (extraction impossible), sinon la liste des edits.
+    positions exactes ou ``---`` devient ``***``. Les offsets retournes sont des
+    offsets de caracteres dans ``raw`` (la chaine decodee), pas des offsets bytes.
+    Retourne ``None`` si la longueur ne se réconcilie pas (extraction impossible),
+    sinon la liste des edits.
     """
     if not spans:
         return None
     flat_chars = []
-    raw_offsets = []
+    char_offsets = []
     for (s, e, d) in spans:
         lit = raw[s:e]
         offs = _literal_offset_map(lit, d)
         flat_chars.append(d)
-        raw_offsets.extend(s + o for o in offs)
+        char_offsets.extend(s + o for o in offs)
     flat_old = "".join(flat_chars)
     flat_new = "".join(new_src) if isinstance(new_src, list) else new_src
-    if len(flat_new) != len(flat_old) or len(raw_offsets) != len(flat_old):
+    if len(flat_new) != len(flat_old) or len(char_offsets) != len(flat_old):
         return None
 
     edits = []
     i = 0
     while i <= len(flat_old) - 3:
         if flat_old[i:i + 3] == HR and flat_new[i:i + 3] == REPLACEMENT:
-            edits.append((raw_offsets[i], raw_offsets[i] + 3, REPLACEMENT))
+            edits.append((char_offsets[i], char_offsets[i] + 3, REPLACEMENT))
             i += 3
         else:
             i += 1
@@ -324,8 +331,10 @@ def process(path: Path, apply: bool) -> int:
     """
     # Lecture/ecriture en MODE BINAIRE : le mode texte de Windows convertirtait
     # les fins de ligne LF/CRLF, ce qui casserait la preservation byte-a-byte.
-    # decode/encode utf-8 sans traduction de newline : les octets hors cible
-    # restent exactement ceux du fichier d'entree.
+    # Les offsets manipules par _parse_spans/_cell_edits sont des offsets de
+    # CARACTERES dans la chaine decodee (pas des offsets bytes) : la preservation
+    # octet-a-octet vient de l'echange binaire + du remplacement ASCII de meme
+    # longueur (--- -> ***) + de l'encode utf-8 final, pas de ces offsets.
     try:
         raw_bytes = path.read_bytes()
     except OSError as exc:
