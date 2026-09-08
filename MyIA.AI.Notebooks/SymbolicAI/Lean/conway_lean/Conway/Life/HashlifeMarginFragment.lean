@@ -883,7 +883,7 @@ theorem gridRowMin_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
     have := gridRowMin_le_of_mem _ _ himg
     omega
   · apply gridRowMin_lower_bound _ _ hsne
-    rintro r ⟨hr⟩
+    intro r hr
     have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
     have := gridRowMin_le_of_mem g _ hpre
     omega
@@ -895,10 +895,11 @@ theorem gridRowMax_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
     gridRowMax (shift v g) = gridRowMax g + v.1 := by
   have hsne : shift v g ≠ [] := shift_ne_nil v g hg
   apply le_antisymm
-  · apply gridRowMax_upper_bound _ _ hsne
-    rintro r ⟨hr⟩
-    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
-    have := le_gridRowMax_of_mem g _ hpre
+  · have hb := gridRowMax_upper_bound (shift v g) (gridRowMax g + v.1 + 1) hsne
+      (fun p hp => by
+        have hpre : (p.1 - v.1, p.2 - v.2) ∈ g := (mem_shift v g p).mp hp
+        have := le_gridRowMax_of_mem g _ hpre
+        omega)
     omega
   · obtain ⟨p, hp, hval⟩ := gridRowMax_mem g hg
     have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
@@ -916,7 +917,7 @@ theorem gridColMin_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
     have := gridColMin_le_of_mem _ _ himg
     omega
   · apply gridColMin_lower_bound _ _ hsne
-    rintro r ⟨hr⟩
+    intro r hr
     have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
     have := gridColMin_le_of_mem g _ hpre
     omega
@@ -927,10 +928,11 @@ theorem gridColMax_shift (v : Int × Int) (g : Grid) (hg : g ≠ []) :
     gridColMax (shift v g) = gridColMax g + v.2 := by
   have hsne : shift v g ≠ [] := shift_ne_nil v g hg
   apply le_antisymm
-  · apply gridColMax_upper_bound _ _ hsne
-    rintro r ⟨hr⟩
-    have hpre : (r.1 - v.1, r.2 - v.2) ∈ g := (mem_shift v g r).mp hr
-    have := le_gridColMax_of_mem g _ hpre
+  · have hb := gridColMax_upper_bound (shift v g) (gridColMax g + v.2 + 1) hsne
+      (fun p hp => by
+        have hpre : (p.1 - v.1, p.2 - v.2) ∈ g := (mem_shift v g p).mp hp
+        have := le_gridColMax_of_mem g _ hpre
+        omega)
     omega
   · obtain ⟨p, hp, hval⟩ := gridColMax_mem g hg
     have himg : (p.1 + v.1, p.2 + v.2) ∈ shift v g := mem_shift_image v g p hp
@@ -947,17 +949,17 @@ theorem elem_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) :
   · rw [List.elem_iff.mpr h]
     exact List.elem_iff.mpr (mem_shift_image v g _ h)
   · have hf : g.elem (r0, c0) = false := by
-      rcases hbool : g.elem (r0, c0) with
+      cases hbool : g.elem (r0, c0) with
       | true => exact absurd (List.elem_iff.mp hbool) h
       | false => rfl
     have hf' : (shift v g).elem (r0 + v.1, c0 + v.2) = false := by
-      rcases hbool : (shift v g).elem (r0 + v.1, c0 + v.2) with
+      cases hbool : (shift v g).elem (r0 + v.1, c0 + v.2) with
       | true =>
-        exact absurd (fun hh => h (by
-          have hpre := (mem_shift v g _).mp (List.elem_iff.mp hbool)
+        exact absurd (List.elem_iff.mp hbool) (fun hm => h (by
+          have hpre := (mem_shift v g _).mp hm
           have heq : (r0 + v.1 - v.1, c0 + v.2 - v.2) = (r0, c0) := by ext <;> omega
           rw [heq] at hpre
-          exact hpre)) (fun hn => hh hn)
+          exact hpre))
       | false => rfl
     rw [hf', hf]
 
@@ -998,21 +1000,23 @@ theorem gridFrame_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) (lvl : Nat)
       cases h : shift v (p₀ :: ps) with
       | nil => exact absurd h hsne
       | cons q₀ qs => exact ⟨q₀, qs, rfl⟩
-    have h1 : gridRowMin (q₀ :: qs) = gridRowMin (p₀ :: ps) + v.1 :=
-      gridRowMin_shift v _ hne'
-    have h2 : gridRowMax (q₀ :: qs) = gridRowMax (p₀ :: ps) + v.1 :=
-      gridRowMax_shift v _ hne'
-    have h3 : gridColMin (q₀ :: qs) = gridColMin (p₀ :: ps) + v.2 :=
-      gridColMin_shift v _ hne'
-    have h4 : gridColMax (q₀ :: qs) = gridColMax (p₀ :: ps) + v.2 :=
-      gridColMax_shift v _ hne'
+    have h1 : gridRowMin (q₀ :: qs) = gridRowMin (p₀ :: ps) + v.1 := by
+      rw [← hq]; exact gridRowMin_shift v _ hne'
+    have h2 : gridRowMax (q₀ :: qs) = gridRowMax (p₀ :: ps) + v.1 := by
+      rw [← hq]; exact gridRowMax_shift v _ hne'
+    have h3 : gridColMin (q₀ :: qs) = gridColMin (p₀ :: ps) + v.2 := by
+      rw [← hq]; exact gridColMin_shift v _ hne'
+    have h4 : gridColMax (q₀ :: qs) = gridColMax (p₀ :: ps) + v.2 := by
+      rw [← hq]; exact gridColMax_shift v _ hne'
     have hfr : gridFrame (p₀ :: ps)
         = ((gridRowMin (p₀ :: ps) - 2, gridColMin (p₀ :: ps) - 2),
            MacroCell.ceilLog2 (max (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat
                                     (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) := rfl
     rw [hfr] at hframe
-    obtain ⟨hp, hlvl⟩ := Prod.mk.injEq.mp hframe
-    obtain ⟨hr0, hc0⟩ := Prod.mk.injEq.mp hp
+    rw [Prod.mk.injEq] at hframe
+    obtain ⟨hp, hlvl⟩ := hframe
+    rw [Prod.mk.injEq] at hp
+    obtain ⟨hr0, hc0⟩ := hp
     rw [hq]
     have hfr' : gridFrame (q₀ :: qs)
         = ((gridRowMin (q₀ :: qs) - 2, gridColMin (q₀ :: qs) - 2),
@@ -1024,8 +1028,8 @@ theorem gridFrame_shift (v : Int × Int) (g : Grid) (r0 c0 : Int) (lvl : Nat)
     have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
       gridColMin_le_gridColMax _ hne'
     refine Prod.ext (Prod.ext ?_ ?_) ?_
-    · omega
-    · omega
+    · dsimp only; omega
+    · dsimp only; omega
     · have hH : (gridRowMax (q₀ :: qs) - gridRowMin (q₀ :: qs) + 5).toNat
           = (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat := by omega
       have hW : (gridColMax (q₀ :: qs) - gridColMin (q₀ :: qs) + 5).toNat
@@ -1041,7 +1045,8 @@ theorem gridToMacroCellWithOffset_shift (v : Int × Int) (g : Grid) :
     (gridToMacroCellWithOffset (shift v g)).2 = (gridToMacroCellWithOffset g).2 := by
   by_cases hg : g = []
   · subst hg
-    simp [shift]
+    have hnil : shift v [] = [] := rfl
+    rw [hnil]
   · obtain ⟨r0, c0, lvl, hframe⟩ : ∃ r0 c0 lvl, gridFrame g = ((r0, c0), lvl) :=
       ⟨(gridFrame g).1.1, (gridFrame g).1.2, (gridFrame g).2, rfl⟩
     have hframe' := gridFrame_shift v g r0 c0 lvl hframe hg
@@ -1087,8 +1092,7 @@ theorem evolve_spaceship_mulF {p : Nat} (g : Grid) (hg : Canonical g) (v : Int �
     evolve (m * p) g = shift (((m : Int) * v.1), ((m : Int) * v.2)) g := by
   induction m with
   | zero =>
-    rw [Nat.zero_mul, evolve_zero, Nat.cast_zero, Int.zero_mul,
-        Nat.cast_zero, Int.zero_mul]
+    rw [Nat.zero_mul, evolve_zero, Nat.cast_zero, Int.zero_mul, Int.zero_mul]
     exact (shift_zero hg).symm
   | succ m ih =>
     have hsplit : (m + 1) * p = m * p + p := by ring
@@ -1109,8 +1113,12 @@ theorem evolve_spaceship_mod {p : Nat} (g : Grid) (hg : Canonical g) (v : Int ×
     evolve t g = shift (((t / p : Nat) : Int) * v.1, ((t / p : Nat) : Int) * v.2)
       (evolve (t % p) g) := by
   have hsplit : t = p * (t / p) + t % p := (Nat.div_add_mod t p).symm
+  have hg' : Canonical (evolve (t % p) g) := by
+    rcases Nat.eq_zero_or_pos (t % p) with h0 | hpos
+    · rw [h0, evolve_zero]; exact hg
+    · exact canonical_evolve_of_pos hpos _
   conv_lhs => rw [hsplit, evolve_add, Nat.mul_comm]
-  exact evolve_spaceship_mulF _ (evolve_spaceship_phase g hship _) _
+  exact evolve_spaceship_mulF _ hg' v (evolve_spaceship_phase g v hship _) _
 
 /-- **Interface (c) tranche 3, étape 7 — la classe des vaisseaux de vitesse
     ≤ c/2 est capturée.** Version `jumpCapturedF` du critère vaisseau : tout
@@ -1139,7 +1147,7 @@ theorem jumpCapturedF_of_spaceship (c : MacroCell) (hwf : c.wf = true)
   have hmul : evolve (2 ^ c.level) (c.toGrid (0, 0))
       = shift ((q : Int) * v.1, (q : Int) * v.2) (c.toGrid (0, 0)) := by
     rw [hq, Nat.mul_comm]
-    exact evolve_spaceship_mulF _ hcan hship q
+    exact evolve_spaceship_mulF _ hcan v hship q
   have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
       = shift ((3 * 2 ^ (c.level - 1) : Int) + (q : Int) * v.1,
                (3 * 2 ^ (c.level - 1) : Int) + (q : Int) * v.2)
@@ -1162,7 +1170,7 @@ theorem jumpCapturedF_of_spaceship (c : MacroCell) (hwf : c.wf = true)
   have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
   have hqnn : (0 : Int) ≤ (q : Nat) := by positivity
   have hcast : ((q : Nat) : Int) * ((p : Nat) : Int) = ((2 ^ c.level : Nat) : Int) := by
-    rw [Nat.cast_mul, hq]
+    rw [← Nat.cast_mul, Nat.mul_comm q p, hq]
   have hbridge : ((2 ^ c.level : Nat) : Int) = (2 ^ c.level : Int) :=
     (Nat.cast_pow 2 c.level).symm
   have hqA : 2 * ((q : Int) * v.1) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
@@ -1171,10 +1179,8 @@ theorem jumpCapturedF_of_spaceship (c : MacroCell) (hwf : c.wf = true)
     have e1 : (q : Int) * (2 * v.1) = 2 * ((q : Int) * v.1) := by ring
     omega
   have hqB : 2 * (-((q : Int) * v.1)) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
-    have e0 : (q : Int) * (-(2 * v.1)) ≤ (q : Int) * ((p : Nat) : Int) := by
-      have hneg : -(2 * v.1) = 2 * (-v.1) := by ring
-      have e0' := mul_le_mul_of_nonneg_left (b := (2 : Int) * (-v.1)) hspd1a hqnn
-      omega
+    have e0 : (q : Int) * (-(2 * v.1)) ≤ (q : Int) * ((p : Nat) : Int) :=
+      mul_le_mul_of_nonneg_left (by omega) hqnn
     have e1 : (q : Int) * (-(2 * v.1)) = 2 * (-((q : Int) * v.1)) := by ring
     omega
   have hqC : 2 * ((q : Int) * v.2) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
@@ -1183,13 +1189,27 @@ theorem jumpCapturedF_of_spaceship (c : MacroCell) (hwf : c.wf = true)
     have e1 : (q : Int) * (2 * v.2) = 2 * ((q : Int) * v.2) := by ring
     omega
   have hqD : 2 * (-((q : Int) * v.2)) ≤ 2 * (2 ^ (c.level - 1) : Int) := by
-    have e0 : (q : Int) * (-(2 * v.2)) ≤ (q : Int) * ((p : Nat) : Int) := by
-      have hneg : -(2 * v.2) = 2 * (-v.2) := by ring
-      have e0' := mul_le_mul_of_nonneg_left (b := (2 : Int) * (-v.2)) hspd2a hqnn
-      omega
+    have e0 : (q : Int) * (-(2 * v.2)) ≤ (q : Int) * ((p : Nat) : Int) :=
+      mul_le_mul_of_nonneg_left (by omega) hqnn
     have e1 : (q : Int) * (-(2 * v.2)) = 2 * (-((q : Int) * v.2)) := by ring
     omega
   omega
+
+/-- **Commutativité des translations.** Translater par `v` puis par `w`
+    egale translater par `w` puis par `v` : les deux compositions aboutissent
+    au vecteur somme. Par `shift_shift` sur chaque côté (paires explicitées),
+    puis égalité des vecteurs composante par composante. -/
+theorem shift_comm (v w : Int × Int) (g : Grid) :
+    shift v (shift w g) = shift w (shift v g) := by
+  obtain ⟨v1, v2⟩ := v
+  obtain ⟨w1, w2⟩ := w
+  have h1 : shift (v1, v2) (shift (w1, w2) g) = shift (v1 + w1, v2 + w2) g :=
+    shift_shift _ _ _ _ _
+  have h2 : shift (w1, w2) (shift (v1, v2) g) = shift (w1 + v1, w2 + v2) g :=
+    shift_shift _ _ _ _ _
+  rw [h1, h2]
+  congr 1
+  ext <;> ring
 
 /-- **Transport de la relation de vaisseau à la reconstruction (rendue à
     l'origine).** L'analogue de `periodic_fix_toGrid_zero` pour la dérive :
@@ -1207,7 +1227,7 @@ theorem spaceship_step_toGrid_zero (g : Grid) (hg : Canonical g) {p : Nat}
                0 - (gridToMacroCellWithOffset g).1.2)
           ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
     toGrid_shift_grid _ 0 0 _ _
-  rw [hshift, ← evolve_shift, hrt, hship]
+  rw [hshift, ← evolve_shift, hrt, hship, shift_comm]
 
 /-- **Capture de la reconstruction d'un vaisseau.** Pour toute phase canonique
     `g` d'un vaisseau (`evolve p g = shift v g`), dont le niveau de
@@ -1236,7 +1256,7 @@ theorem jumpCapturedF_reconstruction_of_spaceship (g : Grid) (hg : Canonical g)
       | zero => rw [hL] at hN; exact absurd hN (by decide)
       | succ m => omega
     exact jumpCapturedF_of_spaceship _ hwf hlvl v
-      (spaceship_step_toGrid_zero g hg hship) hdiv hspd1 hspd2
+      (spaceship_step_toGrid_zero g hg v hship) hdiv hspd1 hspd2
 
 /-- **hcap de la classe des vaisseaux, trajectoire complète.** Pour un vaisseau
     canonique de période `p > 0`, dont **chaque phase** a un niveau de
@@ -1255,7 +1275,7 @@ theorem hcap_of_spaceship (g : Grid) (hg : Canonical g) {p : Nat} (hp0 : 0 < p)
     (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
     ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
   intro t
-  rw [evolve_spaceship_mod g hg hship t, gridToMacroCellWithOffset_shift]
+  rw [evolve_spaceship_mod g hg v hship t, gridToMacroCellWithOffset_shift]
   have hr : t % p < p := Nat.mod_lt _ hp0
   have hcan : Canonical (evolve (t % p) g) := by
     rcases Nat.eq_zero_or_pos (t % p) with h0 | hpos
@@ -1263,7 +1283,7 @@ theorem hcap_of_spaceship (g : Grid) (hg : Canonical g) {p : Nat} (hp0 : 0 < p)
       simpa using hg
     · exact canonical_evolve_of_pos hpos _
   exact jumpCapturedF_reconstruction_of_spaceship _ hcan v
-    (evolve_spaceship_phase g hship _) (hdiv _ hr) hspd1 hspd2
+    (evolve_spaceship_phase g v hship _) (hdiv _ hr) hspd1 hspd2
 
 /-- **L3 clos pour la classe des vaisseaux de vitesse ≤ c/2 : correction
     Hashlife des spaceships.** Corollaire d'assemblage — le troisième cas de
