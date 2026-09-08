@@ -240,11 +240,17 @@ class TestDetermineStatus:
         reqs = {"requires_api": False, "requires_gpu": True, "requires_cloud": False, "requires_wsl": False}
         assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "READY"
 
-    def test_ready_empty_code_cells(self):
+    def test_empty_code_cells_is_no_code_not_ready(self):
+        # #15080 D01 acceptance 1: a markdown-only notebook (code_cells == [])
+        # must NOT be labeled READY -- `all([])` is True by vacuous truth, so the
+        # old code returned READY for a notebook that had nothing to execute
+        # (01-1b-Video-Slideshow-Bonus: `forensic_category: NO_CODE`). Reuse the
+        # existing NO_CODE vocabulary (the buggy-READY behavior is now asserted
+        # as the regression this fixes).
         nb = _nb([_md("# Title")])
         code_cells = []
         reqs = {"requires_api": False, "requires_gpu": False, "requires_cloud": False, "requires_wsl": False}
-        assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "READY"
+        assert determine_status(self._make_path(), nb, code_cells, reqs, pedagogical=True) == "NO_CODE"
 
 
 # --- count_todos ---
