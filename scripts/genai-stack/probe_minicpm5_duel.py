@@ -37,7 +37,13 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 BENCH_PATH = SCRIPT_DIR / "probe_15099_bench.json"
-MASTER_ENV = Path(__file__).resolve().parents[2] / ".secrets" / "master.env"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+# master.env est gitignore : selon l'arbre (worktree vs arbre partage) il peut
+# manquer — candidats dans l'ordre, puis os.environ en dernier recours
+MASTER_ENV_CANDIDATES = (
+    _REPO_ROOT / ".secrets" / "master.env",
+    Path("D:/Dev/CoursIA/.secrets/master.env"),
+)
 DEFAULT_PORT = 8199  # 8185 = serveur Qwen permanent de la flotte, ne pas toucher
 DEFAULT_GPU = 1  # RTX 3090 (GPU 0 = RTX 5080 occupee par la stack GenAI)
 PARITY_RATIO = 0.95
@@ -49,22 +55,26 @@ ENV_KEYS_NEEDED = ("CLAUDISH_PROXY_KEY", "OPENROUTER_API_KEY")
 # ---------------------------------------------------------------- utilitaires
 
 def load_master_env(keys: tuple[str, ...]) -> dict[str, str]:
-    """Charge les cles demandees depuis .secrets/master.env (KEY=VALUE).
-    Ne retourne jamais les valeurs a l'ecran ; l'appelant les met dans os.environ.
+    """Charge les cles demandees : os.environ d'abord, puis .secrets/master.env
+    (KEY=VALUE) sur les arbres candidats. Ne retourne jamais les valeurs a
+    l'ecran ; l'appelant les met dans os.environ.
     """
-    found: dict[str, str] = {}
-    if not MASTER_ENV.is_file():
-        return found
-    for line in MASTER_ENV.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    found = {k: os.environ[k] for k in keys if os.environ.get(k)}
+    for cand in MASTER_ENV_CANDIDATES:
+        if not cand.is_file():
             continue
-        k, _, v = line.partition("=")
-        k = k.strip()
-        if k in keys:
-            v = v.strip().strip('"').strip("'")
-            if v:
-                found[k] = v
+        for line in cand.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            k = k.strip()
+            if k in keys and k not in found:
+                v = v.strip().strip('"').strip("'")
+                if v:
+                    found[k] = v
+        if all(k in found for k in keys):
+            break
     return found
 
 
@@ -313,7 +323,9 @@ def corrector_score(question: str, criterion: str, answer: str, cfg: dict) -> in
     payload = {
         "model": cfg["model"],
         "temperature": 0.0,
-        "max_tokens": 200,
+        # glm-5.2 emet du reasoning AVANT le content : budget large, sinon le
+        # content arrive vide (mesure live probe A)
+        "max_tokens": 700,
         "messages": [
             {"role": "system", "content": CORRECTOR_SYSTEM},
             {"role": "user",
@@ -325,11 +337,18 @@ def corrector_score(question: str, criterion: str, answer: str, cfg: dict) -> in
         for _ in range(2):  # 1 retry par endpoint sur erreur transitoire
             try:
                 data = http_post_json(
-                    base, payload, {"Authorization": f"Bearer {key}"}, timeout=90)
-                txt = (data["choices"][0]["message"].get("content") or "").strip()
+                    base, payload, {"Authorization": f"Bearer {key}"}, timeout=120)
+                msg = data["choices"][0]["message"]
+                txt = (msg.get("content") or "").strip()
                 m = re.search(r"\{[^{}]*\"score\"\s*:\s*([012])[^{}]*\}", txt, re.DOTALL)
                 if m:
                     return int(m.group(1))
+                # content vide/tronque par le raisonnement : chercher le verdict
+                # dans le raisonnement lui-meme ("Score: 2", '"score": 2')
+                r = msg.get("reasoning_content") or ""
+                m2 = re.search(r"(?:[Ss]core|\"score\")\s*[:=]\s*([012])(?!\d)", r)
+                if m2:
+                    return int(m2.group(1))
             except Exception:  # noqa: BLE001 - transitoire : retry puis endpoint suivant
                 time.sleep(2 * (attempt + 1))
     return None
