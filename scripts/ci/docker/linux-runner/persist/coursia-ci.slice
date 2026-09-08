@@ -124,8 +124,16 @@ IOReadBandwidthMax=/var/lib/docker 419430400
 #   Libre, flotte CI ARMEE ................ 39,3 Go
 #   Libre, flotte CI DESARMEE ............ 120,6 Go
 #
-# Les ~81 Go d'ecart sont l'empreinte de cette slice. 16 Go de plafond dur la
-# ramenent a un cinquieme, et laissent >100 Go a l'hote -- qui porte ~80 % des
+# LIRE CES DEUX LIGNES COMME UNE OBSERVATION, PAS COMME UNE MESURE D'EMPREINTE.
+# Un avant/apres est un plan a deux cellules : il n'attribue rien des lors que
+# plus d'une variable a bouge entre les deux releves. Ici, aucun controle n'a
+# ete pose sur les autres services de l'hote (~48 conteneurs Docker Desktop,
+# vLLM, qdrant, la workstation elle-meme), qui ont pu se deplacer dans le meme
+# intervalle. L'ecart de ~81 Go est donc ce qui a ete OBSERVE quand la flotte CI
+# a ete desarmee -- un majorant plausible de son empreinte, pas son empreinte
+# mesuree. La borne posee plus bas ne repose pas sur ce chiffre : elle repose
+# sur la regle « l'hote prime sur la CI », qui tient quel que soit le partage
+# exact. 16 Go de plafond dur laissent >100 Go a l'hote, qui porte ~80 % des
 # services de la flotte ET reste la workstation interactive du user. « Il y a
 # de la place pour tout le monde si on y fait attention. »
 #

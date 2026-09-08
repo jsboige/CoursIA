@@ -170,6 +170,21 @@ separement.
 Ordre obligatoire -- les bornes d'abord, le parc ensuite. Redemarrer avant de les
 poser ferait repartir la file sous le regime non borne qui a gele la machine.
 
+**Regle de lecture de ce bloc : ce qui LIT est vivant, ce qui ECRIT est
+commente.** Les `diff` et les `cat` peuvent se copier-coller tels quels -- ce
+sont des mesures. Toutes les lignes qui modifient la machine sont commentees a
+dessein, et le restent tant que le dimensionnement CPU n'est pas tranche.
+
+**Pourquoi elles sont commentees -- mesure du 2026-09-08 sur ai-01, pas une
+hypothese.** Sous le budget en vigueur (`COURSIA_RUNNER_CPU_BUDGET=8`) et avec
+les quatre waiters residents (`4 x 1 = 4` vCPU), la famille `start` telle que ce
+drop-in la dimensionne demande `4 x 3 = 12` vCPU : `4 + 12 = 16 > 8`, et
+`assert_cpu_budget` **refuse le demarrage**. C'est l'etat de la machine a
+l'instant ou ces lignes sont ecrites -- `coursia-runner.service` en `failed`,
+et la file d'attente sans aucun runner capable de la servir. Deployer ce bloc
+tel quel sur un hote neuf y reproduirait le meme verrou. L'arbitrage de
+dimensionnement appartient a la lane qui porte le parc ; il n'est pas rendu ici.
+
 ```sh
 # 1. Le budget agrege, au daemon et au kernel.
 #    Les DEUX fichiers sont deja vivants (mesure du 2026-09-08). Diffe AVANT
@@ -183,14 +198,27 @@ diff /etc/systemd/system/coursia-ci.slice persist/coursia-ci.slice
 # install -m 0644 persist/daemon.json          /etc/docker/daemon.json
 # install -m 0644 persist/coursia-ci.slice     /etc/systemd/system/coursia-ci.slice
 
-# 2. L'unite corrigee et son wrapper.
-install -m 0644 persist/ai-01/coursia-runner.service   /etc/systemd/system/coursia-runner.service
-install -m 0755 persist/ai-01/coursia-runner-start.sh  /usr/local/bin/coursia-runner-start.sh
+# 2. L'unite corrigee, son wrapper, ET son drop-in -- les trois ensemble.
+#    Le drop-in est ce qui porte le dimensionnement : installer l'unite sans lui
+#    laisse la famille sur les defauts de supervise.sh (cpus=3, memory=4g), qui
+#    ne sont PAS ce que ce depot decrit. La commande omettait le drop-in tandis
+#    que la prose disait le contraire ; sur un hote neuf, l'ecart etait muet.
+# install -m 0644 persist/ai-01/coursia-runner.service   /etc/systemd/system/coursia-runner.service
+# install -m 0755 persist/ai-01/coursia-runner-start.sh  /usr/local/bin/coursia-runner-start.sh
+# mkdir -p /etc/systemd/system/coursia-runner.service.d
+# install -m 0644 persist/ai-01/coursia-runner.service.d/10-sizing.conf \
+#                 /etc/systemd/system/coursia-runner.service.d/10-sizing.conf
 
 # 3. Recharger, puis appliquer.
-systemctl daemon-reload
-systemctl restart docker.service          # docker-ce porte les 4 waiters : ce redemarrage n'est PLUS neutre, cf. ci-dessous
-systemctl start coursia-ci.slice
+# systemctl daemon-reload
+#
+#    Le redemarrage de docker n'est PLUS neutre : docker-ce porte les quatre
+#    waiters (mesure du 2026-09-08). `daemon.json` declare `live-restore: true`,
+#    qui est fait pour qu'ils survivent -- mais cette survie n'a pas ete
+#    verifiee firsthand ici. Tant qu'elle ne l'est pas, cette ligne coupe le
+#    seul etage du parc qui fonctionne encore.
+# systemctl restart docker.service
+# systemctl start coursia-ci.slice
 
 # 4. Verifier que la borne est REELLE avant de rallumer quoi que ce soit.
 cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/io.max
@@ -442,11 +470,23 @@ et la panne qu'il documente est precisement une panne memoire.
 **Ce qui a ete fait.** `persist/coursia-ci.slice` a ete synchronise **depuis le
 vivant** : le depot en etait un sous-ensemble strict (`git diff --numstat` rend
 `56 0` -- cinquante-six lignes ajoutees, zero retiree). L'etape 1 du bloc de
-deploiement est passee d'un `install` inconditionnel a un `diff` prealable. Le
-seul ecart restant entre les deux copies est **une ligne de commentaire**,
-neutralisee cote depot parce qu'elle nommait une personne privee ; le fait
-technique qu'elle portait -- quatre redemarrages manuels sur site dans la meme
-journee -- est conserve.
+deploiement est passee d'un `install` inconditionnel a un `diff` prealable, et
+toutes ses lignes mutantes sont desormais commentees. Restent **deux ecarts
+assumes**, tous deux dans des commentaires, tous deux cote depot :
+
+1. **une ligne neutralisee** parce qu'elle nommait une personne privee ; le fait
+   technique qu'elle portait -- quatre redemarrages manuels sur site dans la
+   meme journee -- est conserve ;
+2. **une qualification ajoutee** au bloc « POURQUOI 12 / 16 ET PAS PLUS ». La
+   copie vivante presente les ~81 Go d'ecart hote (flotte CI armee vs desarmee)
+   comme « l'empreinte de cette slice ». C'est un avant/apres a deux cellules,
+   sans controle sur les ~48 autres conteneurs ni sur la workstation : il rend
+   un **majorant observe**, pas une empreinte causale mesuree. La copie du depot
+   le dit ; la copie vivante, elle, ne l'a pas encore -- l'ecrire ici est la
+   seule chose que cette PR peut faire sans toucher la machine.
+
+Ces deux ecarts vont dans le sens depot -> vivant : c'est au prochain `install`
+delibere de les propager, jamais a un `install` a l'aveugle.
 
 **La lecon.** « Le depot est la reference » est une **convention**, pas une
 mesure. Ce fichier s'ouvre en appelant ses fichiers des *copies de reference* de
