@@ -69,10 +69,13 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
             var context = new TradingContext { Price = 100m };
             Assert.True(new SimpleExpression<bool>("Price > 90").Evaluate(context));
             Assert.False(new SimpleExpression<bool>("Price <= 90").Evaluate(context));
-            Assert.True(new SimpleExpression<bool>("Price == 100").Evaluate(context));
-            Assert.True(new SimpleExpression<bool>("Price != 101").Evaluate(context));
-            Assert.True(new SimpleExpression<bool>("Price > 90 && Price < 110").Evaluate(context));
-            Assert.True(new SimpleExpression<bool>("Price < 90 || Price == 100").Evaluate(context));
+            // Dialecte Flee : "=" (egalite), "<>" (difference), "and" / "or"
+            // (pas ==/!=/&&/||). Les assertions ne bougent pas, seule la chaîne
+            // d'entree adopte la syntaxe du moteur branche.
+            Assert.True(new SimpleExpression<bool>("Price = 100").Evaluate(context));
+            Assert.True(new SimpleExpression<bool>("Price <> 101").Evaluate(context));
+            Assert.True(new SimpleExpression<bool>("Price > 90 and Price < 110").Evaluate(context));
+            Assert.True(new SimpleExpression<bool>("Price < 90 or Price = 100").Evaluate(context));
         }
 
         [Fact]
@@ -107,13 +110,16 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
             Assert.Equal(6, new SimpleExpression<int>("2 * 3").Evaluate(context));
             Assert.Equal("100", new SimpleExpression<string>("Price").Evaluate(context));
 
+            // Expression vide : InvalidOperationException levee en amont (avant Flee).
             Assert.Throws<InvalidOperationException>(() =>
                 new SimpleExpression<decimal>().Evaluate(context));
-            Assert.Throws<InvalidOperationException>(() =>
+            // Membre / chemin / operande invalides : Flee leve ExpressionCompileException
+            // a la compilation (plus tot que ne le faisait l'evaluateur maison).
+            Assert.Throws<Flee.PublicTypes.ExpressionCompileException>(() =>
                 new SimpleExpression<decimal>("UnknownMember").Evaluate(context));
-            Assert.Throws<InvalidOperationException>(() =>
+            Assert.Throws<Flee.PublicTypes.ExpressionCompileException>(() =>
                 new SimpleExpression<decimal>("Price.Nope").Evaluate(context));
-            Assert.Throws<InvalidOperationException>(() =>
+            Assert.Throws<Flee.PublicTypes.ExpressionCompileException>(() =>
                 new SimpleExpression<decimal>("Price + true").Evaluate(context));
         }
 
