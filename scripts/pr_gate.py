@@ -184,6 +184,18 @@ def is_advisory(name: str, workflow_name: str = "") -> bool:
 # repository root that holds .github/workflows.
 DEFAULT_WORKFLOWS_DIR = str(Path(__file__).resolve().parent.parent / ".github" / "workflows")
 
+# Plancher de temps entre le dernier commit de tete et le merge (mandat user
+# 2026-09-07). Importe tard et de facon defensive : `pr_gate.py` est le seul
+# check requis de `main`, et une ImportError ici bloquerait 100 % des PRs.
+# Absent -> le plancher est simplement inapplicable, jamais un refus.
+try:  # pragma: no cover - chemin d'import
+    from ci import merge_dwell as _merge_dwell
+except ImportError:  # pragma: no cover
+    try:
+        from scripts.ci import merge_dwell as _merge_dwell  # type: ignore
+    except ImportError:
+        _merge_dwell = None  # type: ignore
+
 
 def _norm(name: str) -> str:
     """Normalise a check/job name for the delivery canary: lowercase, collapse
@@ -888,6 +900,21 @@ def wait_and_decide(
         sleep(poll_sec)
 
 
+def _optional_int(raw: str) -> "int | None":
+    """`--pr ""` vaut « pas de PR », pas une erreur d'argparse.
+
+    Le workflow passe `--pr "${{ github.event.pull_request.number }}"` sans
+    condition ; sur un `workflow_dispatch` cette expression rend la chaine
+    vide. Un `type=int` y leverait SystemExit et rendrait le gate rouge pour
+    une raison qui n'a rien a voir avec la PR -- exactement la classe de
+    defaut que l'ancien input `sha` de ce workflow avait deja produite.
+    """
+    text = (raw or "").strip()
+    if not text:
+        return None
+    return int(text)
+
+
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", required=True, help="owner/name")
@@ -935,6 +962,29 @@ def main(argv: Iterable[str] | None = None) -> int:
         help=(
             "Workflow run id used to self-cancel on starvation (#13510); "
             "defaults to $GITHUB_RUN_ID when the script runs inside Actions."
+        ),
+    )
+    parser.add_argument(
+        "--pr",
+        type=_optional_int,
+        default=None,
+        help=(
+            "Numero de la PR agregee. Requis pour appliquer le plancher de "
+            "merge (--dwell-min) : sans lui le gate ne tourne pas dans un "
+            "contexte de PR et son verdict ne peut pas bouger de mergeState."
+        ),
+    )
+    parser.add_argument(
+        "--dwell-min",
+        type=float,
+        default=0.0,
+        help=(
+            "Plancher, en minutes, entre le dernier commit de tete et le "
+            "merge (mandat user 2026-09-07 : 120). 0 = desactive. Evalue "
+            "APRES que les constituants ont conclu verts, hors de la boucle "
+            "d'attente : aucun runner n'est tenu a dormir. Le rouge se leve "
+            "seul au balayage horaire de pr-gate-stale-sweep.yml. Voir "
+            "scripts/ci/merge_dwell.py."
         ),
     )
     parser.add_argument(
@@ -1036,6 +1086,44 @@ def main(argv: Iterable[str] | None = None) -> int:
                 "FAIL per rule 1",
                 flush=True,
             )
+
+    # --- plancher de merge (mandat user 2026-09-07) ---------------------
+    #
+    # Evalue APRES l'agregation, et seulement si elle est verte : un rouge
+    # de CI est une information plus utile qu'un « attends 2 h », et la
+    # remplacer ferait disparaitre la cause reelle du log.
+    #
+    # Le plancher n'entre PAS dans la boucle d'attente. `wait_and_decide`
+    # tient un slot de runner tant qu'il poll ; l'y faire dormir 120 min
+    # tiendrait ce slot 120 min par PR. Le rouge rendu ici est rejoue par
+    # pr-gate-stale-sweep.yml (cron horaire) des que le plancher est ecoule.
+    if code == 0 and args.dwell_min > 0:
+        if _merge_dwell is None:
+            # Rule 1 ne s'applique pas a une capacite absente : le module
+            # manquant n'est pas un etat de PR inconnu, c'est un depot mal
+            # deploye. Le dire fort, et ne pas bloquer 100 % des PRs.
+            print(
+                "[pr-gate] plancher de merge demande mais "
+                "scripts/ci/merge_dwell.py est introuvable -- plancher NON "
+                "applique (ceci est un defaut de deploiement, pas un vert).",
+                flush=True,
+            )
+        else:
+            try:
+                dwell_ok, dwell_msg = _merge_dwell.check(
+                    args.repo, args.sha, args.pr, args.dwell_min
+                )
+            except _merge_dwell.DwellError as exc:
+                # Ici rule 1 s'applique : l'age de la tete est lisible en
+                # principe, donc ne pas l'avoir lu est un etat inconnu.
+                code, message = 1, (
+                    "FAIL -- plancher de merge illisible: {}".format(exc)
+                )
+            else:
+                if dwell_ok:
+                    print("[pr-gate] {}".format(dwell_msg), flush=True)
+                else:
+                    code, message = 1, "DWELL -- {}".format(dwell_msg)
 
     print(f"[pr-gate] {message}", flush=True)
     _maybe_post_check_run(args, code, message)

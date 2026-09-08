@@ -200,4 +200,6 @@ jobs:
             --timeout-min 45 \
             --poll-sec 30 \
             --settle-polls 2 \
+            --pr "${{ github.event.pull_request.number }}" \
+            --dwell-min 120 \
             $IS_FORK_ARG
