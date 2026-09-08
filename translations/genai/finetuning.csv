@@ -457,7 +457,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-ebb4
 - The rank $r$ controls the expressiveness/efficiency trade-off
 
 **Next steps** (FT-02): LoRA on a larger model with 4-bit quantization (QLoRA).",,,,,,,888977dd137ad613,c2cf1f5cf24a4aa9,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,b4fb8592,markdown,fr,58558c2130ed65c9,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,b4fb8592,markdown,fr,4c3998735e0a98b2,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
 
 **Objectif** : Comprendre la quantization 4-bit (NF4) et l'approche QLoRA qui combine quantization + LoRA pour fine-tuner des modèles jusqu'a 7B params sur un GPU consumer.
 
@@ -478,7 +478,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,b4fb8592,markd
 **Materiel requis** : GPU avec ~8 Go VRAM (QLoRA OPT-1.3B 4-bit = ~2 Go).
 
 
-**Lecture de la sortie committée** : l'environnement d'exécution est un PyTorch 2.11.0+cu128 sur une RTX 3080 Ti Laptop — 17,2 Go de VRAM totale, 16,0 Go libres au démarrage. Le paradoxe pédagogique de ce notebook : cette carte embarquerait OPT-1.3B en FP16 sans aucune difficulté (4,03 Go mesurés plus loin, section 8). Ce n'est pas elle qui justifie QLoRA — c'est la généralisation : la même recette qui tient un 1,3 Md dans ~1,7 Go en fera tenir un 7 Md dans ~6 Go, sur une carte à 300 €. Le notebook déroule la chaîne complète : quantization NF4 (section 2), la mécanique LoRA écrite à la main (section 4), greffe LoRA via l'API (section 5), entraînement réel mesuré (section 6), génération avant/après (section 7), et comparatif mémoire FP16 vs 4-bit (section 8).
+**Lecture de la sortie committée** : la cellule suivante imprime l'environnement complet (version PyTorch, GPU, VRAM) -- sa sortie committee est la source unique, la prose ne la re-epinglera plus (#9434). Ici un environnement cu12x sur RTX 3080 Ti Laptop, ~17 Go de VRAM totale dont ~16 Go libres au démarrage. Le paradoxe pédagogique de ce notebook : cette carte embarquerait OPT-1.3B en FP16 sans aucune difficulté (4,03 Go mesurés plus loin, section 8). Ce n'est pas elle qui justifie QLoRA — c'est la généralisation : la même recette qui tient un 1,3 Md dans ~1,7 Go en fera tenir un 7 Md dans ~6 Go, sur une carte à 300 €. Le notebook déroule la chaîne complète : quantization NF4 (section 2), la mécanique LoRA écrite à la main (section 4), greffe LoRA via l'API (section 5), entraînement réel mesuré (section 6), génération avant/après (section 7), et comparatif mémoire FP16 vs 4-bit (section 8).
 ","# FT-02: QLoRA — Fine-Tuning with Quantization
 
 **Objective**: Understand 4-bit quantization (NF4) and the QLoRA approach, which combines quantization + LoRA to fine-tune models up to 7B params on a consumer GPU.
@@ -499,7 +499,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,b4fb8592,markd
 
 **Required hardware**: GPU with ~8 GB VRAM (QLoRA OPT-1.3B 4-bit = ~2 GB).
 
-**Reading the committed output**: the execution environment is PyTorch 2.11.0+cu128 on an RTX 3080 Ti Laptop — 17.2 GB of total VRAM, 16.0 GB free at startup. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,58558c2130ed65c9,2fb84d6bf26c162f,,,,,,,
+**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). Here, a cu12x environment on an RTX 3080 Ti Laptop, ~17 GB of total VRAM of which ~16 GB free at startup. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,4c3998735e0a98b2,ef5970390f14e77a,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,482ed3ca,code,fr,31bb8dcfa3cec04b,"import torch
 import os
 import gc
