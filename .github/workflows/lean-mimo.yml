@@ -92,6 +92,7 @@ jobs:
   # `--lib-root` heuristic in `check_target_coverage.py` does not cover a
   # flat lake; sensitivity_lean (also wired) takes the same shortcut.
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize after `ci` to halve anonymous git burst on cold cache
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean

@@ -114,6 +114,7 @@ jobs:
   # ``scripts/lean/tests/test_conway_blocking_gate_whitelist_aligned.py``
   # (audit script: ``scripts/lean/audit_conway_blocking_gate_whitelist.py``).
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize after `ci` to halve anonymous git burst on cold cache
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean

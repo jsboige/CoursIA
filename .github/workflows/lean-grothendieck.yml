@@ -111,6 +111,7 @@ jobs:
   # pattern as lean-knot.yml). Keep `./` until #10889 lands, then either form
   # is correct.
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize after `ci` to halve anonymous git burst on cold cache
     uses: ./.github/workflows/lean-axiom.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean

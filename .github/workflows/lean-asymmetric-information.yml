@@ -83,6 +83,7 @@ jobs:
   # cannot drift when modules are added. fail-on-sorry: true is coherent with
   # sorry-baseline "0" above: no acknowledged sorries exist.
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize after `ci` to halve anonymous git burst on cold cache
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean

@@ -110,6 +110,7 @@ jobs:
   # SocialChoice/CERTIFIED.txt by
   # scripts/tests/test_check_certified_sorry.py::test_workflow_targets_match_manifest.
   proof-integrity:
+    needs: certified-no-sorry  # c.306 parity with knot_lean (#14922) requires `ci` job, but this workflow uses `certified-no-sorry` instead -- serialize after the cheap text-level gate (Hermes review c.322 #5580896587)
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/GameTheory/game_theory_lean

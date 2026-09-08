@@ -65,6 +65,7 @@ jobs:
   # the lake walk; the `_en` i18n sibling is excluded by default (FR-only
   # measurement, byte-parity covers the EN side structurally, cf #10997).
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize after `ci` to halve anonymous git burst on cold cache
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean
