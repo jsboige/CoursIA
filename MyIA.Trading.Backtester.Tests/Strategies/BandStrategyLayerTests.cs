@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -365,6 +367,147 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
             Assert.NotNull(data.Market);
             Assert.NotNull(data.Wallet);
             Assert.Empty(data.Wallet.Orders);
+        }
+
+        // -- Couverture déterministe fr-FR (Tell ai-01 c.1006-L19 strict, c.1007 substance) --
+
+        /// <summary>
+        /// Le test déterministe fr-FR minimal : sous culture "fr-FR" (DecimalSeparator
+        /// par défaut "," — donc "." est un séparateur de milliers, pas un séparateur
+        /// décimal), l'expression "Price + 0.10" doit produire 100.10m EXACT (decimal),
+        /// pas un double approximatif. L'adaptateur Flee force DecimalSeparator = "."
+        /// et RealLiteralDataType = Decimal, donc la culture du thread ne doit pas
+        /// affecter le résultat — c'est précisément ce que ce test vérifie. Restauration
+        /// de la culture d'origine dans finally (Tell ai-01 strict : pas de bibliothèque
+        /// UseCulture supposée existante, sauvegarde/restauration inline).
+        /// </summary>
+        [Fact]
+        public void SimpleExpression_PricePlus010_StaysDecimalUnderFrenchCulture()
+        {
+            var savedCulture = Thread.CurrentThread.CurrentCulture;
+            try
+            {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+                var context = new TradingContext { Price = 100m };
+
+                // Vérification 1 : le séparateur décimal fr-FR est bien "," — sinon le
+                // test ne prouve rien (régression silencieuse possible).
+                Assert.Equal(",", CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
+
+                // Vérification 2 : "Price + 0.10" sous fr-FR donne 100.10m exact (decimal).
+                var result = new SimpleExpression<decimal>("Price + 0.10").Evaluate(context);
+                Assert.Equal(100.10m, result);
+                Assert.IsType<decimal>(result);
+
+                // Vérification 3 : le membre résolu est bien decimal (pas double).
+                Assert.IsType<decimal>(context.Price);
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = savedCulture;
+            }
+        }
+
+        /// <summary>
+        /// Test déterministe fr-FR sur la formule réelle d'AskOrderAmountExpression
+        /// (extraite verbatim de TradingStrategy.cs:195) sous culture "fr-FR". Cette
+        /// formule est la plus complexe du backtester : elle combine (1) DecimalSeparator,
+        /// (2) RealLiteralDataType (les littéraux "1", "100" sont decimal), (3) chemins
+        /// de membres (CurrentOrders.HighestAsk.Value, LowestAskLimitPrice, Price) et
+        /// (4) arithmétique strictement decimal (aucune coercion double). Le test
+        /// vérifie que le résultat est decimal — c'est précisément ce qui ferait échouer
+        /// une configuration Flee incorrecte (résultat promu en double = montant dérive).
+        /// Restauration culture dans finally.
+        /// </summary>
+        [Fact]
+        public void SimpleExpression_RealAskOrderAmountFormula_StaysDecimalUnderFrenchCulture()
+        {
+            var savedCulture = Thread.CurrentThread.CurrentCulture;
+            try
+            {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+                var current = new Wallet();
+                current.Orders.Add(new Order(OrderType.Sell, 115m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Sell, 120m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Sell, 125m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Buy, 80m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Buy, 85m, 0.01m));
+                var strategy = new BandTradingStrategy();
+                var context = CreateContext(current, new Wallet(), 100m, TradingTrend.Bid, strategy);
+                context.Price = 100m;
+                var bandContext = new BandTradingContext(context) { Price = 100m };
+
+                // Formule réelle verbatim (TradingStrategy.cs:195).
+                const string realAskFormula =
+                    "(CurrentOrders.HighestAsk.Value * (1 - Strategy.LimitOrderValueRate / 100) / AskSpan) " +
+                    "+ (((CurrentOrders.HighestAsk.Value * Strategy.LimitOrderValueRate / 100) " +
+                    "- (LowestAskLimitPrice * CurrentOrders.HighestAsk.Value * (1 - Strategy.LimitOrderValueRate / 100) / AskSpan))/ Price)";
+
+                var result = new SimpleExpression<decimal>(realAskFormula).Evaluate(bandContext);
+
+                // Type decimal strict (pas double — c'est la moitié du piège n°3 RealLiteralDataType).
+                Assert.IsType<decimal>(result);
+                // Montant strictement positif (escalier d'asks cohérent).
+                Assert.True(result > 0m, $"AskOrderAmountExpression sous fr-FR a renvoyé {result}, attendu > 0");
+                // Cohérence : 125 * (1 - 10/100) / (125 - LowestAskLimitPrice) ... valeur précise dépend
+                // de LowestAskLimitPrice qui dépend de GetAskMarginFactor — on vérifie un encadrement
+                // plausible plutôt qu'une valeur exacte (la marge est calculée par le contexte).
+                Assert.InRange(result, 0m, 1000m);
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = savedCulture;
+            }
+        }
+
+        /// <summary>
+        /// Test déterministe fr-FR sur la formule réelle de BidOrderAmountExpression
+        /// (extraite verbatim de TradingStrategy.cs:196) sous culture "fr-FR". Cette
+        /// formule inclut la bidouille documentée au commit c.988 : la parens autour de
+        /// "(Strategy.LimitOrderValueRate / 100 - 1)" — Tell bug parens Flee, où la
+        /// forme "((X) - 1)" lève ExpressionCompileException alors que "(X - 1)" est
+        /// acceptée. Le test confirme que la formule parente (la forme corrigée) passe
+        /// sous fr-FR et que le résultat est strictement decimal.
+        /// Restauration culture dans finally.
+        /// </summary>
+        [Fact]
+        public void SimpleExpression_RealBidOrderAmountFormula_StaysDecimalUnderFrenchCulture()
+        {
+            var savedCulture = Thread.CurrentThread.CurrentCulture;
+            try
+            {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+                var current = new Wallet();
+                current.Orders.Add(new Order(OrderType.Sell, 115m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Sell, 120m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Buy, 80m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Buy, 85m, 0.01m));
+                current.Orders.Add(new Order(OrderType.Buy, 90m, 0.01m));
+                var strategy = new BandTradingStrategy();
+                var context = CreateContext(current, new Wallet(), 100m, TradingTrend.Bid, strategy);
+                context.Price = 100m;
+                var bandContext = new BandTradingContext(context) { Price = 100m };
+
+                // Formule réelle verbatim (TradingStrategy.cs:196) — la forme corrigée
+                // (X - 1) sans parens externes autour du terme de soustraction, qui
+                // contourne le bug parens Flee documenté au commit c.988.
+                const string realBidFormula =
+                    "(CurrentOrders.LowestBid.Value * (Strategy.LimitOrderValueRate / 100 - 1) / BidSpan) " +
+                    "+ ((CurrentOrders.LowestBid.Value * Strategy.LimitOrderValueRate / 100) " +
+                    "- (HighestBidLimitPrice * CurrentOrders.LowestBid.Value * (Strategy.LimitOrderValueRate / 100 - 1) / BidSpan))/ Price";
+
+                var result = new SimpleExpression<decimal>(realBidFormula).Evaluate(bandContext);
+
+                // Type decimal strict.
+                Assert.IsType<decimal>(result);
+                // Encadrement plausible (la formule peut donner une valeur négative quand
+                // LimitOrderValueRate < 100 — c'est le comportement attendu upstream).
+                Assert.InRange(result, -1000m, 1000m);
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = savedCulture;
+            }
         }
     }
 }
