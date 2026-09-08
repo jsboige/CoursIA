@@ -108,4 +108,46 @@ cd "$REPO_DIR" || exit 1
 if [ "$ARG" = "stop" ]; then
   exec ./scripts/ci/docker/linux-runner/supervise.sh stop
 fi
+# --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------
+# supervise.sh pose "$STATE_DIR/stop" a l'arret gracieux et REFUSE de demarrer
+# tant qu'elle est la. La sentinelle est un FICHIER : elle survit au reboot.
+# Un arret gracieux suivi d'un redemarrage machine laissait donc l'unite
+# echouer, et le pool restait a ZERO jusqu'a intervention humaine.
+#
+# Mesure ai-01 du 2026-09-07 :
+#   22:37:01  stop gracieux (sentinelle posee)
+#   <reboot>
+#   22:53:29  Started coursia-runner.service
+#   22:53:30  ERREUR: sentinel STOP_FILE present -- status=1/FAILURE
+#
+# C'est arrive QUATRE fois dans cette seule journee, chaque fois avec un
+# deplacement physique jusqu'a la machine pour la redemarrer. C'est le defaut
+# que ce bloc existe pour fermer.
+#
+# Un ExecStart est une demande EXPLICITE de demarrage : si aucun superviseur
+# n'est vivant, la sentinelle ne protege plus rien -- elle wedge. On la retire.
+# Si un superviseur EST vivant, un arret est en cours : on n'interfere pas, et
+# on sort en erreur plutot que de lui couper l'herbe sous le pied.
+#
+# LE PREDICAT EST PAR-JAMBE, PAS FLOTTE-ENTIERE (#15163).
+# La sentinelle, elle, etait deja par-jambe : /var/lib/coursia-runner/stop et
+# /var/lib/coursia-waiters/stop sont deux fichiers distincts. Un predicat
+# `supervise\.sh (start|waiters)` repondrait « un superviseur QUELCONQUE
+# vit-il ? » -- si bien que chaque jambe refuserait de purger SA PROPRE
+# sentinelle perimee tant que L'AUTRE tourne. Un verrou par jambe garde par un
+# test global ne garde rien : il wedge.
+#
+# Les deux formes ne divergent que sur (waiters vivant, runner mort) : c'est le
+# symetrique du wedge reellement observe sur la jambe waiters cette nuit-la --
+# meme mecanisme, autre jambe. Un futur `supervise.sh lean` prendra son propre
+# predicat, pour la meme raison.
+if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
+  if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then
+    echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
+    exit 1
+  fi
+  echo "sentinelle perimee (aucun superviseur vivant) -- purge avant demarrage" >&2
+  rm -f "$COURSIA_RUNNER_STATE_DIR/stop"
+fi
+# ---------------------------------------------------------------------------
 exec ./scripts/ci/docker/linux-runner/supervise.sh start "$ARG"
