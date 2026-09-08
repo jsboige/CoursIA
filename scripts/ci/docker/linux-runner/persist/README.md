@@ -23,17 +23,17 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (une version ad-hoc de 283 octets, sans documentation, occupe la place) |
 | `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **a deployer** (le fichier n'existe pas encore) |
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
-| `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- c'est lui qui tient la machine debout (cf. correction 4) |
+| `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
 
-## Les quatre corrections dues sur #15091 / #15094
+## Les cinq corrections dues sur #15091 / #15094
 
-Les trois premiers ont ete etablis firsthand sur ai-01 le 2026-09-07, le
-quatrieme le 2026-09-08 (lecture des fichiers vivants via
+Les trois premiers ont ete etablis firsthand sur ai-01 le 2026-09-07, les
+quatrieme et cinquieme le 2026-09-08 (lecture des fichiers vivants via
 `wsl.exe -d Ubuntu -u root --`). Ils corrigent des choses que
 j'avais annoncees ou laissees entendre, et qui etaient fausses.
 
@@ -261,3 +261,104 @@ Mesure du fichier vivant au moment de la copie : 762 octets, unite `active`,
 **byte-identique** au fichier vivant ; seul un en-tete de provenance a ete
 ajoute au-dessus, conformement a la convention des autres copies de ce
 repertoire.
+
+### 5. Le drop-in borne la memoire et laisse le CPU au defaut -- meme defaut, autre axe
+
+Etabli firsthand sur ai-01 le 2026-09-08 a 14:49Z, **apres** la redaction de la
+correction 4 -- et il la contredit en partie. La correction 4 dit que le
+drop-in « tient la machine debout ». Mesure du moment :
+
+```
+$ systemctl show coursia-runner -p ActiveState -p NRestarts -p Result
+ActiveState=failed
+NRestarts=4
+Result=exit-code
+```
+
+Le drop-in etait charge (`DropInPaths=/etc/systemd/system/coursia-runner.service.d/10-sizing.conf`),
+`COURSIA_RUNNER_MEMORY=1536m` bien en vigueur, et le service en echec depuis
+14:23:40Z. Le journal donne la cause, quatre fois de suite, puis
+`Start request repeated too quickly` :
+
+```
+ERREUR: budget CPU inter-familles depasse : 16.00 vCPU demandes pour un plafond de 8.
+  deja actif : waiters n=4 cpus=1 -> 4.00
+  demande    : start n=4 cpus=3 -> 12.00
+```
+
+Ce n'est pas la memoire. C'est **le meme defaut que la correction 4, sur l'axe
+que la correction 4 ne regarde pas** :
+
+| axe | ce que le drop-in pose | ce que `supervise.sh` applique | resultat |
+|---|---|---|---|
+| memoire | `COURSIA_RUNNER_MEMORY=1536m` | la valeur posee | 4 x 1536 = 6144 Mo / 12288 -- passe |
+| **CPU** | **rien** | **`CPUS="${COURSIA_RUNNER_CPUS:-3}"` (l.81), le defaut** | **4 x 3 = 12, +4 waiters = 16 / 8 -- refuse** |
+
+Le budget CPU vaut 8 (`COURSIA_RUNNER_CPU_BUDGET:-8`, l.101 du wrapper
+`coursia-runner-start.sh`) : une clause d'egard pour l'hote, qui reserve 8 des
+32 vCPU de la machine a la CI. Elle est **anterieure** a ce travail -- ligne
+identique sur `origin/main`, ni introduite ni modifiee par #15188.
+
+**Pourquoi la correction 4 a pu mesurer `active NRestarts=0` le matin et ce
+tableau `failed NRestarts=4` l'apres-midi.** J'ai d'abord attribue l'ecart a un
+ordre de demarrage entre familles. C'etait une hypothese, et le journal la
+refute. Chronologie mesuree (`journalctl -u coursia-runner --since`, heures
+locales CEST = UTC+2) :
+
+| heure | evenement |
+|---|---|
+| 08:33:52, 08:34:43, 09:29:41 | `demarrage de 4 slot(s) ; caps : cpus=3 memory=1536m` -- **succes**, et **aucune** ligne de budget CPU |
+| **09:47:21** | **mtime de `/usr/local/bin/coursia-runner-start.sh`** -- le wrapper portant `COURSIA_RUNNER_CPU_BUDGET:-8` est ecrit sur la machine |
+| 16:11:53 | premier `ERREUR: budget CPU inter-familles depasse : 16.00 / 8` |
+| 16:24:11 | `Start request repeated too quickly` -> `failed` |
+
+L'ordre de boot est d'ailleurs refute une seconde fois, par arithmetique seule :
+la famille `start` demande **4 x 3 = 12 vCPU a elle seule**, contre un plafond de
+8. Elle echoue meme en partant **la premiere, avec zero waiter actif**. Aucun
+ordre de demarrage ne la fait passer -- c'est ce qui rend l'hypothese non pas
+seulement non prouvee, mais fausse. (Le journal du 2026-09-08 a 16:11:53 montre
+la sequence complete : les waiters obtiennent leurs 4 vCPU, la famille `start`
+demande les 12 restants, total 16, refus.)
+
+Le mecanisme n'est donc pas l'ordre de boot, c'est **l'armement d'un garde
+au-dessus d'une sur-souscription pre-existante**. `assert_cpu_budget()` sort
+immediatement quand le budget vaut 0 (l.422, `[ "${CPU_BUDGET:-0}" = "0" ] &&
+return 0`) et n'imprime alors **rien**. Avant 09:47 le garde n'existait pas sur
+la machine : les 16 vCPU etaient demandes et servis en silence. La ligne de
+succes du garde (l.444, `budget CPU inter-familles : N / M vCPU`) est
+**absente de tout le journal disponible** (depuis le 2026-09-02) -- la famille
+`start` n'a jamais franchi ce garde une seule fois.
+
+Deux consequences qu'il faut ecrire clairement :
+
+1. **La sur-souscription CPU est anterieure a la panne et elle est de moi.**
+   4 slots x 3 vCPU + 4 waiters = 16 tournaient depuis le matin. Ce n'est pas
+   le garde qui a casse le parc, c'est le garde qui a rendu visible ce que le
+   drop-in demandait deja.
+2. **Le garde lui-meme vient de #15103**, la PR precedente de ce meme chantier
+   (`COURSIA_RUNNER_CPU_BUDGET` n'apparait dans le depot qu'au commit
+   `93c05cf10`). Les deux moities du defaut sont donc dans mon propre travail :
+   une PR a pose la sur-souscription, la suivante a arme le declencheur
+   au-dessus, et aucune des deux n'a confronte les deux chiffres.
+
+**Ce que ce README ne tranche pas.** Budget 8 moins 4 de waiters laisse 4 vCPU.
+Trois configurations passent le garde (`>` strict, donc 8 est admis) :
+
+| slots | `COURSIA_RUNNER_CPUS` | famille `start` | total avec waiters |
+|---:|---:|---:|---:|
+| 4 | 1 | 4 | 8 -- passe |
+| 2 | 2 | 4 | 8 -- passe |
+| 1 | 3 *(defaut)* | 3 | 7 -- passe |
+
+Le choix demande une mesure, pas une extrapolation : un job reel a ete mesure a
+**129 % CPU**, donc `cpus=1` l'etranglerait -- exactement la « perte » que le
+mandat user demande d'eviter. Et les extrapolations de ce parc ont deja eu tort
+une fois : le cap de 1536 Mo, juge « ~10x le pic mesure », a fait OOM un rendu
+Quarto. Le dimensionnement CPU est donc laisse **ouvert et nomme**, pas devine
+ici.
+
+**Portee de cette correction** : elle ne change aucun dimensionnement et ne
+touche pas au fichier vivant. Elle retire une affirmation fausse -- « le
+drop-in tient la machine debout » -- et la remplace par ce qui est mesure : le
+drop-in ferme la porte memoire, la porte CPU est restee ouverte, et le pool est
+tombe par la.
