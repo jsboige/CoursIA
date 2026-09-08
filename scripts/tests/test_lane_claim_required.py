@@ -412,21 +412,26 @@ def test_10323_closing_keyword_in_negation_does_not_block():
 
 def test_10323_closing_keyword_in_inline_code_span_does_not_block():
     # `` `Closes #6724` `` inside backticks -- GitHub ignores closing keywords
-    # in inline code. Regex matches, GitHub doesn't -> no block.
+    # in inline code. Since #14780 the finder masks code spans itself, so the
+    # regex no longer MATCHES the span at all: no block (as before), and no
+    # IGNORED_BY_GITHUB residue either -- the FP is gone at the source, not
+    # neutralized after the fact.
     body = _body_with("Avoid the form `Closes #6724`; use `See #6724` instead.")
     fetch = _claimed_by_other_issue(6724)
     v = lcr.check(body, fetch, now=NOW, pr_closing_refs=set())
     assert v["guard_pass"] is True
-    assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+    assert not any("6724" in w for w in v["warnings"])
 
 
 def test_10323_closing_keyword_in_fenced_block_does_not_block():
-    # A closing keyword inside a ``` fenced code block is ignored by GitHub.
+    # A closing keyword inside a ``` fenced code block is ignored by GitHub --
+    # and since #14780 masked by the finder too. Same transition as the inline
+    # span: the hit disappears at the source instead of being IGNORED_BY_GITHUB.
     body = _body_with("Example of what NOT to write:\n```\nCloses #6724\n```\n")
     fetch = _claimed_by_other_issue(6724)
     v = lcr.check(body, fetch, now=NOW, pr_closing_refs=set())
     assert v["guard_pass"] is True
-    assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+    assert not any("6724" in w for w in v["warnings"])
 
 
 def test_10323_real_closing_ref_still_blocks_when_other_lane_claims():
