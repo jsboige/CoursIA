@@ -115,7 +115,7 @@ class TestAllowlist:
         assert "TTS" in reason or "multilingue" in reason
 
     def test_texte_multilingual_allowed(self):
-        reason = mod._is_allowed("MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb")
+        reason = mod._is_allowed("MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb")
         assert reason is not None
         assert "multilingue" in reason.lower() or "mandarin" in reason.lower()
 
