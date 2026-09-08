@@ -130,6 +130,18 @@ runs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
+    # #14886: under concurrent CI runs, anonymous `lake` clones of public deps
+    # (mathlib4 included) trip GitHub's unauthenticated-rate credential prompt;
+    # `git` dies code 128. Authenticate clones with the job token BEFORE the
+    # first `lake` call so the cache-restore + lake-build path never crosses
+    # the unauthenticated threshold. Echoes only redacted `insteadOf` keys
+    # so the token never reaches the log.
+    - name: Authenticate lake's git clones
+      shell: bash
+      run: |
+        git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
+        git config --get-regexp '^url\..*\.insteadof$' | sed -E 's#://[^@/]+@#://***@#g'
+
     - name: Cache Lake build artifacts
       uses: actions/cache@v4
       with:
