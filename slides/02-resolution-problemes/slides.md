@@ -1663,20 +1663,20 @@ Le TP de fin de semestre propose de coder un service web de résolution de CSPs 
 
 ## Trois solveurs, trois profils de passage à l'échelle
 
-Mesures relevées dans [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) (sorties de cellules exécutées, `seed=42` pour min-conflicts) :
+Mesures relevées dans [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) (sorties de cellules exécutées : nœuds c15, Min-Conflicts c22 avec `seed=42`, CP-SAT c33, benchmark consolidé c36) :
 
 | N | Backtracking simple | Backtracking FC+MRV | Min-Conflicts | CP-SAT (OR-Tools) |
 |---:|---:|---:|---:|---:|
 | 8 | 1,1 ms / 876 nœuds | 1,0 ms / 75 nœuds | 0,9 ms / 15 itérations | 40,6 ms |
 | 50 | >30 s (hors table) | 51,5 ms | 264,6 ms / 152 itérations | 767,7 ms |
-| 100 | — | — | ~700 ms (mesure cellule 26) | ~10 s (borne `time_limit`) |
-| 500 | — | — | < 1 s (mesure cellule 26) | ~40 s |
+| 100 | — | — | 923 ms (benchmark c36) | 4,4 s · OPTIMAL (c33) |
+| 500 | — | — | < 1 s (mesure cellule 26) | 60,3 s · UNKNOWN (borne 60 s atteinte, c33) |
 
 ## Ce qu'on en tire
 
 - **MRV + Forward Checking** divisent par ~12 le nombre de nœuds dès N=8 (876 → 75), puis par ~1000× à N=16 (160 712 → 39) : c'est l'effet *propagation*, pas la *recherche*.
 - **Min-Conflicts** reste sub-second jusqu'à N=500 mais perd la garantie de preuve d'optimalité : c'est l'*exploration locale*, brillante pour les grands N quand une solution suffit.
-- **CP-SAT** est le seul qui passe vraiment à l'échelle (énumère les 92 solutions de N=8, valide N=500) au prix d'un overhead constant ~30-40 ms sur les petites instances — c'est l'effet *solveur général*, pas l'algorithme dédié.
+- **CP-SAT** est le seul qui franchit N=100 avec preuve d'optimalité (4,4 s, statut OPTIMAL) et énumère les 92 solutions de N=8 ; à N=500 il atteint sa borne de 60 s et rend UNKNOWN — la complétude n'est plus prouvée à cette taille. C'est l'effet *solveur général* (overhead constant ~30-40 ms sur les petites instances), pas l'algorithme dédié.
 - Le **seuil de croisement** BT/Min-Conflicts (cellule 45) se situe autour de **N=12-14** : en deça, le backtracking gagne ; au-delà, l'exploration locale prend le relais.
 
 Les notebooks Search/02 et suivants ne démontrent pas seulement *comment* coder un solveur — ils démontrent *quand* chacun devient le bon choix. C'est ce qu'attend le jury du TP PKP.
