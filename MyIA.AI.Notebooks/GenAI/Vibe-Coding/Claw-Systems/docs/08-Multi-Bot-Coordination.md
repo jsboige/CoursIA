@@ -97,7 +97,7 @@ reste visible mais n'attend pas de réponse (mode `[INFO]`/`[FYI]`).
 |--------|----------|--------|
 | **Machine** | `myia-ai-01` | `myia-po-2026` |
 | **Rôle** | Bot terminal utilisateur | Coordinateur read-only + bot |
-| **Cadence cron** | `13 */6` (offset) | `37 */6` (offset) |
+| **Cadence cron** | `13 */6` (offset) | `13 */12` cluster-tour + `17 */12` surveillance opérateur (offsets) |
 | **Canal canonique** | `workspace-CoursIA` | `workspace-CoursIA` (lecture/écriture) |
 | **LLM** | GLM-5.2 (condensation 250k) | GLM-5.2 via z.ai natif |
 
@@ -159,7 +159,8 @@ Chaque bot schedulé décale ses crons pour ne pas frapper l'API à la même sec
 
 | Bot | Cron offset | Note |
 |-----|-------------|------|
-| Hermes | `37 */6` | Off-minute (pas `:00`/`:30`) |
+| Hermes cluster-tour | `13 */12` | Off-minute (pas `:00`/`:30`) |
+| Hermes surveillance opérateur | `17 */12` | Décalé de 4 min du tour bot |
 | NanoClaw | `13 */6` | Décalé de 24 min |
 | autres workers | offsets distincts | Aucune collision à la minute |
 
@@ -227,6 +228,17 @@ vérifie :
 1. Dernière activité < 2h → workspace actif
 2. 2h–6h → à surveiller
 3. > 6h sans `[OK]` → probablement tombé silencieux
+
+**Côté Hermes — le silence du canal lui-même est un signal.** Le cas limite du
+multi-bot n'est pas le bot silencieux, c'est le **canal silencieux avec des bots
+qui parlent dans le vide** : pendant l'incident d'août 2026 (~3,5 jours), le
+backend MCP est resté mort derrière un handshake vivant, et les deux bots du
+cluster ont posté « bus down » à chaque cycle — sans que personne ne lise ces
+messages. Le correctif n'est pas technique mais organisationnel : la routine de
+surveillance a un check dédié « **lecture des messages des bots** » (regex sur
+`bus down|undelivered|fallback|write failed`), et l'attribution d'un post
+manquant ne va jamais à l'hypothèse « prompt-skip » avant d'avoir écarté « bus
+mort » (voir [AP13](09-Patterns-Anti-Patterns.md)).
 
 **Côté NanoClaw — prouver sa présence, et démasquer le « faux vivant ».** Chaque conteneur
 de session touche un fichier `/workspace/.heartbeat` ; l'hôte (un *sweep* toutes les 60 s)
