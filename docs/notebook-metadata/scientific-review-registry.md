@@ -102,24 +102,26 @@ Le champ `scientific_reviewed_by` est dans `CURATED_GIT_FIELDS` (l.949 de `gener
 Les 3 entrées suivantes posent le **pilote fondateur** sur les 3 contre-exemples mesurés (FINAL+EXECUTED+UNREVIEWED → bloqués en BETA) :
 
 ```yaml
+# Pilote fondateur c.997/c.1022 — evidence_pr pointe désormais sur des PRs MERGÉES (Tell c.745 sustained §B.2 levée)
+# Vérification first-hand c.1022 : `git log origin/main --oneline -- <notebook>` → PRs MERGED réelles qui touchent chaque notebook.
 - notebook_path: Sudoku/Sudoku-11-Choco-Csharp.ipynb
   reviewer: jsboige@gmail.com
   review_date: 2026-09-08
-  evidence_pr: "#14831"
+  evidence_pr: "#7794"
   review_scope: correctness
-  notes: "c.997 pilote axe 3 — signal curé déverrouille AUTHOR_REVIEWED"
+  notes: "c.997/c.1022 pilote axe 3 — PR #7794 'Sudoku-11-Choco reconcile 1-50 ms claim with 728 ms cold-start output' = correctness factuel"
 - notebook_path: Sudoku/Sudoku-12-Z3-Csharp.ipynb
   reviewer: jsboige@gmail.com
   review_date: 2026-09-08
-  evidence_pr: "#14831"
+  evidence_pr: "#9926"
   review_scope: correctness
-  notes: "c.997 pilote axe 3 — signal curé déverrouille AUTHOR_REVIEWED"
+  notes: "c.997/c.1022 pilote axe 3 — PR #9926 'add 2 interpretation cells to Sudoku-12-Z3-Csharp' = correctness"
 - notebook_path: Sudoku/Sudoku-18-Comparison-Python.ipynb
   reviewer: jsboige@gmail.com
   review_date: 2026-09-08
-  evidence_pr: "#14831"
+  evidence_pr: "#13069"
   review_scope: correctness
-  notes: "c.997 pilote axe 3 — signal curé déverrouille AUTHOR_REVIEWED"
+  notes: "c.997/c.1022 pilote axe 3 — PR #13069 'benchmark statistiquement interprétable + timeout coopératif twins Sudoku-18' = correctness"
 ```
 
 **Note sur `reviewer == last_validator`** : ces 3 notebooks ont `last_validator = jsboige@gmail.com` (le owner canonique). Pour qu'ils passent `AUTHOR_REVIEWED`, **la condition actuelle est `scientific_reviewed_by == last_validator`** (l.806 de `classify_scientific_review`) — c'est exactement le cas. ✅ **Le signal curé est compatible avec la porte actuelle** : c'est un `AUTHOR_REVIEWED` self-attesté (le user valide son propre travail), pas un `PEER_REVIEWED` (qui exige reviewer ≠ last_validator).
