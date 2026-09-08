@@ -68,6 +68,8 @@ layout: dense
 
 <img src="./images/img_001.png" alt="Environnement multi-agent : plusieurs decideurs en interaction, exemple du jeu de Morra" style="display:block; margin:4px auto 0; max-height:88px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebook : [GameTheory-01-Setup](../../MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup.ipynb) — environnement multi-agent, jeu de Morra.*
+
 ---
 layout: section
 ---
@@ -111,6 +113,8 @@ layout: dense
 <img src="./images/img_005.png" alt="Meilleure reponse aux strategies des autres joueurs" style="width:100%; height:28px; object-fit:contain;">
 </div>
 
+*Notebooks : [GameTheory-02-NormalForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb) (matrices, dilemme du prisonnier, IESDS) · [GameTheory-04-NashEquilibrium](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb) (Nash, meilleure reponse) · [GameTheory-02b-Lean-Definitions](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02b-Lean-Definitions.ipynb) (definitions formelles en Lean).*
+
 ---
 layout: dense
 ---
@@ -139,6 +143,30 @@ layout: dense
 <img src="./images/img_007.png" alt="Algorithme de strategie mixte : equations d'indifference a l'equilibre" style="width:100%; height:130px; object-fit:contain;">
 <img src="./images/img_008.png" alt="Calcul des gains esperes : bataille des sexes" style="width:100%; height:130px; object-fit:contain;">
 </div>
+
+*Notebooks : [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb) (support mixte, somme nulle) · [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence calculee).*
+
+---
+layout: dense
+---
+
+# Preuves formelles : Nash et minimax en Lean
+
+## Le corpus formel du cours
+
+- 9 lakes Lean dedies a la theorie des jeux, ~360 theoremes
+- Un seul `sorry` reel subsiste sur l'ensemble (folk theorem a escompte, stretch)
+  - Mesure : `count_code_sorry.py --json`, jamais un grep naif
+
+## Existence de Nash
+
+- [GameTheory-04b-Lean-NashExistence](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb)
+  - Simplexe standard (compact, convexe) -> point fixe -> equilibre mixte
+
+## Von Neumann / minimax
+
+- [GameTheory-05b-Lean-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax.ipynb)
+  - Point de selle via le theoreme de Sion (Mathlib), zero `sorry`
 
 ---
 layout: dense
@@ -173,6 +201,8 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
+*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-24-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
+
 ---
 layout: dense
 ---
@@ -205,6 +235,8 @@ layout: dense
 <img src="./images/img_014.png" alt="Induction arriere : jeu de l'escalade a la guerre" style="width:100%; height:72px; object-fit:contain;">
 <img src="./images/img_015.png" alt="Equilibre parfait de sous-jeu (SPE) : menaces credibles" style="width:100%; height:72px; object-fit:contain;">
 </div>
+
+*Notebooks : [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (arbres, tours successifs) · [GameTheory-09-BackwardInduction](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb) (mille-pattes) · [GameTheory-10-ForwardInduction-SPE](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb).*
 
 ---
 layout: dense
@@ -254,6 +286,25 @@ layout: dense
 <img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
+*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (folk theorem, punition) · [GameTheory-06-EvolutionTrust](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb) (evolution de la confiance) · [GameTheory-09b-Commitment-Stackelberg](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg.ipynb) (se lier les mains).*
+
+---
+layout: dense
+---
+
+# Preuve formelle : jeux repetes en Lean
+
+## Grim trigger certifie
+
+- [GameTheory-06b-Lean-RepeatedGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames.ipynb) : compagnon formel du 06c
+  - Jeu de stage, flux actualises, `grim_trigger_is_NE`
+  - Seuil de credibilite `delta >= (T-R)/(T-P)` certifie, zero `sorry`
+
+## Ce qui reste ouvert
+
+- Folk theorem a escompte : l'unique `sorry` STRETCH du corpus (issue #4880)
+  - Le 0-sorry n'y est exige que sur le theoreme-phare
+
 ---
 layout: dense
 ---
@@ -300,6 +351,29 @@ layout: dense
 <img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
 </div>
 
+*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (topologie complete, cf slide suivante) · [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) (deformation, RPS) · [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb).*
+
+---
+layout: dense
+---
+
+# Topologie des jeux 2x2 : l'arc des notebooks
+
+## De la matrice au paysage ordinal
+
+- [GameTheory-03a-Chemins-de-Swaps](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03a-Chemins-de-Swaps.ipynb) : relier les jeux par echanges de preferences
+- [GameTheory-03b-Chambres-et-Murs](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-et-Murs.ipynb) : partitionner l'espace des jeux 2x2
+
+## Deformations et quotient
+
+- [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) : chemins continus entre classes
+- [GameTheory-03g-Derivation-Quotient](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Derivation-Quotient.ipynb) : deriver la structure quotient
+
+## Parcours et extensions
+
+- [GameTheory-03f-Parcours-Complet](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Parcours-Complet.ipynb) : versant d'integration
+  - [GameTheory-03e-Meta-Actions-Tarifees](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) · [GameTheory-03h-Deux-Especes-de-Fleches](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03h-Deux-Especes-de-Fleches.ipynb) · [GameTheory-03c-Le-Joueur-LLM](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM.ipynb)
+
 ---
 layout: default
 ---
@@ -330,6 +404,8 @@ layout: default
   - Vainqueur de Condorcet (cf Choix social)
 
 <img src="./images/img_031.png" alt="Loi de Hotelling : les deux vendeurs se placent au milieu" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
+
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
 
 ---
 layout: section
@@ -375,6 +451,8 @@ layout: dense
 
 <img src="./images/img_034.png" alt="Dilemme du Sheriff : seuil p>1/3 pour tirer" style="display:block; margin:4px auto; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebooks : [GameTheory-11-BayesianGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb) (types, Nash bayesien) · [GameTheory-11b-Lean-BayesianGamesExt](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt.ipynb) (extension Lean).*
+
 ---
 layout: dense
 ---
@@ -411,6 +489,8 @@ layout: dense
 - Biere-quiche: P=0.9 -> pooling, P=0.2 -> stratégies mixtes
 
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
+
+*Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17b-Asymmetric-Information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb).*
 
 ---
 layout: section
@@ -454,6 +534,8 @@ layout: dense
 - Structures de coalition optimales: NP-Hard
   - Bons résultats avec exploration du graphe de structure
 
+*Notebooks : [GameTheory-15-CooperativeGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb) (axiomes de Shapley prouves en Lean) · [GameTheory-15d-Mobius-Coalitions](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions.ipynb).*
+
 ---
 layout: section
 ---
@@ -487,6 +569,8 @@ layout: dense
   - **DSIC**: Implementation en stratégies dominantes
   - **BNIC**: Equilibre de Nash Bayesien (plus faible)
 
+*Notebooks : [GameTheory-16-MechanismDesign](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb) (revelation, DSIC/BNIC) · [GameTheory-16b-Automated-Mechanism-Design](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design.ipynb) (AMD) ; `amd_star_DSIC/IR` prouves en Lean.*
+
 ---
 layout: dense
 ---
@@ -516,6 +600,8 @@ layout: dense
 
 <img src="./images/img_038.png" alt="Taxe VCG : T_i = U_max(sans i) - U_max(sans i, sans ressource j)" style="display:block; margin:6px auto 2px; max-height:68px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebooks : [GameTheory-16-MechanismDesign](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb) (Vickrey, VCG, equivalence de revenu) · [GameTheory-16c-Extraction-de-Revenu-DSIC-IR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb) ; `vickrey_truthful` prouve en Lean. Bien commun : pas de notebook dedie.*
+
 ---
 layout: dense
 ---
@@ -535,6 +621,8 @@ layout: dense
 - **Paradoxe de Condorcet**: A,B,C -> 2/3 de mecontents
 - **Theoreme de Arrow**: Impossible de satisfaire 1, 2 et 3 simultanement (>= 3 options)
 - **Theoreme de Gibbard-Satterthwaite**: Toute FCS déterministe avec Pareto et >2 choix est manipulable ou dictatoriale
+
+*Notebooks : [SocialChoice/01-Arrow-Impossibility-Theorem](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) (Arrow) · [SocialChoice/05-Gibbard-Satterthwaite](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) · [SocialChoice/04-Computational-Aggregation-SAT-Z3](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) (verification SAT/Z3) ; `arrow` prouve en Lean (game_theory_lean), Gibbard-Satterthwaite dans social_choice_lean_peters.*
 
 ---
 layout: dense
@@ -566,6 +654,8 @@ layout: dense
   - Robuste a la manipulation (electeurs raisonnables)
 
 <img src="./images/img_041.png" alt="Methodes Minimax et Schulze en l'absence de vainqueur de Condorcet" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
+
+*Notebooks : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
 
 ---
 layout: dense
@@ -606,6 +696,8 @@ layout: dense
 <img src="./images/img_047.png" alt="Condorcet randomisee : loterie ponderee dans le peloton de tete" style="width:100%; height:80px; object-fit:contain;">
 </div>
 
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Borda, assentiment, jugement majoritaire). Scrutins stochastiques : pas de notebook dedie.*
+
 ---
 layout: default
 ---
@@ -633,6 +725,8 @@ layout: default
 
 - Mesure de l'aversion au risque de conflit
 - Le risque plus faible concede, sinon tirage au sort
+
+*Notebooks : [GameTheory-04d-Marchandage-Asymetrique](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique.ipynb) (offres alternees) · [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (ultimatum). Zeuthen : pas de notebook dedie.*
 
 ---
 layout: default
@@ -759,6 +853,8 @@ layout: default
 ## Pour aller plus loin
 
 - Details mathematiques dans les references du cours
+
+*Notebooks : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
 
 ---
 layout: section

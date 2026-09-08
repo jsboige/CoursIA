@@ -70,7 +70,6 @@ object-store/
 *.h5
 *.pt
 # EXCEPTION: Final model files referenced by executed notebooks (tracked via git LFS)
-!Python/transformer_checkpoint.pt
 !Python/transformer_multiasset_model.pt
 !Python/best_ppo_model.pt
 !Python/best_dqn_model.pt
