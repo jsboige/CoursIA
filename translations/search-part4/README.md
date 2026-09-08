@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-part4.csv`](search-part4.csv) | `Search/Part4-Metaheuristics/` | 19 (MGS-01-Introduction → MGS-19-MetropolisReinsertion, métaheuristiques GenetiqueSharp : introduction/compositions/eukaryote/islands/compound/benchmarks/TSP/landscape/relief/center-bias/island-synergy/axis-alignment/debias/landscape-foundations/algorithm-selection/parameter-control/CeC-banc/recuit-simulé) | 432 (header + 7 227 lignes CSV-escaped, 20 colonnes) |
+| [`search-part4.csv`](search-part4.csv) | `Search/Part4-Metaheuristics/` | 19 (MGS-1-Introduction → MGS-19-MetropolisReinsertion, métaheuristiques GenetiqueSharp : introduction/compositions/eukaryote/islands/compound/benchmarks/TSP/landscape/relief/center-bias/island-synergy/axis-alignment/debias/landscape-foundations/algorithm-selection/parameter-control/CeC-banc/recuit-simulé) | 432 (header + 7 227 lignes CSV-escaped, 20 colonnes) |
 
 **Note owner-lane strict** : la série Search/Part4-Metaheuristics = **owner po-2025 strict** (PRs récentes #5324 #5193 #5160 #5154 #5060 #4748 #4693 #4686 #4683 #4603 = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
