@@ -24,13 +24,16 @@ Do not start until the prompt defines these fields:
 ```text
 MODE: DISCOVERY | REASSESSMENT
 DOMAIN: domain and applicable project rules
-TARGET: exact artifact or bounded audit surface
-PATHS: canonical editable files/globs
+AUDIT_SCOPE: exact artifact or bounded read-only audit surface
+TARGET: exact artifact, or selection rule for one target within AUDIT_SCOPE
+PATHS: canonical editable files/globs; one exact artifact before any edit
 EXCLUSIONS: active PRs, branches, claims, and paths to avoid
 AUDIT_AXES: falsifiable questions to investigate
 SPECIALISTS: skills, agents, and repository scripts to use
 EXECUTION: real validation commands, kernel, service, or platform
 CAPABILITIES: required CPU, GPU, vision, authentication, and machine
+BASE_HEAD: exact origin/main SHA reserved for the mission
+RESERVATION: central coordination locus and path-scoped claim
 ACCEPTANCE: measurable completion criteria
 DELIVERY: branch, Grain, issue-link policy, and PR-body requirements
 ```
@@ -42,7 +45,15 @@ ISSUE: issue carrying the existing finding
 AUDIT_CLAIM: exact claim to reproduce or refute
 ```
 
-`DISCOVERY` may receive a coordination epic or tracking issue, but it must not receive a predetermined conclusion. If no issue exists, the coordinator must still provide a valid path-scoped coordination locus before editing begins.
+`DISCOVERY` may also receive:
+
+```text
+SEED_FINDINGS: optional advisory hypotheses to reproduce or refute
+```
+
+Seeds are not predetermined conclusions or a closed checklist. Disposition every seed explicitly, but continue independent discovery across `AUDIT_SCOPE`. If no issue exists, the coordinator must still provide a valid path-scoped coordination locus before editing begins.
+
+A series-level `AUDIT_SCOPE` is read-only. Before any edit, select one `TARGET` artifact, narrow `PATHS` and `RESERVATION` to that exact artifact, and repeat deconfliction. Edit at most one notebook per mission; route all other findings to the handoff.
 
 If a required field is missing or contradictory, stop and return `CONTRACT_INCOMPLETE` with the missing fields. Do not infer an editable scope.
 
@@ -72,8 +83,10 @@ Before any edit:
 6. Compare the affected hunk or corrected content identity across `origin/main`, candidate PRs, and the proposed corrected form.
 7. In `REASSESSMENT`, also read the complete issue, linked PR bodies, comments, reviews, inline threads, files, and relevant diffs.
 8. In `DISCOVERY`, repeat the issue/PR search for every candidate finding before classifying it as novel.
+9. Record fence 1: current `origin/main` must equal `BASE_HEAD`, and `RESERVATION` must cover the proposed scope without an intersecting claim.
+10. After selecting the one editable `TARGET`, narrow `PATHS` and the claim to that exact artifact, then repeat the reducer, open-PR path intersection, and head check immediately before the first edit (fence 2).
 
-A raw `[CLAIMED]` marker, a touched file, or a similar title is not sufficient evidence of collision or coverage. Before returning `COLLISION`, `ALREADY_COVERED`, or `NOVEL`, explain how the reducer verdict and content comparison support that status. Cite the merged delivery when corrected content is already present.
+A raw `[CLAIMED]` marker, a touched file, or a similar title is not sufficient evidence of collision or coverage. Before returning `COLLISION`, `ALREADY_COVERED`, or `NOVEL`, explain how the reducer verdict and content comparison support that status. Cite the merged delivery when corrected content is already present. If the head advanced, re-run Phase 0 and compare content identity; stop with `DRIFT` when the evidence or base can no longer be reconciled safely.
 
 If another live work item intersects `PATHS`, stop with `COLLISION`. Do not merely rename the branch or restate the finding.
 
@@ -117,6 +130,19 @@ files_changed
 ```
 
 Never substitute one counter for another in prose. If two measurements disagree without an intervening edit, stop with `EVIDENCE_CONFLICT` and report both methods and values.
+
+For notebooks, keep these denominators distinct and report them whenever execution or output coverage affects the verdict:
+
+```text
+cells_total
+cells_code
+cells_executable
+cells_output_bearing
+cells_parameters
+outputs_error
+```
+
+A Parameters cell is not silently counted as output-bearing, and an executed cell is not evidence that every code cell should carry a visible output.
 
 ### Classification
 
@@ -171,6 +197,15 @@ After drafting the patch and PR body, run a second self-falsification pass disti
 
 Record the counter-check method, `CONFIDENCE`, and `RESIDUAL_UNCERTAINTY` in the handoff.
 
+Qualify every oracle used for acceptance as one of: literal or primary-source reference, structurally different method, or second implementation sharing assumptions with the code under test. Never call a generated restatement of the same rules a declarative or independent oracle. Challenge each oracle with at least one known pre-fix failure or negative mutation and record whether it detects the defect.
+
+Map acceptance to the final patch explicitly:
+
+| Acceptance criterion | Exact diff hunk or evidence | Status | Counter-check |
+|---|---|---|---|
+
+A checked box or handover claim is not evidence. Every criterion needs a final proof, and every material hunk needs a criterion.
+
 If real validation cannot be completed, return the applicable SOTA verdict and stop before commit unless `ACCEPTANCE` explicitly authorizes a non-code, non-output change.
 
 ## Phase 4 — Atomic delivery
@@ -185,15 +220,16 @@ For a confirmed and validated coherent correction:
 6. Use `See #N` or `Part of #N` for partial delivery. Use `Closes #N` only when the complete acceptance criteria of that issue are demonstrably satisfied.
 7. For reassessed findings, include `Reassessed by <agent>: CONFIRMED <type>`.
 8. For discoveries, include `Discovered and verified by <agent>: CONFIRMED <type>` plus the deconfliction evidence.
-9. Include exact post-fix execution evidence, scope, limitations, assertion labels, counter-checks, confidence, residual uncertainty, and the applicable SOTA/drift verdict.
-10. Push and open the PR. Do not merge, review, or close.
+9. Include exact post-fix execution evidence, scope, limitations, assertion labels, counter-checks, confidence, residual uncertainty, acceptance-to-diff matrix, oracle qualification, negative-mutation result, and the applicable SOTA/drift verdict.
+10. Immediately before staging or push, record fence 3: verify `origin/main` against `BASE_HEAD`, re-run the reducer on exact `PATHS`, and re-check open PR file intersections. Re-run Phase 0 or stop with `DRIFT`/`COLLISION` if state changed.
+11. Push and open the PR. Do not merge, review, or close.
 
 ## Stop conditions
 
 Stop without editing or delivery when any of these applies:
 
 - incomplete mission contract;
-- `EVIDENCE_CONFLICT`;
+- `EVIDENCE_CONFLICT` or unreconciled `DRIFT`;
 - GitHub surfaces required for deconfliction cannot be read;
 - active claim or PR collision;
 - required GPU, vision, auth, kernel, service, or source is unavailable and cannot be repaired or routed;
@@ -210,6 +246,8 @@ Return a compact table:
 
 | Finding | Verdict | Assertion type | Evidence | Counter-check | Deconfliction | Action | Validation | Confidence | Residual uncertainty | PR/Next step |
 |---|---|---|---|---|---|---|---|---|---|---|
+
+Then append a structured YAML block containing seed dispositions, counters, notebook denominators, `BASE_HEAD`, all three deconfliction fences, reservation, acceptance-to-diff rows, oracle qualification and mutation results, validation, SOTA verdict, confidence, residual uncertainty, commit, and PR.
 
 Then report:
 

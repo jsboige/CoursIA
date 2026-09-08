@@ -30,6 +30,8 @@ ALLOWLIST: closed list of approved scanner/fixer pairs
 ADVISORY_SCANNERS: read-only scanners whose findings must never trigger edits
 EXECUTION: canonical scan, fix, rendering, and validation commands
 CAPABILITIES: required CPU, vision, authentication, and machine
+BASE_HEAD: exact origin/main SHA reserved for the mission
+RESERVATION: central coordination locus and path-scoped claim
 PR_SPLIT: maximum coherent lot and split rules by fixer/sub-series/collision
 ACCEPTANCE: measurable completion criteria and zero-residue requirements
 DELIVERY: branch, Grain, issue-link policy, and PR-body requirements
@@ -85,8 +87,9 @@ Before any edit:
 4. Search merged PRs and related issues for prior delivery of each defect class.
 5. Run `scripts/check_lane_claim.py` or its successor on the exact candidate paths and retain the JSON result.
 6. Exclude active intersections, renames, normalizations, and content already present upstream.
+7. Record fence 1: current `origin/main` must equal `BASE_HEAD`, and `RESERVATION` must cover `PATHS` without an intersecting claim.
 
-A raw claim, similar title, or touched file is not sufficient. Confirm collision or absorption with the reducer and content identity.
+A raw claim, similar title, or touched file is not sufficient. Confirm collision or absorption with the reducer and content identity. Immediately before the first edit, repeat the head, reducer, and open-PR path checks as fence 2; re-snapshot or stop with `DRIFT`/`COLLISION` when state changed.
 
 ### 2. Read-only scan
 
@@ -100,9 +103,15 @@ findings_applied
 findings_escalated
 files_changed
 cells_changed
+cells_total
+cells_code
+cells_executable
+cells_output_bearing
+cells_parameters
+outputs_error
 ```
 
-A pivot count changes scope, verdict, or acceptance. Measure each pivot with the canonical scanner and independently by parsing its output or the notebook JSON. If the two methods disagree without an intervening edit, stop with `EVIDENCE_CONFLICT`.
+Keep notebook denominators distinct: a Parameters cell is not output-bearing, and executed cells are not interchangeable with cells carrying visible outputs. A pivot count changes scope, verdict, or acceptance. Measure each pivot with the canonical scanner and independently by parsing its output or the notebook JSON. If the two methods disagree without an intervening edit, stop with `EVIDENCE_CONFLICT`.
 
 ### 3. Source confirmation
 
@@ -155,9 +164,10 @@ For a reconciled coherent lot:
 1. Stage exact files only.
 2. Commit with the repository convention and required co-author trailer.
 3. Build the PR body outside the worktree with `Grain:` on the first line.
-4. Report the exact base SHA, allowlisted class, paths, cells, before/after counters, exclusions, escalations, invariant evidence, validators, and residual uncertainty.
-5. Use `See #N` for partial delivery and `Closes #N` only when all issue acceptance criteria are proven.
-6. Push and open one atomic PR per coherent lot. Do not merge, review, or close.
+4. Report the exact base SHA, allowlisted class, paths, cells, notebook denominators, before/after counters, exclusions, escalations, invariant evidence, validators, residual uncertainty, and an acceptance-to-diff matrix mapping every criterion to an exact hunk or final proof.
+5. Immediately before staging or push, record fence 3: verify `origin/main` against `BASE_HEAD`, re-run the reducer on exact `PATHS`, and re-check open PR file intersections. Re-snapshot or stop with `DRIFT`/`COLLISION` if state changed.
+6. Use `See #N` for partial delivery and `Closes #N` only when all issue acceptance criteria are proven.
+7. Push and open one atomic PR per coherent lot. Do not merge, review, or close.
 
 For advisory, ambiguous, deep, or architectural findings, return an issue-ready list with evidence and acceptance criteria. Do not edit or commit those findings.
 
@@ -165,7 +175,7 @@ For advisory, ambiguous, deep, or architectural findings, return an issue-ready 
 
 Stop without delivery when any of these applies:
 
-- `CONTRACT_INCOMPLETE` or `EVIDENCE_CONFLICT`;
+- `CONTRACT_INCOMPLETE`, `EVIDENCE_CONFLICT`, or unreconciled `DRIFT`;
 - required GitHub or reducer surfaces cannot be read;
 - an active path collision remains;
 - a candidate requires a transformation outside the closed allowlist;

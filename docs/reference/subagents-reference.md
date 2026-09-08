@@ -57,6 +57,8 @@ Agent(
 
 Le message final du sous-agent revient en notification. Les sous-agents read-only (analyse) ne risquent pas de collision ; pour les sous-agents qui éditent, **un seul à la fois par notebook/série** (pas d'enrichissement parallèle du même fichier — règle CLAUDE.md).
 
+Pour une vague parallèle de `corrective-auditor`, passer explicitement `model: "sonnet"` et `run_in_background: true`, réserver des `AUDIT_SCOPE` disjoints, et fournir les findings initiaux comme seeds advisory plutôt que comme conclusions. Chaque auditor peut lire sa sous-série, mais réduit sa claim et ses `PATHS` à un seul notebook avant édition et ne corrige pas un second notebook dans la même mission.
+
 ## Skills `.claude/skills/` — slash-commands mandatés
 
 17 skills (16 slash-commands actives + 1 module de référence : `qc-helpers.md`). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
