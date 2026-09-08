@@ -360,6 +360,7 @@ def corrector_score(question: str, criterion: str, answer: str, cfg: dict) -> in
 class ServerHandle:
     process: subprocess.Popen | None
     container: str = ""
+    log_path: Path | None = None
 
     def shutdown(self) -> None:
         if self.container:
@@ -372,11 +373,31 @@ class ServerHandle:
                 self.process.kill()
 
 
+def _hf_repo_root(snapshot: Path) -> tuple[Path, str] | None:
+    """Si le chemin est un snapshot du cache HF (models--org--name/snapshots/<sha>),
+    retourne (repo_root, suffixe_snapshot). Les fichiers d'un snapshot sont des
+    symlinks RELATIFS vers ../../blobs — monter le seul dossier snapshot casse
+    tous les liens dans le container ; il faut monter le repo entier."""
+    p = snapshot
+    for _ in range(4):
+        p = p.parent
+        if p.name.startswith("models--") and (p / "blobs").is_dir():
+            return p, snapshot.relative_to(p).as_posix()
+    return None
+
+
 def boot_server(mode: str, model_path: Path, port: int, gpu: int,
                  model_name: str, max_model_len: int,
                  gpu_mem_util: float, venv_python: Path | None) -> ServerHandle:
+    # mode docker : monter le repo HF entier (blobs + snapshots) pour que les
+    # symlinks relatifs du snapshot restent valides cote container
+    mount_src, model_arg = model_path, str(model_path)
+    if mode == "docker":
+        hf = _hf_repo_root(model_path)
+        if hf:
+            mount_src, model_arg = hf[0], f"/model/{hf[1]}"
     common = [
-        "--model", str(model_path), "--served-model-name", model_name,
+        "--model", model_arg, "--served-model-name", model_name,
         "--max-model-len", str(max_model_len), "--port", str(port if mode == "venv" else 8000),
         "--gpu-memory-utilization", str(gpu_mem_util),
     ]
@@ -388,23 +409,42 @@ def boot_server(mode: str, model_path: Path, port: int, gpu: int,
             [str(venv_python), "-m", "vllm.entrypoints.openai.api_server", *common],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
         return ServerHandle(process=proc)
-    # mode docker : image officielle vllm/vllm-openai, montage du snapshot
     container = "probe-15099-leg"
     subprocess.run(["docker", "rm", "-f", container], capture_output=True)
+    # Ciblage GPU deterministe : Docker Desktop ignore la restriction --gpus
+    # device=<uuid> (les 2 GPU restent visibles dans le container, mesure live
+    # probe A — vLLM tournait sur la 3080 Ti) ; CUDA_VISIBLE_DEVICES=<uuid>
+    # est, lui, honor directement par le runtime CUDA.
+    gpu_query = subprocess.run(
+        ["nvidia-smi", f"--query-gpu=uuid", "--format=csv,noheader", "-i", str(gpu)],
+        capture_output=True, text=True, timeout=15)
+    gpu_uuid = gpu_query.stdout.strip().splitlines()[0].strip() if gpu_query.returncode == 0 else ""
+    import tempfile  # noqa: PLC0415 - log de boot hors repo, debug uniquement
+    log_path = Path(tempfile.gettempdir()) / "probe_15099_boot.log"
+    log_f = open(log_path, "wb")  # noqa: SIM115 - ferme avec le process
     proc = subprocess.Popen([
         "docker", "run", "--rm", "--name", container,
-        "--gpus", f"device={gpu}", "--shm-size", "8g",
-        "-v", f"{model_path}:/model", "-p", f"{port}:8000",
+        "--gpus", "all", "--shm-size", "8g",
+        *(["-e", f"CUDA_VISIBLE_DEVICES={gpu_uuid}"] if gpu_uuid else []),
+        # Docker Desktop = backend WSL2 : vLLM gate le pinned memory (donc
+        # UVA) derriere ce flag ; torch pinne reellement (noyau >= 4.19.121)
+        "-e", "VLLM_WSL2_ENABLE_PIN_MEMORY=1",
+        "-v", f"{mount_src}:/model", "-p", f"{port}:8000",
         "vllm/vllm-openai:latest", *common,
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return ServerHandle(process=proc, container=container)
+    ], stdout=log_f, stderr=subprocess.STDOUT)
+    return ServerHandle(process=proc, container=container, log_path=log_path)
 
 
-def wait_ready(port: int, timeout_s: int = 900) -> bool:
+def wait_ready(port: int, timeout_s: int = 900,
+               handle: "ServerHandle | None" = None) -> bool:
     t0 = time.time()
     while time.time() - t0 < timeout_s:
         if http_get_ok(f"http://127.0.0.1:{port}/health"):
             return True
+        if handle and handle.process and handle.process.poll() is not None:
+            print(f"ERREUR : container mort (rc={handle.process.returncode}) "
+                  f"apres {time.time()-t0:.0f}s — log : {handle.log_path}", file=sys.stderr)
+            return False
         time.sleep(3)
     return False
 
@@ -434,10 +474,10 @@ def run_leg(label: str, model_path: Path, bench: dict, args, extra_body: dict | 
     mon.start()
     t0 = time.time()
     srv = boot_server(args.serve_mode, model_path, args.port, args.gpu,
-                      "duel", args.max_model_len, args.gpu_mem_util,
+                      "duel", args.max_model_len, args.gpu_memory_utilization,
                       args.venv_python)
     try:
-        if not wait_ready(args.port):
+        if not wait_ready(args.port, handle=srv):
             print(f"[{label}] ERREUR : serveur pas pret en {time.time()-t0:.0f}s", file=sys.stderr)
             return rep
         rep.boot_s = time.time() - t0
