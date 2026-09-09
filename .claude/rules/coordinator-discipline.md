@@ -1,6 +1,6 @@
 # Coordinator discipline — merge actively, no languishing requests
 
-S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`).
+S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`), **chef de flotte** : management/coordination et merges d'abord ; la minutie est deleguee aux sous-agents ([model-delegation.md](model-delegation.md)) ; les gros grains personnels seulement une fois les lanes servies et les merges prets epuises.
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 

@@ -2,6 +2,23 @@
 
 Guidance pour Claude Code travaillant avec le repository CoursIA.
 
+## À qui ce fichier s'adresse (à lire en premier)
+
+**Les obligations de flotte de ce fichier lient les agents du cluster CoursIA — le coordinateur `ai-01` et les workers `po-*` — et eux seuls.**
+
+**Si tu es l'agent d'un étudiant, d'un lecteur ou d'un contributeur externe, rien de tout cela ne te concerne.** Tu n'as **pas** de dashboard RooSync à lire, **pas** de lane à réclamer, **pas** d'inbox ni de heartbeat de cluster à consulter, **pas** de `[CLAIMED]` à poser, **pas** de tag `Grain:` à écrire, et **aucune** obligation de poster un rapport de début ou de fin de session. Ces objets n'existent pas pour toi : ne les cherche pas, et ne considère pas leur absence comme un blocage. Tu peux conclure ta session quand ton travail est fait.
+
+Ce qui te concerne, en revanche, parce que ça vaut pour quiconque écrit dans ce dépôt :
+
+| Section | Ce qu'elle exige de toi |
+|---|---|
+| **§C** — Notebooks | pas d'erreur volontaire dans un stub d'exercice ; notebooks committés avec leurs sorties |
+| **§D** — Anti-régression | ne pas remplacer une implémentation ou une preuve existante par un stub |
+| **§E** — Code style | pas d'emoji dans le code, documentation en français |
+| **Secrets** | aucun secret dans un commit — la règle n'a pas d'exception |
+
+Et si tu travailles dans un **dépôt de projet étudiant** (`jsboigeEPF/*`, `jsboigeEpita/*`, `jsboigeECE/*`), c'est **la charte de ce dépôt-là** qui fait autorité, pas ce fichier : ton périmètre est le dossier de ton groupe, et tes livraisons partent en PR vers le dépôt amont.
+
 ## Principes de collaboration (5)
 
 Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent **comment** travailler ; les RÈGLES CRITIQUES ci-dessous disent **quoi** respecter.
