@@ -467,4 +467,82 @@ L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voi
 
 ---
 
+## Ordre partiel et prérequis (livré c.1030, suite au nit user 5594317963)
+
+Cette section pose un **ordre partiel** sur l'ensemble des notebooks du répertoire, **fondé sur les déclarations de prérequis et les chaînes de navigation déjà présentes dans les notebooks eux-mêmes**. Aucun `git mv`, aucune décision de renum — un ordre partiel est orthogonal au verdict renum (EPIC #5081, §3 « aucune renum » reste tenu : les lettres restent posées là où elles sont).
+
+L'objectif est strictement de répondre au constat : *« on ne peut pas demander à un étudiant de piocher dans un ensemble non ordonné. Il doit y avoir des séquences balisées, idéalement sur la progression de prérequis »* (nit user 5594317963). Le présent ordre est dérivé **lecture après lecture** des sections `### Prerequis`, `### Pre-requis`, `**Prérequis:**`, et des lignes `**Navigation : [<< N >>]` ; il est public et auditable, pas une convention de nommage.
+
+### Arc 1 — Agentic (numéroté 0 → 5, ligne principale)
+
+L'arc Agentic forme une chaîne canonique linéaire déjà balisée par les notebooks eux-mêmes. C'est **le chemin par défaut** pour un étudiant qui découvre la série ; il est conçu pour exécuter de bout en bout sans dépendre de l'arc 2.
+
+```
+0-init  →  1-informal  →  2-formal  →  3-orchestration  →  4-capstone  →  5-jtms
+                  ↓               ↓              ↓
+              (Tweety JVM)   (PL solver)   (UI config)
+```
+
+| Rung | Notebook | Prérequis Kernel | Prérequis Notebook |
+|------|----------|------------------|--------------------|
+| 0-init | `Argument_Analysis_Agentic-0-init.ipynb` | Python 3.10+, JPype, JDK 17 portable | aucun (point d'entrée) |
+| 1-informal | `Argument_Analysis_Agentic-1-informal.ipynb` | stdlib uniquement | `0-init` |
+| 2-formal | `Argument_Analysis_Agentic-2-formal.ipynb` | `jpype` + JVM Tweety | `0-init`, bases de logique formelle |
+| 3-orchestration | `Argument_Analysis_Agentic-3-orchestration.ipynb` | stdlib uniquement | `1-informal` (state-driven) |
+| 4-capstone | `Argument_Analysis_Agentic-4-capstone.ipynb` | Python intermédiaire | `1-informal`, `3-orchestration` |
+| 5-jtms | `Argument_Analysis_Agentic-5-jtms.ipynb` | stdlib uniquement | `2-formal` (logique propositionnelle), `4-capstone` (pipeline) |
+
+### Arc 2 — Compagnons `*_agent` (parallèle à l'arc 1)
+
+Les compagnons `*_agent` implémentent l'agent spécialisé associé à chaque rung. Ce sont des **vues « orientées agent »** du même rung — lire le compagnon **après** la base, jamais avant.
+
+```
+0-init_agent          (companion de 0-init)
+1-informal_agent      (companion de 1-informal)
+2-pl_agent            (companion de 2-formal — voir collision §3 verdict EPIC #5081)
+3-orchestration_agent (companion de 3-orchestration)
+```
+
+`4-capstone_agent` et `5-jtms_agent` n'existent pas à ce jour (vérifié par `ls` 2026-09-09) — l'arc Agentic ne se prolonge pas en compagnons au-delà du rung 3.
+
+### Arc 3 — Mnémonique (théorie parallèle, fondationnelle)
+
+Cet arc regroupe les notebooks à **mnémonique** (sans préfixe `Agentic-`) qui éclairent les concepts manipulés par l'arc 1. Aucun ne dépend d'un notebook Agentic pour s'exécuter ; en revanche, plusieurs Agentic citent ces notebooks en référence.
+
+| Notebook | Rôle dans l'arc | Prérequis Notebook dans l'arc |
+|----------|-----------------|-------------------------------|
+| `Argument_Analysis_Dung_AF_Semantics.ipynb` | **fondationnel** — sémantiques grounded/preferred/stable de Dung (1995) | aucun (point d'entrée de l'arc 3) |
+| `Argument_Analysis_Value_Based_AF.ipynb` | VAF de Bench-Capon (2003) — Dung enrichi par les valeurs | `Dung_AF_Semantics` |
+| `Argument_Analysis_Toulmin_Model.ipynb` | Modèle de Toulmin (1958) — auditer la complétude d'un argument | aucun (indépendant) |
+| `Argument_Analysis_Ranking_Semantics.ipynb` | Sémantiques graduées (h-Categoriser, fardeau) | `Dung_AF_Semantics` |
+| `Argument_Analysis_Dated_Graphs.ipynb` | Graphes datés — Observatoire Epic #13303 | `Dung_AF_Semantics` |
+
+```
+Dung_AF_Semantics ──→ Value_Based_AF
+       │
+       ├──→ Ranking_Semantics
+       │
+       └──→ Dated_Graphs
+
+Toulmin_Model  (indépendant, racine propre)
+```
+
+### Synthèse — comment lire la série
+
+Trois flux parallèles, **un seul ordre strict** (Agentic 0→5), les deux autres sont des **ordres partiels** :
+
+1. **Lire l'arc 3 d'abord si la théorie n'est pas acquise** — `Dung_AF_Semantics` puis, selon l'intérêt, `Value_Based_AF` / `Ranking_Semantics` / `Dated_Graphs`, ou `Toulmin_Model` en parallèle.
+2. **Suivre l'arc 1 dans l'ordre 0 → 5** pour la dimension pratique / pipeline. Les compagnons de l'arc 2 s'insèrent **après** leur base (par exemple `2-pl_agent` après `2-formal`).
+3. **L'arc 3 reste ouvert à tout moment** comme référence — `Dung_AF_Semantics` est explicitement cité par `2-formal §6`, et `5-jtms` cite Dung 1995 dans son introduction.
+
+### Limites de cet ordre
+
+- **Ne traite pas la collision slot 2** (`-2-formal` vs `-2-pl_agent`) — le verdict EPIC #5081 attend une décision owner sur le rename ; l'ordre ci-dessus préserve la cohabitation actuelle (les deux notebooks restent lisibles, le companion venant après la base).
+- **Ne tranche pas l'appartenance arc 1 / arc 3** des notebooks transverses (par exemple `Argument_Analysis_Formal_Richness_Matrix.ipynb`) : ils sont référencés depuis plusieurs arcs sans chaîne de prérequis stricte. Une révision ultérieure pourra les repositionner.
+- **Ne modifie aucun notebook** : l'ordre est porté par le README seulement, conformément à la doctrine `notebook-accretion-numbering.md` §3 (« aucune renum » par défaut).
+
+---
+
+**Version 1.2.2** — 2026-09-09 — section *Ordre partiel et prérequis* ajoutée suite au nit user 5594317963. Aucun fichier notebook modifié, aucune décision de renum (EPIC #5081 reste owner-decision). Tell readme-french-first R1 respecté (section rédigée en français). Tell catalog-pr-hygiene R1 respecté (CATALOG-STATUS inchangé).
+
 **Version 1.2.1** — 2026-09-09 — section Renumérotation — verdict (EPIC #5081, issue #14950) consignant la proposition owner-decision sans modifier de fichier. Tell catalog-pr-hygiene R1 respecté (marqueur CATALOG-STATUS inchangé). Tell readme-french-first R1 respecté (section ajoutée en français).
