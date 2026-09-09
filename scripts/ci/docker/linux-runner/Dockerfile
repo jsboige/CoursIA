@@ -76,6 +76,9 @@ RUN echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum -c - \
 USER runner
 WORKDIR /opt/runner
 
+# work_cache_health.sh : moitie executante de #15105, sourcee par l'entrypoint
+# au demarrage de chaque conteneur (controle du cache _work persistant).
+COPY --chown=runner:runner work_cache_health.sh /opt/runner/work_cache_health.sh
 COPY --chown=runner:runner entrypoint.sh /opt/runner/entrypoint.sh
 RUN chmod +x /opt/runner/entrypoint.sh
 
