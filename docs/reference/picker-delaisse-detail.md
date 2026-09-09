@@ -18,7 +18,7 @@ Mecanisme identique : une lane tire l'EPIC, lit une demande adressée a **quelqu
 Apres verification FIRSTHAND (3 etapes de la regle 5), le grain tombe dans exactement **une** de ces 4 cases :
 
 1. **Situation inchangee** → grain **vivant** : claimer, livrer (ou sous-grainer si EPIC).
-2. **Situation resolue** mais issue non fermee → grain **delivered** : fermer avec preuve (cf pattern `candidate-delivered` proactive-coordination.md) ou **retirer le label** en disant pourquoi.
+2. **Situation resolue** mais issue non fermee → grain **delivered** : **reservee au coordinateur et a l'adjoint** (#15069, mandat user 2026-09-07 -- fermer remonte au coordinateur) ; le coordinateur ou l'adjoint verifie firsthand puis ferme avec preuve ou **retire le label** en disant pourquoi. Une lane worker qui rencontre la situation poste `[INFO] candidate-delivered` avec sa preuve et rend la main.
 3. **Situation resolue et acceptee par toutes les parties** mais issue oubliee → grain **clos-substantive** : poster un rapport de cloture avec preuves (cf pattern po-2027 c.504-L1 delivered) + recommander `option 1 : cloture par ai-01`.
 4. **Situation resolue MAIS corps devenu perime** (le 1er paragraphe dit « attente X » mais X est passé) → grain **misleading** : corriger le body avec un edit honest (`gh issue edit N` ou commentaire en tete), **puis** appliquer la case 1/2/3 appropriee.
 

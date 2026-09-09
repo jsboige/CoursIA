@@ -67,10 +67,13 @@ Trois urnes, parce que le pool n'est pas homogene
                   cree un sous-grain dedans. C'est la que vit le DEEP/CONTENU
                   ancien -- une urne unique ne le montrerait jamais.
 - **delivered** : issues portant `candidate-delivered` (livrees par une PR
-                  mergee mais jamais fermees). Les offrir a chaque tirage est
-                  ce qui fait *refluer* le compte sans batch-close aveugle :
-                  l'agent verifie firsthand (G.9) puis ferme avec preuve, ou
-                  retire le label en disant pourquoi.
+                  mergee mais jamais fermees). Urne RESERVEE au coordinateur
+                  et a l'adjoint (#15069, mandat user 2026-09-07) : elle
+                  prescrit une fermeture, et fermer remonte au coordinateur.
+                  C'est ce qui fait *refluer* le compte sans batch-close
+                  aveugle -- pour les lanes habilitees uniquement. Une lane
+                  worker qui rencontre une candidate-delivered poste [INFO]
+                  avec sa preuve et rend la main, sans fermer.
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
@@ -510,6 +513,54 @@ def fetch_visits(
 # pas de mieux classer, mais de cesser d'etre un simple conseil de classement.
 DWELL_HOURS_DEFAULT = 24.0
 URN_NAMES = {"grain", "umbrella", "delivered"}
+
+# #15069 (mandat user 2026-09-07) : l'urne `delivered` prescrit une
+# FERMETURE d'issue, et fermer comme merger remontent au coordinateur ;
+# la verification pre-fermeture se delegue a l'adjoint, jamais aux
+# workers. Avant ce garde, la fermeture etait tiree au sort par le
+# picker : 21 des 120 fermetures mesurees (2026-08-28..09-07) venaient
+# de lanes CoursIA-2 (MiniMax) servies par cette urne -- non par
+# indiscipline, mais par conformite a une regle contradictoire.
+# Le porte sur la LANE, pas sur le modele : le picker ne connait pas le
+# moteur qui l'appelle. Liste explicite et courte, par conception.
+DELIVERED_URN_LANES = frozenset({
+    "myia-ai-01:CoursIA",       # coordinateur
+    "myia-ai-01:CoursIA-2",     # coordinateur (deuxieme dashboard)
+    "myia-po-2025:CoursIA-2",   # adjoint (preflight #13605, #13883)
+})
+
+
+def delivered_urn_allowed(lane: str | None) -> bool:
+    """La lane peut-elle se voir servir l'urne `delivered` ? (#15069)"""
+    return lane in DELIVERED_URN_LANES
+
+
+def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
+    """#15069 : l'urne `delivered` prescrit une fermeture -- une lane
+    worker ne la recoit jamais.
+
+    Retourne (urns_effectives, avis_ou_none). Leve ``ValueError`` quand
+    une lane worker demande l'urne EXPLICITEMENT : la demande explicite
+    porte l'intention de fermer, c'est un refus ; la simple presence via
+    le defaut est retiree avec un avis (le defaut ne doit pas faire
+    echouer chaque worker a chaque tirage).
+    """
+    if "delivered" not in selected_urns or delivered_urn_allowed(lane):
+        return selected_urns, None
+    if urns_arg != urns_default:
+        raise ValueError(
+            "urne 'delivered' reservee aux lanes habilitees ("
+            + ", ".join(sorted(DELIVERED_URN_LANES))
+            + ") -- mandat user 2026-09-07 (#15069) : fermer et merger "
+            "remontent au coordinateur. Une lane worker qui rencontre "
+            "une candidate-delivered poste [INFO] candidate-delivered "
+            "avec sa preuve et rend la main."
+        )
+    urns = set(selected_urns)
+    urns.discard("delivered")
+    return urns, ("(urne 'delivered' retiree du tirage : reservee au "
+                  "coordinateur/adjoint -- #15069 ; une lane worker poste "
+                  "[INFO] candidate-delivered avec preuve et rend la main)")
 
 
 def _csv_values(groups: list[str] | None) -> list[str]:
@@ -1548,6 +1599,25 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     return out
 
 
+# #14706 — vehicules d'automatisation EXCLUS de la file d'orphelines.
+# Le cron catalogue ouvre une PR PERMANENTE sans tag `Grain:` par conception
+# (appartient a l'automatisation, cf catalog-pr-hygiene.md / #14577). Elle n'a
+# aucune disposition valide : lui coller une lane la rendrait comptable dans le
+# cap de variation d'une lane qui ne l'a pas produite ; la reparer est ecrase
+# par le cron quotidien ; la fermer casse le cycle open/close du bot. Predicat
+# ETROIT : auteur bot ET branche `chore/*-pending`. Un bot hors ce motif, ou une
+# lane humaine sur une telle branche, restent visibles (controles negatifs).
+AUTOMATION_AUTHORS = {"app/github-actions", "github-actions[bot]", "github-actions"}
+AUTOMATION_BRANCH_RE = re.compile(r"^chore/[\w-]+-pending$")
+
+
+def is_automation_vehicle(pr: dict) -> bool:
+    """Vrai si la PR est un vehicule d'automatisation (auteur bot ET branche chore/*-pending)."""
+    author = ((pr.get("author") or {}).get("login")) or ""
+    branch = pr.get("headRefName") or ""
+    return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -1561,11 +1631,19 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     un constat sans destinataire n'est pas un routage (#13086). Les untagged
     SANS causes bloquantes ne comptent pas : seule la file qui pourrit est
     routee, pas les PRs en cours de CI.
+
+    Les vehicules d'automatisation (auteur bot sur branche `chore/*-pending`,
+    #14706) sont exclus : aucune lane n'a a etre renvoyee dessus et aucune
+    disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
+    (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
+    ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
-                if not pr.get("isDraft") and parse_grain_tag(pr.get("body") or "") is None]
+                if not pr.get("isDraft")
+                and parse_grain_tag(pr.get("body") or "") is None
+                and not is_automation_vehicle(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:
@@ -2430,6 +2508,18 @@ def main(argv: list[str] | None = None) -> int:
         detail = ", ".join(sorted(invalid_urns)) or "liste vide"
         ap.error(f"--urns invalide ({detail})")
 
+    # #15069 : l'urne `delivered` prescrit une fermeture -- reservee au
+    # coordinateur et a l'adjoint. Une lane worker ne la recoit JAMAIS :
+    # demande explicite refusee, presence par defaut retiree avec un avis.
+    try:
+        selected_urns, delivered_notice = apply_delivered_urn_gate(
+            args.lane, args.urns, ap.get_default("urns"), selected_urns)
+    except ValueError as exc:
+        ap.error(str(exc))
+    if delivered_notice:
+        # stderr : stdout porte un contrat JSON en mode --json (#15069).
+        print(delivered_notice, file=sys.stderr)
+
     effective_cache_mode = args.cache
     if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None:
         effective_cache_mode = "off"
@@ -2891,8 +2981,13 @@ def main(argv: list[str] | None = None) -> int:
     print("        signe d'un sujet delaisse devant ceux du moment : c'est ce que")
     print("        le tirage remonte, et ce que la lane est attendue de conduire.")
     print("umbrella  -> pioche ou cree un SOUS-grain dedans, ne claim pas l'EPIC entier.")
-    print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
-    print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
+    if delivered_urn_allowed(args.lane):
+        print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
+        print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
+    else:
+        print("delivered -> reservee au coordinateur/adjoint (#15069) : une lane worker")
+        print("             qui rencontre une candidate-delivered poste [INFO] avec sa")
+        print("             preuve et rend la main, sans fermer.")
     print("Avant d'EDITER : python scripts/check_lane_claim.py --lane <machine:workspace> <N>")
 
     # #14591 Volet A : persister le genre du grain choisi vers le CSV si
