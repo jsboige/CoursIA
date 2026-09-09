@@ -22,6 +22,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run the gate
+      # (same rationale as lean-sensitivity.yml, cf #8951 / #15305).
+      - '.github/workflows/lean-planning.yml'
+      - '.github/workflows/lean-axiom.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     branches: [main]
     paths:
@@ -29,6 +37,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it (cf #8712).
+      - '.github/workflows/lean-planning.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   workflow_dispatch:
 
 permissions:
@@ -46,3 +59,29 @@ jobs:
       display-name: planning_lean
       sorry-baseline: "0"
       sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline) —
+  # closes #15305: planning_lean was the wired-lake exception with NO axiom
+  # gate, so a proof edit had no CI organ forbidding a new `sorry`,
+  # transitive `sorryAx` or `native_decide`. Same reusable-form caller as
+  # lean-sensitivity.yml (12th caller): needs `ci` only for compile ordering
+  # (parity #14922), the gate rebuilds from its own cache entry.
+  # allow-axioms: "" — the defaults (propext, funext, Classical.choice,
+  # Quot.lift, Quot.mk, Quot.sound) are an explicit-name whitelist, no
+  # wildcard (#15305 acceptance 3); a NEW axiom name = a red.
+  # fail-on-sorry: true — sorry-baseline is 0, the lake is fully proven.
+  # target-modules: "*" (issue #10889) — the module list is derived at
+  # runtime by check_target_coverage.discover_modules (the advisory script
+  # itself), so Planning.Strips/Relaxation/Admissibility are covered by
+  # construction, not by a hand-maintained list that can drift (#15305
+  # acceptance 1). `_en` i18n siblings stay excluded (FR-only measurement,
+  # include-i18n-siblings default false).
+  proof-integrity:
+    needs: ci
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean
+      display-name: planning_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true
