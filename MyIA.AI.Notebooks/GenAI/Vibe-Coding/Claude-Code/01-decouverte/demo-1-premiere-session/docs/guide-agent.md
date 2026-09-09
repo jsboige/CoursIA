@@ -13,20 +13,19 @@ Ce guide est destiné aux formateurs et agents IA pour accompagner les apprenant
 
 ### Installation
 
-1. **Node.js** doit être en version 18+
+1. **Chemin canonique : installation native** (défaut de la documentation officielle Anthropic, Node.js non requis)
+   - Le binaire vit sous `~/.local/bin`, mise à jour via `claude update`
+
+2. **Node.js 18+ requis uniquement pour** : le proxy OpenRouter (brique d'accès aux modèles) et l'alternative npm
    - Commande de vérification : `node --version`
-   - Si version < 18, faire upgrader avant de continuer
+   - Si version < 18 et poste sans Node : privilégier l'installation native de Claude Code ; le proxy reste un paquet npm (voir le quickstart)
 
-2. **Droits d'installation npm**
-   - Sur Linux/Mac, peut nécessiter `sudo`
-   - Sur Windows, ouvrir PowerShell en administrateur si besoin
+3. **Jamais `sudo npm install -g`** (risque de permissions root sur les paquets globaux)
+   - Alternative propre : `npm config set prefix ~/.npm-global` puis ajouter `~/.npm-global/bin` au PATH
 
-3. **PATH système**
-   - Si `claude` n'est pas trouvé après installation, vérifier :
-     ```bash
-     npm bin -g  # Affiche le dossier des binaires npm
-     ```
-   - Ajouter ce dossier au PATH si nécessaire
+4. **PATH système**
+   - Si `claude` n'est pas trouvé après installation native : vérifier que `~/.local/bin` est dans le PATH, puis redémarrer le terminal
+   - Si installation via npm : `npm bin -g` affiche le dossier des binaires npm, à ajouter au PATH si nécessaire
 
 ### Configuration OpenRouter
 
@@ -47,18 +46,18 @@ Ce guide est destiné aux formateurs et agents IA pour accompagner les apprenant
 ### Phase 1 : Vérifications préalables (5 min)
 
 ```bash
-# Vérifier Node.js
+# Vérifier Node.js (requis pour le proxy OpenRouter et l'alternative npm seulement)
 node --version
-
-# Vérifier npm
-npm --version
 ```
 
-Si problème, résoudre avant de continuer.
+Node absent n'est pas bloquant pour l'installation native de Claude Code ; il le devient au moment de configurer le proxy OpenRouter (Étape 2 du README). Résoudre avant de continuer dans ce cas.
 
 ### Phase 2 : Installation (5 min)
 
+Chemin canonique : installation native (voir [README de la démo](../README.md), Étape 1). Alternative npm uniquement si le poste l'exige :
+
 ```bash
+# Alternative npm uniquement
 npm install -g @anthropic-ai/claude-code
 claude --version
 ```
@@ -117,7 +116,7 @@ L'apprenant a réussi cette démo si :
 
 ## Erreurs courantes
 
-### Erreur : "Cannot find module"
+### Erreur : "Cannot find module" (si vous avez utilisé l'alternative npm)
 
 **Cause** : Installation npm corrompue
 
@@ -127,16 +126,24 @@ npm cache clean --force
 npm install -g @anthropic-ai/claude-code
 ```
 
-### Erreur : "EACCES permission denied"
+Avec l'installation native, cette erreur ne se produit pas — si elle apparaît, repartir de l'installateur officiel.
 
-**Cause** : Droits insuffisants
+### Erreur : "EACCES permission denied" (si vous avez utilisé l'alternative npm)
 
-**Solution Linux/Mac** :
+**Cause** : Droits insuffisants sur le dossier global de npm
+
+**Jamais `sudo npm install -g`** : les paquets appartiendraient à root et toute mise à jour future exigerait sudo.
+
+**Solution Linux/Mac** : rediriger le préfixe npm vers votre espace utilisateur :
 ```bash
-sudo npm install -g @anthropic-ai/claude-code
+npm config set prefix ~/.npm-global
+npm install -g @anthropic-ai/claude-code
+# puis ajouter ~/.npm-global/bin au PATH
 ```
 
-**Solution Windows** : Ouvrir PowerShell en administrateur
+**Alternative plus simple** : repartir de l'installation native (chemin canonique), qui ne passe pas par npm.
+
+**Solution Windows** : ouvrir PowerShell en administrateur, ou utiliser l'installation native
 
 ### Erreur : "Invalid API key"
 
