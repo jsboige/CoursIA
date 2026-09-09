@@ -17,8 +17,11 @@ from pathlib import Path
 
 # Insert `scripts/ci/` so the script under test is importable from a flat
 # `import variation_prev_guard` (same convention as test_variation_tag_required.py).
+# Insert `scripts/` too: the mask under test lives in grain_tag since #14780.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import grain_tag as gt  # noqa: E402
 import variation_prev_guard as vpg  # noqa: E402
 
 
@@ -116,7 +119,8 @@ CLEAN_PREV_BODY = (
     "Grain: LIGHT/refactor -- lane myia-po-2026:CoursIA "
     "-- prev: LIGHT/refactor #13826"
 )
-CLEAN_PREV_TARGETS = {"13826": {"kind": "pr", "merged": True}}
+CLEAN_PREV_TARGETS = {"13826": {"kind": "pr", "state": "MERGED",
+                                "merged": True}}
 
 
 def test_prev_self_reference_blocks():
@@ -164,19 +168,67 @@ def test_prev_self_abstains_when_current_pr_unknown():
     assert v["guard_pass"] is True
 
 
-def test_prev_not_merged_blocks():
-    # #13473 measured: `prev: feat/notebook #13465` on PR #13473, where
-    # #13465 was OPEN at the time of the tag (the predecessor is a moving
-    # target whose genre could still change before merge).
-    v = vpg.check(
-        "Grain: feat/module -- lane myia-po-2026:CoursIA "
-        "-- prev: feat/notebook #13465",
-        current_pr=13473,
-        prev_targets={"13465": {"kind": "pr", "merged": False}},
-    )
+# Invariant 2 is a THREE-way discrimination, and the three cases must be
+# pinned together: a predicate tested only on its blocking case cannot be
+# distinguished from one that blocks on everything. That is exactly how the
+# original shipped -- `test_prev_not_merged_blocks` asserted the CLOSED
+# verdict while feeding it an OPEN target, and nothing in the suite said
+# the two were different.
+
+_ABANDONED_BODY = ("Grain: MED/guard -- lane myia-ai-01:CoursIA "
+                   "-- prev: MED/guard #13465")
+
+
+def test_prev_abandoned_blocks():
+    # CLOSED without merging: the declared lineage was given up. Nothing it
+    # carries will ever reach `main`, so adjacency is measured against a
+    # grain that does not exist there. This is the defect invariant 2 aims at.
+    v = vpg.check(_ABANDONED_BODY, current_pr=13473,
+                  prev_targets={"13465": {"kind": "pr", "state": "CLOSED",
+                                          "merged": False}})
     assert v["guard_pass"] is False
-    assert any(h["kind"] == "prev-not-merged" and h["prev_pr"] == 13465
+    assert any(h["kind"] == "prev-abandoned" and h["prev_pr"] == 13465
                for h in v["hits"]["prev_invalid"])
+
+
+def test_prev_open_abstains_the_predecessor_is_in_flight():
+    # THE REPAIR. Same body, same current PR, ONE field different -- and the
+    # verdict flips. A predecessor still open is not a broken lineage: it is
+    # the state R1 of `proactive-coordination.md` mandates ("1 PR entre 2
+    # wakeups = PLANCHER, jamais plafond -- re-pioche IMMEDIATEMENT").
+    #
+    # The witness the original invariant cited, #13473, was tagged
+    # `prev: ... #13465` while #13465 was OPEN -- and it MERGED on
+    # 2026-08-29 without anyone touching the tag. A "defect" that resolves
+    # itself when its predecessor lands is a transient state, not a defect.
+    v = vpg.check(_ABANDONED_BODY, current_pr=13473,
+                  prev_targets={"13465": {"kind": "pr", "state": "OPEN",
+                                          "merged": False}})
+    assert v["guard_pass"] is True
+    assert v["hits"]["prev_invalid"] == []
+
+
+def test_prev_merged_passes():
+    # The third state, kept explicit rather than left implicit in the
+    # end-to-end tests: MERGED is clean, and it must be clean for a REASON
+    # the suite states, not as a by-product of no other branch firing.
+    v = vpg.check(_ABANDONED_BODY, current_pr=13473,
+                  prev_targets={"13465": {"kind": "pr", "state": "MERGED",
+                                          "merged": True}})
+    assert v["guard_pass"] is True
+
+
+def test_legacy_meta_without_state_abstains_it_cannot_tell_open_from_closed():
+    # BACKWARD-COMPAT / FN-SAFETY. A hand-written or pre-#13475-repair
+    # `--prev-targets-file` carries only `merged`. `merged: False` covers
+    # BOTH open and closed, so the predicate has insufficient information
+    # and must abstain rather than guess -- the same contract as an
+    # unresolved target. `test_resolver_always_emits_state_for_a_pr` is
+    # what keeps this an edge case instead of the silent norm.
+    v = vpg.check(_ABANDONED_BODY, current_pr=13473,
+                  prev_targets={"13465": {"kind": "pr", "merged": False}})
+    assert v["guard_pass"] is True
+    assert v["hits"]["prev_invalid"] == []
 
 
 def test_prev_not_pr_blocks():
@@ -224,12 +276,13 @@ def test_combined_close_keyword_and_prev_self_reports_both():
     v = vpg.check(
         "Grain: MED/fix -- lane x:y -- prev: MED/fix #13465",
         current_pr=13465,
-        prev_targets={"13465": {"kind": "pr", "merged": False}},
+        prev_targets={"13465": {"kind": "pr", "state": "CLOSED",
+                                "merged": False}},
     )
     assert v["guard_pass"] is False
     assert any(h["genre"] == "fix" for h in v["hits"]["body"])
     assert any(h["kind"] == "prev-self" for h in v["hits"]["prev_invalid"])
-    assert any(h["kind"] == "prev-not-merged" for h in v["hits"]["prev_invalid"])
+    assert any(h["kind"] == "prev-abandoned" for h in v["hits"]["prev_invalid"])
     # Both reasons appear in the human-readable summary.
     assert "closing keywords" in v["reason"]
     assert "invariant" in v["reason"]
@@ -266,17 +319,21 @@ def test_find_prev_target_pr_numbers_helper():
 
 
 def test_validate_prev_targets_helper():
-    # Helper: builds the right hit dict per kind.
-    targets = [1, 2, 3]
+    # Helper: the full verdict table in one place. Two of the five rows are
+    # CLEAN and two are ABSTENTIONS -- a table listing only the blocking
+    # rows would pass under a predicate that blocks on everything.
+    targets = [1, 2, 3, 4, 5]
     meta = {
-        "1": {"kind": "pr", "merged": True},     # clean
-        "2": {"kind": "pr", "merged": False},    # PREV-NOT-MERGED
-        "3": {"kind": "issue"},                  # PREV-NOT-PR
-        # "4" absent on purpose -> abstain
+        "1": {"kind": "pr", "state": "MERGED", "merged": True},   # clean
+        "2": {"kind": "pr", "state": "CLOSED", "merged": False},  # ABANDONED
+        "3": {"kind": "issue", "state": "OPEN"},                  # NOT-PR
+        "4": {"kind": "pr", "state": "OPEN", "merged": False},    # in flight
+        "5": {"kind": "pr", "merged": False},                     # legacy
+        # "6" absent on purpose -> abstain (unresolved)
     }
-    hits = vpg.validate_prev_targets(targets, meta, location="body")
-    kinds = sorted(h["kind"] for h in hits)
-    assert kinds == ["prev-not-merged", "prev-not-pr"]
+    hits = vpg.validate_prev_targets(targets + [6], meta, location="body")
+    assert sorted(h["kind"] for h in hits) == ["prev-abandoned", "prev-not-pr"]
+    assert sorted(h["prev_pr"] for h in hits) == [2, 3]
 
 
 def test_prev_invalid_check_unaffected_by_existing_close_keyword_tests():
@@ -287,7 +344,8 @@ def test_prev_invalid_check_unaffected_by_existing_close_keyword_tests():
     v = vpg.check(
         "Grain: MED/fix -- lane x:y -- prev: MED/fix #100",
         current_pr=200,
-        prev_targets={"100": {"kind": "pr", "merged": True}},
+        prev_targets={"100": {"kind": "pr", "state": "MERGED",
+                              "merged": True}},
     )
     assert v["guard_pass"] is False
     assert any(h["genre"] == "fix" for h in v["hits"]["body"])
@@ -363,27 +421,44 @@ class FakeGh:
 
 
 WORLD = {14225: ("pr", "MERGED"),      # merged PR   -> the #13922 witness
-         13922: ("pr", "OPEN"),        # open PR
+         13922: ("pr", "OPEN"),        # open PR     -> in flight, clean
+         13999: ("pr", "CLOSED"),      # closed PR   -> abandoned, blocking
          14513: ("issue", "OPEN")}     # issue
 
 
 def test_resolve_prev_targets_merged_pr_is_a_merged_pr():
     gh = FakeGh(WORLD)
     assert vpg.resolve_prev_targets([14225], runner=gh) == {
-        "14225": {"kind": "pr", "merged": True}}
+        "14225": {"kind": "pr", "state": "MERGED", "merged": True}}
     # PR-first ordering: the issue endpoint is never consulted for a PR.
     assert [c[1] for c in gh.calls] == ["pr"]
 
 
 def test_resolve_prev_targets_open_pr_is_a_pr_not_merged():
     assert vpg.resolve_prev_targets([13922], runner=FakeGh(WORLD)) == {
-        "13922": {"kind": "pr", "merged": False}}
+        "13922": {"kind": "pr", "state": "OPEN", "merged": False}}
+
+
+def test_resolve_prev_targets_closed_pr_is_distinguishable_from_an_open_one():
+    # The whole point of surfacing `state` (2026-09-08). Before it, both an
+    # OPEN and a CLOSED PR came back as `merged: False` -- one dict, two
+    # situations, and `validate_prev_targets` was structurally unable to
+    # tell a predecessor still in flight from an abandoned one. The pair of
+    # assertions below IS the repair: same `kind`, same `merged`, and the
+    # only field that differs is the one the invariant now reads.
+    closed = vpg.resolve_prev_targets([13999], runner=FakeGh(WORLD))
+    opened = vpg.resolve_prev_targets([13922], runner=FakeGh(WORLD))
+    assert closed == {"13999": {"kind": "pr", "state": "CLOSED",
+                                "merged": False}}
+    assert closed["13999"]["merged"] == opened["13922"]["merged"], \
+        "`merged` alone cannot separate the two -- that is the defect"
+    assert closed["13999"]["state"] != opened["13922"]["state"]
 
 
 def test_resolve_prev_targets_issue_is_an_issue():
     gh = FakeGh(WORLD)
     assert vpg.resolve_prev_targets([14513], runner=gh) == {
-        "14513": {"kind": "issue"}}
+        "14513": {"kind": "issue", "state": "OPEN"}}
     # Both endpoints were tried, in that order.
     assert [c[1] for c in gh.calls] == ["pr", "issue"]
 
@@ -433,7 +508,24 @@ def test_original_state_merged_field_set_misclassifies_a_merged_pr():
 
     assert original_algorithm(14225) == {"kind": "issue"}          # the defect
     assert vpg.resolve_prev_targets([14225], runner=FakeGh(WORLD)) == {
-        "14225": {"kind": "pr", "merged": True}}                   # the repair
+        "14225": {"kind": "pr", "state": "MERGED",
+                  "merged": True}}                                # the repair
+
+
+def test_resolver_always_emits_state_for_every_pr_kind_it_returns():
+    """Keeps the `state`-less abstention an EDGE case, never the norm.
+
+    `validate_prev_targets` abstains on a PR-kind meta carrying no `state`,
+    because it cannot tell OPEN from CLOSED and must not guess. That
+    abstention is a courtesy to hand-written and legacy fixtures -- if the
+    real resolver ever stopped emitting `state`, the same code path would
+    silently turn invariant 2 off across the whole fleet, and every test
+    above would still be green. This is the control that would go red.
+    """
+    resolved = vpg.resolve_prev_targets(sorted(WORLD), runner=FakeGh(WORLD))
+    assert len(resolved) == len(WORLD), "fixture inerte: rien resolu"
+    without = [n for n, meta in resolved.items() if not meta.get("state")]
+    assert not without, "resolver emitted a PR meta with no state: %s" % without
 
 
 def test_check_passes_on_a_prev_pointing_at_a_resolved_merged_pr():
@@ -453,9 +545,17 @@ def test_check_passes_on_a_prev_pointing_at_a_resolved_merged_pr():
 
 # Shape of the real #14559 body: a valid tag pointing at a MERGED PR, and a
 # quoted tag of ANOTHER grain in the prose. Before the fix, the quotation won:
-# `finditer` swept the whole body, found #14548 (still open), and the guard
-# rejected the PR on `prev-not-merged` -- accusing a lane of a defect it had
-# taken care to avoid.
+# `finditer` swept the whole body, found #14548, and the guard rejected the
+# PR on the cited grain's target -- accusing a lane of a defect it had taken
+# care to avoid.
+#
+# NOTE (2026-09-08, invariant-2 repair): #14548 was OPEN in the real
+# incident, and OPEN was what made the leak visible back then. Since an OPEN
+# target no longer blocks, every fixture in this section holds it CLOSED
+# instead: the teeth of these tests are "a mask leak turns into a block",
+# and that only stays true if the leaked target is one the current predicate
+# rejects. Left at OPEN, the assertions below would pass on a totally broken
+# mask.
 CITING_BODY = (
     "Grain: DEEP/research-code -- lane myia-po-2026:CoursIA-2 -- "
     "prev: DEEP/research-code #14501\n"
@@ -468,9 +568,11 @@ CITING_BODY = (
 
 def test_backticked_prev_is_a_citation_not_a_declaration():
     # The real #14559 case. `prev:` is declared at #14501 (merged); the body
-    # also QUOTES another lane's tag pointing at #14548 (open).
-    targets = {"14501": {"kind": "pr", "merged": True},
-               "14548": {"kind": "pr", "merged": False}}
+    # also QUOTES another lane's tag pointing at #14548 (abandoned -- see
+    # the section NOTE: it was OPEN in the incident, and OPEN no longer
+    # blocks, so the leak has to land on a state that does).
+    targets = {"14501": {"kind": "pr", "state": "MERGED", "merged": True},
+               "14548": {"kind": "pr", "state": "CLOSED", "merged": False}}
     v = vpg.check(CITING_BODY, current_pr=14559, prev_targets=targets)
     assert 14548 not in vpg.find_prev_target_pr_numbers(CITING_BODY)
     assert v["hits"]["prev_invalid"] == []
@@ -493,14 +595,18 @@ def test_fenced_block_is_masked_too():
     assert vpg.find_prev_target_pr_numbers(body) == [14501]
 
 
-def test_plain_prev_at_an_open_pr_still_fails():
-    # NEGATIVE CONTROL -- the invariant is not weakened. A `prev:` written in
-    # plain text (the canonical tag) at a still-open PR must still be rejected.
+def test_plain_prev_at_an_abandoned_pr_still_fails():
+    # NEGATIVE CONTROL -- the mask is not a blanket amnesty. The SAME clause
+    # as the citation above, written in plain text (the canonical tag), at
+    # the SAME target, must still be rejected. This is the pair that proves
+    # the pass above was earned by the backticks, and not by a target the
+    # predicate waves through anyway.
     body = "Grain: MED/guard -- lane a:b -- prev: MED/guard #14548"
     v = vpg.check(body, current_pr=99999,
-                  prev_targets={"14548": {"kind": "pr", "merged": False}})
+                  prev_targets={"14548": {"kind": "pr", "state": "CLOSED",
+                                          "merged": False}})
     assert v["hits"]["prev_invalid"] == [
-        {"location": "body", "kind": "prev-not-merged", "prev_pr": 14548}]
+        {"location": "body", "kind": "prev-abandoned", "prev_pr": 14548}]
     assert v["guard_pass"] is False
 
 
@@ -518,10 +624,15 @@ def test_fully_backticked_tag_is_still_evaluated():
     # backticks and every `prev:` invariant goes silent. `grain_tag.parse_prev`
     # strips backticks before reading, so the DECLARATION is unioned back in.
     # Remove that union and this test goes green in the wrong direction.
+    #
+    # The union is what this measures, so the target must be one the
+    # predicate rejects (section NOTE): held CLOSED, a lost union turns the
+    # red into a green and the test speaks. Held OPEN it would be silent.
     body = "`Grain: MED/guard -- lane a:b -- prev: MED/guard #14548`\nSuite."
     assert vpg.find_prev_target_pr_numbers(body) == [14548]
     v = vpg.check(body, current_pr=99999,
-                  prev_targets={"14548": {"kind": "pr", "merged": False}})
+                  prev_targets={"14548": {"kind": "pr", "state": "CLOSED",
+                                          "merged": False}})
     assert v["guard_pass"] is False
 
 
@@ -534,7 +645,9 @@ def test_prose_citation_without_grain_line_is_not_a_declaration():
     # line at all (it's a normal commit message, not a worker-authored
     # grain). The previous `_declared_prev_pr` passed the WHOLE body to
     # `grain_tag.parse_prev`, which matched the prose citation and reported
-    # `prev: #14592` -- then PREV-SELF / PREV-NOT-MERGED fired.
+    # `prev: #14592` -- then PREV-SELF / PREV-NOT-MERGED fired (that
+    # second invariant is named PREV-ABANDONED since 2026-09-08; the old
+    # name is kept here because it is what the incident report said).
     #
     # After the fix, the search is BOUNDED to the first `Grain:` line:
     # absent -> None -> no declaration -> no false positive.
@@ -566,8 +679,11 @@ def test_prose_citation_after_tag_line_still_evaluates_tag():
         "Le meme defaut que `prev: MED/qc #14548` documentait sur #14548.\n"
     )
     assert vpg._declared_prev_pr(body) == 14501
-    targets = {"14501": {"kind": "pr", "merged": True},
-               "14548": {"kind": "pr", "merged": False}}
+    # #14548 held CLOSED for the same reason as the section NOTE: if the
+    # bounded search ever regressed to the prose citation, the verdict must
+    # go red rather than stay quietly green.
+    targets = {"14501": {"kind": "pr", "state": "MERGED", "merged": True},
+               "14548": {"kind": "pr", "state": "CLOSED", "merged": False}}
     v = vpg.check(body, current_pr=99999, prev_targets=targets)
     assert v["hits"]["prev_invalid"] == []
     assert v["guard_pass"] is True
@@ -602,7 +718,7 @@ def test_first_grain_line_helper_bounds_search():
 # The previous regex `` `[^`\\n]*` `` forbade newlines, so the closing
 # backtick at the start of L5 was orphaned and the L5 half escaped the
 # mask. `` _PREV_PR_REF_RE `` then matched `` #14592 `` and fired
-# `` prev-not-merged -> [14592] `` -- on the PR whose own commit message
+# `` prev-abandoned -> [14592] `` -- on the PR whose own commit message
 # documented the bug. The control in ai-01's analysis was exact: the same
 # citation on a SINGLE line was correctly masked; the soft break was the
 # only discriminant. We extend the span to allow `` \\n `` and pin the
@@ -620,7 +736,7 @@ def test_multiline_backtick_span_is_one_mask():
         "#14592` in backticks inside a numbered list, with NO `Grain:` "
         "line of its own."
     )
-    masked = vpg._mask_code_spans(multiline)
+    masked = gt.mask_code_spans(multiline)
     # The whole span (L4 backtick + newline + L5 leading `#14592` + L5
     # backtick) is replaced by spaces -- nothing for the regex to match.
     assert "14592" not in masked
@@ -639,7 +755,7 @@ def test_single_line_backtick_span_still_masked():
     # the working case BEFORE the fix and must remain working AFTER. If it
     # ever breaks, the fix has widened the regex too far.
     single = ("citing `prev: MED/training #14592` in backticks")
-    masked = vpg._mask_code_spans(single)
+    masked = gt.mask_code_spans(single)
     assert "14592" not in masked
     assert len(masked) == len(single)
     assert vpg.find_prev_self_references(single, current_pr=14592) == []
@@ -655,7 +771,7 @@ def test_adjacent_backticks_do_not_merge_into_one_span():
     # current regex is non-greedy and bounded by the FIRST closing
     # backtick, so they stay distinct.
     text = "`a`\n`b`"
-    masked = vpg._mask_code_spans(text)
+    masked = gt.mask_code_spans(text)
     # Two spans masked independently -- `` `a` `` (3) + newline (1) +
     # `` `b` `` (3) -- total 7 chars, all blanks except the newline.
     assert masked == "   \n   "
@@ -683,15 +799,19 @@ def test_fenced_block_with_internal_backticks_still_masked():
 def test_multiline_backticked_citation_in_commit_passes_full_guard():
     # #14703 -- the issue's isolated control replayed at FULL GUARD level.
     # ai-01 measured the defect through the complete verdict path (the
-    # organ's `prev_invalid` named ``commits[0]`` / prev-not-merged / 14592);
-    # the mask-level tests above pin the mechanism, this one pins the
-    # end-to-end verdict the CI actually computes. The cited #14592 is held
-    # OPEN in ``prev_targets`` so a mask leak would turn into a block --
-    # the pass is earned by the mask, not by an accidentally-unresolvable
-    # target.
+    # organ's `prev_invalid` named ``commits[0]`` / the cited target /
+    # 14592); the mask-level tests above pin the mechanism, this one pins
+    # the end-to-end verdict the CI actually computes. The cited #14592 is
+    # held CLOSED in ``prev_targets`` so a mask leak would turn into a
+    # block -- the pass is earned by the mask, not by a target the current
+    # predicate would wave through anyway. (It was OPEN when this test was
+    # written; OPEN stopped blocking on 2026-09-08, which would have turned
+    # the three assertions below into tautologies.)
     targets = {
-        "13826": {"kind": "pr", "merged": True},   # the body's own prev
-        "14592": {"kind": "pr", "merged": False},  # the cited-in-prose PR
+        # the body's own prev
+        "13826": {"kind": "pr", "state": "MERGED", "merged": True},
+        # the cited-in-prose PR
+        "14592": {"kind": "pr", "state": "CLOSED", "merged": False},
     }
     commit_two_line = (
         "fix(guard): document citation defect\n"
@@ -735,23 +855,28 @@ def test_multiline_backticked_citation_in_commit_passes_full_guard():
     v = vpg.check(CLEAN_PREV_BODY, [commit_bare_wrapped],
                   current_pr=14703, prev_targets=targets)
     assert v["guard_pass"] is False
-    assert any(h["kind"] == "prev-not-merged" and h["prev_pr"] == 14592
+    assert any(h["kind"] == "prev-abandoned" and h["prev_pr"] == 14592
                and h["location"] == "commits[0]"
                for h in v["hits"]["prev_invalid"])
 
 
 # --- #14550, second defect: a silent fail-open is an unearned attestation ----
-# ai-01 measured it on #14515: CLEAN, PR gate green, mergeable -- with a
-# `prev:` at an OPEN PR, because the `gh` resolution happened to fail during
+# ai-01 measured it on #14515: CLEAN, PR gate green, mergeable -- with an
+# unevaluated `prev:`, because the `gh` resolution happened to fail during
 # THAT run. Same violation as four red PRs the same minute; only the
 # abstention differed, and nothing in the verdict said so.
+#
+# The 2026-09-08 repair of invariant 2 does NOT touch this: an abstention on
+# a lookup failure and an abstention on an in-flight predecessor are two
+# different silences, and only the first one is a gap in the measurement.
 
 def test_unresolved_prev_targets_pure_selector():
     # The selector names exactly what the gate could not measure: cited but
     # absent from the resolved dict -- whether the lookup raised (network,
     # gh absent) or the target itself did not resolve.
     assert vpg.unresolved_prev_targets({14483}, {}) == [14483]
-    assert vpg.unresolved_prev_targets({14483, 7}, {"14483": {"kind": "pr", "merged": True}}) == [7]
+    assert vpg.unresolved_prev_targets(
+        {14483, 7}, {"14483": {"kind": "pr", "state": "MERGED"}}) == [7]
     assert vpg.unresolved_prev_targets(set(), {}) == []
 
 
@@ -783,15 +908,23 @@ def test_resolution_failure_stays_green_but_flags_abstention(
     assert "#14459" in captured.err
 
 
-def test_14515_real_body_with_resolved_open_target_fails():
+def test_resolved_bad_target_fails_the_abstention_flag_is_not_the_predicate():
     # ACCEPTANCE 5 (#14550) -- positive control of the fail-open: with the
-    # resolution SUCCEEDING, the real #14515 tag (`prev: MED/notebook-python
-    # #14483`, target OPEN) must go red. The abstention flag repairs
-    # visibility, never the predicate.
+    # resolution SUCCEEDING on a target the predicate rejects, the verdict
+    # must go red. The abstention flag repairs VISIBILITY, never the
+    # predicate; if this ever passes, the fail-open has become permanent.
+    #
+    # The real #14515 tag cited an OPEN #14483, which is no longer a defect
+    # (see `test_prev_open_abstains_the_predecessor_is_in_flight`). What
+    # this test needs is any target the predicate DOES reject, so the shape
+    # is kept and the state moved to CLOSED -- otherwise the assertion would
+    # be measuring the repair instead of the fail-open.
     body = ("Grain: MED/notebook-python -- lane myia-po-2023:CoursIA -- "
             "prev: MED/notebook-python #14483")
-    v = vpg.check(body, prev_targets={"14483": {"kind": "pr", "merged": False}})
+    v = vpg.check(body, prev_targets={"14483": {"kind": "pr",
+                                                "state": "CLOSED",
+                                                "merged": False}})
     assert v["guard_pass"] is False
     kinds = {h["kind"] for h in v["hits"]["prev_invalid"]}
-    assert "prev-not-merged" in kinds
+    assert "prev-abandoned" in kinds
     assert "resolution_failed" not in v  # check() has nothing to abstain on

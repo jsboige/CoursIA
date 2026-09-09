@@ -981,6 +981,7 @@ def test_signal_genre_mismatch_inactive_when_no_body(tmp_path, capsys):
         "--replay", str(mpath), "--genre-signals",
         "--lane", "myia-po-2023:CoursIA",
         "--files", "README.md",
+        "--no-fetch-files",
     ])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert rc == 0
@@ -1028,6 +1029,7 @@ def test_po2025_replay_signals_genre_run_via_cli(tmp_path, capsys):
     rc = vlc.main([
         "--replay", str(mpath), "--genre-signals",
         "--lane", _P_2025_C2,
+        "--no-fetch-files",
     ])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert rc == 0
@@ -1925,6 +1927,12 @@ def test_two_different_unknown_words_form_one_genre_unknown_run():
         "genre": vlc.GENRE_UNKNOWN_KEY,
         "count": 2,
         "numbers": [12945, 13009],
+        # #14357 : la cle additive `members` porte le tier par grain --
+        # l'entree de l'exception mecanique (paire adjacente, second MED/DEEP).
+        "members": [
+            {"number": 12945, "tier": "LIGHT"},
+            {"number": 13009, "tier": "LIGHT"},
+        ],
     }]
 
 
@@ -2215,3 +2223,110 @@ def test_check_pr_budget_spent_by_none_when_nothing_merged(tmp_path, capsys):
     assert rc == 0
     assert res["cap_reached"] is False
     assert res["budget_spent_by"] is None
+
+
+# --- #14357 : the G-VAR-3 mechanical exception --------------------------------
+# Resolution 2 of the issue: two consecutive grains of the same LIGHT genre
+# are allowed IFF the second is MED/DEEP AND the two share NO file. The
+# detection layer (genre_runs) is unchanged; this is the VERDICT layer.
+
+_P_2026 = "myia-po-2026:CoursIA"
+
+# The REAL couple of the #14357 measure (tags and files read firsthand from
+# the merged PRs, 2026-09-02/03): a LIGHT/guard fix of grain_tag.py followed
+# by a MED/guard fix of check_unaddressed_nits.py -- same LIGHT genre, zero
+# shared file, second grain MED. Pre-#14357 the organ flagged the run (ban
+# regardless of tier) and the coordinator had to hand-override on #14330.
+_GVAR3_13869 = {
+    "number": 13869,
+    "body": "Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- prev: LIGHT/tooling #13831.",
+    "files": ["scripts/grain_tag.py", "scripts/tests/test_grain_tag.py"],
+    "mergedAt": "2026-09-02T14:53:45Z",
+}
+_GVAR3_14330 = {
+    "number": 14330,
+    "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #14199.",
+    "files": ["scripts/check_unaddressed_nits.py",
+              "scripts/tests/test_check_unaddressed_nits.py"],
+    "mergedAt": "2026-09-03T03:55:47Z",
+}
+
+
+def test_gvar3_exception_replay_13869_14330_lifts_the_run():
+    # The acceptance replay: the couple that triggered the incident must now
+    # be EXEMPT, organ-side -- the manual override becomes a computed verdict.
+    day = [_GVAR3_13869, _GVAR3_14330]
+    sig = vlc.compute_signals(day, _P_2026)
+    assert sig["signals"]["GENRE-RUN"] is False
+    assert sig["long_runs"] == []
+    assert len(sig["exempt_runs"]) == 1
+    ex = sig["exempt_runs"][0]
+    assert ex["genre"] == "guard"
+    assert ex["numbers"] == [13869, 14330]
+    assert ex["pairs"][0]["second_tier"] == "MED"
+    assert ex["pairs"][0]["files_overlap"] == []
+    assert ex["pairs"][0]["qualifies"] is True
+
+
+def test_gvar3_shared_file_still_blocks():
+    # Same couple, but the second guard touches the FIRST guard's file:
+    # "distinct substance" without disjoint files is exactly the overlap the
+    # intersection proxy exists to catch -- the run stays a violation.
+    second = dict(_GVAR3_14330)
+    second["files"] = ["scripts/grain_tag.py", "scripts/tests/test_nits.py"]
+    sig = vlc.compute_signals([_GVAR3_13869, second], _P_2026)
+    assert sig["signals"]["GENRE-RUN"] is True
+    assert sig["exempt_runs"] == []
+    assert sig["long_runs"][0]["numbers"] == [13869, 14330]
+    assert sig["long_runs"][0]["exception"]["pairs"][0]["files_overlap"] == [
+        "scripts/grain_tag.py",
+    ]
+    assert sig["long_runs"][0]["exception"]["pairs"][0]["qualifies"] is False
+
+
+def test_gvar3_unreadable_files_never_exempt():
+    # Fail-CLOSED (#13475 posture on the exception): records without a
+    # `files` key (a pre-#14357 producer, or a failed gh backfill) cannot be
+    # READ as disjoint, so they must NOT be exempt. Unreadable != exempt.
+    a = {k: v for k, v in _GVAR3_13869.items() if k != "files"}
+    b = {k: v for k, v in _GVAR3_14330.items() if k != "files"}
+    sig = vlc.compute_signals([a, b], _P_2026)
+    assert sig["signals"]["GENRE-RUN"] is True
+    assert sig["exempt_runs"] == []
+    pair = sig["long_runs"][0]["exception"]["pairs"][0]
+    assert pair["files_known"] is False
+    assert pair["qualifies"] is False
+
+
+def test_gvar3_second_light_tier_never_exempt():
+    # Clause (i): only the SECOND grain's tier opens the exception. A
+    # LIGHT/guard after a LIGHT/guard stays banned however disjoint the
+    # files -- the tier axis of G-VAR-2 is untouched by #14357.
+    second = dict(_GVAR3_14330)
+    second["body"] = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA"
+                      " -- prev: MED/guard #14199.")
+    sig = vlc.compute_signals([_GVAR3_13869, second], _P_2026)
+    assert sig["signals"]["GENRE-RUN"] is True
+    pair = sig["long_runs"][0]["exception"]["pairs"][0]
+    assert pair["second_tier"] == "LIGHT"
+    assert pair["files_known"] is True
+    assert pair["qualifies"] is False
+
+
+def test_gvar3_run_of_three_needs_every_pair_to_qualify():
+    # A run of >=3 lifts only if EVERY ADJACENT pair qualifies: here
+    # 13869 -> 14330 qualifies but 14330 -> 9999 does not (the third guard
+    # re-touches the SECOND guard's file), so the whole run stays flagged.
+    # Note the semantics: the third grain touching the FIRST guard's file
+    # would NOT break the exemption -- the pairs are adjacent, not global.
+    third = {
+        "number": 9999,
+        "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #14330.",
+        "files": ["scripts/check_unaddressed_nits.py"],
+        "mergedAt": "2026-09-03T10:00:00Z",
+    }
+    sig = vlc.compute_signals([_GVAR3_13869, _GVAR3_14330, third], _P_2026)
+    assert sig["signals"]["GENRE-RUN"] is True
+    assert sig["exempt_runs"] == []
+    pairs = sig["long_runs"][0]["exception"]["pairs"]
+    assert [p["qualifies"] for p in pairs] == [True, False]

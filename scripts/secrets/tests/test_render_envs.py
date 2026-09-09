@@ -353,6 +353,22 @@ class TestConstants:
             "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
         }
 
+    def test_required_keys_declared_secrets_and_real_labels(self):
+        """#15145 invariantes de la table REQUIRED_KEYS : chaque clé est un
+        SECRET déclaré (ou un alias déclaré) et chaque label correspond à une
+        entrée réelle de TARGET_ENVS -- un label typo n'aurait jamais matché
+        aucune cible et la garde serait morte-née (silencieusement OK)."""
+        for keys in render_envs.REQUIRED_KEYS.values():
+            for k in keys:
+                assert k in render_envs.SECRET_KEYS or k in render_envs.ALIASES, (
+                    f"REQUIRED key {k} is neither a SECRET_KEY nor an alias"
+                )
+        target_labels = {render_envs.env_label(p) for p in render_envs.TARGET_ENVS}
+        for lbl in render_envs.REQUIRED_KEYS:
+            assert lbl in target_labels, (
+                f"REQUIRED_KEYS label {lbl} matches no TARGET_ENVS entry"
+            )
+
 
 # --------------------------------------------------------------------------- #
 # bootstrap: state machine (monkeypatch MASTER_ENV + TARGET_ENVS)
@@ -958,3 +974,187 @@ class TestNotebookTargetEnvs:
         assert "OPENAI_API_KEY=canonical-oai" in text
         assert "SK_VERSION=1.45.0" in text, "non-secret key was wrongly clobbered"
         assert "NOTEBOOK_LOCALE=fr-FR" in text, "non-secret key was wrongly clobbered"
+
+
+# --------------------------------------------------------------------------- #
+# #15145 — REQUIRED_KEYS : une clé du master ABSENTE d'une cible n'était
+# jamais ajoutée, et --check rendait [OK] (aucune ligne à comparer). La
+# table rend l'absence mesurable : sync() appends, --check names,
+# --check --strict exit 1. + geste 1 (nommer les non-provisioned) et
+# geste 2 (nommer les cibles absentes du disque).
+# --------------------------------------------------------------------------- #
+class TestRequiredKeys15145:
+    def _setup(self, tmp_path, monkeypatch, master_text, env_files):
+        """tmp tree à la TestSync._setup ; REQUIRED_KEYS est patchée par le
+        test (labels = chemins posix absolus, hors REPO_ROOT)."""
+        master = tmp_path / "master.env"
+        master.write_text(master_text, encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        targets = []
+        for name, body in env_files:
+            p = _svc_env(tmp_path, name)
+            p.write_text(body, encoding="utf-8")
+            targets.append(p)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", targets)
+        return targets
+
+    def test_check_names_required_gap_exit0(self, tmp_path, monkeypatch, capsys):
+        """Geste 3, mode découverte : sans --strict, --check NOMME la clé
+        requise manquante et reste 0 (miroir de #14373 geste 1)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nVLLM_API_KEY=vvv-secret-1234\n",
+            [("genai", "HF_TOKEN=stable\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"VLLM_API_KEY"})})
+        assert render_envs.sync(check_only=True) == 0
+        out = capsys.readouterr().out
+        assert "REQUIRED key(s) with no line" in out
+        assert "VLLM_API_KEY" in out
+        # Aucune écriture en mode check.
+        assert "VLLM_API_KEY" not in targets[0].read_text(encoding="utf-8")
+
+    def test_check_strict_required_gap_exit1(self, tmp_path, monkeypatch):
+        """Geste 3, mode garde : --check --strict sort 1 sur une clé requise
+        non provisionnée, SANS le moindre drift -- le vert ne couvrait que
+        les lignes existantes (contrôle FP de l'issue : le 401 silencieux
+        de l'incident GenAI/.env)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nVLLM_API_KEY=vvv\n",
+            [("genai", "HF_TOKEN=stable\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"VLLM_API_KEY"})})
+        assert render_envs.sync(check_only=True, strict=True) == 1
+
+    def test_sync_appends_required_line_masked(self, tmp_path, monkeypatch, capsys):
+        """sync() APPEND la ligne manquante (valeur master) ; la sortie masque
+        la valeur (last-4), le fichier la porte en clair."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nVLLM_API_KEY=vvv-secret-1234\n",
+            [("genai", "HF_TOKEN=stable\nCUSTOM_PORT=7\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"VLLM_API_KEY"})})
+        assert render_envs.sync(check_only=False) == 0
+        text = targets[0].read_text(encoding="utf-8")
+        assert "VLLM_API_KEY=vvv-secret-1234" in text
+        assert "CUSTOM_PORT=7" in text, "config locale clobbered"
+        out = capsys.readouterr().out
+        assert "vvv-secret-1234" not in out, "secret complet leaké en sortie"
+        assert "***1234" in out
+
+    def test_sync_required_idempotent(self, tmp_path, monkeypatch, capsys):
+        """Second run : no-op (la ligne existe désormais), plus de
+        '[+] Provisioned'."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "VLLM_API_KEY=vvv\n",
+            [("genai", "HF_TOKEN=stable\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"VLLM_API_KEY"})})
+        assert render_envs.sync(check_only=False) == 0
+        first = targets[0].read_text(encoding="utf-8")
+        capsys.readouterr()
+        assert render_envs.sync(check_only=False) == 0
+        assert targets[0].read_text(encoding="utf-8") == first
+        assert "[+] Provisioned" not in capsys.readouterr().out
+
+    def test_required_key_absent_from_master_named_strict1(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Clé requise absente du master : nommée (cannot provision), rien
+        d'écrit, --strict sort 1. SECRET_KEYS patchée pour isoler la voie
+        REQUIRED de la voie #14373 (missing_in_master)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("genai", "HF_TOKEN=stable\n")],
+        )
+        monkeypatch.setattr(render_envs, "SECRET_KEYS", frozenset({"HF_TOKEN"}))
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"VLLM_API_KEY"})})
+        assert render_envs.sync(check_only=False, strict=True) == 1
+        out = capsys.readouterr().out
+        assert "absent from master.env" in out
+        assert "VLLM_API_KEY" not in targets[0].read_text(encoding="utf-8")
+
+    def test_alias_counts_as_provisioned(self, tmp_path, monkeypatch):
+        """Une cible portant le nom CANONIQUE satisfait une exigence posée sur
+        l'ALIAS (ALIASES = un secret logique sous deux noms). SECRET_KEYS
+        patchée pour isoler la voie alias de la voie #14373 (missing_in_master
+        sur les ~27 clés réelles absentes de ce master minimal)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "COMFYUI_API_TOKEN=tok\n",
+            [("nb", "COMFYUI_API_TOKEN=tok\n")],
+        )
+        monkeypatch.setattr(render_envs, "SECRET_KEYS",
+                            frozenset({"COMFYUI_API_TOKEN"}))
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"COMFYUI_AUTH_TOKEN"})})
+        assert render_envs.sync(check_only=True, strict=True) == 0
+
+    def test_absent_target_named_not_silent(self, tmp_path, monkeypatch, capsys):
+        """Geste 2 : une cible déclarée absente du disque est NOMMÉE (exit 0
+        sans --strict), et son compte n'entre plus dans le [OK] 'All N'."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\n")],
+        )
+        absent = tmp_path / "nope" / ".env"  # déclaré, jamais créé
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", targets + [absent])
+        assert render_envs.sync(check_only=True) == 0
+        out = capsys.readouterr().out
+        assert "missing on disk" in out
+        assert "nope/.env" in out
+        assert "[OK] 1/2 target .env on disk" in out
+
+    def test_absent_required_target_strict_exit1(self, tmp_path, monkeypatch):
+        """Cible requise absente du disque : invisible à --check par
+        construction -> --strict la fait échouer (sinon GenAI/.env supprimé
+        repasserait vert)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nVLLM_API_KEY=vvv\n",
+            [("svc", "HF_TOKEN=stable\n")],
+        )
+        absent = tmp_path / "nope" / ".env"
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", targets + [absent])
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {absent.as_posix(): frozenset({"VLLM_API_KEY"})})
+        assert render_envs.sync(check_only=True, strict=True) == 1
+
+    def test_not_provisioned_master_keys_named(self, tmp_path, monkeypatch, capsys):
+        """Geste 1 : les clés du master SANS ligne dans la cible sont nommées
+        en [i] (indiscernables de 'pas besoin' sans REQUIRED_KEYS)."""
+        self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=a\nWHISPER_API_KEY=b\n",
+            [("svc", "HF_TOKEN=a\n")],
+        )
+        assert render_envs.sync(check_only=True) == 0
+        out = capsys.readouterr().out
+        assert "not provisioned" in out
+        assert "WHISPER_API_KEY" in out
+
+    def test_main_check_strict_routes_required_gap(
+        self, tmp_path, monkeypatch
+    ):
+        """Le CLI route --check --strict vers la voie REQUIRED (cf
+        test_strict_flag_routes_to_sync_strict pour la voie #14373)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nVLLM_API_KEY=vvv\n",
+            [("genai", "HF_TOKEN=stable\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS",
+                            {targets[0].as_posix(): frozenset({"VLLM_API_KEY"})})
+        monkeypatch.setattr(sys, "argv",
+                            ["render_envs.py", "--check", "--strict"])
+        assert render_envs.main() == 1

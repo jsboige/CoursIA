@@ -632,6 +632,53 @@ def test_find_non_closing_refs_empty_and_none():
     assert gt.find_non_closing_refs("nothing here") == []
 
 
+def test_find_close_keyword_pr_refs_backtick_citation_not_a_declaration():
+    # #14780 (controle isole sur main da13579ca) : une PR qui DOCUMENTE le
+    # close-keyword guard cite le motif en prose -- la citation backtiquedee
+    # n'est pas une declaration et ne doit pas faire hit. Single backtick,
+    # double backtick (RST) et fenced block, mono-ligne.
+    assert gt.find_close_keyword_pr_refs(
+        "documents the guard firing on `fixes #10094` in prose"
+    ) == []
+    assert gt.find_close_keyword_pr_refs(
+        "documents the guard firing on ``fixes #10094`` in prose"
+    ) == []
+    assert gt.find_close_keyword_pr_refs(
+        "the finder docstring cites ``CLOSED <PR-number>`` as the incident"
+    ) == []
+    assert gt.find_close_keyword_pr_refs("```\nfixes #99\n```") == []
+
+
+def test_find_close_keyword_pr_refs_backtick_citation_wrapped():
+    # Meme citation repliee sur un soft line break (reflow Markdown) -- le
+    # span code traverse le \\n (#14700 pour prev:, meme split ici). Avant le
+    # fix, la deuxieme moitie s'echappait du masque et trippait le finder.
+    assert gt.find_close_keyword_pr_refs("we ``closes\n#1234`` wrapped") == []
+    assert gt.find_close_keyword_pr_refs("we `resolved\n#77` wrapped") == []
+
+
+def test_find_close_keyword_pr_refs_unbackticked_clause_still_hits():
+    # CONTROLE DE MORDANT : la meme clause SANS backticks reste un hit. Si la
+    # regex de masquage devenait trop large, ce test casse -- le garde doit
+    # garder ses dents sur les vraies declarations.
+    hits = gt.find_close_keyword_pr_refs(
+        "documents the guard firing on fixes #10094 in prose"
+    )
+    assert [h["number"] for h in hits] == [10094]
+    assert hits[0]["keyword"] == "fixes"
+
+
+def test_find_close_keyword_pr_refs_offsets_preserved_through_mask():
+    # Le span rendu doit pointer dans le texte ORIGINAL, pas dans le masque --
+    # le verdict du guard cite la ligne fautive grace a ces offsets. Un hit
+    # APRES une citation masquee garde donc sa vraie position.
+    text = "see `fixes #1` cited, but the real declaration is closes #2 here"
+    hits = gt.find_close_keyword_pr_refs(text)
+    assert [h["number"] for h in hits] == [2]
+    start, end = hits[0]["span"]
+    assert text[start:end] == "closes #2"
+
+
 def test_grain_word_boundary_graine_heading_does_not_shadow_real_tag():
     # #11771 (mesure 2026-08-19) : le body portait un titre `## Graine / Tag`
     # AVANT sa ligne `Grain:` conforme. Le motif acceptait ZERO separateur apres
