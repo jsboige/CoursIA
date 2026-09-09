@@ -80,7 +80,7 @@ C'est le cœur du déploiement MyIA. **Chaque tier a un provider nominal budgét
 
 **Fonctionnement de la cascade :**
 - Chaque step de la cascade a un **TTL indépendant** (échelle `10m/30m/1h/4h/24h`) qui survit à l'armement du rôle — un quota wall hebdomadaire (Qwen) n'est pas re-probé toutes les 10 min pendant que la fenêtre GLM 5h se ré-initialise.
-- Sur un burst (rate-limit), claudish **backoff** sur le step courant et passe au suivant quand le TTL expire.
+- Sur une **exhaustion de quota**, claudish marque le step courant en échec, **passe immédiatement au suivant** et maintient le step épuisé **hors rotation pendant son TTL** ; à l'expiration du TTL, il le **re-sonde** (`markStepFailed` puis résolution qui saute les steps encore TTL-failed — `fork/failover.ts`). Les rate limits transitoires (à la minute) sont explicitement **exclues** de l'armement de la cascade : `isQuotaExhaustion` ne les compte pas comme une exhaustion, elles ne déclenchent pas de bascule.
 - Sur une panne franche, le step suivant prend la main **avec notice de dégradation explicite** : le marqueur `[claudish] Failover model active` apparaît dans la réponse (observé live le 2026-09-09 lors d'un épuisement du nominal GLM). Les notices existent en deux moments — **onset** (bascule) et **recovery** (retour au nominal), diffusées sur 3 canaux : log proxy, dashboard `workspace-claudish`, client (en-tête/corps SSE).
 - Le step final (PAYG direct) est **toujours servi** quand tout le reste est épuisé — l'agent ne meurt jamais, il dégrade avec notification.
 
