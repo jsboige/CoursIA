@@ -31,7 +31,8 @@ sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
-    FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, Guard,
+    FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
+    TRANCHE5, TRANCHE8, Guard,
 )
 
 
@@ -785,6 +786,24 @@ def test_every_tranche_in_the_registry_is_run_by_the_engine():
         assert _re.search(rf"\b{name}\b", aggregate), (
             f"{name} est importee mais absente de l'agregat de main() : "
             f"ses gardes ne tournent jamais")
+
+
+def test_smartcontract_guards_are_native_blocking_deltas():
+    assert {guard.name for guard in TRANCHE8} == {
+        "Smart-contract engine proof ratchet",
+        "Smart-contract standards and execution ratchet",
+    }
+    for guard in TRANCHE8:
+        assert guard.source == FAST_LANE_NATIVE
+        assert guard.blocking is True
+        assert guard.absorbed is True
+        assert guard.needs_base is True
+        assert guard.delta_argv
+        assert guard.swap_paths == [
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts"
+        ]
+        assert "{base_json}" in guard.delta_argv
+        assert "{head_json}" in guard.delta_argv
 
 
 def test_warn_rc_is_success_everywhere(monkeypatch):

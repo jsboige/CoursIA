@@ -839,3 +839,62 @@ TRANCHE7: list[Guard] = [
         warn_rc=(1, 2),  # rc=2 = findings ; rc=1 = illisible/vacuue
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 8 -- Smart Contracts claim/invocation/proof and bounded drift.
+# Both guards scan the complete series on HEAD and on the merge base, then
+# compare JSON snapshots. Existing debt stays visible without blocking; only a
+# new or worsened notebook/rule verdict fails the PR. Papermill state remains
+# owned by its existing canonical detectors rather than duplicated here.
+# ---------------------------------------------------------------------------
+TRANCHE8: list[Guard] = [
+    Guard(
+        name="Smart-contract engine proof ratchet",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb",
+            "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+            "scripts/notebook_tools/tests/test_audit_engine_named_not_invoked.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+            "--scan-all", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+            "--json",
+        ],
+        delta_argv=[
+            "python", "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+            "--compare-base", "{base_json}",
+            "--compare-head", "{head_json}", "--json",
+        ],
+        swap_paths=["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"],
+        needs_base=True,
+        absorbed=True,
+    ),
+    Guard(
+        name="Smart-contract standards and execution ratchet",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb",
+            "scripts/notebook_tools/detect_smartcontract_drift.py",
+            "scripts/notebook_tools/tests/test_detect_smartcontract_drift.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_smartcontract_drift.py",
+            "--scan-all", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+            "--json",
+        ],
+        delta_argv=[
+            "python", "scripts/notebook_tools/detect_smartcontract_drift.py",
+            "--compare-base", "{base_json}",
+            "--compare-head", "{head_json}", "--json",
+        ],
+        swap_paths=["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"],
+        needs_base=True,
+        absorbed=True,
+    ),
+]
