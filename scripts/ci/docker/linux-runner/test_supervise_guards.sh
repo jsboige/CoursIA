@@ -30,14 +30,25 @@ ok() { echo "  PASS: $1"; echo "PASS $1" >> "$RESULTS"; }
 ko() { echo "  FAIL: $1"; echo "FAIL $1" >> "$RESULTS"; }
 
 # Stubs docker + gh + ps. Le stub docker simule une image A JOUR pour le
-# garde de fraicheur #14801 : au probe `run --entrypoint sha256sum`, il rend
-# le sha256 du VRAI entrypoint.sh sibling (bake a la generation du stub).
-# STUB_IMG_ENTRYPOINT_SHA force un ecart pour tester le refus (test 9).
+# garde de fraicheur #14801/#15105 : au probe `run --entrypoint sha256sum`, il
+# rend le sha256 du VRAI sibling du checkout (bake a la generation du stub).
+# La fonction assert_image_fresh lit DEUX fichiers depuis #15105 (work_cache_
+# health.sh est source par l'entrypoint) : le stub repond aux deux probes.
+# STUB_IMG_ENTRYPOINT_SHA / STUB_IMG_HEALTH_SHA forcent un ecart pour tester
+# le refus (tests 9 et 29).
 REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
+REPO_HEALTH_SHA="$(sha256sum "$SCRIPT_DIR/work_cache_health.sh" 2>/dev/null | awk '{print $1}')"
 cat > "$TEST_DIR/bin/docker" <<STUB
 #!/usr/bin/env bash
 if [ "\$1" = "run" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 exit 0
@@ -61,9 +72,24 @@ exit 0
 STUB
 chmod +x "$TEST_DIR/bin/ps"
 
-# Helper : executer supervise.sh avec env detourne. Timeout strict pour
-# eviter le hang de wait() -- cmd_start lance wait() qui attend les
-# slot_loop infinis.
+# Stub sleep GLOBAL : depuis que les boucles VIVENT (la fusion a corrige t0),
+# un cycle court attendait un backoff reel de 15 s ; les tests 1-3/7/10/22
+# (timeouts 1-3 s) timeout-rent au lieu de mesurer. Ce stub rend toutes les
+# attentes de supervise.sh instantanees ; les tests 12-28 posent LEURS stubs
+# sleep logues pour compter les backoffs (non affectes : leurs bins passent
+# d'abord dans le PATH).
+cat > "$TEST_DIR/bin/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "sleep $*" >> "${SLEEP_LOG:-/dev/null}"
+exit 0
+STUB
+chmod +x "$TEST_DIR/bin/sleep"
+
+# Helper : executer supervise.sh avec env detourne. Timeout pour eviter le
+# hang de wait() -- cmd_start lance wait() qui attend les slot_loop infinis.
+# La fenetre (8 s) est large : elle borne execute() sans dependre d'une
+# machine rapide -- les refus testes arrivent en tete de cmd_start, la
+# charge machine ne doit pas les transformer en timeout.
 run_supervise() {
   local args="$1"
   local prefix="$2"
@@ -71,7 +97,7 @@ run_supervise() {
   export PATH="$TEST_DIR/bin:$PATH"
   export COURSIA_RUNNER_NAME_PREFIX="$prefix"
   export COURSIA_RUNNER_STATE_DIR="$state"
-  timeout --kill-after=1 1 bash "$SCRIPT_DIR/supervise.sh" $args >/dev/null 2>"$TEST_DIR/last.err"
+  timeout --kill-after=1 8 bash "$SCRIPT_DIR/supervise.sh" $args >/dev/null 2>"$TEST_DIR/last.err"
   echo "rc=$?"
   cat "$TEST_DIR/last.err"
 }
@@ -121,10 +147,16 @@ echo "Test 3 : start --force leve sentinel (Defaut 2 avec --force)"
   export COURSIA_RUNNER_NAME_PREFIX="test-prefix-C"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-C"
   touch "$TEST_DIR/state-C/stop"
-  timeout --kill-after=1 2 bash "$SCRIPT_DIR/supervise.sh" start 1 --force >/dev/null 2>"$TEST_DIR/last.err" &
+  timeout --kill-after=1 15 bash "$SCRIPT_DIR/supervise.sh" start 1 --force >/dev/null 2>"$TEST_DIR/last.err" &
   TPID=$!
-  sleep 0.5
-  if [ ! -f "$TEST_DIR/state-C/stop" ]; then
+  # Poll (pas de fenetre fixe) : la chaine de gardes pre-rebase fait vivre
+  # N processus stub ; sa duree depend de la charge machine.
+  leve=0
+  for _ in $(seq 1 24); do
+    [ ! -f "$TEST_DIR/state-C/stop" ] && { leve=1; break; }
+    sleep 0.5
+  done
+  if [ "$leve" = "1" ]; then
     ok "sentinel leve par start --force"
   else
     ko "sentinel aurait du etre leve par start --force (encore present)"
@@ -220,9 +252,9 @@ STUB
   export COURSIA_RUNNER_GH_ACCOUNT="fake-account"
   export GH_CALLS_LOG="$TEST_DIR/gh7.calls"
   : > "$GH_CALLS_LOG"
-  timeout --kill-after=1 2 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/last.err" &
+  timeout --kill-after=1 15 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/last.err" &
   TPID=$!
-  sleep 1
+  sleep 5
   pkill -P $TPID 2>/dev/null
   pkill -f 'supervise.sh start' 2>/dev/null
   wait 2>/dev/null
@@ -304,11 +336,19 @@ echo "Test 10 : start passe le garde quand l'image est a jour (#14801)"
   export COURSIA_RUNNER_NAME_PREFIX="test-prefix-10"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-10"
   mkdir -p "$TEST_DIR/state-10"
-  timeout --kill-after=1 2 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out-10.log" 2>"$TEST_DIR/last.err" &
+  timeout --kill-after=1 15 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out-10.log" 2>"$TEST_DIR/last.err" &
   TPID=$!
-  sleep 0.7
-  if grep -q "slots lances" "$TEST_DIR/out-10.log" && ! grep -q "PERIMEE" "$TEST_DIR/last.err"; then
-    ok "image a jour : garde passe, slots lances"
+  # Signal fiable de "slots lances" : $STATE_DIR/pids est ecrit par
+  # redirection directe (immediate), alors que les echoes stdout du
+  # supervise sont bufferises (visibles seulement a la sortie du process).
+  # Poll : la chaine de gardes depend de la charge machine.
+  slots=0
+  for _ in $(seq 1 24); do
+    [ -s "$TEST_DIR/state-10/pids" ] && { slots=1; break; }
+    sleep 0.5
+  done
+  if [ "$slots" = "1" ] && ! grep -q "PERIMEE" "$TEST_DIR/last.err"; then
+    ok "image a jour : garde passe, slots lances ($(tr '\n' ' ' < "$TEST_DIR/state-10/pids"))"
   else
     ko "le garde a tort ou le start a echoue, out=$(cat "$TEST_DIR/out-10.log") err=$(cat "$TEST_DIR/last.err")"
   fi
@@ -403,7 +443,16 @@ echo "Test 12 : backoff exponentiel 3,6,12,24... plafonne 24, identique rc=0 et 
 if [ "\$1" = "info" ]; then exit 0; fi
 if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  # assert_image_fresh sonde DEUX fichiers (#15105) : repondre au bon sha
+  # selon la probe, sinon l'image est jugee PERIMEE et toute la boucle meurt.
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -487,7 +536,16 @@ echo "Test 14 : cycle ayant vecu >= HEALTHY_CYCLE_SECS -> reset + sleep 2"
 if [ "\$1" = "info" ]; then exit 0; fi
 if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  # assert_image_fresh sonde DEUX fichiers (#15105) : repondre au bon sha
+  # selon la probe, sinon l'image est jugee PERIMEE et toute la boucle meurt.
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -755,13 +813,16 @@ echo "Test 22 : waiters -- toolcache monte, et JAMAIS de volume _work (#15091)"
   cd "$SCRIPT_DIR"
   unset PS_OUTPUT
   mkdir -p "$TEST_DIR/bin17" "$TEST_DIR/state-17" "$TEST_DIR/state-17b"
-  # Stub docker distinct : il doit repondre au probe de fraicheur #14801
-  # (`docker run --rm --entrypoint sha256sum`) AVANT de journaliser l'argv du
-  # vrai lancement, sinon le probe serait compte comme un lancement de waiter.
+  # Stub docker distinct : il doit repondre aux probes de fraicheur #14801/
+  # #15105 (`docker run --rm --entrypoint sha256sum` sur entrypoint.sh ET
+  # work_cache_health.sh) AVANT de journaliser l'argv du vrai lancement,
+  # sinon un probe serait compte comme un lancement de waiter.
   cat > "$TEST_DIR/bin17/docker" <<STUB
 #!/usr/bin/env bash
 if [ "\$1" = "run" ] && printf '%s' "\$*" | grep -q -- '--entrypoint sha256sum'; then
-  echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
+  printf '%s' "\$*" | grep -q 'work_cache_health.sh' \
+    && echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh" \
+    || echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -774,13 +835,20 @@ STUB
   chmod +x "$TEST_DIR/bin17/docker"
   cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin17/gh"
   cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin17/ps"
+  # PATH borne a bin17 (pas de stub sleep global) : les boucles waiter
+  # dormiraient reellement entre les cycles ; on pose un sleep instantane.
+  cat > "$TEST_DIR/bin17/sleep" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin17/sleep"
   export PATH="$TEST_DIR/bin17:$PATH"
   export COURSIA_RUNNER_WAITER_NAME_PREFIX="test-waiter-17"
 
   export ARGV_LOG="$TEST_DIR/state-17/docker-argv.txt"
   : > "$ARGV_LOG"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-17"
-  timeout --kill-after=1 3 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
+  timeout --kill-after=1 20 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
   touch "$TEST_DIR/state-17/stop"   # les boucles orphelines sortent d'elles-memes
   argv="$(cat "$ARGV_LOG" 2>/dev/null)"
   if echo "$argv" | grep -q -- "-v coursia-runner-toolcache:/opt/hostedtoolcache" \
@@ -916,7 +984,16 @@ echo "Test 25 : 70 cycles courts consecutifs -- plafond tenu jusqu'au bout, jama
 if [ "\$1" = "info" ]; then exit 0; fi
 if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  # assert_image_fresh sonde DEUX fichiers (#15105) : repondre au bon sha
+  # selon la probe, sinon l'image est jugee PERIMEE et toute la boucle meurt.
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -982,7 +1059,16 @@ echo "Test 26 : cycle court portant une execution de job -> pas de backoff, comp
 if [ "\$1" = "info" ]; then exit 0; fi
 if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  # assert_image_fresh sonde DEUX fichiers (#15105) : repondre au bon sha
+  # selon la probe, sinon l'image est jugee PERIMEE et toute la boucle meurt.
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -1046,7 +1132,16 @@ echo "Test 27 : cycle vecu mais rc!=0 -> non qualifie sain, compteur conserve (r
 if [ "\$1" = "info" ]; then exit 0; fi
 if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  # assert_image_fresh sonde DEUX fichiers (#15105) : repondre au bon sha
+  # selon la probe, sinon l'image est jugee PERIMEE et toute la boucle meurt.
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -1120,7 +1215,16 @@ echo "Test 28 : cycle court AVEC travail sur un log de cycle >64 Ko -- le travai
 if [ "\$1" = "info" ]; then exit 0; fi
 if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  # assert_image_fresh sonde DEUX fichiers (#15105) : repondre au bon sha
+  # selon la probe, sinon l'image est jugee PERIMEE et toute la boucle meurt.
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -1179,6 +1283,29 @@ STUB
   else
     ko "ligne 'cycle court AVEC travail' absente pour un cycle a gros log : $(head -3 "$TEST_DIR/err28.log")"
   fi
+)
+echo ""
+
+# --- Test 29 : garde de fraicheur -- health script perime refuse (#15105) ---
+# Le garde lit DEUX fichiers depuis #15105 (work_cache_health.sh est source
+# par l'entrypoint). Le controle positif du COTE garde : un ecart sur le
+# SEUL fichier ajoute doit refuser exactement comme un ecart d'entrypoint --
+# sinon la porte que le nouveau fichier ouvre serait garde par personne.
+echo "Test 29 : start refuse si work_cache_health.sh de l'image != checkout (#15105)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/state-29"
+  STUB_IMG_HEALTH_SHA=e000000000000000000000000000000000000000000000000000000000000000e
+  export STUB_IMG_HEALTH_SHA
+  rc="$(run_supervise 'start 1' 'test-prefix-29' "$TEST_DIR/state-29" 2>&1 | head -1 | sed 's/rc=//')"
+  err="$(cat "$TEST_DIR/last.err")"
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "work_cache_health.sh"; then
+    ok "health script perime refuse, fichier FAUTIF nomme (rc=$rc)"
+  else
+    ko "refus sur work_cache_health.sh attendu, rc=$rc err=$err"
+  fi
+  unset STUB_IMG_HEALTH_SHA
 )
 echo ""
 

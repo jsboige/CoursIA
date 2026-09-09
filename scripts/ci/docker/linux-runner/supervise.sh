@@ -657,6 +657,9 @@ slot_loop() {
       sleep "$wait_s"
       continue
     fi
+    # #15095 : la duree de vie du conteneur est mesuree depuis AVANT le run
+    # (offset pris avant rotate_log, comme le log_off du signal de travail).
+    local t0=$SECONDS
     rotate_log "$STATE_DIR/$name.log"
     # Offset du log au debut du cycle : le signal de travail de cycle_backoff
     # ne doit lire QUE ce que CE cycle ecrit (le log est cumulatif, cf le
@@ -911,6 +914,7 @@ waiter_loop() {
       sleep "$wait_s"
       continue
     fi
+    local t0=$SECONDS
     rotate_log "$STATE_DIR/$name.log"
     local log_off
     log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
