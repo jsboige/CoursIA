@@ -76,6 +76,33 @@ def get_pull_request_paths(workflow: dict) -> list[str] | None:
     return None
 
 
+def has_pr_target_filter_excluding_main(workflow: dict) -> bool:
+    """True iff the ``pull_request`` trigger carries a target-branch filter
+    that excludes ``main`` (so the workflow does not fire on PRs targeting
+    main, even if no ``paths:`` filter is set).
+
+    Covers both forms documented by GitHub Actions:
+      - ``branches-ignore: [main]``
+      - ``branches: [...]`` where ``main`` is absent from the allowlist
+
+    Used by #12773 to recognize effective pathless filters for the
+    ``#10600`` objective (reduce fan-out on PRs targeting ``main``).
+    """
+    on = workflow.get(True, workflow.get("on", {}))
+    if not isinstance(on, dict):
+        return False
+    pr = on.get("pull_request")
+    if not isinstance(pr, dict):
+        return False
+    branches_ignore = pr.get("branches-ignore")
+    if isinstance(branches_ignore, list) and "main" in branches_ignore:
+        return True
+    branches = pr.get("branches")
+    if isinstance(branches, list) and branches and "main" not in branches:
+        return True
+    return False
+
+
 def get_workflow_pulls_label(workflow: dict) -> bool:
     """Detect label-posing in the workflow script source (heuristic)."""
     # Read raw file to scan ``gh pr edit --add-label`` and ``gh label``.
@@ -136,6 +163,7 @@ def inventory_workflows() -> list[dict]:
         pulls = has_pull_request_trigger(wf)
         paths = get_pull_request_paths(wf) if pulls else None
         labels = get_workflow_pulls_label(wf) if pulls else False
+        target_filter = has_pr_target_filter_excluding_main(wf) if pulls else False
         rows.append(
             {
                 "file": str(wf_path.relative_to(REPO_ROOT)),
@@ -143,19 +171,25 @@ def inventory_workflows() -> list[dict]:
                 "has_pull_request": pulls,
                 "paths": paths,
                 "labels_posed": labels,
+                "pr_target_filter_excludes_main": target_filter,
             }
         )
     return rows
 
 
 # Mapping: PR-type -> set of paths the PR touches. Used to estimate fan-out
-# by intersecting with each workflow's paths filter.
+# by intersecting with each workflow's paths filter. The ``pr-target-main``
+# key is special: it represents a PR whose target branch IS ``main`` and is
+# used by #12773 to recognize ``branches-ignore: [main]`` / ``branches: [...]
+# excluant main`` as effective filters. Its ``touched`` list is empty
+# because the only relevant check is the target-branch filter, not paths.
 PR_TYPE_TOUCHES = {
     "markdown-only": ["**/*.md"],
     "notebook-only": ["**/*.ipynb"],
     "scripts-only": ["scripts/**"],
     "workflows-only": [".github/workflows/**", ".github/actions/**"],
     "docs-only": ["docs/**"],
+    "pr-target-main": [],
 }
 
 
@@ -178,6 +212,10 @@ def fnmatch(path: str, pattern: str) -> bool:
 def estimate_fanout_for_type(row: dict, pr_type: str) -> bool:
     if pr_type not in PR_TYPE_TOUCHES:
         return False
+    if pr_type == "pr-target-main":
+        # #12773 : workflows that exclude ``main`` via ``branches-ignore`` or
+        # ``branches`` (allowlist) do NOT fire on PRs targeting main.
+        return not bool(row.get("pr_target_filter_excludes_main"))
     paths = row.get("paths")
     if paths is None:
         return bool(row.get("has_pull_request"))
@@ -198,22 +236,35 @@ def render_markdown(rows: list[dict], required: set[str] | None) -> str:
         for r in rows
         if r.get("has_pull_request") and required and r.get("name") in required
     )
-    out.append(f"Total workflows: **{n_total}** | pull_request: **{n_pulls}** | avec paths: **{n_paths}** | label-posing: **{n_labels}** | required: **{n_required}**")
+    # #12773 : count workflows with an effective filter on PRs targeting main
+    # (paths: OR branches-ignore: [main] OR branches: [...] excluant main).
+    n_filtered = sum(
+        1
+        for r in rows
+        if r.get("has_pull_request")
+        and (r.get("paths") or r.get("pr_target_filter_excludes_main"))
+    )
+    out.append(
+        f"Total workflows: **{n_total}** | pull_request: **{n_pulls}** | "
+        f"avec paths: **{n_paths}** | label-posing: **{n_labels}** | "
+        f"required: **{n_required}** | avec filtre effectif PR→main: **{n_filtered}**"
+    )
     out.append("")
     if required is None:
         out.append(
             "_API de protection de branche injoignable -- fallback sur la liste statique._"
         )
         out.append("")
-    out.append("| Workflow | pull_request | paths | label-posing |")
-    out.append("|----------|--------------|-------|--------------|")
+    out.append("| Workflow | pull_request | paths | target-filter excl. main | label-posing |")
+    out.append("|----------|--------------|-------|--------------------------|--------------|")
     for r in rows:
         if not r.get("has_pull_request"):
             continue
         paths_repr = ", ".join(r.get("paths") or ["(none)"])[:80]
+        target_repr = "oui" if r.get("pr_target_filter_excludes_main") else "non"
         labels_repr = "oui" if r.get("labels_posed") else "non"
         out.append(
-            f"| `{r['file']}` | oui | {paths_repr or '(none)'} | {labels_repr} |"
+            f"| `{r['file']}` | oui | {paths_repr or '(none)'} | {target_repr} | {labels_repr} |"
         )
     out.append("")
     out.append("## Fan-out estime par type de PR")
@@ -279,12 +330,15 @@ def main() -> int:
         # per #10600 criterion 2 the absence of `paths:` on PR gate is a
         # DESIGN choice, not a violation. See `.github/workflows/pr-gate.yml`
         # header for the rationale. Other required checks should NOT be
-        # pathless — flag them.
+        # pathless — flag them. #12773 : a `branches-ignore: [main]` or
+        # `branches: [...]` allowlist is an equivalent effective filter for
+        # the #10600 objective (do not fire on PRs targeting main).
         violations = [
             r
             for r in rows
             if r.get("has_pull_request")
             and r.get("paths") is None
+            and not r.get("pr_target_filter_excludes_main")
             and r.get("name") in required
             and r.get("name") != "PR gate"
         ]

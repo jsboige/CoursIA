@@ -203,6 +203,21 @@ médias/extraits tiers — cf. § 6 ; modèles GenAI tiers — cf. § 5).
 
 ---
 
+## 8. Inspirations algorithmiques (adaptation non-vendor)
+
+Cette section consigne les **sources d'inspiration algorithmique** pour du
+code natif au dépôt : aucune copie, mais la paternité conceptuelle est
+due et la licence de la source est rappelée.
+
+| Inspiration | Source amont | Commit / version | Licence | Notes |
+|-------------|--------------|------------------|---------|-------|
+| `scripts/ci/guard_gauntlet.py` (pilote HELD/ESCAPED) | [jsboige/gauntlet](https://github.com/jsboige/gauntlet) (fork personnel de `endjin/gauntlet`) | blob `5c7b610d69d7fb9e9172792f661baa9f610b587b` (source pin `4341052ee3ffc7c728ae31ecbc25b987e0906de9`) | **MIT** (projet amont Loop MMT) | Adaptation **non-vendor** : argv explicite sans `shell=True`, token `{path}` substitué via `shlex.quote` (single-arg injection), `cwd=` figé au sandbox, env minimal documenté, `timeout` dédié au verdict (pas de `TimeoutExpired` brut). Le contrat HELD/ESCAPED est conservé. Issue pilote : #15067. |
+
+> La distinction « vendor vs inspiration » est documentée dans le body du
+> runner (`scripts/ci/guard_gauntlet.py` § « Pourquoi ne pas vendor upstream »).
+
+---
+
 **Statut** : **tranches 1 + 2 de #8055 livrées** (THIRD_PARTY_NOTICES central —
 sous-modules + vendored + modèles GenAI + médias pédagogiques). La tranche
 suivante (datasets) est traitée dans
