@@ -411,10 +411,96 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)
 
+## Ordre partiel et prérequis — mapping exhaustif (28/28)
+
+> Suite de la section « Ordre partiel et prérequis » (#15283, c.1030, arcs 1-3) :
+> le présent mapping rend le balisage **exhaustif**. Mesure du 2026-09-09 sur
+> `main` : **28 notebooks** `.ipynb` dans le répertoire (27 à la racine, 1 sous
+> `groupe-I2-contre-arguments-aspic/`). Chaque notebook est balisé dans un des
+> trois arcs ou déclaré hors-arc avec sa raison.
+
+### Arc 1 — Agentic (numéroté 0 → 5, ligne principale) — ordre strict
+
+| # | Notebook | Rôle dans la série |
+|---|----------|--------------------|
+| 0 | `Agentic-0-init` | Setup (JPype + JDK + JARs Tweety) |
+| 1 | `Agentic-1-informal` | Détection d'arguments / sophismes |
+| 2 | `Agentic-2-formal` | Formalisation (PL + FOL + Modal + Dung) |
+| 3 | `Agentic-3-orchestration` | Coordination (mini-DAG vs conversationnel) |
+| 4 | `Agentic-4-capstone` | Intégration (baseline 0-shot vs pipeline) |
+| 5 | `Agentic-5-jtms` | Raisonnement non-monotone (Doyle 1979) |
+
+Lecture **0 → 5** sans raccourci : chaque étape consomme la précédente.
+
+### Arc 2 — Compagnons `*_agent` (parallèle à l'arc 1) — strict après la base
+
+| Base (Arc 1) | Compagnon | Note |
+|--------------|-----------|------|
+| `Agentic-0-init` | `Agentic-0-init_agent` | *(legacy)* configuration LLM/OpenAI |
+| `Agentic-1-informal` | `Agentic-1-informal_agent` | *(legacy)* agent d'analyse informelle |
+| `Agentic-2-formal` | `Agentic-2-pl_agent` | *(legacy)* agent logique propositionnelle |
+| `Agentic-3-orchestration` | `Agentic-3-orchestration_agent` | *(legacy)* orchestration multi-agents |
+
+Pas de compagnon `*_agent` pour `4-capstone` ni `5-jtms` : le compagnon est un
+doublon legacy des étapes 0-3, la série n'en a pas créé au-delà.
+
+### Arc 3 — Mnémonique (théorie parallèle, fondationnelle) — ordre partiel
+
+| Notebook | Rôle dans la série |
+|----------|--------------------|
+| `Dung_AF_Semantics` | Fondation de l'argumentation abstraite (grounded / preferred / stable) |
+| `Toulmin_Model` | Argumentation informelle structurée (6 composants) |
+| `Value_Based_AF` | Argumentation + préférences (Bench-Capon 2003) |
+| `Ranking_Semantics` | Argumentation graduée (h-Categoriser, fardeau) |
+| `Dated_Graphs` | Argumentation temporelle / mesure (Epic #13303) |
+
+`Dung_AF_Semantics` est la fondation → {`Value_Based_AF`, `Ranking_Semantics`,
+`Dated_Graphs`} ; `Toulmin_Model` se lit indépendamment (pont computationnel
+vers Dung en fin de parcours).
+
+### Hors-arc (13/28) — chaque notebook restant, avec sa raison
+
+| Notebook | Raison du hors-arc |
+|----------|--------------------|
+| `Executor` | **Transverse (infra)** : point d'entrée batch du pipeline complet (Papermill / MCP) — consomme l'arc 1 (parcours « 0 → 3 → Executor ») |
+| `Multi_Backend_Routing` | **Transverse (infra)** : routage multi-backend « décider ou échouer bruyamment », s'applique aux solveurs des arcs 1 et 3 |
+| `Formal_Richness_Matrix` | **Transverse (évaluation)** : matrice de richesse formelle (FP-5), classe les verdicts de n'importe quel solveur de la série |
+| `Restitution_3_Actes` | **Transverse (restitution)** : scaffold de restitution honnête (evidence + narration LLM *gated*), réutilisable par toute la série |
+| `Recollement_Lectures` | **Transverse (consolidation)** : lectures croisées de la série |
+| `Recollement_Strate6` | **Transverse (consolidation)** : strate 6 du récollement |
+| `ArgumentProfile` | **Transverse (vue agrégée)** : fiche réunissant les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) — consomme les arcs 1, 2 et 3 |
+| `UI_configuration` | **Transverse (interaction)** : interface utilisateur widgets, parcours alternatif « 0 → 1 → UI_configuration » |
+| `Argumentum_Cards` | **Hors-arc (production)** : deck imprimable du jeu Argumentum (176 cartes depuis la taxonomie) — consomme le socle ontologique, n'est pas un jalon de progression |
+| `Ontology_AIF` | **Fondation (socle ontologique)** : lecture de l'OWL upstream (10 976 NamedIndividual, 4,7 MB) — outillage, pas un jalon d'apprentissage |
+| `Ontology_CrossLinks` | **Fondation (socle ontologique)** : CSV canonique complémentaire (1 408 lignes × 102 colonnes) |
+| `Ontology_Virtues` | **Fondation (socle ontologique)** : pôle vertus, thésaurus SKOS (2 639 triplets) |
+| `I2_Contre_arguments_ASPIC` | **Hors-arc (travail de groupe)** : sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome (contre-arguments ASPIC), n'est pas un jalon de la progression |
+
+### Arithmétique (résolution du désaccord 14 vs 15 de #15283)
+
+La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
+balisés » (auteur de la PR). La mesure de référence est le répertoire :
+**28 notebooks sur `main`**, dont **15 balisés** par les arcs (6 + 4 + 5) et
+**13 hors-arc** documentés ci-dessus — la somme fait 28, sans trou ni double.
+Les transverses que la c.1030 déclarait hors-ordre (`Formal_Richness_Matrix`,
+`Recollement_*`, …) sont ici nommés un à un avec leur raison, et deux
+notebooks absents des tables du README (`Argumentum_Cards`,
+`I2_Contre_arguments_ASPIC`) sont intégrés au balisage.
+
+### Limites de ce mapping
+
+- L'ordre reste **orthogonal au verdict de renumérotation** (EPIC #5081 §3,
+  « aucune renum ») : c'est un ordre de lecture, pas une convention de nom.
+- Classification par **rôle déclaré dans les tables du README** ; un
+  changement de rôle (ex. `Executor` promu jalon d'arc) impose un re-balisage.
+- Un notebook ajouté à la série devra être re-balisé (arc ou raison hors-arc).
+- Les blocs de statut catalogue du README sont inchangés : le catalogue
+  appartient à l'automatisation (`catalog-cron.yml` / `catalog-drift.yml`).
+
 ## Licence
 
 Voir la licence du repository principal.
 
 ---
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche argument_analysis.
+**Version 1.2.1** — Septembre 2026 — mapping exhaustif 28/28 des notebooks Argument_Analysis (arcs 1-3 + 13 hors-arc documentés), suite #15306 de la section c.1030 (#15283). EPIC #3975 tranche argument_analysis.
