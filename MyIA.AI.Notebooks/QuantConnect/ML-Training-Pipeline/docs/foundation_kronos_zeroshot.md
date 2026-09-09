@@ -48,7 +48,7 @@ Le 1er rung foundation-model (Chronos-Bolt, c.893) était NO BEATS — mais son 
 
 Un **2e** paradigme foundation-model zero-shot (K-lines OHLCV, cette fois) **ne bat pas majority-class** sur le panier — rejoignant Chronos-Bolt (langage des TS). **Deux foundation-models, deux échecs.** Cela **renforce** la conclusion centrale de l'Epic #1409 : l'alpha sur cet univers provient de **politiques d'action apprises** (L4 Decision Transformer), **pas** d'overlays *trend*, de *sizing* régime-conditionnel, **ni de prévision foundation-model zero-shot** — qu'elle vienne du « langage des séries temporelles » (Chronos) ou de K-lines OHLCV multi-actifs (Kronos).
 
-Quatre paradigmes testés désormais (L1-L6 + 2 foundation rungs), un seul BEATS (action-based).
+Quatre paradigmes testés désormais (L1-L6 + 2 foundation rungs), un seul BEATS (action-based, panel @10bps).
 
 ## Comparaison honnête au M15 LSTM (KEEPER Gate V2)
 
@@ -65,5 +65,5 @@ Comme pour Chronos, la comparaison *foundation-zero-shot* vs *M15-fine-tuned* n'
 - Kronos : Liu et al., AAAI 2026 — « Kronos : A learned K-line codec tokenizer for financial time-series forecasting » (shiyu-coder/Kronos, NeoQuasar HF mirrors).
 - Chronos-Bolt (1er rung) : [`docs/foundation_chronos_zeroshot.md`](foundation_chronos_zeroshot.md).
 - M15 LSTM (KEEPER Gate V2) : [`docs/M15_LSTM_RV.md`](M15_LSTM_RV.md).
-- L4 Decision Transformer (seul BEATS du ladder) : [`docs/L4_decision_transformer.md`](L4_decision_transformer.md).
+- L4 Decision Transformer (BEATS du ladder, panel @10bps ; OOT réel NO-BEATS) : [`docs/L4_decision_transformer.md`](L4_decision_transformer.md).
 - Spin-out : issue #8607. Epic parent parqué : #1409.
