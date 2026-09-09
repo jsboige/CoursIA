@@ -178,6 +178,7 @@ layout: dense
   - La conscience est un espace de travail ou différentes parties du cerveau partagent des informations
   - Applications: Modèles d'attention, tâches complexes
   - Rôle important de l'inconscient
+  - *Notebook : [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition d'un workspace global, mesure empirique du basculement.*
 - **Integrated Information Theory (IIT)**
   - La conscience est mesuree par le degré d'integration de l'information (Phi)
   - Introduit la notion de systèmes physiques conscients
@@ -218,6 +219,31 @@ layout: dense
   - La conscience peut exister dans tout système integrant l'information
   - Reste difficile a tester experimentalement
 - **Activite**: Decouverte de PyPhi
+  - *Notebook : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Φ sur petits systèmes booléens, les cinq axiomes opérationnels, ce qui distingue un systeme a Phi eleve d'un circuit feed-forward equivalent.*
+
+---
+
+layout: dense
+---
+
+# Conscience mesurable : PyPhi et ignition de workspace
+
+- **Le verrou empirique**
+  - IIT donne un nombre (Phi) mais reste difficile a observer sur le vivant
+  - GWT donne un critere operationnel (ignition) mais ne dit pas ce que le workspace represente
+  - Les deux theories se rejoignent sur un meme geste : **mesurer un phenomene de transition**
+- **PyPhi** (Tononi, Albantakis, et al.)
+  - Systemes booleens a 5--8 noeuds : calcul exact de Phi en quelques secondes
+  - Systemes plus grands : decomposition, partitions minimales, approximation
+  - Question pedagoguee : un systeme a Phi eleve a-t-il quelque chose qui ressemble a une "experience"?
+- **Workspace Ignition** (Dehaene, Mashour, ICT-24)
+  - Signal EEG/MEG : passage d'une activite locale a une activite globale, large bande, durable
+  - ICT-24 formalise cette ignition dans le cadre Integrated Complexity Theory (ICT) et la relie a Phi
+  - Question pedagoguee : cette ignition peut-elle exister dans un systeme non-biologique?
+- **Vers une science de la conscience**
+  - Au-dela du debat philosophique, la mesure impose une discipline
+  - Le depot porte les deux outils (IIT-01, ICT-24) ; les utiliser en parallele montre ce qu'aucun ne montre seul
+  - *Notebooks : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) (calcul exact de Φ) · [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (ignition et integration).*
 
 ---
 
@@ -273,7 +299,10 @@ layout: dense
 - **Exemples concrets**
   - Federated learning (modèle sans base de données centralisee)
   - Deep learning confidentiel
-  - Chiffrement homomorphe
+  - Chiffrement homomorphe (calcul sur données chiffrées, sans déchiffrement)
+    - *Notebook : [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes, scénario bulletin dans l'urne.*
+  - Vote vérifiable de bout en bout (end-to-end voter verifiability)
+    - *Notebook : [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles, conformité électorale.*
   - Augmentation
 
 ---
@@ -348,6 +377,7 @@ layout: dense
   - Eviter la confusion entre outils et entites conscientes
 - **Question ouverte**
   - Si une IA simule la souffrance, a-t-on le droit de la faire souffrir?
+  - *Modèle d'argumentation pour structurer ce type de débat : [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) — claim / data / warrant / backing / qualifier / rebuttal, le debat redevient falsifiable.*
 
 ---
 layout: two-cols
@@ -364,6 +394,8 @@ layout: two-cols
   - Fault Tree Analysis
   - Grilles de securite IA (AI Safety Gridworlds)
   - AI Safety Levels (ASLs)
+  - Modelisation par graphes d'arguments (Dung 1995)
+    - *Notebook : [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb) — extensions de valeurs, semantiques preferred/stable/complete, application au value alignment multi-criteres.*
 - **Exemple concret**
   - Agents "cheatants" dans les simulations
 - **Anthropic**
@@ -624,13 +656,24 @@ layout: section
 
 # Pour aller plus loin : Notebooks
 
-- **Conscience et IIT**: `IIT/` - notebooks PyPhi
-- **IA Symbolique**: `SymbolicAI/Argument_Analysis/` - argumentation formelle
-  - `SymbolicAI/Lean/` - verification formelle
-- **Explicabilite (XAI)**: `ML/` - ML.NET tutorials
-- **IA Generative et ethique**: `GenAI/` - 58 notebooks
-  - DALL-E, Stable Diffusion, ComfyUI, LLMs
-- **Théorie des jeux**: `GameTheory/` - 26 notebooks OpenSpiel
+Le depot ancre chaque theme du deck sur un notebook ou une serie mesurable. Selection
+des cibles **directement citees dans les slides ci-dessus** (chemins relatifs au depot) :
+
+- **Conscience et theories de l'esprit**
+  - [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Phi sur systemes booleens
+  - [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition du workspace global (GWT)
+- **Argumentation formelle et debat structure**
+  - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb) — semantiques de Dung, value alignment
+  - [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) — modele de Toulmin, debat falsifiable
+- **Privacy, chiffrement et vote verifiable**
+  - [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes
+  - [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles
+
+Series complementaires (autres thematiques couvertes par le depot) :
+
+- **Explicabilite (XAI)** : `MyIA.AI.Notebooks/ML/` — tutoriels ML.NET
+- **Verification formelle** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
+- **IA generative et ethique** : `MyIA.AI.Notebooks/GenAI/` (103 notebooks, Image/Audio/Video/Texte)
 
 ---
 layout: end
