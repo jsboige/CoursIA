@@ -4,7 +4,9 @@
 
 > **Module co-écrit.** Patterns et anti-patterns Hermes (po-2026) **et** NanoClaw (ai-01),
 > chacun documenté avec un incident réel. Les entrées suffixées « (NanoClaw) » et
-> numérotées P7+/AP7+ apportent la perspective de l'agent terminal sur `ai-01`. Voir
+> numérotées P7+/AP7+ apportent la perspective de l'agent terminal sur `ai-01`. Les
+> entrées P11+/AP12+ (rafraîchissement Hermes, septembre 2026) couvrent les incidents
+> de coordination et de supervision survenus depuis. Voir
 > [tracker #4428](https://github.com/jsboige/CoursIA/issues/4428).
 
 Ce module est le **retour d'expérience en production**. Il ne décrit pas comment les
@@ -94,6 +96,37 @@ sans accord humain.
 
 **Pourquoi :** un pavé de 30 lignes dans Telegram est illisible et noie le signal. La
 concision est ici un trait de produit, pas une limite technique.
+
+### P11 — Surveillance capability-first
+
+**Pratique :** vérifier ce que les bots **peuvent faire** (le chemin d'écriture réel :
+appel d'outil, pas le handshake) **et ce qu'ils disent** (leurs messages), pas
+seulement qu'ils tournent (process, ports, freshness).
+
+**Pourquoi :** l'incident des 12→15 août 2026 : backend MCP mort pendant ~3,5 jours
+derrière un handshake signé en ~5 ms. Tous les voyants classiques sont restés verts
+pendant que chaque tool call échouait en silence (voir AP13 ci-dessous).
+
+### P12 — Crons post-reboot : purger puis recréer
+
+**Pratique :** après un reboot machine ou une mise à jour du harness, **supprimer**
+les jobs restaurés et en **recréer** de frais (`CronList` → delete all → create →
+vérifier l'unicité).
+
+**Pourquoi :** les crons survivent au reboot via la restauration du harness, qui peut
+créer des doublons (double-fire, fuite de tokens — une lane a consommé 2673 requêtes
+en double avant détection, septembre 2026). Voir AP14 ci-dessous.
+
+### P13 — Organes de vérification indépendants
+
+**Pratique :** quand un cron doit produire un artefact observable (un post, une
+review), lui adjoindre un **watchdog séparé** qui lit tout depuis le **volume hôte**
+(fonctionne conteneur down), décalé de ~15 min après le fire, qui **ne re-fire
+jamais** la tâche vérifiée, avec cooldown + compteur OK/MISSING instrumenté.
+
+**Pourquoi :** un cron peut finir `status=ok` sans avoir rien posté — le statut
+d'exécution n'est pas le résultat business. Seul un vérificateur externe lit le
+résultat (voir AP12 ci-dessous).
 
 ---
 
@@ -290,6 +323,68 @@ Le build et le *spawn* visent donc deux noms d'image différents.
 **Leçon :** sur Windows, deux runtimes peuvent dériver deux identités du même répertoire.
 Toujours vérifier que l'artefact buildé est bien celui que l'orchestrateur lance.
 
+### AP12 — Skip silencieux de cron (08/2026)
+
+**Symptôme :** le cron `cluster-tour` rapporte `status=ok` (« completed
+successfully ») — mais **aucun** post `[CLUSTER-HEALTH]` n'apparaît sur le dashboard
+global. Quatre fires consécutifs sans post, non-déterministe (issue hermes-agent #3).
+
+**Cause racine :** deux familles — (a) le *prompt-skip* : l'agent exécute le statut
+mais saute silencieusement l'étape de post ; (b) le *write MCP mort* : le bus
+RooSync est down et chaque écriture échoue sans faire échouer le cron. Dans les
+deux cas, **le statut d'exécution n'est pas le résultat business**.
+
+**Fix :** un watchdog programmatique post-fire (`hermes-cluster-tour-watchdog.ps1`,
+spécifié par ai-01 en 5 points) : assertion « un append `[CLUSTER-HEALTH]` porte un
+timestamp ≥ fire −5 min », sinon `[WARN]` posté sur le global exactement là où le
+post manquait + alerte Telegram. Jamais de re-fire du tour (verificateur, pas
+duplicate). Un gotcha subtil : le corps du `[WARN]` mentionne littéralement
+« [CLUSTER-HEALTH] » — le parseur doit matcher le **titre de section**
+(`## [CLUSTER-HEALTH] T#N` ancré en début de ligne), sinon le WARN s'auto-valide
+comme tour posté.
+
+**Leçon :** on ne peut pas fermer un defect de prompt-skipping en insistant dans le
+prompt. Seul un check programmatique **après** le fire lit le résultat réel.
+
+### AP13 — L'angle aveugle de la capabilité (12→15/08/2026)
+
+**Symptôme :** les deux bots du cluster perdent l'accès dashboard pendant ~3,5 jours
+(~72 cycles). Processes, ports, freshness : tout vert de bout en bout.
+
+**Cause racine :** l'instance roo-state-manager derrière le proxy est **morte**
+(stall GDrive) — mais continuait de **signer le handshake d'initialize en ~5 ms**.
+Le watchdog sondait le *pont* MCP, pas le *backend* : la poignée de main vivante
+masquait l'outil mort. Chaque tool call renvoyait `isError:true` en silence.
+
+**Fix :** la sonde devient un **appel d'outil réel** (`mcp-chain-watchdog.ps1`,
+côté coordinateur, toutes les 2 min — un `roosync_dashboard list`, précisément le
+chemin qui touche GDrive), avec réparation complète (Stop+Start du service +
+restart du proxy, cooldown 15 min). Et la routine de surveillance gagne un check
+« lecture des messages des bots » : les bots **disaient** « bus down 40+ cycles »
+et personne ne les lisait.
+
+**Leçon :** vérifier ce que le système peut **faire** et ce qu'il **dit**, pas ce
+qu'il **est** (process vivant, port ouvert, handshake signé). La liveness ne prouve
+pas la capabilité.
+
+### AP14 — Ghost crons (09/2026)
+
+**Symptôme :** après un reboot machine, une lane schedulée consomme le double de
+son quota — et une autre lane part en **2673 requêtes** avant d'être coupée.
+
+**Cause racine :** les crons survivent au reboot (restauration du harness au
+démarrage de session) et se retrouvent en **double** : le job restauré + le job
+que l'agent recrée à son réveil en croyant armer pour la première fois.
+
+**Fix :** protocole « purge-puis-recrée » systématique post-reboot : `CronList` →
+supprimer **tous** les jobs de surveillance → `CronCreate` frais (wrapper verbatim,
+recurring) → re-`CronList` pour vérifier l'**exactement 1** job → consigner le
+nouvel ID dans le post de statut. Le wrapper du cron porte sa propre instruction
+de self-re-arm avec purge — le protocole se transmet lui-même à chaque fire.
+
+**Leçon :** un état schedulé restauré n'est pas un état propre. Sur une flotte,
+l'unicité d'un cron est un invariant à vérifier, pas une hypothèse.
+
 ---
 
 ## Règles d'or (synthèse)
@@ -305,6 +400,9 @@ Toujours vérifier que l'artefact buildé est bien celui que l'orchestrateur lan
 9. **Un seul écrivain par base SQLite.** L'invariant qui rend l'état observable et sans contention (NanoClaw).
 10. **Client et serveur d'un protocole bougent ensemble.** SDK ↔ gateway en lockstep (NanoClaw).
 11. **Tester depuis le vrai client.** Un `curl -k` sur l'hôte masque ce qu'un client TLS strict (le conteneur) rejette (NanoClaw).
+12. **Sonder la capabilité, pas la liveness.** Un appel d'outil réel, pas le handshake ; et lire ce que les bots disent.
+13. **Le statut d'un cron n'est pas son résultat.** Un cron « ok » qui ne poste rien est un incident — seul un organe indépendant le voit.
+14. **Un état schedulé restauré n'est pas propre.** Post-reboot : purger, recréer, vérifier l'unicité.
 
 ## Liens
 

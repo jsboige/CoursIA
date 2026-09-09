@@ -159,6 +159,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"fetch_merged_prs_since: {e}", file=sys.stderr)
         return 1
 
+    # Windows stdout est cp1252 -- forcer UTF-8 (UnicodeEncodeError sinon, #15184).
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     json.dump(prs, sys.stdout, ensure_ascii=False)
     print()
     return 0
