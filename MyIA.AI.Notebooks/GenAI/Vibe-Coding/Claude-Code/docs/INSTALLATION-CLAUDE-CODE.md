@@ -11,7 +11,9 @@ Ce guide vous explique comment installer et configurer Claude Code (CLI et exten
 
 ## Installation de Claude Code
 
-### Option 1 : Installation Native (Recommandée)
+> **Chemin canonique : l'installation native.** C'est la méthode par défaut de la documentation officielle Anthropic (script d'installation, Homebrew, WinGet selon la plateforme) : Node.js n'est pas requis, le binaire vit sous `~/.local/bin` et se met à jour via `claude update`. Source consultée le 2026-09-09 : [code.claude.com/docs/en/quickstart](https://code.claude.com/docs/en/quickstart). Tout autre chemin ci-dessous est une **alternative**, à n'emprunter que si sa condition s'applique.
+
+### Chemin canonique : Installation Native
 
 L'installation native ne nécessite pas Node.js et fonctionne sur tous les systèmes d'exploitation.
 
@@ -61,15 +63,15 @@ source ~/.bashrc
 claude --version
 ```
 
-### Option 2 : Installation via npm
+### Alternative : Installation via npm
 
-Si vous avez déjà Node.js 18+ installe :
+**Condition qui sélectionne cette alternative** : votre poste interdit l'installation de binaires hors gestionnaire de paquets, ou Node.js 18+ est déjà installé et géré par votre équipe.
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-**Note :** L'installation native est préférée car elle évite les conflits de versions Node.js.
+**Note :** jamais `sudo npm install -g` — si npm réclame des droits, revenez au chemin canonique (natif) ci-dessus ou configurez un préfixe utilisateur (`npm config set prefix ~/.npm-global`). L'installation native reste le chemin canonique : elle évite les conflits de versions Node.js.
 
 ## Installation de l'Extension VS Code
 
@@ -93,9 +95,13 @@ Cliquez sur ce lien : [Installer Claude Code pour VS Code](vscode:extension/anth
 1. Recherchez **"Claude Code"**
 1. Installez
 
-## Configuration avec OpenRouter
+## Configuration avec OpenRouter (couche d'accès aux modèles — distincte de l'installation)
 
-### Étape 0 : Installer le proxy OpenRouter (Requis)
+**Condition qui sélectionne cette voie d'accès** : vous passez par OpenRouter (clé fournie par le formateur) plutôt que par un compte Anthropic direct. Ce n'est pas un second chemin d'installation : l'outil `claude` installé ci-dessus est le même, seule la couche d'accès aux modèles change. Le proxy est un paquet npm : Node.js est requis pour cette brique, même si Claude Code a été installé nativement.
+
+> **Diagnostic du proxy** : vérifiez qu'il tourne avec `curl http://127.0.0.1:8899/api/v1/models` — une réponse JSON avec la liste des modèles confirme qu'il est actif. **Symptôme s'il ne tourne pas** : chaque appel modèle de Claude Code échoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899` — y compris des jours plus tard si le proxy a été lancé détaché en arrière-plan et que la machine a redémarré. Rattachez d'abord la panne au proxy avant de soupçonner votre clé ou votre installation.
+
+### Étape 0 : Installer le proxy OpenRouter (Requis pour l'accès OpenRouter)
 
 Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu : réponses mal formatées, erreurs d'authentification intermittentes). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requêtes correctement.
 

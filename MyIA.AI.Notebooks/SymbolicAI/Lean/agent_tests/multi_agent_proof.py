@@ -19,9 +19,11 @@ Usage:
 
 import argparse
 import asyncio
+from contextlib import contextmanager
 import json
 import sys
 from pathlib import Path
+from typing import Iterator
 
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
@@ -36,7 +38,57 @@ from prover import (
 from prover.config import LEAN_PROJECT_DIR
 from prover.verifier import verify_with_lean
 from prover.trace import TraceLogger as _TL
-from prover.lean_utils import count_real_sorries  # #9402: real-token counter
+from prover.lean_utils import count_real_sorries, stub_theorem_proof
+
+
+@contextmanager
+def _calibration_stub(demo: dict) -> Iterator[bool]:
+    """Temporarily expose a ``sorry_replacement`` calibration target."""
+    target = None
+    if (
+        demo.get("sorry_type") == "sorry_replacement"
+        and demo.get("file")
+        and demo.get("theorem_name")
+    ):
+        target_path = Path(demo["file"])
+        original = target_path.read_bytes()
+        if count_real_sorries(original.decode("utf-8")) == 0:
+            stubbed = stub_theorem_proof(
+                original.decode("utf-8"), demo["theorem_name"]
+            )
+            target_path.write_bytes(stubbed.encode("utf-8"))
+            target = (target_path, original)
+            print(
+                f"[CALIBRATION_STUB] theorem={demo['theorem_name']} "
+                f"line={demo.get('line')} - approved proof stubbed to sorry, "
+                "original restored on exit"
+            )
+
+    try:
+        yield target is not None
+    finally:
+        if target is not None:
+            target[0].write_bytes(target[1])
+            print("[CALIBRATION_RESTORE] approved proof restored")
+
+
+def _prove_demo(demo: dict, args: argparse.Namespace, trace: TraceLogger) -> dict:
+    """Run one sorry-mode demo with calibration preparation when declared."""
+    with _calibration_stub(demo):
+        if args.mode == "multi":
+            prover = MultiAgentSorryProver(trace=trace, provider=args.provider)
+            return asyncio.run(
+                prover.prove_sorry(
+                    demo=demo, max_iterations=args.max_iterations
+                )
+            )
+
+        prover = AutonomousProver(trace=trace, provider=args.provider)
+        return prover.prove_sorry(
+            demo=demo,
+            max_iterations=args.max_iterations,
+            strategic_hints=args.hints,
+        )
 
 
 def main():
@@ -77,30 +129,39 @@ def main():
             sys.exit(1)
 
         content = lean_path.read_text(encoding="utf-8")
-        sorry_count = count_real_sorries(content)  # #9402: real tokens, not prose
-        if sorry_count == 0:
-            print(f"No sorry found in {lean_path}")
-            sys.exit(0)
-
+        sorry_count = count_real_sorries(content)
         sorry_line = args.sorry_line
-        if sorry_line == 0:
-            for i, line in enumerate(content.split("\n"), 1):
-                if "sorry" in line:
-                    sorry_line = i
-                    break
 
-        # Check if a DEMOS entry matches this file + line
+        # A calibration file is committed with its approved proof, so match the
+        # configured target before the ordinary zero-sorry exit. An explicit
+        # line is required when one file contains several calibration targets.
         matched_demo = None
-        for d in DEMOS.values():
-            dfile = d.get("file", "")
-            if dfile and Path(dfile).resolve() == lean_path.resolve() and d.get("line") == sorry_line:
-                matched_demo = d
-                break
+        if sorry_line:
+            for candidate in DEMOS.values():
+                candidate_file = candidate.get("file", "")
+                if (
+                    candidate_file
+                    and Path(candidate_file).resolve() == lean_path.resolve()
+                    and candidate.get("line") == sorry_line
+                ):
+                    matched_demo = candidate
+                    break
 
         if matched_demo:
             demo = {**matched_demo}
-            print(f"  [Config] Matched DEMO '{matched_demo['name']}' for line {sorry_line}")
+            print(
+                f"  [Config] Matched DEMO '{matched_demo['name']}' "
+                f"for line {sorry_line}"
+            )
         else:
+            if sorry_count == 0:
+                print(f"No sorry found in {lean_path}")
+                sys.exit(0)
+            if sorry_line == 0:
+                for i, line in enumerate(content.split("\n"), 1):
+                    if "sorry" in line:
+                        sorry_line = i
+                        break
             demo = {
                 "name": lean_path.stem,
                 "file": str(lean_path),
@@ -111,21 +172,7 @@ def main():
 
         trace = TraceLogger()
 
-        if args.mode == "multi":
-            prover = MultiAgentSorryProver(
-                trace=trace, provider=args.provider,
-            )
-            result = asyncio.run(prover.prove_sorry(
-                demo=demo, max_iterations=args.max_iterations,
-            ))
-        else:
-            prover = AutonomousProver(
-                trace=trace, provider=args.provider,
-            )
-            result = prover.prove_sorry(
-                demo=demo, max_iterations=args.max_iterations,
-                strategic_hints=args.hints,
-            )
+        result = _prove_demo(demo, args, trace)
 
         trace.save(f"auto_{demo['name']}")
         return
@@ -161,40 +208,26 @@ def main():
     # ── Single demo run ──
     trace = TraceLogger()
 
-    if args.mode == "multi" and is_sorry_mode:
-        prover = MultiAgentSorryProver(
-            trace=trace, provider=args.provider,
-        )
-        result = asyncio.run(prover.prove_sorry(
-            demo=demo, max_iterations=args.max_iterations,
-        ))
+    if is_sorry_mode:
+        result = _prove_demo(demo, args, trace)
     else:
-        prover = AutonomousProver(
-            trace=trace, provider=args.provider,
+        # For standard demos, create synthetic sorry-mode demo
+        print(f"\n>>> PROVING: {demo['name']} ({demo.get('difficulty', '?')})...")
+        # Use verify_with_lean for standard theorem demos
+        result = verify_with_lean(
+            theorem=demo["theorem"],
+            tactic=demo["proof"],
+            imports=demo.get("imports"),
+            project_dir=LEAN_PROJECT_DIR,
+            trace=trace,
         )
-        if is_sorry_mode:
-            result = prover.prove_sorry(
-                demo=demo, max_iterations=args.max_iterations,
-                strategic_hints=args.hints,
-            )
-        else:
-            # For standard demos, create synthetic sorry-mode demo
-            print(f"\n>>> PROVING: {demo['name']} ({demo.get('difficulty', '?')})...")
-            # Use verify_with_lean for standard theorem demos
-            result = verify_with_lean(
-                theorem=demo["theorem"],
-                tactic=demo["proof"],
-                imports=demo.get("imports"),
-                project_dir=LEAN_PROJECT_DIR,
-                trace=trace,
-            )
-            print(f"\n{'='*60}")
-            print(f"RESULT: {'VALID' if result['success'] else 'INVALID'}")
-            print(f"  Tactic: {demo['proof']}")
-            print(f"  Time: {result['time_s']:.1f}s")
-            print(f"{'='*60}")
-            trace.save(f"demo_{demo['name']}")
-            return
+        print(f"\n{'='*60}")
+        print(f"RESULT: {'VALID' if result['success'] else 'INVALID'}")
+        print(f"  Tactic: {demo['proof']}")
+        print(f"  Time: {result['time_s']:.1f}s")
+        print(f"{'='*60}")
+        trace.save(f"demo_{demo['name']}")
+        return
 
     trace.save(f"{'multi' if args.mode == 'multi' else 'auto'}_{demo['name']}")
 
@@ -228,7 +261,10 @@ def _run_batch(demo_nums: list, provider: str = "zai", max_iterations: int = 3):
             prover = AutonomousProver(trace=trace, provider=provider)
 
             if demo.get("sorry_type"):
-                result = prover.prove_sorry(demo=demo, max_iterations=max_iterations)
+                with _calibration_stub(demo):
+                    result = prover.prove_sorry(
+                        demo=demo, max_iterations=max_iterations
+                    )
             else:
                 result = verify_with_lean(
                     theorem=demo["theorem"], tactic=demo["proof"],

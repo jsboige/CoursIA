@@ -718,3 +718,156 @@ def test_c7_roles_are_declared_and_required():
         assert role in lab11_source, (
             f"le specialiste {role} n'est plus execute par Lab11 : C7 "
             "perd sa preuve d'orchestration")
+
+
+# ---------------------------------------------------------------------------
+# Composition C1b x C5 (#15060 SC-2c) : la main passee au sous-agent au
+# tour N est-elle encore la sienne au tour N+1 ?
+# ---------------------------------------------------------------------------
+#
+# C1b couvre la persistance multi-tours au-dessus d'ADK (ConversationRunner
+# garde la session, l'historique du tour 1 atteint le tour 2). C5 couvre le
+# handoff mono-tour (un LLM decide transfer_to_agent en cours de tour, le
+# sous-agent prend la main et repond). La COMPOSITION des deux -- un arbre
+# sub_agents execute par ConversationRunner sur plusieurs tours -- etait
+# l'absence mesuree par le dispatch #15060 : sur l'arbre + la persistance,
+# la main rendue au sous-agent au tour N survit-elle au tour N+1 ?
+#
+# Manifeste pre-enregistre (dispatch sxuy01, acceptance bornee) :
+#   Hypothese  : ConversationRunner + sub_agents ADK 2.8 portent la
+#                persistance de main courante -- le sous-agent repond
+#                directement au tour N+1 sans nouveau transfer_to_agent.
+#   Signe      : result_t2.final_agent == "verifier_agent" et aucun
+#                transfer_to_agent n'est re-emis au tour 2.
+#   Seuil      : 100% (test deterministe sur ScriptedLlm, pas statistique).
+#   Refutation : si la main revient a "contract_root" au tour 2, ADK n'a
+#                pas de notion de main courante persistante -- le contrat
+#                de composition est NON PORTE, a signaler comme dette.
+#   Cout       : 0 appel LLM reel (ScriptedLlm, env prive non requis).
+#
+# Critere 4 (rouge au retrait) : si ConversationRunner re-instancie le
+# Runner entre deux `turn()` (comportement run_agent_turn-style -- _runner
+# frais a chaque appel), la session est RE-OUVERTE a chaque tour, l'arbre
+# est re-monte mais le handoff initial n'est pas rejoue : agent_hands du
+# tour 2 ne contient pas "verifier_agent". Mutation verifiee a la main
+# (journal au body de la PR).
+
+
+def test_c1b_x_c5_handoff_persists_across_conversation_turns():
+    # Composition absente verifiee par le dispatch #15060. Le test
+    # mesure ce qui tient : ConversationRunner + sub_agents + multi-tours.
+    from utils.adk_conversation import ConversationRunner
+
+    verifier = _scripted_agent(name="verifier_agent", tools=())
+    root = Agent(
+        name="contract_root",
+        description="porte-contrat de test",
+        instruction="scripte",
+        model=ScriptedLlm(model="scripted"),
+        sub_agents=[verifier],
+    )
+
+    async def scenario():
+        async with ConversationRunner(
+            root, app_name="contracts-c1bxc5"
+        ) as conv:
+            # Tour 1 : root demande le transfert, verifier prend la main.
+            _SCRIPT.append(
+                ("call", ("transfer_to_agent", {"agent_name": "verifier_agent"})))
+            _SCRIPT.append(("text", "verifie : OK"))
+            tour1 = await conv.turn("verifie ce code")
+            # Tour 2 : aucun nouveau transfer_to_agent scripté. Si la main
+            # est persistée, le verifier repond directement ; sinon le
+            # root reprend la main et la conversation recommence a zero.
+            _SCRIPT.append(("text", "verifie encore : suite OK"))
+            tour2 = await conv.turn("et maintenant ?")
+            return conv, tour1, tour2
+
+    conv, tour1, tour2 = asyncio.run(scenario())
+
+    # --- Verifications sur le tour 1 (le handoff a bien eu lieu) ---
+    assert "transfer_to_agent" in tour1.tool_calls, (
+        "le handoff natif n'a pas ete appele au tour 1, tool_calls : "
+        f"{tour1.tool_calls}")
+    assert tour1.final_agent == "verifier_agent", (
+        f"au tour 1 la main doit passer au sous-agent, mesure : "
+        f"{tour1.final_agent}")
+
+    # --- Verdict compose sur le tour 2 (le contrat a mesurer) ---
+    if tour2.final_agent == "verifier_agent":
+        # Hypothese haute verifiee : la main passee au sous-agent survit
+        # au tour suivant. Le contrat de composition C1b x C5 est PORTE.
+        # Aucun transfer_to_agent n'est re-emis (sinon, il apparaitrait
+        # dans tour2.tool_calls).
+        assert "transfer_to_agent" not in tour2.tool_calls, (
+            "la main est passee au sous-agent au tour 2 MAIS un nouveau "
+            f"transfer_to_agent a ete emis : {tour2.tool_calls} -- la "
+            "persistance n'est pas 'main courante', c'est un re-handoff "
+            "automatique, ce qui est un autre mecanisme a documenter")
+    else:
+        # Hypothese basse : la main revient a root au tour 2, le contrat
+        # de composition est NON PORTE. On documente ici, sans casser le
+        # test (rouge sur PR ferme la porte au demesusage), mais le
+        # verdict permet de tracker la dette.
+        pytest.fail(
+            "COMPOSITION C1b x C5 NON PORTEE : la main rendue au "
+            "sous-agent au tour 1 ne survit pas au tour 2 -- tour 2 "
+            f"relance depuis contract_root, final_agent={tour2.final_agent}, "
+            f"agent_hands={tour2.agent_hands}. ADK ne porte pas de notion "
+            "de main courante persistante au-dessus d'InMemorySessionService. "
+            "Acceptance #15060 partiellement livree : le contrat est "
+            "desormais MESURE (avant : absent), il reste a PORTER par "
+            "un grain au-dessus d'ADK (run_agent_turn-equivalent qui "
+            "rejoue le handoff initial a chaque tour, ou une marque "
+            "de 'main courante' dans la session).")
+
+
+def test_c1b_x_c5_session_accumulates_handoffs_after_composition():
+    # Contre-preuve : la composition doit laisser une trace mecanique
+    # observable dans la session (l'historique cumule les events des deux
+    # tours, y compris le handoff initial). Si ConversationRunner n'avait
+    # pas la persistance multi-tours (C1b), la session du tour 2 ne
+    # contiendrait que le tour 2 -- elle ne cumulerait pas.
+    from utils.adk_conversation import ConversationRunner
+
+    verifier = _scripted_agent(name="verifier_agent", tools=())
+    root = Agent(
+        name="contract_root",
+        description="porte-contrat de test",
+        instruction="scripte",
+        model=ScriptedLlm(model="scripted"),
+        sub_agents=[verifier],
+    )
+
+    async def scenario():
+        async with ConversationRunner(
+            root, app_name="contracts-c1bxc5-trace"
+        ) as conv:
+            _SCRIPT.append(
+                ("call", ("transfer_to_agent", {"agent_name": "verifier_agent"})))
+            _SCRIPT.append(("text", "verifie : OK"))
+            await conv.turn("premier")
+            _SCRIPT.append(("text", "suite"))
+            await conv.turn("second")
+            return await conv.history()
+
+    history = asyncio.run(scenario())
+    history_texts = "".join(
+        (p.text or "") for event in history
+        for p in ((event.content and event.content.parts) or []))
+    # Les DEUX tours apparaissent dans la session (persistance C1b
+    # pure, independante de la composition C5 -- cette-ci est deja
+    # couverte par test_c1b_history_reaches_next_turn).
+    assert "premier" in history_texts
+    assert "second" in history_texts, (
+        "la session ne cumule pas les deux tours : ConversationRunner "
+        "n'a pas la persistance multi-tours (C1b absente, bloque la "
+        "composition C1b x C5)")
+    # Et le handoff C5 figure dans la trace mecanique.
+    handoff_authors = [getattr(e, "author", None) for e in history]
+    assert "contract_root" in handoff_authors, (
+        "le handoff initial n'est pas trace dans la session : "
+        f"auteurs observes : {handoff_authors}")
+    assert "verifier_agent" in handoff_authors, (
+        "le sous-agent n'apparait pas dans la session apres handoff : "
+        f"auteurs observes : {handoff_authors}")

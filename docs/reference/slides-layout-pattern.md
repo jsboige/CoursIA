@@ -109,3 +109,49 @@ La migration `two-cols` -> `grid grid-cols-2` (campagne **#10950**, tranches 1-1
 - **#10950** — campagne de refonte des decks
 - [`cluster-agents.md`](cluster-agents.md) — routage du QA visuel vers une lane qui voit
 - [`slide-analyzer-sk-agent.md`](slide-analyzer-sk-agent.md) — analyse de deck par vision
+
+## Composer à partir des relations texte-image
+
+La position absolue est un moyen technique, pas une méthode de composition. Une image peut rester lisible tout en étant placée sans rapport avec le propos. Une bande basse uniforme reproduit ce défaut aussi sûrement qu'une colonne droite systématique.
+
+### Lire l'intention avant les coordonnées
+
+1. Ouvrir le rendu PNG du PPTX et identifier chaque image par son contenu réel. Ne pas déduire son identité du numéro du fichier ou d'un logo supposé.
+2. Associer chaque figure au paragraphe qui l'introduit : concept illustré, fonction explicative, étape de la démonstration. Une image décorative et un schéma d'architecture ne demandent pas la même surface.
+3. Relever la relation spatiale : face au paragraphe, sous une introduction, entre deux blocs, ou étage d'une séquence. Les coordonnées estimées depuis un PNG ne sont pas des métadonnées PPTX exactes.
+4. Recomposer cette relation après découpage ou enrichissement du texte. Conserver l'intention du PPTX, pas ses coordonnées au pixel près dans un contenu devenu différent.
+
+### Réserver l'espace correspondant au propos
+
+Le titre reste pleine largeur. Pour une slide illustrée, utiliser le layout `image-overlay` et des classes locales au deck. Le texte demeure au-dessus des overlays. Adapter la largeur des paragraphes concernés et leur hauteur réservée, puis centrer la figure dans l'espace qui leur répond. Les paragraphes suivants peuvent retrouver la pleine largeur.
+
+Exemples de décisions, à adapter plutôt qu'à recopier :
+
+- Tokenizer et embeddings : deux figures étagées face aux deux explications respectives.
+- Réseau et attention : respecter les rapports portrait/paysage, sans imposer une taille identique aux rectangles réellement peints.
+- Architecture Transformer : une grande figure verticale face aux étapes, plutôt qu'une miniature en pied de slide.
+- Usages sectoriels : chaque illustration à hauteur du secteur qu'elle représente.
+- Écosystème : séparer les catégories trop chargées avant de distribuer les logos.
+
+`object-fit: contain` conserve les proportions. La boîte de l'élément `img` n'est pas nécessairement le rectangle de l'image peinte : examiner les deux avant de conclure à une collision ou à un espace perdu. Vérifier aussi le contenant de positionnement des overlays ; une règle `position: relative` héritée peut déplacer leur origine. Corriger localement, sans modifier le thème partagé pour un seul deck.
+
+### Faire coïncider apparition et explication
+
+Attribuer un indice de clic explicite au paragraphe et à sa figure. Avec `<v-clicks at="1">`, garder une liste comme seul contenu direct du wrapper quand on veut une progression par élément. Une référence placée après la liste reçoit son propre clic. Une image explicative permanente en frontmatter ne respecte pas cette synchronisation.
+
+Lorsqu'un paragraphe est ajouté ou déplacé, revérifier les indices des figures et références. Pour une hiérarchie enrichie, distinguer le concept, son mécanisme, puis un exemple ou une limite. Le troisième niveau n'est pas une obligation sur chaque puce : scinder la slide si le rendu devient trop dense. Vérifier l'ordre réel des apparitions plutôt que supposer la sémantique d'une liste imbriquée.
+
+### Contrôler le rendu, pas seulement le code
+
+- Produire d'abord quelques échantillons contrastés, puis déléguer des lots bornés avec vision et chemins précis. Conserver la décision d'intégration au principal.
+- Comparer le PPTX et Slidev pour les associations et le placement. Lire chaque slide modifiée au dernier clic, puis vérifier les états intermédiaires pour la synchronisation.
+- Naviguer par URL `/<slide>?clicks=<indice>`, attendre le titre de la bonne slide, les polices, les images et l'opacité finale. Ne pas assigner un état de navigation readonly.
+- Mesurer les rectangles dans les coordonnées normalisées du canvas. Contrôler débordement, intersection avec les glyphes et séparation des paragraphes suivants.
+- Utiliser le scanner de composition comme plancher advisory. Son occupation compare les images au canvas entier : une zone sans image peut contenir le texte. Un avertissement doit être qualifié, pas supprimé en étirant une image jusqu'à satisfaire un seuil.
+- Confronter les conclusions des agents au rendu et aux mesures. Un compte, un titre de capture ou une interprétation de logo peut être erroné même dans une revue apparemment précise.
+
+L'export est un contrôle distinct. Un exit code nul et un fichier PDF présent ne prouvent pas que toutes les slides ont été imprimées. Vérifier le nombre de pages et leur contenu. En cas de timeout tardif, l'export natif `--per-slide --range` permet des plages bornées, ensuite assemblées sans réinterpréter le contenu. La vérification structurelle du PDF ne remplace pas son contrôle visuel.
+
+### Actualiser sans remplacer le cours par un catalogue
+
+Lire les cellules sources des notebooks, pas seulement leurs titres ou dates de modification. Extraire un mécanisme, une expérience et sa limite ; citer le notebook dans la slide correspondante. Pour une affirmation de fraîcheur, compléter avec une source primaire datée du modèle ou de la technique. Distinguer un exemple historique toujours pédagogique d'une prétention à représenter l'état actuel. Un nouveau schéma doit expliquer une relation absente, pas seulement ajouter de la décoration.
