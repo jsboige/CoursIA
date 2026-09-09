@@ -477,8 +477,8 @@ layout: dense
 
 </div>
 
-<div v-click="3" class="absolute top-[355px] left-[48px] w-[160px]"><img src="../_assets/images/slide_20_img_000.png" alt="Tete de robot humanoide" /></div>
-<div v-click="3" class="absolute top-[355px] left-[215px] w-[150px]"><img src="../_assets/images/slide_20_img_001.png" alt="Panneau texte securite IA" /></div>
+<div v-click="3" class="absolute top-[355px] left-[48px] w-[160px]"><img src="./images/slide_20_img_000.png" alt="Cycle FMEA : RPN = SEV x OCCUR x DETEC, etapes 1 a 4" /></div>
+<div v-click="3" class="absolute top-[355px] left-[215px] w-[150px]"><img src="./images/slide_20_img_001.png" alt="Arbre de defaillance (fault tree) : portes logiques et evenements de base" /></div>
 
 <!-- Référence PPTX : slide 20. -->
 
