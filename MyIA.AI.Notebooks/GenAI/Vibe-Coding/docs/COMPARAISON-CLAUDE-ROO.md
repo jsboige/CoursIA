@@ -43,11 +43,11 @@ Guide comparatif détaillé pour comprendre les différences entre Claude Code e
 
 ### Configuration des modèles
 
-**Claude Code avec OpenRouter :**
+**Claude Code avec OpenRouter :** la configuration passe par le proxy local `openrouter-proxy` (les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic — bug connu ; guide complet : [Quickstart OpenRouter](../Claude-Code/docs/OPENROUTER_SETUP.md)) :
 
 ```bash
 # Via variables d'environnement
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 ```
@@ -57,7 +57,7 @@ Ou via `~/.claude/settings.json` :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": ""
   }

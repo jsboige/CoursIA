@@ -826,9 +826,9 @@ prompt_v2 = ""...""  # TODO etudiant : redigez un prompt plus riche
 
 # Comparaison des deux revisions
 print(""Exercice a completer"")",,,,,,,,81ef5fd46901cdd3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b07ca49a,markdown,fr,64c991ca851bb725,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b07ca49a,markdown,fr,c87237c35a3d3d35,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
 
-# 🤖 GPT-5 Multimodal - Analyse et Génération d'Images
+# GPT-5 Multimodal - Analyse et Génération d'Images
 
 **Module :** 01-Images-Foundation  
 **Niveau :** 🟢 Débutant  
@@ -857,7 +857,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Raisonnement** : Analyse complexe et déductive
 - **Éducatif** : Parfait pour l'enseignement",,,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-OpenAI-DALL-E-3.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
 
-# 🤖 GPT-5 Мультимодальный - Анализ и генерация изображений
+# GPT-5 Мультимодальный - Анализ и генерация изображений
 
 **Модуль :** 01-Images-Foundation  
 **Уровень :** 🟢 Начинающий  
@@ -884,7 +884,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Мультимодальность** : Одновременный диалог текст + изображение
 - **Расширенный контекст** : До 400K токенов [OpenAI 2025]
 - **Рассуждение** : Сложный и дедуктивный анализ
-- **Образование** : Идеально для обучения",,64c991ca851bb725,,,,,,f06c734fb9d4e3bc,,
+- **Образование** : Идеально для обучения",,c87237c35a3d3d35,,,,,,7dec99dd3bd02449,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration conversation
