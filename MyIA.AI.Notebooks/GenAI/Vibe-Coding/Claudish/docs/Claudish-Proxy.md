@@ -46,12 +46,12 @@ client ────────────────────────�
 └──────────────┘   └─────────────────┘   └──────────────────┘   │  Qwen / DeepSeek│
                           TLS, cache IIS        traduction wire  └─────────────────┘
                                                  + cascade + concurrence
-        agents distants (LAN) ──► sidecar ai-01 (192.168.0.46:3000) ──► même claudish
+        agents distants (LAN) ──► sidecar LAN ai-01 ──► même claudish
 ```
 
 - **claudish** tourne dans un conteneur Docker sur `po-2023`, port `3000` (hub).
 - La passerelle **IIS** (`models.myia.io`) termine le TLS et reverse-proxie vers le conteneur.
-- Le **sidecar ai-01** (`192.168.0.46:3000`) relaie en LAN pour les agents distants.
+- Le **sidecar LAN ai-01** relaie le hub pour les agents distants.
 - Les clients (agents Claude Code, clients OpenAI, bots Hermes/NanoClaw) pointent sur `https://models.myia.io` ou le sidecar selon leur position.
 
 ### Authentification client → claudish
@@ -189,7 +189,7 @@ Quand Z.AI est en surcharge, il renvoie du `429` (ou `503`). Un `429` brut, c'es
 
 **Le fix** : claudish distingue la surcharge transitoire du quota épuisé, convertit la première en `529 overloaded_error` avec un `Retry-After`, et applique un **backoff patient** (~5 min, 6 retries, schedule 5/10/20/40/80/150 s) côté proxy avant de rendre la main. Le client reçoit un `529` (signal « réessaie ») plutôt qu'un `429` (signal « arrête »). Validé en production : **36 épisodes de surcharge convertis en 529 sur une fenêtre, zéro `429` atteint un client.**
 
-*Leçon : les codes HTTP sont sémantiques (`429` ≠ `529`), et un client bien élevé réessaie sur `529`. Le dogfooding — tester ses propres fixes en prod sur le cluster — a révélé un chemin non couvert (le 429 HTTP-direct) que les tests unitaires n'avaient pas attrapés.*
+*Leçon : les codes HTTP sont sémantiques (`429` ≠ `529`), et un client bien élevé réessaie sur `529`. Le dogfooding — tester ses propres fixes en prod sur le cluster — a révélé un chemin non couvert (le 429 HTTP-direct) que les tests unitaires n'avaient pas attrapé.*
 
 ---
 
