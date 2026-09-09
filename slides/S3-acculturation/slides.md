@@ -107,6 +107,8 @@ layout: section
 
 # Développement (1/2)
 
+<div class="w-[300px]">
+
 **Histoire succincte**
 
 - 1940-70 : Enthousiasme des débuts
@@ -127,6 +129,8 @@ layout: section
 </div>
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
+
+</div>
 
 ---
 
@@ -152,6 +156,8 @@ layout: section
 
 # Dans la vie de tous les jours
 
+<div class="w-[600px]">
+
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
 - **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
@@ -161,6 +167,8 @@ layout: section
 - **Industrie** : conception, fabrication et exploitation assistées par IA
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
+
+</div>
 
 <img src="./images/img_013.jpg" class="absolute top-[130px] right-[20px] w-[600px] max-h-[300px] object-contain object-right" alt="Écosystème IoT — objets du quotidien connectés" />
 
@@ -544,7 +552,9 @@ layout: default
 
 # Jeux
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="w-[300px]">
+
+<div class="grid grid-cols-2 gap-0 -mt-4">
 <div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux vs Exploration</div>
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Arbre Minimax</div>
 </div>
@@ -571,6 +581,8 @@ layout: default
 - Minimax, Alpha-Beta
 - Avec arrêt + évaluation heuristique
 - Techniques probabilistes (Expectiminimax, Monte-Carlo)
+
+</div>
 
 </div>
 
