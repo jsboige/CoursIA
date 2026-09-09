@@ -10,19 +10,23 @@ Installer Claude Code, configurer l'accès via OpenRouter, et réaliser votre pr
 
 ## Prérequis
 
-- Node.js 18+ installé (`node --version`)
 - VS Code installé
+- Node.js 18+ installé (`node --version`) — requis uniquement pour le proxy OpenRouter (brique d'accès aux modèles), pas pour l'installation native de Claude Code
 - Compte OpenRouter avec clé API
 
 ## Étapes
 
 ### Étape 1 : Installation de Claude Code CLI (10 min)
 
-#### Via npm (recommandé)
+#### Chemin canonique : installation native
 
-```bash
-npm install -g @anthropic-ai/claude-code
-```
+C'est la méthode par défaut de la documentation officielle Anthropic — Node.js n'est pas requis pour cette étape :
+
+- **Windows** : installateur depuis [claude.com/code](https://claude.com/code)
+- **macOS** : `brew install --cask claude-code`
+- **Linux / WSL** : `curl -fsSL https://install.claude.com | sh`
+
+Alternative npm (uniquement si votre poste interdit les binaires hors gestionnaire de paquets) : voir le [guide d'installation canonique](../../docs/INSTALLATION-CLAUDE-CODE.md).
 
 #### Vérification
 
@@ -34,33 +38,9 @@ Vous devriez voir quelque chose comme : `claude-code v1.x.x`
 
 ### Étape 2 : Configuration OpenRouter (10 min)
 
-OpenRouter permet d'accéder à Claude via une API unifiée avec plusieurs modèles disponibles.
+OpenRouter permet d'accéder à plusieurs modèles avec une clé unique. **Suivez le guide canonique** [Quickstart : Claude Code + OpenRouter](../../docs/OPENROUTER_SETUP.md) : il installe le proxy local, définit les variables d'environnement et mappe les modèles, étape par étape avec checkpoints.
 
-#### Windows (PowerShell)
-
-Ajoutez ces lignes à votre profil PowerShell (`$PROFILE`) ou exécutez-les :
-
-```powershell
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
-$env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE_ICI"
-$env:ANTHROPIC_API_KEY = ""
-```
-
-#### macOS / Linux
-
-Ajoutez ces lignes à votre `~/.bashrc` ou `~/.zshrc` :
-
-```bash
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
-export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE_ICI"
-export ANTHROPIC_API_KEY=""
-```
-
-Puis rechargez :
-
-```bash
-source ~/.bashrc  # ou source ~/.zshrc
-```
+En résumé : la configuration passe par le proxy local `openrouter-proxy` (`ANTHROPIC_BASE_URL = http://127.0.0.1:8899/api`). Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilisé par Claude Code (bug connu) — le proxy traduit les requêtes. Ne pointez pas `ANTHROPIC_BASE_URL` directement vers `https://openrouter.ai/api`.
 
 ### Étape 3 : Première session interactive (15 min)
 
@@ -165,7 +145,7 @@ Créez un fichier `mes-premieres-questions.md` et documentez vos échanges avec 
 
 ## Points clés à retenir
 
-1. **Installation simple** : `npm install -g @anthropic-ai/claude-code`
+1. **Installation** : chemin canonique = installation native (défaut officiel, Node.js non requis) ; npm reste une alternative conditionnelle
 
 2. **Configuration OpenRouter** : 3 variables d'environnement à définir
 
@@ -183,9 +163,8 @@ Créez un fichier `mes-premieres-questions.md` et documentez vos échanges avec 
 
 ### "command not found: claude"
 
-- Vérifiez que Node.js est installé : `node --version`
-- Réinstallez : `npm install -g @anthropic-ai/claude-code`
-- Vérifiez le PATH de npm : `npm bin -g`
+- Installation native : le binaire vit sous `~/.local/bin` — vérifiez que ce répertoire est dans votre PATH, puis redémarrez votre terminal
+- Alternative npm (si c'est le chemin que vous avez choisi) : vérifiez Node.js (`node --version`), réinstallez avec `npm install -g @anthropic-ai/claude-code`, vérifiez le PATH avec `npm bin -g`
 
 ### "Authentication failed"
 

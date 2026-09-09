@@ -718,3 +718,101 @@ def test_med_unknown_genre_same_prev_is_advisory_not_blocking():
     v2 = vag.check(body_light)
     assert v2["guard_pass"] is False
     assert v2["blocking"] is True
+
+
+# --- #14357: the mechanical MED/DEEP + disjoint-files exemption --------------
+#
+# The #14357 exception lives in the G-VAR-2 organ
+# (variation_light_cap.run_exception_status) but the G-VAR-3 BLOCKING organ is
+# variation_adjacency_guard.py -- an exemption one organ codifies and the
+# blocking organ does not consume is inert (the #12100 `# codeql[...]` class).
+# The exemption only fires when ALL FOUR of: DECLARED MED/DEEP tier, a
+# MERGED-sequence predecessor, both diffs readable, and the diffs DISJOINT.
+# The controls pin the fail-closed edges and the positive controls ai-01 asked
+# to keep (a LIGHT tier, or overlapping files, stays blocked).
+
+_MED_GUARD = ("Grain: MED/guard -- lane myia-po-2027:CoursIA -- "
+              "prev: MED/guard #14959")
+_MED_GUARD_MERGED = ("guard", 14959)
+
+
+def test_14357_med_guard_disjoint_files_exempts():
+    # The case the exemption exists for: a MED/DEEP grain (declared MED, LIGHT
+    # genre word `guard`) whose diff does not touch the predecessor's -> PASS,
+    # marked exempted, not blocked.
+    v = vag.check(
+        _MED_GUARD, merged_prev=_MED_GUARD_MERGED,
+        prev_files={"scripts/ci/other.py"},
+        current_files={"scripts/variation_light_cap.py"})
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["exempted"] is True
+    assert v["adjacent"] is False
+    assert v["prev_source"] == "merged-sequence"
+    assert v["prev_pr"] == 14959
+    assert "#14357" in v["reason"]
+
+
+def test_14357_med_guard_overlapping_files_still_blocks():
+    # POSITIVE CONTROL: MED/DEEP but the diffs OVERLAP -> the exemption must
+    # not open. Two guard grains touching the same file is not the case #14357
+    # exempts; it stays the monoculture the ban exists to stop.
+    v = vag.check(
+        _MED_GUARD, merged_prev=_MED_GUARD_MERGED,
+        prev_files={"scripts/variation_light_cap.py"},
+        current_files={"scripts/variation_light_cap.py"})
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v.get("exempted") is not True
+
+
+def test_14357_light_tier_disjoint_files_still_blocks():
+    # POSITIVE CONTROL: declared LIGHT + disjoint files is NOT exempt -- the
+    # exemption needs a POSITIVE MED/DEEP tier read; a LIGHT guard after a
+    # guard is the exact monoculture, disjoint or not.
+    v = vag.check(
+        "Grain: LIGHT/guard -- lane myia-po-2027:CoursIA -- "
+        "prev: LIGHT/guard #14959",
+        merged_prev=("guard", 14959),
+        prev_files={"scripts/ci/other.py"},
+        current_files={"scripts/variation_light_cap.py"})
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+
+
+def test_14357_unreadable_files_fail_closed():
+    # Either diff unreadable (None) is never "disjoint" -- the exemption is
+    # fail-closed: unreadable != absent overlap, it is simply not proven.
+    for pv, cw in ((None, {"a.py"}), ({"a.py"}, None), (None, None)):
+        v = vag.check(
+            _MED_GUARD, merged_prev=_MED_GUARD_MERGED,
+            prev_files=pv, current_files=cw)
+        assert v["guard_pass"] is False, (pv, cw)
+        assert v["blocking"] is True
+
+
+def test_14357_declared_prev_source_is_not_exempt():
+    # The predecessor on a `declared` prev is unmeasured (the silent-fallback
+    # defect (#12095) ai-01 asked to keep fail-closed): even with disjoint
+    # files passed, the exemption must not fire on a declared source.
+    v = vag.check(
+        _MED_GUARD, merged_prev=(None, None),
+        prev_files={"scripts/ci/other.py"},
+        current_files={"scripts/variation_light_cap.py"})
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["prev_source"] == "declared"
+    assert v.get("exempted") is not True
+
+
+def test_14357_exemption_does_not_touch_different_genres():
+    # If the genres differ the gate passes before the LIGHT branch; the new
+    # exemption inputs must not change that (no adjacency, no exemption flag).
+    v = vag.check(
+        "Grain: MED/notebook-python -- lane myia-po-2027:CoursIA -- "
+        "prev: MED/guard #14959",
+        merged_prev=("guard", 14959),
+        prev_files={"scripts/ci/other.py"},
+        current_files={"notebooks/x.ipynb"})
+    assert v["guard_pass"] is True
+    assert v.get("exempted") is not True
