@@ -1,0 +1,77 @@
+{
+  "source": "https://github.com/mparlak/Flee",
+  "fork_clone_url": "https://github.com/mparlak/Flee.git",
+  "default_branch": "master",
+  "shallow_clone_path": "../../mparlak-Flee-fork/",
+  "target_in_repo": "MyIA.AI.Shared/External/Flee/",
+  "inventory_date": "2026-09-09T05:30Z",
+  "cycle": "c.1039",
+  "lane": "myia-po-2027:CoursIA-2",
+  "tranche": "B",
+  "issue": 15141,
+  "summary": {
+    "total_cs_files": 102,
+    "total_directories": 16,
+    "referenced_namespaces": [
+      "Flee.CalcEngine.InternalTypes",
+      "Flee.CalcEngine.PublicTypes",
+      "Flee.ExpressionElements",
+      "Flee.ExpressionElements.Base",
+      "Flee.ExpressionElements.Base.Literals",
+      "Flee.ExpressionElements.Literals",
+      "Flee.ExpressionElements.Literals.Integral",
+      "Flee.ExpressionElements.Literals.Real",
+      "Flee.ExpressionElements.LogicalBitwise",
+      "Flee.ExpressionElements.MemberElements",
+      "Flee.InternalTypes",
+      "Flee.Parsing",
+      "Flee.PublicTypes",
+      "Flee.Resources"
+    ],
+    "framework_targets_original": ["net6.0", "net5.0", "netstandard2.1", "netstandard2.0"],
+    "framework_target_repo": "net9.0",
+    "implicit_usings_enabled": true,
+    "nullable_enabled": true
+  },
+  "dependency_audit": {
+    "aricie_references": 0,
+    "dotnetnuke_references": 0,
+    "codedom_runtime_references": 0,
+    "codedom_metadata_references": 3,
+    "notes": "Les 3 CodeDom metadata references sont des attributs [global::System.CodeDom.Compiler.GeneratedCodeAttribute(...)] dans les fichiers .Designer.cs (Resources/), generes automatiquement par StronglyTypedResourceBuilder. Pas du runtime CodeDom, juste une metadonnee compatible .NET 9. Aucun retrait necessaire."
+  },
+  "external_packages_original": [
+    {"name": "System.ComponentModel", "version": "4.3.0"},
+    {"name": "System.Reflection", "version": "4.3.0"},
+    {"name": "System.Reflection.Emit", "version": "4.7.0"},
+    {"name": "System.Reflection.Emit.ILGeneration", "version": "4.7.0"},
+    {"name": "System.Reflection.Emit.Lightweight", "version": "4.7.0"}
+  ],
+  "backtester_consumers": [
+    {
+      "path": "MyIA.Trading.Backtester/Core/SimpleExpression.cs",
+      "imports": ["Flee.PublicTypes"],
+      "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)"
+    },
+    {
+      "path": "MyIA.Trading.Backtester/Core/TradingStrategy.cs",
+      "imports": ["implicit via Flee dynamic expressions"],
+      "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)"
+    }
+  ],
+  "tests_to_revalidate": {
+    "BandStrategyLayerTests": {
+      "expected_count": 112,
+      "expected_status": "112/112 vert post-port (cible tranche E)"
+    }
+  },
+  "tranche_b_next_steps": [
+    "Re-cloner le fork (mparlak-Flee-fork/ existe deja, 102 fichiers)",
+    "Copier src/Flee/* vers MyIA.AI.Shared/External/Flee/ en gardant le namespace Flee.* (transition douce)",
+    "Verifier le build avec csproj Flee adapte net9.0",
+    "Verifier que SimpleExpression.cs compile TOUJOURS avec namespace Flee.* (pas de rename)",
+    "Retirer <PackageReference Include=\"Flee\" Version=\"2.0.0\" /> du csproj MyIA.AI.Shared",
+    "Re-executer les 112 tests BandStrategyLayerTests"
+  ],
+  "blocked_until": "Tranche B achevée (compilation + 112/112 vert) avant de passer aux tranches C/D/E (renommage namespace, adaptation .NET 9 si besoin, wrapper léger)"
+}
