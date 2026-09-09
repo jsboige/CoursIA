@@ -49,6 +49,13 @@ name: Notebook plan-loss gate
 # disparitions ASSUMEES).
 
 on:
+  # Per-PR trigger : la gate se branche sur les PRs touchant les notebooks
+  # (cf. discipline d'auto-couverture paths #14391/#14429 -- une PR ne touchant
+  # que ce workflow emet l'evenement, la garde se re-evalue sur sa propre PR).
+  # PAS de `paths:` ici : un seul evenement manquant = la garde ne protege rien.
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
   workflow_dispatch:
 
 permissions:
