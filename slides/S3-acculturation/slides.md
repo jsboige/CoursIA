@@ -107,7 +107,9 @@ layout: section
 
 # Développement (1/2)
 
-<div class="w-[300px]">
+<div class="grid grid-cols-[360px_1fr] gap-8 mt-4 items-start">
+
+<div class="flex flex-col gap-3">
 
 **Histoire succincte**
 
@@ -121,14 +123,17 @@ layout: section
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[600px] max-h-[220px] object-contain" alt="Repères historiques" />
+> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
-<div class="absolute top-[350px] right-[20px] w-[600px] flex gap-10 items-center justify-center">
-  <img src="./images/img_007.jpg" class="h-16 max-w-[45%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-14 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
 
-> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
+<div class="flex flex-col gap-5 items-center pt-1">
+  <img src="./images/img_006.png" class="w-full max-h-[260px] object-contain" alt="Repères historiques" />
+  <div class="flex gap-10 items-center justify-center">
+    <img src="./images/img_007.jpg" class="h-14 object-contain" alt="Logo DARPA" />
+    <img src="./images/img_008.jpg" class="h-12 object-contain" alt="Logo ImageNet" />
+  </div>
+</div>
 
 </div>
 
@@ -156,7 +161,9 @@ layout: section
 
 # Dans la vie de tous les jours
 
-<div class="w-[600px]">
+<div class="grid grid-cols-[1fr_300px] gap-8 mt-4 items-center">
+
+<div class="flex flex-col gap-2 text-sm">
 
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
@@ -170,7 +177,11 @@ layout: section
 
 </div>
 
-<img src="./images/img_013.jpg" class="absolute top-[130px] right-[20px] w-[600px] max-h-[300px] object-contain object-right" alt="Écosystème IoT — objets du quotidien connectés" />
+<div class="flex items-center justify-center">
+  <img src="./images/img_013.jpg" class="w-full max-h-[420px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
+
+</div>
 
 
 ---
@@ -552,13 +563,14 @@ layout: default
 
 # Jeux
 
-<div class="w-[300px]">
+<div class="grid grid-cols-[340px_1fr] gap-8 mt-3 items-start">
 
-<div class="grid grid-cols-2 gap-0 -mt-4">
+<div class="flex flex-col gap-3">
+
+<div class="grid grid-cols-2 gap-0">
 <div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux vs Exploration</div>
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Arbre Minimax</div>
 </div>
-
 
 <div class="dense-list text-base">
 
@@ -586,7 +598,11 @@ layout: default
 
 </div>
 
-<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[600px] max-h-[390px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+<div class="flex items-start justify-center pt-1">
+  <img src="./images/img_031.png" class="max-h-[420px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+</div>
+
+</div>
 
 
 
