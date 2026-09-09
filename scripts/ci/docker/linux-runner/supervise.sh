@@ -232,6 +232,16 @@ BACKOFF_MAX_SEC="${COURSIA_RUNNER_BACKOFF_MAX_SEC:-300}"
 # jitter la disperse.
 BACKOFF_JITTER_PCT="${COURSIA_RUNNER_BACKOFF_JITTER_PCT:-25}"
 
+# Seuil de packs du cache _work persistant (#15105). Au-dela, l'entrypoint du
+# conteneur repack le clone (gc.auto=0 pose par actions/checkout : rien
+# d'autre ne consolide jamais -- slot 1 : 264 packs, compte croissant a
+# chaque job). NON inerte au meme titre que LOG_MAX_BYTES : son absence est
+# une croissance de disque sans borne, pas un plafond qu'une machine n'a pas
+# demande. 0 = desactive. Le knob descend au conteneur par -e ; la passe
+# integrite (refs cassees) est, elle, inconditionnelle -- cf
+# work_cache_health.sh et le bloc entrypoint #15105.
+CACHE_PACK_THRESHOLD="${COURSIA_RUNNER_CACHE_PACK_THRESHOLD:-16}"
+
 mkdir -p "$STATE_DIR"
 
 # Git Bash (MSYS) sous Windows reecrit les arguments de forme /posix/path des
@@ -255,21 +265,24 @@ RUNNER_CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # daemon docker-ce WSL construite 5 h AVANT le merge, jamais rebatie), et ce
 # silence a produit les rouges fantomes du sparse-checkout empoisonne. Le
 # demarrage d'un pool est le seul point qui s'execute inconditionnellement
-# (un job annule ne joue aucun step post) : on y compare le sha256 du
-# entrypoint.sh de CE checkout a celui embarque dans l'image. La lecture
+# (un job annule ne joue aucun step post) : on y compare le sha256 de CHAQUE
+# script embarque de CE checkout (entrypoint.sh, et depuis #15105
+# work_cache_health.sh qu'il source) a celui porte par l'image. La lecture
 # cote image passe par `docker run --entrypoint sha256sum` -- le Dockerfile
-# place le script a /opt/runner/entrypoint.sh et MSYS_NO_PATHCONV (exporte
-# plus haut) protege l'argument POSIX sous Git Bash.
+# place les scripts sous /opt/runner/ et MSYS_NO_PATHCONV (exporte plus haut)
+# protege l'argument POSIX sous Git Bash.
 assert_image_fresh() {
   local image="$1" build_cmd="$2"
-  local repo_sha img_sha
-  repo_sha="$(sha256sum "$RUNNER_CTX/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
-  [ -n "$repo_sha" ] || die "entrypoint.sh introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
-  img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/entrypoint.sh 2>/dev/null | awk '{print $1}')"
-  [ -n "$img_sha" ] || die "lecture de /opt/runner/entrypoint.sh dans $image impossible (docker run --entrypoint sha256sum)"
-  [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : entrypoint.sh du checkout ($repo_sha) != entrypoint embarque ($img_sha).
+  local f repo_sha img_sha
+  for f in entrypoint.sh work_cache_health.sh; do
+    repo_sha="$(sha256sum "$RUNNER_CTX/$f" 2>/dev/null | awk '{print $1}')"
+    [ -n "$repo_sha" ] || die "$f introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
+    img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/$f 2>/dev/null | awk '{print $1}')"
+    [ -n "$img_sha" ] || die "lecture de /opt/runner/$f dans $image impossible (docker run --entrypoint sha256sum)"
+    [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : $f du checkout ($repo_sha) != version embarquee ($img_sha).
 Un correctif merge mais non deploye est indiscernable d'un correctif absent (#14801, #14385). Reconstruire :
     $build_cmd"
+  done
 }
 
 # --- Bornes d'I/O : resolution du device et des drapeaux docker -------------
@@ -564,6 +577,7 @@ slot_loop() {
       -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
       -v "${vol_prefix}-${slot}":"$WORK_MOUNT" \
       -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
+      -e RUNNER_WORK_CACHE_PACK_THRESHOLD="$CACHE_PACK_THRESHOLD" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
