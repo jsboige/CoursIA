@@ -4,21 +4,21 @@
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1124** notebooks référencés au catalogue.
+**1125** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 952 | 84.7% |
-| DEMO | 170 | 15.1% |
+| READY | 947 | 84.2% |
+| DEMO | 175 | 15.6% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 709 |
+| **local** (exécutable sans GPU/cloud/WSL) | 710 |
 | WSL requis | 76 |
 | GPU requis | 126 |
 | Cloud requis (QC / GenAI Docker) | 114 |
@@ -30,13 +30,13 @@
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
 | GameTheory | 95 | 1 | 0 | 96 | 99% |
-| GenAI | 107 | 106 | 2 | 215 | 50% |
+| GenAI | 101 | 111 | 2 | 215 | 47% |
 | IIT | 71 | 1 | 0 | 72 | 99% |
 | ML | 74 | 7 | 0 | 81 | 91% |
 | Probas | 69 | 0 | 0 | 69 | 100% |
 | QuantConnect | 67 | 43 | 0 | 110 | 61% |
 | RL | 22 | 3 | 0 | 25 | 88% |
-| Search | 148 | 0 | 0 | 148 | 100% |
+| Search | 149 | 0 | 0 | 149 | 100% |
 | Sudoku | 37 | 1 | 0 | 38 | 97% |
 | SymbolicAI | 255 | 8 | 0 | 263 | 97% |
 | cross-series | 1 | 0 | 0 | 1 | 100% |
@@ -45,7 +45,7 @@
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 730 |
+| Python 3 | 731 |
 | .NET (C#) | 259 |
 | Lean 4 (WSL) | 39 |
 | Python 3 (ipykernel) | 33 |
