@@ -49,6 +49,22 @@ for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
 done
 # ---------------------------------------------------------------------------
 
+# --- Sante du cache de depot persistant (#15105) ---------------------------
+# Meme hook job-started que le bloc sparse ci-dessus : le volume _work survit
+# au conteneur, l'entrypoint est le seul point qui s'execute avant
+# l'enregistrement du runner -- donc avant qu'un job n'attrape le cache.
+# Deux passes par clone : integrite (refs cassees -> reparation ou purge,
+# le gate de la flotte etait une loterie 1-sur-8 sans que rien le nomme),
+# puis maintenance (repack -ad si le compte de packs depasse le seuil ;
+# gc.auto=0 fait que rien d'autre ne consolide jamais). Le detail et les
+# trois controles positifs (safe.directory, stderr, .promisor) sont dans
+# work_cache_health.sh.
+WCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+. "$WCH_DIR/work_cache_health.sh"
+wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}"
+# ---------------------------------------------------------------------------
+
 cd /opt/runner
 # --disableupdate : le conteneur est --rm et le runner --ephemeral (un seul
 # job puis mort). Un self-update n'y est donc jamais CONSERVE -- GitHub ordonne
