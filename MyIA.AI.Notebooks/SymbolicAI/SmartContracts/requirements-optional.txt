@@ -15,7 +15,3 @@
 #   python -m venv venv-electionguard
 #   venv-electionguard/Scripts/pip install electionguard phe pycryptodome
 # electionguard>=1.4
-
-# === LLM APIs (SC-11, optional - has mock fallback) ===
-openai>=1.0                # OpenAI API client
-anthropic>=0.30            # Anthropic Claude API client
