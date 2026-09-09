@@ -16,6 +16,19 @@ Description=CoursIA Linux runners supervisor (docker slots)
 Wants=docker.service
 After=docker.service
 
+# #15091 : plafond de redemarrage. Les deux unites portaient Restart=always
+# + RestartSec=30 SANS aucune borne : un docker.service indisponible faisait
+# relancer indefiniment N boucles de slots, chacune retentant docker run
+# toutes les 15 s. Releve sur ai-01 avant l arret du 2026-09-07 :
+# "activating (auto-restart)", NRestarts=10. Au-dela de 5 demarrages en
+# 10 min, l unite passe desormais en "failed" et cesse -- un etat lisible,
+# qui se voit dans systemctl status, la ou une boucle muette ne se voyait
+# que dans le debit disque.
+# En [Unit] et non en [Service] : ces deux directives y ont ete deplacees en
+# systemd 229 (elles restent acceptees en [Service], avec un avertissement).
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/coursia-runner-start.sh start 8
@@ -26,6 +39,19 @@ Nice=10
 # ExecStop est gracieux (sentinel supervise.sh) : un job en vol va a son
 # terme, ce qui peut prendre des dizaines de minutes sur un build Lean.
 TimeoutStopSec=900
+
+# #15091 : Nice=10 ci-dessus gouverne le CPU, et RIEN d autre. L I/O du parc
+# n etait bornee par aucun plafond, ce qui a contribue aux gels par famine
+# disque de ai-01 le 2026-09-07 (le pool d attente reclonait 1,14 GiB par job,
+# 12 slots de front). IOWeight fait ceder le parc sous contention plutot que
+# de le laisser rivaliser a poids egal avec le reste de la machine.
+# Requiert cgroup v2 avec le controleur io delegue ; IOAccounting rend la
+# consommation lisible dans systemctl status meme la ou le poids ne mord pas.
+# Le plafond DUR de bande passante (IOWriteBandwidthMax) est volontairement
+# laisse ouvert : il exige de nommer le device, et sa valeur doit sortir d une
+# mesure sous charge, pas d une intuition -- question posee a roo-extensions.
+IOAccounting=yes
+IOWeight=50
 
 [Install]
 WantedBy=multi-user.target

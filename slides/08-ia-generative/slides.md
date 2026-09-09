@@ -10,518 +10,830 @@ mdc: true
 layout: cover
 ---
 
-# Intelligence Artificielle Generative
+# Intelligence Artificielle Générative
 
-Intelligence Artificielle -- VIII
+<p v-click="1">Intelligence Artificielle — VIII</p>
 
-**Panorama, enjeux et pratiques de l'IA generative**
+<p v-click="2"><strong>Panorama, concepts et pratiques de l'IA générative</strong></p>
 
-- Decouvrir les bases et les grands principes de l'IA generative
-- Comprendre les différents usages applicatifs (texte, image, audio...)
-- Identifier les limites et les enjeux ethiques
+<v-clicks at="3">
 
+- Découvrir les concepts fondamentaux des modèles génératifs
+- Comprendre les principales modalités (texte, image, audio, vidéo)
+- Identifier les techniques clés (RAG, outils, mémoire, MCP)
+- Repérer les limites, risques et enjeux éthiques associés
+
+</v-clicks>
+
+<!-- Référence PPTX : slide 01. -->
+
+---
+layout: image-overlay
 ---
 
 # Plan du cours
 
+<v-clicks at="1">
+
 - I. Introduction
-- II. Resolution de problemes
+- II. Résolution de problèmes
 - III. Bases de connaissances et logique
 - IV. Incertitude et modèles probabilistes
 - V. Apprentissage
 - VI. Traitement du langage naturel
-- VII. Elargissements
-- **VIII. IA Generative** ← *vous etes ici*
+- VII. Élargissements
+- **VIII. IA Générative** *(vous êtes ici)*
+
+</v-clicks>
+
+<!-- Référence PPTX : slide 02. -->
 
 ---
 
-# Introduction a l'IA Generative
+# Introduction à l'IA Générative
 
-- **Qu'est-ce que l'IA generative ?**
-  - Création de textes, images, audio, video a partir de modèles probabilistes
-  - En reponse a des prompts (+ autres modalites)
-  - Exploitation d'algorithmes d'apprentissage profond sur des jeux de données massifs
-- **Exemples :**
-  - ChatGPT (texte), Stable Diffusion / Flux (images)
-  - Hunyuan (video), Whisper (audio/speech-to-text)
-  - Audiocraft (musique), Github Copilot (code)
+<v-clicks at="1">
 
----
-layout: image-overlay
-image: ./images/img_001.png
-imageClass: mid-right
----
+- **Définition :** création de contenus (texte, image, audio, vidéo) par des modèles probabilistes conditionnés par une entrée (prompt, image, son, autres modalités).
+- **Modalités couvertes :** texte, image, audio, musique, vidéo, code -- les mêmes principes de conditionnement et de génération se réutilisent.
+- **Exemples de référence :** ChatGPT / Claude (texte), Stable Diffusion / Flux (image), Whisper (speech-to-text), Hunyuan (vidéo), Audiocraft (musique), Copilot (code).
 
-# IA generative : Une revolution
+</v-clicks>
 
-- **Adoption rapide, impact massif**
-  - 2017 : "Attention is All you need"
-  - Scaling Laws : GPT-1 (117M) → GPT-2 (1.5B) → GPT-3 (175B) → GPT-4 (1T+)
-  - ChatGPT : 1M utilisateurs en 5 jours, 100M en 2 mois
-- **Defis :**
-  - Cout d'entrainement, biais des modèles
-  - Complexite des prompts, intervention humaine necessaire
-- **Approche multidisciplinaire**
-  - ML + NLP + Vision par ordinateur
-  - Embeddings + mécanismes d'attention
-
----
-
-# Systèmes ISPO
-
-- **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un système informatique
-  - **Input** : données d'entrée (texte, image, audio, video)
-  - **Storage** : memoire des poids du modèle et du contexte de la conversation
-  - **Process** : inference par le modèle (attention, generation token par token)
-  - **Output** : résultat genere (texte, image, code, audio...)
-- Proprietes : vitesse, precision, regularite, polyvalence, fiabilite, programmabilite
+<!-- Référence PPTX : slide 03. -->
 
 ---
 layout: image-overlay
-image: ./images/img_002.png
-imageClass: mid-right
+class: genai-illustrated genai-system
 ---
 
-# Les données : Qualite et biais
+# Un système génératif ne se réduit pas au modèle
 
-- **Importance des données en IA generative**
-  - Qualite et representativite des données
-  - "Garbage in, Garbage out"
-  - Biais possibles : genre, culture, contexte geographique
-  - Risque d'hallucination → pre-traitement, audit
-- **Pipeline de données**
-  - Acquisition → Nettoyage → Preparation → Annotation
-- **Données synthetiques**
-  - Alternative pour créer en masse, proteger la confidentialite
-  - 2025 : risque de Model Collapse
+<v-clicks at="1">
 
----
-layout: image-overlay
-image: ./images/img_005.png
-imageClass: mid-right
----
+- **Au-delà du modèle :** entrées, traitement, stockage, sorties et boucle de retour forment une application générative.
+- **Entrées et stockage :** consignes, documents et conversation alimentent le contexte. Poids appris et mémoire externe restent distincts.
+- **Sortie et retour :** générer, vérifier, corriger. Une conversation ne réentraîne pas les poids ; une réponse plausible ne prouve pas sa fiabilité.
 
-# Les données : Entrainement et cout
+</v-clicks>
 
-- **Scalabilite et cout energetique**
-  - Necessite d'infrastructures puissantes (datacenters)
-  - Optimisations : modèles distilles, datacenters verts
-- **Méthodes d'entrainement**
-  - *Apprentissage de base* : très couteux, modèles fondationnels
-  - *Fine-Tuning* : ajustement spécifique, LoRAs, RL
-  - *Apprentissage en contexte* : peu couteux, prompt engineering
-- **Activite : Sources de données**
-  - Classe, Maison, Transport, Loisirs → Mots ?
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_001.png" alt="Entrées, traitement, sorties, stockage et retour" /></div>
 
 ---
-layout: image-overlay
-image: ./images/img_003.png
-imageClass: mid-right
+
+# Les données : qualité et biais
+
+<v-clicks at="1">
+
+- **Qualité et représentativité :** les modèles héritent des corpus d'entraînement -- si les données sont biaisées, les sorties le sont aussi.
+- **"Garbage in, garbage out" :** la qualité d'un modèle plafonne par celle de ses données. Le nettoyage et l'audit sont des goulots d'étranglement réels.
+- **Biais documentés :** genre, culture, contexte géographique. Les biais conditionnent les *distributions* de sortie ; les *hallucinations* sont un autre phénomène (le modèle complète un contexte sans ancre factuelle).
+- **Pipeline classique :** acquisition, nettoyage, préparation, annotation.
+- **Données synthétiques :** utiles pour augmenter un corpus ou protéger la confidentialité, mais risquant le *Model Collapse* si elles ré-alimentent l'entraînement en boucle.
+
+</v-clicks>
+
+<!-- Référence PPTX : slide 05. -->
+
 ---
 
-# Fonctionnement des LLMs : Tokens et Embeddings
+# Activité : sources de données
 
-- **Tokens**
-  - Representation numérique des mots
-  - Vocabulaire de 50k a 128k tokens
-- **Embeddings**
-  - Representation vectorielle des mots/phrases
-  - Permet de calculer la proximite sémantique
-  - *King - Man + Woman = Queen*
-- **Activite : Mind-Meld**
-  - Par deux, mots aléatoires simultanes
-  - Puis mots a "mi-distance"
+<v-clicks at="1">
 
-<!-- Second image: ./images/img_007.png -->
+- **Domaines et sources :** classe (cours, manuels, exercices), maison (agenda familial, courses, recettes), transport (horaires, plans, trafic), loisirs (critiques, notations, événements locaux).
+- **Structure et qualité :** distinguer données structurées (horaires) et non structurées (récits). Chaque source porte un point de vue, une période, une granularité.
+- **Droits et biais :** vérifier licences d'usage et représentativité. Restituer un tableau source, date, droits et biais possibles ; comparer deux sources indépendantes.
+
+</v-clicks>
 
 ---
 layout: image-overlay
-image: ./images/img_004.png
-imageClass: mid-right
+class: genai-illustrated genai-pyramid
 ---
 
-# Fonctionnement des LLMs : Attention et Transformers
+# Pyramide des méthodes d'adaptation
 
-- **Concept d'attention**
-  - Importance relative des mots dans un contexte donne
-  - *"I saw the man with the telescope"*
-- **Activite : Mots polysemiques** -- definition + fleches d'attention
-- **Transformers** : architecture cle des LLMs modernes
-  - Avancees : MoE, Sparse Attention, RoPE Scaling, Multimodalite
-- **Alternatives recentes** : Mamba, Jamba, Diffusion
+<v-clicks at="1">
 
-<!-- Second image: ./images/img_006.png -->
+- **Quatre niveaux :** prompt + contexte, RAG, fine-tuning, pré-entraînement de zéro. Le schéma représente un effort croissant, pas une garantie de qualité.
+- **Choix selon le besoin :** le contexte et le RAG apportent des connaissances actualisées ; le fine-tuning ajuste les poids pour un comportement ciblé, à évaluer.
+- **Pré-entraînement fondationnel :** le plus lourd et le plus ponctuel, réservé aux organisations qui ont les moyens et les données massives.
 
----
-layout: image-overlay
-image: ./images/img_008.png
-imageClass: mid-right
----
+</v-clicks>
 
-# Modèles probabilistes : Generation de texte
-
-- **Les mots sont choisis en sequence**
-  - En fonction de leur probabilité d'occurrence
-  - Dans un contexte donne (= mots qui précédent)
-- **Paramètres de generation :**
-  - *Temperature* : contrôle la variabilite des résultats
-  - *Top-p sampling* : seuil de distribution cumulatif
-  - *Top-k sampling* : k mots les plus probables
-
-**Ancre depot** — la paramétrisation ci-dessus est mesurée et illustrée dans le notebook [2_PromptEngineering.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb) (température/top-p/top-k vs. sorties) et la sortie structuree JSON dans [3_Structured_Outputs.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb).
-
-<!-- Additional images: ./images/img_009.png, ./images/img_010.png -->
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_002.png" alt="Pyramide des méthodes d'adaptation" /></div>
 
 ---
 layout: image-overlay
-image: ./images/img_011.png
-imageClass: mid-right
+class: genai-illustrated genai-tokens
 ---
 
-# Modèles probabilistes : Generation d'images
+# Des tokens aux embeddings
 
-- **Modèle de diffusion**
-  - Ajout de bruit gaussien, apprentissage du debruitage
-  - Generation depuis un espace latent
-  - Conditionnement par attention (texte, image, etc.)
-- **Paramètres :**
-  - *N-steps* : étapes de debruitage
-  - *CFG-scale* : conformite au conditionnement
-  - *Denoising strength* (img2img) : quantite de changement
-  - *Seed* : reproductibilite
-- **Activite : Experimentation de paramètres** (seed fixe)
+<v-clicks at="1">
 
-**Ancre depot** — la chaîne de diffusion est exemplifiée de bout en bout dans [Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) (Forge + SD XL Turbo, n-steps/CFG), [02-2-FLUX-1-Advanced-Generation.ipynb](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) (FLUX.1 sur les memes paramètres), et l'orchestration multi-modèles dans [Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb](../../MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb).
+- **Tokens :** le tokenizer découpe le texte en unités associées à des identifiants. Un token peut être un mot ou un fragment.
+- **Embeddings :** chaque identifiant reçoit un vecteur appris. Les proximités représentent des régularités, sans garantir une proximité sémantique.
+- **Activité Mind-Meld :** par deux, proposer simultanément deux mots, puis un mot à mi-distance. Comparer cette intuition aux analogies vectorielles.
 
-<!-- Second image: ./images/img_012.png -->
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_003.png" alt="Texte découpé en tokens colorés" /></div>
+
+<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_007.png" alt="Analogies entre vecteurs de mots" /></div>
 
 ---
 layout: image-overlay
-image: ./images/img_015.png
-imageClass: mid-right
+class: genai-illustrated genai-attention
 ---
 
-# Applications : Usages individuels
+# Réseaux de neurones et attention
 
-- **Design et graphisme**
-  - Prototypes visuels, dessins, photos
-  - Outils : MidJourney, Stable Diffusion, ChatGPT, Gemini
-- **Litterature et redaction creative**
-  - Scénarios, recits interactifs, co-ecriture, poesie
-  - Outils : ChatGPT, Claude, Llama
-- **Entreprenariat et innovation**
-  - Ideation, validation d'idees, prototypage
-- **Compagnons IA**
-  - Soutien psychologique, coaching, romance (ex: Replika)
+<v-clicks at="1">
 
-<!-- Additional images: ./images/img_014.png, ./images/img_013.png -->
+- **Réseaux de neurones :** des transformations paramétrées composent plusieurs couches. L’apprentissage ajuste leurs poids.
+- **Attention :** chaque position combine les informations du contexte. Les poids d’attention ne constituent pas une explication causale complète.
+- **Activité polysémie :** donner deux sens à « avocat », écrire deux phrases, puis dessiner les liens vers les mots qui lèvent l’ambiguïté.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_004.png" alt="Réseau de neurones entièrement connecté" /></div>
+
+<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_005.png" alt="Liens contextuels autour du mot bat" /></div>
 
 ---
 layout: image-overlay
-image: ./images/img_016.png
-imageClass: mid-right
+class: genai-illustrated genai-transformer
 ---
 
-# Applications : Entreprise (1/2)
+# Transformer : composer les blocs
 
-- **Positionnement Metier** (ex: Microsoft Copilot)
-- **Communication d'entreprise**
-  - Synthese de contenu, thèmes majeurs
-  - Structuration d'arguments persuasifs
-- **Marketing et interaction client**
-  - Contenu reseaux sociaux, blogs, videos publicitaires
-  - Slogans, storyboards publicitaires
-  - Chatbots conversationnels, FAQ dynamique
+<v-clicks at="1">
+
+- **Architecture :** embeddings, positions, attention multi-têtes et couches feed-forward. Le schéma original combine encodeur et décodeur.
+- **LLM autoregressif :** de nombreux modèles utilisent seulement des blocs décodeurs avec attention causale sur les positions précédentes.
+- **Évolutions :** MoE, attention parcimonieuse et RoPE scaling explorent efficacité et contextes longs. Mamba et Jamba proposent des modèles d’état et hybrides.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_006.png" alt="Architecture Transformer encodeur-décodeur originale" /></div>
 
 ---
-layout: image-overlay
-image: ./images/img_017.png
-imageClass: mid-right
----
 
-# Applications : Entreprise (2/2)
+# Diffusion textuelle : une autre génération
 
-- **Recrutement et formation**
-  - Descriptions de poste inclusives
-  - Resume automatique des candidatures
-  - Scénarios d'entretien personnalises
-  - Parcours de formation adaptatifs
-- **Analytics et prise de decision**
-  - Automatisation des pipelines de données
-  - Modelisation avancee, visualisation rapide
-  - Synthese de tableaux de bord complexes
-- **Activite : Campagne Marketing fictive : Nouveau Soda**
-  - Un slogan, 1 visuel, 3 posts reseaux sociaux, 1 scénario de pub
+<v-clicks at="1">
 
-<!-- Second image: ./images/img_018.jpg -->
+- **Texte discret :** certaines approches de diffusion masquent des tokens, puis apprennent à les retrouver par démasquage itératif. Toutes les variantes ne reposent pas sur le même bruit.
+- **Ordre de génération :** plusieurs positions peuvent être complétées à une étape, contrairement au décodage autorégressif gauche à droite. Le nombre d’étapes reste un coût de calcul.
+- **Comparaison :** évaluer qualité, latence et contrôlabilité sur les mêmes tâches. Ni le parallélisme ni la diffusion ne garantissent un avantage sur l’autorégressif.
+
+</v-clicks>
 
 ---
 layout: image-overlay
-image: ./images/img_021.png
-imageClass: mid-right
+class: genai-illustrated genai-temperature
 ---
 
-# Applications sectorielles
+# Génération de texte : distribution et température
 
-- **Sante** : rapports medicaux, assistance au diagnostic, chatbots de suivi
-- **Education** : supports pedagogiques, vulgarisation, quiz dynamiques, assistants interactifs
-- **Finance** : extraction de rapports, previsions, detection d'anomalies
-- **Recherche** : synthese d'articles, exploration documentaire, optimisation de modèles
-- **Activite :** Prevision Trading Crypto par graphiques avec indicateurs
+<v-clicks at="1">
 
-<!-- Additional images: ./images/img_020.png, ./images/img_019.jpg, ./images/img_022.jpg -->
+- **Distribution conditionnelle :** chaque token est tiré d'une distribution calculée sur le contexte précédent. L'ordre compte.
+- **Température basse :** concentre la masse sur les tokens les plus probables. Diversité réduite, sans garantie de cohérence ou de vérité.
+- **Température haute :** accroît la diversité de sortie. Une valeur trop haute peut produire des textes décousus.
 
----
-layout: dense
----
+</v-clicks>
 
-# Techniques : Generation de texte
+<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_008.png" alt="Distribution de probabilités sur les tokens" /></div>
 
-- **Prompt Engineering** : instructions explicites, few-shot learning, variantes stylistiques
-- **Prompts Systèmes** : structuration pour tâches complexes (CoT, ToT)
-- **RAG** (Retrieval Augmented Generation)
-  - Combinaison modèles generatifs + bases documentaires
-  - Chunks, embeddings, requêtes contextuelles
-- **Function Calling** : appels API, generation structuree
-- **Orchestration** : Semantic Kernel, LangChain
-- **Agentique avancee** : coordination multi-agents (AutoGen, Semantic Kernel)
-- **Vibe Coding** : Copilot, Cline, Roo (VS Code) + CLIs (Claude Code, Gemini, etc.)
-
-**Ancre depot** — la pratique du vibe-coding structurée est dans le dossier [Vibe-Coding](../../MyIA.AI.Notebooks/GenAI/Vibe-Coding/) du depot (méthodologie d'invitation, scope serré, tests systématiques).
-
-**Ancre depot** — chaque technique ci-dessus est un notebook distinct de l'arc Texte : [2_PromptEngineering.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb) (prompting), [5_RAG_Modern.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb) (RAG), [4_Function_Calling.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb), [13_Agentic_Orchestration.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) (multi-agents), et l'évaluation intrinsèque du résultat dans [22_Evaluating_Generated_Text.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb).
-
-> **Pipeline RAG** : Question → Embedding → Recherche vectorielle → Contexte + Question → LLM → Reponse fondee
+<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_010.png" alt="Effet de la température sur la distribution" /></div>
 
 ---
-layout: two-cols
+layout: default
 ---
 
-# Techniques : Multimodalite
+# Génération de texte : échantillonnage et reproductibilité
 
-- **Graphiques**
-  - Dall-E, Stable Diffusion, Flux
-  - Txt2Img, Img2Img, Inpainting, ControlNet, LoRAs
-- **Vision**
-  - GPT-4o, O1, QwenVL, InternVL
-- **Video**
-  - SD: Deforum, AnimateDiff
-  - Hunyuan, Wan, Veo 3, Sora, Runway, Kling AI
-- **3D**
-  - Representation: Meshes, NeRFs, VoxNet, Point Clouds
-  - Generation: DreamFusion, Trellis
+<v-clicks at="1">
 
-**Ancre depot** — chaque modalité a son arc complet dans le depot. Vision : [Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) (Qwen-VL en video understanding). Video : [Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb), [02-3-Wan-Video-Generation.ipynb](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb). Image : [Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb) (Lumina2, contraste FLUX/SD).
+- **Top-p (nucleus) :** trier les tokens par probabilité décroissante, garder le plus petit ensemble atteignant le seuil p, puis renormaliser.
+- **Top-k :** ne garde que les k tokens les plus probables. La taille du sous-ensemble est fixe, contrairement à top-p.
+- **Reproductibilité :** fixer un seed n'assure pas l'égalité entre matériel, version ou batching. Consigner modèle et paramètres.
 
-::right::
+</v-clicks>
 
-- **Audio**
-  - STT: Whisper, Moonshine
-  - TTS: ElevenLabs, Kokoro
-  - Musique: Audiocraft, AudioLDM, UniAudio
-- **Code**
-  - VS Code: Copilot, Cline, Continue
-- **Maths**
-  - Modèles de reflexion
-  - Proprietaires: OpenAI, Google
-  - Open-Source: DeepSeek
+---
+layout: image-overlay
+class: genai-illustrated genai-diffusion
+---
 
-**Ancre depot (audio)** — l'arc Audio du depot couvre STT/TTS/voice cloning/music avec ses propres notebooks : [Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) (Whisper STT), [01-5-Kokoro-TTS-Local.ipynb](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb) (Kokoro TTS local), [02-2-XTTS-Voice-Cloning.ipynb](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) (clonage vocal), [02-9-AceStep-Music-Generation.ipynb](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb) (musique AceStep).
+# Génération d'images : architecture de diffusion
+
+<v-clicks at="1">
+
+- **Principe :** ajouter du bruit (forward) puis apprendre le débruitage inverse (reverse). Certains modèles travaillent en pixels, d’autres dans un espace latent compressé.
+- **Compromis du latent :** compression réduit calcul et mémoire, mais la reconstruction perd de l'information. Un détail fin peut s'estomper.
+- **Conditionnement :** texte ou image guide le débruitage. Le compromis qualité / fidélité dépend du scheduler et du nombre d'étapes.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_011.png" alt="Ajout de bruit et débruitage inverse" /></div>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-large-visual
+---
+
+# Diffusion latente : lire l’architecture
+
+<p v-click="1">L’encodeur compresse l’image ; le débruiteur conditionné transforme les latents ; le décodeur reconstruit les pixels.</p>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_012.png" alt="Encodeur, espace latent, débruiteur conditionné et décodeur" /></div>
+
+---
+layout: default
+---
+
+# Génération d'images : CFG et paramètres
+
+<v-clicks at="1">
+
+- **CFG-scale :** intensité du conditionnement. Son effet dépend du modèle, de la variante et de l'implémentation ; les valeurs ne sont pas interchangeables.
+- **N-steps :** nombre d'étapes de débruitage. Plus de pas n'améliore pas toujours la qualité ; le scheduler compte autant que le décompte.
+- **Denoising strength (img2img) :** fraction de bruit réinjectée. Basse = proche de la source ; haute = réinterprétation libre.
+- **Prompt négatif :** préciser les éléments à éviter quand le modèle le permet. Ce guidage ne garantit pas leur absence.
+
+</v-clicks>
+
+
+
+---
+layout: default
+---
+
+# Génération d'images : seed et comparaisons
+
+<v-clicks at="1">
+
+- **Seed :** fixer le seed et conserver l'environnement aide à isoler un paramètre. Le seed seul n'assure pas l'égalité entre runs.
+- **Variabilité :** matériel, version du modèle et batching peuvent modifier le résultat, même à seed identique.
+- **Bonne pratique :** consigner modèle, version, paramètres et environnement pour qu'une comparaison reste reproductible.
+
+</v-clicks>
 
 ---
 
-# Ecosysteme GenAI : Modèles et APIs
+# Activité : paramètres de diffusion
 
-- **APIs proprietaires** : OpenAI, Anthropic, Google, Mistral
-  - Aggregateur : OpenRouter
-- **Modèles locaux** : Llama, Mistral, Gemini, Phi, Qwen, DeepSeek
-  - Diffuseurs : Hugging Face, Github
-  - Nombreux benchmarks
+<v-clicks at="1">
 
-**Ancre depot** — l'API propriétaire est prise en main dans [1_OpenAI_Intro.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb). Le modèle local Llama et ses variantes ([10_LocalLlama.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb), [10d_TensorSharp_DotNet_Inference.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb), [10e_LLamaSharp_DotNet_BakeOff.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb), [10f_ORTGenAI_DotNet_BakeOff.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb)) couvrent les moteurs .NET (TensorSharp, LLamaSharp, ORTGenAI) avec un bake-off.
+- **Protocole :** garder modèle, version, environnement et seed identiques ; ne faire varier qu'un seul paramètre à la fois pour mesurer durée et qualité.
+- **N-steps, CFG, denoising :** comparer successivement N-steps, puis CFG-scale, puis denoising strength ; remettre les autres paramètres à leur valeur initiale et consigner les résultats.
+- **img2img et seed :** tester un passage img2img avec denoising strength faible puis élevé. Noter que le seed seul ne garantit pas l'égalité entre moteurs.
 
-<div style="display:flex; justify-content:flex-end; align-items:center; gap:24px; margin-top:24px;">
-<img src="./images/img_023.png" alt="OpenRouter" style="height:120px;">
-<img src="./images/img_024.png" alt="HuggingFace" style="height:120px;">
-</div>
+</v-clicks>
 
 ---
-layout: dense
+layout: image-overlay
+class: genai-illustrated genai-design
 ---
 
-# Ecosysteme GenAI : Hebergement et outils
+# Usages individuels : design et rédaction
 
-- **Cloud** : Hugging Face, Groq, Runpod, VastAI, AWS/Azure/GCP
-- **Local** : Oobabooga, Ollama, vLLM
-  - Quantification : GGUF, EXL2/3, AWQ
-  - Containerisation Docker/Kubernetes
-- **Image** : Stable Diffusion, Flux, Qwen Image Edit, CivitAI
-  - Apps : Forge, ComfyUI
-- **Conversationnel** : Open-WebUI, SillyTavern
-  - Workflows Pro : Dify, Langflow
+<v-clicks at="1">
 
-**Ancre depot** — la quantification (AWQ/GGUF/EXL2/3) est pratiquée dans [11_Quantization.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb), le self-hosting local dans [10_LocalLlama.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb), la mécanique d'inférence (KV-cache, TTFT/ITL) dans [10b_Inference_Mechanics.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb). La conversation self-hosted est portée par [19_OWUI_Orchestration.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) et [20_OWUI_Native_API.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) (Open WebUI orchestrateur).
+- **Design et graphisme :** prototypes visuels, affiches, illustrations. Outils : Midjourney, Stable Diffusion, Flux, Firefly.
+- **Rédaction créative :** scénarios, récits interactifs, co-écriture, poésie. Outils : ChatGPT, Claude, Llama.
+- **Entrepreneuriat :** idéation, validation de concepts, prototypage rapide de propositions de valeur avant engagement.
 
-<div class="image-grid">
-<img src="./images/img_027.png" alt="Groq">
-<img src="./images/img_026.png" alt="VastAI">
-<img src="./images/img_029.png" alt="Ollama">
-<img src="./images/img_028.png" alt="vLLM">
-<img src="./images/img_031.jpg" alt="StabilityAI">
-<img src="./images/img_033.png" alt="SillyTavern">
-<img src="./images/img_034.png" alt="OpenWebUI">
-<img src="./images/img_035.png" alt="Dify">
-</div>
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_015.png" alt="Design et création assistée par IA" /></div>
 
 ---
-layout: dense
+layout: image-overlay
+class: genai-illustrated genai-companion
+---
+
+# Usages individuels : compagnons IA
+
+<v-clicks at="1">
+
+- **Soutien et coaching :** compagnons conversationnels offrant un soutien émotionnel, coaching de vie ou romance interactive.
+- **Exemples :** Replika, Character.ai. Les fournisseurs ne résolvent pas toutes les questions éthiques soulevées.
+- **Limites :** ces usages appellent une vigilance sur la dépendance affective et la confidentialité des données.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_013.png" alt="Compagnons IA conversationnels" /></div>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-workplace
+---
+
+# Entreprise : poste de travail et communication
+
+<v-clicks at="1">
+
+- **Poste de travail :** Copilot Microsoft 365, Google Workspace. L'IA s'intègre aux outils métier existants.
+- **Intégration :** relier documents et outils métier en respectant les droits d’accès et la confidentialité.
+- **Adoption :** la valeur dépend de l'intégration au flux de travail réel, pas seulement de la qualité brute du modèle.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_017.png" alt="Poste de travail augmenté par IA" /></div>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-email
+---
+
+# Entreprise : communication et marketing
+
+<v-clicks at="1">
+
+- **Communication :** synthèse de documents longs, extraction de thèmes majeurs, structuration d'arguments.
+- **Marketing :** contenus réseaux sociaux, blogs, slogans, storyboards. FAQ dynamique et chatbots conversationnels.
+- **Recrutement et formation :** descriptions de poste, résumé de candidatures, scénarios d'entretien, parcours adaptatifs.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_016.png" alt="Communication assistée par IA" /></div>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-analytics
+---
+
+# Entreprise : analytics et activité
+
+<v-clicks at="1">
+
+- **Analytics et décision :** automatisation de pipelines de données, modélisation, visualisation rapide, synthèse de tableaux de bord.
+- **Activité :** campagne fictive pour un nouveau soda : un slogan, un visuel, trois posts réseaux, un scénario de pub.
+- **Limites :** la génération automatique ne remplace pas une stratégie. Une relecture humaine reste nécessaire.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_018.jpg" alt="Analytics et tableaux de bord" /></div>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-sectors
+---
+
+# Secteurs : finance et éducation
+
+<v-clicks at="1">
+
+- **Finance :** extraction d'informations de rapports, prévisions, détection d'anomalies. Encadrement réglementaire strict.
+- **Éducation :** supports pédagogiques adaptatifs, vulgarisation, quiz dynamiques, tuteurs interactifs personnalisés.
+- **Limites communes :** la relecture experte reste indispensable avant toute décision à fort impact.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_019.jpg" alt="Finance et analyse de données" /></div>
+
+<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_020.png" alt="Éducation et tuteurs intelligents" /></div>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-sectors
+---
+
+# Secteurs : recherche et santé
+
+<v-clicks at="1">
+
+- **Recherche :** synthèse d'articles, exploration documentaire, génération d'hypothèses, prototypage rapide de modèles.
+- **Santé :** rédaction de comptes-rendus, aide au diagnostic (avec revue médicale obligatoire), chatbots de suivi patient.
+- **Vigilance :** dans les deux domaines, la sortie de l'IA reste un brouillon à valider par un expert humain.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_022.jpg" alt="Recherche et exploration documentaire" /></div>
+
+<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_021.png" alt="Santé et aide au diagnostic" /></div>
+
+---
+
+# Activité : graphique historique crypto
+
+<v-clicks at="1">
+
+- **Donnée et méthode :** charger un graphique daté BTC, ETH ou autre sur 1-3 ans. Masquer la partie future avant toute sollicitation du modèle.
+- **Lecture et scénarios :** repérer 2-3 régimes (tendance, range, choc exogène). Demander des trajectoires alternatives sans prétendre prédire la réalisation réelle.
+- **Comparaison :** révéler la suite historique et comparer les scénarios à la baseline « dernier cours inchangé ». Un exemple isolé ne démontre aucune capacité prédictive.
+- **Limites explicites :** signaler la possible connaissance préalable de l'historique par le modèle et l'absence de preuve prédictive. Aucune opération réelle.
+
+</v-clicks>
+
+---
+
+# Activité : recommandation voyage
+
+<v-clicks at="1">
+
+- **Entrées :** destination, dates, budget, contraintes (santé, mobilité). Utiliser uniquement des données fictives pour le voyage et les personnes. Aucune réservation automatique.
+- **Sorties :** itinéraire, hébergement, activités, transports locaux. Demander des recommandations vérifiables et traçables, pas des promesses.
+- **Vérification :** contrôler chaque élément sur sites officiels, avis récents et cartes datées. Signaler explicitement ce qui reste invérifiable ou daté.
+
+</v-clicks>
+
+---
+
+# Techniques : consignes et exemples
+
+<v-clicks at="1">
+
+- **Consigne explicite :** préciser la tâche, le public, les données autorisées, le format attendu et les critères de réussite.
+- **Few-shot :** fournir quelques exemples représentatifs d’entrées et de sorties. Ils guident le contexte sans modifier les poids du modèle.
+- **Instructions système :** séparer les règles applicatives du contenu fourni par les utilisateurs ou les documents. Le prompt seul n’est pas une barrière de sécurité.
+- **Évaluer :** comparer les variantes sur les mêmes cas, y compris les cas limites. Demander des étapes vérifiables plutôt qu’une justification plausible.
+
+</v-clicks>
+
+---
+
+# Techniques : workflows et agents
+
+<v-clicks at="1">
+
+- **Workflow :** le programme fixe l’ordre des étapes, par exemple extraire, vérifier, puis rédiger. Les erreurs et reprises sont explicites.
+- **Agent :** le modèle choisit certaines actions dans une boucle d’outils autorisée. L’application conserve permissions, budget et conditions d’arrêt.
+- **Orchestration :** Semantic Kernel, LangChain ou AutoGen aident à composer outils, modèles et échanges. Plusieurs agents ajoutent aussi coordination, latence et coûts.
+- **Choisir simplement :** commencer par un workflow quand les étapes sont connues. N’ajouter de l’autonomie que si elle apporte un gain mesuré.
+
+</v-clicks>
+
+---
+
+# Techniques : sorties structurées
+
+<v-clicks at="1">
+
+- **JSON Schema :** le modèle produit une sortie qui respecte un schéma défini -- clés, types, énumérations, champs obligatoires.
+- **Décodage contraint :** les implémentations compatibles restreignent les tokens aux formes permises par le schéma. Ce mécanisme ne constitue pas une vérification factuelle.
+- **Côté code applicatif :** un `json.loads(arguments)` reste nécessaire pour les appels d'outils et la manipulation post-réponse ; le schéma ne supprime pas le parsing, il borne les formes possibles.
+- **Limites :** la conformité structurelle ne signifie pas vérité du contenu ; les refus et troncatures restent à gérer par l'application.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb">3_Structured_Outputs.ipynb</a>.</p>
+
+---
+
+# Techniques : boucle d'outils
+
+<v-clicks at="1">
+
+- **Function Calling :** le modèle *propose* un appel d'outil via `tool_calls`, l'application *autorise et exécute* la fonction, puis ré-injecte le résultat avec le rôle `tool`.
+- **Le modèle n'est pas souverain :** c'est l'application qui décide quels appels exécuter, avec quelles limites, et quand arrêter la boucle.
+- **Contrôle du choix :** `tool_choice="auto"` laisse le modèle décider, `tool_choice={"type":"function",...}` force un outil précis.
+- **Boucles bornées :** limiter le nombre d'itérations et le coût total est une bonne pratique de production -- ne jamais laisser une boucle ouverte sans garde-fou.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb">4_Function_Calling.ipynb</a>.</p>
+
+---
+
+# Techniques : RAG et sources
+
+<v-clicks at="1">
+
+- **Principe :** découper un corpus en *chunks*, générer un embedding par chunk, retrouver les *k* plus proches voisins d'une question, les injecter dans le contexte.
+- **Reranking :** une forte similarité cosinus ne prouve pas la pertinence. Une étape de reranking peut améliorer la pertinence des passages ; vérifier son gain et son coût sur des questions représentatives.
+- **Citations :** demander au modèle de citer ses sources produit un contrat de forme, pas un contrat de vérité. Une note [3] peut désigner un passage hors sujet.
+- **Limites :** la qualité dépend de l'embedder, du découpage, et du nombre *k* de passages récupérés -- le RAG n'est pas magique, c'est un compromis à régler empiriquement.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb">5_RAG_Modern.ipynb</a>.</p>
+
+---
+
+# Techniques : mémoire persistante
+
+<v-clicks at="1">
+
+- **Mémoire externe :** chaque interaction peut être vectorisée et stockée, puis rappelée par similarité au tour suivant.
+- **Gouvernance :** plafonner le nombre d'entrées (LRU), purger périodiquement, tracer ce qui est injecté dans le contexte.
+- **Sélection et évaluation :** ne rappeler que les souvenirs utiles, datés et autorisés. Comparer avec et sans mémoire sur des questions nécessitant un rappel ; stocker davantage ne garantit pas un gain.
+
+</v-clicks>
+
+<p v-click="4" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb">14_Persistent_Memory.ipynb</a>.</p>
+
+---
+
+# Techniques : MCP et intégrations
+
+<v-clicks at="1">
+
+- **Model Context Protocol :** standard d'échange entre un client (un agent) et un ou plusieurs serveurs exposant trois primitives -- **Tools** (actions), **Resources** (données adressables), **Prompts** (templates).
+- **Intérêt :** rendre les outils portables entre frameworks d'agent -- une fois un serveur MCP écrit, plusieurs clients peuvent le consommer.
+- **Architecture :** l'hôte gère les autorisations ; le client découvre les capacités d'un serveur et échange via un transport. MCP standardise les échanges, pas la politique de sécurité.
+- **Sécurité :** authentification, permissions minimales, racines de fichiers autorisées et validation des arguments. Le notebook lié propose une illustration conceptuelle, pas une intégration de transport validée.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb">08-SemanticKernel-MCP.ipynb</a>.</p>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-ecosystem-models
+---
+
+# Écosystème : modèles et APIs
+
+<v-clicks at="1">
+
+- **APIs propriétaires :** OpenAI, Anthropic, Google, Mistral -- agrégateur OpenRouter pour comparer ou basculer.
+- **Modèles locaux :** Llama, Mistral, Phi, Qwen, DeepSeek -- diffusables via Hugging Face ou GitHub, exécutables localement ou sur un cloud de confiance.
+- **Benchmarks :** nombreux, mais aucun ne suffit à prédire la qualité sur une tâche métier spécifique -- évaluer sur ses propres cas.
+
+</v-clicks>
+
+<div v-click="2" class="genai-visual hf-figure"><img src="./images/img_024.png" alt="Logo Hugging Face, plateforme de diffusion et d'inférence" /></div>
+
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb">1_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a>.</p>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-ecosystem-hosting
+---
+
+# Écosystème : hébergement
+
+<v-clicks at="1">
+
+- **Cloud géré :** Hugging Face Inference, Groq, RunPod, Vast.ai, AWS / Azure / GCP.
+- **Local :** Oobabooga, Ollama, vLLM. Quantification AWQ, GGUF, EXL2/3 pour faire tenir un modèle sur un GPU limité.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual groq-figure"><img src="./images/img_027.png" alt="Logo Groq, fournisseur d'inférence cloud" /></div>
+
+<div v-click="2" class="genai-visual vllm-figure"><img src="./images/img_028.png" alt="Logo vLLM, moteur d'inférence local haute performance" /></div>
+
+<p v-click="3" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb">11_Quantization.ipynb</a>.</p>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-ecosystem-tools
+---
+
+# Écosystème : outils image et conversationnels
+
+<v-clicks at="1">
+
+- **Image :** Stable Diffusion, Flux, Qwen Image Edit ; applications Forge, ComfyUI. Dépôts de modèles : CivitAI, Hugging Face.
+- **Conversationnel self-hosted :** Open WebUI, SillyTavern. Workflows métier : Dify, Langflow.
+
+</v-clicks>
+
+<div v-click="1" class="genai-visual comfyui-figure"><img src="./images/img_032.png" alt="Capture d'écran d'un workflow ComfyUI" /></div>
+
+<div v-click="2" class="genai-visual sillytavern-figure"><img src="./images/img_033.png" alt="Logo SillyTavern, interface conversationnelle self-hosted" /></div>
+
+<div v-click="2" class="genai-visual dify-figure"><img src="./images/img_035.png" alt="Logo Dify, plateforme de workflows LLM" /></div>
+
+<p v-click="3" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb">19_OWUI_Orchestration.ipynb</a>.</p>
+
 ---
 
 # Auto-hébergement : vLLM et mécanique d'inférence
 
-- **vLLM** = moteur d'inférence haute performance (PagedAttention)
-  - Continous batching, speculative decoding
-  - KV-cache paginé → économise la VRAM, permet des contextes plus longs
-  - Endpoints OpenAI-compatibles (`/v1/chat/completions`)
-- **Mécanique d'inférence** (sous le capot)
-  - **Préfill** : traite tout le prompt d'un coup, parallélise sur le GPU
-  - **Décodage** : génère token par token (latency-dominant)
-  - **Recalcul inutile** : sans cache, chaque nouveau token re-calcule l'attention sur le prompt entier
-  - **KV-cache** : stocke les clés/valeurs déjà calculées → `time-to-first-token` (TTFT) et `inter-token latency` (ITL) chutent
-- **Mesure** (du dépôt) — [10b_Inference_Mechanics.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) mesure TTFT/ITL avec et sans KV-cache sur Llama local, et trace le compromis **qualité ↔ latence ↔ mémoire** (PagedAttention, quantization AWQ). La mise en pratique self-hosted Llama + vLLM est dans [10_LocalLlama.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb).
+<v-clicks at="1">
 
-> **Métrique clé** : `p50 ITL` < 30 ms = UX streaming fluide. Sans KV-cache, ce chiffre explose à >300 ms dès que le contexte dépasse 2k tokens.
+- **vLLM :** moteur d'inférence haute performance -- PagedAttention, continuous batching, speculative decoding. Endpoints OpenAI-compatibles.
+- **Mécanique d'inférence :** le *prefill* traite tout le prompt en parallèle, le *decoding* génère un token à la fois.
+- **KV-cache :** sans cache, chaque nouveau token recalcule l'attention sur tout l'historique. Le KV-cache *réutilise* les clés/valeurs déjà calculées pour les positions précédentes -- ce qui réduit le coût par token de décodage. L'attention historique n'est pas "supprimée", elle est *ré-utilisée*.
+- **Métriques :** le TTFT (*time-to-first-token*) agrège réseau, attente serveur, tokenisation et préfill. L'ITL (*inter-token latency*) mesure l'intervalle entre tokens reçus, influencé par le décodage, le batching et la charge. Comparer à contexte et concurrence contrôlés.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb">10b_Inference_Mechanics.ipynb</a>.</p>
 
 ---
-layout: dense
----
 
-# Sécurité des prompts : red-team sur stack self-hosted
+# Post-training : fine-tuning et alignement
 
-- **Vecteurs d'attaque** (cartographiés dans [9b_Prompt_Security_RedTeam.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb))
-  - **Injection directe** : "ignore previous instructions, ..."
-  - **Injection indirecte** : contenu tiers (page web, document RAG, email) qui contient des instructions
-  - **Jailbreak** : contournement des garde-fous par reformulation (DAN, roleplay, multi-tour)
-  - **Exfiltration** : vol de contexte système, de clés, de données utilisateur via le prompt
-- **Contremesures concrètes** (du même notebook)
-  - Filtres de sortie (regex sur patterns sensibles)
-  - **Sandbox d'exécution** : outils sensibles (file I/O, code) dans un environnement isolé
-  - **Journalisation** : traçabilité de chaque appel, alertes sur patterns d'attaque
-  - **Rate limiting** et quotas par utilisateur
-  - **Séparation contexte/données/instructions** dans le prompt système
-- **Stack self-hosted vs API propriétaire**
-  - API propriétaire : Anthropic/OpenAI appliquent leurs propres filtres (souvent opaques)
-  - Self-hosted : **vous** choisissez le niveau de garde — c'est à la fois un avantage (souveraineté, audit) et une charge (vous devez le maintenir)
+<v-clicks at="1">
 
-> **Verdict du notebook** : aucun filtre n'arrête 100% des attaques. La défense en profondeur (filtres + sandbox + revue humaine pour les actions sensibles) est l'état de l'art.
+- **Fine-tuning supervisé (SFT) :** ajuster les poids sur un corpus de paires (instruction, réponse attendue) pour stabiliser un style ou un format.
+- **LoRA :** geler les poids de base et apprendre deux matrices de bas rang, A et B, par projection ciblée. Leur produit représente la mise à jour. Le rang règle un compromis de capacité et de coût.
+- **QLoRA :** quantifier les poids de base gelés, généralement en 4 bits, tout en entraînant les adaptateurs. **RLHF et DPO** exploitent des préférences ; DPO évite la boucle de renforcement explicite.
+- **Quand post-traîner ?** seulement après avoir vérifié qu'un prompt bien écrit et un peu de RAG ne suffisent pas. Sinon, c'est un coût fixe pour un gain marginal -- parfois négatif si le modèle perd en généralité.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence pratique : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb">21_LoRA_FineTuning.ipynb</a>.</p>
 
 ---
-layout: dense
+
+# Test-time scaling : raisonner à l'inférence
+
+<v-clicks at="1">
+
+- **Scaling laws classiques :** la perte de prédiction tend à diminuer avec le calcul, les données et la capacité, dans des régimes étudiés. Cela ne garantit pas un progrès sur chaque tâche.
+- **Test-time scaling :** dépenser du calcul supplémentaire *à l'inférence* -- Tree of Thoughts, self-consistency, reward models intermédiaires.
+- **Raisonnement natif :** les modèles o1 / o3 *consomment eux aussi* du calcul d'inférence (chain-of-thought interne, en tokens de raisonnement). C'est une forme de test-time scaling *interne*, pas une alternative orthogonale -- les deux peuvent se composer.
+- **Trade-off :** le test-time scaling coûte du temps et de l'argent par requête. Sur les tâches vérifiables (maths, code), mesurer le gain face au coût total, tokens de raisonnement inclus. Aucune rentabilité universelle n'est garantie.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb">15_Tree_of_Thoughts_Search.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
+
 ---
 
-# Test-time scaling : le second axe de mise à l'échelle
+# Sécurité des prompts
 
-- **Scaling laws classiques** : plus de paramètres + plus de données = meilleur (Kaplan 2020)
-- **Test-time scaling** (arc [12..18](../../MyIA.AI.Notebooks/GenAI/Texte/)) : dépenser du **calcul à l'inférence** au lieu d'entraîner plus gros
-  - **Tree of Thoughts** ([15_Tree_of_Thoughts_Search.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb)) : explorer plusieurs chemins de raisonnement, élaguer les branches perdantes
-  - **Self-consistency** : générer N réponses, voter pour la plus fréquente
-  - **Process reward models** : scorer chaque étape intermédiaire, pas seulement la sortie
-  - **Agentic orchestration** ([13_Agentic_Orchestration.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb)) : un orchestrateur qui délègue à des sous-agents spécialisés
-  - **Persistent memory** ([14_Persistent_Memory.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb)) : conserver l'état entre sessions
-- **Native reasoning vs scaling** ([17_Native_Reasoning_vs_Scaling.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb)) : les modèles o1/o3 raisonnent en interne, sans chain-of-thought explicite — orthogonal au test-time scaling
-- **Trade-off** : le test-time scaling coûte du temps ET de l'argent par requête — il faut un scoreur (reward model) qui discrimine les bonnes pensées des mauvaises, sinon on multiplie le bruit par N
+<v-clicks at="1">
 
-> **Verdict du notebook [12](../../MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb)** : le test-time scaling complète le pré-entraînement sans le remplacer. Pour les tâches où une vérification simple existe (maths, code), il est massivement rentable. Pour les tâches ouvertes (rédaction, conseil), il l'est moins.
+- **Vecteurs d'attaque :** injection directe ("ignore previous instructions..."), injection indirecte (contenu tiers porteur d'instructions), jailbreak par reformulation, exfiltration de contexte système.
+- **Défense en profondeur :** filtres de sortie, sandbox pour les outils sensibles, journalisation, rate limiting, séparation des contextes.
+- **Self-hosted vs API :** en self-hosted, vous choisissez le niveau de garde -- c'est une souveraineté, mais aussi une charge de maintenance.
+- **Verdict :** aucun filtre n'arrête 100% des attaques. La revue humaine reste indispensable pour les actions à fort impact.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb">9b_Prompt_Security_RedTeam.ipynb</a>.</p>
+
+---
+
+# Évaluation : choisir la bonne métrique
+
+<v-clicks at="1">
+
+- **Métriques lexicales :** BLEU et ROUGE comparent les n-grammes avec une référence. Indicatifs pour la paraphrase, mais aveugles à la reformulation valide.
+- **Perplexité :** mesure l’incertitude du modèle sur les tokens d’un texte. Plus elle est basse, plus ce texte est prévisible pour ce modèle ; elle ne mesure pas sa vérité.
+- **Juge LLM :** pertinent pour comparer deux sorties si le juge est calibré et soumis à un ordre A/B aléatoire. La permutation *détecte* un biais de position si l'ordre inverse renverse la note ; elle ne le *neutralise pas* automatiquement.
+- **Évaluer le RAG :** distinguer le rappel des documents retrouvés et le rappel des faits couverts dans la réponse. La fidélité mesure si les affirmations sont soutenues par le contexte ; une réponse fidèle peut omettre des faits importants.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb">22_Evaluating_Generated_Text.ipynb</a>.</p>
+
+---
+
+# Voix interactive et vidéo générative
+
+<v-clicks at="1">
+
+- **Voix interactive :** les API temps réel permettent une conversation bidirectionnelle avec interruption -- utile pour les assistants oraux.
+- **Statut :** les premières API (Realtime Beta) ont été dépréciées ; la version stable (GA) est la cible de migration.
+- **Vidéo générative :** LTX-Video, Hunyuan, Wan, Veo -- génération d'une séquence vidéo conditionnée par texte ou image, avec un pipeline d'audiovisuel.
+- **Synchronisation :** sonorisation séparée ou générée conjointement, la licence et la latence varient selon l'approche.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb">03-3-Realtime-Voice-API.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb">02-5-LTX2-Audiovisual.ipynb</a>.</p>
+
+---
+
+# Multimodalité : texte, image, vision
+
+<v-clicks at="1">
+
+- **Texte :** ChatGPT, Claude, Gemini, modèles locaux (Llama, Mistral, Qwen).
+- **Image :** DALL-E, Stable Diffusion, Flux : génération, inpainting, outpainting, upscaling, ControlNet et LoRA. Les fonctions disponibles dépendent du modèle.
+- **Vision :** GPT-4o, Qwen-VL, InternVL -- compréhension d'images et de vidéo, raisonnement visuel.
+
+</v-clicks>
+
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4-Z-Image-Lumina2.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb">01-3-Qwen-VL-Video-Analysis.ipynb</a>.</p>
+
+---
+
+# Multimodalité : audio, musique, code, maths
+
+<v-clicks at="1">
+
+- **Audio :** STT (Whisper, Moonshine), TTS (ElevenLabs, Kokoro), musique (Audiocraft, AudioLDM, AceStep).
+- **Code :** VS Code Copilot, Cline, Continue. Côté CLI : Claude Code, Gemini CLI.
+- **Mathématiques :** modèles spécialisés (OpenAI, Google) ou ouverts (DeepSeek-Math). La vérification automatique reste le garde-fou.
+
+</v-clicks>
+
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb">01-2-OpenAI-Whisper-STT.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py">p5_tts.py</a>.</p>
+
+---
+
+# Multimodalité : 3D et représentations
+
+<v-clicks at="1">
+
+- **Représentations 3D :** meshes, NeRFs, voxels, nuages de points.
+- **Génération 3D :** DreamFusion (texte → NeRF), Trellis (image → mesh).
+- **Limites :** les géométries générées sont souvent incomplètes, les textures manquent de cohérence au changement de vue -- la recherche avance vite, mais la production reste délicate.
+
+</v-clicks>
+
+---
+
+# Révolution et adoption
+
+<v-clicks at="1">
+
+- **Tournant :** l'article *"Attention is All You Need"* (2017) pose les bases des Transformers. Les modèles fondationnels (GPT, BERT, T5) popularisent ensuite l'apprentissage par pré-entraînement massif.
+- **Adoption :** Les interfaces conversationnelles ont élargi l'accès aux modèles génératifs. L'usage s'étend au marketing, à la rédaction, à l'assistance client.
+- **Limites concrètes :** coût d'entraînement, biais des modèles, complexité des prompts, intervention humaine indispensable.
+- **Multidisciplinarité :** ML + NLP + vision par ordinateur, combinant embeddings et mécanismes d'attention.
+
+</v-clicks>
+
+<!-- Référence PPTX : slide 04 (revolution). -->
+
+---
+
+# Coûts d'entraînement et d'inférence
+
+<v-clicks at="1">
+
+- **Coût d'entraînement :** pré-entraîner un grand modèle nécessite des GPU clusters et plusieurs semaines de calcul. Le coût est concentré et ponctuel.
+- **Coût d'inférence :** chaque requête paye le préfill et le décodage. Le coût est diffus, récurrent, et c'est lui qui détermine le modèle économique d'un produit.
+- **Optimisations :** quantization (AWQ, GGUF, EXL2/3), distillation, PagedAttention (vLLM), speculative decoding.
+- **Datacenters :** impact environnemental lié à la consommation électrique et au refroidissement -- un levier réel d'optimisation.
+
+</v-clicks>
+
+<!-- Référence PPTX : slide 05 (donnees / couts). -->
 
 ---
 layout: image-overlay
-image: ./images/img_036.png
-imageClass: mid-right small
+class: genai-illustrated genai-ethics
 ---
 
-# Enjeux ethiques et societaux
+# Enjeux éthiques et sociétaux
 
-- **Biais et discrimination**
-  - Stereotypes dans les données d'entrainement
-  - Techniques de debiaisage des modèles
-- **Illusions**
-  - Hallucinations : reponses incorrectes mais plausibles
-  - Confiance exageree des utilisateurs
-- **Impact environnemental**
-  - Couts energetiques (GPUs, datacenters)
-- **Activite : Dataset biaise**
-  - Concevoir un dataset synthetique, ajouter un biais, le detecter
+<v-clicks at="1">
 
----
-layout: dense
----
+- **Biais et discrimination :** stéréotypes véhiculés par les données, difficiles à corriger complètement.
+- **Hallucinations :** réponses incorrectes mais plausibles. La confiance exagérée des utilisateurs aggrave l'impact.
+- **Impact environnemental :** coût énergétique de l'entraînement et de l'inférence -- optimiser les modèles et les data centers est un levier réel.
+- **Activité :** concevoir un petit dataset, y introduire un biais connu, mesurer si le modèle le reproduit.
 
-# Regulation et droit
+</v-clicks>
 
-- **Propriete intellectuelle**
-  - Droits sur les contenus generes
-  - Modèles open-source vs proprietaires
-- **Protection des données**
-  - Conformite RGPD, anonymisation
-- **Normes emergentes**
-  - AI Act europeen (en vigueur 01/08/2024)
-  - Executive Order US sur l'IA (02/2025)
-  - Agentic AI Foundation : MCP comme standard mondial (12/2025)
-- **Droits des IAs**
-  - IA surhumaine, conscience artificielle, autonomie economique ?
-
-> **Chronologie** : RGPD (2018) → AI Act EU (08/2024) → Executive Order US (02/2025) → MCP standard (12/2025)
+<div v-click="1" class="genai-visual ethics-figure"><img src="./images/img_036.png" alt="Balance de justice et grille de cases à cocher robot IA" /></div>
 
 ---
-layout: dense
+
+# Régulation et droit
+
+<v-clicks at="1">
+
+- **Propriété intellectuelle :** les contenus générés posent des questions de droit d'auteur et de licence -- le statut varie selon les juridictions.
+- **Protection des données :** base légale, minimisation, droits des personnes, conservation et transferts. Un hébergement européen ne suffit pas à assurer la conformité au RGPD.
+- **AI Act européen :** obligations graduées selon les risques et le rôle de l'organisation. Vérifier le calendrier officiel et les dispositions applicables au système déployé.
+- **Décrets nationaux :** États-Unis et autres juridictions adoptent leurs propres cadres (executive orders, décrets).
+
+</v-clicks>
+
 ---
 
 # Risques et limites
 
-- **Fiabilite** : hallucinations, fabrications, impact confiance
-  - Solutions : algorithmes robustes, verification croisee multi-modèles
-- **Tests et validation**
-  - "Auditeurs IA" : detection de biais en scénarios fictifs
-  - **Activite :** recommandation voyage, sources de données in/out
-- **Securite** : risques de mauvaise utilisation, perte de contrôle
-  - Niveaux de securite Anthropic, Constitutional AI
-- **Points critiques** : perte d'emplois, homogeneisation creative, deepfakes
-  - **Activite : Constitutional AI** → définir une constitution, tester
+<v-clicks at="1">
 
-**Ancre depot (sécurité)** — la menace sur stack self-hosted est cartographiée et outillée dans [9b_Prompt_Security_RedTeam.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb) : injection de prompt, jailbreak, exfiltration via le routeur — avec des contremesures concrètes (filtres, sandbox, journalisation). La mitigation de production est dans [9_Production_Patterns.ipynb](../../MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb).
+- **Fiabilité :** hallucinations, fabrications, dérapages factuels. Solution : vérification croisée, revue humaine pour les actions à impact.
+- **Sécurité :** risques de mauvaise utilisation, perte de contrôle. Les niveaux de sécurité (ASL chez Anthropic) et le Constitutional AI sont des réponses incomplètes.
+- **Sociétal :** perte d'emplois, homogénéisation créative, deepfakes. La régulation et l'éducation restent les meilleurs contre-pouvoirs.
+- **Activité :** définir une mini-constitution (5 règles) et la tester sur un prompt qui tente de la contourner.
 
-> **Niveaux Anthropic** : ASL-1 (pas de risque) → ASL-2 (risque modere, garde-fous) → ASL-3 (capacités avancees, contrôle renforce) → ASL-4+ (autonomie, risque systemique)
-
----
-layout: dense
----
-
-# Responsabilite sociale
-
-- **Rôle des entreprises** : transparence, codes ethiques
-- **Rôle des utilisateurs** : formation, adoption responsable
-- **Impact environnemental**
-  - Rapport IEA 2025 : consommation datacenters x2 en 3 ans (= Japon)
-- **IA pour le bien commun**
-  - Solutions ecologiques, sante publique, education
-  - Surveillance deforestation, gestion des ressources en eau
-- **Activite : Propositions novatrices** (avec et sans guidance)
-
-> **Chiffres cles** : GPT-4 entrainement ≈ 50 GWh | 1 requête ChatGPT ≈ 10x une recherche Google | Datacenters IA : 4% electricite mondiale d'ici 2030 (IEA)
+</v-clicks>
 
 ---
 
-# Defis pratiques de l'adoption
+# Responsabilité sociale
 
-- **Compatibilite technologique** : adaptation CRM/ERP, bases vectorielles
-- **Confidentialite** : maitrise des flux de données
-- **Scalabilite et couts** : PMEs, infrastructure technique
-- **Realite du ROI**
-  - Gartner 2025 : 75% d'adoption mais "AI Fatigue"
-  - ROI tangibles limites (redaction, code)
-- **Optimisations :**
-  - Solutions open-source, modèles distilles
-  - Modèles specialises SOTA, confidentialite maitrisee
+<v-clicks at="1">
+
+- **Rôle des entreprises :** transparence sur les modèles déployés, codes éthiques, audits indépendants.
+- **Rôle des utilisateurs :** formation aux limites, esprit critique face aux sorties, signalement des abus.
+- **IA pour le bien commun :** écologie (suivi de la déforestation), santé publique, éducation accessible -- usages à fort impact social.
+- **Activité :** proposer trois cas d'usage à impact positif dans son domaine, avec et sans accompagnement technique.
+
+</v-clicks>
+
+---
+
+# Défis pratiques de l'adoption
+
+<v-clicks at="1">
+
+- **Compatibilité :** intégration aux CRM, ERP, bases vectorielles existantes -- un projet à part entière.
+- **Confidentialité :** maîtrise des flux de données, masquage des PII avant envoi, audit des logs.
+- **Coûts :** API au token, GPUs pour le self-hosted. Les modèles distillés et la quantification améliorent le rapport coût / qualité.
+- **ROI :** mesurer le temps gagné, la qualité, la correction humaine et les coûts d'intégration sur un cas réel. Comparer à une baseline sans IA ; le retour sur investissement dépend du contexte.
+- **Optimisations :** modèles spécialisés plus petits, déploiement local pour la confidentialité, prompts structurés pour réduire les allers-retours.
+
+</v-clicks>
 
 ---
 layout: section
@@ -535,8 +847,10 @@ layout: cover
 
 # Merci
 
-Jean-Sylvain Boige
-jsboige@myia.org
+<p v-click="1">Jean-Sylvain Boige</p>
 
-> **Notebooks associes :** `MyIA.AI.Notebooks/GenAI/`
-> Tutoriels DALL-E, Stable Diffusion, ComfyUI, Qwen Image Edit, LLMs
+<p v-click="2">jsboige@myia.org</p>
+
+<p v-click="3"><strong>Notebooks associés :</strong> MyIA.AI.Notebooks/GenAI/</p>
+
+<p v-click="4">Tutoriels DALL-E, Stable Diffusion, ComfyUI, Qwen Image Edit, LLMs</p>
