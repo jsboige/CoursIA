@@ -2,7 +2,7 @@ name: Lean CI (search_lean)
 
 # CI for search_lean (Search/search_lean) — A* optimality lake at the Search series
 # root. Formalizes the landmark theorems of A* (Hart, Nilsson & Raphael, 1968):
-# phase-1 `admissible_implies_optimal` (PR #4090), phase-2
+# phase-1 `admissible_le_suffix_cost` (anciennement `admissible_implies_optimal`, PR #4090), phase-2
 # `consistent_implies_admissible` (téléscopage). See #4048, roadmap #4038,
 # registry #3801 (prong B « problème non-trivial » — répond au grief BFS-vs-A*
 # dégénéré sur graphe à coût uniforme).
