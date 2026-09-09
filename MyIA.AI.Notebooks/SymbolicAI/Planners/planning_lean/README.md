@@ -1,6 +1,6 @@
 # planning_lean — admissibilité de la relaxation sans-delete (h⁺ ≤ h\*)
 
-Mini-projet Lean 4 (avec Mathlib, toolchain `v4.31.0-rc1`) prouvant l'**admissibilité de
+Mini-projet Lean 4 (avec Mathlib, toolchain `v4.33.0`) prouvant l'**admissibilité de
 la relaxation sans-delete** en planification STRIPS : le coût du plan relaxé optimal
 `h⁺` n'excède jamais le coût du plan réel optimal `h*`,
 
