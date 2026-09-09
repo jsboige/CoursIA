@@ -340,6 +340,56 @@ def test_audit_filenames_bounded_for_windows():
     )
 
 
+def test_audit_index_unique_and_no_identical_duplicates_per_pair():
+    """#15345 : deux invariants du journal file-per-audit, invisibles a tout
+    garde de nommage (les deux cas constates portaient des noms canoniques ou
+    bornes).
+
+    1. Unicite du prefixe ``NNNN`` dans une paire : l'index zero-pade est la
+       cle de tri du journal (``sorted(glob)`` = ordre d'append, #14911) ;
+       deux fichiers au meme index rendent leur ordre relatif dependant du
+       reste du nom. Incident fondateur : #15225 (cap du lane slug a 48
+       chars) a AJOUTE la copie cappee sans retirer l'original long -- deux
+       ``0008`` dans gametheory-6-evolutiontrust.
+
+    2. Absence de deux attestations byte-identiques dans une paire : des
+       octets identiques ne portent aucune information incrementale (date,
+       lane et shas identiques), et ``_load_audits_from_files`` append chaque
+       fichier -- le journal double-compterait un audit unique. Incident
+       fondateur : gametheory-13-imperfectinfo-cfr 0003/0005, herites de la
+       liste inline de l'ancien registre mono-fichier (la migration #14940 a
+       copie 12 entrees vers 12 fichiers, doublon compris).
+
+    Controle positif : ce test est ROUGE sur le registre pre-deduplication
+    (les deux classes ci-dessus) et VERT apres suppression des deux copies
+    redundantes.
+    """
+    import hashlib
+
+    bad_index: list[str] = []
+    bad_dup: list[str] = []
+    for pair_dir in sorted(p for p in REGISTRY_DIR.iterdir() if p.is_dir()):
+        seen_idx: dict[str, str] = {}
+        seen_digest: dict[str, str] = {}
+        for f in sorted(pair_dir.glob("*.yaml")):
+            idx = f.name.split("-", 1)[0]
+            prev = seen_idx.setdefault(idx, f.name)
+            if prev != f.name:
+                bad_index.append(f"{pair_dir.name}: {prev} et {f.name}")
+            digest = hashlib.sha256(f.read_bytes()).hexdigest()
+            twin = seen_digest.setdefault(digest, f.name)
+            if twin != f.name:
+                bad_dup.append(f"{pair_dir.name}: {twin} et {f.name}")
+    assert not bad_index, (
+        f"prefixe NNNN duplique dans une paire (l'index est la cle de tri du "
+        f"journal, #14911/#15345) : {bad_index}"
+    )
+    assert not bad_dup, (
+        f"attestations byte-identiques intra-paire (le journal double-compte "
+        f"un audit unique, #15345) : {bad_dup}"
+    )
+
+
 # --- Verification d'integrite des sha attestes (#9399 volet b) ---
 
 

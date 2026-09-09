@@ -111,7 +111,7 @@ conclusion centrale de l'Epic #1409 : **l'alpha sur cet univers provient de poli
 apprises** (L4 Decision Transformer), **pas** d'overlays *trend*, de *sizing* régime-conditionnel,
 **ni de prévision foundation-model zero-shot**.
 
-Trois paradigmes testés, un seul BEATS (action-based) : la prévision de retour/direction — qu'elle
+Trois paradigmes testés, un seul BEATS (action-based, panel @10bps) : la prévision de retour/direction — qu'elle
 vienne d'un overlay artisanal (L1-L3, L5) ou d'un foundation-model de 200M params pré-entraîné
 sur 100B séries (ce rung) — ne produit pas d'edge robuste après coûts sur cet univers.
 
@@ -134,6 +134,6 @@ sur 100B séries (ce rung) — ne produit pas d'edge robuste après coûts sur c
 - Chronos-Bolt: Amazon Science, 2025 — 250× plus rapide, tokenisation continue.
 - Kronos (AAAI 2026) — shiyu-coder/Kronos, K-lines OHLCV.
 - M15 LSTM (KEEPER Gate V2) : [`docs/M15_LSTM_RV.md`](M15_LSTM_RV.md) (crypto, vol-forecasting).
-- L4 Decision Transformer (seul BEATS du ladder) : [`docs/L4_decision_transformer.md`](L4_decision_transformer.md).
+- L4 Decision Transformer (BEATS du ladder, panel @10bps ; OOT réel NO-BEATS) : [`docs/L4_decision_transformer.md`](L4_decision_transformer.md).
 - L6 HMM regime-sizing (dernier rung NO BEATS avant spin-out) : [`docs/L6_hmm_regime_sizing.md`](L6_hmm_regime_sizing.md).
 - Spin-out : issue #8607. Epic parent parqué : #1409.

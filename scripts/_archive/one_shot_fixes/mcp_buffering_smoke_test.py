@@ -16,6 +16,16 @@ Requirements:
     - python3 kernel available
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (closed dead-end); fix #835 lives in the external
+#   jupyter-papermill-mcp-server repository
+# - Verdict recorded in : PR #835 (2d1f644ca), PR #9731
+#
+# Per-function disposition :
+# - create_stress_notebook() : kept as reference; no successor
+# - run_smoke_test() : kept as reference; one-time validation mission fulfilled
+
 import json
 import os
 import sys
