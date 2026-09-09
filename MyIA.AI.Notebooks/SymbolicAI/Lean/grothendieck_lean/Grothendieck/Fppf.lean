@@ -39,7 +39,7 @@ namespace Grothendieck.Fppf
 
 open AlgebraicGeometry AlgebraicGeometry.Scheme
 
-set_option backward.isDefEq.respectTransparency false
+set_option backward.isDefEq.respectTransparency.types false
 
 /-- Les morphismes localement de présentation finie sont multiplicatifs. -/
 instance : MorphismProperty.IsMultiplicative @LocallyOfFinitePresentation where

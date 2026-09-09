@@ -23,8 +23,15 @@ anglais et le bornage pédagogique sont des additions CoursIA.
 
 - Lean : `leanprover/lean4:v4.33.0`
 - Mathlib : `db584cd6d46c92f209a44c0f1c829460d327499d`
-- Option locale au module : `backward.isDefEq.respectTransparency false`
+- Option locale aux modules : `backward.isDefEq.respectTransparency.types false`
 
 L'option de transparence n'est pas ajoutée au `lakefile` : son périmètre reste
 borné à `Fppf.lean` et `Fppf_en.lean`, où elle est requise pour synthétiser les
-instances de l'intersection `Flat ⊓ LocallyOfFinitePresentation`.
+instances de l'intersection `Flat ⊓ LocallyOfFinitePresentation`. La variante
+`.types` est la plus étroite qui compile ce socle, conformément au choix de
+Mathlib pour les définitions fppf sous-jacentes.
+
+L'agrégateur racine importe le module français uniquement. Le sibling anglais
+reste auto-construit par le glob `Grothendieck.*` et vérifié par le garde i18n,
+sans enregistrer une seconde copie des mêmes instances propositionnelles lors
+d'un simple `import Grothendieck`.
