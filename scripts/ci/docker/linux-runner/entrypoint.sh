@@ -49,6 +49,38 @@ for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
 done
 # ---------------------------------------------------------------------------
 
+# --- Desarmement des refs distantes dangling (slot poisoning checkout) -------
+# Le volume _work persiste PAR SLOT (#14285/#14288) : une branche rebasee ou
+# force-poussee cote origin laisse refs/remotes/origin/<branche> pointant sur
+# un objet absent du depot -- le fetch de actions/checkout (--depth=1, refspec
+# EXPLICITE +<sha>:refs/remotes/pull/N/merge) ne met a jour NI ne prune les
+# autres refs distantes. Le checkout du job suivant meurt alors avant toute
+# etape utile :
+#   git checkout --force <ref> -> fatal: bad object refs/remotes/origin/<b>
+# (incident PR #15089, job 101812399772, 2026-09-07 : chore/11840-iit-zero-pad
+# rebasee entre-temps sur un slot persistant). On ne supprime QUE les refs dont
+# l'objet manque -- le cache incrementale de #14285 reste conserve (contraire-
+# ment au purge rm -rf du cas sparse arme, ~40-51 s/job).
+# Complementaire au bloc work_cache_health (#15105) place juste apres : son
+# detecteur (for-each-ref par defaut) ne nomme que les refs INPARSABLES
+# (fichier zero octet -> reparation ou purge du clone) ; une ref au SHA
+# parsable mais d'objet absent tue son scan en fatal non reconnu et son
+# compte de refs reste > 0 -- il conclurait "sain". Verifie par mesure :
+# for-each-ref defaut -> fatal rc=128 ; format '%(refname) %(objectname)'
+# -> liste rc=0. D'ou l'ordre : disarm chirurgical ici, integrite large
+# ensuite.
+for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
+  [ -e "$gitdir" ] || continue
+  repo="${gitdir%/.git}"
+  while read -r ref sha; do
+    if ! git -C "$repo" cat-file -e "$sha^{object}" 2>/dev/null; then
+      echo "entrypoint: ref distante dangling $ref -- suppression (objet absent)"
+      git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
+    fi
+  done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)
+done
+# TEST-ENTRYPOINT-DANGLING-REFS-END
+
 # --- Sante du cache de depot persistant (#15105) ---------------------------
 # Meme hook job-started que le bloc sparse ci-dessus : le volume _work survit
 # au conteneur, l'entrypoint est le seul point qui s'execute avant
