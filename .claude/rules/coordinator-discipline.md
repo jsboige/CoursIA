@@ -57,6 +57,20 @@ Incident 2026-06-16 (verbatim) + liste des rollouts LIVE (#3973 + filles, #4212,
 
 Mandat 2026-06-26 (verbatim) + listes d'issues des sources (a)/(b) : [§2.5](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01). Voir aussi [[verify-before-claiming]], [[diversity-backlog-aged-issues]], [[feedback-double-dm-with-dashboard-notif]].
 
+## Regle 6 : l'adjoint — verification delegable, jamais merge ni fermeture (HARD)
+
+**Lane de l'adjoint : `myia-po-2025:CoursIA-2`** (preflight #13605 `issuecomment-5467391147`, cas `ADJOINT PREFLIGHT` de `check_unaddressed_nits.py` PR #13883, recalculs firsthand DM `msg-20260904T043716-lo9ryu`).
+
+Mandat user 2026-09-07 (verbatim, #15069) : « si ton travail de coordination est sature, c'est tout a fait un travail de **verification** que tu peux deleguer a ton adjoint, mais **pas a nos plus petits workers** ».
+
+| Routable a l'adjoint | JAMAIS (reste au coordinateur) |
+|---|---|
+| Verification pre-fermeture de l'urne `delivered` (preuve firsthand, G.9) | La fermeture elle-meme (`gh issue close`) |
+| Preflight de PR (lecture body/comments/reviews + verdict `[adjoint — preflight COMMENTED]`) | Le merge (`gh auth switch` + merge reste ai-01) |
+| Recalcul firsthand d'un verdict ou d'une metrique contestee | Toute decision de perimetre/design-gate |
+
+L'adjoint **est** la lane habilitee n°3 de `DELIVERED_URN_LANES` dans `pick_idle_grain.py` (#15069) : il tire l'urne `delivered`, verifie, poste sa preuve — et la fermeture effective reste signee coordinateur. Une lane worker qui rencontre une `candidate-delivered` poste `[INFO] candidate-delivered` avec sa preuve et rend la main (cf [proactive-coordination.md](proactive-coordination.md), urne `delivered`).
+
 ## Voir aussi
 
 - [proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup plancher, backlog pickup 8 sources, queue profonde
