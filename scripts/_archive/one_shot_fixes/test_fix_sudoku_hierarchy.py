@@ -19,6 +19,19 @@ fix_notebook exercises: idempotency guard (skip already-demoted `> **`),
 format-preservation round-trip (string/line-list/char-split), no-write on
 dry-run, write on apply (LF-only via indent=1 binary write), parse error path.
 """
+
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : scripts/notebook_tools/tests/test_demote_md_asides.py
+# - Verdict recorded in : PR #9273 (53b984a74), PR #9607
+#
+# Per-function disposition :
+# - all test_*() functions : pair-archived; absorbed behavior is covered by the
+#   canonical demote_md_asides test suite
+# - _make_nb() and _write_nb() : kept as historical fixture helpers
+# - <module> loader : dormant and broken after move (parent.parent resolves to
+#   scripts/_archive); intentionally documented rather than reactivated
+
 import json
 import sys
 from pathlib import Path
