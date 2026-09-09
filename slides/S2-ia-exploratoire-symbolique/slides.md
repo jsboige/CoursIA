@@ -217,7 +217,7 @@ layout: cover
 
 # Intelligences (suite)
 
-<div class="image-row">
+<div class="image-row grid grid-cols-3 gap-6 items-start justify-center max-w-3xl mx-auto">
 <img src="./images/img_010.jpg" height="180" alt="Intelligence exploratoire">
 <img src="./images/img_011.png" height="180" alt="Intelligence symbolique">
 <img src="./images/img_012.jpg" height="180" alt="Intelligence probabiliste">

@@ -107,7 +107,7 @@ jobs:
           # de ce que le ratio protege. Constate le 2026-08-10 sur #10328
           # (60 mergees, 30 vues, lane po-2024:CoursIA a 11 grains lue <=2).
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || \
+            --json number,body,mergedAt,labels,files > /tmp/merged.json 2>/dev/null || \
             printf '[]' > /tmp/merged.json
 
           # Body circule par fichier : printf '%s' ne reinterprete rien (cf

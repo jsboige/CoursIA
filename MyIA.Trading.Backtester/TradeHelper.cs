@@ -12,9 +12,17 @@ namespace MyIA.Trading.Backtester
     public class TradeHelper
     {
 
+        // Tranche 6B-3 : Binary = MessagePack (substitution mesuree, cf BackTesting.cs).
+        // Apex.Serialization 4.0.5 leve TypeInitializationException (FieldInfoModifier,
+        // "Expression must be writeable") en generant le deserialiseur de Trade sur
+        // net9.0 -- champ backing readonly de la propriete get-only Time. Trade porte
+        // deja les annotations MessagePack completes ([MessagePackObject], cles 0-2,
+        // [IgnoreMember] sur Time), et le helper MessagePack du Converter sert les
+        // memes caches .bin.lz4 (Lz4BlockArray). Aucun cache bin.lz4 n'est commite
+        // dans le repo : pas de retrocompatibilite de format a tenir.
         public static SerializationConfig DeSerializationConfig { get; set; } = new SerializationConfig()
         {
-            Binary = BinarySerializationType.Apex,
+            Binary = BinarySerializationType.MessagePack,
             Csv = CsvSerializationType.TinyCsv,
             Json = JsonSerializationType.Utf8,
             Xml = XmlSerializationType.XmlSerializer,
@@ -23,7 +31,7 @@ namespace MyIA.Trading.Backtester
 
         public static SerializationConfig SerializationConfig { get; set; } = new SerializationConfig()
         {
-            Binary = BinarySerializationType.Apex,
+            Binary = BinarySerializationType.MessagePack,
             Csv = CsvSerializationType.FlatFiles,
             Json = JsonSerializationType.Utf8,
             Xml = XmlSerializationType.XmlSerializer,

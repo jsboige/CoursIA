@@ -312,3 +312,65 @@ class TestBatchExecuteMode:
             batch_execute(str(tmp_path), mode="native")
             mock.assert_called_once()
             assert mock.call_args.kwargs.get("mode") == "native" or "native" in str(mock.call_args)
+
+
+# --- check_env_wsl kernelspec listing (#14908 followup) ---
+
+
+class TestCheckEnvWslKernelspecs:
+    def test_lists_registered_kernelspecs(self, capsys):
+        """When `jupyter kernelspec list` returns names, they are printed and counted."""
+        kspec_out = "Available kernels:\n  python3    /usr/local/share/jupyter/kernels/python3\n  gametheory-wsl    /home/jesse/.local/share/jupyter/kernels/gametheory-wsl\n"
+        # Patch sequence: test -d (venv), pip list (must include all 6 pkgs so ok stays True), jupyter kernelspec list
+        run_wsl_responses = iter([
+            (0, "OK", ""),                                     # test -d
+            (0, "papermill 2.5.0\nipykernel 6.0.0\nnashpy 0.0.0\nmatplotlib 3.0.0\nnumpy 1.0.0\nscipy 1.0.0\n", ""),  # pip list
+            (0, kspec_out, ""),                                # jupyter kernelspec list
+        ])
+
+        def fake_run_wsl(cmd, timeout=300):
+            return next(run_wsl_responses)
+
+        with patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            ok = check_env_wsl()
+        out = capsys.readouterr().out
+        assert ok is True
+        assert "kernelspecs registered in venv (2): python3, gametheory-wsl" in out
+        assert "WARNING" not in out  # python3 present, no warning
+
+    def test_warns_when_no_python_kernelspec(self, capsys):
+        """If no python-prefixed kernelspec is registered, warn — notebooks declaring
+        `python3` or `python3-wsl` will hit NoSuchKernel."""
+        kspec_out = "Available kernels:\n  gametheory-wsl    /home/jesse/.local/share/jupyter/kernels/gametheory-wsl\n"
+        run_wsl_responses = iter([
+            (0, "OK", ""),
+            (0, "papermill 2.5.0\nipykernel 6.0.0\nnashpy 0.0.0\nmatplotlib 3.0.0\nnumpy 1.0.0\nscipy 1.0.0\n", ""),
+            (0, kspec_out, ""),
+        ])
+
+        def fake_run_wsl(cmd, timeout=300):
+            return next(run_wsl_responses)
+
+        with patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            check_env_wsl()
+        out = capsys.readouterr().out
+        assert "WARNING: no python-prefixed kernelspec registered" in out
+
+    def test_kernelspec_list_unavailable_does_not_fail(self, capsys):
+        """If `jupyter kernelspec list` exits non-zero (jupyter not installed in venv),
+        check_env does not blow up — pip-list still passes."""
+        run_wsl_responses = iter([
+            (0, "OK", ""),
+            (0, "papermill 2.5.0\nipykernel 6.0.0\nnashpy 0.0.0\nmatplotlib 3.0.0\nnumpy 1.0.0\nscipy 1.0.0\n", ""),
+            (1, "", "jupyter: command not found"),  # kernelspec list fails
+        ])
+
+        def fake_run_wsl(cmd, timeout=300):
+            return next(run_wsl_responses)
+
+        with patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            ok = check_env_wsl()
+        out = capsys.readouterr().out
+        assert ok is True
+        assert "jupyter kernelspec list unavailable" in out
+

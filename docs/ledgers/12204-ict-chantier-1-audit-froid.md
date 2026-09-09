@@ -33,10 +33,10 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 8 | Certifier | FIRSTHAND (ce cycle) | 2+ (22 lakes) | Lean-formel | **TABLE** — 18/22 lakes à 0 sorry réel (mesuré §P3) |
 | 9 | Élargir l'espace | FIRSTHAND (A3) | **2** (`planning_lean` Admissibility.lean:50 + SW-14 #12263) | Lean-formel + empirique | **TABLE** — promotion mesurée §Tombées (gain) |
 | 10 | Concevoir la règle | FIRSTHAND (ce cycle) | 2+ (GT-16b #12259, GT-20 #12303, SC-27 #12265) | empirique | **TABLE** — le mécanisme comme variable, trois familles |
-| 11 | Descendre sous budget | RAPPORTE | 1 (à confirmer) | n/a | en constitution — statuer en A6 |
-| 12 | Composer des regards | FIRSTHAND (ce cycle) | 2+ (GT-21 #12245 + Loi III) | empirique-notebook | en constitution — **candidate forte**, voir §Gain |
-| 13 | Traverser un mur | RAPPORTE | 1 (GT-24 #12364, 576/576) | empirique | en constitution — statuer en A6 |
-| 14 | Agréger un collectif | RAPPORTE | 1 (Shapley `game_theory_lean`) | Lean-formel | en constitution — statuer en A6 |
+| 11 | Descendre sous budget | FIRSTHAND (A6) | **1** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation, témoin connu (budget atteint / blocage) |
+| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **1 directe** (GT-21 #12245) + renfort Loi III non indépendant | empirique-notebook | en constitution — **candidate forte** ; promotion A6 refusée (§Tranche A6) |
+| 13 | Traverser un mur | FIRSTHAND (A6) | **1** (GT-24 #12364 MERGED ; 24b = témoins impossibilité, même substrat) | empirique | en constitution — A6 : 1 attestation, famille 24/24b |
+| 14 | Agréger un collectif | FIRSTHAND (A6) | **1** (`Shapley.lean:614-634` Möbius/Harsanyi, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation ; GaleShapley n'est pas une 2ᵉ (appariement ≠ agrégation) |
 
 ## Les quatre tombées (décisions de la revue extérieure, appliquées)
 
@@ -94,6 +94,22 @@ lakes porteurs de sorry reel: 4/22
 ## Effet demandé sur le body de l'EPIC
 
 Le body §2 doit refléter : op 2, 5, 6 → file d'attente ; op 3 → file d'attente (1 attestation locale) ; mention Brown-Sandholm (op 5) → lecture structurelle ; §3 verdict de grade → Loi I : 1 · Loi II : 2 · Loi III : 2. L'édition du body est posée en commentaire de livraison sur l'issue (l'EPIC reste la source de vérité ; ce ledger en est la preuve).
+
+## Tranche A6 (2026-09-07, po-2027:CoursIA-2) — statuer sur les quatre en constitution + file d'attente
+
+Mandat §4bis : « A6 est donc une décision, plus une enquête. » Vérifications firsthand ce cycle :
+
+**Op 11 — FIRSTHAND, 1 attestation.** `SymbolicAI/Lean/mimo_lean/Descent.lean` (+ sibling `Descent_en.lean`) : `descent_flips_le_barrier` (l.110 — décroissance stricte `hstrict` + barrière de confinement `hbarrier`) et théorème de terminaison sous plafond de flips (l.144). Le fichier se déclare lui-même « La thèse du chantier (opération 11, "descendre sous budget") » (l.148), et y consigne la dissociation-vs-échec — la dette du body. 0 `sorry` (grep direct + cohérent avec P3 : mimo_lean hors des 4 lakes porteurs). **Verdict : reste en constitution** — une seule attestation.
+
+**Op 12 — décision : promotion REFUSÉE.** La table disait « 2+ (GT-21 + Loi III) ». Mesuré : la seconde attestation de la Loi III **est GT-21 lui-même** (§Gain 2) — compter GT-21 et « Loi III » comme deux attestations de l'op 12 est un double comptage du même artefact. Test d'une 2ᵉ attestation directe : `ICT-34-BancRecollementLectures.ipynb` (candidat naturel) porte recollement×26 mais forward/backward ×0 — c'est un banc d'op 5 (Recoller), pas une composition de regards play-forward/coplay-backward. **Verdict : reste en constitution, candidate forte confirmée** — première promotion quand une seconde instantiation directe atterrira.
+
+**Op 13 — FIRSTHAND, 1 attestation.** PR #12364 MERGED (2026-08-22T22:45:49Z) ; `GameTheory-24-Chemin-Minimal-Robinson-Goforth.ipynb` sur disque : chambres×35, swaps×17, mur×12, 576×7 — le chemin minimal à travers le mur Robinson-Goforth est bien l'objet exécuté. Le compagnon `GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite.ipynb` renforce la forme du témoin (impossibilité), mais c'est le **même substrat** — pas une seconde attestation indépendante. **Verdict : reste en constitution.**
+
+**Op 14 — FIRSTHAND, 1 attestation.** `game_theory_lean/CooperativeGames/Shapley.lean:614-634` : namespace `Mobius`, `mobiusCoeff` (dividende de Harsanyi), `mobiusReconstruction` (`G = Σ_{T≠∅} a_T • u_T`) — la loi « Möbius sur le treillis des coalitions » attestée Lean-formel, sorry-free dans le fichier (le 1 sorry réel du lake mesuré en P3 est ailleurs). Réserve tranchée : `StableMarriage/GaleShapley.lean` n'est **pas** une 2ᵉ attestation — l'appariement stable n'est pas l'agrégation de coalitions sur le treillis. **Verdict : reste en constitution.**
+
+**File d'attente — point fixe.** Second usage de Knaster-Tarski : `git grep -il knaster -- "*.lean"` → `argumentation_lean/Argumentation.lean` + `Argumentation/Characteristic.lean` (+ sibling `_en`) — un seul locus substantiel après dédoublonnage FR/EN (racine et module du même lake). Pas de second usage indépendant atterri : la promotion « dès le second usage » reste en attente.
+
+**Bilan A6** : quatre opérations statuées, zéro promotion, zéro descente. La table reste à **6 opérations en TABLE** (1, 4, 7, 8, 9, 10), **4 en file d'attente** (2, 3, 5, 6), **4 en constitution — toutes quatre FIRSTHAND désormais**. Reste **A7** (relecture froide : la table est-elle un catalogue ? une quatrième loi est-elle apparue ?) — dernier grain.
 
 ## Références
 

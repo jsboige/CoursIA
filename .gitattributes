@@ -38,6 +38,19 @@ MyIA.AI.Notebooks/**/*.md text eol=lf
 *.lean text eol=lf
 *.sh text eol=lf
 *.service text eol=lf
+# Meme motif, meme consommateur (#15091) : une slice systemd est parsee ligne a
+# ligne par le meme analyseur que les .service ci-dessus -- un `CPUQuota=800%`
+# suivi d'un CR devient une valeur invalide, et l'unite refuse de charger. Le
+# depot est checkout par git Windows sous /mnt/d, puis les fichiers sont
+# installes depuis CE working tree vers /etc/systemd/system : sans regle, la
+# borne agregee serait deployee illisible et le refus se lirait comme une
+# panne de cgroup.
+*.slice text eol=lf
+# daemon.json est lu par dockerd sous Linux. JSON tolere CRLF, donc le defaut
+# serait SILENCIEUX ici -- mais le fichier voisine avec la slice dans le meme
+# geste d'installation, et une regle qui couvre l'un sans l'autre invite a
+# croire que le repertoire entier est normalise.
+scripts/ci/docker/linux-runner/persist/**/*.json text eol=lf
 .env text eol=lf
 .env.example text eol=lf
 *.en.md text eol=lf

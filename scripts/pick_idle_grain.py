@@ -1497,22 +1497,30 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     Panne d'import ou de reseau : dictionnaire vide plutot qu'une exception. Le
     garde ne doit jamais empecher un tirage pour une raison technique -- mais
     l'appelant DIT que la surface n'a pas ete regardee (cf `nits_unavailable`).
+    Une erreur de CONTRAT avec l'organe (TypeError/AttributeError), en revanche,
+    n'est pas une PR illisible : elle est relancee pour rester visible (#15139).
     """
     if not numbers:
         return {}
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
     import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
 
-    now = dt.datetime.now(dt.timezone.utc)
     out: dict[int, int] = {}
     for n in numbers:
         try:
-            data = nits.gh_json(["pr", "view", str(n), "--repo", REPO,
-                                 "--json", nits.FIELDS])
-            result = nits.analyse(
-                data, nits.review_threads(n), now,
-                issue_created=nits.gh_issue_created,
-                dismissed_improperly=nits.improper_dismissals(n))
+            # #15139 : delegation via le point d'entree `analyse_pr` de
+            # l'organe, pas un assemblage local de kwargs -- l'assemblage
+            # local avait derive (kwarg `issue_created` disparu de la
+            # signature) et le TypeError avale rendait un dict vide
+            # silencieux : la cause 4 ne se declenchait plus, pour aucune
+            # lane, pendant que le merge-gate (qui appelle juste) refusait
+            # les memes PRs.
+            result = nits.analyse_pr(n)
+        except (TypeError, AttributeError):
+            # Derive de contrat avec l'organe : bug d'appel, pas « PR
+            # illisible ». Propager jusqu'au try de `red_backlog` qui rend
+            # `nits_unavailable` -- visible, jamais un dict vide muet.
+            raise
         except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
             continue
         if result.get("blocked"):
