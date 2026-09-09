@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_twin_parity import (
     load_registry, _slug, _latest_audit, _content_sha, verify_recorded_sha,
     update_pair, surgical_rebaseline, migrate_registry_files_per_audit,
+    _audit_filename, _AUDIT_LANE_SLUG_MAX,
 )  # noqa: E402
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "twin_pairs.d"
@@ -316,6 +317,26 @@ def test_schema_file_present_and_excluded_from_pairs():
     assert not isinstance(data, dict), (
         "_schema.yaml doit etre de la documentation (comments), pas une paire ; "
         "sinon le loader `_`-skip doit etre durci."
+    )
+
+
+def test_audit_filenames_bounded_for_windows():
+    """Les noms de fichiers d'audit restent sous le budget Windows MAX_PATH : le
+    `git checkout` de la CI windows-latest (sans `core.longpaths`) echoue sur un
+    chemin de plus de 260 chars (incident 2026-09-07 : un `by` narratif de 250+
+    chars a produit un fichier de 308, cassant ArgumentAnalysis windows). Le
+    prefixe fixe (repo + `twin_pairs.d/<pair-slug>/` + `<idx:04d>-<date>-`)
+    consomme deja ~100 chars, d'ou la borne sur la part lane du nom."""
+    max_name = 4 + 1 + 10 + 1 + _AUDIT_LANE_SLUG_MAX + len(".yaml")
+    for f in REGISTRY_DIR.glob("*/*.yaml"):
+        assert len(f.name) <= max_name, (
+            f"nom de fichier d'audit trop long ({len(f.name)} > {max_name}) : {f.name}"
+        )
+    long_by = "myia-po-2099:CoursIA-9 -- " + "justification narrative apres audit " * 10
+    name = _audit_filename("2026-09-08", long_by, index=8)
+    assert len(name) <= max_name
+    assert name.startswith("0008-2026-09-08-myia-po-2099-CoursIA-9"), (
+        "la troncature doit preserve l'index, la date et le debut de l'id de lane"
     )
 
 
