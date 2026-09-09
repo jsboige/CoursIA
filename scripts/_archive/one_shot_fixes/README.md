@@ -61,8 +61,10 @@ garde actif détecte H1-DEEP, mais aucun démoteur canonique ne l'applique.
 La PR #8663 avait appliqué le repli local-only de `patch_c917_repli.py`. La PR
 #8707 l'a ensuite remplacé par la vraie ré-exécution de `10_LocalLlama.ipynb`
 sur trois endpoints ; #8743 et #12331 ont poursuivi les exécutions réelles. Le
-notebook actuel ne contient plus le texte de repli : le script est conservé
-comme trace d'une voie transitoire résolue, pas comme patch à rejouer.
+notebook actuel ne contient plus le récit local-only du repli ; deux notes de
+provenance préfixées subsistent dans des cellules héritées de #8281. Le script
+est conservé comme trace d'une voie transitoire résolue, pas comme patch à
+rejouer.
 
 ### Buffering MCP
 

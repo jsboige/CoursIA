@@ -35,7 +35,8 @@ Constraints:
 # - _detect_source_format(), _write_text(), _set_cell_source() : abandoned local
 #   patch helpers; the repli was replaced by real execution
 # - patch_cell0(), patch_cell_prepend(), patch_cell_full(), patch_cell_tail() :
-#   abandoned one-shot patch modes; their output no longer exists on main
+#   abandoned one-shot patch modes; the local-only narrative no longer exists
+#   on main, while two provenance prepend notes remain in the notebook
 # - main() : abandoned; 10_LocalLlama.ipynb was re-executed by PR #8707
 
 import json, pathlib, sys
