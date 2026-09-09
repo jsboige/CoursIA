@@ -65,6 +65,7 @@ jobs:
   # are EXCLUDED by default (FR-only measurement; the byte-parity of #10997
   # covers the EN side structurally).
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean
