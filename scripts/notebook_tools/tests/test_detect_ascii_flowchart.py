@@ -520,6 +520,87 @@ class TestUnreadableNotebookSkipped:
 
 
 # ---------------------------------------------------------------------------
+# 4ter. --json warning-flood (#11962)
+# ---------------------------------------------------------------------------
+
+def _dup_id_notebook_dict() -> dict:
+    """Un notebook dont deux cellules partagent un id '' -> nbformat emet
+    `DuplicateCellId` (nbformat.warnings.DuplicateCellId) a la lecture.
+    Reproduit le warning de fond du corpus reel (ids de cellules non uniques)."""
+    return {
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+        "cells": [
+            {"cell_type": "markdown", "metadata": {}, "id": "",
+             "source": "# Header"},
+            {"cell_type": "markdown", "metadata": {}, "id": "",
+             "source": "# Duplicate id"},
+        ],
+    }
+
+
+class TestJsonModeWarningFlood:
+    """#11962 — le mode --json doit rendre une sortie STRICTEMENT parseable
+    (`json.loads` exit 0) quelque soit le volume de warnings nbformat emis
+    sur le scope. Sur Windows, en capture pipe shell, stderr+stdout
+    s'entrelacent : un DuplicateCellId qui precede le `{` du JSON casse
+    `json.loads`. Le fix neutralise la categorie a la source (lecture)."""
+
+    def test_multi_subtree_json_parseable(self, tmp_path):
+        import subprocess
+        import sys as _sys
+        # Scaffold >= 3 sous-arbres, chacun avec un notebook qui declenche
+        # le warning DuplicateCellId a la lecture.
+        for sub in ("a", "b", "c"):
+            d = tmp_path / sub
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "dup.ipynb").write_text(
+                json.dumps(_dup_id_notebook_dict()), encoding="utf-8"
+            )
+        repo_root = Path(__file__).resolve().parents[3]
+        script = repo_root / "scripts/notebook_tools/detect_ascii_flowchart.py"
+        # stderr=STDOUT reproduit l'entrelacement du pipe shell sur Windows :
+        # sans le fix, le warning nbformat precede le `{` -> json.loads echoue.
+        proc = subprocess.run(
+            [_sys.executable, str(script), "--json", str(tmp_path)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=repo_root,
+        )
+        assert proc.returncode == 0, proc.stderr
+        out = proc.stdout.decode("utf-8", "replace")
+        # La sortie doit commencer par le JSON ({) -- pas un warning.
+        assert out.lstrip().startswith("{"), (
+            f"warning-flood devant la sortie JSON : {out[:200]!r}"
+        )
+        result = json.loads(out)  # exit 0 = acceptation
+        assert result["files_scanned"] == 3
+        assert "findings" in result
+
+    def test_json_no_warning_residue_in_stdout(self, tmp_path):
+        import subprocess
+        import sys as _sys
+        # Même scenario, mais on verifie qu'aucun warning nbformat ne se
+        # retrouve dans stdout (le canal machine doit rester pur).
+        d = tmp_path / "solo"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "dup.ipynb").write_text(
+            json.dumps(_dup_id_notebook_dict()), encoding="utf-8"
+        )
+        repo_root = Path(__file__).resolve().parents[3]
+        script = repo_root / "scripts/notebook_tools/detect_ascii_flowchart.py"
+        proc = subprocess.run(
+            [_sys.executable, str(script), "--json", str(tmp_path)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=repo_root,
+        )
+        out = proc.stdout.decode("utf-8", "replace")
+        assert "DuplicateCellId" not in out
+        assert "warn" not in out.lower()
+        json.loads(out)
+
+
+# ---------------------------------------------------------------------------
 # 5. Corpus baseline pin (anti-regression)
 # ---------------------------------------------------------------------------
 
@@ -586,6 +667,7 @@ class TestCorpusBaseline:
             ["python", "scripts/notebook_tools/detect_ascii_flowchart.py",
              str(notebooks_dir), "--json"],
             capture_output=True, text=True, cwd=repo_root,
+            encoding="utf-8", errors="replace",  # #12811 : encode explicite, sinon cp1252 crash
         )
         if proc.returncode != 0:
             pytest.skip(f"scan returned {proc.returncode}")
