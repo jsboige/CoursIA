@@ -483,9 +483,7 @@ balisés » (auteur de la PR). La mesure de référence est le répertoire :
 **28 notebooks sur `main`**, dont **15 balisés** par les arcs (6 + 4 + 5) et
 **13 hors-arc** documentés ci-dessus — la somme fait 28, sans trou ni double.
 Les transverses que la c.1030 déclarait hors-ordre (`Formal_Richness_Matrix`,
-`Recollement_*`, …) sont ici nommés un à un avec leur raison, et deux
-notebooks absents des tables du README (`Argumentum_Cards`,
-`I2_Contre_arguments_ASPIC`) sont intégrés au balisage.
+`Recollement_*`, …) sont ici nommés un à un avec leur raison.
 
 ### Limites de ce mapping
 
