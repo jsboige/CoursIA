@@ -1,69 +1,47 @@
 {
-  "checkout_hygiene_positive_control": {
-    "detected": [
-      "bad-clone.yml",
-      "bad-target.yml"
-    ],
-    "expected": [
-      "bad-clone.yml",
-      "bad-target.yml"
-    ],
-    "ok": true,
-    "ran": true
+  "issue": 10600,
+  "workflows_total": 150,
+  "workflows_pull_request": 86,
+  "workflows_with_paths": 79,
+  "workflows_label_posing": 6,
+  "workflows_exempt_documented": 6,
+  "workflows_unfiltered_eligible": 0,
+  "required_checks": [
+    "PR gate"
+  ],
+  "required_checks_source": "api",
+  "fanout_estimated_per_pr_type": {
+    "markdown-only": 8,
+    "notebook-only": 22,
+    "scripts-only": 8,
+    "workflows-only": 10,
+    "docs-only": 8,
+    "pr-target-main": 85
   },
-  "generated_at": "2026-09-02T09:57:04.838900+00:00",
-  "summary": {
-    "checkout_hygiene_conforming": 16,
-    "checkout_hygiene_excluded": 1,
-    "checkout_hygiene_machines": 22,
-    "checkout_hygiene_nonconforming": 5,
-    "filtered": 64,
-    "no_pr_trigger": 62,
-    "total": 131,
-    "unfiltered": 5,
-    "unfiltered_optional": 1,
-    "unfiltered_required": 4,
-    "with_pr_trigger": 69
-  },
-  "workflows": [
+  "rows": [
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "required",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": true,
-      "name": "always-on-guards.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\always-on-guards.yml",
+      "name": "Always-on guards",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": true,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": "#13234"
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "required",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": true,
-      "name": "always-on-metadata-guards.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\always-on-metadata-guards.yml",
+      "name": "Always-on metadata guards",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": true,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": "#13234"
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "arxiv-attributions-guard.yml",
-      "paths_count": 10,
-      "paths_list": [
+      "file": ".github\\workflows\\arxiv-attributions-guard.yml",
+      "name": "arXiv attributions guard",
+      "has_pull_request": true,
+      "paths": [
         "arxiv_attributions_registry.yaml",
         "scripts/check_arxiv_attributions.py",
         "scripts/tests/test_check_arxiv_attributions.py",
@@ -74,382 +52,353 @@
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb",
         "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb",
         "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "ascii-flowchart-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\ascii-flowchart-advisory.yml",
+      "name": "ASCII-flowchart detector (advisory)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "banner-guard.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\banner-guard.yml",
+      "name": "banner-guard",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/strip_probe_banner.py",
         ".github/workflows/banner-guard.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "bare-cross-dir-load-gate.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\bare-cross-dir-load-gate.yml",
+      "name": "Bare cross-dir",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "scripts/notebook_tools/detect_bare_cross_dir_load.py",
         ".github/workflows/bare-cross-dir-load-gate.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "base-not-main-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\base-not-main-advisory.yml",
+      "name": "Base-not-main advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "bash-syntax-advisory.yml",
-      "paths_count": 2,
-      "paths_list": [
-        "scripts/**",
+      "file": ".github\\workflows\\bash-syntax-advisory.yml",
+      "name": "Bash Syntax Advisory",
+      "has_pull_request": true,
+      "paths": [
+        "**/*.sh",
         ".github/workflows/bash-syntax-advisory.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "candidate-delivered-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\candidate-delivered-advisory.yml",
+      "name": "Candidate-Delivered Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "catalog-cron.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\catalog-cron.yml",
+      "name": "Catalog Auto-Regen (main, scheduled)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "catalog-drift.yml",
-      "paths_count": 5,
-      "paths_list": [
+      "file": ".github\\workflows\\catalog-drift.yml",
+      "name": "Catalog Drift Check",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "MyIA.AI.Notebooks/**/README.md",
         "scripts/notebook_tools/generate_catalog.py",
         "scripts/notebook_tools/expand_catalog_markers.py",
         "COURSE_CATALOG.generated.json"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "cell-order-gate.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\cell-order-gate.yml",
+      "name": "Cell-order gate",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "scripts/notebook_tools/scan_cell_ordering.py",
         "scripts/notebook_tools/cell_order_ci.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "check-resync-only.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\check-resync-only.yml",
+      "name": "Resync-Only Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "cjk-residue-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\cjk-residue-advisory.yml",
+      "name": "CJK Residue Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "concurrency-conj-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\concurrency-conj-guard.yml",
+      "name": "concurrency-conj-guard",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": true,
-      "checkout_hygiene_reason": "nonconforming_full_clone",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "consecutive-code-cells-advisory.yml",
-      "paths_count": 2,
-      "paths_list": [
+      "file": ".github\\workflows\\consecutive-code-cells-advisory.yml",
+      "name": "Consecutive Code Cells Advisory",
+      "has_pull_request": true,
+      "paths": [
         "**/*.ipynb",
         ".github/workflows/consecutive-code-cells-advisory.yml"
-      ]
+      ],
+      "labels_posed": true,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "degenerate-figure-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\degenerate-figure-gate.yml",
+      "name": "Degenerate figure gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "degraded-mode-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\degraded-mode-advisory.yml",
+      "name": "Degraded-mode confession detector (advisory)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "detect-dup-selftest.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\detect-dup-selftest.yml",
+      "name": "Detect-Duplicate Self-Test",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "docs-link-check.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\docs-link-check.yml",
+      "name": "Docs Link Check",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "dotnet-nuget-block-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\dotnet-AgentSafetyAnalyzer.yml",
+      "name": "dotnet-AgentSafetyAnalyzer",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**",
+        ".github/workflows/dotnet-AgentSafetyAnalyzer.yml",
+        "MyIA.CoursIA.sln"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "epic-charter-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\dotnet-ArgumentAnalysis.yml",
+      "name": "dotnet-ArgumentAnalysis",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**",
+        ".github/workflows/dotnet-ArgumentAnalysis.yml",
+        "MyIA.CoursIA.sln"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "epic-neglect-sweep.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\dotnet-nuget-block-advisory.yml",
+      "name": "dotnet-nuget-block-advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "exercise-leak-ci.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\dotnet-OrphanApps.yml",
+      "name": "dotnet-OrphanApps",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/**",
+        "MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**",
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**",
+        ".github/workflows/dotnet-OrphanApps.yml",
+        "MyIA.CoursIA.sln"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "exercises-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\dotnet-Shared.Tests.yml",
+      "name": "dotnet-Shared-Tests",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Shared/**",
+        "MyIA.AI.Shared.Tests/**",
+        ".github/workflows/dotnet-Shared.Tests.yml"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "fabricated-output-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\enrich-quality-gate.yml",
+      "name": "Enrich-quality gate",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/**/*.ipynb",
+        "scripts/notebook_tools/scan_enrich_quality.py",
+        "scripts/notebook_tools/enrich_quality_ci.py"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "fast-lane-shadow.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\epic-charter-advisory.yml",
+      "name": "EPIC charter advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "grain-orphans-sweep.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\epic-neglect-sweep.yml",
+      "name": "EPIC neglect sweep",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "h1-hygiene-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\exercise-leak-ci.yml",
+      "name": "exercise-leak-ci",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": true,
-      "checkout_hygiene_reason": "nonconforming_full_clone",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "harness-coauthor-guard.yml",
-      "paths_count": 7,
-      "paths_list": [
+      "file": ".github\\workflows\\exercises-advisory.yml",
+      "name": "Exercises Convention Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\fabricated-output-gate.yml",
+      "name": "Fabricated text output gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\fast-lane-shadow.yml",
+      "name": "Fast lane (ombre)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\gametheory-tests.yml",
+      "name": "GameTheory-Tests",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/**",
+        ".github/workflows/gametheory-tests.yml"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\grain-orphans-sweep.yml",
+      "name": "Grain orphans sweep",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\h1-hygiene-advisory.yml",
+      "name": "h1-hygiene-advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\harness-coauthor-guard.yml",
+      "name": "harness-coauthor-guard",
+      "has_pull_request": true,
+      "paths": [
         ".claude/skills/**",
         ".claude/agents/**",
         ".claude/commands/**",
@@ -457,120 +406,101 @@
         ".github/workflows/harness-coauthor-guard.yml",
         "scripts/notebook_tools/check_harness_coauthor.py",
         "scripts/tests/test_check_harness_coauthor.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "hooks-parity.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\hooks-parity.yml",
+      "name": "hooks-parity",
+      "has_pull_request": true,
+      "paths": [
         ".pre-commit-config.yaml",
         ".github/workflows/hooks-parity.yml",
         "scripts/check_hooks_parity.py",
         "scripts/setup_hooks.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "ict-tests.yml",
-      "paths_count": 2,
-      "paths_list": [
+      "file": ".github\\workflows\\ict-tests.yml",
+      "name": "ICT-Series Tests",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/IIT/ICT-Series/**",
         ".github/workflows/ict-tests.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "label-paths-guard.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\label-paths-guard.yml",
+      "name": "Workflow Label-Paths Coverage Guard",
+      "has_pull_request": true,
+      "paths": [
         ".github/workflows/**",
         "scripts/check_workflow_label_paths.py",
         "scripts/tests/test_check_workflow_label_paths.py"
-      ]
+      ],
+      "labels_posed": true,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "lane-claim-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\lane-claim-guard.yml",
+      "name": "Lane Claim Guard",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-argumentation.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\leaky-fixture-sweep.yml",
+      "name": "Leaky Fixture Sweep (date-window)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\lean-argumentation.yml",
+      "name": "Lean CI (argumentation_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-assignment.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-assignment.yml",
+      "name": "Lean CI (assignment_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean",
         "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-asymmetric-information.yml",
-      "paths_count": 13,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-asymmetric-information.yml",
+      "name": "Lean Asymmetric Information CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lean-toolchain",
@@ -584,83 +514,63 @@
         ".github/workflows/lean-build.yml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "lean-axiom.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\lean-axiom.yml",
+      "name": "Lean Axiom Check (reusable)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "lean-build.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\lean-build.yml",
+      "name": "Lean Build (reusable)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-calibration.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-calibration.yml",
+      "name": "Lean Calibration CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-conway-cgt.yml",
-      "paths_count": 5,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-conway-cgt.yml",
+      "name": "Lean CI (conway_cgt_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean",
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain",
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-conway.yml",
-      "paths_count": 7,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-conway.yml",
+      "name": "Lean Conway CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml",
@@ -668,92 +578,91 @@
         ".github/workflows/lean-conway.yml",
         ".github/workflows/lean-axiom.yml",
         "scripts/lean/check_target_coverage.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-decision-theory.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-decision-theory.yml",
+      "name": "Lean CI (decision_theory_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/Probas/decision_theory_lean/**.lean",
         "MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.lean",
         "MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.toml",
         "MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-discrepancy.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-discrepancy.yml",
+      "name": "Lean CI (discrepancy_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean",
         "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean",
         "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml",
         "MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-erc20.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-erc20.yml",
+      "name": "Lean CI (erc20_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-finiteness.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-finiteness.yml",
+      "name": "Lean CI (finiteness_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-galois.yml",
-      "paths_count": 9,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-formal-groups.yml",
+      "name": "Lean CI (formal_groups_lean)",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain",
+        ".github/workflows/lean-formal-groups.yml",
+        ".github/workflows/lean-axiom.yml",
+        ".github/workflows/lean-build.yml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\lean-galois.yml",
+      "name": "Lean Galois CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.toml",
@@ -763,73 +672,57 @@
         ".github/workflows/lean-build.yml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-game-defs-ext.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-game-defs-ext.yml",
+      "name": "Lean Game Defs Ext CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean",
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-game-defs.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-game-defs.yml",
+      "name": "Lean Game Defs CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean",
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-game-theory.yml",
-      "paths_count": 5,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-game-theory.yml",
+      "name": "Lean Game Theory CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain",
         ".github/workflows/lean-game-theory.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-grothendieck.yml",
-      "paths_count": 10,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-grothendieck.yml",
+      "name": "Lean Grothendieck CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml",
@@ -840,55 +733,61 @@
         ".github/workflows/lean-build.yml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-i18n-drift.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-hecke.yml",
+      "name": "Lean CI (hecke_lean)",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain",
+        ".github/workflows/lean-hecke.yml",
+        ".github/workflows/lean-axiom.yml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\lean-i18n-drift.yml",
+      "name": "Lean i18n sibling drift",
+      "has_pull_request": true,
+      "paths": [
         "**/*.lean",
         "scripts/lean/check_i18n_siblings.py",
         ".github/workflows/lean-i18n-drift.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-kelly.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-kelly.yml",
+      "name": "Lean CI (kelly_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean",
         "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean",
         "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.toml",
         "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-knot.yml",
-      "paths_count": 10,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-knot.yml",
+      "name": "Lean Knot CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml",
@@ -896,131 +795,122 @@
         ".github/workflows/lean-knot.yml",
         ".github/workflows/lean-axiom.yml",
         ".github/workflows/lean-build.yml",
+        ".github/actions/lean-build/action.yml",
+        ".github/actions/lean-axiom/action.yml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py",
         "scripts/lean/check_target_coverage.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-learning-theory.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-learning-theory.yml",
+      "name": "Lean CI (learning_theory_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean",
         "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean",
         "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.toml",
         "MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-mathlib-examples.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-mathlib-examples.yml",
+      "name": "Lean CI (mathlib_examples)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-mimo.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-mimo.yml",
+      "name": "Lean CI (mimo_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-minimax.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-minimax.yml",
+      "name": "Lean CI (minimax_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean",
         "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-planning.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-percolation.yml",
+      "name": "Lean CI (percolation_lean)",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean",
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain",
+        ".github/workflows/lean-percolation.yml",
+        ".github/workflows/lean-axiom.yml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\lean-planning.yml",
+      "name": "Lean CI (planning_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-search.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-search.yml",
+      "name": "Lean CI (search_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/Search/search_lean/**.lean",
         "MyIA.AI.Notebooks/Search/search_lean/lakefile.lean",
         "MyIA.AI.Notebooks/Search/search_lean/lakefile.toml",
         "MyIA.AI.Notebooks/Search/search_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-sensitivity.yml",
-      "paths_count": 8,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-sensitivity.yml",
+      "name": "Lean CI (sensitivity_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml",
@@ -1029,38 +919,30 @@
         ".github/workflows/lean-axiom.yml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-social-choice-peters.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-social-choice-peters.yml",
+      "name": "Lean CI (social_choice_lean_peters)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/**.lean",
         "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean",
         "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml",
         "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-social-choice.yml",
-      "paths_count": 12,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-social-choice.yml",
+      "name": "Lean Social Choice CI",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean",
@@ -1073,535 +955,465 @@
         "scripts/lean/check_certified_sorry.py",
         "scripts/lean/count_code_sorry.py",
         "scripts/tests/test_check_certified_sorry.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "lean-sudoku.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\lean-sudoku.yml",
+      "name": "Lean CI (sudoku_lean)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean",
         "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean",
         "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.toml",
         "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "linux-self-hosted-tests.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\lean-visibility-advisory.yml",
+      "name": "Lean Visibility Advisory",
+      "has_pull_request": true,
+      "paths": [
+        "**/*_lean/**/*.lean",
+        ".github/workflows/lean-visibility-advisory.yml"
+      ],
+      "labels_posed": true,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "machine-dep-timing-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\linux-runner-starvation-advisory.yml",
+      "name": "Linux runner starvation advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "machine-dep-timing-inventory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\linux-self-hosted-tests.yml",
+      "name": "Linux Self-Hosted Tests",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "manifest-description-visuelle-gate.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\machine-dep-timing-advisory.yml",
+      "name": "machine-dep-timing-advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\machine-dep-timing-inventory.yml",
+      "name": "machine-dep-timing-inventory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\manifest-description-visuelle-gate.yml",
+      "name": "Manifest description_visuelle gate",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/assets/readme/MANIFEST.md",
         "scripts/notebook_tools/detect_manifest_field.py",
         ".github/workflows/manifest-description-visuelle-gate.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "markdown-claims-output-advisory.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\markdown-claims-output-advisory.yml",
+      "name": "Markdown claims anchored to previous output (advisory)",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "scripts/check_markdown_claims_output.py",
         "scripts/tests/test_check_markdown_claims_output.py",
         ".github/workflows/markdown-claims-output-advisory.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "markdown-rendering-guard.yml",
-      "paths_count": 6,
-      "paths_list": [
+      "file": ".github\\workflows\\markdown-deaccent-advisory.yml",
+      "name": "Markdown deaccent advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\markdown-rendering-guard.yml",
+      "name": "markdown-rendering-guard",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "_quarto.yml",
         "scripts/notebook_tools/detect_markdown_rendering.py",
         "scripts/notebook_tools/scan_md_hierarchy.py",
         "scripts/notebook_tools/markdown_rendering_baseline.json",
         ".github/workflows/markdown-rendering-guard.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "markdown-table-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\markdown-table-guard.yml",
+      "name": "Markdown table syntax advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "md-content-loss-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\md-content-loss-gate.yml",
+      "name": "Markdown content-loss gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "ml-tests.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\ml-tests.yml",
+      "name": "ML & Prover Tests",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/**",
         "tests/**",
         "pytest.ini",
         ".github/workflows/ml-tests.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": true,
-      "checkout_hygiene_reason": "nonconforming_full_clone",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-cell-source-parses.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-cell-source-parses.yml",
+      "name": "Notebook Cell Source Parses",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/check_cell_source_parses.py",
         ".github/workflows/notebook-cell-source-parses.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-exec-sequence-ratchet.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-exec-sequence-ratchet.yml",
+      "name": "Notebook Exec Sequence Ratchet",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/check_exec_sequence.py",
         "scripts/notebook_tools/check_exec_ratchet.py",
+        "scripts/notebook_tools/tests/**",
         ".github/workflows/notebook-exec-sequence-ratchet.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-execution-required.yml",
-      "paths_count": 5,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-execution-required.yml",
+      "name": "Notebook Execution Required",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/golden_set.yml",
         "scripts/notebook_tools/golden_set.lock.txt",
         "scripts/notebook_tools/notebook_tools.py",
         ".github/workflows/notebook-execution-required.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-interp-positioning.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-interp-positioning.yml",
+      "name": "notebook-interp-positioning-guard",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "scripts/notebook_tools/check_interp_positioning.py",
         "scripts/notebook_tools/interp_positioning_baseline.json",
         ".github/workflows/notebook-interp-positioning.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-navlink-check.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-latex-control-chars.yml",
+      "name": "Notebook LaTeX Control Chars",
+      "has_pull_request": true,
+      "paths": [
+        "**.ipynb",
+        "scripts/notebook_tools/check_latex_control_chars.py",
+        ".github/workflows/notebook-latex-control-chars.yml"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\notebook-link-render-check.yml",
+      "name": "notebook-link-render-check",
+      "has_pull_request": true,
+      "paths": [
+        "MyIA.AI.Notebooks/**/README.md",
+        "scripts/notebook_tools/check_notebook_link_render.py",
+        ".github/workflows/notebook-link-render-check.yml"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\notebook-navlink-check.yml",
+      "name": "Notebook Navlink Check",
+      "has_pull_request": true,
+      "paths": [
         "**/*.ipynb",
         "scripts/notebook_tools/check_notebook_navlinks.py",
         "scripts/tests/baseline_nb_navlinks.json",
         ".github/workflows/notebook-navlink-check.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "notebook-output-failure-ratchet.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\notebook-output-failure-ratchet.yml",
+      "name": "Notebook Output Failure Ratchet",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-papermill-ratchet.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-output-flood-ratchet.yml",
+      "name": "Notebook Output Flood Ratchet",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\notebook-papermill-ratchet.yml",
+      "name": "Notebook Papermill Ratchet",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/check_papermill_ratchet.py",
         ".github/workflows/notebook-papermill-ratchet.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "notebook-validation.yml",
-      "paths_count": 1,
-      "paths_list": [
+      "file": ".github\\workflows\\notebook-plan-loss-gate.yml",
+      "name": "Notebook plan-loss gate",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": "#14391/#14429"
+    },
+    {
+      "file": ".github\\workflows\\notebook-validation.yml",
+      "name": "Notebook Validation",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "orphan-branch-scan.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\orphan-branch-scan.yml",
+      "name": "Orphan branch scan",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "optional",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": true,
-      "name": "orphaned-delivery-scan.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\orphaned-delivery-scan.yml",
+      "name": "Orphaned delivery scan",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": true,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "outputs-text-fragmentation-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\outputs-text-fragmentation-advisory.yml",
+      "name": "Outputs text fragmentation (advisory)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "owui-playwright-check.yml",
-      "paths_count": 2,
-      "paths_list": [
+      "file": ".github\\workflows\\owui-playwright-check.yml",
+      "name": "OWUI Playwright — Compile & Collect",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/**",
         ".github/workflows/owui-playwright-check.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "pedagogy-density-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\pedagogy-density-advisory.yml",
+      "name": "Pedagogy Density Advisory",
+      "has_pull_request": true,
+      "paths": [
+        "scripts/notebook_tools/pedagogy_density_baseline.json",
+        "MyIA.AI.Notebooks/**",
+        ".github/workflows/pedagogy-density-advisory.yml"
+      ],
+      "labels_posed": true,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "perimeter-review-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\perimeter-review-guard.yml",
+      "name": "perimeter-review-guard",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": "#11268"
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "pip-leak-guard.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\pip-leak-guard.yml",
+      "name": "pip-leak-guard",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/audit_pip_install_cells.py",
         "scripts/notebook_tools/pip_leak_delta.py",
         ".github/workflows/pip-leak-guard.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "pr-gate-missing-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\pr-gate-rerun.yml",
+      "name": "PR gate (re-aggregate)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "pr-gate-rerun.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\pr-gate-stale-sweep.yml",
+      "name": "PR gate stale-verdict sweep",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "pr-gate-stale-sweep.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\pr-gate-sweep-health-advisory.yml",
+      "name": "PR gate sweep health advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": false,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "pr-gate-sweep-health-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\pr-gate.yml",
+      "name": "PR gate",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": "#10600"
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "required",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": true,
-      "name": "pr-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\pr-path-collision-advisory.yml",
+      "name": "PR path-collision advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "pr-path-collision-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
-    },
-    {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "prose-counts-guard.yml",
-      "paths_count": 2,
-      "paths_list": [
+      "file": ".github\\workflows\\prose-counts-guard.yml",
+      "name": "prose-counts-guard",
+      "has_pull_request": true,
+      "paths": [
         "**/*.ipynb",
         "**/*.md"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "qc-research-monitor.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\qc-research-monitor.yml",
+      "name": "QC research monitor",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "quantconnect-notebook-freshness.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\quantconnect-notebook-freshness.yml",
+      "name": "QuantConnect notebook freshness",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/**/*.ipynb",
         "scripts/check_quantconnect_notebook_freshness.py",
         "scripts/tests/test_check_quantconnect_notebook_freshness.py",
         ".github/workflows/quantconnect-notebook-freshness.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "quarto-pages-deploy.yml",
-      "paths_count": 8,
-      "paths_list": [
+      "file": ".github\\workflows\\quarto-pages-deploy.yml",
+      "name": "Quarto Pages Deploy",
+      "has_pull_request": true,
+      "paths": [
         "_quarto.yml",
         "**.qmd",
         "MyIA.AI.Notebooks/**/index.qmd",
@@ -1609,90 +1421,77 @@
         "MyIA.AI.Notebooks/**/_output.ipynb",
         "MyIA.AI.Notebooks/**/README.md",
         "docs/**",
-        "scripts/quarto_yaml_safe.py"
-      ]
+        ".github/workflows/quarto-pages-deploy.yml",
+        "scripts/quarto_yaml_safe.py",
+        "scripts/quarto_render_scope.py"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "regression-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\regression-guard.yml",
+      "name": "Regression Guard",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "render-volume-delta-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\render-volume-delta-advisory.yml",
+      "name": "Render volume delta detector (advisory)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "repo-size-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\repeated-prose-advisory.yml",
+      "name": "Repeated-prose advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "review-coverage-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\repo-size-advisory.yml",
+      "name": "Repo Size Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": true,
-      "checkout_hygiene_reason": "nonconforming_full_clone",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "scan-md-hierarchy-drift.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\review-coverage-advisory.yml",
+      "name": "Review coverage advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\scan-md-hierarchy-drift.yml",
+      "name": "MD Hierarchy Drift Advisory",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "scripts/notebook_tools/scan_md_hierarchy.py",
         "scripts/notebook_tools/md_hierarchy_baseline.json"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "scripts-tests.yml",
-      "paths_count": 18,
-      "paths_list": [
+      "file": ".github\\workflows\\scripts-tests.yml",
+      "name": "Scripts & Notebook-Tools Tests",
+      "has_pull_request": true,
+      "paths": [
         "scripts/**",
         "tests/**",
         "pytest.ini",
@@ -1710,229 +1509,177 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain",
         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py",
         ".github/workflows/pr-gate-rerun.yml",
-        ".github/workflows/**"
-      ]
+        ".github/workflows/**",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "excluded_full_history",
-      "classification": "required",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": true,
-      "name": "secret-scan.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\secret-scan.yml",
+      "name": "Secret Scan",
+      "has_pull_request": true,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": "#10600"
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "series-naming-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\series-naming-gate.yml",
+      "name": "series-naming-gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "slides-build-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\slides-build-advisory.yml",
+      "name": "Slides Build Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "slides-composition-advisory.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\slides-composition-advisory.yml",
+      "name": "Slides Composition Advisory",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "slow-lane.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\slides-composition-pr-relay.yml",
+      "name": "Slides Composition PR Relay",
+      "has_pull_request": true,
+      "paths": [
+        "slides/**"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "solution-leak-guard.yml",
-      "paths_count": 4,
-      "paths_list": [
+      "file": ".github\\workflows\\slow-lane.yml",
+      "name": "Slow lane (voie asynchrone, tranches 1-2",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\solution-leak-guard.yml",
+      "name": "solution-leak-guard",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/notebook_tools/audit_solution_leaks.py",
         "scripts/notebook_tools/solution_leak_delta.py",
         ".github/workflows/solution-leak-guard.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": true,
-      "checkout_hygiene_reason": "nonconforming_full_clone",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "source-output-ratchet.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\source-output-ratchet.yml",
+      "name": "Source-Output Ratchet",
+      "has_pull_request": true,
+      "paths": [
         "**/*.ipynb",
         "scripts/notebook_tools/check_source_output_ratchet.py",
         ".github/workflows/source-output-ratchet.yml"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "stale-base-warning.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\stale-base-warning.yml",
+      "name": "Stale Base Branch Warning",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "stale-guard-red-sweep.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\stale-guard-red-sweep.yml",
+      "name": "Stale guard-red sweep",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "svg-broken-geometry-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\svg-broken-geometry-gate.yml",
+      "name": "SVG broken-geometry gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "svg-decimal-comma-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\svg-decimal-comma-gate.yml",
+      "name": "SVG decimal-comma gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "svg-empty-display-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\svg-empty-display-gate.yml",
+      "name": "SVG empty-display gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "svg-offscreen-flat-gate.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\svg-offscreen-flat-gate.yml",
+      "name": "SVG offscreen-flat gate",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "testpaths-coverage-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\testpaths-coverage-guard.yml",
+      "name": "testpaths-coverage-guard",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "translation-drift.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\translation-drift.yml",
+      "name": "Translation Drift Check",
+      "has_pull_request": true,
+      "paths": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "translations/**",
         "scripts/translation/**"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "translation-guard.yml",
-      "paths_count": 11,
-      "paths_list": [
+      "file": ".github\\workflows\\translation-guard.yml",
+      "name": "Translation Guard",
+      "has_pull_request": true,
+      "paths": [
         ".github/workflows/translation-guard.yml",
         "scripts/ci/translation_override_required.py",
         "scripts/tests/test_translation_override_required.py",
@@ -1944,162 +1691,131 @@
         "MyIA.AI.Notebooks/**/*_zh.ipynb",
         "MyIA.AI.Notebooks/**/*_ru.ipynb",
         "MyIA.AI.Notebooks/**/*_pt.ipynb"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "translation-parity.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\translation-parity.yml",
+      "name": "Translation parity gate (advisory)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "translation-sync.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\translation-sync.yml",
+      "name": "Translation Sync",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "twin-parity-cron.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\twin-attestation-name-guard.yml",
+      "name": "Twin attestation name guard",
+      "has_pull_request": true,
+      "paths": [
+        "scripts/notebook_tools/twin_pairs.d/**"
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "twin-parity-drift-audit.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\twin-parity-cron.yml",
+      "name": "Twin Parity Cron (CI-derived SHA,",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "conforming_blob_none",
-      "classification": "filtered",
-      "has_blob_none_filter": true,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": true,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "twin-parity.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\twin-parity-drift-audit.yml",
+      "name": "Twin Parity Drift Audit (advisory)",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\twin-parity.yml",
+      "name": "Twin Parity Check",
+      "has_pull_request": true,
+      "paths": [
         "scripts/notebook_tools/twin_pairs.d/**",
         "scripts/notebook_tools/check_twin_parity.py",
         "MyIA.AI.Notebooks/**/*.ipynb"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "unique-check-run-names-guard.yml",
-      "paths_count": 3,
-      "paths_list": [
+      "file": ".github\\workflows\\unique-check-run-names-guard.yml",
+      "name": "Unique Check-Run Names Guard",
+      "has_pull_request": true,
+      "paths": [
         ".github/workflows/**",
         "scripts/ci/check_unique_check_run_names.py",
         "scripts/pr_gate.py"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_fetch_depth_zero",
-      "classification": "filtered",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": true,
-      "has_pr_trigger": true,
-      "name": "validation-matrix.yml",
-      "paths_count": 2,
-      "paths_list": [
+      "file": ".github\\workflows\\validation-matrix.yml",
+      "name": "Validation Matrix",
+      "has_pull_request": true,
+      "paths": [
         "**.ipynb",
         "scripts/validation/**"
-      ]
+      ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "variation-light-genre.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\variation-light-genre.yml",
+      "name": "Variation Light Genre Signals",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "variation-tag-guard.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\variation-tag-guard.yml",
+      "name": "Variation Tag Guard",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "windows-self-hosted-tests.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\windows-self-hosted-tests.yml",
+      "name": "Windows Self-Hosted Tests",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     },
     {
-      "checkout_hygiene_nonconforming": false,
-      "checkout_hygiene_reason": "no_pr_trigger",
-      "classification": "no_pr_trigger",
-      "has_blob_none_filter": false,
-      "has_checkout_step": true,
-      "has_fetch_depth_0": false,
-      "has_filter": false,
-      "has_pr_trigger": false,
-      "name": "workflow-path-filter-audit.yml",
-      "paths_count": 0,
-      "paths_list": []
+      "file": ".github\\workflows\\workflow-path-filter-audit.yml",
+      "name": "workflow-path-filter-audit",
+      "has_pull_request": false,
+      "paths": null,
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
     }
-  ],
-  "workflows_dir": "C:\\dev\\CoursIA-12773-tranche2b\\.github\\workflows"
+  ]
 }
