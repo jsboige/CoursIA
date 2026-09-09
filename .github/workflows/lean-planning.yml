@@ -28,6 +28,10 @@ on:
       - '.github/workflows/lean-planning.yml'
       - '.github/workflows/lean-axiom.yml'
       - 'scripts/lean/check_target_coverage.py'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     branches: [main]
     paths:
@@ -41,6 +45,10 @@ on:
       - '.github/workflows/lean-planning.yml'
       - '.github/workflows/lean-axiom.yml'
       - 'scripts/lean/check_target_coverage.py'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   workflow_dispatch:
 
 permissions:
