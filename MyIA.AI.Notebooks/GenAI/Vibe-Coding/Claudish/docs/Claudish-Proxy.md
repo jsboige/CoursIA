@@ -176,7 +176,7 @@ Quatre consommateurs cohabitent dans l'écosystème et **chacun lit ses propres 
 Deux pièges mesurés :
 
 - le gabarit étudiant (`MODEL_*`) ne partage **aucune** variable avec les trois autres conventions — un étudiant qui configure « son » accès en configure un quart (#15286, défaut 2) ;
-- les gabarits `.env.example` hérités enseignent une **cible morte (401)** — l'ancien vLLM direct — au lieu de Claudish ; à repointer vers `models.myia.io` (#14952, contribution à #14926).
+- les gabarits `.env.example` hérités enseignaient une **cible morte (401)** — l'ancien vLLM direct — au lieu de Claudish ; repointés vers `models.myia.io/v1` par #15050 (2026-09-07).
 
 ### Référence des variables (déploiement Claudish)
 
