@@ -67,6 +67,7 @@ import argparse
 import json
 import re
 import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -831,19 +832,25 @@ def genre_runs(merged_prs: list[dict], target_lane: str) -> list[dict]:
 
     A run is a maximal sequence of chronologically-adjacent grains (no
     break by a different genre) whose canonical genre is in `LIGHT_GENRES`.
-    Returns a list of `{genre, count, numbers}` dicts, one per run.
+    Returns a list of `{genre, count, numbers, members}` dicts, one per
+    run (`members`: `[{number, tier}]`, the per-grain detail the #14357
+    exception evaluates pairs over -- additive, the historical keys keep
+    their shape).
 
     The unit is a run of `count >= 1`. G-VAR-3 by GENRE bans runs of
     `count >= 2`: the organ reports each run that crosses the threshold,
-    the merger step decides whether to HOLD. An isolated `readme` (count
-    1) is NOT a run -- it is a single grain of a banned genre, the budget
-    catches that, not the adjacency rule.
+    `run_exception_status` decides whether the mechanical exception
+    (#14357) lifts it, the merger step decides whether to HOLD. An
+    isolated `readme` (count 1) is NOT a run -- it is a single grain of
+    a banned genre, the budget catches that, not the adjacency rule.
 
     The function is pure (the order is `mergedAt` ascending, the same as
-    `_candidate_record`); it does not consult the declared tier. The
-    "regardless of declared tier" wording of issue #10020 §GENRE-RUN is
-    the point: a MED/readme consecutive to a MED/readme is the same
-    violation as a LIGHT/readme consecutive to a LIGHT/readme.
+    `_candidate_record`); it does not consult the declared tier HERE --
+    the #10020 "regardless of declared tier" detection stays whole (a
+    MED/readme adjacent to a MED/readme still forms a run). What changed
+    with #14357 is the VERDICT layer, not the detection layer: the
+    second grain's tier is now an input of the exception
+    (`run_exception_status`), not of the run detection.
 
     Since #13475 an unresolved genre counts LIGHT and groups under the
     `GENRE_UNKNOWN_KEY` sentinel, so two consecutive mis-tags with
@@ -864,10 +871,131 @@ def genre_runs(merged_prs: list[dict], target_lane: str) -> list[dict]:
         if current is not None and current["genre"] == cg:
             current["count"] += 1
             current["numbers"].append(r["number"])
+            current["members"].append({"number": r["number"], "tier": r["tier"]})
         else:
-            current = {"genre": cg, "count": 1, "numbers": [r["number"]]}
+            current = {
+                "genre": cg,
+                "count": 1,
+                "numbers": [r["number"]],
+                "members": [{"number": r["number"], "tier": r["tier"]}],
+            }
             runs.append(current)
     return runs
+
+
+def _pr_file_paths(pr: dict) -> set[str] | None:
+    """Diff paths of one merged-PR record, as a set -- None when unreadable.
+
+    Reads the `files` key the producer embeds (`gh pr list --json
+    ...,files` since #14357): a list of `{path, ...}` dicts (the gh shape)
+    or of plain path strings (hand-built replay fixtures). A record
+    WITHOUT the key is UNKNOWN, not empty -- the caller must never read
+    "files unreadable" as "no files shared": the #14357 exception is
+    fail-CLOSED exactly there.
+    """
+    files = pr.get("files")
+    if files is None:
+        return None
+    out: set[str] = set()
+    for f in files:
+        if isinstance(f, dict):
+            p = f.get("path")
+            if p:
+                out.add(p)
+        elif isinstance(f, str) and f:
+            out.add(f)
+    return out
+
+
+def collect_files_by_pr(
+    merged_prs: list[dict],
+    numbers: set[int],
+    fetch_missing: bool = True,
+) -> dict[int, set[str]]:
+    """Files-by-PR map for `numbers`, bounded to the run members (#14357).
+
+    Embedded `files` first (the producer includes them since #14357);
+    PRs of `numbers` whose record carries none are lazily fetched via
+    `gh pr view <n> --json files` when `fetch_missing` -- ONE call per
+    PR, only ever invoked for the members of a count >= 2 run (a
+    handful), never for the whole day set. A fetch that fails (no gh, no
+    network, timeout) leaves the PR ABSENT from the map: unreadable !=
+    exempt, the fail-CLOSED posture of #13475 applied to the exception.
+    """
+    out: dict[int, set[str]] = {}
+    missing: list[int] = []
+    for pr in merged_prs:
+        n = pr.get("number")
+        if n not in numbers:
+            continue
+        paths = _pr_file_paths(pr)
+        if paths is None:
+            missing.append(n)
+        else:
+            out[n] = paths
+    if fetch_missing:
+        for n in missing:
+            try:
+                res = subprocess.run(
+                    ["gh", "pr", "view", str(n), "--json", "files", "--jq",
+                     "[.files[].path]"],
+                    capture_output=True, text=True, timeout=20,
+                    encoding="utf-8", errors="replace",
+                )
+                paths = set(json.loads(res.stdout)) if res.returncode == 0 else None
+            except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+                paths = None
+            if paths is not None:
+                out[n] = paths
+    return out
+
+
+def run_exception_status(
+    run: dict,
+    files_by_pr: dict[int, set[str]] | None,
+) -> dict | None:
+    """The #14357 mechanical G-VAR-3 exception for ONE run of `count >= 2`.
+
+    An adjacent pair (i, i+1) QUALIFIES iff (i) member i+1's tier is MED
+    or DEEP, and (ii) files(i) INTERSECTION files(i+1) is empty -- the
+    two grains touch disjoint parts of the tree. The run is exempt
+    (`all_qualify`) iff EVERY adjacent pair qualifies; a run of 2 has
+    exactly one pair.
+
+    Fail-Closed (#13475 posture): a member whose files are unknown (not
+    in `files_by_pr`, or `files_by_pr` is None) makes each of its pairs
+    NOT qualify -- "I could not read the diff" is never "the diffs are
+    disjoint". Same for a member with an unreadable tier (None): the
+    exception needs a POSITIVE MED/DEEP read, not an absence of LIGHT.
+
+    Returns `{"pairs": [{prev, next, second_tier, files_overlap,
+    files_known, qualifies}], "all_qualify": bool}` or None when
+    `count < 2` (nothing to exempt).
+    """
+    members = run.get("members") or []
+    if run.get("count", 0) < 2 or len(members) < 2:
+        return None
+    pairs = []
+    for prev, nxt in zip(members, members[1:]):
+        second_tier = nxt.get("tier")
+        fp = (files_by_pr or {}).get(prev["number"])
+        fn = (files_by_pr or {}).get(nxt["number"])
+        files_known = fp is not None and fn is not None
+        files_overlap = sorted(fp & fn) if files_known else None
+        qualifies = (
+            second_tier in ("MED", "DEEP")
+            and files_known
+            and not files_overlap
+        )
+        pairs.append({
+            "prev": prev["number"],
+            "next": nxt["number"],
+            "second_tier": second_tier,
+            "files_overlap": files_overlap,
+            "files_known": files_known,
+            "qualifies": qualifies,
+        })
+    return {"pairs": pairs, "all_qualify": all(p["qualifies"] for p in pairs)}
 
 
 # Veine runs (#11343): a "veine" is a (lane, cited_issue#) pair. Unlike
@@ -1007,6 +1135,7 @@ def compute_signals(
     *,
     candidate_genre: str | None = None,
     candidate_files: list[str] | None = None,
+    files_by_pr: dict[int, set[str]] | None = None,
 ) -> dict:
     """Compute the four advisory G-VAR-2/3-by-GENRE signals for `target_lane`.
 
@@ -1019,10 +1148,13 @@ def compute_signals(
                                     absorbs the open candidate without
                                     declaring every single-MED-then-LIGHT
                                     day as inflation.
-      * `GENRE-RUN`              -- any run in `genre_runs()` of `count >= 2`.
-                                    Returned as the list of runs (each
-                                    `{genre, count, numbers}`); the workflow
-                                    flags a label when the list is non-empty.
+      * `GENRE-RUN`              -- any run in `genre_runs()` of `count >= 2`
+                                    NOT lifted by the #14357 mechanical
+                                    exception (second grain MED/DEEP + zero
+                                    shared files). Exempt runs leave
+                                    `exempt_runs` (with per-pair detail) as
+                                    the organ-computed override trace; the
+                                    violations stay in `long_runs`.
       * `CAP-EXCEEDED-BY-GENRE`  -- `tally["light_genre"] > tally["cap"]`.
       * `GENRE-MISMATCH`         -- `candidate_genre is not None` AND
                                     `_genre_from_paths(candidate_files)` is
@@ -1073,10 +1205,47 @@ def compute_signals(
     `candidate_genre` defaults to `None` (no claim from the open PR's tag)
     which makes GENRE-MISMATCH inactive; `candidate_files` defaults to
     `None` which makes it inactive too. Pass both to opt in.
+
+    `files_by_pr` (None by default) carries the diff paths per PR number
+    that the #14357 exception evaluates intersections over. When None,
+    the organ self-collects from the EMBEDDED `files` keys of the merged
+    records -- no I/O: a day set whose producer included `files`
+    (#14357 producer change) gets full exception evaluation, a legacy
+    set without them gets none (fail-CLOSED: every count >= 2 run stays
+    a violation, the pre-#14357 behaviour). CLI callers that want the
+    `gh pr view` backfill pass an explicit `collect_files_by_pr(...,
+    fetch_missing=True)` map.
     """
     tally = lane_genre_tally(merged_prs, target_lane)
     runs = genre_runs(merged_prs, target_lane)
-    long_runs = [r for r in runs if r["count"] >= 2]
+    # #14357: partition the count >= 2 runs into violations vs exemptions.
+    # Detection is unchanged (every adjacent same-LIGHT-genre pair still
+    # forms a run); the VERDICT layer applies the mechanical exception:
+    # second grain MED/DEEP AND disjoint files, pair by pair. Runs whose
+    # files cannot be read are NOT exempt (fail-CLOSED).
+    flagged = [r for r in runs if r["count"] >= 2]
+    if files_by_pr is None:
+        need = {m["number"] for r in flagged for m in r["members"]}
+        files_by_pr = (
+            collect_files_by_pr(merged_prs, need, fetch_missing=False)
+            if need else {}
+        )
+    long_runs: list[dict] = []
+    exempt_runs: list[dict] = []
+    for r in flagged:
+        status = run_exception_status(r, files_by_pr)
+        if status is not None and status["all_qualify"]:
+            exempt_runs.append({
+                "genre": r["genre"],
+                "count": r["count"],
+                "numbers": r["numbers"],
+                "pairs": status["pairs"],
+            })
+        else:
+            # Copy, not mutate: `runs` (returned whole) holds the same
+            # dicts -- the raw run stays shape-stable for its historical
+            # consumers, the violation carries WHY the exception refused.
+            long_runs.append({**r, "exception": status})
 
     # TIER-INFLATION: the GENRE-LIGHT count is more than 1 above the
     # DECLARED-LIGHT count. Tolerance +1 absorbs the natural case "one
@@ -1138,6 +1307,7 @@ def compute_signals(
             "PREV-LANE-MISMATCH": bool(prev_mismatches),
         },
         "long_runs": long_runs,
+        "exempt_runs": exempt_runs,
         "vein_runs": vein_list,
         "prev_lane_mismatches": prev_mismatches,
         "inferred_genre_from_paths": inferred,
@@ -1180,6 +1350,20 @@ class CapInputError(Exception):
     {"cap_reached": null, "verdict": "unknown"} so the workflow can warn and
     leave labels untouched instead of guessing.
     """
+
+
+def _files_map_for_runs(merged: list[dict], lane: str, fetch: bool) -> dict[int, set[str]]:
+    """#14357 CLI backfill: files map for the members of count >= 2 runs only.
+
+    Bounded by construction -- `collect_files_by_pr` never sees a number
+    outside a flagged run, so the `gh pr view` backfill is a handful of
+    calls on a lane-day that actually trips G-VAR-3, zero otherwise.
+    """
+    runs = [r for r in genre_runs(merged, lane) if r["count"] >= 2]
+    if not runs:
+        return {}
+    need = {m["number"] for r in runs for m in r["members"]}
+    return collect_files_by_pr(merged, need, fetch_missing=fetch)
 
 
 def _load(path: str) -> list[dict]:
@@ -1244,6 +1428,11 @@ def main(argv: list[str] | None = None) -> int:
                         "paths of the current PR (for the GENRE-MISMATCH "
                         "corroboration). If absent, GENRE-MISMATCH is "
                         "inactive (no false positive on missing input).")
+    p.add_argument("--no-fetch-files", action="store_true",
+                   help="disable the `gh pr view --json files` backfill of "
+                        "the #14357 exception (offline / test contexts). "
+                        "Embedded `files` keys are still honored; PRs whose "
+                        "diff cannot be read are NOT exempt (fail-CLOSED).")
     args = p.parse_args(argv)
 
     if not args.replay:
@@ -1336,7 +1525,11 @@ def main(argv: list[str] | None = None) -> int:
                 # its lane's day tripping a vein. Surface picker_command
                 # so the lane points at the picker regardless of where
                 # in the assessment it branched.
-                sig_early = compute_signals(merged, lane)
+                sig_early = compute_signals(
+                    merged, lane,
+                    files_by_pr=_files_map_for_runs(
+                        merged, lane, fetch=not args.no_fetch_files) or None,
+                )
                 vein_early = sig_early.get("vein_runs", [])
                 if vein_early:
                     out["vein_exceeded"] = True
@@ -1391,7 +1584,11 @@ def main(argv: list[str] | None = None) -> int:
         # still merges (amendement ai-01 verbatim : « le plafond ne
         # bloque PAS le merge de la tranche en cours, c'est la
         # SUIVANTE de la meme veine qui declenche le tirage »).
-        sig = compute_signals(merged, lane)
+        sig = compute_signals(
+            merged, lane,
+            files_by_pr=_files_map_for_runs(
+                merged, lane, fetch=not args.no_fetch_files) or None,
+        )
         vein_runs_list = sig.get("vein_runs", [])
         picker_cmd = None
         if vein_runs_list:
@@ -1469,6 +1666,8 @@ def main(argv: list[str] | None = None) -> int:
             args.lane,
             candidate_genre=cand_genre,
             candidate_files=cand_files,
+            files_by_pr=_files_map_for_runs(
+                merged, args.lane, fetch=not args.no_fetch_files) or None,
         )
         # Picker-call wiring (#11343 tranche 2) : the signals are
         # advisory, but the FIRST tripped vein (highest count, lowest

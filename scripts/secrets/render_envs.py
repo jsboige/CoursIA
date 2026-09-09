@@ -32,9 +32,16 @@ MODES
   --strict    exit 1 when a SECRET key declared in SECRET_KEYS is absent
               from master.env (so a CI can distinguish "in sync" from
               "in sync on what I watch" -- a declared key that drifts can
-              only drift if master actually serves it, #14373). Combines
-              with --check. Without --strict, --check stays exit 0 on a
-              declared-but-absent key and only NAMES it.
+              only drift if master actually serves it, #14373), OR when a
+              key declared REQUIRED for a target (REQUIRED_KEYS, #15145)
+              has no line in that target / the target .env is missing on
+              disk. Combines with --check. Without --strict, --check stays
+              exit 0 on a declared-but-absent key and only NAMES it.
+  (#15145) --check also NAMES, per target: master keys with no line in the
+              target ("not provisioned" -- without a REQUIRED_KEYS entry
+              that is indistinguishable from "not needed"), and declared
+              targets missing from disk. sync() APPENDS the missing lines
+              for REQUIRED keys (master-served values only).
   --bootstrap ONE-SHOT: scan existing .env files, extract SECRET values,
               write master.env (first-seen value per key; conflicts
               reported). Use only to initialize master.env from a legacy
@@ -165,6 +172,15 @@ SECRET_KEYS: frozenset[str] = frozenset({
     # centralized here so notebook consumers stay in lock-step with the server on
     # rotation. Both names MUST carry the same value.
     "QDRANT_API_KEY",
+    # claudish proxy -- CLIENT side (consumers authenticate to the proxy with the
+    # claudish security header instead of carrying the provider key, #14926). The
+    # proxy SERVER compose lives OUTSIDE CoursIA; only the CLIENT key is
+    # centralized here so notebook consumers stay in lock-step with the server on
+    # rotation. The proxy auth middleware accepts THREE input headers --
+    # ``x-proxy-key``, ``x-api-key`` and ``Authorization: Bearer`` -- all carrying
+    # the same value (verified firsthand: Bearer and x-proxy-key both return 200
+    # on a live completion).
+    "CLAUDISH_PROXY_KEY",
     # OWUI native API (NB-20, #417) + TTS multi-voice gateway (#16, po-2023)
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree).
@@ -219,6 +235,34 @@ ALIASES: dict[str, str] = {
     # shadows the correct API_TOKEN in the ``or`` fallback chain -> 401.
     "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
 }
+
+# Per-target REQUIRED keys (#15145). sync() only rewrites lines that already
+# EXIST in a target, so a key the target's consumers read -- but that never
+# had a line there -- is invisible to ``--check`` ("[OK]" was exact about
+# what it looked at and false about the question asked: the GenAI/.env
+# VLLM_API_KEY incident served empty Authorization headers -> HTTP 401 while
+# ``--check`` stayed green). A key listed here for a target:
+#   * is APPENDED by sync() when the target exists and master serves it;
+#   * is NAMED by --check, and fails --check --strict (exit 1) when absent.
+# Keys enter this table only when grep-verified against the target's actual
+# consumers; everything else stays indistinguishable from "not needed" and
+# is reported as informational "not provisioned" lines, never silently OK.
+REQUIRED_KEYS: dict[str, frozenset[str]] = {
+    # GenAI notebooks .env: 9 notebooks read os.getenv("VLLM_API_KEY")
+    # against the vLLM endpoint (GenAI/Texte 10/10b/10c, GenAI/_research,
+    # RAG-09, SK-04, Aspire-02 + GameTheory-03c/28b which walk up to the
+    # same file). A missing line = None -> empty bearer -> 401.
+    "MyIA.AI.Notebooks/GenAI/.env": frozenset({"VLLM_API_KEY"}),
+}
+
+
+def env_label(env: Path) -> str:
+    """Repo-relative posix path for reports and REQUIRED_KEYS lookup;
+    absolute posix when the path is outside the repo (hermetic tmp tests)."""
+    try:
+        return env.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return env.as_posix()
 
 
 # --------------------------------------------------------------------------- #
@@ -369,9 +413,18 @@ def sync(check_only: bool, strict: bool = False) -> int:
 
     drift: list[str] = []
     written: list[str] = []
+    absent_targets: list[str] = []
+    not_provisioned: list[str] = []
+    required_gaps: list[str] = []
+    provisioned: list[str] = []
     for env in TARGET_ENVS:
         if not env.exists():
+            # #15145 geste 2 : une cible declaree absente du disque etait
+            # sautee sans un mot -- invisible a --check par construction.
+            absent_targets.append(env_label(env))
             continue
+        label = env_label(env)
+        target_keys = set(read_env(env).keys())
         original = env.read_text(encoding="utf-8").splitlines()
         changed = False
         out_lines: list[str] = []
@@ -389,9 +442,63 @@ def sync(check_only: bool, strict: bool = False) -> int:
                     out_lines.append(line)
             else:
                 out_lines.append(line)
+        # #15145 geste 1 : nommer les cles du master sans ligne ici. Sans
+        # REQUIRED_KEYS, "cette cible n'en a pas besoin" et "elle aurait du
+        # la recevoir" rendent la meme sortie -- c'est l'indiscernabilite
+        # qui etait le defaut, pas un chiffre.
+        gap = sorted(k for k in master
+                     if k not in target_keys and ALIASES.get(k, k) not in target_keys)
+        if gap:
+            not_provisioned.append(
+                f"  {label}: {len(gap)} master key(s) have no line here "
+                f"(not provisioned): {gap}")
+        # #15145 geste 3 : les cles DECLAREES requisent deviennent mesurables.
+        required = REQUIRED_KEYS.get(label)
+        if required:
+            missing_req = sorted(k for k in required
+                                 if k not in target_keys
+                                 and ALIASES.get(k, k) not in target_keys)
+            if missing_req:
+                if check_only:
+                    required_gaps.append(
+                        f"  {label}: REQUIRED key(s) with no line: {missing_req}")
+                else:
+                    out_lines.append("# provisioned by render_envs.py -- declared "
+                                     "REQUIRED key (cf #15145)")
+                    for k in missing_req:
+                        if k in master:
+                            out_lines.append(f"{k}={master[k]}")
+                            provisioned.append(f"  {label}: {k} {mask(master[k])}")
+                            changed = True
+                        else:
+                            required_gaps.append(
+                                f"  {label}: REQUIRED key {k} absent from "
+                                f"master.env (cannot provision)")
         if changed and not check_only:
             env.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
             written.append(env.parent.name)
+
+    if absent_targets:
+        for lbl in absent_targets:
+            req = REQUIRED_KEYS.get(lbl)
+            if req:
+                required_gaps.append(
+                    f"  {lbl}: .env missing on disk -- REQUIRED key(s) "
+                    f"{sorted(req)} invisible to --check")
+        print(f"[!] {len(absent_targets)} declared target .env missing on disk "
+              f"(skipped, invisible to drift comparison): {absent_targets}")
+    if not_provisioned:
+        print(f"[i] {len(not_provisioned)} target(s) carry master key(s) with no "
+              f"line -- not provisioned (indistinguishable from 'not needed' "
+              f"absent a REQUIRED_KEYS entry, cf #15145):")
+        for r in not_provisioned:
+            print(r)
+    if required_gaps:
+        print(f"[!] {len(required_gaps)} REQUIRED-key gap(s) "
+              f"(fix: run sync without --check; keys absent from master.env "
+              f"need a master.env edit):")
+        for g in required_gaps:
+            print(g)
 
     if drift:
         if check_only:
@@ -406,15 +513,21 @@ def sync(check_only: bool, strict: bool = False) -> int:
         print("\n[i] Restart impacted containers (ComfyUI-Login hashes regen at restart).")
         return 0
 
+    if provisioned:
+        print(f"[+] Provisioned {len(provisioned)} REQUIRED key line(s):")
+        for p in provisioned:
+            print(p)
+
+    on_disk = len(TARGET_ENVS) - len(absent_targets)
     if missing_in_master:
-        print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
-              f"within the {propagated} propagated key(s). "
+        print(f"[OK] {on_disk}/{len(TARGET_ENVS)} target .env on disk, in sync "
+              f"with master.env within the {propagated} propagated key(s). "
               f"{len(missing_in_master)} declared secret key(s) are OUT OF SCOPE "
               f"(absent from master.env): {sorted(missing_in_master)}.")
     else:
-        print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
-              f"({len(master)} secret keys). No drift.")
-    if strict and missing_in_master:
+        print(f"[OK] {on_disk}/{len(TARGET_ENVS)} target .env on disk, in sync "
+              f"with master.env ({len(master)} secret keys). No drift.")
+    if strict and (missing_in_master or required_gaps):
         return 1
     return 0
 
@@ -554,7 +667,9 @@ def main() -> int:
                            "--check blind spot, cf #9351)")
     p.add_argument("--strict", action="store_true",
                    help="exit 1 if a declared SECRET key is absent from "
-                        "master.env (CI gate, #14373)")
+                        "master.env (CI gate, #14373), or a REQUIRED key "
+                        "has no line in its target / the target .env is "
+                        "missing on disk (#15145)")
     args = p.parse_args()
     if args.bootstrap:
         return bootstrap()

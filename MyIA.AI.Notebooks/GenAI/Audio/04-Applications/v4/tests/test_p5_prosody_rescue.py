@@ -124,6 +124,9 @@ def test_f4_temperature_modulated_by_tension():
     """F4: synth payload temperature scales with seg.dramatic_ref.tension_0_10.
 
     We patch fishaudio_tts so no network call happens; we capture the kwargs.
+    We also stub the narrator-routing branch (F6 / Issue #15002) so the
+    FishAudio mapping remains testable without hitting the Qwen gateway;
+    the narrator routing itself is tested in test_p5_narrator_routing.py.
     """
     import v4.p5_tts as p5
 
@@ -133,10 +136,27 @@ def test_f4_temperature_modulated_by_tension():
         captured.append(kwargs)
         return b""  # treat as failure so MP3 write is skipped
 
+    def _fake_narrator_qwen(*args, **kwargs):
+        # Delegate to the FishAudio path so the existing F4 mapping
+        # assertion still captures the temperature kwarg. The narrator
+        # branch is exercised by test_p5_narrator_routing.py separately.
+        seg = kwargs.get("seg") or (args[0] if args else None)
+        fishaudio_text = kwargs.get("fishaudio_text") or (args[1] if len(args) > 1 else "")
+        return p5._synthesize_fishaudio_path(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            reference_id=p5._resolve_voice(seg),
+            seed=42 + seg.seg_index,
+            mp3_path=p5.TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3",
+            current_hash=p5._text_hash(fishaudio_text),
+        )
+
     real_tts = p5.fishaudio_tts
     real_wait = p5.thermal_wait
+    real_narrator = p5._synthesize_narrator_qwen
     p5.fishaudio_tts = _fake_tts
     p5.thermal_wait = lambda: None
+    p5._synthesize_narrator_qwen = _fake_narrator_qwen
     try:
         seg_low = _build_seg(annotated_text="Texte calme.", tension=0)
         seg_high = _build_seg(annotated_text="Texte tendu.", tension=10)
@@ -145,6 +165,7 @@ def test_f4_temperature_modulated_by_tension():
     finally:
         p5.fishaudio_tts = real_tts
         p5.thermal_wait = real_wait
+        p5._synthesize_narrator_qwen = real_narrator
 
     temps = [c["temperature"] for c in captured]
     assert temps, "no payload captured"
@@ -289,15 +310,33 @@ def test_f4_no_dramatic_ref_defaults_tension_5():
         captured.append(kwargs)
         return b""
 
+    def _fake_narrator_qwen(*args, **kwargs):
+        # F6 stub: narrator routing is exercised separately in
+        # test_p5_narrator_routing.py — delegate to FishAudio here so
+        # the F4 temperature mapping remains testable.
+        seg = kwargs.get("seg") or (args[0] if args else None)
+        fishaudio_text = kwargs.get("fishaudio_text") or (args[1] if len(args) > 1 else "")
+        return p5._synthesize_fishaudio_path(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            reference_id=p5._resolve_voice(seg),
+            seed=42 + seg.seg_index,
+            mp3_path=p5.TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3",
+            current_hash=p5._text_hash(fishaudio_text),
+        )
+
     real_tts = p5.fishaudio_tts
     real_wait = p5.thermal_wait
+    real_narrator = p5._synthesize_narrator_qwen
     p5.fishaudio_tts = _fake_tts
     p5.thermal_wait = lambda: None
+    p5._synthesize_narrator_qwen = _fake_narrator_qwen
     try:
         p5._synthesize_segment(seg, "Test.")
     finally:
         p5.fishaudio_tts = real_tts
         p5.thermal_wait = real_wait
+        p5._synthesize_narrator_qwen = real_narrator
 
     assert captured, "no payload captured"
     temp = captured[0]["temperature"]

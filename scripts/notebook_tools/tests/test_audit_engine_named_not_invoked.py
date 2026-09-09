@@ -3,11 +3,10 @@
 
 Covers the 5 verdicts + sequence-aware grouping + edge cases:
 
-* ``ENGINE_EXEC_PROVED`` : claim + wiring + real output (Lab16 BigQuery
-  post-fix, OpenAI with real response).
+* ``ENGINE_EXEC_PROVED`` : claim + wiring + invocation + attributable output.
 * ``DISCLOSED_SEQUENCE_PROVED`` : deterministic notebook + successor with
-  wiring/proof (Track2 Lab8/Lab16 etc).
-* ``WIRING_ONLY`` : import present but no real output (key-gated code).
+  wiring/invocation/proof (Track2 Lab8/Lab16 etc).
+* ``WIRING_ONLY`` : import present but no invocation or attributable output.
 * ``SIMULATED_TERMINAL`` : outputs = simulation, no wiring (SW-12
   GraphRAG).
 * ``NAMED_NOT_INVOKED`` : claim present but zero wiring (Track2 ADK
@@ -38,6 +37,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from audit_engine_named_not_invoked import (  # noqa: E402
     ENGINE_REGISTRY,
     classify_notebook,
+    compare_scan_results,
     main,
     scan_repo,
     _is_disclosed_deterministic,
@@ -74,9 +74,20 @@ def _out_stream(text):
 
 # --- Engine registry structure ---------------------------------------------
 
-def test_registry_has_three_engines():
-    expected = {"google_adk", "openai_llm", "bigquery"}
-    assert set(ENGINE_REGISTRY.keys()) == expected
+def test_registry_includes_original_and_smart_contract_engines():
+    expected = {
+        "google_adk",
+        "openai_llm",
+        "bigquery",
+        "foundry",
+        "solc",
+        "bitcoinlib",
+        "solders",
+        "sui_cli",
+        "electionguard",
+        "concrete",
+    }
+    assert expected <= set(ENGINE_REGISTRY)
 
 
 def test_registry_entries_have_required_fields():
@@ -84,7 +95,10 @@ def test_registry_entries_have_required_fields():
         assert spec.key == key
         assert spec.imports, f"{key}: imports vide"
         assert spec.claims, f"{key}: claims vide"
+        assert spec.invocations, f"{key}: invocations vide"
+        assert spec.proof_markers, f"{key}: proof_markers vide"
         assert spec.simulation_markers, f"{key}: simulation_markers vide"
+        assert spec.recoverability.startswith(("RECOVERABLE-", "INTRINSIC"))
         assert spec.label
 
 
@@ -95,7 +109,13 @@ def test_engine_exec_proved_bigquery():
     nb = _nb(
         md_cells=["# Lab 16 : BigQuery BQML reel\nCe lab utilise **BigQuery**."],
         code_cells=[
-            ("from google.cloud import bigquery\nclient = bigquery.Client()", _out_stream("Dataset cree")),
+            (
+                "from google.cloud import bigquery\n"
+                "client = bigquery.Client()\n"
+                "dataset = client.create_dataset('cours.audit')\n"
+                "print(f'Dataset cree: {dataset.dataset_id}')",
+                _out_stream("Dataset cree: audit"),
+            ),
         ],
     )
     p = Path("/tmp/_test_engine_exec_proved.ipynb")
@@ -115,7 +135,9 @@ def test_engine_exec_proved_openai_real_response():
         md_cells=["# GPT-4 integration\nAppel reel a `gpt-4`."],
         code_cells=[
             (
-                "import openai\nr = openai.ChatCompletion.create(model='gpt-4', messages=[{'role':'user','content':'hi'}])\nprint(r.choices[0].message.content)",
+                "from openai import OpenAI\nclient = OpenAI()\n"
+                "r = client.responses.create(model='gpt-4o', input='hi')\n"
+                "print(r.output_text)",
                 _out_stream("Bonjour, comment puis-je vous aider ?"),
             ),
         ],
@@ -128,6 +150,108 @@ def test_engine_exec_proved_openai_real_response():
         assert results["openai_llm"]["verdict"] == "ENGINE_EXEC_PROVED"
     finally:
         p.unlink()
+
+
+def test_setup_output_is_not_engine_proof(tmp_path):
+    """Un import suivi d'un print de disponibilite reste du wiring seul."""
+    nb = _nb(
+        md_cells=["# BigQuery integration"],
+        code_cells=[
+            (
+                "from google.cloud import bigquery\n"
+                "client = bigquery.Client()\n"
+                "print('Client BigQuery disponible')",
+                _out_stream("Client BigQuery disponible"),
+            ),
+        ],
+    )
+    path = tmp_path / "setup.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+    result = classify_notebook(
+        path, nb, ["bigquery"], {path.parent.resolve(): [path]}
+    )["bigquery"]
+
+    assert result["verdict"] == "WIRING_ONLY"
+    assert result["wiring"]
+    assert result["invocation"] == []
+    assert result["proof"] == []
+
+
+def test_engine_helper_definition_without_call_is_not_invocation(tmp_path):
+    nb = _nb(
+        md_cells=["# Foundry compilation"],
+        code_cells=[
+            (
+                "import subprocess\n"
+                "def run_forge(forge):\n"
+                "    return subprocess.run([forge, 'build'])",
+                _out_stream("Helper Foundry defini"),
+            ),
+        ],
+    )
+    path = tmp_path / "helper-only.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+    result = classify_notebook(
+        path, nb, ["foundry"], {path.parent.resolve(): [path]}
+    )["foundry"]
+
+    assert result["verdict"] == "WIRING_ONLY"
+    assert result["invocation"] == []
+    assert result["proof"] == []
+
+
+def test_called_engine_helper_with_output_is_proved(tmp_path):
+    nb = _nb(
+        md_cells=["# Foundry forge build"],
+        code_cells=[
+            (
+                "import subprocess\n"
+                "def run_forge(forge):\n"
+                "    return subprocess.run([forge, 'build'])",
+                [],
+            ),
+            (
+                "result = run_forge(forge)\nprint(result.stdout)",
+                _out_stream("Compiler run successful; bytecode emitted"),
+            ),
+        ],
+    )
+    path = tmp_path / "helper-called.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+    result = classify_notebook(
+        path, nb, ["foundry"], {path.parent.resolve(): [path]}
+    )["foundry"]
+
+    assert result["verdict"] == "ENGINE_EXEC_PROVED"
+    assert result["invocation"]
+    assert result["proof"]
+
+
+def test_foundry_subprocess_invocation_is_proved(tmp_path):
+    nb = _nb(
+        md_cells=["# Foundry fuzz test via forge test"],
+        code_cells=[
+            (
+                "import subprocess\nforge = '/opt/foundry/forge'\n"
+                "result = subprocess.run(\n"
+                "    [forge, 'test', '--fuzz-runs', '512'],\n"
+                "    capture_output=True,\n"
+                ")\nprint(result.stdout)",
+                _out_stream("Suite result: 2 tests passed"),
+            ),
+        ],
+    )
+    path = tmp_path / "forge.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+    result = classify_notebook(
+        path, nb, ["foundry"], {path.parent.resolve(): [path]}
+    )["foundry"]
+
+    assert result["verdict"] == "ENGINE_EXEC_PROVED"
 
 
 # --- DISCLOSED_SEQUENCE_PROVED ---------------------------------------------
@@ -155,7 +279,7 @@ def test_disclosed_sequence_proved_via_successor():
         md_cells=["# Lab B : Google ADK reel"],
         code_cells=[
             (
-                "from google.adk import Agent\nagent = Agent()",
+                "from google.adk import Agent\nagent = Agent()\nprint(agent)",
                 _out_stream("Agent initialise"),
             ),
         ],
@@ -291,7 +415,13 @@ def test_multi_engine_per_notebook():
             "# Multi\nUtilise Google ADK **et** BigQuery.",
         ],
         code_cells=[
-            ("from google.cloud import bigquery", _out_stream("Client() OK")),
+            (
+                "from google.cloud import bigquery\n"
+                "client = bigquery.Client()\n"
+                "job = client.query('SELECT 1')\n"
+                "print(job)",
+                _out_stream("Query job complete"),
+            ),
             # pas d'import google.adk
         ],
     )
@@ -355,6 +485,11 @@ def test_cli_json_output(tmp_path):
     assert rc == 0
 
 
+def test_cli_scan_all_unreadable_notebook_exits_two(tmp_path):
+    (tmp_path / "broken.ipynb").write_text("not json", encoding="utf-8")
+    assert main(["--scan-all", str(tmp_path), "--json"]) == 2
+
+
 def test_cli_scan_single_notebook(tmp_path):
     p = tmp_path / "one.ipynb"
     p.write_text(json.dumps(_nb(
@@ -372,6 +507,55 @@ def test_cli_scan_repo_no_defects_exits_zero(tmp_path):
     )))
     rc = main(["--scan-all", str(tmp_path), "--check"])
     assert rc == 0
+
+
+def _snapshot(verdict):
+    return {
+        "course/lesson.ipynb": {
+            "foundry": {
+                "verdict": verdict,
+                "recoverability": "RECOVERABLE-LOCAL",
+                "claims": [[0, "Foundry"]],
+                "wiring": [],
+                "invocation": [],
+                "proof": [],
+                "simulation": [],
+            }
+        }
+    }
+
+
+def test_compare_scan_results_tolerates_inherited_debt():
+    inherited = _snapshot("NAMED_NOT_INVOKED")
+    assert compare_scan_results(inherited, inherited) == []
+
+
+def test_compare_scan_results_blocks_new_or_worsened_debt():
+    new_claim = compare_scan_results({}, _snapshot("WIRING_ONLY"))
+    worsened = compare_scan_results(
+        _snapshot("WIRING_ONLY"), _snapshot("SIMULATED_TERMINAL")
+    )
+
+    assert len(new_claim) == 1
+    assert new_claim[0]["base_verdict"] == "NOT_CLAIMED"
+    assert len(worsened) == 1
+    assert worsened[0]["head_verdict"] == "SIMULATED_TERMINAL"
+
+
+def test_cli_delta_contract_and_invalid_snapshot(tmp_path):
+    base = tmp_path / "base.json"
+    head = tmp_path / "head.json"
+    base.write_text(json.dumps(_snapshot("ENGINE_EXEC_PROVED")), encoding="utf-8")
+    head.write_text(json.dumps(_snapshot("WIRING_ONLY")), encoding="utf-8")
+
+    assert main([
+        "--compare-base", str(base), "--compare-head", str(head), "--json"
+    ]) == 1
+
+    head.write_text("not json", encoding="utf-8")
+    assert main([
+        "--compare-base", str(base), "--compare-head", str(head)
+    ]) == 2
 
 
 # --- scan_repo end-to-end --------------------------------------------------
@@ -392,6 +576,30 @@ def test_scan_repo_finds_track2_adk_baseline(tmp_path):
 
 
 # --- Coverage gaps identified by empirical --scan-all cycle 92 -------------
+
+def test_wiring_and_invocation_inside_multiline_string_are_ignored(tmp_path):
+    nb = _nb(
+        md_cells=["# solc compiler"],
+        code_cells=[
+            (
+                "SOURCE = '''\nimport solcx\n"
+                "result = solcx.compile_source(contract_source)\n'''\n"
+                "print(SOURCE)",
+                _out_stream("Solidity example"),
+            ),
+        ],
+    )
+    path = tmp_path / "embedded-source.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+    result = classify_notebook(
+        path, nb, ["solc"], {path.parent.resolve(): [path]}
+    )["solc"]
+
+    assert result["verdict"] == "NAMED_NOT_INVOKED"
+    assert result["wiring"] == []
+    assert result["invocation"] == []
+
 
 def test_wiring_inside_string_literal_ignored():
     """Un import SDK place dans une string (print('import openai')) n'est PAS
@@ -516,7 +724,12 @@ def test_disclosed_deterministic_with_successor_executed():
     nb_real = _nb(
         md_cells=["# Real Google ADK runtime"],
         code_cells=[
-            ("from google.adk import Agent\nprint('agent ready')", _out_stream("agent ready")),
+            (
+                "from google.adk import Agent\n"
+                "agent = Agent()\n"
+                "print(agent)",
+                _out_stream("agent ready"),
+            ),
         ],
     )
     p_deterministic.write_text(json.dumps(nb_det))

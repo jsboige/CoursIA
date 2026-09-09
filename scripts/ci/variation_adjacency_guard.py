@@ -44,6 +44,13 @@ never a crash). The verdict reports which source it used in `prev_source`
     allows two consecutive there "si chacun est une substance genument
     distincte" -- a judgment not mechanisable, so the organ labels, never
     blocks. A Lean specialist chaining two distinct proofs must not blush.
+  * **PASS (exempted)** when `genre == prev_genre`, the genre is in the LIGHT
+    set, but the grain is DECLARED `MED`/`DEEP` AND its diff is DISJOINT from
+    the merged-sequence predecessor's (#14357) -- the mechanical exception
+    the G-VAR-2 organ already codifies, consumed here so the blocking organ
+    and the accounting organ never disagree. Fail-closed: it needs a
+    POSITIVE tier and POSITIVE disjoint read, and never fires on a `declared`
+    (unmeasured) predecessor. A LIGHT tier or overlapping files still blocks.
   * **PASS** otherwise -- different genres, `prev: none (premier grain)`
     (the first-grain exemption, already parsed by `parse_prev`), or a
     `prev:` absent / unreadable (already covered by the `variation-tag-prev-
@@ -73,12 +80,16 @@ merge makes the ban hold.
 ## Run locally
 
     python scripts/ci/variation_adjacency_guard.py --body-file body.txt
+    # with the #14357 exemption (fetches the current + predecessor diffs):
+    python scripts/ci/variation_adjacency_guard.py --body-file body.txt \
+        --merged-prs-file merged.json --pr-number 15151
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -243,6 +254,29 @@ def parse_override(comments: list[dict] | None) -> dict | None:
     return fallback
 
 
+def _gh_pr_files(pr_number: int) -> set[str] | None:
+    """Diff paths of a PR via ``gh pr view --json files``; None when unreadable.
+
+    Mirrors ``variation_light_cap.collect_files_by_pr`` in timing and failure
+    mode: a fetch that fails (no gh, no network, timeout, non-zero exit) yields
+    None -- unreadable is never "no shared files", and the #14357 exception is
+    fail-CLOSED exactly there (a MED/DEEP grain is only exempt when its diff is
+    POSITIVELY disjoint from the predecessor's).
+    """
+    try:
+        res = subprocess.run(
+            ["gh", "pr", "view", str(pr_number), "--json", "files", "--jq",
+             "[.files[].path]"],
+            capture_output=True, text=True, timeout=20,
+            encoding="utf-8", errors="replace",
+        )
+        if res.returncode != 0:
+            return None
+        return set(json.loads(res.stdout))
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, TypeError):
+        return None
+
+
 def resolve_merged_prev_genre(merged_prs: list[dict] | None, lane: str | None) -> tuple:
     """Return the lane's REAL predecessor: (canonical_genre, pr_number).
 
@@ -287,7 +321,9 @@ def resolve_merged_prev_genre(merged_prs: list[dict] | None, lane: str | None) -
 
 
 def check(body: str | None, override: dict | None = None,
-          merged_prev: tuple | None = None) -> dict:
+          merged_prev: tuple | None = None,
+          prev_files: set[str] | None = None,
+          current_files: set[str] | None = None) -> dict:
     """Return the adjacency verdict for a PR body.
 
     Pure function so unit tests pin each branch without going through the
@@ -377,6 +413,31 @@ def check(body: str | None, override: dict | None = None,
     # word alone: the retag is asked (note GENRE-UNKNOWN below), the ban
     # is not applied.
     if genre_counts_light(genre, g.get("tier")):
+        # #15184: a `declared` predecessor is unmeasured -- the `prev:` field is
+        # frozen at PR-open time (#12095/#11963), so a hard ban on it rests on
+        # data the lane did not produce while the PR sat open. The merged window
+        # being absent, unreadable, or empty for the lane is a degraded path,
+        # NOT a measurement. Refuse to issue the absolute ban of section 2 on
+        # unmeasured data: downgrade to advisory and let the coordinator, not
+        # CI, adjudicate adjacency (verified by the caller carrying an explicit
+        # `unmeasured` verdict the merge gate can read).
+        if prev_source == "declared":
+            return {
+                "guard_pass": True, "blocking": False, "adjacent": False,
+                "unmeasured": True,
+                "genre": genre, "prev_genre": prev_genre, "lane": lane,
+                "prev_source": prev_source,
+                "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
+                "reason": (
+                    f"G-VAR-3: {genre} succede a {prev_genre} mais le "
+                    f"predecesseur vient du champ `prev:` declare "
+                    f"({declared_prev_genre} #{declared_prev_pr or '?'}) -- "
+                    f"donnee NON MESUREE (fenetre merge absente, illisible ou "
+                    f"sans grain pour la lane). Un ban absolu (section 2) ne se "
+                    f"rend pas sur une mesure non faite (#15184). ADVISORY : le "
+                    f"coordinateur, pas la CI, tranche l'adjacence."
+                ),
+            }
         unknown_note = ""
         if not genre_resolves(genre):
             unknown_note = (
@@ -384,6 +445,35 @@ def check(body: str | None, override: dict | None = None,
                 f"fermee (variation-protocol §1) -- retaguez avec un genre "
                 f"canonique, le vocabulaire est ferme par intention."
             )
+        # #14357 -- the mechanical exemption G-VAR-3 codifies for a grain
+        # declared MED/DEEP whose diff is DISJOINT from its predecessor's.
+        # The gate is the BLOCKING organ of G-VAR-3; the exemption lives in
+        # the G-VAR-2 organ (variation_light_cap.run_exception_status) and not
+        # consuming it here would leave a rule nothing applies (the inert-clause
+        # defect of #12100). Fail-CLOSED (#13475 posture): MED/DEEP is a
+        # POSITIVE tier read, the file disjointness is a POSITIVE diff read --
+        # unreadable files are never "disjoint". It also never fires on a
+        # `declared` predecessor (unmeasured -- the silent-fallback defect),
+        # only on the merged sequence. The positive control holds: a LIGHT
+        # tier, or overlapping files, still blocks.
+        if (g.get("tier") in ("MED", "DEEP")
+                and prev_source == "merged-sequence"
+                and prev_files is not None
+                and current_files is not None
+                and not (prev_files & current_files)):
+            return {
+                "guard_pass": True, "blocking": False, "adjacent": False,
+                "genre": genre, "prev_genre": prev_genre, "lane": lane,
+                "exempted": True,
+                "prev_source": prev_source,
+                "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
+                "reason": (
+                    f"#14357: {genre} apres {prev_genre} pour la lane {lane}, "
+                    f"mais grain declare {g.get('tier')} dont le diff est "
+                    f"disjoint du predecesseur #{prev_pr} -- exemption "
+                    f"mecanique (fichiers sans recouvrement).{src_note}"
+                ),
+            }
         # The adjacency is real. Before failing, ask whether the coordinator
         # has exercised the 24h decision section 3 already grants (#11708).
         if override and override.get("next_genre") \
@@ -477,6 +567,11 @@ def main(argv: list[str] | None = None) -> int:
                         "resolve the lane's real predecessor from the merged "
                         "sequence instead of the frozen `prev:` field (#12095). "
                         "Same data source as variation_light_cap.py --replay.")
+    p.add_argument("--pr-number", metavar="N", default=None, type=int,
+                   help="PR number, to fetch the CURRENT PR's diff files for "
+                        "the #14357 disjoint-files exemption. Without it the "
+                        "exemption cannot be evaluated and the gate is "
+                        "fail-closed (no exemption).")
     args = p.parse_args(argv)
 
     try:
@@ -516,10 +611,32 @@ def main(argv: list[str] | None = None) -> int:
                     f"prev: declare (#12636)"
                 )
         except (OSError, ValueError) as e:
+            # #15184: the unreadable path must be LOUD in the JSON verdict, not
+            # only on stderr -- the pre-#12636 silent fallback is the defect
+            # this closes, and a window that was fetched but could not be read
+            # deserves the same note as a window that missed the lane.
+            merged_fallback_note = (
+                f"window merge illisible ({e}) -- predecesseur resolu depuis le "
+                f"prev: declare (#15184)"
+            )
             print(json.dumps({"warning": f"merged-prs unreadable: {e}"}),
                   file=sys.stderr)
 
-    verdict = check(body, override=override, merged_prev=merged_prev)
+    # #14357: the disjoint-files exemption needs the current PR's diff AND a
+    # MEASURED predecessor. When the predecessor resolved to the merged
+    # sequence, fetch its files; when it fell back to the declared `prev:`
+    # (unmeasured -- the silent-fallback defect), do NOT fetch and leave the
+    # exemption closed. Any fetch failure yields None, which check() treats as
+    # fail-closed (never "disjoint").
+    current_files = None
+    prev_files = None
+    if args.pr_number:
+        current_files = _gh_pr_files(args.pr_number)
+        if merged_prev is not None and merged_prev[0] is not None:
+            prev_files = _gh_pr_files(merged_prev[1])
+
+    verdict = check(body, override=override, merged_prev=merged_prev,
+                    prev_files=prev_files, current_files=current_files)
     if merged_fallback_note:
         verdict = dict(verdict)
         verdict["prev_source"] = "declared"

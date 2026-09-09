@@ -67,10 +67,13 @@ Trois urnes, parce que le pool n'est pas homogene
                   cree un sous-grain dedans. C'est la que vit le DEEP/CONTENU
                   ancien -- une urne unique ne le montrerait jamais.
 - **delivered** : issues portant `candidate-delivered` (livrees par une PR
-                  mergee mais jamais fermees). Les offrir a chaque tirage est
-                  ce qui fait *refluer* le compte sans batch-close aveugle :
-                  l'agent verifie firsthand (G.9) puis ferme avec preuve, ou
-                  retire le label en disant pourquoi.
+                  mergee mais jamais fermees). Urne RESERVEE au coordinateur
+                  et a l'adjoint (#15069, mandat user 2026-09-07) : elle
+                  prescrit une fermeture, et fermer remonte au coordinateur.
+                  C'est ce qui fait *refluer* le compte sans batch-close
+                  aveugle -- pour les lanes habilitees uniquement. Une lane
+                  worker qui rencontre une candidate-delivered poste [INFO]
+                  avec sa preuve et rend la main, sans fermer.
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
@@ -510,6 +513,54 @@ def fetch_visits(
 # pas de mieux classer, mais de cesser d'etre un simple conseil de classement.
 DWELL_HOURS_DEFAULT = 24.0
 URN_NAMES = {"grain", "umbrella", "delivered"}
+
+# #15069 (mandat user 2026-09-07) : l'urne `delivered` prescrit une
+# FERMETURE d'issue, et fermer comme merger remontent au coordinateur ;
+# la verification pre-fermeture se delegue a l'adjoint, jamais aux
+# workers. Avant ce garde, la fermeture etait tiree au sort par le
+# picker : 21 des 120 fermetures mesurees (2026-08-28..09-07) venaient
+# de lanes CoursIA-2 (MiniMax) servies par cette urne -- non par
+# indiscipline, mais par conformite a une regle contradictoire.
+# Le porte sur la LANE, pas sur le modele : le picker ne connait pas le
+# moteur qui l'appelle. Liste explicite et courte, par conception.
+DELIVERED_URN_LANES = frozenset({
+    "myia-ai-01:CoursIA",       # coordinateur
+    "myia-ai-01:CoursIA-2",     # coordinateur (deuxieme dashboard)
+    "myia-po-2025:CoursIA-2",   # adjoint (preflight #13605, #13883)
+})
+
+
+def delivered_urn_allowed(lane: str | None) -> bool:
+    """La lane peut-elle se voir servir l'urne `delivered` ? (#15069)"""
+    return lane in DELIVERED_URN_LANES
+
+
+def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
+    """#15069 : l'urne `delivered` prescrit une fermeture -- une lane
+    worker ne la recoit jamais.
+
+    Retourne (urns_effectives, avis_ou_none). Leve ``ValueError`` quand
+    une lane worker demande l'urne EXPLICITEMENT : la demande explicite
+    porte l'intention de fermer, c'est un refus ; la simple presence via
+    le defaut est retiree avec un avis (le defaut ne doit pas faire
+    echouer chaque worker a chaque tirage).
+    """
+    if "delivered" not in selected_urns or delivered_urn_allowed(lane):
+        return selected_urns, None
+    if urns_arg != urns_default:
+        raise ValueError(
+            "urne 'delivered' reservee aux lanes habilitees ("
+            + ", ".join(sorted(DELIVERED_URN_LANES))
+            + ") -- mandat user 2026-09-07 (#15069) : fermer et merger "
+            "remontent au coordinateur. Une lane worker qui rencontre "
+            "une candidate-delivered poste [INFO] candidate-delivered "
+            "avec sa preuve et rend la main."
+        )
+    urns = set(selected_urns)
+    urns.discard("delivered")
+    return urns, ("(urne 'delivered' retiree du tirage : reservee au "
+                  "coordinateur/adjoint -- #15069 ; une lane worker poste "
+                  "[INFO] candidate-delivered avec preuve et rend la main)")
 
 
 def _csv_values(groups: list[str] | None) -> list[str]:
@@ -1356,7 +1407,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     return causes
 
 
-def _is_adjacency_red(body: str) -> bool:
+def _is_adjacency_red(body: str) -> str | bool:
     """Verdict LIGHT-genre adjacency pour le corps d'une PR rouge (#13967).
 
     Pont entre l'organe `scripts/ci/variation_adjacency_guard.py` (verdict
@@ -1366,6 +1417,22 @@ def _is_adjacency_red(body: str) -> bool:
     cause. Enveloppe tolérante : si l'organe est indisponible (import,
     panne), on rend False -- les trois conseils generiques restent le
     fallback sur, jamais un crash de picker.
+
+    #15184 (distinction demandee en review) : la valeur rendue distingue le
+    STATUT EPISTEMIQUE du rouge, pas seulement sa presence --
+      * `"measured"`  : blocking=True -- blocage PROUVE par l'organe sur
+        sequence mergee (fenetre mesuree). Non produit par le picker
+        actuel -- `check(body)` sans `merged_prev` resout toujours
+        prev_source="declared" -- mais le contrat est pinné pour le jour
+        ou un caller lui passera la sequence.
+      * `"declared"`  : unmeasured=True -- conseil fonde sur la
+        DECLARATION du body (predicat LIGHT matche, prev non mesure).
+        C'est le seul cas que le picker voit ; le CI ne ban pas cette
+        donnee (#15184), le picker CONSEILLE seulement.
+      * `False`       : pas d'adjacence evaluable.
+    Les deux premieres valeurs sont truthy : `all(r.get("is_adjacency"))`
+    et l'override `pr["is_adjacency"] = True/False` des callers restent
+    valides sans changement.
     """
     try:
         sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
@@ -1376,10 +1443,14 @@ def _is_adjacency_red(body: str) -> bool:
         verdict = vag.check(body)
     except Exception:  # noqa: BLE001 - idem : organe optionnel, picker robuste
         return False
-    # L'organe est fail-CLOSED : blocking=True <=> LIGHT adjacency reelle
-    # (cf docstring `check`). On conserve `adjacent` pour les diagnostics
-    # futurs (DEEP/MED adjacency = advisory, hors branche specialised).
-    return bool(verdict.get("blocking"))
+    if verdict.get("blocking"):
+        return "measured"
+    if verdict.get("unmeasured"):
+        return "declared"
+    # `adjacent` (DEEP/MED, advisory) reste hors branche specialised : le
+    # contrat fondateur #13967 couvre l'adjacence LIGHT, pas l'advisory
+    # DEEP/MED.
+    return False
 
 
 def _newest_start_hours(stamps) -> float | None:
@@ -1497,27 +1568,54 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     Panne d'import ou de reseau : dictionnaire vide plutot qu'une exception. Le
     garde ne doit jamais empecher un tirage pour une raison technique -- mais
     l'appelant DIT que la surface n'a pas ete regardee (cf `nits_unavailable`).
+    Une erreur de CONTRAT avec l'organe (TypeError/AttributeError), en revanche,
+    n'est pas une PR illisible : elle est relancee pour rester visible (#15139).
     """
     if not numbers:
         return {}
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
     import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
 
-    now = dt.datetime.now(dt.timezone.utc)
     out: dict[int, int] = {}
     for n in numbers:
         try:
-            data = nits.gh_json(["pr", "view", str(n), "--repo", REPO,
-                                 "--json", nits.FIELDS])
-            result = nits.analyse(
-                data, nits.review_threads(n), now,
-                issue_created=nits.gh_issue_created,
-                dismissed_improperly=nits.improper_dismissals(n))
+            # #15139 : delegation via le point d'entree `analyse_pr` de
+            # l'organe, pas un assemblage local de kwargs -- l'assemblage
+            # local avait derive (kwarg `issue_created` disparu de la
+            # signature) et le TypeError avale rendait un dict vide
+            # silencieux : la cause 4 ne se declenchait plus, pour aucune
+            # lane, pendant que le merge-gate (qui appelle juste) refusait
+            # les memes PRs.
+            result = nits.analyse_pr(n)
+        except (TypeError, AttributeError):
+            # Derive de contrat avec l'organe : bug d'appel, pas « PR
+            # illisible ». Propager jusqu'au try de `red_backlog` qui rend
+            # `nits_unavailable` -- visible, jamais un dict vide muet.
+            raise
         except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
             continue
         if result.get("blocked"):
             out[n] = len(result.get("blocking") or [])
     return out
+
+
+# #14706 — vehicules d'automatisation EXCLUS de la file d'orphelines.
+# Le cron catalogue ouvre une PR PERMANENTE sans tag `Grain:` par conception
+# (appartient a l'automatisation, cf catalog-pr-hygiene.md / #14577). Elle n'a
+# aucune disposition valide : lui coller une lane la rendrait comptable dans le
+# cap de variation d'une lane qui ne l'a pas produite ; la reparer est ecrase
+# par le cron quotidien ; la fermer casse le cycle open/close du bot. Predicat
+# ETROIT : auteur bot ET branche `chore/*-pending`. Un bot hors ce motif, ou une
+# lane humaine sur une telle branche, restent visibles (controles negatifs).
+AUTOMATION_AUTHORS = {"app/github-actions", "github-actions[bot]", "github-actions"}
+AUTOMATION_BRANCH_RE = re.compile(r"^chore/[\w-]+-pending$")
+
+
+def is_automation_vehicle(pr: dict) -> bool:
+    """Vrai si la PR est un vehicule d'automatisation (auteur bot ET branche chore/*-pending)."""
+    author = ((pr.get("author") or {}).get("login")) or ""
+    branch = pr.get("headRefName") or ""
+    return author in AUTOMATION_AUTHORS and bool(AUTOMATION_BRANCH_RE.match(branch))
 
 
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
@@ -1533,11 +1631,19 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     un constat sans destinataire n'est pas un routage (#13086). Les untagged
     SANS causes bloquantes ne comptent pas : seule la file qui pourrit est
     routee, pas les PRs en cours de CI.
+
+    Les vehicules d'automatisation (auteur bot sur branche `chore/*-pending`,
+    #14706) sont exclus : aucune lane n'a a etre renvoyee dessus et aucune
+    disposition ne leur est valide. Le predicat est PARTAGE avec `red_backlog`
+    (un `unattributed_blocked_prs` → le garde « reparer son rouge ») — ce qui est
+    ici souhaite, aucune lane ne devant etre renvoyee sur le vehicule du bot.
     """
     if prs is None:
         prs = fetch_open_prs()
     untagged = [pr for pr in prs
-                if not pr.get("isDraft") and parse_grain_tag(pr.get("body") or "") is None]
+                if not pr.get("isDraft")
+                and parse_grain_tag(pr.get("body") or "") is None
+                and not is_automation_vehicle(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:
@@ -1934,10 +2040,34 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         # ne retaguez pas le meme travail ») -- ici on le dit EN CLAIR
         # pour que la lane ne perde pas son cycle a pousser une PR dont
         # la cause est ailleurs.
-        print("Cause determinante : `adjacency` (G-VAR-3, organe "
-              "variation_adjacency_guard). Aucun des trois gestes generiques")
-        print("ne leve ce blocage : la cause n'est pas dans le diff, elle est")
-        print("dans le **genre du grain suivant**. Le remede :")
+        # #15184 (review) : distinguer CONSEIL fonde sur declaration et
+        # BLOCAGE prouve par fenetre mesuree. `_is_adjacency_red` rend le
+        # statut epistemique ("declared" / "measured") ; un override
+        # `is_adjacency=True` pose par un caller ne porte pas de statut --
+        # on ne reclame jamais "mesure/proouve" sans le verdict de l'organe.
+        kinds = [r["is_adjacency"] if isinstance(r.get("is_adjacency"), str)
+                 else "declared"
+                 for r in red if r.get("is_adjacency")]
+        n_measured = sum(1 for k in kinds if k == "measured")
+        if n_measured == len(kinds):
+            print("Cause determinante : `adjacency` MESUREE (G-VAR-3, sequence")
+            print("mergee -- blocage PROUVE par l'organe variation_adjacency_guard).")
+            print("Aucun des trois gestes generiques ne leve ce blocage : la cause")
+            print("n'est pas dans le diff, elle est dans le **genre du grain")
+            print("suivant**. Le remede :")
+        elif n_measured:
+            print(f"Cause determinante : `adjacency` (G-VAR-3) -- {n_measured} PR(s)")
+            print(f"MESUREE(s) (blocage prouve, sequence mergee) + "
+                  f"{len(kinds) - n_measured} DECLAREE(s)")
+            print("(conseil sur donnee non mesuree). Les trois gestes generiques")
+            print("sont invariants au predicat dans les deux cas. Le remede :")
+        else:
+            print("Cause determinante : `adjacency` DECLAREE, NON MESUREE (G-VAR-3")
+            print("advisory -- prev lu dans le body, pas de fenetre mergee consultee")
+            print("par le picker ; le CI ne BAN pas cette donnee depuis #15184, le")
+            print("picker CONSEILLE). Les trois gestes generiques ne changent pas le")
+            print("genre non plus -- la cause n'est pas dans le diff, elle est dans")
+            print("le **genre du grain suivant**. Le remede :")
         print()
         print("  -> Piocher un grain d'UN AUTRE genre (LIGHT/{guard,ledger,")
         print("     docs,readme,test} apres un autre grain du meme genre est")
@@ -2377,6 +2507,18 @@ def main(argv: list[str] | None = None) -> int:
     if not selected_urns or invalid_urns:
         detail = ", ".join(sorted(invalid_urns)) or "liste vide"
         ap.error(f"--urns invalide ({detail})")
+
+    # #15069 : l'urne `delivered` prescrit une fermeture -- reservee au
+    # coordinateur et a l'adjoint. Une lane worker ne la recoit JAMAIS :
+    # demande explicite refusee, presence par defaut retiree avec un avis.
+    try:
+        selected_urns, delivered_notice = apply_delivered_urn_gate(
+            args.lane, args.urns, ap.get_default("urns"), selected_urns)
+    except ValueError as exc:
+        ap.error(str(exc))
+    if delivered_notice:
+        # stderr : stdout porte un contrat JSON en mode --json (#15069).
+        print(delivered_notice, file=sys.stderr)
 
     effective_cache_mode = args.cache
     if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None:
@@ -2839,8 +2981,13 @@ def main(argv: list[str] | None = None) -> int:
     print("        signe d'un sujet delaisse devant ceux du moment : c'est ce que")
     print("        le tirage remonte, et ce que la lane est attendue de conduire.")
     print("umbrella  -> pioche ou cree un SOUS-grain dedans, ne claim pas l'EPIC entier.")
-    print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
-    print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
+    if delivered_urn_allowed(args.lane):
+        print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
+        print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
+    else:
+        print("delivered -> reservee au coordinateur/adjoint (#15069) : une lane worker")
+        print("             qui rencontre une candidate-delivered poste [INFO] avec sa")
+        print("             preuve et rend la main, sans fermer.")
     print("Avant d'EDITER : python scripts/check_lane_claim.py --lane <machine:workspace> <N>")
 
     # #14591 Volet A : persister le genre du grain choisi vers le CSV si

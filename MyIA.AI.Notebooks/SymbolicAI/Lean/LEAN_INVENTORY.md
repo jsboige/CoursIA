@@ -24,7 +24,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 9² | 15 | 4 | PEDA/REF | #2874, #3003 |
+| `knot_lean` | v4.32.1 | 8² | 15 | 4 | PEDA/REF | #2874, #3003 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
@@ -58,7 +58,10 @@ décharge de `conway_trivial_alexander` (preuve kernel déterminant 10×10 ℤ[t
 See #2874, 2026-09-05 ; re-mesure canonique du jour confirmant **11 sur `main`**,
 `distinct_code_sorry` 11/22 → 10/20 — pas de dérive depuis le 2026-08-28). Puis
 10 → **9** après la décharge de `KT_trivial_alexander` (mineur t⁵ par
-transvections, See #2874, 2026-09-06 ; `distinct_code_sorry` 10/20 → 9/18).
+transvections, See #2874, 2026-09-06 ; `distinct_code_sorry` 10/20 → 9/18). Puis
+9 → **8** : fusion de main dans #14821 (2026-09-09) — `Knot.unknottingNumber`
+déchargé sur main par #15082 (définition par infimum, cas trivial prouvé ;
+`distinct_code_sorry` 9/18 → 8/16, re-mesure sur l'arbre fusionné).
 ³ `calibration_lean` est un **composant de harnais** (prover calibration, déplacé depuis
 GameTheory, #1764). Les `· sorry` inline de `Calibration/Nash.lean` sont un **fixture de
 test intentionnel** (le harnais doit gérer un *sorry-increase* 1→2 sans régression) — pas

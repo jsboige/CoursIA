@@ -107,10 +107,10 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | Besoin | Détail |
 |--------|--------|
 | Python | 3.10+, environnement virtuel recommandé |
-| `ortools` | Search-9 (Linear Programming), Search-17b (CP-SAT) |
+| `ortools` | Search-9 (Linear Programming), Search-11c (CP-SAT) |
 | `deap` | Search-5 (Genetic Algorithms) |
 | `mealpy` | Search-11 (Métaheuristiques) |
-| `z3-solver` | Search-10 (Symbolic Automata), Search-17b (SMT) |
+| `z3-solver` | Search-10 (Symbolic Automata), Search-11c (SMT) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué) |
 | Kernel `lean4-wsl` | Search-09d : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |

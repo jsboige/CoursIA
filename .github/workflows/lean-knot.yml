@@ -145,7 +145,10 @@ jobs:
           # kernel determinant 10x10, Conway.lean 6 -> 5 sorries reels).
           # 10 -> 9 : KT_trivial_alexander decharge (See #2874, mineur t^5
           # par transvections, Conway.lean 5 -> 4 sorries reels).
-          sorry-baseline: "9"
+          # 9 -> 8 : fusion main -- unknottingNumber decharge sur main par
+          # #15082 (Invariant.lean) ; les stubs CTA/KT de main sont
+          # remplaces par les preuves completes ci-dessus.
+          sorry-baseline: "8"
           sorry-filter-mode: real
           # #14821 : le pool coursia-lean OOM-kill (exit 137) sur le pic
           # d'elaboration des siblings Conway/Conway_en DANS le meme job —
@@ -189,7 +192,7 @@ jobs:
           display-name: knot_lean
           target-modules: "*"
           allow-axioms: ""
-          # 9 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+          # 8 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
           # build job above; the gate tolerates them (`fail-on-sorry: false`) but
           # still reports `has_sorry` per module and hard-fails forbidden axioms.
           # The per-module enumeration now lives in the gate's runtime derivation

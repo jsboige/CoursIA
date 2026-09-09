@@ -92,6 +92,7 @@ jobs:
   # `--lib-root` heuristic in `check_target_coverage.py` does not cover a
   # flat lake; sensitivity_lean (also wired) takes the same shortcut.
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean

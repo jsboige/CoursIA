@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.32.1` (migration post-#11325, cf #11256).
 
-## État des sorries (vérifié 2026-09-06 contre la branche #2874, **9 réels**)
+## État des sorries (vérifié 2026-09-09 sur l'arbre fusionné #14821, **8 réels**)
 
 Deux comptes, selon le filtre CI :
 
@@ -13,16 +13,17 @@ Deux comptes, selon le filtre CI :
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 3 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
-| `Knots/Invariant.lean` | **1** | 15 |
-| `Knots/Conway.lean` | 4 | 11 |
+| `Knots/Invariant.lean` | **0** | 5 |
+| `Knots/Conway.lean` | 4 | 10 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **9** | **37** |
+| **Total** | **8** | **26** |
 
 - **sorry réels** = ce qui manque vraiment comme preuve. **9** au total (code-only
   après strip `--`/`/- -/`, mesuré par `scripts/lean/count_code_sorry.py` champ
-  `distinct_code_sorry`), tous stables : 1 dans `Invariant.lean`
-  (`Knot.unknottingNumber` L2143 — `tricolorable_invariant` est résolu), 2
+  `distinct_code_sorry`), tous stables : 0 dans `Invariant.lean`
+  (`Knot.unknottingNumber` DISCHARGÉ sur main par #15082 — définition par
+  infimum, cas trivial prouvé ; fusion main 2026-09-09), 2
   `reidemeister_theorem` (PL), 4 Conway (les 2 defs `IsSmoothlySlice` /
   `IsTopologicallySlice := sorry` + 2 `exact sorry` de bornes —
   `conway_trivial_alexander` a été DISCHARGÉ le 2026-09-05 par la preuve kernel
@@ -36,11 +37,12 @@ Deux comptes, selon le filtre CI :
   `c₂ ≠ c₃` → `absurd` clos les deux résiduels d'une ligne chacun. La
   **bi-implication R1 connectée est COMPLÈTE** (forward #3000 + backward
   #3124/#11227).
-- **Baisse historique 17 → 16 → 14 → 11 → 10 → 9** : #2874 a déchargé
+- **Baisse historique 17 → 16 → 14 → 11 → 10 → 9 → 8** : #2874 a déchargé
   `KT_trivial_alexander` (2026-09-06, mineur t⁵ par 30 transvections —
   déterminant invariant à chaque pas, Q = 1), puis
   `conway_trivial_alexander` (2026-09-05, élimination de Gauss kernel 10×10 +
-  étape composite au coin k=8, déterminant −t⁶). Avant cela, #8766 a déchargé `trefoil_not_unknot`
+  étape composite au coin k=8, déterminant −t⁶) ; la fusion de main (2026-09-09) ajoute 9 → 8 : #15082
+  y a déchargé `Knot.unknottingNumber`. Avant cela, #8766 a déchargé `trefoil_not_unknot`
   (composition), #9966 a surélevé à 17 (wall du wrapper
   `tricolorable_forward_r1`), puis le wall a été déchargé (16) et #11227 a
   clos fox/col (14) ; la lecture fine par fichier (post-strip commentaires,
@@ -56,8 +58,8 @@ Deux comptes, selon le filtre CI :
 - **sorry prose** = **37** (raw, any-line matchant `sorry` — la prose de
   documentation des murs R2/R3 en a ajouté). Le mode CI officiel est
   **`real`** : strippe `--` et `/- -/`, puis compte le mot-bounded
-  `\bsorry\b`. La CI gate sur baseline **11** (alignée avec
-  `LEAN_INVENTORY.md`, voir #13312).
+  `\bsorry\b`. La CI gate sur baseline **8** (alignée avec
+  `LEAN_INVENTORY.md` et `lean-knot.yml`, voir #13312).
 
 La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 11**
 (alignement post-#13312, mesure 2026-08-28 ; historique : prose-header 25→28
