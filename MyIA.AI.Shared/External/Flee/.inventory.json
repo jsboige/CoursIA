@@ -1,94 +1,95 @@
 {
-  "source": "https://github.com/mparlak/Flee",
-  "fork_clone_url": "https://github.com/mparlak/Flee.git",
-  "default_branch": "master",
-  "shallow_clone_path": "../../mparlak-Flee-fork/",
-  "target_in_repo": "MyIA.AI.Shared/External/Flee/",
-  "inventory_date": "2026-09-09T06:30Z",
-  "cycle": "c.1041",
-  "lane": "myia-po-2027:CoursIA-2",
-  "tranche": "B-finale-step1",
-  "issue": 15141,
-  "discovery_c1041": "3e consommateur Flee identifie sur main (FleePredicateBuilder, EPIC #7265 B4 'le liant universel') ; inventaire c.1039 etait incomplet (2 consommateurs backtester seulement)",
-  "summary": {
-    "total_cs_files": 102,
-    "total_directories": 16,
-    "referenced_namespaces": [
-      "Flee.CalcEngine.InternalTypes",
-      "Flee.CalcEngine.PublicTypes",
-      "Flee.ExpressionElements",
-      "Flee.ExpressionElements.Base",
-      "Flee.ExpressionElements.Base.Literals",
-      "Flee.ExpressionElements.Literals",
-      "Flee.ExpressionElements.Literals.Integral",
-      "Flee.ExpressionElements.Literals.Real",
-      "Flee.ExpressionElements.LogicalBitwise",
-      "Flee.ExpressionElements.MemberElements",
-      "Flee.InternalTypes",
-      "Flee.Parsing",
-      "Flee.PublicTypes",
-      "Flee.Resources"
-    ],
-    "framework_targets_original": ["net6.0", "net5.0", "netstandard2.1", "netstandard2.0"],
-    "framework_target_repo": "net9.0",
-    "implicit_usings_enabled": true,
-    "nullable_enabled": true
-  },
-  "dependency_audit": {
-    "aricie_references": 0,
-    "dotnetnuke_references": 0,
-    "codedom_runtime_references": 0,
-    "codedom_metadata_references": 3,
-    "notes": "Les 3 CodeDom metadata references sont des attributs [global::System.CodeDom.Compiler.GeneratedCodeAttribute(...)] dans les fichiers .Designer.cs (Resources/), generes automatiquement par StronglyTypedResourceBuilder. Pas du runtime CodeDom, juste une metadonnee compatible .NET 9. Aucun retrait necessaire."
-  },
-  "external_packages_original": [
-    {"name": "System.ComponentModel", "version": "4.3.0"},
-    {"name": "System.Reflection", "version": "4.3.0"},
-    {"name": "System.Reflection.Emit", "version": "4.7.0"},
-    {"name": "System.Reflection.Emit.ILGeneration", "version": "4.7.0"},
-    {"name": "System.Reflection.Emit.Lightweight", "version": "4.7.0"}
+ "source": "https://github.com/mparlak/Flee",
+ "fork_clone_url": "https://github.com/mparlak/Flee.git",
+ "default_branch": "master",
+ "shallow_clone_path": "../../mparlak-Flee-fork/",
+ "target_in_repo": "MyIA.AI.Shared/External/Flee/",
+ "inventory_date": "2026-09-09T06:30Z",
+ "cycle": "c.1041",
+ "lane": "myia-po-2027:CoursIA-2",
+ "tranche": "B-inventory-reliquat",
+ "issue": 15141,
+ "discovery_c1041": "3e consommateur Flee identifie c.1041 (FleePredicateBuilder, EPIC #7265 B4 nugget), port abandonne par arbitrage ai-01 2026-09-08T17:29Z",
+ "summary": {
+  "total_cs_files": 102,
+  "total_directories": 16,
+  "referenced_namespaces": [
+   "Flee.CalcEngine.InternalTypes",
+   "Flee.CalcEngine.PublicTypes",
+   "Flee.ExpressionElements",
+   "Flee.ExpressionElements.Base",
+   "Flee.ExpressionElements.Base.Literals",
+   "Flee.ExpressionElements.Literals",
+   "Flee.ExpressionElements.Literals.Integral",
+   "Flee.ExpressionElements.Literals.Real",
+   "Flee.ExpressionElements.LogicalBitwise",
+   "Flee.ExpressionElements.MemberElements",
+   "Flee.InternalTypes",
+   "Flee.Parsing",
+   "Flee.PublicTypes",
+   "Flee.Resources"
   ],
-  "backtester_consumers": [
-    {
-      "path": "MyIA.Trading.Backtester/Core/SimpleExpression.cs",
-      "imports": ["Flee.PublicTypes"],
-      "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)"
-    },
-    {
-      "path": "MyIA.Trading.Backtester/Core/TradingStrategy.cs",
-      "imports": ["implicit via Flee dynamic expressions"],
-      "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)"
-    },
-    {
-      "path": "MyIA.AI.Shared/ComponentModel/Rules/FleePredicateBuilder.cs",
-      "imports": ["Flee.PublicTypes"],
-      "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)",
-      "epic_link": "EPIC #7265 (socle partage .NET pour la pompe patrimoine Aricie), nugget B4 'le liant universel' -- regle metier string -> predicat compile sur entites reflechir",
-      "discovered_cycle": "c.1041"
-    }
+  "framework_targets_original": [
+   "net6.0",
+   "net5.0",
+   "netstandard2.1",
+   "netstandard2.0"
   ],
-  "tests_to_revalidate": {
-    "BandStrategyLayerTests": {
-      "expected_count": 112,
-      "expected_status": "112/112 vert post-port (cible tranche E)"
-    },
-    "FleePredicateBuilderTests": {
-      "expected_count": 8,
-      "expected_status": "8/8 vert post-port (substance Prong-B proof, lie au notebook #10161)",
-      "path": "MyIA.AI.Shared.Tests/FleePredicateBuilderTests.cs",
-      "discovered_cycle": "c.1041"
-    }
+  "framework_target_repo": "net9.0",
+  "implicit_usings_enabled": true,
+  "nullable_enabled": true
+ },
+ "dependency_audit": {
+  "aricie_references": 0,
+  "dotnetnuke_references": 0,
+  "codedom_runtime_references": 0,
+  "codedom_metadata_references": 3,
+  "notes": "Les 3 CodeDom metadata references sont des attributs [global::System.CodeDom.Compiler.GeneratedCodeAttribute(...)] dans les fichiers .Designer.cs (Resources/), generes automatiquement par StronglyTypedResourceBuilder. Pas du runtime CodeDom, juste une metadonnee compatible .NET 9. Aucun retrait necessaire."
+ },
+ "external_packages_original": [
+  {
+   "name": "System.ComponentModel",
+   "version": "4.3.0"
   },
-  "total_tests_to_revalidate": 120,
-  "tranche_b_next_steps": [
-    "Re-cloner le fork (mparlak-Flee-fork/ existe deja, 102 fichiers)",
-    "Copier src/Flee/* vers MyIA.AI.Shared/External/Flee/ en gardant le namespace Flee.* (transition douce)",
-    "Verifier le build avec csproj Flee adapte net9.0",
-    "Verifier que SimpleExpression.cs compile TOUJOURS avec namespace Flee.* (pas de rename)",
-    "Verifier que FleePredicateBuilder.cs compile TOUJOURS avec namespace Flee.* (consommateur #3 decouvert c.1041)",
-    "Retirer <PackageReference Include=\"Flee\" Version=\"2.0.0\" /> du csproj MyIA.AI.Shared",
-    "Re-executer les 112 tests BandStrategyLayerTests + 8 tests FleePredicateBuilderTests = 120 tests cumul"
-  ],
-  "blocked_until": "Tranche B achevee (compilation + 120/120 vert) avant de passer aux tranches C/D/E (renommage namespace, adaptation .NET 9 si besoin, wrapper leger)",
-  "c1041_decision": "Inventaire enrichi uniquement ce cycle (3e consommateur + 120 tests). Copie des 102 fichiers source = cycle dedie (risque regression MyIA.AI.Shared trop eleve pour 30 min + violation G-VAR-4 composite trop large > 100 fichiers en 1 PR)."
+  {
+   "name": "System.Reflection",
+   "version": "4.3.0"
+  },
+  {
+   "name": "System.Reflection.Emit",
+   "version": "4.7.0"
+  },
+  {
+   "name": "System.Reflection.Emit.ILGeneration",
+   "version": "4.7.0"
+  },
+  {
+   "name": "System.Reflection.Emit.Lightweight",
+   "version": "4.7.0"
+  }
+ ],
+ "tests_to_revalidate": {
+  "BandStrategyLayerTests": {
+   "expected_count": 20,
+   "expected_status": "20/20 vert au fichier (cible tranche E post-port); projet total 114/114 verifie c.1057",
+   "count_scope": "per_file (recompte firsthand c.1057)",
+   "previous_count": 112,
+   "previous_count_scope": "projet (obsolete, recompte par fichier 20 + autres fichiers projet = 114 total)"
+  },
+  "FleePredicateBuilderTests": {
+   "expected_count": 8,
+   "expected_status": "8/8 vert post-port (substance Prong-B proof, lie au notebook #10161)",
+   "path": "MyIA.AI.Shared.Tests/FleePredicateBuilderTests.cs",
+   "discovered_cycle": "c.1041",
+   "count_scope": "per_file (recompte firsthand c.1057)"
+  }
+ },
+ "reliquat_note_c1057": "Port vendored Flee abandonne par arbitrage ai-01 2026-09-08T17:29Z (DISPATCH REPAIR msg-20260909T175426-ve4khn). Inventaire reduit aux sections informatives (summary, dependency_audit, external_packages_original, tests_to_revalidate) utiles aux tranches S1-S4 futures. backtester_consumers et tranche_b_next_steps retires (NuGet Flee 2.0.0 reste en MyIA.AI.Shared.csproj -- pas de port actif).",
+ "total_tests_to_revalidate_per_file": {
+  "BandStrategyLayerTests": 20,
+  "FleePredicateBuilderTests": 8,
+  "total_per_file": 28,
+  "project_total": 114,
+  "note": "28 tests cumules sur les 2 fichiers directement concernes par Flee ; 114 tests au projet MyIA.Trading.Backtester.Tests complet (13 fichiers .cs)"
+ }
 }
