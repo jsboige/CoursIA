@@ -1344,6 +1344,7 @@ layout: section
 </div>
 <div>
 
+<TeachingStep placement="below" size="md">
 
 **Structure d'agent**
 
@@ -1353,10 +1354,11 @@ layout: section
   - Critique
   - Générateur de problème
 
-<img src="./images/img_080.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
+<template #visual>
+<img src="./images/img_080.png" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
+</template>
 
-
-
+</TeachingStep>
 
 </div>
 </div>
