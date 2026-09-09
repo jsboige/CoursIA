@@ -26,7 +26,12 @@ from typing import Iterator, List, Optional
 import httpx
 
 
-# URL par defaut : localhost en dev, models.myia.io en prod
+# URL par defaut : localhost en dev, models.myia.io en prod. La constante
+# reste exportee pour compatibilite (les tests la monkeypatchent), mais
+# depuis #15286 la resolution EFFECTIVE se fait a l'appel via
+# `_resolve_base_url` : poser CLAUDISH_BASE_URL dans une cellule APRES
+# l'import est honored (defaut V03 : valeur figee au chargement du module,
+# cible immobile sans erreur).
 DEFAULT_BASE_URL = os.environ.get("CLAUDISH_BASE_URL", "http://localhost:3000")
 ANTHROPIC_VERSION = "2023-06-01"
 
@@ -41,9 +46,20 @@ KNOWN_MODELS = [
 ]
 
 
+def _resolve_base_url(base_url: Optional[str] = None) -> str:
+    """URL de base effective, lue A L'APPEL (#15286).
+
+    Ordre de precedence : argument explicite > CLAUDISH_BASE_URL lu au
+    moment de l'appel > DEFAULT_BASE_URL (constante d'import, fallback de
+    compatibilite monkeypatche par les tests historiques).
+    """
+    resolved = base_url or os.environ.get("CLAUDISH_BASE_URL") or DEFAULT_BASE_URL
+    return resolved.rstrip("/")
+
+
 def get_endpoint(base_url: Optional[str] = None) -> str:
     """Retourne l'URL complet du endpoint /v1/messages."""
-    base = (base_url or DEFAULT_BASE_URL).rstrip("/")
+    base = _resolve_base_url(base_url)
     return f"{base}/v1/messages"
 
 
@@ -57,7 +73,7 @@ def get_api_key(env_var: str = "ANTHROPIC_AUTH_TOKEN") -> Optional[str]:
 
 def list_models(base_url: Optional[str] = None, timeout: float = 5.0) -> List[dict]:
     """Liste les modeles exposes par Claudish (endpoint /v1/models)."""
-    base = (base_url or DEFAULT_BASE_URL).rstrip("/")
+    base = _resolve_base_url(base_url)
     with httpx.Client(timeout=timeout) as client:
         r = client.get(f"{base}/v1/models")
         r.raise_for_status()
