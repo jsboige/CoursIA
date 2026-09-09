@@ -528,6 +528,7 @@ Le treillis des déterminations croît exponentiellement avec le nombre d'attrib
 SymbolicLearning/
 ├── SL-1-LogicalLearning.ipynb              # CBH, Version Space
 ├── SL-1-LogicalLearning-Csharp.ipynb       # Jumeau C# (.NET Interactive) — CBH + Candidate Elimination from-scratch, parité #4956
+├── SL-1b-LogicalLearning-Lean-Native.ipynb # Compagnon Lean natif (kernel lean4-wsl) — théorie PAC + perceptron de Novikoff, See #11703
 ├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
 ├── SL-2-KnowledgeBasedLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
@@ -582,7 +583,7 @@ maturity: BETA=20, ALPHA=2
 
 **Conformité C.1** (stubs sans `raise NotImplementedError`) : tous les notebooks respectent la convention notebook 2026-04-26 — patterns de stub corrects (`pass` / `print("Exercice a completer")` / `return None` / `result = None  # TODO etudiant`). La table de pioche de 52 exercices (section dédiée) couvre les angles de chaque algorithme : biais conjonctif de CBH, utility problem de Minton (EBL), borne PAC de l'oracle d'équivalence (L*), seuil de confiance pour les règles AMIE, etc. Dépendances : `requirements.txt` (scikit-learn, numpy, matplotlib, rdflib, clingo, python-dotenv, openai, janus_swi, setuptools < 81) + SWI-Prolog >= 9.1.12 externe (kernel Linux/WSL pour SL-4/SL-6) + conda env `lernd-dilp` (TensorFlow) pour ∂ILP. Vendored : `vendor/metagol/` (BSD-3), `aima_knowledge.py` (MIT AIMA).
 
-**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à Argument_Analysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 52 exercices en pied de README (vs un décompte minimal) — le README fait 664 lignes, dense, cohérent avec la densité mathématique de la série.
+**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à Argument_Analysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 52 exercices en pied de README (vs un décompte minimal) — le README fait 665 lignes, dense, cohérent avec la densité mathématique de la série.
 
 ## Écosystème MCP et parenté cross-lane
 
