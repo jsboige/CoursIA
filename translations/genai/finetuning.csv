@@ -1463,9 +1463,9 @@ model_sft = get_peft_model(model_base, lora_config)
 model_sft.print_trainable_parameters()
 
 print(f""\nVRAM avant entrainement : {torch.cuda.memory_allocated() / 1e6:.0f} Mo"")",,,,,,,,868f4bb26a11037a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.ipynb,dbb4632c,markdown,fr,d5e033b55cc84c23,"## 5. Entrainement SFT
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.ipynb,dbb4632c,markdown,fr,3f8a16a24a791c5f,"## 5. Entrainement SFT
 
-Nous utilisons le `Trainer` de HuggingFace pour orchestrer l'entrainement. Le dataset est petit (21 exemples), donc nous ferons plusieurs epoques pour que le modèle apprenne bien le format instruction/reponse.
+Nous utilisons le `Trainer` de HuggingFace pour orchestrer l'entrainement. Le dataset reste un corpus pédagogique petit (**227 paires** — cf. sorties des cellules précédentes : « Dataset SFT : 227 paires », « 227 exemples formates »), très en deçà des 10 000–1 000 000 paires d'un SFT de production, donc nous ferons plusieurs epoques pour que le modèle apprenne bien le format instruction/reponse.
 
 **Hyperparametres cles** :
 - `num_train_epochs=5` : le dataset est petit, on compense avec plus de passages
@@ -1479,7 +1479,7 @@ We use HuggingFace's `Trainer` to orchestrate the training. The dataset is small
 - `num_train_epochs=5`: the dataset is small, so we compensate with more passes
 - `learning_rate=2e-4`: standard learning rate for LoRA
 - `per_device_train_batch_size=2`: small batch for VRAM
-- `gradient_accumulation_steps=4`: simulates a batch of 8",,,,,,,d5e033b55cc84c23,ecd6c8c8ae2988ee,,,,,,,
+- `gradient_accumulation_steps=4`: simulates a batch of 8",,,,,,,3f8a16a24a791c5f,ecd6c8c8ae2988ee,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.ipynb,6eb4f241,code,fr,cceb5aa30ebbedfb,"# Preparation du dataset pour le Trainer HuggingFace
 from datasets import Dataset
 from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
@@ -2978,7 +2978,7 @@ une génération catastrophique. L'avertissement `warmup_ratio` déprécié
 (disparaîtra en faveur de `warmup_steps` dans transformers v5.2) n'affecte pas
 ce run.
 ",,,,,,,,c0978fb2b3b88394,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,3fc218c8,markdown,fr,c1132eb9f0a8f5a1,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,3fc218c8,markdown,fr,69243b145f80da9f,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
 
 **Objectif** : Comprendre comment fusionner plusieurs modèles fine-tunes en un seul modèle plus performant, du merge de poids au routage dynamique.
 
@@ -3014,9 +3014,11 @@ hyperparamètre ou d'implémenter une variante.
 **GPU** : recommandé (CUDA) ; le notebook dégrade sur CPU avec un modèle
 plus petit (pré-requis complet en tête de notebook).
 
-**Coût-bénéfice mesuré** : ~5 min sur RTX 3090 (25.8 GB VRAM pic, base
-1.3B params × 2 adaptateurs LoRA 3.1M params). C'est l'ordre de grandeur
-pour reproduire localement les chiffres de ce notebook.
+**Coût-bénéfice** : le notebook est committé avec ses sorties produites par une
+**GPU 8 Go** (`NVIDIA GeForce RTX 3070 Laptop GPU, 8.6 GB VRAM`, cf. cellule #1).
+Le coût réel porte sur le fine-tuning des adaptateurs (FT-02/03/04) ; le **merge**
+des task vectors est une addition vectorielle homogène (~3.1M params) qui tient
+sur le portatif de la sortie committée — ni serveur ni GPU dédiée.
 ","# FT-05: Model Merging and Routing -- Combining Expertises
 
 **Objective**: Understand how to merge several fine-tuned models into a single, more capable model, from weight merging to dynamic routing.
@@ -3055,7 +3057,7 @@ model (full prerequisites at the top of the notebook).
 
 **Measured cost-benefit**: ~5 min on an RTX 3090 (25.8 GB peak VRAM, 1.3B
 base params × 2 LoRA adapters of 3.1M params). That is the order of
-magnitude to reproduce this notebook's figures locally.",,,,,,,c1132eb9f0a8f5a1,53717e19b7ba36a0,,,,,,,
+magnitude to reproduce this notebook's figures locally.",,,,,,,69243b145f80da9f,53717e19b7ba36a0,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,7975df42,markdown,fr,0c6dffef77087fad,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
@@ -3230,19 +3232,17 @@ adapter moves from the base"".
 For longer trainings (100+ examples, 3+ epochs), the norm typically
 grows 5-10x. It is this norm that drives the stability of the merges
 (LERP, SLERP, DARE).",,,,,,,7f8bcd03c78bf5c1,c541c7929cc0234e,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,e3f84171,markdown,fr,53c0174d96bb6ca9,"**Observation** : Chaque adaptateur repond mieux dans son domaine de specialisation. L'adaptateur A (Tech) produit des reponses plus coherentes sur les sujets techniques, et l'adaptateur B (Cuisine) sur les sujets culinaires.
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,e3f84171,markdown,fr,4feea7e9fcaf4db4,"**Lecture attendue** : chaque adaptateur devrait repondre mieux dans son domaine de specialisation — l'adaptateur A (Tech) sur les sujets techniques, l'adaptateur B (Cuisine) sur les sujets culinaires. À confirmer sur un jeu d'évaluation dédié.
 
 Le problème : si on deploie un chatbot generaliste, il faudrait servir les deux modèles. C'est ici que le **model merging** intervient.
-**Observation** : chaque adaptateur répond mieux dans son domaine
-que dans le domaine de l'autre (cf. test cross-domaine cellule #10).
-C'est la preuve qualitative que les deux LoRA ont bien capturé des
-spécificités distinctes — sans cela, la fusion n'aurait aucun
+**Indice qualitatif (non mesuré)** : chaque adaptateur est attendu plus à l'aise dans son domaine que dans celui de l'autre — les 4 générations du test cross-domaine (cellule #10) suggèrent cette asymétrie sans l'établir de façon fiable. Au mieux un indice qualitatif que les deux LoRA ont pu capturer des spécificités distinctes — sans cela, la fusion n'aurait aucun
 intérêt (deux adaptateurs identiques se fusionnent trivialement).
 
-**Métrique attendue** : Tech-adaptateur devrait scorer ~80 % sur QA
-technique et ~30 % sur cuisine ; le pattern inverse pour
-Cuisine-adaptateur. La **différence** entre les deux scores est le
-**signal de spécialisation** capturé par le fine-tuning.
+**Métrique non mesurée ici** : on pourrait s'attendre à ce que Tech-adaptateur
+score plus haut sur QA technique que sur cuisine (et l'inverse pour
+Cuisine-adaptateur). **Aucun score n'est calculé dans les sorties committées** —
+la qualification reste qualitative. La différence de comportement attendue entre les deux domaines est le **signal de spécialisation** recherché ; les générations committées n'en offrent qu'un aperçu qualitatif ;
+une mesure chiffrée exigerait un jeu d'évaluation dédié, hors scope ici.
 ","**Observation**: Each adapter answers better in its domain of specialization. Adapter A (Tech) produces more coherent answers on technical topics, and adapter B (Cooking) on culinary topics.
 
 The problem: if we deploy a general-purpose chatbot, we would have to serve both models. This is where **model merging** comes in.
@@ -3255,8 +3255,8 @@ identical adapters merge trivially).
 **Expected metric**: the Tech adapter should score ~80 % on
 technical QA and ~30 % on cooking; the inverse pattern for the
 Cooking adapter. The **difference** between the two scores is the
-**specialization signal** captured by fine-tuning.",,,,,,,53c0174d96bb6ca9,57c2896f1665b9ef,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,631283bf,markdown,fr,313021549e1f6f18,"## 2. Les Task Vectors
+**specialization signal** captured by fine-tuning.",,,,,,,4feea7e9fcaf4db4,57c2896f1665b9ef,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,631283bf,markdown,fr,9795791ff3f084cf,"## 2. Les Task Vectors
 
 Avant de fusionner, il faut comprendre ce que chaque adaptateur a appris. Le concept de **Task Vector** ([Ilharco et al., 2022](https://arxiv.org/abs/2212.04089)) formalise cela :
 
@@ -3268,7 +3268,7 @@ Avec LoRA, c'est encore plus simple : les poids LoRA **sont** déjà le task vec
 ## 2. Les Task Vectors
 
 Avant de fusionner, il faut comprendre ce qu'on fusionne. Un **task
-vector** (Ilharco et al. 2022, arXiv:2210.09316) est la **différence
+vector** (Ilharco et al. 2022, arXiv:2212.04089) est la **différence
 de poids** entre l'adaptateur fine-tuné et le modèle de base :
 
 > `τ = θ_finetuned − θ_base`
@@ -3313,7 +3313,7 @@ subtraction).
 - `θ_base + α · τ_A + (1 − α) · τ_B` ≈ weighted merge (LERP, §3).
 - `θ_base + τ_A − projection(τ_B, τ_A)` ≈ subtracting the cooking signal (negation).
 
-It is this algebra that underlies sections §3-§5.",,,,,,,313021549e1f6f18,6f7fc87881b45b60,,,,,,,
+It is this algebra that underlies sections §3-§5.",,,,,,,9795791ff3f084cf,6f7fc87881b45b60,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,595ecced,markdown,fr,3398093674dc18c9,"### Interpretation : Task Vectors
 
 **Sortie obtenue** : Les normes et statistiques des poids LoRA pour chaque adaptateur.
@@ -3435,11 +3435,11 @@ orthogonal** (two very distinct domains), LERP produces a model
 ""sitting between two chairs"" — it loses quality on both
 domains. This is the **failure mode of LERP**, and the motivation
 for SLERP and DARE (§4-§5).",,,,,,,9fe391682eb3fe7e,ee0331564b9dab97,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,b1cc4612,markdown,fr,d6c5f21116b5bc89,"### Interpretation : LERP
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,b1cc4612,markdown,fr,ae90907ac1e5f5df,"### Interpretation : LERP
 
 **Sortie obtenue** : Reponses du modèle fusionne avec interpolation lineaire.
 
-| Aspect | Observation |
+| Aspect | Lecture attendue (non mesurée) |
 |--------|-------------|
 | alpha = 0.5 | Melange egalitaire des deux expertises |
 | Qualite tech | Peut etre degradee par rapport a l'adaptateur A seul |
@@ -3448,18 +3448,16 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,b1cc4612,mar
 **Points cles** :
 1. Le LERP est simple mais peut degrader les deux expertises
 2. Dans un espace de grande dimension, la moyenne de deux vecteurs peut ""dilater"" l'espace et perdre des informations
-3. C'est pourquoi SLERP (section suivante) est souvent preferee
+3. C'est pourquoi SLERP (section suivante) est souvent préférée dans la littérature — l'avantage en qualité n'est pas mesuré ici
 ### Lecture du résultat : LERP
 
-**Sortie obtenue** (cellule #16) : pour `α = 0.5`, le modèle
-fusionné LERP répond de manière « intermédiaire » entre Tech et
-Cuisine — il a perdu la spécialisation sur chaque domaine, mais
-gagne en polyvalence.
+**Sortie obtenue** (cellule #16) : pour `α = 0.5`, le LERP opère un mélange égalitaire des deux adaptateurs ; la lecture attendue est une réponse « intermédiaire » entre Tech et Cuisine — spécialisation affaiblie sur chaque domaine contre polyvalence — mais ce comportement n'est pas mesuré par les générations committées.
 
-**Métrique attendue** : la perplexité sur Tech et sur Cuisine devrait
-être **plus élevée** que les adaptateurs spécialisés respectifs
-(mais plus basse que le modèle de base). C'est le **trade-off
-spécialisation / polyvalence** du LERP.
+**Métrique non mesurée ici** : la perplexité du LERP n'est **pas calculée**
+dans les outputs committés (seules les générations sont imprimées). L'intuition
+pédagogique — le LERP plus « mixte » que les spécialistes, donc une perplexité
+plus « élevée » par domaine — reste un **exercice de lecture**, pas un résultat
+mesuré. Cette tension est le **trade-off spécialisation / polyvalence** du LERP.
 
 **Hyperparamètre clé** : `α = 0.5` est le défaut, mais on peut
 biaiser vers Tech (`α = 0.7`) ou Cuisine (`α = 0.3`) si l'usage
@@ -3494,7 +3492,7 @@ versatility trade-off**.
 **Key hyperparameter**: `α = 0.5` is the default, but one can bias
 towards Tech (`α = 0.7`) or Cooking (`α = 0.3`) if the target use
 is dominated by one domain. Section §7 exercise 1 invites you to
-explore this dimension.",,,,,,,d6c5f21116b5bc89,6ce62bc023a17344,,,,,,,
+explore this dimension.",,,,,,,ae90907ac1e5f5df,6ce62bc023a17344,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,5d290593,markdown,fr,45ae24d99839c10d,"## 4. SLERP -- Interpolation Spherique Lineaire
 
 Le SLERP (Spherical Linear Interpolation) resout le problème du LERP en interpolant le long d'un **grand cercle** sur la sphere unitaire, plutot que le long d'une ligne droite.
@@ -3563,7 +3561,7 @@ weighting coincide.
 **Implementation**: cell #19 (reference to `merge_slerp` in the
 `lorafusion` lib). The Python library `lorafusion` (Jeremy Howard,
 fast.ai) implements SLERP ready to use.",,,,,,,45ae24d99839c10d,d4e8ecc56265f354,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,ba2645cd,markdown,fr,8ab9d04d20e780b6,"### Interpretation : SLERP
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,ba2645cd,markdown,fr,bd72bc9fcd14ef99,"### Interpretation : SLERP
 
 **Sortie obtenue** : Reponses du modèle fusionne avec interpolation spherique.
 
@@ -3571,26 +3569,23 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,ba2645cd,mar
 |--------|------|-------|
 | Preservation des directions | Non (dilation possible) | Oui (arc de grand cercle) |
 | Couches quasi-colineaires | N/A | Fallback automatique vers LERP |
-| Qualite du melange | Moyenne, risque de degradation | Meilleure preservation des expertises |
+| Qualite du melange (non mesurée) | Lecture attendue : moyenne, risque de dégradation | Lecture attendue : meilleure préservation des expertises |
 
 **Points cles** :
-1. SLERP preserve les proprietes geometriques des deux task vectors
+1. Propriété de l'algorithme : SLERP interpole sur l'arc de grand cercle, ce qui préserve les propriétés géométriques des deux task vectors
 2. Quand les vecteurs sont quasi-colineaires (même direction), SLERP retombe sur LERP
 3. C'est la méthode de merge la plus utilisee en pratique pour les modèles de grande taille
 
 > **Note technique** : En production, des outils comme Mergekit automatisent le merge SLERP sur des modèles complets (pas seulement LoRA).
 ### Lecture du résultat : SLERP
 
-**Sortie obtenue** (cellule #19) : avec `t = 0.5`, le modèle SLERP
-produit des réponses qui ressemblent plus aux **deux domaines
-préservés** que ne le fait LERP — sur les questions Tech, il reste
-Tech ; sur Cuisine, il reste Cuisine. C'est la **propriété clef** du
-SLERP.
+**Sortie obtenue** (cellule #19) : avec `t = 0.5`, SLERP interpole sur l'arc de grand cercle entre les deux task vectors. La **propriété attendue** — meilleure préservation des deux expertises que LERP — est un résultat de la littérature, pas une observation de ce notebook : les générations committées (cellule #19) sont brèves et parfois incohérentes, elles ne l'établissent pas.
 
-**Métrique attendue** : perplexité Tech et Cuisine du SLERP devrait
-être **plus proche** des adaptateurs spécialisés que ne l'est LERP.
-C'est ce qu'on observe empiriquement dans la littérature
-(Ilharco et al. 2022, Wortsman et al. 2022).
+**Métrique non mesurée ici** : la perplexité SLERP n'est **pas calculée** dans
+les sorties committées. La propriété qualitative attendue (SLERP « reste Tech sur Tech, Cuisine sur Cuisine ») n'est pas établie par les générations committées ; la comparaison chiffrée
+avec LERP reposerait sur une perplexité qu'on ne calcule pas ici. La littérature
+(Ilharco et al. 2022, Wortsman et al. 2022) rapporte cette tendance — c'est une
+**référence bibliographique**, pas une valeur mesurée dans ce notebook.
 
 **Implémentation de fallback** : si les normes des task vectors sont
 très différentes (un task vector domine l'autre), SLERP fallback
@@ -3627,7 +3622,7 @@ is what is observed empirically in the literature (Ilharco et al.
 **Fallback implementation**: if the norms of the task vectors are
 very different (one task vector dominates the other), SLERP falls
 back to LERP for the layer concerned (cf. the log ""LERP fallback:
-0 layers"" in the output).",,,,,,,8ab9d04d20e780b6,f9944aa51a90c3b9,,,,,,,
+0 layers"" in the output).",,,,,,,bd72bc9fcd14ef99,f9944aa51a90c3b9,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,05c5777e,markdown,fr,ab3f1b46243d66f7,"## 5. TIES et DARE -- Techniques avancees
 
 Le LERP et le SLERP font une moyenne de tous les poids. Mais tous les poids ne sont pas également utiles. Deux techniques recentes introduisent une **sélection** des poids :
@@ -3717,15 +3712,15 @@ statistically: two conflicting task vectors have a 30 % chance
 benchmarks (lm-eval-harness, MT-Bench) for an identical
 computational cost. It is the default option in the `mergekit`
 lib.",,,,,,,ab3f1b46243d66f7,99ca6499d9e0d8aa,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,1f45af4a,markdown,fr,3a0ba4fe9096cafa,"### Interpretation : DARE
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,1f45af4a,markdown,fr,bb635aa2db62a0d2,"### Interpretation : DARE
 
 **Sortie obtenue** : Reponses du modèle fusionne avec DARE (30% de dropout).
 
-| Aspect | Observation |
+| Aspect | Propriété de l'algorithme / lecture attendue |
 |--------|-------------|
 | Drop rate | 30% des poids de chaque task vector sont mis a zero |
 | Rescaling | Les poids restants sont multiplies par 1/(1-0.3) ~ 1.43 |
-| Interference | Reduite par la suppression aleatoire des poids redondants |
+| Interference (non mesurée) | Lecture attendue : réduite par la suppression aléatoire — le code mesure le taux de poids supprimés, pas les interférences |
 
 **Points cles** :
 1. DARE est très simple a implementer et ne necessite pas de calcul de signe
@@ -3733,14 +3728,12 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,1f45af4a,mar
 3. Un drop_rate plus eleve (0.5-0.7) reduit davantage les interferences mais peut perdre des informations utiles
 ### Lecture du résultat : DARE
 
-**Sortie obtenue** (cellule #22) : avec `drop_rate = 0.3`, le modèle
-fusionné DARE performe **au niveau des adaptateurs spécialisés** sur
-les deux domaines — c'est la « magie » du DARE, justifiée
-théoriquement par le rescaling.
+**Sortie obtenue** (cellule #22) : avec `drop_rate = 0.3`, DARE met à zéro 30 % des poids de chaque task vector puis recale la magnitude (rescaling). L'attente théorique — une performance proche des adaptateurs spécialisés sur les deux domaines — vient de la littérature ; ce notebook ne la mesure pas.
 
-**Métrique attendue** : la qualité DARE devrait être ≈ 95-98 % de
-la qualité de l'adaptateur spécialisé sur chaque domaine, et
-nettement > à LERP/SLERP pour des domaines orthogonaux.
+**Métrique non mesurée ici** : le rapport de qualité DARE (≈ 95-98 % du
+spécialiste) n'est **pas calculé** dans les sorties — c'est un ordre de grandeur
+de la littérature, proposé comme **lecture attendue**. Les seuls outputs committés
+sont les générations ; aucune métrique de qualité n'y est mesurée.
 
 **Hyperparamètre** : `drop_rate ∈ [0.1, 0.5]` est l'intervalle
 raisonnable. Au-delà de 0.5, l'espacement devient trop sparse et la
@@ -3774,7 +3767,7 @@ LERP/SLERP for orthogonal domains.
 **Hyperparameter**: `drop_rate ∈ [0.1, 0.5]` is the reasonable
 range. Beyond 0.5, the spacing becomes too sparse and quality
 degrades. **mergekit default**: `drop_rate = 0.5`,
-`temperature = 1.0`.",,,,,,,3a0ba4fe9096cafa,d88e884d732f63c5,,,,,,,
+`temperature = 1.0`.",,,,,,,bb635aa2db62a0d2,d88e884d732f63c5,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,20357aa9,markdown,fr,183355db679227b1,"## 6. Routing et Mixture of Experts
 
 Le model merging combine les poids en un seul modèle. Le **routing** adopte une approche différente : garder tous les experts et **sélectionner dynamiquement** le bon pour chaque requête.
@@ -4036,34 +4029,34 @@ Now that we have demonstrated both paradigms, here is their
 - For **general multi-task systems** (an LLM that must do
   everything) → **Merging** (DARE) often beats routing through
   its simplicity.",,,,,,,782e052678eaa81d,e8381b82aa04178c,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,095833db,markdown,fr,3723cb785a229367,"### Interpretation : Comparaison finale
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,095833db,markdown,fr,1d242bbaa509b5ee,"### Interpretation : Comparaison finale
 
-**Résultats attendus** :
+**Résultats attendus (hypothèses qualitatives — aucun classement mesuré, cf. Hypothèse à tester ci-dessous)** :
 
 | Approche | Tech | Cuisine | Commentaire |
 |----------|------|---------|-------------|
 | Adaptateur A | Bon | Faible | Specialise tech |
 | Adaptateur B | Faible | Bon | Specialise cuisine |
 | LERP | Moyen | Moyen | Melange egalitaire, degradation des deux |
-| SLERP | Moyen+ | Moyen+ | Meilleur preservation que LERP |
+| SLERP | Moyen+ | Moyen+ | Meilleur preservation que LERP (attendu) |
 | DARE | Variable | Variable | Dependant du dropout aleatoire |
-| Routing | Bon | Bon | Selectionne le bon expert, meilleur résultat |
+| Routing | Bon | Bon | Selectionne le bon expert, meilleur résultat (attendu) |
 
 **Points cles** :
-1. Le **routing** offre les meilleurs résultats par domaine mais coute plus cher en VRAM
-2. Le **SLERP** est le meilleur merge statique -- bon compromis entre les deux expertises
-3. Le **DARE** est efficace quand on a beaucoup d'experts, mais moins bon avec seulement 2
+1. Le **routing** est attendu le plus performant par domaine (hypothèse, non mesurée) mais coute plus cher en VRAM
+2. Le **SLERP** est souvent cité comme le meilleur merge statique (littérature) ; l'hypothèse à tester ci-dessous privilégie DARE — non mesuré ici
+3. Le **DARE** est efficace quand on a beaucoup d'experts, mais moins bon avec seulement 2 (littérature, non mesuré ici)
 4. En production, les approches peuvent etre combinees : merge SLERP pour les experts proches + routing pour les domaines très différents
 ### Lecture du résultat : Comparaison finale
 
-**Résultats attendus** (cellule #30) : tableau comparant les
-différentes approches sur les 10 questions cross-domaine. **DARE
-devrait être le meilleur merge**, suivi par SLERP puis LERP.
+**Résultats attendus** (cellule #30) : tableau comparant les différentes
+approches sur les 2 questions retenues (une tech, une cuisine). **Hypothèse à tester** : DARE devrait être le meilleur merge, suivi par SLERP puis LERP — classement attendu de la littérature, aucun classement mesuré dans ce notebook.
 
-**Métrique de comparaison** : on utilise la **perplexité** du
-modèle fusionné sur chaque question (plus basse = mieux). DARE
-devrait obtenir une perplexité ≈ 5 % au-dessus du spécialiste
-pur, là où LERP est 20-30 % au-dessus.
+**Métrique non mesurée ici** : la **perplexité** des modèles fusionnés n'est
+**pas calculée** dans les sorties committées (la cellule #30 ne compare que des
+générations textuelles). L'ordre « DARE ≈ 5 % au-dessus du spécialiste, LERP
+20-30 % au-dessus » est un **ordre de grandeur de la littérature**, non une
+mesure issue de ce notebook.
 
 **Lecture critique** : les chiffres exacts dépendent de la **graine
 aléatoire** du fine-tuning (cellule #5 et #7) et de
@@ -4071,8 +4064,7 @@ l'**initialisation** du classifieur de routing (cellule #26). Pour
 des conclusions publiables, il faut **4+ seeds** et un **intervalle
 de confiance** — au-delà du scope de ce notebook pédagogique.
 
-**Conclusion pratique** : pour un déploiement rapide, **DARE avec
-drop_rate = 0.3** est l'option sans regret.
+**Conclusion pratique (sous réserve de mesure)** : faute de métrique dans ce notebook, **DARE avec drop_rate = 0.3** est un défaut raisonnable cité par la littérature — à valider sur un benchmark dédié avant tout déploiement.
 ","### Interpretation: Final comparison
 
 **Expected results**:
@@ -4109,7 +4101,7 @@ needs **4+ seeds** and a **confidence interval** — beyond the scope
 of this pedagogical notebook.
 
 **Practical conclusion**: for a quick deployment, **DARE with
-drop_rate = 0.3** is the no-regret option.",,,,,,,3723cb785a229367,7e2969c31487cda7,,,,,,,
+drop_rate = 0.3** is the no-regret option.",,,,,,,1d242bbaa509b5ee,7e2969c31487cda7,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,7ea0d064,markdown,fr,00a1b5b5b3bd4162,"## 7. Exercices
 
 Mettez en pratique les concepts de ce notebook. Chaque exercice build sur les concepts précédents.
@@ -4152,7 +4144,7 @@ system. Extend the classifier to handle 3 classes.
 
 Each exercise is **independent** — you can do them in any
 order.",,,,,,,00a1b5b5b3bd4162,d15955e25b193faf,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,981e8e66,markdown,fr,597bdc1550caf3a6,"
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,981e8e66,markdown,fr,75004de5026e5902,"
 
 
 **Note méthodologique — quand ce notebook est utile (et quand il ne l'est pas)**
@@ -4173,16 +4165,12 @@ même architecture de base ; (2) **sparsité extrême** (> 95% drop_rate)
 **sélection dynamique par token** — préférer un vrai MoE (Mixtral,
 DeepSeek-MoE).
 
-**Coût-bénéfice mesuré** : pour 2 adaptateurs LoRA sur un base 1.3B,
-le merge complet (DARE drop_rate=0.3) tourne en **~10 secondes** sur
-RTX 3090. C'est le coût réel pour reproduire les chiffres de ce
-notebook — l'investissement se porte sur le fine-tuning des
-adaptateurs (FT-02/03/04), pas sur le merge.
+**Coût-bénéfice structurel** : pour 2 adaptateurs LoRA sur un base 1.3B, le merge complet (DARE drop_rate=0.3) est une addition vectorielle sur ~3.1M params — négligeable devant le fine-tuning des adaptateurs (FT-02/03/04), quel que soit le matériel ; son coût exact dépend du GPU et des versions (non mesuré ici). L'investissement se porte sur le fine-tuning, pas sur le merge.
 
 **Limites assumées** : (1) les **métriques de qualité** (perplexité,
-lm-eval-harness) sont **manuelles** dans ce notebook — pour des
-conclusions publiables, il faudrait 4+ seeds et un intervalle de
-confiance ; (2) le **routeur** est un proxy léger (embeddings moyens),
+lm-eval-harness) ne sont **pas calculées** dans ce notebook — les outputs
+committés ne contiennent que des générations ; pour des conclusions publiables,
+il faudrait 4+ seeds et un intervalle de confiance ; (2) le **routeur** est un proxy léger (embeddings moyens),
 pas un vrai classifier de production ; (3) le **DARE drop_rate = 0.3**
 est un défaut raisonnable, pas un optimum universel.
 ","
@@ -4216,4 +4204,4 @@ lm-eval-harness) are **manual** in this notebook — for publishable
 conclusions, one would need 4+ seeds and a confidence interval;
 (2) the **router** is a lightweight proxy (mean embeddings), not a
 production classifier; (3) **DARE drop_rate = 0.3** is a reasonable
-default, not a universal optimum.",,,,,,,597bdc1550caf3a6,08c4bd218a455004,,,,,,,
+default, not a universal optimum.",,,,,,,75004de5026e5902,08c4bd218a455004,,,,,,,
