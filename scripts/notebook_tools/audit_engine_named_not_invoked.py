@@ -12,14 +12,15 @@ s'execute. Defaut firsthand documente dans #13927 :
 * ``SW-12-Python-GraphRAG.ipynb`` : objectifs "Extraction reelle avec
   GPT/Claude" mais outputs "Reponse simulee".
 
-Ce scanner croise **trois surfaces** par notebook :
+Ce scanner croise **quatre surfaces** par notebook :
 
 * **claim** : prose (markdown), titre, objectifs -- emploie un moteur avec
   un verbe d'execution/integration ;
-* **wiring** : code source -- import et appel de l'API officielle ou du
-  client reel ;
-* **proof** : outputs executes -- real output compatible avec l'appel
-  reel, sans marqueur de simulation/fallback.
+* **wiring** : code source -- import ou client officiel disponible ;
+* **invocation** : appel top-level du SDK/binaire, direct ou via un helper
+  notebook-wide effectivement appele ;
+* **proof** : output attribuable a cette invocation, sans marqueur de
+  simulation/fallback.
 
 Un notebook sans wiring local peut etre admissible uniquement si :
 
@@ -31,18 +32,18 @@ Un notebook sans wiring local peut etre admissible uniquement si :
 
 | Verdict | Sens |
 |---|---|
-| ``ENGINE_EXEC_PROVED`` | claim + wiring + outputs reels |
-| ``DISCLOSED_SEQUENCE_PROVED`` | notebook deterministe declare + successeur avec wiring+proof dans la meme serie |
-| ``WIRING_ONLY`` | import present mais aucun output reel (cle absente, exec gate par env, etc.) |
+| ``ENGINE_EXEC_PROVED`` | claim + wiring + invocation + output attribuable |
+| ``DISCLOSED_SEQUENCE_PROVED`` | notebook deterministe declare + successeur avec wiring/invocation/proof dans la meme serie |
+| ``WIRING_ONLY`` | import present mais aucune invocation prouvee (cle absente, exec gate par env, etc.) |
 | ``SIMULATED_TERMINAL`` | outputs = simulation/fallback, pas de successeur avec wiring |
 | ``NAMED_NOT_INVOKED`` | claim present mais zero import/wiring |
 
 ## Registre moteur (extensible)
 
 Chaque entree porte : ``imports`` (regex sur code source), ``claims`` (regex
-sur prose markdown), ``simulation_markers`` (regex sur outputs), et un
-verdict par defaut si rien ne matche. Le registre est explicite -- aucune
-heuristique opaque.
+sur prose markdown), ``invocations`` (regex sur code top-level),
+``proof_markers`` et ``simulation_markers`` (regex sur outputs). Le registre
+est explicite -- aucune heuristique opaque.
 
 Usage::
 
@@ -54,9 +55,12 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import ast
+import io
 import json
 import re
 import sys
+import tokenize
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -66,13 +70,16 @@ from typing import Dict, List, Optional, Tuple
 
 @dataclass(frozen=True)
 class EngineSpec:
-    """Specification d'un moteur dans le registre."""
+    """Specification explicite d'un moteur dans le registre."""
 
     key: str
     label: str
     imports: Tuple[str, ...]
     claims: Tuple[str, ...]
+    invocations: Tuple[str, ...]
+    proof_markers: Tuple[str, ...]
     simulation_markers: Tuple[str, ...]
+    recoverability: str = "RECOVERABLE-LOCAL"
     notes: str = ""
 
 
@@ -81,64 +88,113 @@ ENGINE_REGISTRY: Dict[str, EngineSpec] = {
         key="google_adk",
         label="Google ADK",
         imports=(r"\bgoogle\.adk\b", r"\bfrom\s+google\s+import\s+adk\b"),
-        claims=(
-            r"\bgoogle\s+adk\b",
-            r"\badk\s+agent\b",
-            r"\badk\s+runtime\b",
-            r"\badk\s+reel\b",
-        ),
-        simulation_markers=(
-            r"class\s+MockAgent",
-            r"class\s+FakeAgent",
-            r"#\s*simulated\s+adk",
-            r"\bsdk\s+fictif\b",
-        ),
-        notes="Track2-GoogleADK : 10 labs sans import `google.adk` detecte en 2026-09.",
+        claims=(r"\bgoogle\s+adk\b", r"\badk\s+(?:agent|runtime|reel)\b"),
+        invocations=(r"\b(?:Agent|Runner|InMemoryRunner)\s*\(", r"\brunner\.run"),
+        proof_markers=(r"\bagent\b", r"\b(?:runner|session)\b"),
+        simulation_markers=(r"class\s+(?:Mock|Fake)Agent", r"#\s*simulated\s+adk", r"\bsdk\s+fictif\b"),
+        notes="Track2-GoogleADK : claims sans import `google.adk` detectes en 2026-09.",
     ),
     "openai_llm": EngineSpec(
         key="openai_llm",
         label="OpenAI/Anthropic/LiteLLM (LLM reel)",
-        imports=(
-            r"\bopenai\b",
-            r"\banthropic\b",
-            r"\blitellm\b",
-            r"\bfrom\s+openai\s+import\b",
-            r"\bfrom\s+anthropic\s+import\b",
-        ),
+        imports=(r"\bopenai\b", r"\banthropic\b", r"\blitellm\b"),
         claims=(
-            r"\bgpt-[34]\b",
-            r"\bclaude-(?:opus|sonnet|haiku)\b",
-            r"\bGPT\s*/\s*Claude\b",
-            r"\bappel\s+(?:a|au)\s+(?:gpt|claude|llm)\b",
-            r"\b(?:avec|via)\s+(?:gpt|claude|llm)\b",
-            r"\blLM\s+reel\b",
+            r"\bgpt-(?:[345]|4o)\b", r"\bclaude-(?:opus|sonnet|haiku)\b",
+            r"\bGPT\s*/\s*Claude\b", r"\bappel\s+(?:a|au)\s+(?:gpt|claude|llm)\b",
+            r"\b(?:avec|via)\s+(?:gpt|claude|llm)\b", r"\bllm\s+reel\b",
         ),
+        invocations=(
+            r"\b(?:responses|completions|messages)\.create\s*\(",
+            r"\b(?:completion|acompletion)\s*\(",
+        ),
+        proof_markers=(r".+",),
         simulation_markers=(
-            r"Reponse simulee",
-            r"simulated\s+response",
-            r"class\s+MockLLM",
-            r"#\s*TODO.*api\s+key",
+            r"reponse\s+simulee", r"simulated\s+response", r"mock\s+response",
+            r"mode\s+mock", r"genere\s+par\s+llm\s*\(mock\)",
         ),
-        notes="SW-12 GraphRAG : claim 'GPT/Claude' avec outputs 'Reponse simulee'.",
+        recoverability="RECOVERABLE-USER-HAND",
+        notes="Une cle absente ne justifie jamais un output mock presente comme resultat LLM.",
     ),
     "bigquery": EngineSpec(
         key="bigquery",
         label="Google BigQuery / BQML",
-        imports=(
-            r"\bgoogle\.cloud\.bigquery\b",
-            r"\bfrom\s+google\.cloud\s+import\s+bigquery\b",
+        imports=(r"\bgoogle\.cloud\.bigquery\b", r"\bfrom\s+google\.cloud\s+import\s+bigquery\b"),
+        claims=(r"\bbigquery\b", r"\bBQML\b", r"\bML\.PREDICT\b"),
+        invocations=(r"\b(?:client\.)?(?:query|create_dataset|get_table|insert_rows)\s*\(",),
+        proof_markers=(r"\b(?:dataset|table|query|job)\b",),
+        simulation_markers=(r"schema\s+simul", r"donnees\s+simulees", r"bigquery\s+simul"),
+        recoverability="RECOVERABLE-USER-HAND",
+    ),
+    "foundry": EngineSpec(
+        key="foundry",
+        label="Foundry / Forge",
+        imports=(r"\bforge_helper\b", r"\bsubprocess\b", r"\bshutil\.which\s*\(\s*['\"]forge['\"]"),
+        claims=(r"\bfoundry\b", r"\bforge\s+(?:build|test|script)\b", r"\bfuzz(?:ing|\s+test)?\b"),
+        invocations=(
+            r"\bforge_(?:compile|compile_and_deploy)\s*\(",
+            r"\bsubprocess\.(?:run|check_call|check_output|Popen)"
+            r"\s*\([\s\S]{0,300}?\[\s*forge\b",
         ),
-        claims=(
-            r"\bbigquery\b",
-            r"\bBQML\b",
-            r"\bML\.PREDICT\b",
+        proof_markers=(r"\b(?:compilation\s+reussie|compiler run|suite result|test result|tests? passed|bytecode)\b",),
+        simulation_markers=(r"\bsortie\s+attendue\b", r"\bexpected\s+output\b", r"\bforge\s+non\s+installe\b"),
+    ),
+    "solc": EngineSpec(
+        key="solc",
+        label="Solidity compiler / SMTChecker",
+        imports=(r"\bsolcx\b", r"\bsubprocess\b", r"\bshutil\.which\s*\(\s*['\"]solc['\"]"),
+        claims=(r"\bsolc\b", r"\bSMTChecker\b", r"\bcompil(?:er|ation).*solidity\b"),
+        invocations=(
+            r"\bsolcx\.compile_(?:source|standard)\s*\(",
+            r"\bsubprocess\.(?:run|check_output)\s*\([\s\S]{0,300}?\bsolc\b",
         ),
-        simulation_markers=(
-            r"schema\s+simul",
-            r"donnees\s+simulees",
-            r"bigquery\s+simul",
-        ),
-        notes="Lab16 DataScienceWithAgents : claim BQML avec schema simule -- corrige via #14040 (RECOVERABLE-USER-HAND).",
+        proof_markers=(r"\b(?:compiled|compilation|bytecode|warning|error|smtchecker)\b",),
+        simulation_markers=(r"\bsortie\s+attendue\b", r"\bsolc\s+non\s+(?:installe|disponible)\b"),
+    ),
+    "bitcoinlib": EngineSpec(
+        key="bitcoinlib",
+        label="python-bitcoinlib",
+        imports=(r"\bbitcoin(?:\.core|\.wallet|\.signmessage)?\b", r"\bfrom\s+bitcoin\b"),
+        claims=(r"\bpython-bitcoinlib\b", r"\bbitcoin\s+(?:script|signature|transaction)\b"),
+        invocations=(r"\b(?:VerifyScript|SignatureHash|CBitcoinSecret|CMutableTransaction)\s*\(",),
+        proof_markers=(r"\b(?:signature|script|transaction|txid|verification)\b",),
+        simulation_markers=(r"\b(?:ficti(?:f|ve)|simul(?:e|ee)|toy)\b", r"python-bitcoinlib\s+non\s+installe"),
+    ),
+    "solders": EngineSpec(
+        key="solders",
+        label="Solana solders",
+        imports=(r"\bsolders\b",),
+        claims=(r"\bsolana\b", r"\bprogram\s+derived\s+address\b", r"\bPDA\b"),
+        invocations=(r"\bPubkey\.(?:find_program_address|create_program_address)\s*\(",),
+        proof_markers=(r"\b(?:pda|program\s+address|bump)\b",),
+        simulation_markers=(r"\b(?:pda|solana).*simul", r"first\s+byte\s*<\s*128"),
+    ),
+    "sui_cli": EngineSpec(
+        key="sui_cli",
+        label="Sui CLI",
+        imports=(r"\bsubprocess\b", r"\bshutil\.which\s*\(\s*['\"]sui['\"]"),
+        claims=(r"\bsui\s+move\s+(?:build|test)\b", r"\bsui\s+cli\b"),
+        invocations=(r"\bsubprocess\.(?:run|check_output)\s*\([^\n]*\bsui\b",),
+        proof_markers=(r"\b(?:build|test result|tests? passed|move)\b",),
+        simulation_markers=(r"\bsui\s+(?:non\s+installe|simul)", r"\bobjet.*dictionnaire\b"),
+    ),
+    "electionguard": EngineSpec(
+        key="electionguard",
+        label="Microsoft ElectionGuard",
+        imports=(r"\belectionguard\b",),
+        claims=(r"\belectionguard\b",),
+        invocations=(r"\b(?:ElectionBuilder|encrypt_ballot|decrypt)\s*\(",),
+        proof_markers=(r"\b(?:election|ballot|tally|ciphertext)\b",),
+        simulation_markers=(r"electionguard\s+(?:non\s+installe|indisponible)", r"\brenvoi\s+documentaire\b"),
+    ),
+    "concrete": EngineSpec(
+        key="concrete",
+        label="Zama Concrete",
+        imports=(r"\bconcrete(?:\.fhe)?\b",),
+        claims=(r"\bconcrete(?:-python)?\b", r"\bzama\b"),
+        invocations=(r"\bcompiler\.compile\s*\(", r"\bcircuit\.(?:encrypt_run_decrypt|keygen)\s*\(",),
+        proof_markers=(r"\b(?:circuit|fhe|encrypted|decrypted)\b",),
+        simulation_markers=(r"concrete.*(?:non\s+installe|indisponible|skip)",),
+        recoverability="RECOVERABLE-MACHINE",
     ),
 }
 
@@ -187,107 +243,143 @@ def _cell_output_text(cell: dict) -> str:
 
 @dataclass
 class SurfaceHits:
-    """Resultat du croisement des 3 surfaces pour un moteur."""
-    claim_hits: List[Tuple[int, str]] = field(default_factory=list)   # (cell_idx, snippet)
+    """Resultat du croisement des surfaces pour un moteur."""
+
+    claim_hits: List[Tuple[int, str]] = field(default_factory=list)
     wiring_hits: List[Tuple[int, str]] = field(default_factory=list)
+    invocation_hits: List[Tuple[int, str]] = field(default_factory=list)
     proof_hits: List[Tuple[int, str]] = field(default_factory=list)
     simulation_hits: List[Tuple[int, str]] = field(default_factory=list)
 
 
 def _strip_comments_and_strings(src: str) -> str:
-    """Retire commentaires, docstrings, et chaines de caracteres pour le scan wiring.
+    """Remove Python comments and strings while preserving token positions."""
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(src).readline)
+        kept = [
+            token._replace(string="")
+            if token.type in (tokenize.COMMENT, tokenize.STRING)
+            else token
+            for token in tokens
+        ]
+        return tokenize.untokenize(kept)
+    except (IndentationError, tokenize.TokenError):
+        return ""
 
-    Un match dans un commentaire OU dans une string n'est pas une preuve
-    d'invocation SDK -- c'est une mention discursive ou un exemple pedagogique.
-    On garde uniquement le code actif (appels reels, imports reels).
-    """
-    lines = src.split("\n")
-    out = []
-    for line in lines:
-        stripped = line.lstrip()
-        if stripped.startswith("#"):
+
+
+def _defined_helpers(src: str, spec: EngineSpec) -> set[str]:
+    """Return helper functions whose body invokes the selected engine."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return set()
+
+    helpers: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        # Parse caractere par caractere pour reperer les commentaires et strings.
-        in_str = None  # None si hors string, '"' ou "'" sinon
-        new_line_chars = []
-        i = 0
-        while i < len(line):
-            c = line[i]
-            if in_str:
-                if c == in_str:
-                    in_str = None
-                new_line_chars.append(c) if False else None  # on jette le contenu des strings
-                i += 1
-            elif c == "#":
-                # Commentaire in-line : on tronque
+        segment = ast.get_source_segment(src, node) or ""
+        active = _strip_comments_and_strings(segment)
+        if any(re.search(pattern, active, re.IGNORECASE) for pattern in spec.invocations):
+            helpers.add(node.name)
+    return helpers
+
+
+def _top_level_active_code(src: str) -> str:
+    """Remove function/class definitions while preserving top-level statements."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return _strip_comments_and_strings(src)
+
+    lines = src.splitlines(keepends=True)
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        start = max(node.lineno - 1, 0)
+        end = node.end_lineno or node.lineno
+        for index in range(start, min(end, len(lines))):
+            lines[index] = "\n" if lines[index].endswith("\n") else ""
+    return _strip_comments_and_strings("".join(lines))
+
+
+def _top_level_helper_call(src: str, helper_names: set[str]) -> Optional[str]:
+    """Return a top-level call to an engine helper, ignoring its definition."""
+    if not helper_names:
+        return None
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return None
+
+    for node in tree.body:
+        for candidate in ast.walk(node):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 break
-            elif c == '"' or c == "'":
-                in_str = c
-                # On remplace le contenu de la string par des espaces (preserve positions pour l'erreur)
-                new_line_chars.append(c)
-                # Skip le contenu de la string
-                j = i + 1
-                while j < len(line) and line[j] != in_str:
-                    if line[j] == "\\" and j + 1 < len(line):
-                        j += 2
-                    else:
-                        j += 1
-                # Ajouter des espaces a la place du contenu
-                new_line_chars.append(" " * (j - i - 1))
-                i = j + 1 if j < len(line) else j
-            else:
-                new_line_chars.append(c)
-                i += 1
-        out.append("".join(new_line_chars))
-    return "\n".join(out)
+            if isinstance(candidate, ast.Call) and isinstance(candidate.func, ast.Name):
+                if candidate.func.id in helper_names:
+                    return candidate.func.id
+    return None
 
 
 def _scan_engine(notebook: dict, spec: EngineSpec) -> SurfaceHits:
     hits = SurfaceHits()
     cells = notebook.get("cells", [])
+    helper_names: set[str] = set()
+    for cell in cells:
+        if cell.get("cell_type") == "code":
+            helper_names.update(_defined_helpers(_cell_source(cell), spec))
+
     for idx, cell in enumerate(cells):
         ctype = cell.get("cell_type", "")
         src = _cell_source(cell)
         out_text = _cell_output_text(cell) if ctype == "code" else ""
-        # Code sans commentaires : utilise pour wiring (un import dans un
-        # commentaire n'est pas un import reel).
         code_clean = _strip_comments_and_strings(src) if ctype == "code" else ""
 
-        # --- claim : markdown prose ---
         if ctype == "markdown":
-            for pat in spec.claims:
-                m = re.search(pat, src, re.IGNORECASE)
-                if m:
-                    snippet = m.group(0)
-                    hits.claim_hits.append((idx, snippet[:80]))
+            for pattern in spec.claims:
+                match = re.search(pattern, src, re.IGNORECASE)
+                if match:
+                    hits.claim_hits.append((idx, match.group(0)[:80]))
                     break
 
         if ctype != "code":
             continue
 
-        # --- simulation markers : scan sur source ET outputs ---
-        # Le marker de simulation peut etre dans le code (class Mock...)
-        # OU dans l'output (print("Reponse simulee")).
         cell_is_simulation = False
-        for pat in spec.simulation_markers:
-            m_src = re.search(pat, src, re.IGNORECASE)
-            m_out = re.search(pat, out_text, re.IGNORECASE)
-            if m_src or m_out:
-                marker = (m_src or m_out).group(0)
+        for pattern in spec.simulation_markers:
+            source_match = re.search(pattern, src, re.IGNORECASE)
+            output_match = re.search(pattern, out_text, re.IGNORECASE)
+            if source_match or output_match:
+                marker = (source_match or output_match).group(0)
                 hits.simulation_hits.append((idx, marker[:80]))
                 cell_is_simulation = True
                 break
 
-        # --- wiring : import ou appel SDK dans la source (commentaires retires) ---
-        for pat in spec.imports:
-            m = re.search(pat, code_clean)
-            if m:
-                hits.wiring_hits.append((idx, m.group(0)[:80]))
+        for pattern in spec.imports:
+            match = re.search(pattern, code_clean, re.IGNORECASE)
+            if match:
+                hits.wiring_hits.append((idx, match.group(0)[:80]))
                 break
 
-        # --- proof : output reel d'execution, non vide, sans marker simulation ---
-        # Si la cellule EST simulation, son output ne compte pas comme proof.
-        if not cell_is_simulation and out_text.strip():
+        invocation: Optional[str] = None
+        top_level_code = _top_level_active_code(src)
+        for pattern in spec.invocations:
+            match = re.search(pattern, top_level_code, re.IGNORECASE)
+            if match:
+                invocation = match.group(0)
+                break
+        if invocation is None:
+            invocation = _top_level_helper_call(src, helper_names)
+        if invocation:
+            hits.invocation_hits.append((idx, invocation[:80]))
+
+        output_proves_engine = any(
+            re.search(pattern, out_text, re.IGNORECASE | re.DOTALL)
+            for pattern in spec.proof_markers
+        )
+        if invocation and output_proves_engine and not cell_is_simulation:
             hits.proof_hits.append((idx, out_text[:80].replace("\n", " ")))
 
     return hits
@@ -369,6 +461,7 @@ def classify_notebook(
 
         # Croisement
         has_wiring = bool(hits.wiring_hits)
+        has_invocation = bool(hits.invocation_hits)
         has_proof = bool(hits.proof_hits)
         has_simulation = bool(hits.simulation_hits)
         disclosed = _is_disclosed_deterministic(notebook)
@@ -377,7 +470,7 @@ def classify_notebook(
         # Regle fondamentale : sans wiring (import SDK), un proof (output)
         # ne peut pas etre attribue au moteur claim. Un print(10) sans
         # import bigquery n'est pas une preuve d'execution BigQuery.
-        if has_wiring and has_proof and not has_simulation:
+        if has_wiring and has_invocation and has_proof and not has_simulation:
             verdict = "ENGINE_EXEC_PROVED"
         elif disclosed and (siblings is None or _detect_disclosed_sequence(notebook_path, spec, hits, siblings) is True):
             verdict = "DISCLOSED_SEQUENCE_PROVED"
@@ -387,7 +480,7 @@ def classify_notebook(
             # sur WIRING_ONLY car le verdict `SIMULATED_TERMINAL` est plus
             # informatif pour le lecteur (cycle 93 feedback).
             verdict = "SIMULATED_TERMINAL"
-        elif has_wiring and not has_proof:
+        elif has_wiring and (not has_invocation or not has_proof):
             verdict = "WIRING_ONLY"
         elif not has_wiring:
             verdict = "NAMED_NOT_INVOKED"
@@ -398,8 +491,14 @@ def classify_notebook(
             "verdict": verdict,
             "claims": hits.claim_hits[:5],
             "wiring": hits.wiring_hits[:3],
+            "invocation": hits.invocation_hits[:3],
             "proof": hits.proof_hits[:3],
             "simulation": hits.simulation_hits[:3],
+            "recoverability": (
+                "SOTA-OK"
+                if verdict in ("ENGINE_EXEC_PROVED", "DISCLOSED_SEQUENCE_PROVED")
+                else spec.recoverability
+            ),
             "disclosed_deterministic": disclosed,
         }
 
@@ -463,6 +562,59 @@ def scan_repo(
 
 # --- CLI -------------------------------------------------------------------
 
+_VERDICT_SEVERITY = {
+    "ENGINE_EXEC_PROVED": 0,
+    "DISCLOSED_SEQUENCE_PROVED": 0,
+    "WIRING_ONLY": 1,
+    "NAMED_NOT_INVOKED": 2,
+    "SIMULATED_TERMINAL": 3,
+    "UNMEASURED": 3,
+}
+
+
+def compare_scan_results(
+    base: Dict[str, Dict[str, dict]],
+    head: Dict[str, Dict[str, dict]],
+) -> List[dict]:
+    """Return only newly introduced or worsened engine verdicts."""
+    regressions: List[dict] = []
+    for notebook_path, head_engines in head.items():
+        if "_error" in head_engines:
+            continue
+        base_engines = base.get(notebook_path, {})
+        for engine_key, head_info in head_engines.items():
+            if not isinstance(head_info, dict) or "verdict" not in head_info:
+                continue
+            head_verdict = head_info["verdict"]
+            head_severity = _VERDICT_SEVERITY.get(head_verdict, 3)
+            base_info = base_engines.get(engine_key, {})
+            base_verdict = base_info.get("verdict", "NOT_CLAIMED")
+            base_severity = _VERDICT_SEVERITY.get(base_verdict, 0)
+            if head_severity > base_severity:
+                regressions.append({
+                    "notebook": notebook_path,
+                    "engine": engine_key,
+                    "base_verdict": base_verdict,
+                    "head_verdict": head_verdict,
+                    "recoverability": head_info.get("recoverability"),
+                    "evidence": {
+                        "claim": head_info.get("claims", [])[:1],
+                        "wiring": head_info.get("wiring", [])[:1],
+                        "invocation": head_info.get("invocation", [])[:1],
+                        "proof": head_info.get("proof", [])[:1],
+                        "simulation": head_info.get("simulation", [])[:1],
+                    },
+                })
+    return regressions
+
+
+def _load_scan_snapshot(path: Path) -> Dict[str, Dict[str, dict]]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("scan snapshot must contain a JSON object")
+    return data
+
+
 def _format_report(scan_results: Dict[str, Dict[str, dict]]) -> str:
     lines: List[str] = []
     total_by_verdict: Dict[str, int] = {}
@@ -492,29 +644,77 @@ def main(argv: Optional[List[str]] = None) -> int:
                         help="Restrict to one or more engine keys (default: all)")
     parser.add_argument("--json", action="store_true", help="JSON output")
     parser.add_argument("--check", action="store_true",
-                        help="Exit 1 if any NAMED_NOT_INVOKED or SIMULATED_TERMINAL found")
+                        help="Exit 1 if a deficient verdict is found")
+    parser.add_argument("--compare-base", type=Path,
+                        help="Compare two JSON scan snapshots")
+    parser.add_argument("--compare-head", type=Path,
+                        help="Head snapshot paired with --compare-base")
     args = parser.parse_args(argv)
 
+    if bool(args.compare_base) != bool(args.compare_head):
+        parser.error("--compare-base and --compare-head must be used together")
+
+    if args.compare_base:
+        if args.scan or args.scan_all is not None:
+            parser.error("comparison mode cannot be combined with scan mode")
+        try:
+            base = _load_scan_snapshot(args.compare_base)
+            head = _load_scan_snapshot(args.compare_head)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            print(f"[ERROR] unable to read scan snapshots: {exc}", file=sys.stderr)
+            return 2
+        snapshot_errors = [
+            path for snapshot in (base, head)
+            for path, engines in snapshot.items()
+            if isinstance(engines, dict) and "_error" in engines
+        ]
+        if snapshot_errors:
+            print(
+                "[ERROR] unreadable notebooks in scan snapshots: "
+                + ", ".join(snapshot_errors),
+                file=sys.stderr,
+            )
+            return 2
+        regressions = compare_scan_results(base, head)
+        payload = {"regressions": regressions, "count": len(regressions)}
+        if args.json:
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+        else:
+            for item in regressions:
+                print(
+                    f"[REGRESSION] {item['notebook']} engine={item['engine']} "
+                    f"{item['base_verdict']} -> {item['head_verdict']}"
+                )
+            print(f"Engine regressions: {len(regressions)}")
+        return 1 if regressions else 0
+
     engine_keys = args.engine
-    if args.scan:
-        results = {str(args.scan): scan_notebook(args.scan, engine_keys)}
-    elif args.scan_all is not None:
-        results = scan_repo(args.scan_all, engine_keys)
-    else:
-        parser.error("Either --scan or --scan-all required")
+    try:
+        if args.scan:
+            results = {str(args.scan): scan_notebook(args.scan, engine_keys)}
+        elif args.scan_all is not None:
+            results = scan_repo(args.scan_all, engine_keys)
+        else:
+            parser.error("Either --scan or --scan-all required")
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"[ERROR] unable to read notebook: {exc}", file=sys.stderr)
+        return 2
 
     if args.json:
         print(json.dumps(results, indent=2, ensure_ascii=False))
     else:
         print(_format_report(results))
 
+    if any("_error" in nb_results for nb_results in results.values()):
+        return 2
+
     if args.check:
         defects = 0
         for nb_results in results.values():
             for info in nb_results.values():
-                if isinstance(info, dict) and info.get("verdict") in (
-                    "NAMED_NOT_INVOKED", "SIMULATED_TERMINAL",
-                ):
+                if isinstance(info, dict) and _VERDICT_SEVERITY.get(
+                    info.get("verdict", "UNMEASURED"), 3
+                ) > 0:
                     defects += 1
         return 1 if defects > 0 else 0
     return 0

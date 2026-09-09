@@ -354,6 +354,33 @@ class TestScan:
         kinds = [f["kind"] for f in result["findings"]]
         assert "STRUCTURE_DRIFT" in kinds
 
+    def test_new_file_exempt(self, tmp_path: Path):
+        # Notebook NOUVEAU (absent de la base) -> exempt (rien a perdre, tout
+        # est ajout) : 0 finding et stats COMPLETES. C'est le chemin qui
+        # crashe en KeyError 'base_md_cells' avant #15147 -- les renommages
+        # (MGS-7 -> MGS-07) sont vus comme des fichiers nouveaux par le gate.
+        import subprocess
+        other = tmp_path / "autre.ipynb"
+        _write_nb(other, _nb(_md("# Autre\n\n")))
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "autre.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+
+        p = tmp_path / "nouveau.ipynb"
+        _write_nb(p, _nb(_md("# Plan nouveau\n\n### Duree estimee : 50 minutes\n\n")))
+        result = dpl.scan_notebook(p, base_ref="HEAD", head_ref=None)
+        assert "error" not in result, result.get("error")
+        assert result["new_file"] is True
+        assert result["findings"] == []
+        st = result["stats"]
+        assert st["base_md_cells"] == 0
+        assert st["head_md_cells"] == 1
+        assert st["cell_count_stable"] is False
+        assert st["base_headings"] == 0
+        assert st["head_headings"] == 2
+
 
 # ---------------------------------------------------------------------------
 # 6. Justification par-section depuis le body PR
@@ -459,3 +486,51 @@ class TestMain:
         _write_nb(p, nb_head)
         rc = dpl.main([str(p), "--base", "HEAD", "--check"])
         assert rc == 1
+
+    def test_new_file_text_mode_exits_zero(self, tmp_path: Path, capsys):
+        # new_file en mode TEXTE : la ligne [STATS] indexe
+        # st['base_md_cells'] -- c'etait le KeyError de #15147 (le gate
+        # lit rc=1 comme une perte de plan). Fichier PRESENT au disque,
+        # ABSENT a la base -> rc=0, banniere [NEW FILE], [STATS] rendu.
+        import subprocess
+        other = tmp_path / "autre.ipynb"
+        _write_nb(other, _nb(_md("# Autre\n\n")))
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "autre.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+
+        p = tmp_path / "nouveau.ipynb"
+        _write_nb(p, _nb(_md("# Plan nouveau\n\n### Duree estimee : 50 minutes\n\n")))
+        rc = dpl.main([str(p), "--base", "HEAD", "--check"])
+        captured = capsys.readouterr()
+        assert rc == 0, f"rc={rc}, stderr={captured.err!r}"
+        assert "[NEW FILE]" in captured.out
+        assert "md_cells base=0 head=1 stable=False" in captured.out
+
+    def test_new_file_json_mode_exits_zero(self, tmp_path: Path, capsys):
+        # new_file en mode JSON : sortie machine parseable, new_file=True,
+        # stats avec les memes cles que les branches comparees (celles que
+        # les consommateurs indexent, ex. le render texte ligne ci-dessus).
+        import json
+        import subprocess
+        other = tmp_path / "autre.ipynb"
+        _write_nb(other, _nb(_md("# Autre\n\n")))
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "autre.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+
+        p = tmp_path / "nouveau.ipynb"
+        _write_nb(p, _nb(_md("# Plan nouveau\n\n### Duree estimee : 50 minutes\n\n")))
+        rc = dpl.main([str(p), "--base", "HEAD", "--json"])
+        captured = capsys.readouterr()
+        assert rc == 0, f"rc={rc}, stderr={captured.err!r}"
+        result = json.loads(captured.out)
+        assert result["new_file"] is True
+        assert result["findings"] == []
+        assert result["stats"]["base_md_cells"] == 0
+        assert result["stats"]["head_md_cells"] == 1
+        assert result["stats"]["cell_count_stable"] is False

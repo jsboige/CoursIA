@@ -1835,7 +1835,7 @@ Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial**
 | research_l1_tsmom | 20/8/8 | numpy, pandas | **SOTA-OK** (TSMOM, 3 def legit) |
 | research_l2_dual_momentum | 20/8/8 | numpy, pandas | **SOTA-OK** (cross-section+DM) |
 | research_l3_trend | 21/9/9 | numpy, pandas, matplotlib | **SOTA-OK** (trend long-horizon) |
-| research_l4_decision_transformer | 13/6/6 | **ta**, numpy, pandas, **arch**, matplotlib | **SOTA-OK** (analyse DT GPU, BEATS 24/26) |
+| research_l4_decision_transformer | 13/6/6 | **ta**, numpy, pandas, **arch**, matplotlib | **SOTA-OK** (analyse DT GPU, BEATS 24/26 panel @10bps) |
 | research_what_dl_can_predict | 25/15/15 | **arch**, ta, numpy, pandas | **SOTA-OK** (GARCH, DL-predictability) |
 
 ### Synthèse

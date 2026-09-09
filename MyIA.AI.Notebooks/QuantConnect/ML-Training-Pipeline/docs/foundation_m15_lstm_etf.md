@@ -74,5 +74,5 @@ Un seul paradigme BEATS : les **politiques d'action apprises** (L4 Decision Tran
 - Chronos-Bolt (1er rung) : [`foundation_chronos_zeroshot.md`](foundation_chronos_zeroshot.md).
 - Kronos (2e rung) : [`foundation_kronos_zeroshot.md`](foundation_kronos_zeroshot.md).
 - M15 LSTM d'origine (log-RV crypto, KEEPER Gate V2) : [`M15_LSTM_RV.md`](M15_LSTM_RV.md).
-- L4 Decision Transformer (seul BEATS du ladder) : [`L4_decision_transformer.md`](L4_decision_transformer.md).
+- L4 Decision Transformer (BEATS du ladder, panel @10bps ; OOT réel NO-BEATS) : [`L4_decision_transformer.md`](L4_decision_transformer.md).
 - Spin-out : issue #8607. Epic parent parqué : #1409. Capability-core : #1454.

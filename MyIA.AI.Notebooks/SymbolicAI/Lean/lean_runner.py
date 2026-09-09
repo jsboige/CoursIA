@@ -1042,8 +1042,16 @@ class LLMClient:
             ]
         )
         
+        text_blocks = [
+            block.text
+            for block in response.content
+            if getattr(block, "type", None) == "text" and getattr(block, "text", None)
+        ]
+        if not text_blocks:
+            raise RuntimeError("La reponse Anthropic ne contient aucun bloc texte")
+
         return {
-            "content": response.content[0].text,
+            "content": "\n".join(text_blocks),
             "model": response.model,
             "tokens": {
                 "prompt": response.usage.input_tokens,

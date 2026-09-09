@@ -463,6 +463,13 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     # -- meme politique, distinction preservee par path_exists_at_ref.
     if not path_exists_at_ref(nb_path, base_ref):
         head_h = extract_headings(nb_head)
+        # Meme jeu de cles de stats que les branches comparees : le render
+        # texte de main() indexe base_md_cells/head_md_cells/cell_count_stable
+        # -- leur absence faisait crasher new_file en KeyError (#15147, une
+        # PR de renommages traite chaque nouveau chemin comme un new_file).
+        head_md_count = sum(
+            1 for c in nb_head.get("cells", []) if c.get("cell_type") == "markdown"
+        )
         return {
             "notebook": str(nb_path),
             "base_ref": base_ref,
@@ -470,6 +477,9 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
             "new_file": True,
             "findings": [],
             "stats": {
+                "base_md_cells": 0,
+                "head_md_cells": head_md_count,
+                "cell_count_stable": False,
                 "base_headings": 0,
                 "head_headings": len(head_h),
                 "findings_count": 0,
