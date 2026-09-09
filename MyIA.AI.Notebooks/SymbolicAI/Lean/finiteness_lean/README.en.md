@@ -11,7 +11,7 @@ Lean 4 mini-project from Epic #2978 (deliverable C), shipped via PR #3018.
 
 ## Status
 
-- **Toolchain**: `leanprover/lean4:v4.32.0`
+- **Toolchain**: `leanprover/lean4:v4.33.0`
 - **Sorry**: **0 sorry, 0 axiom** — everything is proven or illustrated via `#eval`
 - **Build**: `lake build Finiteness` — **autonomous, without Mathlib** (Lean core only)
 - **Dependencies**: none
