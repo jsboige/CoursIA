@@ -68,6 +68,36 @@ jobs:
           done < <(git ls-files '*.sh' | grep -v -E '^(MyIA.AI.Notebooks/GenAI/Vibe-Coding/|docs/archive/)|(^|/)_archive/' | sort)
           exit "$FAILED"
 
+  runner-script-tests:
+    name: Runner script behavioural tests
+    # Complements bash -n (syntax) with execution: the sibling bash tests that
+    # live alongside the self-hosted Linux runner scripts
+    # (scripts/ci/docker/linux-runner/test_*.sh). Discovered by glob so a new
+    # test_*.sh is wired automatically -- a semantic regression of the block
+    # under test can no longer land unappercu (NanoClaw reserve, PR #15226
+    # review 16:54:37Z). Runs on the same self-hosted jambe as syntax-check
+    # (routing #14283 tranche 3c, do not revert independently); it is queued
+    # while that runner is starved, exactly like syntax-check.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run linux-runner test_*.sh
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for t in scripts/ci/docker/linux-runner/test_*.sh; do
+            [ -e "$t" ] || continue
+            echo "== $t =="
+            if bash "$t"; then
+              echo "OK: $t"
+            else
+              echo "::error::runner script test failed: $t"
+              FAILED=1
+            fi
+          done
+          exit "$FAILED"
+
   shebang-dry-run-advisory:
     name: Shebang + dry-run advisory (non-blocking)
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
