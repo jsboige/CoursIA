@@ -413,6 +413,31 @@ def check(body: str | None, override: dict | None = None,
     # word alone: the retag is asked (note GENRE-UNKNOWN below), the ban
     # is not applied.
     if genre_counts_light(genre, g.get("tier")):
+        # #15184: a `declared` predecessor is unmeasured -- the `prev:` field is
+        # frozen at PR-open time (#12095/#11963), so a hard ban on it rests on
+        # data the lane did not produce while the PR sat open. The merged window
+        # being absent, unreadable, or empty for the lane is a degraded path,
+        # NOT a measurement. Refuse to issue the absolute ban of section 2 on
+        # unmeasured data: downgrade to advisory and let the coordinator, not
+        # CI, adjudicate adjacency (verified by the caller carrying an explicit
+        # `unmeasured` verdict the merge gate can read).
+        if prev_source == "declared":
+            return {
+                "guard_pass": True, "blocking": False, "adjacent": False,
+                "unmeasured": True,
+                "genre": genre, "prev_genre": prev_genre, "lane": lane,
+                "prev_source": prev_source,
+                "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
+                "reason": (
+                    f"G-VAR-3: {genre} succede a {prev_genre} mais le "
+                    f"predecesseur vient du champ `prev:` declare "
+                    f"({declared_prev_genre} #{declared_prev_pr or '?'}) -- "
+                    f"donnee NON MESUREE (fenetre merge absente, illisible ou "
+                    f"sans grain pour la lane). Un ban absolu (section 2) ne se "
+                    f"rend pas sur une mesure non faite (#15184). ADVISORY : le "
+                    f"coordinateur, pas la CI, tranche l'adjacence."
+                ),
+            }
         unknown_note = ""
         if not genre_resolves(genre):
             unknown_note = (
@@ -586,6 +611,14 @@ def main(argv: list[str] | None = None) -> int:
                     f"prev: declare (#12636)"
                 )
         except (OSError, ValueError) as e:
+            # #15184: the unreadable path must be LOUD in the JSON verdict, not
+            # only on stderr -- the pre-#12636 silent fallback is the defect
+            # this closes, and a window that was fetched but could not be read
+            # deserves the same note as a window that missed the lane.
+            merged_fallback_note = (
+                f"window merge illisible ({e}) -- predecesseur resolu depuis le "
+                f"prev: declare (#15184)"
+            )
             print(json.dumps({"warning": f"merged-prs unreadable: {e}"}),
                   file=sys.stderr)
 

@@ -34,7 +34,7 @@ python scripts/notebook_tools/notebook_tools.py execute <target> [options]
 | `--kernel <name>` | Force un kernel specifique (ex. `python3`, `.net-csharp`, `python3 (PyMC)`) | Cibler un env conda precis quand le kernel par defaut manque des deps |
 | `--cwd <path>` | Execute depuis ce repertoire au lieu du dossier parent du notebook | Executer dans un worktree de curation, ou isoler `load_dotenv()` |
 | `--env KEY=VAL` | Injecte une variable d'environnement (repeter pour plusieurs) | `--env BATCH_MODE=true`, overrides ponctuels |
-| `--scrub-keys` | Retire les cles API LLM (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) du sous-processus | Force le chemin mock deterministe pour les notebooks LLM (SC-11, GenAI) sans appel API payant |
+| `--scrub-keys` | Retire les cles API LLM (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) du sous-processus | Test explicite d'un comportement sans credentials ; ne valide pas une démonstration qui revendique un appel LLM réel |
 | `--batch-mode` | Active BATCH_MODE=true (env + param Papermill) | Notebooks interactifs en validation non-interactive |
 | `--cell-by-cell` | Execution cellule par cellule (.NET/Lean) | Kernels persistants |
 | `--timeout N` | Timeout par notebook en secondes (defaut: 300) | Notebooks longs |
@@ -42,20 +42,17 @@ python scripts/notebook_tools/notebook_tools.py execute <target> [options]
 **Cookbook — cas d'usage courants** :
 
 ```bash
-# Re-exec validation standard (chemin mock, pas d'appel API)
-python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/SymbolicAI/SmartContracts/SC-11-LLM-Assisted.ipynb --scrub-keys
-
 # Re-exec dans un worktree de curation
 python scripts/notebook_tools/notebook_tools.py execute /tmp/worktree/SC-11.ipynb --cwd /tmp/worktree
 
 # Forcer un kernel conda specifique
 python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Probas/PyMC/ --kernel "python3 (PyMC)"
 
-# Re-exec avec variables d'env personnalisees
-python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/ --env BATCH_MODE=true --env MOCK_RESPONSES=true
+# Re-exec avec une variable d'environnement non sensible
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/ --env BATCH_MODE=true
 
-# Re-exec batch d'une famille complete, mode mock
-python scripts/notebook_tools/notebook_tools.py execute SmartContracts --scrub-keys --batch-mode
+# Vérifier explicitement le chemin sans credentials (test négatif uniquement)
+python scripts/notebook_tools/notebook_tools.py execute path/to/notebook.ipynb --scrub-keys
 ```
 
 #### Capture des outputs .NET post-`#r` (#5005)
@@ -102,6 +99,8 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 | `audit_pip_install_cells.py` | Audit cellules `!pip install` (leak vector + env anti-pattern, secrets-hygiene §6 triage C = source-leak). Classifier `UNCONDITIONAL_BASH` / `UNCONDITIONAL_SYS` / `CONDITIONAL_TRY` / `NON_BASH`. Modes `--scan` / `--scan-all` / `--scan-all --check` (exit 1 si HIGH) / `--json`. Compteur initial repo = 70 HIGH-severity sur 203 notebooks (c.460). 13/13 tests unitaires PASS |
 | `pip_leak_delta.py` | **Guard delta pip-leak** : compare deux scans JSON d'`audit_pip_install_cells.py` et fail si la PR introduit des leaks HIGH *nouveaux* (pas un fail absolu `--check` — le repo porte encore des HIGH hérités drainés un-PR-par-notebook). CI-ready (exit 1 sur delta > 0) |
 | `detect_fabricated_outputs.py` | Détecteur **sorties textuelles FABRIQUÉES** committes comme résultats d'exécution (Prong-A, registre #3801) : placeholder textuel (`Row N`) ou dataframe backtest-entièrement-à-0.0 en lieu et place du vrai résultat. Companion image-axis de `detect_blank_figures.py` |
+| `audit_engine_named_not_invoked.py` | Audit `claim → wiring → invocation → proof` des moteurs annoncés (Google ADK, OpenAI/Anthropic, BigQuery et moteurs Smart Contracts). Reconnaît les helpers notebook-wide appelés, refuse qu'un print de setup tienne lieu de preuve, expose les cellules d'évidence et compare deux snapshots JSON avec `--compare-base/--compare-head` pour ne bloquer que les régressions |
+| `detect_smartcontract_drift.py` | Détecteur borné Smart Contracts (#15246) : `UserOperation` ERC-4337 non packée, réseaux Goerli/Mumbai présentés comme actifs et suites Foundry seulement imprimées. Exclut le contexte historique, les exercices C.1 et les cheatcodes/mocks Solidity légitimes ; mode delta par snapshots JSON |
 | `strip_fabricated_quantbook_outputs.py` | Strip des sorties text/PNG fabriquées des `quantbook.ipynb` (cf #6891, Side A). Les 8 quantbooks QC non-ré-exécutables via MCP portaient des outputs fabriqués ; cet outil les retire proprement (exception quantbook QC, cf secrets-hygiene §6) |
 | `detect_quantbook_window_divergence.py` | Détecteur **période annoncée ≠ période calculée** dans les quantbooks (#8772, classe doc-honesty #8052/#8364). Deux signaux : (A) lookback ENTIER passé à `qb.History(...)` — qui s'ancre sur `qb.Time` = `StartDate`, donc **recule** depuis la période déclarée — sans qu'aucune ligne n'imprime la fenêtre obtenue ; (B) `SetStartDate` placé dans un `try:` qui a échoué, la sortie committée venant du repli yfinance ancré à l'heure d'exécution. Args découpés par scanner à parenthèses équilibrées (une regex `\([^)]*\)` casse sur `History(list(...), 365*5, ...)`). **Écarte** les cellules de référence `class X(QCAlgorithm)` (ancrage glissant = effet voulu), les appels sur `self`, et les arguments ambigus. **Le fix attendu est de DIVULGUER, pas de re-fenêtrer** : re-fenêtrer avant #8734 échangerait un défaut de doc contre un défaut de données (forward-fill constant) |
 | `detect_bare_cross_dir_load.py` | Détecte un `#load "X.cs"` **bare** (nom nu, sans séparateur) dont le `.cs` n'existe PAS dans le dossier du notebook — anti-pattern du rollout SVG inline (#6927) où le kernel résout un `#load` relatif et échoue silencieusement / charge le mauvais fichier |
