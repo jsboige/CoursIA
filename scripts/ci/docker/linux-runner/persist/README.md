@@ -217,11 +217,43 @@ Les journaux des **conteneurs** sont bornes ailleurs, par `daemon.json`
 (`log-driver: local`, 10 Mo x 3). Deux mecanismes distincts, ecrits a deux endroits
 differents, qui remplissaient chacun le meme disque.
 
+## Maintenance du cache `_work` (#15105)
+
+`actions/checkout` pose `gc.auto = 0` dans le depot du slot : correct pour un
+workspace jetable, faux depuis que #14285 rend ce workspace persistant. Chaque
+job depose un pack promisor de plus (slot 1 : **264 packs** au diagnostic,
+compte croissant sans plafond), et un arret brutal laisse des refs de ZERO
+octet qui transforment le gate en loterie -- le slot 7 en portait 1471.
+
+Deux passes vivent dans l'entrypoint du conteneur (avant l'enregistrement du
+runner : aucun job en vol ne les paie, et elles tournent sous les bornes d'I/O
+du conteneur lui-meme) :
+
+- **Integrite, inconditionnelle** : refs cassees detectees sur le canal stderr
+  de `for-each-ref` (rc=0 -- seul le warning nomme la ref), reparees par
+  retrait des fichiers vides de `.git/refs` et `.git/logs` UNIQUEMENT (un
+  marqueur `.promisor` vide est legitime et vit sous `.git/objects` :
+  hors perimetre par construction), et purge du clone si le depot reste muet.
+- **Repack, seuille** : `COURSIA_RUNNER_CACHE_PACK_THRESHOLD` (defaut **16**,
+  0 = desactive) descend au conteneur ; au-dela, `git repack -ad` consolide
+  avec la mesure avant/apres au journal. Non inerte au meme titre que
+  `COURSIA_RUNNER_LOG_MAX_BYTES` : son absence est une croissance de disque
+  sans borne, pas un plafond qu'une machine n'a pas demande. Sur un clone
+  partiel `blob:none`, le repack est sur (mesure sur fixture au filtre
+  reellement honore : 5 packs promisor -> 1, marqueur preserve, lazy-fetch et
+  fetch incremental intacts).
+
+La garde de fraicheur #14801 lit desormais **deux** scripts embarques
+(`entrypoint.sh` ET `work_cache_health.sh` qu'il source) : un correctif merge
+mais non rebuild sur l'un ou l'autre est refuse au demarrage du pool.
+
 ## Voir aussi
 
 - [`../supervise.sh`](../supervise.sh) -- le superviseur, ses trois pools et ses bornes
-- [`../test_supervise_guards.sh`](../test_supervise_guards.sh) -- 18 tests, chaque garde avec son controle negatif
+- [`../test_supervise_guards.sh`](../test_supervise_guards.sh) -- 20 tests, chaque garde avec son controle negatif
+- [`../test_work_cache_health.sh`](../test_work_cache_health.sh) -- sante du cache `_work` sur fixtures git reelles (#15105)
 - [`../../../../../docs/ci/self-hosted-runners.md`](../../../../../docs/ci/self-hosted-runners.md) -- vue d'ensemble du parc
 - **#15091** -- revision du design du superviseur (traffic disque, isolation)
 - **#14385** -- volumes `_work` par slot -- les waiters n'en montent pas, le test 17 le garde
 - **#14801** -- fraicheur de l'image, verifiee par empreinte de l'entrypoint
+- **#15105** -- integrite et maintenance du cache `_work` persistant
