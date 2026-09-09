@@ -162,30 +162,11 @@ Quand Z.AI est en surcharge, il renvoie du `429` (ou `503`). Un `429` brut, c'es
 
 ## 8. Variables d'environnement clés
 
-### Quel consommateur lit quelle variable (#15286)
-
-Quatre consommateurs cohabitent dans l'écosystème et **chacun lit ses propres variables** : configurer « son » accès pour l'un ne configure aucun des trois autres. C'est la table à lire **avant** de copier un `.env` d'un voisin.
-
-| Consommateur | Variables lues | Où le vérifier |
-|---|---|---|
-| **Claude Code (CLI)** | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (ou `ANTHROPIC_API_KEY` selon l'installateur) + `ANTHROPIC_MODEL` | [§4](#4-connecter-un-agent-claude-code) ci-dessus · [Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md](../../Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md) |
-| **Notebook Claudish** (helper Python) | `ANTHROPIC_AUTH_TOKEN` + `CLAUDISH_BASE_URL` (défaut `http://localhost:3000`) | [`notebooks/helpers/claudish_client.py`](../notebooks/helpers/claudish_client.py) — la base URL est lue **à l'appel** (depuis #15312) : la poser dans une cellule **après** l'import est honorée |
-| **TP wire OpenAI (T01)** | client `OpenAI()` + `OPENAI_MODEL` | matériaux de cours hors dépôt (mesuré par l'audit EPF, #15286) |
-| **Gabarit projet étudiant** | `MODEL_API_KEY` + `MODEL_BASE_URL` — **rien d'autre** | gabarit remis aux groupes, hors dépôt (audit #15286) |
-
-Deux pièges mesurés :
-
-- le gabarit étudiant (`MODEL_*`) ne partage **aucune** variable avec les trois autres conventions — un étudiant qui configure « son » accès en configure un quart (#15286, défaut 2) ;
-- les gabarits `.env.example` hérités enseignaient une **cible morte (401)** — l'ancien vLLM direct — au lieu de Claudish ; repointés vers `models.myia.io/v1` par #15050 (2026-09-07).
-
-### Référence des variables (déploiement Claudish)
-
 | Variable | Effet |
 |----------|-------|
 | `ANTHROPIC_BASE_URL` | URL claudish (les clients pointent ici au lieu de `api.anthropic.com`) |
 | `ANTHROPIC_AUTH_TOKEN` | Clé d'auth claudish |
 | `ANTHROPIC_MODEL` | Modèle/tier par défaut (`glm-5.2`, `claude-opus-4-8`, `qwen3.6-35b-a3b`) |
-| `CLAUDISH_BASE_URL` | Base URL du helper notebook (défaut `http://localhost:3000`, lue à l'appel — #15286/#15312) |
 | `providerConcurrency` (config) | Cap de concurrence par provider (`{ "glm-coding": 8 }`) |
 | `customEndpoints` (config) | Endpoints nommés (`vllm-myia@…`) avec leur propre `maxConcurrency` |
 | `SEARXNG_URL` / `SEARXNG_MCP_URL` | Backends de recherche web interceptés |
