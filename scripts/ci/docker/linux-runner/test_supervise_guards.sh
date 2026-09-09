@@ -31,13 +31,19 @@ ko() { echo "  FAIL: $1"; echo "FAIL $1" >> "$RESULTS"; }
 
 # Stubs docker + gh + ps. Le stub docker simule une image A JOUR pour le
 # garde de fraicheur #14801 : au probe `run --entrypoint sha256sum`, il rend
-# le sha256 du VRAI entrypoint.sh sibling (bake a la generation du stub).
-# STUB_IMG_ENTRYPOINT_SHA force un ecart pour tester le refus (test 9).
+# le sha256 du VRAI script sibling demande (entrypoint.sh, et depuis #15105
+# work_cache_health.sh -- le garde lit les DEUX, le stub dispatche sur le
+# chemin passe en argument). STUB_IMG_ENTRYPOINT_SHA / STUB_IMG_HEALTH_SHA
+# forcent un ecart pour tester le refus (tests 9 et 20).
 REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
+REPO_HEALTH_SHA="$(sha256sum "$SCRIPT_DIR/work_cache_health.sh" 2>/dev/null | awk '{print $1}')"
 cat > "$TEST_DIR/bin/docker" <<STUB
 #!/usr/bin/env bash
 if [ "\$1" = "run" ]; then
-  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  case "\$*" in
+    *'/opt/runner/entrypoint.sh')        echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh" ;;
+    *'/opt/runner/work_cache_health.sh') echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh" ;;
+  esac
   exit 0
 fi
 exit 0
@@ -121,9 +127,13 @@ echo "Test 3 : start --force leve sentinel (Defaut 2 avec --force)"
   export COURSIA_RUNNER_NAME_PREFIX="test-prefix-C"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-C"
   touch "$TEST_DIR/state-C/stop"
-  timeout --kill-after=1 2 bash "$SCRIPT_DIR/supervise.sh" start 1 --force >/dev/null 2>"$TEST_DIR/last.err" &
+  timeout --kill-after=1 4 bash "$SCRIPT_DIR/supervise.sh" start 1 --force >/dev/null 2>"$TEST_DIR/last.err" &
   TPID=$!
-  sleep 0.5
+  # 1.5 s : le garde de fraicheur #15105 lit DEUX scripts embarques, soit
+  # deux probes docker de plus avant le rm du sentinel -- sous Git Bash ou
+  # chaque fork de stub coute ~100 ms, 0.5 s coupaient parfois AVANT le rm
+  # et le test echouait sur une question de delai, pas d'intention.
+  sleep 1.5
   if [ ! -f "$TEST_DIR/state-C/stop" ]; then
     ok "sentinel leve par start --force"
   else
@@ -539,7 +549,10 @@ echo "Test 17 : waiters -- toolcache monte, et JAMAIS de volume _work (#15091)"
   cat > "$TEST_DIR/bin17/docker" <<STUB
 #!/usr/bin/env bash
 if [ "\$1" = "run" ] && printf '%s' "\$*" | grep -q -- '--entrypoint sha256sum'; then
-  echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
+  case "\$*" in
+    *'/opt/runner/entrypoint.sh')        echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh" ;;
+    *'/opt/runner/work_cache_health.sh') echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh" ;;
+  esac
   exit 0
 fi
 if [ "\$1" = "run" ]; then
@@ -680,6 +693,29 @@ echo "Test 19 : cmd_stop rend != 0 quand le sentinel n'a PAS pu etre pose (#1509
   else
     ko "l'echec annonce quand meme le succes : $out"
   fi
+)
+echo ""
+
+# --- Test 20 : garde de fraicheur -- health script perime refuse (#15105) ---
+# Le garde lit DEUX fichiers depuis #15105 (work_cache_health.sh est source
+# par l'entrypoint). Le controle positif du COTE garde : un ecart sur le
+# SEUL fichier ajoute doit refuser exactement comme un ecart d'entrypoint --
+# sinon la porte que le nouveau fichier ouvre serait garde par personne.
+echo "Test 20 : start refuse si work_cache_health.sh de l'image != checkout (#15105)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/state-20"
+  STUB_IMG_HEALTH_SHA=e000000000000000000000000000000000000000000000000000000000000000e
+  export STUB_IMG_HEALTH_SHA
+  rc="$(run_supervise 'start 1' 'test-prefix-20' "$TEST_DIR/state-20" 2>&1 | head -1 | sed 's/rc=//')"
+  err="$(cat "$TEST_DIR/last.err")"
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "work_cache_health.sh"; then
+    ok "health script perime refuse, fichier FAUTIF nomme (rc=$rc)"
+  else
+    ko "refus sur work_cache_health.sh attendu, rc=$rc err=$err"
+  fi
+  unset STUB_IMG_HEALTH_SHA
 )
 echo ""
 

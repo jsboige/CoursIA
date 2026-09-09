@@ -4933,6 +4933,30 @@ def test_14216_unite_scope_login_persona_et_anonyme():
     assert not mod._override_scopes_reserve(excl, "clusterManager-Myia")
 
 
+def test_15193_login_suivi_du_point_matche():
+    """#15193 — le `.` était dans la classe des frontières d'identité, si
+    bien que l'idiome recommandé par l'organe lui-même — « je lève aussi la
+    réserve de <login>. » (login en fin de phrase) — ne matchait jamais.
+    Un login suivi d'un point est une frontière d'identité légitime ; seul
+    un caractère de MOT (alnum/_) continue le token. Mesuré sur #15049 :
+    trois overrides successifs rejetés avant que la cause soit isolée."""
+    assert mod._override_scopes_reserve(
+        "… je lève aussi la réserve de jsboige.", "jsboige")
+    assert mod._override_scopes_reserve(
+        "… je lève aussi la réserve de jsboige elle-même.", "jsboige")
+    assert mod._override_scopes_reserve(
+        "… je lève aussi la réserve de jsboige, posée à 23:11Z.", "jsboige")
+    # frontière d'identité : un login suivi d'ALNUM ou d'un hyphen n'est pas
+    # le même token (anti sous-chaîne) ; la persona/inconnu reste inchangée.
+    assert not mod._override_scopes_reserve(
+        "Levée aussi de jsboige2.", "jsboige")
+    assert not mod._override_scopes_reserve(
+        "Levée aussi de jsboige-backup.", "jsboige")
+    assert not mod._override_scopes_reserve(
+        "Levée aussi de clusterManager-Myia.", "Myia")
+    assert mod._override_scopes_reserve("réserve Hermes levée", "jsboige")
+
+
 def test_14216_ignored_overrides_explique_le_scope_manquant():
     """#14216 — le rouge doit DIRE pourquoi l'override visible n'a rien
     éteint pour la réserve survivante (même exigence de nomination que
