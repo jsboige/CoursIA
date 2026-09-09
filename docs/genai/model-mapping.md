@@ -1,6 +1,6 @@
 # Inventaire et table de correspondance — modèles GenAI/OpenAI (issue #14755, tranche 1)
 
-> **Statut** : tranche 1/5 de #14755. Cadrage uniquement. Aucune substitution de notebook dans cette PR — la substitution est gelée tant que la table n'est pas validée contre l'API du fournisseur.
+> **Statut** : tranche 1/5 de #14755. Cadrage uniquement. Aucune substitution de notebook dans cette PR — la substitution était gelée tant que la table n'était pas validée contre l'API du fournisseur. **Gel levé le 2026-09-09** par la validation API (section 8).
 
 ## 1. Périmètre de mesure
 
@@ -113,3 +113,52 @@ Liste à finaliser en tranche 2 par lecture cellule par cellule.
 - PRs connexes observées :
   - #14851 MERGED 2026-09-06 : `fix(genai,#14838): prepare_for_api garantit max_size_kb` — gel des substitutions de modèle tant que la table canonique n'est pas publiée.
   - #15018 OPEN : `feature/14664-local-llama-coherence` — concerne `GenAI/Texte/10_LocalLlama.ipynb`, hors `docs/genai/**`, ne bloque pas la tranche 1.
+
+## 8. Validation API — tranche 2, 2026-09-09 (gel levé)
+
+Lookups exécutés firsthand le 2026-09-09 : `GET https://api.openai.com/v1/models` (HTTP 200, clé du `.secrets/master.env`) → **99 identifiants `gpt-*`** ; `GET https://openrouter.ai/api/v1/models` (HTTP 200, endpoint public) → **82 variantes `openai/gpt-*`**.
+
+### 8.1 Ligne courante — la famille `gpt-5.6` confirme le mandat user
+
+L'API officielle sert **`gpt-5.6-luna`**, `gpt-5.6-sol`, `gpt-5.6-terra` (chacun doublé d'une variante `-pro` ; toutes présentes aussi sur OpenRouter). Le mandat user (« On en est à 5.6 pour OpenAI, version Luna pour la taille mini ») est donc confirmé au sens propre :
+
+| Tier | Cible validée | Note |
+|---|---|---|
+| Mini (ex-`gpt-4o-mini`) | **`gpt-5.6-luna`** | désignée par le mandat user lui-même |
+| Standard (ex-`gpt-4o`) | `gpt-5.6-sol` pressenti | à trancher à la première substitution en lecture pédagogique (luna/sol/terra = mini/standard/large est l'ordonnancement attendu, non une donnée de l'API — les deux lookups ne portent pas de métadonnée de tier) |
+
+Les cibles « pressenties » de la section 3 (`gpt-5-mini`, `gpt-5`) restent **servies** par l'API mais ne sont plus la ligne courante : elles deviennent des cibles de repli pour les contextes où un alias stable prime sur la fraîcheur (ce choix reste pédagogique, par notebook).
+
+### 8.2 Statuts « à valider » — verdicts
+
+Tous les `CUR-OFF*` de la section 3 sont **confirmés présents** sur l'API officielle : `gpt-5.2` (+`-pro`, `-codex`, `-chat-latest`), `gpt-5.5` (+`-pro` — donc aussi officiel, pas seulement OpenRouter), `gpt-5` famille complète, `gpt-5.1` famille complète, `gpt-5.3` (`-chat-latest`, `-codex`), `gpt-5.4` famille complète, `gpt-5-pro`, `gpt-5-nano`, `gpt-5-chat-latest`, `gpt-5-2025-08-07`, `gpt-image-1`/`-1-mini`/`-1.5`/`-2`, `gpt-realtime-*` (dont `gpt-realtime-2.1`, `-translate`, `-whisper`). Les variantes notées `CUR-OR` existent bien sur OpenRouter (`openai/gpt-5.4-image-2`, `openai/gpt-5.2-chat`, etc.).
+
+### 8.3 Correction de la table tranche 1 — deux lignes résolues
+
+- **`gpt-5o-mini` (5 hits) = coquille confirmée** : toutes les occurrences sont `"openai/gpt-5o-mini"` dans `GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb` (et son `_output`) ; aucun `gpt-5o*` n'existe ni côté OpenAI ni côté OpenRouter. Correction : `openai/gpt-5-mini`. **Hors tranche 2** (famille Image) — à corriger dans la tranche qui couvre Image.
+- **`gpt-image-1.` (2 hits) = FAUX POSITIF de la mesure tranche 1** : les deux occurrences sont le **point final d'une phrase française** en prose (« … l'exécution réelle utilisant gpt-image-1. ») — pas un identifiant. La ligne est retirée du périmètre ; aucun identifiant `gpt-image-1.` n'existe dans le dépôt.
+
+### 8.4 Nuance d'honnêteté sur « OBS »
+
+`gpt-4o`, `gpt-4o-mini`, `gpt-4.1*`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo` sont **toujours servis** par `/v1/models` au 2026-09-09. « OBS » signifie donc ici **supplanté pédagogiquement** (mandat user : ne pas enseigner des modèles de 2024), **pas** retiré de l'API. Les substitutions restent donc motivées par le mandat, et une cellule substituée qui échouerait sur l'ancien identifiant n'est pas un scénario attendu.
+
+### 8.5 Inventaire tranche 2 — `GenAI/Texte + GenAI/SemanticKernel`
+
+Compte strict des identifiants OBS (hors conservations §4) par fichier, `origin/main@e6ddf5828` :
+
+| Fichier | Hits OBS |
+|---|---:|
+| `SemanticKernel/07-SemanticKernel-MultiModal.ipynb` | 8 |
+| `SemanticKernel/10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb` | 8 |
+| `SemanticKernel/10-SemanticKernel-NotebookMaker.ipynb` | 5 |
+| `SemanticKernel/10a-SemanticKernel-NotebookMaker-batch.ipynb` | 5 |
+| `Texte/7_Code_Interpreter.ipynb` | 5 |
+| `SemanticKernel/03-SemanticKernel-Agents.ipynb` | 4 |
+| `SemanticKernel/01-SemanticKernel-Intro.ipynb` | 4 |
+| `Texte/6_PDF_Web_Search.ipynb` | 3 |
+| `Texte/19_OWUI_Orchestration.ipynb` | 2 |
+| `SemanticKernel/02-SemanticKernel-Advanced.ipynb` | 2 |
+| `Texte/22_Evaluating_Generated_Text.ipynb` | 1 |
+| `Texte/1_OpenAI_Intro.ipynb` | 1 |
+
+Exclusions de périmètre : `SemanticKernel/semantic-fleet/**` (sous-module — commit dedans + bump pointeur, tranche dédiée), `Texte/10_LocalLlama.ipynb` (PR #15018 ouverte), `*_output.ipynb` (artefacts d'exécution non trackés), placeholders `gpt-invalid-model` (fixtures). La lecture cellule par cellule (§4, conservations pédagogiques) reste due **avant chaque substitution** — les compteurs ci-dessus situent la charge, ils ne qualifient pas chaque occurrence.
