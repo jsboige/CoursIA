@@ -123,7 +123,7 @@ lake build ERC20     # build de la librairie
 ```
 
 Prérequis : [elan](https://github.com/leanprover/elan) (toolchain
-`leanprover/lean4:v4.31.0-rc1`, voir `lean-toolchain`).
+`leanprover/lean4:v4.33.0`, voir `lean-toolchain`).
 
 ## État et suite
 
