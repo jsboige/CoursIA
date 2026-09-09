@@ -65,13 +65,13 @@ def installation_status() -> Dict[str, Any]:
             }
         return {
             "state": "non-executable",
-            "message": f"Claude CLI trouve ({resolved_path}) mais 'claude --version' echoue (code {result.returncode})",
+            "message": f"Claude CLI trouve ({resolved}) mais 'claude --version' echoue (code {result.returncode})",
             "resolved_path": resolved
         }
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
         return {
             "state": "non-executable",
-            "message": f"Claude CLI trouve ({resolved_path}) mais non executable: {e}",
+            "message": f"Claude CLI trouve ({resolved}) mais non executable: {e}",
             "resolved_path": resolved
         }
 
