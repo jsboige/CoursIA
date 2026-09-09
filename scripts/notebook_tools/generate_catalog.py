@@ -888,9 +888,16 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         executed_at=gm.get("executed_at"),
         head_sha=gm.get("head_sha"),
     )
+    # Registre curé axe 3 (c.997, issue #14831 voie 1) — analog of
+    # editorial-review-registry (c.764, axe 1). If this notebook has a curated
+    # scientific_reviewed_by in the registry, prefer it over gm (curated beats
+    # git-derived, same convention as _merge_curated_fields).
+    rel_str_for_registry = str(rel) if hasattr(rel, "__fspath__") else str(rel)
+    sr_registry = _load_scientific_review_registry()
+    sr_curated = sr_registry.get(rel_str_for_registry) or sr_registry.get(rel_str_for_registry.replace("\\", "/"))
     scientific_review = classify_scientific_review(
         notebook,
-        scientific_reviewed_by=gm.get("scientific_reviewed_by"),
+        scientific_reviewed_by=sr_curated or gm.get("scientific_reviewed_by"),
         last_validator=gm.get("last_validator"),
         # FORMALLY_VERIFIED exige un lake Lean sorry-free PROUVE (artifact Lean-CI),
         # pas une simple presence de compagnon (cf #8051, #8351). Le champ
@@ -967,6 +974,65 @@ def _load_main_catalog() -> dict[str, dict]:
         data = _json.loads(result.stdout)
         return {e["path"]: e for e in data if "path" in e}
     except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+        return {}
+
+
+# Registre curé `scientific_reviewed_by` (c.997, issue #14831 voie 1) — analogue
+# au pattern `editorial-review-registry.md` (c.764, axe 1). Le registre whitelist
+# YAML pose le signal canonique : sans signal, classify_scientific_review retombe
+# sur UNREVIEWED (design délibéré cf #8051). Le champ est dans CURATED_GIT_FIELDS
+# (l.949) donc préservable par _merge_curated_fields.
+def _load_scientific_review_registry() -> dict[str, str]:
+    """Load the curated scientific review registry (cf scientific-review-registry.md).
+
+    Returns a dict keyed by notebook_path with reviewer as value. Empty dict if
+    the registry file is missing or malformed (fail-OPEN : ne lève pas, retombe
+    sur UNREVIEWED comme avant le câblage c.997).
+    """
+    registry_path = REPO_ROOT / "docs" / "notebook-metadata" / "scientific-review-registry.md"
+    if not registry_path.exists():
+        return {}
+    try:
+        text = registry_path.read_text(encoding="utf-8")
+        # Parse YAML fenced blocks (simplified — analogue à check_scientific_review.py).
+        import re as _re
+        yaml_blocks = _re.findall(r"```yaml\s*\n(.*?)```", text, _re.DOTALL)
+        registry = {}
+        for block in yaml_blocks:
+            current = None
+            for line in block.splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                if stripped.startswith("- "):
+                    if (
+                        current
+                        and current.get("notebook_path")
+                        and current.get("reviewer")
+                        # Skip template/example entries (placeholders in angle brackets)
+                        and "<" not in current.get("notebook_path", "")
+                        and "<" not in current.get("reviewer", "")
+                        and "<" not in current.get("evidence_pr", "")
+                    ):
+                        registry[current["notebook_path"]] = current["reviewer"]
+                    kv = stripped[2:]
+                    key, _, value = kv.partition(":")
+                    current = {key.strip(): value.strip().strip('"').strip("'")}
+                elif current is not None and ":" in stripped:
+                    key, _, value = stripped.partition(":")
+                    current[key.strip()] = value.strip().strip('"').strip("'")
+            if (
+                current
+                and current.get("notebook_path")
+                and current.get("reviewer")
+                # Skip template/example entries (placeholders in angle brackets)
+                and "<" not in current.get("notebook_path", "")
+                and "<" not in current.get("reviewer", "")
+                and "<" not in current.get("evidence_pr", "")
+            ):
+                registry[current["notebook_path"]] = current["reviewer"]
+        return registry
+    except (UnicodeDecodeError, ValueError):
         return {}
 
 

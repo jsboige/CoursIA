@@ -6,6 +6,18 @@ Pattern: fix_issue_420.py (PR #453, Issue #420)
 Reference: Issue #463
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb
+#   (PR #469; reworked for issue #464 by commit 171e7862a; labels restored by PR #601)
+# - Verdict recorded in : PR #469 and archive PR #9575
+#
+# Per-function disposition :
+# - <module> : one-shot transform delivered by PR #469, reworked for issue
+#   #464 by commit 171e7862a, then its Exemple labels were removed by student
+#   TP PR #601; the current
+#   notebook preserves the CSP content rather than this script's label state.
+
 import json
 
 path = "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb"
