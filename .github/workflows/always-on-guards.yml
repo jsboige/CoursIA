@@ -287,7 +287,7 @@ jobs:
           # silencieuse crash -> || echo "False" -> "cap non atteint"
           # re-autorisait une LIGHT over budget. L'unknown doit etre VISIBLE.
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/tmp/merged_fetch.err || true
+            --json number,body,mergedAt,labels,files > /tmp/merged.json 2>/tmp/merged_fetch.err || true
           [ -s /tmp/merged_fetch.err ] && { echo "--- gh pr list (merged) stderr ---"; cat /tmp/merged_fetch.err; } || true
 
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
@@ -375,7 +375,7 @@ jobs:
           # signaux lisaient False sur une absence de donnee. Le fichier
           # absent va jusqu'au detecteur, qui emet verdict unknown.
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/tmp/merged_fetch.err || true
+            --json number,body,mergedAt,labels,files > /tmp/merged.json 2>/tmp/merged_fetch.err || true
           [ -s /tmp/merged_fetch.err ] && { echo "--- gh pr list (merged) stderr ---"; cat /tmp/merged_fetch.err; } || true
 
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
@@ -858,7 +858,8 @@ jobs:
 
           # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
           python3 scripts/ci/variation_adjacency_guard.py \
-            --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG \
+            --body-file /tmp/pr_body.txt --pr-number "$PR_NUMBER" \
+            $COMMENTS_ARG $MERGED_ARG \
             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then

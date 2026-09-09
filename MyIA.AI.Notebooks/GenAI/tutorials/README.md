@@ -26,7 +26,6 @@ Image → Audio → Vidéo → Texte → Vibe-Coding), et l'on vient ici cherche
 
 ## Note de maintenance
 
-Le sous-dossier [`Image/tutorials/`](../Image/tutorials/) contient actuellement
-une copie identique de ces quatre guides (duplication historique). La source
-autoritaire est le présent dossier `GenAI/tutorials/` ; la consolidation de la
-copie est tracée séparément (voir Epic nettoyage #9535).
+Ce dossier est la source **autoritaire** des guides. Une copie historique
+existe dans `GenAI/Image/tutorials/` (cf. #13581 T3, doublon daté) — la
+consolidation qui l'a retirée est tracée dans le Epic nettoyage #9535.
