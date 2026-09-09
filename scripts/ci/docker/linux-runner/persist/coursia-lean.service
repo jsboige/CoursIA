@@ -1,0 +1,53 @@
+# Unite systemd de persistance du POOL LEAN specialise (label coursia-lean).
+# Troisieme jambe du superviseur, apres coursia-runner.service (execution,
+# label coursia-linux) et coursia-waiters.service (attente PR-gate, label
+# coursia-waiter). Les trois jambes sont independantes : state dirs distincts
+# (/var/lib/coursia-runner, /var/lib/coursia-waiters, /var/lib/coursia-lean),
+# sentinelles d'arret distinctes, prefixes de nom distincts.
+#
+# Deploiement po-2024 (2026-09-09, incident pool lean wedged post-reboot) :
+# copie de reference -- l'original vit dans la distro Ubuntu de l'hote, sous
+# /etc/systemd/system/coursia-lean.service (systemctl enable --now).
+#
+# INCIDENT FONDATEUR : le pool lean tournait en appel manuel hors systemd.
+# Au reboot du 2026-09-09, les jambes runner+waiters restaurees, la jambe
+# lean est restee a ZERO : aucun runner ne portait le label coursia-lean,
+# le run main de lean-knot y est mort "runner lost communication"
+# (check-run 102437210604), et deux jobs lean de PR sont restes en queue
+# toute l'apres-midi (diagnostic po-2027, 14:23Z).
+#
+# N slots porte par l'argument ExecStart (po-2024 -> 2, l'effectif
+# d'avant la chute : volumes _work chauds coursia-runner-work-lean-{1,2}).
+[Unit]
+Description=CoursIA Lean runners pool (coursia-lean slots)
+# Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
+# un docker.service en echec au boot doit retarder le service et le laisser
+# retenter, pas le sortir de la liste des unites.
+Wants=docker.service
+After=docker.service
+
+# #15091 : plafond de redemarrage, calque des deux autres unites.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/coursia-lean-start.sh 2
+ExecStop=/usr/local/bin/coursia-lean-start.sh stop
+Restart=always
+RestartSec=30
+Nice=10
+# Un slot lean porte des lake builds : 900 s comme la jambe d'execution,
+# pas 120 s comme les waiters. ExecStop est gracieux (sentinel) : un job
+# lake en vol va a son terme.
+TimeoutStopSec=900
+
+# Nice=10 gouverne le CPU ; l'I/O du pool cede sous contention comme les
+# autres (IOWeight=50), cf #15091. Les caps durs par conteneur (cpus=6,
+# memory=8g, memory-swap=24g) sont portes par supervise.sh lui-meme via
+# LEAN_CPUS/LEAN_MEMORY/LEAN_MEMORY_SWAP -- l'unite ne les re-encode pas.
+IOAccounting=yes
+IOWeight=50
+
+[Install]
+WantedBy=multi-user.target
