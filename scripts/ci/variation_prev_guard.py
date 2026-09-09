@@ -168,29 +168,10 @@ _PREV_PR_REF_RE = re.compile(
 )
 
 
-# Inline code spans and fenced blocks. A `prev:` clause written INSIDE
-# backticks is a CITATION (documentation of another grain's tag), never a
-# declaration -- the canonical tag line is plain text. #14550 measured the
-# cost of conflating the two: a lane that documented its successor, or that
-# explained WHY it did not point `prev:` at a still-open PR, had its own
-# correct tag overruled by its own prose. Masking preserves offsets so the
-# slices reported in the verdict stay meaningful.
-#
-# Backtick spans can wrap across a soft line break (Markdown reflow): a
-# citation of `` `prev: MED/training\n#14592` `` is still ONE code span,
-# not two. The previous `` `[^`\\n]*` `` forbade newlines and let the
-# second half escape the mask -- a defect measured on PR #14700's own
-# `` commits[0] `` (L4-L5 of the body) where the bug citation spanned two
-# lines and the unguarded half tripped `` _PREV_PR_REF_RE `` on
-# `` #14592 ``. We allow ``\\n`` inside the span (still forbidding a bare
-# backtick) so the whole citation is masked as one. Fenced blocks (```...```)
-# already accept newlines via ``.*?`` + ``re.DOTALL``.
-_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`]*`", re.DOTALL)
-
-
-def _mask_code_spans(text: str) -> str:
-    r"""Blank out inline code spans / fenced blocks, preserving length."""
-    return _CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
+# Citation masking is shared with the close-keyword finder since #14780: the
+# citation/declaration split a `prev:` clause needs (#14550, multi-line #14700)
+# is the same split a ``fixes #N`` citation needs. The canonical surface lives
+# in grain_tag (``gt.mask_code_spans``) so both guards mask identically.
 
 
 def _first_grain_line(text: str | None) -> str | None:
@@ -281,7 +262,7 @@ def find_prev_self_references(text: str | None, current_pr: int | None) -> list[
     if not text or current_pr is None:
         return []
     out: list[dict] = []
-    for m in _PREV_PR_REF_RE.finditer(_mask_code_spans(text)):
+    for m in _PREV_PR_REF_RE.finditer(gt.mask_code_spans(text)):
         n = int(m.group(1))
         if n == current_pr:
             out.append({"prev_pr": n, "match": m.group(0)})
@@ -302,7 +283,7 @@ def find_prev_target_pr_numbers(text: str | None) -> list[int]:
         return []
     seen: set[int] = set()
     out: list[int] = []
-    for m in _PREV_PR_REF_RE.finditer(_mask_code_spans(text)):
+    for m in _PREV_PR_REF_RE.finditer(gt.mask_code_spans(text)):
         n = int(m.group(1))
         if n not in seen:
             seen.add(n)
