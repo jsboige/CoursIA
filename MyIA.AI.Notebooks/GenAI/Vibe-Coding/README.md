@@ -45,13 +45,14 @@ Assistant de codage agentique développé par Anthropic. Interface CLI + Extensi
 ### Installation Claude Code
 
 ```bash
-# Installation CLI
-npm install -g @anthropic-ai/claude-code
-
-# Configuration OpenRouter (PowerShell)
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
-$env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
+# Installation CLI - chemin canonique : installation native (Node.js non requis)
+#   Windows : installateur depuis https://claude.com/code
+#   macOS   : brew install --cask claude-code
+#   Linux   : curl -fsSL https://install.claude.com | sh
+claude --version
 ```
+
+Configuration OpenRouter : passe par le proxy local `openrouter-proxy` (`ANTHROPIC_BASE_URL = http://127.0.0.1:8899/api`), guide pas-a-pas dans [OPENROUTER_SETUP.md](Claude-Code/docs/OPENROUTER_SETUP.md). Alternative npm : `npm install -g @anthropic-ai/claude-code` (voir le [guide d'installation](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)).
 
 ## Roo Code - Ateliers
 
@@ -235,7 +236,7 @@ Le répertoire `docs/` contient :
 ## Prérequis techniques
 
 - **VS Code** 1.60.0+
-- **Node.js** 18+ (pour Claude Code CLI)
+- **Node.js** 18+ (pour le proxy OpenRouter et l'alternative npm uniquement — pas requis pour l'installation native de Claude Code)
 - Un compte **OpenRouter** avec une clé API
 - Connaissances de base en programmation
 
@@ -252,7 +253,9 @@ A l'issue de cette série, vous serez capable de :
 
 ### Claude Code ne s'installe pas ou erreur `command not found`
 
-Claude Code (modules [01](Claude-Code/01-decouverte/) a [05](Claude-Code/05-automatisation-avancee/)) s'installe via npm. Si erreur `claude: command not found` après installation :
+Claude Code (modules [01](Claude-Code/01-decouverte/) a [05](Claude-Code/05-automatisation-avancee/)) s'installe par le **chemin canonique : l'installation native** (défaut de la documentation officielle, Node.js non requis — guide : [INSTALLATION-CLAUDE-CODE.md](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)). Si erreur `claude: command not found` après installation native : vérifier que `~/.local/bin` est dans le PATH, puis redémarrer le terminal.
+
+Si vous avez utilisé l'alternative npm :
 
 ```bash
 # Verifier Node.js (18+ requis)
@@ -260,9 +263,6 @@ node --version
 
 # Installer globalement
 npm install -g @anthropic-ai/claude-code
-
-# Verifier l'installation
-claude --version
 
 # Si toujours introuvable, verifier le PATH npm
 npm config get prefix
@@ -291,7 +291,7 @@ Les ateliers Claude Code et Roo Code utilisent OpenRouter comme fournisseur LLM.
 
 ```powershell
 # Verifier les variables d'environnement
-$env:ANTHROPIC_BASE_URL    # doit etre "https://openrouter.ai/api"
+$env:ANTHROPIC_BASE_URL    # doit etre "http://127.0.0.1:8899/api" (proxy local, cf OPENROUTER_SETUP.md)
 $env:ANTHROPIC_AUTH_TOKEN   # doit commencer par "sk-or-v1-..."
 ```
 

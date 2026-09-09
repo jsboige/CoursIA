@@ -3051,8 +3051,14 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     if not nit_author:
         return True
     body = lift_body or ""
-    author_re = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(nit_author)
-                           + r"(?![A-Za-z0-9_.-])")
+    # #15193: le `.` est exclu des frontieres (lookbehind ET lookahead) --
+    # un login suivi d'un point (fin de phrase) est une frontiere d'identite
+    # legitime : "la reserve de <login>." doit MATCHER. Seul un caractere de
+    # MOT (alnum/_) continue le token (anti "jsboige2" / "jsboige_x") ; `-`
+    # reste en classe pour proteger la sous-chaine ("Myia" dans
+    # "clusterManager-Myia").
+    author_re = re.compile(r"(?<![A-Za-z0-9_-])" + re.escape(nit_author)
+                           + r"(?![A-Za-z0-9_-])")
     if _scope_lifted_sentence(body, author_re):
         return True
     if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":

@@ -246,10 +246,26 @@ def _audit_dir(registry_dir: Path, slug: str) -> Path:
     return registry_dir / slug
 
 
+# Windows MAX_PATH = 260 : le prefixe fixe (repo + twin_pairs.d/<pair-slug>/ +
+# `<idx:04d>-<date>-`) consomme deja ~100 chars, et la CI windows-latest fait un
+# `git checkout` sans `core.longpaths` -> un slug de lane non borne casse le
+# checkout (incident 2026-09-07 : `by` narratif de 250+ chars -> fichier de 308).
+_AUDIT_LANE_SLUG_MAX = 48
+
+
 def _audit_lane_slug(by: str | None) -> str:
     """Slug d'une identite de lane (`myia-po-2024:CoursIA-2`) -> nom de fichier
-    (safe : pas de `:` ni de `/`). Vide -> 'manual'."""
+    (safe : pas de `:` ni de `/`). Vide -> 'manual'.
+
+    Borne a `_AUDIT_LANE_SLUG_MAX` : le champ `by` accepte une justification
+    libre apres l'id de lane, mais seul le debut survit dans le nom de fichier
+    (le contenu YAML garde le texte integral). Les collisions de troncature
+    entre lanes differentes sont deja couvertes par le suffixe `-2`/`-3` de
+    `_write_audit_file` et par l'index zero-padded unique par paire.
+    """
     s = re.sub(r"[^a-z0-9A-Z]+", "-", str(by or "manual")).strip("-")
+    if len(s) > _AUDIT_LANE_SLUG_MAX:
+        s = s[:_AUDIT_LANE_SLUG_MAX].rstrip("-")
     return s or "manual"
 
 
