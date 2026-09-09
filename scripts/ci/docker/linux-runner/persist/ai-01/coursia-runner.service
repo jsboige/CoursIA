@@ -1,0 +1,71 @@
+# Unite systemd du superviseur de runners Linux CoursIA -- version ai-01.
+# Copie de REFERENCE : l'original vit sous /etc/systemd/system/ dans la distro
+# Ubuntu de l'hote. La copie a la racine de persist/ est celle de po-2024 --
+# voir persist/README.md pour la table de correspondance.
+[Unit]
+Description=Superviseur de runners GitHub Actions Linux (CoursIA, ephemeres conteneurises)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+After=docker.service
+# Wants= et NON Requires= (#14347 item 2). Un docker.service en echec au boot
+# doit retarder ce service et le laisser retenter sous Restart=always, pas le
+# faire sortir de la liste des unites -- une unite sortie ne revient qu'a la
+# main, et personne ne va la chercher.
+Wants=docker.service
+
+# Garde anti-emballement au niveau de l'unite (#15091). Restart=always seul
+# fait boucler indefiniment un service qui echoue au demarrage -- master.env
+# illisible, token revoque, slice absente sous REQUIRE=1 : autant de causes qui
+# ne se reparent PAS toutes seules. Au-dela de 5 echecs en 10 min, systemd
+# passe l'unite en `failed` et arrete de marteler. Le backoff interne des
+# boucles de slot couvre l'autre echelle -- la panne transitoire pendant que le
+# superviseur, lui, tourne.
+#
+# CES DEUX CLES SONT EN [Unit] ET NON EN [Service] (mesure du 2026-09-07). Elles
+# y ont ete ecrites d'abord, et `systemd-analyze verify` a rendu :
+#   Unknown key name 'StartLimitIntervalSec' in section 'Service', ignoring.
+# Une clause ignoree ne refuse rien : le service aurait redemarre toutes les 30 s
+# indefiniment, en presentant l'apparence exacte d'un garde anti-emballement.
+# C'est la classe de defaut que cette PR ferme ailleurs, reproduite dans le
+# fichier qui la porte -- d'ou la mention explicite ici plutot qu'un
+# deplacement silencieux. Depuis systemd v229 ces cles appartiennent a [Unit]
+# (systemd.unit(5)) ; mesure sur systemd 255 (255.4-1ubuntu8.17).
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/coursia-runner-start.sh 8
+# ExecStop PASSE PAR LE WRAPPER (#15091). La version precedente appelait
+# supervise.sh directement, donc sans COURSIA_RUNNER_STATE_DIR : le sentinel
+# atterrissait dans $HOME/.coursia-runner/ -- que supervise.sh CREE lui-meme --
+# pendant que le superviseur surveillait /var/lib/coursia-runner/. L'arret
+# gracieux etait inerte et rendait rc=0 ; systemd retombait sur le SIGTERM de
+# KillMode=mixed, tuant net les jobs en vol que le sentinel existe pour laisser
+# finir.
+ExecStop=/usr/local/bin/coursia-runner-start.sh stop
+KillMode=mixed
+# Un lake build a froid tient des dizaines de minutes : l'arret gracieux doit
+# lui laisser le temps d'aboutir, sinon il rend un rouge qui ne veut rien dire.
+TimeoutStopSec=900
+
+Restart=always
+RestartSec=30
+# Le plafond de redemarrage qui borne ce Restart=always vit en [Unit], pas ici
+# -- voir le bloc StartLimit* plus haut, et la raison pour laquelle il a fallu
+# l'y deplacer.
+
+# L'hote prime (clause en tete de supervise.sh et de
+# docs/ci/self-hosted-runners.md) : le superviseur cede la main devant
+# l'interactif et les trainings GPU.
+Nice=10
+# Comptabilite d'I/O et poids relatif. PAS de IOWriteBandwidthMax ici : les
+# conteneurs sont des NEVEUX du superviseur, pas ses enfants -- ils naissent
+# dans le cgroup du daemon, pas dans celui de cette unite. Un plafond dur pose
+# ici ne bornerait que ce que le superviseur ecrit lui-meme, c'est-a-dire ses
+# journaux. Le plafond dur des conteneurs vit dans coursia-ci.slice ; ce qui
+# est honnete a cette place, ce sont ces deux lignes.
+IOAccounting=yes
+IOWeight=50
+
+[Install]
+WantedBy=multi-user.target

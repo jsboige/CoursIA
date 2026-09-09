@@ -1744,12 +1744,12 @@ Intelligence Artificielle - IV
 
 # Pour aller plus loin: Notebooks
 
-- **Infer.NET 101**: `Probas/Infer-101.ipynb` - introduction probabilités
-- **Réseaux bayésiens**: `Probas/Infer/Infer-3-Factor-Graphs.ipynb`, `Infer-4-Bayes-Nets.ipynb`
-- **Inférence**: `Probas/Infer/Infer-5-Inference.ipynb`, `Infer-7-Variable-Elimination.ipynb`
-- **HMM**: `Probas/Infer/Infer-6-HMM.ipynb`, `Infer-8-Temporal.ipynb`
-- **Décision et utilité**: `Probas/Infer/Infer-12-Decision.ipynb`, `Infer-14-Decision-Utility.ipynb`
-- **MDP et RL**: `GameTheory/GameTheory-2b-MDP.ipynb`, `GameTheory-14b-RL-Basics.ipynb`
+- **Infer.NET prise en main**: `Probas/Infer/Infer-1b-Premiers-Modeles.ipynb`
+- **Réseaux bayésiens**: `Probas/Infer/Infer-4-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
+- **Inférence**: `Probas/Infer/Infer-3-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
+- **HMM et séries temporelles**: `Probas/Infer/Infer-14-Sequences.ipynb`, `Probas/PyMC/PyMC-14-Sequences.ipynb`, `Probas/Infer/Infer-17-Kalman-Filter.ipynb`
+- **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-05-Decision-Networks.ipynb`, `DecInfer-06-Value-Information.ipynb`
+- **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb`, `DecInfer-09-Lean-Gittins.ipynb`, `DecInfer-10-Thompson-Sampling.ipynb`
 
 <!-- Liens vers notebooks dans MyIA.AI.Notebooks/ -->
 

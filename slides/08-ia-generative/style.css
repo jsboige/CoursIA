@@ -1,0 +1,124 @@
+/* Figures en overlay : texte z2, images z1. Aucun partage en colonnes. */
+.slidev-layout.genai-illustrated { position: relative; font-size: 20px; line-height: 1.35; }
+.slidev-layout.image-overlay.genai-illustrated > .overlay-content { position: static; }
+.genai-illustrated h1, .genai-illustrated ul, .genai-illustrated p { position: relative; z-index: 2; }
+.genai-illustrated h1 { font-size: 1.4em; margin-bottom: 16px; }
+.genai-illustrated li { font-size: 1em; margin-bottom: 12px; }
+.genai-visual { position: absolute; z-index: 1; top: 305px; height: 220px; left: 48px; width: 884px; display: flex; align-items: center; justify-content: center; }
+.genai-visual img { width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; }
+.genai-visual.of-2 { width: 424px; }
+.genai-visual.of-2.visual-2 { left: 508px; }
+
+/* Liens vers les notebooks : couleur accent + underline. */
+.slidev-layout a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+/* Texte des paragraphes : interligne confortable, fonte heredee du theme. */
+.slidev-layout p {
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+/* Reduced motion : pas de transition sur les v-click, juste apparition. */
+@media (prefers-reduced-motion: reduce) {
+  .slidev-vclick-target,
+  .slidev-vclick-enter,
+  .slidev-vclick-leave {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Schéma détaillé : un paragraphe introducteur, puis un grand overlay. */
+.genai-large-visual .genai-visual { top: 170px; height: 350px; }
+
+/* Échantillons : espaces propres aux paragraphes, inspirés des rendus PPTX 05–07.
+   Les figures restent des overlays absolus ; aucune grille de colonnes commune. */
+.genai-pyramid li:nth-child(1) { width: 100%; }
+.genai-pyramid li:nth-child(2) { width: 43%; margin-top: 38px; }
+.genai-pyramid li:nth-child(3) { width: 43%; margin-top: 22px; }
+.genai-pyramid .genai-visual { left: 465px; top: 195px; width: 465px; height: 275px; }
+
+.genai-tokens li:nth-child(1) { width: 47%; min-height: 155px; }
+.genai-tokens li:nth-child(2) { width: 49%; min-height: 155px; }
+.genai-tokens li:nth-child(3) { width: 100%; }
+.genai-tokens .genai-visual.visual-1 { left: 525px; top: 82px; width: 405px; height: 155px; }
+.genai-tokens .genai-visual.visual-2 { left: 530px; top: 254px; width: 395px; height: 160px; }
+
+.genai-attention li:nth-child(1) { width: 55%; min-height: 145px; }
+.genai-attention li:nth-child(2) { width: 43%; min-height: 145px; }
+.genai-attention li:nth-child(3) { width: 100%; }
+.genai-attention .genai-visual.visual-1 { left: 690px; top: 85px; width: 175px; height: 165px; }
+.genai-attention .genai-visual.visual-2 { left: 465px; top: 265px; width: 465px; height: 125px; }
+
+.genai-transformer li { width: 47%; margin-bottom: 26px; }
+.genai-transformer .genai-visual { left: 545px; top: 90px; width: 365px; height: 425px; }
+
+.genai-temperature li:nth-child(1) { width: 51%; min-height: 155px; }
+.genai-temperature li:nth-child(2) { width: 41%; min-height: 100px; }
+.genai-temperature li:nth-child(3) { width: 41%; }
+.genai-temperature .genai-visual.visual-1 { left: 585px; top: 90px; width: 300px; height: 150px; }
+.genai-temperature .genai-visual.visual-2 { left: 445px; top: 270px; width: 490px; height: 195px; }
+
+/* Le système occupe l'espace commun aux deux paragraphes explicatifs. */
+.genai-system li:nth-child(1) { width: 100%; margin-bottom: 35px; }
+.genai-system li:nth-child(n+2) { width: 43%; margin-bottom: 30px; }
+.genai-system .genai-visual { left: 465px; top: 195px; width: 465px; height: 265px; }
+
+/* Le processus horizontal répond au principe ; les nuances suivent dessous. */
+.genai-diffusion li:nth-child(1) { width: 44%; min-height: 215px; }
+.genai-diffusion li:nth-child(n+2) { width: 100%; }
+.genai-diffusion .genai-visual { left: 465px; top: 115px; width: 465px; height: 170px; }
+
+/* Le dessin accompagne le design uniquement, pas toute la liste des usages. */
+.genai-design li:nth-child(1) { width: 64%; min-height: 165px; }
+.genai-design li:nth-child(n+2) { width: 100%; margin-bottom: 22px; }
+.genai-design .genai-visual { left: 700px; top: 95px; width: 210px; height: 155px; }
+
+.genai-companion li:nth-child(-n+2) { width: 63%; margin-bottom: 30px; }
+.genai-companion li:nth-child(3) { width: 100%; margin-top: 45px; }
+.genai-companion .genai-visual { left: 695px; top: 100px; width: 215px; height: 250px; }
+
+.genai-workplace li:nth-child(1) { width: 48%; min-height: 200px; }
+.genai-workplace li:nth-child(n+2) { width: 100%; margin-bottom: 22px; }
+.genai-workplace .genai-visual { left: 520px; top: 95px; width: 390px; height: 185px; }
+
+/* La capture de communication garde une grande surface pour ses annotations. */
+.genai-email li { width: 43%; margin-bottom: 32px; }
+.genai-email .genai-visual { left: 470px; top: 100px; width: 460px; height: 380px; }
+
+.genai-analytics li:nth-child(1) { width: 55%; min-height: 200px; }
+.genai-analytics li:nth-child(n+2) { width: 100%; margin-bottom: 22px; }
+.genai-analytics .genai-visual { left: 605px; top: 90px; width: 295px; height: 200px; }
+
+/* Un secteur par zone : chaque figure est centrée face à son paragraphe. */
+.genai-sectors li:nth-child(-n+2) { width: 61%; min-height: 150px; }
+.genai-sectors li:nth-child(3) { width: 100%; }
+.genai-sectors .genai-visual.visual-1 { left: 670px; top: 90px; width: 250px; height: 145px; }
+.genai-sectors .genai-visual.visual-2 { left: 650px; top: 252px; width: 270px; height: 145px; }
+
+/* Écosystème modèles/APIs : HF face bullet 2 "Modèles locaux". */
+.genai-ecosystem-models li:nth-child(1) { width: 100%; margin-bottom: 22px; }
+.genai-ecosystem-models li:nth-child(2) { width: 50%; min-height: 180px; }
+.genai-ecosystem-models li:nth-child(3) { width: 100%; margin-top: 18px; }
+.genai-ecosystem-models .hf-figure { left: 625px; top: 175px; width: 260px; height: 170px; }
+
+/* Écosystème hébergement : Groq face bullet 1 "Cloud", vLLM face bullet 2 "Local". */
+.genai-ecosystem-hosting li:nth-child(1) { width: 50%; min-height: 180px; }
+.genai-ecosystem-hosting li:nth-child(2) { width: 50%; min-height: 180px; }
+.genai-ecosystem-hosting .groq-figure { left: 615px; top: 100px; width: 320px; height: 150px; }
+.genai-ecosystem-hosting .vllm-figure { left: 615px; top: 305px; width: 320px; height: 150px; }
+
+/* Écosystème outils : ComfyUI face bullet 1 "Image", ST/Dify face bullet 2. */
+.genai-ecosystem-tools li:nth-child(1) { width: 50%; min-height: 160px; }
+.genai-ecosystem-tools li:nth-child(2) { width: 48%; min-height: 150px; margin-top: 14px; }
+.genai-ecosystem-tools .comfyui-figure { left: 540px; top: 85px; width: 390px; height: 160px; }
+.genai-ecosystem-tools .sillytavern-figure { left: 525px; top: 245px; width: 200px; height: 130px; }
+.genai-ecosystem-tools .dify-figure { left: 745px; top: 245px; width: 200px; height: 130px; }
+
+/* Éthique : balance+grille face bullet 1 "Biais". */
+.genai-ethics li:nth-child(1) { width: 55%; min-height: 175px; }
+.genai-ethics li:nth-child(n+2) { width: 100%; margin-bottom: 18px; }
+.genai-ethics .ethics-figure { left: 615px; top: 90px; width: 300px; height: 165px; }

@@ -1848,3 +1848,115 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
         f"auto-apply absent. Sortie: {captured[:400]}"
     )
     assert "tooling" in captured
+
+
+def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
+    """PR synthetique untagged non-draft, pour `unattributed_blocked_prs`."""
+    created = (pig.NOW - pig.dt.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"number": n, "title": f"pr {n}", "body": "pas de tag\n",
+            "createdAt": created, "isDraft": False,
+            "author": {"login": author}, "headRefName": branch}
+
+
+def test_is_automation_vehicle_requires_both_conditions():
+    """#14706 : bot ET branche chore/*-pending, pas l'une sans l'autre."""
+    assert pig.is_automation_vehicle({
+        "author": {"login": "app/github-actions"},
+        "headRefName": "chore/catalog-refresh-pending"}) is True
+    assert pig.is_automation_vehicle({
+        "author": {"login": "app/github-actions"},
+        "headRefName": "feature/other"}) is False
+    assert pig.is_automation_vehicle({
+        "author": {"login": "jsboige"},
+        "headRefName": "chore/x-pending"}) is False
+
+
+def test_automation_vehicle_excluded_from_orphans_report(monkeypatch):
+    """#14706 : le vehicule du bot (chore/*-pending) sort de la file d'orphelines."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(1, author="app/github-actions", branch="chore/catalog-refresh-pending"),
+    ], {1: red})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_human_lane_stays(monkeypatch):
+    """Controle positif : une untagged bloquee d'une lane humaine reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_untagged_pr(7, author="jsboige", branch="feature/x")], {7: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [7]
+
+
+def test_orphan_report_neg1_bot_off_pattern_stays(monkeypatch):
+    """Controle negatif 1 : un bot sur branche HORS chore/*-pending reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(8, author="github-actions[bot]", branch="feature/catalog-fix"),
+    ], {8: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [8]
+
+
+def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
+    """Controle negatif 2 : un humain sur branche chore/*-pending reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
+    ], {9: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
+# --- #15139 : delegation a l'organe check_unaddressed_nits -----------------
+# Incident fondateur (2026-09-07, mesure sur myia-po-2027:CoursIA-2) : la lane
+# portait trois PRs a remarques non levees dont deux du user, et le picker
+# passait directement au tirage. La delegation re-assemblait l'appel
+# `analyse(...)` avec un kwarg `issue_created` disparu de la signature ->
+# TypeError sur CHAQUE PR, avale par le `except Exception: continue` ->
+# dict vide silencieux -> la cause « point de review non leve » ne pouvait
+# plus se declencher, pour aucune lane, pendant que le merge-gate (appel
+# correct) refusait les memes PRs.
+
+def test_unaddressed_review_points_delegue_a_analyse_pr(monkeypatch):
+    """La delegation passe par le point d'entree `analyse_pr` de l'organe --
+    un seul assemblage des kwargs, celui du merge-gate."""
+    import check_unaddressed_nits as nits
+    calls = []
+
+    def fake_analyse_pr(n):
+        calls.append(n)
+        return {"blocked": True, "blocking": [{"kind": "BLOCK"}, {"kind": "NIT"}]}
+
+    monkeypatch.setattr(nits, "analyse_pr", fake_analyse_pr)
+    assert pig.unaddressed_review_points([15049, 15081]) == {15049: 2, 15081: 2}
+    assert calls == [15049, 15081]
+
+
+def test_unaddressed_review_points_derive_de_contrat_visible(monkeypatch):
+    """Un TypeError de l'organe (derive de contrat) est RELANCE, pas classe
+    « PR illisible » : le bug d'appel doit rester visible (nits_unavailable
+    via red_backlog) au lieu d'un dict vide muet."""
+    import check_unaddressed_nits as nits
+
+    def broken_analyse_pr(n):
+        raise TypeError("analyse() got an unexpected keyword argument")
+
+    monkeypatch.setattr(nits, "analyse_pr", broken_analyse_pr)
+    import pytest
+    with pytest.raises(TypeError):
+        pig.unaddressed_review_points([15049])
+
+
+def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeypatch):
+    """Une PR illisible (gh en erreur) reste avalee par PR : la panne d'UNE
+    PR ne doit pas empecher la detection sur les autres."""
+    import check_unaddressed_nits as nits
+    calls = []
+
+    def flaky_analyse_pr(n):
+        calls.append(n)
+        if n == 15049:
+            raise RuntimeError("gh: connection reset")
+        return {"blocked": True, "blocking": [{"kind": "NIT"}]}
+
+    monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
+    assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
+    assert calls == [15049, 15081]
