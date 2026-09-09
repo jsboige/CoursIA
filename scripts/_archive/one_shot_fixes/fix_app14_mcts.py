@@ -18,6 +18,17 @@ Fixes :
     Echec" par une interpretation correcte du benchmark MCTS post-fix.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in cells
+#   mcts-impl, benchmark-mcts and 2a282f84 of App-14-ConnectFour-Adversarial.ipynb
+# - Verdict recorded in : PR #580 (0ff88db90), PR #9607
+#
+# Per-function disposition :
+# - to_list() : kept as reference; no successor (local cell-source formatter)
+# - main() : transformation applied in PR #580; the three target cells were
+#   verified on main on 2026-09-09
+
 import json
 from pathlib import Path
 

@@ -22,6 +22,19 @@ Executable both ways:
     py scripts/tests/test_fix_texte_hierarchy.py
     npx pytest scripts/tests/test_fix_texte_hierarchy.py
 """
+
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : test_demote_md_asides.py for hint demotion only
+# - Verdict recorded in : PR #9607
+#
+# Per-function disposition :
+# - all test_*() functions : pair-archived; hint coverage is partially absorbed,
+#   while _demote_first_line_h1() has no canonical successor
+# - _write_nb() and _md() : kept as historical fixture helpers
+# - <module> loader : dormant and broken after move (sys.path targets
+#   scripts/_archive); intentionally documented rather than reactivated
+
 from __future__ import annotations
 
 import json
