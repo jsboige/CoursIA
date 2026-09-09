@@ -413,36 +413,36 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-f42d
 # Observez comment le style de generation change.
 
 print(""Exercice a completer : fine-tunez sur un style different"")",,,,,,,,165be5bb72fe6930,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-70d4b526,markdown,fr,09c57c376066abb4,"### Exercice 3 : Hyperparametres d'entrainement
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-70d4b526,markdown,fr,7789f8e75f63bd11,"### Exercice 3 : Hyperparametres d'entrainement
 
 Le *learning rate* est l'hyperparametre le plus sensible du fine-tuning. Un LR trop faible = convergence lente, un LR trop eleve = divergence et degradation du modèle. Testez différentes valeurs pour trouver le point optimal.
 
-**Point de reference mesure** : avec la configuration du corps du notebook (10 epochs, batch 2), la perte finale affichee etait de **5.0106** en **~13 s** sur RTX 3090 -- c'est la valeur a battre (ou a degrader volontairement) en faisant varier le learning rate. Un `learning_rate` trop eleve fait typiquement diverger la perte au-dela de cette reference des les premiers steps, un taux trop faible la laisse stagner sans l'atteindre.","### Exercise 3: Training Hyperparameters
+**Point de reference mesure** : avec la configuration du corps du notebook (10 epochs, batch 2), la perte finale mesuree est de **5.0025** (12,3 s sur la machine d'execution, valeur machine-dependante) -- c'est la valeur a battre (ou a degrader volontairement) en faisant varier le learning rate. Un `learning_rate` trop eleve fait typiquement diverger la perte au-dela de cette reference des les premiers steps, un taux trop faible la laisse stagner sans l'atteindre.","### Exercise 3: Training Hyperparameters
 
-The *learning rate* is the most sensitive hyperparameter in fine-tuning. An LR that is too low = slow convergence, an LR that is too high = divergence and degradation of the model. Test different values to find the optimal point.",,,,,,,09c57c376066abb4,71a929b06826c340,,,,,,,
+The *learning rate* is the most sensitive hyperparameter in fine-tuning. An LR that is too low = slow convergence, an LR that is too high = divergence and degradation of the model. Test different values to find the optimal point.",,,,,,,7789f8e75f63bd11,71a929b06826c340,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-fc5cb509,code,fr,4daa1488050f4257,"# Exercice 3 : Impact du learning rate
 # TODO etudiant : Entrainnez avec learning_rate = 1e-5, 5e-4, 1e-3.
 # Observez la perte finale et la qualite de generation.
 # Que se passe-t-il avec un learning rate trop eleve ?
 
 print(""Exercice a completer : comparez les learning rates"")",,,,,,,,4daa1488050f4257,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-ebb412ad,markdown,fr,888977dd137ad613,"## Resume
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-ebb412ad,markdown,fr,a34405ce818798e5,"## Resume
 
 | Approche | Params entrainables | VRAM requise | Stockage adaptateur |
 |----------|--------------------:|-------------:|--------------------:|
-| Full Fine-Tuning | 100% | 3-4x taille modèle | Modèle complet |
-| Partial (2 couches) | ~5-15% | ~1.5x taille modèle | Couches modifiees |
-| **LoRA (r=8)** | **~0.5%** | **~1.1x taille modèle** | **~2-5 Mo** |
+| Full Fine-Tuning | 100 % (124 439 808) | 3-4x taille modèle | Modèle complet |
+| Partial (2 couches) | **42,41 %** (52 773 120) | ~1.5x taille modèle | Couches modifiees |
+| **LoRA (r=8)** | **0,24 %** (294 912) | **~1.1x taille modèle** | **1,18 Mo** |
 
 **Points cles** :
 - LoRA decompose la mise a jour en matrices de bas rang $B \times A$ ou $r \ll d, k$
-- Seuls ~0.5% des paramètres sont entraines, mais la qualite reste proche du full fine-tuning
+- Seuls 0,24 % des paramètres sont entraines (mesure section 3 ; `trainable%: 0.2364` cote PEFT) ; ce notebook n'execute pas de full fine-tuning de comparaison, aucune parité de qualité n'est donc mesurée ici
 - Les adaptateurs sont portables : un seul modèle de base + N adaptateurs pour N tâches
 - Le rang $r$ contrôle le compromis expressivite/efficacite
 
 **Prochaines étapes** (FT-02) : LoRA sur un modèle plus grand avec quantization 4-bit (QLoRA).
 
-**Ce que ce notebook a mesure, pas seulement annonce** : 124 439 808 parametres totaux pour GPT-2 ; 294 912 parametres entrainables en LoRA r=8 (0,24 %, `trainable%: 0.2364` cote PEFT) ; un adaptateur de **1,18 Mo** contre **497,8 Mo** pour le modele complet ; et une generation apres fine-tuning qui reste entierement en francais la ou le modele original laissait affleurer l'anglais. La suite logique est FT-02 : quantizer le modele de base en 4 bits (QLoRA) pour entrainer ces memes adaptateurs sur une fraction de la VRAM.","## Summary
+**Ce que ce notebook a mesure, pas seulement annonce** : 124 439 808 parametres totaux pour GPT-2 ; 294 912 parametres entrainables en LoRA r=8 (0,24 %, `trainable%: 0.2364` cote PEFT) ; un adaptateur de **1,18 Mo** contre **497,8 Mo** pour le modele complet ; et, dans ce tirage commite, une generation apres fine-tuning majoritairement en francais -- l'anglais du pre-entrainement y recule sans etre evacue totalement -- la ou le modele original basculait en anglais : contraste indicatif faute de re-echantillonnage controle (cf. la reserve de la section 5). La suite logique est FT-02 : quantizer le modele de base en 4 bits (QLoRA) pour entrainer ces memes adaptateurs sur une fraction de la VRAM.","## Summary
 
 | Approach | Trainable params | Required VRAM | Adapter storage |
 |----------|--------------------:|-------------:|--------------------:|
@@ -456,7 +456,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb,cell-ebb4
 - Adapters are portable: a single base model + N adapters for N tasks
 - The rank $r$ controls the expressiveness/efficiency trade-off
 
-**Next steps** (FT-02): LoRA on a larger model with 4-bit quantization (QLoRA).",,,,,,,888977dd137ad613,c2cf1f5cf24a4aa9,,,,,,,
+**Next steps** (FT-02): LoRA on a larger model with 4-bit quantization (QLoRA).",,,,,,,a34405ce818798e5,c2cf1f5cf24a4aa9,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,b4fb8592,markdown,fr,4c3998735e0a98b2,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
 
 **Objectif** : Comprendre la quantization 4-bit (NF4) et l'approche QLoRA qui combine quantization + LoRA pour fine-tuner des modèles jusqu'a 7B params sur un GPU consumer.
