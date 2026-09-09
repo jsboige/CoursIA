@@ -795,6 +795,11 @@ def test_adjacency_detected_from_body_when_caller_omits_flag(monkeypatch, capsys
         "fait (cf #13967)"
     )
     assert "gh pr update-branch" not in out
+    assert "DECLAREE, NON MESUREE" in out, (
+        "#15184 : sans fenetre mergee consultee, le rouge d'adjacence du "
+        "picker est un CONSEIL fonde sur declaration -- la branche "
+        "specialisee doit le dire, pas le presenter comme un blocage prouve"
+    )
 
 
 def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys):
@@ -845,6 +850,48 @@ def test_adjacency_med_advisory_not_specialized_branch(monkeypatch, capsys):
         "declaree)"
     )
     assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
+def test_adjacency_red_reports_epistemic_kind(monkeypatch):
+    """#15184 (review) : `_is_adjacency_red` rend le STATUT epistemique --
+    "declared" (conseil sur declaration : le seul cas que le picker peut
+    produire, `check(body)` sans `merged_prev` resout toujours
+    prev_source="declared") ou "measured" (blocage prouve sur sequence
+    mergee) -- pas un bool agrege. La branche specialisee s'en sert pour
+    distinguer conseil declare et blocage prouve.
+    """
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    assert pig._is_adjacency_red(body) == "declared"
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import variation_adjacency_guard as vag
+    monkeypatch.setattr(vag, "check", lambda b: {
+        "guard_pass": False, "blocking": True, "adjacent": True,
+        "unmeasured": False})
+    assert pig._is_adjacency_red(body) == "measured"
+    monkeypatch.setattr(vag, "check", lambda b: {
+        "guard_pass": True, "blocking": False, "adjacent": True,
+        "unmeasured": False})
+    assert pig._is_adjacency_red(body) is False
+
+
+def test_adjacency_measured_wording_distinguishes_proven_block(
+        monkeypatch, capsys):
+    """#15184 : quand le statut est "measured" (blocage PROUVE par fenetre
+    mesuree), la branche specialisee doit le dire -- ne pas presenter un
+    blocage prouve comme un simple conseil declare, ni l'inverse.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    pr = _pr_with_body(105, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {105: red})
+    monkeypatch.setattr(pig, "_is_adjacency_red", lambda b: "measured")
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "MESUREE" in out and "PROUVE" in out
+    assert "DECLAREE, NON MESUREE" not in out
 
 
 def test_adjacency_caller_override_still_respected(monkeypatch, capsys):

@@ -1356,7 +1356,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     return causes
 
 
-def _is_adjacency_red(body: str) -> bool:
+def _is_adjacency_red(body: str) -> str | bool:
     """Verdict LIGHT-genre adjacency pour le corps d'une PR rouge (#13967).
 
     Pont entre l'organe `scripts/ci/variation_adjacency_guard.py` (verdict
@@ -1366,6 +1366,22 @@ def _is_adjacency_red(body: str) -> bool:
     cause. Enveloppe tolérante : si l'organe est indisponible (import,
     panne), on rend False -- les trois conseils generiques restent le
     fallback sur, jamais un crash de picker.
+
+    #15184 (distinction demandee en review) : la valeur rendue distingue le
+    STATUT EPISTEMIQUE du rouge, pas seulement sa presence --
+      * `"measured"`  : blocking=True -- blocage PROUVE par l'organe sur
+        sequence mergee (fenetre mesuree). Non produit par le picker
+        actuel -- `check(body)` sans `merged_prev` resout toujours
+        prev_source="declared" -- mais le contrat est pinné pour le jour
+        ou un caller lui passera la sequence.
+      * `"declared"`  : unmeasured=True -- conseil fonde sur la
+        DECLARATION du body (predicat LIGHT matche, prev non mesure).
+        C'est le seul cas que le picker voit ; le CI ne ban pas cette
+        donnee (#15184), le picker CONSEILLE seulement.
+      * `False`       : pas d'adjacence evaluable.
+    Les deux premieres valeurs sont truthy : `all(r.get("is_adjacency"))`
+    et l'override `pr["is_adjacency"] = True/False` des callers restent
+    valides sans changement.
     """
     try:
         sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
@@ -1376,18 +1392,14 @@ def _is_adjacency_red(body: str) -> bool:
         verdict = vag.check(body)
     except Exception:  # noqa: BLE001 - idem : organe optionnel, picker robuste
         return False
-    # L'organe est fail-CLOSED sur le MESURE : blocking=True <=> LIGHT
-    # adjacency sur sequence mergee (cf docstring `check`). Depuis #15184,
-    # un precedecesseur `declared` (prev_source == "declared", donnee non
-    # mesuree) rend un verdict ADVISORY -- blocking: False + unmeasured:
-    # True -- mais cette branche de l'organe n'est atteinte QUE si le
-    # predicat d'adjacence a deja matche (genre == prev_genre dans la liste
-    # LIGHT). Le picker ne BAN pas, il CONSEILLE : traiter l'unmeasured
-    # comme rouge d'affichage preserve le contrat fondateur #13967 (la PR
-    # bloquee en adjacency suspconnee recoit le conseil specialise) sans
-    # reintroduire le ban CI sur donnee non mesuree. `adjacent` (DEEP/MED,
-    # advisory) reste hors branche specialised.
-    return bool(verdict.get("blocking")) or bool(verdict.get("unmeasured"))
+    if verdict.get("blocking"):
+        return "measured"
+    if verdict.get("unmeasured"):
+        return "declared"
+    # `adjacent` (DEEP/MED, advisory) reste hors branche specialised : le
+    # contrat fondateur #13967 couvre l'adjacence LIGHT, pas l'advisory
+    # DEEP/MED.
+    return False
 
 
 def _newest_start_hours(stamps) -> float | None:
@@ -1950,10 +1962,34 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         # ne retaguez pas le meme travail ») -- ici on le dit EN CLAIR
         # pour que la lane ne perde pas son cycle a pousser une PR dont
         # la cause est ailleurs.
-        print("Cause determinante : `adjacency` (G-VAR-3, organe "
-              "variation_adjacency_guard). Aucun des trois gestes generiques")
-        print("ne leve ce blocage : la cause n'est pas dans le diff, elle est")
-        print("dans le **genre du grain suivant**. Le remede :")
+        # #15184 (review) : distinguer CONSEIL fonde sur declaration et
+        # BLOCAGE prouve par fenetre mesuree. `_is_adjacency_red` rend le
+        # statut epistemique ("declared" / "measured") ; un override
+        # `is_adjacency=True` pose par un caller ne porte pas de statut --
+        # on ne reclame jamais "mesure/proouve" sans le verdict de l'organe.
+        kinds = [r["is_adjacency"] if isinstance(r.get("is_adjacency"), str)
+                 else "declared"
+                 for r in red if r.get("is_adjacency")]
+        n_measured = sum(1 for k in kinds if k == "measured")
+        if n_measured == len(kinds):
+            print("Cause determinante : `adjacency` MESUREE (G-VAR-3, sequence")
+            print("mergee -- blocage PROUVE par l'organe variation_adjacency_guard).")
+            print("Aucun des trois gestes generiques ne leve ce blocage : la cause")
+            print("n'est pas dans le diff, elle est dans le **genre du grain")
+            print("suivant**. Le remede :")
+        elif n_measured:
+            print(f"Cause determinante : `adjacency` (G-VAR-3) -- {n_measured} PR(s)")
+            print(f"MESUREE(s) (blocage prouve, sequence mergee) + "
+                  f"{len(kinds) - n_measured} DECLAREE(s)")
+            print("(conseil sur donnee non mesuree). Les trois gestes generiques")
+            print("sont invariants au predicat dans les deux cas. Le remede :")
+        else:
+            print("Cause determinante : `adjacency` DECLAREE, NON MESUREE (G-VAR-3")
+            print("advisory -- prev lu dans le body, pas de fenetre mergee consultee")
+            print("par le picker ; le CI ne BAN pas cette donnee depuis #15184, le")
+            print("picker CONSEILLE). Les trois gestes generiques ne changent pas le")
+            print("genre non plus -- la cause n'est pas dans le diff, elle est dans")
+            print("le **genre du grain suivant**. Le remede :")
         print()
         print("  -> Piocher un grain d'UN AUTRE genre (LIGHT/{guard,ledger,")
         print("     docs,readme,test} apres un autre grain du meme genre est")
