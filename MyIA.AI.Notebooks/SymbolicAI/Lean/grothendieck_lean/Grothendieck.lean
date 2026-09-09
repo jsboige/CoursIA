@@ -39,6 +39,8 @@ import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
+import Grothendieck.Fppf
+import Grothendieck.Fppf_en
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
