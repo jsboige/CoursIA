@@ -136,6 +136,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
     #   notebook-execution-required/golden-set-execute (execution lourde).
     "bash-syntax-advisory.yml",
+    # c.1020 (#14337 tranche 1) : seule `lean-social-choice.yml:build`
+    # (job non-reusable, branche ONLY) peut basculer vers le pool
+    # specialise `coursia-lean` (image Dockerfile.lean = elan +
+    # leanprover/lean4:v4.32.1 baked in, .lake/packages garde au chaud
+    # dans le volume _work par slot). `lean-build.yml` et `lean-axiom.yml`
+    # restent ubuntu-latest : ce sont des REUSABLE workflows (declenche
+    # par `workflow_call`), la garde REUSABLE_SELF_HOSTED leur refuse
+    # le routage self-hosted par principe (un fork peut les invoquer).
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",

@@ -129,7 +129,13 @@ jobs:
 
   build:
     name: "Lake build"
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
+    # Garde anti-fork exigee par scripts/ci/check_self_hosted_runner_policy.py
+    # (SAME_REPO_GUARD) : un fork ne doit pas executer du code sur le pool
+    # self-hosted, son PR etant juste un payload. Le code d'un fork ne tourne
+    # jamais sur `coursia-lean` ; `pr_gate.py` compte `skipped` comme OK
+    # (cf lean-knot.yml ligne 124 meme garde, tranche 1 #14337).
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Serialized behind the CHEAP text-level gate (fail fast before spending a
     # Mathlib build). proof-integrity now depends on THIS job (c.327) so the two
     # full compiles run in series instead of in parallel.
