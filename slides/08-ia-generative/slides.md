@@ -464,7 +464,7 @@ class: genai-illustrated genai-sectors
 
 - **Workflow :** le programme fixe l’ordre des étapes, par exemple extraire, vérifier, puis rédiger. Les erreurs et reprises sont explicites.
 - **Agent :** le modèle choisit certaines actions dans une boucle d’outils autorisée. L’application conserve permissions, budget et conditions d’arrêt.
-- **Orchestration :** Semantic Kernel, LangChain ou AutoGen aident à composer outils, modèles et échanges. Plusieurs agents ajoutent aussi coordination, latence et coûts.
+- **Orchestration :** LangChain, ou Microsoft Agent Framework -- successeur direct de Semantic Kernel et AutoGen (mêmes équipes, guides de migration officiels) -- pour composer outils, modèles et échanges. Plusieurs agents ajoutent aussi coordination, latence et coûts.
 - **Choisir simplement :** commencer par un workflow quand les étapes sont connues. N’ajouter de l’autonomie que si elle apporte un gain mesuré.
 
 </v-clicks>
@@ -515,6 +515,34 @@ class: genai-illustrated genai-sectors
 <p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb">5_RAG_Modern.ipynb</a>.</p>
 
 ---
+layout: image-overlay
+class: genai-illustrated genai-hybrideretrieve
+---
+
+# Recherche hybride : dense + BM25
+
+<p v-click="1" class="genai-level genai-concept"><strong>Concept</strong> — combiner la similarité vectorielle (dense) et la pertinence lexicale BM25 (Best Matching 25). Deux signaux complémentaires pour ne pas dépendre d'un seul.</p>
+
+<p v-click="2" class="genai-level genai-mechanism"><strong>Mécanisme</strong> — chaque recherche produit un classement. RRF (Reciprocal Rank Fusion) fusionne les rangs, pas les scores bruts. La recherche supplémentaire a néanmoins un coût.</p>
+
+<p v-click="3" class="genai-level genai-limit"><strong>Limite mesurée</strong> — sur le petit corpus du notebook, aucun gain hybride au rappel@5. BM25 exploite le recouvrement lexical après analyse des termes, pas la similarité sémantique.</p>
+
+<div v-click="2" class="genai-visual genai-hybrideretrieve-viz">
+
+```mermaid
+flowchart LR
+    Q[Question : port Qdrant 6333] --> D[Recherche dense : rangs]
+    Q --> B[BM25 : rangs]
+    D --> R[Fusion RRF par rangs]
+    B --> R
+    R --> O[Résultats fusionnés]
+```
+
+</div>
+
+<p v-click="4" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb">08-KernelMemory-Hybrid-Search.ipynb</a>.</p>
+
+---
 
 # Techniques : mémoire persistante
 
@@ -552,7 +580,7 @@ class: genai-illustrated genai-ecosystem-models
 
 <v-clicks at="1">
 
-- **APIs propriétaires :** OpenAI, Anthropic, Google, Mistral -- agrégateur OpenRouter pour comparer ou basculer.
+- **APIs propriétaires :** OpenAI (ex. GPT-6 Astra, GPT-5.6 Sol -- effort de raisonnement réglable, de none/low à max selon le modèle), Anthropic, Google, Mistral ; OpenRouter pour comparer ou basculer.
 - **Modèles locaux :** Llama, Mistral, Phi, Qwen, DeepSeek -- diffusables via Hugging Face ou GitHub, exécutables localement ou sur un cloud de confiance.
 - **Benchmarks :** nombreux, mais aucun ne suffit à prédire la qualité sur une tâche métier spécifique -- évaluer sur ses propres cas.
 
@@ -560,7 +588,7 @@ class: genai-illustrated genai-ecosystem-models
 
 <div v-click="2" class="genai-visual hf-figure"><img src="./images/img_024.png" alt="Logo Hugging Face, plateforme de diffusion et d'inférence" /></div>
 
-<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb">1_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a>.</p>
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb">1_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a> · modèles : <a href="https://platform.openai.com/docs/models">OpenAI Models API Reference</a>.</p>
 
 ---
 layout: image-overlay
@@ -635,6 +663,62 @@ class: genai-illustrated genai-ecosystem-tools
 <p v-click="5" class="notebook-reference">Référence pratique : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb">21_LoRA_FineTuning.ipynb</a>.</p>
 
 ---
+layout: image-overlay
+class: genai-illustrated genai-grpo
+---
+
+# GRPO : post-training sans critic
+
+<p v-click="1" class="genai-level genai-concept"><strong>Concept</strong> — GRPO (Group Relative Policy Optimization) supprime le critique appris de la formulation PPO (Proximal Policy Optimization) de référence. L'avantage est estimé relativement aux autres réponses du même prompt.</p>
+
+<p v-click="2" class="genai-level genai-mechanism"><strong>Mécanisme</strong> — pour un prompt, échantillonner G réponses. Normaliser leurs récompenses intra-groupe pour estimer les avantages, puis optimiser un objectif clippé avec régularisation KL.</p>
+
+<p v-click="3" class="genai-level genai-limit"><strong>Limite</strong> — le calcul croît avec G. La mémoire dépend aussi de la longueur des réponses et du traitement par lots. Mesurer le pic mémoire et la qualité avant d'augmenter G.</p>
+
+<div v-click="2" class="genai-visual genai-grpo-viz">
+
+```mermaid
+%%{init: {'flowchart': {'rankSpacing': 24}}}%%
+flowchart TD
+    P[Prompt] --> G[G complétions]
+    G --> R[Rewards]
+    R --> A[Avantage intra-groupe]
+    A --> U[Objectif clippé + KL]
+```
+
+</div>
+
+<p v-click="4" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb">PT_04_grpo_deepseek_r1.ipynb</a>.</p>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-rlvr
+---
+
+# RLVR et reward hacking : la récompense, et sa dérive
+
+<p v-click="1" class="genai-level genai-concept"><strong>Concept</strong> — RLVR (Reinforcement Learning with Verifiable Rewards) récompense selon un vérificateur. Ce signal est distinct de l'optimiseur, par exemple GRPO.</p>
+
+<p v-click="2" class="genai-level genai-mechanism"><strong>Mécanisme</strong> — extraire la réponse <em>produite</em>, puis comparer à la <em>référence</em>. Dans PT_05 : 1 si correcte ; 0,5 si extractible mais fausse ; 0 sinon. Le format reçoit donc un crédit distinct de la justesse.</p>
+
+<p v-click="3" class="genai-level genai-limit"><strong>Limite</strong> — des tests incomplets ou une réponse correcte par chance restent récompensés. Une alerte proxy signale une dérive à enquêter, sans prouver à elle seule l'échec.</p>
+
+<div v-click="2" class="genai-visual genai-rlvr-viz">
+
+```mermaid
+flowchart LR
+    X[Réponse produite] --> E[Extraction]
+    E --> C[Comparaison à la référence]
+    C --> Y[Récompense]
+    Y --> Z[Mise à jour]
+    Y -.-> W[Surveillance]
+```
+
+</div>
+
+<p v-click="4" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb">PT_05_rlvr_verifiable_rewards.ipynb</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb">PT_07_rewardspy_reward_hacking.ipynb</a>.</p>
+
+---
 
 # Test-time scaling : raisonner à l'inférence
 
@@ -642,7 +726,7 @@ class: genai-illustrated genai-ecosystem-tools
 
 - **Scaling laws classiques :** la perte de prédiction tend à diminuer avec le calcul, les données et la capacité, dans des régimes étudiés. Cela ne garantit pas un progrès sur chaque tâche.
 - **Test-time scaling :** dépenser du calcul supplémentaire *à l'inférence* -- Tree of Thoughts, self-consistency, reward models intermédiaires.
-- **Raisonnement natif :** les modèles o1 / o3 *consomment eux aussi* du calcul d'inférence (chain-of-thought interne, en tokens de raisonnement). C'est une forme de test-time scaling *interne*, pas une alternative orthogonale -- les deux peuvent se composer.
+- **Raisonnement natif :** les modèles à raisonnement intégré (ex. GPT-6 Astra, GPT-5.6 Sol) *consomment eux aussi* du calcul d'inférence -- chaîne de pensée interne, niveau d'effort réglable (jusqu'à max selon le modèle). C'est une forme de test-time scaling *interne*, pas une alternative orthogonale -- les deux se composent.
 - **Trade-off :** le test-time scaling coûte du temps et de l'argent par requête. Sur les tâches vérifiables (maths, code), mesurer le gain face au coût total, tokens de raisonnement inclus. Aucune rentabilité universelle n'est garantie.
 
 </v-clicks>
@@ -672,12 +756,40 @@ class: genai-illustrated genai-ecosystem-tools
 
 - **Métriques lexicales :** BLEU et ROUGE comparent les n-grammes avec une référence. Indicatifs pour la paraphrase, mais aveugles à la reformulation valide.
 - **Perplexité :** mesure l’incertitude du modèle sur les tokens d’un texte. Plus elle est basse, plus ce texte est prévisible pour ce modèle ; elle ne mesure pas sa vérité.
-- **Juge LLM :** pertinent pour comparer deux sorties si le juge est calibré et soumis à un ordre A/B aléatoire. La permutation *détecte* un biais de position si l'ordre inverse renverse la note ; elle ne le *neutralise pas* automatiquement.
+- **Juge LLM :** pertinent pour comparer deux sorties si le juge est calibré et soumis à un ordre A/B aléatoire. Un ordre inverse qui renverse la note est un *signal* de biais de position, pas une preuve : un renversement isolé peut être stochastique -- répéter les permutations et calibrer le juge avant de conclure.
 - **Évaluer le RAG :** distinguer le rappel des documents retrouvés et le rappel des faits couverts dans la réponse. La fidélité mesure si les affirmations sont soutenues par le contexte ; une réponse fidèle peut omettre des faits importants.
 
 </v-clicks>
 
 <p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb">22_Evaluating_Generated_Text.ipynb</a>.</p>
+
+---
+layout: image-overlay
+class: genai-illustrated genai-aneval
+---
+
+# Évaluer des trajectoires : succès, coût, sûreté
+
+<p v-click="1" class="genai-level genai-concept"><strong>Concept</strong> — faire tourner un agent ne dit pas sa valeur. Quand la tâche le permet, vérifier mécaniquement le succès. Sinon, un juge modèle doit être calibré sur des évaluations de référence.</p>
+
+<p v-click="2" class="genai-level genai-mechanism"><strong>Mécanisme</strong> — comparer succès, coût et sûreté sur les mêmes tâches. Faire une <em>ablation</em> : retirer un outil, puis remesurer. Le notebook compare avec et sans l'outil <code>resoudre_best_of_n</code>.</p>
+
+<p v-click="3" class="genai-level genai-limit"><strong>Limite</strong> — un petit test réussi ne garantit pas la généralisation. Avec un juge modèle, répéter les permutations : un renversement isolé ne prouve pas un biais.</p>
+
+<div v-click="2" class="genai-visual genai-aneval-viz">
+
+```mermaid
+flowchart TD
+    T[Tâche] -->|vérifiable| V[Vérificateur mécanique]
+    T -->|sinon| J[Juge calibré + permutations]
+    V --> M[Succès + coût + sûreté]
+    J --> M
+    M --> L[Comparer stratégies et ablations]
+```
+
+</div>
+
+<p v-click="4" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb">13b_Agent_Evaluation.ipynb</a>.</p>
 
 ---
 
@@ -686,13 +798,13 @@ class: genai-illustrated genai-ecosystem-tools
 <v-clicks at="1">
 
 - **Voix interactive :** les API temps réel permettent une conversation bidirectionnelle avec interruption -- utile pour les assistants oraux.
-- **Statut :** les premières API (Realtime Beta) ont été dépréciées ; la version stable (GA) est la cible de migration.
-- **Vidéo générative :** LTX-Video, Hunyuan, Wan, Veo -- génération d'une séquence vidéo conditionnée par texte ou image, avec un pipeline d'audiovisuel.
-- **Synchronisation :** sonorisation séparée ou générée conjointement, la licence et la latence varient selon l'approche.
+- **Statut :** l'API Realtime *Beta* a été retirée le 12 mai 2026 ; la version stable (GA) est la cible de migration.
+- **Vidéo générative :** LTX-2, Hunyuan, Wan, Veo -- séquence vidéo conditionnée par texte ou image. LTX-2 génère conjointement audio et vidéo. Le notebook montre un workflow ComfyUI quantifié en GGUF Q4.
+- **Synchronisation :** modalités conjointes ne signifie pas étape unique : `ti2vid_two_stages`, documenté mais non exécuté ici, utilise deux étapes. Vérifier la synchronisation et évaluer la quantification selon le matériel.
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb">03-3-Realtime-Voice-API.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb">02-5-LTX2-Audiovisual.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb">03-3-Realtime-Voice-API.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb">02-5-LTX2-Audiovisual.ipynb</a> · dépréciations : <a href="https://platform.openai.com/docs/deprecations">OpenAI Deprecations</a> (retraits du 12 mai 2026).</p>
 
 ---
 
@@ -701,12 +813,12 @@ class: genai-illustrated genai-ecosystem-tools
 <v-clicks at="1">
 
 - **Texte :** ChatGPT, Claude, Gemini, modèles locaux (Llama, Mistral, Qwen).
-- **Image :** DALL-E, Stable Diffusion, Flux : génération, inpainting, outpainting, upscaling, ControlNet et LoRA. Les fonctions disponibles dépendent du modèle.
-- **Vision :** GPT-4o, Qwen-VL, InternVL -- compréhension d'images et de vidéo, raisonnement visuel.
+- **Image :** GPT Image, Stable Diffusion, Flux : génération et édition selon le modèle et le pipeline. ControlNet et LoRA concernent notamment les écosystèmes SD/Flux. Les modèles API DALL-E 2/3 ont été retirés le 12 mai 2026. Le masque GPT Image guide l'édition sans garantir un contour exact.
+- **Vision :** GPT-6, Qwen-VL, InternVL -- compréhension d'images et raisonnement visuel. La vision (analyser une image) reste distincte de la génération d'images (GPT Image).
 
 </v-clicks>
 
-<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4-Z-Image-Lumina2.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb">01-3-Qwen-VL-Video-Analysis.ipynb</a>.</p>
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4-Z-Image-Lumina2.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb">01-3-Qwen-VL-Video-Analysis.ipynb</a> · <a href="https://developers.openai.com/api/docs/guides/image-generation">Guide GPT Image</a>.</p>
 
 ---
 
@@ -714,13 +826,13 @@ class: genai-illustrated genai-ecosystem-tools
 
 <v-clicks at="1">
 
-- **Audio :** STT (Whisper, Moonshine), TTS (ElevenLabs, Kokoro), musique (Audiocraft, AudioLDM, AceStep).
+- **Audio :** STT (Whisper, Moonshine), TTS (ElevenLabs, Kokoro, Chatterbox), musique (Audiocraft, AudioLDM, AceStep).
 - **Code :** VS Code Copilot, Cline, Continue. Côté CLI : Claude Code, Gemini CLI.
 - **Mathématiques :** modèles spécialisés (OpenAI, Google) ou ouverts (DeepSeek-Math). La vérification automatique reste le garde-fou.
 
 </v-clicks>
 
-<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb">01-2-OpenAI-Whisper-STT.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py">p5_tts.py</a>.</p>
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb">01-2-OpenAI-Whisper-STT.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb">02-1-Chatterbox-TTS.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py">p5_tts.py</a>.</p>
 
 ---
 
