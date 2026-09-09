@@ -412,6 +412,14 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la thé
 | [Infer-1b](Infer/Infer-1b-Premiers-Modeles.ipynb) | .NET (C#) | Premier modèle Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
 
+### Percolation (sous-dossier [`Applications/Percolation/`](Applications/Percolation/README.md))
+
+Duo simulation + formalisation autour de la percolation de liens sur tore fini
+(Diskin–Easo–Radhakrishnan–Sudakov–Tassion, arXiv:2603.03257) :
+[`Percolation-Supercritique`](Applications/Percolation/Percolation-Supercritique.ipynb) (Python, trois régimes mesurés) et
+[`Percolation-Lean`](Applications/Percolation/Percolation-Lean.ipynb) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
+voir [`Applications/Percolation/README.md`](Applications/Percolation/README.md) et #14871.
+
 ## Prerequisites
 
 ### Niveau mathématique attendu
