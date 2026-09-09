@@ -79,8 +79,11 @@ open PDAction
 /-- A bounded program agent: a **total** function which, informed of
 its opponent's probe profile (action against CoopBot, action against
 DefectBot), chooses a Prisoner's Dilemma action. The space of agents is
-finite (4³ = 64 programs) and every confrontation reduces to a bounded
-number of evaluations: no recursion, no unbounded search, no loops. -/
+finite: `PDAction` has two constructors, so
+`ProgramAgent := PDAction → PDAction → PDAction` admits 2⁴ = 16
+extensionally distinct functions (an enumeration of length-four binary
+tables confirms this). Every confrontation reduces to a bounded number
+of evaluations: no recursion, no unbounded search, no loops. -/
 abbrev ProgramAgent : Type := PDAction → PDAction → PDAction
 
 /-- Probe profile of an agent: its action against CoopBot (first

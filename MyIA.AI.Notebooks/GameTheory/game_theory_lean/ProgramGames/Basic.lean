@@ -60,9 +60,12 @@ open PDAction
 /-- Un agent-programme borné : une fonction **totale** qui, informée du
 profil de sonde de son adversaire (action contre CoopBot, action contre
 DefectBot), choisit une action du Dilemme du Prisonnier. L'espace des
-agents est fini (4³ = 64 programmes) et chaque confrontation se réduit
-à un nombre borné d'évaluations : aucune récursion, aucune recherche non
-bornée, aucune boucle. -/
+agents est fini : `PDAction` a deux constructeurs, donc
+`ProgramAgent := PDAction → PDAction → PDAction` admet 2⁴ = 16 fonctions
+extensionnellement distinctes (une énumération des tables binaires de
+longueur quatre le confirme). Chaque confrontation se réduit à un nombre
+borné d'évaluations : aucune récursion, aucune recherche non bornée,
+aucune boucle. -/
 abbrev ProgramAgent : Type := PDAction → PDAction → PDAction
 
 /-- Profil de sonde d'un agent : son action contre CoopBot (première
