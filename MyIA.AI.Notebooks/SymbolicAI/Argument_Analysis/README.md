@@ -417,4 +417,54 @@ Voir la licence du repository principal.
 
 ---
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche argument_analysis.
+## Renumérotation — verdict (EPIC #5081, issue #14950)
+
+Cette section consigne la proposition d'analyse reçue du workspace partenaire `myia-ai-01:2025-Epita-Intelligence-Symbolique` au titre de la mission de distillation (issue [#14950](https://github.com/jsboige/CoursIA/issues/14950)). La proposition est **owner-decision** : aucun `git mv`, aucune PR de renommage exécutée à ce stade. La consignation ci-dessous sert de **mémo pour arbitrage ultérieur**, conformément à la doctrine `.claude/rules/notebook-accretion-numbering.md` §3 (« le verdict par défaut est aucune renum »).
+
+### Verdict par branche
+
+| Branche | Verdict proposé | Tell §3 nommé |
+| ------- | --------------- | ------------- |
+| `Argument_Analysis_Agentic-<N>` (numéros nus 0 à 5) | **aucune renumérotation** — c'est un arc | — |
+| 4 compagnons `*_agent` (`-0-init_agent`, `-1-informal_agent`, `-2-pl_agent`, `-3-orchestration_agent`) | **normalisation `*` → `b`** (convention §2 : base = `a`, première accrétion = `b`) | traduction d'une intention auteur déjà notée `*(legacy)*` dans la table curée |
+| 14 notebooks à mnémonique (théorie / formalismes) | **aucune renum, question de partition** — orthogonaux à l'arc Agentic | aucun tell ne se lit ; le mécanisme des lettres ne s'applique pas |
+
+### Collision slot 2 — décision owner requise
+
+Le slot 2 porte **deux notebooks au contenu distinct** sous le même identifiant nu :
+
+- `Argument_Analysis_Agentic-2-formal.ipynb` (24 cellules, « Vérification Logique Formelle avec Tweety »)
+- `Argument_Analysis_Agentic-2-pl_agent.ipynb` (23 cellules, « Agent : PropositionalLogicAgent (Definitions) »)
+
+Deux tells §3 se lisent dans le contenu :
+
+- **Collision d'identifiant (tell 1)** — deux contenus pour un même `<préfixe>-<num>`.
+- **Faux prérequis séquentiel (tell 2)** — la navigation de `-2-pl_agent` déclare *Init → ce notebook → Orchestration*, sautant `-1-informal`.
+
+Décision owner attendue : renommer `-2-pl_agent` (et son compagnon `-2-formal_agent` s'il existe) pour lever la collision. La proposition de mapping n'est pas émise dans cette section — un mapping dérivé de titres et de volumes est une hypothèse, conformément à §5.1.
+
+### Indépendant de la renumération
+
+Indépendamment de toute décision de renum, **trois classes de défauts** se corrigent dans les *headings* des notebooks sans toucher au catalogue (`catalog-pr-hygiene.md` : le catalogue appartient à l'automatisation, le cron rattrape sous 24 h) :
+
+- 11 titres publiés commencent par le nom de fichier (régresse la lisibilité du catalogue)
+- 3 titres portent le littéral `.ipynb`
+- 1 titre cite un numéro de PR interne (`PR-B #4960`)
+- 1 titre commence par un numéro de heading d'un autre système (`6.`)
+- 3 titres commencent par « Introduction : »
+
+Ce lot est **distinct** de la renumérotation et peut partir seul, sans attendre l'arbitrage owner du slot 2.
+
+### Mesure repo-wide (hors Argument_Analysis)
+
+Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur 1240 notebooks (hors `_archive`/checkpoints/`.lake`) :
+
+- identifiés par la règle §1 : 822
+- vus par `_INDEX_RE` : 224
+- écart : **746 notebooks identifiés que le garde de collision ne peut pas voir**
+
+L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voisines : `Sudoku` 0/37, `Tweety` 0/34, `GameTheory` 8/94. Ce périmètre mériterait sa propre issue, mais elle appartient à l'owner de l'organe. **Elle n'est pas déposée depuis cette section** — la présente consignation se limite à la série Argument_Analysis.
+
+---
+
+**Version 1.2.1** — 2026-09-09 — section Renumérotation — verdict (EPIC #5081, issue #14950) consignant la proposition owner-decision sans modifier de fichier. Tell catalog-pr-hygiene R1 respecté (marqueur CATALOG-STATUS inchangé). Tell readme-french-first R1 respecté (section ajoutée en français).
