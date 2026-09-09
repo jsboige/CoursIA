@@ -25,6 +25,20 @@ Constraints:
 - Preserve cell IDs (L948 ★★: NO output scrubbing).
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (closed dead-end) — real 3-endpoint execution PR #8707
+# - Verdict recorded in : PR #8663 (45fad5df4), PR #8707 (207a87d77),
+#   PR #8743, PR #9607
+#
+# Per-function disposition :
+# - _detect_source_format(), _write_text(), _set_cell_source() : abandoned local
+#   patch helpers; the repli was replaced by real execution
+# - patch_cell0(), patch_cell_prepend(), patch_cell_full(), patch_cell_tail() :
+#   abandoned one-shot patch modes; the local-only narrative no longer exists
+#   on main, while two provenance prepend notes remain in the notebook
+# - main() : abandoned; 10_LocalLlama.ipynb was re-executed by PR #8707
+
 import json, pathlib, sys
 
 NB = pathlib.Path('MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb')
