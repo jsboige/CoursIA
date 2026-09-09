@@ -15,7 +15,7 @@ Cette formation vous permettra de :
 ## Prérequis
 
 - **VS Code** installé (version 1.60.0+)
-- **Node.js** 18+ (pour Claude Code CLI)
+- **Node.js** 18+ — requis uniquement pour le proxy OpenRouter (brique d'accès aux modèles) et l'alternative npm, pas pour l'installation native de Claude Code
 - Un compte **OpenRouter** avec une clé API
 - Connaissances de base en programmation
 
@@ -35,29 +35,22 @@ Cette formation vous permettra de :
 
 ### 1. Installer Claude Code CLI
 
-```bash
-# Installation via npm (recommandée)
-npm install -g @anthropic-ai/claude-code
+**Chemin canonique : l'installation native** (défaut de la documentation officielle Anthropic, Node.js non requis) :
 
+- **Windows** : installateur depuis [claude.com/code](https://claude.com/code)
+- **macOS** : `brew install --cask claude-code`
+- **Linux / WSL** : `curl -fsSL https://install.claude.com | sh`
+
+```bash
 # Vérifier l'installation
 claude --version
 ```
 
+Alternative npm (uniquement si votre poste interdit les binaires hors gestionnaire de paquets) : `npm install -g @anthropic-ai/claude-code` — détails dans le [guide d'installation](docs/INSTALLATION-CLAUDE-CODE.md).
+
 ### 2. Configurer OpenRouter
 
-**Windows (PowerShell):**
-```powershell
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
-$env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
-$env:ANTHROPIC_API_KEY = ""
-```
-
-**macOS/Linux:**
-```bash
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
-export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
-export ANTHROPIC_API_KEY=""
-```
+Suivez le guide canonique **[Quickstart : Claude Code + OpenRouter](docs/OPENROUTER_SETUP.md)** (15 min, checkpoints à chaque étape). La configuration passe par le proxy local `openrouter-proxy` (`ANTHROPIC_BASE_URL = http://127.0.0.1:8899/api`) : les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilisé par Claude Code (bug connu). Ne pointez pas `ANTHROPIC_BASE_URL` directement vers `https://openrouter.ai/api`.
 
 ### 3. Installer l'extension VS Code
 
@@ -234,7 +227,7 @@ claude
 
 | Problème | Solution |
 |----------|----------|
-| `command not found: claude` | Vérifier PATH, réinstaller avec `npm install -g` |
+| `command not found: claude` | Installation native : `~/.local/bin` dans le PATH + redémarrer le terminal. Alternative npm : réinstaller avec `npm install -g` |
 | `Authentication failed` | Vérifier `ANTHROPIC_AUTH_TOKEN` et `ANTHROPIC_BASE_URL` |
 | Extension ne se connecte pas | Activer "Disable Login Prompt" dans les settings |
 | MCP timeout | Augmenter la variable `MCP_TIMEOUT` |
