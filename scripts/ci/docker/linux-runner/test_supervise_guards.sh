@@ -835,13 +835,10 @@ STUB
   chmod +x "$TEST_DIR/bin17/docker"
   cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin17/gh"
   cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin17/ps"
-  # PATH borne a bin17 (pas de stub sleep global) : les boucles waiter
-  # dormiraient reellement entre les cycles ; on pose un sleep instantane.
-  cat > "$TEST_DIR/bin17/sleep" <<'STUB'
-#!/usr/bin/env bash
-exit 0
-STUB
-  chmod +x "$TEST_DIR/bin17/sleep"
+  # PAS de stub sleep ici (contrairement au bin/ global) : le `sleep 3` du
+  # stub docker ci-dessus + le backoff reel bornent le rythme de la boucle
+  # waiter -- sans eux, ARGV_LOG explose et `echo | grep -q` prend un
+  # SIGPIPE sous pipefail (mesure CI Linux 2026-09-09).
   export PATH="$TEST_DIR/bin17:$PATH"
   export COURSIA_RUNNER_WAITER_NAME_PREFIX="test-waiter-17"
 
