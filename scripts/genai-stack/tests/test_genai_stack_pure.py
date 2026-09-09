@@ -209,8 +209,8 @@ class TestAuthManagerUpdateEnvFile:
         lines = content.splitlines()
         assert any(line == "" for line in lines)
 
-    def test_updates_aliases(self, manager, tmp_path):
-        """Updates COMFYUI_BEARER_TOKEN and QWEN_API_USER_TOKEN aliases."""
+    def test_preserves_legacy_bearer_and_updates_live_aliases(self, manager, tmp_path):
+        """Preserves legacy bearer while updating the aliases still consumed."""
         env_path = tmp_path / ".env"
         env_path.write_text(
             "COMFYUI_BEARER_TOKEN=old\nQWEN_API_USER_TOKEN=old\nCOMFYUI_PASSWORD=old\n",
@@ -218,7 +218,8 @@ class TestAuthManagerUpdateEnvFile:
         )
         manager._update_env_file(env_path, "raw_tok", "new_hash")
         content = env_path.read_text(encoding="utf-8")
-        assert "COMFYUI_BEARER_TOKEN=new_hash" in content
+        assert "COMFYUI_BEARER_TOKEN=old" in content
+        assert "COMFYUI_API_TOKEN=new_hash" in content
         assert "QWEN_API_USER_TOKEN=new_hash" in content
         assert "COMFYUI_PASSWORD=raw_tok" in content
 

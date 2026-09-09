@@ -24,6 +24,20 @@ double-prefixing if re-run).
 Usage:
     python fix_sudoku_hierarchy.py [--dry-run] [--target <notebook>]
 """
+
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : scripts/notebook_tools/demote_md_asides.py
+# - Verdict recorded in : PR #8654 (4827e297b), PR #9607
+#
+# Per-function disposition :
+# - _matches_target() : moved to demote_md_asides._matches_target()
+# - _detect_source_format() : moved to demote_md_asides._detect_source_format()
+# - _demote_all_headings() : moved to demote_md_asides._demote_all_headings()
+# - fix_notebook() : moved to demote_md_asides.fix_notebook()
+# - main() : superseded by demote_md_asides.main(); 34 delivered demotions were
+#   verified on main on 2026-09-09
+
 import argparse, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent  # worktree root

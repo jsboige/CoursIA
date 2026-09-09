@@ -110,3 +110,21 @@ lean_lib Swaps where
 @[default_target]
 lean_lib Abstraction where
   globs := #[`Abstraction.*]
+
+-- Grain #15176 (po-2026) : ajout `lean_lib ProgramGames` — EPIC #15062
+-- (Math for AI Safety), tranche L1 noyau borné. Équilibre en programmes
+-- (Barasz et al. 2014, arXiv:1401.5577 ; Critch 2016, arXiv:1602.04184)
+-- LIMITÉ aux agents bornés : `ProgramAgent` = fonction totale des profils
+-- de sondes triviales (CoopBot/DefectBot), sémantique `outcome` sans
+-- récursion, table de confrontations finie, organes décidables
+-- (MutualCooperation, Unexploitable), `ProgramNash` sur famille finie.
+-- Réutilise `RepeatedGames.PDAction` / `PrisonersDilemma` / `stagePayoff`
+-- (import RepeatedGames.Stage). PAS de Löb (L2/L3 hors scope). 0 sorry.
+-- Théorèmes-phare : `outcome_probeBot_probeBot` (rfl, coopération par
+-- sondage bornée), `programNash_probeBot_probeBot` (la coopération EST
+-- un Nash de la famille : dévier vers DefectBot est puni P < R),
+-- `probeBot_unexploitable_in_family`, `probeBot_exploited_by_exploiterBot`
+-- (limite exacte du L1 hors famille : exploitable, non insondable).
+@[default_target]
+lean_lib ProgramGames where
+  globs := #[`ProgramGames.*]

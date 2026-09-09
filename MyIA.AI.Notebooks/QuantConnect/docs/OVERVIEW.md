@@ -92,7 +92,7 @@ Forex                  -0.32   -0.32   1    ▏
 2025-08  ██████████ Algorithm Framework — composites TrendWeather
 2025-10  ██████████████ ML Training Pipeline — L1-L5 ladder (RF/GB/DT/LSTM/PatchTST)
 2025-11  ████ QC Strategy Library — 8 clones de référence
-2026-01  ████████████████ L4 Decision Transformer — seul BEATS du ladder
+2026-01  ████████████████ L4 Decision Transformer — seul BEATS du ladder (panel @10bps)
 2026-02  ████ QC Cloud MCP — automatisation backtests via API
 2026-03  ████████████████████████ Catalogue 116 projets — README + docs
 2026-04  ████████████████████████████████ SymbolicAI PROD — 116 notebooks
