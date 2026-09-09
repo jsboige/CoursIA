@@ -1376,10 +1376,18 @@ def _is_adjacency_red(body: str) -> bool:
         verdict = vag.check(body)
     except Exception:  # noqa: BLE001 - idem : organe optionnel, picker robuste
         return False
-    # L'organe est fail-CLOSED : blocking=True <=> LIGHT adjacency reelle
-    # (cf docstring `check`). On conserve `adjacent` pour les diagnostics
-    # futurs (DEEP/MED adjacency = advisory, hors branche specialised).
-    return bool(verdict.get("blocking"))
+    # L'organe est fail-CLOSED sur le MESURE : blocking=True <=> LIGHT
+    # adjacency sur sequence mergee (cf docstring `check`). Depuis #15184,
+    # un precedecesseur `declared` (prev_source == "declared", donnee non
+    # mesuree) rend un verdict ADVISORY -- blocking: False + unmeasured:
+    # True -- mais cette branche de l'organe n'est atteinte QUE si le
+    # predicat d'adjacence a deja matche (genre == prev_genre dans la liste
+    # LIGHT). Le picker ne BAN pas, il CONSEILLE : traiter l'unmeasured
+    # comme rouge d'affichage preserve le contrat fondateur #13967 (la PR
+    # bloquee en adjacency suspconnee recoit le conseil specialise) sans
+    # reintroduire le ban CI sur donnee non mesuree. `adjacent` (DEEP/MED,
+    # advisory) reste hors branche specialised.
+    return bool(verdict.get("blocking")) or bool(verdict.get("unmeasured"))
 
 
 def _newest_start_hours(stamps) -> float | None:

@@ -817,6 +817,36 @@ def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys)
     assert "Piocher un grain d'UN AUTRE genre" not in out
 
 
+def test_adjacency_med_advisory_not_specialized_branch(monkeypatch, capsys):
+    """#15184 frontiere du picker : un corps `MED/lean` apres `MED/lean`
+    (genre hors LIGHT_GENRES) rend chez l'organe le verdict §2 ADVISORY --
+    `adjacent: True` sans `unmeasured` ni `blocking` -- qui reste hors la
+    branche specialisee : le conseil generique s'applique (un push peut
+    reparer le rouge ; l'adjacence hors-LIGHT releve du jugement
+    coordinateur, #11170). Sans ce controle, un `_is_adjacency_red` elargi
+    a `adjacent` reduirait la branche specialisee a toutes les PRs MED
+    rouges de genre non-light. (Un `MED/guard` n'est PAS un cas advisory :
+    `guard` est un genre LIGHT meme a tier MED -- le tier ne spare que les
+    genres non resolus, #13585.)
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: MED/lean -- lane myia-po-2026:CoursIA -- "
+            "prev: MED/lean #15150\n")
+    pr = _pr_with_body(104, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {104: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out
+    assert "gh pr update-branch" in out, (
+        "adjacence hors liste LIGHT = advisory : le push reste le "
+        "premier geste, la branche specialisee est reservee a "
+        "l'adjacence de genre LIGHT (bloquee mesuree ou suspconnee "
+        "declaree)"
+    )
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
 def test_adjacency_caller_override_still_respected(monkeypatch, capsys):
     """#13967 preservation du contrat : un caller externe peut toujours
     poser `is_adjacency=False` pour court-circuiter la deduction par
