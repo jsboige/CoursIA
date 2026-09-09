@@ -26,7 +26,44 @@
 #   ./supervise.sh lean [N]      # N slots Lean specialises (label coursia-lean, image
 #                                  # dediee elan+toolchain, .lake chaud par slot, defaut 2)
 #   ./supervise.sh stop          # arret gracieux : pas de nouveau conteneur
-#   ./supervise.sh status
+#   ./supervise.sh status        # familles actives + etat des trois bornes
+#
+# BORNES (#15091) -- toutes declarees par ENVIRONNEMENT.
+#
+# Les bornes de RESSOURCES sont vides ou a 0 par defaut : une machine qui tire
+# cette version sans rien declarer ne se voit imposer aucun plafond qu'elle
+# n'a pas demande, et garde exactement son comportement anterieur. C'est le
+# wrapper de chaque machine qui arme ce qu'elle veut (voir persist/README.md).
+#
+# Les deux valeurs qui ne sont PAS inertes -- backoff et rotation -- ne sont
+# pas des plafonds : elles ne refusent rien et ne ralentissent aucun travail
+# qui aboutit. Elles ne mordent que sur ce qui echoue en boucle ou grossit
+# sans borne, c'est-a-dire exactement les deux comportements qui ont mis la
+# machine par terre. Les laisser inertes aurait demande a chaque machine de
+# reclamer explicitement de ne pas marteler l'API et de ne pas remplir son
+# disque.
+#
+#   COURSIA_RUNNER_CGROUP_PARENT        slice systemd attendue (ex.
+#                                       coursia-ci.slice). Le script la
+#                                       VERIFIE, il ne la re-impose pas.
+#   COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET  1 = REFUSER de demarrer si elle
+#                                       manque ou n'a pas d'io.max. 0 =
+#                                       avertir et continuer.
+#   COURSIA_RUNNER_DEVICE_WRITE_BPS     plafond d'ecriture PAR conteneur, en
+#   COURSIA_RUNNER_DEVICE_READ_BPS      octets/s (ex. 41943040 = 40 Mio/s).
+#   COURSIA_RUNNER_BLKIO_DEVICE         device porteur ; auto-detecte si vide.
+#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU, toutes familles
+#                                       confondues. 0 = pas de garde.
+#   COURSIA_RUNNER_LOG_MAX_BYTES        rotation des journaux de slot.
+#                                       NON inerte : 32 Mio. 0 = desactive.
+#   COURSIA_RUNNER_BACKOFF_MIN_SEC      backoff exponentiel des boucles de
+#   COURSIA_RUNNER_BACKOFF_MAX_SEC      slot. NON inertes : 5 s -> 300 s.
+#   COURSIA_RUNNER_BACKOFF_JITTER_PCT   dispersion du backoff. NON inerte :
+#                                       25 %. 0 = rafale synchronisee.
+#
+# Le detail de chaque borne -- ce qu'elle couvre, ce qu'elle ne peut PAS
+# couvrir, et la mesure qui l'etablit -- est dans le bloc BORNES plus bas et
+# dans persist/README.md.
 #
 # PREREQUIS : docker, gh authentifie avec droit admin sur le depot (le fetch
 # du registration token l'exige). Le token n'est JAMAIS passe en argv --
@@ -34,7 +71,7 @@
 set -uo pipefail
 
 REPO="${COURSIA_RUNNER_REPO:-jsboige/CoursIA}"
-IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.336.0}"
+IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.337.0}"
 LABELS="${COURSIA_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-linux}"
 NAME_PREFIX="${COURSIA_RUNNER_NAME_PREFIX:-myia-po-2024-linux-docker}"
 STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-$HOME/.coursia-runner}"
@@ -81,6 +118,16 @@ WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-myia-po-2024-linux-wait
 WAITER_CPUS="${COURSIA_RUNNER_WAITER_CPUS:-1}"
 WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-1g}"
 WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
+# Toolcache partage sur les waiters (#15091). La premisse d'origine etait
+# « un slot qui attend ne coute rien », donc aucun volume. Elle tombe sur le
+# seul workflow route ici : le job `PR gate` commence par un checkout PUIS un
+# `setup-python@v5`, qui sans RUNNER_TOOL_CACHE re-telecharge et reinstalle
+# CPython a CHAQUE job -- ~300 jobs/jour sur ce pool. Le toolcache est le
+# MEME volume nomme que celui des slots d'execution : partage, en lecture
+# quasi exclusive, il ne croit pas avec le nombre de jobs. Ce n'est PAS le
+# volume _work, dont la persistance est le vecteur ferme par #14385 -- les
+# waiters n'en ont toujours aucun, et cette distinction est la garde.
+WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
 
 # Pool Lean specialise (#14337 tranche 1) : le cout d'un job Lean n'est pas le
 # toolchain mais MATHLIB. Image dediee (Dockerfile.lean : elan + toolchain
@@ -89,7 +136,7 @@ WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
 # Le .lake chaud vit dans le volume _work PAR SLOT au prefixe dedie
 # coursia-runner-work-lean-{N} (pattern #14285) : .lake/packages et .lake/build
 # survivent aux conteneurs, lake build devient incremental.
-LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.336.0}"
+LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.337.0}"
 LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
 LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
 LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"
@@ -107,6 +154,93 @@ LEAN_PIDS="${COURSIA_LEAN_RUNNER_PIDS:-512}"
 # memory-swap 24g = 8g RAM + 16g swap. Le swap n'est PAS de la RAM
 # reservee -- l'hote ne paie que si le pic survient.
 LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-24g}"
+
+# ---------------------------------------------------------------------------
+# BORNES D'I/O ET BUDGET INTER-FAMILLES (#15091 pieces 2 et 4)
+# ---------------------------------------------------------------------------
+# Le mandat : « optimiser au mieux tout le traffic et les acces engendres par
+# le superviseur et ses workers avec de vrais gardes surtout en cas de panne ».
+# Les trois mots qui comptent sont VRAIS et EN CAS DE PANNE : un cap qui ne se
+# verifie pas et une boucle qui retente a cadence fixe ne sont pas des gardes,
+# ce sont des intentions.
+#
+# Trois bornes distinctes, qui ne se remplacent pas :
+#
+#   1. PAR CONTENEUR -- COURSIA_RUNNER_DEVICE_WRITE_BPS. Empeche UN slot de
+#      monopoliser le disque. Mesure ai-01 2026-09-07 : dd 256 Mio oflag=direct
+#      rend 7,4 GB/s sans cap et 21,2 MB/s sous --device-write-bps 20 Mio/s --
+#      facteur 350, a 1 % de la valeur demandee. Le cap est REEL.
+#   2. AGREGE -- la slice systemd coursia-ci.slice, appliquee par defaut du
+#      daemon (/etc/docker/daemon.json "cgroup-parent"). C'est la seule borne
+#      qui somme les familles ; voir persist/coursia-ci.slice.
+#   3. CPU INTER-FAMILLES -- assert_cpu_budget() ci-dessous, qui ferme le trou
+#      que cmd_lean documente depuis #14337 (« la somme des caps CPU des
+#      familles actives n'est gardee par RIEN »).
+#
+# La borne 2 est daemon-wide et donc independante de l'appelant ; ce script
+# n'a pas a la re-imposer, il a a VERIFIER qu'elle est en vigueur. La
+# difference n'est pas cosmetique : re-passer --cgroup-parent sur une machine
+# ou la slice n'existe pas cree un cgroup vide qui a l'air d'un garde et n'en
+# est pas -- exactement la classe de defaut ou un outil manquant rend un garde
+# vert.
+#
+# Vide = borne desactivee, explicitement. Aucun defaut n'est impose aux
+# machines qui n'ont pas deploye la slice (po-2024) : elles gardent le
+# comportement anterieur et recoivent un avertissement nomme.
+CGROUP_PARENT="${COURSIA_RUNNER_CGROUP_PARENT:-}"
+# 1 = refuser de demarrer si CGROUP_PARENT est declare mais introuvable /
+# sans io.max. La machine qui a deploye la slice veut un echec LISIBLE
+# (unite en `failed`, cf StartLimitBurst) plutot qu'un pool non borne qui
+# tourne comme si de rien n'etait -- c'est ce silence-la qui a gele ai-01.
+REQUIRE_CGROUP_BUDGET="${COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET:-0}"
+# Plafond d'ecriture PAR CONTENEUR, en octets/s. Vide = pas de cap.
+DEVICE_WRITE_BPS="${COURSIA_RUNNER_DEVICE_WRITE_BPS:-}"
+DEVICE_READ_BPS="${COURSIA_RUNNER_DEVICE_READ_BPS:-}"
+# Device porteur de /var/lib/docker. Auto-detecte si vide (df sur le
+# DockerRootDir REEL du daemon vise, pas un chemin suppose : ai-01 a deux
+# daemons et le socket epingle decide lequel repond).
+BLKIO_DEVICE="${COURSIA_RUNNER_BLKIO_DEVICE:-}"
+# Budget CPU total de la CI, toutes familles confondues. 0 = pas de garde.
+# 8 sur les 16 coeurs d'ai-01 : la workstation garde la moitie de sa machine
+# quoi que fasse la CI (clause « l'hote prime » en tete de ce fichier).
+CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-0}"
+# Rotation des journaux de slot. Sans elle, $STATE_DIR/<nom>.log croit sans
+# borne : mesure ai-01 2026-09-07, /var/lib/coursia-runner = 14 Mo pour un
+# pool eteint la majeure partie de la journee. 32 Mio par fichier, une
+# generation conservee -- assez pour diagnostiquer le dernier incident, borne
+# pour ne jamais devenir la fuite disque qu'on pretend surveiller.
+LOG_MAX_BYTES="${COURSIA_RUNNER_LOG_MAX_BYTES:-33554432}"
+
+# Backoff exponentiel des boucles de slot (#15091 : « de vrais gardes surtout
+# en cas de panne »).
+#
+# Le defaut ferme ici : la boucle retentait a CADENCE FIXE -- `sleep 15` apres
+# un echec, `sleep 60` apres un token refuse. Sous panne (image absente, token
+# expire, daemon docker mort), 12 slots produisaient donc ~48 appels
+# `registration-token` par minute, indefiniment, pendant que rien ne pouvait
+# aboutir. Une panne se transformait en charge soutenue sur l'API GitHub et
+# sur le daemon -- l'inverse d'un garde.
+#
+# Le backoff double a chaque echec consecutif jusqu'a un plafond, et se
+# REINITIALISE des qu'un conteneur se termine proprement (rc=0) : une panne
+# franche se calme en quelques minutes, un job normal ne paie rien.
+BACKOFF_MIN_SEC="${COURSIA_RUNNER_BACKOFF_MIN_SEC:-5}"
+BACKOFF_MAX_SEC="${COURSIA_RUNNER_BACKOFF_MAX_SEC:-300}"
+# Jitter, en pourcentage du delai. NON cosmetique : les N slots sont lances
+# dans la meme seconde, echouent dans la meme seconde et repartiraient dans la
+# meme seconde -- le backoff seul deplace la rafale sans la disperser. Le
+# jitter la disperse.
+BACKOFF_JITTER_PCT="${COURSIA_RUNNER_BACKOFF_JITTER_PCT:-25}"
+
+# Seuil de packs du cache _work persistant (#15105). Au-dela, l'entrypoint du
+# conteneur repack le clone (gc.auto=0 pose par actions/checkout : rien
+# d'autre ne consolide jamais -- slot 1 : 264 packs, compte croissant a
+# chaque job). NON inerte au meme titre que LOG_MAX_BYTES : son absence est
+# une croissance de disque sans borne, pas un plafond qu'une machine n'a pas
+# demande. 0 = desactive. Le knob descend au conteneur par -e ; la passe
+# integrite (refs cassees) est, elle, inconditionnelle -- cf
+# work_cache_health.sh et le bloc entrypoint #15105.
+CACHE_PACK_THRESHOLD="${COURSIA_RUNNER_CACHE_PACK_THRESHOLD:-16}"
 
 mkdir -p "$STATE_DIR"
 
@@ -131,21 +265,236 @@ RUNNER_CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # daemon docker-ce WSL construite 5 h AVANT le merge, jamais rebatie), et ce
 # silence a produit les rouges fantomes du sparse-checkout empoisonne. Le
 # demarrage d'un pool est le seul point qui s'execute inconditionnellement
-# (un job annule ne joue aucun step post) : on y compare le sha256 du
-# entrypoint.sh de CE checkout a celui embarque dans l'image. La lecture
+# (un job annule ne joue aucun step post) : on y compare le sha256 de CHAQUE
+# script embarque de CE checkout (entrypoint.sh, et depuis #15105
+# work_cache_health.sh qu'il source) a celui porte par l'image. La lecture
 # cote image passe par `docker run --entrypoint sha256sum` -- le Dockerfile
-# place le script a /opt/runner/entrypoint.sh et MSYS_NO_PATHCONV (exporte
-# plus haut) protege l'argument POSIX sous Git Bash.
+# place les scripts sous /opt/runner/ et MSYS_NO_PATHCONV (exporte plus haut)
+# protege l'argument POSIX sous Git Bash.
 assert_image_fresh() {
   local image="$1" build_cmd="$2"
-  local repo_sha img_sha
-  repo_sha="$(sha256sum "$RUNNER_CTX/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
-  [ -n "$repo_sha" ] || die "entrypoint.sh introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
-  img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/entrypoint.sh 2>/dev/null | awk '{print $1}')"
-  [ -n "$img_sha" ] || die "lecture de /opt/runner/entrypoint.sh dans $image impossible (docker run --entrypoint sha256sum)"
-  [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : entrypoint.sh du checkout ($repo_sha) != entrypoint embarque ($img_sha).
+  local f repo_sha img_sha
+  for f in entrypoint.sh work_cache_health.sh; do
+    repo_sha="$(sha256sum "$RUNNER_CTX/$f" 2>/dev/null | awk '{print $1}')"
+    [ -n "$repo_sha" ] || die "$f introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
+    img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/$f 2>/dev/null | awk '{print $1}')"
+    [ -n "$img_sha" ] || die "lecture de /opt/runner/$f dans $image impossible (docker run --entrypoint sha256sum)"
+    [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : $f du checkout ($repo_sha) != version embarquee ($img_sha).
 Un correctif merge mais non deploye est indiscernable d'un correctif absent (#14801, #14385). Reconstruire :
     $build_cmd"
+  done
+}
+
+# --- Bornes d'I/O : resolution du device et des drapeaux docker -------------
+
+# Device bloc qui porte le repertoire de donnees du daemon VISE. La resolution
+# passe par `docker info` et non par un chemin suppose : ai-01 porte deux
+# daemons (docker-ce sur /var/run/docker-ce.sock, Docker Desktop sur le socket
+# par defaut) et c'est DOCKER_HOST qui decide lequel repond. Les deux
+# annoncent le meme DockerRootDir -- s'y fier sans passer par le socket epingle
+# est un leurre verifie firsthand.
+resolve_blkio_device() {
+  [ -n "$BLKIO_DEVICE" ] && { printf '%s\n' "$BLKIO_DEVICE"; return 0; }
+  local root dev
+  root="$(docker info --format '{{.DockerRootDir}}' 2>/dev/null)"
+  [ -n "$root" ] || return 1
+  # df --output n'existe pas partout ; la forme POSIX (colonne 1 de la 2e
+  # ligne) marche sur coreutils comme sur busybox.
+  dev="$(df -P "$root" 2>/dev/null | awk 'NR==2 {print $1}')"
+  case "$dev" in
+    /dev/*) printf '%s\n' "$dev" ;;
+    *) return 1 ;;
+  esac
+}
+
+# Drapeaux --device-{read,write}-bps a passer a docker run. Rend une liste
+# vide si aucun plafond n'est demande, ou si le device n'a pas pu etre resolu
+# -- et dans ce dernier cas le DIT : un plafond demande et silencieusement non
+# applique est pire que pas de plafond, parce qu'on se croit borne.
+BLKIO_ARGS=()
+compute_blkio_args() {
+  BLKIO_ARGS=()
+  [ -z "$DEVICE_WRITE_BPS$DEVICE_READ_BPS" ] && return 0
+  local dev
+  if ! dev="$(resolve_blkio_device)"; then
+    echo "AVERTISSEMENT: plafond d'I/O par conteneur demande (write=$DEVICE_WRITE_BPS read=$DEVICE_READ_BPS) mais le device de DockerRootDir n'a pas pu etre resolu -- AUCUN plafond ne sera applique. Nommer le device : COURSIA_RUNNER_BLKIO_DEVICE=/dev/sdX" >&2
+    return 0
+  fi
+  [ -n "$DEVICE_WRITE_BPS" ] && BLKIO_ARGS+=(--device-write-bps "$dev:$DEVICE_WRITE_BPS")
+  [ -n "$DEVICE_READ_BPS" ] && BLKIO_ARGS+=(--device-read-bps "$dev:$DEVICE_READ_BPS")
+  echo "plafond d'I/O par conteneur : $dev write=${DEVICE_WRITE_BPS:-illimite} read=${DEVICE_READ_BPS:-illimite} (octets/s)"
+  return 0
+}
+
+# --- Borne agregee : VERIFIER la slice, ne pas la re-imposer ----------------
+
+# La slice systemd est appliquee par defaut du daemon. Ce garde ne la pose pas,
+# il constate qu'elle est en vigueur ET qu'elle porte reellement un io.max --
+# une slice qui existe sans limite est un cgroup vide qui a l'exacte apparence
+# d'un garde. La verification lit le kernel, pas la configuration :
+# /sys/fs/cgroup/<parent imbrique>/io.max.
+#
+# systemd imbrique une slice sur son nom : `coursia-ci.slice` vit sous
+# `coursia.slice`. On essaie les formes plausibles plutot que de coder
+# l'imbrication en dur.
+assert_cgroup_budget() {
+  [ -z "$CGROUP_PARENT" ] && return 0
+  local base path found="" io=""
+  base="${CGROUP_PARENT%.slice}"
+  for path in \
+      "/sys/fs/cgroup/${base%%-*}.slice/${CGROUP_PARENT}" \
+      "/sys/fs/cgroup/${CGROUP_PARENT}" \
+      "/sys/fs/cgroup/system.slice/${CGROUP_PARENT}"; do
+    if [ -d "$path" ]; then found="$path"; break; fi
+  done
+  if [ -n "$found" ] && [ -r "$found/io.max" ]; then
+    io="$(cat "$found/io.max" 2>/dev/null)"
+  fi
+  if [ -n "$io" ]; then
+    echo "budget agrege en vigueur : $found"
+    echo "  io.max  = $io"
+    [ -r "$found/cpu.max" ] && echo "  cpu.max = $(cat "$found/cpu.max")"
+    return 0
+  fi
+  local msg="budget agrege $CGROUP_PARENT INTROUVABLE ou sans io.max"
+  local how="Deployer la slice et le defaut du daemon :
+    sudo cp scripts/ci/docker/linux-runner/persist/coursia-ci.slice /etc/systemd/system/
+    sudo cp scripts/ci/docker/linux-runner/persist/daemon.json /etc/docker/daemon.json
+    sudo systemctl daemon-reload && sudo systemctl restart docker.service
+  Puis relire : cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/io.max"
+  if [ "$REQUIRE_CGROUP_BUDGET" = "1" ]; then
+    die "$msg -- REFUS de demarrer (COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET=1).
+Un pool non borne est precisement ce qui a gele cette machine ; un echec
+lisible vaut mieux qu'un demarrage silencieux.
+$how"
+  fi
+  echo "AVERTISSEMENT: $msg -- les familles tourneront SANS plafond agrege." >&2
+  echo "$how" >&2
+  return 0
+}
+
+# --- Budget CPU inter-familles ---------------------------------------------
+
+# Enumere TOUTES les familles de superviseur actives, une par ligne :
+#   <pid> <famille> <n>
+#
+# Distinct de supervisor_pids() a dessein. supervisor_pids() est le garde
+# d'idempotence de `start` : il ne doit voir que `start`, sinon un pool de
+# waiters actif ferait refuser un `start` legitime (les familles coexistent
+# par design). Ce recensement-ci repond a l'autre question -- « que tourne-t-il
+# en tout sur cette machine ? » -- et c'est celle que le budget CPU pose.
+#
+# La table des processus est la source : elle porte deja la famille et le N
+# dans l'argv, elle traverse les state dirs (ai-01 en a deux, un par jambe) et
+# elle ne peut pas deriver d'un fichier d'etat oublie.
+supervisor_families() {
+  local me="$$"
+  ps -ef 2>/dev/null \
+    | grep -E '[s]upervise\.sh (start|waiters|lean)' \
+    | awk -v me="$me" '$2 != me && $3==1 {
+        for (i=1; i<=NF; i++) {
+          if ($i ~ /supervise\.sh$/) {
+            fam = $(i+1); n = $(i+2);
+            if (n !~ /^[0-9]+$/) n = "";
+            print $2, fam, n;
+            break;
+          }
+        }
+      }'
+}
+
+# Cap CPU par conteneur DECLARE par un superviseur donne, lu dans son propre
+# environnement (/proc/<pid>/environ) -- pas dans le mien. Deux superviseurs
+# lances par des wrappers differents portent des caps differents ; supposer les
+# miens rendrait un budget faux et confiant.
+family_cpus_of() {
+  local pid="$1" fam="$2" var fallback val=""
+  case "$fam" in
+    start)   var="COURSIA_RUNNER_CPUS";        fallback="$CPUS" ;;
+    waiters) var="COURSIA_RUNNER_WAITER_CPUS"; fallback="$WAITER_CPUS" ;;
+    lean)    var="COURSIA_LEAN_RUNNER_CPUS";   fallback="$LEAN_CPUS" ;;
+    *)       printf '0\n'; return 0 ;;
+  esac
+  if [ -r "/proc/$pid/environ" ]; then
+    val="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n "s/^${var}=//p" | head -1)"
+  fi
+  printf '%s\n' "${val:-$fallback}"
+}
+
+# Ferme le trou nomme dans cmd_lean depuis #14337 :
+#   « La somme des caps CPU des familles actives n'est gardee par RIEN --
+#     c'est l'operateur qui dimensionne. »
+# Un cap `--cpus` est PAR CONTENEUR : 12 waiters a 1 vCPU sont conformes un a
+# un et prennent 12 coeurs ensemble. Le seul endroit ou la somme existe est
+# ici, avant de lancer la famille suivante.
+#
+# Refus, jamais avertissement : depasser le budget est exactement l'etat qui a
+# gele la machine, et un demarrage refuse se repare en une commande.
+assert_cpu_budget() {
+  local new_fam="$1" new_n="$2" new_cpus="$3"
+  [ "${CPU_BUDGET:-0}" = "0" ] && return 0
+  local total detail pid fam n c sub
+  total=0; detail=""
+  while read -r pid fam n; do
+    [ -z "${n:-}" ] && continue
+    c="$(family_cpus_of "$pid" "$fam")"
+    sub="$(awk -v a="$n" -v b="$c" 'BEGIN{printf "%.2f", a*b}')"
+    total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
+    detail="$detail
+  deja actif : $fam n=$n cpus=$c -> $sub"
+  done < <(supervisor_families)
+  sub="$(awk -v a="$new_n" -v b="$new_cpus" 'BEGIN{printf "%.2f", a*b}')"
+  total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
+  detail="$detail
+  demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub"
+  if awk -v t="$total" -v b="$CPU_BUDGET" 'BEGIN{exit !(t > b)}'; then
+    die "budget CPU inter-familles depasse : $total vCPU demandes pour un plafond de $CPU_BUDGET.$detail
+
+Le cap --cpus de docker est PAR CONTENEUR ; il ne borne pas une flotte (#14337).
+Baisser N, arreter une autre famille, ou relever COURSIA_RUNNER_CPU_BUDGET en
+connaissance de cause -- l'hote prime sur la CI (clause en tete de ce fichier)."
+  fi
+  echo "budget CPU inter-familles : $total / $CPU_BUDGET vCPU$detail"
+}
+
+# --- Rotation des journaux de slot ------------------------------------------
+
+# Appelee avant chaque `docker run`. Une generation conservee, pas de
+# dependance a logrotate : le superviseur tourne sous une unite systemd qui
+# n'a pas de hook de rotation, et un journal non borne dans le repertoire
+# d'etat est une fuite disque de plus dans un script qui existe pour les
+# fermer. Mesure ai-01 2026-09-07 : /var/lib/coursia-runner = 14 Mo alors que
+# le pool etait eteint la majeure partie de la journee.
+rotate_log() {
+  local f="$1" sz
+  [ "${LOG_MAX_BYTES:-0}" = "0" ] && return 0
+  [ -f "$f" ] || return 0
+  sz="$(wc -c < "$f" 2>/dev/null | tr -d ' ')"
+  [ -n "$sz" ] || return 0
+  if [ "$sz" -gt "$LOG_MAX_BYTES" ]; then
+    mv -f "$f" "$f.1" 2>/dev/null || true
+    : > "$f"
+  fi
+}
+
+# --- Backoff exponentiel avec jitter ----------------------------------------
+
+# Rend le delai a attendre apres `n` echecs consecutifs : min * 2^(n-1),
+# plafonne, puis disperse par un jitter de +/- BACKOFF_JITTER_PCT %.
+# $RANDOM suffit ici -- on disperse des rafales, on ne tire rien de sensible.
+backoff_delay() {
+  local fails="$1" d="$BACKOFF_MIN_SEC" i
+  for ((i=1; i<fails; i++)); do
+    d=$(( d * 2 ))
+    if [ "$d" -ge "$BACKOFF_MAX_SEC" ]; then d="$BACKOFF_MAX_SEC"; break; fi
+  done
+  [ "$d" -gt "$BACKOFF_MAX_SEC" ] && d="$BACKOFF_MAX_SEC"
+  local span=$(( d * BACKOFF_JITTER_PCT / 100 ))
+  if [ "$span" -gt 0 ]; then
+    d=$(( d - span + (RANDOM % (2 * span + 1)) ))
+  fi
+  [ "$d" -lt 1 ] && d=1
+  printf '%s\n' "$d"
 }
 
 # #14259 Defaut 1+3 : compte et liste les PIDs des superviseurs actifs du
@@ -200,15 +549,22 @@ slot_loop() {
   local mem_swap="${9:-}"
   local swap_args=()
   [ -n "$mem_swap" ] && swap_args=(--memory-swap "$mem_swap")
+  # Compteur d'echecs CONSECUTIFS : c'est lui qui porte le backoff, et il est
+  # remis a zero par le premier cycle propre. Une panne franche se calme ; un
+  # job qui echoue de temps en temps ne penalise pas le slot.
+  local fails=0 wait_s
   echo "[slot $slot] demarrage, nom runner=$name"
   while [ ! -f "$STOP_FILE" ]; do
     local token
     token="$(fetch_token)"
     if [ -z "$token" ]; then
-      echo "[slot $slot] token indisponible (droit admin gh ?) -- nouvelle tentative dans 60 s" >&2
-      sleep 60
+      fails=$(( fails + 1 ))
+      wait_s="$(backoff_delay "$fails")"
+      echo "[slot $slot] token indisponible (droit admin gh ?) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      sleep "$wait_s"
       continue
     fi
+    rotate_log "$STATE_DIR/$name.log"
     # --rm : le conteneur disparait avec le job. --ephemeral (dans l'entrypoint)
     # desenregistre le runner cote GitHub. Un cycle = un job, proprement --
     # mais le cache de depot (volume par slot) survit au conteneur (#14285).
@@ -216,10 +572,12 @@ slot_loop() {
       --name "$name" \
       --cpus="$cpus" --memory="$memory" --pids-limit="$pids" \
       "${swap_args[@]+"${swap_args[@]}"}" \
+      "${BLKIO_ARGS[@]+"${BLKIO_ARGS[@]}"}" \
       --security-opt=no-new-privileges \
       -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
       -v "${vol_prefix}-${slot}":"$WORK_MOUNT" \
       -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
+      -e RUNNER_WORK_CACHE_PACK_THRESHOLD="$CACHE_PACK_THRESHOLD" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -227,9 +585,22 @@ slot_loop() {
       "$image" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
     echo "[slot $slot] conteneur termine (rc=$rc)"
-    # Anti-emballement : si le conteneur meurt immediatement et en boucle
-    # (image absente, token refuse), on ne martele ni docker ni l'API.
-    [ "$rc" -ne 0 ] && sleep 15 || sleep 2
+    # Anti-emballement (#15091). La forme precedente etait un delai FIXE de
+    # 15 s : sous panne durable, N slots produisaient N/15 e appels
+    # registration-token par seconde -- ~48/min a 12 slots -- indefiniment,
+    # pendant que rien ne pouvait aboutir. Une panne devenait une charge
+    # soutenue sur l'API et sur le daemon. Le backoff double le delai a chaque
+    # echec consecutif jusqu'au plafond, et le jitter disperse les N slots qui
+    # sans lui repartiraient tous dans la meme seconde.
+    if [ "$rc" -ne 0 ]; then
+      fails=$(( fails + 1 ))
+      wait_s="$(backoff_delay "$fails")"
+      echo "[slot $slot] echec consecutif #$fails -- attente ${wait_s}s avant relance" >&2
+      sleep "$wait_s"
+    else
+      fails=0
+      sleep 2
+    fi
   done
   echo "[slot $slot] arret demande, boucle terminee"
 }
@@ -280,6 +651,12 @@ utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
 est en cours. Attendre la fin des jobs, faire '$0 stop' (no-op si deja
 fait) puis '$0 start', OU relancer avec '$0 start $n --force'."
   fi
+  # Les trois bornes, verifiees AVANT de lever le sentinel : un refus ne doit
+  # laisser aucune trace, sinon un arret gracieux en cours serait annule par
+  # une tentative de demarrage que l'on vient justement de refuser.
+  assert_cgroup_budget
+  assert_cpu_budget "start" "$n" "$CPUS"
+  compute_blkio_args
   # Sur succes, on leve le sentinel -- le superviseur qui demarre prend
   # la main sur l'etat precedent (Defaut 2 dans son volet `start`
   # historiquement effacait sans condition ; ici il n'efface que si
@@ -302,8 +679,34 @@ cmd_stop() {
   # Arret GRACIEUX : on pose le sentinel, les boucles ne relancent plus de
   # conteneur. Le job en cours va a son terme -- on ne tue pas un job qui
   # tourne, il rendrait un rouge qui ne veut rien dire.
-  touch "$STOP_FILE"
-  echo "sentinel pose : aucun nouveau conteneur ne sera lance."
+  #
+  # LE SENTINEL SE VERIFIE APRES L'ECRITURE (#15091). Cette fonction rendait
+  # 0 quoi qu'il arrive : sous `set -uo pipefail` SANS `-e`, l'echec du
+  # `touch` n'interrompait rien, et le code de retour etait celui du dernier
+  # `echo`. Un arret inerte etait donc indiscernable d'un arret reussi.
+  #
+  # Ce n'est pas une hypothese : sur ai-01, l'unite appelait ce script sans
+  # COURSIA_RUNNER_STATE_DIR, le sentinel atterrissait dans un
+  # /root/.coursia-runner/ que ce script CREE lui-meme, le superviseur
+  # surveillait /var/lib/coursia-runner/ -- et `systemctl stop` annoncait le
+  # succes avant de retomber sur son SIGTERM. La reparation du cablage vit
+  # dans persist/ai-01/ ; celle-ci est la borne qui rend le meme defaut
+  # LISIBLE la prochaine fois, quel que soit l'appelant.
+  #
+  # Le test verifie la PRESENCE du fichier, pas le code de retour du touch :
+  # ce qui compte est qu'un fichier existe a l'endroit que les boucles
+  # surveillent -- un touch qui reussit sur un chemin que personne ne lit
+  # n'est pas un arret.
+  if ! touch "$STOP_FILE" 2>/dev/null || [ ! -e "$STOP_FILE" ]; then
+    echo "ERREUR: sentinel NON pose -- $STOP_FILE n'a pas pu etre ecrit." >&2
+    echo "  Les boucles de slot continuent de lancer des conteneurs." >&2
+    echo "  Verifier les droits sur $STATE_DIR, et que COURSIA_RUNNER_STATE_DIR" >&2
+    echo "  designe bien le repertoire surveille par le superviseur en cours" >&2
+    echo "  (un STATE_DIR different est cree en silence, et l'arret est inerte)." >&2
+    return 1
+  fi
+  echo "sentinel pose : $STOP_FILE"
+  echo "aucun nouveau conteneur ne sera lance."
   echo "Les jobs en cours vont a leur terme. Pour couper net (deconseille) :"
   echo "  docker ps --filter name=$NAME_PREFIX -q | xargs -r docker kill"
   echo "  docker ps --filter name=$LEAN_NAME_PREFIX -q | xargs -r docker kill"
@@ -329,6 +732,34 @@ cmd_status() {
       echo "  superviseurs actifs : $count (PID $pids)"
     fi
   fi
+  echo "== familles actives (toutes, tous state dirs) =="
+  # supervisor_pids() ci-dessus ne voit que `start` (c'est son role : garder
+  # l'idempotence de start). Le recensement inter-familles repond a l'autre
+  # question, celle que pose le budget CPU.
+  local fam_lines
+  fam_lines="$(supervisor_families)"
+  if [ -z "$fam_lines" ]; then
+    echo "  aucune famille active"
+  else
+    local pid fam n c
+    while read -r pid fam n; do
+      [ -z "${fam:-}" ] && continue
+      c="$(family_cpus_of "$pid" "$fam")"
+      echo "  $fam n=${n:-?} cpus=$c (pid $pid)"
+    done <<< "$fam_lines"
+  fi
+  echo "== bornes =="
+  if [ -n "$CGROUP_PARENT" ]; then
+    assert_cgroup_budget 2>&1 | sed 's/^/  /'
+  else
+    echo "  budget agrege : non declare (COURSIA_RUNNER_CGROUP_PARENT vide)"
+  fi
+  if [ -n "$DEVICE_WRITE_BPS$DEVICE_READ_BPS" ]; then
+    compute_blkio_args 2>&1 | sed 's/^/  /'
+  else
+    echo "  plafond par conteneur : non declare (COURSIA_RUNNER_DEVICE_WRITE_BPS vide)"
+  fi
+  echo "  budget CPU inter-familles : ${CPU_BUDGET:-0} vCPU (0 = pas de garde)"
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="
@@ -365,19 +796,30 @@ waiter_loop() {
   # l'attente du gate. Pas de volume -- rien a persister.
   local slot="$1"
   local name="${WAITER_NAME_PREFIX}-${slot}"
+  local fails=0 wait_s
+  # Toolcache seul -- jamais de volume _work (cf commentaire WAITER_TOOLCACHE).
+  local tc_args=()
+  if [ "$WAITER_TOOLCACHE" = "1" ]; then
+    tc_args=(-v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT")
+  fi
   echo "[waiter $slot] demarrage, nom runner=$name"
   while [ ! -f "$STOP_FILE" ]; do
     local token
     token="$(fetch_token)"
     if [ -z "$token" ]; then
-      echo "[waiter $slot] token indisponible (droit admin gh ?) -- nouvelle tentative dans 60 s" >&2
-      sleep 60
+      fails=$(( fails + 1 ))
+      wait_s="$(backoff_delay "$fails")"
+      echo "[waiter $slot] token indisponible (droit admin gh ?) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      sleep "$wait_s"
       continue
     fi
+    rotate_log "$STATE_DIR/$name.log"
     docker run --rm \
       --name "$name" \
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
+      "${BLKIO_ARGS[@]+"${BLKIO_ARGS[@]}"}" \
       --security-opt=no-new-privileges \
+      "${tc_args[@]+"${tc_args[@]}"}" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -385,7 +827,15 @@ waiter_loop() {
       "$IMAGE" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
     echo "[waiter $slot] conteneur termine (rc=$rc)"
-    [ "$rc" -ne 0 ] && sleep 15 || sleep 2
+    if [ "$rc" -ne 0 ]; then
+      fails=$(( fails + 1 ))
+      wait_s="$(backoff_delay "$fails")"
+      echo "[waiter $slot] echec consecutif #$fails -- attente ${wait_s}s avant relance" >&2
+      sleep "$wait_s"
+    else
+      fails=0
+      sleep 2
+    fi
   done
   echo "[waiter $slot] arret demande, boucle terminee"
 }
@@ -409,6 +859,12 @@ cmd_waiters() {
       die "waiters deja lancees (pid $head_pid) -- arreter d'abord ($0 stop)"
     fi
   fi
+  # Les trois bornes, verifiees AVANT de lever le sentinel : un refus ne doit
+  # laisser aucune trace, sinon un arret gracieux en cours serait annule par
+  # une tentative de demarrage que l'on vient justement de refuser.
+  assert_cgroup_budget
+  assert_cpu_budget "waiters" "$n" "$WAITER_CPUS"
+  compute_blkio_args
   rm -f "$STATE_DIR/waiter-pids"
   echo "demarrage de $n waiter(s) ; labels=$WAITER_LABELS ; caps : cpus=$WAITER_CPUS memory=$WAITER_MEMORY pids=$WAITER_PIDS"
   for i in $(seq 1 "$n"); do
@@ -433,14 +889,18 @@ cmd_lean() {
   # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
   # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
   #
-  # Budget CPU hors garde (a documenter, ai-01 DM 2026-09-04) : le garde PPID
-  # ne couvre que les superviseurs d'un MEME prefix, donc `start` et `lean`
-  # coexistent par design (familles distinctes, containers distincts). La
-  # somme des caps CPU des familles actives n'est gardee par RIEN -- c'est
-  # l'operateur qui dimensionne : slots generiques (N x CPUS) + waiters
-  # (N x WAITER_CPUS) + slots lean (N x LEAN_CPUS) doit rester <= le total
-  # machine. Le pool lean est dimensionne pour tourner SEUL sur la jambe CI
-  # lourde (arret des autres familles avant `lean` quand la machine sature).
+  # Budget CPU inter-familles (#15091, fermeture du trou nomme ici depuis
+  # #14337). Le garde PPID ne couvre que les superviseurs d'un MEME prefix,
+  # donc `start`, `waiters` et `lean` coexistent par design -- et leur somme
+  # n'etait gardee par RIEN : « c'est l'operateur qui dimensionne ». C'est
+  # desormais assert_cpu_budget qui la garde, en lisant les familles actives
+  # dans la table des processus et leurs caps dans /proc/<pid>/environ.
+  # Il reste INACTIF tant que COURSIA_RUNNER_CPU_BUDGET vaut 0 : aucune
+  # machine ne se voit imposer un plafond qu'elle n'a pas declare (po-2024
+  # garde son comportement ; ai-01 declare 8 dans son wrapper).
+  # Le pool lean reste dimensionne pour tourner SEUL sur la jambe CI lourde --
+  # avec le budget arme, le demarrage est desormais REFUSE au lieu de degrader
+  # la machine en silence.
   if [ -f "$STATE_DIR/lean-pids" ]; then
     local head_pid
     head_pid="$(head -1 "$STATE_DIR/lean-pids" 2>/dev/null || true)"
@@ -448,6 +908,12 @@ cmd_lean() {
       die "pool lean deja lance (pid $head_pid) -- arreter d'abord ($0 stop)"
     fi
   fi
+  # Les trois bornes, verifiees AVANT de lever le sentinel : un refus ne doit
+  # laisser aucune trace, sinon un arret gracieux en cours serait annule par
+  # une tentative de demarrage que l'on vient justement de refuser.
+  assert_cgroup_budget
+  assert_cpu_budget "lean" "$n" "$LEAN_CPUS"
+  compute_blkio_args
   rm -f "$STATE_DIR/lean-pids"
   echo "demarrage de $n slot(s) lean ; labels=$LEAN_LABELS ; caps : cpus=$LEAN_CPUS memory=$LEAN_MEMORY pids=$LEAN_PIDS ; image=$LEAN_IMAGE ; .lake chaud=${LEAN_WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
   for i in $(seq 1 "$n"); do

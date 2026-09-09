@@ -116,14 +116,157 @@ def convert_cell(source, is_first_cell: bool) -> tuple[object, int]:
     return text, changed
 
 
-def process(path: Path, apply: bool) -> int:
-    """Rend le nombre de separateurs convertis (ou convertibles si apply=False)."""
-    try:
-        nb = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        print(f"ILLISIBLE {path}: {exc}", file=sys.stderr)
-        return 0
+def _raw_decode(text: str, i: int):
+    """Decode un token JSON (string, nombre, bool, null) via le decodeur standard."""
+    return json.JSONDecoder().raw_decode(text, i)
 
+
+def _parse_spans(text: str):
+    """Parse la JSON du notebook et enregistre les offsets de caracteres de chaque string literal.
+
+    Retourne ``(nb, literal_spans)`` ou ``literal_spans`` est une liste de tuples
+    ``(start, end, decoded, path)`` : ``start``/``end`` sont les offsets de CARACTERES
+    du literal dans ``text`` (la chaine decodee — ce ne sont PAS des offsets bytes),
+    ``decoded`` sa valeur decodee, ``path`` son chemin JSON
+    (ex. ``("cells", 3, "source", 1)`` pour l'element 1 de la source de la cellule 3).
+    """
+    literal_spans = []
+
+    def skip(i):
+        while i < len(text) and text[i] in " \t\r\n":
+            i += 1
+        return i
+
+    def parse(i, path):
+        i = skip(i)
+        c = text[i]
+        if c == '"':
+            val, end = _raw_decode(text, i)
+            literal_spans.append((i, end, val, path))
+            return val, end
+        if c == "{":
+            i += 1
+            obj = {}
+            while True:
+                i = skip(i)
+                if text[i] == "}":
+                    i += 1
+                    break
+                k, i = parse(i, path)
+                i = skip(i)
+                if text[i] == ":":
+                    i += 1
+                v, i = parse(i, path + (k,))
+                obj[k] = v
+                i = skip(i)
+                if text[i] == ",":
+                    i += 1
+            return obj, i
+        if c == "[":
+            i += 1
+            arr = []
+            idx = 0
+            while True:
+                i = skip(i)
+                if text[i] == "]":
+                    i += 1
+                    break
+                v, i = parse(i, path + (idx,))
+                arr.append(v)
+                idx += 1
+                i = skip(i)
+                if text[i] == ",":
+                    i += 1
+            return arr, i
+        val, end = _raw_decode(text, i)
+        return val, end
+
+    nb, _ = parse(0, ())
+    return nb, literal_spans
+
+
+def _literal_offset_map(lit: str, decoded: str) -> list[int]:
+    """Map index de char decode -> offset de caractere dans ``lit`` (le literal, guillemets inclus).
+
+    ``lit`` est la tranche ``text[start:end]`` du literal JSON ; ``decoded`` sa
+    valeur decodee. Retourne une liste de longueur ``len(decoded)`` : le k-ième
+    element est l'offset de CARACTERE (dans ``lit``) du k-ième caractère décodé.
+    Ces offsets sont des offsets de caracteres dans la chaine decodee, PAS des
+    offsets bytes : la preservation octet-a-octet provient de l'echange binaire,
+    du remplacement ASCII de meme longueur et de l'encode utf-8 final, pas de ces
+    offsets. Les paires de surrogates (``\\uD800\\uDC00``) comptent pour un seul
+    caractère décodé.
+    """
+    inner = lit[1:-1]
+    out = []
+    ri = 0
+    di = 0
+    n = len(inner)
+    while ri < n and di < len(decoded):
+        out.append(ri + 1)  # +1 : guillemet ouvrant
+        ch = inner[ri]
+        if ch == "\\":
+            c2 = inner[ri + 1] if ri + 1 < n else ""
+            if c2 == "u":
+                j = ri + 2
+                hexs = inner[j:j + 4]
+                cp = int(hexs, 16) if hexs else -1
+                ri = j + 4
+                if 0xD800 <= cp <= 0xDBFF and ri + 6 <= n and inner[ri:ri + 2] == "\\u":
+                    ri += 6  # paire de surrogates : un seul char décodé
+            else:
+                ri += 2
+        else:
+            ri += 1
+        di += 1
+    return out
+
+
+def _source_spans_by_cell(literal_spans: list) -> dict:
+    """Regroupe les spans de source par index de cellule, pour les cellules markdown."""
+    by_cell = {}
+    for (s, e, d, p) in literal_spans:
+        if len(p) >= 3 and p[0] == "cells" and p[2] == "source":
+            by_cell.setdefault(p[1], []).append((s, e, d))
+    return by_cell
+
+
+def _cell_edits(raw: str, old_src, new_src, spans: list):
+    """Calcule les edits ``(start, end, replacement)`` (offsets de CARACTERES) pour une cellule.
+
+    Compare la source decodee aplatie avant/après conversion et ne retient que les
+    positions exactes ou ``---`` devient ``***``. Les offsets retournes sont des
+    offsets de caracteres dans ``raw`` (la chaine decodee), pas des offsets bytes.
+    Retourne ``None`` si la longueur ne se réconcilie pas (extraction impossible),
+    sinon la liste des edits.
+    """
+    if not spans:
+        return None
+    flat_chars = []
+    char_offsets = []
+    for (s, e, d) in spans:
+        lit = raw[s:e]
+        offs = _literal_offset_map(lit, d)
+        flat_chars.append(d)
+        char_offsets.extend(s + o for o in offs)
+    flat_old = "".join(flat_chars)
+    flat_new = "".join(new_src) if isinstance(new_src, list) else new_src
+    if len(flat_new) != len(flat_old) or len(char_offsets) != len(flat_old):
+        return None
+
+    edits = []
+    i = 0
+    while i <= len(flat_old) - 3:
+        if flat_old[i:i + 3] == HR and flat_new[i:i + 3] == REPLACEMENT:
+            edits.append((char_offsets[i], char_offsets[i] + 3, REPLACEMENT))
+            i += 3
+        else:
+            i += 1
+    return edits
+
+
+def _count_conversions(nb) -> int:
+    """Nombre de separateurs convertibles, sans ecrire (reutilise convert_cell)."""
     total = 0
     seen_markdown = False
     for cell in nb.get("cells", []):
@@ -131,16 +274,96 @@ def process(path: Path, apply: bool) -> int:
             continue
         first = not seen_markdown
         seen_markdown = True
-        new_source, n = convert_cell(cell.get("source"), first)
-        if n:
-            total += n
-            if apply:
-                cell["source"] = new_source
+        _, n = convert_cell(cell.get("source"), first)
+        total += n
+    return total
 
-    if total and apply:
-        path.write_text(
-            json.dumps(nb, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+
+def _apply_byte_preserving(raw: str, nb, expected_total: int):
+    """Applique les conversions de facon byte-preserving.
+
+    Ne modifie que les fragments de source markdown eligibles ; tout le reste du
+    fichier (code, outputs, execution_count, metadata, nbsp interne des chaines
+    HTML) est preserve octet par octet. Retourne le nouveau texte, ou ``None`` si
+    le nombre de mutations texte ne se reconcilie pas avec ``expected_total``.
+    """
+    _, literal_spans = _parse_spans(raw)
+    cells = nb.get("cells", [])
+    by_cell = _source_spans_by_cell(literal_spans)
+
+    edits = []
+    seen_markdown = False
+    for i, cell in enumerate(cells):
+        if cell.get("cell_type") != "markdown":
+            continue
+        first = not seen_markdown
+        seen_markdown = True
+        old_src = cell.get("source")
+        new_src, n = convert_cell(old_src, first)
+        if not n:
+            continue
+        spans = by_cell.get(i)
+        cell_edits = _cell_edits(raw, old_src, new_src, spans)
+        if cell_edits is None or len(cell_edits) != n:
+            return None
+        edits.extend(cell_edits)
+
+    if len(edits) != expected_total:
+        return None
+
+    # Chaque mutation doit porter sur un vrai separateur `---` dans le texte brut,
+    # sans quoi la substitution ecrirait des octets hors cible (echouer sans ecrire).
+    edits.sort(key=lambda e: e[0], reverse=True)
+    for (s, e, repl) in edits:
+        if raw[s:e] != HR:
+            return None
+        raw = raw[:s] + repl + raw[e:]
+    return raw
+
+
+def process(path: Path, apply: bool) -> int:
+    """Rend le nombre de separateurs convertis (ou convertibles si apply=False).
+
+    ``apply=True`` ecrit de facon byte-preserving : seule la source markdown
+    eligible change ; code, outputs, metadata et whitespace interne restent
+    intactes. Lève ``RuntimeError`` (rien n'est ecrit) si le nombre de mutations
+    texte ne se reconcilie pas avec le nombre de conversions calcule.
+    """
+    # Lecture/ecriture en MODE BINAIRE : le mode texte de Windows convertirtait
+    # les fins de ligne LF/CRLF, ce qui casserait la preservation byte-a-byte.
+    # Les offsets manipules par _parse_spans/_cell_edits sont des offsets de
+    # CARACTERES dans la chaine decodee (pas des offsets bytes) : la preservation
+    # octet-a-octet vient de l'echange binaire + du remplacement ASCII de meme
+    # longueur (--- -> ***) + de l'encode utf-8 final, pas de ces offsets.
+    try:
+        raw_bytes = path.read_bytes()
+    except OSError as exc:
+        print(f"ILLISIBLE {path}: {exc}", file=sys.stderr)
+        return 0
+    try:
+        raw = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        print(f"ILLISIBLE {path}: {exc}", file=sys.stderr)
+        return 0
+    try:
+        nb = json.loads(raw)
+    except ValueError as exc:
+        print(f"ILLISIBLE {path}: {exc}", file=sys.stderr)
+        return 0
+
+    total = _count_conversions(nb)
+    if not total:
+        return 0
+    if not apply:
+        return total
+
+    new_raw = _apply_byte_preserving(raw, nb, total)
+    if new_raw is None:
+        raise RuntimeError(
+            f"reconciliation ECHOUE sur {path} : {total} conversion(s) calculee(s) "
+            f"mais mutations textuelles non reconciliees — rien n'a ete ecrit"
         )
+    path.write_bytes(new_raw.encode("utf-8"))
     return total
 
 
@@ -168,7 +391,11 @@ def main(argv=None) -> int:
     files = 0
     seps = 0
     for nb in iter_notebooks(args.targets):
-        n = process(nb, apply=args.apply)
+        try:
+            n = process(nb, apply=args.apply)
+        except RuntimeError as exc:
+            print(f"ECHEC {nb}: {exc}", file=sys.stderr)
+            return 2
         if n:
             files += 1
             seps += n

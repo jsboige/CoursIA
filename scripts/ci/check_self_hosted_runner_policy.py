@@ -300,6 +300,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "notebook-latex-control-chars.yml",
+    # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
+    #   les disparitions de section au plan des notebooks pedagogiques.
+    #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem
+    #   md-content-loss-gate a sa creation -- absorption fast-lane-shadow
+    #   differee a un cycle ulterieur si le pattern tient). Detecteur
+    #   `scripts/notebook_tools/detect_notebook_plan_loss.py` (3 passes de
+    #   substance + normalisation accents/numerals, complement structurel de
+    #   md-content-loss : axe PLAN vs axe VOLUME), stdlib-only, 28 tests verts.
+    #   Aucun secret, aucun GITHUB_TOKEN cote job, garde same-repo universelle
+    #   parenthesee au niveau job (#13874) pour les forks PRs qui se font
+    #   skipper proprement par pr_gate. Runner = jambe Linux containerisee
+    #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
+    #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "notebook-plan-loss-gate.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
