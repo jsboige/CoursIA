@@ -6,8 +6,9 @@ substance en 3 passes :
   - retrogradation titre -> bold inline -> SUBSTANCE_FOUND_INLINE_BOLD (PAS de signal)
   - section renommee / absorbee -> SUBSTANCE_FOUND_TOKEN_MATCH (PAS de signal)
   - titre re-accentue / re-numerote -> INVISIBLE apres normalisation (PAS de signal)
-  - STRUCTURE_DRIFT : nombre de cellules markdown different (PAS de comparaison
-    elementaire, design #1 #8655 transpose)
+  - STRUCTURE_DRIFT : nombre de cellules markdown different -- signal
+    INFORMATIF non bloquant ; la detection de perte (LOST_SECTION) tourne
+    malgre le drift (fix FP d'ajout : #15403/#15390, borne #8655 retiree)
   - NEW_FILE exempt (rc=0)
   - justification par-section via body PR (--pr-body-file) : leve le finding
     LOST_SECTION correspondant
@@ -240,10 +241,10 @@ class TestScan:
     def test_section_lost_raises_finding(self, tmp_path: Path):
         # Cas du ticket : `### Duree estimee : 50 minutes` a la base,
         # absent du head sans substance ailleurs -> LOST_SECTION.
-        # Note : on garde le MEME nombre de cellules markdown entre base et
-        # head sinon STRUCTURE_DRIFT bloque la passe substance (par design --
-        # une difference de cellules = impossible de garantir une
-        # comparaison ENSEMBLE).
+        # (Le meme nombre de cellules n'est plus requis depuis le fix du
+        # court-circuit STRUCTURE_DRIFT : une difference de compte ne
+        # desarme plus la passe substance -- on le garde ici par simplicite
+        # du fixture.)
         # On choisit un head dont AUCUN token significatif de `duree estimee
         # 50 minutes` ne survit (les seuls tokens >=4 chars du titre sont
         # `duree` et `estimee` -- le head ne contient ni l'un ni l'autre).
@@ -336,8 +337,12 @@ class TestScan:
 
     def test_structure_drift(self, tmp_path: Path):
         # Nombre de cellules markdown different entre base et head ->
-        # STRUCTURE_DRIFT (PAS de comparaison elementaire).
-        nb_base = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"), _md("## Section B\n\n"))
+        # STRUCTURE_DRIFT informatif + la detection de perte TOURNE quand
+        # meme (fix du court-circuit). Le titre perdu porte des tokens
+        # UNIQUES (duree/estimee) pour ne pas tomber dans SUBSTANCE_FOUND
+        # par token partage avec un autre titre (cf. test_section_lost).
+        nb_base = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"),
+                      _md("### Duree estimee : 50 minutes\n\nSuite.\n\n"))
         nb_head = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"))
         import subprocess
         p = tmp_path / "sd.ipynb"
@@ -353,6 +358,13 @@ class TestScan:
         assert "error" not in result
         kinds = [f["kind"] for f in result["findings"]]
         assert "STRUCTURE_DRIFT" in kinds
+        # La perte REELLE (Duree estimee disparue, substance introuvable)
+        # reste detectee MALGRE le drift -- le drift ne court-circuite plus
+        # la detection.
+        assert "LOST_SECTION" in kinds
+        blocking_kinds = [f["kind"] for f in dpl._blocking_findings(result["findings"])]
+        assert "STRUCTURE_DRIFT" not in blocking_kinds
+        assert "LOST_SECTION" in blocking_kinds
 
     def test_new_file_exempt(self, tmp_path: Path):
         # Notebook NOUVEAU (absent de la base) -> exempt (rien a perdre, tout
@@ -381,10 +393,30 @@ class TestScan:
         assert st["base_headings"] == 0
         assert st["head_headings"] == 2
 
+    def test_structure_drift_pure_addition_not_blocking(self, tmp_path: Path):
+        # AJOUT pur d'une cellule markdown (le geste d'enrichissement
+        # standard -- cas #15403) : drift rapporte mais AUCUN titre perdu
+        # -> rien de bloquant.
+        nb_base = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"))
+        nb_head = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"),
+                      _md("## Ce qu'il faut retenir\n\nCloture.\n\n"))
+        import subprocess
+        p = tmp_path / "sd_add.ipynb"
+        _write_nb(p, nb_base)
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "sd_add.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+        _write_nb(p, nb_head)
 
-# ---------------------------------------------------------------------------
-# 6. Justification par-section depuis le body PR
-# ---------------------------------------------------------------------------
+        result = dpl.scan_notebook(p, base_ref="HEAD", head_ref=None)
+        assert "error" not in result
+        kinds = [f["kind"] for f in result["findings"]]
+        assert kinds == ["STRUCTURE_DRIFT"]
+        assert dpl._blocking_findings(result["findings"]) == []
+        assert result["stats"]["cell_count_stable"] is False
+
 class TestBodyJustification:
     def test_marker_normalizes(self):
         # Le marker est compare a la forme NORMALISEE du titre de plan.
@@ -470,6 +502,26 @@ class TestMain:
         # Le marker couvre `duree est longue` (normalise) ; le finding
         # correspondant est JUSTIFIED -> pas bloquant -> rc=0.
         assert rc == 0, f"rc={rc}, expected 0 (justified)"
+
+    def test_pure_addition_exits_zero(self, tmp_path: Path, capsys):
+        # Enrichissement qui AJOUTE une cellule markdown, aucun titre perdu
+        # (cas #15403) : STRUCTURE_DRIFT informatif, rc=0.
+        import subprocess
+        p = tmp_path / "add.ipynb"
+        nb_base = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"))
+        nb_head = _nb(_md("# Plan\n\n"), _md("## Section A\n\n"),
+                      _md("## Ce qu'il faut retenir\n\nCloture.\n\n"))
+        _write_nb(p, nb_base)
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "add.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+        _write_nb(p, nb_head)
+        rc = dpl.main([str(p), "--base", "HEAD", "--check"])
+        captured = capsys.readouterr()
+        assert rc == 0, f"expected rc=0, got stdout={captured.out!r}, stderr={captured.err!r}"
+        assert "STRUCTURE_DRIFT" in captured.out
 
     def test_unjustified_lost_exits_one(self, tmp_path: Path):
         # LOST_SECTION SANS body marker -> rc=1.
