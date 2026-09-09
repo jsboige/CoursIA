@@ -34,6 +34,21 @@ we modified, 0 re-execution (markdown-only edits).
 Usage:
     python fix_texte_hierarchy.py [--dry-run] [--target <notebook>]
 """
+
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : scripts/notebook_tools/demote_md_asides.py (partial)
+# - Verdict recorded in : PR #8630 (bbf6f9a70), PR #9607
+#
+# Per-function disposition :
+# - _matches_hint() : partially absorbed by demote_md_asides._matches_target();
+#   the space-bound "Pistes pour aller plus loin" variants remain reference-only
+# - _detect_source_format() : moved to demote_md_asides._detect_source_format()
+# - _demote_first_line_h1() : kept as reference; no canonical demoter successor
+# - _demote_all_hint_headings() : moved to demote_md_asides._demote_all_headings()
+# - fix_notebook() : hint branch absorbed; H1 branch kept as reference
+# - main() : superseded by demote_md_asides.main() for the absorbed hint branch
+
 import argparse, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent  # worktree root

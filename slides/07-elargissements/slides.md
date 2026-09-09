@@ -127,7 +127,11 @@ layout: dense
 
 # Mesurer l'intelligence
 
-<!-- Image: images/turing_test.png -->
+<div v-click="1" class="absolute top-[95px] left-[700px] w-[230px]"><img src="./images/turing_test.png" alt="Illustration du test de Turing : un interrogateur, un terminal et deux entites a departager par la conversation" /></div>
+
+<div class="w-[630px] leading-[1.25]">
+
+<v-clicks at="1">
 
 - **Le Turing Test (1950)**
   - Objectif: Evaluer l'intelligence par une conversation convaincante
@@ -142,9 +146,17 @@ layout: dense
 - **Defi**
   - Concevoir des tests mesurant l'acquisition de nouvelles competences, la generalisation et l'ethique
 
----
+</v-clicks>
 
-# Machines et pensee
+</div>
+
+<!-- Référence PPTX : slide 8. -->
+
+<div v-click="4" class="leading-[1.25]">
+
+## Machines et pensee
+
+<v-clicks at="5">
 
 - **Les debats philosophiques depuis Turing**
   - Pensee simulee vs pensee réelle
@@ -153,6 +165,10 @@ layout: dense
   - "Les machines pensent-elles?" est aussi pertinent que de demander si les sous-marins nagent
 - **Question ouverte**
   - "Si une IA simule parfaitement la pensee, est-ce suffisant pour dire qu'elle pense?"
+
+</v-clicks>
+
+</div>
 
 ---
 
@@ -178,6 +194,7 @@ layout: dense
   - La conscience est un espace de travail ou différentes parties du cerveau partagent des informations
   - Applications: Modèles d'attention, tâches complexes
   - Rôle important de l'inconscient
+  - *Notebook : [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition d'un workspace global, mesure empirique du basculement.*
 - **Integrated Information Theory (IIT)**
   - La conscience est mesuree par le degré d'integration de l'information (Phi)
   - Introduit la notion de systèmes physiques conscients
@@ -218,12 +235,40 @@ layout: dense
   - La conscience peut exister dans tout système integrant l'information
   - Reste difficile a tester experimentalement
 - **Activite**: Decouverte de PyPhi
+  - *Notebook : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Φ sur petits systèmes booléens, les cinq axiomes opérationnels, ce qui distingue un systeme a Phi eleve d'un circuit feed-forward equivalent.*
+
+---
+layout: dense
+---
+
+# Conscience mesurable : PyPhi et ignition de workspace
+
+- **Le verrou empirique**
+  - IIT donne un nombre (Phi) mais reste difficile a observer sur le vivant
+  - GWT donne un critere operationnel (ignition) mais ne dit pas ce que le workspace represente
+  - Les deux theories se rejoignent sur un meme geste : **mesurer un phenomene de transition**
+- **PyPhi** (Tononi, Albantakis, et al.)
+  - Systemes booleens a 5--8 noeuds : calcul exact de Phi en quelques secondes
+  - Systemes plus grands : decomposition, partitions minimales, approximation
+  - Question pedagoguee : un systeme a Phi eleve a-t-il quelque chose qui ressemble a une "experience"?
+- **Workspace Ignition** (Dehaene, Mashour, ICT-24)
+  - Signal EEG/MEG : passage d'une activite locale a une activite globale, large bande, durable
+  - ICT-24 formalise cette ignition dans le cadre Integrated Complexity Theory (ICT) et la relie a Phi
+  - Question pedagoguee : cette ignition peut-elle exister dans un systeme non-biologique?
+- **Vers une science de la conscience**
+  - Au-dela du debat philosophique, la mesure impose une discipline
+  - Le depot porte les deux outils (IIT-01, ICT-24) ; les utiliser en parallele montre ce qu'aucun ne montre seul
+  - *Notebooks : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) (calcul exact de Φ) · [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (ignition et integration).*
 
 ---
 
 # L'ethique de l'IA
 
-<!-- Image: images/trolley_problem.png -->
+<div v-click="1" class="absolute top-[215px] left-[630px] w-[300px]"><img src="./images/trolley_problem.png" alt="Le dilemme du tramway : un aiguillage, une voie avec cinq personnes, une seule personne sur l'autre" /></div>
+
+<div class="w-[570px] leading-[1.25]">
+
+<v-clicks at="1">
 
 - **L'IA comme double tranchant**
   - **Avantages**: Amelioration des soins medicaux, prediction des catastrophes, automatisation
@@ -233,6 +278,12 @@ layout: dense
   - Minimiser les risques
 - **Question pour reflexion**
   - "Comment garantir que l'IA sert l'intérêt collectif et non des intérêts individuels?"
+
+</v-clicks>
+
+</div>
+
+<!-- Référence PPTX : slide 14. -->
 
 ---
 layout: dense
@@ -260,7 +311,11 @@ layout: dense
 
 # Surveillance, securite et vie privee
 
-<!-- Image: images/federated_learning.png -->
+<div v-click="3" class="absolute top-[150px] left-[680px] w-[250px]"><img src="./images/federated_learning.png" alt="Apprentissage federe : un serveur central agrege les modeles entraines localement sur plusieurs appareils clients" /></div>
+
+<div class="w-[640px] leading-[1.25]">
+
+<v-clicks at="1">
 
 - **Problemes**
   - Surveillance de masse (cameras, microphones)
@@ -273,8 +328,15 @@ layout: dense
 - **Exemples concrets**
   - Federated learning (modèle sans base de données centralisee)
   - Deep learning confidentiel
-  - Chiffrement homomorphe
+  - Chiffrement homomorphe (calcul sur données chiffrées, sans déchiffrement)
+    - *Notebook : [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes, scénario bulletin dans l'urne.*
+  - Vote vérifiable de bout en bout (end-to-end voter verifiability)
+    - *Notebook : [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles, conformité électorale.*
   - Augmentation
+
+</v-clicks>
+
+</div>
 
 ---
 
@@ -296,7 +358,11 @@ layout: dense
 
 # Transparence et confiance
 
-<!-- Image: images/decision_tree_xai.png -->
+<div v-click="2" class="absolute top-[88px] left-[742px] w-[190px]"><img src="./images/decision_tree_xai.png" alt="Arbre de decision interprete par XAI : chaque noeud porte une explication locale de la prediction" /></div>
+
+<div class="w-[620px] leading-[1.25]">
+
+<v-clicks at="1">
 
 - **Exigences de confiance**
   - Verification et validation (V&V)
@@ -308,6 +374,13 @@ layout: dense
   - Comparaison entre explications humaines et machines
 - **Question ouverte**
   - "Les explications des IA sont-elles fiables ou simplement convaincantes?"
+
+</v-clicks>
+
+</div>
+
+<div v-click="5" class="absolute top-[270px] left-[700px] w-[232px]">
+
 - **Applications**
   - TP: XAI simple avec ML.Net
   - Scikit-learn: Scikit-Explain API
@@ -317,9 +390,15 @@ layout: dense
     - On the Biology of a Large Language Model
     - When Models Manipulate Manifolds
 
----
+</div>
 
-# L'avenir de l'emploi
+<!-- Référence PPTX : slide 17. -->
+
+<div v-click="6" class="w-[640px] leading-[1.25]">
+
+## L'avenir de l'emploi
+
+<v-clicks at="7">
 
 - **Impacts**
   - Court terme: Augmentation de la productivite
@@ -331,6 +410,10 @@ layout: dense
   - Reinvention des metiers (radiologie augmentee par IA)
 - **Question ouverte**
   - Une societe sans travail reste-t-elle envisageable?
+
+</v-clicks>
+
+</div>
 
 ---
 
@@ -348,48 +431,101 @@ layout: dense
   - Eviter la confusion entre outils et entites conscientes
 - **Question ouverte**
   - Si une IA simule la souffrance, a-t-on le droit de la faire souffrir?
+  - *Modèle d'argumentation pour structurer ce type de débat : [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) — claim / data / warrant / backing / qualifier / rebuttal, le debat redevient falsifiable.*
 
----
-layout: two-cols
 ---
 
 # Securite de l'IA
 
-- **Problemes**
-  - Alignement des valeurs (value alignment)
-  - Effets secondaires non prevus
-  - Exemple: Supprimer tous les cancers?
+<div v-click="2" class="absolute top-[88px] left-[640px] w-[292px]">
+
 - **Solutions**
   - Failure Mode and Effects Analysis (FMEA)
   - Fault Tree Analysis
   - Grilles de securite IA (AI Safety Gridworlds)
   - AI Safety Levels (ASLs)
+  - Modelisation par graphes d'arguments (Dung 1995)
+    - *Notebook : [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb) — extensions de valeurs, semantiques preferred/stable/complete, application au value alignment multi-criteres.*
+
+</div>
+
+<div class="w-[552px]">
+
+<div v-click="1">
+
+- **Problemes**
+  - Alignement des valeurs (value alignment)
+  - Effets secondaires non prevus
+  - Exemple: Supprimer tous les cancers?
+
+</div>
+
+<div v-click="3">
+
 - **Exemple concret**
   - Agents "cheatants" dans les simulations
+
+</div>
+
+<div v-click="4">
+
 - **Anthropic**
   - Responsible Scaling Policy
   - Constitutional AI
 
-::right::
+</div>
 
-![w:300](../_assets/images/slide_20_img_000.png)
-![w:200](../_assets/images/slide_20_img_001.png)
+</div>
+
+<div v-click="3" class="absolute top-[355px] left-[48px] w-[160px]"><img src="./images/slide_20_img_000.png" alt="Cycle FMEA : RPN = SEV x OCCUR x DETEC, etapes 1 a 4" /></div>
+<div v-click="3" class="absolute top-[355px] left-[215px] w-[150px]"><img src="./images/slide_20_img_001.png" alt="Arbre de defaillance (fault tree) : portes logiques et evenements de base" /></div>
+
+<!-- Référence PPTX : slide 20. -->
 
 ---
 
 # Construire un futur ethique pour l'IA
 
+<div class="absolute top-[150px] left-[48px] w-[440px] leading-[1.25]">
+
+<div v-click="1" class="mb-[56px]">
+
 - **Resume des defis ethiques majeurs**
   - Justice, transparence, securite, droits, travail
+
+</div>
+
+<div v-click="2">
+
 - **Appel a l'action**
   - Cooperation entre ingenieurs, decideurs, et citoyens
   - Former une nouvelle generation d'ingenieurs ethiques
+
+</div>
+
+</div>
+
+<div class="absolute top-[150px] left-[520px] w-[412px] leading-[1.25]">
+
+<div v-click="3" class="mb-[56px]">
+
 - **La singularite et le transhumanisme**
   - Singularite technologique (Good, Kurzweil)
   - Transhumanisme: Fusion homme-machine
   - Optimisme vs dangers (contrôle, survie humaine)
+
+</div>
+
+<div v-click="4">
+
 - **Question ouverte**
   - "Quel futur voulons-nous co-créer avec l'IA?"
+
+</div>
+
+</div>
+
+<!-- Référence PPTX : slide 21. -->
 
 ---
 layout: section
@@ -481,7 +617,11 @@ layout: dense
 
 # Apprentissage et Deep Learning
 
-<!-- Image: images/gan_architecture.png -->
+<div v-click="1" class="absolute top-[225px] left-[570px] w-[374px]"><img src="./images/gan_architecture.png" alt="Architecture d un GAN : exemples reels, generateur et discriminateur en competition" /></div>
+
+<div class="w-[520px] leading-[1.25]">
+
+<v-clicks at="1">
 
 - **Progres spectaculaires**
   - Vision par ordinateur, langage naturel, apprentissage par renforcement
@@ -496,6 +636,12 @@ layout: dense
 - **Axes futurs**
   - Apprentissage par transfert: reutiliser les connaissances
   - Integration apprentissage/connaissance: fusion de l'expérience et du raisonnement
+
+</v-clicks>
+
+</div>
+
+
 
 ---
 
@@ -531,7 +677,11 @@ layout: dense
 
 # IA Générale
 
-<!-- Image: images/recursive_self_improvement.png -->
+<div v-click="1" class="absolute top-[215px] left-[540px] w-[390px]"><img src="./images/recursive_self_improvement.png" alt="Boucle d auto-amelioration recursive : l agent ameliore ses propres capacites" /></div>
+
+<div class="w-[450px] leading-[1.25]">
+
+<v-clicks at="1">
 
 - **Objectif**
   - Créer des agents capables de maitriser plusieurs tâches diverses
@@ -540,6 +690,12 @@ layout: dense
   - Manque de diversite comportementale et de generalisation
 - **Progres recents**
   - Systèmes multi-langues ou multi-tâches bases sur des modèles de grande taille (ex: GPT)
+
+</v-clicks>
+
+</div>
+
+
 
 ---
 
@@ -624,13 +780,24 @@ layout: section
 
 # Pour aller plus loin : Notebooks
 
-- **Conscience et IIT**: `IIT/` - notebooks PyPhi
-- **IA Symbolique**: `SymbolicAI/Argument_Analysis/` - argumentation formelle
-  - `SymbolicAI/Lean/` - verification formelle
-- **Explicabilite (XAI)**: `ML/` - ML.NET tutorials
-- **IA Generative et ethique**: `GenAI/` - 58 notebooks
-  - DALL-E, Stable Diffusion, ComfyUI, LLMs
-- **Théorie des jeux**: `GameTheory/` - 26 notebooks OpenSpiel
+Le depot ancre chaque theme du deck sur un notebook ou une serie mesurable. Selection
+des cibles **directement citees dans les slides ci-dessus** (chemins relatifs au depot) :
+
+- **Conscience et theories de l'esprit**
+  - [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Phi sur systemes booleens
+  - [ICT-24-WorkspaceIgnition](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb) — ignition du workspace global (GWT)
+- **Argumentation formelle et debat structure**
+  - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb) — semantiques de Dung, value alignment
+  - [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) — modele de Toulmin, debat falsifiable
+- **Privacy, chiffrement et vote verifiable**
+  - [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) — Paillier, vote sur chiffres homomorphes
+  - [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) — preuves individuelles + universelles
+
+Series complementaires (autres thematiques couvertes par le depot) :
+
+- **Explicabilite (XAI)** : `MyIA.AI.Notebooks/ML/` — tutoriels ML.NET
+- **Verification formelle** : `MyIA.AI.Notebooks/SymbolicAI/Lean/`
+- **IA generative et ethique** : `MyIA.AI.Notebooks/GenAI/` (103 notebooks, Image/Audio/Video/Texte)
 
 ---
 layout: end

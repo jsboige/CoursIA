@@ -16,16 +16,19 @@ Claude Code utilise le protocole Anthropic pour communiquer avec les modèles. O
 
 ### Installation
 
+> **Vérifié le 2026-09-09 (#15419)** : le paquet `openrouter-proxy` **n'existe pas sur le registre npm** (`npm install -g openrouter-proxy` → 404). L'installation réelle, conforme au dépôt upstream, est un clonage Git — zéro dépendance, seul Node.js (≥ 16) est requis.
+
 ```bash
-# Installer le proxy globalement via npm
-npm install -g openrouter-proxy
+# Cloner le dépôt (emplacement au choix, il servira à chaque démarrage)
+git clone https://github.com/ahaostudy/openrouter-proxy.git
 ```
 
 ### Démarrage
 
 ```bash
 # Lance le proxy sur le port 8899 par defaut
-openrouter-proxy
+cd openrouter-proxy
+node proxy.js
 ```
 
 Le proxy tourne en arrière-plan et traduit les requêtes Claude Code vers OpenRouter. Gardez-le actif tant que vous utilisez Claude Code.
@@ -34,16 +37,16 @@ Le proxy tourne en arrière-plan et traduit les requêtes Claude Code vers OpenR
 
 Pour éviter de le lancer manuellement a chaque session :
 
-**Windows** - Ajoutez a votre profil PowerShell (`notepad $PROFILE`) :
+**Windows** - Ajoutez a votre profil PowerShell (`notepad $PROFILE`), en adaptant le chemin du clone :
 
 ```powershell
-Start-Process -WindowStyle Hidden -FilePath "openrouter-proxy"
+Start-Process -WindowStyle Hidden -FilePath "node" -ArgumentList "$HOME\openrouter-proxy\proxy.js"
 ```
 
 **macOS / Linux** - Ajoutez a `~/.zshrc` ou `~/.bashrc` :
 
 ```bash
-(openrouter-proxy &>/dev/null &)
+(node ~/openrouter-proxy/proxy.js &>/dev/null &)
 ```
 
 **Checkpoint :** Vérifiez que le proxy tourne :
@@ -54,9 +57,13 @@ curl http://127.0.0.1:8899/api/v1/models
 
 Si vous voyez une réponse JSON avec des modèles, le proxy fonctionne.
 
+**Symptôme si le proxy ne tourne pas** : chaque appel modèle de Claude Code échoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899`. Si vous aviez activé le lancement automatique détaché, un redémarrage du poste l'a arrêté sans message visible : relancez simplement `node proxy.js` dans le dossier du proxy, puis re-testez le `curl` ci-dessus.
+
 ---
 
 ## Étape 1 : Installer Claude Code (3 min)
+
+> **Chemin canonique : l'installation native** (défaut de la documentation officielle Anthropic, Node.js non requis pour cette étape). Guide complet et alternative npm : [INSTALLATION-CLAUDE-CODE.md](./INSTALLATION-CLAUDE-CODE.md).
 
 ### Windows
 
