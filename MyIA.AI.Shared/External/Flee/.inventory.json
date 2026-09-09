@@ -4,11 +4,12 @@
   "default_branch": "master",
   "shallow_clone_path": "../../mparlak-Flee-fork/",
   "target_in_repo": "MyIA.AI.Shared/External/Flee/",
-  "inventory_date": "2026-09-09T05:30Z",
-  "cycle": "c.1039",
+  "inventory_date": "2026-09-09T06:30Z",
+  "cycle": "c.1041",
   "lane": "myia-po-2027:CoursIA-2",
-  "tranche": "B",
+  "tranche": "B-finale-step1",
   "issue": 15141,
+  "discovery_c1041": "3e consommateur Flee identifie sur main (FleePredicateBuilder, EPIC #7265 B4 'le liant universel') ; inventaire c.1039 etait incomplet (2 consommateurs backtester seulement)",
   "summary": {
     "total_cs_files": 102,
     "total_directories": 16,
@@ -57,21 +58,37 @@
       "path": "MyIA.Trading.Backtester/Core/TradingStrategy.cs",
       "imports": ["implicit via Flee dynamic expressions"],
       "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)"
+    },
+    {
+      "path": "MyIA.AI.Shared/ComponentModel/Rules/FleePredicateBuilder.cs",
+      "imports": ["Flee.PublicTypes"],
+      "current_dependency": "NuGet Flee 2.0.0 (via MyIA.AI.Shared.csproj)",
+      "epic_link": "EPIC #7265 (socle partage .NET pour la pompe patrimoine Aricie), nugget B4 'le liant universel' -- regle metier string -> predicat compile sur entites reflechir",
+      "discovered_cycle": "c.1041"
     }
   ],
   "tests_to_revalidate": {
     "BandStrategyLayerTests": {
       "expected_count": 112,
       "expected_status": "112/112 vert post-port (cible tranche E)"
+    },
+    "FleePredicateBuilderTests": {
+      "expected_count": 8,
+      "expected_status": "8/8 vert post-port (substance Prong-B proof, lie au notebook #10161)",
+      "path": "MyIA.AI.Shared.Tests/FleePredicateBuilderTests.cs",
+      "discovered_cycle": "c.1041"
     }
   },
+  "total_tests_to_revalidate": 120,
   "tranche_b_next_steps": [
     "Re-cloner le fork (mparlak-Flee-fork/ existe deja, 102 fichiers)",
     "Copier src/Flee/* vers MyIA.AI.Shared/External/Flee/ en gardant le namespace Flee.* (transition douce)",
     "Verifier le build avec csproj Flee adapte net9.0",
     "Verifier que SimpleExpression.cs compile TOUJOURS avec namespace Flee.* (pas de rename)",
+    "Verifier que FleePredicateBuilder.cs compile TOUJOURS avec namespace Flee.* (consommateur #3 decouvert c.1041)",
     "Retirer <PackageReference Include=\"Flee\" Version=\"2.0.0\" /> du csproj MyIA.AI.Shared",
-    "Re-executer les 112 tests BandStrategyLayerTests"
+    "Re-executer les 112 tests BandStrategyLayerTests + 8 tests FleePredicateBuilderTests = 120 tests cumul"
   ],
-  "blocked_until": "Tranche B achevée (compilation + 112/112 vert) avant de passer aux tranches C/D/E (renommage namespace, adaptation .NET 9 si besoin, wrapper léger)"
+  "blocked_until": "Tranche B achevee (compilation + 120/120 vert) avant de passer aux tranches C/D/E (renommage namespace, adaptation .NET 9 si besoin, wrapper leger)",
+  "c1041_decision": "Inventaire enrichi uniquement ce cycle (3e consommateur + 120 tests). Copie des 102 fichiers source = cycle dedie (risque regression MyIA.AI.Shared trop eleve pour 30 min + violation G-VAR-4 composite trop large > 100 fichiers en 1 PR)."
 }
