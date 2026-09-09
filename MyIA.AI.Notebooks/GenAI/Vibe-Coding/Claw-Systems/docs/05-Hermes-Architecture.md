@@ -107,9 +107,20 @@ en plus du planificateur OS. Trois jobs tournent en production :
 
 | Job | Cadence | Role |
 |-----|---------|------|
-| `cluster-tour` | 6h | Tour de santé du cluster, lecture dashboards, rapport |
-| `pr-review` | planifié | Review de PRs assignées |
-| `inbox-poll` | planifié | Scrutation de la messagerie inter-machines |
+| `cluster-tour` | 12h (`13 */12`) | Tour de santé du cluster, lecture dashboards, rapport `[CLUSTER-HEALTH]` sur global |
+| `pr-review` | 1h (`23 * * * *`) | Review des PRs ouvertes (CoursIA, roo-extensions) |
+| `inbox-poll` | 30 min | Scrutation de la messagerie inter-machines |
+| `self-check` | 2×/jour (`7 11,23`) | Auto-diagnostic du bot |
+
+La cadence du `cluster-tour` est passée de 6h à 12h en juillet 2026 (équilibre
+coût tokens / réactivité — un tour complet lit tous les dashboards du cluster).
+Chaque cron porte une **escalade de watchdogs indépendants** qui compense la
+cadence : voir [06 — section Résilience](06-Hermes-Deploy-s6-Overlay.md).
+
+En plus des crons du bot, un **cron opérateur** (session Claude Code sur la
+machine hôte, `17 */12`) exécute une routine de surveillance à 8 vérifications —
+dont la lecture des messages des bots, le critère le plus discriminant (voir
+[AP13](09-Patterns-Anti-Patterns.md)).
 
 ## Système de profils
 
@@ -139,6 +150,36 @@ Tout le code doit appeler `get_hermes_home()` (depuis `hermes_constants`) —
 | `hermes_cli/commands.py` | Registre central des slash commands |
 | `gateway/run.py` | `GatewayRunner` — cycle de vie plateformes, routage messages |
 | `agent/prompt_builder.py` | Assemblage du system prompt (identite, skills, contexte, mémoire) |
+
+## Synchronisation upstream (la discipline du fork)
+
+Le fork est resynchronisé vers upstream **toutes les 3 à 4 semaines**. Cinq
+itérations en production (juillet–septembre 2026), dont un record de **7531
+commits** mergés d'un coup. La méthode, éprouvée à chaque itération :
+
+1. Tag `pre-sync-YYYYMMDD` + backup du volume → point de retour garanti
+2. Branche `sync/YYYY-MM-DD` → `git merge upstream/main`
+3. Résolution de conflits **délibérée** (jamais aveugle) — les conflits
+   récurrents sont connus et documentés :
+   - *sentinelle de patch* en tête de `tools/environments/base.py` et `local.py`
+     (prouve à l'import que le fichier patché est bien chargé — héritage de
+     l'incident des 96h, voir [09](09-Patterns-Anti-Patterns.md)) ;
+   - *garde `/root`* : upstream a intégré notre extraction `_recover_cwd()`
+     (issue #17558) mais **sans** la garde `PermissionError` — il faut la
+     ré-ajouter par-dessus à chaque sync ;
+   - Dockerfile : nos 4 lignes de drift RooSync vs les refactorings upstream.
+4. Audit de drift par grep (les lignes doivent survivre au merge)
+5. Build `s6-sync-YYYYMMDD` → déploiement → `hermes-verify.ps1` **12/12** →
+   fast-forward main → push
+
+Depuis la sync de septembre 2026, upstream embarque un `.gitattributes`
+(`eol=lf` global) qui normalise les fins de ligne au checkout — nos strips CRLF
+build-time sont conservés en défense en profondeur (le working tree Windows
+pré-existant garde du CRLF).
+
+> **Leçon de fork :** un drift isolé dans un répertoire dédié (`roosync-cluster/`)
+> rend le merge trivial ; les rares fichiers cœur patchés (2 fichiers) sont le
+> seul coût récurrent — et leurs conflits sont prévisibles, donc rapides.
 
 ## Hermes vs NanoClaw
 

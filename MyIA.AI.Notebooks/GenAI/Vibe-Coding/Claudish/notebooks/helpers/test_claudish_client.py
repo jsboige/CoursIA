@@ -108,6 +108,9 @@ def test_known_models_includes_secondary_haiku():
 # --------------------------------------------------------------------------
 def test_get_endpoint_default_uses_module_default(monkeypatch):
     """Sans argument, get_endpoint utilise DEFAULT_BASE_URL + '/v1/messages'."""
+    # #15286 : delenv requis — l'env lue a l'appel primerait sur la
+    # constante patchee si le shell hote exporte CLAUDISH_BASE_URL.
+    monkeypatch.delenv("CLAUDISH_BASE_URL", raising=False)
     monkeypatch.setattr(claudish_client, "DEFAULT_BASE_URL", "http://localhost:3000")
     assert claudish_client.get_endpoint() == "http://localhost:3000/v1/messages"
 
@@ -132,6 +135,9 @@ def test_get_endpoint_custom_base_url():
 
 def test_get_endpoint_none_falls_back_to_default(monkeypatch):
     """base_url=None doit etre equivalent a ne rien passer."""
+    # #15286 : delenv requis — meme raison que :111 (env d'appel prime
+    # sur la constante patchee si le shell l'exporte).
+    monkeypatch.delenv("CLAUDISH_BASE_URL", raising=False)
     monkeypatch.setattr(claudish_client, "DEFAULT_BASE_URL", "http://fallback:5000")
     assert claudish_client.get_endpoint(None) == "http://fallback:5000/v1/messages"
 
@@ -723,3 +729,73 @@ def test_stream_chat_empty_delta_text_not_yielded(monkeypatch):
         claudish_client.httpx.Client = original_client
 
     assert deltas == ["kept"]
+
+
+# --------------------------------------------------------------------------
+# #15286 (V03) — lecture d'env a l'APPEL, pas a l'import
+# --------------------------------------------------------------------------
+def test_env_set_after_import_is_honored(monkeypatch):
+    """#15286 temoin : poser CLAUDISH_BASE_URL dans une cellule APRES
+    l'import doit etre honored par get_endpoint(). Defaut V03 : la lecture
+    d'environnement se faisait au chargement du module (DEFAULT_BASE_URL
+    fige a l'import), donc la cible ne bougeait pas -- silencieusement,
+    sans erreur. C'est exactement le geste etudiant : executer la cellule
+    d'import, decouvrir que l'endpoint est faux, corriger la variable dans
+    une cellule suivante, re-executer... et rien ne change.
+    """
+    monkeypatch.delenv("CLAUDISH_BASE_URL", raising=False)
+    # Reference relative a la constante (et non localhost:3000 en dur) :
+    # si le shell hote exportait deja CLAUDISH_BASE_URL au moment de
+    # l'import du module, la constante a gele cette valeur -- c'est le
+    # contrat de compat, le temoin porte sur l'env d'APPEL, pas l'import.
+    expected_default = claudish_client.DEFAULT_BASE_URL.rstrip("/") + "/v1/messages"
+    assert claudish_client.get_endpoint() == expected_default
+    monkeypatch.setenv("CLAUDISH_BASE_URL", "http://proxy-etudiant:4000")
+    assert claudish_client.get_endpoint() == "http://proxy-etudiant:4000/v1/messages"
+
+
+def test_explicit_base_url_still_wins_over_env(monkeypatch):
+    """#15286 controle de precedence : l'argument explicite base_url=
+    prime sur l'environnement pose a l'appel (et sur la constante)."""
+    monkeypatch.setenv("CLAUDISH_BASE_URL", "http://from-env:4000")
+    out = claudish_client.get_endpoint("https://explicit.myia.io")
+    assert out == "https://explicit.myia.io/v1/messages"
+
+
+def test_default_base_url_monkeypatch_still_fallback(monkeypatch):
+    """#15286 garde de compat : DEFAULT_BASE_URL reste exporte et reste
+    le fallback quand CLAUDISH_BASE_URL est absent a l'appel -- les tests
+    historiques (:109/:133) qui monkeypatchent la constante gardent leur
+    semantique. Le delenv protege le fallback contre une env heritee du
+    shell qui ferait gagner l'environnement sur la constante patchee.
+    """
+    monkeypatch.delenv("CLAUDISH_BASE_URL", raising=False)
+    monkeypatch.setattr(claudish_client, "DEFAULT_BASE_URL", "http://patched:5000")
+    assert claudish_client.get_endpoint() == "http://patched:5000/v1/messages"
+
+
+def test_list_models_honors_env_set_after_import(monkeypatch):
+    """#15286 : list_models (second consommateur, :60) lit aussi l'env a
+    l'appel. Le transport est stubbe -- le temoin verifie l'URL DEMANDEE
+    au transport, pas une reponse reelle."""
+    monkeypatch.setenv("CLAUDISH_BASE_URL", "http://proxy-etudiant:4000")
+    seen_urls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, json={"data": []})
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport) as _:
+        # list_models construit son propre Client : on patch httpx.Client
+        # pour y injecter le transport (pattern MockTransport hermetique).
+        original_client = httpx.Client
+
+        def _client_with_transport(*args, **kwargs):
+            kwargs["transport"] = transport
+            return original_client(*args, **kwargs)
+
+        monkeypatch.setattr(httpx, "Client", _client_with_transport)
+        claudish_client.list_models()
+
+    assert seen_urls == ["http://proxy-etudiant:4000/v1/models"]

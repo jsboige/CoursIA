@@ -111,6 +111,7 @@ jobs:
   # pattern as lean-knot.yml). Keep `./` until #10889 lands, then either form
   # is correct.
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
     uses: ./.github/workflows/lean-axiom.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean

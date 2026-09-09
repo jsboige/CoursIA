@@ -361,6 +361,35 @@ def parse_prev(body: str | None) -> dict:
     return out
 
 
+# Inline code spans and fenced blocks -- the shared citation-masking surface.
+# Text inside backticks is a CITATION (documentation of another grain's tag,
+# or of a guard firing on one), never a declaration: the canonical forms
+# (`Grain:`, `prev:`, `Closes #N`) are plain text. #14550 measured the cost
+# of conflating the two on variation_prev_guard (a lane documenting its
+# successor had its own correct tag overruled by its own prose); #14780
+# measured the same defect on find_close_keyword_pr_refs (a PR documenting
+# the close-keyword guard with a backticked ``fixes #N`` citation tripped the
+# guard on its own explanatory text). Masking preserves offsets so the spans
+# reported in verdicts stay meaningful.
+#
+# Backtick runs of ANY length pair up (CommonMark-style): the opening run is
+# captured and must be closed by a run of the SAME length, so a double
+# backtick ``...`` citation is masked whole -- the previous `` `[^`]*` ``
+# matched the adjacent pair as an empty span and left the citation's CONTENT
+# bare (measured #14780: ``fixes #10094`` scanned as a live `fixes #10094`).
+# Spans wrap across a soft line break (Markdown reflow): `` `closes\n#1234` ``
+# is ONE code span, not two (#14700) -- the content class accepts newlines,
+# still forbidding a bare backtick. Fenced blocks (```...```) are matched
+# first, lazily and across lines, so a fence containing backticked inline
+# code is masked as one unit.
+CODE_SPAN_RE = re.compile(r"```.*?```|(`+)[^`]*\1", re.DOTALL)
+
+
+def mask_code_spans(text: str) -> str:
+    r"""Blank out inline code spans / fenced blocks, preserving length."""
+    return CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
+
+
 # Matches `<closing-keyword> #N` in free prose (#10101). The keyword set is
 # exactly `CLOSING_KEYWORDS` (the 9 GitHub auto-close words); the `#N` tail is
 # what GitHub parses as an auto-close instruction when the text lands in a
@@ -386,6 +415,14 @@ def find_close_keyword_pr_refs(text: str | None) -> list[dict]:
     carried a ``CLOSED <PR-number>`` line in prose, which a naive squash would
     have re-closed that PR (the same translation deliverable #10093 protects).
 
+    The scan runs on ``mask_code_spans(text)`` (#14780): a backticked
+    ``fixes #N`` is a CITATION of the closing pattern (documentation of the
+    guard, of a past incident, of another grain's tag), never a declaration,
+    and must not trip the guard on its own explanatory prose -- the same
+    citation/declaration split ``variation_prev_guard`` enforces on ``prev:``
+    since #14550/#14700. Offsets are preserved, so the spans above still
+    point into the original text.
+
     Each hit is ``{"keyword": <lowercased>, "number": <int>, "span": <tuple>}``:
     the keyword (lowercased for the 9-flexion test), the referenced number
     (the caller resolves it PR-vs-issue), and the match span (so the verdict
@@ -400,7 +437,7 @@ def find_close_keyword_pr_refs(text: str | None) -> list[dict]:
     if not text:
         return []
     hits = []
-    for m in CLOSE_KW_REF_RE.finditer(text):
+    for m in CLOSE_KW_REF_RE.finditer(mask_code_spans(text)):
         hits.append({
             "keyword": m.group(1).lower(),
             "number": int(m.group(2)),

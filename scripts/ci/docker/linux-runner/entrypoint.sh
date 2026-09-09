@@ -49,8 +49,44 @@ for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
 done
 # ---------------------------------------------------------------------------
 
+# --- Sante du cache de depot persistant (#15105) ---------------------------
+# Meme hook job-started que le bloc sparse ci-dessus : le volume _work survit
+# au conteneur, l'entrypoint est le seul point qui s'execute avant
+# l'enregistrement du runner -- donc avant qu'un job n'attrape le cache.
+# Deux passes par clone : integrite (refs cassees -> reparation ou purge,
+# le gate de la flotte etait une loterie 1-sur-8 sans que rien le nomme),
+# puis maintenance (repack -ad si le compte de packs depasse le seuil ;
+# gc.auto=0 fait que rien d'autre ne consolide jamais). Le detail et les
+# trois controles positifs (safe.directory, stderr, .promisor) sont dans
+# work_cache_health.sh.
+WCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+. "$WCH_DIR/work_cache_health.sh"
+wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}"
+# ---------------------------------------------------------------------------
+
 cd /opt/runner
-./config.sh --unattended --ephemeral --replace
+# --disableupdate : le conteneur est --rm et le runner --ephemeral (un seul
+# job puis mort). Un self-update n'y est donc jamais CONSERVE -- GitHub ordonne
+# la mise a jour, le runner telecharge le tarball apres le job, le conteneur
+# meurt, --rm efface le telechargement, le suivant repart de l'image epinglee
+# et retelecharge. Le travail de mise a jour n'est jamais reutilise.
+# Mesure sur les 8 logs de slot de la flotte A, ~6 jours, pivot au rebuild de
+# l'image (2026-09-08T07:10Z), image epinglee 2.336.0 alors que GitHub exigeait
+# 2.337.0 :
+#                              avant     apres
+#   'Downloading ... runner'    7939         0
+#   'update process finished'   5566         0
+#   jobs termines               7535       169
+# Soit ~1,05 telechargement par job, et une borne basse d'egress de
+# 5566 x 215 Mio = 1,14 Tio perdus pour la seule flotte A sur la periode.
+# Les jobs se terminaient normalement : le defaut est du gaspillage de bande
+# passante, pas une famine CI -- ne pas invoquer ce bloc pour diagnostiquer
+# des jobs qui ne partent pas, la cause serait ailleurs.
+# La version du runner EST celle de l'image : elle se bumpe par un rebuild
+# (ARG RUNNER_VERSION du Dockerfile), jamais a chaud. Sans ce flag, la prochaine
+# exigence de version rearme exactement la meme boucle. Cf #15153, #15164.
+./config.sh --unattended --ephemeral --replace --disableupdate
 
 # Teardown symetrique : --ephemeral desenregistre de lui-meme apres le job ;
 # le trap couvre les sorties en erreur (config echoue, run.sh interrompu).

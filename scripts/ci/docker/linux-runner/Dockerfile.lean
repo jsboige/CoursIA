@@ -24,7 +24,7 @@
 # coursia-linux : le label distinct EST la garantie de routage (un garde
 # Python ne doit pas atterrir sur un slot Lean, et inversement).
 
-FROM coursia-linux-runner:2.336.0
+FROM coursia-linux-runner:2.337.0
 
 # elan pince par SHA-256, meme discipline que le Dockerfile de base.
 # v4.2.4, asset elan-x86_64-unknown-linux-gnu.tar.gz (contient elan-init).
