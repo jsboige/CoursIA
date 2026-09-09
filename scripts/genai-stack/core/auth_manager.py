@@ -297,7 +297,7 @@ COMFYUI_URL=http://localhost:8188
 # --- AUTH ---
 COMFYUI_USERNAME=admin
 COMFYUI_PASSWORD={config.get('raw_token')}
-COMFYUI_BEARER_TOKEN={config.get('bcrypt_hash')}
+COMFYUI_API_TOKEN={config.get('bcrypt_hash')}
 GUEST_MODE_ENABLED=false
 SECRET_KEY={self.generate_secure_token(40)}
 
