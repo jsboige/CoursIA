@@ -54,9 +54,13 @@ curl http://127.0.0.1:8899/api/v1/models
 
 Si vous voyez une réponse JSON avec des modèles, le proxy fonctionne.
 
+**Symptôme si le proxy ne tourne pas** : chaque appel modèle de Claude Code échoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899`. Si vous aviez activé le lancement automatique détaché, un redémarrage du poste l'a arrêté sans message visible : relancez simplement `openrouter-proxy` dans un terminal, puis re-testez le `curl` ci-dessus.
+
 ---
 
 ## Étape 1 : Installer Claude Code (3 min)
+
+> **Chemin canonique : l'installation native** (défaut de la documentation officielle Anthropic, Node.js non requis pour cette étape). Guide complet et alternative npm : [INSTALLATION-CLAUDE-CODE.md](./INSTALLATION-CLAUDE-CODE.md).
 
 ### Windows
 

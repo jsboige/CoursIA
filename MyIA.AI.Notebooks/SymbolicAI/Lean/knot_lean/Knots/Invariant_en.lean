@@ -5,7 +5,7 @@
   Knot invariants distinguish knots. This file scaffolds:
   1. Tricolorability (Fox 1962) — the most accessible invariant
   2. Crossing number bounds
-  3. Unknotting number (definition only, sorry)
+  3. Unknotting number (infimum definition, unknot case proved)
 
   Epic #2874, Phase 1–2.
 
@@ -2132,7 +2132,7 @@ theorem trefoil_crossing_number :
   unfold Knot.crossingNumberOfDiagram Knot.diagram trefoil trefoilDiagram
   decide
 
-/-! ## 7. Unknotting number (definition only)
+/-! ## 7. Unknotting number
 
 The unknotting number u(K) is the minimum number of crossing changes
 needed to turn K into the unknot. This is a much harder invariant.
@@ -2172,15 +2172,34 @@ theorem changeCrossing_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
   rw [changeCrossingAll_eq_mirror]
   exact mirror_wf_preserves k h
 
-/-- Unknotting number: minimum crossing changes to reach the unknot. -/
-def Knot.unknottingNumber (k : Knot) : Nat := by
-  exact sorry
-  -- BLOCKED: requires substantial infrastructure not yet in the project:
-  --   1. Minimization over equivalence classes (Knot.crossingNumber has same issue)
-  --   2. Reachability in a graph of diagrams
-  --   (The crossing-change operation itself is now justified by `changeCrossing_wf_preserves`,
-  --    derived from `mirror_wf_preserves` — see Epic #2874.)
-  -- Phase 4+ target — out of scope for Phase 2
+/-- Change the crossing at index `i`. If `i` is out of bounds, `List.modify`
+leaves the list unchanged. The diagram's edge count is preserved. -/
+def Knot.changeCrossingAt (k : Knot) (i : Nat) : Knot where
+  diagram := {
+    crossings := k.diagram.crossings.modify i changeCrossing
+    numEdges := k.diagram.numEdges
+  }
+
+/-- `k` can be reduced to the unknot by exactly `n` crossing changes, followed
+by Reidemeister moves. -/
+def Knot.UnknottableIn (k : Knot) (n : Nat) : Prop :=
+  ∃ indices : List Nat, indices.length = n ∧
+    ReidemeisterEquiv (indices.foldl Knot.changeCrossingAt k).diagram unknotDiagram
+
+/-- Unknotting number: the minimum length of a sequence of crossing changes
+that reduces `k` to the unknot, modulo Reidemeister equivalence.
+
+`Nat.sInf` is total by convention: when the set of reachable lengths is empty,
+`Nat.sInf_empty` gives the sentinel value `0`. Finiteness of the unknotting
+number for every knot would require a separate existence theorem. -/
+noncomputable def Knot.unknottingNumber (k : Knot) : Nat :=
+  sInf {n : Nat | k.UnknottableIn n}
+
+/-- The unknot has unknotting number zero: the empty list of crossing changes
+is a witness and Reidemeister equivalence is reflexive. -/
+theorem unknot_unknottingNumber : unknot.unknottingNumber = 0 := by
+  rw [Knot.unknottingNumber, Nat.sInf_eq_zero]
+  exact Or.inl ⟨[], rfl, ReidemeisterEquiv.refl unknotDiagram⟩
 
 /-! ## 8. Backward transfer (research scaffolding — Epic #2874, Phase 5 PR3)
 
