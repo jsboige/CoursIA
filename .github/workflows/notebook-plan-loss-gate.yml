@@ -1,0 +1,172 @@
+name: Notebook plan-loss gate
+
+# Purpose
+# -------
+# Per-PR gate that catches notebook PLAN LOSS (#14532) : une PR qui restructure
+# les titres d'un notebook pedagogique peut faire DISPARAITRE une section du
+# plan sans en perdre le contenu -- c'est le deficit de `detect_md_content_loss`
+# qui ne mesure que le VOLUME de prose par cellule (volume-aveugle aux
+# disparitions de section, plan-aveugle aux troncatures intra-cellulaires ; les
+# deux gardes sont complementaires structurellement, cf. module docstring du
+# detecteur).
+#
+# Cas fondateur (#14117 / #14532) : un `### Duree estimee : 50 minutes` peut
+# disparaitre du head sans que `detect_md_content_loss` bronche -- le volume
+# total reste stable ou monte (l'auteur re-ecrit ailleurs). Trois exigences
+# mesurees sur ce ticket :
+#
+#   1. Normalisation accents + numerals (sans elle, 10 faux positifs sur 15
+#      mesures brutes sur #14117 -- re-accentuations comptees comme disparitions).
+#   2. Comparaison SUBSTANCE, pas titres : le diff de titres produit des
+#      CANDIDATS ; le predicat cherche ensuite la substance dans le head
+#      (paragraphe en gras, section renommee, tableau d'interpretation)
+#      avant de conclure. Sans cette deuxieme passe, 3 accusations sur 4 de la
+#      premiere redaction du ticket etaient des faux positifs sur des sections
+#      ameliorees.
+#   3. Rougir sur substance introuvable ET non arbitree : un marker
+#      `plan-loss: section assumee -- <notebook> section: <titre_normalise> : <raison>`
+#      dans le body de la PR justifie la disparition au cas par cas. Le marker
+#      est la porte assumee par l'auteur, pas une dispense ; il est visible dans
+#      la sortie machine comme `LOST_SECTION_JUSTIFIED_BY_BODY`.
+#
+# STRUCTURE_DRIFT : si le nombre de cellules markdown differe entre base et
+# head, la comparaison ENSEMBLE n'est pas garantie (une fusion peut absorber
+# un titre dans une autre cellule, invisible au diff). Le garde rapporte un
+# seul finding STRUCTURE_DRIFT bloquant -- transpose du design #1 #8655.
+#
+# Detector: scripts/notebook_tools/detect_notebook_plan_loss.py (#14532), run
+# in --check mode (rc=0 clean, rc=1 on unjustified LOST_SECTION, rc=2 unreadable)
+# on every notebook changed by the PR. Diff-scoped (base git vs working tree) :
+# les pertes pre-existantes sur `main` ne sont pas relevees tant que le
+# notebook n'est pas touche.
+#
+# Sortie exploitable en review : notebook / section perdue (titre normalise) /
+# mode de justification (SUBSTANCE_FOUND_RENAMED_SECTION /
+# SUBSTANCE_FOUND_INLINE_BOLD / SUBSTANCE_FOUND_TOKEN_MATCH) /
+# LOST_SECTION_JUSTIFIED_BY_BODY le cas echeant. Le detecteur SIGNALE ; la PR
+# justifie en review (une retrogradation legitime est absorbee par les 3
+# passes de substance -- le marker du body n'est requis que pour les
+# disparitions ASSUMEES).
+
+on:
+  # Per-PR trigger : la gate se branche sur les PRs touchant les notebooks
+  # (cf. discipline d'auto-couverture paths #14391/#14429 -- une PR ne touchant
+  # que ce workflow emet l'evenement, la garde se re-evalue sur sa propre PR).
+  # PAS de `paths:` ici : un seul evenement manquant = la garde ne protege rien.
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-plan-loss-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notebook-plan-loss:
+    name: "No notebook plan loss in changed notebooks"
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        env:
+          # Forme sure : le body arrive comme variable d'environnement et
+          # n'est jamais interpole dans le shell (identique a
+          # always-on-guards.yml l.934). Sur workflow_dispatch,
+          # github.event.pull_request est nul -> chaine vide -> inerte,
+          # conforme a l'Acceptance #13491 transposee ici (malforme = inert).
+          NOTEBOOK_PLAN_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Notebook plan-loss gate::Manual dispatch -- nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Notebook plan-loss gate::No notebooks changed -- clean."
+            exit 0
+          fi
+
+          # Justification par-section depuis le body de la PR (#14532, option a) :
+          # le detecteur parse le body a la recherche de markers
+          # `plan-loss: section assumee -- <notebook> section: <titre> : <raison>`
+          # qui exonerent le finding LOST_SECTION correspondant (transparence :
+          # le finding devient LOST_SECTION_JUSTIFIED_BY_BODY et reste dans la
+          # sortie machine, seul le verdict binaire --check passe a 0). Sans
+          # marker pour un finding donne, le comportement nominal (rc=1) est
+          # preserve. Le body est passe via l'env var in-memory
+          # NOTEBOOK_PLAN_LOSS_PR_BODY (canal recommande, meme politique que
+          # MD_CONTENT_LOSS_PR_BODY pour md-content-loss-gate). Les PRs sans
+          # body (string vide) ne matchent rien, comportement actuel preserve
+          # (cf. design : marker = porte assumee par l'auteur, pas dispense).
+
+          echo "## Notebook plan-loss gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          unreadable=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            # `&& rc=0 || rc=$?` is load-bearing under `bash -e`: a bare `out=$(cmd)`
+            # that exits non-zero aborts the step before `rc=$?` is read, making the
+            # rc=1/rc=2 branches below dead code and the failure anonymous (#8884 motif).
+            # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
+            out=$(python scripts/notebook_tools/detect_notebook_plan_loss.py --base "$BASE" --check "$nb" 2>&1) && rc=0 || rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=Notebook plan loss::$nb lost a section whose substance is untraceable in the head (3-pass measure-first). If this is an intentional removal, add a per-section marker in the PR body: 'plan-loss: section assumee -- <notebook> section: <titre_normalise> : <raison>' (one per justified section, see #14532). Retrogradations (### Titre -> **Titre** : ...) and renames are absorbed by the 3 substance passes -- no marker required for those."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=Notebook plan-loss gate::$nb could not be read (rc=2); see detector log."
+              unreadable=$((unreadable + 1))
+            fi
+          done <<< "$CHANGED"
+
+          # Anti-self-disarmament guard (meme politique que md-content-loss-gate,
+          # reserve ai-01 c.28 sur #8656 transposée ici) : si CHAQUE notebook
+          # tente etait illisible (rc=2), le gate n'a rien analyse -> il NE
+          # PEUT PAS certifier "no plan loss". Un detecteur casse ou une ref
+          # git manquante desarmerait silencieusement ce gate. On fail loud
+          # dans ce cas plutot que de donner un quitus a l'aveugle.
+          if [ "$checked" -gt 0 ] && [ "$unreadable" -eq "$checked" ]; then
+            echo "::error title=Notebook plan-loss gate::All $checked changed notebook(s) were unreadable (rc=2) -- the gate analyzed NOTHING and cannot certify plan integrity. This is likely a broken detector or a missing git ref (BASE=$BASE), not a clean bill of health. Failing loud (anti-self-disarmament, #14532)."
+            echo "FIX: the gate could not read any changed notebook. Check the detector log above and the BASE ref ($BASE). Do NOT treat this as a pass." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: a section disappeared from the notebook plan with no traceable substance elsewhere. Three usual causes (see the detector log above for which): (1) the section was removed by mistake -- restore the heading and content ; (2) the section was rolled into another section without keeping a bold inline or renumbered heading -- the substance is present but not at section level (3-pass substance search): either revert or add a 'plan-loss: section assumee' marker with a justification ; (3) the section was re-organized with a different number of markdown cells -- the detector reports STRUCTURE_DRIFT, which is blocking on its own. A legit rephrase in the SUBSTANCE_FOUND_* modes (renamed section, retrograded to bold inline, token absorbed elsewhere) is admitted automatically by the 3-pass measure-first and needs no marker." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=Notebook plan-loss gate::Checked $checked changed notebook(s); no plan loss."
