@@ -59,24 +59,28 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 ### EPF — GenAI Bachelor 3A (MSBNS3IN03) (23)
 
 <!-- MyIA.AI.Notebooks/GenAI/Image/01-Foundation -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/01-Foundation -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/01-Foundation -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb`
@@ -89,6 +93,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 ### ECE IA Finance Ing4 + Partner Algo Trading QuantConnect (35)
 
 <!-- MyIA.AI.Notebooks/QuantConnect/Python -->
+
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb`
@@ -104,6 +109,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-11-RegimeSwitching.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-06-Options-Trading.ipynb`
+
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-07-Futures-Forex.ipynb`
@@ -119,6 +125,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-15-Parameter-Optimization.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-16-Alternative-Data.ipynb`
+
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-17-Sentiment-Analysis.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-19-ML-Supervised-Classification.ipynb`
@@ -128,6 +135,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 ### EPITA — Programmation par Contraintes (22)
 
 <!-- MyIA.AI.Notebooks/Search/Part1-Foundations -->
+
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb`
@@ -142,6 +150,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb`
 <!-- MyIA.AI.Notebooks/Search/Part2-CSP -->
+
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb`
@@ -155,11 +164,13 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 ### EPITA — IA Symbolique (19)
 
 <!-- MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-formal.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Tweety -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb`
@@ -167,16 +178,20 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3-Propositions-Proofs.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb`
 
@@ -189,12 +204,14 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 ### EPF — GenAI Bachelor 3A (MSBNS3IN03) (34)
 
 <!-- MyIA.AI.Notebooks/GenAI/Image/02-Advanced -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/02-Advanced -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb`
@@ -205,6 +222,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb`
@@ -213,6 +231,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
+
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb`
@@ -230,6 +249,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 ### ECE IA Finance Ing4 + Partner Algo Trading QuantConnect (18)
 
 <!-- MyIA.AI.Notebooks/QuantConnect/Python -->
+
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-24-Autoencoders-Anomaly.ipynb`
@@ -252,6 +272,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 ### EPITA — IA Symbolique (60)
 
 <!-- MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-4-capstone.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb`
@@ -270,6 +291,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Tweety -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Aspic-Csharp.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb`
@@ -279,6 +301,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-4-Quantifiers.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-5-Tactics.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb`
@@ -299,6 +322,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-PFR-Entropy-Method.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-MIMO-Detection-Flips.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb`
@@ -310,10 +334,12 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SmartContracts -->
+
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-4-Functions-State.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-5-Inheritance.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-6-Errors-Events.ipynb`
