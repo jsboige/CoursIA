@@ -98,6 +98,52 @@ def test_shutdown_signal_is_lost_comm():
     assert classify_job(_job("failure", []), ann) == "RUNNER_LOST_COMM"
 
 
+def test_fetch_annotations_tolerates_only_true_404():
+    """Review ai-01 : seuls les 404 (job sans annotations) sont une classe
+    valide ; un 401 (auth perimee) ou une panne reseau doit remonter
+    bruyamment, jamais se fondre dans CANCELLED_OTHER."""
+    import classify_job_deaths as mod
+
+    mod.gh_api = lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("gh api repos/jsboige/CoursIA/check-runs/1/annotations "
+                     "failed: gh: HTTP 404: Not Found (HTTP 404)")
+    )
+    assert mod.fetch_annotations(1) == []
+    mod.gh_api = lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("gh api repos/jsboige/CoursIA/check-runs/1/annotations "
+                     "failed: gh: HTTP 401: Bad credentials (HTTP 401)")
+    )
+    try:
+        mod.fetch_annotations(1)
+        raise AssertionError("401 doit propager, pas rendre []")
+    except RuntimeError:
+        pass
+    mod.gh_api = lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("gh api repos/jsboige/CoursIA/check-runs/1/annotations "
+                     "failed: connection refused")
+    )
+    try:
+        mod.fetch_annotations(1)
+        raise AssertionError("panne reseau doit propager, pas rendre []")
+    except RuntimeError:
+        pass
+
+
+def test_sha_validation_is_hex_40_and_rejects_non_hex():
+    """Review ai-01 : --sha exige exactement [0-9a-fA-F]{40}, pas seulement
+    une longueur de 40 — sinon un sha non-hex rend un zero propre."""
+    from classify_job_deaths import is_valid_sha
+
+    assert is_valid_sha("f" * 40)
+    assert is_valid_sha("0" * 40)
+    assert not is_valid_sha("g" * 40)
+    assert not is_valid_sha("z" * 40)
+    assert not is_valid_sha("f" * 39)
+    assert not is_valid_sha("f" * 41)
+    assert not is_valid_sha("f" * 40 + "g")
+    assert not is_valid_sha("")
+
+
 def test_run_cancelled_no_jobs_is_a_distinct_signature():
     """Batch de supersession mesure le 2026-09-07T23:02:33Z : run cancelled
     avec ZERO jobs (annulation avant creation). analyse_runs doit l'emettre

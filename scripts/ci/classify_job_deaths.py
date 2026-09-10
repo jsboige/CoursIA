@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -115,12 +116,26 @@ def fetch_run_jobs(run_id: int) -> list[dict]:
 def fetch_annotations(job_id: int) -> list[dict]:
     try:
         data = gh_api(f"check-runs/{job_id}/annotations")
-    except RuntimeError:
-        # Les jobs sans annotation peuvent rendre 404 selon l'endpoint ;
-        # l'absence d'annotation est une classe valide (CANCELLED_OTHER /
-        # UNCATEGORIZED_FAILURE), pas une erreur d'instrument.
+    except RuntimeError as exc:
+        # Seul un vrai 404 (job sans annotations) est une classe valide :
+        # l'absence d'annotation vaut CANCELLED_OTHER / UNCATEGORIZED_FAILURE.
+        # Tout autre echec — 401/403/429, 5xx, panne reseau — doit remonter
+        # bruyamment : le transformer en [] masquerait precisement la cause
+        # que l'instrument doit rendre fiable.
+        if "HTTP 404" not in str(exc):
+            raise
         return []
     return data if isinstance(data, list) else []
+
+
+SHA_RE = re.compile(r"[0-9a-fA-F]{40}")
+
+
+def is_valid_sha(sha: str) -> bool:
+    """SHA complet hex (40 chars). Un rayon d'authentification ou 40
+    caracteres non-hexadécimaux donnent le meme zero propre qu'un sha
+    absent : le contrat exige le format exact, pas seulement la longueur."""
+    return SHA_RE.fullmatch(sha) is not None
 
 
 def parse_created(created: str) -> str:
@@ -234,13 +249,15 @@ def render_markdown(payload: dict) -> str:
         counts.get(k, 0) for k in ("NO_RUNNER_ACQUIRED", "RUNNER_LOST_COMM")
     )
     out = ["# Audit job deaths (issue #15055)", ""]
+    timeout = counts.get("TIMEOUT", 0)
     out.append(
         f"Jobs morts non-skips analyses : **{total}** | "
         f"morts infrastructurelles : **{infra}** "
         f"(NO_RUNNER_ACQUIRED={counts.get('NO_RUNNER_ACQUIRED', 0)}, "
         f"RUNNER_LOST_COMM={counts.get('RUNNER_LOST_COMM', 0)}) | "
         f"REAL_STEP_FAILURE={counts.get('REAL_STEP_FAILURE', 0)} | "
-        f"AUTRES={total - infra - counts.get('REAL_STEP_FAILURE', 0)}"
+        f"TIMEOUT={timeout} (config timeout-minutes, hors sante du parc) | "
+        f"AUTRES={total - infra - counts.get('REAL_STEP_FAILURE', 0) - timeout}"
     )
     out.append("")
     out.append(
@@ -296,10 +313,12 @@ def main() -> int:
         run = gh_api(f"actions/runs/{args.run}")
         runs = [run]
     elif args.sha:
-        if len(args.sha) != 40:
+        if not is_valid_sha(args.sha):
             print(
-                "--sha exige le SHA complet (40 chars) : un prefixe rend "
-                "0 run, zero propre indiscernable d'une absence reelle",
+                "--sha exige un SHA complet hexadécimal (40 chars "
+                "[0-9a-fA-F]) : un prefixe ou des caracteres non-hex "
+                "rendent 0 run, zero propre indiscernable d'une absence "
+                "reelle",
                 file=sys.stderr,
             )
             return 2
