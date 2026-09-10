@@ -22,8 +22,29 @@ Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
 Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
 Updated: 2026-09-06 — iTransformer BTC log-RV revalidé contre HAR débiaisé train-only (#14860, lane myia-po-2026:CoursIA-2) : h=1/h=5/h=10 **NO BEATS** (4/4 seeds battues et DM p<0,05) ; var_ratio > 1 aux trois horizons — l'attention inversée (variable-as-token) ne bat pas la baseline HAR simple sur log-RV ; voir section §C iTransformer ci-dessous.
+Updated: 2026-09-08 — M19 MiniCPM5-2B GRPO+QLoRA sur DAPO-Math-17k, entrée §C (issue #15099 probe B, lane myia-po-2023:CoursIA) : **BEATS en trainabilité RL** vs Qwen3.5-0.8B — Δ accuracy eval held-out (40 problèmes × 4 générations, pré/post 100 steps bornés, même recette DAPO non-thinking) : MiniCPM5-2B **+0,0219 ± 0,0031** (2/2 seeds progressent, +88 % relatif, courbes saines, longueur stable) vs Qwen3.5-0.8B +0,0063 ± 0,0063 (1 seed plat, 1 seed modéré, reward train déclinant) ; intervalles ±1std disjoints. Réserves honnêtes : accuracies absolues 2-6 % (DAPO olympiaque pour ces tailles — la claim porte sur la trainabilité relative, pas sur un modèle math utilisable), et baseline 2,5× plus petite (0.8B vs 2B, désignée par l'issue). Détail section M19 + `docs/M19_MiniCPM5_GRPO.md` + manifestes `scripts/results/m19_minicpm5_grpo/`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M19 MiniCPM5-2B GRPO+QLoRA DAPO — entrée §C (2026-09-08) — issue #15099 probe B
+
+Probe RL : recette DAPO bornée (TRL 1.12 GRPO, loss_type dapo, clip-higher
+0.28, pas de KL, QLoRA NF4 r16, 100 steps, 32 completions/step, génération HF
+transformers — vLLM indisponible sous Windows) sur DAPO-Math-17k (17 917
+problèmes uniques, olympiaque : pass@1 non-thinking 0/50 pour les deux
+modèles — viabilité = variance pass@8, confirmée en pré-eval 1,9-3,1 %).
+Éval held-out 40 problèmes × 4 générations pré/post. Script
+`scripts/probe_15099_dapo_grpo.py` (selftest matcher 10/10), manifestes par
+run + `summary.json` + `curves.png` dans `scripts/results/m19_minicpm5_grpo/`,
+doc `docs/M19_MiniCPM5_GRPO.md`. Matrice 2×2, ~11 h GPU RTX 3090. Adaptators
+hors repo (D:/Dev/probe15099_runs).
+
+| | pre | post | Δ moyen ± 1std | courbes |
+|---|---|---|---|---|
+| MiniCPM5-2B | 0.025 | 0.047 | **+0.0219 ± 0.0031** | saines (montée, longueur stable) |
+| Qwen3.5-0.8B | 0.022 | 0.028 | +0.0063 ± 0.0063 | erratiques (flat/déclin) |
+
+Verdict : **BEATS** (trainabilité RL relative sous budget borné identique).
 
 ## M18 TimesFM 2.5 zero-shot — première entrée §C (2026-09-05) — issue #14768
 

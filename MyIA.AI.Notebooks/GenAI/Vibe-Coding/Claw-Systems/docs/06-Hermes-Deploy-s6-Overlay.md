@@ -33,7 +33,7 @@ Aucun token ne doit être commité. Voir
 
 | Élément | Valeur |
 |----------|--------|
-| **Image** | `hermes-agent:s6-20260528` (build local depuis le fork) |
+| **Image** | `hermes-agent:s6-sync-YYYYMMDD` (build local depuis le fork, un tag par sync upstream — p.ex. `s6-sync-20260906`) |
 | **PID 1** | `s6-svscan` (s6-overlay v3.2.3.0, remplace tini/gosu) |
 | **Utilisateur** | `hermes` (UID 10000) via `s6-setuidgid` |
 | **Volume** | `<home>/.hermes` → `/opt/data` (persistant entre rebuilds) |
@@ -48,7 +48,7 @@ docker run -d --name hermes `
   -v C:\dev\roo-extensions\mcps\internal\servers\roo-state-manager:/opt/roo-state-manager:ro `
   --add-host=host.docker.internal:host-gateway `
   -p 9120:9119 `
-  hermes-agent:s6-20260528 gateway run
+  hermes-agent:s6-sync-20260906 gateway run
 ```
 
 Le script complet et commenté vit dans
@@ -94,8 +94,12 @@ configuration a partir des secrets a chaque boot, dans cet ordre :
 7. Corrige le format `jobs.json` (list→dict, normalisation, retrait des restrictions de toolsets)
 8. Installe `croniter`, `gh` CLI, `jq`
 9. Configure `gh auth` (persisté dans `/opt/data/.config/gh`)
-10. Patch le `SCHEMA_SQL` du kanban (index session_id avant migration)
+10. Patch le `SCHEMA_SQL` du kanban (index session_id avant migration) — *retiré depuis qu'upstream a corrigé l'ordre ; la garde de boot accepte désormais l'absence du patch comme un OK (« upstream fixed »)*
 11. Lance les verifications (PASS/FAIL)
+
+> **Leçon de garde :** une garde de vérification doit distinguer « patch absent »
+> de « bug revenu ». Ici, upstream a supprimé la ligne fautive — lire l'absence
+> comme un FAIL produisait un faux positif de boot à chaque démarrage.
 
 ## Fallback MCP local (quand le proxy LAN est down)
 
@@ -120,6 +124,14 @@ infrastructure MCP locale :
 Ces patches existent a cause de la combinaison checkout Windows (CRLF) +
 isolation d'env s6-overlay (cassee l'heritage Docker ENV). **A ré-appliquer
 apres chaque sync upstream.**
+
+> **Évolution (sync 09/2026) :** upstream embarque désormais un `.gitattributes`
+> global (`eol=lf`) qui normalise les fins de ligne au checkout. Les strips CRLF
+> ci-dessus restent néanmoins en place : le working tree Windows — préexistant
+> aux attributs — conserve du CRLF jusqu'à sa réécriture complète, et le strip
+> build-time est la défense en profondeur qui rend l'image correcte *quoi qu'il
+> arrive au checkout*. Le Dockerfile vit à la racine du repo depuis la sync
+> d'août 2026 (déplacé par upstream depuis `docker/`).
 
 1. **Strip CRLF** — le Dockerfile ajoute `RUN find /etc/s6-overlay/s6-rc.d -type f -exec sed -i 's/\r$//' {} +` (et idem pour `/etc/cont-init.d`) apres chaque bloc `COPY`. Sans cela, `s6-rc-compile` echoue avec "invalid type".
 
@@ -176,21 +188,47 @@ auxiliary:
 
 Surveiller les `tool_use_error` apres compaction — redémarrer la session si observé.
 
-## Résilience MCP (watchdog)
+## Résilience MCP (constellation de watchdogs)
 
 **Cause racine :** `MCPServerTask.run()` dans `tools/mcp_tool.py` abandonne apres
 `_MAX_RECONNECT_RETRIES = 5` tentatives. Une fois la tâche retournée, le pont est
 mort jusqu'au redémarrage du process gateway.
 
-**Watchdog :** `roosync-cluster/scripts/hermes-mcp-watchdog.ps1` tourne toutes
-les 15 min via une tâche planifiée Windows. Escalade de récupération :
+**Watchdog bridge :** `roosync-cluster/scripts/hermes-mcp-watchdog.ps1` tourne
+toutes les 15 min via une tâche planifiée Windows. Escalade de récupération :
 
-1. **Stage 1 :** `SIGUSR1` au PID gateway — redémarrage graceful, préserve l'état conteneur
+1. **Stage 1 :** `SIGTERM` au PID gateway — arrêt propre, attendre le drain des
+   sessions, l'entrypoint s6 relance le service
 2. **Stage 2 :** `docker restart` — reboot complet (dernier recours)
+
+> **Gotcha signal (août 2026) :** `SIGUSR1` ne redémarre **plus** le gateway
+> depuis la sync du 23/08 (changement de gestion de signaux upstream). Utiliser
+> `SIGTERM` et **attendre le drain** — un SIGTERM suivi d'un redémarrage
+> immédiat coupe les sessions en vol.
 
 **Backoff :** exponentiel (5, 10, 15... jusqu'à 60 min). Max 10 échecs consécutifs
 avant abandon. Le compteur reset sur check sain. Evite les loops de restart
 (incident 2026-05-11 : 10+ restarts en 4h).
+
+### Les organes indépendants (design ai-01, spec en 5 points)
+
+L'incident d'août 2026 (bus MCP mort **3,5 jours** alors que tous les voyants
+étaient verts — voir [AP13](09-Patterns-Anti-Patterns.md)) a produit une seconde
+génération de watchdogs, dits **organes** : des observateurs **indépendants** qui
+lisent tout depuis le **volume hôte** (pas l'API du conteneur) et fonctionnent
+donc même quand le conteneur est down — précisément quand le gap est le plus
+probable.
+
+| Organe | Tâche planifiée | Ce qu'il vérifie |
+|--------|-----------------|------------------|
+| `hermes-mcp-watchdog.ps1` | 15 min | Le pont MCP du conteneur répond |
+| `hermes-review-watchdog.ps1` | 30 min (`:07/:37`) | Des reviews GitHub sont réellement postées (le cron `pr-review` peut finir `status=ok` avec **zéro** review) |
+| `hermes-cluster-tour-watchdog.ps1` | 30 min (`:07/:37`) | Chaque fire du cluster-tour a bien produit son append `[CLUSTER-HEALTH]` sur global (jamais de re-fire — verificateur, pas duplicate) |
+| `mcp-chain-watchdog.ps1` (côté ai-01) | 2 min | La chaîne MCP **backend** : sonde = appel d'outil réel (`roosync_dashboard list`), pas le handshake |
+
+Principes communs (spec ai-01) : cooldown anti-spam, fichier d'état compteur
+OK/MISSING (le taux est instrumenté), alerte Telegram + post `[WARN]` sur le
+dashboard à l'endroit exact où le post manquant aurait dû apparaître.
 
 ## Backup
 
@@ -229,7 +267,7 @@ docker run -d --name hermes `
   -v C:\dev\roo-extensions\mcps\internal\servers\roo-state-manager:/opt/roo-state-manager:ro `
   --add-host=host.docker.internal:host-gateway `
   -p 9120:9119 `
-  hermes-agent:pre-sync-20260602 gateway run
+  hermes-agent:pre-sync-YYYYMMDD gateway run   # le tag posé avant la dernière sync
 ```
 
 ## Troubleshooting
@@ -240,8 +278,13 @@ docker run -d --name hermes `
 | CMD tourne avec ~6 vars d'env | Shebang sans `with-contenv` | Vérifier patch #2 |
 | `PermissionError: /root/...` | HOME non overriddé | Vérifier patch #3 (`export HOME=/opt/data`) |
 | `tool_use_error` apres compaction | Compat Anthropic + MCP | Forcer `provider: zai`, redémarrer session |
-| MCP mort apres quelques heures | Limite 5 retries | Vérifier le watchdog (SIGUSR1) |
+| MCP mort apres quelques heures | Limite 5 retries | Vérifier le watchdog bridge (SIGTERM + drain) |
 | MCPs down si proxy LAN injoignable | Proxy 9090 down | Le fallback local doit prendre le relais |
+| Cron finit `status=ok` mais ne poste rien | Skip silencieux du prompt | Organe cluster-tour-watchdog (vérification post-fire programmatique) |
+| Tout est vert mais les dashboards ne bougent plus | Backend MCP mort derrière un handshake vivant | `mcp-chain-watchdog` (sonde = appel d'outil réel), restart proxy |
+| Crons en double après un reboot/MAJ VS Code | Jobs restaurés par le harness par-dessus l'existant | Purger + recréer frais (protocole ghost-crons) |
+| Crons 7/7 en erreur, thinking sans signature | Proxy LLM émet un bloc thinking non signé → crash SDK | Patch `.pth` retype dict→ThinkingBlock (persisté au restore) |
+| Bot muet en boucle sur sa mémoire | Plafond mémoire agent trop bas (livelock) | Doubler les limites de contexte mémoire (2200→4400 chars) + SIGTERM gateway |
 
 ## Liens
 

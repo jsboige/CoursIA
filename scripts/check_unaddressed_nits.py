@@ -296,6 +296,15 @@ _APPROVE_RESERVATION_RE = re.compile(
 # sans toucher a la sous-chaine « CONCERNS », qui reste case-sensitive.
 _CONCERN_LABEL = "\x00concern-label"
 
+# #14682 — DECISION : PAS de mots de prose « bloquante » ici. Une reserve
+# bloquante posee sans marqueur (#14658 : « le seul point bloquant pour un
+# LGTM plein », prose libre, rc=0) est un defaut COTE EMISSION du reviewer,
+# resolu par la consigne de marqueur (pr-review-discipline.md), pas par le
+# filet : mesure sur 80 PRs mergees, un detecteur ad-hoc de prose bloquante
+# sur-accuse d'un facteur 5 (4 des 5 : prose qui DECrit un blocage de job ou
+# de garde -- #14575 « ce job est bloquant par design » conclut « Pas de
+# bloqueur », #14511, #14604 « non bloquante », #14557 course merge). En
+# ajouter ici ouvrirait la porte aux faux positifs que le corpus mesure.
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -3042,8 +3051,14 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     if not nit_author:
         return True
     body = lift_body or ""
-    author_re = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(nit_author)
-                           + r"(?![A-Za-z0-9_.-])")
+    # #15193: le `.` est exclu des frontieres (lookbehind ET lookahead) --
+    # un login suivi d'un point (fin de phrase) est une frontiere d'identite
+    # legitime : "la reserve de <login>." doit MATCHER. Seul un caractere de
+    # MOT (alnum/_) continue le token (anti "jsboige2" / "jsboige_x") ; `-`
+    # reste en classe pour proteger la sous-chaine ("Myia" dans
+    # "clusterManager-Myia").
+    author_re = re.compile(r"(?<![A-Za-z0-9_-])" + re.escape(nit_author)
+                           + r"(?![A-Za-z0-9_-])")
     if _scope_lifted_sentence(body, author_re):
         return True
     if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
@@ -3682,6 +3697,29 @@ def _print_sha_notes(result: dict) -> None:
     for w in result.get("absent_sha_warnings") or ():
         print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
               f"(absent des commits, non rattaché à cette PR) — non bloquant")
+
+
+def analyse_pr(pr: int) -> dict:
+    """Analyse pre-merge d'une PR ouverte, SANS impression — point d'entree
+    partage avec le picker (#15139).
+
+    `gate()` reste l'entree CLI (impression + rc) et couvre aussi l'audit
+    retro (cutoff = mergedAt). Ce wrapper couvre le cas pre-merge (cutoff =
+    now) pour les appelants programmeurs : jusqu'ici chacun re-assemblait
+    l'appel `analyse(...)` avec ses propres kwargs, et la derive de signature
+    entre les deux assemblages rendait la delegation du picker morte en
+    silence (TypeError avale -> dict vide -> la cause « point de review non
+    leve » ne se declenchait jamais). Un seul point d'entree, un seul
+    assemblage : ce qui diverge ici casse le merge-gate lui-meme et devient
+    visible immediatement.
+    """
+    data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
+    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
+    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
+    return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+                   issue_info=gh_issue_info,
+                   dismissed_improperly=improper_dismissals(pr))
 
 
 def gate(pr: int, as_json: bool) -> int:

@@ -495,6 +495,44 @@ TRANCHE2: list[Guard] = [
         absorbed=True,
         warn_rc=(2,),
     ),
+    # Translation hot-drift ATTRIBUTION, advisory (#15322): a prose-realignment
+    # PR that edits the source of a cell carrying a deposited translation
+    # without resyncing its CSV row turns the repo-wide hot-subset ratchet
+    # (#13551) red on MAIN -- and every open PR inherits the red (36 PRs at
+    # once; incidents #15253 / #15136 / #15216). The ratchet must stay
+    # repo-wide; what was missing is the per-PR question: which cells does
+    # THIS diff put into the hot subset? The predicate is reused verbatim from
+    # scripts/translation/check_translation_sync.py (issue constraint: no
+    # second predicate that could diverge from the ratchet it protects); the
+    # delta (source cells changed between merge-base and head) isolates the
+    # PR's own contribution, so inherited main-side drift never flags. Advisory
+    # per the issue: neutral conclusion naming the cells; blocking only after
+    # the trigger rate is measured (calibration on 98 landed notebook PRs:
+    # 6 flagged, 6/6 true positives -- the 3 documented incidents plus 3
+    # repaired-after-the-fact landings the issue table did not list).
+    # Source : translation-hot-drift-advisory.yml (stub dispatch-only).
+    Guard(
+        name="Translation hot-drift (base vs PR, advisory)",
+        source="translation-hot-drift-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "translations/**/*.csv",
+            "scripts/translation/check_pr_translation_drift.py",
+            "scripts/translation/tests/test_check_pr_translation_drift.py",
+            ".github/workflows/translation-hot-drift-advisory.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/translation/check_pr_translation_drift.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/translation/check_pr_translation_drift.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
 ]
 
 
@@ -837,5 +875,64 @@ TRANCHE7: list[Guard] = [
         iterates_paths=True,
         absorbed=True,
         warn_rc=(1, 2),  # rc=2 = findings ; rc=1 = illisible/vacuue
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 8 -- Smart Contracts claim/invocation/proof and bounded drift.
+# Both guards scan the complete series on HEAD and on the merge base, then
+# compare JSON snapshots. Existing debt stays visible without blocking; only a
+# new or worsened notebook/rule verdict fails the PR. Papermill state remains
+# owned by its existing canonical detectors rather than duplicated here.
+# ---------------------------------------------------------------------------
+TRANCHE8: list[Guard] = [
+    Guard(
+        name="Smart-contract engine proof ratchet",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb",
+            "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+            "scripts/notebook_tools/tests/test_audit_engine_named_not_invoked.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+            "--scan-all", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+            "--json",
+        ],
+        delta_argv=[
+            "python", "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+            "--compare-base", "{base_json}",
+            "--compare-head", "{head_json}", "--json",
+        ],
+        swap_paths=["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"],
+        needs_base=True,
+        absorbed=True,
+    ),
+    Guard(
+        name="Smart-contract standards and execution ratchet",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb",
+            "scripts/notebook_tools/detect_smartcontract_drift.py",
+            "scripts/notebook_tools/tests/test_detect_smartcontract_drift.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_smartcontract_drift.py",
+            "--scan-all", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+            "--json",
+        ],
+        delta_argv=[
+            "python", "scripts/notebook_tools/detect_smartcontract_drift.py",
+            "--compare-base", "{base_json}",
+            "--compare-head", "{head_json}", "--json",
+        ],
+        swap_paths=["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"],
+        needs_base=True,
+        absorbed=True,
     ),
 ]

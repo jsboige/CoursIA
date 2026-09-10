@@ -1,0 +1,71 @@
+# Unite systemd de persistance du POOL D'ATTENTE PR-gate (label coursia-waiter).
+# Jumelle de coursia-runner.service, qui ne porte que la jambe d'EXECUTION
+# (`start N`, label coursia-linux). Les deux jambes sont independantes : state
+# dirs distincts, sentinelles d'arret distinctes, prefixes de nom distincts.
+#
+# Deploiement ai-01 (2026-09-07, #14612/#14846) : copie de REFERENCE -- l'original
+# vit dans la distro Ubuntu de l'hote, sous /etc/systemd/system/. Modifier ce
+# fichier ne change rien sur la machine tant que la copie vivante n'a pas ete
+# remplacee ; un `git pull` ne deploie pas persist/. Voir persist/README.md.
+#
+# N slots porte par l'argument ExecStart (ai-01 -> 12, l'effectif d'avant la chute).
+#
+# CE QUI DISTINGUE CETTE COPIE DE LA VERSION VIVANTE (#15091, mesure du 2026-09-07)
+# ---------------------------------------------------------------------------------
+# Un seul ajout : le plafond de redemarrage en [Unit]. Le reste est byte-pour-byte
+# la version deployee -- deliberement, pour que le diff soit relisible d'un coup
+# d'oeil et que le garde ne se cache pas au milieu d'autre chose.
+[Unit]
+Description=CoursIA PR-gate waiter pool (coursia-waiter slots)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+# Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
+# un docker.service en echec au boot doit retarder le service et le laisser
+# retenter, pas le sortir de la liste des unites.
+Wants=docker.service
+After=docker.service
+
+# GARDE ANTI-EMBALLEMENT (#15091) -- absent de la version vivante, et le defaut
+# n'etait pas theorique : mesure du 2026-09-07, la sentinelle
+# /var/lib/coursia-waiters/stop etait POSEE, laissee par le dernier arret
+# gracieux. Or cmd_waiters REFUSE de demarrer tant qu'elle est la (supervise.sh :
+# `[ -f "$STOP_FILE" ] && die "sentinel STOP pose"`). Sous Restart=always +
+# RestartSec=30 et SANS plafond, un `systemctl start` sur cet etat aurait relance
+# le wrapper toutes les 30 secondes indefiniment -- lecture de master.env, mkdir,
+# `cd`, echec, recommence -- sur une machine qui sortait de deux gels d'I/O.
+#
+# La cause (sentinelle residuelle) se repare a la main en un `rm`. Ce qui se
+# repare ici est la CONSEQUENCE : qu'une cause non auto-reparable devienne un
+# martelement sans fin plutot qu'un `failed` visible. Au-dela de 5 echecs en
+# 10 minutes, systemd passe l'unite en `failed` et arrete.
+#
+# CES DEUX CLES VONT EN [Unit], JAMAIS EN [Service]. Ecrites en [Service],
+# `systemd-analyze verify` rend :
+#   Unknown key name 'StartLimitIntervalSec' in section 'Service', ignoring.
+# -- une clause ignoree ne refuse rien, et presente l'apparence exacte d'un
+# garde. Le defaut a ete commis puis mesure sur coursia-runner.service dans
+# cette meme PR ; il est nomme ici pour qu'il ne se re-commette pas au prochain
+# fichier. Depuis systemd v229 elles appartiennent a [Unit] (systemd.unit(5)) ;
+# mesure sur systemd 255 (255.4-1ubuntu8.17).
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/coursia-waiters-start.sh 12
+ExecStop=/usr/local/bin/coursia-waiters-start.sh stop
+Restart=always
+RestartSec=30
+Nice=10
+# Un slot d'attente ne porte jamais de build long : 120 s suffisent la ou la
+# jambe d'execution demande 900 s pour laisser finir un lake build.
+TimeoutStopSec=120
+# Comptabilite d'I/O sur le superviseur lui-meme. PAS de IOWriteBandwidthMax ici :
+# les conteneurs waiters sont des NEVEUX de cette unite, pas des enfants -- ils
+# naissent dans le cgroup du daemon docker. Un plafond dur pose ici ne bornerait
+# que les journaux du superviseur. Ce qui borne les conteneurs est la slice
+# agregee, appliquee par defaut via "cgroup-parent" dans /etc/docker/daemon.json.
+IOAccounting=yes
+IOWeight=50
+
+[Install]
+WantedBy=multi-user.target

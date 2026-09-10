@@ -27,6 +27,30 @@ Quatre projets complets, bout en bout, illustrent la diversité des applications
 
 Ces notebooks sont le point d'entrée idéal pour découvrir les capacités de l'IA générative avant d'approfondir dans les séries thématiques ([Texte](../Texte/README.md), [SemanticKernel](../SemanticKernel/README.md), [Image](../Image/README.md)).
 
+## Généalogie et provenance
+
+Les quatre cas de cette série sont **adaptés de productions étudiantes de l'EPF**
+(École Polytechnique Féminine, session partenaire), universalisées en mai 2026 par le
+refactor de migration [#890](https://github.com/jsboige/CoursIA/pull/890) (design
+[#888](https://github.com/jsboige/CoursIA/pull/888)) — voir le design archivé
+[`docs/archive/epf-universalisation-design.md`](../../../docs/archive/epf-universalisation-design.md).
+L'intention du refactor était de **préserver l'attribution des auteurs** ; elle est
+restituée ici, chaque groupe étant renseigné par ce design.
+
+| Cas | Production EPF d'origine |
+|---|---|
+| [Barbie-Schreck](Barbie-Schreck/README.md) | **Carole & Cléo** |
+| [Recipe-Maker](Recipe-Maker/README.md) | **Dorian & Bastien** (cuisine) |
+| [Medical-Chatbot](Medical-Chatbot/README.md) | **Louise et Jeanne Céline** |
+| [Fort-Boyard](Fort-Boyard/README.md) | production EPF — groupe non préservé par le refactor |
+
+> **Garde-fou d'attribution** : seuls les groupes effectivement enregistrés par le refactor
+> #890 sont nommés. Le groupe du cas Fort-Boyard n'apparaît dans aucun sous-répertoire
+> auteur d'origine (`GenAI/EPF/fort-boyard-python.ipynb` était à la racine, sans
+> sous-dossier de groupe) ; il n'est donc pas réattribué nominativement. Les sorties
+> brutes étudiantes (`*_output.ipynb`) sont archivées hors-ligne par l'enseignant et ne
+> font pas partie des livrables du dépôt.
+
 ## Pourquoi ces projets
 
 Les séries thématiques de GenAI démontent chaque composant ; ces quatre projets montrent les composants remontés. Adaptés de réalisations étudiantes, ils ont la taille exacte d'un bon projet de fin de module : assez complets pour exiger une vraie architecture — des rôles, une orchestration, des conditions d'arrêt —, assez courts pour être lus en entier. Lire un système complet apprend ce qu'aucun tutoriel ne montre : où placer la logique métier, comment empêcher deux agents de tourner en rond, quand arrêter une conversation. C'est aussi ce qui en fait de bons sujets d'extension, chaque projet se concluant par trois exercices qui ajoutent une contrainte, un agent ou une stratégie.

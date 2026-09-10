@@ -33,7 +33,7 @@ FORGE_PORT=17861
 
 # Authentification Gradio (Basic Auth)
 FORGE_USER=admin
-FORGE_PASSWORD=changeme  # A MODIFIER EN PRODUCTION
+FORGE_PASSWORD=  # a renseigner avant demarrage : compose refuse une valeur vide
 ```
 
 ### Arguments CLI
@@ -74,7 +74,7 @@ docker compose -f docker-configurations/services/forge-turbo/docker-compose.yml 
 ## Acces
 
 - **URL**: http://localhost:17861
-- **Auth**: admin / changeme (modifier dans .env)
+- **Auth**: admin / (mot de passe a definir dans .env — aucune valeur par defaut commitee)
 - **API**: http://localhost:17861/sdapi/v1/
 
 ## Dockerfile Custom
@@ -122,6 +122,7 @@ nvidia-smi
 ### Exemple API
 
 ```python
+import os
 import requests
 
 url = "http://localhost:17861/sdapi/v1/txt2img"
@@ -133,7 +134,7 @@ payload = {
     "cfg_scale": 1.0  # Turbo = cfg 1
 }
 
-response = requests.post(url, json=payload, auth=("admin", "changeme"))
+response = requests.post(url, json=payload, auth=("admin", os.environ["FORGE_PASSWORD"]))
 ```
 
 ## Troubleshooting

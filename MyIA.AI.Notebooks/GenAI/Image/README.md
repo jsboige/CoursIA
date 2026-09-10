@@ -30,9 +30,10 @@ Image/
 ├── 03-Orchestration/  # Multi-modèles
 ├── 04-Applications/   # Production
 ├── assets/            # Médias partagés (couvertures, panneaux)
-├── examples/          # Cas d'usage par domaine
-└── tutorials/         # Guides de référence (markdown)
+└── examples/          # Cas d'usage par domaine
 ```
+
+Les guides de référence transversaux (DALL-E 3, GPT-5 image, OpenRouter, workflows éducatifs) vivent dans le répertoire partagé [`../tutorials/`](../tutorials/README.md) — pas de doublon local ici.
 
 ## Progression par niveau
 
@@ -139,16 +140,16 @@ Applications directes par domaine : histoire-géographie (cartes, reconstitution
 | [literature-visual](examples/literature-visual.ipynb) | Littérature |
 | [science-diagrams](examples/science-diagrams.ipynb) | Diagrammes scientifiques |
 
-### tutorials/ - Guides de référence
+### Tutorials — guides de référence
 
-Section transversale de guides markdown (pas de notebooks) — quatre références longues pour approfondir un aspect précis du pipeline image, à consulter après avoir pratiqué les notebooks ci-dessus :
+Section transversale de guides markdown (pas de notebooks) — quatre références longues pour approfondir un aspect précis du pipeline image, à consulter après avoir pratiqué les notebooks ci-dessus. Les guides vivent dans le répertoire partagé [`GenAI/tutorials/`](../tutorials/README.md) (source autoritaire unique) :
 
 | Guide | Sujet |
 |-------|-------|
-| [dalle3-complete-guide](tutorials/dalle3-complete-guide.md) | DALL-E 3 de bout en bout via l'API OpenAI — prompt engineering, templates pédagogiques, batch et intégration workflows CoursIA |
-| [educational-workflows](tutorials/educational-workflows.md) | Supports de cours, évaluations et présentations via API OpenAI (DALL-E 3 + GPT-5) et OpenRouter — contrôle qualité, accessibilité |
-| [gpt5-image-analysis-guide](tutorials/gpt5-image-analysis-guide.md) | Analyse d'images multimodale GPT-5 via OpenRouter — configuration, templates cas pédagogiques, alt-text, optimisation des coûts |
-| [openrouter-ecosystem-guide](tutorials/openrouter-ecosystem-guide.md) | Routage DALL-E 3 / GPT-5 via OpenRouter — endpoints multiples, fallback, rate limiting et optimisation des coûts |
+| [dalle3-complete-guide](../tutorials/dalle3-complete-guide.md) | DALL-E 3 de bout en bout via l'API OpenAI — prompt engineering, templates pédagogiques, batch et intégration workflows CoursIA |
+| [educational-workflows](../tutorials/educational-workflows.md) | Supports de cours, évaluations et présentations via API OpenAI (DALL-E 3 + GPT-5) et OpenRouter — contrôle qualité, accessibilité |
+| [gpt5-image-analysis-guide](../tutorials/gpt5-image-analysis-guide.md) | Analyse d'images multimodale GPT-5 via OpenRouter — configuration, templates cas pédagogiques, alt-text, optimisation des coûts |
+| [openrouter-ecosystem-guide](../tutorials/openrouter-ecosystem-guide.md) | Routage DALL-E 3 / GPT-5 via OpenRouter — endpoints multiples, fallback, rate limiting et optimisation des coûts |
 
 ## Technologies
 
@@ -167,8 +168,9 @@ Section transversale de guides markdown (pas de notebooks) — quatre référenc
 
 ```bash
 # Dans GenAI/.env (jamais de littéral en clair dans le repo — voir .gitignore)
-# OPENAI_API_KEY et COMFYUI_BEARER_TOKEN sont configurés via .secrets/master.env
+# OPENAI_API_KEY et COMFYUI_API_TOKEN sont configurés via .secrets/master.env
 # et propagés par `python scripts/secrets/render_envs.py` (cf secrets-hygiene.md).
+# COMFYUI_AUTH_TOKEN est un alias synchronisé : même valeur que COMFYUI_API_TOKEN.
 ```
 
 ### Docker Services
@@ -262,7 +264,8 @@ docker ps | grep comfyui
 cd docker-configurations/services/comfyui-qwen && docker-compose restart
 
 # Vérifier le bearer token (drift bcrypt entre container et .env)
-cat MyIA.AI.Notebooks/GenAI/.env | grep COMFYUI_BEARER_TOKEN
+# COMFYUI_API_TOKEN (principal) et COMFYUI_AUTH_TOKEN (alias) portent la même valeur
+grep -E '^(COMFYUI_API_TOKEN|COMFYUI_AUTH_TOKEN)=' MyIA.AI.Notebooks/GenAI/.env
 ```
 
 Les notebooks ont une graceful degradation : sans token, ils basculent vers les API cloud quand c'est possible.
