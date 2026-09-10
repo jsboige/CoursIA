@@ -29,6 +29,14 @@ name: Candidate-Delivered Advisory
 #     heuristic alone mislabeled exactly that shape (measured on #10984:
 #     open #10986 + six merged PRs). The sweep retracts the label when an
 #     open PR appears, same as it does for post-merge activity.
+#   - A MERGED PR counts only if it carries a DECLARED DELIVERY MARKER
+#     (`See #N` / `Part of #N` / `Closes #N` / `Fixes #N` / `Refs #N`) for the
+#     issue in its CURRENT body (#15060, measured 2026-09-10): the timeline's
+#     cross-referenced event is posed on FIRST mention and never retracted
+#     when the mention is later amended away, so "merged + silent" alone
+#     mislabeled #15060 via a research-prep PR (#15200, contextual mention
+#     "verified by dispatch #15060") and a stale cross-ref surviving a body
+#     amend (#15149). See scripts/candidate_delivered.py.
 
 on:
   schedule:
