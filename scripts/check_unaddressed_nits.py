@@ -487,6 +487,22 @@ LIFT_MARKERS = (
     #     « ERASME »/« rasoir » : word-bound par `_WORD_BOUNDED_LIFT_RE`.
     "rien à signaler", "rien à traiter", "c'est traité",
     "RAS",
+    # #15468 — verbes de DISSIPATION : la voie 1 (commenter pour dissiper)
+    # etait morte par construction — un commentaire worker-self qui nomme
+    # l'etat qu'il dissipe (« 4 points dissipés », « les contrats dissipés »)
+    # etait reclasse nouvelle reserve car « dissipé » ne levait rien.
+    # « dissipé » (cle miroir `_unaccent` = « dissipe ») couvre par sous-
+    # chaine la famille entiere : dissipé(e)(s), dissipe, dissipent,
+    # dissipation. La negation directe (« n'est pas dissipé ») et la
+    # narration nominale (« une dissipation ») restent exclues par les
+    # gardes existantes (_lift_is_negated / _lift_is_narrated).
+    "dissipé",
+    # #15468 — locution de dissipation : « ce nit ne concerne plus le
+    # head ». Le token « plus » vit DANS le marqueur (hors des fenetres de
+    # negation de _lift_is_negated, qui ne regardent pas a l'interieur du
+    # match) — la construction est une dissipation positive, pas une
+    # negation de levee.
+    "ne concerne plus",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge

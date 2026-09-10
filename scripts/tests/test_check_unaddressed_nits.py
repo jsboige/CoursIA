@@ -5577,3 +5577,75 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     # tiendrait aussi pour une PR mergee : analyse_pr est pre-merge).
     delta = abs((captured["cutoff"] - datetime.now(timezone.utc)).total_seconds())
     assert delta < 30
+
+
+# --- #15468 : verbe de DISSIPATION dans le registre LIFT ------------------
+#
+# La voie 1 (commenter pour dissiper) etait morte par construction : un
+# commentaire worker-self qui NOMME l'etat qu'il dissipe (« 4 points
+# dissipés », « 2 contrats dissipés ») etait reclasse nouvelle reserve —
+# « dissipé » ne levait rien, le marqueur CHANGES_REQUESTED/BOT-CONCERN
+# cite restait une emission. Mesure du 10/09 : les 4 follow-ups de
+# dissipation de myia-po-2027:CoursIA-2 (#15280, #15423) classes
+# BOT-CONCERN mot pour mot (le chemin de la voie 3 escalade).
+#
+# Gardes preserves : la negation directe (« n'est pas dissipé ») et la
+# revalidation dont le verdict formel precede la dissipation (modele
+# #12798/#12836) gardent le classement BOT-CONCERN.
+
+def test_dissipation_reconnue_par_le_registre_lift():
+    """« dissipé » couvre la famille par sous-chaine (miroir _unaccent)."""
+    assert mod.has_marker("les 4 points dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("2 contrats dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("le concern dissipé", mod.LIFT_MARKERS)
+    assert mod.has_marker("la reserve dissipée", mod.LIFT_MARKERS)
+    assert mod.has_marker("les contrats dissipés (sans accents)", mod.LIFT_MARKERS)
+    assert mod.has_marker("ce nit ne concerne plus le head", mod.LIFT_MARKERS)
+
+
+def test_dissipation_negation_et_narration_restent_exclues():
+    """Les gardes existantes s'appliquent au verbe nouveau comme aux autres."""
+    assert not mod.has_live_lift("le point n'est pas dissipé, il reste ouvert")
+    assert not mod.has_live_lift("obtenir une dissipation explicite est exige")
+
+
+def test_dissipation_worker_self_nommant_le_verdict_ne_classe_plus():
+    """Corps fidele a 5618922001 / 5618520801 (reformulations propres UTF-8) :
+    la dissipation nomme le verdict qu'elle dissipe — c'est une resolution."""
+    body = ("**Follow-up dissipation** — head `8d503f9` inchange. Les 2 contrats "
+            "dissipes anterieurement (Tag `Grain:` premiere ligne + override "
+            "workflow_dispatch retire) demeurent materiellement verifies sur le "
+            "head courant. La chaine de dissipation du CHANGES_REQUESTED myia-ai-01 "
+            "(2026-09-09) est complete.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_accentuee_nommant_le_verdict_ne_classe_plus():
+    body = ("Follow-up dissipation B.0 — head `b0157070` apres second update-branch. "
+            "4 points dissipés (zéro exercice, structure, cellules consécutives, "
+            "citation) demeurent vérifiés sur le notebook courant. Le seul verdict "
+            "CHANGES_REQUESTED de myia-ai-01 (2026-09-09T22:44Z) est levé par l'amend.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_neguee_garde_le_classement():
+    """« n'est pas dissipé » = la reserve vit : pas de levee par negation."""
+    body = ("CHANGES_REQUESTED : le point 2 n'est pas dissipé, il reste ouvert sur "
+            "le head courant.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_verdict_formel_avant_dissipation_garde_la_reserve():
+    """Modele #12798/#12836 : la revalidation dont le verdict formel PRECEDE la
+    dissipation narree refute la levee — le registre nouveau ne la blanchit pas."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — le point 2 refute la dissipation "
+            "narree plus bas : la correction que la lane dit dissipée ne couvre "
+            "pas le head.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_locution_ne_concerne_plus_leve():
+    """« ne concerne plus » : la dissipation positive double-negation FR."""
+    body = ("Le nit CHANGES_REQUESTED ne concerne plus le head courant : l'amend "
+            "f29727a67 (ancetre verifie) a retire les 4 stubs.")
+    assert mod.classify("jsboige", body) is None
