@@ -1,9 +1,11 @@
 """
-intraday_volume_periodicity.py — Companion script pedagogique
+intraday_volume_periodicity.py - Companion script pedagogique
 
 Illustration du concept de periodicite intraday du volume boursier,
-d'apres Wu, Zhang, Liu & Wang (M&S 2025), "Intraday volume periodicity
-and return predictability" (Manufacturing & Service Operations Management).
+d'apres Wu, L., Zhang, R. & Dai, Y. (2025), *Spectral Volume Models:
+Universal High-Frequency Periodicities in Intraday Trading Activities*,
+Management Science, doi:10.1287/mnsc.2024.06215 (nov. 2025 ;
+preprint SSRN 4230610).
 
 Ce script reproduit la logique du notebook
 intraday_volume_periodicity.ipynb sous forme d'un script lineaire
