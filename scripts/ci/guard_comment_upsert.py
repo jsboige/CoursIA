@@ -38,10 +38,11 @@ from datetime import datetime, timezone
 from typing import Callable, Optional
 
 # Les commentaires postes avec GITHUB_TOKEN ont pour auteur
-# ``github-actions[bot]`` ; les runs legacy ``github-actions``. Les deux
-# partagent ce prefix. Un autre bot (dependabot, etc.) ne doit jamais
-# etre edite par ce garde.
-GUARD_BOT_LOGIN_PREFIX = "github-actions"
+# ``github-actions[bot]`` ; les runs legacy ``github-actions``. Ce sont les
+# DEUX SEULS logins editables -- appartenance exacte, pas un prefix : sur un
+# depot public un tiers peut porter ``github-actions-xyz`` (review ai-01
+# #15374) et un autre bot (dependabot, etc.) ne doit jamais l'etre non plus.
+GUARD_BOT_LOGINS = frozenset({"github-actions", "github-actions[bot]"})
 
 DEFAULT_TIMEOUT = 15
 
@@ -67,7 +68,7 @@ def find_guard_comment_id(
     for c in comments or []:
         body = c.get("body") or ""
         login = ((c.get("user") or {}).get("login") or "")
-        if marker in body and login.startswith(GUARD_BOT_LOGIN_PREFIX):
+        if marker in body and login in GUARD_BOT_LOGINS:
             cid = c.get("id")
             if isinstance(cid, int) and (best is None or cid > best):
                 best = cid

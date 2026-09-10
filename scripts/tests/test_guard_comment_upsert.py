@@ -90,6 +90,19 @@ class TestFindGuardCommentId:
         ]
         assert gcu.find_guard_comment_id(comments, MARKER) is None
 
+    def test_lookalike_login_github_actions_xyz_is_not_the_bot(self):
+        """Review ai-01 #15374 : sur un depot public un tiers peut porter
+        ``github-actions-xyz`` -- le prefixe ne suffit pas, un SET EXACT
+        seul protege. Ce commentaire ne doit jamais etre PATCHe."""
+        comments = [
+            _comment(305, "github-actions-xyz", f"{MARKER} faux reponse"),
+            _comment(306, "github-actions[bot]", f"{MARKER} vrai verdict"),
+        ]
+        # le lookalike SEUL -> aucun cible (pas de PATCH sur un tiers)
+        assert gcu.find_guard_comment_id(comments[:1], MARKER) is None
+        # melange au bot veritable -> seul le bot est cible
+        assert gcu.find_guard_comment_id(comments, MARKER) == 306
+
     def test_legacy_login_github_actions_counts(self):
         comments = [_comment(401, "github-actions", MARKER)]
         assert gcu.find_guard_comment_id(comments, MARKER) == 401
@@ -243,3 +256,45 @@ class TestMain:
         with pytest.raises(SystemExit):
             gcu.main(["--pr", "50", "--marker", MARKER,
                       "--body-file", str(body_file), "--lift"])
+
+
+# ---------------------------------------------------------------------------
+# Câblage workflow -- l'échec de lift/upsert doit rester OBSERVABLE (#15374)
+# ---------------------------------------------------------------------------
+
+WORKFLOW = (
+    Path(__file__).resolve().parents[2]
+    / ".github" / "workflows" / "always-on-guards.yml"
+)
+
+
+class TestWorkflowWiring:
+    r"""Review ai-01 #15374 : le chemin vert ne doit plus avaler l'échec de
+    lift par ``>/dev/null 2>&1 || true`` -- sinon le commentaire bloquant
+    survit affiché faux sans aucun signal (le défaut racine de #15372).
+    Le gate reste vert, mais l'échec devient un ``::warning``."""
+
+    def test_lift_failure_emits_warning(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        assert "::warning::prev-guard lift failed" in text, (
+            "le chemin vert du prev-guard doit rendre l'échec de lift "
+            "observable (review ai-01 #15374)")
+
+    def test_upsert_failure_emits_warning(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        assert "::warning::prev-guard upsert failed" in text, (
+            "le chemin rouge ne doit pas présenter un échec d'upsert "
+            "comme une écriture réussie (review ai-01 #15374)")
+
+    def test_no_silently_swallowed_upsert_call(self):
+        """Le buggy pattern : un appel guard_comment_upsert.py suivi (à
+        ~6 lignes, le temps des arguments multilignes) d'un ``|| true``
+        seul -- sans if/warning, l'échec est invisible."""
+        lines = WORKFLOW.read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(lines):
+            if "guard_comment_upsert.py" in line:
+                window = lines[i:i + 7]
+                swallowed = [l for l in window if l.strip() == ">/dev/null 2>&1 || true"]
+                assert not swallowed, (
+                    f"appel guard_comment_upsert.py l.{i + 1} avalé par "
+                    "|| true -- l'échec doit être observable")
