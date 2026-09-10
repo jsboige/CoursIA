@@ -791,17 +791,28 @@ def _is_monetary_value(prose: str, match_pos: int, match_end: int) -> bool:
     deliberately NOT gated on the math-span walk: a price list
     '(DALL-E: $0.04, Whisper: $0.006, TTS: $15)' carries several '$' that
     the pairwise delimiter walk mispairs into phantom math spans, which
-    would un-exempt exactly the cells with the most prices. Inline math in
-    this corpus never STARTS with a bare decimal digit ('LaTeX opens with
-    a macro or symbol'), so '$0.04' is unambiguous. The AFTER direction
-    keeps the math guard, content-checked (`_MATH_CONTENT_RE`):
-    '$\\times 60 = 52.7$' closes a real math span on a digit (DecInfer-01
-    md[24] collateral) and stays guarded; a phantom span of plain prose
-    between two currency '$' does not.
+    would un-exempt exactly the cells with the most prices. What separates
+    a math delimiter from a currency '$' is the closing one: a '$'
+    IMMEDIATELY after the numeric token makes the pair the delimiters of a
+    bare inline-math span ('$0.5$', review 2026-09-10) -- sandwiched
+    numbers are math and stay checked. The AFTER direction keeps the math
+    guard, content-checked (`_MATH_CONTENT_RE`): '$\\times 60 = 52.7$'
+    closes a real math span on a digit (DecInfer-01 md[24] collateral)
+    and stays guarded; a phantom span of plain prose between two currency
+    '$' does not.
     """
     # Currency BEFORE, glued ('$0.04') or spaced ('$ 15'): no math guard
     # (see docstring -- inline math never opens on a bare decimal digit).
     pre = prose[max(0, match_pos - 2):match_pos]
+    # Math sandwich '$0.5$' (review 2026-09-10): a '$' immediately before
+    # AND right after the numeric token are the delimiters of a bare
+    # inline-math span. The opening '$' must not fire the BEFORE shortcut,
+    # and without this early return the closing '$' would fire the AFTER
+    # one two checks below -- the span itself carries no formula signal
+    # (`_MATH_CONTENT_RE`), so no other guard catches it. A real price is
+    # never written with a '$' glued after the number: '$0.5$' is math.
+    if pre and pre[-1] == "$" and prose[match_end:match_end + 1] == "$":
+        return False
     if pre and pre[-1] in _CURRENCY_CHARS:
         return True
     if len(pre) >= 2 and pre[-1] in " \xa0" and pre[-2] in _CURRENCY_CHARS:

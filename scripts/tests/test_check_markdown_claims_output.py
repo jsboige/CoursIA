@@ -1716,6 +1716,30 @@ class TestMonetaryProvenance15430:
         ])
         assert result["verdict"] == "FABRICATION_DETECTED"
 
+    def test_math_sandwich_bare_decimal_stays_detected(self, tmp_path):
+        """Review #15435 (2026-09-10T05:01:42Z): output 'metric: 0.24' +
+        prose '$0.5$' -- the '$' before the decimal is the OPENING math
+        delimiter, not currency, and the one after is its closing pair.
+        The BEFORE shortcut must not exempt it, and the AFTER check below
+        must not read the closing delimiter as a spaced/glued currency."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("compute()", [_stream_output("metric: 0.24\n")]),
+            _md_cell("La métrique dérivée vaut $0.5$."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        norms = {f["normalized"] for f in result["findings"]}
+        assert "0.5" in norms, result["findings"]
+
+    def test_tariff_currency_before_unit_after_stays_clean(self, tmp_path):
+        """Review #15435 (2026-09-10T05:01:42Z) counter-case: the sandwich
+        guard must not un-exempt the founding tariff form -- '$0.04' with
+        '/image' after is a price, no '$' closes the span."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("estimate()", [_stream_output("cout estime\n")]),
+            _md_cell("Tarif : $0.04/image pour la generation."),
+        ])
+        assert result["verdict"] == "CLEAN", result
+
     def test_tokens_per_minute_metric_stays_detected(self, tmp_path):
         """Review #15435: '15 tokens/min' -- same class: a throughput
         metric the organ must keep checking."""
