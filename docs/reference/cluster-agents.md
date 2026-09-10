@@ -269,6 +269,8 @@ Le tableau précédent décrit les **sous-agents** ; il ne décrit pas le moteur
 
 Le suffixe `CoursIA-2` n'implique donc ni MiniMax ni un droit de fermeture. L'adjoint peut recevoir l'urne `delivered`, vérifier firsthand l'acceptance et poster sa preuve ; la fermeture effective reste signée par le coordinateur, conformément à la règle 6 de [`coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md).
 
+Deux lanes qui exécutent le même modèle peuvent donc avoir des autorités différentes : `myia-po-2025:CoursIA` produit des livrables, tandis que `myia-po-2025:CoursIA-2` assiste la vérification. Toute autorisation terminale se lit dans la règle de rôle, jamais dans le nom du moteur.
+
 ## Capacité vision — router le QA visuel vers MiniMax (lanes CoursIA-2) ou ai-01, jamais GLM
 
 Mandat user 2026-07-11. **MiniMax M3** (main-loop des lanes CoursIA-2 sauf `myia-po-2025:CoursIA-2`, qui tourne Sol) et **ai-01** (Opus) ont des capacités de **vision** que **ZAI GLM-5.1** (lanes CoursIA) n'a pas. Objectif : que nos README et notebooks **rendent bien visuellement**.
