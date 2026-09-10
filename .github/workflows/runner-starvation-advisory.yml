@@ -37,11 +37,6 @@ on:
   schedule:
     - cron: '23,53 * * * *'  # waiter + lean (offset distinct du cron linux 19,49)
   workflow_dispatch:
-    inputs:
-      label:
-        description: 'Override label (debug only)'
-        required: false
-        default: ''
 
 permissions:
   contents: read   # checkout du script
@@ -76,7 +71,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
-          LABEL: ${{ matrix.label || inputs.label }}
+          LABEL: ${{ matrix.label }}
           STARVE_MINUTES: ${{ matrix.starve_minutes }}
           WARN_FLOOR: ${{ matrix.warn_floor }}
           WINDOW_MAX_MINUTES: "360"
