@@ -628,9 +628,10 @@ theorem alexander_figureEight_eval_neg_one :
   norm_num
 
 /-- La variante signée restitue le classique sur le nœud en huit :
-l'étiquetage alterné `[−, +, −, +]` du diagramme DT-dérivé (deux signes de
-chaque, toute paire miroir convient — `4_1` est amphichiral) rend
-exactement `t² − 3t + 1` sous le même mineur désigné. -/
+l'étiquetage alterné `[−, +, −, +]` du diagramme DT-dérivé rend
+exactement `t² − 3t + 1` sous le même mineur désigné, et son miroir
+`[+, −, +, −]` rend `t · (t² − 3t + 1)` — même classe d'unités, comme
+l'exige l'amphichiralité de `4_1`. -/
 theorem alexander_figureEight_signed :
     alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
       = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by

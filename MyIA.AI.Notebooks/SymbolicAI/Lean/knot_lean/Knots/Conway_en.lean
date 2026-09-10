@@ -559,8 +559,9 @@ determinant survives: `|P(−1)| = 5 = det(4_1)`
 
 The signed variant `alexanderPolynomialSigned` takes chirality as data and
 recovers the classical value on the figure-eight: the alternating labeling
-of the DT-derived diagram returns exactly `t² − 3t + 1`, its mirror
-`t · (t² − 3t + 1)` — same unit class, as amphichirality demands. -/
+`[−, +, −, +]` of the DT-derived diagram returns exactly `t² − 3t + 1`,
+its mirror `[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class,
+as amphichirality demands. -/
 
 /-- Alexander row of a **negative** crossing: Fox derivative of the mirror
 Wirtinger relation `x_o⁻¹ x_i x_o = x_out`, multiplied by the unit `t` to
@@ -632,9 +633,10 @@ theorem alexander_figureEight_eval_neg_one :
   norm_num
 
 /-- The signed variant recovers the classical value on the figure-eight:
-the alternating labeling `[−, +, −, +]` of the DT-derived diagram (two
-signs of each; any mirror pair works — `4_1` is amphichiral) returns
-exactly `t² − 3t + 1` under the same designated minor. -/
+the alternating labeling `[−, +, −, +]` of the DT-derived diagram returns
+exactly `t² − 3t + 1` under the same designated minor, and its mirror
+`[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class, as
+amphichirality of `4_1` demands. -/
 theorem alexander_figureEight_signed :
     alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
       = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by

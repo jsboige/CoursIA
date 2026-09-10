@@ -22,6 +22,16 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run it (conway
+      # lesson, #8951 -- a gate whose own edits don't trigger it can be
+      # rewritten red-free and never prove anything again).
+      - '.github/workflows/lean-planning.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_target_coverage.py'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     branches: [main]
     paths:
@@ -29,6 +39,16 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run it (conway
+      # lesson, #8951 -- a gate whose own edits don't trigger it can be
+      # rewritten red-free and never prove anything again).
+      - '.github/workflows/lean-planning.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_target_coverage.py'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   workflow_dispatch:
 
 permissions:
@@ -46,3 +66,54 @@ jobs:
       display-name: planning_lean
       sorry-baseline: "0"
       sorry-filter-mode: real
+
+  # Proof integrity gate (criterion B.3 of pr-review-discipline): the REAL axiom
+  # check -- transitive sorryAx, native_decide, Classical whitelist -- on the
+  # planning modules, so the CI forbids a future edit from introducing a sorry,
+  # a transitive sorryAx or a native_decide here (the hole #15305 exists to
+  # close). Serialized behind `ci` (#14921: two full builds at the same second
+  # doubles the anonymous git burst and can trip GitHub's per-IP anonymous
+  # limit). target-modules: "*" (issue #10889) derives the module list at
+  # runtime from the lake walk -- Planning.Strips, Planning.Relaxation,
+  # Planning.Admissibility, _en i18n siblings excluded by default -- so the gate
+  # cannot drift out of view of a newly added module. fail-on-sorry: true is
+  # green-by-truth: the lake is genuinely sorry-free on main (count_code_sorry
+  # --lake planning_lean: code=0).
+  proof-integrity:
+    needs: ci
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean
+      display-name: planning_lean
+      target-modules: "*"
+      # allow-axioms inherits the workflow default -- the NAMED standard set
+      # (Classical.choice, propext, funext, Quot.lift/mk/sound), never a
+      # wildcard. planning_lean uses no native_decide and no noncomputable def
+      # (measured: 0/0/0), so the default list already covers its axiom closure.
+      fail-on-sorry: true
+
+  # Advisory proof-integrity coverage (See #8782). `*` makes the gate derive its
+  # module list at runtime, so every compiled module is inspected by
+  # construction -- no blind spot can exist. This job prints the delta
+  # (compiled vs target) and ALWAYS exits 0: it never fails CI, it makes the gap
+  # legible in the log. --from-workflow reads THIS file and unions
+  # target-modules over every job whose `uses:` resolves to lean-axiom.yml,
+  # instead of restating the list a second time here.
+  target-coverage:
+    name: planning target-coverage
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Advisory target-coverage delta
+        run: |
+          python3 scripts/lean/check_target_coverage.py \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean \
+            --from-workflow .github/workflows/lean-planning.yml \
+            --lib-root Planning \
+            --name planning_lean
