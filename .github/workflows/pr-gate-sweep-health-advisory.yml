@@ -34,6 +34,12 @@ name: PR gate sweep health advisory
 # can be reached by fork code). `push` is in SAFE_SELF_HOSTED_TRIGGERS and, on
 # `branches: [main]`, only ever runs repository-owned code -- the same property
 # the schedule-only routing relied on.
+#
+# 2026-09-10 repair (ai-01 dispatch): the cadence probe and the sweep-age probe
+# are the two sondes of this advisory. A red first step used to SKIP the second
+# (default Actions short-circuit) -- the observer went half-blind exactly when
+# it was red. Both probes now always run (continue-on-error) and a final
+# aggregate step carries the red: one red probe must not silence the other.
 
 on:
   schedule:
@@ -73,6 +79,8 @@ jobs:
             scripts/ci/check_scheduler_liveness.py
 
       - name: Measure served cadence of the schedule event class (#15332)
+        id: cadence
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -81,11 +89,17 @@ jobs:
           # Mesure la cadence SERVIE par organe (declaree vs observee) et rougit
           # quand la livraison de l'evenement 'schedule' est morte. Advisory :
           # le nom du workflow porte le marqueur, donc un rouge n'est pas
-          # bloquant -- il parle sans bloquer un merge. Le code de sortie est
-          # donc PROPAGE (pas de `|| true`) : c'est le rouge qui alerte.
+          # bloquant -- il parle sans bloquer un merge. continue-on-error ici ne
+          # neutralise PAS le rouge : l'exit code est reporte au step final
+          # d'agregation, qui porte le rouge de CE step et de la sonde d'age --
+          # sans cela, un echec ici SKIPPERAIT la sonde d'age (short-circuit
+          # Actions, repare sur dispatch ai-01 2026-09-10).
           python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
 
       - name: Check age of last successful sweep run
+        id: sweep_age
+        if: always()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           STALE_AFTER_MINUTES: "60"
@@ -124,3 +138,26 @@ jobs:
           fi
 
           echo "[sweep-health] last successful sweep run: ${AGE_S}s ago -- OK"
+
+      - name: Aggregate probe verdicts (a red probe must not silence the other)
+        if: always()
+        run: |
+          set -uo pipefail
+          # Les deux sondes portent continue-on-error : elles s'executent toutes
+          # les deux quelle que soit la couleur de l'autre, et CE step porte le
+          # rouge agrage. Un echec de sonde n'est donc jamais avalé, et aucune
+          # sonde n'est skippée par l'echec de l'autre (dispatch ai-01
+          # 2026-09-10 : "les exécuter toutes deux puis agréger rc rouge").
+          rc=0
+          if [ "${{ steps.cadence.outcome }}" = "failure" ]; then
+            echo "::error::[sweep-health] served-cadence probe RED -- details in its step log above (#15332)"
+            rc=1
+          fi
+          if [ "${{ steps.sweep_age.outcome }}" = "failure" ]; then
+            echo "::error::[sweep-health] sweep-age probe RED -- details in its step log above (#11860 / #12588)"
+            rc=1
+          fi
+          if [ "$rc" -eq 0 ]; then
+            echo "[sweep-health] both probes green (cadence + sweep age)"
+          fi
+          exit $rc

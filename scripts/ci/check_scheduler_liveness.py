@@ -70,6 +70,12 @@ class Organ:
 
 
 # Declared cadences read firsthand from each workflow file's `cron:` line.
+# KEEP IN SYNC with the `cron:` lines of the workflows listed below: this
+# table is a hand-copied snapshot, nothing verifies it against the files. A
+# future `cron:` change in any listed workflow diverges SILENTLY -- the
+# declared column here would mis-state the cadence (and mis-scale LATE/DEAD
+# floors) without failing anything. Update this table in the same PR that
+# touches any of these `cron:` lines.
 REGISTRY: tuple[Organ, ...] = (
     Organ("pr-gate-stale-sweep.yml", 60.0, "cron '7 * * * *'"),
     Organ("pr-gate-sweep-health-advisory.yml", 30.0, "cron '13,43 * * * *' -- cet observateur"),
