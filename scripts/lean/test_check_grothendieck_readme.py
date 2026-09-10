@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Tests for scripts/lean/check_grothendieck_readme.py — pin the four positive controls.
+"""Tests for scripts/lean/check_grothendieck_readme.py — pin the six positive controls.
 
 Background
 ----------
 The checker is the **anti-récidive organe** for #15474. After the
-2026-09-10 re-review on head ``621dd53cb1`` flagged three gaps in the
-positive controls (no ``--inject-fake`` argument, ``--strict`` does not
-promote OVERCOUNT/ORPHAN, history-aware skip not pinned), this file
-adds four-row test coverage:
+2026-09-11 re-review on head ``cf2c0cb24`` flagged that
+``--inject-fake`` only handled three of the four drift classes
+(UNDERCOUNT, TOOLCHAIN_DRIFT, MISSING_IN_TABLE) and that ``--strict``
+promotion of OVERCOUNT/ORPHAN_IN_TABLE was untested at the behavioral
+level (the prior ``TestStrictPromotion`` only regex-matched the source,
+which ai-01 demonstrated was silent when the implementation was
+stubbed), this file pins **behavioral coverage** for all six classes:
 
 1. **Faux sous-compte live détecté** — a fake counter (``--inject-fake
    {"counter": 61}``) on a clean README yields ``UNDERCOUNT: blocking``.
@@ -20,6 +23,12 @@ adds four-row test coverage:
    override yields ``MISSING_IN_TABLE: blocking``.
 4. **Panne toolchain détectée** — a fake ``toolchain_drift`` override
    yields ``TOOLCHAIN_DRIFT: blocking``.
+5. **OVERCOUNT advisory sans --strict** — a fake ``overcount`` override
+   without ``--strict`` exits 0 and the drift entry has
+   ``severity == "advisory"``.
+6. **OVERCOUNT/ORPHAN blocking avec --strict** — a fake ``overcount`` or
+   ``orphan_in_table`` override WITH ``--strict`` exits 1 and the drift
+   entry has ``severity == "blocking"``.
 
 Usage
 -----
@@ -176,23 +185,87 @@ class TestInjectFake(unittest.TestCase):
 
 
 class TestStrictPromotion(unittest.TestCase):
-    """Pin that --strict promotes OVERCOUNT and ORPHAN_IN_TABLE to blocking."""
+    """Behavioral pinning: --strict promotes OVERCOUNT and ORPHAN_IN_TABLE to blocking.
 
-    def test_strict_promotion(self):
-        # We can't easily inject ORPHAN/OVERCOUNT via the JSON fake (those
-        # classes need a synthetic table, which the README extraction layer
-        # doesn't expose through the fake). Instead, we pin the documented
-        # severity-mapping at the source: walk the module's
-        # `check_lake(strict=True)` body and verify each severtiy expression
-        # references `strict`. This is the lighter, more reliable form of
-        # pinning for a class whose injection requires filesystem mutation.
-        src = CHECKER.read_text(encoding="utf-8")
-        # Both occurrence should reference 'blocking' if strict else 'advisory'.
-        self.assertRegex(
-            src,
-            r'severity=\("blocking"\s+if\s+strict\s+else\s+"advisory"\)',
-            "check_lake must promote OVERCOUNT/ORPHAN via 'blocking if strict else advisory'",
-        )
+    Replaces the prior regex-only pinning (which ai-01 demonstrated was
+    silent: replacing ``OVERCOUNT`` severity with a literal ``"advisory"``
+    left 7/7 tests green). These four tests run the real CLI with
+    ``--inject-fake`` and assert on the produced ``Report`` JSON, so the
+    severity expression cannot be stubbed without breaking at least one
+    test.
+    """
+
+    def test_overcount_advisory_without_strict(self):
+        """--inject-fake overcount without --strict → exit 0, severity advisory."""
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fp:
+            json.dump({"overcount": 9999}, fp)
+            fake_path = Path(fp.name)
+        try:
+            proc = _run_checker("--inject-fake", str(fake_path), expect_exit=0)
+            self.assertEqual(
+                proc.returncode, 0,
+                f"OVERCOUNT w/o --strict is advisory → must exit 0; got {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}",
+            )
+            doc = json.loads(proc.stdout)
+            oc = [d for d in doc["drifts"] if d["kind"] == "OVERCOUNT"]
+            self.assertEqual(len(oc), 1, f"exactly one OVERCOUNT entry expected, got {len(oc)}: {doc['drifts']}")
+            self.assertEqual(oc[0]["severity"], "advisory")
+        finally:
+            fake_path.unlink()
+
+    def test_overcount_blocking_with_strict(self):
+        """--inject-fake overcount with --strict → exit 1, severity blocking."""
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fp:
+            json.dump({"overcount": 9999}, fp)
+            fake_path = Path(fp.name)
+        try:
+            proc = _run_checker("--strict", "--inject-fake", str(fake_path), expect_exit=1)
+            self.assertEqual(
+                proc.returncode, 1,
+                f"OVERCOUNT WITH --strict must exit 1; got {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}",
+            )
+            doc = json.loads(proc.stdout)
+            oc = [d for d in doc["drifts"] if d["kind"] == "OVERCOUNT"]
+            self.assertEqual(len(oc), 1, f"exactly one OVERCOUNT entry expected, got {len(oc)}: {doc['drifts']}")
+            self.assertEqual(oc[0]["severity"], "blocking")
+        finally:
+            fake_path.unlink()
+
+    def test_orphan_advisory_without_strict(self):
+        """--inject-fake orphan_in_table without --strict → exit 0, severity advisory."""
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fp:
+            json.dump({"orphan_in_table": ["FooGoneFromDisk", "BarAlsoGone"]}, fp)
+            fake_path = Path(fp.name)
+        try:
+            proc = _run_checker("--inject-fake", str(fake_path), expect_exit=0)
+            self.assertEqual(
+                proc.returncode, 0,
+                f"ORPHAN_IN_TABLE w/o --strict is advisory → must exit 0; got {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}",
+            )
+            doc = json.loads(proc.stdout)
+            orphans = [d for d in doc["drifts"] if d["kind"] == "ORPHAN_IN_TABLE"]
+            self.assertEqual(len(orphans), 1, f"exactly one ORPHAN_IN_TABLE entry expected, got {len(orphans)}: {doc['drifts']}")
+            self.assertEqual(orphans[0]["severity"], "advisory")
+        finally:
+            fake_path.unlink()
+
+    def test_orphan_blocking_with_strict(self):
+        """--inject-fake orphan_in_table with --strict → exit 1, severity blocking."""
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fp:
+            json.dump({"orphan_in_table": ["FooGoneFromDisk"]}, fp)
+            fake_path = Path(fp.name)
+        try:
+            proc = _run_checker("--strict", "--inject-fake", str(fake_path), expect_exit=1)
+            self.assertEqual(
+                proc.returncode, 1,
+                f"ORPHAN_IN_TABLE WITH --strict must exit 1; got {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}",
+            )
+            doc = json.loads(proc.stdout)
+            orphans = [d for d in doc["drifts"] if d["kind"] == "ORPHAN_IN_TABLE"]
+            self.assertEqual(len(orphans), 1, f"exactly one ORPHAN_IN_TABLE entry expected, got {len(orphans)}: {doc['drifts']}")
+            self.assertEqual(orphans[0]["severity"], "blocking")
+        finally:
+            fake_path.unlink()
 
 
 def main() -> int:
