@@ -417,4 +417,132 @@ Voir la licence du repository principal.
 
 ---
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche argument_analysis.
+## Renumérotation — verdict (EPIC #5081, issue #14950)
+
+Cette section consigne la proposition d'analyse reçue du workspace partenaire `myia-ai-01:2025-Epita-Intelligence-Symbolique` au titre de la mission de distillation (issue [#14950](https://github.com/jsboige/CoursIA/issues/14950)). La proposition est **owner-decision** : aucun `git mv`, aucune PR de renommage exécutée à ce stade. La consignation ci-dessous sert de **mémo pour arbitrage ultérieur**, conformément à la doctrine `.claude/rules/notebook-accretion-numbering.md` §3 (« le verdict par défaut est aucune renum »).
+
+### Verdict par branche
+
+| Branche | Verdict proposé | Tell §3 nommé |
+| ------- | --------------- | ------------- |
+| `Argument_Analysis_Agentic-<N>` (numéros nus 0 à 5) | **aucune renumérotation** — c'est un arc | — |
+| 4 compagnons `*_agent` (`-0-init_agent`, `-1-informal_agent`, `-2-pl_agent`, `-3-orchestration_agent`) | **normalisation `*` → `b`** (convention §2 : base = `a`, première accrétion = `b`) | traduction d'une intention auteur déjà notée `*(legacy)*` dans la table curée |
+| 14 notebooks à mnémonique (théorie / formalismes) | **aucune renum, question de partition** — orthogonaux à l'arc Agentic | aucun tell ne se lit ; le mécanisme des lettres ne s'applique pas |
+
+### Collision slot 2 — décision owner requise
+
+Le slot 2 porte **deux notebooks au contenu distinct** sous le même identifiant nu :
+
+- `Argument_Analysis_Agentic-2-formal.ipynb` (24 cellules, « Vérification Logique Formelle avec Tweety »)
+- `Argument_Analysis_Agentic-2-pl_agent.ipynb` (23 cellules, « Agent : PropositionalLogicAgent (Definitions) »)
+
+Deux tells §3 se lisent dans le contenu :
+
+- **Collision d'identifiant (tell 1)** — deux contenus pour un même `<préfixe>-<num>`.
+- **Faux prérequis séquentiel (tell 2)** — la navigation de `-2-pl_agent` déclare *Init → ce notebook → Orchestration*, sautant `-1-informal`.
+
+Décision owner attendue : renommer `-2-pl_agent` (et son compagnon `-2-formal_agent` s'il existe) pour lever la collision. La proposition de mapping n'est pas émise dans cette section — un mapping dérivé de titres et de volumes est une hypothèse, conformément à §5.1.
+
+### Indépendant de la renumération
+
+Indépendamment de toute décision de renum, **trois classes de défauts** se corrigent dans les *headings* des notebooks sans toucher au catalogue (`catalog-pr-hygiene.md` : le catalogue appartient à l'automatisation, le cron rattrape sous 24 h) :
+
+- 11 titres publiés commencent par le nom de fichier (régresse la lisibilité du catalogue)
+- 3 titres portent le littéral `.ipynb`
+- 1 titre cite un numéro de PR interne (`PR-B #4960`)
+- 1 titre commence par un numéro de heading d'un autre système (`6.`)
+- 3 titres commencent par « Introduction : »
+
+Ce lot est **distinct** de la renumérotation et peut partir seul, sans attendre l'arbitrage owner du slot 2.
+
+### Mesure repo-wide (hors Argument_Analysis)
+
+Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur 1240 notebooks (hors `_archive`/checkpoints/`.lake`) :
+
+- identifiés par la règle §1 : 822
+- vus par `_INDEX_RE` : 224
+- écart : **746 notebooks identifiés que le garde de collision ne peut pas voir**
+
+L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voisines : `Sudoku` 0/37, `Tweety` 0/34, `GameTheory` 8/94. Ce périmètre mériterait sa propre issue, mais elle appartient à l'owner de l'organe. **Elle n'est pas déposée depuis cette section** — la présente consignation se limite à la série Argument_Analysis.
+
+---
+
+## Ordre partiel et prérequis (livré c.1030, suite au nit user 5594317963)
+
+Cette section pose un **ordre partiel** sur l'ensemble des notebooks du répertoire, **fondé sur les déclarations de prérequis et les chaînes de navigation déjà présentes dans les notebooks eux-mêmes**. Aucun `git mv`, aucune décision de renum — un ordre partiel est orthogonal au verdict renum (EPIC #5081, §3 « aucune renum » reste tenu : les lettres restent posées là où elles sont).
+
+L'objectif est strictement de répondre au constat : *« on ne peut pas demander à un étudiant de piocher dans un ensemble non ordonné. Il doit y avoir des séquences balisées, idéalement sur la progression de prérequis »* (nit user 5594317963). Le présent ordre est dérivé **lecture après lecture** des sections `### Prerequis`, `### Pre-requis`, `**Prérequis:**`, et des lignes `**Navigation : [<< N >>]` ; il est public et auditable, pas une convention de nommage.
+
+### Arc 1 — Agentic (numéroté 0 → 5, ligne principale)
+
+L'arc Agentic forme une chaîne canonique linéaire déjà balisée par les notebooks eux-mêmes. C'est **le chemin par défaut** pour un étudiant qui découvre la série ; il est conçu pour exécuter de bout en bout sans dépendre de l'arc 2.
+
+```
+0-init  →  1-informal  →  2-formal  →  3-orchestration  →  4-capstone  →  5-jtms
+                  ↓               ↓              ↓
+              (Tweety JVM)   (PL solver)   (UI config)
+```
+
+| Rung | Notebook | Prérequis Kernel | Prérequis Notebook |
+|------|----------|------------------|--------------------|
+| 0-init | `Argument_Analysis_Agentic-0-init.ipynb` | Python 3.10+, JPype, JDK 17 portable | aucun (point d'entrée) |
+| 1-informal | `Argument_Analysis_Agentic-1-informal.ipynb` | stdlib uniquement | `0-init` |
+| 2-formal | `Argument_Analysis_Agentic-2-formal.ipynb` | `jpype` + JVM Tweety | `0-init`, bases de logique formelle |
+| 3-orchestration | `Argument_Analysis_Agentic-3-orchestration.ipynb` | stdlib uniquement | `1-informal` (state-driven) |
+| 4-capstone | `Argument_Analysis_Agentic-4-capstone.ipynb` | Python intermédiaire | `1-informal`, `3-orchestration` |
+| 5-jtms | `Argument_Analysis_Agentic-5-jtms.ipynb` | stdlib uniquement | `2-formal` (logique propositionnelle), `4-capstone` (pipeline) |
+
+### Arc 2 — Compagnons `*_agent` (parallèle à l'arc 1)
+
+Les compagnons `*_agent` implémentent l'agent spécialisé associé à chaque rung. Ce sont des **vues « orientées agent »** du même rung — lire le compagnon **après** la base, jamais avant.
+
+```
+0-init_agent          (companion de 0-init)
+1-informal_agent      (companion de 1-informal)
+2-pl_agent            (companion de 2-formal — voir collision §3 verdict EPIC #5081)
+3-orchestration_agent (companion de 3-orchestration)
+```
+
+`4-capstone_agent` et `5-jtms_agent` n'existent pas à ce jour (vérifié par `ls` 2026-09-09) — l'arc Agentic ne se prolonge pas en compagnons au-delà du rung 3.
+
+### Arc 3 — Mnémonique (théorie parallèle, fondationnelle)
+
+Cet arc regroupe les notebooks à **mnémonique** (sans préfixe `Agentic-`) qui éclairent les concepts manipulés par l'arc 1. Aucun ne dépend d'un notebook Agentic pour s'exécuter ; en revanche, plusieurs Agentic citent ces notebooks en référence.
+
+| Notebook | Rôle dans l'arc | Prérequis Notebook dans l'arc |
+|----------|-----------------|-------------------------------|
+| `Argument_Analysis_Dung_AF_Semantics.ipynb` | **fondationnel** — sémantiques grounded/preferred/stable de Dung (1995) | aucun (point d'entrée de l'arc 3) |
+| `Argument_Analysis_Value_Based_AF.ipynb` | VAF de Bench-Capon (2003) — Dung enrichi par les valeurs | `Dung_AF_Semantics` |
+| `Argument_Analysis_Toulmin_Model.ipynb` | Modèle de Toulmin (1958) — auditer la complétude d'un argument | aucun (indépendant) |
+| `Argument_Analysis_Ranking_Semantics.ipynb` | Sémantiques graduées (h-Categoriser, fardeau) | `Dung_AF_Semantics` |
+| `Argument_Analysis_Dated_Graphs.ipynb` | Graphes datés — Observatoire Epic #13303 | `Dung_AF_Semantics` |
+
+```
+Dung_AF_Semantics ──→ Value_Based_AF
+       │
+       ├──→ Ranking_Semantics
+       │
+       └──→ Dated_Graphs
+
+Toulmin_Model  (indépendant, racine propre)
+```
+
+### Synthèse — comment lire la série
+
+Trois flux parallèles, **un seul ordre strict** (Agentic 0→5), les deux autres sont des **ordres partiels** :
+
+1. **Lire l'arc 3 d'abord si la théorie n'est pas acquise** — `Dung_AF_Semantics` puis, selon l'intérêt, `Value_Based_AF` / `Ranking_Semantics` / `Dated_Graphs`, ou `Toulmin_Model` en parallèle.
+2. **Suivre l'arc 1 dans l'ordre 0 → 5** pour la dimension pratique / pipeline. Les compagnons de l'arc 2 s'insèrent **après** leur base (par exemple `2-pl_agent` après `2-formal`).
+3. **L'arc 3 reste ouvert à tout moment** comme référence — `Dung_AF_Semantics` est explicitement cité par `2-formal §6`, et `5-jtms` cite Dung 1995 dans son introduction.
+
+### Limites de cet ordre
+
+- **Ne traite pas la collision slot 2** (`-2-formal` vs `-2-pl_agent`) — le verdict EPIC #5081 attend une décision owner sur le rename ; l'ordre ci-dessus préserve la cohabitation actuelle (les deux notebooks restent lisibles, le companion venant après la base).
+- **Ne tranche pas l'appartenance arc 1 / arc 3** des notebooks transverses (par exemple `Argument_Analysis_Formal_Richness_Matrix.ipynb`) : ils sont référencés depuis plusieurs arcs sans chaîne de prérequis stricte. Une révision ultérieure pourra les repositionner.
+- **Ne modifie aucun notebook** : l'ordre est porté par le README seulement, conformément à la doctrine `notebook-accretion-numbering.md` §3 (« aucune renum » par défaut).
+
+---
+
+**Version 1.2.2** — 2026-09-09 — section *Ordre partiel et prérequis* ajoutée suite au nit user 5594317963. Aucun fichier notebook modifié, aucune décision de renum (EPIC #5081 reste owner-decision). Tell readme-french-first R1 respecté (section rédigée en français). Tell catalog-pr-hygiene R1 respecté (CATALOG-STATUS inchangé).
+
+**Version 1.2.1** — 2026-09-09 — section Renumérotation — verdict (EPIC #5081, issue #14950) consignant la proposition owner-decision sans modifier de fichier. Tell catalog-pr-hygiene R1 respecté (marqueur CATALOG-STATUS inchangé). Tell readme-french-first R1 respecté (section ajoutée en français).
