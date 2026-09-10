@@ -573,8 +573,8 @@ class: genai-illustrated genai-ecosystem-hosting
 
 - **Cloud géré :** Hugging Face Inference, Groq, RunPod, Vast.ai, AWS / Azure / GCP.
 - **Local :** Oobabooga, Ollama, vLLM. Quantification AWQ, GGUF, EXL2/3 pour faire tenir un modèle sur un GPU limité.
-- **Containerisation :** Docker et Docker Compose encapsulent les services (modèles, API, monitoring) pour reproduire le déploiement sur n'importe quel hôte.
-- **Hybride :** *(non couvert par les notebooks GenAI de la série — voir `extracted/content.md` l.370-373 pour la provenance PPTX-13 ; à compléter en suivi dédié si un notebook est créé.)*
+- **Containerisation :** Docker et Docker Compose encapsulent les services (modèles, API, monitoring).
+- **Hybride :** *(non couvert par les notebooks de la série — voir `extracted/content.md` l.370-373).*
 
 </v-clicks>
 
