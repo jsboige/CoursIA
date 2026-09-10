@@ -50,6 +50,34 @@
 # borne que ce que le superviseur ecrit lui-meme, c'est-a-dire ses journaux.
 # Les unites gardent IOAccounting + IOWeight, qui eux sont honnetes a cette
 # place ; le plafond dur vit ici, ou vivent les conteneurs.
+#
+# ORDRE DE DEPLOIEMENT -- LA SLICE D'ABORD, LE SUPERVISEUR ENSUITE
+# ----------------------------------------------------------------
+# L'ordre n'est pas une preference de confort, il decide de ce que les gardes
+# voient. `running_ci_mb()` somme les conteneurs portant le label
+# `coursia-ci=1` ; un conteneur demarre AVANT que le daemon ne porte
+# `"cgroup-parent": "coursia-ci.slice"` garde son label mais reste HORS de la
+# slice. Il est donc compte par le garde userspace et ignore par le mur du
+# noyau -- l'ecart exact entre les deux qu'aucune des deux mesures ne signale.
+#
+# Sur une machine qui deploie la slice, dans cet ordre :
+#
+#   1. sudo cp coursia-ci.slice /etc/systemd/system/
+#      sudo cp daemon.json /etc/docker/daemon.json
+#   2. sudo systemctl daemon-reload && sudo systemctl start coursia-ci.slice
+#   3. sudo systemctl restart docker          # prend le cgroup-parent
+#   4. ./supervise.sh stop && ./supervise.sh start
+#      (etape 4 OBLIGATOIRE : les conteneurs deja en vie a l'etape 3 ne
+#       migrent PAS dans la slice -- seul un cycle de conteneur les y met)
+#   5. verification : le demarrage echo
+#      « [slice] mur agrege ACTIF : memory.high=... memory.max=... »
+#      Avec `COURSIA_REQUIRE_CI_SLICE=1`, son absence devient un refus de
+#      demarrer plutot qu'un avertissement.
+#
+# Sur une machine qui NE la deploie PAS (po-2024), il n'y a rien a faire :
+# `CI_CGROUP_PARENT` reste vide, `--cgroup-parent` n'est pas passe, et le
+# superviseur avertit sans refuser (cf assert_ci_slice dans supervise.sh).
+#
 [Unit]
 Description=CoursIA CI runner containers -- aggregate budget (all families)
 Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
@@ -80,3 +108,34 @@ IOWriteBandwidthMax=/var/lib/docker 209715200
 IOReadBandwidthMax=/var/lib/docker 419430400
 
 MemoryAccounting=yes
+MemoryHigh=12G
+MemoryMax=16G
+MemorySwapMax=16G
+# POURQUOI 12 / 16.
+#
+# Ces deux nombres sont un CONTRAT CONSERVATEUR, pas le resultat d'une mesure
+# d'empreinte. La distinction est importante, parce que la mesure qui avait
+# d'abord servi a les justifier ne le pouvait pas :
+#
+#   Total Windows ........................ 191,8 Go
+#   Libre, flotte CI ARMEE ................ 39,3 Go
+#   Libre, flotte CI DESARMEE ............ 120,6 Go
+#
+# Ce releve est authentique, mais l'ecart entre ses deux dernieres lignes
+# N'EST PAS imputable a la flotte CI : entre les deux points, plus d'une
+# variable a bouge (services de l'hote, WSL, charge interactive). Un plan a
+# deux cellules ou plusieurs facteurs changent ensemble ne separe aucun
+# facteur -- il donne un ecart, jamais une attribution. Le corps de la PR qui
+# pose ces bornes le retracte explicitement ; ce commentaire ne doit pas
+# devenir la version qui survit a la retractation.
+#
+# Ce qui fonde 12/16 est donc l'autre bout du raisonnement, qui ne depend
+# d'aucune attribution : ai-01 porte ~80 % des services de la flotte ET reste
+# la workstation interactive du user. 16 Go de plafond dur laissent >170 Go a
+# tout le reste. Un contrat se choisit par ce qu'on veut GARANTIR aux autres,
+# pas par ce qu'on croit avoir mesure de soi.
+#
+# CE PLAFOND EST UN CONTRAT AVEC LES AUTRES SERVICES, PAS UN REGLAGE DE PERF.
+# Le monter demande une mesure cote hote ET une raison ecrite -- une mesure
+# d'empreinte marginale propre, celle qui manque ci-dessus (un seul facteur
+# change a la fois). Le baisser ne demande rien.

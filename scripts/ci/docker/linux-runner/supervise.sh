@@ -86,7 +86,14 @@ STOP_FILE="$STATE_DIR/stop"
 
 # Caps par conteneur. Volontairement conservateurs : l'hote prime sur la CI.
 CPUS="${COURSIA_RUNNER_CPUS:-3}"
-MEMORY="${COURSIA_RUNNER_MEMORY:-4g}"
+# Cap par slot. Mesure `docker stats` sur des jobs REELS (ai-01, 2026-09-08) :
+# 38 MiB et 160 MiB (ce dernier a 129 % CPU, genuinement occupe) contre un cap
+# de 3072 MiB -- soit 1,2 % et 5,2 % du cap. 1536m reste ~10x le pic mesure, et
+# c'est ce chiffre qui debloque `auto` : a 3072m la demi-part de budget_slots()
+# plafonne le pool de travail a 2 slots (0 des qu'il tourne), a 1536m elle en
+# rend 4 sur un budget vide. L'arithmetique n'avait pas besoin d'etre changee,
+# le cap si.
+MEMORY="${COURSIA_RUNNER_MEMORY:-1536m}"
 PIDS="${COURSIA_RUNNER_PIDS:-384}"
 
 # Toolcache persistant : sans lui, chaque conteneur ephemere (un par job)
@@ -123,7 +130,7 @@ WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
 WAITER_LABELS="${COURSIA_RUNNER_WAITER_LABELS:-self-hosted,coursia-waiter}"
 WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-${MACHINE_ID}-linux-waiter}"
 WAITER_CPUS="${COURSIA_RUNNER_WAITER_CPUS:-1}"
-WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-1g}"
+WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-512m}"
 WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
 # Toolcache partage sur les waiters (#15091). La premisse d'origine etait
 # « un slot qui attend ne coute rien », donc aucun volume. Elle tombe sur le
@@ -151,16 +158,35 @@ LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runne
 # (cf CONTRAINTE en tete de fichier) -- baisser N ou les caps si la machine
 # gene pendant un lake build.
 LEAN_CPUS="${COURSIA_LEAN_RUNNER_CPUS:-6}"
-LEAN_MEMORY="${COURSIA_LEAN_RUNNER_MEMORY:-8g}"
+LEAN_MEMORY="${COURSIA_LEAN_RUNNER_MEMORY:-6g}"
 LEAN_PIDS="${COURSIA_LEAN_RUNNER_PIDS:-512}"
 # Swap au-dela de la RAM du slot : les modules Hashlife de conway_lean
 # pointent a >16 Go au build a froid (exit 137 mesure sous --memory 8g,
 # 8716/8727 modules OK puis Walls.{SE,SW,NE} tues ; les runners hosted
 # s'en sortent par 32G de fallocate swap, lean-axiom.yml L~100). Un job
 # conteneurise n'a pas sudo pour creer son swap, donc le pool le porte :
-# memory-swap 24g = 8g RAM + 16g swap. Le swap n'est PAS de la RAM
-# reservee -- l'hote ne paie que si le pic survient.
-LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-24g}"
+# --memory-swap est le TOTAL, donc 12g = 6g RAM (LEAN_MEMORY) + 6g swap.
+# Ce commentaire a deja menti deux fois (« 8g + 16g » quand LEAN_MEMORY etait
+# passe a 6g, puis « 24g » apres l'abaissement du total) : un commentaire qui
+# ment sur un cap memoire est pire qu'un commentaire absent -- c'est lui qu'on
+# relit en incident. Toute modification de l'un des deux nombres refait
+# l'arithmetique ici, dans le meme commit.
+#
+# Le swap n'est PAS de la RAM reservee : l'hote ne paie que si le pic
+# survient. Mais il paie alors en I/O, et sur ai-01 le pagefile partage le
+# NVMe -- une question de memoire s'y convertit en tempete de disque. Et
+# assert_memory_budget compte --memory seul : BUDGET_GB borne la RAM, jamais
+# le swap. A 24g le total, cela faisait 18 Go de swap PAR SLOT, soit 36 Go
+# qu'aucun budget ne voyait, ecrits sur le NVMe qui porte le pagefile de
+# l'hote -- exactement le mecanisme qui a fait redemarrer la machine.
+#
+# 12g : 6g de RAM (LEAN_MEMORY) + 6g de swap, 12 Go non comptes pour deux
+# slots au lieu de 36. Ce n'est PAS `= LEAN_MEMORY` : supprimer le swap ne
+# retire pas le pic de Hashlife, il transforme un build qui deborde en un
+# exit 137 -- c'est un curseur, pas un dogme. Si conway_lean redevient
+# infaisable a 12g, la reponse est de router ce lake sur un runner hosted
+# (32G de fallocate swap, lean-axiom.yml), pas de remonter le total ici.
+LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"
 
 # ---------------------------------------------------------------------------
 # BORNES D'I/O ET BUDGET INTER-FAMILLES (#15091 pieces 2 et 4)
@@ -200,6 +226,20 @@ CGROUP_PARENT="${COURSIA_RUNNER_CGROUP_PARENT:-}"
 # (unite en `failed`, cf StartLimitBurst) plutot qu'un pool non borne qui
 # tourne comme si de rien n'etait -- c'est ce silence-la qui a gele ai-01.
 REQUIRE_CGROUP_BUDGET="${COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET:-0}"
+# Meme discipline pour le mur MEMOIRE de la slice. 1 = REFUSER de demarrer si
+# la slice est absente ou sans plafond ; 0 = avertir et continuer SANS placer
+# les conteneurs dedans.
+#
+# Le defaut est 0 parce que la slice est deployee sur ai-01 SEULEMENT
+# (persist/README.md : `coursia-ci.slice` -> machine ai-01). Un defaut a 1
+# ferait refuser de demarrer les runners de po-2024, qui n'ont pas la slice et
+# n'ont jamais eu a l'avoir. La machine qui LA deploie met la variable a 1 dans
+# son unite systemd, et obtient alors le fail-closed voulu.
+#
+# Le couple {avertir, ne pas placer} est ce qui evite le faux garde decrit en
+# tete de assert_ci_slice : sans slice on ne passe PAS --cgroup-parent, donc
+# docker ne cree pas un cgroup vide qui aurait l'air d'un mur.
+REQUIRE_CI_SLICE="${COURSIA_REQUIRE_CI_SLICE:-0}"
 # Plafond d'ecriture PAR CONTENEUR, en octets/s. Vide = pas de cap.
 DEVICE_WRITE_BPS="${COURSIA_RUNNER_DEVICE_WRITE_BPS:-}"
 DEVICE_READ_BPS="${COURSIA_RUNNER_DEVICE_READ_BPS:-}"
@@ -274,6 +314,358 @@ mkdir -p "$STATE_DIR"
 export MSYS_NO_PATHCONV=1
 export MSYS2_ARG_CONV_EXCL='*'
 
+# ---------------------------------------------------------------------------
+# BUDGET MEMOIRE -- mesure cote HOTE, jamais cote VM
+# ---------------------------------------------------------------------------
+# INCIDENT FONDATEUR (2026-09-07). Ce superviseur a porte 8 slots + 12 waiters
+# sur ai-01 ; la machine a sature sa RAM, le disque s'est mis a swapper, GDrive
+# est tombe et ROOSYNC_SHARED_PATH avec lui. Le user a du faire redemarrer le
+# serveur a la main pour la QUATRIEME fois de la journee.
+#
+# LE DEFAUT N'ETAIT PAS LA VALEUR DES CAPS, C'ETAIT LEUR REFERENTIEL. Le script
+# ne mesurait rien du tout ; et toute mesure prise DANS la VM WSL lit ce que
+# .wslconfig AUTORISE la VM a retenir, pas ce que Windows a encore de libre :
+#
+#   MemAvailable dans la VM ............. 112,7 Go  <- ce qu'on aurait lu
+#   Libre cote Windows, au MEME instant ... 39,3 Go  <- la verite
+#
+# Ces deux lignes sont un releve SIMULTANE de deux referentiels : c'est ce qui
+# en fait une preuve. Le facteur ~2,9 entre elles ne depend d'aucune hypothese
+# sur ce qui tournait -- il mesure l'ecart entre « ce que .wslconfig autorise
+# la VM a retenir » et « ce que Windows a encore de libre », a la seconde pres.
+# N'importe quelle logique de dimensionnement lisant /proc/meminfo depuis la
+# VM sur-engage donc par construction, quels que soient les caps.
+#
+# UN TROISIEME RELEVE A ETE RETIRE D'ICI. Un « libre cote Windows, flotte
+# DESARMEE = 120,6 Go » figurait sous les deux lignes ci-dessus, et l'ecart
+# avec la deuxieme etait presente comme « l'empreinte de ce superviseur ».
+# Cette attribution est FAUSSE et a ete retractee : les deux points ne sont pas
+# simultanes, et entre eux plus d'une variable a bouge (la flotte, mais aussi
+# les caches du navigateur, GDrive, VS Code, le pagefile). Un plan a deux
+# cellules ou plusieurs facteurs changent ensemble ne separe aucun facteur --
+# il donne un ecart, jamais une attribution. L'argument du REFERENTIEL, lui,
+# survit intact : il ne repose que sur les deux lignes conservees.
+#
+# D'OU LA REGLE : la seule mesure qui fait autorite est celle de l'hote, et si
+# elle est INJOIGNABLE on REFUSE de demarrer. Un budget non mesure n'est pas un
+# budget -- c'est l'hypothese qui a coute quatre redemarrages.
+#
+# Ce garde est le pendant userspace de coursia-ci.slice (MemoryHigh / MemoryMax
+# / MemorySwapMax). Les deux sont necessaires et ne font pas le meme travail :
+# la slice est le mur que le noyau tient meme si ce script a tort ; ce garde
+# est ce qui evite d'aller taper dedans, et qui sait DIRE POURQUOI il refuse.
+
+# Part de RAM hote que la CI s'autorise, toutes familles confondues. Alignee
+# sur MemoryHigh de la slice : le budget userspace et le seuil de recuperation
+# du noyau annoncent le meme nombre.
+BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-12}"
+# Le garde d'hote ne lit plus AUCUN compteur de NIVEAU. Il demande « la machine
+# est-elle en train de souffrir ? », pas « reste-t-il N Go ? » -- deux questions
+# differentes, et seule la premiere a une reponse mesurable sous Windows.
+#
+# Les deux seuils precedents (free reel >= 8 Go, commit <= 78 %) ont ete
+# RETIRES par leur auteur (Maintenance) dans l'heure qui a suivi leur mise en
+# service, mesures a l'appui : Windows garde la free list basse par design
+# (1,7 Go de free avec ZERO lecture disque = machine parfaitement saine), et le
+# 78 etait, verbatim, « mon invention ». Les recalibrer aurait laisse le garde
+# branche sur deux signaux declares non-valides ; on change de question.
+#
+# « Soutenu » veut dire DEUX echantillons espaces, pas un. Le faux positif du
+# 2026-09-07T22:53Z (un pic isole a 293 lectures/s, latence 0, file 0) est
+# exactement ce qu'un echantillon unique ne sait pas ecarter.
+DISTRESS_GAP_S="${COURSIA_RUNNER_DISTRESS_GAP_S:-15}"
+# Temps d'inactivite disque MINIMUM sur le disque le plus charge, en %. On lit
+# PercentIdleTime et non AvgDisksecPerRead/Write : ces deux-la sont des UInt32
+# EN SECONDES dans la classe formatee, donc a 0 jusqu'a 1 s de latence -- un
+# seuil en millisecondes dessus ne peut pas se declencher (mesure ai-01 du
+# 2026-09-07T23:42Z : 0 sur les cinq disques, machine saine ET machine en
+# tempete rendraient le meme 0).
+DISTRESS_IDLE_PCT_MAX="${COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX:-50}"
+# Chute de `Mapped` dans la VM WSL entre les deux echantillons, en Mo : c'est le
+# mmap qdrant qui se fait evincer. Critere d'abandon donne par Maintenance --
+# une eviction qdrant est le debut de la conversion memoire -> tempete d'I/O,
+# et elle precede les compteurs de detresse.
+MAPPED_DROP_MB="${COURSIA_RUNNER_MAPPED_DROP_MB:-512}"
+
+# Variables RETIREES. On refuse bruyamment plutot que d'ignorer en silence : un
+# operateur qui les positionne croit gouverner un garde qui ne les lit plus.
+for _retired in COURSIA_RUNNER_HOST_FREE_FLOOR_GB COURSIA_RUNNER_HOST_COMMIT_PCT_MAX \n                COURSIA_RUNNER_HOST_FREE_GB COURSIA_RUNNER_HOST_COMMIT_PCT; do
+  if [ -n "$(eval "echo \${${_retired}:-}")" ]; then
+    echo "[garde] AVERTISSEMENT : $_retired est RETIREE et n'est plus lue." >&2
+    echo "        Le garde d'hote ne lit plus de compteur de niveau (free, commit, Available)." >&2
+    echo "        Pour declarer une mesure sur un hote non-Windows : COURSIA_RUNNER_HOST_PROBE=\"<pagewrites> <pagesout> <file> <idle%> <vmmem_Mo> <mapped_Mo>\"" >&2
+  fi
+done
+unset _retired
+
+# Convertit un cap docker ("3g", "512m") en Mo entiers. Refuse tout le reste
+# plutot que de rendre un nombre faux : un budget calcule sur une unite mal lue
+# est pire qu'une absence de budget.
+mem_to_mb() {
+  local v
+  case "$1" in
+    *g|*G) v="${1%[gG]}" ;;
+    *m|*M) v="${1%[mM]}"; case "$v" in ""|*[!0-9]*) die "cap memoire non entier: $1 (attendu 3g, 512m)" ;; esac; echo "$v"; return 0 ;;
+    *) die "cap memoire non reconnu: $1 (attendu 3g, 512m)" ;;
+  esac
+  case "$v" in ""|*[!0-9]*) die "cap memoire non entier: $1 (attendu 3g, 512m)" ;; esac
+  echo $(( v * 1024 ))
+}
+
+# Etat de DETRESSE de l'hote Windows. Rend "" si la mesure est impossible --
+# jamais un chiffre par defaut, jamais zero : un zero fabrique est indiscernable
+# d'une machine saine, et c'est ainsi qu'un garde devient un decor.
+#
+# La sonde vit dans un FICHIER .ps1 a cote, pas dans une chaine inline. Un motif
+# qui traverse bash -> powershell -> wsl -> sh perd une couche de quoting par
+# etage : mesure du 2026-09-07T23:47Z, awk recevait `{print` comme nom de
+# fichier. Le fichier supprime trois de ces quatre etages.
+#
+# Contrat de sortie, six entiers separes par des espaces (aucun separateur
+# decimal : sous locale FR un `91,7` se lit `91` en arithmetique bash) :
+#
+#   pagewrites  pagesout  file_disque_max  idle_disque_min_%  vmmem_Mo  mapped_Mo
+#
+# vmmem_Mo est le commit PRIVE (Win32_Process.PageFileUsage), jamais le
+# WorkingSet : Windows rabote le WorkingSet quand il pagine, donc cet
+# instrument-la BAISSE quand le probleme s'aggrave. mapped_Mo vaut -1 quand la
+# VM n'est pas joignable -- « inconnu », a ne jamais confondre avec zero.
+# Meme dossier que RUNNER_CTX (defini plus bas pour le garde de fraicheur) :
+# on ne peut pas le reutiliser ici, il est calcule apres.
+PROBE_PS1="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/persist/host-distress-probe.ps1"
+
+host_probe() {
+  # Echappatoire EXPLICITE pour un hote non-Windows ou pour un controle positif :
+  # l'operateur DECLARE sa mesure au lieu de s'en passer. _PROBE_2 declare le
+  # SECOND echantillon -- sans lui les deux points sont identiques, et aucun
+  # critere differentiel (la chute de `Mapped`) ne peut etre mis a l'epreuve :
+  # un controle positif qui ne peut pas faire rougir le garde ne le valide pas.
+  local which="${1:-1}"
+  if [ -n "${COURSIA_RUNNER_HOST_PROBE:-}" ]; then
+    if [ "$which" = "2" ] && [ -n "${COURSIA_RUNNER_HOST_PROBE_2:-}" ]; then
+      echo "$COURSIA_RUNNER_HOST_PROBE_2"
+    else
+      echo "$COURSIA_RUNNER_HOST_PROBE"
+    fi
+    return 0
+  fi
+  command -v powershell.exe >/dev/null 2>&1 || return 0
+  [ -f "$PROBE_PS1" ] || return 0
+  powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+    -File "$(cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
+    2>/dev/null | tr -d '\r' | head -1
+}
+
+# Deux echantillons espaces de DISTRESS_GAP_S. Ecrit son verdict et les nombres
+# qui le fondent sur stdout, et rend :
+#   0 = sain     1 = detresse soutenue     2 = non mesurable (fail-closed)
+#
+# Ce que la conjonction exige, sur LES DEUX echantillons :
+#   PageWrites/s > 0  ET  PagesOutput/s > 0
+# Plus un critere d'abandon independant : `Mapped` qui chute de plus de
+# MAPPED_DROP_MB entre les deux points = qdrant se fait evincer.
+#
+# POURQUOI la file disque et l'inactivite ne sont PLUS des conjoints.
+# L'arbitrage Maintenance du 2026-09-07T22:59Z en prescrivait quatre ensemble :
+# ecritures pagefile, sorties de pages, file d'attente disque >= 1, et disque
+# sous 50 % d'inactivite. Les deux derniers NE SE MESURENT PAS sur cet hote --
+# controle positif passe sur ai-01 le 2026-09-08T00:14Z :
+#
+#   charge                                        AvgDisksecPerTransfer   file
+#   au repos                                             0,0000 s          0
+#   320 Mo en FileOptions::WriteThrough, Flush(true)     0,0000 s          0
+#     force a chaque bloc de 4 Mo
+#
+# `CurrentDiskQueueLength` ne quitte pas zero sous une vraie tempete d'ecriture,
+# et `PercentIdleTime` reste a 92-99 % (8 mesures sur 105 s). Le test `q >= 1`
+# etait donc TOUJOURS faux et `id <= 50` presque toujours : deux conjoints
+# structurellement faux tuaient la conjonction ENTIERE. La garde tombait sur son
+# `return 0` « hote sain » quelle que soit la pagination -- un garde vert par
+# manque de mesure, exactement le defaut que la validation des douze champs
+# ci-dessous existe pour empecher. Elle ne pouvait pas l'attraper : elle verifie
+# que les champs sont des ENTIERS, pas que l'instrument est SENSIBLE, et un
+# champ toujours a 0 passe une validation d'integralite.
+#
+# On RETIRE les deux termes morts plutot que d'abaisser leur seuil : un seuil ne
+# repare pas un compteur qui ne bouge pas. Les deux jambes memoire, elles, sont
+# vivantes et lisent 0 sur une machine saine (0/8 sur 105 s) -- les exiger
+# seules ne fabrique donc pas de refus abusif, et rend la garde strictement PLUS
+# conservatrice, ce qui est la bonne direction pour une garde dont la
+# defaillance a envoye quelqu'un redemarrer le serveur au grenier.
+#
+# La file et l'inactivite restent RELEVEES et AFFICHEES : elles enrichissent le
+# message quand elles bougent, elles ne conditionnent plus le verdict. Si elles
+# redeviennent sensibles un jour (diskperf -y, ou un provider qui ne tronque pas
+# les latences NVMe sub-ms), les readmettre comme conjoints demande de REPASSER
+# le controle positif ci-dessus, pas de faire confiance a leur retour.
+host_distress_verdict() {
+  local a b pw_a po_a q_a id_a vm_a mp_a pw_b po_b q_b id_b vm_b mp_b drop _v
+  a="$(host_probe 1)"
+  [ -n "$a" ] || { echo "[garde] hote NON MESURABLE (sonde injoignable)"; return 2; }
+  # Gap nul = deux echantillons instantanes : ne meme pas appeler sleep. La
+  # suite de tests compte les backoffs via un stub sleep qui journalise TOUT
+  # appel -- un `sleep 0` de la sonde viendrait polluter la premiere entree
+  # de chaque sequence attendue (cf tests 22-23, 37-43).
+  [ "$DISTRESS_GAP_S" -gt 0 ] && sleep "$DISTRESS_GAP_S"
+  b="$(host_probe 2)"
+  [ -n "$b" ] || { echo "[garde] hote NON MESURABLE (2e echantillon perdu)"; return 2; }
+
+  read -r pw_a po_a q_a id_a vm_a mp_a <<< "$a"
+  read -r pw_b po_b q_b id_b vm_b mp_b <<< "$b"
+  # Valider les DOUZE valeurs, pas seulement les huit du predicat de detresse.
+  # Une sonde qui rend cinq champs au lieu de six laisse `mp_*` VIDE ; le test
+  # `[ "$mp_a" -ge 0 ]` echoue alors en silence sur stderr, la conjonction de
+  # detresse ne se declenche pas davantage, et la fonction tombe sur son
+  # `return 0` -- un garde VERT par manque de mesure, exactement le defaut que
+  # la version precedente portait deja sous une autre forme. On refuse.
+  for _v in "$pw_a" "$po_a" "$q_a" "$id_a" "$vm_a" "$mp_a"             "$pw_b" "$po_b" "$q_b" "$id_b" "$vm_b" "$mp_b"; do
+    if ! [[ "$_v" =~ ^-?[0-9]+$ ]]; then
+      echo "[garde] sonde ILLISIBLE (champ absent ou non entier) : a=[$a] b=[$b]"
+      return 2
+    fi
+  done
+
+  echo "[garde] t0 : pagewrites=$pw_a pagesout=$po_a file=$q_a idle=${id_a}% vmmem=${vm_a}Mo mapped=${mp_a}Mo"
+  echo "[garde] t+${DISTRESS_GAP_S}s : pagewrites=$pw_b pagesout=$po_b file=$q_b idle=${id_b}% vmmem=${vm_b}Mo mapped=${mp_b}Mo"
+
+  if [ "$mp_a" -ge 0 ] && [ "$mp_b" -ge 0 ]; then
+    drop=$(( mp_a - mp_b ))
+    if [ "$drop" -gt "$MAPPED_DROP_MB" ]; then
+      echo "[garde] DETRESSE : Mapped a chute de $drop Mo en ${DISTRESS_GAP_S}s (seuil $MAPPED_DROP_MB) -- le mmap qdrant se fait evincer."
+      return 1
+    fi
+  fi
+
+  if [ "$pw_a" -gt 0 ] && [ "$po_a" -gt 0 ] && [ "$pw_b" -gt 0 ] && [ "$po_b" -gt 0 ]; then
+    echo "[garde] DETRESSE SOUTENUE : ecritures pagefile ET sorties de pages > 0 sur les DEUX echantillons."
+    if [ "$q_a" -ge 1 ] || [ "$q_b" -ge 1 ] || [ "$id_a" -le "$DISTRESS_IDLE_PCT_MAX" ] || [ "$id_b" -le "$DISTRESS_IDLE_PCT_MAX" ]; then
+      echo "[garde] confirme cote disque : file=$q_a/$q_b, inactivite=${id_a}%/${id_b}% (seuil ${DISTRESS_IDLE_PCT_MAX}%)."
+    else
+      echo "[garde] cote disque MUET : file=$q_a/$q_b, inactivite=${id_a}%/${id_b}%. Ces deux compteurs sont connus"
+      echo "[garde] insensibles sur cet hote (controle positif ci-dessus) : leur silence ne contredit PAS le verdict."
+    fi
+    return 1
+  fi
+
+  # Ce que ce `return 0` prouve, et ce qu'il ne prouve PAS. Deux familles de
+  # gel ont ete observees le meme soir sur cet hote :
+  #   (a) 07/09 17:57 -- famine progressive, 14 min de preavis, dilation lisible ;
+  #   (b) 07/09 19:01 -- ZERO preavis, RAM a 43,2 %, 109 Go libres, aucune dilation.
+  # Ce garde, comme `Blackbox-Lateness` que Maintenance a promu en arbitre, ne
+  # voit que la famille (a). Un verdict sain est donc une absence de FAMINE,
+  # jamais une absence de GEL. C'est ecrit ici, et pas seulement retenu, parce
+  # qu'un garde qui rend vert finit toujours par etre lu comme une garantie.
+  echo "[garde] hote sain : aucune ecriture pagefile soutenue, disque libre."
+  echo "[garde] (un verdict sain exclut la FAMINE, pas le gel sans preavis -- famille (b) du 07/09 19:01.)"
+  return 0
+}
+
+# Memoisation : la sonde coute DISTRESS_GAP_S d'attente. `assert_memory_budget`
+# et `budget_slots` sont appeles dans le meme lancement -- les faire payer deux
+# fois 15 s pousserait a baisser l'ecart, donc a rendre le « soutenu » creux.
+# Appeler SANS substitution de commande : le resultat vit dans les globales.
+HOST_VERDICT_DONE=0
+HOST_VERDICT_RC=2
+HOST_VERDICT_OUT=""
+host_distress() {
+  if [ "$HOST_VERDICT_DONE" -eq 1 ]; then return "$HOST_VERDICT_RC"; fi
+  HOST_VERDICT_OUT="$(host_distress_verdict)"
+  HOST_VERDICT_RC=$?
+  HOST_VERDICT_DONE=1
+  return "$HOST_VERDICT_RC"
+}
+
+# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol. On lit la
+# limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
+# re-derivation des variables de ce script : c'est la seule facon de compter
+# une famille lancee par un AUTRE processus, avec un autre environnement --
+# soit exactement le trou que cmd_lean documente depuis toujours (« la somme
+# des caps des familles actives n'est gardee par RIEN »).
+running_ci_mb() {
+  local ids
+  ids="$(docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"
+  if [ -z "$ids" ]; then echo 0; return 0; fi
+  docker inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null \
+    | awk '{ s += $1 } END { printf "%d", s/1048576 }'
+}
+
+# Refuse le demarrage si la famille demandee ne tient pas dans le budget, ou si
+# l'hote est deja sous le plancher. Montre l'arithmetique dans les deux cas :
+# un refus qui ne montre pas son calcul se contourne au juge.
+assert_memory_budget() {
+  local famille="$1" n="$2" per="$3"
+  local per_mb want_mb used_mb budget_mb rc
+  per_mb="$(mem_to_mb "$per")"
+  want_mb=$(( per_mb * n ))
+  used_mb="$(running_ci_mb)"
+  budget_mb=$(( BUDGET_GB * 1024 ))
+
+  # Un refus qui ne montre pas sa mesure se conteste au juge, puis se contourne.
+  # Les deux echantillons partent donc AVEC le message d'erreur, pas sur un flux
+  # separe que l'operateur presse ne lira pas.
+  host_distress; rc=$?
+  [ "$rc" -eq 0 ] && echo "$HOST_VERDICT_OUT"
+
+  if [ "$rc" -eq 2 ]; then
+    die "$HOST_VERDICT_OUT
+etat de l'hote NON MESURABLE -- REFUS.
+Un budget non mesure n'est pas un budget, et un zero fabrique est indiscernable
+d'une machine saine. Sur un hote non-Windows, ou pour rejouer une mesure :
+  COURSIA_RUNNER_HOST_PROBE=\"<pagewrites> <pagesout> <file> <idle%> <vmmem_Mo> <mapped_Mo>\" $0 ..."
+  fi
+
+  if [ "$rc" -eq 1 ]; then
+    die "$HOST_VERDICT_OUT
+hote EN DETRESSE MESUREE -- REFUS.
+Les deux echantillons ci-dessus le montrent : la machine pagine deja pour
+elle-meme. Demarrer des slots maintenant, c'est ajouter de la pression a une
+machine qui en evacue -- et c'est ce qui envoie quelqu'un redemarrer le serveur.
+Attendre que la pression retombe. Les seuils se declarent, si vraiment besoin,
+par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_MB
+-- en connaissance de cause, et jamais pour faire passer un demarrage."
+  fi
+
+  if [ $(( used_mb + want_mb )) -gt "$budget_mb" ]; then
+    local reste_mb max_n
+    reste_mb=$(( budget_mb - used_mb ))
+    max_n=$(( reste_mb / per_mb ))
+    [ "$max_n" -lt 0 ] && max_n=0
+    die "budget CI depasse -- REFUS.
+  deja en vol ......... $used_mb Mo
+  demande ($famille) .. $n x $per = $want_mb Mo
+  total ............... $(( used_mb + want_mb )) Mo
+  budget .............. $budget_mb Mo (COURSIA_RUNNER_BUDGET_GB=$BUDGET_GB)
+Il reste de la place pour $max_n slot(s) de cette famille.
+Arreter une autre famille, ou demarrer '$famille $max_n'."
+  fi
+
+  echo "[budget] hote sans detresse soutenue ; CI en vol ${used_mb} Mo + ${want_mb} Mo demandes <= ${budget_mb} Mo"
+}
+
+# Nombre de slots que le budget residuel autorise pour un cap donne. Sert au
+# mot-cle `auto` : le N cesse d'etre un chiffre choisi a la main -- c'est un
+# `8` ecrit a la main qui a sature la machine -- et se DERIVE de la mesure.
+budget_slots() {
+  local per_mb reste_mb part_mb n rc
+  per_mb="$(mem_to_mb "$1")"
+  # Hote en detresse OU non mesurable : `auto` rend 0. Fail-closed dans LES DEUX
+  # cas -- une mesure qui echoue doit couter un refus, sinon la panne de sonde
+  # devient le chemin le plus permissif. La sortie du garde part sur stderr :
+  # cette fonction ecrit UN nombre sur stdout, son appelant le lit.
+  host_distress; rc=$?
+  [ -n "$HOST_VERDICT_OUT" ] && echo "$HOST_VERDICT_OUT" >&2
+  if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
+  reste_mb=$(( BUDGET_GB * 1024 - $(running_ci_mb) ))
+  # Part maximale qu'UNE famille peut reclamer d'un coup : la moitie du
+  # residuel. Les familles coexistent par design (prefixes distincts, gardes
+  # PPID aveugles l'un a l'autre) -- laisser la premiere tout prendre revient
+  # a n'avoir aucun budget.
+  part_mb=$(( reste_mb / 2 ))
+  n=$(( part_mb / per_mb ))
+  [ "$n" -lt 0 ] && n=0
+  echo "$n"
+}
+
 die() { echo "ERREUR: $*" >&2; exit 1; }
 
 # #15095 Garde de disponibilite du demon. Avant cette garde, un daemon
@@ -342,7 +734,7 @@ cycle_backoff() {
     # que tail ecrit encore -> SIGPIPE 141 -> sous `set -uo pipefail` la
     # pipeline est non nulle et un cycle AYANT travaille est classe en boucle
     # vide (backoff au lieu de sleep 2). Un gros log de cycle (>> tampon ~64
-    # Ko, cf test 28) revele la faute. `grep ... >/dev/null` lit tout jusqu'a
+    # Ko, cf test 40) revele la faute. `grep ... >/dev/null` lit tout jusqu'a
     # EOF : tail se termine proprement, rc=0 sur match.
     if tail -c "+$(( log_off + 1 ))" "$work_log" 2>/dev/null | grep "Running job" >/dev/null; then
       worked=1
@@ -643,8 +1035,56 @@ supervisor_pids() {
   # recompute pas pour les subshells) -- mesure : self=PPID=1 avec out=mon
   # propre PID, donc le garde s'auto-matchait et le service crash-loopait.
   me="$$"
-  out="$(ps -ef 2>/dev/null | grep '[s]upervise\.sh start' | awk -v me="$me" '$2 != me && $3==1 {print $2}')"
+  # #15163 : `$2 ~ /^[0-9]+$/`. Une ligne `ps -ef` dont les colonnes ont glisse
+  # (commande lancee en `bash -c ...`) peut placer un jeton non-numerique en $2.
+  # Sans ce filtre il est rendu comme un PID, et `cmd_start` die() alors sur un
+  # superviseur FANTOME -- meme wedge que la sentinelle perimee, autre cause.
+  # Le filtre ne peut pas produire de faux negatif : un vrai PID est numerique.
+  out="$(ps -ef 2>/dev/null | grep '[s]upervise\.sh start' | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3==1 {print $2}')"
   printf '%s\n' "$out"
+}
+
+any_supervisor_alive() {
+  local me out
+  # Volontairement PLUS LARGE que supervisor_pids() : ce dernier ne retient que
+  # les superviseurs de PPID 1 (lances par systemd, cf #14347). Un superviseur
+  # lance a la main (nohup depuis un shell) porte un PPID quelconque et lui
+  # echappe. Ici la decision est d'EFFACER une sentinelle : rater un superviseur
+  # vivant ferait repartir une seconde flotte par-dessus la premiere. On exclut
+  # donc seulement soi-meme et ses propres fils.
+  me="$$"
+  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|waiters|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
+  printf '%s
+' "$out"
+}
+
+# Porte d'entree commune aux trois familles. Rend 0 si le demarrage peut
+# proceder ; die() sinon.
+#
+# #15163 -- la sentinelle SURVIT AU REBOOT, et c'est ce qui wedgeait le pool.
+# Mesure ai-01 du 2026-09-07 : stop gracieux a 22:37:01, reboot, puis
+# `Started coursia-runner.service` a 22:53:29 -> "ERREUR: sentinel STOP_FILE
+# present" -> status=1/FAILURE a 22:53:30. Pool a zero jusqu'a intervention
+# humaine, quatre fois dans la journee.
+#
+# Le raisonnement d'origine ("ne pas effacer, sinon un superviseur survivant
+# reprendrait") est deja garanti impossible par la garde qui precede dans
+# cmd_start : elle die() si un superviseur est actif. La sentinelle ne pouvait
+# donc mordre QUE dans le cas ou il n'y a plus rien a proteger.
+stop_sentinel_gate() {
+  [ -f "$STOP_FILE" ] || return 0
+  local alive
+  alive="$(any_supervisor_alive | tr '
+' ' ' | sed 's/ *$//')"
+  if [ -n "$alive" ]; then
+    die "sentinel STOP_FILE present ($STOP_FILE) ET un superviseur est vivant
+(PID $alive) -- un arret gracieux est reellement en cours. Attendre la fin des
+jobs en vol, puis relancer."
+  fi
+  echo "[sentinelle] $STOP_FILE present, mais AUCUN superviseur vivant : la" >&2
+  echo "[sentinelle] sentinelle est perimee (elle survit au reboot). Purge." >&2
+  rm -f "$STOP_FILE"
+  return 0
 }
 
 fetch_token() {
@@ -711,6 +1151,8 @@ slot_loop() {
     docker run --rm \
       --name "$name" \
       --cpus="$cpus" --memory="$memory" --pids-limit="$pids" \
+      --label coursia-ci=1 \
+      ${CI_CGROUP_PARENT:+--cgroup-parent="$CI_CGROUP_PARENT"} \
       "${swap_args[@]+"${swap_args[@]}"}" \
       "${BLKIO_ARGS[@]+"${BLKIO_ARGS[@]}"}" \
       --security-opt=no-new-privileges \
@@ -772,24 +1214,35 @@ cmd_start() {
   # on nomme les PIDs -- un deuxieme `start` produirait deux boucles
   # concurrantes portant des copies differentes de l'environnement
   # (incident po-2024 2026-09-02, plusieurs PRs de contenu bloquees).
+  assert_memory_budget start "$n" "$MEMORY"
+  assert_ci_slice
   local existing_pids
   existing_pids="$(supervisor_pids)"
   if [ -n "$existing_pids" ]; then
     die "un superviseur $NAME_PREFIX est deja actif (PID $existing_pids) ;
 utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
   fi
-  # #14259 Defaut 2 : si le sentinel STOP_FILE est pose, refuser sauf
-  # `--force`. C'est le mecanisme cle qui protege un arret gracieux :
-  # un `stop` pose le sentinel, les boucles existantes ne relancent
-  # plus de conteneur, et un `start` ulterieur NE DOIT PAS effacer
-  # le sentinel sinon le superviseur (s'il survit) reprendrait. Le
-  # seul moyen de re-marcher apres un stop est `--force`, qui dit
-  # explicitement « j'ai conscience que je relance sur un stop en
-  # cours ».
-  if [ -f "$STOP_FILE" ] && [ "$force" -ne 1 ]; then
-    die "sentinel STOP_FILE present ($STOP_FILE) -- un arret gracieux
-est en cours. Attendre la fin des jobs, faire '$0 stop' (no-op si deja
-fait) puis '$0 start', OU relancer avec '$0 start $n --force'."
+  # #14259 Defaut 2 : le sentinel STOP_FILE protege un arret gracieux -- un
+  # `stop` le pose, les boucles ne relancent plus de conteneur, et un `start`
+  # qui l'effacerait ferait reprendre un superviseur encore vivant.
+  #
+  # #15163 : ce raisonnement etait juste, sa MISE EN OEUVRE ne l'etait pas.
+  # Le refus etait inconditionnel, alors que le sentinel est un FICHIER : il
+  # survit au reboot, quand plus aucun superviseur ne peut reprendre. Mesure
+  # ai-01 du 2026-09-07 -- stop gracieux a 22:37:01, reboot, puis
+  # `Started coursia-runner.service` a 22:53:29 -> "ERREUR: sentinel
+  # STOP_FILE present" -> status=1/FAILURE a 22:53:30. Pool a zero jusqu'a
+  # intervention humaine, quatre fois dans la journee.
+  #
+  # `stop_sentinel_gate` conserve le refus quand un superviseur est vivant, et
+  # purge quand il n'y en a aucun. Noter que la garde `existing_pids` ci-dessus
+  # a deja die() sur les superviseurs de PPID 1 : c'est `any_supervisor_alive`,
+  # plus large, qui rend le refus atteignable pour les autres.
+  #
+  # `--force` reste la sortie explicite pour relancer PAR-DESSUS un arret en
+  # cours, ce que la porte refuse justement de faire toute seule.
+  if [ "$force" -ne 1 ]; then
+    stop_sentinel_gate
   fi
   # Les trois bornes, verifiees AVANT de lever le sentinel : un refus ne doit
   # laisser aucune trace, sinon un arret gracieux en cours serait annule par
@@ -850,6 +1303,163 @@ cmd_stop() {
   echo "Les jobs en cours vont a leur terme. Pour couper net (deconseille) :"
   echo "  docker ps --filter name=$NAME_PREFIX -q | xargs -r docker kill"
   echo "  docker ps --filter name=$LEAN_NAME_PREFIX -q | xargs -r docker kill"
+  echo
+  # Point de mesure demande par Maintenance : l'arret d'un slot ne rend pas sa
+  # memoire tout de suite. Le commit prive de vmmemWSL redescend en differe, et
+  # c'est ce differe -- pas l'instant de l'arret -- qui dit ce que la CI coutait
+  # vraiment. Mesurer TROP TOT rend un chiffre qui accuse la CI d'occuper encore
+  # ce qu'elle a deja rendu.
+  echo "[mesure] relever a T+35 min (et pas avant) :"
+  echo "  $0 peak                                  # pic cgroup de la slice CI"
+  echo "  $(dirname "${BASH_SOURCE[0]}")/persist/host-distress-probe.ps1  # 5e champ = commit prive vmmemWSL, en Mo"
+}
+
+# --- MESURE DU PIC REEL DE LA SLICE CI ---------------------------------------
+#
+# BUDGET_GB dit ce qu'on s'AUTORISE ; il ne dit pas ce qu'on CONSOMME. Tant que
+# personne ne lit le pic, « 12 Go suffisent » reste une hypothese -- exactement
+# le genre d'hypothese que l'en-tete de ce fichier accuse d'avoir coute quatre
+# redemarrages. cgroup v2 expose le high-water mark reel : on le lit.
+#
+# memory.peak est un MAXIMUM ATTEINT DEPUIS LA CREATION DE LA SLICE, pas une
+# mesure instantanee et pas une moyenne. Deux consequences a ne pas oublier en
+# le lisant :
+#
+#   1. il ne redescend jamais. Un pic de 14 Go affiche apres coup ne dit pas
+#      que la CI tient 14 Go maintenant -- il dit qu'elle les a tenus une fois.
+#      C'est precisement ce qu'on veut pour dimensionner un plafond.
+#   2. il n'est REMISE A ZERO que sur noyau >= 6.9 (ecriture de 0 dans le
+#      fichier). Mesure sur ai-01 le 2026-09-07 : noyau 6.6.87.2-microsoft-
+#      standard-WSL2, fichier en -r--r--r--, l'ecriture est refusee. Pour
+#      repartir d'un pic vierge sur ce noyau il faut RECREER la slice
+#      (systemctl stop coursia-ci.slice), pas esperer un reset.
+#
+# La slice vit cote VM. Ce script tourne soit DANS la VM, soit sous Git Bash
+# cote Windows : on essaie la lecture directe, puis l'interop wsl.exe. Si
+# aucune ne repond on rend "" -- jamais un zero, qui se lirait comme « la CI
+# n'a rien consomme » alors qu'il signifie « je n'ai pas su regarder ».
+CI_SLICE_PATH="${COURSIA_CI_SLICE_PATH:-/sys/fs/cgroup/coursia.slice/coursia-ci.slice}"
+CI_SLICE_WSL_DISTRO="${COURSIA_CI_SLICE_WSL_DISTRO:-Ubuntu}"
+
+# `docker run --cgroup-parent` attend, sous le pilote cgroupfs, un chemin
+# RELATIF a la racine cgroup. On le derive du chemin absolu ci-dessus pour
+# qu'il n'existe qu'une seule source de verite entre lecture et placement.
+CI_CGROUP_PARENT="${CI_SLICE_PATH#/sys/fs/cgroup/}"
+
+slice_read() {
+  local f="$CI_SLICE_PATH/$1" v
+  if [ -r "$f" ]; then
+    cat "$f" 2>/dev/null | tr -d '\r\n '
+    return 0
+  fi
+  command -v wsl.exe >/dev/null 2>&1 || return 0
+  # wsl.exe repond en UTF-16LE quand la distro est introuvable : les octets
+  # nuls remontent sur STDOUT (pas stderr) et bash emet un avertissement par
+  # substitution. On les filtre -- un chemin d'erreur bruyant finit par noyer
+  # le message qui compte.
+  v="$(wsl.exe -d "$CI_SLICE_WSL_DISTRO" -u root -- cat "$f" 2>/dev/null | tr -d '\000\r\n ')"
+  case "$v" in ""|*[!0-9]*) return 0 ;; esac
+  echo "$v"
+}
+
+# Lecture BRUTE d'un fichier de la slice. `slice_read` ne rend QUE des
+# chiffres : il rend "" aussi bien pour un fichier illisible que pour la
+# valeur litterale `max` (cgroup sans plafond). Ces deux cas commandent des
+# actions OPPOSEES -- refuser de demarrer, ou demarrer en sachant qu'il n'y a
+# pas de mur -- donc le garde ci-dessous ne peut pas s'appuyer dessus.
+slice_read_raw() {
+  local f="$CI_SLICE_PATH/$1" v
+  if [ -r "$f" ]; then
+    cat "$f" 2>/dev/null | tr -d '\r\n '
+    return 0
+  fi
+  command -v wsl.exe >/dev/null 2>&1 || return 0
+  v="$(wsl.exe -d "$CI_SLICE_WSL_DISTRO" -u root -- cat "$f" 2>/dev/null | tr -d '\000\r\n ')"
+  case "$v" in *"No such file"*|*"cannot open"*|*"Permission denied"*) return 0 ;; esac
+  echo "$v"
+}
+
+# Garde de CABLAGE du mur agrege.
+#
+# Sans lui, `--cgroup-parent` sur un chemin ABSENT le fait CREER par docker
+# -- sans MemoryHigh ni MemoryMax. Le mur agrege redeviendrait decoratif,
+# mais cette fois `memory.peak` monterait et la slice AURAIT L'AIR cablee.
+# Un zero franc est recuperable ; un faux non-zero ne l'est pas. C'est le
+# meme defaut que celui repare ici : la slice existait, plafonnee, et aucun
+# conteneur n'y entrait -- `memory.peak` rendait 0 pendant que la CI
+# consommait 198 Mio dehors (mesure ai-01 2026-09-08T00:56Z).
+assert_ci_slice() {
+  local mx hi why=""
+  mx="$(slice_read_raw memory.max)"
+  case "$mx" in
+    "")  why="slice CI illisible ou absente ($CI_SLICE_PATH)" ;;
+    max) why="slice CI presente mais SANS plafond ($CI_SLICE_PATH/memory.max = max)" ;;
+  esac
+  if [ -n "$why" ]; then
+    if [ "$REQUIRE_CI_SLICE" = "1" ]; then
+      die "$why -- REFUS de demarrer (COURSIA_REQUIRE_CI_SLICE=1).
+Le mur agrege serait decoratif tout en paraissant actif. Deployer :
+    sudo cp scripts/ci/docker/linux-runner/persist/coursia-ci.slice /etc/systemd/system/
+    sudo cp scripts/ci/docker/linux-runner/persist/daemon.json /etc/docker/daemon.json
+    sudo systemctl daemon-reload && sudo systemctl start coursia-ci.slice"
+    fi
+    # Machine sans slice (po-2024) : on avertit, et surtout on NEUTRALISE le
+    # placement. Passer --cgroup-parent sur un chemin absent le ferait creer
+    # par docker, sans aucun plafond -- un mur qui a l'air d'un mur.
+    CI_CGROUP_PARENT=""
+    echo "[slice] $why -- mur memoire agrege NON ACTIF ; conteneurs non places."
+    echo "[slice] (COURSIA_REQUIRE_CI_SLICE=1 pour en faire un refus de demarrer)"
+    return 0
+  fi
+  hi="$(slice_read_raw memory.high)"
+  echo "[slice] mur agrege ACTIF : memory.high=$hi memory.max=$mx octets"
+  echo "[slice] ($CI_SLICE_PATH ; conteneurs places via --cgroup-parent=$CI_CGROUP_PARENT)"
+}
+
+# Affiche pic / courant / plafonds de la slice, et confronte le pic au budget.
+# C'est la seule ligne de ce script qui compare une DECLARATION a une MESURE.
+cmd_peak() {
+  local peak swpeak cur high max
+  peak="$(slice_read memory.peak)"
+  swpeak="$(slice_read memory.swap.peak)"
+  cur="$(slice_read memory.current)"
+  high="$(slice_read memory.high)"
+  max="$(slice_read memory.max)"
+
+  echo "== slice CI : pic mesure vs budget declare =="
+  if [ -z "$peak" ]; then
+    echo "  slice ILLISIBLE ($CI_SLICE_PATH) -- ni lecture directe ni interop wsl.exe."
+    echo "  Ce n'est PAS « pic nul » : la mesure a echoue. Verifier que la slice est"
+    echo "  deployee (scripts/ci/docker/linux-runner/persist/coursia-ci.slice)."
+    return 0
+  fi
+
+
+  _peak_gib() { awk -v x="$1" 'BEGIN{ if (x=="" || x=="max") print "-"; else printf "%.2f", x/1073741824 }'; }
+  echo "  memory.peak ......... $(_peak_gib "$peak") Gio   (max atteint depuis creation de la slice)"
+  echo "  memory.swap.peak .... $(_peak_gib "$swpeak") Gio"
+  echo "  memory.current ...... $(_peak_gib "$cur") Gio   (instantane)"
+  echo "  memory.high ......... $(_peak_gib "$high") Gio   (seuil de recuperation noyau)"
+  echo "  memory.max .......... $(_peak_gib "$max") Gio   (mur OOM)"
+
+  if [ "$peak" = "0" ]; then
+    echo "  -- pic a 0 : aucune charge n'a jamais tourne dans cette slice depuis sa"
+    echo "     creation. Le budget de $BUDGET_GB Go reste une HYPOTHESE non verifiee."
+    return 0
+  fi
+
+  local peak_mb budget_mb
+  peak_mb=$(( peak / 1048576 ))
+  budget_mb=$(( BUDGET_GB * 1024 ))
+  if [ "$peak_mb" -gt "$budget_mb" ]; then
+    echo "  -- PIC AU-DESSUS DU BUDGET : ${peak_mb} Mo mesures > ${budget_mb} Mo declares."
+    echo "     Le budget sous-estime la charge reelle. Soit baisser le nombre de slots,"
+    echo "     soit relever COURSIA_RUNNER_BUDGET_GB EN LE SACHANT -- pas par defaut."
+  else
+    awk -v p="$peak_mb" -v b="$budget_mb" 'BEGIN{
+      printf "  -- pic %d Mo sous le budget %d Mo (marge %d Mo, %.0f%% du budget utilise)\n",
+             p, b, b-p, 100*p/b }'
+  fi
 }
 
 cmd_status() {
@@ -927,6 +1537,9 @@ cmd_status() {
     fi
   fi
   [ -f "$STOP_FILE" ] && echo "== sentinel STOP pose : les boucles ne relancent plus =="
+  # Le pic fait partie de l'etat courant : un status qui montre les conteneurs
+  # sans montrer ce qu'ils ont reellement consomme laisse le budget invisible.
+  cmd_peak
 }
 
 waiter_loop() {
@@ -962,6 +1575,8 @@ waiter_loop() {
       --name "$name" \
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
       "${BLKIO_ARGS[@]+"${BLKIO_ARGS[@]}"}" \
+      --label coursia-ci=1 \
+      ${CI_CGROUP_PARENT:+--cgroup-parent="$CI_CGROUP_PARENT"} \
       --security-opt=no-new-privileges \
       "${tc_args[@]+"${tc_args[@]}"}" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
@@ -984,7 +1599,7 @@ waiter_loop() {
 }
 
 cmd_waiters() {
-  local n="${1:-24}"
+  local n="${1:-8}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
   validate_backoff_env
@@ -993,7 +1608,7 @@ cmd_waiters() {
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
   assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
-  [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
+  stop_sentinel_gate
   # Idempotence propre a la famille waiters : le garde de `start` filtre
   # `supervise.sh start` et ne voit pas `waiters`. Verrou porte par le pid
   # de la boucle -- si elle est morte, kill -0 echoue et on relance.
@@ -1010,6 +1625,8 @@ cmd_waiters() {
   assert_cgroup_budget
   assert_cpu_budget "waiters" "$n" "$WAITER_CPUS"
   compute_blkio_args
+  assert_memory_budget waiters "$n" "$WAITER_MEMORY"
+  assert_ci_slice
   rm -f "$STATE_DIR/waiter-pids"
   echo "demarrage de $n waiter(s) ; labels=$WAITER_LABELS ; caps : cpus=$WAITER_CPUS memory=$WAITER_MEMORY pids=$WAITER_PIDS"
   for i in $(seq 1 "$n"); do
@@ -1032,7 +1649,7 @@ cmd_lean() {
   # Dockerfile.lean FROM coursia-linux-runner : l'entrypoint est herite de la
   # base -- un ecart pointe soit vers l'image lean, soit vers sa base.
   assert_image_fresh "$LEAN_IMAGE" "docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
-  [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
+  stop_sentinel_gate
   # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
   # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
   #
@@ -1061,6 +1678,8 @@ cmd_lean() {
   assert_cgroup_budget
   assert_cpu_budget "lean" "$n" "$LEAN_CPUS"
   compute_blkio_args
+  assert_memory_budget lean "$n" "$LEAN_MEMORY"
+  assert_ci_slice
   rm -f "$STATE_DIR/lean-pids"
   echo "demarrage de $n slot(s) lean ; labels=$LEAN_LABELS ; caps : cpus=$LEAN_CPUS memory=$LEAN_MEMORY pids=$LEAN_PIDS ; image=$LEAN_IMAGE ; .lake chaud=${LEAN_WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
   for i in $(seq 1 "$n"); do
@@ -1076,10 +1695,21 @@ cmd_lean() {
 }
 
 case "${1:-}" in
-  start)   shift; cmd_start "${1:-2}" "${2:-}" ;;
-  waiters) shift; cmd_waiters "${1:-24}" ;;
-  lean)    shift; cmd_lean "${1:-2}" ;;
+  start)   shift
+           # `auto` derive N du budget residuel au lieu de le lire en argv.
+           n_arg="${1:-2}"
+           [ "$n_arg" = "auto" ] && n_arg="$(budget_slots "$MEMORY")"
+           cmd_start "$n_arg" "${2:-}" ;;
+  waiters) shift
+           n_arg="${1:-8}"
+           [ "$n_arg" = "auto" ] && n_arg="$(budget_slots "$WAITER_MEMORY")"
+           cmd_waiters "$n_arg" ;;
+  lean)    shift
+           n_arg="${1:-1}"
+           [ "$n_arg" = "auto" ] && n_arg="$(budget_slots "$LEAN_MEMORY")"
+           cmd_lean "$n_arg" ;;
   stop)    cmd_stop ;;
   status)  cmd_status ;;
-  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status}"; exit 2 ;;
+  peak)    cmd_peak ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak}"; exit 2 ;;
 esac
