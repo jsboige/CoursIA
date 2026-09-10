@@ -124,19 +124,10 @@ jobs:
 
           # Aggregate findings across the diff: a single fill-without-color
           # rule in ANY modified file flags the PR. Unmeasured = JSON
-          # unparseable (script died or produced nothing).
-          FINDINGS=$(python -c "
-import json, sys
-findings = -1
-unmeasured = 0
-try:
-    payload = json.load(open('payload.json'))
-    findings = payload.get('total_hits', -1)
-    unmeasured = payload.get('error_count', 0)
-except Exception:
-    unmeasured = 1
-print(f'{findings} {unmeasured}')
-")
+          # unparseable (script died or produced nothing) -> FIND stays -1,
+          # caught by the guard below (one-liner python -c : un bloc python
+          # multi-lignes en colonne 0 terminerait le scalaire litteral YAML).
+          FINDINGS=$(python -c "import json; d = json.load(open('payload.json')); print(d.get('total_hits', -1), d.get('error_count', 0))" 2>/dev/null || echo "-1 1")
           FIND=$(echo "$FINDINGS" | awk '{print $1}')
           UNM=$(echo "$FINDINGS" | awk '{print $2}')
           echo "fill-without-color rules across modified files: $FIND"
