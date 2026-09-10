@@ -91,6 +91,8 @@ Mesure d'intégration (#10232), série gagnante `e` vs son opposé `-e` contre b
 
 Le tableau montre les deux instruments et leur angle mort : `mse`/`mae` mesurent la précision (insensibles au signe), `linear` distingue le signe mais mesure le biais. La jambe DM de §C porte donc sur une perte de précision ; `linear` reste disponible comme contrôle de biais (détection de sous/sur-prévision). Pin de régression : `test_dm.py::test_linear_loss_distinguishes_opposite_series` (valide — signes opposés = déclaration de biais, pas de précision).
 
+**Instance fondatrice du rapport de biais par modèle — #10938.** Le point (7) de la règle (`mean(e)` signé ou biais OOS, modèle ET baseline, dans le body) est né d'un `har_bias_oos = −0.227` (#10938) non déclaré, découvert **après** qu'une lecture avait été construite sur l'edge qu'il portait : c'est précisément le contrôle que le rapport de biais par modèle aurait fait apparaître avant. Un edge porté par le biais (pas par la précision) se déclare comme tel.
+
 ### D.5 — #8479 MusicGen : l'alignement qui enshrine un nombre périssable
 
 Notebook MusicGen 02-3 : le RTF documenté `0.5-2x` a été « aligné » en `0.21-0.24x` **sur un run non-optimisé**, alors qu'une re-exécution Stop-&-Repair était **déjà due** sur ce notebook (cellule cassée).

@@ -69,7 +69,7 @@ les reprendre. Historique et mesure : [détail, section Réparer son rouge](../.
 
 ## Règle de sélection
 
-Prendre **un item à la fois** (`[CLAIMED]` avant), livrer, **re-piocher aussitôt** — G.5 interdit N deep-tracks **parallèles**, pas N PRs **séquentielles**. **Anti-pattern interdit** : auditer la tranche étroite de SA famille puis poster un `[ASK coordinator]` alors que le pool offrait des grains cross-lane — c'est le silo (incident fondateur R5/R7, [détail §101](../../docs/reference/proactive-coordination-detail.md)). **Le coordinateur n'est PAS un distributeur de grains** : il merge, scoper les issues, déconflitter les claims.
+Prendre **un item à la fois** (`[CLAIMED]` avant), livrer, **re-piocher aussitôt** — G.5 interdit N deep-tracks **parallèles**, pas N PRs **séquentielles**. **Anti-pattern interdit** : auditer la tranche étroite de SA famille puis poster un `[ASK coordinator]` alors que le pool offrait des grains cross-lane — c'est le silo (incident fondateur R5/R7, [détail §Incident fondateur R5/R7](../../docs/reference/proactive-coordination-detail.md)). **Le coordinateur n'est PAS un distributeur de grains** : il merge, scoper les issues, déconflitter les claims.
 
 ## Voir aussi
 
