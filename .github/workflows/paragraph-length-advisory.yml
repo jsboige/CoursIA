@@ -1,0 +1,191 @@
+name: Paragraph Length Advisory
+
+# Organ for the "markdown paragraph too long" convention (PR #15405 founding
+# incident; user request 2026-09-10, fix PR #15507). The user's observation:
+# a single line of 3246 chars / 374 words in MyIA.AI.Notebooks/Probas/README.md
+# is unreadable, and the CI did not catch it -- there was no detector.
+#
+# ADVISORY, never blocking (decision user 2026-09-10, like
+# consecutive-code-cells-advisory.yml #12797): the job ALWAYS exits 0. The
+# actionable payload is the `paragraph-length` LABEL, NEVER the green
+# conclusion of the job (the same trap that let a non-conforming PR through
+# in #8797). Promoting to a blocking gate is a separate decision, to revisit
+# only once the residual is at 0 and stable -- body PR B lists the
+# follow-up issue for the sweep of the existing ~42 corpus files.
+#
+# Per-PR scope: runs detect_paragraph_length.py ONLY on the *.md and *.ipynb
+# modified by the PR (3-point diff merge-base...HEAD), NOT a repo-wide scan
+# on every push. This matches the consecutive-code-cells-advisory convention
+# and the catalog-drift per-PR posture.
+#
+# Self-cover (#8822): a paths-filtered label-poser must list its own file,
+# else it cannot re-run (so cannot remove its own label) once the matching
+# paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content criterion runs against them.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - '**/*.ipynb'
+      # Self-cover (#8822) -- the script, its tests + fixture, and the
+      # workflow itself.
+      - 'scripts/notebook_tools/detect_paragraph_length.py'
+      - 'scripts/notebook_tools/tests/test_detect_paragraph_length.py'
+      - 'scripts/notebook_tools/tests/fixtures/paragraph_wall_md.md'
+      - '.github/workflows/paragraph-length-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: paragraph-length-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  paragraph-length-advisory:
+    name: "Markdown paragraph length advisory (label, non-blocking)"
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed files.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Self-test detector (proves it can fire)
+        # A detector that cannot be shown firing is indistinguishable from a
+        # disconnected one (lecon #11685). Run --self-test FIRST so a broken
+        # install is loud before any measurement happens.
+        run: |
+          python scripts/notebook_tools/detect_paragraph_length.py --self-test
+
+      - name: Advisory check on modified .md / .ipynb
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without a git context GH_REPO, `gh pr edit` / `gh label create`
+          # cannot infer the target repo and fail silently (variation-tag-guard
+          # documented this trap firsthand after #8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_PARAGRAPH: paragraph-length
+          LABEL_UNMEASURED: paragraph-length-unmeasured
+        run: |
+          set -uo pipefail
+
+          # Added/modified .md + .ipynb in the PR (deletions excluded -- a
+          # deleted file has nothing to measure). 3-point diff (#10403) :
+          # merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.md' '*.ipynb' \
+            | grep -v $'\r$' > changed_files.txt || true
+          COUNT=$(wc -l < changed_files.txt | tr -d ' ')
+          echo "Modified .md / .ipynb in this PR: $COUNT"
+
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified files to check."
+            unset_label "$LABEL_PARAGRAPH"; unset_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
+          # is the pair of LABELS decided from the JSON payload below.
+          python scripts/notebook_tools/detect_paragraph_length.py \
+            --json --stdin < changed_files.txt > payload.json
+          cat payload.json
+
+          # Aggregate findings across the diff: a single oversized paragraph in
+          # ANY modified file flags the PR. Unmeasured = JSON unparseable
+          # (script died or produced nothing).
+          FINDINGS=$(python -c "
+import json, sys
+total = 0
+unmeasured = 0
+try:
+    payload = json.load(open('payload.json'))
+    total = payload.get('flagged_count', 0)
+    unmeasured = payload.get('error_count', 0)
+except Exception:
+    unmeasured = 1
+print(f'{total} {unmeasured}')
+")
+          FIND=$(echo "$FINDINGS" | awk '{print $1}')
+          UNM=$(echo "$FINDINGS" | awk '{print $2}')
+          echo "Oversized paragraphs across modified files: $FIND"
+          echo "Unmeasured (parse errors / illisibles): $UNM"
+
+          # Issue #8819 applied: TWO distinct labels. "Could not measure" and
+          # "measured, has oversized paragraph" call for different reactions,
+          # so they never collapse into one. Each label is raised when its
+          # count > 0 and cleared otherwise (a stale label from an earlier
+          # push must not stick).
+          ensure_label "$LABEL_PARAGRAPH" \
+            "A modified .md or .ipynb cell carries a markdown paragraph over the calibration threshold (default 2000 chars) -- readability concern (#15405 founding incident, #15507 fix)" "E99695"
+          ensure_label "$LABEL_UNMEASURED" \
+            "A modified .md or .ipynb could not be measured by the paragraph-length detector -- NOT verified (#8819)" "BFD4F2"
+
+          # The #8819 guard: if the detector died, FIND/UNM are not integers.
+          # With only `set -uo pipefail` (no -e), each `[ \"\" -gt 0 ]` exits
+          # rc=2 -- which falls into the else branch, UNSETS both labels, and
+          # asserts verified conformity on a measurement that never happened.
+          # NOT measured => NOT verified: pose the unmeasured label and a loud
+          # ::error::, never a green claim.
+          if ! [ "${FIND:-}" -eq "${FIND:-}" ] 2>/dev/null \
+             || ! [ "${UNM:-}" -eq "${UNM:-}" ] 2>/dev/null; then
+            echo "::error::paragraph-length payload illisible (detect_paragraph_length.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          if [ "$FIND" -gt 0 ]; then
+            echo "::notice::$FIND modified file(s) carry an oversized markdown paragraph (#15405 founding incident). See the '$LABEL_PARAGRAPH' label."
+            set_label "$LABEL_PARAGRAPH"
+          else
+            unset_label "$LABEL_PARAGRAPH"
+          fi
+
+          if [ "$UNM" -gt 0 ]; then
+            echo "::warning::$UNM modified file(s) could not be measured -- NOT verified by the paragraph-length advisory (#8819). See the '$LABEL_UNMEASURED' label."
+            set_label "$LABEL_UNMEASURED"
+          else
+            unset_label "$LABEL_UNMEASURED"
+          fi
+
+          # The closing line asserts ONLY what was measured (issue #8819). The
+          # job never claims "all conform" while unmeasured > 0.
+          if [ "$UNM" -gt 0 ]; then
+            echo "RESULT: $UNM file(s) NOT measured -- conformity neither claimed nor denied."
+          elif [ "$FIND" -gt 0 ]; then
+            echo "RESULT: $FIND file(s) with an oversized paragraph -- labelled."
+          else
+            echo "RESULT: no modified file carries an oversized markdown paragraph (verified)."
+          fi
+          exit 0

@@ -253,6 +253,54 @@ Baseline c.884 : 937 notebooks, **0 residu inattendu**, 2 allowed (fleet clean
 post-sweep). Le guard n'empeche que la recidive ; la correction d'un nouveau
 residu reste byte-surgical par notebook (cf #8428 fix pattern).
 
+### `detect_paragraph_length.py` (#15507, PR #15405 founding incident)
+
+Detecteur de paragraphes markdown trop longs. Incident fondateur : PR #15405
+(commit `76d7a5bc`, deja sur `main`) introduisait dans
+`MyIA.AI.Notebooks/Probas/README.md` un paragraphe unique de **3246 caracteres
+sur une seule ligne physique**, passe au travers du CI -- aucun detecteur
+n'existait. Demande user 2026-09-10 : « le bloc "cette serie..." est encore
+trop gros » + « IL aurait du etre intercepte par le CI comme un bloc sans
+espaces indigeste » + « Tu peux rajouter l'organe au CI ? ».
+
+Mesure : `len("".join(lines))` par bloc contigu (separe par ligne vide).
+**Ignore** les fences code (``` / ~~~), les lignes de tableau (`|`),
+les titres markdown (`#` / `##` ...), et les blocs HTML
+(`<!-- ... -->` -- protege le marqueur `CATALOG-STATUS`). Listes et
+blockquotes comptent comme bloc -- un item de 10k caracteres reste un mur,
+la calibration les inclut deja. Constante module **`MAX_PARAGRAPH_LEN = 2000`**
+(delibere, pas un flag : « locked by calibration », p99 corpus = 1437 c).
+
+**Advisory par construction** (decision user 2026-09-10, comme
+`consecutive-code-cells-advisory.yml` #12797) : le job sort TOUJOURS 0, le
+signal actionnable est le label `paragraph-length` pose par
+`.github/workflows/paragraph-length-advisory.yml` (et `paragraph-length-unmeasured`
+si le JSON est illisible, lecon #8819). **Pas d'enregistrement gate** :
+`pr_gate.py` agrege les check-runs automatiquement (fetch_checks, dedup par
+nom) ; un job toujours-vert n'entre jamais dans le verdict.
+
+```bash
+python scripts/notebook_tools/detect_paragraph_length.py path/to/file.md         # humain
+python scripts/notebook_tools/detect_paragraph_length.py --json --stdin < list   # machine (CI)
+python scripts/notebook_tools/detect_paragraph_length.py <file> --fail-on-findings  # CI-ready exit 2
+python scripts/notebook_tools/detect_paragraph_length.py --self-test            # preuve que le detecteur tire
+```
+
+Codes de retour : 0 = clean ; 1 = fichier illisible / scan vacuue ; 2 =
+findings (avec `--fail-on-findings`). Sans `--fail-on-findings`, exit 0
+toujours (advisory).
+
+Calibration du seuil : `MAX_PARAGRAPH_LEN = 2000`. p99 = 1437 c sur le
+corpus `git ls-files '*.md'` ; 2000 laisse 39 % de marge au-dessus du p99
+tout en attrapant les murs pedagogiques type PR #15405. **42 fichiers** du
+corpus portent deja un paragraphe > 2000 c : ils font l'objet d'une issue
+de suivi ouverte par PR B (sweep de resorption, voie 3 B.0). La bascule
+**advisory -> bloquant** est une decision separee, a prendre apres ~2
+cycles sans faux positifs mesures (ajout `--fail-on-findings` dans le
+workflow + workspace the name marker du gate).
+
+Owner : `myia-po-2023:CoursIA-2` (lane qui livre, c.418).
+
 ---
 
 ## Triade accent #2876 — défense outillée (3 axes complémentaires)
