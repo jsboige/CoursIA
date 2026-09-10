@@ -5649,3 +5649,118 @@ def test_locution_ne_concerne_plus_leve():
     body = ("Le nit CHANGES_REQUESTED ne concerne plus le head courant : l'amend "
             "f29727a67 (ancetre verifie) a retire les 4 stubs.")
     assert mod.classify("jsboige", body) is None
+
+
+# --- #15483 (extension cycle c.418) : pinning des residuels CHANGES_REQUESTED
+# ai-01 sur le commit `071c5763` (clusterManager-Myia structural review +
+# ai-01 CHANGES_REQUESTED). Les 4 formes infinitif/futur et le faux negatif
+# `ne concerne plus rien` doivent etre pinnés par test — sans quoi la voie 1
+# reparée peut recréer silencieusement la classe d'incident que #15468 documente
+# (dissipation crue, reserve éteinte).
+
+
+@pytest.mark.parametrize("body", [
+    # infinitif futur : « reste à dissiper »
+    "CHANGES_REQUESTED : ce point reste a dissiper sur le prochain push.",
+    "Le concern reste a dissiper dans la tranche qui suit — CHANGES_REQUESTED maintenu.",
+    # infinitif futur : « il faut dissiper »
+    "Il faut dissiper ce point avant de relancer la CI : CHANGES_REQUESTED sur la review.",
+    "Pour relancer, faut dissiper le residue du CHANGES_REQUESTED.",
+    # futur simple : « sera dissipé »
+    "Le concern sera dissipe au prochain push après l'amend. CHANGES_REQUESTED : a confirmer.",
+    "Cette reserve sera dissipee des que la voie 3 issue sera ouverte. CHANGES_REQUESTED.",
+    # obligation passive : « doit être dissipé »
+    "Le point 2 doit etre dissipe avant que le merge puisse passer. CHANGES_REQUESTED émis.",
+    "Cette reserve doit etre dissipée avant la prochaine passe. CHANGES_REQUESTED.",
+])
+def test_dissipation_pending_ne_leve_pas(body):
+    """#15483 instance fondatrice : les 4 formes infinitif/futur ne lèvent PAS.
+
+    Instance : CHANGES_REQUESTED ai-01 sur `071c5763` : le marqueur sous-
+    chaine `dissipé` blanchissait des réserves encore ouvertes. La garde
+    `_dissipation_is_pending` regarde 25 chars avant et 10 chars apres le
+    hit pour detecter la construction NON close. Sans elle, `classify()`
+    retournait `None` (dissipation acquise) — faux OK.
+
+    Chaque body inclut un `CHANGES_REQUESTED` EXPLICITE pour ouvrir le
+    nit (le verdict), puis la dissipation future ne le leve pas — la
+    garde distingue l'ACQUIS (passe compose `dissipé`) du NON-ACQUIS
+    (infinitif/futur)."""
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("body", [
+    # Intensification FR : « ne concerne plus rien »
+    "Le nit CHANGES_REQUESTED ne concerne plus rien sur le head courant.",
+    "Cette reserve ne concerne plus rien dans la pile de suivi.",
+    # Intensification : « ne concerne plus personne »
+    "Le lever du nit ne concerne plus personne, fermeture autorisee.",
+    # Intensification : « ne concerne plus aucun point »
+    "Le verdict ne concerne plus aucun point — la voie 3 a tout ferme.",
+])
+def test_locution_ne_concerne_plus_intensifie_leve(body):
+    """#15483 faux negatif : la locution intensifiee leve.
+
+    Instance : sans la garde `_lift_is_intensified_marker_negated`, le token
+    `rien` dans `_LIFT_NEGATION_TOKENS` rejetait « ne concerne plus rien »
+    comme negation applicative (faux negatif majeur) alors que c'est
+    l'intensification de la dissipation. Le predicat neutralise la negation
+    UNIQUEMENT quand l'intensifieur (`rien`/`personne`/`aucun`) est en TETE
+    de fenetre AFTER. Sans ce fix, les PRs dissipant totalement etaient
+    classees BOT-CONCERN a tort (c.1071 reformulation au lieu de la voie 1)."""
+    assert mod.classify("jsboige", body) is None
+
+
+def test_locution_ne_concerne_plus_rien_avec_verbe_actif_ne_leve_pas():
+    """#15483 residuel assume : « ne concerne plus rien faire » n'est PAS une
+    intensification — `rien` suivi d'un verbe actif redevient objet de
+    negation applicative. La garde exige l'intensifieur ISOLE (juste après
+    `plus`, sans verbe entre les deux)."""
+    body = ("Le concern CHANGES_REQUESTED ne concerne plus rien faire à la "
+            "CI : la rotation reste due, ce qui justifie la reserve.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_acquise_plus_pendant_garde_le_vivant():
+    """#15483 cas aggravant : « 2 contrats sont dissipés, 1 point reste à
+    dissiper » — un commentaire MIXTE leve partiellement. AVANT la garde,
+    les 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignoré → la
+    review complete etait classee `None` alors qu'un point VIVAIT. Pin : la
+    garde `_dissipation_is_pending` rend `None` -> `BOT-CONCERN` quand
+    l'AU MOINS UN hit tombe dans une construction PENDING."""
+    body = ("**Dissipation partielle** : les 2 contrats dissipés sur la voie "
+            "(a) sont clos, MAIS le point 3 reste à dissiper au prochain "
+            "push. CHANGES_REQUESTED maintenu. PR non mergeable en l'état.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_trois_points_dissipes_un_vivant():
+    """Variante du cas mixte avec 3 hits valides + 1 vivanted par PENDING —
+    le seul hit PENDING suffit à invalider toute la levee."""
+    body = ("**Follow-up dissipation** : 3 points sont dissipes (Tag Grain: "
+            "premiere ligne, override workflow_dispatch retire, sub-string "
+            "exempt), MAIS le concern de scope CHANGES_REQUESTED reste à "
+            "dissiper.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_participe_isole_leve_toujours():
+    """Regresssion negative : un participe ISOLE (`dissipé`, `dissipee`)
+    sans verbe de PENDING devant reste une LEVEE reelle. Les formes
+    narratives (« la reserve est dissipée », « les points dissipes ») doivent
+    toujours lever — la garde `_dissipation_is_pending` regarde les 25 chars
+    AVANT et n'attrape QUE si un verbe de PENDING est présent."""
+    body = ("Les 4 points sont dissipes sur le head courant apres l'amend "
+            "f29727a67 — verification first-hand OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_pending_fenetre_25_chars_avant_limite():
+    """Regresssion negative : la fenetre de PENDING est bornée à 25 chars
+    AVANT. Un verbe lointain (« il y a longtemps on devrait dissiper ») NE
+    doit PAS activer la garde de PENDING — c'est une narration sans rapport,
+    pas une construction non-acquise. Residuel assume documente dans #15483
+    (« frontiere documentee : au-dela, c'est une autre phrase »)."""
+    body = ("Il y a longtemps — pour ne pas dire dans la version initiale "
+            "de la PR — on a dissipe ce concern, qui est desormais ferme.")
+    assert mod.classify("jsboige", body) is None
