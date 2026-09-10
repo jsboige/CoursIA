@@ -19,6 +19,22 @@
       "mc_late": 0.6416666666666667,
       "reward_early": 1.55,
       "reward_late": 1.7
+    },
+    {
+      "arm": "Np",
+      "model": "Qwen/Qwen2.5-14B-Instruct",
+      "seed": 1,
+      "steps": 120,
+      "train_s": 1792.2106356620789,
+      "vram_load_gb": 10.101015552,
+      "vram_peak_gb": 10.700704256,
+      "n_records": 240,
+      "hack_early": 0.7333333333333333,
+      "hack_late": 0.825,
+      "mc_early": 0.6666666666666666,
+      "mc_late": 0.6416666666666667,
+      "reward_early": 1.5833333333333333,
+      "reward_late": 1.75
     }
   ]
 }
