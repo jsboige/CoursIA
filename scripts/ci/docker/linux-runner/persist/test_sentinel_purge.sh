@@ -99,10 +99,11 @@ run_case() {  # $1 = script de purge ; $2 = STATE_DIR ; $3 = table de processus
   return $?
 }
 
-for LEG in runner waiters; do
+for LEG in runner waiters lean; do
   case "$LEG" in
     runner)  SRC="$HERE/ai-01/coursia-runner-start.sh"; OTHER=waiters ;;
     waiters) SRC="$HERE/coursia-waiters-start.sh";      OTHER=start   ;;
+    lean)    SRC="$HERE/coursia-lean-start.sh";         OTHER=start   ;;
   esac
   [ -r "$SRC" ] || { bad "$LEG: wrapper illisible ($SRC)"; continue; }
 
@@ -138,6 +139,7 @@ for LEG in runner waiters; do
   case "$LEG" in
     runner)  MINE='bash ./supervise.sh start 4' ;;
     waiters) MINE='bash ./supervise.sh waiters 4' ;;
+    lean)    MINE='bash ./supervise.sh lean 2' ;;
   esac
   out="$(run_case "$PURGE" "$SD" "$MINE")"; rc=$?
   if [ "$rc" -eq 1 ] && [ -e "$SD/stop" ] && ! printf '%s' "$out" | grep -q 'DEMARRAGE'; then

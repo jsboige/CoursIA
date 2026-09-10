@@ -1,0 +1,81 @@
+name: Translation Hot-Drift Advisory
+
+# #15322 — une PR de realignement de prose qui modifie la source d'une
+# cellule portant une traduction deposee, sans resynchroniser sa ligne CSV,
+# fait rougir le cliquet hot-subset (#13551) SUR MAIN — donc sur toutes les
+# PRs ouvertes qui l'heritent (36 PRs rouges d'un coup ; incidents documentes
+# #15253 / #15136 / #15216). La lane qui voit le rouge le lit comme son
+# propre defaut et brule un cycle sur un diff qu'elle n'a pas casse.
+#
+# Ce garde repond, par PR, la seule question que le cliquet ne peut pas
+# poser : quelles cellules CE diff fait-il entrer dans le sous-ensemble
+# chaud ? Le predicat est REUTILISE tel quel de
+# scripts/translation/check_translation_sync.py (contrainte de l'issue :
+# pas de second predicat qui puisse diverger du cliquet qu'il protege) ;
+# le delta (cellules source changees entre merge-base et tete) isole la
+# contribution propre de la PR — la derive heritee de main ne flagge jamais.
+#
+# Placement ADVISORY (point 2 de l'issue) : le verdict est publie sous le
+# check-run « Translation hot-drift (base vs PR, advisory) » avec une
+# conclusion neutre, nommant les cellules. Calibration sur 98 PRs notebook
+# atterries (2026-08-20 -> 2026-09-10) : 6 declenchements, 6/6 vrais
+# positifs (les 3 incidents documentes + 3 atterrissages repris apres coup
+# que le tableau de l'issue ne listait pas). La bascule en bloquant attend
+# la poursuite de cette mesure.
+
+# Livré directement dans la voie rapide (#12567) : le verdict par-PR est
+# rendu par `fast-lane-shadow.yml` via l'entrée TRANCHE2 de
+# `scripts/ci/fast_lane_registry.py`. Ce fichier ne garde que
+# `workflow_dispatch` (relance manuelle).
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to ratchet against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: translation-hot-drift-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisory:
+    name: Translation hot-drift (base vs PR, advisory)
+    # Même jambe que les siblings ratchet (#14959) : garde Python pur, sans
+    # secret. La garde same-repo ci-dessous saute les PRs de fork : aucun
+    # code de fork n'atteint le runner.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Le self-test passe FIRST et gate le garde : contrôles positifs,
+      # négatifs et d'attribution sur fixtures synthétiques + replay du cas
+      # fondateur (#15136, image.csv cell b07ca49a).
+      - name: Detector self-test (positive + negative + attribution)
+        run: python scripts/translation/check_pr_translation_drift.py --self-test
+
+      - name: Translation hot-drift unit tests
+        run: python -m pytest scripts/translation/tests/test_check_pr_translation_drift.py -q
+
+      # Refs reach the script via env, never inline in the run script
+      # (script-injection guard, same as the siblings).
+      - name: Hot-drift check (advisory)
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/translation/check_pr_translation_drift.py "$BASE"
