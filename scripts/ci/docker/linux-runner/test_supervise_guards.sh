@@ -1306,6 +1306,113 @@ echo "Test 29 : start refuse si work_cache_health.sh de l'image != checkout (#15
 )
 echo ""
 
+# --- Test 30 : validation fail-closed des 3 bornes env (review #15166 v2) ---
+# Une config operateur invalide doit tuer le start AVANT toute boucle :
+# BASE=0 bouclait sur un backoff nul sans fin, et BASE/CAP proches de la
+# borne signee faisaient deborder le probe de cap_exp vers le negatif puis 0.
+# Chaque cas : rc!=0 (et !=124 : pas un timeout = pas de boucle), message
+# nommant la variable fautive.
+echo "Test 30 : bornes backoff invalides rejetees au demarrage (fail-closed)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/state-30"
+  neg_case() {
+    local desc="$1" expect="$2"
+    rc="$(run_supervise 'start 1' 'test-prefix-30' "$TEST_DIR/state-30" 2>&1 | head -1 | sed 's/rc=//')"
+    err="$(cat "$TEST_DIR/last.err")"
+    if [ "$rc" != "0" ] && [ "$rc" != "124" ] && echo "$err" | grep -q "$expect"; then
+      ok "$desc : refuse (rc=$rc)"
+    else
+      ko "$desc : attendu refus [$expect], rc=$rc err=$err"
+    fi
+  }
+  export COURSIA_RUNNER_BACKOFF_BASE=0
+  neg_case "BASE=0" "strictement positif"
+  export COURSIA_RUNNER_BACKOFF_BASE=15x
+  neg_case "BASE non numerique" "entier decimal"
+  export COURSIA_RUNNER_BACKOFF_BASE=30
+  export COURSIA_RUNNER_BACKOFF_CAP=24
+  neg_case "BASE>CAP" "plafond doit dominer"
+  export COURSIA_RUNNER_BACKOFF_BASE=15
+  export COURSIA_RUNNER_BACKOFF_CAP=9999999999999999999
+  neg_case "CAP 19 chiffres (hors domaine)" "18 chiffres"
+  unset COURSIA_RUNNER_BACKOFF_BASE COURSIA_RUNNER_BACKOFF_CAP
+)
+echo ""
+
+# --- Test 31 : frontiere puissance de deux -- le doublement garde (v2) -----
+# Repro review : BASE proche de la borne signee + CAP au-dela debordait le
+# probe (p=2^63 -> -2^63 -> 0 -> boucle infinie). Config valide limite : la
+# plus grande puissance de deux du domaine (2^59, 18 chiffres) en BASE=CAP.
+# Le backoff doit terminer (rc=0, pas de timeout) et rendre exactement la
+# borne, jamais un negatif ni un zero.
+echo "Test 31 : BASE=CAP=2^59 -- frontiere puissance de deux, pas de debordement"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin31" "$TEST_DIR/state-31"
+  cat > "$TEST_DIR/bin31/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  if [ "\$RUNS" -ge 3 ]; then touch "\$STUB_STOP_FILE"; fi
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin31/docker"
+  cat > "$TEST_DIR/bin31/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin31/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin31/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin31/ps"
+  rm -f "$TEST_DIR/state-31/stop" "$TEST_DIR/state-31/pids" "$TEST_DIR/run31.count"
+  : > "$TEST_DIR/sleep31.log"
+  (
+    export PATH="$TEST_DIR/bin31:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-31"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-31"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=576460752303423488
+    export COURSIA_RUNNER_BACKOFF_CAP=576460752303423488
+    export STUB_STOP_FILE="$TEST_DIR/state-31/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run31.count"
+    export SLEEP_LOG="$TEST_DIR/sleep31.log"
+    timeout --kill-after=2 15 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err31.log"
+    echo "rc=$?" > "$TEST_DIR/rc31"
+  )
+  rc31="$(sed 's/rc=//' "$TEST_DIR/rc31")"
+  seq31="$(paste -sd, "$TEST_DIR/sleep31.log")"
+  bad=0
+  for v in $(cat "$TEST_DIR/sleep31.log"); do
+    [ "$v" -le 0 ] && bad=1
+  done
+  if [ "$rc31" = "0" ] && [ "$bad" = "0" ] && [ "$(sort -u "$TEST_DIR/sleep31.log" | wc -l)" = "1" ] && grep -q "^576460752303423488$" "$TEST_DIR/sleep31.log"; then
+    ok "frontiere 2^59 : 3 backoffs exactement egaux a la borne, jamais negatifs/nuls, boucle TERMINEE (rc=0)"
+  else
+    ko "attendu rc=0 et backoff=2^59 plat ; rc=$rc31 seq=[$seq31] bad=$bad err=$(head -3 "$TEST_DIR/err31.log")"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au

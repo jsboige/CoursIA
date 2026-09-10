@@ -281,6 +281,35 @@ assert_docker_daemon() {
   fi
 }
 
+# Review #15166 (v2) : les 3 bornes du backoff sont env-overridable ; une
+# config operateur invalide ne doit JAMAIS pouvoir atteindre les boucles --
+# BASE=0 produisait un backoff nul sans fin, et des valeurs proches de la
+# borne signee 64 bits faisaient deborder le doublement vers le negatif
+# puis 0 (boucle infinie dans cycle_backoff). Fail-closed AVANT tout cycle :
+# decimal strictement positif, domaine arithmetique garanti (18 chiffres
+# max < 2^60 : tout produit garde du calcul iteratif reste < 2^61, loin de
+# la borne signee), et BASE <= CAP (le plafond doit dominer la base).
+_validate_backoff_value() {
+  # $1 = nom de la variable d'environnement, $2 = valeur
+  case "$2" in
+    ''|*[!0-9]*)
+      die "COURSIA_RUNNER_* : $1='$2' n'est pas un entier decimal (#15166)."
+      ;;
+  esac
+  [ "${#2}" -le 18 ] \
+    || die "COURSIA_RUNNER_* : $1='$2' depasse le domaine arithmetique (18 chiffres max, #15166)."
+  [ "$2" -ge 1 ] \
+    || die "COURSIA_RUNNER_* : $1='$2' doit etre strictement positif (#15166)."
+}
+
+validate_backoff_env() {
+  _validate_backoff_value HEALTHY_CYCLE_SECS "$HEALTHY_CYCLE_SECS"
+  _validate_backoff_value BACKOFF_BASE "$BACKOFF_BASE"
+  _validate_backoff_value BACKOFF_CAP "$BACKOFF_CAP"
+  [ "$BACKOFF_BASE" -le "$BACKOFF_CAP" ] \
+    || die "COURSIA_RUNNER_* : BACKOFF_BASE=$BACKOFF_BASE > BACKOFF_CAP=$BACKOFF_CAP -- le plafond doit dominer la base (#15166)."
+}
+
 # #15095 Backoff post-cycle partage par slot_loop et waiter_loop. La duree
 # de vie (pas le rc) classe le cycle : court = anormal, exponentiel plafonne
 # (15,30,60,...,900 s) ; sain = respiration courte et remise a zero. Le rc
@@ -320,20 +349,22 @@ cycle_backoff() {
       return
     fi
     SHORT_CYCLES=$(( SHORT_CYCLES + 1 ))
-    # Saturation AVANT l'exponentiation : tout exposant >= cap_exp donne le
-    # MEME delai plafonne, et cap_exp est le plus petit exposant tel que
-    # BASE*2^cap_exp > CAP. Le probe double p depuis BASE sans jamais
-    # depasser 2^62 (BASE*2^k ne peut pas egaliser une puissance de deux
-    # exacte, donc pas de debordement du probe lui-meme).
+    # Review #15166 (v2) : le doublement ne doit JAMAIS pouvoir depasser la
+    # borne signee 64 bits, quelle que soit la config valide. d est calcule
+    # ITERATIVEMENT : on ne double que si d <= CAP/2 (chaque produit reste
+    # <= 2*floor(CAP/2) <= CAP, dans le domaine) ; si les exp doublons ne
+    # tiennent pas tous dans la garde, la vraie valeur depasse CAP ->
+    # plafond. L'ancien probe `while p<=CAP && p<=2^62; p=p*2` debordait sur
+    # BASE=2^62/CAP maximale (p=2^63 -> -2^63 -> 0 -> boucle infinie) et
+    # sur BASE=0 (0 sans fin) ; ces configs sont desormais rejetees au
+    # demarrage (validate_backoff_env), et le calcul lui-meme est garde.
     local exp=$(( SHORT_CYCLES - 1 ))
-    local cap_exp=0 p="$BACKOFF_BASE"
-    while [ "$p" -le "$BACKOFF_CAP" ] && [ "$p" -le 4611686018427387904 ]; do
-      p=$(( p * 2 ))
-      cap_exp=$(( cap_exp + 1 ))
+    local d="$BACKOFF_BASE" i=0
+    while [ "$i" -lt "$exp" ] && [ "$d" -le "$(( BACKOFF_CAP / 2 ))" ]; do
+      d=$(( d * 2 ))
+      i=$(( i + 1 ))
     done
-    [ "$exp" -gt "$cap_exp" ] && exp="$cap_exp"
-    local d=$(( BACKOFF_BASE * (2 ** exp) ))
-    [ "$d" -gt "$BACKOFF_CAP" ] && d="$BACKOFF_CAP"
+    [ "$i" -lt "$exp" ] && d="$BACKOFF_CAP"
     echo "$tag cycle court (rc=$rc, ${lifetime}s, consecutifs=$SHORT_CYCLES) -- backoff ${d}s (#15095)" >&2
     sleep "$d"
   elif [ "$rc" -eq 0 ]; then
@@ -716,6 +747,7 @@ cmd_start() {
   [ "${2:-}" = "--force" ] && force=1
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  validate_backoff_env
   assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
@@ -948,6 +980,7 @@ cmd_waiters() {
   local n="${1:-24}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  validate_backoff_env
   assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
@@ -984,6 +1017,7 @@ cmd_lean() {
   local n="${1:-2}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  validate_backoff_env
   assert_docker_daemon
   docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
     || die "image $LEAN_IMAGE absente -- construire d'abord :
