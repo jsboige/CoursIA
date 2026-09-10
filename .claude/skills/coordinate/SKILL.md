@@ -33,7 +33,7 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 
 ### Phase 3 - Production et digestion en parallèle
 
-**Production avant digestion (HARD)** : lancer ou maintenir les deep queues productives avant d'attendre la fin de la passe de merge. CI, review, `DWELL`, HOLD ou backlog bloquent une candidate, jamais une lane. La saturation de digestion déclenche une piste de réparation/capacité parallèle ; elle ne réduit jamais les dispatchs.
+**Production avant digestion (HARD)** : lancer ou maintenir les deep queues productives avant d'attendre la fin de la passe de merge. CI, review, `DWELL`, HOLD ou backlog bloquent une candidate, jamais une lane. Chaque worker draine a chaque session **tous** les nits et reserves reparables de **toutes** ses PRs, sequentiellement, puis enchaine plusieurs grains DEEP/MED de contenu ; traiter un seul nit ou livrer une seule PR ne clot pas la session. La saturation de digestion déclenche une piste de réparation/capacité parallèle ; elle ne réduit jamais les dispatchs.
 
 Sweep batché, dossiers préparés en parallèle, décision séquentielle au coordinateur — pas de re-audit intégral PR par PR. Déléguer agressivement la préparation vérifiable : adjoint pour preflight B.0/exact-head, Hermes et NanoClaw pour la première digestion spécialisée ; ai-01 garde la lecture B.0 personnelle finale, le verdict et le merge.
 
