@@ -72,6 +72,12 @@ exit 0
 STUB
 chmod +x "$TEST_DIR/bin/ps"
 
+# REAL_SLEEP : chemin absolu du sleep systeme, capture AVANT la creation du
+# stub global (le resolveur `command -v` toucherait sinon le stub). Les polls
+# du HARNAIS (tests 3 et 10) doivent attendre pour de vrai ; le stub ne sert
+# qu'aux backoffs du programme teste.
+REAL_SLEEP="$(command -v sleep)"
+
 # Stub sleep GLOBAL : depuis que les boucles VIVENT (la fusion a corrige t0),
 # un cycle court attendait un backoff reel de 15 s ; les tests 1-3/7/10/22
 # (timeouts 1-3 s) timeout-rent au lieu de mesurer. Ce stub rend toutes les
@@ -154,7 +160,7 @@ echo "Test 3 : start --force leve sentinel (Defaut 2 avec --force)"
   leve=0
   for _ in $(seq 1 24); do
     [ ! -f "$TEST_DIR/state-C/stop" ] && { leve=1; break; }
-    sleep 0.5
+    "$REAL_SLEEP" 0.5
   done
   if [ "$leve" = "1" ]; then
     ok "sentinel leve par start --force"
@@ -345,7 +351,7 @@ echo "Test 10 : start passe le garde quand l'image est a jour (#14801)"
   slots=0
   for _ in $(seq 1 24); do
     [ -s "$TEST_DIR/state-10/pids" ] && { slots=1; break; }
-    sleep 0.5
+    "$REAL_SLEEP" 0.5
   done
   if [ "$slots" = "1" ] && ! grep -q "PERIMEE" "$TEST_DIR/last.err"; then
     ok "image a jour : garde passe, slots lances ($(tr '\n' ' ' < "$TEST_DIR/state-10/pids"))"
