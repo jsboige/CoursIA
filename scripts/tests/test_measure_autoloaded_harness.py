@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -248,10 +249,10 @@ def test_mesure_complete_reflete_les_surfaces_manquantes(tmp_path):
 # --- cablage CLI (#15204) : ratio calibre, budget en tokens -------------------
 
 
-def _cli(*args, root=None):
+def _cli(*args, root=None, env=None):
     cmd = [sys.executable, str(_MODULE_PATH), "--root", str(root or _REPO), *args]
     return subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", env=env)
 
 
 def test_json_expose_le_ratio_et_dit_que_les_tokens_sont_DERIVES():
@@ -329,9 +330,18 @@ def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
     """Une somme partielle ne passe jamais un seuil entre partiel et complet."""
     root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
     memory = tmp_path / "machine" / "MEMORY.md"
+    home = tmp_path / "home"
+    (home / ".claude" / "rules").mkdir(parents=True)
+    (home / ".claude" / "CLAUDE.md").write_text(
+        "# global\n", encoding="utf-8"
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
 
     partial = _cli(
-        "--with-machine", "--memory-file", str(memory), "--json", root=root,
+        "--with-machine", "--memory-file", str(memory), "--json",
+        root=root, env=env,
     )
     assert partial.returncode == 0, partial.stderr
     partial_data = json.loads(partial.stdout)
@@ -340,7 +350,8 @@ def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
     memory.parent.mkdir(parents=True)
     memory.write_text("# mémoire\n" + "x" * 1000, encoding="utf-8")
     complete = _cli(
-        "--with-machine", "--memory-file", str(memory), "--json", root=root,
+        "--with-machine", "--memory-file", str(memory), "--json",
+        root=root, env=env,
     )
     assert complete.returncode == 0, complete.stderr
     complete_data = json.loads(complete.stdout)
@@ -354,7 +365,7 @@ def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
     memory.unlink()
     missing_guard = _cli(
         "--with-machine", "--memory-file", str(memory),
-        "--max-bytes", str(threshold), "--json", root=root,
+        "--max-bytes", str(threshold), "--json", root=root, env=env,
     )
     assert missing_guard.returncode == 2
     assert "MESURE INCOMPLETE" in missing_guard.stderr
@@ -362,7 +373,7 @@ def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
     memory.write_text("# mémoire\n" + "x" * 1000, encoding="utf-8")
     complete_guard = _cli(
         "--with-machine", "--memory-file", str(memory),
-        "--max-bytes", str(threshold), "--json", root=root,
+        "--max-bytes", str(threshold), "--json", root=root, env=env,
     )
     assert complete_guard.returncode == 1
     assert "DEPASSEMENT" in complete_guard.stderr
