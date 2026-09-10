@@ -255,13 +255,27 @@ Le mapping du `model` explicite (`sonnet` / `haiku`) vers le moteur sous-jacent 
 
 MiniMax M3 (déployé sur `po-2023` depuis 2026-07-02, mandat user) remplace Qwen 3.6 sur le tier `haiku` pour cette lane : les sous-agents `model: "haiku"` invoqués depuis po-2023 sont exécutés par MiniMax M3. Seul le moteur change, pas la règle de qualité.
 
+### Moteur de main-loop par lane
+
+Le tableau précédent décrit les **sous-agents** ; il ne décrit pas le moteur de la boucle principale. Le rôle et les droits restent attachés à la lane, jamais inférés depuis le moteur ou le suffixe du workspace.
+
+| Lane | Moteur de main-loop | Rôle |
+|---|---|---|
+| `myia-ai-01:CoursIA` | Opus | coordinateur : décisions, merges et fermetures |
+| `myia-po-2025:CoursIA` | Sol (`gpt-5.6-sol`) | worker d'élite |
+| `myia-po-2025:CoursIA-2` | Sol (`gpt-5.6-sol`) | adjoint : vérifications pré-fermeture et preflights, sans merge ni fermeture |
+| autres lanes `*:CoursIA` | slot `sonnet` → GLM, sans failover | workers |
+| autres lanes `*:CoursIA-2` | slot `haiku` → MiniMax, régime nominal | workers |
+
+Le suffixe `CoursIA-2` n'implique donc ni MiniMax ni un droit de fermeture. L'adjoint peut recevoir l'urne `delivered`, vérifier firsthand l'acceptance et poster sa preuve ; la fermeture effective reste signée par le coordinateur, conformément à la règle 6 de [`coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md).
+
 ## Capacité vision — router le QA visuel vers MiniMax (lanes CoursIA-2) ou ai-01, jamais GLM
 
-Mandat user 2026-07-11. **MiniMax M3** (main-loop de toutes les lanes CoursIA-2 depuis le mandat du 02/07) et **ai-01** (Opus) ont des capacités de **vision** que **ZAI GLM-5.1** (lanes CoursIA) n'a pas. Objectif : que nos README et notebooks **rendent bien visuellement**.
+Mandat user 2026-07-11. **MiniMax M3** (main-loop des lanes CoursIA-2 sauf `myia-po-2025:CoursIA-2`, qui tourne Sol) et **ai-01** (Opus) ont des capacités de **vision** que **ZAI GLM-5.1** (lanes CoursIA) n'a pas. Objectif : que nos README et notebooks **rendent bien visuellement**.
 
 **Routage capability-driven, PAS token-driven.** Distinct de [[feedback-token-economy-anthropic-only]] : on route vers MiniMax **pour sa vision** — une capacité que GLM n'a pas — pas pour économiser. C'est le cas légitime « meilleur outil pour la tâche », pas un fallback dégradé.
 
-- **Règle.** Toute tâche dont la valeur dépend du **rendu visuel** (galeries de figures README, plots générés par notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** routé vers une lane **CoursIA-2 (MiniMax)** ou vers **ai-01**. **Jamais** vérifié text-only sur une lane GLM : elle ne voit pas.
+- **Règle.** Toute tâche dont la valeur dépend du **rendu visuel** (galeries de figures README, plots générés par notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** routé vers une lane **qui voit** — une lane CoursIA-2 sous MiniMax, ou **ai-01**. **Jamais** vérifié text-only sur une lane GLM : elle ne voit pas.
 - **Mécanisme concret.** Un `Read` sur un fichier image (`.png`/`.webp`/`.jpg`), ou sur un screenshot (Playwright render → screenshot → `Read`, ou `mcp__sk-agent__analyze_image`), insère des blocs image que MiniMax/Opus interprètent. Un `test -f` confirme l'**existence**, PAS le **rendu** — seul le regard distingue une vraie figure d'un placeholder plat, blanc ou cassé.
 - **Couplage ai-01 ↔ MiniMax (la « double vision » du mandat).** MiniMax fait le **balayage en volume** (audit read-only de N figures → liste de défauts : cassées / blanches / placeholder / alt-text incohérent / overflow slide) ; ai-01 **valide la liste et tranche au merge-gate** (regarde effectivement les figures d'une PR avant merge). Déléguer le sweep borné, garder le jugement — le sweep visuel est read-only, donc **sans collision** avec la lane qui possède la substance : le fix repart au owner.
 - **Classe de défaut à attraper** (cf [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) Prong A) : une figure réduite à des blocs de couleur plats / image blanche / placeholder / render cassé **alors que le vrai outil était invocable** (stack GenAI, matplotlib, solveur) → verdict RECOVERABLE-MACHINE ou -LOCAL, **régénérer**, jamais consacrer.
