@@ -88,7 +88,16 @@ from .sae_traces import (
     binarize_quantile,
     states_from_panel,
 )
-from .sae_traces import _load_npz_unchecked
+# Binding local ``_sae_load_npz_unchecked`` : :func:`load_traces` lit le
+# .npz via :func:`ict.sae_traces._load_npz_unchecked` (meme schema, memes
+# loaders numpy-only + garde BOS-inf, SANS enforce) puis applique la
+# discrimination J-Lens via le contrat v1. Le nom ``_sae_load_npz_unchecked``
+# est explicite : c'est la fonction ``_load_npz_unchecked`` **telle qu'elle
+# est vue par jlens_traces**, pas un appel direct (qui ferait perdre le
+# monkeypatching des tests : un monkeypatch sur
+# ``ict.sae_traces._load_npz_unchecked`` prend effet via le binding importe,
+# cf. :mod:`ict.tests.test_jlens_traces`, helper ``_fake_load_factory``).
+from .sae_traces import _load_npz_unchecked as _sae_load_npz_unchecked
 
 __all__ = [
     "load_traces",
@@ -129,11 +138,25 @@ def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     fonctions d'aval ``densify`` / ``differential_features`` / ... sont
     reexportees telles quelles depuis :mod:`ict.sae_traces`).
     """
-    meta, prompts = _load_npz_unchecked(path)
+    # Delegation via le binding local ``_sae_load_npz_unchecked`` (import
+    # explicite ligne 91, ``as _sae_load_npz_unchecked``) : un monkeypatch
+    # sur ``ict.jlens_traces._sae_load_npz_unchecked`` prend effet ; les
+    # tests :mod:`ict.tests.test_jlens_traces` (post-c.1050) monkeypatchent
+    # ``ict.sae_traces._load_npz_unchecked`` directement. Voir
+    # :mod:`ict.tests.test_jlens_traces._fake_load_factory`.
+    #
+    # Note technique : le chargeur J-Lens ne delegue PAS a
+    # ``ict.sae_traces.load_traces`` (qui enforce ``instrument=='sae'`` et
+    # refuserait systematiquement une trace J-Lens legacy ``lens='jacobian'``).
+    # Il utilise :func:`ict.sae_traces._load_npz_unchecked` (parsing
+    # structurel + garde BOS-inf SANS enforce) puis applique sa propre
+    # validation/enforcement avec ``expected='jlens'``.
+    raw_meta, prompts = _sae_load_npz_unchecked(path)
+    traces = {"meta": raw_meta, "prompts": prompts}
     # Contrat v1 : validation + anti-melange (acceptance #1).
     # Import local pour eviter tout cycle d'import (trace_contract ne depend
-    # de rien du package).
+    # de rien du package, sae_traces trace_contract ne depend pas de sae_traces).
     from .trace_contract import validate_manifest, enforce_instrument
-    meta = validate_manifest(meta, strict=strict)
-    enforce_instrument(meta, "jlens")
-    return {"meta": meta, "prompts": prompts}
+    traces["meta"] = validate_manifest(traces["meta"], strict=strict, expected="jlens")
+    enforce_instrument(traces["meta"], "jlens")
+    return traces

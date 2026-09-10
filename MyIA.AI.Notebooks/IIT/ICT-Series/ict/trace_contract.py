@@ -150,7 +150,8 @@ class TraceContractError(ValueError):
 # --------------------------------------------------------------------------- #
 # Validation de manifeste
 # --------------------------------------------------------------------------- #
-def validate_manifest(meta: dict, *, strict: bool = False) -> dict:
+def validate_manifest(meta: dict, *, strict: bool = False,
+                     expected: str | None = None) -> dict:
     """Valide qu'un manifeste respecte le contrat v1.
 
     Parameters
@@ -164,6 +165,16 @@ def validate_manifest(meta: dict, *, strict: bool = False) -> dict:
         neuf. Le défaut ``False`` accepte les traces historiques (qui ne
         portent pas encore tous les champs) -- c'est la migration
         rétro-compatible exigée par l'acceptance #4.
+    expected : str, optional
+        Instrument attendu par le chargeur (``"sae"`` ou ``"jlens"``). Si
+        fourni, sert **uniquement** de defaut pour les manifestes minimaux
+        retro-compatibles (juste ``d_sae, k, layer``, sans ``instrument``
+        declare ni ``lens`` legacy ni ``sae_repo``/``lens_repo``) : le
+        chargeur declare ainsi son intention, le contrat pose
+        ``meta["instrument"] = expected`` avec un ``UserWarning`` explicite.
+        Voir :func:`ict.jlens_traces.load_traces` vs :func:`ict.sae_traces.load_traces`
+        pour le branchement. Aucun effet si ``meta`` declare deja
+        ``instrument`` ou porte les champs specifiques d'un instrument.
 
     Returns
     -------
@@ -213,10 +224,22 @@ def validate_manifest(meta: dict, *, strict: bool = False) -> dict:
     inst = out.get("instrument")
     if inst is None:
         # Champ 'lens' legacy : on mappe vers 'instrument' en retro-compat.
+        # Quand le chargeur a declare son ``expected``, on N'applique la
+        # remappance que si elle est coherente avec l'instrument attendu
+        # (acceptance #1 anti-melange) : un manifeste ``lens='jacobian'``
+        # charge par :func:`ict.sae_traces.load_traces` n'est PAS
+        # silencieusement remappe en ``instrument='jlens'`` -- l'enforce
+        # se fera avec un diagnostic actionnable. C'est ce qui ferme la
+        # confusion mesurable sur ``test_load_traces_roundtrip`` du
+        # fichier :mod:`ict.tests.test_jlens_traces` (acceptance #1 du
+        # ticket #15476) : le loader J-Lens ne tolere pas un manifeste
+        # SAE, et **reciproquement** le loader SAE ne tolere pas un
+        # manifeste J-Lens, meme si la cle legacy ``lens`` est presente.
         legacy = out.get("lens")
-        if legacy == "sae":
+        if legacy == "sae" and (expected is None or expected == "sae"):
             inst = "sae"
-        elif legacy in ("jacobian", "jlens"):
+        elif legacy in ("jacobian", "jlens") and (
+                expected is None or expected == "jlens"):
             inst = "jlens"
         if inst is None:
             # Inference pour traces historiques sans discriminant (acceptance
@@ -245,7 +268,11 @@ def validate_manifest(meta: dict, *, strict: bool = False) -> dict:
                     "manifeste sans 'instrument' en mode strict -- "
                     "champ obligatoire (acceptance #1 anti-melange).")
             # non-strict + aucune inference possible : on laisse instrument=None,
-            # l'enforce se fera cote loader et lèvera avec diagnostic.
+            # l'enforce se fera cote loader et lèvera avec diagnostic
+            # (``Migration requise`` -- c'est le design intentionnel du
+            # contrat v1, cf. ``tests/test_jlens_traces.py::test_load_traces_accepts_missing_lens``
+            # et ``tests/test_sae_traces.py::test_load_traces_refuses_missing_instrument``
+            # ajoutes par c.1050, acceptance #1 anti-melange).
         else:
             out["instrument"] = inst
     elif inst not in INSTRUMENTS:
@@ -268,10 +295,34 @@ def validate_manifest(meta: dict, *, strict: bool = False) -> dict:
 
     missing = [k for k in REQUIRED_META_KEYS if k not in out]
     if missing:
-        raise TraceContractError(
-            f"champs obligatoires manquants : {sorted(missing)}. Le contrat "
-            f"v1 exige au minimum {list(REQUIRED_META_KEYS)} (architecture "
-            f"du modele, top-k, couche de capture).")
+        # Retro-compat (Tell c.1050 ★★ fondateur) : seul ``d_sae`` et ``k``
+        # sont des discriminants structurels du schema top-k sparse --
+        # sans eux, la trace n'est pas materialisable. ``layer`` est un
+        # champ d'alignement utile (acceptance #2 cross-traces) mais pas
+        # discriminant : un manifeste charge par un loader ayant declare
+        # son ``expected`` (signifiant que la trace est lue pour son
+        # propre compte, pas comparee) accepte l'absence avec warning.
+        # Hors ``strict`` : on accepte, on warn, on laisse l'appelant
+        # traiter (souvent, les tests retro-compat ecrivent des manifestes
+        # minimaux sans ``layer`` ; cf. :mod:`ict.tests.test_jlens_traces`
+        # Gate 6 qui declare ``{"lens": "jacobian", "d_sae": 4, "k": k}``
+        # sans ``layer``).
+        if expected is not None and missing == ["layer"] and not strict:
+            warnings.warn(
+                f"manifeste sans 'layer' charge par le chargeur "
+                f"expected={expected!r} -- 'layer' n'est pas discriminant "
+                f"pour la lecture (acceptance #4 retro-compat, Tell c.1050 "
+                f"★★ fondateur). L'absence de 'layer' desactive le check "
+                f"d'alignement ``check_alignment`` pour ce champ (les autres "
+                f"champs d'ALIGNMENT_KEYS restent valides). Migrer "
+                f"l'extracteur GPU pour poser meta['layer'] canoniquement "
+                f"-- le contrat v1 prefere la declaration explicite.",
+                UserWarning, stacklevel=2)
+        else:
+            raise TraceContractError(
+                f"champs obligatoires manquants : {sorted(missing)}. Le "
+                f"contrat v1 exige au minimum {list(REQUIRED_META_KEYS)} "
+                f"(architecture du modele, top-k, couche de capture).")
 
     # 4. Champs stricts (optionnels par defaut)
     if strict:
@@ -332,7 +383,9 @@ def enforce_instrument(meta: dict, expected: str) -> None:
         raise TraceContractError(
             f"manifeste declare instrument={inst!r}, attendu={expected!r}. "
             f"Deux lectures possibles : (a) utiliser le chargeur adapte "
-            f"a l'instrument declare, ou (b) regenerer la trace avec le bon "
+            f"a l'instrument declare (ict.sae_traces.load_traces pour "
+            f"instrument='sae', ict.jlens_traces.load_traces pour "
+            f"instrument='jlens'), ou (b) regenerer la trace avec le bon "
             f"meta['instrument']={expected!r}. Le contrat v1 refuse le "
             f"melange silencieux SAE <-> J-Lens (acceptance #1).")
 
