@@ -134,10 +134,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           STALE_DAYS: "14"
-          BASE_REF: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           git fetch origin main
-          BASE_SHA="$BASE_REF"
+          # base.sha est la POINTE de la base au moment de l'evenement (mesure
+          # #14333 : == origin/main sur la PR de controle #15426, donc
+          # BASE_SHA == MAIN_SHA -> "Base is up-to-date" inconditionnel,
+          # organe muet). Le point de fourche reel de la PR est le merge-base
+          # de sa tete avec main.
+          BASE_SHA="$(git merge-base "$PR_HEAD_SHA" origin/main)"
           MAIN_SHA="$(git rev-parse origin/main)"
           if [ "$BASE_SHA" = "$MAIN_SHA" ]; then
             echo "Base is up-to-date."
