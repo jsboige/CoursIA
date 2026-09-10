@@ -20,6 +20,18 @@ formalize EGA/SGA. The goal is to give learners a curated entry point into:
 - Schemes (locally ringed spaces locally Spec R) and the Zariski site
 - What Mathlib has and what it doesn't (yet)
 
+## How to read this workspace
+
+Three paths are offered depending on your goal:
+
+1. **Reader discovering Grothendieck for the first time.** Follow the arc « laying out the site → building the sheaf → letting the points speak ». Parts 1 (categories and sites), 6 (sieves), 8 (order on topologies) lay the foundations; 13 (sheafification) and 14 (left exactness) deliver the key theorem; 15 (points of a site) and 19 (conservative families) tie the theory to its models; 20-23 (cohomology) measure the obstruction. The table of Parts below gives a one-line content summary per module.
+
+2. **Reader interested in the six operations** (direct image / inverse image / exceptional image). The thread runs from Part 33 (`DirectImage`, `f^* ⊣ f_*`) to Part 34 (`ExceptionalDirect`, `f_! ⊣ f^*`), then Part 68 (`ExceptionalTriple`, `f_! ⊣ f^* ⊣ f_*` in full). Three adjunctions, ordered best-known to least-known.
+
+3. **Reader interested in the Lawvere–Tierney ↔ Grothendieck bridge.** Parts 58 (classifier `Ω`), 59 (closure operator `j` on Ω), 60 (the dictionary: Grothendieck topologies = Lawvere–Tierney topologies, the two notions coincide). This is the bridge where categorical logic meets relative geometry.
+
+**Navigation conventions.** Modules are grouped into `Grothendieck/` and `SheafCohomology/` folders; each `Foo.lean` module has a sibling `Foo_en.lean` for the English version (i18n convention, EPIC #4980). The table below gives, for each Part, the FR module + the `_en` module + one content line.
+
 ## The arc
 
 The **73 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
