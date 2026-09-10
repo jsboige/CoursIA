@@ -141,7 +141,6 @@ GenAI/
 ├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
 ├── Aspire/                  # Hosting/observabilité .NET (AppHost, services, OpenTelemetry)
 ├── CaseStudies/             # Études de cas étudiants GenAI (4 projets agentiques)
-├── EPF/                     # [archive] Sorties étudiantes EPF alimentant GenAI/CaseStudies/
 ├── FallacyDetection/        # Taxonomie + datasets + couverture cross-notebooks fallacy
 ├── Integrations-DotNet/     # Hub d'intégrations .NET GenAI (EFCore + CopilotSDK, voir PR #14431)
 ├── Plateformes-Conversationnelles/  # Interfaces GenAI conversationnelles (nommées par fonction)
@@ -151,7 +150,7 @@ GenAI/
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
 
-> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. `EPF/` est un répertoire d'archive (voir [`EPF/README.md`](EPF/README.md)) — sorties étudiantes EPF préservées comme trace, pas un parcours actif.
+> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. La provenance des réalisations étudiantes EPF est portée par la section « Généalogie » de [`CaseStudies/README.md`](CaseStudies/README.md).
 
 ### 00-GenAI-Environment - Votre point de départ
 
@@ -213,9 +212,6 @@ Série pédagogique sur [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/a
 
 Hub thématique dédié aux **bindings .NET** des API GenAI : EFCore (requêtes compilées sur metadata), CopilotSDK (intégration Microsoft Copilot), et les futurs arrivants (TUnit.Testcontainers, AppHost configurations). Voir [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) pour le contexte de création et la liste à venir.
 
-### EPF - Sorties étudiantes (archive)
-
-Sous-répertoire d'**archive** contenant les `_output.ipynb` produits par les étudiantes EPF (Dorian & Bastien pour Recipe-Maker, Louise & Jeanne Céline pour Medical-Chatbot). Préservé comme trace des sessions pédagogiques qui ont nourri [`GenAI/CaseStudies/`](CaseStudies/README.md). **Pas un parcours actif** — voir [`EPF/README.md`](EPF/README.md) pour le détail et la distinction avec le `MyIA.AI.Notebooks/CaseStudies/` top-level.
 ## Théorie — Stack self-hosted ⇄ Cloud API
 
 <a id="stack-self-hosted-vs-cloud"></a>
@@ -408,7 +404,6 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 - **[tutorials/](tutorials/README.md)** — guides pratiques transverses (écosystème OpenRouter, prompt engineering DALL-E 3, workflows pédagogiques, accessibilité GPT-5 multimodal). Quatre guides approfondissent un fournisseur ou un cas d'usage qui déborde d'une seule modalité. À consulter en parallèle d'un notebook quand on cherche un éclairage transverse.
 - **[_research/](_research/)** — documents de recherche bruts en cours de maturation (gate Phase 3-5 de l'Epic ICT). Non destiné à un parcours étudiant ; citer depuis les notebooks qui les exploitent (ex. `FallacyDetection/02_fallacy_datasets_landscape.ipynb` pour l'inventaire SAE Qwen3.5).
-- **[EPF/](EPF/README.md)** — répertoire d'**archive** (sorties étudiantes EPF alimentant [`CaseStudies/`](CaseStudies/README.md)). Pas un parcours pédagogique actif ; voir [`EPF/README.md`](EPF/README.md) pour la distinction avec `MyIA.AI.Notebooks/CaseStudies/` top-level.
 
 > **Archive** : le fichier historique `VALIDATION_SUMMARY.md` (daté 2026-02-25, états de validation pré-`catalog-cron.yml`) a été retiré du dépôt le 2026-09-03 — la source de vérité autoritative pour les volumes est désormais le marqueur `CATALOG-STATUS` (auto-régénéré chaque nuit, voir [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md) R1).
 
