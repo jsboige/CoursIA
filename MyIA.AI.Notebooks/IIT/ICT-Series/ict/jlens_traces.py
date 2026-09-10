@@ -42,19 +42,25 @@ Pour le **SAE top-k officiel Qwen-Scope**, une feature hors top-50 vaut
 **exactement zero** : le SAE top-k force la troncature, donc :func:`densify`
 materialise une representation **exacte** (cf. :mod:`ict.sae_traces`).
 
-Pour **J-Lens** (directions singulieres principales de la matrice jacobienne des
-logits par token), ne garder que le top-k des directions par score est une
-**troncature de rang-k** : les directions negligees ont un coefficient petit mais
-**NON nul** en realite. :func:`densify` materialise donc une **approximation
-rang-k** de la projection J-space, pas une exactitude absolue comme pour le SAE.
+Pour **J-Lens** (IDs du vocabulaire du modele + logits signes captures
+token par token), ne garder que le top-k par score est une **troncature
+de rang-k** sur la projection : les identifiants et logits negliges
+existent dans le buffer original mais **ne sont pas observes** dans la
+trace exportee. :func:`densify` materialise donc une **vue partielle**
+du J-space (un top-k d'identifiants vocabulaire + leurs logits signes),
+pas une exactitude absolue comme pour le SAE -- les identifiants hors
+top-k sont **non observes** (cf. :func:`ict.trace_contract.topk_semantics`
+qui code cette asymetrie comme ``TOPK_UNOBSERVED`` vs ``TOPK_EXACT_ZERO``
+pour SAE).
 
 La batterie d'emergence tourne a l'identique (meme appareil, c'est l'objectif),
 MAIS le verdict doit etre rapporte avec cette nuance : la co-localisation
 SAE <-> J se mesure entre deux representations de natures differentes (l'une
-exacte par construction, l'autre approximee par troncature). Ce n'est pas un
-defaut -- c'est la meilleure approximation disponible d'un J-space qu'aucun
-top-k n'epuise -- c'est une limite honnete a inscrire dans le notebook (garde-fou
-#1 de :mod:`ict.workspace` : ne pas vendre comme equivalentes les deux lectures).
+exacte par construction, l'autre partielle par troncature d'identifiants).
+Ce n'est pas un defaut -- c'est la meilleure approximation disponible d'un
+J-space qu'aucun top-k n'epuise -- c'est une limite honnete a inscrire dans
+le notebook (garde-fou #1 de :mod:`ict.workspace` : ne pas vendre comme
+equivalentes les deux lectures).
 
 Numpy uniquement : AUCUN import torch ici (le GPU reste confine au script
 d'extraction ``scripts/extract_jlens_traces.py``, piste GPU2 de #5681).
@@ -82,7 +88,7 @@ from .sae_traces import (
     binarize_quantile,
     states_from_panel,
 )
-from .sae_traces import load_traces as _sae_load_traces
+from .sae_traces import _load_npz_unchecked
 
 __all__ = [
     "load_traces",
@@ -98,31 +104,36 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # Chargement (garde-fou anti-melange SAE <-> J-Lens, tete-a-tete #5681)
 # --------------------------------------------------------------------------- #
-def load_traces(path: str | Path) -> dict:
+def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     """Recharge un ``.npz`` de traces **J-Lens** (meme schema que :mod:`ict.sae_traces`).
 
-    Garde-fou anti-melange : valide la nature de la trace via ``meta["lens"]``.
+    Validation du **contrat de trace v1** (:mod:`ict.trace_contract`) :
+    appelle :func:`ict.trace_contract.validate_manifest` puis
+    :func:`ict.trace_contract.enforce_instrument` avec ``expected="jlens"``.
+    Toute trace ``meta['instrument'] == 'sae'`` (ou un manifeste qui declare
+    un autre instrument du contrat) est REFUSEE avec un diagnostic
+    actionnable -- c'est l'acceptance #1 anti-melange du ticket #15476.
 
-    * ``meta["lens"] == "sae"`` -> **refuse** (c'est une trace SAE : utiliser
-      :func:`ict.sae_traces.load_traces`). Evite de charger une trace SAE comme
-      trace J-lens dans le notebook tete-a-tete #5681.
-    * ``meta["lens"] == "jacobian"`` -> **accepte** (trace J-Lens nominale).
-    * ``meta["lens"]`` absent -> **accepte** (retro-compatibilite avec un extracteur
-      qui n'ecrit pas encore le champ). L'extracteur GPU2
-      (``scripts/extract_jlens_traces.py``) DOIT ecrire ``"lens": "jacobian"``
-      pour la tracabilite du tete-a-tete.
+    Le contrat v1 introduit le champ ``meta['instrument']`` (canonique) en
+    plus du champ legacy ``meta['lens']``. Les deux sont lus en
+    retro-compatibilite : un manifeste sans ``instrument`` mais avec
+    ``lens='jacobian'`` est accepte comme J-Lens ; un manifeste avec
+    ``instrument='jlens'`` est accepte directement.
+
+    Le parametre ``strict`` (defaut ``False``) suit la meme convention que
+    :func:`ict.sae_traces.load_traces` : ``False`` accepte les traces
+    historiques, ``True`` exige un manifeste v1 complet.
 
     Retourne ``{"meta": dict, "prompts": {(set_name, i): {"ids", "vals",
     "tokens"}}}`` -- meme structure que :func:`ict.sae_traces.load_traces` (les
     fonctions d'aval ``densify`` / ``differential_features`` / ... sont
     reexportees telles quelles depuis :mod:`ict.sae_traces`).
     """
-    traces = _sae_load_traces(path)
-    lens = traces.get("meta", {}).get("lens")
-    if lens == "sae":
-        raise ValueError(
-            f"trace {path} porte meta['lens']='sae' : c'est une trace SAE, pas "
-            f"J-Lens. Utiliser ict.sae_traces.load_traces pour les traces SAE "
-            f"(garde-fou anti-melange du tete-a-tete #5681 Track S)."
-        )
-    return traces
+    meta, prompts = _load_npz_unchecked(path)
+    # Contrat v1 : validation + anti-melange (acceptance #1).
+    # Import local pour eviter tout cycle d'import (trace_contract ne depend
+    # de rien du package).
+    from .trace_contract import validate_manifest, enforce_instrument
+    meta = validate_manifest(meta, strict=strict)
+    enforce_instrument(meta, "jlens")
+    return {"meta": meta, "prompts": prompts}

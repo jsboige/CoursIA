@@ -55,12 +55,15 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # Chargement
 # --------------------------------------------------------------------------- #
-def load_traces(path: str | Path) -> dict:
-    """Recharge un ``.npz`` produit par ``scripts/extract_sae_traces.py``.
+def _load_npz_unchecked(path: str | Path) -> tuple[dict, dict[tuple[str, int], dict]]:
+    """Lit un ``.npz`` et retourne ``(meta, prompts)`` SANS validation contrat.
 
-    Retourne ``{"meta": dict, "prompts": {(set_name, i): {"ids", "vals",
-    "tokens"}}}`` avec ``ids`` [T, k] int32, ``vals`` [T, k] float32 (depuis
-    float16), ``tokens`` [T] str. Aucun ``allow_pickle`` requis.
+    Fonction interne partagee entre :func:`load_traces` (SAE) et le chargeur
+    J-Lens (:mod:`ict.jlens_traces`) : la validation du contrat v1 et
+    l'enforcement d'instrument sont faits par l'appelant, PAS ici. Cela
+    evite que :func:`ict.jlens_traces.load_traces` (qui appelle historiquement
+    le chargeur SAE via delegation) refuse systematiquement les traces
+    J-Lens au premier controle d'instrument.
     """
     data = np.load(Path(path), allow_pickle=False)
     meta = json.loads(str(data["__meta__"]))
@@ -90,6 +93,37 @@ def load_traces(path: str | Path) -> dict:
                 f"trace {set_name}__{idx} : {n_bad} vals non-finies — trace "
                 f"pre-correctif (#12388), regenerer via extract_sae_traces.py "
                 f"a jour (il exclut les positions non-finies a la capture)")
+    return meta, prompts
+
+
+def load_traces(path: str | Path, *, strict: bool = False) -> dict:
+    """Recharge un ``.npz`` produit par ``scripts/extract_sae_traces.py``.
+
+    Retourne ``{"meta": dict, "prompts": {(set_name, i): {"ids", "vals",
+    "tokens"}}}`` avec ``ids`` [T, k] int32, ``vals`` [T, k] float32 (depuis
+    float16), ``tokens`` [T] str. Aucun ``allow_pickle`` requis.
+
+    Validation du **contrat de trace v1** (:mod:`ict.trace_contract`) :
+    appelle :func:`ict.trace_contract.validate_manifest` puis
+    :func:`ict.trace_contract.enforce_instrument` avec ``expected="sae"``.
+    Toute trace ``meta['instrument'] == 'jlens'`` (ou un manifeste sans
+    ``instrument`` et sans ``lens`` legacy) est REFUSEE avec un diagnostic
+    actionnable -- c'est l'acceptance #1 anti-melange du ticket #15476.
+
+    Le parametre ``strict`` (defaut ``False``) regle la rigueur du contrat :
+    ``False`` accepte les manifestes historiques (sans ``instrument`` declare
+    ou avec le seul champ legacy ``meta['lens']='sae'``), ``True`` exige un
+    manifeste complet conforme au contrat v1. Les notebooks existants
+    chargent en ``strict=False`` ; les extracteurs GPU neuf et les tests
+    du contrat chargent en ``strict=True``.
+    """
+    meta, prompts = _load_npz_unchecked(path)
+    # Contrat v1 : validation + anti-melange (acceptance #1).
+    # Import local pour eviter tout cycle d'import (trace_contract ne depend
+    # de rien du package, sae_traces trace_contract ne depend pas de sae_traces).
+    from .trace_contract import validate_manifest, enforce_instrument
+    meta = validate_manifest(meta, strict=strict)
+    enforce_instrument(meta, "sae")
     return {"meta": meta, "prompts": prompts}
 
 
