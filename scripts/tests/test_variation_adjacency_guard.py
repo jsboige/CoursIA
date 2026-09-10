@@ -11,6 +11,7 @@ first-grain exemption (`prev: none (premier grain)`) must never be flagged.
 Run:
     python -m pytest scripts/tests/test_variation_adjacency_guard.py
 """
+import json
 import sys
 from pathlib import Path
 
@@ -27,8 +28,9 @@ CASE_11165 = "Grain: LIGHT/docs -- lane myia-po-2023:CoursIA -- prev: MED/notebo
 
 
 def test_11136_replay_blocks():
-    # The merged-without-question case: same LIGHT genre twice -> BLOCK.
-    v = vag.check(CASE_11136)
+    # The merged-without-question case: same LIGHT genre twice -> BLOCK
+    # (measured, on the merged sequence -- #15184 keeps the ban on measured data).
+    v = vag.check(CASE_11136, merged_prev=("docs", 11134))
     assert v["guard_pass"] is False
     assert v["blocking"] is True
     assert v["adjacent"] is True
@@ -47,7 +49,7 @@ def test_11165_replay_passes():
 def test_blocking_reason_names_genres_and_lane():
     # The issue demands the error message cite BOTH genres and the lane, so
     # the failure is debuggable from the job log alone.
-    v = vag.check(CASE_11136)
+    v = vag.check(CASE_11136, merged_prev=("docs", 11134))
     assert "docs" in v["reason"]
     assert "myia-po-2023:CoursIA" in v["reason"]
     assert "UN AUTRE genre" in v["reason"]
@@ -100,7 +102,9 @@ def test_deep_med_adjacency_is_advisory():
 def test_every_light_genre_blocks():
     # The full LIGHT set {guard, ledger, docs, readme, test} bans adjacency.
     for genre in ("guard", "ledger", "docs", "readme", "test"):
-        v = vag.check(f"Grain: LIGHT/{genre} -- lane x:y -- prev: LIGHT/{genre} #1")
+        v = vag.check(
+            f"Grain: LIGHT/{genre} -- lane x:y -- prev: LIGHT/{genre} #1",
+            merged_prev=(genre, 1))
         assert v["guard_pass"] is False, f"{genre} adjacency must block"
         assert v["blocking"] is True
 
@@ -109,7 +113,8 @@ def test_aliases_normalised_before_comparison():
     # `docs-translation` folds to `docs` via the alias table: two grains of
     # the same work under invented labels must still trip the ban (§1).
     v = vag.check(
-        "Grain: LIGHT/docs -- lane myia-po-2025:CoursIA-2 -- prev: LIGHT/docs-translation #100"
+        "Grain: LIGHT/docs -- lane myia-po-2025:CoursIA-2 -- prev: LIGHT/docs-translation #100",
+        merged_prev=("docs", 100),
     )
     assert v["guard_pass"] is False
     assert v["prev_genre"] == "docs"
@@ -117,9 +122,12 @@ def test_aliases_normalised_before_comparison():
 
 def test_tier_of_prev_does_not_matter():
     # The ban compares GENRES, not tiers: LIGHT/docs after MED/docs is the
-    # same violation (the MED/readme defect case of #10020).
+    # same violation (the MED/readme defect case of #10020). Measured via the
+    # merged-sequence so the ban rests on data the lane produced, not the
+    # frozen `prev:` field (#15184).
     v = vag.check(
-        "Grain: LIGHT/docs -- lane myia-po-2023:CoursIA -- prev: MED/docs #200"
+        "Grain: LIGHT/docs -- lane myia-po-2023:CoursIA -- prev: MED/docs #200",
+        merged_prev=("docs", 200),
     )
     assert v["guard_pass"] is False
     assert v["blocking"] is True
@@ -150,7 +158,7 @@ def test_override_absent_still_blocks():
     # from a gate that is unplugged: without a marker, the real adjacency
     # must still fail. This is the case that proves the other six mean
     # something.
-    v = vag.check(_BLOCKED, override=None)
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=None)
     assert v["guard_pass"] is False
     assert v["blocking"] is True
     # and the message must name the way out, not just the ban
@@ -158,7 +166,7 @@ def test_override_absent_still_blocks():
 
 
 def test_override_by_coordinator_lifts_with_named_replacement():
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01",
         "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: lean"))
     assert v["guard_pass"] is True
@@ -170,7 +178,7 @@ def test_override_by_coordinator_lifts_with_named_replacement():
 def test_override_by_worker_is_ignored():
     # A lane cannot self-exempt -- the whole point of writing the arbitration
     # down (#10223 precedent on lane claims).
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-po-2026",
         "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: lean"))
     assert v["guard_pass"] is False
@@ -179,14 +187,14 @@ def test_override_by_worker_is_ignored():
 def test_override_without_replacement_is_ignored():
     # "HOLD sans remplacement = echec coordinateur" (section 3): a marker
     # naming no successor is not a decision, it is an abdication.
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA"))
     assert v["guard_pass"] is False
 
 
 def test_override_naming_the_blocking_genre_is_vacuous():
     # A waiver that promises to replay the same adjacency is not a waiver.
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01",
         "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: guard"))
     assert v["guard_pass"] is False
@@ -196,7 +204,7 @@ def test_override_naming_the_blocking_genre_is_vacuous():
 def test_override_replacement_goes_through_the_alias_table():
     # Same normalisation as the genre comparison itself: `slidev` folds to
     # `slides`, so a coordinator writing either names the same successor.
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01",
         "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: slidev"))
     assert v["guard_pass"] is True
@@ -212,7 +220,7 @@ def test_override_genre_outside_the_enum_passes_through():
     # (#13475 note: the historical example word `documentation` now resolves
     # to `docs` through the alias table -- replaced with a word that is
     # still genuinely outside the enum, which is what this test pins.)
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01",
         "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: fictioninedit"))
     assert v["guard_pass"] is True
@@ -225,7 +233,7 @@ def test_last_coordinator_marker_wins():
         {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] next: qc"},
     ])
     assert ov is not None and ov["next_genre"] == "qc"
-    assert vag.check(_BLOCKED, override=ov)["guard_pass"] is True
+    assert vag.check(_BLOCKED, merged_prev=("guard", 11675), override=ov)["guard_pass"] is True
 
 
 def test_override_does_not_touch_the_advisory_branch():
@@ -267,7 +275,7 @@ def test_malformed_override_missing_next_is_announced():
     # Acceptance negative A of #12096: coordinator marker WITHOUT `next:`.
     # The gate must block AND the verdict must name the rejected marker,
     # its author, and the reason -- this is the #11963 shape verbatim.
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA"))
     assert v["guard_pass"] is False
     assert v["blocking"] is True
@@ -283,7 +291,7 @@ def test_malformed_override_next_off_line_is_announced():
     # marker -- the exact form that failed in #11963 (the regex is
     # single-line by design, CommonMark-style; the remedy is feedback, not
     # multiline parsing).
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01",
         "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA\nnext: lean"))
     assert v["guard_pass"] is False
@@ -296,7 +304,7 @@ def test_malformed_override_bad_genre_shape_is_announced():
     # the third malformed clause of #12096. Distinct from out-of-enum
     # genres, which pass through verbatim (section 1 -- see
     # test_override_genre_outside_the_enum_passes_through).
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01", "[G-VAR-3 OVERRIDE] next: 123"))
     assert v["guard_pass"] is False
     assert "n'est pas un genre" in v["reason"]
@@ -307,13 +315,13 @@ def test_override_rejected_field_is_named_and_absence_means_unread():
     # Acceptance 5 of #12096: the added verdict field is NAMED so a future
     # reader of the verdict knows its absence means "no coordinator marker
     # read", never "not looked".
-    v_bad = vag.check(_BLOCKED, override=_ov(
+    v_bad = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01", "[G-VAR-3 OVERRIDE] sans next"))
     assert v_bad["override_rejected"]["reason"]  # named, carries the reason
-    v_clean = vag.check(_BLOCKED, override=None)
+    v_clean = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=None)
     assert "override_rejected" not in v_clean  # absent = nothing was read
     # the vacuous next:-names-the-blocked-genre case carries the field too
-    v_vacuous = vag.check(_BLOCKED, override=_ov(
+    v_vacuous = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01", "[G-VAR-3 OVERRIDE] next: guard"))
     assert v_vacuous["override_rejected"]["author"] == "myia-ai-01"
 
@@ -326,7 +334,7 @@ def test_malformed_override_by_worker_stays_invisible():
     ov = vag.parse_override([{"author": "myia-po-2026",
                               "body": "[G-VAR-3 OVERRIDE] sans next"}])
     assert ov is None
-    v = vag.check(_BLOCKED, override=ov)
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=ov)
     assert v["guard_pass"] is False
     assert "override_rejected" not in v
 
@@ -337,7 +345,7 @@ def test_well_formed_override_still_lifts_after_12096():
     # test_override_by_coordinator_lifts_with_named_replacement, kept here
     # so the malformed cases above are provably not passing by accident of
     # a disconnected helper.
-    v = vag.check(_BLOCKED, override=_ov(
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=_ov(
         "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
     assert v["guard_pass"] is True
     assert v["overridden"] is True
@@ -354,7 +362,7 @@ def test_13730_jsboige_is_NOT_a_coordinator_login():
         {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"},
     ])
     assert ov is None  # invisible: shared-identity author is not a coordinator
-    v = vag.check(_BLOCKED, override=ov)
+    v = vag.check(_BLOCKED, merged_prev=("guard", 11675), override=ov)
     assert v["guard_pass"] is False
     assert v["blocking"] is True
     assert v["overridden"] is False
@@ -629,17 +637,36 @@ def test_symmetric_false_negative_still_blocks():
 def test_no_merged_pr_falls_back_to_declared():
     # A lane with no merged grain has no merged sequence to consult: the gate
     # falls back to the declared `prev:` (the pre-#12095 behaviour), no crash,
-    # and the verdict is honest about the source.
+    # and the verdict is honest about the source. Because that declared field
+    # is unmeasured (#11963), a fallback never hard-bans -- it downgrades to
+    # ADVISORY (#15184).
     v = vag.check(_BLOCKED, merged_prev=vag.resolve_merged_prev_genre([], "myia-po-2026:CoursIA"))
-    assert v["guard_pass"] is False
-    assert v["blocking"] is True
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["unmeasured"] is True
     assert v["prev_source"] == "declared"
-    # A declaring-different-genre case passes too, same fallback.
+    # A declaring-different-genre case passes too, same non-blocking fallback.
     v2 = vag.check(
         "Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- prev: MED/tooling #12063",
         merged_prev=vag.resolve_merged_prev_genre(None, "myia-po-2026:CoursIA"))
     assert v2["guard_pass"] is True
+    assert v2["blocking"] is False
     assert v2["prev_source"] == "declared"
+
+
+def test_declared_prev_is_advisory_not_block():
+    # G-VAR-3 gate: a hard ban (exit 1, section 2) must not be rendered on
+    # `prev_source=="declared"` -- the `prev:` field is frozen at PR-open time
+    # (#12095/#11963), so a same-genre adjacency on unmeasured data downgrades
+    # to ADVISORY with `unmeasured: true`, exit 0. The coordinator, not the
+    # CI, adjudicates the adjacency (#15184).
+    v = vag.check(_BLOCKED)
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["adjacent"] is False
+    assert v["unmeasured"] is True
+    assert v["prev_source"] == "declared"
+    assert "ADVISORY" in v["reason"]
 
 
 def test_merged_sequence_other_lane_ignored():
@@ -665,9 +692,14 @@ def test_merged_sequence_other_lane_ignored():
 def test_repeated_invented_genre_blocks():
     # Controle positif : avant #13475 ce cas rendait adjacent=True,
     # blocking=False (advisory). Le ban doit s'appliquer aussi aux mots
-    # inventes -- sinon G-VAR-3 reste contournable par choix de mot.
+    # inventes -- sinon G-VAR-3 reste contournable par choix de mot. Measured
+    # on the merged sequence: an invented word twice in a row is still the
+    # absolute ban when the lane actually produced it (#15184). The genre is
+    # passed canonicalised (``inexistant``), exactly as the real caller
+    # ``resolve_merged_prev_genre`` returns it.
     v = vag.check(
-        "Grain: LIGHT/zzz-inexistant -- lane myia-po-2023:CoursIA-2 -- prev: LIGHT/zzz-inexistant #1"
+        "Grain: LIGHT/zzz-inexistant -- lane myia-po-2023:CoursIA-2 -- prev: LIGHT/zzz-inexistant #1",
+        merged_prev=("inexistant", 1),
     )
     assert v["guard_pass"] is False
     assert v["blocking"] is True
@@ -680,9 +712,11 @@ def test_repeated_invented_genre_blocks():
 def test_repeated_prose_now_blocks_through_the_alias():
     # `prose` -> docs (alignement table/texte de regle, #13475) : deux grains
     # LIGHT/prose consecutifs = adjacence docs/docs = ban absolu. Avant,
-    # prose restait verbatim hors LIGHT_GENRES -> advisory seulement.
+    # prose restait verbatim hors LIGHT_GENRES -> advisory seulement. Measured
+    # on the merged sequence so the alias-driven ban is a real one (#15184).
     v = vag.check(
-        "Grain: LIGHT/prose -- lane myia-po-2023:CoursIA-2 -- prev: LIGHT/prose #1"
+        "Grain: LIGHT/prose -- lane myia-po-2023:CoursIA-2 -- prev: LIGHT/prose #1",
+        merged_prev=("docs", 1),
     )
     assert v["guard_pass"] is False
     assert v["blocking"] is True
@@ -715,7 +749,7 @@ def test_med_unknown_genre_same_prev_is_advisory_not_blocking():
     assert v["adjacent"] is True
     assert "advisory" in v["reason"]
     body_light = "Grain: LIGHT/secrets -- lane myia-po-2026:CoursIA -- prev: LIGHT/secrets 13540"
-    v2 = vag.check(body_light)
+    v2 = vag.check(body_light, merged_prev=("secrets", 13540))
     assert v2["guard_pass"] is False
     assert v2["blocking"] is True
 
@@ -793,14 +827,17 @@ def test_14357_unreadable_files_fail_closed():
 
 def test_14357_declared_prev_source_is_not_exempt():
     # The predecessor on a `declared` prev is unmeasured (the silent-fallback
-    # defect (#12095) ai-01 asked to keep fail-closed): even with disjoint
-    # files passed, the exemption must not fire on a declared source.
+    # defect (#12095)): on an unmeasured source the gate awards NEITHER the
+    # disjoint-files exemption NOR a hard ban -- it downgrades to ADVISORY
+    # (#15184). The exemption stays reserved for a measured merged-sequence
+    # predecessor (see the merged control above).
     v = vag.check(
         _MED_GUARD, merged_prev=(None, None),
         prev_files={"scripts/ci/other.py"},
         current_files={"scripts/variation_light_cap.py"})
-    assert v["guard_pass"] is False
-    assert v["blocking"] is True
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["unmeasured"] is True
     assert v["prev_source"] == "declared"
     assert v.get("exempted") is not True
 
@@ -816,3 +853,27 @@ def test_14357_exemption_does_not_touch_different_genres():
         current_files={"notebooks/x.ipynb"})
     assert v["guard_pass"] is True
     assert v.get("exempted") is not True
+
+
+def test_unreadable_merged_window_is_loud_in_verdict(tmp_path, capsys):
+    # #15184: a merged-prs window that was requested but could not be read must
+    # surface inside the JSON verdict itself (prev_fallback), not only on
+    # stderr -- otherwise the fallback to the declared `prev:` is silent again,
+    # the pre-#12636 defect this closes. On a declared predecessor the gate is
+    # advisory (exit 0), and the note is preserved in the reason.
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(_BLOCKED, encoding="utf-8")
+    rc = vag.main([
+        "--body-file", str(body_file),
+        "--merged-prs-file", str(tmp_path / "does-not-exist.json"),
+    ])
+    out = capsys.readouterr()
+    assert rc == 0
+    verdict = json.loads(out.out)
+    assert verdict["guard_pass"] is True
+    assert verdict["blocking"] is False
+    assert verdict["unmeasured"] is True
+    assert verdict["prev_source"] == "declared"
+    assert "prev_fallback" in verdict
+    assert "window merge illisible" in verdict["prev_fallback"]
+    assert "window merge illisible" in verdict["reason"]

@@ -826,9 +826,9 @@ prompt_v2 = ""...""  # TODO etudiant : redigez un prompt plus riche
 
 # Comparaison des deux revisions
 print(""Exercice a completer"")",,,,,,,,81ef5fd46901cdd3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b07ca49a,markdown,fr,64c991ca851bb725,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b07ca49a,markdown,fr,c87237c35a3d3d35,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
 
-# 🤖 GPT-5 Multimodal - Analyse et Génération d'Images
+# GPT-5 Multimodal - Analyse et Génération d'Images
 
 **Module :** 01-Images-Foundation  
 **Niveau :** 🟢 Débutant  
@@ -857,7 +857,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Raisonnement** : Analyse complexe et déductive
 - **Éducatif** : Parfait pour l'enseignement",,,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-OpenAI-DALL-E-3.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
 
-# 🤖 GPT-5 Мультимодальный - Анализ и генерация изображений
+# GPT-5 Мультимодальный - Анализ и генерация изображений
 
 **Модуль :** 01-Images-Foundation  
 **Уровень :** 🟢 Начинающий  
@@ -884,7 +884,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Мультимодальность** : Одновременный диалог текст + изображение
 - **Расширенный контекст** : До 400K токенов [OpenAI 2025]
 - **Рассуждение** : Сложный и дедуктивный анализ
-- **Образование** : Идеально для обучения",,64c991ca851bb725,,,,,,f06c734fb9d4e3bc,,
+- **Образование** : Идеально для обучения",,c87237c35a3d3d35,,,,,,7dec99dd3bd02449,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration conversation
@@ -2071,9 +2071,6 @@ save_results = True                # Sauvegarder résultats
 
 # Configuration widgets
 show_interactive_demo = True       # Widgets interactifs",,,,,,,,23add44c9337260a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ea967118,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,mqt2vlh8yw,markdown,fr,da04acfff9e51e9f,"Les paramètres d'exécution sont définis. La cellule suivante initialise l'environnement Python en important les bibliotheques de traitement d'images (Pillow, NumPy, Matplotlib) et en configurant les chemins de travail.",,,,,,,,da04acfff9e51e9f,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,e53c1482,code,fr,58fd702df6c99f73,"# Verification des dependances externes
 import importlib
@@ -4442,9 +4439,6 @@ Pour toute question ou problème technique :
 - **API Status**: Vérifiez l'accessibilité à `https://turbo.stable-diffusion-webui-forge.myia.io`
 - **Documentation Projet**: Consultez le README principal du projet CoursIA
 - **Issues GitHub**: Signalez bugs/améliorations sur le dépôt du projet",,,,,,,,51b989930a9834af,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,b48102c0,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,79be9a9e,markdown,fr,8eae4299ed430cb5,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-4-Forge-SD-XL-Turbo.ipynb)
 
 # Notebook: Qwen Image-Edit 2.5 - API ComfyUI
@@ -6211,10 +6205,10 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0a694ae8,
 - **Bai, J. et al.** (2023). *Qwen-VL: A Versatile Vision-Language Model*. arXiv:2308.12966. — Precurseur VLM de la lignee Qwen-Vision.
 
 ",,,,,,,,6994932c534432d1,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,307eaac9,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,307eaac9,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-0,markdown,fr,c588eaadc6d5a6a8,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5-Qwen-Image-Edit.ipynb) | [Suivant >>](02-2-FLUX-1-Advanced-Generation.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-0,markdown,fr,c588eaadc6d5a6a8,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5-Qwen-Image-Edit.ipynb) | [Suivant >>](02-2-FLUX-1-Advanced-Generation.ipynb)
 
 # Qwen Image Edit 2509 - Édition Avancée d'Images
 
@@ -6255,7 +6249,7 @@ Ce notebook explore les capacités avancées de **Qwen-Image-Edit 2509** (versio
 - Module 00-GenAI-Environment complété
 - Service `comfyui-qwen` actif (`docker compose up -d`)
 - Notebook 01-5-Qwen-Image-Edit terminé (concepts de base)",,,,,,,,c588eaadc6d5a6a8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,9wen2509,markdown,fr,8ea9c09a4ba33a26,"Le diagramme ci-dessous rend ce pipeline sous forme de graphe : l'image et le prompt
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,9wen2509,markdown,fr,8ea9c09a4ba33a26,"Le diagramme ci-dessous rend ce pipeline sous forme de graphe : l'image et le prompt
 convergent dans l'encodeur vision-langage Qwen2.5-VL, puis le modèle de diffusion edite
 le contenu dans l'espace latent avant decodage VAE.
 
@@ -6283,7 +6277,7 @@ flowchart TD
 > l'intention textuelle dans le modèle de diffusion (UNet), qui opere dans un espace
 > latent compresse par un **VAE a 16 canaux** ; le decodage VAE produit l'image editee.
 ",,,,,,,,8ea9c09a4ba33a26,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,dw2367dvov,markdown,fr,5bfacab0d368450b,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5-Qwen-Image-Edit.ipynb) | [Suivant >>](02-2-FLUX-1-Advanced-Generation.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,dw2367dvov,markdown,fr,5bfacab0d368450b,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5-Qwen-Image-Edit.ipynb) | [Suivant >>](02-2-FLUX-1-Advanced-Generation.ipynb)
 
 ---
 
@@ -6308,7 +6302,7 @@ A la fin de ce notebook, vous saurez :
 - Service `comfyui-qwen` actif (`docker compose up -d`)
 - Notebook 01-5-Qwen-Image-Edit terminé (concepts de base)
 ",,,,,,,,5bfacab0d368450b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-1,code,fr,1e43a0d7b8f68368,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-1,code,fr,1e43a0d7b8f68368,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -6418,8 +6412,8 @@ BATCH_MODE = os.getenv(""BATCH_MODE"", ""true"").lower() == ""true""
 if BATCH_MODE:
     print(""Mode BATCH actif"")
 ",,,,,,,,1e43a0d7b8f68368,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,avizixuyjo6,markdown,fr,c0e111002ff77a0c,Les imports et la configuration de base sont en place. La cellule suivante initialise le client avance `QwenImageEditClient` et verifie la connexion a l'API ComfyUI.,,,,,,,,c0e111002ff77a0c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-2,code,fr,bd150252c37cfb42,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,avizixuyjo6,markdown,fr,c0e111002ff77a0c,Les imports et la configuration de base sont en place. La cellule suivante initialise le client avance `QwenImageEditClient` et verifie la connexion a l'API ComfyUI.,,,,,,,,c0e111002ff77a0c,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-2,code,fr,bd150252c37cfb42,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 2. CLIENT COMFYUI AVANCÉ
@@ -6546,8 +6540,8 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,bd150252c37cfb42,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,p5h3jbfh8zk,markdown,fr,4c95c25651e31adb,"Le client ComfyUI est instancie et la connexion validee. La cellule suivante définit les trois types de workflows disponibles : generation texte-vers-image, edition image-vers-image, et inpainting.",,,,,,,,4c95c25651e31adb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-3,code,fr,d7682af20eb719ef,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,p5h3jbfh8zk,markdown,fr,4c95c25651e31adb,"Le client ComfyUI est instancie et la connexion validee. La cellule suivante définit les trois types de workflows disponibles : generation texte-vers-image, edition image-vers-image, et inpainting.",,,,,,,,4c95c25651e31adb,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-3,code,fr,d7682af20eb719ef,"# =============================================================================
 # 3. WORKFLOWS QWEN-IMAGE-EDIT 2509 - ARCHITECTURE PHASE 29
 # =============================================================================
 # Ces workflows utilisent l'architecture native ComfyUI validee Phase 29
@@ -6876,10 +6870,10 @@ print(""   - CFG=1.0 recommande (CFGNorm gere l'amplification)"")
 print(""   - Scheduler 'beta' optimise pour Qwen"")
 print(""   - 20 steps suffisent pour de bons resultats"")
 ",,,,,,,,d7682af20eb719ef,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-4,markdown,fr,9101480fcd77f381,"## 4. Génération Text-to-Image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-4,markdown,fr,9101480fcd77f381,"## 4. Génération Text-to-Image
 
 Commençons par générer une image de base que nous éditerons ensuite.",,,,,,,,9101480fcd77f381,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-5,code,fr,1c534fd0a2ad4909,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-5,code,fr,1c534fd0a2ad4909,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 4. TEXT-TO-IMAGE: Creation d'une image de base
@@ -6930,7 +6924,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,1c534fd0a2ad4909,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,daa141ac,markdown,fr,48f7a07955327437,"### Exercice 1 : Transfert de style par edition image-to-image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,daa141ac,markdown,fr,48f7a07955327437,"### Exercice 1 : Transfert de style par edition image-to-image
 
 Le workflow image-to-image permet de transformer le style visuel d'une image tout en preservant sa composition. Le paramètre `denoise` contrôle le degré de transformation : une valeur basse preserve davantage la structure originale.
 
@@ -6942,7 +6936,7 @@ Le workflow image-to-image permet de transformer le style visuel d'une image tou
 - # Étape 3 : Utiliser `create_img2img_workflow(image_name=uploaded_name, prompt=..., denoise=0.6)`
 - # Étape 4 : Executer chaque workflow et afficher les 3 résultats cote a cote
 - # Indice : Avec `denoise=0.6`, le modèle preserve environ 40% de l'image originale. L'output_node pour img2img est ""12"".",,,,,,,,48f7a07955327437,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,e35872dc,code,fr,879ff6b2c3c91926,"# Exercice 1 : Transfert de style par edition image-to-image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,e35872dc,code,fr,879ff6b2c3c91926,"# Exercice 1 : Transfert de style par edition image-to-image
 # TODO etudiant : appliquer 3 styles differents a l'image de base
 
 style_prompts = None  # TODO etudiant : definir 3 prompts de style (impressionniste, anime, hyperrealiste)
@@ -6963,10 +6957,10 @@ style_prompts = None  # TODO etudiant : definir 3 prompts de style (impressionni
 
 # TODO etudiant : afficher les 3 resultats avec l'originale
 print(""Exercice a completer"")",,,,,,,,879ff6b2c3c91926,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-6,markdown,fr,06a9b3d80fea741e,"## 5. Édition Image-to-Image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-6,markdown,fr,06a9b3d80fea741e,"## 5. Édition Image-to-Image
 
 Explorons différents niveaux de `denoise` pour comprendre son impact sur l'édition.",,,,,,,,06a9b3d80fea741e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-7,code,fr,c02883a5a75cccd1,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-7,code,fr,c02883a5a75cccd1,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 5. IMAGE-TO-IMAGE: Analyse comparative du parametre denoise
@@ -7035,7 +7029,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,c02883a5a75cccd1,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,dadagfpmkwo,markdown,fr,2e84e9cb53ba2aa0,"### Interpretation : Impact du paramètre Denoise
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,dadagfpmkwo,markdown,fr,2e84e9cb53ba2aa0,"### Interpretation : Impact du paramètre Denoise
 
 Les résultats montrent l'effet du paramètre `denoise` sur l'intensite de l'edition :
 
@@ -7050,10 +7044,10 @@ Les résultats montrent l'effet du paramètre `denoise` sur l'intensite de l'edi
 
 **Choix stratégique** : Pour une edition qui preserve la composition tout en changeant l'ambiance, `denoise=0.5` offre le meilleur compromis.
 ",,,,,,,,2e84e9cb53ba2aa0,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-8,markdown,fr,664652b979603ae4,"## 6. Inpainting Avancé avec Masque Personnalisé
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-8,markdown,fr,664652b979603ae4,"## 6. Inpainting Avancé avec Masque Personnalisé
 
 L'inpainting permet de modifier uniquement certaines zones de l'image. Nous allons créer un masque programmatique pour remplacer un élément spécifique.",,,,,,,,664652b979603ae4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-9,code,fr,1e348aa3b3bce49c,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-9,code,fr,1e348aa3b3bce49c,"# =============================================================================
 # 6. INPAINTING: Édition localisée avec masque
 # =============================================================================
 
@@ -7146,8 +7140,8 @@ if 'base_image' in dir():
     plt.show()
 else:
     print(""⚠️ Image de base non disponible"")",,,,,,,,1e348aa3b3bce49c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,1ii0f5tdkgi,markdown,fr,5edf11a61835fc8b,L'image de base est generee et uploadee. La cellule suivante execute le workflow d'inpainting en appliquant un masque pour editer selectivement une region de l'image.,,,,,,,,5edf11a61835fc8b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-10,code,fr,a1bd0665df7743fb,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,1ii0f5tdkgi,markdown,fr,5edf11a61835fc8b,L'image de base est generee et uploadee. La cellule suivante execute le workflow d'inpainting en appliquant un masque pour editer selectivement une region de l'image.,,,,,,,,5edf11a61835fc8b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-10,code,fr,a1bd0665df7743fb,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 6b. EXECUTION DE L'INPAINTING
@@ -7195,7 +7189,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,a1bd0665df7743fb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,90dfdc7f,markdown,fr,f45f8c20b27f19c5,"### Exercice 2 : Inpainting creatif avec masque circulaire
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,90dfdc7f,markdown,fr,f45f8c20b27f19c5,"### Exercice 2 : Inpainting creatif avec masque circulaire
 
 L'inpainting permet de remplacer une zone spécifique de l'image. En combinant un masque précis avec un prompt adapte, on peut inserer de nouveaux éléments dans une scene existante tout en preservant le contexte.
 
@@ -7207,7 +7201,7 @@ L'inpainting permet de remplacer une zone spécifique de l'image. En combinant u
 - # Étape 3 : Construire le workflow avec `create_inpaint_workflow()` en decrivant le nouvel élément
 - # Étape 4 : Utiliser `denoise=0.9` pour un remplacement complet de la zone masquee
 - # Indice : Le masque blanc définit la zone a modifier, le noir la zone a preserver. Le paramètre `feather` adoucit les bords pour une transition naturelle.",,,,,,,,f45f8c20b27f19c5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,d919c2da,code,fr,3b51bca6bcb0a8e6,"# Exercice 2 : Inpainting creatif avec masque circulaire
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,d919c2da,code,fr,3b51bca6bcb0a8e6,"# Exercice 2 : Inpainting creatif avec masque circulaire
 # TODO etudiant : creer un masque circulaire et remplacer la zone masquee
 
 # TODO etudiant : creer le masque circulaire
@@ -7230,7 +7224,7 @@ inpaint_prompt_circle = None  # TODO etudiant : decrire le nouvel element
 
 # TODO etudiant : afficher avant/apres
 print(""Exercice a completer"")",,,,,,,,3b51bca6bcb0a8e6,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,gjiyry24wsw,markdown,fr,bd99edd84c193647,"### Interpretation : Résultats de l'Inpainting
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,gjiyry24wsw,markdown,fr,bd99edd84c193647,"### Interpretation : Résultats de l'Inpainting
 
 L'inpainting a remplace la zone masquee par un nouvel élément :
 
@@ -7242,10 +7236,10 @@ L'inpainting a remplace la zone masquee par un nouvel élément :
 
 > **Point cle** : Le succes de l'inpainting depend de la qualite du masque. Un masque avec bords adoucis (feathered) permet une transition plus naturelle entre la zone modifiée et l'originale.
 ",,,,,,,,bd99edd84c193647,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-11,markdown,fr,cc64fdf7f2ef56c6,"## 7. Batch Processing: Génération Multiple
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-11,markdown,fr,cc64fdf7f2ef56c6,"## 7. Batch Processing: Génération Multiple
 
 Pour l'efficacité, générons plusieurs variations en parallèle avec différents prompts.",,,,,,,,cc64fdf7f2ef56c6,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-12,code,fr,3e63566cfedcf801,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-12,code,fr,3e63566cfedcf801,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 7. BATCH PROCESSING: Variations multiples
@@ -7335,7 +7329,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,3e63566cfedcf801,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,8txuf4lm17g,markdown,fr,001cecfe8892a307,"### Interpretation : Batch Processing
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,8txuf4lm17g,markdown,fr,001cecfe8892a307,"### Interpretation : Batch Processing
 
 La generation en lot a permis de créer 4 variations thematiques distinctes :
 
@@ -7350,10 +7344,10 @@ La generation en lot a permis de créer 4 variations thematiques distinctes :
 
 **Performance** : Avec 4 images generes en sequence, le temps total reste raisonnable car chaque generation utilise la même architecture de modèles (pas de rechargement necessaire).
 ",,,,,,,,001cecfe8892a307,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-13,markdown,fr,54b969107b65485f,"## 8. Analyse Comparative: CFG Scale
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-13,markdown,fr,54b969107b65485f,"## 8. Analyse Comparative: CFG Scale
 
 Le paramètre `cfg` (Classifier-Free Guidance) contrôle l'adhérence au prompt. Explorons son impact.",,,,,,,,54b969107b65485f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-14,code,fr,c2ea5d73490015c9,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-14,code,fr,c2ea5d73490015c9,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 8. ANALYSE CFG: Impact du Guidance Scale avec CFGNorm
@@ -7421,7 +7415,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,c2ea5d73490015c9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,7fbd7073,markdown,fr,ea6b785dfbe10696,"### Exercice 3 : Exploration des schedulers de diffusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,7fbd7073,markdown,fr,ea6b785dfbe10696,"### Exercice 3 : Exploration des schedulers de diffusion
 
 Le scheduler determine la trajectoire de denoise dans l'espace latent. L'architecture Phase 29 utilise par defaut le scheduler `beta` avec le sampler `euler`. D'autres combinaisons peuvent produire des résultats interessants en termes de nettete, contraste ou creativite.
 
@@ -7433,7 +7427,7 @@ Le scheduler determine la trajectoire de denoise dans l'espace latent. L'archite
 - # Étape 3 : Tester : (a) `beta`/`euler` (defaut), (b) `normal`/`euler_ancestral`, (c) `karras`/`dpmpp_2m`
 - # Étape 4 : Executer chaque variante et comparer la nettete, les couleurs et le temps de generation
 - # Indice : Accedez au workflow comme un dictionnaire Python : `workflow[""9""][""inputs""][""scheduler""] = ""normal""`",,,,,,,,ea6b785dfbe10696,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,845bc08c,code,fr,ce8ae1242c7e12d3,"# Exercice 3 : Exploration des schedulers de diffusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,845bc08c,code,fr,ce8ae1242c7e12d3,"# Exercice 3 : Exploration des schedulers de diffusion
 # TODO etudiant : tester 3 combinaisons scheduler/sampler
 
 scheduler_prompt = None  # TODO etudiant : definir un prompt detaille
@@ -7452,7 +7446,7 @@ scheduler_configs = [
 
 # TODO etudiant : afficher et comparer les 3 resultats
 print(""Exercice a completer"")",,,,,,,,ce8ae1242c7e12d3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,mzzz5x02in9,markdown,fr,975dc1e991925d8a,"### Interpretation : Impact du CFG avec CFGNorm
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,mzzz5x02in9,markdown,fr,975dc1e991925d8a,"### Interpretation : Impact du CFG avec CFGNorm
 
 L'analyse des différentes valeurs CFG avec l'architecture Phase 29 revele des comportements spécifiques :
 
@@ -7467,7 +7461,7 @@ L'analyse des différentes valeurs CFG avec l'architecture Phase 29 revele des c
 
 **Recommandation definitive** : Avec l'architecture Phase 29 (Qwen Image Edit 2509), utilisez toujours `cfg=1.0` pour les meilleurs résultats. Des valeurs plus elevees n'apportent pas d'amelioration significative et peuvent reduire la qualite.
 ",,,,,,,,975dc1e991925d8a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-15,markdown,fr,10a1819ba0982724,"## 9. Recapitulatif des Exercices
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-15,markdown,fr,10a1819ba0982724,"## 9. Recapitulatif des Exercices
 
 Les exercices pratiques sont repartis dans le notebook aux endroits stratégiques :
 
@@ -7478,14 +7472,14 @@ Les exercices pratiques sont repartis dans le notebook aux endroits stratégique
 | **Exercice 3** | Section 8 (après CFG Scale) | Exploration des schedulers | Après analyse CFG |
 
 Chaque exercice est precede d'un bloc markdown avec les objectifs et indices, suivi d'une cellule de code a completer.",,,,,,,,10a1819ba0982724,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-16,code,fr,da64f4279e0a7017,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-16,code,fr,da64f4279e0a7017,"# =============================================================================
 # Les exercices sont maintenant disponibles directement dans le notebook
 # aux sections 4, 6b et 8. Cherchez les cellules ""### Exercice N"" pour
 # les trouver et les completer.
 # =============================================================================
 
 print(""3 exercices disponibles dans les sections 4, 6b et 8 du notebook"")",,,,,,,,da64f4279e0a7017,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-17,markdown,fr,ecf2c8e7ecc3c9ab,"## 10. Recapitulatif et Points Cles
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-17,markdown,fr,ecf2c8e7ecc3c9ab,"## 10. Recapitulatif et Points Cles
 
 ### Architecture Phase 29 - Qwen-Image-Edit 2509
 
@@ -7540,7 +7534,7 @@ ConditioningZeroOut       # Conditioning negatif vide
 - **Bai, J., Bai, S., Yang, S., et al.** (2023). *Qwen-VL: A Versatile Vision-Language Model*. arXiv:2308.12966. — VLM fondateur de la série Qwen (précédent Qwen2-VL puis Qwen2.5-VL).
 - **Esser, P., Kulal, S., Blattmann, A., et al.** (2024). *Scaling Rectified Flow Transformers for High-Resolution Image Synthesis* (MMDiT). arXiv:2403.03206. — Architecture Flow/DiT dont s'inspirent les modèles Qwen-Image (node `ModelSamplingAuraFlow`).
 ",,,,,,,,ecf2c8e7ecc3c9ab,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb,cell-18,code,fr,4531b1305c59f203,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-18,code,fr,4531b1305c59f203,"# =============================================================================
 # FIN DU NOTEBOOK
 # =============================================================================
 
@@ -13223,9 +13217,6 @@ accessibility_level = ""wcag_aa""    # ""basic"", ""wcag_aa"", ""wcag_aaa""
 batch_mode = False                 # Mode batch pour plusieurs contenus
 quality_check = True               # Validation qualité automatique
 save_templates = True              # Sauvegarder comme template",,,,,,,,f528ec8d39eba111,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,d9afc9c1,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,987dea3b,markdown,fr,6821b10d64812a0a,"## Setup et configuration
 
 Chargement de l'environnement, configuration des APIs, et validation des credentials.",,,,,,,,6821b10d64812a0a,,,,,,,,
@@ -14216,9 +14207,6 @@ export_templates = True               # Exporter comme templates réutilisables
 batch_processing = False              # Mode batch pour plusieurs projets
 auto_optimization = True              # Optimisation automatique des prompts
 quality_assessment = True             # Évaluation qualité automatique",,,,,,,,01fcbe9e8167a1bb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-2-Creative-Workflows.ipynb,47058191,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-2-Creative-Workflows.ipynb,72e71896,markdown,fr,8afbcc05ddc53a9c,"## Setup et configuration
 
 Chargement des dependances Python (OpenAI, PIL, ipywidgets) et resolution du fichier `.env` contenant les cles API. Le notebook recherche le fichier de configuration en remontant l'arborescence de repertoires pour fonctionner a la fois en interactif et via Papermill.",,,,,,,,8afbcc05ddc53a9c,,,,,,,,

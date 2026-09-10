@@ -14,7 +14,7 @@ régression du prouveur.
 
 ## Statut
 
-- **Toolchain** : v4.32.1 (v4.31.0-rc1 → v4.32.0 via #11307, puis bump soundness → v4.32.1 via #11325, cf #11256)
+- **Toolchain** : v4.33.0 (v4.32.1 → v4.33.0 via #14773, Mathlib `db584cd6d46c92f209a44c0f1c829460d327499d` ; bump pur, aucune adaptation de source)
 - **Compte de sorry** : 0 en production (les 4 cibles de calibration sont prouvées ; un ancien compte de « 4 sorry » correspondait à du texte de docstring à l'intérieur de blocs `/-- ... -/`, pas à des termes `sorry` réels)
 - **Build** : `lake build Calibration` -- SUCCESS
 - **Dépendances** : Mathlib4
@@ -75,7 +75,7 @@ flowchart LR
 Ce projet est une **suite de calibration** pour le prouveur Lean multi-agents :
 quatre cibles de preuve de type manuel (C / D / E / F) dans
 `Calibration/Nash.lean`, toutes **prouvées avec 0 `sorry`**
-(`lake build Calibration` SUCCESS, toolchain `v4.32.1`).
+(`lake build Calibration` SUCCESS, toolchain `v4.33.0`).
 
 ### Pourquoi ce module existe
 

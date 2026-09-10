@@ -9,7 +9,7 @@ Extends the L4 Decision Transformer (action-only) with:
 Same sweep protocol as L4: 26 symbols x 4 seeds (0/1/7/42) x 5-fold walk-forward.
 Verdict: BEATS / NO BEATS / INCONCLUSIVE (>= 2 sigma edge cross-seed).
 
-L4 found BEATS 24/26 symbols with action-only DT (median AUC 0.5582).
+L4 found BEATS 24/26 symbols with action-only DT (median AUC 0.5582, panel @10bps).
 L6 hypothesis: adding size head + cost-aware loss improves risk-adjusted returns
 by reducing unnecessary trades and adapting position size to conviction.
 
@@ -40,7 +40,7 @@ Usage:
 References:
     - Chen et al. (2021): "Decision Transformer: RL via Sequence Modeling"
     - arXiv:2411.17900: "Decision Transformer for Algorithmic Trading"
-    - L4 results: scripts/results/l4_decision_transformer/results.json (BEATS 24/26)
+    - L4 results: scripts/results/l4_decision_transformer/results.json (BEATS 24/26, panel @10bps)
 """
 
 from __future__ import annotations

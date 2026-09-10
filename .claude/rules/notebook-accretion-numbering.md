@@ -82,7 +82,7 @@ Fusionner **n'est pas supprimer** : « Consolider != Archiver » s'applique inte
 
 ## 6. Ce qu'une renum casse — et l'organe qui le rattrape
 
-Le sweep n'est pas « chercher l'ancien nom ». Cinq surfaces cassent, et elles ont chacune leur organe :
+Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq ont leur organe :
 
 | Surface | Organe |
 |---|---|
@@ -91,8 +91,11 @@ Le sweep n'est pas « chercher l'ancien nom ». Cinq surfaces cassent, et elles 
 | Accents perdus dans les cibles | `scripts/notebook_tools/detect_link_target_regression.py` |
 | Rendu des liens de README de serie | `scripts/notebook_tools/check_notebook_link_render.py` |
 | **Libelle qui ment sur sa cible** | `scripts/notebook_tools/check_link_label_agreement.py` — **livre par la PR #14625, pas encore sur `main`** (#14624) |
+| **Referents hors depot** | **aucun organe possible** — le catalogue du depot projets etudiant `jsboigeEPF/2026-MSMIN5IN52-GenAI` (`docs/CATALOGUE.md`), consommateur connu des chemins `MyIA.AI.Notebooks/GenAI/**` (#15289) |
 
 **La cinquieme est celle que le sweep rate**, et c'est la sequelle propre a la renumerotation : les quatre premiers organes verifient que la cible **existe**, aucun ne verifie que le **libelle dit la verite**. Un `[Search-12](.../Search-03b-....ipynb)` passe les quatre. Mesure du 2026-09-04 : **32 desaccords sur 2194 fichiers**, dont la sequelle directe de #13770.
+
+**La sixieme sort du depot — et c'est la seule sans organe.** Le catalogue etudiant reference les notebooks par des liens absolus `github.com/jsboige/CoursIA/blob/main/...` ; aucun balayage du depot ne traverse la frontiere de depot, le vert d'un rollup ne dit donc rien de ces referents. Instance fondatrice : **#15289** — la renumerotation #15085 (zero-pad `GenAI/Texte` 1..9 -> 01..09) y casse **9 liens sur 7 chemins**, invisible au rollup vert. Aide-memoire : avant toute renum sous `GenAI/**`, grep ce catalogue dans la meme tranche (mise a jour embarquee ou report coordonne, jamais un renommage muet des deux cotes).
 
 Deux residus supplementaires se traitent dans la meme tranche : les cles orphelines de `pedagogy_density_baseline.json` (#13815) et la liste de rendu Quarto (#13931).
 

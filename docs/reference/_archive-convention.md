@@ -10,7 +10,7 @@ Un dossier `_archive/` sans convention devient un **puits de code mort** : on y 
 
 - 11 emplacements `_archive/` dispersés (125 fichiers au total au 2026-08), conventions hétérogènes.
 - `scripts/genai-stack/_archive/` (constat empirique au 2026-08, **hors scope PR actuelle**) : 28 fichiers (37 % du répertoire) — code mort, certains cassés auto-admis. **Cible de la tranche 3** (cf table lignes 73-85).
-- `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08, **hors scope PR actuelle**) : ~30 fichiers sans README de disposition. **Cible de la tranche 2** (cf table lignes 73-85).
+- `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08) : ~30 fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table lignes 73-85).
 
 Le coût d'un `_archive/` non standardisé = **découverte impossible** : aucun successeur nommé, aucun verdict enregistré, aucun moyen de savoir si le script peut être ressuscité ou doit être supprimé.
 
@@ -66,9 +66,9 @@ Un script qui ne satisfait pas les 4 critères **ne va pas dans `_archive/`** �
 
 Exception : si un dossier `_archive/` ne contient que des **données** (pas de scripts) — par exemple `_output.ipynb` sans sources — il peut être centralisé après vérif `execution_count`/consommateurs (cf cas `DSA AgenticDataScience/` + `PythonAgentsForDataScience/` signalés dans #13749 body).
 
-## Application — 11 emplacements, 8 restants à standardiser
+## Application — 11 emplacements
 
-État au 2026-08-31 :
+État au 2026-09-09 :
 
 | Emplacement | README | Standard complet |
 |---|---|---|
@@ -79,7 +79,7 @@ Exception : si un dossier `_archive/` ne contient que des **données** (pas de s
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ❌ | tranche 4 |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ❌ | tranche 4 |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ❌ | tranche 4 |
-| `scripts/_archive/` | partiel | tranche 2A : `one_shots_post_463/` conforme ; `one_shot_fixes/` et `recycle_csp/` restent à standardiser |
+| `scripts/_archive/` | ✅ | ✅ : `one_shots_post_463/`, `recycle_csp/` et `one_shot_fixes/` conformes |
 | `scripts/genai-stack/_archive/` | ❌ | tranche 3 (28 fichiers constatés au 2026-08, peut nécessiter split) — **hors scope PR actuelle** |
 | `scripts/sudoku/_archive/` | ❌ | tranche 4 |
 | `slides/S4-trading-algorithmique/_archive/` | ❌ | tranche 4 |
