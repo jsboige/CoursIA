@@ -111,6 +111,22 @@ D'où la clause « audit fichier ENTIER » : le format slim `+5/−5` du rollout
 
 Audit associé au même mandat : Tweety / GameTheory / Search = **stale-body sévère** ; SymbolicLearning / SemanticWeb / SmartContracts = ciblé ; Sudoku = trivial.
 
+### Émission du verdict — instance fondatrice et mesure (#14682)
+
+**#14658** : réserve qualifiée « le seul point bloquant pour un LGTM plein », posée en **prose française sans marqueur** → invisible à l'organe B.0 (`scripts/check_unaddressed_nits.py`, `CONCERN_MARKERS`), `rc=0`, merge passé.
+
+**Ne pas élargir `CONCERN_MARKERS`** — mesure #14682, scan de 80 PRs mergées : un filet à mots de prose (« bloquant », « à corriger », « est faux ») **sur-accuse d'un facteur 5** (4 détections sur 5 = de la prose qui *décrit* un blocage de job ou de garde, pas qui *pose* une réserve). Le contrat est côté **émission** : le reviewer pose `CHANGES_REQUESTED` / `[Hermes] COMMENT_WITH_CONCERNS` / 🟡 / 🔴, il ne rédige pas « il faudrait corriger » en prose libre.
+
+### B.1 — pourquoi pas `grep -c sorry` (mesure 2026-08-14)
+
+Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`).
+
+### D.6 — récurrences du ratchet `Output-failure`
+
+- #13517 : PR #13036 (LDA) — bannières `TOOL_FAILURE 0 → 21`, `MACHINE_PATH 0 → 14`, **approuvée par Hermes** alors que le garde rend `rc=1`.
+- #3473 (juin 2026) : famille ~15 filles de bannières d'échec passées sous la détection d'erreurs Python classique.
+- #11693 (18/08) et #11685 : remplacements de rendus SVG/figures par des bannières « program is not installed ».
+
 ## Incident fondateur B.0 — PR #10761 (récit déporté de CLAUDE.md, 2026-08-21)
 
 **Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook a été mergé en attribuant à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
