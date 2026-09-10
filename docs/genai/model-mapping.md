@@ -162,3 +162,13 @@ Compte strict des identifiants OBS (hors conservations §4) par fichier, `origin
 | `Texte/1_OpenAI_Intro.ipynb` | 1 |
 
 Exclusions de périmètre : `SemanticKernel/semantic-fleet/**` (sous-module — commit dedans + bump pointeur, tranche dédiée), `Texte/10_LocalLlama.ipynb` (PR #15018 ouverte), `*_output.ipynb` (artefacts d'exécution non trackés), placeholders `gpt-invalid-model` (fixtures). La lecture cellule par cellule (§4, conservations pédagogiques) reste due **avant chaque substitution** — les compteurs ci-dessus situent la charge, ils ne qualifient pas chaque occurrence.
+
+### 8.6 Substitution d'endpoint exécutée — SK/04 §6 (issue #15431)
+
+La revue ai-01 de la PR #15378 a requalifié `INTRINSIC` → `RECOVERABLE-MACHINE` pour la cellule d'appel LLM de la section 6 (OpenTelemetry) de `04-SemanticKernel-Filters-Observability.ipynb` : l'endpoint vLLM LAN n'est joignable d'aucune machine worker. Substitution exécutée :
+
+| Notebook / cellule | Avant | Après | Modèle | Clé (slot `.env`) |
+|---|---|---|---|---|
+| `SemanticKernel/04-…-Filters-Observability.ipynb` §6 (cellule d'appel) | sidecar vLLM du LAN ai-01 (adresse retirée de la doc publique ; injoignable des machines worker) | `https://models.myia.io/v1` (proxy claudish, OpenAI-compatible) | `qwen3.6-35b-a3b` (inchangé) | `VLLM_API_KEY` (clé dédiée au proxy, obligatoire) |
+
+Même cible opérationnelle que SK/01 et SK/03 (sections déjà exécutées via le proxy claudish). La cellule exige la clé **dédiée** au proxy dans le slot `VLLM_API_KEY` et échoue explicitement si elle manque — aucun repli sur `OPENAI_API_KEY` (credential cross-provider interdit : le secret d'un fournisseur ne doit jamais partir vers l'hôte d'un autre). Les sections §1-§5 du même notebook continuent de router sur `api.openai.com` avec `OPENAI_API_KEY` : l'isolement se fait par client `AsyncOpenAI` explicite, jamais par `OPENAI_BASE_URL` global (qui détournerait aussi les sections précédentes).
