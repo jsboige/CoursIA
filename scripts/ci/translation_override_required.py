@@ -118,6 +118,7 @@ def gh_label_fetcher(pr_number: int) -> list[str]:
         out = subprocess.run(
             [
                 "gh", "pr", "view", str(pr_number),
+                "--repo", repo,
                 "--json", "labels",
                 "--jq", "[.labels[].name]",
             ],
@@ -301,8 +302,10 @@ def check(
             "reason": (
                 f"translation-guard violation: no override label '{OVERRIDE_LABEL}' "
                 f"and no comment marker '[TRANSLATION-OVERRIDE] <motif>'. "
-                f"Edit the source notebook instead and let translation-sync re-derive. "
-                f"See #10332."
+                f"NOTE (#15198): translation-sync is on manual-maintainer hold since "
+                f"2026-08-12 (#10038) -- editing the FR source does not refresh the "
+                f"derived file until the hold is lifted; while it stands, the dual-key "
+                f"override (#10332) is the expected exit for a legitimate change. "
             ),
             "override_applied": False,
             "label_present": False,
