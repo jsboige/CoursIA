@@ -43,6 +43,20 @@ ADVISORY, never auto-close (#10466 "Ce que l'organe ne doit pas faire"):
     must not produce the "probably delivered" label. Measured on #10984
     (open #10986 + six merged PRs = a multi-phase rollout the old heuristic
     mislabeled). An open *issue* mention does NOT trigger this: only PR refs.
+  - A merged PR counts ONLY if it carries a **declared delivery marker**
+    (`See #N` / `Part of #N` / `Closes #N` / `Fixes #N` / `Refs #N`) in its
+    CURRENT body (#15060, measured 2026-09-10). The timeline's
+    ``cross-referenced`` event is posed when the body FIRST mentions the issue
+    and is never retracted when the mention later disappears: #15149's
+    cross-ref survived a body amend that removed every mention, and #15200
+    referenced #15060 only contextually (research prep for SC-2c, "verified by
+    dispatch #15060", worktree name) -- neither DELIVERED the issue, yet both
+    merged PRs satisfied "merged + silent" and mislabeled it. The repo's link
+    discipline (git-workflow.md) requires the marker for every intentional
+    link, so its absence in the body is the faithful "contextual reference"
+    signal. The body is read per merged PR with a per-run cache (one REST call
+    per PR, whatever the number of issues that reference it); a body that
+    cannot be fetched counts as NOT declared (fail-safe: no label).
   - A **human retraction of the label is a verdict, and it sticks** (#14307).
     Removing the label after a firsthand check is a decision about *this*
     issue ("acceptance not satisfied", "engine on user hold"); a later merge
@@ -97,6 +111,29 @@ def is_epic(title: str, labels: Iterable[str]) -> bool:
     return any(_EPIC_RE.search(lab or "") for lab in labels)
 
 
+# Delivery markers the repo's link discipline (git-workflow.md) requires for an
+# intentional PR->issue link: `See #N`/`Part of #N` for a partial contribution,
+# `Closes #N`/`Fixes #N` for a full one. A bare `(#N)` in a grain title, "the
+# dispatch #N", or a `feature/N-...` branch name is context, not a claim.
+def _delivery_marker_re(number: int) -> "re.Pattern[str]":
+    return re.compile(
+        r"\b(?:see|part\s+of|closes|fixes|refs|references?)\b\s*:?\s*#?%d\b" % number,
+        re.IGNORECASE,
+    )
+
+
+def delivery_marker(body: str, number: int) -> bool:
+    """True iff ``body`` declares delivery of issue ``number``.
+
+    The marker must sit directly before the number (only whitespace or a
+    colon in between): "See the #N protocol" does not match, and a mention of
+    a DIFFERENT issue does not. Conservative by design -- this gate decides
+    whether a merged PR counts as evidence of delivery, and an unreadable
+    reference must fail safe (#15060), not produce a candidate.
+    """
+    return bool(_delivery_marker_re(number).search(body or ""))
+
+
 def _is_bot(actor: str) -> bool:
     """True if ``actor`` is a GitHub App/bot login (``...[bot]``).
 
@@ -147,7 +184,9 @@ def classify(
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)
         ``"retracted"``    -- a human removed the label: verdict stands (#14307)
-        ``"no_delivery"``  -- no merged PR references it
+        ``"no_delivery"``  -- no merged PR references it, or every merged PR
+                              references it only contextually (no delivery
+                              marker in its body, #15060)
         ``"in_flight"``    -- an OPEN PR references it: work in progress (#11100)
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
@@ -180,8 +219,25 @@ def classify(
     if not merged:
         return ("no_delivery", "no merged PR references the issue")
 
+    # #15060: a merged PR counts as evidence of delivery only if its CURRENT
+    # body declares THIS issue (See/Part of/Closes/Fixes/Refs marker for the
+    # issue number -- a PR body links `See #<issue>`, its own number is never
+    # the target). The cross-referenced timeline event is posed on first
+    # mention and never retracted when the mention is later amended away; a
+    # contextual mention (grain title "(#N)", "verified by dispatch #N") is
+    # research context, not a delivery claim.
+    target = issue.get("number")
+    if not target:
+        return ("no_delivery", "issue number unavailable -- delivery marker unverifiable")
+    declared = [r for r in merged if delivery_marker(r.get("body") or "", target)]
+    if not declared:
+        prs = ", ".join(f"#{r['pr_number']}" for r in merged)
+        return ("no_delivery",
+                f"merged PR(s) {prs} mention the issue only contextually "
+                f"(no See/Part of/Closes/Fixes marker in their body) -- not a delivery")
+
     # ISO 8601 timestamps sort lexicographically; string max is correct.
-    latest_merge = max(r["merged_at"] for r in merged)
+    latest_merge = max(r["merged_at"] for r in declared)
 
     comment_dates = [c["created_at"] for c in (issue.get("comments") or []) if c.get("created_at")]
     last_activity = max(comment_dates + [issue.get("created_at", "")])
@@ -242,6 +298,12 @@ def _parse_cross_ref_events(events: list[dict]) -> list[dict]:
     ``merged_at: None`` and are ignored downstream by :func:`classify`, which
     counts only refs with a merge. Events missing a source issue number are
     dropped.
+
+    Each ref carries ``"body": None``: the timeline payload does NOT embed the
+    PR body (nor its edit history), and the network-free contract ends here.
+    The driver (:func:`_with_merged_pr_bodies`) replaces the value on the
+    merged refs, and :func:`classify` treats a missing body as NOT declared
+    (fail-safe, #15060).
     """
     refs = []
     for ev in events or []:
@@ -255,6 +317,7 @@ def _parse_cross_ref_events(events: list[dict]) -> list[dict]:
             "merged_at": pr.get("merged_at"),
             "is_pr": is_pr,
             "state": src.get("state"),
+            "body": None,
         })
     return refs
 
@@ -278,6 +341,41 @@ def _parse_label_events(events: list[dict], label: str) -> list[dict]:
             "actor": ((ev.get("actor") or {}).get("login")) or "",
             "created_at": ev.get("created_at") or "",
         })
+    return out
+
+
+def _with_merged_pr_bodies(
+    repo: str, refs: list[dict], cache: dict[int, str],
+) -> list[dict]:
+    """Attach the CURRENT body of each merged PR to its ref (delivery-marker gate).
+
+    A cross-referenced event is posed when the body FIRST mentions the issue
+    and is never retracted when the mention later disappears -- #15149's
+    cross-ref on #15060 survived a body amend that removed every mention.
+    The current body is the only faithful signal of what the merged PR
+    DELIVERED, so the driver reads it once per PR number (the per-run
+    ``cache`` makes a PR referenced by several issues cost one REST call).
+
+    A body that cannot be fetched (PR deleted, gh hiccup) reads as ``""`` --
+    NOT declared -- which is fail-safe: the sweep is advisory, and a ref it
+    cannot verify must not produce a candidate label.
+    """
+    out = []
+    for r in refs:
+        r = dict(r)
+        if r.get("merged_at") and r.get("is_pr"):
+            pr = r["pr_number"]
+            if pr not in cache:
+                try:
+                    raw = _gh_json(
+                        ["pr", "view", str(pr), "--repo", repo, "--json", "body"],
+                    )
+                except RuntimeError:
+                    raw = None
+                body = (raw or {}).get("body") if isinstance(raw, dict) else None
+                cache[pr] = (body if isinstance(body, str) else "") or ""
+            r["body"] = cache[pr]
+        out.append(r)
     return out
 
 
@@ -385,6 +483,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[candidate-delivered] repo={repo} mode={'dry-run' if args.dry_run else 'apply'} "
           f"open_issues={len(issues)} label={args.label}")
 
+    body_cache: dict[int, str] = {}
+
     for issue in issues:
         number = issue["number"]
         try:
@@ -392,6 +492,11 @@ def main(argv: list[str] | None = None) -> int:
             detail = issue_detail(repo, number)
         except Exception as exc:  # network/gh hiccup -- skip, do not crash the sweep
             print(f"  #{number:<6} SKIP  ({exc})")
+            continue
+        try:
+            refs = _with_merged_pr_bodies(repo, refs, body_cache)
+        except Exception as exc:  # body fetch failure -- fail safe, do not label
+            print(f"  #{number:<6} SKIP  (pr body fetch failed: {exc})")
             continue
 
         enriched = {

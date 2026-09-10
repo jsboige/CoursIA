@@ -23,15 +23,18 @@ from candidate_delivered import (  # noqa: E402
     classify,
     is_epic,
     human_retraction,
+    delivery_marker,
     _is_bot,
     _parse_cross_ref_events,
     _parse_label_events,
 )
 
 
-def _issue(title="x", labels=None, created_at="2026-08-01T00:00:00Z", comments=None):
+def _issue(title="x", number=1, labels=None, created_at="2026-08-01T00:00:00Z",
+           comments=None):
     return {
         "title": title,
+        "number": number,
         "labels": labels or [],
         "created_at": created_at,
         "comments": [{"created_at": c} for c in (comments or [])],
@@ -40,10 +43,14 @@ def _issue(title="x", labels=None, created_at="2026-08-01T00:00:00Z", comments=N
 
 def test_candidate_delivered_silent_after_merge():
     # Mirrors #10403: claims at 02:56, delivery merges at 06:40, silence after.
-    issue = _issue(title="5 guards 2-point diff", comments=["2026-08-11T02:56:16Z"])
+    # The merged PRs link the ISSUE number (10403), never their own.
+    issue = _issue(title="5 guards 2-point diff", number=10403,
+                   comments=["2026-08-11T02:56:16Z"])
     refs = [
-        {"pr_number": 10405, "merged_at": "2026-08-11T04:25:17Z"},
-        {"pr_number": 10410, "merged_at": "2026-08-11T06:40:37Z"},
+        {"pr_number": 10405, "merged_at": "2026-08-11T04:25:17Z",
+         "body": "Grain: DEEP/source -- See #10403."},
+        {"pr_number": 10410, "merged_at": "2026-08-11T06:40:37Z",
+         "body": "Part of #10403 -- 2-point diff."},
     ]
     verdict, _ = classify(issue, refs)
     assert verdict == "candidate"
@@ -70,7 +77,8 @@ def test_epic_by_label_excluded():
 def test_active_when_comment_after_merge():
     # A worker re-engages the issue after delivery -> active, label retracted.
     issue = _issue(title="some defect", comments=["2026-08-11T12:00:00Z"])
-    refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z"}]
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z",
+             "body": "See #1."}]
     verdict, why = classify(issue, refs)
     assert verdict == "active"
     assert "active after merge" in why
@@ -112,7 +120,8 @@ def test_open_issue_mention_is_not_in_flight():
     issue = _issue(title="x", comments=[])
     refs = [
         {"pr_number": 10397, "merged_at": None, "is_pr": False, "state": "open"},
-        {"pr_number": 1, "merged_at": "2026-08-11T06:40:37Z", "is_pr": True, "state": "closed"},
+        {"pr_number": 1, "merged_at": "2026-08-11T06:40:37Z", "is_pr": True,
+         "state": "closed", "body": "See #1."},
     ]
     verdict, _ = classify(issue, refs)
     assert verdict == "candidate"
@@ -121,7 +130,8 @@ def test_open_issue_mention_is_not_in_flight():
 def test_candidate_when_comment_equals_merge_time():
     # Boundary: equal timestamps lean to candidate (strict > for active).
     issue = _issue(title="x", comments=["2026-08-11T10:00:00Z"])
-    refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z"}]
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z",
+             "body": "See #1."}]
     verdict, _ = classify(issue, refs)
     assert verdict == "candidate"
 
@@ -129,7 +139,8 @@ def test_candidate_when_comment_equals_merge_time():
 def test_candidate_uses_creation_when_no_comments():
     # No comments at all: issue created_at is the activity floor.
     issue = _issue(title="x", created_at="2026-08-01T00:00:00Z", comments=[])
-    refs = [{"pr_number": 1, "merged_at": "2026-08-10T00:00:00Z"}]
+    refs = [{"pr_number": 1, "merged_at": "2026-08-10T00:00:00Z",
+             "body": "Closes #1."}]
     verdict, _ = classify(issue, refs)
     assert verdict == "candidate"
 
@@ -175,12 +186,107 @@ def test_parse_cross_ref_events_merged_prs_captured():
 
 
 def test_parse_cross_ref_events_feeds_classify_candidate():
-    # End-to-end: the parsed refs drive classify() to the right verdict.
+    # End-to-end: the parsed refs drive classify() to the right verdict. The
+    # parse itself is body-less (network-free); the driver enriches the merged
+    # refs with their current body before classify -- mirrored here.
     events = [_xref_event(10410, merged_at="2026-08-11T06:40:37Z")]
     refs = _parse_cross_ref_events(events)
-    issue = _issue(title="5 guards 2-point diff", comments=["2026-08-11T02:56:16Z"])
+    refs[0]["body"] = "See #10410."  # driver: _with_merged_pr_bodies() attaches this
+    issue = _issue(title="5 guards 2-point diff", number=10410,
+                   comments=["2026-08-11T02:56:16Z"])
     verdict, _ = classify(issue, refs)
     assert verdict == "candidate"
+
+
+def test_parsed_ref_without_body_is_not_declared():
+    # The parse leaves body=None; a classify on the raw refs (no driver
+    # enrichment) must fail safe to no_delivery, never to candidate.
+    events = [_xref_event(10410, merged_at="2026-08-11T06:40:37Z")]
+    refs = _parse_cross_ref_events(events)
+    assert refs[0]["body"] is None
+    issue = _issue(title="5 guards 2-point diff", number=10410, comments=[])
+    verdict, why = classify(issue, refs)
+    assert verdict == "no_delivery"
+    assert "only contextually" in why
+
+
+def test_contextual_mention_is_not_a_delivery():
+    # #15060 (measured 2026-09-10): #15200 was research prep for SC-2c -- the
+    # body mentions the issue in a grain title and as "verified by dispatch
+    # #15060", with no See/Closes marker anywhere. "merged + silent" used to
+    # label it; the delivery-marker gate must keep it no_delivery.
+    issue = _issue(title="[ICT] SC-2b : lancer l'experience homogene/heterogene",
+                   number=15060, comments=[])
+    refs = [{
+        "pr_number": 15200, "merged_at": "2026-09-09T03:06:21Z",
+        "is_pr": True, "state": "closed",
+        "body": ("# c.1006 SC-2c (#15060) -- mesure de la composition C1b x C5. "
+                 "composition absente verifiee par le dispatch #15060. "
+                 "worktree C:/dev/CoursIA-c1006-15060-sc2c"),
+    }]
+    verdict, why = classify(issue, refs)
+    assert verdict == "no_delivery"
+    assert "#15200" in why
+
+
+def test_stale_cross_ref_after_body_amend_is_not_a_delivery():
+    # #15060 (measured 2026-09-10): #15149 cross-referenced the issue on first
+    # mention, then a body amend removed every mention -- the timeline event
+    # survives, the delivery claim does not. A body that never mentions the
+    # issue cannot be a delivery marker.
+    issue = _issue(title="[ICT] SC-2b : lancer l'experience homogene/heterogene",
+                   number=15060, comments=[])
+    refs = [{
+        "pr_number": 15149, "merged_at": "2026-09-09T05:27:30Z",
+        "is_pr": True, "state": "closed",
+        "body": "feat(catalog,#14831): pose signal scientifique cure via registre",
+    }]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "no_delivery"
+
+
+def test_see_marker_variants_declare_delivery():
+    # Every form of the repo's link discipline (git-workflow.md) counts.
+    issue = _issue(title="x", comments=["2026-08-10T00:00:00Z"])
+    for marker in ["See #1", "see #1", "See: #1", "Part of #1", "part of #1",
+                   "Closes #1", "Fixes #1", "Refs #1", "references #1"]:
+        refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z", "body": marker}]
+        verdict, _ = classify(issue, refs)
+        assert verdict == "candidate", f"marker {marker!r} must declare delivery"
+
+
+def test_marker_requires_word_adjacency():
+    # A word between the marker and the number is prose, not the prescribed
+    # form. ("Please see #1" DOES match: it contains the literal `see #1` --
+    # the repo's forms are adjacency marker->number, and English word order
+    # keeps that intact.)
+    issue = _issue(title="x", comments=[])
+    for body in ["See the #1 protocol", "cf #1", "voir #1"]:
+        refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z", "body": body}]
+        verdict, _ = classify(issue, refs)
+        assert verdict == "no_delivery", f"body {body!r} must NOT declare delivery"
+
+
+def test_marker_for_another_issue_does_not_count():
+    issue = _issue(title="x", comments=[])
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T10:00:00Z",
+             "body": "See #15201, not this one"}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "no_delivery"
+
+
+def test_delivery_marker_unit_forms():
+    assert delivery_marker("See #42.", 42)
+    assert delivery_marker("Part of #42 -- partial", 42)
+    assert delivery_marker("closes #42", 42)
+    assert delivery_marker("Fixes #42", 42)
+    assert delivery_marker("Refs #42", 42)
+    assert delivery_marker("See #42 and #43", 42)
+    assert not delivery_marker("See #42", 43)
+    assert not delivery_marker("SC-2c (#42) -- mesure", 42)
+    assert not delivery_marker("feature/42-sc2c-composition", 42)
+    assert not delivery_marker("", 42)
+    assert not delivery_marker(None, 42)
 
 
 def test_parse_cross_ref_events_empty_when_no_source_number():
@@ -208,7 +314,11 @@ def _lab(event, actor, created_at):
 # The shape measured on #10038 / #11601 / #10475: bot poses, human removes with
 # a written verdict, a later merge cites the issue, bot poses again.
 _BOT = "github-actions[bot]"
-_DELIVERED_SILENT = [{"pr_number": 13939, "merged_at": "2026-09-02T08:51:58Z"}]
+# The delivery-marker gate is NOT under test in the #14307 block; the body
+# carries the default fixture issue number (1) so those tests exercise the
+# label-history memories untouched.
+_DELIVERED_SILENT = [{"pr_number": 13939, "merged_at": "2026-09-02T08:51:58Z",
+                      "body": "See #1."}]
 
 
 def test_human_retraction_sticks_over_a_later_merge():
