@@ -47,7 +47,8 @@ flowchart LR
     P1 --> U1["Incertitude<br/>non quantifiée"]
     P2 --> U2["Incertitude<br/>native<br/>(intervalles de crédibilité)"]
     U2 --> DEC["Décision basée sur<br/>E[U] (utilité espérée)"]
-    classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022)
+    classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
     class P2,U2,DEC dist;
 ```
 
@@ -176,9 +177,10 @@ flowchart TD
     PYMC --> PIVOT2{"Besoin de message passing<br/>déterministe (VMP/EP) ou .NET ?"}
     PIVOT1 -->|"oui"| PYMC
     PIVOT2 -->|"oui"| INFER
-    classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px;
-    classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px;
-    classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022)
+    classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
+    classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085;
+    classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class INFER infer;
     class PYMC pymc;
     class IN101 entry;
@@ -649,12 +651,13 @@ flowchart LR
     %% NB_EP (Infer.NET EP / VMP) = inférence bayésienne approximative ;
     %% la passerelle Dung ↔ argumentation_lean est couverte par le tableau §E ci-dessus (ligne SymbolicAI ↔ Probas),
     %% pas par un lien direct depuis ce nœud de simulation.
-    style LK_DT fill:#e8f5e9,stroke:#2e7d32
-    style LK_CO fill:#e8f5e9,stroke:#2e7d32
-    style LK_PAC fill:#e8f5e9,stroke:#2e7d32
-    style LK_GIT fill:#e8f5e9,stroke:#2e7d32
-    style LK_KELLY fill:#e8f5e9,stroke:#2e7d32
-    style LK_SC fill:#e8f5e9,stroke:#2e7d32
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022)
+    style LK_DT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_CO fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_PAC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_GIT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_KELLY fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_SC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 ```
 
 La double culture Probas tient en deux gestes complémentaires. D'un côté, **simuler** : PyMC fait tourner NUTS/HMC sur des modèles hiérarchiques, Infer.NET propage des messages EP/VMP sur des graphes factoriels, et les notebooks PAC entraînent des hypothèses parERM. De l'autre, **prouver** : `decision_theory_lean` (VNM et Coherence certifiés, `0 sorry`) certifie que les axiomes de rationalité impliquent l'existence d'une utilité espérée, et la chaîne PAC iter-2 démontre `pac_agnostic_generalization` de bout en bout sans `sorry`. Les deux faces du même raisonnement bayésien et décisionnel — l'une touche l'intuition numérique, l'autre ancre la garantie formelle.
