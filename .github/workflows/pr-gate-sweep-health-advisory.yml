@@ -20,11 +20,28 @@ name: PR gate sweep health advisory
 # The workflow name carries "advisory" (ADVISORY_MARKER in scripts/pr_gate.py):
 # the PR gate then treats a red version of this check as non-blocking, so it
 # can rougir to surface the alarm without appearing to block a merge.
+#
+# 2026-09-09 (#15332): the observer itself went silent at 01:13Z WITH the rest
+# -- the last `event=schedule` run of the whole repository -- because its own
+# heartbeat was a `schedule:`. An observer that dies of the cause it reports
+# observes nothing. It now also fires on `push` to main: merges keep flowing
+# while the scheduler is mute, so the alarm still gets a chance to speak during
+# the exact outage it exists to report.
+#
+# Why `push` and not `workflow_run` on a frequent workflow (the first shape
+# #15332 suggested): a self-hosted job gated on `workflow_run` is refused by
+# scripts/ci/check_self_hosted_runner_policy.py (UNSAFE_TRIGGER -- workflow_run
+# can be reached by fork code). `push` is in SAFE_SELF_HOSTED_TRIGGERS and, on
+# `branches: [main]`, only ever runs repository-owned code -- the same property
+# the schedule-only routing relied on.
 
 on:
   schedule:
     # Every 30 minutes on off-:00 minutes, offset from the sweep's 7,27,47.
     - cron: '13,43 * * * *'
+  # Heartbeat independent of the `schedule` event class (#15332).
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -39,13 +56,35 @@ jobs:
   health:
     name: PR gate sweep health advisory
     # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
-    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    # Declencheurs `schedule` + `push` sur main -- les deux ne portent que des
+    # refs du depot (SAFE_SELF_HOSTED_TRIGGERS), donc aucun code de fork ne peut
+    # l'atteindre et aucune garde same-repo n'est requise (cf en-tete de
+    # check_self_hosted_runner_policy.py). Retour arriere = remettre
+    # `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+        with:
+          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree de
+          # fichier fait echouer le checkout (`fatal: ... is not a directory`).
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            scripts/ci/check_scheduler_liveness.py
+
+      - name: Measure served cadence of the schedule event class (#15332)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          # Mesure la cadence SERVIE par organe (declaree vs observee) et rougit
+          # quand la livraison de l'evenement 'schedule' est morte. Advisory :
+          # le nom du workflow porte le marqueur, donc un rouge n'est pas
+          # bloquant -- il parle sans bloquer un merge. Le code de sortie est
+          # donc PROPAGE (pas de `|| true`) : c'est le rouge qui alerte.
+          python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+
       - name: Check age of last successful sweep run
         env:
           GH_TOKEN: ${{ github.token }}
