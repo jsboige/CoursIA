@@ -330,6 +330,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-plan-loss-gate.yml",
+    # #15322 (owner myia-po-2023:CoursIA) : vehicule workflow_dispatch-ONLY
+    #   servant de cible d'identite au check-run absorbe par fast-lane
+    #   (registre TRANCHE2) et de re-run manuel du self-test sur main.
+    #   Detecteur check_pr_translation_drift.py (attribution par merge-base,
+    #   predicat REUTILISE de check_translation_sync.check_csv -- aucune
+    #   reimplementation), advisory pur-Python stdlib-only, conclusion neutre,
+    #   jamais exit != 0 sur le verdict, aucun secret, aucun GITHUB_TOKEN cote
+    #   job. Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
+    #   profil que repeated-prose-advisory.yml / markdown-deaccent-
+    #   advisory.yml). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist).
+    "translation-hot-drift-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
