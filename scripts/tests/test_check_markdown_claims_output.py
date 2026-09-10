@@ -1697,11 +1697,33 @@ class TestMonetaryProvenance15430:
         assert result["verdict"] == "CLEAN"
 
     def test_tariff_unit_without_currency_is_clean(self, tmp_path):
+        """Review #15435: the without-currency exemption survives only via
+        the bounded lexical tariff context ('Abordable') -- not by the bare
+        unit suffix."""
         result = self._scan_tmp(tmp_path, [
             _code_cell("run()", [_stream_output("done\n")]),
             _md_cell("Abordable a 0.006/min, et 15/1M chars en volume."),
         ])
         assert result["verdict"] == "CLEAN"
+
+    def test_derived_metric_per_minute_stays_detected(self, tmp_path):
+        """Review #15435 (reserve NanoClaw 2026-09-10T03:21:32Z): '0,7
+        conflits/min' is a derived METRIC, not a price -- no currency, no
+        tariff context, it must stay confronted with the outputs."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("conflicts()", [_stream_output("0 conflit\n")]),
+            _md_cell("Le reordonnancement donne 0,7 conflits/min."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED"
+
+    def test_tokens_per_minute_metric_stays_detected(self, tmp_path):
+        """Review #15435: '15 tokens/min' -- same class: a throughput
+        metric the organ must keep checking."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("count_tokens()", [_stream_output("done\n")]),
+            _md_cell("Le service traite 15 tokens/min en moyenne."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED"
 
     def test_reference_fabrication_still_detected(self, tmp_path):
         """Positive control pinned by the issue: 117,600 (the #15365 /
@@ -1743,10 +1765,24 @@ class TestMonetaryProvenance15430:
         assert _is_monetary_value(prose, pos, pos + 2)
 
     def test_predicate_tariff_units(self):
-        for text, num in [("$0.006/min", "0.006"), ("15/1M chars", "15"),
-                          ("0,02 / mois", "0,02"), ("9.90€/1k tokens", "9.90")]:
+        # Review #15435: bare '15/1M chars' / '0,02 / mois' no longer
+        # exempt on the unit alone -- they carry a tariff context.
+        for text, num in [("$0.006/min", "0.006"),
+                          ("Tarif : 15/1M chars", "15"),
+                          ("Tarif : 0,02 / mois", "0,02"),
+                          ("9.90€/1k tokens", "9.90"),
+                          ("Abordable a 0.006/min", "0.006")]:
             pos = text.index(num)
             assert _is_monetary_value(text, pos, pos + len(num)), text
+
+    def test_predicate_metric_units_without_context(self):
+        """Review #15435: the negative face of the unit direction -- a bare
+        number/unit is a metric, not a price."""
+        for text, num in [("0,7 conflits/min", "0,7"),
+                          ("15 tokens/min", "15"),
+                          ("22 mots/heure", "22")]:
+            pos = text.index(num)
+            assert not _is_monetary_value(text, pos, pos + len(num)), text
 
     def test_version_prefix_sk_and_package(self):
         for prose in ["requis SK 1.39+ pour config",

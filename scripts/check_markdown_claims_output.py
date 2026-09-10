@@ -144,6 +144,20 @@ def _substantive(norm: str) -> bool:
     return False
 
 
+def _unit_bearing(raw: str, prose: str, match_end: int) -> bool:
+    """Review #15435: only a DERIVED RATE ('15 tokens/min', '75 steps/s')
+    lifts the ``_substantive`` floor -- a rate is computed, never directly
+    observed, which is exactly the class-(b) metric the organ exists to
+    confront. The floor stays for simple quantities ('16 tokens', '400ms')
+    and for single-letter SI suffixes ('3 M' -- French elision collisions).
+    The rate is recognised by a multi-character unit on the number itself
+    followed by '/<unit>' right after the match."""
+    tail = re.sub(r"^\d[\d.,]*\s*", "", raw.strip(), count=1)
+    if not tail or (len(tail) == 1 and tail.isalpha()):
+        return False
+    return bool(re.match(r"\s*/\s*[A-Za-z]", prose[match_end:]))
+
+
 def _output_text(outputs: list) -> str:
     """Flatten an `outputs` array (cell.output) into a single searchable string."""
     if not outputs:
@@ -734,6 +748,24 @@ _TARIFF_UNIT_RE = re.compile(
     r")\b"
 )
 
+# Review #15435 (reserve NanoClaw 2026-09-10T03:21:32Z): a bare '/unit'
+# proves NOTHING by itself -- '0,7 conflits/min' and '15 tokens/min' are
+# derived METRICS, exactly the class-(b) values this organ exists to
+# confront with the committed outputs. The unit-direction exemption
+# survives ONLY when a bounded lexical context in the surrounding window
+# actually establishes price/cost. Closed alternation, deliberately free
+# of generic 'par <unit>' phrasings (a metric can be 'par minute' too)
+# and of the bare word 'cent' (a French number, not a money word).
+_TARIFF_CONTEXT_RE = re.compile(
+    r"\b(?:tarifs?|prix|co[uû]ts?|couts?|costs?|price|prices|pricing|"
+    r"factur\w*|billing|billed|gratuit\w*|payant\w*|abordable\w*|"
+    r"centimes?\b|cents\b|free\s+tier)\b",
+    re.IGNORECASE,
+)
+# Bounded look-around window for the tariff context (fixed offsets: the
+# file-wide caution on scan cost applies -- no unbounded search).
+_TARIFF_CONTEXT_WINDOW = 120
+
 # A REAL inline-math span carries formula content (a TeX macro, a
 # superscript/subscript, an equals sign). A span delimited by two
 # currency '$' contains plain prose -- price lists phantom-pair into
@@ -790,7 +822,14 @@ def _is_monetary_value(prose: str, match_pos: int, match_end: int) -> bool:
         return True
     if len(post) >= 2 and post[0] in " \xa0" and post[1] in _CURRENCY_CHARS:
         return True
-    return bool(_TARIFF_UNIT_RE.match(prose, match_end))
+    # Review #15435: the unit direction alone is NOT monetary proof (a
+    # derived metric like '0,7 conflits/min' must stay checked); it only
+    # completes a provenance that the bounded tariff context establishes.
+    if _TARIFF_UNIT_RE.match(prose, match_end):
+        ctx_start = max(0, match_pos - _TARIFF_CONTEXT_WINDOW)
+        ctx_end = min(len(prose), match_end + _TARIFF_CONTEXT_WINDOW)
+        return bool(_TARIFF_CONTEXT_RE.search(prose, ctx_start, ctx_end))
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1096,7 +1135,7 @@ def check_notebook(path: Path) -> dict:
             match_pos = m.start()
             match_end = m.end()
             norm = _normalize_num(raw)
-            if not _substantive(norm):
+            if not _substantive(norm) and not _unit_bearing(raw, prose, match_end):
                 continue
             # FP filters (c.366): skip version-number citations and
             # numbers inside quoted exception/version/path spans.
