@@ -334,7 +334,7 @@ def check_lake(lake_root: Path, strict: bool = False) -> Report:
             elif n > disk_n + 1:
                 rpt.drifts.append(Drift(
                     kind="OVERCOUNT",
-                    severity="advisory",
+                    severity=("blocking" if strict else "advisory"),
                     detail=f"README claims {n} leaf modules; disk has {disk_n} FR + {disk_n} EN (lead by {n - disk_n} — in-flight PR?)",
                     expected=disk_n,
                     actual=n,
@@ -367,7 +367,7 @@ def check_lake(lake_root: Path, strict: bool = False) -> Report:
     if orphan:
         rpt.drifts.append(Drift(
             kind="ORPHAN_IN_TABLE",
-            severity="advisory",
+            severity=("blocking" if strict else "advisory"),
             detail=f"{len(orphan)} leaf module(s) in README.md table but absent on disk: {orphan}",
             expected=sorted(disk_all),
             actual=sorted(table_fr),
@@ -377,7 +377,7 @@ def check_lake(lake_root: Path, strict: bool = False) -> Report:
         if orphan_en:
             rpt.drifts.append(Drift(
                 kind="ORPHAN_IN_TABLE",
-                severity="advisory",
+                severity=("blocking" if strict else "advisory"),
                 detail=f"{len(orphan_en)} leaf module(s) in README.en.md table but absent on disk: {orphan_en}",
                 expected=sorted(disk_all),
                 actual=sorted(table_en),
@@ -432,6 +432,69 @@ def _print_human(rpt: Report, strict: bool) -> None:
             print(f"           actual   = {d.actual}")
 
 
+def _apply_inject_fake(rpt: Report, fake_path: Path) -> Report:
+    """Apply test-time fakes to a Report — never touches the working tree.
+
+    ``fake_path`` is a JSON document with optional keys that override the
+    measurements the checker would otherwise report. Each override ADDS a
+    drift entry simulating the artefact under test, so the checker's positive
+    controls can be exercised without mutating files on disk. Supported keys:
+
+    - ``"counter"`` (int) — fake an UNDERCOUNT drift claiming the README
+      advertises this leaf count when the disk shows the real number.
+    - ``"toolchain_drift"`` (str, e.g. ``"v4.99.0"``) — fake a TOOLCHAIN_DRIFT
+      between the claimed toolchain and ``lean-toolchain`` on disk.
+    - ``"missing_in_table"`` (list[str]) — fake MISSING_IN_TABLE entries that
+      appear on disk but not in the README table.
+
+    The function **augments** ``rpt.drifts`` rather than regenerating the
+    report: real disk measurements are preserved alongside the injected
+    drift, so an operator can see both. Returns the same ``rpt`` for
+    chaining.
+
+    This is the formal positive control for #15474's re-review: the
+    checker must detect, with exit != 0, each artefact category. Calling
+    with an empty dict is a no-op (used by tests that assert baseline
+    cleanliness).
+    """
+    if not fake_path.exists():
+        print(f"FATAL: --inject-fake file not found: {fake_path}", file=sys.stderr)
+        raise SystemExit(2)
+    fake = json.loads(fake_path.read_text(encoding="utf-8"))
+    if not isinstance(fake, dict):
+        raise SystemExit(f"FATAL: --inject-fake must be a JSON object, got {type(fake).__name__}")
+    if "counter" in fake:
+        n = int(fake["counter"])
+        disk_n = rpt.leaf_count_disk_fr
+        rpt.drifts.append(Drift(
+            kind="UNDERCOUNT",
+            severity="blocking",
+            detail=f"[--inject-fake] README claims {n} leaf modules; disk has {disk_n} FR + {disk_n} EN",
+            expected=disk_n,
+            actual=n,
+        ))
+    if "toolchain_drift" in fake:
+        claimed = str(fake["toolchain_drift"])
+        disk_v = _TOOLCHAIN_CLAIM_RE.search(rpt.toolchain_disk or "").group("version") if rpt.toolchain_disk else "unknown"
+        rpt.drifts.append(Drift(
+            kind="TOOLCHAIN_DRIFT",
+            severity="blocking",
+            detail=f"[--inject-fake] README claims v{claimed} but lean-toolchain pins v{disk_v}",
+            expected=disk_v,
+            actual=claimed,
+        ))
+    if "missing_in_table" in fake:
+        missing = list(fake["missing_in_table"])
+        rpt.drifts.append(Drift(
+            kind="MISSING_IN_TABLE",
+            severity="blocking",
+            detail=f"[--inject-fake] {len(missing)} leaf module(s) marked absent from README.md table",
+            expected=sorted(missing),
+            actual=sorted(rpt.table_modules_fr),
+        ))
+    return rpt
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--path", default=str(DEFAULT_LAKE),
@@ -441,6 +504,11 @@ def main() -> int:
                    help="Promote OVERCOUNT/ORPHAN_IN_TABLE advisories to blocking "
                         "(default: blocking only on UNDERCOUNT/MISSING_IN_TABLE/TOOLCHAIN_DRIFT)")
     p.add_argument("--json", action="store_true", help="Emit a JSON document on stdout")
+    p.add_argument("--inject-fake", default=None, metavar="FAKE_JSON",
+                   help="Path to a JSON file with test-time drift overrides; "
+                        "supported keys: counter (int), toolchain_drift (str), "
+                        "missing_in_table (list[str]). Adds drift entries "
+                        "without mutating the working tree.")
     args = p.parse_args()
 
     lake = Path(args.path).resolve()
@@ -449,6 +517,8 @@ def main() -> int:
         return 2
 
     rpt = check_lake(lake, strict=args.strict)
+    if args.inject_fake:
+        rpt = _apply_inject_fake(rpt, Path(args.inject_fake))
 
     if args.json:
         print(json.dumps(rpt.to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
