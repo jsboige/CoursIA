@@ -21,6 +21,18 @@ d'entrée curaté vers :
 - Schémas (espaces annelés en anneaux locaux localement Spec R) et site de Zariski
 - Ce que Mathlib possède et ce qu'il n'a pas (encore)
 
+## Comment lire ce workspace
+
+Trois parcours sont proposés selon ton but :
+
+1. **Lecteur découvrant Grothendieck pour la première fois.** Suis l'arc « poser le site → construire le faisceau → faire parler les points ». Les Parties 1 (catégories et sites), 6 (cribles), 8 (ordre sur les topologies) jettent les fondations ; 13 (faisceautisation) et 14 (exactitude à gauche) donnent le théorème clé ; 15 (points d'un site) et 19 (familles conservatrices) relient la théorie à ses modèles ; 20-23 (cohomologie) mesurent l'obstruction. Le tableau des Parties (ci-dessous) donne le contenu de chaque module en une ligne.
+
+2. **Lecteur intéressé par les six opérations** (image directe / réciproque / exceptionnelle). Le fil va de la Partie 33 (`DirectImage`, `f^* ⊣ f_*`) à la Partie 34 (`ExceptionalDirect`, `f_! ⊣ f^*`) puis la Partie 68 (`ExceptionalTriple`, `f_! ⊣ f^* ⊣ f_*` au complet). Trois adjonctions, ordonnées de la mieux connue à la moins connue.
+
+3. **Lecteur intéressé par le pont Lawvere–Tierney ↔ Grothendieck**. Parties 58 (classifieur `Ω`), 59 (opérateur de clôture `j` sur Ω), 60 (le dictionnaire : topologies de Grothendieck = topologies de Lawvere–Tierney, les deux notions se confondent). C'est le pont où la logique catégorique rejoint la géométrie relative.
+
+**Conventions de navigation.** Les modules sont regroupés en dossiers `Grothendieck/` et `SheafCohomology/` ; chaque module `Foo.lean` a un sibling `Foo_en.lean` pour la version anglaise (convention i18n EPIC #4980). Le tableau ci-dessous donne, pour chaque Partie, le module FR + le module `_en` + une ligne de contenu.
+
 ## La trajectoire
 
 Les **73 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
@@ -182,7 +194,7 @@ approximativement autant.*
 ## Build & état
 
 - **Toolchain** : `leanprover/lean4:v4.33.0` (cf. `lean-toolchain` du lake ; migration v4.32.1 → v4.33.0 survenue post-#11294, attestée par `git log -- lean-toolchain`)
-- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en` (74 .lean FR : 1 umbrella + 73 leaf, + 73 .lean `_en`, total 148 fichiers .lean vérifié par `git ls-tree -r origin/main`). Dernier build vérifié sur main (à la date de cette PR) : `lake build Grothendieck` SUCCESS local (cf. §Validation du body PR — preuve jointe). Le compte disque **73 leaf FR + 73 leaf `_en` + 1 umbrella** est mesuré par le checker anti-récidive `scripts/lean/check_grothendieck_readme.py` (sortie JSON, exit code non-zéro sur dérive) — l'ancienne prose « 61 leaf » est l'erreur que cette PR corrige.
+- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en` (74 .lean FR : 1 umbrella + 73 leaf, + 73 .lean `_en`, total 148 fichiers .lean vérifié par `git ls-tree -r origin/main`). Dernier build vérifié sur main (à la date de cette PR) : `lake build Grothendieck` SUCCESS local (cf. §Validation du body PR — preuve jointe). Le compte disque **73 leaf FR + 73 leaf `_en` + 1 umbrella** est mesuré par le checker anti-récidive `scripts/lean/check_grothendieck_readme.py` (sortie JSON, exit code non-zéro sur dérive).
 - **Preuves** : **0 `sorry`, 0 axiome ajouté** — tous les modules sont complets à la création. (Un `grep sorry` naïf matche des mentions en prose dans les docstrings bilingues, notamment deux dans `ExceptionalDirect.lean` ; la CI compte en mode `real` — après strip des commentaires — et vaut 0.)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
 - **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **74 fichiers FR** (1 umbrella `Grothendieck.lean` + 73 leaf canoniques mesurés par `git ls-tree -r origin/main`) et **73 siblings `_en.lean`**, ratio 1:1 intégral (vérifié par `scripts/lean/check_i18n_siblings.py`). L'historique « gap `PullbackFunctor.lean` sans `_en` » est clos depuis c.2026-08-18 : `PullbackFunctor_en.lean` est sur disque, et **tous** les 73 modules FR ont leur sibling `_en`. Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
