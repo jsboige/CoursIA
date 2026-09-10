@@ -257,10 +257,8 @@ layout: default
 | Régulier | DFA | Patterns, regex |
 
 ---
-
----
 layout: image-overlay
-image: images/slide_18_img_7fb42adf.png
+image: ./images/slide_18_img_7fb42adf.png
 ---
 
 # 18. Grammaires probabilistes
@@ -286,10 +284,8 @@ mots fonctionnels). Classes ouvertes (mots ajoutés au fil du temps).
 *Figure historique (PCFG)* : extrait du PPTX original 2018.
 
 ---
-
----
 layout: image-overlay
-image: images/slide_19_img_fe5c88d1.png
+image: ./images/slide_19_img_fe5c88d1.png
 ---
 
 # 19. Analyse syntaxique — Parsing
@@ -337,12 +333,8 @@ layout: section
 Du sens au contexte
 
 ---
-layout: default
----
-
----
 layout: image-overlay
-image: images/slide_22_img_752cd77a.png
+image: ./images/slide_22_img_752cd77a.png
 ---
 
 # 22. Interprétation sémantique
@@ -377,10 +369,8 @@ de ses parties.
 > « Who did the agent tell you to give the gold to? » → trace `_`licenciée par `who`
 
 ---
-
----
 layout: image-overlay
-image: images/slide_24_img_765dfaa8.png
+image: ./images/slide_24_img_765dfaa8.png
 ---
 
 # 24. Fouille d'arguments
@@ -456,12 +446,8 @@ layout: section
 De RNN à Transformers
 
 ---
-layout: default
----
-
----
 layout: image-overlay
-image: images/slide_28_img_4b6f2b7a.png
+image: ./images/slide_28_img_4b6f2b7a.png
 ---
 
 # 28. Modèles profonds
@@ -484,10 +470,8 @@ LLM modernes.
 *Figure historique (seq2seq + attention)* : extrait du PPTX original 2018.
 
 ---
-
----
 layout: image-overlay
-image: images/slide_29_img_0094ef69.png
+image: ./images/slide_29_img_0094ef69.png
 ---
 
 # 29. Agents conversationnels
@@ -552,13 +536,21 @@ layout: section
 |---|---|
 | n-grammes, modèles de langue | `GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb` |
 | HMM, Viterbi | `Probas/Infer/*` |
-| Automates finis, transducteurs | `Search/Z3/Sudoku/Lean` |
-| CRF, structured prediction | `Probas/Infer/*` |
-| Parsing CFG/PCFG | `SymbolicAI/Lean` |
+| Automates finis, transducteurs | `SymbolicAI/SMT/Automata/`, `SymbolicAI/SMT/Z3-API/`, `Sudoku/` |
+| CRF, structured prediction | _gap_ (pas de notebook dédié dans le dépôt) |
+| Parsing CFG/PCFG | _gap_ (couverture partielle via Lean ; pas de parser CFG/PCFG autonome) |
 | Sémantique | `SymbolicAI/SemanticWeb` |
 | RNN, LSTM, seq2seq, attention | `GenAI/Texte/10*` |
 | Transformers, LLMs | `GenAI/Texte/11*`, `13*` |
 | Bots conversationnels | `GenAI/Plateformes-Conversationnelles/*` |
+
+> **Note** : les trois dernières lignes du tableau initial confondaient couverture
+> `Probas/Infer/*` et `SymbolicAI/Lean` pour CRF et CFG/PCFG alors qu'aucun notebook
+> du dépôt n'aborde ces techniques de front. Les chemins réels vérifiés
+> firsthand pour les automates finis sont `SymbolicAI/SMT/Automata/`,
+> `SymbolicAI/SMT/Z3-API/` et `Sudoku/` — le chemin `Search/Z3/Sudoku/Lean`
+> cité antérieurement est un fantôme. Ces écarts sont marqués `gap` pour
+> ne pas induire les étudiants en erreur.
 
 ---
 
@@ -583,12 +575,13 @@ layout: section
 
 # Annexe — Figures historiques préservées (référence)
 
-Les 32 PNG retenues (≥10 KB, diagrammes pédagogiques) ne sont **pas toutes** intégrées
+Les 13 PNG retenues dans le dépôt (≥30 KB, diagrammes complexes, tous
+référencés dans le tableau ci-dessous) ne sont **pas toutes** intégrées
 en `image-overlay` dans le corps du deck — seulement 6 le sont (slides 18, 19, 22,
-24, 28, 29). Les 26 autres sont **préservées en archive locale** et **référençables**
-par les étudiants qui explorent le PPTX historique. La voie canonique pour les
-intégrer plus tard est `image-overlay` (jamais `bg right`/`image-right` issus de
-convertisseurs, règle projet).
+24, 28, 29). Les 7 autres sont préservées dans ce dossier et **référençables**
+par les étudiants qui consultent le PPTX canonique hors Git. La voie canonique
+pour intégrer les figures complémentaires est `image-overlay` (jamais
+`bg right`/`image-right` issus de convertisseurs, règle projet).
 
 **Figures retenues ≥30 KB (diagrammes complexes)** :
 
@@ -610,6 +603,12 @@ convertisseurs, règle projet).
 
 **Source** : PPTX canonique hors Git `G:\Mon Drive\MyIA\IA\Bibliographie IA\Slides\English\Artificial Intelligence - 6 - Natural Language Processing.pptx`
 (1.68 MB, mars 2022, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
+
+> **Note de cycle (c.1033)** : les **19 PNG inférieurs à 30 KB** (slides 5, 9×2, 11,
+> 18, 21×3, 22×3, 23, 25, 26, 27×2, 28×3 — toutes hors annexe, sans référence
+> pédagogique préservée) ont été retirés du dépôt. Ils restent accessibles dans
+> le PPTX canonique hors Git. Le dossier `images/` ne contient désormais que
+> **treize** figures, toutes référencées par le tableau ci-dessus.
 
 ---
 

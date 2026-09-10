@@ -1047,3 +1047,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
 # the script in the repo; the artefacts out.
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 
+
+# Scratchpads de cycle agent (temporaires, hors travail — Tell c.677-L4 ×7)
+scratchpad_c*.txt
