@@ -30,6 +30,11 @@ on:
       - "styles.css"
       - ".github/workflows/quarto-pages-deploy.yml"
       - "scripts/quarto_yaml_safe.py"
+      # La page catalogue est un document rendu (_quarto.yml render list), mais
+      # son refresh arrive par la PR long-lived catalog-cron -- dont le merge
+      # ne touche AUCUN autre path de cette liste : sans ce filtre, la page
+      # Quarto restait stale jusqu'au prochain commit non-catalogue (#15490).
+      - "COURSE_CATALOG.generated.md"
   pull_request:
     paths:
       - "_quarto.yml"
@@ -43,6 +48,10 @@ on:
       # emettre l'evenement pull_request (asymetrie push/pull_request, #14391).
       - ".github/workflows/quarto-pages-deploy.yml"
       - "scripts/quarto_yaml_safe.py"
+      # Catalog-drift re-regenere l'artefact sur les branches same-repo : la PR
+      # doit valider le rendu AVANT le merge, pas seulement le deploy apres
+      # (#15490, symetrique au filtre push ci-dessus).
+      - "COURSE_CATALOG.generated.md"
       # Meme raison (#14429) : le script qui DECIDE combien on rend doit lui
       # aussi declencher la verification qu'il pilote. Emettre l'evenement ne
       # suffit pas -- voir le mode `smoke` du step de scope, sans lequel une PR
