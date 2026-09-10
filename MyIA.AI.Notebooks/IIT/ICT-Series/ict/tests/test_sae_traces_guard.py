@@ -22,14 +22,25 @@ import pytest
 from ict import sae_traces as st
 
 
-def _write_trace(path, vals):
+def _write_trace(path, vals, *, instrument: str | None = "sae"):
+    """Ecrit un .npz minimal pour les tests BOS-inf.
+
+    Le contrat v1 (#15476) exige un discriminant (``instrument`` ou
+    heritage ``lens='sae'``). On ajoute ``instrument="sae"`` par defaut
+    pour que les tests BOS-inf visent la garde specifique (vals non-
+    finies), pas le contrat (qui refuserait le manifeste nu avec
+    ``Migration requise`` -- c'est le comportement c.1050 attendu,
+    couvert par les tests de :mod:`ict.tests.test_trace_contract`).
+    """
     arrays = {
         "setA__0__topk_ids": np.array([[0, 1], [2, 3]], dtype=np.int32),
         "setA__0__topk_vals": np.array(vals, dtype=np.float16),
         "setA__0__tokens": np.array(["a", "b"], dtype=str),
     }
-    meta = json.dumps({"d_sae": 4, "k": 2, "layer": 18, "variant": "test"})
-    np.savez(path, __meta__=meta, **arrays)
+    meta_dict = {"d_sae": 4, "k": 2, "layer": 18, "variant": "test"}
+    if instrument is not None:
+        meta_dict["instrument"] = instrument
+    np.savez(path, __meta__=json.dumps(meta_dict), **arrays)
 
 
 def test_load_traces_accepts_finite_trace(tmp_path):
@@ -39,6 +50,7 @@ def test_load_traces_accepts_finite_trace(tmp_path):
     out = st.load_traces(p)
     assert ("setA", 0) in out["prompts"]
     assert out["meta"]["layer"] == 18
+    assert out["meta"]["instrument"] == "sae"
 
 
 def test_load_traces_refuses_nonfinite_vals_with_value_error(tmp_path):

@@ -122,7 +122,11 @@ def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     # Import local pour eviter tout cycle d'import (trace_contract ne depend
     # de rien du package, sae_traces trace_contract ne depend pas de sae_traces).
     from .trace_contract import validate_manifest, enforce_instrument
-    meta = validate_manifest(meta, strict=strict)
+    # ``expected="sae"`` declare au contrat l'intention du chargeur : un
+    # manifeste strictement minimal (juste d_sae, k, layer, sans
+    # discriminant declare, Tell c.1050 ★★ fondateur) sera accepte avec
+    # UserWarning plutot que REFUSE comme un melange silencieux.
+    meta = validate_manifest(meta, strict=strict, expected="sae")
     enforce_instrument(meta, "sae")
     return {"meta": meta, "prompts": prompts}
 
