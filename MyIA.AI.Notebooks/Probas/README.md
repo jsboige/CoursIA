@@ -47,7 +47,7 @@ flowchart LR
     P1 --> U1["Incertitude<br/>non quantifiée"]
     P2 --> U2["Incertitude<br/>native<br/>(intervalles de crédibilité)"]
     U2 --> DEC["Décision basée sur<br/>E[U] (utilité espérée)"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022)
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
     class P2,U2,DEC dist;
 ```
@@ -177,7 +177,7 @@ flowchart TD
     PYMC --> PIVOT2{"Besoin de message passing<br/>déterministe (VMP/EP) ou .NET ?"}
     PIVOT1 -->|"oui"| PYMC
     PIVOT2 -->|"oui"| INFER
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022)
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
     classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085;
     classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
@@ -651,7 +651,7 @@ flowchart LR
     %% NB_EP (Infer.NET EP / VMP) = inférence bayésienne approximative ;
     %% la passerelle Dung ↔ argumentation_lean est couverte par le tableau §E ci-dessus (ligne SymbolicAI ↔ Probas),
     %% pas par un lien direct depuis ce nœud de simulation.
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022)
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style LK_DT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style LK_CO fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style LK_PAC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
