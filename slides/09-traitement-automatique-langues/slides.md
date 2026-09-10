@@ -66,7 +66,7 @@ layout: default
 |---|---|
 | n-grammes, modèles de langue | `GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb` |
 | Markov caché (HMM), Viterbi | `Probas/Infer/Infer-*` |
-| Automates finis, transducteurs (morphologie) | `Search/Z3/Sudoku/Lean` |
+| Automates finis, transducteurs (morphologie) | `SymbolicAI/SMT/Automata/`, `SymbolicAI/SMT/Z3-API/`, `Sudoku/` |
 | CRF / structured prediction | **GAP** — pas de notebook dédié (voir `Probas/Infer/Infer-*` pour HMM/Viterbi amont) |
 | Parsing CFG/PCFG, CYK | **GAP** — `SymbolicAI/Lean` contient CFG et grammaires, mais pas de CYK ni de notebook PCFG dédié |
 | Sémantique compositionnelle | `SymbolicAI/SemanticWeb` |
@@ -575,40 +575,36 @@ layout: section
 
 # Annexe — Figures historiques préservées (référence)
 
-Les 13 PNG retenues dans le dépôt (≥30 KB, diagrammes complexes, tous
-référencés dans le tableau ci-dessous) ne sont **pas toutes** intégrées
-en `image-overlay` dans le corps du deck — seulement 6 le sont (slides 18, 19, 22,
-24, 28, 29). Les 7 autres sont préservées dans ce dossier et **référençables**
-par les étudiants qui consultent le PPTX canonique hors Git. La voie canonique
-pour intégrer les figures complémentaires est `image-overlay` (jamais
-`bg right`/`image-right` issus de convertisseurs, règle projet).
+Le dépôt ne conserve désormais que les **six PNG strictement nécessaires**
+(assets référencés par le rendu) — un par slide d'`image-overlay` (slides 18,
+19, 22, 24, 28, 29). Tous les autres diagrammes du PPTX canonique (≥30 KB ou non)
+sont accessibles dans le PPTX source hors Git. La voie canonique pour intégrer
+des figures complémentaires au deck est `image-overlay` (jamais `bg right` /
+`image-right` issus de convertisseurs, règle projet).
 
-**Figures retenues ≥30 KB (diagrammes complexes)** :
+**Figures retenues — assets strictement nécessaires (référencées)** :
 
 | Slide | Fichier | Taille | Intégré |
 |---|---|---:|---|
-| 12 | `slide_12_img_3b62caa7.png` | 47 KB | non |
-| 12 | `slide_12_img_077838bf.png` | 44 KB | non |
-| 13 | `slide_13_img_e0b7882c.png` | 55 KB | non |
 | 18 | `slide_18_img_7fb42adf.png` | 91 KB | **oui** |
-| 18 | `slide_18_img_9b5e1bf2.png` | 64 KB | non |
 | 19 | `slide_19_img_fe5c88d1.png` | 72 KB | **oui** |
-| 21 | `slide_21_img_e92de5f3.png` | 44 KB | non |
 | 22 | `slide_22_img_752cd77a.png` | 35 KB | **oui** |
 | 24 | `slide_24_img_765dfaa8.png` | 158 KB | **oui** |
-| 27 | `slide_27_img_68ee27c5.png` | 45 KB | non |
 | 28 | `slide_28_img_4b6f2b7a.png` | 63 KB | **oui** |
 | 29 | `slide_29_img_0094ef69.png` | 135 KB | **oui** |
-| 29 | `slide_29_img_95c7e198.png` | 106 KB | non |
 
 **Source** : PPTX canonique hors Git `G:\Mon Drive\MyIA\IA\Bibliographie IA\Slides\English\Artificial Intelligence - 6 - Natural Language Processing.pptx`
 (1.68 MB, mars 2022, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
 
-> **Note de cycle (c.1033)** : les **19 PNG inférieurs à 30 KB** (slides 5, 9×2, 11,
-> 18, 21×3, 22×3, 23, 25, 26, 27×2, 28×3 — toutes hors annexe, sans référence
-> pédagogique préservée) ont été retirés du dépôt. Ils restent accessibles dans
-> le PPTX canonique hors Git. Le dossier `images/` ne contient désormais que
-> **treize** figures, toutes référencées par le tableau ci-dessus.
+> **Notes de cycle** :
+> - **c.1033** : 32 PNG initiaux → 19 retirés (≤30 KB, sans référence pédagogique
+>   préservée). Le dossier `images/` est passé à **treize** figures (6 corps + 7
+>   préservées).
+> - **c.1037** (CHANGES_REQUESTED ai-01 #15452, review `5170199962`) : critère
+>   "assets strictement nécessaires" = PNG référencés par le rendu. Les 7 figures
+>   préservées non intégrées au corps sont **retirées du dépôt** (accessibles via
+>   le PPTX canonique hors Git). Le dossier `images/` passe de treize à **six**
+>   figures, toutes référencées par `image-overlay` dans le corps du deck.
 
 ---
 

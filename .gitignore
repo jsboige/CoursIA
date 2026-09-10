@@ -1048,5 +1048,5 @@ MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 
 
-# Scratchpads de cycle agent (temporaires, hors travail — Tell c.677-L4 ×7)
-scratchpad_c*.txt
+# Scratchpads de cycle agent (temporaires, hors travail — Tell c.677-L4 ×7) — Tell c.1037 ★ NEW : retiré de c.1037 (collision éditoriale #15356, hors scope slides PR)
+# scratchpad_c*.txt — géré par PR #15356
