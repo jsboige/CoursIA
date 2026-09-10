@@ -1410,8 +1410,12 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
             statuses[e["status"]] = statuses.get(e["status"], 0) + 1
             m = e.get("maturity", "UNKNOWN")
             maturities[m] = maturities.get(m, 0) + 1
-        status_str = ", ".join(f"{s}:{c}" for s, c in sorted(statuses.items()))
-        mat_str = ", ".join(f"{m}:{c}" for m, c in sorted(maturities.items()))
+        status_str = ", ".join(
+            f"{_md_escape_cell(s)}:{c}" for s, c in sorted(statuses.items())
+        )
+        mat_str = ", ".join(
+            f"{_md_escape_cell(m)}:{c}" for m, c in sorted(maturities.items())
+        )
         lines.append(f"### {serie} ({len(items)} notebooks) — {status_str} | {mat_str}")
         lines.append("")
         for bucket_name, bucket_items in _serie_buckets(items):
@@ -1442,12 +1446,19 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
                     notebook_cell = f"{_md_escape_cell(basename)} *(missing)*"
                 title = _md_escape_cell(truncate_at_word(e["title"], 50))
                 kernel = _md_escape_cell(truncate_at_word(e["kernel"], 30))
-                maturity = e.get("maturity", "UNKNOWN")
-                duration = e.get("duree_estimee", "")
-                owner = e.get("owner_logique", "")
+                status_cell = _md_escape_cell(str(e.get("status", "")))
+                maturity_cell = _md_escape_cell(
+                    str(e.get("maturity", "UNKNOWN"))
+                )
+                duration_cell = _md_escape_cell(
+                    str(e.get("duree_estimee", ""))
+                )
+                owner_cell = _md_escape_cell(
+                    str(e.get("owner_logique", ""))
+                )
                 lines.append(
                     f"| {i} | {notebook_cell} | {title} | {kernel} "
-                    f"| {e['status']} | {maturity} | {duration} | {owner} |"
+                    f"| {status_cell} | {maturity_cell} | {duration_cell} | {owner_cell} |"
                 )
             lines.append("")
 

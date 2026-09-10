@@ -1847,6 +1847,44 @@ class TestGenerateMarkdownReport:
         assert "\\|" in title_row
         assert "\\`" in title_row and "\\[bracket\\]" in title_row
 
+    def test_cell_escaping_status_maturity_duration_owner(self, tmp_path):
+        """Every text cell in a notebook row must be escaped, not just title/kernel.
+
+        Regression for the c.412 adjoint preflight: status/maturity/duree_estimee/owner_logique
+        came from entry fields and could carry `|`, backticks, or brackets. A naive
+        raw interpolation widened or corrupted the table.
+        """
+        import re as _re
+
+        entries = [
+            _catalog_entry(
+                "ML/nb-a.ipynb",
+                status="WIP | needs review",
+                maturity="BETA [draft]",
+                duree_estimee="[15] `min`",
+                owner_logique="po-2023|lane",
+            ),
+        ]
+        (tmp_path / "MyIA.AI.Notebooks" / "ML").mkdir(parents=True)
+        (tmp_path / "MyIA.AI.Notebooks" / "ML" / "nb-a.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # Locate the row carrying this entry. The basename appears in the row.
+        row = next(
+            ln for ln in report.splitlines() if "nb-a.ipynb" in ln and "Title" not in ln
+        )
+        # 8 columns => 9 structural `|` chars (no escaped). Any new unescaped pipe
+        # in status/maturity/duration/owner would widen the row.
+        assert len(_re.findall(r"(?<!\\)\|", row)) == 9, (
+            f"unescaped pipe in status/maturity/duration/owner widened the row:\n{row}"
+        )
+        # The dangerous payloads survive the escape and stay visible in the cell.
+        assert "\\|" in row
+        assert "\\`" in row
+        assert "\\[draft\\]" in row
+        assert "\\[15\\]" in row
+
     def test_missing_target_no_link_and_signalled(self, tmp_path):
         entries = [_catalog_entry("ML/ghost-notebook.ipynb")]  # not created
         report = generate_markdown_report(entries, repo_root=tmp_path)
