@@ -122,7 +122,7 @@ NOTEBOOK_EXCLUDE_MARKERS = (
 # 1.10.18 (pin CI mis a jour). Verifie firsthand (2026-08-14, standalone) :
 #   - App-9b-EdgeDetection-CSharp.ipynb : 1.7.32 >= 15 min sans progression
 #     -> 1.10.18 rend en ~6 s (HTML 4.88 MB).
-#   - MGS-9-EverestRelief / MGS-15-LandscapeAnalysis : 1.10.18 rendent en
+#   - MGS-09-EverestRelief / MGS-15-LandscapeAnalysis : 1.10.18 rendent en
 #     7 s / 3 s (leger vs lourd de la famille MetaGeneticSharp).
 #   - Mini-repro minimal (1 cellule code, ligne de source terminant par \n +
 #     1 display_data) : 1.7.32 pend, 1.10.18 rend en ~13 s.

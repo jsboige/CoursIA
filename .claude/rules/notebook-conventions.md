@@ -41,7 +41,6 @@ Les cellules doivent suivre un **ordre canonique** sans glissement ni oubli. Fri
 - **WSL notebooks** (GameTheory/Lean) : `wsl_papermill.py` (cf [.claude/rules/wsl-kernels.md](wsl-kernels.md))
 - Working directory explicite pour notebooks avec paths relatifs
 - `BATCH_MODE=true` pour notebooks avec widgets interactifs
-- **Notebooks LLM/API** (SC-11, GenAI) : re-exec validation via `--scrub-keys` pour forcer le chemin mock deterministe sans appel API payant : `notebook_tools.py execute <path> --scrub-keys`. Cf [docs/scripts-reference.md](../../docs/reference/scripts-reference.md) pour le cookbook complet (`--kernel`, `--cwd`, `--env`, `--scrub-keys`).
 - **QuantConnect QuantBook notebooks** (L574 ★★) : re-exec **QC Cloud uniquement** via MCP `qc-mcp` (`create_compile` + `create_backtest` + `read_backtest`). Tentative Papermill locale = FAIL (kernel `QuantBook()` absent, exécution QC Cloud obligatoire). Validateur `scripts/audit/check_cost_metadata.py` lit `cost.validator == qc_cloud` pour ces notebooks (sinon `MAJOR qc_notebook_no_validator`). Cf [CLAUDE.md QUANTCONNECT](../../CLAUDE.md#quantconnect-résumé) pour la discipline backtest obligatoire après modification.
 
 ## Cellules code : output systematique (anti faux-positif maturite)

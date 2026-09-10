@@ -29,7 +29,7 @@ docker-compose logs -f sdnext
 |----------|-------------|--------|
 | `SDNEXT_API_KEY` | Cle API pour l'acces programmatique | - |
 | `WEB_USER` | Utilisateur Gradio (via `FORGE_USER`) | `admin` |
-| `WEB_PASSWORD` | Mot de passe Gradio (via `FORGE_PASSWORD`) | `changeme` |
+| `WEB_PASSWORD` | Mot de passe Gradio (via `FORGE_PASSWORD`) | A definir (fail-closed : aucune valeur commitee) |
 
 Parametres fixes dans `FORGE_ARGS` :
 

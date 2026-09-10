@@ -222,7 +222,7 @@ Allocation pondérée inverse-vol avec régression Ridge sur les features
 
 ### L4 Decision Transformer — Trading basé actions (BEATS)
 
-Premier modèle à battre le buy-and-hold sur 24/26 symboles. L'approche basée actions (classification buy/hold/sell)
+Premier modèle à battre le buy-and-hold sur 24/26 symboles (panel @10bps ; hors-échantillon temporel réel : NO-BEATS). L'approche basée actions (classification buy/hold/sell)
 surpasse massivement les approches basées prévision (PatchTST). AUC médian 0,5582, 104 combos validés.
 
 ### Stratégies QC Cloud alimentées par ces modèles

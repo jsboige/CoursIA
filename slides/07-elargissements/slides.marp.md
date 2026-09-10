@@ -398,8 +398,8 @@ Son impact réel?
 </div>
 <div class="col-right">
 
-![w:300](../_assets/images/slide_20_img_000.png)
-![w:200](../_assets/images/slide_20_img_001.png)
+![w:300](./images/slide_20_img_000.png)
+![w:200](./images/slide_20_img_001.png)
 
 </div>
 </div>

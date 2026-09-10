@@ -92,6 +92,16 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      body PR, lisible par un auditeur ulterieur -- c'est la propriete que la
      baseline fichier ne donne pas avec la meme qualite.
 
+  9. EXEMPT LES ARTEFACTS DE RUN GENERES (#15349) : un notebook dont le
+     markdown est une SORTIE non deterministe d'un agent/LLM
+     (ex. ``Notebook-Generated.ipynb`` : la conversation multi-agents ECrit
+     les cellules a chaque run) est dispense du content-loss -- base-vs-head
+     mesure la variance de la generation, pas une perte de contenu. La
+     dispense n'est pas path-based aveugle : elle exige le nom canonique
+     (``GENERATED_ARTIFACT_NAMES``) ET une trace papermill dans ``metadata``
+     -- un fichier edite a la main qui porterait le nom sans avoir ete
+     execute par papermill reste verifie.
+
 Usage
 -----
     # un notebook, diff vs origin/main (head = working tree)
@@ -105,7 +115,8 @@ Usage
 Exit codes
 ----------
     0 -- aucune perte de contenu detectee (ou mode non --check), y compris un
-         notebook NOUVEAU (absent a la base : rien a comparer -> exempt)
+         notebook NOUVEAU (absent a la base : rien a comparer -> exempt) ou un
+         artefact de run genere (markdown non deterministe, #15349)
     1 -- une ou plusieurs pertes detectees (--check). Les findings ``TRUNCATED_CELL``
          pour lesquels un marker de body valide a ete trouve sont SUPPRIMES
          du verdict et la sortie les mentionne comme
@@ -121,6 +132,7 @@ Voir aussi
 - scan_md_hierarchy / check_notebook_navlinks -- gardes existants (volume-aveugles)
 - Issue #8655 -- cahier des charges + 3 cas reels
 - Issue #13491 -- justification par cellule (option (a) du choix de porte)
+- Issue #15349 -- artefacts de run generes (exemption content-loss)
 - Registre #3966 -- le rollout demotion-de-titres dont provient le defaut
 """
 from __future__ import annotations
@@ -174,6 +186,49 @@ def _fr_sibling_path(nb_path: Path) -> Path:
 def _is_translation_artifact(nb_path: Path) -> bool:
     """True si le notebook est un artefact de traduction (*_<lang>.ipynb)."""
     return _TRANSLATION_SUFFIX_RE.search(nb_path.name) is not None
+
+# ---------------------------------------------------------------------------
+# Artefacts de RUN generes (#15349). Un notebook dont le contenu est une
+# SORTIE non deterministe d'un agent/LLM (ex. SemanticKernel/Notebook-Generated
+# .ipynb : la conversation multi-agents ECrit les cellules a chaque run) a un
+# markdown qui varie d'un run a l'autre. Le comparer base-vs-head mesure la
+# VARIANCE de la generation, pas une perte : la "perte" detectee est la
+# variance normale de deux runs distincts (cf #15209 pour la classe de defaut),
+# et restaurer l'ancien texte a la main pour verdir le garde fabriquerait un
+# artefact de run (interdit, Stop & Repair). On exempte donc ce notebook du
+# content-loss, comme un nouveau fichier.
+#
+# Pas path-based aveugle : la predicate exige le nom canonique (un seul
+# Notebook-Generated.ipynb dans le depot) ET une trace d'execution papermill
+# (un vrai artefact de run est execute in-place). Un notebook EDITE A LA MAIN
+# qui porterait le meme nom sans cette trace reste verifie -- on ne dispense
+# pas un fichier au seul motif de son nom.
+# ---------------------------------------------------------------------------
+GENERATED_ARTIFACT_NAMES = {"Notebook-Generated.ipynb"}
+
+
+def _is_generated_artifact(nb_path: Path, nb_head: dict | None = None) -> bool:
+    """True si le notebook est un artefact de run genere (issue #15349).
+
+    Le predicat exige le nom canonique (``GENERATED_ARTIFACT_NAMES``) ET une
+    trace d'execution papermill dans ``metadata``, pour ne pas etre path-based
+    aveugle : un fichier edite a la main qui porterait le nom sans avoir ete
+    execute par papermill n'est pas dispense.
+
+    ``nb_head`` : la tete deja chargee par l'appelant (evite une relecture du
+    fichier) ; si ``None``, le notebook est relu depuis le disque.
+    """
+    if nb_path.name not in GENERATED_ARTIFACT_NAMES:
+        return False
+    metadata = nb_head.get("metadata") if isinstance(nb_head, dict) else None
+    if metadata is None:
+        try:
+            nb = json.loads(nb_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+        metadata = nb.get("metadata") if isinstance(nb, dict) else None
+    return isinstance(metadata, dict) and "papermill" in metadata
+
 
 # Aliases EN des motifs structurants : en mode traduction, un motif FR disparu
 # mais present sous sa forme anglaise dans le rendu N'EST PAS une perte --
@@ -821,6 +876,30 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
             },
         }
 
+    # Artefact de run genere (issue #15349) : un notebook dont le markdown est
+    # une sortie non deterministe de run. La comparaison base-vs-head mesure la
+    # variance de la generation, pas une perte de contenu -- on l'exempte, comme
+    # un nouveau fichier (voir _is_generated_artifact pour le predicat non
+    # path-based aveugle).
+    if _is_generated_artifact(nb_path, nb_head):
+        head_md_gen = extract_md_cells(nb_head)
+        head_total_gen = sum(_norm_len(s) for _, _, s in head_md_gen)
+        return {
+            "notebook": str(nb_path),
+            "base_ref": base_ref,
+            "head_ref": head_label,
+            "generated_artifact": True,
+            "findings": [],
+            "stats": {
+                "base_md_cells": 0,
+                "head_md_cells": len(head_md_gen),
+                "cell_count_stable": False,
+                "base_total_normalized_chars": 0,
+                "head_total_normalized_chars": head_total_gen,
+                "findings_count": 0,
+            },
+        }
+
     nb_base = read_notebook_at_ref(nb_path, base_ref)
     if nb_base is None:
         return {"notebook": str(nb_path), "error": f"base_ref {base_ref} unreadable"}
@@ -1031,6 +1110,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[TRANSLATION] artefact *_<lang>.ipynb -> comparaison au sibling FR "
                   f"de la meme revision ({result.get('fr_sibling')}), seuil "
                   f"{TRANSLATION_DROP_THRESHOLD}, motifs bilingues (#13548).")
+        if result.get("generated_artifact"):
+            print("[GENERATED-ARTEFACT] notebook de run genere -- markdown non "
+                  "deterministe, comparaison base-vs-head sans objet -> exempt "
+                  "de content-loss (#15349).")
         print(f"[STATS]    md_cells base={st['base_md_cells']} head={st['head_md_cells']} "
               f"stable={st['cell_count_stable']} | "
               f"normalized_chars base={st['base_total_normalized_chars']} "
