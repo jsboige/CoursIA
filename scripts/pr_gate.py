@@ -1127,6 +1127,13 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     print(f"[pr-gate] {message}", flush=True)
     _maybe_post_check_run(args, code, message)
+    if code != 0:
+        # Le check-run derive du job ne porte qu'« Process completed with exit
+        # code 1 » sur un rouge : seul l'annotation donne la RAISON du verdict
+        # dans l'UI. Legs DWELL rendus muets mesures sur #15472 (2026-09-10) :
+        # 8 PR gates rouges sans cause organique, tous des DWELL (plancher de
+        # merge, mandat 07/09) dont la re-agregation ne rend jamais compte.
+        print(f"::error::[pr-gate] {message}", file=sys.stderr, flush=True)
     return code
 
 

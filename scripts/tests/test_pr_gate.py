@@ -1289,7 +1289,27 @@ def test_dwell_red_is_prefixed_so_the_cause_is_readable(capsys, monkeypatch):
         ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
     )
     assert code == 1
-    assert "DWELL -- tete du 2026-09-07T11:55:00Z" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert "DWELL -- tete du 2026-09-07T11:55:00Z" in captured.out
+    # #15472 : le check-run derive du job ne montre que « exit code 1 » sans
+    # annotation — la RAISON du rouge doit etre portee par un ::error:: mot
+    # pour mot (c'est la surface que lisent humains et balayages).
+    assert "::error::[pr-gate] DWELL -- tete du 2026-09-07T11:55:00Z" in captured.err
+
+
+def test_red_ci_verdict_carries_annotation(capsys, monkeypatch):
+    """Un rouge de CI porte aussi l'annotation -- pas seulement le plancher."""
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_kw: (1, "FAIL -- failing checks: Lean CI"),
+    )
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--no-self-cancel"]
+    )
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "::error::[pr-gate] FAIL -- failing checks: Lean CI" in err
 
 
 def test_empty_pr_argument_means_no_pr(monkeypatch):
