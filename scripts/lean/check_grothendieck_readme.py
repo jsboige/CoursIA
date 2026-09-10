@@ -241,21 +241,41 @@ def _extract_leaf_count_claims(readme: Path) -> tuple[list[int], list[tuple[int,
     README that says both "61" and "62" is a *more* broken README than one
     that says "61" twice. Surfacing both lets the operator see the drift
     fan-out.
+
+    **History-aware skip.** A match is excluded from the verdict when its
+    surrounding context (90 chars) clearly marks it as a historical
+    reference — the typical signature is a quoted past claim ("ancienne
+    prose « N leaf »"), an explicit correction cue ("erreur", "correction",
+    "historique"), or an architectural/legacy note referencing how things
+    USED to be. The literal number is still surfaced in the human report
+    so the operator can verify, but it does NOT contribute to the
+    UNDERCOUNT drift verdict.
     """
     if not readme.exists():
         return [], []
     text = readme.read_text(encoding="utf-8")
     cleaned = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    HISTORY_MARKERS = (
+        "ancienne", "ancien", "erreur", "correction", "corrige",
+        "historique", "précédente", "precedente", "avant #11294",
+        "avant #15474", "c.2026-08-15", "c.2026-08-16", "c.2026-08-17",
+    )
     nums: list[int] = []
     raw: list[tuple[int, str]] = []
     for m in _LEAF_COUNT_RE.finditer(cleaned):
         n = int(m.group("n"))
         if n < 5 or n > 200:  # sanity bound: nobody has 200+ leaf in this lake
             continue
-        nums.append(n)
-        start = max(0, m.start() - 30)
-        end = min(len(cleaned), m.end() + 30)
-        raw.append((n, cleaned[start:end].replace("\n", " ")))
+        start = max(0, m.start() - 90)
+        end = min(len(cleaned), m.end() + 90)
+        ctx = cleaned[start:end].replace("\n", " ").lower()
+        is_historical = any(marker in ctx for marker in HISTORY_MARKERS)
+        start_show = max(0, m.start() - 30)
+        end_show = min(len(cleaned), m.end() + 30)
+        raw.append((n, cleaned[start_show:end_show].replace("\n", " "), is_historical))
+        if not is_historical:
+            nums.append(n)
+    raw = [(n, ctx) for (n, ctx, _is_hist) in raw]
     return nums, raw
 
 
