@@ -422,6 +422,28 @@ def test_mixed_lean_and_linux_labels_are_rejected(tmp_path):
     assert codes(result) == {"RUNNER_LABELS"}
 
 
+def test_translation_hot_drift_advisory_is_allowlisted(tmp_path):
+    """#15322/#15438 : le vehicule workflow_dispatch-ONLY du garde hot-drift
+    par-PR (absorbe fast-lane TRANCHE2) est autorise sur la jambe Linux
+    containerisee -- precedent repeated-prose-advisory / markdown-deaccent
+    (cible d'identite + re-run manuel du self-test). Son non-allowlistage
+    etait exactement le WORKFLOW_NOT_ALLOWED prouve par le run CPU frais."""
+    assert "translation-hot-drift-advisory.yml" in policy.SELF_HOSTED_WORKFLOW_ALLOWLIST
+    write_workflow(tmp_path, "translation-hot-drift-advisory", """
+        name: translation-hot-drift
+        on: workflow_dispatch
+        jobs:
+          advisory:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
 def test_mixed_linux_and_fast_guards_labels_are_rejected(tmp_path):
     # Mixing the two dedicated sets must stay a violation: a job eligible
     # for both the Windows runners and the Linux container would make the
