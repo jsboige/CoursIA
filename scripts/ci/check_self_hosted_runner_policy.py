@@ -185,6 +185,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "leaky-fixture-sweep.yml",
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
+    "mermaid-fill-color-advisory.yml",
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
