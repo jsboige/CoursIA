@@ -35,6 +35,7 @@ from generate_catalog import (
     detect_requirements,
     determine_status,
     extract_title,
+    generate_markdown_report,
     has_markdown_intro_conclusion,
 )
 
@@ -1680,6 +1681,206 @@ class TestClassifyReproducibility:
     def test_partial_exec_is_static_ok(self):
         assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
         assert classify_reproducibility("NO_CODE") == "STATIC_OK"
+
+
+# --- generate_markdown_report (#15490) ---
+
+
+def _catalog_entry(path, title=None, **overrides):
+    """Build a minimal catalog entry for report-level tests."""
+    from pathlib import PurePosixPath
+
+    p = PurePosixPath(path)
+    serie = p.parts[0] if len(p.parts) > 1 else ""
+    sous = p.parts[1] if len(p.parts) > 2 else ""
+    entry = {
+        "path": path,
+        "title": title if title is not None else p.stem,
+        "serie": serie,
+        "sous_serie": sous,
+        "kernel": "Python 3",
+        "status": "READY",
+        "maturity": "BETA",
+        "duree_estimee": "15min",
+        "owner_logique": "po-2023",
+        "requires_api": False,
+        "requires_gpu": False,
+        "requires_cloud": False,
+        "requires_wsl": False,
+        "executable_locally": True,
+    }
+    entry.update(overrides)
+    return entry
+
+
+class TestGenerateMarkdownReport:
+    """Direct tests of the rendered catalog page (#15490 acceptance)."""
+
+    def test_hierarchy_serie_sous_serie_and_racine(self, tmp_path):
+        entries = [
+            _catalog_entry("Search/Part1-Foundations/nb-a.ipynb"),
+            _catalog_entry("Search/Part2-CSP/nb-b.ipynb"),
+            _catalog_entry("Search/nb-root.ipynb"),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### Search (3 notebooks)" in report
+        # Racine bucket first, sous-series after (deterministic order)
+        assert report.index("#### Racine (1)") < report.index(
+            "#### Part1-Foundations (1)"
+        )
+        assert report.index("#### Part1-Foundations (1)") < report.index(
+            "#### Part2-CSP (1)"
+        )
+
+    def test_totals_reconcile_to_grand_total(self, tmp_path):
+        import re as _re
+
+        entries = [
+            _catalog_entry("Search/Part1-Foundations/nb-a.ipynb"),
+            _catalog_entry("Search/nb-root.ipynb"),
+            _catalog_entry("ML/nb-c.ipynb", status="NO_CODE", maturity="DRAFT"),
+            _catalog_entry("ML/nb-d.ipynb", status="BROKEN", maturity="ALPHA"),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # Aggregate table: sum of the bucket rows == grand total (4). The
+        # TOTAL row (`| **TOTAL** | | **4** |`) has an empty middle cell and a
+        # bold count, so it deliberately does NOT match the row regex.
+        rows = _re.findall(r"^\| (\S.+) \| (\S.+) \| (\d+) \|$", report, _re.M)
+        assert rows, "aggregate table missing"
+        assert sum(int(n) for _, _, n in rows) == len(entries) == 4
+        assert "| **TOTAL** | | **4** |" in report
+        # Status Summary (first section only) sums to the same total.
+        # The explicit `- **TOTAL**: 4` bullet is excluded (it is the
+        # reconciliation line, not a status bucket).
+        status_section = report.split("## Maturity Summary")[0]
+        status_counts = _re.findall(
+            r"^- \*\*(\w+)\*\*: (\d+)$", status_section, _re.M
+        )
+        assert sum(int(n) for k, n in status_counts if k != "TOTAL") == 4
+        # Maturity Summary too
+        maturity_section = report.split("## Maturity Summary")[1].split(
+            "## Series / Sub-series Totals"
+        )[0]
+        maturity_counts = _re.findall(
+            r"^- \*\*(\w+)\*\*: (\d+)$", maturity_section, _re.M
+        )
+        assert sum(int(n) for k, n in maturity_counts if k != "TOTAL") == 4
+
+    def test_unknown_serie_still_renders_after_series_order(self, tmp_path):
+        entries = [
+            _catalog_entry("Search/nb-a.ipynb"),
+            _catalog_entry("ZebraSerie/nb-z.ipynb"),  # absent from SERIES_ORDER
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### ZebraSerie (1 notebooks)" in report
+        assert report.index("### Search") < report.index("### ZebraSerie")
+
+    def test_statuses_and_future_values_render_dynamically(self, tmp_path):
+        entries = [
+            _catalog_entry("ML/nb-a.ipynb", status="NO_CODE"),
+            _catalog_entry("ML/nb-b.ipynb", status="SOME_FUTURE_STATUS"),
+            _catalog_entry("ML/nb-c.ipynb", maturity="FUTURE_MATURITY"),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "- **NO_CODE**: 1" in report
+        assert "- **SOME_FUTURE_STATUS**: 1" in report
+        assert "- **FUTURE_MATURITY**: 1" in report
+
+    def test_basename_untruncated_and_distinct_from_title(self, tmp_path):
+        long_name = "Search/Part1-Foundations/" + (
+            "a-very-long-basename-that-never-gets-truncated-in-the-cell.ipynb"
+        )
+        target = tmp_path / "MyIA.AI.Notebooks" / long_name
+        target.parent.mkdir(parents=True)
+        target.write_text("{}", encoding="utf-8")
+        entries = [_catalog_entry(
+            long_name, title="A completely different pedagogical title",
+        )]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "a-very-long-basename-that-never-gets-truncated-in-the-cell.ipynb" in report
+        assert "A completely different pedagogical title" in report
+
+    def test_link_encoding_spaces_and_accents(self, tmp_path):
+        rel = "Search/Part1-Foundations/Nb été (fr).ipynb"
+        amp_rel = "ML/ML.Net/Data&Features.ipynb"
+        for r in (rel, amp_rel):
+            target = tmp_path / "MyIA.AI.Notebooks" / r
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("{}", encoding="utf-8")
+        entries = [_catalog_entry(rel), _catalog_entry(amp_rel)]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # href = repo-root-relative (MyIA.AI.Notebooks/ prefix), percent-encoded
+        assert (
+            "](MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Nb%20%C3%A9t%C3%A9%20%28fr%29.ipynb)" in report
+        )
+        # Display keeps the accent, URL does not
+        assert "[Nb été (fr).ipynb](" in report
+        # '&' stays LITERAL: Quarto does not decode %26 (#15490) -- encoding it
+        # broke the real ML.Net Data&Features links at render time.
+        assert "](MyIA.AI.Notebooks/ML/ML.Net/Data&Features.ipynb)" in report
+        assert "%26" not in report
+
+    def test_cell_escaping_pipes_backticks_brackets(self, tmp_path):
+        import re as _re
+
+        entries = [
+            _catalog_entry(
+                "ML/nb-a.ipynb",
+                title="Title with | pipe `code` [bracket]",
+                kernel="Kernel|X",
+            ),
+        ]
+        (tmp_path / "MyIA.AI.Notebooks" / "ML").mkdir(parents=True)
+        (tmp_path / "MyIA.AI.Notebooks" / "ML" / "nb-a.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # No UNESCAPED pipe inside cells: the row still has exactly 8 columns
+        # (9 structural pipes incl. edges). Escaped `\|` pipes are excluded by
+        # the lookbehind, so 1 escaped pipe in the title + 1 in the kernel
+        # must not widen the row.
+        title_row = next(
+            ln for ln in report.splitlines() if "Title with" in ln
+        )
+        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 9
+        assert "\\|" in title_row
+        assert "\\`" in title_row and "\\[bracket\\]" in title_row
+
+    def test_missing_target_no_link_and_signalled(self, tmp_path):
+        entries = [_catalog_entry("ML/ghost-notebook.ipynb")]  # not created
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "](ML/ghost-notebook.ipynb)" not in report
+        assert "ghost-notebook.ipynb *(missing)*" in report
+
+    def test_deterministic_and_lf_two_generations_identical(self, tmp_path):
+        entries = [
+            _catalog_entry("ML/nb-b.ipynb"),
+            _catalog_entry("ML/nb-a.ipynb"),
+            _catalog_entry("Search/Part1-Foundations/nb-c.ipynb"),
+        ]
+        first = generate_markdown_report(entries, repo_root=tmp_path)
+        second = generate_markdown_report(entries, repo_root=tmp_path)
+        assert first == second
+        assert "\r" not in first
+        # Caller-order independence: the report sorts by path itself
+        assert first.index("nb-a.ipynb") < first.index("nb-b.ipynb")
+        # No wall-clock timestamp survived
+        assert "Generated:" not in first
+
+    def test_responsive_style_block_present(self, tmp_path):
+        """Mobile guard: the page must not scroll horizontally (#15490).
+
+        The emitted <style> turns wide tables into scrollable containers
+        (verified against the rendered page at 400px in the PR body).
+        """
+        report = generate_markdown_report(
+            [_catalog_entry("ML/nb-a.ipynb")], repo_root=tmp_path
+        )
+        assert (
+            "#quarto-document-content table { display: block; overflow-x: auto; }"
+            in report
+        )
 
 
 if __name__ == "__main__":
