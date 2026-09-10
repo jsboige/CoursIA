@@ -32,9 +32,9 @@ Usage :
 Exit codes :
     0 -- mesure rendue (et sous le seuil si --max-bytes est passe)
     1 -- --max-bytes depasse
-    2 -- mesure impossible : self-check en echec, aucun fichier de regle trouve
-         (une mesure vide n'est pas une mesure a zero), ou --ref inatteignable
-         (typiquement hors de la greffe d'un clone superficiel)
+    2 -- mesure impossible : self-check en echec, aucun fichier de regle trouve,
+         --ref inatteignable, ratio invalide, ou seuil demande alors qu'une
+         surface machine manque (une somme partielle ne certifie aucun budget)
 
 Aucun workflow CI n'appelle ce script : --max-bytes existe pour cabler le
 garde-fou de non-regression demande par #11554, il ne rougit nulle part tant
@@ -43,6 +43,7 @@ que personne ne l'a cable.
 
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
@@ -132,6 +133,7 @@ def machine_surfaces(root, memory_file=None):
     jamais comptee zero : la doctrine de ce fichier est qu'une mesure vide n'est
     pas une mesure a zero, et elle vaut pour chaque surface prise a part.
     """
+    root = Path(root).resolve()
     home = Path(os.path.expanduser("~"))
     entries, missing = [], []
 
@@ -208,6 +210,7 @@ def measure(root, ref=None, machine=False, memory_file=None):
         "machine_surfaces_included": bool(machine),
         "machine_surfaces": machine_entries,
         "machine_surfaces_missing": machine_missing,
+        "measurement_complete": not machine_missing,
     }
 
 
@@ -270,14 +273,18 @@ def render(m, top, ratio=DEFAULT_RATIO, budget_tokens=None):
     print("      tokens DERIVES du ratio %.2f o/tok -- pas produits par un"
           " tokenizer (cf --ratio)" % ratio)
     if budget_tokens is not None:
-        budget_bytes = int(budget_tokens * ratio)
-        delta = total - budget_bytes
-        verdict = ("SOUS LA CIBLE de %d o (%.1fk tok de marge)"
-                   % (-delta, -delta / ratio / 1000)) if delta <= 0 else (
-                  "AU-DESSUS de %d o (%.1fk tok a retirer)"
-                  % (delta, delta / ratio / 1000))
-        print("      cible %d tok = %d o : %s"
-              % (budget_tokens, budget_bytes, verdict))
+        if not m.get("measurement_complete", True):
+            print("      cible %d tok : NON CERTIFIEE (surface demandee manquante)"
+                  % budget_tokens)
+        else:
+            budget_bytes = int(budget_tokens * ratio)
+            delta = total - budget_bytes
+            verdict = ("SOUS LA CIBLE de %d o (%.1fk tok de marge)"
+                       % (-delta, -delta / ratio / 1000)) if delta <= 0 else (
+                      "AU-DESSUS de %d o (%.1fk tok a retirer)"
+                      % (delta, delta / ratio / 1000))
+            print("      cible %d tok = %d o : %s"
+                  % (budget_tokens, budget_bytes, verdict))
     print("      (total brut des rules  %8d o -- la valeur qu'on obtient en"
           " oubliant le gating)" % m["all_rules_bytes"])
     print()
@@ -321,8 +328,12 @@ def main():
     if args.self_check:
         return self_check()
 
+    if not math.isfinite(args.ratio) or args.ratio <= 0:
+        ap.error("--ratio doit etre strictement positif et fini")
+
+    root = Path(args.root).resolve()
     try:
-        m = measure(Path(args.root), args.ref, machine=args.with_machine,
+        m = measure(root, args.ref, machine=args.with_machine,
                     memory_file=args.memory_file)
     except RefUnavailable as exc:
         print("ref %r inatteignable (%s) -- mesure impossible." % (args.ref, exc),
@@ -347,6 +358,12 @@ def main():
         print(json.dumps(m, indent=2, ensure_ascii=False))
     else:
         render(m, args.top, args.ratio, args.budget_tokens)
+
+    if ((args.max_bytes is not None or args.budget_tokens is not None)
+            and not m["measurement_complete"]):
+        sys.stderr.write("\nMESURE INCOMPLETE : seuil/budget non certifie "
+                         "car une surface demandee manque\n")
+        return 2
 
     if args.max_bytes is not None and m["autoloaded_total_bytes"] > args.max_bytes:
         sys.stderr.write("\nDEPASSEMENT : %d o > seuil %d o\n"

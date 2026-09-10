@@ -212,6 +212,39 @@ def test_surface_machine_absente_est_rendue_manquante_pas_zero(tmp_path):
         "une entree comptee est une surface reellement lue"
 
 
+def test_root_relatif_est_resolu_avant_slug_memoire(tmp_path, monkeypatch):
+    """Le slug mémoire dépend de la racine absolue, jamais de ``Path('.')``."""
+    repo = tmp_path / "CoursIA"
+    repo.mkdir()
+    home = tmp_path / "home"
+    drive = repo.resolve().drive[:1].lower()
+    expected = (home / ".claude" / "projects" / (drive + "--CoursIA")
+                / "memory" / "MEMORY.md")
+    expected.parent.mkdir(parents=True)
+    expected.write_text("# mémoire\n", encoding="utf-8")
+    (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
+    (home / ".claude" / "rules").mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setattr(mah.os.path, "expanduser", lambda value: str(home))
+    monkeypatch.chdir(repo)
+
+    entries, missing = mah.machine_surfaces(Path("."))
+
+    assert not missing
+    assert str(expected) in {e["path"] for e in entries}
+
+
+def test_mesure_complete_reflete_les_surfaces_manquantes(tmp_path):
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    result = mah.measure(
+        root,
+        machine=True,
+        memory_file=tmp_path / "absent" / "MEMORY.md",
+    )
+    assert result["measurement_complete"] is False
+    assert result["machine_surfaces_missing"]
+
+
 # --- cablage CLI (#15204) : ratio calibre, budget en tokens -------------------
 
 
@@ -244,6 +277,95 @@ def test_budget_tokens_rougit_au_dessus_et_passe_en_dessous():
     """
     assert _cli("--budget-tokens", "1").returncode == 1
     assert _cli("--budget-tokens", "10000000").returncode == 0
+
+
+def test_budget_refuse_de_certifier_une_mesure_machine_incomplete(tmp_path):
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    absent = tmp_path / "absent" / "MEMORY.md"
+    r = _cli(
+        "--with-machine",
+        "--memory-file", str(absent),
+        "--budget-tokens", "10000000",
+        "--json",
+        root=root,
+    )
+    assert r.returncode == 2
+    assert json.loads(r.stdout)["measurement_complete"] is False
+    assert "MESURE INCOMPLETE" in r.stderr
+
+
+@pytest.mark.parametrize("ratio", ["0", "-2", "nan", "inf", "-inf"])
+def test_ratio_invalide_est_refuse(ratio):
+    r = _cli("--ratio=" + ratio, "--json")
+    assert r.returncode == 2
+    assert "strictement positif et fini" in r.stderr
+
+
+def test_ratio_valide_est_accepte():
+    r = _cli("--ratio", "3.5", "--json")
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["ratio_bytes_per_token"] == pytest.approx(3.5)
+
+
+def test_cli_racine_implicite_depuis_le_depot_egale_racine_absolue():
+    """L'invocation nominale sans ``--root`` mesure le dépôt courant."""
+    implicit = subprocess.run(
+        [sys.executable, str(_MODULE_PATH), "--json"],
+        cwd=_REPO,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    absolute = _cli("--json", root=_REPO.resolve())
+
+    assert implicit.returncode == 0, implicit.stderr
+    assert absolute.returncode == 0, absolute.stderr
+    assert (json.loads(implicit.stdout)["autoloaded_total_bytes"]
+            == json.loads(absolute.stdout)["autoloaded_total_bytes"])
+
+
+def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
+    """Une somme partielle ne passe jamais un seuil entre partiel et complet."""
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    memory = tmp_path / "machine" / "MEMORY.md"
+
+    partial = _cli(
+        "--with-machine", "--memory-file", str(memory), "--json", root=root,
+    )
+    assert partial.returncode == 0, partial.stderr
+    partial_data = json.loads(partial.stdout)
+    assert partial_data["measurement_complete"] is False
+
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# mémoire\n" + "x" * 1000, encoding="utf-8")
+    complete = _cli(
+        "--with-machine", "--memory-file", str(memory), "--json", root=root,
+    )
+    assert complete.returncode == 0, complete.stderr
+    complete_data = json.loads(complete.stdout)
+    assert complete_data["measurement_complete"] is True
+    assert (complete_data["autoloaded_total_bytes"]
+            > partial_data["autoloaded_total_bytes"])
+
+    threshold = (partial_data["autoloaded_total_bytes"]
+                 + complete_data["autoloaded_total_bytes"]) // 2
+
+    memory.unlink()
+    missing_guard = _cli(
+        "--with-machine", "--memory-file", str(memory),
+        "--max-bytes", str(threshold), "--json", root=root,
+    )
+    assert missing_guard.returncode == 2
+    assert "MESURE INCOMPLETE" in missing_guard.stderr
+
+    memory.write_text("# mémoire\n" + "x" * 1000, encoding="utf-8")
+    complete_guard = _cli(
+        "--with-machine", "--memory-file", str(memory),
+        "--max-bytes", str(threshold), "--json", root=root,
+    )
+    assert complete_guard.returncode == 1
+    assert "DEPASSEMENT" in complete_guard.stderr
 
 
 if __name__ == "__main__":  # pragma: no cover
