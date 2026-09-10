@@ -117,7 +117,7 @@ def is_epic(title: str, labels: Iterable[str]) -> bool:
 # dispatch #N", or a `feature/N-...` branch name is context, not a claim.
 def _delivery_marker_re(number: int) -> "re.Pattern[str]":
     return re.compile(
-        r"\b(?:see|part\s+of|closes|fixes|refs|references?)\b\s*:?\s*#?%d\b" % number,
+        r"\b(?:see|part\s+of|closes|fixes|refs|references?)\b\s*:?\s*#%d\b" % number,
         re.IGNORECASE,
     )
 
@@ -126,8 +126,9 @@ def delivery_marker(body: str, number: int) -> bool:
     """True iff ``body`` declares delivery of issue ``number``.
 
     The marker must sit directly before the number (only whitespace or a
-    colon in between): "See the #N protocol" does not match, and a mention of
-    a DIFFERENT issue does not. Conservative by design -- this gate decides
+    colon in between) and the ``#`` is required: "See the #N protocol" and
+    "see 42 results" do not match, and a mention of a DIFFERENT issue
+    does not. Conservative by design -- this gate decides
     whether a merged PR counts as evidence of delivery, and an unreadable
     reference must fail safe (#15060), not produce a candidate.
     """
