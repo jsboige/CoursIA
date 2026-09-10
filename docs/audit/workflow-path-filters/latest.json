@@ -1,6 +1,6 @@
 {
   "issue": 10600,
-  "workflows_total": 150,
+  "workflows_total": 151,
   "workflows_pull_request": 86,
   "workflows_with_paths": 79,
   "workflows_label_posing": 6,
@@ -886,7 +886,12 @@
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain"
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
+        ".github/workflows/lean-planning.yml",
+        ".github/workflows/lean-axiom.yml",
+        "scripts/lean/check_target_coverage.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ],
       "labels_posed": false,
       "pr_target_filter_excludes_main": false,
@@ -1692,6 +1697,15 @@
         "MyIA.AI.Notebooks/**/*_ru.ipynb",
         "MyIA.AI.Notebooks/**/*_pt.ipynb"
       ],
+      "labels_posed": false,
+      "pr_target_filter_excludes_main": false,
+      "exempt_documented": null
+    },
+    {
+      "file": ".github\\workflows\\translation-hot-drift-advisory.yml",
+      "name": "Translation Hot-Drift Advisory",
+      "has_pull_request": false,
+      "paths": null,
       "labels_posed": false,
       "pr_target_filter_excludes_main": false,
       "exempt_documented": null

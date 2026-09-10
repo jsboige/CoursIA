@@ -1,6 +1,6 @@
 # Audit workflow paths-filters (issue #10600)
 
-Total workflows: **150** | pull_request: **86** | avec paths: **79** | label-posing: **6** | required: **1** | avec filtre effectif PR→main: **80** | exemptions documentees: **6** | sans-filtre eligible: **0**
+Total workflows: **151** | pull_request: **86** | avec paths: **79** | label-posing: **6** | required: **1** | avec filtre effectif PR→main: **80** | exemptions documentees: **6** | sans-filtre eligible: **0**
 
 | Workflow | pull_request | paths | target-filter excl. main | label-posing | exemption doc. |
 |----------|--------------|-------|--------------------------|--------------|----------------|
