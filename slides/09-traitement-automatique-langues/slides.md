@@ -67,15 +67,15 @@ layout: default
 | n-grammes, modèles de langue | `GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb` |
 | Markov caché (HMM), Viterbi | `Probas/Infer/Infer-*` |
 | Automates finis, transducteurs (morphologie) | `Search/Z3/Sudoku/Lean` |
-| CRF / structured prediction | `Probas/Infer/CRF` |
-| Parsing CFG/PCFG, CYK | `SymbolicAI/Lean` |
+| CRF / structured prediction | **GAP** — pas de notebook dédié (voir `Probas/Infer/Infer-*` pour HMM/Viterbi amont) |
+| Parsing CFG/PCFG, CYK | **GAP** — `SymbolicAI/Lean` contient CFG et grammaires, mais pas de CYK ni de notebook PCFG dédié |
 | Sémantique compositionnelle | `SymbolicAI/SemanticWeb` |
 | Word embeddings, RNN, LSTM, seq2seq, Transformers | `GenAI/Texte/10*` |
 | Agents conversationnels, LUIS, Dialogflow | `GenAI/Plateformes-Conversationnelles` |
 
 > Aucun des 8 arcs n'est perdu silencieusement : chacun renvoie vers un **owner
-> exécutable** du dépôt. Les gaps restent à fermer par des notebooks atomiques
-> additionnels (jamais autofermés).
+> réel** ou est marqué **GAP** quand aucun notebook exécutable n'existe. Les
+> gaps restent à fermer par des notebooks atomiques additionnels (jamais autofermés).
 
 ---
 layout: section
@@ -258,6 +258,11 @@ layout: default
 
 ---
 
+---
+layout: image-overlay
+image: images/slide_18_img_7fb42adf.png
+---
+
 # 18. Grammaires probabilistes
 
 **PCFG** = CFG + probabilités sur les règles.
@@ -278,6 +283,13 @@ VP → V     [0.6]
 **Lexique** : listes de mots autorisés par catégorie (noms, verbes, adjectifs,
 mots fonctionnels). Classes ouvertes (mots ajoutés au fil du temps).
 
+*Figure historique (PCFG)* : extrait du PPTX original 2018.
+
+---
+
+---
+layout: image-overlay
+image: images/slide_19_img_fe5c88d1.png
 ---
 
 # 19. Analyse syntaxique — Parsing
@@ -296,6 +308,8 @@ vs.
 > « Have the students in section 2 of Computer Science 101 taken the exam? »
 
 **Solution** : stocker les résultats intermédiaires → **Chart parsing**, **CYK**.
+
+*Figure historique (Chart parsing)* : extrait du PPTX original 2018.
 
 ---
 
@@ -326,6 +340,11 @@ Du sens au contexte
 layout: default
 ---
 
+---
+layout: image-overlay
+image: images/slide_22_img_752cd77a.png
+---
+
 # 22. Interprétation sémantique
 
 **Sémantique compositionnelle** : le sens d'une expression est **fonction** du sens
@@ -338,6 +357,8 @@ de ses parties.
 **Verbes** : prédicats au même titre que les syntagmes verbaux (VP).
 
 **Entraînement** : à partir d'exemples annotés (parallélisme syntaxe-sémantique).
+
+*Figure historique (sémantique compositionnelle)* : extrait du PPTX original 2018.
 
 ---
 
@@ -357,6 +378,11 @@ de ses parties.
 
 ---
 
+---
+layout: image-overlay
+image: images/slide_24_img_765dfaa8.png
+---
+
 # 24. Fouille d'arguments
 
 **Objectif** : extraire la **structure inférentielle** depuis un texte argumentatif.
@@ -370,6 +396,8 @@ de ses parties.
 - Outils d'annotation : **OVA+**
 
 **Applications** : détection de sophismes, journalisme automatisé, aide à la décision.
+
+*Figure historique (AIF / RDF)* : extrait du PPTX original 2018.
 
 ---
 layout: section
@@ -431,6 +459,11 @@ De RNN à Transformers
 layout: default
 ---
 
+---
+layout: image-overlay
+image: images/slide_28_img_4b6f2b7a.png
+---
+
 # 28. Modèles profonds
 
 **Réseaux récurrents (RNN)** : mémoire interne = contexte.
@@ -448,6 +481,13 @@ LLM modernes.
 > post-2018 (BERT, GPT, T5, etc.), voir `GenAI/Texte/10*` et `GenAI/Texte/13*`
 > du dépôt.
 
+*Figure historique (seq2seq + attention)* : extrait du PPTX original 2018.
+
+---
+
+---
+layout: image-overlay
+image: images/slide_29_img_0094ef69.png
 ---
 
 # 29. Agents conversationnels
@@ -466,6 +506,8 @@ LLM modernes.
 
 **Voir** : `GenAI/Plateformes-Conversationnelles/*` pour les notebooks modernes
 (open-webUI, Qwen, etc.).
+
+*Figure historique (architecture bot)* : extrait du PPTX original 2018.
 
 ---
 layout: default
@@ -536,6 +578,38 @@ layout: section
 
 > Ces projets sont **historiques** (2018). Pour les projets modernes équivalents,
 > voir le syllabus courant (`MyIA.AI.Notebooks/GradeBookApp/`).
+
+---
+
+# Annexe — Figures historiques préservées (référence)
+
+Les 32 PNG retenues (≥10 KB, diagrammes pédagogiques) ne sont **pas toutes** intégrées
+en `image-overlay` dans le corps du deck — seulement 6 le sont (slides 18, 19, 22,
+24, 28, 29). Les 26 autres sont **préservées en archive locale** et **référençables**
+par les étudiants qui explorent le PPTX historique. La voie canonique pour les
+intégrer plus tard est `image-overlay` (jamais `bg right`/`image-right` issus de
+convertisseurs, règle projet).
+
+**Figures retenues ≥30 KB (diagrammes complexes)** :
+
+| Slide | Fichier | Taille | Intégré |
+|---|---|---:|---|
+| 12 | `slide_12_img_3b62caa7.png` | 47 KB | non |
+| 12 | `slide_12_img_077838bf.png` | 44 KB | non |
+| 13 | `slide_13_img_e0b7882c.png` | 55 KB | non |
+| 18 | `slide_18_img_7fb42adf.png` | 91 KB | **oui** |
+| 18 | `slide_18_img_9b5e1bf2.png` | 64 KB | non |
+| 19 | `slide_19_img_fe5c88d1.png` | 72 KB | **oui** |
+| 21 | `slide_21_img_e92de5f3.png` | 44 KB | non |
+| 22 | `slide_22_img_752cd77a.png` | 35 KB | **oui** |
+| 24 | `slide_24_img_765dfaa8.png` | 158 KB | **oui** |
+| 27 | `slide_27_img_68ee27c5.png` | 45 KB | non |
+| 28 | `slide_28_img_4b6f2b7a.png` | 63 KB | **oui** |
+| 29 | `slide_29_img_0094ef69.png` | 135 KB | **oui** |
+| 29 | `slide_29_img_95c7e198.png` | 106 KB | non |
+
+**Source** : PPTX canonique hors Git `G:\Mon Drive\MyIA\IA\Bibliographie IA\Slides\English\Artificial Intelligence - 6 - Natural Language Processing.pptx`
+(1.68 MB, mars 2022, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
 
 ---
 
