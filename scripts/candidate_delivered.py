@@ -534,8 +534,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  #{number:<6} retracted  {why}")
         elif verdict == "epic":
             print(f"  #{number:<6} EPIC       excluded  ({enriched['title'][:50]})")
-        else:  # no_delivery
-            pass  # quiet -- the common case, no merged PR references it
+        elif verdict == "no_delivery":
+            if labeled:
+                # A label can survive a predicate change: posed under the old
+                # merged+silent heuristic, reclassified no_delivery under the
+                # delivery-marker gate (#15060). Retract -- the sweep's own
+                # retraction is hysteresis, never a verdict (#14307).
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} no_delivery {why}  (label retracted)")
+            # else: quiet -- the common case, no merged PR declares it
 
         if args.sleep:
             time.sleep(args.sleep)
