@@ -29,6 +29,9 @@
     décidables `MutualCooperation` / `Unexploitable`, `ProgramNash`
     sur famille finie, bots triviaux (CoopBot, DefectBot, ProbeBot),
     invariants PD réutilisés de `RepeatedGames.Stage`. 0 sorry.
+  - `ProgramGames.Bounded` — modèle structurel complémentaire où le code
+    public et le budget fini sont explicites, avec interprète total et
+    certificats calculables sur une famille témoin.
 
   ## Cohorte de lakes mutualisés
 
@@ -48,3 +51,4 @@
 -/
 
 import ProgramGames.Basic
+import ProgramGames.Bounded

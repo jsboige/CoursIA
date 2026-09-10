@@ -156,7 +156,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [MGS-1 : Introduction a MetaGeneticSharp et au moteur…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb) | BETA | Oui |
+| 1 | [MGS-1 : Introduction a MetaGeneticSharp et au moteur…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-01-Introduction.ipynb) | BETA | Oui |
 | 2 | [MGS-11 : Synergie d'iles complementaires -- exploration…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb) | BETA | Oui |
 | 3 | [MGS-13 — Visualiser les paysages dé-biaisés : pourquoi…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb) | BETA | Oui |
 | 4 | [MGS-14 — Trouver une synergie (et dire quand il n'y en…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb) | BETA | Oui |
@@ -167,12 +167,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 9 | [MGS-19 — Recuit simulé décomposé : l'opérateur de…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | BETA | Oui |
 | 10 | [MGS-20 : Langage de composition pour métaheuristiques](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb) | BETA | Oui |
 | 11 | [MGS-21 : Représentation contre algorithme — la preuve…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb) | BETA | Oui |
-| 12 | [MGS-3 : L'Eukaryote -- sous-populations et chromosomes…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb) | BETA | Oui |
-| 13 | [MGS-4 : Le Modèle Insulaire -- populations structurees…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb) | BETA | Oui |
-| 14 | [MGS-7 : TSP combinatoire -- la grammaire de composition…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7-TSP.ipynb) | BETA | Oui |
-| 15 | [MGS-7d : Michalewicz (steep ridges) + Dixon-Price…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb) | BETA | Oui |
-| 16 | [MGS-8 : Fitness Landscape Explorer -- voir la surface…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb) | BETA | Oui |
-| 17 | [MGS-9 - Trouver l'Everest : relief reel et bassins…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb) | BETA | Oui |
+| 12 | [MGS-3 : L'Eukaryote -- sous-populations et chromosomes…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-03-Eukaryote.ipynb) | BETA | Oui |
+| 13 | [MGS-4 : Le Modèle Insulaire -- populations structurees…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-04-Islands.ipynb) | BETA | Oui |
+| 14 | [MGS-7 : TSP combinatoire -- la grammaire de composition…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb) | BETA | Oui |
+| 15 | [MGS-7d : Michalewicz (steep ridges) + Dixon-Price…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb) | BETA | Oui |
+| 16 | [MGS-8 : Fitness Landscape Explorer -- voir la surface…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb) | BETA | Oui |
+| 17 | [MGS-9 - Trouver l'Everest : relief reel et bassins…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb) | BETA | Oui |
 | 18 | [MGS-22 : MGS contre mealpy — le bench croisé lib-vs-lib…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb) | BETA | Oui |
 | 19 | [MGS-23 : DifferentialEvolution MGS contre mealpy —…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-23-DifferentialEvolution-vs-Mealpy.ipynb) | BETA | Oui |
 | 20 | [MGS-25 : WhaleOptimisation MGS contre mealpy — le WOA…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-25-WhaleOptimisation-vs-Mealpy.ipynb) | BETA | Oui |
