@@ -472,7 +472,11 @@ def check(
     if not hits_body and not hits_commits and not hits_prev_invalid:
         return {"guard_pass": True,
                 "reason": "no prev: defect (close-keyword or invalid ref)",
-                "hits": {"body": [], "commits": [], "prev_invalid": []}}
+                "hits": {"body": [], "commits": [], "prev_invalid": []},
+                # Cibles `prev:` declarees et acceptees par ce run vert :
+                # la levee de commentaire #15372 les nomme, pour que le
+                # remplacement du mur affiche ce qui fait tenir le vert.
+                "prev_targets_accepted": sorted(set(body_targets))}
 
     # Compose the verdict. The reason names the worst offender first so
     # the worker reads the most actionable hint at the top of the failure

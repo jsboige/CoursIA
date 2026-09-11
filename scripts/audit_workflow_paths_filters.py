@@ -54,6 +54,27 @@ WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 # list is updated when the protection changes.
 REQUIRED_CHECKS_FALLBACK = {"PR gate"}
 
+# Gardes exempts de ``paths:`` par DECISION ECRITE, jamais par oubli.
+# L'acceptance #12773 (« mesurer unfiltered=2 ») se lit : tous les workflows
+# ELIGIBLES portent un filtre effectif ; les six ci-dessous restent sans
+# filtre, chacun avec sa reference de decision.
+EXEMPT_DOCUMENTED: dict[str, str] = {
+    # agregat requis : un paths le rendrait pending-forever sur les PRs
+    # qui ne touchent pas la path (#10600, critere 2).
+    "pr-gate.yml": "#10600",
+    # securite : doit couvrir chaque PR.
+    "secret-scan.yml": "#10600",
+    # garde de perimetre : lit chaque diff par fonction (#11268).
+    "perimeter-review-guard.yml": "#11268",
+    # label-posing : paths rendrait le garde aveugle aux PRs hors paths
+    # (#13234, tranche 1c a retire leurs paths-filter).
+    "always-on-guards.yml": "#13234",
+    "always-on-metadata-guards.yml": "#13234",
+    # discipline d'auto-couverture paths, ecrite dans le workflow : un seul
+    # evenement manquant = la garde ne protege rien (#14391/#14429).
+    "notebook-plan-loss-gate.yml": "#14391/#14429",
+}
+
 
 def has_pull_request_trigger(workflow: dict) -> bool:
     on = workflow.get(True, workflow.get("on", {}))
@@ -172,6 +193,7 @@ def inventory_workflows() -> list[dict]:
                 "paths": paths,
                 "labels_posed": labels,
                 "pr_target_filter_excludes_main": target_filter,
+                "exempt_documented": EXEMPT_DOCUMENTED.get(Path(wf_path).name),
             }
         )
     return rows
@@ -244,10 +266,24 @@ def render_markdown(rows: list[dict], required: set[str] | None) -> str:
         if r.get("has_pull_request")
         and (r.get("paths") or r.get("pr_target_filter_excludes_main"))
     )
+    n_exempt = sum(
+        1 for r in rows if r.get("has_pull_request") and r.get("exempt_documented")
+    )
+    # #12773 : le seul deficit qui compte = sans filtre effectif ET sans
+    # exemption documentee (un eligible oublie, pas une decision ecrite).
+    n_unfiltered_eligible = sum(
+        1
+        for r in rows
+        if r.get("has_pull_request")
+        and not r.get("paths")
+        and not r.get("pr_target_filter_excludes_main")
+        and not r.get("exempt_documented")
+    )
     out.append(
         f"Total workflows: **{n_total}** | pull_request: **{n_pulls}** | "
         f"avec paths: **{n_paths}** | label-posing: **{n_labels}** | "
-        f"required: **{n_required}** | avec filtre effectif PR→main: **{n_filtered}**"
+        f"required: **{n_required}** | avec filtre effectif PR→main: **{n_filtered}** | "
+        f"exemptions documentees: **{n_exempt}** | sans-filtre eligible: **{n_unfiltered_eligible}**"
     )
     out.append("")
     if required is None:
@@ -255,16 +291,17 @@ def render_markdown(rows: list[dict], required: set[str] | None) -> str:
             "_API de protection de branche injoignable -- fallback sur la liste statique._"
         )
         out.append("")
-    out.append("| Workflow | pull_request | paths | target-filter excl. main | label-posing |")
-    out.append("|----------|--------------|-------|--------------------------|--------------|")
+    out.append("| Workflow | pull_request | paths | target-filter excl. main | label-posing | exemption doc. |")
+    out.append("|----------|--------------|-------|--------------------------|--------------|----------------|")
     for r in rows:
         if not r.get("has_pull_request"):
             continue
         paths_repr = ", ".join(r.get("paths") or ["(none)"])[:80]
         target_repr = "oui" if r.get("pr_target_filter_excludes_main") else "non"
         labels_repr = "oui" if r.get("labels_posed") else "non"
+        exempt_repr = r.get("exempt_documented") or ""
         out.append(
-            f"| `{r['file']}` | oui | {paths_repr or '(none)'} | {target_repr} | {labels_repr} |"
+            f"| `{r['file']}` | oui | {paths_repr or '(none)'} | {target_repr} | {labels_repr} | {exempt_repr} |"
         )
     out.append("")
     out.append("## Fan-out estime par type de PR")
@@ -300,6 +337,17 @@ def main() -> int:
         "workflows_pull_request": sum(1 for r in rows if r.get("has_pull_request")),
         "workflows_with_paths": sum(1 for r in rows if r.get("paths")),
         "workflows_label_posing": sum(1 for r in rows if r.get("labels_posed")),
+        "workflows_exempt_documented": sum(
+            1 for r in rows if r.get("has_pull_request") and r.get("exempt_documented")
+        ),
+        "workflows_unfiltered_eligible": sum(
+            1
+            for r in rows
+            if r.get("has_pull_request")
+            and not r.get("paths")
+            and not r.get("pr_target_filter_excludes_main")
+            and not r.get("exempt_documented")
+        ),
         "required_checks": sorted(required) if required else [],
         "required_checks_source": "api" if api_reachable else "fallback_static",
         "fanout_estimated_per_pr_type": {

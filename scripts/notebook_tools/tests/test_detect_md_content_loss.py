@@ -449,6 +449,79 @@ class TestNewFileExemptionAndRefGuard:
 
 
 # ---------------------------------------------------------------------------
+# 9b. Artefact de run genere exempte (#15349)
+# ---------------------------------------------------------------------------
+class TestGeneratedArtifact:
+    """Un notebook dont le markdown est une sortie de run LLM non deterministe
+    (nom d'artefact canonique + trace papermill) est exempte de content-loss :
+    base-vs-head mesure la variance de la generation, pas une perte de contenu
+    (#15349). La dispense n'est pas path-based aveugle : sans trace papermill,
+    ou sous un nom hors ``GENERATED_ARTIFACT_NAMES``, le notebook reste verifie.
+    """
+
+    @staticmethod
+    def _head_with_papermill(body="> **Indices :**"):
+        """Tete dont la cellule markdown s'est effondree (ratio << 0.75)."""
+        head = _nb(_md(body))
+        head["metadata"]["papermill"] = {
+            "input_path": "Notebook-Generated.ipynb",
+            "output_path": "Notebook-Generated.ipynb",
+        }
+        return head
+
+    def _scan_gen(self, tmp_path, head_nb, nb_name="Notebook-Generated.ipynb"):
+        p = tmp_path / nb_name
+        p.write_text(json.dumps(head_nb), encoding="utf-8")
+        with mock.patch.object(dml, "read_notebook_at_ref",
+                               return_value=_nb(_md(EXERCISE_BODY))), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            return dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
+
+    def test_generated_artifact_exempted(self, tmp_path):
+        # Artefact de run (nom canonique + papermill) -> exempt, 0 finding.
+        r = self._scan_gen(tmp_path, self._head_with_papermill())
+        assert r.get("generated_artifact") is True
+        assert r["stats"]["findings_count"] == 0
+        assert "error" not in r
+
+    def test_generated_artifact_main_exits_0(self, tmp_path):
+        # main() --check renvoie 0 pour l'artefact (le garde ne le rougit pas).
+        p = tmp_path / "Notebook-Generated.ipynb"
+        p.write_text(json.dumps(self._head_with_papermill()), encoding="utf-8")
+        with mock.patch.object(dml, "read_notebook_at_ref",
+                               return_value=_nb(_md(EXERCISE_BODY))), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            assert dml.main([str(p), "--base", "MOCK", "--check"]) == 0
+
+    def test_generated_artifact_needs_papermill_trace(self, tmp_path):
+        # Meme nom d'artefact mais AUCUNE trace papermill -> verifie (non
+        # path-based aveugle) -> la troncature est signalee.
+        r = self._scan_gen(tmp_path, _nb(_md("> **Indices :**")))
+        assert r.get("generated_artifact") is not True
+        assert r["stats"]["findings_count"] >= 1
+        assert any(f["kind"] == "TRUNCATED_CELL" for f in r["findings"])
+
+    def test_non_generated_name_not_exempt(self, tmp_path):
+        # Trace papermill mais nom hors GENERATED_ARTIFACT_NAMES -> pas exempte.
+        r = self._scan_gen(tmp_path, self._head_with_papermill(),
+                           nb_name="ordinary.ipynb")
+        assert r.get("generated_artifact") is not True
+        assert r["stats"]["findings_count"] >= 1
+
+    def test_predicate_unit(self):
+        # Predicat pur : nom canonique + papermill -> True ; sans papermill
+        # -> False ; nom hors liste -> False (avant meme de lire la metadata).
+        assert dml._is_generated_artifact(
+            Path("Notebook-Generated.ipynb"), self._head_with_papermill()) is True
+        assert dml._is_generated_artifact(
+            Path("Notebook-Generated.ipynb"), _nb(_md("x"))) is False
+        assert dml._is_generated_artifact(
+            Path("ordinary.ipynb"), self._head_with_papermill()) is False
+
+
+# ---------------------------------------------------------------------------
 # 10. Frontmatter cost -> metadata.cost migration (#8919)
 # ---------------------------------------------------------------------------
 # Un bloc frontmatter YAML `cost:` retire d'une cellule alors que ses champs

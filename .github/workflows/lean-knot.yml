@@ -148,6 +148,16 @@ jobs:
           display-name: knot_lean
           sorry-baseline: "8"
           sorry-filter-mode: real
+          # #14821 : le pool coursia-lean OOM-kill (exit 137) sur le pic
+          # d'elaboration des siblings Conway/Conway_en DANS le meme job —
+          # la contention entre jobs est REFUTEE (Proof integrity mort seul,
+          # 18 min apres liberation de l'autre job, DM ai-01 2026-09-06).
+          # Serialisation d'abord comme INSTRUMENT DE MESURE (reco ai-01,
+          # msg-20260906T133912-j6rlew) : si ca passe, c'est aussi le remede
+          # court terme ; si ca OOM, le pic d'un Conway seul depasse la boite.
+          # NB: Lake 5.0 n'a pas de -j (tentative 1 = run 34037681207, mort
+          # a l'option parsing) — le cap passe par LEAN_NUM_THREADS.
+          build-jobs: "1"
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
   # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`)
@@ -186,6 +196,10 @@ jobs:
           # The per-module enumeration now lives in the gate's runtime derivation
           # (issue #10889) -- flip to `true` when the baseline reaches 0.
           fail-on-sorry: false
+          # #14821 : meme instrument que le job ci (voir le commentaire du
+          # job ci) — ce job REBUILD le lake avec sa propre cle de cache,
+          # donc le pic des siblings se rejoue ici aussi.
+          build-jobs: "1"
 
   # Advisory proof-integrity coverage (See #8782). Same pattern as conway_lean
   # (#8787): the `target-modules` list above is hand-maintained while the
