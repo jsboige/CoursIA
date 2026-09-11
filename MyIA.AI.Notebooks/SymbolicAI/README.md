@@ -46,9 +46,10 @@ flowchart TD
     LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
     TW -.->|"induction logique (FOIL)"| SL
 
-    classDef found fill:#e8f0fe,stroke:#1a73e8
-    classDef app fill:#e6f4ea,stroke:#188038
-    classDef bridge fill:#fef7e0,stroke:#f9ab00
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef found fill:#e8f0fe,stroke:#1a73e8,color:#174ea6
+    classDef app fill:#e6f4ea,stroke:#188038,color:#137333
+    classDef bridge fill:#fef7e0,stroke:#f9ab00,color:#856404
     class TW,SW,LEAN found
     class SMT,PL,SC app
     class AA,SL bridge
