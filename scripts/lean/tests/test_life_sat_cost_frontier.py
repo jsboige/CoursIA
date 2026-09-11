@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("z3", reason="z3-solver requis pour la campagne SAT")
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import life_sat_cost_frontier as frontier

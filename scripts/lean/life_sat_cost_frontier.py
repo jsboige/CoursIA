@@ -17,11 +17,9 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-import z3
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from life_synthesize_sat import search_minimal, universe_bounds
+from life_synthesize_sat import search_minimal, universe_bounds, z3
 
 
 @dataclass(frozen=True)
@@ -138,6 +136,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    if z3 is None:
+        print("z3 est requis : pip install z3-solver", file=sys.stderr)
+        return 2
     if args.timeout_ms <= 0:
         parser.error("--timeout-ms doit être strictement positif")
     if args.repeats <= 0:
