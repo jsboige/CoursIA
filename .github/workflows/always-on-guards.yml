@@ -716,13 +716,32 @@ jobs:
 
           if [ "$RC" -eq 0 ]; then
             echo "No \`prev:\` close-keyword genre in body or commits -- job passes."
+            # #15372 : un run vert LEVE le commentaire bloquant precedent
+            # en place (s'il existe). No-op silencieux sinon -- un vert
+            # sur une PR jamais bloquee ne fabrique pas de bruit. Un mur
+            # qui ne se ferme jamais n'est pas un signal.
+            PREVS=$(python3 -c "import json; print(', '.join('#%s' % n for n in json.load(open('/tmp/verdict.json')).get('prev_targets_accepted', [])))" 2>/dev/null || echo "")
+            if ! GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 scripts/ci/guard_comment_upsert.py \
+              --pr "$PR_NUMBER" \
+              --marker '<!-- vtr-prev-close-keyword -->' \
+              --lift --note "aucun genre mots-clé fermant dans le body ni les commits ; prev: accepté(s) : ${PREVS:-aucun}" \
+              >/dev/null 2>&1; then
+              # #15374 : le gate reste vert (run prev: propre), mais un
+              # lift qui echoue (quota, reseau, permissions) doit rester
+              # OBSERVABLE -- sinon le commentaire bloquant survit faux
+              # en silence.
+              echo "::warning::prev-guard lift failed (commentaire bloquant possiblement perime)"
+            fi
             exit 0
           fi
 
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
           echo "::error::prev: close-keyword genre detected: $REASON"
 
-          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          # #15372 : upsert -- EDITE le commentaire bot existant (marqueur
+          # + auteur github-actions) au lieu d'en cumuler un nouveau par
+          # run rouge (19 faux bloquants mesures sur 4 PRs le 09/09).
+          cat > /tmp/prev_blocked_body.md <<EOF
           <!-- vtr-prev-close-keyword -->
           **\`prev:\` genre mots-clé fermant -- bloquant (#10093).**
 
@@ -736,7 +755,16 @@ jobs:
           Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<refactor|guard|tooling|...> #<PR>
           \`\`\`
           EOF
-          )" 2>/dev/null || true
+          if ! GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 scripts/ci/guard_comment_upsert.py \
+            --pr "$PR_NUMBER" \
+            --marker '<!-- vtr-prev-close-keyword -->' \
+            --body-file /tmp/prev_blocked_body.md \
+            >/dev/null 2>&1; then
+            # #15374 : le gate est deja rouge (exit 1 ensuite), mais
+            # l'echec d'upsert ne doit pas passer inapercu -- il ne sera
+            # jamais presente comme une ecriture reussie.
+            echo "::warning::prev-guard upsert failed (commentaire bloquant non pose)"
+          fi
 
           exit 1
 

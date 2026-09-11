@@ -155,6 +155,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (mesure 2026-09-02) : ils ne peuvent pas affamer les gardes de PR.
     #   Exclus : markdown-table-guard / render-volume-delta-advisory (lourds),
     #   slides-composition-advisory (navigateurs hors image).
+    # #15347 (owner myia-po-2026:CoursIA) : cablage de l'organe G-VAR-3
+    #   refresh_stale_adjacency.py -- sur main + tests, aucun workflow ne
+    #   l'appelait (organe inerte, 24 h de blocage mesurees sur #15165).
+    #   Balayage cron horaire (schedule + workflow_dispatch) pur-Python +
+    #   gh bootstrap toolcache : simule le garde contre la sequence de merges
+    #   courante et appose le marqueur `<!-- refresh-adj -->` idempotent qui
+    #   re-declenche `pull_request: edited` -- jamais d'override (le garde
+    #   reste l'autorite, la simulation doit passer). Advisory by
+    #   construction : exit 0 toujours, rc=2 logge ::warning::, aucun secret,
+    #   GITHUB_TOKEN lecture seule + pull-requests: write (body edit).
+    #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
+    #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",
@@ -314,6 +328,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-plan-loss-gate.yml",
+    # #15322 (owner myia-po-2023:CoursIA) : vehicule workflow_dispatch-ONLY
+    #   servant de cible d'identite au check-run absorbe par fast-lane
+    #   (registre TRANCHE2) et de re-run manuel du self-test sur main.
+    #   Detecteur check_pr_translation_drift.py (attribution par merge-base,
+    #   predicat REUTILISE de check_translation_sync.check_csv -- aucune
+    #   reimplementation), advisory pur-Python stdlib-only, conclusion neutre,
+    #   jamais exit != 0 sur le verdict, aucun secret, aucun GITHUB_TOKEN cote
+    #   job. Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
+    #   profil que repeated-prose-advisory.yml / markdown-deaccent-
+    #   advisory.yml). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist).
+    "translation-hot-drift-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
