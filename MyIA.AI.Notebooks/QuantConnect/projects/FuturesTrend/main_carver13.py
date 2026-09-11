@@ -284,28 +284,31 @@ class CarverThirteen(QCAlgorithm):
     def _breadth_multiplier(self, forecasts):
         """Breadth multiplier — honest requalification of the prior FDM
         (Tell c.1069 strict, REPAIR-3 c.1109 adjoint po-2025 preflight
-        `msg-20260911T043805-i7tl0g`).
+        `msg-20260911T043805-i7tl0g`; REPAIR-5 c.1066 docstring honesty
+        after the same adjoint signalled that `abs()` makes the formula
+        sign-invariant, contradicting the prior "one-directional" claim).
 
-        Formula (instantaneous cross-sectional breadth proxy):
+        Formula (instantaneous cross-sectional magnitude concentration):
             breadth = sum(|f_i|) / sqrt(sum(f_i^2))
 
-        Reading (c.1109 honest requalification): when forecasts are
-        perfectly aligned (all same sign, same magnitude), the ratio
-        equals sqrt(N) — that's NOT a "penalty for concentration", it's
-        a **bonus when the book is one-directional**. When forecasts are
-        independent (zero mean cross-section), the ratio tends toward
-        sqrt(2N / pi) — also a bonus. The classical Carver FDM (chap. 9)
-        inverts this to penalise concentration; we do NOT do that here
-        because (a) it requires an exogenous correlation estimate the
-        instantaneous formula cannot supply, and (b) the QC Cloud backtest
-        window already enforces gross-leverage limits through margin and
-        position sizing.
+        Reading (c.1109 + c.1066 honest requalification): `|f|` removes
+        the sign at the input, so the ratio is **sign-invariant** —
+        `[10, 10]` and `[10, -10]` yield the same `breadth`. The ratio
+        ranges from 1.0 (one forecast dominates, the rest are zero) to
+        sqrt(N) (all |f_i| equal); it measures how evenly the absolute
+        magnitudes are spread across the book, nothing more. It does
+        NOT measure whether forecasts are aligned in sign.
 
+        The classical Carver FDM (chap. 9) penalises concentration and
+        requires an exogenous correlation estimate; we do NOT replicate
+        that here because the instantaneous formula cannot supply it.
         Hence the multiplier is labelled *breadth*, not *FDM*, and is
-        clipped to [1.0, 2.0] as a soft cap on gross leverage when the
-        book is one-directional. The clip is conservative; we never
-        reduce gross exposure below the proportional sum because we have
-        no signal that the forecasts are spuriously aligned.
+        clipped to [1.0, 2.0] as a **soft cap on gross leverage when
+        magnitudes are concentrated** — never below the proportional sum
+        of |f_i|, because we have no signal that the magnitudes are
+        spuriously concentrated either. The final portfolio weight
+        `forecast / abs_sum` (in `_rebalance`) preserves the sign; only
+        this multiplier is sign-invariant.
         """
         arr = np.asarray([abs(float(f)) for f in forecasts], dtype=float)
         if arr.size == 0:
