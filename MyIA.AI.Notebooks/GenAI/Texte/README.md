@@ -133,6 +133,32 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 - Ollama ou vLLM installé pour les notebooks de déploiement
 - PyTorch CPU suffit pour la partie from scratch de `10b`; un endpoint vLLM authentifié est requis pour ses mesures TTFT/ITL
 
+### Harnais de mesure LLamaSharp (10e, `tools/llamasharp-bakeoff/`)
+
+Le binaire `Test.exe` que le notebook `10e_LLamaSharp_DotNet_BakeOff.ipynb` mesure en
+processus externe est **compilé depuis la source versionnée** dans
+`tools/llamasharp-bakeoff/` (`test.csproj` + `Program.cs`, LLamaSharp 0.27.0,
+self-contained .NET 8 + backend CUDA 12). Reproduction sur une machine propre :
+
+1. **Modèle** — télécharger `Qwen3-4B-Q4_K_M.gguf` (2,4 Go) depuis
+   [`Qwen/Qwen3-4B-GGUF`](https://huggingface.co/Qwen/Qwen3-4B-GGUF) vers
+   `tools/llamasharp-bakeoff/models/` (gitignoré). sha256 de la lignée officielle :
+   `7485fe6f11af29433bc51cab58009521…`.
+2. **Compiler** — `dotnet publish -c Release -r win-x64 --self-contained true -o publish`
+   depuis `tools/llamasharp-bakeoff/` (le RID est obligatoire, cf §4 du notebook).
+3. **Runtime CUDA** — le paquet `LLamaSharp.Backend.Cuda12.Windows` ne livre pas
+   `cudart64_12`/`cublas64_12`/`cublasLt64_12` ; les wheels
+   `nvidia-cuda-runtime-cu12==12.4.127` et `nvidia-cublas-cu12==12.4.5.8` (canal
+   officiel, sans CUDA Toolkit ni UAC) les fournissent, à colocaliser auprès de
+   `ggml-cuda.dll` (`publish/runtimes/win-x64/native/cuda12/`).
+4. **Sonde de détection** — sans CUDA Toolkit, LLamaSharp n'énumère jamais le candidat
+   CUDA : poser `%CUDA_PATH%` pointant vers un `version.json` portant la clé
+   `libcublas` (le notebook, cellule 4bis, fait les étapes 3-4 automatiquement).
+
+Le notebook exécute ces étapes lui-même (cellules 3, 4bis, 4ter) : exécuté depuis ce
+dossier de série, il recompile, répare et mesure sans dépendre d'aucun artefact hors
+dépôt.
+
 ## Parcours suggéré
 
 ```text

@@ -1047,3 +1047,10 @@ MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
 # the script in the repo; the artefacts out.
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 
+# Harnais LLamaSharp bake-off (GenAI/Texte 10e, #15570) : artefacts locaux
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/models/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/publish/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/bin/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
