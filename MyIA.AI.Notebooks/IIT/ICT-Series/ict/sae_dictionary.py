@@ -93,8 +93,9 @@ class TopKSae:
         a = np.maximum(self.precode(x), 0.0)
         if self.k >= a.shape[1]:
             return a
-        # Top-k sur les PRE-activations, puis re-relu : garder le top-k des
-        # relu equivaut a garder le top-k des pre-relu non negatifs.
+        # relu d'abord, puis top-k des activations non nulles : si moins de k
+        # pre-activations sont positives, des zeros sont retenus et L0 < k
+        # (cohérent avec la doc de l0_measured : L0 mesure <= k).
         idx = np.argpartition(a, a.shape[1] - self.k, axis=1)[:, -self.k :]
         keep = np.zeros_like(a)
         np.put_along_axis(keep, idx, 1.0, axis=1)
