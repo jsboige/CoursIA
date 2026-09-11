@@ -16,7 +16,9 @@ Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR
 
 Ex. `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard #8954`.
 
-`prev:` documente le grain précédent de la lane (adjacence G-VAR-3) **et** le lie à une PR relisable — le genre est la clé d'adjacence, le numéro rend la déclaration vérifiable ; les deux sont obligatoires.
+`prev:` documente le grain précédent de la lane (adjacence G-VAR-3) **et** le lie à une PR relisable — le numéro rend la déclaration vérifiable ; les deux sont obligatoires.
+
+**Le genre déclaré dans `prev:` n'est PAS la clé de calcul de l'adjacence** : l'organe [`scripts/ci/variation_adjacency_guard.py`](../../scripts/ci/variation_adjacency_guard.py) lit la **séquence mergée** de la lane et rend le genre déclaré dans un champ séparé (`declared_prev_genre`). Le `prev:` reste *documentaire* et n'est la source de vérité qu'en repli (premier grain, ou échec de fetch). Ne pas dériver l'adjacence à la main depuis les `prev:` déclarés — deux HOLD faux en ont résulté le 2026-09-11. Mécanisme, mesure et cas « `prev:` ouvert » : [détail §2.1](../../docs/reference/variation-protocol-detail.md).
 
 Le guard ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guard.yml)) matche par **mot-clé** (`Grain:`, `lane`), casse insensible, décoration markdown neutralisée : ni le séparateur ni la casse ne comptent. Ce qui est vérifié est la **substance** (TIER par le litmus, GENRE dans l'énumération, `lane` présente). **Ne pas forcer de churn cosmétique** sur un tag valide en substance.
 
