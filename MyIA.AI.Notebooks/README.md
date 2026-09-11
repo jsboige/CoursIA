@@ -323,12 +323,13 @@ flowchart LR
     N4 -. "fraction risquée f" .-> L4
     N5 -. "invariant réentrance" .-> L5
     N6 -. "impossibilité" .-> L6
-    style L1 fill:#e8f5e9
-    style L2 fill:#e8f5e9
-    style L3 fill:#e8f5e9
-    style L4 fill:#e8f5e9
-    style L5 fill:#e8f5e9
-    style L6 fill:#e8f5e9
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style L1 fill:#e8f5e9,color:#1b5e20
+    style L2 fill:#e8f5e9,color:#1b5e20
+    style L3 fill:#e8f5e9,color:#1b5e20
+    style L4 fill:#e8f5e9,color:#1b5e20
+    style L5 fill:#e8f5e9,color:#1b5e20
+    style L6 fill:#e8f5e9,color:#1b5e20
 ```
 
 Le pipeline complet relie les **notebooks** (qui motivent) aux **lakes** (qui prouvent) et inversement : un notebook Tweety illustre un AF-Dung et cite `argumentation_lean` comme source de l'extension prouvée ; un cours QuantConnect cite `kelly_lean` comme justification formelle de la fraction risquée optimale. Sans la couche Lean, ces résultats seraient des formules réputées « standard » mais jamais démontrées. Avec elle, la justification est formellement garantie — pas seulement empiriquement ajustée.
