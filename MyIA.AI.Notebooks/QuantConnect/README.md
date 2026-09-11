@@ -123,9 +123,10 @@ flowchart LR
     PC --> RM["Risk Management<br/>quels filtres ?"]
     RM --> E["Execution<br/>quels ordres ?"]
     RM -. "ajustement temps reel" .-> U
-    style A fill:#e1f5ff
-    style PC fill:#e8f5e9
-    style RM fill:#fff3e0
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style A fill:#e1f5ff,color:#004085
+    style PC fill:#e8f5e9,color:#1b5e20
+    style RM fill:#fff3e0,color:#bf360c
 ```
 
 Le flux de données traverse cinq modules Découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, le **Risk Management** filtre/ajuste ces cibles en continu, et l'**Execution** route les ordres. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
@@ -498,11 +499,12 @@ flowchart TD
     FEES --> VERD{"Sharpe net<br/>survit aux frais ?"}
     VERD -->|"oui"| KEEP["Strategie robuste"]
     VERD -->|"non"| DROP["Edge evapore"]
-    style PSR fill:#fff3e0
-    style VERD fill:#fff3e0
-    style KEEP fill:#e8f5e9
-    style ART fill:#ffebee
-    style DROP fill:#ffebee
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style PSR fill:#fff3e0,color:#bf360c
+    style VERD fill:#fff3e0,color:#bf360c
+    style KEEP fill:#e8f5e9,color:#1b5e20
+    style ART fill:#ffebee,color:#721c24
+    style DROP fill:#ffebee,color:#721c24
 ```
 
 Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est presque toujours un artefact. La validation ci-dessus — walk-forward, OOS strict aligné, multi-seed, PSR > 50%, puis test des frais réels — est ce qui sépare une stratégie robuste d'une illusion statistique. Les stratégies du tableau Top 5 ci-dessous sont celles qui ont survécu à ce pipeline.
@@ -558,8 +560,9 @@ flowchart LR
     QC -. "fréquence risquée f" .-> KELLY
     KELLY -. "théorème-prouve f*" .-> ML
     ML --> BACKTEST
-    style KELLY fill:#e8f5e9
-    style BACKTEST fill:#e1f5ff
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style KELLY fill:#e8f5e9,color:#1b5e20
+    style BACKTEST fill:#e1f5ff,color:#004085
 ```
 
 Le pipeline complet relie donc trois familles du dépôt : la **théorie** (Lean prouve `kelly_optimal` + `kelly_unique`), la **pratique** (ML-Training-Pipeline dimensionne Kelly HMM-regime, fee-aware, multi-asset, cap-relaxed — voir `ML-Training-Pipeline/docs/M11*`), et la **validation empirique** (backtests QC Cloud walk-forward + multi-seed, comparatif dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md)). Sans la couche Lean, la pratique risquerait de s'appuyer sur une formule réputée « standard » mais jamais démontrée. Avec elle, la justification du fractionnement du capital est formellement garantie — pas seulement empiriquement ajustée.
