@@ -2704,15 +2704,20 @@ def _message_refs_pr(message: str, pr_refs: set[str]) -> bool:
     return bool(cited & pr_refs)
 
 
-def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
+def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
     """Resoudre cote serveur les SHAs cites mais absents des commits de la PR.
 
     S'execute UNIQUEMENT dans le chemin `gate` (reseau) : `analyse` reste
-    pur et lit le resultat via `data["_absent_sha_messages"]`. Sans entree
-    resolue, `analyse` reste en mode avertissement -- l'audit retro, qui
-    n'appelle jamais ceci, ne peut donc pas produire de faux blocage.
-    Capped a `cap` appels : plus de 5 SHAs absents cites sur une seule PR
-    est extraordinaire, et chaque appel paie un aller-retour API.
+    pur et lit le resultat via `data["_absent_sha_messages"]` (le message)
+    et `data["_absent_sha_trees"]` (l'arbre du commit rembobine, #15556).
+    Sans entree resolue, `analyse` reste en mode avertissement -- l'audit
+    retro, qui n'appelle jamais ceci, ne peut donc pas produire de faux
+    blocage. Capped a `cap` appels : plus de 5 SHAs absents cites sur une
+    seule PR est extraordinaire, et chaque appel paie un aller-retour API.
+
+    #15556 : le MEME appel porte deja l'arbre du commit (`commit.tree.sha`)
+    -- le capter ici evite un second aller-retour par SHA au moment de
+    distinguer push muet (arbre identique) et push de contenu.
     """
     oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
     oids.discard("")
@@ -2722,16 +2727,144 @@ def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
     for c in (data.get("comments") or []) + (data.get("reviews") or []):
         cited |= _cited_shas(c.get("body") or "")
     absent = sorted(s for s in cited if not any(o.startswith(s) for o in oids))
-    messages: dict[str, str] = {}
+    state: dict[str, dict] = {}
     for sha in absent[:cap]:
         try:
             commit = gh_json(["api", f"repos/{REPO}/commits/{sha}"])
         except subprocess.CalledProcessError:
             continue  # non resoluble -> analyse restera en mode avertissement
         head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
-        if head:
-            messages[sha] = head
-    return messages
+        tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+        if head or tree:
+            state[sha] = {"message": head or "", "tree": tree}
+    return state
+
+
+# --- #15556 : identite de CONTENU, pas de SHA ------------------------------
+#
+# Sur #15492, sept rounds de reparation ont ete consommes par une boucle :
+# pousser un wake-commit (le remede canonique aux checks qui ne s'arment
+# pas) rembobine la tete, rembobiner invalide les levees qui citaient
+# l'ancienne tete, invalider oblige a relever, relever oblige a re-pousser.
+# Deux levees valides ont ete detruites par un push qui n'avait pas bouge
+# UN BYTE du livrable -- l'arbre etait identique, seul le SHA avait change.
+#
+# Le predicat se rattache donc au contenu : une levee citant un SHA
+# rembobine reste VALIDE si l'arbre du SHA rembobine est identique a
+# l'arbre de la tete (wake-commit, amend de message), ou si aucun fichier
+# de la PR n'est touche par la difference (rebase sans conflit). En cas
+# d'incertitude (arbre inconnu, pagination suspecte) : comportement
+# anterieur, le refus -- l'organe ne devient jamais permissif sur un
+# doute, c'est le cas que B.0 existe pour attraper.
+
+
+def _pr_head_oid(data: dict) -> str:
+    """OID de la tete de la PR : `headRefOid` si present, sinon le dernier
+    commit portant un `oid` (le plus recent de la liste chronologique)."""
+    head = (data.get("headRefOid") or "").lower()
+    if head:
+        return head
+    for c in reversed(data.get("commits") or []):
+        oid = (c.get("oid") or "").lower()
+        if oid:
+            return oid
+    return ""
+
+
+def _pr_file_paths(data: dict, page_cap: int = 100) -> set[str] | None:
+    """Chemins des fichiers de la PR, bornes incluses.
+
+    None = determination impossible (PR sans numero, erreur reseau, ou
+    liste tronquee a la pagination) : l'appelant doit alors rester sur le
+    comportement strict -- ne JAMAIS deduire « fichiers inchanges » d'une
+    liste incomplete.
+    """
+    number = data.get("number")
+    if number is None:
+        return None
+    try:
+        files = gh_json(
+            ["api", f"repos/{REPO}/pulls/{number}/files?per_page={page_cap}"])
+    except subprocess.CalledProcessError:
+        return None
+    if not isinstance(files, list) or len(files) >= page_cap:
+        return None  # pagination potentiellement tronquee -> fail-safe
+    return {f.get("filename") for f in files if f.get("filename")}
+
+
+def _rewind_pr_files_untouched(data: dict, state: dict[str, dict],
+                               head_oid: str, head_tree: str,
+                               cap: int = 3) -> dict[str, bool]:
+    """SHAs rembobines rattaches a la PR dont AUCUN fichier de la PR n'a
+    bouge entre le SHA rembobine et la tete (cas rebase, #15556).
+
+    Compare cote serveur `{sha}...{head_oid}` : si aucun des fichiers
+    touches par la comparaison n'est un fichier de la PR, le livrable est
+    inchange et la levee reste valide. Fail-safe systematique : compare
+    irrecuperable, plus de `cap` candidats, fichiers de la PR inconnus ou
+    liste de compare au plafond (troncature silencieuse de l'API a 300)
+    -> le SHA n'est PAS marque untouched (le refus survit).
+    """
+    if not head_oid or not head_tree:
+        return {}
+    pr_refs: set[str] = set()
+    if data.get("number") is not None:
+        pr_refs.add(str(data["number"]))
+    for m in re.finditer(r"#(\d+)", (data.get("title") or "")
+                         + "\n" + (data.get("body") or "")):
+        pr_refs.add(m.group(1))
+    pr_refs.discard("")
+    rattachable = sorted(
+        s for s, v in state.items()
+        if v.get("message") and _message_refs_pr(v["message"], pr_refs)
+        and not (v.get("tree") and v["tree"] == head_tree))
+    if not rattachable:
+        return {}
+    pr_files = _pr_file_paths(data)
+    if pr_files is None:
+        return {}
+    untouched: dict[str, bool] = {}
+    for sha in rattachable[:cap]:
+        try:
+            compare = gh_json(
+                ["api", f"repos/{REPO}/compare/{sha}...{head_oid}"])
+        except subprocess.CalledProcessError:
+            continue
+        files = compare.get("files") or []
+        if len(files) >= 300:
+            continue  # troncature suspecte -> fail-safe
+        changed = {f.get("filename") for f in files}
+        if not (changed & pr_files):
+            untouched[sha] = True
+    return untouched
+
+
+def _attach_absent_sha_context(data: dict) -> None:
+    """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
+
+    Assemble les trois vues que `analyse` consulte : messages (rattachement
+    #13639), arbres des commits rembobines et arbre de la tete (#15556),
+    puis la comparaison fichiers pour les seuls candidats rattaches dont
+    l'arbre differe -- un seul appel reseau par SHA, un par PR pour la
+    tete et les fichiers.
+    """
+    state = _resolve_absent_sha_state(data)
+    data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
+                                    if v.get("message")}
+    data["_absent_sha_trees"] = {s: v["tree"] for s, v in state.items()
+                                 if v.get("tree")}
+    head_oid = _pr_head_oid(data)
+    head_tree = ""
+    if head_oid:
+        try:
+            commit = gh_json(["api", f"repos/{REPO}/commits/{head_oid}"])
+            head_tree = ((commit.get("commit") or {}).get("tree")
+                         or {}).get("sha") or ""
+        except subprocess.CalledProcessError:
+            head_tree = ""
+    data["_head_tree"] = head_tree
+    data["_rewind_pr_files_untouched"] = _rewind_pr_files_untouched(
+        data, state, head_oid, head_tree)
 
 
 def can_lift(comment: dict) -> bool:
@@ -3260,7 +3393,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_info)
 
     # #13639 -- passer les levees au crible du SHA rembobine (voir
-    # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
+    # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). #15556 : le
+    # refus se rattache desormais a l'identite de CONTENU -- un push muet
+    # (wake-commit, amend de message, rebase sans fichier de la PR touche)
+    # ne desnue plus la levee ; cf _attach_absent_sha_context. Inerte sans
     # OIDs connus : le pre-filtre d'audit (sans `commits`) et les fixtures
     # sans `oid` sautent ce passage -- comportement inchange. Limite assumee
     # : ce pre-filtre d'audit ne verra donc jamais cette classe de defaut
@@ -3270,6 +3406,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                    for c in (pr_data.get("commits") or []) if c.get("oid")]
     voided_lifts: list[dict] = []
     absent_sha_warnings: list[dict] = []
+    rewind_artifacts: list[dict] = []
     if commit_oids:
         pr_refs: set[str] = set()
         if pr_data.get("number") is not None:
@@ -3279,10 +3416,15 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             pr_refs.add(m.group(1))
         pr_refs.discard("")
         resolved = pr_data.get("_absent_sha_messages") or {}
+        rewound_trees = pr_data.get("_absent_sha_trees") or {}
+        head_tree = pr_data.get("_head_tree")
+        untouched = pr_data.get("_rewind_pr_files_untouched") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
+            refused_known_change = False
             warned = None
+            artifact = None
             for sha in sorted(_cited_shas(lift_body)):
                 if any(oid.startswith(sha) for oid in commit_oids):
                     continue  # present dans la PR : preuve valide
@@ -3290,15 +3432,38 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     continue  # citation de contexte : ni refus, ni signalement
                 message = resolved.get(sha)
                 if message and _message_refs_pr(message, pr_refs):
-                    refused = sha  # rembobine ET rattache : la levee est nue
+                    # rembobine ET rattache. #15556 : avant de desnuer la
+                    # levee, verifier que le push a reellement change le
+                    # livrable -- wake-commit et amend de message poussent
+                    # un arbre IDENTIQUE, rebase sans conflit ne touche
+                    # aucun fichier de la PR. Sans donnees d'arbre (audit
+                    # retro, resolution serveur impossible) : refus, le
+                    # comportement anterieur n'est jamais assoupli.
+                    if untouched.get(sha):
+                        if artifact is None:
+                            artifact = (sha, "pr_files_untouched")
+                        continue
+                    tree = rewound_trees.get(sha)
+                    if tree and head_tree and tree == head_tree:
+                        if artifact is None:
+                            artifact = (sha, "same_tree")
+                        continue
+                    refused = sha
+                    if tree and head_tree:
+                        refused_known_change = True
                     break
                 warned = sha  # non resoluble ou sans rapport : avertir
             if refused:
                 voided_lifts.append(
-                    {"author": lifter, "at": t.isoformat(), "sha": refused})
+                    {"author": lifter, "at": t.isoformat(), "sha": refused,
+                     "tree_differs": refused_known_change})
             else:
                 kept_lifts.append((t, lifter, lift_body))
-                if warned:
+                if artifact:
+                    rewind_artifacts.append(
+                        {"author": lifter, "at": t.isoformat(),
+                         "sha": artifact[0], "reason": artifact[1]})
+                elif warned:
                     absent_sha_warnings.append(
                         {"author": lifter, "at": t.isoformat(), "sha": warned})
         explicit_lifts = kept_lifts
@@ -3639,12 +3804,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "ignored_overrides": ignored_overrides,
         "voided_lifts": voided_lifts,
         "absent_sha_warnings": absent_sha_warnings,
+        "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
     }
 
 
-FIELDS = "number,title,body,mergedAt,author,comments,reviews,commits,url,state"
+FIELDS = ("number,title,body,mergedAt,author,comments,reviews,commits,url,"
+          "state,headRefOid")
 
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
@@ -3689,11 +3856,27 @@ def _print_unevaluated(result: dict) -> None:
 
 
 def _print_sha_notes(result: dict) -> None:
-    """#13639 : nommer les levees dont la preuve citee manque de la PR."""
+    """#13639 : nommer les levees dont la preuve citee manque de la PR.
+
+    #15556 : distinguer l'ARTEFACT du vrai defaut -- un push muet
+    (wake-commit, amend de message) ne change pas l'arbre, la preuve citee
+    reste byte-pour-byte vraie ; seul le SHA a change. Les deux cas ne
+    demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
+    """
+    for a in result.get("rewind_artifacts") or []:
+        why = ("arbre identique à la tête"
+               if a["reason"] == "same_tree"
+               else "fichiers de la PR inchangés")
+        print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
+              f"rembobiné par un push muet ({why}) — preuve conservée, "
+              f"non bloquant")
     for v in result.get("voided_lifts") or []:
+        detail = (" — l'arbre DIFFÈRE de la tête : vraie réserve à reposer"
+                  if v.get("tree_differs")
+                  else " — arbre non comparable, refus conservateur")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
-              f"mais rembobiné par un push ultérieur)")
+              f"mais rembobiné par un push ultérieur){detail}")
     for w in result.get("absent_sha_warnings") or ():
         print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
               f"(absent des commits, non rattaché à cette PR) — non bloquant")
@@ -3714,9 +3897,9 @@ def analyse_pr(pr: int) -> dict:
     visible immediatement.
     """
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
-    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
-    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
+    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+    _attach_absent_sha_context(data)
     return analyse(data, review_threads(pr), datetime.now(timezone.utc),
                    issue_info=gh_issue_info,
                    dismissed_improperly=improper_dismissals(pr))
@@ -3724,9 +3907,9 @@ def analyse_pr(pr: int) -> dict:
 
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
-    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
-    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
+    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+    _attach_absent_sha_context(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff,

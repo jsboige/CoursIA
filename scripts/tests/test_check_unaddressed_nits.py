@@ -3479,6 +3479,186 @@ def test_13639_sha_distant_du_marqueur_est_contexte():
     assert res["absent_sha_warnings"] == []
 
 
+# --- #15556 : un push qui ne change pas l'arbre n'invalide pas la levee ---
+
+TREE_A = "t" + "a" * 39   # arbre du commit rembobine ET de la tete
+TREE_B = "t" + "b" * 39   # arbre d'un vrai commit de contenu
+
+
+def test_15556_push_muet_arbre_identique_conserve_la_levee():
+    """Instance fondatrice (#15492) : wake-commit / amend de message
+    rembobinent la tete SANS toucher un byte du livrable -- l'arbre du SHA
+    cite est identique a l'arbre de la tete. La preuve avancee par la
+    phrase reste vraie : la levee est conservée, signalee comme artefact
+    non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_A},
+              _head_tree=TREE_A)
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "same_tree")]
+
+
+def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
+    """Controle negatif OBLIGATOIRE (acceptance 3 de l'issue) : une levee
+    posee avant un commit de CONTENU -- l'arbre cite differant de l'arbre
+    de la tete -- reste invalide. Le remede ne rend pas l'organe
+    permissif : c'est exactement le cas que B.0 existe pour attraper
+    (« un push muet est indiscernable d'un push qui repond »)."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A)
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15556_sans_donnees_arbre_refus_conservateur():
+    """Audit retro / resolution serveur sans arbre : comportement
+    anterieur integralement preserve (refus). L'incertitude n'assouplit
+    jamais l'organe."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is False
+
+
+def test_15556_rebase_sans_fichier_de_la_pr_touche_conserve():
+    """Cas rebase sans conflit : l'arbre global differant (main a avance)
+    mais AUCUN fichier de la PR n'est touche par la difference -- le
+    livrable est inchangé, la levee reste valide."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _rewind_pr_files_untouched={"2d6e4c3642": True})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "pr_files_untouched")]
+
+
+def test_15556_artefact_ne_masque_pas_un_vrai_refus():
+    """Une meme levee cite deux SHAs : l'un rembobine par push muet
+    (arbre identique), l'autre par un vrai commit de contenu. Le refus
+    gagne -- un artefact parmi les preuves ne sauve pas une levee dont
+    une autre preuve est morte."""
+    body = ("Les 2 nits sont adresses dans les commits 111aaaa111 et "
+            "222bbbb222.")
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, reply],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"111aaaa111": "fix(x,#0): typo",
+                                    "222bbbb222": "fix(y,#0): autre"},
+              _absent_sha_trees={"111aaaa111": TREE_A, "222bbbb222": TREE_B},
+              _head_tree=TREE_A)
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["222bbbb222"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_15556_headrefoid_prefere_au_dernier_oid():
+    """`_pr_head_oid` : headRefOid (present depuis #15556 dans FIELDS)
+    prime sur le dernier commit portant un oid -- sur une PR a plus de
+    commits que le plafond de la liste, le dernier affiche n'est pas
+    garanti etre la tete."""
+    data = {"headRefOid": "f" * 40,
+            "commits": [{"oid": "e" * 40}, {"oid": "d" * 40}]}
+    assert mod._pr_head_oid(data) == "f" * 40
+    assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
+    assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
+
+
+def test_15556_file_paths_tronques_renvent_none(monkeypatch):
+    """Fail-safe de `_pr_file_paths` : une liste de fichiers au plafond de
+    pagination (troncature potentielle) est une NON-determination, jamais
+    une liste complete -- en deduire « fichiers inchanges » serait le
+    faux negatif que l'acceptance 3 interdit."""
+    monkeypatch.setattr(mod, "gh_json",
+                        lambda args: [{"filename": f"f{i}.py"} for i in range(100)])
+    assert mod._pr_file_paths({"number": 7}) is None
+    monkeypatch.setattr(mod, "gh_json", lambda args: [])
+    assert mod._pr_file_paths({"number": 7}) == set()
+    assert mod._pr_file_paths({}) is None
+
+
+def test_15556_compare_hors_fichiers_pr_marque_untouched(monkeypatch):
+    """`_rewind_pr_files_untouched` : la difference SHA rembobine -> tete
+    ne touche que des fichiers HORS de la PR (rebase sur main) : le SHA
+    est marque untouched. Elle touche un fichier de la PR : pas de
+    marque, le refus survit."""
+    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_B}}
+    head_oid, head_tree = "f" * 40, TREE_A
+    data = {"number": 7, "title": "t", "body": ""}
+
+    def fake_gh_json(args):
+        url = args[-1]
+        if "/pulls/7/files" in url:
+            return [{"filename": "src/livrable.py"}]
+        if "/compare/" in url:
+            return {"files": [{"filename": "README.md"}]}  # hors PR
+        raise AssertionError(f"appel inattendu: {url}")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    assert mod._rewind_pr_files_untouched(data, state, head_oid,
+                                          head_tree) == {"111aaaa111": True}
+
+    def fake_gh_json_touche(args):
+        url = args[-1]
+        if "/pulls/7/files" in url:
+            return [{"filename": "src/livrable.py"}]
+        if "/compare/" in url:
+            return {"files": [{"filename": "src/livrable.py"}]}  # DANS la PR
+        raise AssertionError(f"appel inattendu: {url}")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json_touche)
+    assert mod._rewind_pr_files_untouched(data, state, head_oid,
+                                          head_tree) == {}
+
+
+def test_15556_compare_au_plafond_fail_safe(monkeypatch):
+    """L'API compare tronque silencieusement a 300 fichiers : une liste au
+    plafond ne prouve RIEN sur les fichiers restants -- pas de marque."""
+    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_B}}
+
+    def fake_gh_json(args):
+        url = args[-1]
+        if "/pulls/7/files" in url:
+            return [{"filename": "src/livrable.py"}]
+        if "/compare/" in url:
+            return {"files": [{"filename": f"f{i}.py"} for i in range(300)]}
+        raise AssertionError(f"appel inattendu: {url}")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    assert mod._rewind_pr_files_untouched(
+        {"number": 7, "title": "t", "body": ""}, state, "f" * 40,
+        TREE_A) == {}
+
+
+def test_15556_meme_arbre_pas_de_compare_ni_de_files(monkeypatch):
+    """Un SHA rembobine d'arbre IDENTIQUE a la tete est deja un artefact :
+    ni l'appel compare ni l'appel fichiers de la PR ne sont dus pour lui
+    (le gate paie un appel par PR, pas par SHA, quand tout est muet)."""
+    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_A}}
+
+    def fake_gh_json(args):
+        raise AssertionError("aucun appel reseau attendu ici")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    assert mod._rewind_pr_files_untouched(
+        {"number": 7, "title": "t", "body": ""}, state, "f" * 40,
+        TREE_A) == {}
+
+
 def test_13641_ref_par_prefixe_ne_compte_pas():
     """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
     matchait `#13639` dans un message contenant `#136390` (ticket adjacent
@@ -5538,8 +5718,9 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     captured = {}
 
     monkeypatch.setattr(mod, "gh_json", lambda args: dict(payload))
-    monkeypatch.setattr(mod, "_resolve_absent_sha_messages",
-                        lambda data, cap=5: {"abc123": "corps du message"})
+    monkeypatch.setattr(mod, "_resolve_absent_sha_state",
+                        lambda data, cap=5: {"abc123": {"message": "corps du message",
+                                                         "tree": None}})
     monkeypatch.setattr(mod, "review_threads", lambda pr: [])
     monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
 
