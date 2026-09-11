@@ -10,9 +10,18 @@ Modes :
   smoke     : boucle complete 3 steps + eval reduite (validation end-to-end GPU)
   run       : run borne complet (un modele x une seed)
   summarize : agrege les runs -> tableau multi-seed + courbes PNG + verdict
+  baseline  : eval SEULE du modele de base, sans training (#15294 : mesure du
+              critere d'accessibilite AVANT tout run GRPO — casting DAPO)
 
-Dataset : BytedTsinghua-SIA/DAPO-Math-17k (cache HF local, 1 791 700 lignes =
-17 917 problemes uniques x 100 repliques ; dedup par extra_info.index).
+Datasets (--dataset, protocole identique, seule la couche donnees/reward change) :
+  dapo   : BytedTsinghua-SIA/DAPO-Math-17k (cache HF local, 1 791 700 lignes =
+           17 917 problemes uniques x 100 repliques ; dedup par extra_info.index)
+  xlam   : Salesforce/xlam-function-calling-60k (#15294 retenu 1 — aiguillage/outils,
+           reward JSON deterministe, tier 1B assume). Gated HF : sans acces, lancer
+           hermes (substitut documente dans P15294_SMALL_MODEL_RL_DATASETS.md).
+  hermes : NousResearch/hermes-function-calling-v1 singleturn (substitut effectif du
+           xlam gated ; meme forme de tache, ground truth = blocs <tool_call>)
+  gsm8k  : openai/gsm8k split train (#15294 bras controle — grade-school non competitif)
 """
 
 from __future__ import annotations
@@ -20,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import re
 import sys
 import time
@@ -27,10 +37,14 @@ from pathlib import Path
 from typing import Any
 
 REPO_RESULTS = Path(__file__).resolve().parent / "results" / "m19_minicpm5_grpo"
+BASELINE_RESULTS = Path(__file__).resolve().parent / "results" / "p15294_accessibility"
 RUNS_ROOT = Path("D:/Dev/probe15099_runs")  # adapters + artefacts lourds, hors repo
 DATASET_SNAPSHOT_GLOB = (
     "datasets--BytedTsinghua-SIA--DAPO-Math-17k/snapshots/*/data/dapo-math-17k.parquet"
 )
+XLAM_SNAPSHOT_GLOB = "datasets--Salesforce--xlam-function-calling-60k/snapshots/*"
+HERMES_SNAPSHOT_GLOB = "datasets--NousResearch--hermes-function-calling-v1/snapshots/*"
+GSM8K_SNAPSHOT_GLOB = "datasets--openai--gsm8k/snapshots/*/main"
 
 MAX_STEPS = 100
 EVAL_N_PROMPTS = 40
@@ -171,12 +185,225 @@ def load_dapo_split() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
 
 # ---------------------------------------------------------------------------
+# Datasets #15294 : xlam-function-calling-60k (aiguillage) et GSM8K (controle).
+# Protocole identique au DAPO (memes constantes, meme split fixe) ; seule la
+# couche prompt/reward change. Critere de calibration : docs/P15294_*.md.
+# ---------------------------------------------------------------------------
+
+_XLAM_SYSTEM = (
+    "You are a function calling assistant. Use the function signatures provided "
+    "inside <tools></tools> XML tags to answer the user's question."
+)
+_XLAM_INSTRUCTION = (
+    "\n\nReply with the function call(s) only, as JSON "
+    '({"name": ..., "arguments": {...}}), no prose.'
+)
+
+
+def _coerce_numeric_strings(value: Any) -> Any:
+    """xlam melange "2" et 2 dans les arguments : coercion deterministe des deux cotes."""
+    if isinstance(value, dict):
+        return {k: _coerce_numeric_strings(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_coerce_numeric_strings(v) for v in value]
+    if isinstance(value, str):
+        s = value.strip()
+        try:
+            return int(s)
+        except ValueError:
+            try:
+                return float(s)
+            except ValueError:
+                return s
+    return value
+
+
+def canonical_calls(value: Any) -> str:
+    """Forme canonique d'un appel ou d'une liste d'appels (cles triees, sep compacts)."""
+    calls = value if isinstance(value, list) else [value]
+    return json.dumps(
+        _coerce_numeric_strings(calls), sort_keys=True, separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+def extract_json_call(text: str) -> Any | None:
+    """Premier objet/tableau JSON parsable du texte (fences ``` retirees)."""
+    cleaned = re.sub(r"```(?:json)?|```", "", text)
+    decoder = json.JSONDecoder()
+    for i, ch in enumerate(cleaned):
+        if ch in "[{":
+            try:
+                value, _ = decoder.raw_decode(cleaned[i:])
+                return value
+            except json.JSONDecodeError:
+                continue
+    return None
+
+
+def xlam_match(text: str, ground_truth: str) -> bool:
+    pred = extract_json_call(text)
+    if pred is None:
+        return False
+    try:
+        return canonical_calls(pred) == canonical_calls(json.loads(ground_truth))
+    except json.JSONDecodeError:
+        return False
+
+
+def xlam_reward(
+    prompts: list[Any],
+    completions: list[Any],
+    ground_truth: list[str],
+    **_kwargs: Any,
+) -> list[float]:
+    """Reward binaire xlam : l'appel JSON produit egale (canoniquement) l'appel attendu."""
+
+    def content(c: Any) -> str:
+        if isinstance(c, list) and c and isinstance(c[0], dict):
+            return c[-1].get("content", "")
+        return str(c)
+
+    return [1.0 if xlam_match(content(c), gt) else 0.0
+            for c, gt in zip(completions, ground_truth, strict=True)]
+
+
+def _read_table(snapshot: Path) -> "Any":
+    import pandas as pd
+
+    candidates = (
+        sorted(snapshot.rglob("*.parquet")) + sorted(snapshot.rglob("*.jsonl"))
+        + sorted(snapshot.rglob("*.json"))
+    )
+    if not candidates:
+        raise FileNotFoundError(f"aucun fichier de donnees sous {snapshot}")
+    # preference explicite pour le split train (gsm8k/main trie test avant train)
+    train_first = [c for c in candidates if "train" in c.name.lower()]
+    first = (train_first or candidates)[0]
+    if first.suffix == ".parquet":
+        return pd.read_parquet(first)
+    return pd.read_json(first, lines=True)
+
+
+def load_xlam_split() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    import json as _json
+
+    df = _read_table(find_hf_snapshot(XLAM_SNAPSHOT_GLOB))
+    df = df.sample(frac=1.0, random_state=SPLIT_SEED).reset_index(drop=True)
+
+    def rows(frame: Any) -> list[dict[str, Any]]:
+        out = []
+        for _, r in frame.iterrows():
+            tools, query, answers = str(r["tools"]), str(r["query"]), str(r["answers"])
+            if len(query) + len(tools) > 3000:  # meme filtre outliers longs que DAPO
+                continue
+            out.append({
+                "prompt": [
+                    {"role": "system", "content": _XLAM_SYSTEM},
+                    {"role": "user", "content": f"<tools>{tools}</tools>\n\n{query}{_XLAM_INSTRUCTION}"},
+                ],
+                "ground_truth": canonical_calls(_json.loads(answers)),
+            })
+        return out
+
+    eval_rows = rows(df.iloc[:EVAL_N_PROMPTS * 3])[:EVAL_N_PROMPTS]
+    train_rows = rows(df.iloc[EVAL_N_PROMPTS * 3 : EVAL_N_PROMPTS * 3 + TRAIN_POOL * 2])[:TRAIN_POOL]
+    return train_rows, eval_rows
+
+
+_HERMES_TOOLCALL_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.DOTALL)
+
+
+def load_hermes_split() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Hermes function-calling v1, fichier singleturn (substitut xlam : repo xlam gated).
+
+    Meme forme de tache que xlam : schemas d'outils + requete utilisateur ->
+    appel(s) JSON. Ground truth = les blocs <tool_call> du tour assistant.
+    """
+    snap = find_hf_snapshot(HERMES_SNAPSHOT_GLOB)
+    data = json.loads((snap / "func-calling-singleturn.json").read_text(encoding="utf-8"))
+    rng = random.Random(SPLIT_SEED)
+    rng.shuffle(data)
+
+    def rows(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        out = []
+        for rec in records:
+            tools = rec.get("tools")
+            if not tools:
+                continue
+            tools_s = tools if isinstance(tools, str) else json.dumps(tools, ensure_ascii=False)
+            conv = rec.get("conversations", [])
+            human = next((m["value"] for m in conv if m.get("from") == "human"), None)
+            gpt = next((m["value"] for m in conv if m.get("from") == "gpt"), None)
+            if not human or not gpt:
+                continue
+            calls = [json.loads(b) for b in _HERMES_TOOLCALL_RE.findall(gpt)]
+            if not calls or any(c is None for c in calls):
+                continue
+            if len(human) + len(tools_s) > 3000:  # meme filtre outliers longs que DAPO
+                continue
+            out.append({
+                "prompt": [
+                    {"role": "system", "content": _XLAM_SYSTEM},
+                    {"role": "user", "content": f"<tools>{tools_s}</tools>\n\n{human}{_XLAM_INSTRUCTION}"},
+                ],
+                "ground_truth": canonical_calls(calls),
+            })
+        return out
+
+    eval_rows = rows(data[:EVAL_N_PROMPTS * 3])[:EVAL_N_PROMPTS]
+    train_rows = rows(data[EVAL_N_PROMPTS * 3 : EVAL_N_PROMPTS * 3 + TRAIN_POOL * 2])[:TRAIN_POOL]
+    return train_rows, eval_rows
+
+
+def load_gsm8k_split() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    df = _read_table(find_hf_snapshot(GSM8K_SNAPSHOT_GLOB))
+    df = df.sample(frac=1.0, random_state=SPLIT_SEED).reset_index(drop=True)
+
+    def rows(frame: Any) -> list[dict[str, Any]]:
+        out = []
+        for _, r in frame.iterrows():
+            question, answer = str(r["question"]), str(r["answer"])
+            gt = answer.split("####")[-1].strip().replace(",", "")
+            out.append({
+                "prompt": [{
+                    "role": "user",
+                    "content": question
+                    + "\n\nReason briefly, then end your reply with: Answer: $<number>$",
+                }],
+                "ground_truth": gt,
+            })
+        return out
+
+    eval_rows = rows(df.iloc[:EVAL_N_PROMPTS])
+    train_rows = rows(df.iloc[EVAL_N_PROMPTS : EVAL_N_PROMPTS + TRAIN_POOL])
+    return train_rows, eval_rows
+
+
+def dapo_match(text: str, ground_truth: str) -> bool:
+    return answers_match(extract_answer(text), ground_truth)
+
+
+DATASETS: dict[str, dict[str, Any]] = {
+    "dapo": {"load": load_dapo_split, "match": dapo_match, "reward": dapo_reward,
+             "label": "DAPO-Math-17k"},
+    "xlam": {"load": load_xlam_split, "match": xlam_match, "reward": xlam_reward,
+             "label": "xlam-function-calling-60k"},  # gated HF : substitut = hermes
+    "hermes": {"load": load_hermes_split, "match": xlam_match, "reward": xlam_reward,
+               "label": "Hermes-function-calling-v1 (singleturn)"},
+    "gsm8k": {"load": load_gsm8k_split, "match": dapo_match, "reward": dapo_reward,
+              "label": "GSM8K-train"},
+}
+
+
+# ---------------------------------------------------------------------------
 # Entrainement GRPO + QLoRA
 # ---------------------------------------------------------------------------
 
 
 def build_trainer(
-    model_key: str, seed: int, steps: int, train_rows: list[dict[str, Any]]
+    model_key: str, seed: int, steps: int, train_rows: list[dict[str, Any]],
+    reward_fn: Any = dapo_reward, dataset_key: str = "dapo",
 ):
     import torch
     from datasets import Dataset
@@ -203,7 +430,7 @@ def build_trainer(
         task_type="CAUSAL_LM",
     )
     cfg = GRPOConfig(
-        output_dir=str(RUNS_ROOT / f"{model_key}_seed{seed}" / "trainer_out"),
+        output_dir=str(RUNS_ROOT / f"{model_key}_{dataset_key}_seed{seed}" / "trainer_out"),
         seed=seed,
         max_steps=steps,  # cap NON lineaire (lecon #13596)
         learning_rate=2e-5,
@@ -231,7 +458,7 @@ def build_trainer(
     )
     trainer = GRPOTrainer(
         model=str(model_path),
-        reward_funcs=dapo_reward,
+        reward_funcs=reward_fn,
         args=cfg,
         train_dataset=Dataset.from_list(train_rows),
         processing_class=tokenizer,
@@ -241,14 +468,16 @@ def build_trainer(
     return trainer, model_path
 
 
-def evaluate(trainer: Any, eval_rows: list[dict[str, Any]], seed: int) -> dict[str, float]:
-    """Generation n=EVAL_GENS par prompt eval, reward par le meme matcher."""
+def _generate_eval(
+    model: Any, tokenizer: Any, eval_rows: list[dict[str, Any]], seed: int,
+    match_fn: Any = dapo_match,
+) -> dict[str, float]:
+    """Generation n=EVAL_GENS par prompt eval, reward par le matcher du dataset."""
     import torch
 
     gen_seed = seed * 1000 + 7
     rewards: list[float] = []
     lengths: list[int] = []
-    model, tokenizer = trainer.model, trainer.processing_class
     device = next(model.parameters()).device
     model.eval()
     with torch.no_grad():
@@ -274,15 +503,20 @@ def evaluate(trainer: Any, eval_rows: list[dict[str, Any]], seed: int) -> dict[s
             )
             texts = tokenizer.batch_decode(out[:, n_in:], skip_special_tokens=True)
             for t in texts:
-                rewards.append(
-                    1.0 if answers_match(extract_answer(t), row["ground_truth"]) else 0.0
-                )
+                rewards.append(1.0 if match_fn(t, row["ground_truth"]) else 0.0)
                 lengths.append(len(t))
     return {
         "n_gens": float(len(rewards)),
         "reward_mean": sum(rewards) / len(rewards),
         "length_mean": sum(lengths) / max(1, len(lengths)),
     }
+
+
+def evaluate(
+    trainer: Any, eval_rows: list[dict[str, Any]], seed: int,
+    match_fn: Any = dapo_match,
+) -> dict[str, float]:
+    return _generate_eval(trainer.model, trainer.processing_class, eval_rows, seed, match_fn)
 
 
 # ---------------------------------------------------------------------------
@@ -307,24 +541,100 @@ def mode_selftest() -> int:
              if answers_match(extract_answer(t), g) != want]
     for t, g, got in fails:
         print(f"FAIL: extract({t!r}) vs {g!r} -> {got}")
-    print(f"selftest: {len(cases) - len(fails)}/{len(cases)} pass")
-    return 1 if fails else 0
+    n_match = len(cases) - len(fails)
+
+    xlam_cases: list[tuple[str, str, bool]] = [
+        # egalite canonique : strings numeriques coercées ("2" == 2)
+        ('{"name": "f", "arguments": {"x": "2"}}', '{"name": "f", "arguments": {"x": 2}}', True),
+        # fences ```json retirees
+        ('```json\n{"name": "f", "arguments": {}}\n```', '{"name": "f", "arguments": {}}', True),
+        # mauvais arguments
+        ('{"name": "f", "arguments": {"x": 1}}', '{"name": "f", "arguments": {"x": 2}}', False),
+        # mauvais nom de fonction
+        ('{"name": "g", "arguments": {}}', '{"name": "f", "arguments": {}}', False),
+        # pas de JSON du tout
+        ('je appelle la fonction f', '{"name": "f", "arguments": {}}', False),
+        # liste multi-appels, ordre preserve
+        ('[{"name": "f", "arguments": {}}, {"name": "g", "arguments": {"y": 1}}]',
+         '[{"name": "f", "arguments": {}}, {"name": "g", "arguments": {"y": "1"}}]', True),
+        # ordre des cles different = meme forme canonique
+        ('{"arguments": {"x": 1}, "name": "f"}', '{"name": "f", "arguments": {"x": 1}}', True),
+    ]
+    xlam_fails = [(t, g, xlam_match(t, g)) for t, g, want in xlam_cases
+                  if xlam_match(t, g) != want]
+    for t, g, got in xlam_fails:
+        print(f"FAIL: xlam_match({t!r}) vs {g!r} -> {got}")
+    n_xlam = len(xlam_cases) - len(xlam_fails)
+
+    total_ok, total = n_match + n_xlam, len(cases) + len(xlam_cases)
+    print(f"selftest: {total_ok}/{total} pass (dapo {n_match}/{len(cases)}, xlam {n_xlam}/{len(xlam_cases)})")
+    return 1 if (fails or xlam_fails) else 0
 
 
-def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False) -> dict[str, Any]:
-    train_rows, eval_rows = load_dapo_split()
+def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
+    """Eval seule, sans training : mesure le critere d'accessibilite (#15294, condition 1).
+
+    Evite de construire un trainer (pas besoin de train rows ni de GRPO) :
+    charge le modele en 4bit et passe la boucle de generation sur le split eval.
+    """
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import BitsAndBytesConfig
+
+    ds = DATASETS[dataset_key]
+    _, eval_rows = ds["load"]()
+    model_path = find_hf_snapshot(MODELS[model_key]["path_glob"])
     t0 = time.time()
-    trainer, model_path = build_trainer(model_key, seed, steps, train_rows)
+    quant_cfg = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+    model = AutoModelForCausalLM.from_pretrained(
+        str(model_path), quantization_config=quant_cfg, device_map="cuda",
+    )
+    ev = _generate_eval(model, tokenizer, eval_rows, SPLIT_SEED, match_fn=ds["match"])
+    result = {
+        "module": "ML-Training-Pipeline",
+        "issue": 15294,
+        "mode": "baseline",
+        "dataset": dataset_key,
+        "dataset_label": ds["label"],
+        "chat_mode": "thinking" if not CHAT_KWARGS else "nonthinking",
+        "max_completion_length": MAX_COMPLETION,
+        "model": MODELS[model_key]["label"],
+        "model_key": model_key,
+        "model_path": str(model_path),
+        "eval": ev,
+        "wallclock_s": round(time.time() - t0, 1),
+    }
+    BASELINE_RESULTS.mkdir(parents=True, exist_ok=True)
+    out = BASELINE_RESULTS / f"{dataset_key}_{model_key}.json"
+    out.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(f"[baseline {dataset_key}/{model_key}] accessibilite={ev['reward_mean']:.4f} -> {out}")
+    return result
 
-    pre = evaluate(trainer, eval_rows, seed)
+
+def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
+             dataset_key: str = "dapo") -> dict[str, Any]:
+    ds = DATASETS[dataset_key]
+    train_rows, eval_rows = ds["load"]()
+    t0 = time.time()
+    trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
+                                        reward_fn=ds["reward"], dataset_key=dataset_key)
+
+    pre = evaluate(trainer, eval_rows, seed, match_fn=ds["match"])
     print(f"[{model_key} seed{seed}] pre-eval: {pre}")
 
     trainer.train()
 
-    post = evaluate(trainer, eval_rows, seed)
+    post = evaluate(trainer, eval_rows, seed, match_fn=ds["match"])
     print(f"[{model_key} seed{seed}] post-eval: {post}")
 
-    adapter_dir = RUNS_ROOT / f"{model_key}_seed{seed}" / "adapter"
+    run_dir = RUNS_ROOT / f"{model_key}_{dataset_key}_seed{seed}"
+    adapter_dir = run_dir / "adapter"
     trainer.model.save_pretrained(str(adapter_dir))
     trainer.processing_class.save_pretrained(str(adapter_dir))
 
@@ -334,7 +644,9 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False) -> dict
     ]
     result = {
         "module": "ML-Training-Pipeline",
-        "issue": 15099,
+        "issue": 15099 if dataset_key == "dapo" else 15294,
+        "dataset": dataset_key,
+        "dataset_label": ds["label"],
         "chat_mode": "thinking" if not CHAT_KWARGS else "nonthinking",
         "max_completion_length": MAX_COMPLETION,
         "model": MODELS[model_key]["label"],
@@ -347,7 +659,8 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False) -> dict
         "log_history": log_history,
         "wallclock_s": round(time.time() - t0, 1),
     }
-    out_dir = RUNS_ROOT if smoke else REPO_RESULTS
+    out_dir = RUNS_ROOT if smoke else (REPO_RESULTS if dataset_key == "dapo"
+                                       else REPO_RESULTS.parent / f"p15294_{dataset_key}_grpo")
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"{model_key}_seed{seed}{'_smoke' if smoke else ''}.json"
     out.write_text(json.dumps(result, indent=2), encoding="utf-8")
@@ -446,8 +759,10 @@ def mode_summarize() -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("mode", choices=["selftest", "smoke", "run", "summarize"])
+    ap.add_argument("mode", choices=["selftest", "smoke", "run", "summarize", "baseline"])
     ap.add_argument("--model", choices=list(MODELS), default="minicpm5")
+    ap.add_argument("--dataset", choices=list(DATASETS), default="dapo",
+                    help="jeu de donnees (dapo = probe B #15099 inchangee)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=MAX_STEPS)
     ap.add_argument(
@@ -468,12 +783,16 @@ def main() -> int:
         return mode_selftest()
     if args.mode == "summarize":
         return mode_summarize()
+    if args.mode == "baseline":
+        mode_baseline(args.model, args.dataset)
+        return 0
     steps = 3 if args.mode == "smoke" else args.steps
     global EVAL_N_PROMPTS, TRAIN_POOL
     if args.mode == "smoke":
         EVAL_N_PROMPTS, TRAIN_POOL = 8, 16
     RUNS_ROOT.mkdir(parents=True, exist_ok=True)
-    mode_run(args.model, args.seed, steps, smoke=args.mode == "smoke")
+    mode_run(args.model, args.seed, steps, smoke=args.mode == "smoke",
+             dataset_key=args.dataset)
     return 0
 
 
