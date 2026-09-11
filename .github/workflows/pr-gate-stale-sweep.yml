@@ -554,11 +554,17 @@ jobs:
       # traitee a la source (pool dedie coursia-linux, #14283) et la cadence
       # est horaire : le cout n'est plus le meme, la promesse de fond (la
       # re-aggregation reste sans checkout) tient.
-      - name: Checkout sparse (gate-absent organ only)
+      - name: Checkout sparse (gate-absent + tir-cadence organs)
         uses: actions/checkout@v4
         with:
-          sparse-checkout: scripts/pr_gate_missing.py
+          sparse-checkout: |
+            scripts/pr_gate_missing.py
+            scripts/ci/pr_gate_stale_sweep_tir.py
           sparse-checkout-cone-mode: false
+          # #15197 voie (i) : mesure du taux de tir schedule. Ajouté sous
+          # le même sparse-checkout que scripts/pr_gate_missing.py pour ne
+          # pas multiplier les checkouts (cf. "#12728: this sweep is a
+          # 2-minute job", le checkout reste une pénalité mesurée).
 
       - name: Flag PRs whose PR gate never ran (absent, by cause)
         env:
@@ -662,3 +668,28 @@ jobs:
           except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
               print(f"::warning::stale-sweep timing unavailable: {exc}")
           PY
+
+      # #15197 voie (i) -- mesure du taux de tir schedule.
+      # L'acceptance #12728 mesurait les annulations (cancellation count),
+      # pas le taux de tir (combien de crons produisent un run). Mesure
+      # du 2026-09-08T09:34Z : 53 runs sur 184,3 h, taux de tir 28,8 %,
+      # médiane 3,35 h, max 6,24 h. Ce step rend l'angle mort mesurable
+      # sans le corriger (la correction est ailleurs : doctrine de
+      # filet de rattrapage + voie (ii) cron externe arbitrée séparément).
+      # Advisory par construction : exit 0 toujours, un sweep qui
+      # rougit parce que lui-même est sous-cadencé aggrave la famine.
+      - name: Measure sweep tir cadence (advisory, #15197)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          python scripts/ci/pr_gate_stale_sweep_tir.py \
+            --repo "$REPO" \
+            --workflow-file pr-gate-stale-sweep.yml \
+            --window-hours 168 \
+            --write-summary || {
+            echo "::warning::sweep tir measurement failed -- angle mort non mesuré ce passage"
+            exit 0
+          }

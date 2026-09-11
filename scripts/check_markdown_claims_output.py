@@ -144,6 +144,20 @@ def _substantive(norm: str) -> bool:
     return False
 
 
+def _unit_bearing(raw: str, prose: str, match_end: int) -> bool:
+    """Review #15435: only a DERIVED RATE ('15 tokens/min', '75 steps/s')
+    lifts the ``_substantive`` floor -- a rate is computed, never directly
+    observed, which is exactly the class-(b) metric the organ exists to
+    confront. The floor stays for simple quantities ('16 tokens', '400ms')
+    and for single-letter SI suffixes ('3 M' -- French elision collisions).
+    The rate is recognised by a multi-character unit on the number itself
+    followed by '/<unit>' right after the match."""
+    tail = re.sub(r"^\d[\d.,]*\s*", "", raw.strip(), count=1)
+    if not tail or (len(tail) == 1 and tail.isalpha()):
+        return False
+    return bool(re.match(r"\s*/\s*[A-Za-z]", prose[match_end:]))
+
+
 def _output_text(outputs: list) -> str:
     """Flatten an `outputs` array (cell.output) into a single searchable string."""
     if not outputs:
@@ -234,6 +248,8 @@ def _strip_md_structure(src: str) -> str:
 # insensitive, word-boundary anchored. The list is OPEN: c.366 FP
 # manifest opened on SMT-LIB 2.6, Python 3.10, .NET 9.0, PEP 8,
 # Mathlib 4, CUDA 12.x, pandas 2.x, Version=10.0.0, v2.5, Lean 4.
+# #15430: extended to 'Semantic Kernel' / 'SK' (11 measured FPs:
+# 'SK 1.39+', 'Semantic Kernel 1.30+', 'Microsoft.SemanticKernel 1.60.0').
 # c.415 (#11873): extended to cover LLM model names where the trailing
 # digit is a version suffix, not a measurement (GPT-3.5, LLaMA-2, Mistral-7B,
 # Claude-3, Gemini-1.5, Mixtral-8x7B, Phi-3, Llama-3.1, Gemma-2, etc.).
@@ -246,6 +262,7 @@ _VERSION_PREFIX_RE = re.compile(
     r"pypy\b|node\.?js?|golang\b|swift\b|angular\b|react\b|next\.?js?|"
     r"nuxt\b|svelte\b|spark\b|jupyter\b|latex\b|tex\b|miktex\b|"
     r"matlab\b|simulink\b|qt\b|kde\b|gnome\b|wayland\b|x11\b|"
+    r"semantic\s*kernel(?:\.\w+)+\b|semantic\s*kernel\b|\bsk\b|"
     r"sqlite\b|mysql\b|postgres\b|redis\b|kafka\b|nginx\b|apache\b|"
     r"tomcat\b|maven\b|gradle\b|eslint\b|prettier\b|webpack\b|vite\b|"
     r"rollup\b|v\b|version\b|ver\b|release\b|rel\b|"
@@ -256,7 +273,7 @@ _VERSION_PREFIX_RE = re.compile(
     r"qwen\b|gemini\b|gemma\b|phi\b|deepseek\b|command\b|sonar\b|"
     r"falcon\b|bert\b|roberta\b|t5\b|bloom\b|opt\b|starcoder\b|"
     r"codellama\b|vicuna\b|wizardlm\b|orca\b|yi\b|zephyr\b"
-    r")\s*[=:=]?\s*[-]?\s*$"
+    r")`?\s*[=:=]?\s*[-]?\s*$"
 )
 
 
@@ -367,6 +384,17 @@ def _in_exception_code_span(prose: str, match_pos: int, match_end: int) -> bool:
     """
     span_text = _nearest_inline_code_span(prose, match_pos)
     if span_text is not None and _EXCEPTION_HINT_RE.search(span_text):
+        return True
+    # #15430: a code span whose ENTIRE content is a dotted version number
+    # ('`1.60.0`' pinned for a NuGet package) is a quoted pin, not a
+    # measurement. At least TWO dot groups are required: a one-dot span
+    # ('`0.21`', '`6.5`') is overwhelmingly a cited RESULT value (ML-2.12
+    # 'seuil optimal `0.21`', 'coût attendu minimal `153.0`' -- measured
+    # false negatives of the lax {1,3} form) and stays checked;
+    # 'version 1.60.0' in plain prose keeps the version-prefix path; a
+    # mixed span ('audio 1.2 s') stays checked.
+    if span_text is not None and re.fullmatch(
+            r"v?\d+(?:\.\d+){2,3}[+-]?", span_text.strip()):
         return True
     # Line-scoped fallback: same-line carries a strongly-quoted-text
     # signal (Exception / Version= / FileNotFound / Traceback / "assembly
@@ -700,6 +728,122 @@ def _is_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# #15430 -- monetary / external-fact provenance: a price is a documented
+# external fact, never a value the previous code cell measured. Measured
+# baseline on GenAI/SemanticKernel + ML (21 notebooks): 14 of 33 findings
+# were tariffs ($0.04/image, $0.006/min, $15/1M chars, $2.00/1M tokens,
+# ~0.00038$, 0,04 $...), against 1 true positive. Lookahead on the token
+# only -- no backtracking (user caution on scan cost).
+# ---------------------------------------------------------------------------
+
+# Tariff units that follow the number: '/image', '/min', '/1M', '/mois'...
+# Bounded alternation. No '^' anchor: the pattern is applied via
+# .match(prose, match_end), which already anchors at that position (a '^'
+# would re-assert start-of-string and never fire mid-line).
+_TARIFF_UNIT_RE = re.compile(
+    r"\s*/\s*(?:"
+    r"image|images|min|minute|minutes|mois|month|months|"
+    r"1\s?[MmKk]|million|request|appel|call|"
+    r"token|tokens|char|chars|mot|mots|word|words|heure|hour"
+    r")\b"
+)
+
+# Review #15435 (reserve NanoClaw 2026-09-10T03:21:32Z): a bare '/unit'
+# proves NOTHING by itself -- '0,7 conflits/min' and '15 tokens/min' are
+# derived METRICS, exactly the class-(b) values this organ exists to
+# confront with the committed outputs. The unit-direction exemption
+# survives ONLY when a bounded lexical context in the surrounding window
+# actually establishes price/cost. Closed alternation, deliberately free
+# of generic 'par <unit>' phrasings (a metric can be 'par minute' too)
+# and of the bare word 'cent' (a French number, not a money word).
+_TARIFF_CONTEXT_RE = re.compile(
+    r"\b(?:tarifs?|prix|co[uû]ts?|couts?|costs?|price|prices|pricing|"
+    r"factur\w*|billing|billed|gratuit\w*|payant\w*|abordable\w*|"
+    r"centimes?\b|cents\b|free\s+tier)\b",
+    re.IGNORECASE,
+)
+# Bounded look-around window for the tariff context (fixed offsets: the
+# file-wide caution on scan cost applies -- no unbounded search).
+_TARIFF_CONTEXT_WINDOW = 120
+
+# A REAL inline-math span carries formula content (a TeX macro, a
+# superscript/subscript, an equals sign). A span delimited by two
+# currency '$' contains plain prose -- price lists phantom-pair into
+# "math" that never was (measured: SK-05 md[17], SK-07 md[22]).
+_MATH_CONTENT_RE = re.compile(r"[\\^_={}]")
+
+_CURRENCY_CHARS = "$€£"
+
+# Upper bound of a monetary range: '~$0.08-0.12' -- the second number has
+# no '$' of its own; it inherits the provenance of the bound before it.
+_MONETARY_RANGE_RE = re.compile(r"\$\s?\d[\d.,]*\s*[-–à]\s*$")
+
+
+def _is_monetary_value(prose: str, match_pos: int, match_end: int) -> bool:
+    """#15430: the numeric match is a PRICE -- a documented external fact
+    (currency immediately before it, currency or a tariff unit right after
+    it). Never a measurement of the previous code cell's output.
+
+    Both francophone and anglophone layouts are measured in the wild:
+    '$0.04/image' and '~0.00038$' / '0,04 $'.
+
+    The BEFORE direction (currency glued to the number, no space) is
+    deliberately NOT gated on the math-span walk: a price list
+    '(DALL-E: $0.04, Whisper: $0.006, TTS: $15)' carries several '$' that
+    the pairwise delimiter walk mispairs into phantom math spans, which
+    would un-exempt exactly the cells with the most prices. What separates
+    a math delimiter from a currency '$' is the closing one: a '$'
+    IMMEDIATELY after the numeric token makes the pair the delimiters of a
+    bare inline-math span ('$0.5$', review 2026-09-10) -- sandwiched
+    numbers are math and stay checked. The AFTER direction keeps the math
+    guard, content-checked (`_MATH_CONTENT_RE`): '$\\times 60 = 52.7$'
+    closes a real math span on a digit (DecInfer-01 md[24] collateral)
+    and stays guarded; a phantom span of plain prose between two currency
+    '$' does not.
+    """
+    # Currency BEFORE, glued ('$0.04') or spaced ('$ 15'): no math guard
+    # (see docstring -- inline math never opens on a bare decimal digit).
+    pre = prose[max(0, match_pos - 2):match_pos]
+    # Math sandwich '$0.5$' (review 2026-09-10): a '$' immediately before
+    # AND right after the numeric token are the delimiters of a bare
+    # inline-math span. The opening '$' must not fire the BEFORE shortcut,
+    # and without this early return the closing '$' would fire the AFTER
+    # one two checks below -- the span itself carries no formula signal
+    # (`_MATH_CONTENT_RE`), so no other guard catches it. A real price is
+    # never written with a '$' glued after the number: '$0.5$' is math.
+    if pre and pre[-1] == "$" and prose[match_end:match_end + 1] == "$":
+        return False
+    if pre and pre[-1] in _CURRENCY_CHARS:
+        return True
+    if len(pre) >= 2 and pre[-1] in " \xa0" and pre[-2] in _CURRENCY_CHARS:
+        return True
+    # Monetary-range upper bound: '~$0.08-0.12 par exécution'.
+    if _MONETARY_RANGE_RE.search(prose, max(0, match_pos - 14), match_pos):
+        return True
+    # AFTER directions stay math-guarded ('$52.7$' is math, not money) --
+    # but only for spans that actually look like math. A price pair
+    # '(DALL-E: $0.04, ... TTS: $15)' phantom-pairs the '$' delimiters and
+    # encloses '0,04 $'-style numbers in a span of plain prose; prose
+    # between two currency '$' must not block the currency-after check.
+    span = _nearest_math_span(prose, match_pos)
+    if span is not None and _MATH_CONTENT_RE.search(span):
+        return False
+    post = prose[match_end:match_end + 2]
+    if post and post[0] in _CURRENCY_CHARS:
+        return True
+    if len(post) >= 2 and post[0] in " \xa0" and post[1] in _CURRENCY_CHARS:
+        return True
+    # Review #15435: the unit direction alone is NOT monetary proof (a
+    # derived metric like '0,7 conflits/min' must stay checked); it only
+    # completes a provenance that the bounded tariff context establishes.
+    if _TARIFF_UNIT_RE.match(prose, match_end):
+        ctx_start = max(0, match_pos - _TARIFF_CONTEXT_WINDOW)
+        ctx_end = min(len(prose), match_end + _TARIFF_CONTEXT_WINDOW)
+        return bool(_TARIFF_CONTEXT_RE.search(prose, ctx_start, ctx_end))
+    return False
+
+
+# ---------------------------------------------------------------------------
 # #14905 -- coordinate pairs: (2,2) is a grid position, not a decimal
 # ---------------------------------------------------------------------------
 
@@ -1002,7 +1146,7 @@ def check_notebook(path: Path) -> dict:
             match_pos = m.start()
             match_end = m.end()
             norm = _normalize_num(raw)
-            if not _substantive(norm):
+            if not _substantive(norm) and not _unit_bearing(raw, prose, match_end):
                 continue
             # FP filters (c.366): skip version-number citations and
             # numbers inside quoted exception/version/path spans.
@@ -1037,6 +1181,10 @@ def check_notebook(path: Path) -> dict:
             # Family D: hyperparameters / specifications are inputs, never
             # printed by the code cell that follows them.
             if _is_input_specification(prose, match_pos, match_end):
+                continue
+            # #15430: prices are documented external facts (provenance, not
+            # form): currency around the number or a tariff unit after it.
+            if _is_monetary_value(prose, match_pos, match_end):
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
