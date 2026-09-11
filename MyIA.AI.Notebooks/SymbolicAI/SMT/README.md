@@ -36,8 +36,9 @@ flowchart LR
     TH4 --> V
     V -->|"sat"| M["modèle<br/>(solution)"]
     V -->|"unsat"| U["impossibilité<br/>prouvée"]
-    classDef sat fill:#fff3cd,stroke:#856404,stroke-width:2px;
-    classDef smt fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef sat fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
+    classDef smt fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
     class SAT sat;
     class SMT smt;
 ```

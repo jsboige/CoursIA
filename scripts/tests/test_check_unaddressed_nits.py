@@ -3507,7 +3507,13 @@ def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
     posee avant un commit de CONTENU -- l'arbre cite differant de l'arbre
     de la tete -- reste invalide. Le remede ne rend pas l'organe
     permissif : c'est exactement le cas que B.0 existe pour attraper
-    (« un push muet est indiscernable d'un push qui repond »)."""
+    (« un push muet est indiscernable d'un push qui repond »).
+
+    #15566 : ce chemin est aussi celui d'un REBASE -- un rebase fait
+    differer l'arbre, donc il retombe ici, sur le refus conservateur.
+    L'echappatoire qui pretendait l'absoudre a ete retiree (mesuree
+    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`) : c'est ce
+    test qui pinne le comportement retenu."""
     res = run([USER_NIT, lift_citant_sha()],
               commits=[{"oid": NIT_OID, "committedDate": at(19)}],
               _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
@@ -3529,22 +3535,6 @@ def test_15556_sans_donnees_arbre_refus_conservateur():
     assert res["blocked"] is True
     assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
     assert res["voided_lifts"][0]["tree_differs"] is False
-
-
-def test_15556_rebase_sans_fichier_de_la_pr_touche_conserve():
-    """Cas rebase sans conflit : l'arbre global differant (main a avance)
-    mais AUCUN fichier de la PR n'est touche par la difference -- le
-    livrable est inchangé, la levee reste valide."""
-    res = run([USER_NIT, lift_citant_sha()],
-              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
-              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
-              _absent_sha_trees={"2d6e4c3642": TREE_B},
-              _head_tree=TREE_A,
-              _rewind_pr_files_untouched={"2d6e4c3642": True})
-    assert res["blocked"] is False
-    assert res["voided_lifts"] == []
-    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
-        [("2d6e4c3642", "pr_files_untouched")]
 
 
 def test_15556_artefact_ne_masque_pas_un_vrai_refus():
@@ -3576,87 +3566,6 @@ def test_15556_headrefoid_prefere_au_dernier_oid():
     assert mod._pr_head_oid(data) == "f" * 40
     assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
     assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
-
-
-def test_15556_file_paths_tronques_renvent_none(monkeypatch):
-    """Fail-safe de `_pr_file_paths` : une liste de fichiers au plafond de
-    pagination (troncature potentielle) est une NON-determination, jamais
-    une liste complete -- en deduire « fichiers inchanges » serait le
-    faux negatif que l'acceptance 3 interdit."""
-    monkeypatch.setattr(mod, "gh_json",
-                        lambda args: [{"filename": f"f{i}.py"} for i in range(100)])
-    assert mod._pr_file_paths({"number": 7}) is None
-    monkeypatch.setattr(mod, "gh_json", lambda args: [])
-    assert mod._pr_file_paths({"number": 7}) == set()
-    assert mod._pr_file_paths({}) is None
-
-
-def test_15556_compare_hors_fichiers_pr_marque_untouched(monkeypatch):
-    """`_rewind_pr_files_untouched` : la difference SHA rembobine -> tete
-    ne touche que des fichiers HORS de la PR (rebase sur main) : le SHA
-    est marque untouched. Elle touche un fichier de la PR : pas de
-    marque, le refus survit."""
-    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_B}}
-    head_oid, head_tree = "f" * 40, TREE_A
-    data = {"number": 7, "title": "t", "body": ""}
-
-    def fake_gh_json(args):
-        url = args[-1]
-        if "/pulls/7/files" in url:
-            return [{"filename": "src/livrable.py"}]
-        if "/compare/" in url:
-            return {"files": [{"filename": "README.md"}]}  # hors PR
-        raise AssertionError(f"appel inattendu: {url}")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
-    assert mod._rewind_pr_files_untouched(data, state, head_oid,
-                                          head_tree) == {"111aaaa111": True}
-
-    def fake_gh_json_touche(args):
-        url = args[-1]
-        if "/pulls/7/files" in url:
-            return [{"filename": "src/livrable.py"}]
-        if "/compare/" in url:
-            return {"files": [{"filename": "src/livrable.py"}]}  # DANS la PR
-        raise AssertionError(f"appel inattendu: {url}")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json_touche)
-    assert mod._rewind_pr_files_untouched(data, state, head_oid,
-                                          head_tree) == {}
-
-
-def test_15556_compare_au_plafond_fail_safe(monkeypatch):
-    """L'API compare tronque silencieusement a 300 fichiers : une liste au
-    plafond ne prouve RIEN sur les fichiers restants -- pas de marque."""
-    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_B}}
-
-    def fake_gh_json(args):
-        url = args[-1]
-        if "/pulls/7/files" in url:
-            return [{"filename": "src/livrable.py"}]
-        if "/compare/" in url:
-            return {"files": [{"filename": f"f{i}.py"} for i in range(300)]}
-        raise AssertionError(f"appel inattendu: {url}")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
-    assert mod._rewind_pr_files_untouched(
-        {"number": 7, "title": "t", "body": ""}, state, "f" * 40,
-        TREE_A) == {}
-
-
-def test_15556_meme_arbre_pas_de_compare_ni_de_files(monkeypatch):
-    """Un SHA rembobine d'arbre IDENTIQUE a la tete est deja un artefact :
-    ni l'appel compare ni l'appel fichiers de la PR ne sont dus pour lui
-    (le gate paie un appel par PR, pas par SHA, quand tout est muet)."""
-    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_A}}
-
-    def fake_gh_json(args):
-        raise AssertionError("aucun appel reseau attendu ici")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
-    assert mod._rewind_pr_files_untouched(
-        {"number": 7, "title": "t", "body": ""}, state, "f" * 40,
-        TREE_A) == {}
 
 
 def test_13641_ref_par_prefixe_ne_compte_pas():
@@ -5758,3 +5667,190 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     # tiendrait aussi pour une PR mergee : analyse_pr est pre-merge).
     delta = abs((captured["cutoff"] - datetime.now(timezone.utc)).total_seconds())
     assert delta < 30
+
+
+# --- #15468 : verbe de DISSIPATION dans le registre LIFT ------------------
+#
+# La voie 1 (commenter pour dissiper) etait morte par construction : un
+# commentaire worker-self qui NOMME l'etat qu'il dissipe (« 4 points
+# dissipés », « 2 contrats dissipés ») etait reclasse nouvelle reserve —
+# « dissipé » ne levait rien, le marqueur CHANGES_REQUESTED/BOT-CONCERN
+# cite restait une emission. Mesure du 10/09 : les 4 follow-ups de
+# dissipation de myia-po-2027:CoursIA-2 (#15280, #15423) classes
+# BOT-CONCERN mot pour mot (le chemin de la voie 3 escalade).
+#
+# Gardes preserves : la negation directe (« n'est pas dissipé ») et la
+# revalidation dont le verdict formel precede la dissipation (modele
+# #12798/#12836) gardent le classement BOT-CONCERN.
+
+def test_dissipation_reconnue_par_le_registre_lift():
+    """« dissipé » couvre la famille par sous-chaine (miroir _unaccent)."""
+    assert mod.has_marker("les 4 points dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("2 contrats dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("le concern dissipé", mod.LIFT_MARKERS)
+    assert mod.has_marker("la reserve dissipée", mod.LIFT_MARKERS)
+    assert mod.has_marker("les contrats dissipés (sans accents)", mod.LIFT_MARKERS)
+    assert mod.has_marker("ce nit ne concerne plus le head", mod.LIFT_MARKERS)
+
+
+def test_dissipation_negation_et_narration_restent_exclues():
+    """Les gardes existantes s'appliquent au verbe nouveau comme aux autres."""
+    assert not mod.has_live_lift("le point n'est pas dissipé, il reste ouvert")
+    assert not mod.has_live_lift("obtenir une dissipation explicite est exige")
+
+
+def test_dissipation_worker_self_nommant_le_verdict_ne_classe_plus():
+    """Corps fidele a 5618922001 / 5618520801 (reformulations propres UTF-8) :
+    la dissipation nomme le verdict qu'elle dissipe — c'est une resolution."""
+    body = ("**Follow-up dissipation** — head `8d503f9` inchange. Les 2 contrats "
+            "dissipes anterieurement (Tag `Grain:` premiere ligne + override "
+            "workflow_dispatch retire) demeurent materiellement verifies sur le "
+            "head courant. La chaine de dissipation du CHANGES_REQUESTED myia-ai-01 "
+            "(2026-09-09) est complete.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_accentuee_nommant_le_verdict_ne_classe_plus():
+    body = ("Follow-up dissipation B.0 — head `b0157070` apres second update-branch. "
+            "4 points dissipés (zéro exercice, structure, cellules consécutives, "
+            "citation) demeurent vérifiés sur le notebook courant. Le seul verdict "
+            "CHANGES_REQUESTED de myia-ai-01 (2026-09-09T22:44Z) est levé par l'amend.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_neguee_garde_le_classement():
+    """« n'est pas dissipé » = la reserve vit : pas de levee par negation."""
+    body = ("CHANGES_REQUESTED : le point 2 n'est pas dissipé, il reste ouvert sur "
+            "le head courant.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_verdict_formel_avant_dissipation_garde_la_reserve():
+    """Modele #12798/#12836 : la revalidation dont le verdict formel PRECEDE la
+    dissipation narree refute la levee — le registre nouveau ne la blanchit pas."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — le point 2 refute la dissipation "
+            "narree plus bas : la correction que la lane dit dissipée ne couvre "
+            "pas le head.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_locution_ne_concerne_plus_leve():
+    """« ne concerne plus » : la dissipation positive double-negation FR."""
+    body = ("Le nit CHANGES_REQUESTED ne concerne plus le head courant : l'amend "
+            "f29727a67 (ancetre verifie) a retire les 4 stubs.")
+    assert mod.classify("jsboige", body) is None
+
+
+# --- #15483 (extension cycle c.418) : pinning des residuels CHANGES_REQUESTED
+# ai-01 sur le commit `071c5763` (clusterManager-Myia structural review +
+# ai-01 CHANGES_REQUESTED). Les 4 formes infinitif/futur et le faux negatif
+# `ne concerne plus rien` doivent etre pinnés par test — sans quoi la voie 1
+# reparée peut recréer silencieusement la classe d'incident que #15468 documente
+# (dissipation crue, reserve éteinte).
+
+
+@pytest.mark.parametrize("body", [
+    # infinitif futur : « reste à dissiper »
+    "CHANGES_REQUESTED : ce point reste a dissiper sur le prochain push.",
+    "Le concern reste a dissiper dans la tranche qui suit — CHANGES_REQUESTED maintenu.",
+    # infinitif futur : « il faut dissiper »
+    "Il faut dissiper ce point avant de relancer la CI : CHANGES_REQUESTED sur la review.",
+    "Pour relancer, faut dissiper le residue du CHANGES_REQUESTED.",
+    # futur simple : « sera dissipé »
+    "Le concern sera dissipe au prochain push après l'amend. CHANGES_REQUESTED : a confirmer.",
+    "Cette reserve sera dissipee des que la voie 3 issue sera ouverte. CHANGES_REQUESTED.",
+    # obligation passive : « doit être dissipé »
+    "Le point 2 doit etre dissipe avant que le merge puisse passer. CHANGES_REQUESTED émis.",
+    "Cette reserve doit etre dissipée avant la prochaine passe. CHANGES_REQUESTED.",
+])
+def test_dissipation_pending_ne_leve_pas(body):
+    """#15483 instance fondatrice : les 4 formes infinitif/futur ne lèvent PAS.
+
+    Instance : CHANGES_REQUESTED ai-01 sur `071c5763` : le marqueur sous-
+    chaine `dissipé` blanchissait des réserves encore ouvertes. La garde
+    `_dissipation_is_pending` regarde 25 chars avant et 10 chars apres le
+    hit pour detecter la construction NON close. Sans elle, `classify()`
+    retournait `None` (dissipation acquise) — faux OK.
+
+    Chaque body inclut un `CHANGES_REQUESTED` EXPLICITE pour ouvrir le
+    nit (le verdict), puis la dissipation future ne le leve pas — la
+    garde distingue l'ACQUIS (passe compose `dissipé`) du NON-ACQUIS
+    (infinitif/futur)."""
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("body", [
+    # Intensification FR : « ne concerne plus rien »
+    "Le nit CHANGES_REQUESTED ne concerne plus rien sur le head courant.",
+    "Cette reserve ne concerne plus rien dans la pile de suivi.",
+    # Intensification : « ne concerne plus personne »
+    "Le lever du nit ne concerne plus personne, fermeture autorisee.",
+    # Intensification : « ne concerne plus aucun point »
+    "Le verdict ne concerne plus aucun point — la voie 3 a tout ferme.",
+])
+def test_locution_ne_concerne_plus_intensifie_leve(body):
+    """#15483 faux negatif : la locution intensifiee leve.
+
+    Instance : sans la garde `_lift_is_intensified_marker_negated`, le token
+    `rien` dans `_LIFT_NEGATION_TOKENS` rejetait « ne concerne plus rien »
+    comme negation applicative (faux negatif majeur) alors que c'est
+    l'intensification de la dissipation. Le predicat neutralise la negation
+    UNIQUEMENT quand l'intensifieur (`rien`/`personne`/`aucun`) est en TETE
+    de fenetre AFTER. Sans ce fix, les PRs dissipant totalement etaient
+    classees BOT-CONCERN a tort (c.1071 reformulation au lieu de la voie 1)."""
+    assert mod.classify("jsboige", body) is None
+
+
+def test_locution_ne_concerne_plus_rien_avec_verbe_actif_ne_leve_pas():
+    """#15483 residuel assume : « ne concerne plus rien faire » n'est PAS une
+    intensification — `rien` suivi d'un verbe actif redevient objet de
+    negation applicative. La garde exige l'intensifieur ISOLE (juste après
+    `plus`, sans verbe entre les deux)."""
+    body = ("Le concern CHANGES_REQUESTED ne concerne plus rien faire à la "
+            "CI : la rotation reste due, ce qui justifie la reserve.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_acquise_plus_pendant_garde_le_vivant():
+    """#15483 cas aggravant : « 2 contrats sont dissipés, 1 point reste à
+    dissiper » — un commentaire MIXTE leve partiellement. AVANT la garde,
+    les 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignoré → la
+    review complete etait classee `None` alors qu'un point VIVAIT. Pin : la
+    garde `_dissipation_is_pending` rend `None` -> `BOT-CONCERN` quand
+    l'AU MOINS UN hit tombe dans une construction PENDING."""
+    body = ("**Dissipation partielle** : les 2 contrats dissipés sur la voie "
+            "(a) sont clos, MAIS le point 3 reste à dissiper au prochain "
+            "push. CHANGES_REQUESTED maintenu. PR non mergeable en l'état.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_trois_points_dissipes_un_vivant():
+    """Variante du cas mixte avec 3 hits valides + 1 vivanted par PENDING —
+    le seul hit PENDING suffit à invalider toute la levee."""
+    body = ("**Follow-up dissipation** : 3 points sont dissipes (Tag Grain: "
+            "premiere ligne, override workflow_dispatch retire, sub-string "
+            "exempt), MAIS le concern de scope CHANGES_REQUESTED reste à "
+            "dissiper.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_participe_isole_leve_toujours():
+    """Regresssion negative : un participe ISOLE (`dissipé`, `dissipee`)
+    sans verbe de PENDING devant reste une LEVEE reelle. Les formes
+    narratives (« la reserve est dissipée », « les points dissipes ») doivent
+    toujours lever — la garde `_dissipation_is_pending` regarde les 25 chars
+    AVANT et n'attrape QUE si un verbe de PENDING est présent."""
+    body = ("Les 4 points sont dissipes sur le head courant apres l'amend "
+            "f29727a67 — verification first-hand OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_pending_fenetre_25_chars_avant_limite():
+    """Regresssion negative : la fenetre de PENDING est bornée à 25 chars
+    AVANT. Un verbe lointain (« il y a longtemps on devrait dissiper ») NE
+    doit PAS activer la garde de PENDING — c'est une narration sans rapport,
+    pas une construction non-acquise. Residuel assume documente dans #15483
+    (« frontiere documentee : au-dela, c'est une autre phrase »)."""
+    body = ("Il y a longtemps — pour ne pas dire dans la version initiale "
+            "de la PR — on a dissipe ce concern, qui est desormais ferme.")
+    assert mod.classify("jsboige", body) is None

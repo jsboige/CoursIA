@@ -487,6 +487,40 @@ LIFT_MARKERS = (
     #     « ERASME »/« rasoir » : word-bound par `_WORD_BOUNDED_LIFT_RE`.
     "rien à signaler", "rien à traiter", "c'est traité",
     "RAS",
+    # #15468 — verbes de DISSIPATION : la voie 1 (commenter pour dissiper)
+    # etait morte par construction — un commentaire worker-self qui nomme
+    # l'etat qu'il dissipe (« 4 points dissipés », « les contrats dissipés »)
+    # etait reclasse nouvelle reserve car « dissipé » ne levait rien.
+    # « dissipé » (cle miroir `_unaccent` = « dissipe ») couvre par sous-
+    # chaine la famille entiere : dissipé(e)(s), dissipe, dissipent,
+    # dissipation. La negation directe (« n'est pas dissipé ») et la
+    # narration nominale (« une dissipation ») restent exclues par les
+    # gardes existantes (_lift_is_negated / _lift_is_narrated).
+    "dissipé",
+    # #15483 (extension c.418) — INFINITIF et PARTICIPE PRESENT ajouter pour
+    # couvrir les constructions NON closes (« reste à dissiper », « faut
+    # dissiper », « devant dissiper », « en dissipant »). La garde
+    # `_dissipation_is_pending` distingue INFINITIF (PENDING) vs PASSE
+    # COMPOSE (LEVE) — ce qui impose que les deux formes soient
+    # interceptées au meme niveau du registre.
+    "dissiper", "dissipant", "dissipée", "dissipe", "dissipées", "dissipés",
+    # #15468 — locution de dissipation : « ce nit ne concerne plus le
+    # head ». Le token « plus » vit DANS le marqueur (hors des fenetres de
+    # negation de _lift_is_negated, qui ne regardent pas a l'interieur du
+    # match) — la construction est une dissipation positive, pas une
+    # negation de levee.
+    "ne concerne plus",
+    # #15483 (extension c.418) — intensification FR : « ne concerne plus rien »,
+    # « ne concerne plus personne », « ne concerne plus aucun point ».
+    # L'intensifieur (`rien`/`personne`/`aucun`) est l'OBJET de la negation
+    # grammaticale (« plus rien » = « rien de plus »), pas l'inverse — c'est
+    # la dissipation la plus FORTE possible, et `_lift_is_negated` la
+    # rejetait a tort via le token `rien` dans `_LIFT_NEGATION_TOKENS`.
+    # La garde `_lift_is_intensified_marker_negated` neutralise l'effet de
+    # negation sur le marqueur `ne concerne plus` UNIQUEMENT quand
+    # l'intensifieur est en TETE de fenetre AFTER (sous-clause composee).
+    "ne concerne plus rien", "ne concerne plus personne",
+    "ne concerne plus aucun point", "ne concerne plus aucune reserve",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -1941,7 +1975,160 @@ def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
     return False
 
 
-# #14564 — marqueurs LIFT reconnus par MOTIF plutot que par sous-chaine.
+# #15483 (extension cycle c.418) — formes NON-ACQUISES du verbe de dissipation.
+# Le registre `_LIFT_MARKERS` matche la sous-chaine `dissip[eé]` (_unaccent
+# ramene tout a `dissipe`) sans distinguer le PASSE COMPOSE (« les 4 points
+# dissipés », levee reelle) du FUTUR/INFINITIF/OBLIGATION (« ce point reste à
+# dissiper », « il faut dissiper », « sera dissipé au prochain push »,
+# « doit être dissipé ») — un hit dans une construction NON close le validait
+# quand même comme levee, et un commentaire mixte
+# (« les 2 contrats sont dissipés, 1 point reste à dissiper ») levait toute
+# la review au lieu de garder la reservation sur le vivant.
+#
+# Discrimination : on regarde les 25 chars AVANT et 10 chars APRES le hit,
+# et on cherche un motif de PENDING obligatoire/futur/passif-devoir :
+#   * infinitif futur     : « reste à dissiper », « faut dissiper »
+#   * futur simple        : « sera dissipé », « sera dissipe »
+#   * obligation passive  : « doit être dissipé », « doit etre dissipe »
+#   * futur compose        : « sera dissipé au prochain push »
+#   * infinitif introduit  : « a dissiper », « a dissipé » seul apres verbe de
+#                            futur ("aura à dissiper »)
+# La fenetre est bornee à 25+10 chars : au-dela, c'est une autre phrase, un
+# autre commentaire, ou une narration sans rapport — frontiere documentee dans
+# l'instance fondatrice #15483 (CHANGES_REQUESTED ai-01 sur `071c5763`,
+# clusterManager-Myia « COMMENTED » + ai-01 « le nouveau marqueur sous-chaine
+# `dissipé` blanchit des réserves encore ouvertes : ce point reste à dissiper,
+# il faut dissiper, sera dissipé au prochain push et doit être dissipé »).
+_DISSPATION_PENDING_PATTERNS = re.compile(
+    r"(?:"  # groupe non capturant : alternatives en OU
+    r"\breste\s+(?:à|a)\s+dissip"     # « reste à dissiper » / « reste a dissiper »
+    r"|\bfaut\s+dissip"               # « il faut dissiper »
+    r"|\bsera\s+dissip"               # « sera dissipé »
+    r"|\bdoit\s+(?:etre|être)\s+dissip"  # « doit etre dissipé »
+    r"|\bdevra\s+(?:etre|être)\s+dissip"  # « devra etre dissipé »
+    r"|\b(?:a|à)\s+dissiper\b"        # « à dissiper »
+    r"|\bsera\s+(?:dissipé|dissipe)"  # variante passe-compose futur
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _dissipation_is_pending(window_before: str, window_after: str, marker: str) -> bool:
+    """Le hit `dissip[eé]` vit-il dans une construction NON-acquise ?
+
+    Renvoie True si une forme infinitif/futur/obligation est detectee
+    dans la fenetre etroite [max(0, i-25):i_end+10] OU si le pattern matche
+    en JUXTAPOSANT la fin de window_before avec le debut de marker (cas
+    « dissipe » dans `reste a dissiper` : `_unaccent('dissipe')` est
+    sous-chaine de `_unaccent('dissiper')`, mais le pattern regarde apres la
+    fin du hit). On elargit la fenetre avec la racine du marker pour
+    couvrir ce cas (la sous-chaine `dissip` est AJOUTEE comme prefixe de
+    la sous-clause).
+
+    Residuel assume (documente dans #15483) :
+      * negation interne au compose « pas encore dissipé » est deja couverte
+        par `_lift_is_negated` ; cette garde ne RE-couvre pas la negation,
+        elle ajoute UNIQUEMENT les formes de PENDING.
+      * un hit `dissipe` precede d'un nom abstrait sans verbe
+        (« l'etat dissipe », « le risque dissipe ») est un PARTICIPE
+        ISOLE = levee reelle. Le regex exige un VERBE DE PENDING explicite
+        (« reste/faut/sera/doit », « à dissiper »), donc un participe nu
+        passe.
+      * un hit `dissipe` au milieu d'une negation externe
+        (« ils ne sont pas dissipe, d'autres oui ») matche deja le token
+        `pas` dans `_lift_is_negated` — pas de double-traitement.
+    """
+    # La racine commune du marqueur dissipation (`dissip` après unaccent)
+    # est ajoutee comme JUXTAPOSITION entre window_before et window_after.
+    # Ça permet au pattern `reste\s+(?:à|a)\s+dissip` de matcher même si le
+    # hit `_unaccent(marker)` est `dissipe` (sous-chaine de `dissiper`) :
+    # sinon le `_unaccent('dissipe').find('reste a dissip')` rate car le
+    # pattern regarde apres la FIN du hit, et le `r` final de `dissiper`
+    # (« consomme » par le hit long) est APRES la frontiere du hit court.
+    root = "dissip"
+    combined = window_before + root + window_after
+    return bool(_DISSPATION_PENDING_PATTERNS.search(combined))
+
+
+# #15483 (extension cycle c.418) — faux negatif de la locution « ne concerne plus ».
+# Le token `rien` est dans `_LIFT_NEGATION_TOKENS` (couvre « ne plus rien »
+# ordinaire), mais dans la LOCUTION « ne concerne plus rien » c'est
+# l'INTENSIFICATION de la dissipation (« ne concerne plus rien du tout »), pas
+# l'annulation. Sans exception, la dissipation totale la plus forte possible
+# (« ce nit ne concerne plus rien ») etait classee BOT-CONCERN.
+#
+# Discrimination : si le marker LIFT matchant COMMENCE par `ne concerne plus`
+# ET le token `_LIFT_NEGATION_TOKENS` qui suit est l'un des 3 « INTENSIFIEURS
+# AUTORISES » (`rien`, `personne`, `aucun`, `aucune`) EN DEBUT de segment
+# consecutif (pas separe par une frontiere de phrase) ET n'est PAS SUIVI
+# D'UN VERBE ACTIF, on neutralise l'effet de negation — la sous-clause
+# `"plus rien"` est un objet compose, pas une negation applicative.
+_INTENSIFIED_LIFT_NEG_EXCEPTIONS = frozenset({"rien", "personne", "aucun", "aucune"})
+
+# Mots-outils et verbes actifs : un intensifieur suivi d'un de ces mots
+# N'EST PAS une intensification (le mot-outil ou le verbe reprend la
+# portee propositionnelle et `rien` redevient negation applicative,
+# cf. exemple fondateur « ne concerne plus rien faire à la CI »).
+_INTENSIFIED_LIFT_FOLLOWING_BLOCKERS = frozenset({
+    "a", "à", "de", "du", "des", "la", "le", "les",
+    "l'", "l",  # apostrophe
+    "que", "qui", "quoi", "dont", "ou", "où",
+    # verbes actifs courants en FR
+    "faire", "va", "aller", "peut", "doit", "faut", "sera",
+    "reste", "reste", "permet", "permettre",
+})
+
+
+def _lift_is_intensified_marker_negated(window_before: str, window_after: str) -> bool:
+    """Vrai si la negation post-marker tombe dans la sous-clause
+    INTENSIFICATRICE de la locution dissipation (« ne concerne plus rien »).
+
+    Heuristique : on cherche un token `_LIFT_NEGATION_TOKENS` au DEBUT de la
+    fenetre AFTER (apres strip des separateurs), restreint aux 4 intensifieurs
+    autorises, et exige l'absence de mot-outil ou verbe actif IMMEDIAT
+    apres. Si l'intensifieur est seul (juste apres `plus`, sans reprise
+    propositionnelle), c'est une intensification — pas une negation
+    applicative.
+
+    Residuel assume (documente dans #15483) : un commentaire comme
+    « ne concerne plus rien faire à la CI » (verbe actif `rien faire`)
+    n'est PAS une intensification ; il peut legitimer BOT-CONCERN. Le
+    predicat exige un intensifieur isole (juste apres `plus`, sans mot-
+    outil ni verbe entre les deux), donc « rien faire » ne le neutralise
+    pas — `rien` est suivi de `faire` qui est dans
+    `_INTENSIFIED_LIFT_FOLLOWING_BLOCKERS`.
+    """
+    head = _unaccent(window_after).lower().lstrip(" \t\n.,;:!?")
+    if not head:
+        return False
+    # Le premier token significatif de la fenetre AFTER est-il un intensifieur ?
+    first_tok = head.split(" ", 1)[0].rstrip("'")
+    if first_tok not in _INTENSIFIED_LIFT_NEG_EXCEPTIONS:
+        return False
+    # Le token SUIVANT (apres l'intensifieur) est-il un mot-outil ou un
+    # verbe actif ? Si oui, l'intensifieur n'EST PAS isolé → PAS une
+    # intensification (le mot-outil/verbe reprend la portee propositionnelle).
+    parts = head.split()
+    if len(parts) >= 2 and parts[1].rstrip("'") in _INTENSIFIED_LIFT_FOLLOWING_BLOCKERS:
+        return False
+    return True
+
+
+def _lift_is_intensified_marker_negated_marker_active(window_after: str) -> bool:
+    """Variante pour marker `ne concerne plus rien` (intensifieur INCLUS) :
+    le premier token APRES le marker est-il un mot-outil / verbe actif ?
+    Si oui, l'intensifieur n'est PAS en fin de phrase → PAS une
+    intensification (le mot-outil/verbe reprend la portee).
+
+    Cas fondateur : « ne concerne plus rien faire à la CI » — marker
+    `ne concerne plus rien` (inclu), suivi de `faire à la CI`. `faire`
+    est dans `_INTENSIFIED_LIFT_FOLLOWING_BLOCKERS` → return False.
+    """
+    head = _unaccent(window_after).lower().lstrip(" \t\n.,;:!?")
+    if not head:
+        return False
+    first_tok = head.split(" ", 1)[0].rstrip("'")
+    return first_tok in _INTENSIFIED_LIFT_FOLLOWING_BLOCKERS
 # La cle est le marqueur minuscule/desaccentue (`_unaccent(marker).lower()`),
 # comme `_WORD_BOUNDED_MARKERS` cote CONCERN. Seul « RAS » y est : la
 # sous-chaine nue vit aussi dans « ERASME », « rasoir », « CRAS » — un mot
@@ -1970,6 +2157,15 @@ def _live_lift_positions(normalised: str) -> list[int]:
     lieu, alors que le token `levee` matchait sans prise en compte de
     la negation. Le predicat `_lift_is_negated` regarde 15 chars avant
     ET apres le marker.
+    #15483 — extension dissipation : un seul hit `dissip[eé]` (ou sa
+    famille infinitive) dans une construction NON close (« reste à
+    dissiper », « il faut dissiper », « sera dissipé », « doit être
+    dissipé ») doit EMPECHER toute levée : les constructions infinies
+    sont sémantiquement incompatibles avec une LIFT réelle (réserve
+    encore ouverte). On post-filtre donc : si, dans une fenêtre large
+    autour de la zone des hits dissipation, au moins un hit tombe dans
+    une construction PENDING, on invalide TOUS les hits dissipation de
+    cette zone — la levée n'est pas acquise.
     """
     out: list[int] = []
     for marker in LIFT_MARKERS:
@@ -1986,11 +2182,139 @@ def _live_lift_positions(normalised: str) -> list[int]:
         for i, i_end in hits:
             window_before = normalised[max(0, i - 30):i]
             window_after = normalised[i_end:i_end + 15]
+            # #15483 — fenetre etendue pour la garde de PENDING dissipation :
+            # les constructions « reste à dissiper », « il faut dissiper »,
+            # « sera dissipé », « doit être dissipé » peuvent avoir leurs
+            # verbes de PENDING jusqu'à 25 chars avant le hit `dissip[eé]`.
+            # La fenetre `_live_lift_positions` reste à 30/15 par defaut (les
+            # autres families de markers n'en profitent pas) ; on elargit
+            # localement juste pour la garde `_dissipation_is_pending`.
+            window_before_25 = normalised[max(0, i - 25):i]
+            window_after_10 = normalised[i_end:i_end + 10]
+            dissip_is_pending = m.startswith("dissip") and _dissipation_is_pending(
+                window_before_25, window_after_10, m
+            )
+            # #15483 — extensions cycle c.418 — locution intensifiee
+            # `ne concerne plus [rien|personne|...]` : le predicat couvre
+            # 2 cas. (1) marker `ne concerne plus` suivi de l'intensifieur
+            # ISOLE → intensification (positif). (2) marker `ne concerne
+            # plus rien` deja present dans LIFT_MARKERS mais suivi d'un
+            # VERBE ACTIF (`rien faire`, `rien a faire`) → PAS une
+            # intensification (le verbe reprend la portee). Le helper
+            # couvre les 2 : pour le second, le `rien` n'est PAS en tete
+            # de fenetre after (il est DANS le marker), donc le predicat
+            # echoue ; on ajoute un check `marker.endswith(intensif)` +
+            # verbe actif en tete apres.
+            intensified_marker = (
+                m.startswith("ne concerne plus") and _lift_is_intensified_marker_negated(
+                    window_before, window_after
+                )
+            ) or (
+                m in ("ne concerne plus rien",)
+                and _lift_is_intensified_marker_negated_marker_active(
+                    window_after
+                )
+            )
+            # #15483 — `_dissipation_is_pending` COURT-CIRCUITE les autres
+            # gardes (narrated / arrow / negated) : le predicat detecte une
+            # CONSTRUCTION VERBALE NON CLOSE (« reste a dissiper », « faut
+            # dissiper », « sera dissipé », « doit etre dissipé ») qui prime
+            # sur la classification narrative generique (`_lift_is_narrated`
+            # classifie a tort les verbes « reste »/`faut` precedes de
+            # `a` comme narrés via `LIFT_NARRATION_CITERS = ('a',)`).
+            # Sans ce court-circuit, un commentaire « Le concern reste a
+            # dissiper » etait rejete comme narré AVANT d'evaluer le
+            # PENDING — la garde narrative GENERIQUE ne peut distinguer
+            # « une dissipation » (narration) de « le concern reste a
+            # dissiper » (PENDING). Discrimination lexicale forte via
+            # `_dissipation_is_pending` doit primer.
+            if dissip_is_pending:
+                continue
             if not _lift_is_narrated(window_before) \
                     and not _arrow_precedes(normalised, i) \
-                    and not _lift_is_negated(window_before, window_after):
+                    and not _lift_is_negated(window_before, window_after) \
+                    and not intensified_marker:
                 out.append(i)
+    # #15483 — post-filtrage MIXTE. Si le body contient AU MOINS UN hit
+    # dissipation en construction PENDING (infinitif/futur), TOUS les
+    # hits dissipation de la zone large (±100 chars autour de la fenetre
+    # de PENDING) sont invalides. Cas aggravant fondateur : « 2 contrats
+    # sont dissipés, 1 point reste à dissiper » — AVANT cette garde, les
+    # 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignore → la
+    # review complete classee `None` alors qu'un point VIVAIT.
+    out = _invalidate_dissipation_in_pending_zone(normalised, out)
     return out
+
+
+def _invalidate_dissipation_in_pending_zone(normalised: str, positions: list[int]) -> list[int]:
+    """Invalide les hits dissipation acquis dans une PHRASE contenant un PENDING.
+
+    Strategie : on cherche TOUS les hits VERBAUX PENDING (racine
+    dissipation + verbe de pending dans la fenetre 25 chars avant). Le
+    nom « dissipation » SEUL (sans verbe) n'est PAS un PENDING — c'est
+    une narration nominale deja couverte par `_lift_is_narrated` /
+    `_lift_is_intensified_marker_negated`. On isole donc les PENDING par
+    la MEME garde `_dissipation_is_pending` appliquee a chaque hit de
+    la racine dissipation.
+
+    Zone d'invalidation = de la frontiere PHRASE precedente (`.`, `!`,
+    `?`, `\n`, `**`) au prochain PENDING — c'est la « phrase logique ».
+    Un PENDING dans une AUTRE phrase (séparée par un terminateur) n'invalide
+    PAS les hits acquis de la premiere.
+
+    Cas mixtes documentes :
+      * « 2 contrats dissipés, MAIS le point 3 reste a dissiper » → meme
+        phrase logique (« , » n'est PAS terminateur) → invalide les 2 hits
+        « dissipés » → LIFT None → pas de levee.
+      * « les 4 points dissipés ... en attendant le push qui doit
+        dissiper X » → les 2 dans la meme phrase si pas de point intermediaire.
+      * « les 4 points dissipés. Le push qui doit dissiper X suit. » →
+        2 phrases distinctes (point separe) → les 4 restent acquis,
+        la dissipation de la premiere est OK ; le PENDING de la seconde
+        ouvre un nouveau concern à dissiper (mais ne retroagit pas).
+
+    Terminateurs reconnus : `.`, `!`, `?`, `\n`, `\r`, `**`, `…`.
+    """
+    if not positions:
+        return positions
+    # PENDING positions dans le body.
+    pending_positions: list[int] = []
+    dissip_roots = ("dissipe", "dissipant", "dissipee", "dissipes", "dissipees")
+    for root in dissip_roots:
+        start = 0
+        while True:
+            j = normalised.find(root, start)
+            if j == -1:
+                break
+            j_end = j + len(root)
+            window_before_25 = normalised[max(0, j - 25):j]
+            window_after_10 = normalised[j_end:j_end + 10]
+            if _dissipation_is_pending(window_before_25, window_after_10, root):
+                pending_positions.append(j)
+            start = j + 1
+    if not pending_positions:
+        return positions
+    # Pour chaque PENDING, calculer la frontiere PHRASE precedente (le
+    # dernier terminateur AVANT la position) puis invalider les hits acquis
+    # entre cette frontiere et la position du PENDING (inclus).
+    _TERMINATORS = (".", "!", "?", "\n", "\r", "**")
+    new_positions: list[int] = []
+    for pos in positions:
+        # La frontiere de phrase pour ce hit = la position max des
+        # terminateurs AVANT pos. Si aucun terminateur, c'est 0
+        # (debut du body).
+        prev_terminator = -1
+        for term in _TERMINATORS:
+            t = normalised.rfind(term, 0, pos)
+            if t > prev_terminator:
+                prev_terminator = t
+        # zone_start = position juste après le terminateur (ou 0)
+        zone_start = prev_terminator + 1
+        # Si un PENDING vit dans la zone [zone_start, pos], invalider.
+        blocked = any(zone_start <= pp <= pos + 200 for pp in pending_positions)
+        if not blocked:
+            new_positions.append(pos)
+    return new_positions
 
 
 def has_live_lift(body: str) -> bool:
@@ -2751,11 +3075,25 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 #
 # Le predicat se rattache donc au contenu : une levee citant un SHA
 # rembobine reste VALIDE si l'arbre du SHA rembobine est identique a
-# l'arbre de la tete (wake-commit, amend de message), ou si aucun fichier
-# de la PR n'est touche par la difference (rebase sans conflit). En cas
-# d'incertitude (arbre inconnu, pagination suspecte) : comportement
-# anterieur, le refus -- l'organe ne devient jamais permissif sur un
-# doute, c'est le cas que B.0 existe pour attraper.
+# l'arbre de la tete (wake-commit, amend de message). En cas
+# d'incertitude (arbre inconnu) : comportement anterieur, le refus --
+# l'organe ne devient jamais permissif sur un doute, c'est le cas que
+# B.0 existe pour attraper.
+#
+# #15566 -- l'echappatoire « rebase sans conflit » (aucun fichier de la PR
+# touche par la difference) est RETIREE, pas corrigee. Mesure sur une
+# vraie paire de rebase (39846a7a3 -> 9296031c6 : meme patch pose sur
+# deux bases) : `compare/{sha}...{head}` est une comparaison TROIS-POINTS
+# -- `merge_base_commit` rend d3107fce, pas le SHA cite -- et les fichiers
+# de la PR sont dans `changed` par construction, donc l'intersection
+# n'etait jamais vide et la marque n'a jamais pu etre posee sur une PR
+# non vide. Le code etait mort. Le corriger « en comparant merge_base
+# explicitement » serait un no-op (trois-points EST merge_base..head), et
+# l'API ne sert pas la forme deux-points (`..` rend 404, mesure sur une
+# paire parent/enfant). Une version exacte demanderait une comparaison de
+# blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
+# surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
+# au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -2771,82 +3109,12 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
-def _pr_file_paths(data: dict, page_cap: int = 100) -> set[str] | None:
-    """Chemins des fichiers de la PR, bornes incluses.
-
-    None = determination impossible (PR sans numero, erreur reseau, ou
-    liste tronquee a la pagination) : l'appelant doit alors rester sur le
-    comportement strict -- ne JAMAIS deduire « fichiers inchanges » d'une
-    liste incomplete.
-    """
-    number = data.get("number")
-    if number is None:
-        return None
-    try:
-        files = gh_json(
-            ["api", f"repos/{REPO}/pulls/{number}/files?per_page={page_cap}"])
-    except subprocess.CalledProcessError:
-        return None
-    if not isinstance(files, list) or len(files) >= page_cap:
-        return None  # pagination potentiellement tronquee -> fail-safe
-    return {f.get("filename") for f in files if f.get("filename")}
-
-
-def _rewind_pr_files_untouched(data: dict, state: dict[str, dict],
-                               head_oid: str, head_tree: str,
-                               cap: int = 3) -> dict[str, bool]:
-    """SHAs rembobines rattaches a la PR dont AUCUN fichier de la PR n'a
-    bouge entre le SHA rembobine et la tete (cas rebase, #15556).
-
-    Compare cote serveur `{sha}...{head_oid}` : si aucun des fichiers
-    touches par la comparaison n'est un fichier de la PR, le livrable est
-    inchange et la levee reste valide. Fail-safe systematique : compare
-    irrecuperable, plus de `cap` candidats, fichiers de la PR inconnus ou
-    liste de compare au plafond (troncature silencieuse de l'API a 300)
-    -> le SHA n'est PAS marque untouched (le refus survit).
-    """
-    if not head_oid or not head_tree:
-        return {}
-    pr_refs: set[str] = set()
-    if data.get("number") is not None:
-        pr_refs.add(str(data["number"]))
-    for m in re.finditer(r"#(\d+)", (data.get("title") or "")
-                         + "\n" + (data.get("body") or "")):
-        pr_refs.add(m.group(1))
-    pr_refs.discard("")
-    rattachable = sorted(
-        s for s, v in state.items()
-        if v.get("message") and _message_refs_pr(v["message"], pr_refs)
-        and not (v.get("tree") and v["tree"] == head_tree))
-    if not rattachable:
-        return {}
-    pr_files = _pr_file_paths(data)
-    if pr_files is None:
-        return {}
-    untouched: dict[str, bool] = {}
-    for sha in rattachable[:cap]:
-        try:
-            compare = gh_json(
-                ["api", f"repos/{REPO}/compare/{sha}...{head_oid}"])
-        except subprocess.CalledProcessError:
-            continue
-        files = compare.get("files") or []
-        if len(files) >= 300:
-            continue  # troncature suspecte -> fail-safe
-        changed = {f.get("filename") for f in files}
-        if not (changed & pr_files):
-            untouched[sha] = True
-    return untouched
-
-
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
-    Assemble les trois vues que `analyse` consulte : messages (rattachement
-    #13639), arbres des commits rembobines et arbre de la tete (#15556),
-    puis la comparaison fichiers pour les seuls candidats rattaches dont
-    l'arbre differe -- un seul appel reseau par SHA, un par PR pour la
-    tete et les fichiers.
+    Assemble les deux vues que `analyse` consulte : messages (rattachement
+    #13639) et arbres des commits rembobines plus arbre de la tete
+    (#15556) -- un appel reseau par SHA, plus un pour la tete.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
@@ -2863,8 +3131,6 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
-    data["_rewind_pr_files_untouched"] = _rewind_pr_files_untouched(
-        data, state, head_oid, head_tree)
 
 
 def can_lift(comment: dict) -> bool:
@@ -3418,7 +3684,6 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         resolved = pr_data.get("_absent_sha_messages") or {}
         rewound_trees = pr_data.get("_absent_sha_trees") or {}
         head_tree = pr_data.get("_head_tree")
-        untouched = pr_data.get("_rewind_pr_files_untouched") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
@@ -3435,14 +3700,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # rembobine ET rattache. #15556 : avant de desnuer la
                     # levee, verifier que le push a reellement change le
                     # livrable -- wake-commit et amend de message poussent
-                    # un arbre IDENTIQUE, rebase sans conflit ne touche
-                    # aucun fichier de la PR. Sans donnees d'arbre (audit
+                    # un arbre IDENTIQUE. Sans donnees d'arbre (audit
                     # retro, resolution serveur impossible) : refus, le
                     # comportement anterieur n'est jamais assoupli.
-                    if untouched.get(sha):
-                        if artifact is None:
-                            artifact = (sha, "pr_files_untouched")
-                        continue
                     tree = rewound_trees.get(sha)
                     if tree and head_tree and tree == head_tree:
                         if artifact is None:

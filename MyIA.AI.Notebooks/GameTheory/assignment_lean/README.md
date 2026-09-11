@@ -1,6 +1,6 @@
 # assignment_lean — Problème d'affectation (Kuhn-Munkres)
 
-Lake compagnon du notebook [GameTheory-27-Munkres-Assignment.ipynb](../GameTheory-27-Munkres-Assignment.ipynb), hommage à James R. Munkres (1930-2026) — issue #12598 (1/3).
+Lake compagnon du notebook [GameTheory-23-Munkres-Assignment.ipynb](../GameTheory-23-Munkres-Assignment.ipynb), hommage à James R. Munkres (1930-2026) — issue #12598 (1/3).
 
 Il formalise la **charpente de correction** de la méthode hongroise (Kuhn 1955, Munkres 1957) :
 

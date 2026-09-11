@@ -129,7 +129,8 @@ def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     raw_meta, prompts = _sae_load_npz_unchecked(path)
 
     # Gardes-fous propres à Track P (discriminants que le contrat v1 ne
-    # connaît pas) : trace SAE et fixture Track S.
+    # connaît pas) : trace SAE et fixture Track S. Posés AVANT l'enforce
+    # contrat -- les tests #5681 matchent les ValueError historiques.
     if raw_meta.get("lens") == "sae":
         raise ValueError(
             f"trace {path} porte meta['lens']='sae' : c'est une trace SAE, pas "
@@ -144,12 +145,12 @@ def load_traces(path: str | Path, *, strict: bool = False) -> dict:
             f"Modèles distincts = substrats non comparables directement "
             f"(garde-fou anti-mélange Track S/Track P #5681)."
         )
-
     # #15536 : stamp du discriminant v1 pour les fixtures legacy sans
     # 'instrument' NI 'lens'. Sans lui, l'inférence du contrat (champs
     # lens_repo/lens_kind/lens_rank -> 'jlens') contredirait l'enforce
-    # 'jlens_trackp' sur ces traces historiques.
-    if "instrument" not in raw_meta and raw_meta.get("lens") is None:
+    # 'jlens_trackp' sur ces traces historiques. La garde couvre la cle
+    # absente ET le ``null`` explicite (rétro-compat #15525).
+    if raw_meta.get("instrument") is None and raw_meta.get("lens") is None:
         raw_meta["instrument"] = "jlens_trackp"
 
     # Contrat v1 : validation + anti-mélange instrument (acceptance #1).
