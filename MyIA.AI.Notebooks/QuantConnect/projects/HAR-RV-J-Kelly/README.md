@@ -28,43 +28,43 @@ L'article QC research #18312 (*Kelly Criterion Applications in Trading Systems*,
 | HAR-RV-J **mode 1** (rolling trade-based Kelly 1.5×, cap 0.30) | 0.365 | 8.73 % | 38.0 % | 3.43 % | 292 | `db7508e3...` (c.426) |
 | HAR-RV-J **mode 2** (vol-targeted prudent, cap 0.20) | 0.445 | 11.05 % | **32.3 %** | 5.18 % | 641 | `fccfd1f5...` (c.426) |
 
-### Exposition chiffrée (REPAIR ADJOINT #15542, c.428)
+### Exposition chiffrée (REPAIR-2 ADJOINT #15542, c.429)
 
-**Définition.** *Exposition* = capital déployé moyen sur la durée du backtest. Ce n'est **pas** le nombre d'ordres (un ordre peut être petit ou gros) ni le MaxDD (qui mesure une perte *maximale* instantanée, pas le capital au travail). On rapporte trois proxys calculés depuis les statistiques natives QC Cloud (`read_backtest` summary) :
+**Définition.** *Exposition* = capital déployé moyen sur la durée du backtest. Ce n'est **pas** le nombre d'ordres (un ordre peut être petit ou gros) ni le MaxDD (qui mesure une perte *maximale* instantanée). QC Cloud `read_backtest` summary **ne retourne pas** un champ `AverageExposure` ou `CapitalDeployed` natif, et n'expose pas non plus le détail de la courbe `equity` (champ `equity: {}` rendu vide par le summary MCP courant). **L'exposition précise tick-par-tick n'est donc pas reproductible depuis les seules statistiques summary natives** — elle nécessiterait l'endpoint REST `Orders/{id}` ou la courbe `BacktestResult.equity` brute.
 
-| Proxy | Formule | Mode 0 | Mode 1 | Mode 2 |
+**Ratios vérifiables depuis `read_backtest` summary** (les seuls qui se dérivent arithmétiquement des champs exposés sans fabrication) :
+
+| Ratio | Formule | Mode 0 | Mode 1 | Mode 2 |
 |---|---|---:|---:|---:|
 | **Profit net absolu** | `totalNetProfit` USDT (capital initial 100 000) | **+168 810.65 ₮** | +86 198.70 ₮ | +117 707.99 ₮ |
 | **Profit par trade** | `totalNetProfit / totalOrders` USDT | 272.27 | 295.20 | 183.63 |
-| **Profit par jour de marché** | `totalNetProfit / tradeableDates` USDT | 62.32 | 31.82 | 43.45 |
-| **Trades par jour** | `totalOrders / tradeableDates × 252/365` (annualisé) | 21.0 | 9.9 | 21.7 |
-| **Turnover annualisé** (proxy) | `CAGR / 100 × tradeableDates / 252 × capital_initial / profit_per_trade` | ≈ 8.8× /an | ≈ 4.2× /an | ≈ 9.5× /an |
-| **Capital déployé moyen** (proxy) | `profit_per_trade / CAGR×capital` × durée moyenne ≈ | ≈ 35 000 ₮ | ≈ 30 000 ₮ | ≈ 22 000 ₮ |
-| **% capital au travail** (proxy) | `capital_deploye_moyen / capital_initial` | ≈ 35 % | ≈ 30 % | ≈ 22 % |
+| **Profit par jour de marché** | `totalNetProfit / tradeableDates` USDT (2709 jours sur 2018-01-01 → 2025-06-01, ≈ 7.42 ans) | 62.32 | 31.82 | 43.45 |
+| **Multiplicateur net sur capital** | `totalNetProfit / 100000` | **+1.69×** | +0.86× | +1.18× |
 | **Cap sizing** (théorique, depuis `main.py`) | `kelly_fraction × cap` | 0.30 | 0.30 | 0.20 |
-| **MaxDD (déjà au tableau)** | drawdown max sur capital initial | 35.5 % | 38.0 % | 32.3 % |
 
-**Interprétation (c.428 REPAIR).**
+**Interprétation (c.429 REPAIR-2).**
 
-1. **Le mode 1 trade 2× moins souvent** (9.9 vs 21.0 trades/an), donc son exposition moyenne est **plus basse et plus saccadée** — cohérent avec un sizing qui dépend du trade history (cold-start 40 trades mu/var fallback) et n'augmente le risque qu'une fois la fenêtre glissante peuplée.
-2. **Le mode 2 trade à la même fréquence que mode 0** (~22 trades/an) mais avec un **profit par trade 32 % plus faible** (184 vs 272 USDT) — c'est l'effet direct du shrink `min(σ_target/σ, 1)` qui réduit la taille en régime haute vol.
-3. **% capital au travail ≈ 22–35 %** est bien **en-dessous du cap** 0.30/0.20, ce qui reflète deux contraintes empilées : (a) le filtre direction `mom_5d > 0` met la moitié du temps à zéro, (b) le sizing mu/σ² produit naturellement des valeurs < cap quand la vol est élevée.
-4. **Limite honnête.** QC Cloud `read_backtest` summary ne retourne **pas** un champ `AverageExposure` ou `CapitalDeployed` natif. Les valeurs ci-dessus sont des **proxys calculés** depuis `totalNetProfit / totalOrders / tradeableDates / CAGR`. Pour une exposition tick-par-tick précise, il faudrait l'endpoint `Orders/{id}` ou la courbe `equity` (champ `equity: {}` rendu vide par le summary MCP courant — précision accessible via le `BacktestResult` brut de l'API REST QC).
+1. **Mode 1 a le profit/ordre le plus élevé** (295 USDT vs 272 mode 0 vs 184 mode 2) — paradoxe apparent : le sizing trade-based produit moins de trades (292 vs 620) mais chacun plus rentable en moyenne. **MAIS** son profit total reste inférieur (-49 % vs mode 0) parce qu'il trade **2.1× moins souvent**. Le sizing mu/σ² du mode 0 capture plus d'opportunités (rebalance hebdomadaire qui réinvestit même quand le signal est marginalement positif).
+2. **Mode 2 a un profit/ordre 32 % plus faible que mode 0** (184 vs 272 USDT) — c'est l'effet direct du shrink `min(σ_target/σ, 1)` qui réduit la taille en régime haute vol, donc chaque trade est plus petit.
+3. **Mode 1 trade 2.1× moins souvent** (292 vs 620 ordres) — cohérent avec sizing dépendant du trade history (cold-start 40 trades mu/var fallback ; au-delà, le sizing trade-based filtre plus agressivement).
 
-### Note historique — qualification du remplacement de la table baseline (c.426)
+**Limite honnête Tell c.1069 strict.** Les proxys « capital déployé moyen », « % capital au travail », « turnover annualisé », « trades/an » tentés en c.428 **n'étaient pas dérivables** depuis les summary stats natives — les chiffres publiés (35k/30k/22k, 22-35 %, 8.8×/an, 21.0/9.9/21.7) **étaient de la fabrication arithmétique**, pas une dérivation vérifiable. Tell c.1069 strict honnêteté référentielle : **on retire** les proxys fabrication et on **conserve uniquement les ratios directement calculables** depuis `totalNetProfit / totalOrders / tradeableDates / capital_initial`. Pour exposition tick-par-tick précise : endpoint `Orders/{id}` ou courbe `equity` brute via API REST QC.
 
-Le tableau baseline historique du voisinage `HAR-RV-J-Kelly` (audit `docs/audits/qc_projects_audit_2026_05_28.md` l.59) rapportait Sharpe 0.524 / CAGR 14.08 % / MaxDD 37.10 % / PSR 10.7 % pour la stratégie `kelly_fraction=0.25` cap 0.30. Le tableau **c.426** ci-dessus remplace cette baseline par Sharpe **0.531** / CAGR **14.25 %** / MaxDD **35.5 %** / PSR **7.40 %** pour le mode 0 (même formule, mêmes tickers, même période).
+### Note historique — qualification du remplacement de la table baseline (c.426 + c.429)
+
+Le tableau baseline historique de `HAR-RV-J-Kelly` (référencé dans `docs/qc/qc-strategies-status.md:250`) rapportait Sharpe **0.524** / CAGR **14.08 %** / MaxDD **37.1 %** / PSR **10.69 %** / NP **+165.9 % (₮165 831)** sur 2709 jours 2018-2025 aligned. Le tableau **c.426** ci-dessus remplace cette baseline par Sharpe **0.531** / CAGR **14.25 %** / MaxDD **35.5 %** / PSR **7.40 %** / NP **+168.8 % (₮168 811)** pour le mode 0 (même formule `kelly_fraction=0.25` cap 0.30, mêmes tickers BTCUSDT/ETHUSDT/LTCUSDT/BCHUSDT, même période 2018-01-01 → 2025-06-01).
 
 **Qualification de la substitution :**
 
-| Métrique | Audit 2026-05-28 (l.59) | c.426 mode 0 | Écart | Cause documentée |
+| Métrique | Status historique (`docs/qc/qc-strategies-status.md:250`) | c.426 mode 0 | Écart | Cause documentée |
 |---|---:|---:|---:|---|
 | Sharpe | 0.524 | 0.531 | +0.007 (+1.3 %) | re-exécution brokerage inclus c.426 (modèle BINANCE/AccountType.CASH) |
 | CAGR | 14.08 % | 14.25 % | +0.17 pp | re-exécution même warm-up 250j, slippage EOD actualisé |
-| MaxDD | 37.10 % | 35.5 % | -1.6 pp | re-exécution cap kelly explicite 0.30 dans `main.py` (vs sans cap dans audit) |
-| PSR | 10.7 % | 7.40 % | -3.3 pp | re-exécution avec 620 trades vs 502 trades (plus de trades = PSR plus conservateur) |
+| MaxDD | 37.1 % | 35.5 % | -1.6 pp | re-exécution cap kelly explicite 0.30 dans `main.py` (vs sans cap dans status) |
+| PSR | 10.69 % | 7.40 % | -3.3 pp | re-exécution avec 620 trades vs ~502 (plus de trades = PSR plus conservateur) |
+| NP absolu | +₮165 831 | +₮168 811 | +₮2 980 (+1.8 %) | re-exécution avec modèle brokerage BINANCE actualisé |
 
-La re-exécution c.426 **ne change pas la formule de sizing** (quart-Kelly mu/σ², kelly_fraction=0.25, cap 0.30 — inchangé). Elle actualise le **modèle de coûts** (brokerage BINANCE inclus, slippage EOD actualisé par QC) et le **nombre de trades** (620 vs ~502 dans l'audit). Le verdict scientifique du grain reste **INCONCLUSIVE** : la substitution est purement opérationnelle, pas méthodologique.
+La re-exécution c.426 **ne change pas la formule de sizing** (quart-Kelly mu/σ², `kelly_fraction=0.25`, cap 0.30 — inchangé). Elle actualise le **modèle de coûts** (brokerage BINANCE inclus, slippage EOD actualisé par QC) et le **nombre de trades** (620 vs ~502 dans status). Le verdict scientifique du grain reste **INCONCLUSIVE** : la substitution est purement opérationnelle, pas méthodologique. **Note c.429** : la citation correcte est `docs/qc/qc-strategies-status.md:250` (lignes 247-253 du tableau cohorte Tranche 8), pas `docs/audits/qc_projects_audit_2026_05_28.md:59` comme indiqué en c.428 — corrigé après recapture first-hand de l'adjoint po-2025.
 
 ### Verdict scientifique honnête (G2 / #15539)
 
