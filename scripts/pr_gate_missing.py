@@ -50,7 +50,6 @@ import argparse
 import json
 import subprocess
 import sys
-from typing import Iterable
 
 LABEL_DEFAULT = "pr-gate-missing"
 LABEL_BOT_DEFAULT = "pr-gate-missing-bot"
@@ -537,6 +536,21 @@ def post_comment(repo: str, number: int, body: str, dry_run: bool) -> None:
               f"comment on #{number}")
 
 
+def retract_comment(repo: str, comment_id: int, body: str, dry_run: bool) -> None:
+    """Rewrite one PR-gate-missing comment in place (PATCH, idempotent).
+
+    Hermes #15621 (c.16h54, point 3) : le commentaire marque laisse par un faux
+    positif de classification affirmait des proprietes non mesurees (« auteur :
+    (pas une PR bot) », « investigation manuelle ») -- le laisser tel quel
+    fabrique du travail de coordination pour une cause triviale et design.
+    """
+    if dry_run:
+        return
+    _gh_write(["api", f"repos/{repo}/issues/comments/{comment_id}",
+               "-X", "PATCH", "-f", f"body={body}"],
+              f"retract comment {comment_id}")
+
+
 def labeled_prs(repo: str, label: str) -> dict[int, bool]:
     """Map PR number -> has-label for all open PRs carrying ``label``.
 
@@ -613,10 +627,13 @@ def main(argv: list[str] | None = None) -> int:
             if number in labeled_conflict:
                 remove_label(repo, number, args.label_conflict, args.dry_run)
                 print(f"  #{number:<6} has_gate   {why}  (conflict label retracted)")
-        elif verdict == "draft":
-            pass  # quiet -- the common non-defect case
-        else:  # excluded_base
-            pass  # quiet -- PRs targeting a feature branch never see PR gate
+        elif verdict in ("draft", "excluded_base"):
+            # Hermes #15621 (c.16h54, point 3) : la retombee de label n'existait
+            # que sur `has_gate` -- une PR signee « missing » par l'ancien
+            # collapse de forme puis correctement reclassee gardait son label et
+            # son commentaire FAUX a vie. Retrait symetrique, idempotent.
+            _retract_reclassified(repo, number, verdict, why, args,
+                                  labeled, labeled_bot, labeled_conflict)
 
     print(f"[pr-gate-missing] done: {counts} causes={causes}")
     return 0
@@ -633,6 +650,46 @@ def _comment_body(remediation: str, cause_line: str = "") -> str:
         parts += ["", cause_line]
     parts.append(COMMENT_MARKER_END)
     return "\n".join(parts)
+
+
+def _retraction_body(verdict: str, why: str) -> str:
+    # SANS marqueurs, volontairement : une PR qui redevient `missing` (retarget
+    # vers main, sortie du draft) doit obtenir une remediation FRAICHE --
+    # `existing_comment` ne doit plus trouver ce commentaire retracte, sinon
+    # il resterait muet sur un vrai defaut futur.
+    return "\n".join([
+        "## Retracte -- cette PR n'est pas un cas « PR gate absent »",
+        "",
+        f"Classe `{verdict}` : {why}.",
+        "Le signalement precedent etait un artefact du defaut de forme #15621",
+        "(classification figee sur `missing`). Aucune action requise.",
+    ])
+
+
+def _retract_reclassified(repo: str, number: int, verdict: str, why: str,
+                          args: object, labeled: dict, labeled_bot: dict,
+                          labeled_conflict: dict) -> None:
+    """Idempotent retraction of a misclassification's artifacts.
+
+    Symetrique au `has_gate` ci-dessus, mais la reecriture du commentaire est
+    en plus : pour `has_gate` le commentaire reste en historique (le retrait du
+    label EST le signal de resolution), alors qu'ici le commentaire laisse par
+    le faux positif affirmait des proprietes non mesurees. Le check des
+    commentaires est INCONDITIONNEL (pas seulement si un label est present) :
+    pendant l'episode 404 des labels (mesure #15621, defaut 2), les
+    commentaires ont ete postes alors qu'aucun label n'a jamais ete cree.
+    """
+    for present, label in ((number in labeled, args.label),
+                           (number in labeled_bot, args.label_bot),
+                           (number in labeled_conflict, args.label_conflict)):
+        if present:
+            remove_label(repo, number, label, args.dry_run)
+            print(f"  #{number:<6} {verdict:<8} {why}  (label {label} retracted)")
+    comment_id = existing_comment(repo, number)
+    if comment_id is not None:
+        retract_comment(repo, comment_id, _retraction_body(verdict, why),
+                        args.dry_run)
+        print(f"  #{number:<6} {verdict:<8} {why}  (comment retracted)")
 
 
 if __name__ == "__main__":

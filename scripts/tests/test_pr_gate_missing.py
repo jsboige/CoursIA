@@ -31,6 +31,7 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pr_gate_missing import (  # noqa: E402
+    main,
     classify,
     classify_input,
     rollup_names,
@@ -43,8 +44,9 @@ from pr_gate_missing import (  # noqa: E402
     prescribe,
     remediation_for,
     _gh_write,
+    COMMENT_MARKER_START,
+    COMMENT_MARKER_END,
     REMEDIATION_CONFLICT,
-    REMEDIATION_SKIP_CI,
 )
 
 
@@ -364,3 +366,73 @@ def test_write_success_stays_quiet():
         ok = _gh_write(["label", "create", "pr-gate-missing"], "label create")
     assert ok is True
     assert err.getvalue() == ""
+
+
+# ---------------------------------------------------------------------------
+# (#15621, Hermes point 3) la reclassee retracte ses artefacts faux
+# ---------------------------------------------------------------------------
+
+
+def _run_main(pr_row, labeled_map=None, comment_id=None):
+    """Drive main() in apply mode with every network touch patched.
+
+    The retraction path for `excluded_base`/`draft` is WIRLING (labels map +
+    comment lookup + writes), invisible to a classify()-only test -- the same
+    blind spot that let the GraphQL/REST mismatch live for weeks.
+    """
+    labeled_map = labeled_map or {}
+    with mock.patch("pr_gate_missing.ensure_label", lambda *a, **k: None), \
+         mock.patch("pr_gate_missing.list_open_prs", lambda repo: [pr_row]), \
+         mock.patch("pr_gate_missing.labeled_prs",
+                    lambda repo, label: labeled_map.get(label, {})), \
+         mock.patch("pr_gate_missing.existing_comment",
+                    lambda repo, number: comment_id), \
+         mock.patch("pr_gate_missing.remove_label") as remove, \
+         mock.patch("pr_gate_missing.retract_comment") as retract, \
+         mock.patch("pr_gate_missing.apply_label") as apply_l, \
+         mock.patch("pr_gate_missing.post_comment") as post:
+        rc = main(["--repo", "jsboige/CoursIA"])
+    return rc, remove, retract, apply_l, post
+
+
+def test_reclassified_pr_loses_label_and_false_comment():
+    # #15620 telle que mesuree par Hermes : stackee (base != main), classee
+    # `missing` par le collapse de forme, label + commentaire faux poses.
+    row = classify_input(15620, "fix/15489-kernel-suffix-canon-guard", False,
+                         "jsboige", [], [{"name": "pr-gate-missing"}])
+    rc, remove, retract, apply_l, post = _run_main(
+        row, labeled_map={"pr-gate-missing": {15620: True}}, comment_id=42)
+    assert rc == 0
+    assert remove.call_count == 1
+    assert remove.call_args[0] == ("jsboige/CoursIA", 15620,
+                                   "pr-gate-missing", False)
+    assert retract.call_count == 1
+    repo, cid, body, dry = retract.call_args[0]
+    assert (repo, cid, dry) == ("jsboige/CoursIA", 42, False)
+    # La retraction est SANS marqueurs : une rechute reelle doit reposter une
+    # remediation fraiche, pas rester muette sur un commentaire retracte.
+    assert COMMENT_MARKER_START not in body and COMMENT_MARKER_END not in body
+    assert "excluded_base" in body
+    assert apply_l.call_count == 0 and post.call_count == 0
+
+
+def test_reclassified_draft_retracts_too():
+    row = classify_input(15334, "main", True, "jsboige", [],
+                         [{"name": "pr-gate-conflict"}])
+    rc, remove, retract, _, _ = _run_main(
+        row, labeled_map={"pr-gate-conflict": {15334: True}}, comment_id=None)
+    assert rc == 0
+    assert remove.call_count == 1
+    assert remove.call_args[0][2] == "pr-gate-conflict"
+    assert retract.call_count == 0  # pas de commentaire marque -> rien a reecrire
+
+
+def test_retraction_is_idempotent():
+    # Deuxieme passage : plus de label, plus de commentaire -> aucun geste.
+    row = classify_input(15609, "feature/15479-ict-torch-hooks", False,
+                         "jsboige", [])
+    rc, remove, retract, apply_l, post = _run_main(row)
+    assert rc == 0
+    assert remove.call_count == 0
+    assert retract.call_count == 0
+    assert apply_l.call_count == 0 and post.call_count == 0
