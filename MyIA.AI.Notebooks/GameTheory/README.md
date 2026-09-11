@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 96
-breakdown: root=88, SocialChoice=8
-maturity: BETA=91, ALPHA=3, DRAFT=2
+pedagogical_count: 98
+breakdown: root=90, SocialChoice=8
+maturity: BETA=92, ALPHA=4, DRAFT=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -476,12 +476,13 @@ flowchart LR
     N4 -. "balanced ⟹ Core non-vide" .-> L4
     N5 -. "optimalité proposant" .-> L5
     N6 -. "stabilité sous menace" .-> L6
-    style L1 fill:#e8f5e9
-    style L2 fill:#e8f5e9
-    style L3 fill:#e8f5e9
-    style L4 fill:#e8f5e9
-    style L5 fill:#e8f5e9
-    style L6 fill:#e8f5e9
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style L1 fill:#e8f5e9,color:#1b5e20
+    style L2 fill:#e8f5e9,color:#1b5e20
+    style L3 fill:#e8f5e9,color:#1b5e20
+    style L4 fill:#e8f5e9,color:#1b5e20
+    style L5 fill:#e8f5e9,color:#1b5e20
+    style L6 fill:#e8f5e9,color:#1b5e20
 ```
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.

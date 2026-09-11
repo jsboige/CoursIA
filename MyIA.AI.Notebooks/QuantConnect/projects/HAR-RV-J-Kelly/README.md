@@ -38,7 +38,7 @@ L'article QC research #18312 (*Kelly Criterion Applications in Trading Systems*,
 |---|---|---:|---:|---:|
 | **Profit net absolu** | `totalNetProfit` USDT (capital initial 100 000) | **+168 810.65 ₮** | +86 198.70 ₮ | +117 707.99 ₮ |
 | **Profit par trade** | `totalNetProfit / totalOrders` USDT | 272.27 | 295.20 | 183.63 |
-| **Profit par jour de marché** | `totalNetProfit / tradeableDates` USDT (2709 jours sur 2018-01-01 → 2025-06-01, ≈ 7.42 ans) | 62.32 | 31.82 | 43.45 |
+| **Profit par jour de marché** | `totalNetProfit / tradeableDates` USDT (2709 jours sur 2018-01-01 → 2025-06-01, ≈ 7.42 ans) | 62.31 | 31.82 | 43.45 |
 | **Multiplicateur net sur capital** | `totalNetProfit / 100000` | **+1.69×** | +0.86× | +1.18× |
 | **Cap sizing** (théorique, depuis `main.py`) | `kelly_fraction × cap` | 0.30 | 0.30 | 0.20 |
 
@@ -61,10 +61,10 @@ Le tableau baseline historique de `HAR-RV-J-Kelly` (référencé dans `docs/qc/q
 | Sharpe | 0.524 | 0.531 | +0.007 (+1.3 %) | re-exécution brokerage inclus c.426 (modèle BINANCE/AccountType.CASH) |
 | CAGR | 14.08 % | 14.25 % | +0.17 pp | re-exécution même warm-up 250j, slippage EOD actualisé |
 | MaxDD | 37.1 % | 35.5 % | -1.6 pp | re-exécution cap kelly explicite 0.30 dans `main.py` (vs sans cap dans status) |
-| PSR | 10.69 % | 7.40 % | -3.3 pp | re-exécution avec 620 trades vs ~502 (plus de trades = PSR plus conservateur) |
+| PSR | 10.69 % | 7.40 % | -3.3 pp | re-exécution avec 620 ordres vs ~502 d'après l'UI QC Cloud du backtest d'origine (le tableau status ne porte pas de compte d'ordres ; plus de trades = PSR plus conservateur) |
 | NP absolu | +₮165 831 | +₮168 811 | +₮2 980 (+1.8 %) | re-exécution avec modèle brokerage BINANCE actualisé |
 
-La re-exécution c.426 **ne change pas la formule de sizing** (quart-Kelly mu/σ², `kelly_fraction=0.25`, cap 0.30 — inchangé). Elle actualise le **modèle de coûts** (brokerage BINANCE inclus, slippage EOD actualisé par QC) et le **nombre de trades** (620 vs ~502 dans status). Le verdict scientifique du grain reste **INCONCLUSIVE** : la substitution est purement opérationnelle, pas méthodologique. **Note c.429** : la citation correcte est `docs/qc/qc-strategies-status.md:250` (lignes 247-253 du tableau cohorte Tranche 8), pas `docs/audits/qc_projects_audit_2026_05_28.md:59` comme indiqué en c.428 — corrigé après recapture first-hand de l'adjoint po-2025.
+La re-exécution c.426 **ne change pas la formule de sizing** (quart-Kelly mu/σ², `kelly_fraction=0.25`, cap 0.30 — inchangé). Elle actualise le **modèle de coûts** (brokerage BINANCE inclus, slippage EOD actualisé par QC) et le **nombre d'ordres** (620 vs ~502, d'après l'UI QC Cloud du backtest d'origine — le tableau status ne porte pas de compte d'ordres). Le verdict scientifique du grain reste **INCONCLUSIVE** : la substitution est purement opérationnelle, pas méthodologique. **Note c.429** : la citation correcte est `docs/qc/qc-strategies-status.md:250` (lignes 247-253 du tableau cohorte Tranche 8), pas `docs/audits/qc_projects_audit_2026_05_28.md:59` comme indiqué en c.428 — corrigé après recapture first-hand de l'adjoint po-2025.
 
 ### Verdict scientifique honnête (G2 / #15539)
 

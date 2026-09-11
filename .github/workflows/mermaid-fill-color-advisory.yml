@@ -1,0 +1,182 @@
+name: Mermaid Fill Color Advisory
+
+# Organ for the "mermaid fill: without color:" convention (issue #15022 founding
+# incident -- user reported light-on-light labels in dark theme; fix PR #15502
+# verified the rule BY HAND, review NanoClaw asked for a mechanical guard so
+# the class cannot return on the 25 corpus files that still carry it).
+#
+# ADVISORY, never blocking (same posture decision as
+# paragraph-length-advisory.yml #15513 and consecutive-code-cells-advisory.yml
+# #12797): the job ALWAYS exits 0. The actionable payload is the
+# `mermaid-fill-color` LABEL, never the green conclusion of the job. Promoting
+# to a blocking gate is a separate decision, to revisit only once the residual
+# corpus (25 files / 90 rules measured on main 2026-09-11, follow-up issue in
+# the PR body) is swept and stable.
+#
+# Per-PR scope: runs detect_mermaid_fill_without_color.py ONLY on the *.md and
+# *.ipynb modified by the PR (3-point diff merge-base...HEAD), NOT a repo-wide
+# scan on every push -- the residual is pre-existing on main, a per-PR scan
+# would flag every PR touching an already-defective file (#8829 posture).
+#
+# Self-cover (#8822): a paths-filtered label-poser must list its own file,
+# else it cannot re-run (so cannot remove its own label) once the matching
+# paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content criterion runs against them.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - '**/*.ipynb'
+      # Self-cover (#8822) -- the script, its tests + fixture, and the
+      # workflow itself.
+      - 'scripts/notebook_tools/detect_mermaid_fill_without_color.py'
+      - 'scripts/notebook_tools/tests/test_detect_mermaid_fill_without_color.py'
+      - 'scripts/notebook_tools/tests/fixtures/mermaid_fill_no_color.md'
+      - '.github/workflows/mermaid-fill-color-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: mermaid-fill-color-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mermaid-fill-color-advisory:
+    name: "Mermaid fill-without-color advisory (label, non-blocking)"
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed files.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Self-test detector (proves it can fire)
+        # A detector that cannot be shown firing is indistinguishable from a
+        # disconnected one (lecon #11685). Run --self-test FIRST so a broken
+        # install is loud before any measurement happens.
+        run: |
+          python scripts/notebook_tools/detect_mermaid_fill_without_color.py --self-test
+
+      - name: Advisory check on modified .md / .ipynb
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without a git context GH_REPO, `gh pr edit` / `gh label create`
+          # cannot infer the target repo and fail silently (variation-tag-guard
+          # documented this trap firsthand after #8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_FINDING: mermaid-fill-color
+          LABEL_UNMEASURED: mermaid-fill-color-unmeasured
+        run: |
+          set -uo pipefail
+
+          # Added/modified .md + .ipynb in the PR (deletions excluded -- a
+          # deleted file has nothing to measure). 3-point diff (#10403) :
+          # merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.md' '*.ipynb' \
+            | grep -v $'\r$' > changed_files.txt || true
+          COUNT=$(wc -l < changed_files.txt | tr -d ' ')
+          echo "Modified .md / .ipynb in this PR: $COUNT"
+
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified files to check."
+            unset_label "$LABEL_FINDING"; unset_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
+          # is the pair of LABELS decided from the JSON payload below.
+          python scripts/notebook_tools/detect_mermaid_fill_without_color.py \
+            --json --stdin --root . < changed_files.txt > payload.json
+          cat payload.json
+
+          # Aggregate findings across the diff: a single fill-without-color
+          # rule in ANY modified file flags the PR. Unmeasured = JSON
+          # unparseable (script died or produced nothing) -> FIND stays -1,
+          # caught by the guard below (one-liner python -c : un bloc python
+          # multi-lignes en colonne 0 terminerait le scalaire litteral YAML).
+          FINDINGS=$(python -c "import json; d = json.load(open('payload.json')); print(d.get('total_hits', -1), d.get('error_count', 0))" 2>/dev/null || echo "-1 1")
+          FIND=$(echo "$FINDINGS" | awk '{print $1}')
+          UNM=$(echo "$FINDINGS" | awk '{print $2}')
+          echo "fill-without-color rules across modified files: $FIND"
+          echo "Unmeasured (parse errors / illisibles): $UNM"
+
+          # Issue #8819 applied: TWO distinct labels. "Could not measure" and
+          # "measured, carries the defect" call for different reactions, so
+          # they never collapse into one. Each label is raised when its count
+          # is > 0 and cleared otherwise (a stale label from an earlier push
+          # must not stick).
+          ensure_label "$LABEL_FINDING" \
+            "A modified .md or .ipynb carries a mermaid style/classDef rule with fill: but no color: -- light-on-light label risk in dark theme (#15022 founding incident, #15502 fix + guard)" "E99695"
+          ensure_label "$LABEL_UNMEASURED" \
+            "A modified .md or .ipynb could not be measured by the mermaid fill-color detector -- NOT verified (#8819)" "BFD4F2"
+
+          # The #8819 guard: if the detector died, FIND/UNM are not integers
+          # (FIND defaults to -1 on unreadable payload). With only `set -uo
+          # pipefail` (no -e), each comparison falls into the wrong branch if
+          # unchecked. NOT measured => NOT verified: pose the unmeasured label
+          # and a loud ::error::, never a green claim.
+          if ! [ "${FIND:-}" -eq "${FIND:-}" ] 2>/dev/null \
+             || ! [ "${UNM:-}" -eq "${UNM:-}" ] 2>/dev/null \
+             || [ "${FIND:-}" -lt 0 ] 2>/dev/null; then
+            echo "::error::mermaid fill-color payload illisible (detector produced no usable JSON) -- the advisory measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          if [ "$FIND" -gt 0 ]; then
+            echo "::notice::$FIND fill-without-color mermaid rule(s) in modified file(s) (#15022 founding incident). See the '$LABEL_FINDING' label."
+            set_label "$LABEL_FINDING"
+          else
+            unset_label "$LABEL_FINDING"
+          fi
+
+          if [ "$UNM" -gt 0 ]; then
+            echo "::warning::$UNM modified file(s) could not be measured -- NOT verified by the mermaid fill-color advisory (#8819). See the '$LABEL_UNMEASURED' label."
+            set_label "$LABEL_UNMEASURED"
+          else
+            unset_label "$LABEL_UNMEASURED"
+          fi
+
+          # The closing line asserts ONLY what was measured (issue #8819). The
+          # job never claims "all conform" while unmeasured > 0.
+          if [ "$UNM" -gt 0 ]; then
+            echo "RESULT: $UNM file(s) NOT measured -- conformity neither claimed nor denied."
+          elif [ "$FIND" -gt 0 ]; then
+            echo "RESULT: $FIND fill-without-color rule(s) in modified file(s) -- labelled."
+          else
+            echo "RESULT: no modified file carries a fill-without-color mermaid rule (verified)."
+          fi
+          exit 0
