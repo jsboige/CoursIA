@@ -71,7 +71,14 @@ from .sae_traces import (
     binarize_quantile,
     states_from_panel,
 )
-from .sae_traces import load_traces as _sae_load_traces
+# Binding local ``_sae_load_npz_unchecked`` (#15536) : :func:`load_traces`
+# lit le .npz via :func:`ict.sae_traces._load_npz_unchecked` (meme schema,
+# memes loaders numpy-only + garde BOS-inf, SANS enforce) puis applique ses
+# propres gardes Track P + la discrimination contrat v1 ``jlens_trackp``.
+# Elle ne delegue PAS a ``ict.sae_traces.load_traces`` (qui enforce
+# ``instrument=='sae'`` et refuserait systematiquement une fixture Track P
+# legacy ``lens='jacobian'`` -- cause des 13 fails post-#15525).
+from .sae_traces import _load_npz_unchecked as _sae_load_npz_unchecked
 
 __all__ = [
     "load_traces",
@@ -87,7 +94,7 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # Chargement (garde-fou anti-mélange Track S/SAE <-> Track P, #5681)
 # --------------------------------------------------------------------------- #
-def load_traces(path: str | Path) -> dict:
+def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     """Recharge un ``.npz`` de traces **J-Lens Track P** (persona, 4B).
 
     Garde-fou anti-mélange : valide la nature de la trace via ``meta["lens"]`` et
@@ -103,19 +110,33 @@ def load_traces(path: str | Path) -> dict:
     * ``meta["track"]`` commence par ``"P"`` ou est absent -> **accepte** (fixture
       Track P nominale, ou rétro-compatibilité).
 
+    Validation du **contrat de trace v1** (:mod:`ict.trace_contract`, #15536) :
+    appelle :func:`ict.trace_contract.validate_manifest` puis
+    :func:`ict.trace_contract.enforce_instrument` avec
+    ``expected="jlens_trackp"`` (instrument dédié, v1.1.0). Un manifeste
+    legacy ``lens='jacobian'``/``'jlens'`` est accepté en rétro-compatibilité ;
+    un manifeste sans ``instrument`` NI ``lens`` est stampé
+    ``instrument='jlens_trackp'`` (rétro-compat documentée par
+    ``tests/test_jlens_trackP_traces.py::test_load_traces_accepts_missing_track_and_lens``).
+
+    Le paramètre ``strict`` (défaut ``False``) suit la même convention que
+    :func:`ict.sae_traces.load_traces` : ``False`` accepte les traces
+    historiques, ``True`` exige un manifeste v1 complet.
+
     Retourne ``{"meta": dict, "prompts": {(set_name, i): {"ids", "vals",
     "tokens"}}}`` -- même structure que :func:`ict.sae_traces.load_traces`.
     """
-    traces = _sae_load_traces(path)
-    meta = traces.get("meta", {})
-    lens = meta.get("lens")
-    if lens == "sae":
+    raw_meta, prompts = _sae_load_npz_unchecked(path)
+
+    # Gardes-fous propres à Track P (discriminants que le contrat v1 ne
+    # connaît pas) : trace SAE et fixture Track S.
+    if raw_meta.get("lens") == "sae":
         raise ValueError(
             f"trace {path} porte meta['lens']='sae' : c'est une trace SAE, pas "
             f"J-Lens Track P. Utiliser ict.sae_traces.load_traces (garde-fou "
-            f"anti-mélange du tete-a-tete #5681 Track P)."
+            f"anti-mélange du tete-a-tête #5681 Track P)."
         )
-    track = meta.get("track", "")
+    track = raw_meta.get("track", "")
     if isinstance(track, str) and track.startswith("S"):
         raise ValueError(
             f"trace {path} porte meta['track']={track!r} : c'est une fixture "
@@ -123,4 +144,17 @@ def load_traces(path: str | Path) -> dict:
             f"Modèles distincts = substrats non comparables directement "
             f"(garde-fou anti-mélange Track S/Track P #5681)."
         )
-    return traces
+
+    # #15536 : stamp du discriminant v1 pour les fixtures legacy sans
+    # 'instrument' NI 'lens'. Sans lui, l'inférence du contrat (champs
+    # lens_repo/lens_kind/lens_rank -> 'jlens') contredirait l'enforce
+    # 'jlens_trackp' sur ces traces historiques.
+    if "instrument" not in raw_meta and raw_meta.get("lens") is None:
+        raw_meta["instrument"] = "jlens_trackp"
+
+    # Contrat v1 : validation + anti-mélange instrument (acceptance #1).
+    # Import local pour éviter tout cycle d'import.
+    from .trace_contract import validate_manifest, enforce_instrument
+    meta = validate_manifest(raw_meta, strict=strict, expected="jlens_trackp")
+    enforce_instrument(meta, "jlens_trackp")
+    return {"meta": meta, "prompts": prompts}
