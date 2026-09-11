@@ -415,7 +415,7 @@ def _cli(argv: list[str] | None = None) -> None:
             "r_neutre_by_seed": calib.r_neutre_by_seed,
             "sigma_attn": calib.sigma_attn,
             "notes": calib.notes,
-        }, ensure_ascii=False, indent=1), encoding="utf-8")
+        }, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
         print(f"[calibrate] sigma_attn={calib.sigma_attn:.6f} -> {args.out}")
         return
     frozen = json.loads(Path(args.calibration).read_text(encoding="utf-8"))
@@ -425,7 +425,7 @@ def _cli(argv: list[str] | None = None) -> None:
         notes=list(frozen.get("notes", [])))
     result = run_analysis(calib, {i: load_traces(p) for i, p in enumerate(args.traces)})
     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=1),
-                              encoding="utf-8")
+                              encoding="utf-8", newline="\n")
     print(f"[score] verdict={result['verdict']} -> {args.out}")
 
 

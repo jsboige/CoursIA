@@ -250,6 +250,8 @@ discrimination_self = |propa(q(soi)) − propa(autrui)| ≥ ε_self
 2. `ε_self = 0.5 × σ_self × propa(q(autrui))_médian` — l'écart absolu entre self et autrui doit valoir au moins la moitié du bruit de fond typique pour qu'on parle de discrimination réelle.
 3. **Le null adversarial est exécuté AVANT le test principal** (calibration des objets neutres), pas après (anti-HARKing) — la PR de test ouvrira par la cellule calibration, puis le test.
 
+> **Note d'instrument (opérateur ε, propriété reportée à la réutilisation canonique)** : seule σ (bras de calibration) est gelée avant extraction ; l'échelle médiane qui multiplie ε — `propa(q(autrui))_médian` ci-dessus, `propa(q̂_vrai) − propa(aléatoire)` pour ε_stable (case 3) — est assemblée depuis les traces des **bras principaux** au moment de l'analyse. La réutilisation canonique de l'opérateur en case 5 ([PR #15547](https://github.com/jsboige/CoursIA/pull/15547), `propa_obj_median_scale`) hérite de cette propriété : ε est relatif-pré-gelé, son échelle absolue est post-extraction.
+
 **Tue la prédiction si** (deux nulls adversariaux explicites) :
 
 - `R_self ∈ [0.85, 1.15]` (= self ≈ autrui, indistinguable du ratio neutre) **OU**
