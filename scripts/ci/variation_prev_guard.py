@@ -34,11 +34,18 @@ the genre-adjacency measurement G-VAR-3 enforces:
      the comparator direction), so the cap never measures anything. Real
      witness: #12875.
 
-  2. **PREV-NOT-MERGED** -- the `prev:` points at a PR that has NOT been
-     merged yet. The predecessor is a moving target: the author believed
-     their work flowed from a closed-but-still-editable PR, and the cap
-     silently compares against a genre that may still change. Real witness:
-     #13473.
+  2. **PREV-ABANDONED** -- the `prev:` points at a PR that was **closed
+     without merging**. The declared lineage was given up: nothing it
+     carries will ever reach `main`, so the adjacency is measured against
+     a grain that does not exist there.
+
+     This invariant used to read "not merged", i.e. it fired on OPEN PRs
+     too, and that was wrong -- see ``validate_prev_targets`` for the
+     measurement (five PRs blocked on 2026-09-08 whose four cited
+     predecessors were all merely in flight) and for why an OPEN
+     predecessor is the *mandated* state of a lane holding R1's floor.
+     The witness the original invariant cited, #13473, merged on
+     2026-08-29 without anyone touching it.
 
   3. **PREV-NOT-PR** -- the `prev:` points at an ISSUE (not a PR). The
      predecessor is never mergeable, so genre adjacency is structurally
@@ -58,7 +65,7 @@ Scans the PR body AND every commit message on the branch for:
   (a) `prev:` whose genre is a closing keyword (`grain_tag.CLOSING_KEYWORDS`)
       -- the #10093 invariant;
   (b) `prev:` whose PR reference violates one of the three #13475 invariants
-      (PREV-SELF / PREV-NOT-MERGED / PREV-NOT-PR).
+      (PREV-SELF / PREV-ABANDONED / PREV-NOT-PR).
 
 A single verdict is emitted on stdout:
 
@@ -118,13 +125,18 @@ cite is a documented exemption, not a defect.
 
 ## How the caller passes target metadata
 
-(b) requires knowing whether each cited `#N` resolves to a PR, and whether
-that PR is merged. The workflow fetches this with `gh` and writes it as a
-JSON dict:
+(b) requires knowing whether each cited `#N` resolves to a PR, and in
+which state. The workflow fetches this with `gh` and writes it as a JSON
+dict:
 
-    {"1234": {"kind": "pr", "merged": true},
-     "5678": {"kind": "pr", "merged": false},
-     "9012": {"kind": "issue"}}
+    {"1234": {"kind": "pr", "state": "MERGED", "merged": true},
+     "5678": {"kind": "pr", "state": "OPEN",   "merged": false},
+     "3456": {"kind": "pr", "state": "CLOSED", "merged": false},
+     "9012": {"kind": "issue", "state": "OPEN"}}
+
+``state`` is the field invariant (2) tests; the three PR states are three
+different verdicts (clean / clean / blocked) and the `merged` boolean
+cannot express that.
 
 The shape is the smallest information needed to evaluate the three
 invariants; the gate does not call `gh` itself (that would couple the
@@ -139,7 +151,7 @@ number -- which the caller passes via `--current-pr`.
     # with commit messages (JSON array of strings):
     python scripts/ci/variation_prev_guard.py --body-file body.txt --commits-file commits.json \\
         --current-pr 13918
-    # with target metadata (JSON dict of pr_number -> {kind, merged}):
+    # with target metadata (JSON dict of pr_number -> {kind, state}):
     python scripts/ci/variation_prev_guard.py --body-file body.txt --current-pr 13918 \\
         --prev-targets-file targets.json
 """
@@ -303,21 +315,80 @@ def validate_prev_targets(
     r"""Evaluate invariants (2) and (3) of #13475 against a target list.
 
     ``targets_meta`` is a dict `{str(pr_number): {"kind": "pr"|"issue",
-    "merged": bool}}` -- the JSON the workflow writes. ``location`` is
-    `"body"` or `"commits[<index>]"` so the verdict can name the slot.
+    "state": "OPEN"|"CLOSED"|"MERGED"}}` -- the JSON ``resolve_prev_targets``
+    writes. ``location`` is `"body"` or `"commits[<index>]"` so the verdict
+    can name the slot.
 
     Returns a list of `{"location", "kind", "prev_pr"}` hits:
 
-      * `kind="prev-not-merged"` -- the target is a PR but its `merged` flag
-        is false (invariant 2).
+      * `kind="prev-abandoned"` -- the target is a PR **closed without
+        merging**: the lineage the tag declares was given up, so the
+        `prev:` points at nothing that will ever reach `main` (invariant 2).
       * `kind="prev-not-pr"` -- the target is an issue (invariant 3).
 
-    A target missing from `targets_meta` (the workflow couldn't resolve it)
-    is NOT flagged: the FN-safety contract is "unresolved -> abstain",
-    matching `check_unaddressed_nits.py`'s posture on the same class of
-    problem. The silent-acceptance defect that #13475 measures is at the
-    SUFFICIIENT-information end (the metadata is right there in the file,
-    we just didn't read it), not at the unresolvable end.
+    **An OPEN target is NOT a hit.** Invariant 2 used to fire on any
+    non-merged PR, which conflated two states that are not remotely the
+    same defect:
+
+    ==========  =====================================================
+    target      what it says about the lineage
+    ==========  =====================================================
+    ``MERGED``  the predecessor landed -- clean
+    ``OPEN``    the predecessor is **still in flight** -- clean too
+    ``CLOSED``  the predecessor was abandoned -- the real defect
+    ==========  =====================================================
+
+    Flagging ``OPEN`` punished the exact behaviour R1 of
+    `proactive-coordination.md` *mandates*: "1 PR entre 2 wakeups =
+    PLANCHER, jamais plafond -- une PR livree ne clot pas la session,
+    re-pioche IMMEDIATEMENT". A lane that opens its next PR before the
+    previous one merges is working as instructed, and this gate rejected
+    it for that. Measured on 2026-09-08 at 13:20Z, by replaying this
+    organ against the real bodies and commit messages: **five** open PRs
+    blocked (#15156, #15190, #15207, #15209, #15210), citing **four**
+    distinct predecessors (#15129, #15175, #15199, #15203) -- **all four
+    OPEN, not one abandoned**. #15175 was blocked too, but on its own
+    ``prev-self``; the ``prev-not-merged`` it also carried was this
+    invariant firing a second time on the same self-reference, and the
+    repair removes that duplicate without touching the real defect.
+
+    An earlier count of this same set said *six*, including #15200. That
+    reading was correct when taken and is no longer reproducible: #15200's
+    body was replaced by ``...`` at 2026-09-08T13:11:52Z, which removed
+    its ``Grain:`` line and with it every ``prev:`` clause. It is recorded
+    here rather than quietly corrected, because a body that moves under a
+    content measurement is exactly what makes such a measurement look
+    wrong afterwards. (#15200 is now a grain-orphan -- a separate defect,
+    invisible to every lane guard, tracked by GRAIN-ORPHANS-SWEEP #13086.)
+
+    It is also the doctrine `variation_adjacency_guard.py` already holds
+    since #11963: "the `prev:` field is frozen at PR-open time, so a lane
+    that merges grains while the PR sits open made the gate block PRs the
+    rule never aimed at". The two organs read the same field; they now
+    read it the same way.
+
+    The witness #13475 recorded for invariant 2 -- #13473, tagged
+    ``prev: ... #13465`` while #13465 was OPEN -- **merged on 2026-08-29**.
+    The "defect" resolved itself the moment its predecessor landed, which
+    is what a transient state does and what a broken lineage does not.
+
+    Two abstentions, both deliberate:
+
+      * a target missing from ``targets_meta`` (the workflow couldn't
+        resolve it) is NOT flagged -- FN-safety contract "unresolved ->
+        abstain", matching `check_unaddressed_nits.py` on the same class of
+        problem. The silent-acceptance defect #13475 measures is at the
+        SUFFICIENT-information end (the metadata is right there in the
+        file, we just didn't read it), not at the unresolvable end;
+      * a PR-kind meta carrying **no ``state``** (a hand-written or legacy
+        ``--prev-targets-file`` from before this field existed) cannot
+        separate OPEN from CLOSED, so it is unresolved *for this predicate*
+        and abstains for the same reason. ``resolve_prev_targets`` always
+        emits ``state``; ``test_resolver_always_emits_state_for_a_pr`` is
+        the control that keeps this path an edge case rather than the norm.
+
+    ``merged`` is still emitted by the resolver for backward compatibility
+    with readers of the JSON, but it is **not** what this predicate tests.
     """
     if not target_prs or not targets_meta:
         return []
@@ -330,10 +401,15 @@ def validate_prev_targets(
         if kind == "issue":
             out.append({"location": location, "kind": "prev-not-pr",
                         "prev_pr": n})
-        elif kind == "pr" and not meta.get("merged", False):
-            out.append({"location": location, "kind": "prev-not-merged",
-                        "prev_pr": n})
-        # kind == "pr" and merged -> clean, no entry
+        elif kind == "pr":
+            state = str(meta.get("state") or "").upper()
+            if state == "CLOSED":
+                out.append({"location": location, "kind": "prev-abandoned",
+                            "prev_pr": n})
+            # MERGED -> landed, clean.
+            # OPEN   -> still in flight, clean (see docstring).
+            # ""     -> legacy meta without `state`: abstain, we cannot
+            #           tell OPEN from CLOSED and must not guess.
     return out
 
 
@@ -382,7 +458,7 @@ def check(
              "prev_pr": h["prev_pr"]}
             for h in find_prev_self_references(msg, current_pr)
         )
-    # PREV-NOT-MERGED + PREV-NOT-PR -- body + every commit. Each location
+    # PREV-ABANDONED + PREV-NOT-PR -- body + every commit. Each location
     # gets its own target list because the body and each commit carry
     # independent `prev:` clauses; aggregating them would mix concerns.
     body_targets = find_prev_target_pr_numbers(body)
@@ -396,7 +472,11 @@ def check(
     if not hits_body and not hits_commits and not hits_prev_invalid:
         return {"guard_pass": True,
                 "reason": "no prev: defect (close-keyword or invalid ref)",
-                "hits": {"body": [], "commits": [], "prev_invalid": []}}
+                "hits": {"body": [], "commits": [], "prev_invalid": []},
+                # Cibles `prev:` declarees et acceptees par ce run vert :
+                # la levee de commentaire #15372 les nomme, pour que le
+                # remplacement du mur affiche ce qui fait tenir le vert.
+                "prev_targets_accepted": sorted(set(body_targets))}
 
     # Compose the verdict. The reason names the worst offender first so
     # the worker reads the most actionable hint at the top of the failure
@@ -425,8 +505,9 @@ def check(
         )
         reasons.append(
             f"`prev:` reference(s) fail invariant(s) ({kind_summary}) -> "
-            "point `prev:` at a MERGED PR of the same lane, distinct from "
-            "the current PR. See #13475."
+            "point `prev:` at a PR of the same lane, distinct from the "
+            "current PR, that is merged or still open -- never at an "
+            "abandoned (closed-unmerged) PR nor at an issue. See #13475."
         )
 
     return {
@@ -461,7 +542,7 @@ def _read_commits_file(path: str) -> list[str]:
 def _read_prev_targets_file(path: str) -> dict[str, dict]:
     """Read a prev-targets file as a JSON dict of metadata.
 
-    The workflow writes a dict ``{str(pr_number): {"kind", "merged"}}``
+    The workflow writes a dict ``{str(pr_number): {"kind", "state"}}``
     built from ``gh pr view`` / ``gh issue view`` lookups for each
     `prev:` reference. An empty/missing file yields an empty dict -- the
     gate then abstains on invariants 2/3 (FN-safety contract; see
@@ -489,7 +570,14 @@ def resolve_prev_targets(
     runner=None,
     timeout: int = 15,
 ) -> "dict[str, dict]":
-    r"""Resolve each `prev:` target to ``{"kind": "pr"|"issue", "merged": bool}``.
+    r"""Resolve each `prev:` target to ``{"kind", "state", "merged"}``.
+
+    ``state`` is the verbatim ``gh`` state -- ``OPEN`` / ``CLOSED`` /
+    ``MERGED`` -- and it is the field ``validate_prev_targets`` tests.
+    ``merged`` is kept as a derived convenience for readers of the JSON,
+    but collapsing the three states into that boolean is precisely what
+    made invariant 2 unable to tell "still in flight" from "abandoned"
+    (see that function's docstring).
 
     This is the half of #13475 that used to live in a heredoc inside
     ``always-on-guards.yml``, where no test could reach it -- and it was
@@ -534,13 +622,15 @@ def resolve_prev_targets(
             state = _json_field(pr.stdout, "state")
             if state:
                 out[str(n)] = {"kind": "pr",
+                               "state": state.upper(),
                                "merged": state.upper() == "MERGED"}
                 continue
         issue = runner(["gh", "issue", "view", str(n), "--json", "state"],
                        capture_output=True, text=True, timeout=timeout)
         if getattr(issue, "returncode", 1) == 0:
-            if _json_field(issue.stdout, "state"):
-                out[str(n)] = {"kind": "issue"}
+            istate = _json_field(issue.stdout, "state")
+            if istate:
+                out[str(n)] = {"kind": "issue", "state": istate.upper()}
                 continue
         # neither resolved -> omitted -> the gate abstains on this target
     return out
@@ -584,8 +674,8 @@ def main(argv: list[str] | None = None) -> int:
                         "(required to evaluate PREV-SELF)")
     p.add_argument("--prev-targets-file", metavar="FILE",
                    help="path to a JSON dict of "
-                        "{str(pr_number): {kind, merged}} for each cited "
-                        "`prev:` reference (required for PREV-NOT-MERGED "
+                        "{str(pr_number): {kind, state}} for each cited "
+                        "`prev:` reference (required for PREV-ABANDONED "
                         "and PREV-NOT-PR)")
     p.add_argument("--resolve-targets", action="store_true",
                    help="resolve each cited `prev:` reference with `gh` "

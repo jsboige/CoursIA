@@ -81,6 +81,17 @@ _MARKER_RE = re.compile(
 OVERRIDE_LABEL = "translation-override"
 
 
+class FetchError(RuntimeError):
+    """A fetcher could not READ its source (auth, rate-limit, network).
+
+    Raised by ``gh_label_fetcher`` / ``gh_comment_fetcher`` on any failure.
+    Distinct from a successful read that found nothing: an unreadable source
+    must never be rendered as a measured absence (#15342) -- ``check()``
+    turns this into a fail-closed verdict whose ``reason`` says the read
+    failed, with ``label_present``/``marker_present`` set to ``None``.
+    """
+
+
 # ---------------------------------------------------------------------------
 # Fetchers (default = gh; injectable for tests).
 # ---------------------------------------------------------------------------
@@ -92,45 +103,57 @@ CommentFetcher = Callable[[int], list[dict]]
 def gh_label_fetcher(pr_number: int) -> list[str]:
     """Fetch the label NAMES attached to a PR via the ``gh`` CLI.
 
-    Returns an empty list on any failure (auth, rate-limit, network) -- the
-    verdict treats a fetch failure as "label not present" (fail-closed on the
-    override: a missing label never satisfies the dual-key, so an unknown state
-    cannot widen the bypass).
+    Raises :class:`FetchError` on any failure (missing repo env, auth,
+    rate-limit, network, bad JSON) -- never an empty list. An empty list is
+    reserved for the measured fact "the PR has no labels". The verdict stays
+    fail-closed on an unreadable source (an override is never widened by an
+    unknown state) but renders the read failure, not a false absence (#15342).
     """
     repo = os.environ.get("GH_REPO") or os.environ.get("GITHUB_REPOSITORY")
     if not repo:
-        return []
+        raise FetchError(
+            "cannot read PR labels: neither GH_REPO nor GITHUB_REPOSITORY is set"
+        )
     try:
         out = subprocess.run(
             [
                 "gh", "pr", "view", str(pr_number),
+                "--repo", repo,
                 "--json", "labels",
                 "--jq", "[.labels[].name]",
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
         )
-    except (OSError, subprocess.SubprocessError):
-        return []
+    except (OSError, subprocess.SubprocessError) as e:
+        raise FetchError(f"cannot read PR labels: gh pr view failed: {e}") from e
     if out.returncode != 0:
-        return []
+        stderr = (out.stderr or "").strip()[:200]
+        raise FetchError(
+            f"cannot read PR labels: gh pr view rc={out.returncode}: {stderr}"
+        )
     try:
         names = json.loads(out.stdout or "[]")
-    except json.JSONDecodeError:
-        return []
+    except json.JSONDecodeError as e:
+        raise FetchError(
+            f"cannot read PR labels: gh pr view output is not JSON: {e}"
+        ) from e
     return [str(n) for n in names if isinstance(n, str)]
 
 
 def gh_comment_fetcher(pr_number: int) -> list[dict]:
     """Fetch the COMMENTS of a PR via the ``gh`` CLI.
 
-    Each comment is returned as ``{author, body, createdAt}``. Returns an empty
-    list on any failure. The dual-key verdict treats a fetch failure as
-    "comment with marker not present" (fail-closed) -- same rationale as
-    ``gh_label_fetcher``.
+    Each comment is returned as ``{author, body, createdAt}``. Raises
+    :class:`FetchError` on any failure -- never an empty list. An empty list
+    is reserved for the measured fact "the PR has no comments". Same
+    fail-closed-with-honest-restitution rationale as ``gh_label_fetcher``
+    (#15342).
     """
     repo = os.environ.get("GH_REPO") or os.environ.get("GITHUB_REPOSITORY")
     if not repo:
-        return []
+        raise FetchError(
+            "cannot read PR comments: neither GH_REPO nor GITHUB_REPOSITORY is set"
+        )
     try:
         out = subprocess.run(
             [
@@ -139,14 +162,19 @@ def gh_comment_fetcher(pr_number: int) -> list[dict]:
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
-    except (OSError, subprocess.SubprocessError):
-        return []
+    except (OSError, subprocess.SubprocessError) as e:
+        raise FetchError(f"cannot read PR comments: gh api failed: {e}") from e
     if out.returncode != 0:
-        return []
+        stderr = (out.stderr or "").strip()[:200]
+        raise FetchError(
+            f"cannot read PR comments: gh api rc={out.returncode}: {stderr}"
+        )
     try:
         comments = json.loads(out.stdout or "[]")
-    except json.JSONDecodeError:
-        return []
+    except json.JSONDecodeError as e:
+        raise FetchError(
+            f"cannot read PR comments: gh api output is not JSON: {e}"
+        ) from e
     return comments
 
 
@@ -193,55 +221,98 @@ def check(
           "guard_pass": True|False,
           "reason": str,
           "override_applied": bool,
-          "label_present": bool,
-          "marker_present": bool,
+          "label_present": True|False|None,
+          "marker_present": True|False|None,
           "motif": str|None,
-          "warnings": [str, ...]
+          "warnings": [str, ...],
+          "fetch_error": str|None
         }
 
     ``guard_pass`` is True iff the dual-key is satisfied (label AND marker).
+    ``label_present``/``marker_present`` are ``None`` when that side could not
+    be READ (fetcher raised): an unreadable source is never rendered as a
+    measured absence -- the verdict stays fail-closed but says so (#15342).
+    ``fetch_error`` carries the cause(s); it is ``None`` on a clean read.
+
     The override is the **only** way the guard can pass once ``violated=true``
     has been computed upstream by ``translation-guard.yml`` itself; on a clean
     PR (no derived files touched), ``translation-guard.yml`` short-circuits
     before this script is consulted -- this helper exists for the
     ``violated=true`` path.
     """
-    labels = (
-        label_names
-        if label_names is not None
-        else (label_fetcher or gh_label_fetcher)(pr_number)
-    )
-    label_present = OVERRIDE_LABEL in labels
+    fetch_errors: list[str] = []
 
-    bodies: list[str]
+    labels: list[str] | None = label_names
+    if labels is None:
+        try:
+            labels = (label_fetcher or gh_label_fetcher)(pr_number)
+        except Exception as e:  # noqa: BLE001 - any fetcher failure is a read failure
+            fetch_errors.append(f"labels: {type(e).__name__}: {e}")
+    label_present: bool | None = (
+        None if labels is None else OVERRIDE_LABEL in labels
+    )
+
+    bodies: list[str] | None
     if comment_bodies is not None:
         bodies = list(comment_bodies)
     else:
-        comments = (comment_fetcher or gh_comment_fetcher)(pr_number)
-        bodies = [c.get("body", "") for c in comments if isinstance(c, dict)]
+        try:
+            comments = (comment_fetcher or gh_comment_fetcher)(pr_number)
+        except Exception as e:  # noqa: BLE001 - any fetcher failure is a read failure
+            fetch_errors.append(f"comments: {type(e).__name__}: {e}")
+            bodies = None
+        else:
+            bodies = [c.get("body", "") for c in comments if isinstance(c, dict)]
 
     marker: str | None = None
-    for body in bodies:
-        marker = _extract_marker(body)
-        if marker is not None:
-            break
-    marker_present = marker is not None
+    if bodies is not None:
+        for body in bodies:
+            marker = _extract_marker(body)
+            if marker is not None:
+                break
+    marker_present: bool | None = None if bodies is None else marker is not None
 
     warnings: list[str] = []
+    if fetch_errors:
+        unreadable = [
+            name
+            for name, present in (
+                ("les labels", label_present),
+                ("les commentaires", marker_present),
+            )
+            if present is None
+        ]
+        return {
+            "guard_pass": False,
+            "reason": (
+                f"translation-guard: impossible de lire {' et '.join(unreadable)} : "
+                f"{'; '.join(fetch_errors)}. "
+                f"Ceci n'est pas une absence mesuree (fail-closed inchange). See #15342."
+            ),
+            "override_applied": False,
+            "label_present": label_present,
+            "marker_present": marker_present,
+            "motif": marker,
+            "warnings": warnings,
+            "fetch_error": "; ".join(fetch_errors),
+        }
     if not label_present and not marker_present:
         return {
             "guard_pass": False,
             "reason": (
                 f"translation-guard violation: no override label '{OVERRIDE_LABEL}' "
                 f"and no comment marker '[TRANSLATION-OVERRIDE] <motif>'. "
-                f"Edit the source notebook instead and let translation-sync re-derive. "
-                f"See #10332."
+                f"NOTE (#15198): translation-sync is on manual-maintainer hold since "
+                f"2026-08-12 (#10038) -- editing the FR source does not refresh the "
+                f"derived file until the hold is lifted; while it stands, the dual-key "
+                f"override (#10332) is the expected exit for a legitimate change. "
             ),
             "override_applied": False,
             "label_present": False,
             "marker_present": False,
             "motif": None,
             "warnings": warnings,
+            "fetch_error": None,
         }
     if not label_present:
         return {
@@ -255,6 +326,7 @@ def check(
             "marker_present": True,
             "motif": marker,
             "warnings": warnings,
+            "fetch_error": None,
         }
     if not marker_present:
         return {
@@ -269,6 +341,7 @@ def check(
             "marker_present": False,
             "motif": None,
             "warnings": warnings,
+            "fetch_error": None,
         }
 
     # Both keys satisfied: the override applies.
@@ -286,6 +359,7 @@ def check(
         "marker_present": True,
         "motif": marker,
         "warnings": warnings,
+        "fetch_error": None,
     }
 
 

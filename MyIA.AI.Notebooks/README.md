@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1124
-breakdown: SymbolicAI=263, GenAI=215, Search=148, QuantConnect=110, GameTheory=96, ML=81, IIT=72, Probas=69, Sudoku=38, RL=25, CaseStudies=6, cross-series=1
-maturity: BETA=992, DRAFT=71, ALPHA=57, TEMPLATE=4
+total: 1130
+breakdown: SymbolicAI=265, GenAI=215, Search=149, QuantConnect=110, GameTheory=98, ML=81, IIT=72, Probas=69, Sudoku=38, RL=26, CaseStudies=6, cross-series=1
+maturity: BETA=998, DRAFT=70, ALPHA=58, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -323,12 +323,13 @@ flowchart LR
     N4 -. "fraction risquée f" .-> L4
     N5 -. "invariant réentrance" .-> L5
     N6 -. "impossibilité" .-> L6
-    style L1 fill:#e8f5e9
-    style L2 fill:#e8f5e9
-    style L3 fill:#e8f5e9
-    style L4 fill:#e8f5e9
-    style L5 fill:#e8f5e9
-    style L6 fill:#e8f5e9
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style L1 fill:#e8f5e9,color:#1b5e20
+    style L2 fill:#e8f5e9,color:#1b5e20
+    style L3 fill:#e8f5e9,color:#1b5e20
+    style L4 fill:#e8f5e9,color:#1b5e20
+    style L5 fill:#e8f5e9,color:#1b5e20
+    style L6 fill:#e8f5e9,color:#1b5e20
 ```
 
 Le pipeline complet relie les **notebooks** (qui motivent) aux **lakes** (qui prouvent) et inversement : un notebook Tweety illustre un AF-Dung et cite `argumentation_lean` comme source de l'extension prouvée ; un cours QuantConnect cite `kelly_lean` comme justification formelle de la fraction risquée optimale. Sans la couche Lean, ces résultats seraient des formules réputées « standard » mais jamais démontrées. Avec elle, la justification est formellement garantie — pas seulement empiriquement ajustée.

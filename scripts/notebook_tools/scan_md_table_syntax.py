@@ -7,7 +7,7 @@ breaks rendering on at least one common renderer, not a post-render check):
 
   - **COL_MISMATCH**: within a recognized table (one that HAS a `|---|`-shaped
     separator row), a data row's raw ``|`` count differs from the header row's.
-    Canonical cause (MGS-3-Eukaryote cell[13], #10097): a bare ``|`` inside a
+    Canonical cause (MGS-03-Eukaryote cell[13], #10097): a bare ``|`` inside a
     cell that the author did not escape as ``\\|`` -- e.g. ``| Scope |
     `Crossover | Mutation` | ... |`` reads as 5 columns where the header had 4.
     A source-level lint counts raw pipes (it does not try to honor inline-code
@@ -40,7 +40,7 @@ breaks rendering on at least one common renderer, not a post-render check):
   - **NO_BLANK_BEFORE**: a non-blank, non-heading, non-table line immediately
     precedes a table block. GFM (CommonMark) requires a blank line separating a
     paragraph from a following table; without it the table is absorbed into the
-    paragraph and does not render as a table (MGS-1-Introduction, #10097).
+    paragraph and does not render as a table (MGS-01-Introduction, #10097).
 
   - **NO_BLANK_AFTER**: the symmetric case -- a non-blank, non-heading,
     non-table line immediately follows a table block, merging the next

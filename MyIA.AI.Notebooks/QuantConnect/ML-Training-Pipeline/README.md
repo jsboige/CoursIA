@@ -55,7 +55,7 @@ Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — a
 | `research_l1_tsmom.ipynb` | L1 TSMOM — baseline momentum temporelle (NO BEATS) | (c) |
 | `research_l2_dual_momentum.ipynb` | L2 Cross-Sectional + Dual Momentum (NO BEATS) | (c) |
 | `research_l3_trend.ipynb` | L3 Trend Long-Horizon — LSTM directionnel (NO BEATS) | (c) |
-| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (seul BEATS du ladder) | (c) |
+| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (BEATS panel @10bps ; OOT réel NO-BEATS) | (c) |
 | `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
 | `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
 | `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
@@ -101,9 +101,10 @@ flowchart TD
     VERD --> CKPT["Checkpoint<br/>model.pt + metadata.json"]
     VERD -.-> NO["NO BEATS<br/>(documente honnetement)"]
     CKPT --> REG["REGISTRY.md"]
-    style VERD fill:#fff3e0
-    style CKPT fill:#e8f5e9
-    style NO fill:#ffebee
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style VERD fill:#fff3e0,color:#bf360c
+    style CKPT fill:#e8f5e9,color:#1b5e20
+    style NO fill:#ffebee,color:#721c24
 ```
 
 Ci-dessous, l'arborescence des scripts qui implémente ce pipeline.
@@ -514,22 +515,23 @@ flowchart LR
     ACT --> TR1["Trading direct"]
     RET --> TH["Seuillage / conversion<br/>en position"]
     TH --> TR2["Trading differe"]
-    TR1 --> RES1["L4 DT : 24/26 seeds BEATS<br/>Sharpe net > buy-hold 1.15"]
+    TR1 --> RES1["L4 DT : 24/26 panel @10bps<br/>(OOT temporel réel 04/09 : NO-BEATS)"]
     TR2 --> RES2["PatchTST : 0/26 seeds BEATS<br/>Signal noye dans le bruit"]
-    style P1 fill:#e8f5e9
-    style P2 fill:#ffebee
-    style RES1 fill:#c8e6c9
-    style RES2 fill:#ffcdd2
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style P1 fill:#e8f5e9,color:#1b5e20
+    style P2 fill:#ffebee,color:#721c24
+    style RES1 fill:#c8e6c9,color:#1b5e20
+    style RES2 fill:#ffcdd2,color:#721c24
 ```
 
-L'écart de performance n'est pas un hasard : un classifieur d'action capture la **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. D'où le verdict consolidé — un seul BEATS (DT action-based), tout le reste NO BEATS (rendement/forecast).
+L'écart de performance n'est pas un hasard : un classifieur d'action capture la **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. D'où le verdict consolidé — un seul BEATS (DT action-based, **panel @10bps** ; non confirmé hors-échantillon en temps, OOT réel 04/09 NO-BEATS), tout le reste NO BEATS (rendement/forecast).
 
 | Rung | Modèle | Approche | Verdict | Métrique clé | Doc |
 |------|-------|----------|---------|--------------|-----|
 | L1 | TSMOM | Momentum time-series | NO BEATS | Sharpe net -2.56 à -2.26 (coûts tuent le signal) | `docs/L1_tsmom.md` |
 | L2 | CS+DM | Carry + momentum dual | NO BEATS | meilleur CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
 | L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, AUC médian 0.509, 300 combos | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** (panel @10bps) | **24/26, AUC médian 0.558** ; @50bps INCONCLUSIVE ; holdout 06/08 non reproduit (-6.63σ interne) | `docs/L4_decision_transformer.md` |
+| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** (panel @10bps) | **24/26, AUC médian 0.558** ; @50bps INCONCLUSIVE ; holdout 06/08 non reproduit (-6.63σ interne) ; **OOT réel 04/09 NO-BEATS** (train gelé ≤ 2025-06-30, 0/5 seeds, −5.38σ) | `docs/L4_decision_transformer.md` |
 | L5 | Composite vol-targeted | Filtre trend + vol-targeting 10% sur composite S7 | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
 | (side) | PatchTST | Forecast-based (prédiction rendement) — mislabellisé "L5" avant 2026-06-12 | NO BEATS | 0/26, AUC médian 0.501 | `results/l5_patchtst/` |
 
@@ -589,7 +591,7 @@ Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : pl
 ### Prochaines étapes
 
 1. **Reproduire les KEEPERS** : cloner le repo, installer les dépendances (`Dependencies` ci-dessus), lancer `python scripts/dry_run_validation.py` pour valider le pipeline CPU, puis entraîner S3/S4 sur données réelles (`python scripts/s3_hmm_regime.py`).
-2. **Étendre le L4 Decision Transformer** : le seul ladder level BEATS (24/26 seeds) — le passer en multi-seed étendu (BG run ai-01) puis migration QC Cloud pour validation hors-échantillon.
+2. **Bilan L4 Decision Transformer** : BEATS panel @10bps (24/26) — mais la validation hors-échantillon temporelle **réelle** (04/09, train gelé ≤ 2025-06-30) est **NO-BEATS** (0/5 seeds, edge −5.38σ) : l'edge reste cantonné à la coupe transversale (détail : `docs/L4_decision_transformer.md`, §Protocole OOT).
 3. **Migration QC Cloud** : les keepers sont des modèles research standalone (type (c), données yfinance) ; l'étape suivante est l'intégration dans des `QCAlgorithm` déployables (cf. `../projects/` et la série QC-Py).
 4. **Surveiller la thermal safety** : tout training GPU doit passer par `shared/gpu_training.py` (MAX_TEMP=80C, AMP) — le repo RTX 3090/4090 a déjà subi des throttling thermiques.
 5. **Consulter le REGISTRY** : [`REGISTRY.md`](REGISTRY.md) catalogue les 70+ checkpoints par stage (-1/0/1/2) avec verdict BEATS/FAIL/MIXED et l'audit Anti-Bias.

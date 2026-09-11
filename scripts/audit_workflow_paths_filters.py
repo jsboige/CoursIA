@@ -54,6 +54,27 @@ WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 # list is updated when the protection changes.
 REQUIRED_CHECKS_FALLBACK = {"PR gate"}
 
+# Gardes exempts de ``paths:`` par DECISION ECRITE, jamais par oubli.
+# L'acceptance #12773 (« mesurer unfiltered=2 ») se lit : tous les workflows
+# ELIGIBLES portent un filtre effectif ; les six ci-dessous restent sans
+# filtre, chacun avec sa reference de decision.
+EXEMPT_DOCUMENTED: dict[str, str] = {
+    # agregat requis : un paths le rendrait pending-forever sur les PRs
+    # qui ne touchent pas la path (#10600, critere 2).
+    "pr-gate.yml": "#10600",
+    # securite : doit couvrir chaque PR.
+    "secret-scan.yml": "#10600",
+    # garde de perimetre : lit chaque diff par fonction (#11268).
+    "perimeter-review-guard.yml": "#11268",
+    # label-posing : paths rendrait le garde aveugle aux PRs hors paths
+    # (#13234, tranche 1c a retire leurs paths-filter).
+    "always-on-guards.yml": "#13234",
+    "always-on-metadata-guards.yml": "#13234",
+    # discipline d'auto-couverture paths, ecrite dans le workflow : un seul
+    # evenement manquant = la garde ne protege rien (#14391/#14429).
+    "notebook-plan-loss-gate.yml": "#14391/#14429",
+}
+
 
 def has_pull_request_trigger(workflow: dict) -> bool:
     on = workflow.get(True, workflow.get("on", {}))
@@ -74,6 +95,33 @@ def get_pull_request_paths(workflow: dict) -> list[str] | None:
     if isinstance(paths, list):
         return paths
     return None
+
+
+def has_pr_target_filter_excluding_main(workflow: dict) -> bool:
+    """True iff the ``pull_request`` trigger carries a target-branch filter
+    that excludes ``main`` (so the workflow does not fire on PRs targeting
+    main, even if no ``paths:`` filter is set).
+
+    Covers both forms documented by GitHub Actions:
+      - ``branches-ignore: [main]``
+      - ``branches: [...]`` where ``main`` is absent from the allowlist
+
+    Used by #12773 to recognize effective pathless filters for the
+    ``#10600`` objective (reduce fan-out on PRs targeting ``main``).
+    """
+    on = workflow.get(True, workflow.get("on", {}))
+    if not isinstance(on, dict):
+        return False
+    pr = on.get("pull_request")
+    if not isinstance(pr, dict):
+        return False
+    branches_ignore = pr.get("branches-ignore")
+    if isinstance(branches_ignore, list) and "main" in branches_ignore:
+        return True
+    branches = pr.get("branches")
+    if isinstance(branches, list) and branches and "main" not in branches:
+        return True
+    return False
 
 
 def get_workflow_pulls_label(workflow: dict) -> bool:
@@ -136,6 +184,7 @@ def inventory_workflows() -> list[dict]:
         pulls = has_pull_request_trigger(wf)
         paths = get_pull_request_paths(wf) if pulls else None
         labels = get_workflow_pulls_label(wf) if pulls else False
+        target_filter = has_pr_target_filter_excluding_main(wf) if pulls else False
         rows.append(
             {
                 "file": str(wf_path.relative_to(REPO_ROOT)),
@@ -143,19 +192,26 @@ def inventory_workflows() -> list[dict]:
                 "has_pull_request": pulls,
                 "paths": paths,
                 "labels_posed": labels,
+                "pr_target_filter_excludes_main": target_filter,
+                "exempt_documented": EXEMPT_DOCUMENTED.get(Path(wf_path).name),
             }
         )
     return rows
 
 
 # Mapping: PR-type -> set of paths the PR touches. Used to estimate fan-out
-# by intersecting with each workflow's paths filter.
+# by intersecting with each workflow's paths filter. The ``pr-target-main``
+# key is special: it represents a PR whose target branch IS ``main`` and is
+# used by #12773 to recognize ``branches-ignore: [main]`` / ``branches: [...]
+# excluant main`` as effective filters. Its ``touched`` list is empty
+# because the only relevant check is the target-branch filter, not paths.
 PR_TYPE_TOUCHES = {
     "markdown-only": ["**/*.md"],
     "notebook-only": ["**/*.ipynb"],
     "scripts-only": ["scripts/**"],
     "workflows-only": [".github/workflows/**", ".github/actions/**"],
     "docs-only": ["docs/**"],
+    "pr-target-main": [],
 }
 
 
@@ -178,6 +234,10 @@ def fnmatch(path: str, pattern: str) -> bool:
 def estimate_fanout_for_type(row: dict, pr_type: str) -> bool:
     if pr_type not in PR_TYPE_TOUCHES:
         return False
+    if pr_type == "pr-target-main":
+        # #12773 : workflows that exclude ``main`` via ``branches-ignore`` or
+        # ``branches`` (allowlist) do NOT fire on PRs targeting main.
+        return not bool(row.get("pr_target_filter_excludes_main"))
     paths = row.get("paths")
     if paths is None:
         return bool(row.get("has_pull_request"))
@@ -198,22 +258,50 @@ def render_markdown(rows: list[dict], required: set[str] | None) -> str:
         for r in rows
         if r.get("has_pull_request") and required and r.get("name") in required
     )
-    out.append(f"Total workflows: **{n_total}** | pull_request: **{n_pulls}** | avec paths: **{n_paths}** | label-posing: **{n_labels}** | required: **{n_required}**")
+    # #12773 : count workflows with an effective filter on PRs targeting main
+    # (paths: OR branches-ignore: [main] OR branches: [...] excluant main).
+    n_filtered = sum(
+        1
+        for r in rows
+        if r.get("has_pull_request")
+        and (r.get("paths") or r.get("pr_target_filter_excludes_main"))
+    )
+    n_exempt = sum(
+        1 for r in rows if r.get("has_pull_request") and r.get("exempt_documented")
+    )
+    # #12773 : le seul deficit qui compte = sans filtre effectif ET sans
+    # exemption documentee (un eligible oublie, pas une decision ecrite).
+    n_unfiltered_eligible = sum(
+        1
+        for r in rows
+        if r.get("has_pull_request")
+        and not r.get("paths")
+        and not r.get("pr_target_filter_excludes_main")
+        and not r.get("exempt_documented")
+    )
+    out.append(
+        f"Total workflows: **{n_total}** | pull_request: **{n_pulls}** | "
+        f"avec paths: **{n_paths}** | label-posing: **{n_labels}** | "
+        f"required: **{n_required}** | avec filtre effectif PR→main: **{n_filtered}** | "
+        f"exemptions documentees: **{n_exempt}** | sans-filtre eligible: **{n_unfiltered_eligible}**"
+    )
     out.append("")
     if required is None:
         out.append(
             "_API de protection de branche injoignable -- fallback sur la liste statique._"
         )
         out.append("")
-    out.append("| Workflow | pull_request | paths | label-posing |")
-    out.append("|----------|--------------|-------|--------------|")
+    out.append("| Workflow | pull_request | paths | target-filter excl. main | label-posing | exemption doc. |")
+    out.append("|----------|--------------|-------|--------------------------|--------------|----------------|")
     for r in rows:
         if not r.get("has_pull_request"):
             continue
         paths_repr = ", ".join(r.get("paths") or ["(none)"])[:80]
+        target_repr = "oui" if r.get("pr_target_filter_excludes_main") else "non"
         labels_repr = "oui" if r.get("labels_posed") else "non"
+        exempt_repr = r.get("exempt_documented") or ""
         out.append(
-            f"| `{r['file']}` | oui | {paths_repr or '(none)'} | {labels_repr} |"
+            f"| `{r['file']}` | oui | {paths_repr or '(none)'} | {target_repr} | {labels_repr} | {exempt_repr} |"
         )
     out.append("")
     out.append("## Fan-out estime par type de PR")
@@ -249,6 +337,17 @@ def main() -> int:
         "workflows_pull_request": sum(1 for r in rows if r.get("has_pull_request")),
         "workflows_with_paths": sum(1 for r in rows if r.get("paths")),
         "workflows_label_posing": sum(1 for r in rows if r.get("labels_posed")),
+        "workflows_exempt_documented": sum(
+            1 for r in rows if r.get("has_pull_request") and r.get("exempt_documented")
+        ),
+        "workflows_unfiltered_eligible": sum(
+            1
+            for r in rows
+            if r.get("has_pull_request")
+            and not r.get("paths")
+            and not r.get("pr_target_filter_excludes_main")
+            and not r.get("exempt_documented")
+        ),
         "required_checks": sorted(required) if required else [],
         "required_checks_source": "api" if api_reachable else "fallback_static",
         "fanout_estimated_per_pr_type": {
@@ -279,12 +378,15 @@ def main() -> int:
         # per #10600 criterion 2 the absence of `paths:` on PR gate is a
         # DESIGN choice, not a violation. See `.github/workflows/pr-gate.yml`
         # header for the rationale. Other required checks should NOT be
-        # pathless — flag them.
+        # pathless — flag them. #12773 : a `branches-ignore: [main]` or
+        # `branches: [...]` allowlist is an equivalent effective filter for
+        # the #10600 objective (do not fire on PRs targeting main).
         violations = [
             r
             for r in rows
             if r.get("has_pull_request")
             and r.get("paths") is None
+            and not r.get("pr_target_filter_excludes_main")
             and r.get("name") in required
             and r.get("name") != "PR gate"
         ]

@@ -36,30 +36,30 @@ layout: cover
 
 # Sommaire
 
-<div class="grid grid-cols-2 gap-8 mt-4">
-<div>
+<div class="grid grid-cols-[1fr_600px] gap-6 mt-3 items-center">
+<div class="flex flex-col gap-2.5 text-sm">
 
 **Qu'est-ce que l'intelligence artificielle ?**<br>
-<span class="text-sm text-slate-500">Racines, histoire et état de l'art — structure des agents rationnels</span>
+<span class="text-sm text-slate-500">Racines, histoire, agents rationnels</span>
 
 **Intelligence exploratoire**<br>
-<span class="text-sm text-slate-500">Comment chercher la solution à un problème ?</span>
+<span class="text-sm text-slate-500">Chercher la solution d'un problème</span>
 
 **Intelligence symbolique**<br>
-<span class="text-sm text-slate-500">Comment utiliser le raisonnement et les mathématiques ?</span>
+<span class="text-sm text-slate-500">Raisonnement et mathématiques</span>
 
 **Intelligence probabiliste**<br>
-<span class="text-sm text-slate-500">Comment agir dans l'incertitude ?</span>
+<span class="text-sm text-slate-500">Agir dans l'incertitude</span>
 
 **Apprentissage**<br>
-<span class="text-sm text-slate-500">Comment utiliser les données et l'expérience ?</span>
+<span class="text-sm text-slate-500">Apprendre des données et de l'expérience</span>
 
 **Application : le langage naturel**<br>
 <span class="text-sm text-slate-500">Chatbots, LLM, IA générative et agents</span>
 
 </div>
 <div class="flex items-center justify-center">
-  <img src="./images/img_004.png" class="rounded shadow-lg max-h-[430px]" alt="Couverture AIMA Russell & Norvig" />
+<img src="./images/img_004.png" class="rounded shadow-lg max-h-[420px] w-full object-contain" alt="Couverture AIMA Russell & Norvig" />
 </div>
 </div>
 
@@ -119,14 +119,14 @@ layout: section
   - Robotique, vision
 - 1990s : L'IA devient une science
 
+> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
+
 <img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
 
 <div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
   <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
   <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
-
-> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
 ---
 
@@ -398,16 +398,21 @@ layout: section
 - Coût de chemin
 - Solution = Séquence
 
-<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[260px] max-h-[220px] object-contain" alt="Plateau de dames avec six pions noirs disposés sur l'échiquier" />
+<div class="absolute top-[110px] right-[20px] w-[600px]">
+<div class="grid grid-cols-2 gap-2">
+<img src="./images/img_018.png" class="max-h-[190px] w-full object-contain" alt="Plateau de dames avec six pions noirs disposés sur l'échiquier" />
+<img src="./images/img_robot_extracted.png" class="max-h-[190px] w-full object-contain" alt="Bras robotique articulé — assemblage robotique" />
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<img src="./images/img_021.png" class="max-h-[150px] w-full object-contain" alt="Missionnaires et cannibales" />
+<img src="./images/img_019.png" class="max-h-[150px] w-full object-contain" alt="8-puzzle (état initial mélangé)" />
+</div>
+</div>
 
 **Abstractions**
 
 - Assemblage robotique
 - Problèmes jouets
-
-<img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
-<img src="./images/img_019.png" class="absolute top-[452px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
-<img src="./images/img_021.png" class="absolute top-[452px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
 
 
 
@@ -1138,9 +1143,9 @@ layout: section
 
 # Théorie des jeux (2/2)
 
-<div class="grid grid-cols-2 gap-8 -mt-4">
-<div>
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Jeux simultanés</div>
+<div class="w-[300px]">
+
+<div class="bg-orange-700 text-white px-3 py-1.5 text-sm font-bold text-center">Jeux simultanés</div>
 
 - Matrice de gains
 - Dominance
@@ -1148,9 +1153,7 @@ layout: section
 - Purs et mixtes (2n+1)
 - Topologie
 
-</div>
-<div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Jeux séquentiels</div>
+<div class="bg-slate-800 text-white px-3 py-1.5 text-sm font-bold text-center mt-5">Jeux séquentiels</div>
 
 - Plusieurs manches
 - Forme extensive
@@ -1159,15 +1162,41 @@ layout: section
 - Induction
   - avant/arrière
 
+</div>
+
+<img src="./images/img_070.png" class="absolute top-[135px] right-[20px] w-[600px] max-h-[220px] object-contain object-right" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
+
+<div class="absolute top-[365px] right-[20px] w-[600px] flex justify-center">
+
+**Forme extensive (exemple)**
+
+<div class="flex items-center gap-3 mt-1 text-sm">
+<div class="px-2 py-1 rounded bg-orange-700 text-white font-bold">J1</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+  <span class="text-slate-500 text-xs">gauche</span>
+  <div class="px-2 py-1 border border-slate-400 rounded bg-slate-50">(3, 1)</div>
+</div>
+<div class="flex items-center gap-2">
+  <span class="text-slate-500 text-xs">droite</span>
+  <div class="px-2 py-1 rounded bg-slate-800 text-white font-bold">J2</div>
+  <div class="flex flex-col gap-1">
+    <div class="flex items-center gap-2">
+      <span class="text-slate-500 text-xs">haut</span>
+      <div class="px-2 py-1 border border-slate-400 rounded bg-slate-50">(2, 1)</div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-slate-500 text-xs">bas</span>
+      <div class="px-2 py-1 border border-slate-400 rounded bg-slate-50">(0, 0)</div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+</div>
+
 <!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
-
-</div>
-<div>
-
-<img src="./images/img_070.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
-
-</div>
-</div>
 ---
 
 
@@ -1344,6 +1373,7 @@ layout: section
 </div>
 <div>
 
+<TeachingStep placement="below" size="md">
 
 **Structure d'agent**
 
@@ -1353,10 +1383,11 @@ layout: section
   - Critique
   - Générateur de problème
 
-<img src="./images/img_080.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
+<template #visual>
+<img src="./images/img_080.png" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
+</template>
 
-
-
+</TeachingStep>
 
 </div>
 </div>

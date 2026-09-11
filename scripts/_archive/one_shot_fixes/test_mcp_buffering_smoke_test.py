@@ -1,5 +1,15 @@
 """Tests for scripts/mcp_buffering_smoke_test.py — MCP buffering smoke test helpers."""
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none; historical test paired with the archived instrument
+# - Verdict recorded in : PR #2546 (e7069641f), PR #9731
+#
+# Per-function disposition :
+# - all TestCreateStressNotebook.test_*() methods : pair-archived; retained as
+#   historical coverage, with a valid co-located module import
+# - <module> loader : kept as reference; resolves the co-located archived script
+
 import importlib.util
 import json
 from pathlib import Path

@@ -1,8 +1,18 @@
 # Coordinator discipline — merge actively, no languishing requests
 
-S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`).
+S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`), **chef de flotte** : management/coordination et merges d'abord ; la minutie est deleguee aux sous-agents ([model-delegation.md](model-delegation.md)) ; les gros grains personnels seulement une fois les lanes servies et les merges prets epuises.
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
+
+## Regle 0 : production avant digestion, sans perte de qualite (HARD)
+
+La production des lanes et la digestion (CI, reviews, merges) sont **deux pipelines paralleles**. Une saturation du second est un symptome a reparer ou a capaciter ; elle ne devient jamais une politique de ralentissement du premier.
+
+- Un check rouge, un `DWELL`, une review en attente, un conflit ou un HOLD bloque **la candidate concernee**, jamais la lane. La lane traite ce qu'elle peut reparer, puis poursuit aussitot un nouveau grain DEEP/MED de contenu pendant toute attente externe.
+- `candidate-delivered`, forensic sans finding, body-only, attente mecanique, `HORS CAP` et backlog de review ne satisfont ni le plancher de production ni une fin de cycle.
+- Quand le debit de digestion baisse, ai-01 maintient les deep queues et ouvre **en parallele** la piste de remise en capacite : diagnostic CI, sweep de merge supplementaire, ou correction de l'organe bloque. Il ne reduit pas les dispatchs pour rendre la queue confortable.
+- ai-01 delegue agressivement la preparation verifiable : l'adjoint absorbe en file continue des lots oldest-first de preflights B.0/exact-head, relectures post-fix et recalculs ; Hermes et NanoClaw absorbent la premiere digestion specialisee. Chaque lot inventorie toutes les reserves de chaque candidate et remonte chaque READY sans attendre la fin du lot. Ces avis preparent la decision sans remplacer la lecture B.0 personnelle finale, les controles qualite ni la signature de merge d'ai-01.
+- Une candidate prete n'attend pas le cron suivant : ai-01 refait la capture B.0/exact-head/gates et merge des qu'elle est sure. Les controles B.0, H.4 et G-VAR restent inchanges ; augmenter le debit ne signifie jamais les contourner.
 
 ## Regle 1 : ai-01 merge activement sous `myia-ai-01`
 
@@ -56,6 +66,20 @@ Incident 2026-06-16 (verbatim) + liste des rollouts LIVE (#3973 + filles, #4212,
 **Tell d'auto-detection** avant de poster un steer : « (a) grain verifie OPEN/non-sature firsthand a l'instant, **et aucune PR ouverte sur ce chemin** ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? » — trois oui requis, sinon phantom. Le (a) se pose **avant** de rediger, pas apres (cf L898, [proactive-coordination.md](proactive-coordination.md)).
 
 Mandat 2026-06-26 (verbatim) + listes d'issues des sources (a)/(b) : [§2.5](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01). Voir aussi [[verify-before-claiming]], [[diversity-backlog-aged-issues]], [[feedback-double-dm-with-dashboard-notif]].
+
+## Regle 6 : l'adjoint — verification delegable, jamais merge ni fermeture (HARD)
+
+**Lane de l'adjoint : `myia-po-2025:CoursIA-2`** (preflight #13605 `issuecomment-5467391147`, cas `ADJOINT PREFLIGHT` de `check_unaddressed_nits.py` PR #13883, recalculs firsthand DM `msg-20260904T043716-lo9ryu`).
+
+Mandat user 2026-09-07 (verbatim, #15069) : « si ton travail de coordination est sature, c'est tout a fait un travail de **verification** que tu peux deleguer a ton adjoint, mais **pas a nos plus petits workers** ».
+
+| Routable a l'adjoint | JAMAIS (reste au coordinateur) |
+|---|---|
+| Verification pre-fermeture de l'urne `delivered` (preuve firsthand, G.9) | La fermeture elle-meme (`gh issue close`) |
+| Preflight de PR (lecture body/comments/reviews + verdict `[adjoint — preflight COMMENTED]`) | Le merge (`gh auth switch` + merge reste ai-01) |
+| Recalcul firsthand d'un verdict ou d'une metrique contestee | Toute decision de perimetre/design-gate |
+
+L'adjoint **est** la lane habilitee n°3 de `DELIVERED_URN_LANES` dans `pick_idle_grain.py` (#15069) : il tire l'urne `delivered`, verifie, poste sa preuve — et la fermeture effective reste signee coordinateur. Une lane worker qui rencontre une `candidate-delivered` poste `[INFO] candidate-delivered` avec sa preuve et rend la main (cf [proactive-coordination.md](proactive-coordination.md), urne `delivered`).
 
 ## Voir aussi
 

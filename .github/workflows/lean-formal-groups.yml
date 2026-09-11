@@ -7,9 +7,10 @@ name: Lean CI (formal_groups_lean)
 # (#14785, sub-grain of #14771). 0 sorry by construction. Target Lean
 # v4.33.0 / Mathlib db584cd6 (anchor #14773); the lake is autonomous.
 # Same thin-dispatcher form as lean-hecke.yml (same FLT-port family).
-# Note: no `needs:` between the two jobs — the per-IP anonymous-git burst
-# of #14921 is specific to the self-hosted pool behind one residential IP;
-# GitHub-hosted jobs each get their own runner IP.
+# c.329: `needs: ci` on proof-integrity (below) is parity with knot_lean
+# (#14922) -- it ORDERS the two compiles. It does not halve the anonymous-git
+# burst of #14921: that concern is specific to the self-hosted pool behind
+# one residential IP; GitHub-hosted jobs each get their own runner IP.
 
 on:
   push:
@@ -69,6 +70,7 @@ jobs:
   # the lake walk; the `_en` i18n siblings are excluded by default (FR-only
   # measurement, byte-parity covers the EN side structurally, cf #10997).
   proof-integrity:
+    needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean

@@ -795,6 +795,11 @@ def test_adjacency_detected_from_body_when_caller_omits_flag(monkeypatch, capsys
         "fait (cf #13967)"
     )
     assert "gh pr update-branch" not in out
+    assert "DECLAREE, NON MESUREE" in out, (
+        "#15184 : sans fenetre mergee consultee, le rouge d'adjacence du "
+        "picker est un CONSEIL fonde sur declaration -- la branche "
+        "specialisee doit le dire, pas le presenter comme un blocage prouve"
+    )
 
 
 def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys):
@@ -815,6 +820,78 @@ def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys)
         "genres distincts = pas d'adjacence = conseil generic applicable"
     )
     assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
+def test_adjacency_med_advisory_not_specialized_branch(monkeypatch, capsys):
+    """#15184 frontiere du picker : un corps `MED/lean` apres `MED/lean`
+    (genre hors LIGHT_GENRES) rend chez l'organe le verdict §2 ADVISORY --
+    `adjacent: True` sans `unmeasured` ni `blocking` -- qui reste hors la
+    branche specialisee : le conseil generique s'applique (un push peut
+    reparer le rouge ; l'adjacence hors-LIGHT releve du jugement
+    coordinateur, #11170). Sans ce controle, un `_is_adjacency_red` elargi
+    a `adjacent` reduirait la branche specialisee a toutes les PRs MED
+    rouges de genre non-light. (Un `MED/guard` n'est PAS un cas advisory :
+    `guard` est un genre LIGHT meme a tier MED -- le tier ne spare que les
+    genres non resolus, #13585.)
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: MED/lean -- lane myia-po-2026:CoursIA -- "
+            "prev: MED/lean #15150\n")
+    pr = _pr_with_body(104, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {104: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out
+    assert "gh pr update-branch" in out, (
+        "adjacence hors liste LIGHT = advisory : le push reste le "
+        "premier geste, la branche specialisee est reservee a "
+        "l'adjacence de genre LIGHT (bloquee mesuree ou suspconnee "
+        "declaree)"
+    )
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
+def test_adjacency_red_reports_epistemic_kind(monkeypatch):
+    """#15184 (review) : `_is_adjacency_red` rend le STATUT epistemique --
+    "declared" (conseil sur declaration : le seul cas que le picker peut
+    produire, `check(body)` sans `merged_prev` resout toujours
+    prev_source="declared") ou "measured" (blocage prouve sur sequence
+    mergee) -- pas un bool agrege. La branche specialisee s'en sert pour
+    distinguer conseil declare et blocage prouve.
+    """
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    assert pig._is_adjacency_red(body) == "declared"
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import variation_adjacency_guard as vag
+    monkeypatch.setattr(vag, "check", lambda b: {
+        "guard_pass": False, "blocking": True, "adjacent": True,
+        "unmeasured": False})
+    assert pig._is_adjacency_red(body) == "measured"
+    monkeypatch.setattr(vag, "check", lambda b: {
+        "guard_pass": True, "blocking": False, "adjacent": True,
+        "unmeasured": False})
+    assert pig._is_adjacency_red(body) is False
+
+
+def test_adjacency_measured_wording_distinguishes_proven_block(
+        monkeypatch, capsys):
+    """#15184 : quand le statut est "measured" (blocage PROUVE par fenetre
+    mesuree), la branche specialisee doit le dire -- ne pas presenter un
+    blocage prouve comme un simple conseil declare, ni l'inverse.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    pr = _pr_with_body(105, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {105: red})
+    monkeypatch.setattr(pig, "_is_adjacency_red", lambda b: "measured")
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "MESUREE" in out and "PROUVE" in out
+    assert "DECLAREE, NON MESUREE" not in out
 
 
 def test_adjacency_caller_override_still_respected(monkeypatch, capsys):
@@ -1850,6 +1927,61 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "tooling" in captured
 
 
+def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
+    """PR synthetique untagged non-draft, pour `unattributed_blocked_prs`."""
+    created = (pig.NOW - pig.dt.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"number": n, "title": f"pr {n}", "body": "pas de tag\n",
+            "createdAt": created, "isDraft": False,
+            "author": {"login": author}, "headRefName": branch}
+
+
+def test_is_automation_vehicle_requires_both_conditions():
+    """#14706 : bot ET branche chore/*-pending, pas l'une sans l'autre."""
+    assert pig.is_automation_vehicle({
+        "author": {"login": "app/github-actions"},
+        "headRefName": "chore/catalog-refresh-pending"}) is True
+    assert pig.is_automation_vehicle({
+        "author": {"login": "app/github-actions"},
+        "headRefName": "feature/other"}) is False
+    assert pig.is_automation_vehicle({
+        "author": {"login": "jsboige"},
+        "headRefName": "chore/x-pending"}) is False
+
+
+def test_automation_vehicle_excluded_from_orphans_report(monkeypatch):
+    """#14706 : le vehicule du bot (chore/*-pending) sort de la file d'orphelines."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(1, author="app/github-actions", branch="chore/catalog-refresh-pending"),
+    ], {1: red})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_human_lane_stays(monkeypatch):
+    """Controle positif : une untagged bloquee d'une lane humaine reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_untagged_pr(7, author="jsboige", branch="feature/x")], {7: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [7]
+
+
+def test_orphan_report_neg1_bot_off_pattern_stays(monkeypatch):
+    """Controle negatif 1 : un bot sur branche HORS chore/*-pending reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(8, author="github-actions[bot]", branch="feature/catalog-fix"),
+    ], {8: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [8]
+
+
+def test_orphan_report_neg2_human_on_chore_pending_stays(monkeypatch):
+    """Controle negatif 2 : un humain sur branche chore/*-pending reste listee."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(9, author="jsboige", branch="chore/x-pending"),
+    ], {9: red})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [9]
+
+
 # --- #15139 : delegation a l'organe check_unaddressed_nits -----------------
 # Incident fondateur (2026-09-07, mesure sur myia-po-2027:CoursIA-2) : la lane
 # portait trois PRs a remarques non levees dont deux du user, et le picker
@@ -1905,3 +2037,63 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
     assert calls == [15049, 15081]
+
+
+# --- age de derniere livraison reelle : hook weight (#15491 Phase 1) ---------
+
+def _umbrella(n, age=120, idle=40):
+    return {"number": n, "age": age, "idle": idle, "genre": "docs",
+            "klass": "umbrella", "polarity": "neutral",
+            "title": "EPIC %d" % n}
+
+
+def test_delivery_factor_boosts_umbrellas_only():
+    """Le signal est un facteur de distribution ENTRE EPICs : un grain
+    classique ne doit jamais le recevoir, meme present dans le dict."""
+    grain = {"number": 5, "age": 30, "idle": 1, "genre": "docs"}
+    factors = {5: 1.5, 6: 1.5}
+    assert pig.weight(dict(grain), None, None, None, None, factors) == \
+        pig.weight(dict(grain), None, None, None, None, None)
+    umb = _umbrella(6)
+    assert pig.weight(dict(umb), None, None, None, None, factors) == \
+        pig.weight(dict(umb), None, None, None, None, None) * 1.5
+
+
+def test_delivery_boost_zero_leaves_weight_unchanged():
+    """Phase 1 : --delivery-boost-max 0 (defaut) = kill switch. Les facteurs
+    calcules a 0 valent tous 1.0, le poids d'une umbrella ne bouge pas."""
+    umb = _umbrella(1101)
+    neutre = {1101: pig.delivery_factor(
+        pig.DELIVERY_NONE_IN_WINDOW, None, 14, 0.0)}
+    assert pig.weight(dict(umb), None, None, None, None, neutre) == \
+        pig.weight(dict(umb), None, None, None, None, None)
+
+
+def test_delivery_boost_spreads_without_monopoly():
+    """Acceptance statistique : a boost 0.5, la part de tirage des umbrellas
+    sans livraison croit, sans qu'aucune umbrella monopolise le tirage.
+    Deterministe : rng reseedes pareil pour les deux compositions."""
+    import random
+    starved = [_umbrella(1101), _umbrella(1102)]           # aucune livraison
+    fed = [_umbrella(1103), _umbrella(1104), _umbrella(1105)]  # age 0
+    items = starved + fed
+
+    def composition(factors):
+        rng = random.Random(42)
+        counts = {it["number"]: 0 for it in items}
+        for _ in range(400):
+            pick = pig.draw([dict(i) for i in items], 1, rng, None,
+                            {}, {}, {}, factors)
+            counts[pick[0]["number"]] += 1
+        return counts
+
+    baseline = composition(None)
+    boosted = composition({1101: 1.5, 1102: 1.5, 1103: 1.0,
+                           1104: 1.0, 1105: 1.0})
+    share_starved_base = sum(baseline[n] for n in (1101, 1102)) / 400
+    share_starved_boost = sum(boosted[n] for n in (1101, 1102)) / 400
+    assert share_starved_boost > share_starved_base, (
+        f"le boost doit favoriser les sans-livraison : "
+        f"{share_starved_boost:.2f} vs {share_starved_base:.2f}")
+    assert max(boosted.values()) / 400 < 0.5, (
+        f"aucune umbrella ne doit monopoliser : {boosted}")

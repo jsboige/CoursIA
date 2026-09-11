@@ -73,6 +73,7 @@ import argparse
 import json
 import re
 import sys
+import warnings
 from pathlib import Path
 
 import nbformat
@@ -370,7 +371,18 @@ def _count_boxes_on_line(line: str) -> int:
 def scan_notebook(path: Path) -> dict:
     """Scan un notebook ; renvoie les cellules markdown contenant des flowcharts ASCII."""
     try:
-        nb = nbformat.read(path, as_version=4)
+        with warnings.catch_warnings():
+            # nbformat emet DuplicateCellId (sous-classe de Warning, module
+            # nbformat.warnings) pendant la lecture (ids de cellules
+            # non-uniques). En mode --json capture via pipe shell sur Windows,
+            # stderr+stdout s'entrelacent et le warning precedent le `{` du
+            # JSON -> json.loads echoue (#11962). On neutralise la categorie a
+            # la source : ces warnings ne sont pas actionnables (le detecteur
+            # ne transforme jamais le notebook) et n'ont de valeur qu'en dev,
+            # pas dans la sortie machine. Module-matche, donc toutes les
+            # categories nbformat (DuplicateCellId compris) sont couvertes.
+            warnings.filterwarnings("ignore", module="^nbformat")
+            nb = nbformat.read(path, as_version=4)
     except (OSError, NotJSONError, ValidationError) as exc:
         # Garde par-fichier (#12097) : un notebook illisible (BOM UTF-8,
         # JSON tronque, validation echouee) ne doit pas interrompre le scan

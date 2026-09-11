@@ -181,11 +181,33 @@ jobs:
         run: |
           set -uo pipefail
 
-          # Cap the number of re-aggregations per sweep. A wide outage can
-          # leave dozens of PRs in this state at once; doing all of them in one
-          # job would run past the timeout. The next sweep (20 min later) takes
-          # the next batch.
-          MAX_POSTS=8
+          # Per-tier caps (#15375). A flat cap of 8 faced a measured queue
+          # of 38 candidates (2026-09-09T10:43Z, run 34341779278; 25 -> 38 in
+          # two hours while throughput stayed 8) -- a flat cap against a
+          # growing queue follows further and further behind. The remedy is
+          # NOT one big cap of 38: a re-run is fire-and-forget for this sweep,
+          # but it occupies a coursia-waiter slot for the gate's full ~9-12 min
+          # poll, and #13363 measures gate runs already holding a third of the
+          # runners. So the cap splits by what a re-run is WORTH:
+          #
+          #   MAX_MATURE=12 -- candidates whose stale verdict is older than
+          #     the 120-min dwell floor. Their re-run is immediately
+          #     conclusive (floor elapsed + all other checks green, which the
+          #     filter above already enforces, => SUCCESS => merge unblocked):
+          #     every slot spent here converts to a merge. 12 = 75% of the
+          #     16-slot coursia-waiter pool (measured 2026-09-09T12:5xZ),
+          #     leaving 4 slots for live PR traffic; the burst self-drains in
+          #     one gate pass (~12 min), so it is capacity-bounded, not
+          #     compounding.
+          #   MAX_IMMATURE=4 -- verdict younger than the floor: the re-run can
+          #     only re-render the same dwell FAIL, converting to nothing.
+          #     Kept above zero solely as the fallback for tier
+          #     misclassification (young verdict on an old head -- reopened
+          #     PR whose gate timed out again) and unreadable timestamps; down
+          #     from the flat 8 because buying 0 merges per purge is exactly
+          #     what #15375 exists to stop.
+          MAX_MATURE=12
+          MAX_IMMATURE=4
 
           # Collected over REST, one small call per PR, NOT one bulk GraphQL
           # query. `gh pr list --limit 60 --json statusCheckRollup` returns
@@ -227,6 +249,7 @@ jobs:
 
           python - <<'PY' > /tmp/candidates.txt
           import json, os, re, sys
+          from datetime import datetime, timezone
 
           # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
           # A check counts as settled-green when it has completed with a
@@ -243,6 +266,23 @@ jobs:
           # below keeps the later verdict) or a real interruption that must not
           # be greenwashed. Asymmetric on purpose (#11862).
           RED = {"failure", "timed_out", "action_required", "cancelled"}
+
+          # Maturity floor for the two-tier service order (#15375). Mirrors
+          # DEFAULT_DWELL_MIN = 120.0 in scripts/ci/merge_dwell.py -- the
+          # dwell the re-run gate will itself measure against the HEAD COMMIT
+          # date. The tier proxy below uses the gate verdict's age instead of
+          # the head commit date (which this sweep does not collect); its
+          # soundness is one-directional on purpose: every leg examined here
+          # lives on the PR's CURRENT head SHA (the listing carries it), the
+          # gate leg on that SHA started strictly after the SHA's commit, and
+          # pr-gate.yml fires on every pull_request event -- so a push after
+          # the verdict would have produced a newer leg on a newer SHA.
+          # Verdict age >= floor therefore IMPLIES head commit age >= floor,
+          # i.e. the dwell has elapsed and the re-run is immediately
+          # conclusive. The converse is not claimed: a young verdict on an old
+          # head lands in tier 1 and waits an hour -- conservative, never
+          # wrong.
+          DWELL_FLOOR_S = 120.0 * 60
 
           # Test seam: the shipped selector is exec'd verbatim by
           # scripts/tests/test_pr_gate_sweep_select.py, which points this at a
@@ -380,7 +420,27 @@ jobs:
                       for k, c in red_others])
                   continue
 
-              print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
+              # Tier: 0 = mature (verdict older than the dwell floor -> the
+              # re-run converts to a merge), 1 = immature (the re-run can only
+              # re-render the same dwell FAIL). The newest RED gate leg
+              # governs: any later leg on this SHA would be the one whose age
+              # bounds the last event. An unreadable/missing timestamp is
+              # tier 1, never tier 0 -- the immature lane still serves it
+              # (fallback cap), so it is never starved, only deprioritized.
+              red_gates = [c for c in gate_legs
+                           if (c.get("conclusion") or "") in RED]
+              newest_red = max((c.get("started_at") or "") for c in red_gates)
+              try:
+                  ts = (newest_red[:-1] + "+00:00"
+                        if newest_red.endswith("Z") else newest_red)
+                  verdict_age_s = (
+                      datetime.now(timezone.utc)
+                      - datetime.fromisoformat(ts)).total_seconds()
+                  rank = 0 if verdict_age_s >= DWELL_FLOOR_S else 1
+              except ValueError:
+                  rank = 1
+              print(f'{p["number"]} {p["sha"]} '
+                    f'{str(p.get("fork", False)).lower()} {rank}')
           PY
 
           # OLDEST FIRST, and the cap is the whole reason it matters.
@@ -405,22 +465,32 @@ jobs:
           # stay under the cap; above it the tail is never reached.
           #
           # PR numbers are monotonic in creation time, so a numeric sort IS
-          # the age order -- no extra API call.
-          sort -n -o /tmp/candidates.txt /tmp/candidates.txt
+          # the age order -- no extra API call. #15375 makes the order
+          # TWO-TIER: tier (4th field, 0 = mature) is the primary key, PR
+          # number the secondary -- mature candidates first (their re-run
+          # converts to a merge), oldest verdicts first within each tier.
+          sort -s -k4,4n -k1,1n -o /tmp/candidates.txt /tmp/candidates.txt
 
           COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
-          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT (oldest first)"
+          MATURE_N=$(awk '$4 == "0"' /tmp/candidates.txt | wc -l | tr -d ' ')
+          IMMATURE_N=$(awk '$4 == "1"' /tmp/candidates.txt | wc -l | tr -d ' ')
+          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT (mature $MATURE_N, served first / immature $IMMATURE_N)"
           if [ "$COUNT" = "0" ]; then
             echo "[stale-sweep] nothing to do"
             exit 0
           fi
 
-          n=0
-          while read -r NUM SHA FORK; do
+          m=0
+          i=0
+          while read -r NUM SHA FORK RANK; do
             [ -z "${NUM:-}" ] && continue
-            if [ "$n" -ge "$MAX_POSTS" ]; then
-              echo "[stale-sweep] cap $MAX_POSTS reached -- $((COUNT - n)) newer candidate(s) wait for the next sweep"
-              break
+            # Capped rows of one tier must not stop the loop: the sort puts
+            # mature first, so `continue` walks on into the immature block.
+            if [ "${RANK:-1}" = "0" ] && [ "$m" -ge "$MAX_MATURE" ]; then
+              continue
+            fi
+            if [ "${RANK:-1}" != "0" ] && [ "$i" -ge "$MAX_IMMATURE" ]; then
+              continue
             fi
             # Re-run the ORIGINAL run rather than POSTing a fresh verdict.
             #
@@ -449,7 +519,7 @@ jobs:
               # workflow run behind it, so there is nothing to re-run. Say so
               # rather than fail silently: this class needs its own handling.
               echo "[stale-sweep] #$NUM ($SHA): red \`PR gate\` with NO workflow run -- cannot re-run, skipping"
-              n=$((n + 1))
+              if [ "${RANK:-1}" = "0" ]; then m=$((m + 1)); else i=$((i + 1)); fi
               continue
             fi
 
@@ -462,8 +532,9 @@ jobs:
               gh run rerun "$RUN_ID" --repo "$REPO" \
                 || echo "[stale-sweep] re-run refused for #$NUM (non-fatal)"
             fi
-            n=$((n + 1))
+            if [ "${RANK:-1}" = "0" ]; then m=$((m + 1)); else i=$((i + 1)); fi
           done < /tmp/candidates.txt
+          echo "[stale-sweep] served: mature $m/$MATURE_N (cap $MAX_MATURE), immature $i/$IMMATURE_N (cap $MAX_IMMATURE) -- waiting for the next sweep: $((MATURE_N - m)) mature, $((IMMATURE_N - i)) immature"
 
           # Advisory organ: it acts, it never blocks.
           exit 0
@@ -483,11 +554,17 @@ jobs:
       # traitee a la source (pool dedie coursia-linux, #14283) et la cadence
       # est horaire : le cout n'est plus le meme, la promesse de fond (la
       # re-aggregation reste sans checkout) tient.
-      - name: Checkout sparse (gate-absent organ only)
+      - name: Checkout sparse (gate-absent + tir-cadence organs)
         uses: actions/checkout@v4
         with:
-          sparse-checkout: scripts/pr_gate_missing.py
+          sparse-checkout: |
+            scripts/pr_gate_missing.py
+            scripts/ci/pr_gate_stale_sweep_tir.py
           sparse-checkout-cone-mode: false
+          # #15197 voie (i) : mesure du taux de tir schedule. Ajouté sous
+          # le même sparse-checkout que scripts/pr_gate_missing.py pour ne
+          # pas multiplier les checkouts (cf. "#12728: this sweep is a
+          # 2-minute job", le checkout reste une pénalité mesurée).
 
       - name: Flag PRs whose PR gate never ran (absent, by cause)
         env:
@@ -591,3 +668,28 @@ jobs:
           except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
               print(f"::warning::stale-sweep timing unavailable: {exc}")
           PY
+
+      # #15197 voie (i) -- mesure du taux de tir schedule.
+      # L'acceptance #12728 mesurait les annulations (cancellation count),
+      # pas le taux de tir (combien de crons produisent un run). Mesure
+      # du 2026-09-08T09:34Z : 53 runs sur 184,3 h, taux de tir 28,8 %,
+      # médiane 3,35 h, max 6,24 h. Ce step rend l'angle mort mesurable
+      # sans le corriger (la correction est ailleurs : doctrine de
+      # filet de rattrapage + voie (ii) cron externe arbitrée séparément).
+      # Advisory par construction : exit 0 toujours, un sweep qui
+      # rougit parce que lui-même est sous-cadencé aggrave la famine.
+      - name: Measure sweep tir cadence (advisory, #15197)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          python scripts/ci/pr_gate_stale_sweep_tir.py \
+            --repo "$REPO" \
+            --workflow-file pr-gate-stale-sweep.yml \
+            --window-hours 168 \
+            --write-summary || {
+            echo "::warning::sweep tir measurement failed -- angle mort non mesuré ce passage"
+            exit 0
+          }
