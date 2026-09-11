@@ -202,9 +202,10 @@ jobs:
           done
           CTRL_SCAN_EXIT=99
           if [ "$CTRL_READY" -ne 1 ]; then
-            echo "::error title=Composition gate meta-failure::contrôle positif : serveur slidev de la fixture jamais prêt en ${TOTAL_WAIT_BUDGET_S}s -- instrument NON VALIDÉ, aucun deck mesuré"
+            echo "::error title=Composition gate meta-failure::contrôle positif : serveur slidev de la fixture jamais prêt en ${TOTAL_WAIT_BUDGET_S}s -- instrument NON VALIDÉ, mesure des decks éventuels SANS GARANTIE"
             echo "Contrôle positif : fixture jamais servie -- instrument non validé." >> "$GITHUB_STEP_SUMMARY"
             tail -40 "/tmp/slidev_$CTRL_PORT.log" 2>/dev/null || true
+            META_FAIL=1
           else
             python scripts/notebook_tools/scan_slidev_composition.py \
               --url "http://localhost:$CTRL_PORT/" \
