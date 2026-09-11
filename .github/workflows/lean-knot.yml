@@ -27,10 +27,10 @@ name: Lean Knot CI
 # the prover harness `count_real_sorries` (FX-6 #1453) — counts exactly
 # compiled-tactic sorries, immune to docstring edits.
 # Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
-#   - Conway.lean:              7 (Conway knot 11n34, Kinoshita-Terasaka, mutation ;
-#                                  conway_trivial_alexander DISCHARGED [8->7],
-#                                  split de PR 14821 — KT_trivial_alexander suit,
-#                                  voir la note du theorem)
+#   - Conway.lean:              6 (Conway knot 11n34, Kinoshita-Terasaka, mutation ;
+#                                  conway_trivial_alexander [8->7] et
+#                                  KT_trivial_alexander [7->6] DISCHARGED,
+#                                  split de PR 14821)
 #   - Invariant.lean:           3 (tricolorable_invariant residual fox/col tactics
 #                                  DISCHARGED by #11211 [sorry 5->3] — the all-distinct
 #                                  kink mode is VACUOUS: the R1 kink C = ⟨a,b,c,c⟩ has
@@ -49,17 +49,19 @@ name: Lean Knot CI
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 9 (mesure `count_code_sorry.py` champ
+# Total real tactic sorry = 8 (mesure `count_code_sorry.py` champ
 # `distinct_code_sorry` ; lowered
 # from 14 par la mesure instrument post-#11227 — le décompte « 14 » dans les
 # commentaires/README comptait 2 sorry dans `Invariant.lean` qui n'en portent
 # qu'1 une fois stripé des commentaires, et sur-comptait Conway ; historique :
 # 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
 # (#11211/#11227 fox/col) → 11 (mesure 2026-08-28, `count_code_sorry.py`) →
-# 10 (#15082 unknottingNumber par sInf) → **9** (conway_trivial_alexander
-# DISCHARGED, unité preuve-Conway du split de PR 14821).
+# 10 (#15082 unknottingNumber par sInf) → 9 (conway_trivial_alexander
+# DISCHARGED, unité preuve-Conway du split de PR 14821) → **8**
+# (KT_trivial_alexander DISCHARGED par transvections, unité preuve-KT
+# du split de PR 14821).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 9 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; la
+# | 8 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; la
 # synchronisation inventaire/README est portée par la PR finale du split).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
@@ -144,7 +146,7 @@ jobs:
         with:
           project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
           display-name: knot_lean
-          sorry-baseline: "9"
+          sorry-baseline: "8"
           sorry-filter-mode: real
           # #14821 : le pool coursia-lean OOM-kill (exit 137) sur le pic
           # d'elaboration des siblings Conway/Conway_en DANS le meme job —
@@ -162,7 +164,7 @@ jobs:
   # that the textual sorry counter cannot see. Runs after the build to
   # reuse the cached lake artifacts.
   # Opt-in per lake; knot_lean is the pilote because it has a stable
-  # sorry profile (9 real tactic sorries, all enumerated + justified).
+  # sorry profile (8 real tactic sorries, all enumerated + justified).
   # #14337 tranche 2a: routed to the coursia-lean pool via the composite
   # twin (.github/actions/lean-axiom) -- job-level `uses:` on the local
   # reusable replaced by a LOCAL job (runs-on/if/steps) invoking the
@@ -188,7 +190,7 @@ jobs:
           display-name: knot_lean
           target-modules: "*"
           allow-axioms: ""
-          # 9 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+          # 8 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
           # build job above; the gate tolerates them (`fail-on-sorry: false`) but
           # still reports `has_sorry` per module and hard-fails forbidden axioms.
           # The per-module enumeration now lives in the gate's runtime derivation
