@@ -67,41 +67,39 @@ def test_mess3_parametrage_invalide_rejete():
 
 
 def _mess3_bruteforce_beliefs(m: Mess3, obs: np.ndarray) -> np.ndarray:
-    """Enumeration de toutes les sequences d'etats : P(s_k | o_{0..k}) exact par sommation."""
+    """Enumeration exacte (independante du forward) : pour chaque sequence
+    complete d'etats, poids joint = prior * prod(transitions) * prod(likelihoods),
+    puis marginalisation en P(s_k | o_{0..n-1}) — beliefs lisses, a comparer
+    au forward apres troncature des observations au meme prefixe."""
     n = len(obs)
     means = np.asarray(m.means)
-    out = np.zeros((n, m.n_states))
-    total_prec = np.zeros(m.n_states)  # somme des poids des prefixes, par etat final
-    # weight prefix jusqu'a k-1, par etat s_{k-1} : recursion sur prefixes
-    w_prev = np.zeros(m.n_states)  # poids non normalises des sequences s_{0..k-1}
-    log_norm = 0.0
-    # initialisation : k = 0
     prior = m.stationary()
-    for k in range(n):
-        w_new = np.zeros(m.n_states)
-        for s in range(m.n_states):
-            lik = math.exp(-0.5 * ((obs[k] - means[s]) / m.std) ** 2)
-            if k == 0:
-                w_new[s] = prior[s] * lik
-            else:
-                for sprev in range(m.n_states):
-                    trans = m.transition_matrix()[sprev, s]
-                    if trans > 0 and w_prev[sprev] > 0:
-                        w_new[s] += w_prev[sprev] * trans * lik
-        z = w_new.sum()
-        w_prev = w_new / z
-        log_norm += math.log(z)
-        out[k] = w_prev
-    return out
+    t = m.transition_matrix()
+
+    def lik(o: float, s: int) -> float:
+        return math.exp(-0.5 * ((o - means[s]) / m.std) ** 2)
+
+    weights = np.zeros(m.n_states)
+    for seq in itertools.product(range(m.n_states), repeat=n):
+        w = prior[seq[0]] * lik(obs[0], seq[0])
+        for k in range(1, n):
+            w *= t[seq[k - 1], seq[k]] * lik(obs[k], seq[k])
+        weights[seq[n - 1]] += w
+    return weights / weights.sum()
 
 
 def test_mess3_beliefs_vs_enumeration_brute():
     m = Mess3(means=(-0.15, 0.0, 0.15), std=0.05, stay=0.9)
-    _, obs = m.sample(12, seed=42)
-    fast = m.beliefs(obs)
-    brute = _mess3_bruteforce_beliefs(m, obs)
-    assert fast.shape == (12, 3)
-    assert np.allclose(fast, brute, atol=1e-12)
+    _, obs = m.sample(8, seed=42)
+    fast_last = m.beliefs(obs)[-1]
+    brute_last = _mess3_bruteforce_beliefs(m, obs)
+    assert fast_last.shape == (3,)
+    assert np.allclose(fast_last, brute_last, atol=1e-10)
+    # et sur prefixes successifs : le forward au pas k = enumeration tronquee a k+1
+    for cut in (3, 5, 8):
+        assert np.allclose(
+            m.beliefs(obs[:cut])[-1], _mess3_bruteforce_beliefs(m, obs[:cut]), atol=1e-10
+        )
 
 
 def test_mess3_beliefs_somment_a_un_et_modes_lisibles():
