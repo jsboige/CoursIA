@@ -3,19 +3,38 @@
 scan_slidev_composition.py — garde-fou CI de composition des slides.
 
 Mesure rendue (Playwright headless) sur un deck Slidev servi en dev mode
-(expose window.__slidev__.nav). 3 signaux (cf issue #11923) :
+(expose window.__slidev__.nav). 4 signaux (cf issues #11923, #15351) :
 
   1. HORS_CANVAS — élément dont la bbox dépasse le canvas déclaré (défaut 980×552).
 
-  2. CHEVAUCHEMENT (sur glyphes) — deux Range.selectNodeContents() qui
-     s'intersectent de plus de 1 px dans les deux axes. Mesure sur les
-     glyphes (jamais les boîtes), pour éviter le faux-positif du pattern
-     overlay (boîte LI pleine largeur qui croise une image posée à droite).
+  2. CHEVAUCHEMENT (sur glyphes, texte × texte) — deux
+     Range.selectNodeContents() qui s'intersectent de plus de 1 px dans les
+     deux axes. Mesure sur les glyphes (jamais les boîtes), pour éviter le
+     faux-positif du pattern overlay (boîte LI pleine largeur qui croise une
+     image posée à droite).
 
   3. OCCUPATION (sur images) — bande latérale sans image (> 25 % de la
      largeur du canvas) PENDANT que la colonne centrale sature (débordement
      bas ou bord frôlé). Le cas fondateur : slide 5 S3-acculturation
      @ 6cabc826b (img_006 + 2 logos en flux au centre, tiers droit vide).
+
+  4. RECOUVREMENT TEXTE × IMAGE (#15351) — du texte dont les glyphes sont
+     repeints par une image peinte AU-DESSUS de lui. Prédicat en 4
+     exigences : (a) bbox par nœud textuel (Range.getClientRects du Text
+     node, pas la boîte du bloc) ; (b) bbox du CONTENU RENDU de l'image
+     (naturalWidth/Height + object-fit/object-position — sous
+     object-contain la boîte peut être bien plus large que l'image peinte) ;
+     (c) image peinte au-dessus seulement (elementFromPoint sur 5 points de
+     l'intersection, fallback ordre DOM/z-index) — une image DERRIÈRE le
+     texte est le layout image-overlay voulu par la convention #221, pas un
+     défaut ; (d) opacité effective : tout JPEG est opaque, un PNG n'est
+     exempté que sur alpha effectivement présent dans la sous-zone
+     intersectée (échantillonnage canvas 32×32 ; erreur canvas → opaque,
+     fail-closed). Cas fondateur : PR #15224 @ 7f7b346f, slides /5 /7 /23 —
+     w-[600px] right-[20px] repeint les glyphes sous lui alors que le
+     scanner rendait « occupation 6 → 0 ». ADVISORY : ce signal ne modifie
+     pas le code retour tant que le taux de faux positifs n'est pas mesuré
+     sur les decks existants.
 
 Le rendu est ADVISORY — il ne remplace pas le QA visuel humain pour la
 composition esthétique. Cette borne est imprimée à chaque invocation.
@@ -245,12 +264,16 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                 }
             });
 
-            // --- CHEVAUCHEMENT (sur glyphes via Range) ---
+            // --- CHEVAUCHEMENT (sur glyphes via Range, texte × texte) ---
+            // Les <img> n'y participent pas : un <img> est un void element
+            // (jamais de firstChild) et le garde ci-dessous l'excluait de
+            // fait depuis la v1 — le texte × image a son propre prédicat
+            // (RECOUVREMENT ci-après), qui mesure le contenu rendu et
+            // l'ordre de peinture au lieu de la boîte élément naïve.
             const chevauchements = [];
             const textEls = Array.from(
                 root.querySelectorAll('h1, h2, h3, h4, p, li, blockquote, td, th')
             );
-            const imgEls = Array.from(root.querySelectorAll('img'));
 
             function glyphBBox(el) {
                 if (!el.firstChild) return null;
@@ -278,10 +301,9 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                 return { left: L, top: T, right: R, bottom: B };
             }
 
-            const allTargets = [
-                ...textEls.map(e => ({ kind: 'text', el: e, key: e.tagName + '.' + (e.className||'').toString().slice(0,40) })),
-                ...imgEls.map(e => ({ kind: 'img', el: e, key: 'img.' + (e.alt || (e.src.split('/').pop() || '?')).slice(0,60) })),
-            ];
+            const allTargets = textEls.map(
+                e => ({ kind: 'text', el: e, key: e.tagName + '.' + (e.className||'').toString().slice(0,40) })
+            );
             const boxes = [];
             for (const t of allTargets) {
                 const b = glyphBBox(t.el);
@@ -302,6 +324,159 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                             a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
                             b_bbox: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)],
                             overlap: [Math.round(overlapX), Math.round(overlapY)],
+                        });
+                    }
+                }
+            }
+
+            // --- RECOUVREMENT TEXTE × IMAGE (#15351) ---
+            // 4 exigences : (a) glyphes par nœud textuel, (b) bbox du
+            // contenu rendu de l'image, (c) image peinte au-dessus
+            // seulement, (d) opacité effective de la sous-zone peinte.
+            // ADVISORY : signalé, jamais bloquant (mesure de FP en cours).
+            const recouvrements = [];
+
+            function parseObjPosPart(part, boxSize, paintedSize) {
+                const kw = { left: '0%', top: '0%', right: '100%', bottom: '100%', center: '50%' };
+                const v = kw[part] !== undefined ? kw[part] : part;
+                if (v.endsWith('%')) return (boxSize - paintedSize) * (parseFloat(v) / 100);
+                return parseFloat(v) || 0;
+            }
+
+            // (b) contenu rendu : object-fit contain/none/scale-down
+            // letterboxent — seule la zone peinte repeint les glyphes.
+            // fill et cover peignent toute la boîte élément.
+            function renderedBox(img) {
+                const r = img.getBoundingClientRect();
+                const nw = img.naturalWidth, nh = img.naturalHeight;
+                if (!nw || !nh || r.width < 4 || r.height < 4) return null;
+                const cs = getComputedStyle(img);
+                let pw = r.width, ph = r.height;
+                const fit = cs.objectFit;
+                if (fit === 'none') { pw = nw; ph = nh; }
+                else if (fit === 'scale-down') {
+                    const s = Math.min(1, r.width / nw, r.height / nh);
+                    pw = nw * s; ph = nh * s;
+                } else if (fit === 'contain') {
+                    const s = Math.min(r.width / nw, r.height / nh);
+                    pw = nw * s; ph = nh * s;
+                }
+                const parts = (cs.objectPosition || '50% 50%').split(/\\s+/);
+                const ox = parseObjPosPart(parts[0] || '50%', r.width, pw);
+                const oy = parseObjPosPart(parts[1] || '50%', r.height, ph);
+                return {
+                    left: r.left + ox, top: r.top + oy,
+                    right: r.left + ox + pw, bottom: r.top + oy + ph,
+                };
+            }
+
+            const imgRendues = [];
+            root.querySelectorAll('img').forEach(img => {
+                const b = renderedBox(img);
+                if (b) imgRendues.push({ el: img, src: img.getAttribute('src') || '?', ...b });
+            });
+
+            if (imgRendues.length) {
+                // (a) glyphes par nœud textuel : un rect par line-box, avec
+                // le texte du nœud pour un constat actionnable.
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+                const lignesTexte = [];
+                let tn;
+                while ((tn = walker.nextNode())) {
+                    const contenu = (tn.textContent || '').trim();
+                    if (!contenu) continue;
+                    const rg = document.createRange();
+                    rg.selectNodeContents(tn);
+                    const rects = rg.getClientRects();
+                    for (let k = 0; k < rects.length; k++) {
+                        const rr = rects[k];
+                        if (rr.width < 1 || rr.height < 1) continue;
+                        lignesTexte.push({
+                            el: tn.parentElement, text: contenu,
+                            left: rr.left, top: rr.top, right: rr.right, bottom: rr.bottom,
+                        });
+                    }
+                }
+                for (const tb of lignesTexte) {
+                    if (!tb.el) continue;
+                    for (const ib of imgRendues) {
+                        if (tb.el.contains(ib.el) || ib.el.contains(tb.el)) continue;
+                        const ovX = Math.min(tb.right, ib.right) - Math.max(tb.left, ib.left);
+                        const ovY = Math.min(tb.bottom, ib.bottom) - Math.max(tb.top, ib.top);
+                        if (ovX <= 1 || ovY <= 1) continue;
+                        const ix1 = Math.max(tb.left, ib.left), ix2 = Math.min(tb.right, ib.right);
+                        const iy1 = Math.max(tb.top, ib.top), iy2 = Math.min(tb.bottom, ib.bottom);
+                        // (c) peinte au-dessus ? elementFromPoint sur 5
+                        // points de l'intersection. L'image-overlay légitime
+                        // (#221 : .overlay-content z-index 2 > .overlay-img
+                        // z-index 1) renvoie le texte — pas un défaut.
+                        const pts = [
+                            [(ix1 + ix2) / 2, (iy1 + iy2) / 2],
+                            [ix1 + (ix2 - ix1) * .25, iy1 + (iy2 - iy1) * .25],
+                            [ix1 + (ix2 - ix1) * .75, iy1 + (iy2 - iy1) * .25],
+                            [ix1 + (ix2 - ix1) * .25, iy1 + (iy2 - iy1) * .75],
+                            [ix1 + (ix2 - ix1) * .75, iy1 + (iy2 - iy1) * .75],
+                        ];
+                        let imgHits = 0, textHits = 0;
+                        for (const [px, py] of pts) {
+                            const eop = document.elementFromPoint(px, py);
+                            if (!eop) continue;
+                            if (ib.el === eop || ib.el.contains(eop)) imgHits++;
+                            else if (tb.el === eop || tb.el.contains(eop) || eop.contains(tb.el)) textHits++;
+                        }
+                        let peinteDessus;
+                        if (imgHits > 0 && imgHits >= textHits) peinteDessus = true;
+                        else if (textHits > 0) peinteDessus = false;
+                        else {
+                            // 3e élément au-dessus des deux partout : ordre
+                            // DOM (l'image APRÈS le texte est peinte après)
+                            // départagé par z-index.
+                            const rel = ib.el.compareDocumentPosition(tb.el);
+                            const zOf = (e) => {
+                                const z = getComputedStyle(e).zIndex;
+                                return z === 'auto' ? 0 : (parseFloat(z) || 0);
+                            };
+                            peinteDessus = zOf(ib.el) > zOf(tb.el) ||
+                                (zOf(ib.el) === zOf(tb.el) &&
+                                 !!(rel & Node.DOCUMENT_POSITION_PRECEDING));
+                        }
+                        if (!peinteDessus) continue;
+                        // (d) opacité effective : JPEG opaque ; PNG
+                        // échantillonné sur la sous-zone NATURELLE mappée
+                        // depuis la zone rendue intersectée ; erreur canvas
+                        // → opaque (fail-closed : on signale, on ne devine
+                        // pas une transparence qu'on n'a pas pu lire).
+                        let alpha;
+                        if (/\\.(jpe?g)(\\?|$)/i.test(ib.src)) {
+                            alpha = 1.0;
+                        } else {
+                            alpha = -1;
+                            try {
+                                const c = document.createElement('canvas');
+                                c.width = 32; c.height = 32;
+                                const ctx = c.getContext('2d', { willReadFrequently: true });
+                                const rw = ib.right - ib.left, rh = ib.bottom - ib.top;
+                                const sx = (ix1 - ib.left) / rw * ib.el.naturalWidth;
+                                const sy = (iy1 - ib.top) / rh * ib.el.naturalHeight;
+                                const sw = (ix2 - ix1) / rw * ib.el.naturalWidth;
+                                const sh = (iy2 - iy1) / rh * ib.el.naturalHeight;
+                                if (sw >= 1 && sh >= 1) {
+                                    ctx.drawImage(ib.el, sx, sy, sw, sh, 0, 0, 32, 32);
+                                    const d = ctx.getImageData(0, 0, 32, 32).data;
+                                    let op = 0, tot = 0;
+                                    for (let q = 3; q < d.length; q += 4) { tot++; if (d[q] >= 250) op++; }
+                                    alpha = op / tot;
+                                }
+                            } catch (e) { /* canvas taint : alpha reste -1 */ }
+                        }
+                        if (alpha >= 0 && alpha < 0.05) continue; // zone transparente : n'abîme rien
+                        recouvrements.push({
+                            texte: tb.text.slice(0, 60),
+                            texte_bbox: [Math.round(tb.left), Math.round(tb.top), Math.round(tb.right), Math.round(tb.bottom)],
+                            image: ib.src.split('/').pop(),
+                            image_bbox_rendu: [Math.round(ib.left), Math.round(ib.top), Math.round(ib.right), Math.round(ib.bottom)],
+                            overlap: [Math.round(ovX), Math.round(ovY)],
+                            alpha_zone: Math.round(alpha * 1000) / 1000,
                         });
                     }
                 }
@@ -348,7 +523,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                 };
             }
 
-            return { horsCanvas, chevauchements, occupation, contentBottom: Math.round(contentBottom) };
+            return { horsCanvas, chevauchements, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
         }""",
         [canvas_w, canvas_h],
     )
@@ -364,6 +539,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
         "hors_canvas": hors,
         "container_only": bool(hors) and not any(h.get("tag") in CONTENT_TAGS for h in hors),
         "chevauchements": raw.get("chevauchements", []),
+        "recouvrements": raw.get("recouvrements", []),
         "occupation": raw.get("occupation"),
     }
 
@@ -453,6 +629,13 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
                 f"{c['a']} × {c['b']} overlap={c['overlap']}px"
             )
+        for rv in r.get("recouvrements", [])[:3]:
+            out.append(
+                f"::warning file={rel},line={line}::[RECOUVREMENT-TEXTE-IMAGE] slide {r['slide']} — "
+                f"«{rv['texte'][:40]}» repeint par {rv['image']} "
+                f"overlap={rv['overlap']}px alpha={rv['alpha_zone']} "
+                f"texte_bbox={rv['texte_bbox']} img_rendu={rv['image_bbox_rendu']}"
+            )
         if occupation_flagged(r, report["canvas"][1]):
             occ = r["occupation"]
             out.append(
@@ -541,6 +724,7 @@ def main():
     n_total = len(results)
     n_hors = sum(1 for r in results if content_overflow(r))
     n_chev = sum(1 for r in results if r.get("chevauchements"))
+    n_rec = sum(1 for r in results if r.get("recouvrements"))
     n_occ = sum(1 for r in results if occupation_flagged(r, canvas_h))
 
     # contrôle positif
@@ -571,7 +755,12 @@ def main():
         "n_slides": n_total,
         "n_hors_canvas": n_hors,
         "n_chevauchements": n_chev,
+        "n_recouvrements": n_rec,
         "n_occupation_flagged": n_occ,
+        "recouvrement_borne": (
+            "ADVISORY — signalé, non compté dans le code retour "
+            "(taux de faux positifs à mesurer avant tout câblage bloquant)"
+        ),
         "controle_positif_ok": ctrl_positif_ok,
         "controle_positif_msg": ctrl_positif_msg,
         "controle_positif_armed": args.baseline_slide is not None,
