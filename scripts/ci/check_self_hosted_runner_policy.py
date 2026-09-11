@@ -210,9 +210,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "lane-claim-guard.yml",
     "linux-runner-starvation-advisory.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
-    #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux 3
-    #   labels requis par pr-gate.yml (waiter) et les workflows bloquants
-    #   (linux, lean). Meme profil : advisory cron schedule+workflow_dispatch
+    #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
+    #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
+    #   coursia-linux reste couvert par le workflow dedie
+    #   linux-runner-starvation-advisory.yml -- la sonde n'oberve pas
+    #   linux. Meme profil : advisory cron schedule+workflow_dispatch
     #   UNIQUEMENT (doctrine #12817), runs-on STATIQUE [self-hosted,
     #   coursia-ephemeral, coursia-linux] -- l'observateur tourne sur la jambe
     #   Linux containerisee, pas sur les labels qu'il observe (un observateur
@@ -220,10 +222,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   stdlib + gh binaire de l'image ; RUNNERS_READ_PAT secret read-only
     #   pose 2026-09-02T08:26Z (Administration:read, incapable de minter un
     #   registration-token, par design). Cron 23,53 (offset disjoint du cron
-    #   linux 19,49 et des sweeps 13,43). trigger workflow_dispatch debug
-    #   override (inputs.label). ZERO job self-hosted sur pull_request :
-    #   aucun risque d'atteindre un job de fork. Rollback = revert de la PR
-    #   (l'entree disparait de l'allowlist).
+    #   linux 19,49 et des sweeps 13,43). trigger workflow_dispatch sans
+    #   input (matrice executee in extenso -- l'input `label` declare
+    #   precedemment a ete retire c.1065 car chaque job matriciel porte
+    #   matrix.label truthy et shadowait inputs.label). ZERO job self-hosted
+    #   sur pull_request : aucun risque d'atteindre un job de fork. Rollback
+    #   = revert de la PR (l'entree disparait de l'allowlist).
     "runner-starvation-advisory.yml",
     "markdown-rendering-guard.yml",
     "markdown-table-guard.yml",
