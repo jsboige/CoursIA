@@ -351,14 +351,27 @@ TRANCHE1: list[Guard] = [
         blocking=True,
         absorbed=True,
     ),
-    # Forme 2 : scan globs, bloque sur convention zero-pad GameTheory
-    # (#11840/#12586). Source : series-naming-gate.yml (job affiche
-    # `zero-pad guard (GameTheory serie)`).
+    # Forme 2 : scan globs, bloque sur la convention zero-pad des series
+    # DECLAREES (#11840/#12586, portee explicite #15489 defaut 5). Source :
+    # series-naming-gate.yml (job affiche `zero-pad guard (series declarees)`).
+    # Les globs ci-dessous MIROITENT `scripts/notebook_tools/zero_pad_series.json`
+    # -- le garde est lance sans argument et lit le registre, mais la voie
+    # rapide doit savoir quand le declencher sans lire le JSON au chargement
+    # (ce module ne fait AUCUNE E/S, cf son docstring). Un test de parite
+    # rougit si le miroir et le registre divergent.
     Guard(
-        name="zero-pad guard (GameTheory serie)",
+        name="zero-pad guard (series declarees)",
         source="series-naming-gate.yml",
         paths=[
             "MyIA.AI.Notebooks/GameTheory/**",
+            "MyIA.AI.Notebooks/GenAI/FineTuning/**",
+            "MyIA.AI.Notebooks/IIT/**",
+            "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/PyMC/**",
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+            "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
+            "MyIA.AI.Notebooks/Sudoku/**",
+            "scripts/notebook_tools/zero_pad_series.json",
             "scripts/notebook_tools/check_series_zero_pad.py",
             "scripts/notebook_tools/naming_canon.py",
             ".github/workflows/series-naming-gate.yml",
