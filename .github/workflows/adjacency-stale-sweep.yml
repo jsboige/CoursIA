@@ -1,0 +1,219 @@
+name: Adjacency stale-verdict sweep
+
+# Câble refresh_stale_adjacency.py (#15347) : l'organe existe sur main depuis
+# le fix fondateur, mais AUCUN workflow ne l'appelait -- 24 h de blocage
+# mesurées sur #15165, une PR saine dont le verdict `Always-on guards` était
+# devenu périmé sans qu'aucun événement ne le rafraîchisse.
+#
+# Pourquoi la péremption arrive : le garde G-VAR-3 adjacence résout le
+# PRÉDÉCESSEUR RÉEL de la lane dans la séquence des merges
+# (prev_source: merged-sequence, #12095 -- « the declared prev: is frozen at
+# open time »), et ne se relance que sur `pull_request: synchronize, edited,
+# reopened`. Le merge d'un sibling déplace le prédécesseur réel sous une PR
+# ouverte ; le commentaire bloquant était vrai à l'heure où il a été posté,
+# faux maintenant, avec zéro événement pour le dire.
+#
+# Ce que fait ce sweep (simuler, jamais outrepasser) :
+#   1. Énumérer les PR ouvertes non-fork (REST) et ne garder que celles dont
+#      le check "Always-on guards -- 12 organes, 1 checkout" est ROUGE.
+#   2. Lancer refresh_stale_adjacency.py dessus : il re-simule le garde contre
+#      la séquence de merges COURANTE (le même calcul que la CI).
+#   3. Si la simulation PASSE alors que la CI échoue, le script appose le
+#      marqueur idempotent `<!-- refresh-adj: ISO8601 -->` et fait
+#      `gh pr edit` -- re-déclenchant `pull_request: edited`, le seul
+#      événement écouté par le garde qu'un sweep puisse synthétiser. Le garde
+#      recalcule avec la séquence à jour et le rouge périmé se lève.
+#
+# L'organe n'outrepasse JAMAIS : une PR dont la simulation échoue ENCORE est
+# laissée intacte (adjacence G-VAR-3 réelle, pas la nôtre à lever -- le
+# script sort 1 dessus et le sweep le journalise). Cadence horaire + pool
+# coursia-linux dédié : même doctrine que pr-gate-stale-sweep (#12728 -- le
+# sweep qui répare ne doit pas jeûner sous la congestion qu'il absorbe).
+# Le sweep sort TOUJOURS 0 (organe réparateur, jamais un gate) ; rc=2 (erreur
+# d'appelant) est loggé ::warning:: et ne rougit pas la CI.
+#
+# Couplage au nom de check, déclaré : le script lit le nom exact
+# "Always-on guards -- 12 organes, 1 checkout" via `gh pr checks` ; le
+# pré-filtre ci-dessous matche tout nom commençant par "Always-on guards"
+# pour qu'un changement de compte d'organes (12 -> 13) ne débranche PAS le
+# sweep en silence. Si AUCUNE PR ouverte ne porte de jambe "Always-on
+# guards*", le sweep émet ::warning:: -- c'est le cas rename-to-nothing
+# qu'un organe muet cacherait.
+
+on:
+  schedule:
+    # Horaire à la minute off-:00 (convention anti-stampede) -- minute 27
+    # inoccupée du parc (mesuré 2026-09-09).
+    - cron: '27 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List candidates, post nothing'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: write   # body-edit (marqueur idempotent) pour verdicts périmés
+
+concurrency:
+  # Un sweep à la fois, jamais tué en cours : un sweep interrompu laisse les
+  # PR qu'il n'a pas atteintes bloquées -- le mode d'échec exact que ce
+  # fichier existe pour supprimer (même règle que pr-gate-stale-sweep.yml).
+  group: adjacency-stale-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Refresh stale G-VAR-3 adjacency verdicts
+    # Routage tranche 4 (#14283, pool coursia-linux) : balayage cron horaire
+    # pur-Python -- déclencheurs schedule/workflow_dispatch uniquement, donc
+    # code repo-owned seul, aucune garde same-repo requise (cf. entêtes de
+    # check_self_hosted_runner_policy.py et stale-guard-red-sweep.yml).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 15
+    steps:
+      - name: Bootstrap gh into the persistent toolcache
+        # L'image coursia-linux (#14171: ubuntu:24.04 + python3/jq/curl/git)
+        # ne transporte volontairement pas gh, et ce sweep est gh-driven.
+        # Même bootstrap que pr-gate-stale-sweep.yml : installé UNE fois dans
+        # le toolcache persistant (le volume survit aux conteneurs éphémères,
+        # c'est son but) -- chaque sweep suivant réutilise. Pas de
+        # setup-python/pip : l'image fait foi, insensible à la classe de bug
+        # RUNNER_TOOL_CACHE (2026-09-02).
+        env:
+          GH_BOOTSTRAP_VERSION: "2.80.0"
+        run: |
+          set -uo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            echo "[gh] preinstalled on this runner"
+            gh --version
+            exit 0
+          fi
+          GH_BIN="/opt/hostedtoolcache/bin/gh"
+          if [ ! -x "$GH_BIN" ]; then
+            VER="${GH_BOOTSTRAP_VERSION}"
+            echo "[gh] bootstrapping v${VER} into toolcache (one-time, cached for every later sweep)"
+            curl -fsSL "https://github.com/cli/cli/releases/download/v${VER}/gh_${VER}_linux_amd64.tar.gz" -o /tmp/gh.tgz
+            tar -xzf /tmp/gh.tgz -C /tmp
+            mkdir -p /opt/hostedtoolcache/bin
+            mv "/tmp/gh_${VER}_linux_amd64/bin/gh" "$GH_BIN"
+          fi
+          echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
+          "$GH_BIN" --version
+
+      - name: Checkout sparse (guard modules only)
+        # Fermeture d'imports COMPLÈTE de refresh_stale_adjacency.py :
+        # grain_tag + variation_light_cap (scripts/), variation_adjacency_guard
+        # (scripts/ci/), fetch_merged_prs_since (sous-processus). Modules
+        # stdlib-only + internes -- rien d'autre n'est lu sur disque.
+        # Cone-mode false (le mode par défaut n'accepte que des REPERTOIRES :
+        # une entrée de fichier ferait échouer le checkout -- mesure
+        # stale-guard-red-sweep.yml).
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            scripts/ci/refresh_stale_adjacency.py
+            scripts/ci/fetch_merged_prs_since.py
+            scripts/ci/variation_adjacency_guard.py
+            scripts/grain_tag.py
+            scripts/variation_light_cap.py
+
+      - name: Refresh stale G-VAR-3 adjacency verdicts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -uo pipefail
+
+          # Plafond d'éditions de body par sweep : chaque edit re-déclenche le
+          # workflow always-on-guards complet (~12 organes) pour CETTE PR. Sous
+          # péremption massive (cas fondateur : 7 PRs) le sweep suivant draine
+          # le reste -- jamais une cascade sous congestion (#12728).
+          MAX_REFRESH=8
+
+          # Même énumération REST que pr-gate-stale-sweep.yml : un petit appel
+          # par PR, PAS de rollup GraphQL en bloc (504 sur ce repo, mesuré
+          # 2026-08-17). Les PRs de fork sont exclues : le job always-on-guards
+          # porte une garde same-repo, une PR de fork ne rend donc jamais le
+          # verdict.
+          gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --paginate \
+            --jq '.[] | select(.draft | not) | select(.head.repo.fork | not) | "\(.number) \(.head.sha)"' \
+            > /tmp/adjacency_openprs.txt \
+            || { echo "::warning::[adjacency-sweep] PR listing failed (upstream) -- skip this sweep"; exit 0; }
+
+          : > /tmp/adjacency_red.txt
+          GUARD_LEG_COUNT=0
+          while read -r NUM SHA; do
+            [ -z "${NUM:-}" ] && continue
+            LEGS=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+                     --jq '[.check_runs[] | select(.name | startswith("Always-on guards")) | .conclusion]' 2>/dev/null) || continue
+            if [ -z "${LEGS:-}" ] || [ "$LEGS" = "[]" ]; then
+              continue
+            fi
+            GUARD_LEG_COUNT=$((GUARD_LEG_COUNT + 1))
+            # Une jambe rouge = candidate ; refresh_stale_adjacency.py
+            # re-vérifie contre `gh pr checks` et décide du refresh. Le
+            # pré-filtre peut sur-sélectionner (jambe passée cohabitant avec
+            # une vieille rouge, #11532), le script reste l'autorité.
+            if printf '%s' "$LEGS" | jq -e 'any(. == "failure" or . == "timed_out" or . == "action_required")' >/dev/null 2>&1; then
+              echo "$NUM" >> /tmp/adjacency_red.txt
+            fi
+          done < /tmp/adjacency_openprs.txt
+          INSPECTED=$(wc -l < /tmp/adjacency_openprs.txt | tr -d ' ')
+          RED_COUNT=$(wc -l < /tmp/adjacency_red.txt | tr -d ' ')
+          echo "[adjacency-sweep] open PRs inspected: $INSPECTED; carrying an 'Always-on guards*' leg: $GUARD_LEG_COUNT; red legs: $RED_COUNT"
+
+          # #11808 : un filtre déconnecté et un filtre vide sont
+          # indistinguables. Zéro jambe "Always-on guards*" sur TOUT le pool
+          # = rename du check (ou organe mort) -- le script lit le nom exact,
+          # le sweep rendrait le silence visible.
+          if [ "$GUARD_LEG_COUNT" -eq 0 ]; then
+            echo "::warning::[adjacency-sweep] no open PR carries an 'Always-on guards*' check -- if that check was renamed, refresh_stale_adjacency.py (which reads the exact name) is silently inert."
+          fi
+
+          if [ "$RED_COUNT" -eq 0 ]; then
+            echo "[adjacency-sweep] nothing to refresh"
+            exit 0
+          fi
+
+          # Plus ancien d'abord (tri numérique = ordre d'âge), plafonné :
+          # les PR jeunes gardent synchronize/reopened comme second chemin de
+          # réparation ; les vieilles silencieuses n'ont que ce sweep.
+          sort -n -o /tmp/adjacency_red.txt /tmp/adjacency_red.txt
+          head -n "$MAX_REFRESH" /tmp/adjacency_red.txt > /tmp/adjacency_batch.txt
+          readarray -t BATCH < /tmp/adjacency_batch.txt
+          echo "[adjacency-sweep] refreshing up to $MAX_REFRESH of $RED_COUNT candidate(s): ${BATCH[*]:-none}"
+
+          PR_ARGS=()
+          for NUM in "${BATCH[@]}"; do
+            PR_ARGS+=(--pr "$NUM")
+          done
+
+          DRY=""
+          if [ "${DRY_RUN:-false}" = "true" ]; then DRY="--dry-run"; fi
+
+          set +e
+          python3 scripts/ci/refresh_stale_adjacency.py "${PR_ARGS[@]}" $DRY \
+            > /tmp/adjacency_verdicts.json 2>/tmp/adjacency_verdicts.err
+          RC=$?
+          set -e
+
+          echo "--- refresh_stale_adjacency verdicts ---"
+          cat /tmp/adjacency_verdicts.json
+          if [ -s /tmp/adjacency_verdicts.err ]; then
+            echo "--- script stderr (rc=$RC) ---"
+            cat /tmp/adjacency_verdicts.err
+          fi
+
+          # rc=1 = au moins une PR échoue la simulation pour de bon
+          # (adjacence G-VAR-3 réelle, ou rouge d'un autre garde) : journalisé
+          # ci-dessus, JAMAIS une faillite CI -- le sweep rafraîchit, il ne
+          # gate pas. rc=2 = erreur d'appelant (ex. fenêtre de merges non
+          # récupérable) : le dire, puis sortir 0 -- l'organe ne doit pas
+          # rougir pendant que la flotte est bloquée.
+          # Advisory by construction, même doctrine que les sweeps frères.
+          exit 0
