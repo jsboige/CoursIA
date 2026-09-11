@@ -15,7 +15,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py`, `detect_paragraph_length.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) / **#15405** (paragraphes markdown > 2000 c, wall-of-text guard) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py`, `detect_paragraph_length.py`, `detect_mermaid_fill_without_color.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) / **#15405** (paragraphes markdown > 2000 c, wall-of-text guard) / **#15022** (mermaid fill sans color, clair-sur-clair theme sombre) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -286,6 +286,30 @@ fichiers pre-existants soit a zero.
 
 **Owner** : partition-mienne pour les PRs docs (relecture fichier-entier
 README series), cluster-manager pour la bascule bloquante.
+### `detect_mermaid_fill_without_color.py` (#15022, PR #15502)
+
+Regression-guard du defect **#15022** (signale par le user) : une regle mermaid
+`style`/`classDef` portant `fill:` sans `color:` force un fond clair en
+laissant le libelle heriter la couleur de texte du theme — clair-sur-clair en
+mode sombre GitHub. Le fix #15502 avait verifie les 10 regles du README Probas
+**a la main** ; ce detecteur mecanise la verification (demande review
+NanoClaw : « le motif peut revenir, sur ce fichier comme sur les 24 autres »).
+Scanne les `.md` trackes + cellules markdown des `.ipynb`, fence `mermaid`
+seulement, commentaires `%%` exclus. Cable en advisory par
+`.github/workflows/mermaid-fill-color-advisory.yml` (labels
+`mermaid-fill-color` / `mermaid-fill-color-unmeasured`, jamais bloquant).
+
+```bash
+python scripts/notebook_tools/detect_mermaid_fill_without_color.py --self-test  # prouve qu'il tire
+python scripts/notebook_tools/detect_mermaid_fill_without_color.py README.md    # un fichier
+python scripts/notebook_tools/detect_mermaid_fill_without_color.py --check      # exit 1 si finding
+```
+
+Baseline fleet (origin/main, 2026-09-11) : **25 fichiers / 90 regles fautives**
+sur 204 regles `fill:` — le README Probas porte exactement les 10 regles du
+fix #15502 (ground truth retrouve). Le residuel pre-existant fait l'objet
+d'une issue de suivi (sweep par familles) ; l'advisory ne flague que les
+fichiers modifies par une PR.
 
 ---
 
