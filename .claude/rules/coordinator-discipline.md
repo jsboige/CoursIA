@@ -39,9 +39,15 @@ seule une reponse du pair la qualifie.
 | Lane mesuree | Cadence a armer |
 |---|---|
 | `myia-ai-01:CoursIA`, **et** unique | `/coordinate` |
-| `myia-ai-01:CoursIA`, **une autre session active sur la meme lane** | arbitrer : **une seule** garde `/coordinate`. A defaut d'accord, **celle qui a detecte la collision cede** — regle deterministe, pour qu'un depart simultane ne produise ni deux coordinateurs ni zero |
+| `myia-ai-01:CoursIA`, **une autre session active sur la meme lane** | arbitrer : **une seule** garde `/coordinate`. A defaut d'accord, elle revient a **celle qui detient deja un cron `/coordinate` arme** ; si aucune ne l'a ou si les deux l'ont, a **la session demarree le plus tot** (`ListAgents` horodate les demarrages). L'autre cede **et passe en worktree** |
 | `myia-po-2025:CoursIA-2` | `/coordinate-adjoint` |
 | toute autre lane | `/continue` (worker) |
+
+Les deux criteres de defaut sont **asymetriques et lisibles des deux cotes** :
+chaque session peut rendre son `CronList` et son heure de demarrage. « Celle qui a
+detecte la collision cede » ne l'est pas — une detection **simultanee** ferait
+ceder les deux et ne laisserait **aucun** coordinateur, precisement ce que le
+defaut existe pour empecher.
 
 ### La session qui cede change d'arbre, pas seulement de cadence
 
@@ -76,6 +82,10 @@ sortante d'abord**, armer ensuite.
 coordinateur et son cron (`CronCreate` est session-only, L740). Deux sessions
 CoursIA se sont retrouvees vivantes sur `myia-ai-01` sans qu'aucun signal ne dise
 laquelle devait coordonner — `ListAgents` listait des noms, pas des lanes.
+L'arbitrage s'est regle **par accord** au premier aller-retour : le defaut
+deterministe n'a pas eu a jouer, et il ne faut pas lire cet episode comme son
+precedent. Ce qui a departage est ce que la table nomme desormais — une session
+portait le cron arme, l'autre avait un `CronList` vide.
 
 ## Regle 0 : production avant digestion, sans perte de qualite (HARD)
 
