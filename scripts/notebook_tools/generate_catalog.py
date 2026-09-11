@@ -29,8 +29,8 @@ import re
 import subprocess
 import sys
 import unicodedata
-from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
@@ -1268,70 +1268,199 @@ def scan_all_notebooks(
     return entries
 
 
-def generate_markdown_report(entries: list[dict]) -> str:
-    """Generate a human-readable markdown summary."""
-    by_serie = {}
-    status_counts = {}
-    for e in entries:
-        s = e["serie"]
-        by_serie.setdefault(s, []).append(e)
+# Bucket label for notebooks that live directly at serie root (no sous-serie).
+ROOT_BUCKET = "Racine"
+
+
+def _md_escape_cell(text: str) -> str:
+    """Escape Markdown-sensitive characters inside a table cell (#15490).
+
+    Pipes break the cell, backticks switch to code spans, square brackets open
+    link syntax -- all three appear in real notebook titles/kernels.
+    Backslash is escaped first so it cannot counterfeit the other escapes.
+    """
+    text = text.replace("\\", "\\\\")
+    text = text.replace("|", "\\|")
+    text = text.replace("`", "\\`")
+    text = text.replace("[", "\\[")
+    text = text.replace("]", "\\]")
+    return text
+
+
+def _md_href(path: str) -> str:
+    """Percent-encode a repo-relative path for use as a Markdown href.
+
+    Spaces, accents and parentheses must not leak into the URL: GitHub would
+    break the link at the first space. '/' stays literal (path separators).
+    '&' also stays literal: it is a legal URL sub-delim that Markdown handles
+    raw, and Quarto's link resolver does NOT decode %26 -- encoding it broke
+    the 3 ML.Net `Data&Features` links at render time (measured, #15490).
+    """
+    return quote(path, safe="/&")
+
+
+def _serie_buckets(items: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Group a serie's entries by sous_serie; root notebooks under Racine.
+
+    Deterministic order: Racine first, then sous-series alphabetically
+    (case-insensitive, exact case as tiebreaker).
+    """
+    buckets: dict[str, list[dict]] = {}
+    for e in items:
+        name = e.get("sous_serie") or ROOT_BUCKET
+        buckets.setdefault(name, []).append(e)
+    return sorted(
+        buckets.items(),
+        key=lambda kv: (kv[0] != ROOT_BUCKET, kv[0].lower(), kv[0]),
+    )
+
+
+def _serie_order(by_serie: dict[str, list[dict]]) -> list[str]:
+    """SERIES_ORDER first (only series present), then the rest, sorted.
+
+    A serie absent from SERIES_ORDER used to be silently dropped from the
+    report; it must still render (#15490).
+    """
+    listed = [s for s in SERIES_ORDER if s in by_serie]
+    rest = sorted(s for s in by_serie if s not in SERIES_ORDER)
+    return listed + rest
+
+
+def generate_markdown_report(entries: list[dict], repo_root: Path | None = None) -> str:
+    """Generate the human-readable Markdown catalog page (#15490).
+
+    Deterministic: no wall-clock timestamp -- two generations at the same SHA
+    are byte-identical. Entries are re-sorted by path so the report does not
+    depend on the caller's ordering.
+
+    Structure:
+      - Status/Maturity summaries rendered from the DATA (any status or
+        maturity value present appears -- no closed list that would hide
+        NO_CODE or a future value);
+      - an aggregate table serie x sous-serie whose rows sum to the grand
+        total (reconciliation is asserted by tests);
+      - per-serie sections (SERIES_ORDER first, unknown series after),
+        each split into sous-serie buckets (root notebooks under Racine);
+      - one row per notebook: full canonical basename (clickable link to the
+        real path when the target exists under ``repo_root``, plain text +
+        ``(missing)`` marker otherwise) DISTINCT from the pedagogical title.
+
+    ``repo_root=None`` checks targets against the module's REPO_ROOT.
+    """
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    ordered = sorted(entries, key=lambda e: e.get("path", ""))
+
+    by_serie: dict[str, list[dict]] = {}
+    status_counts: dict[str, int] = {}
+    maturity_counts: dict[str, int] = {}
+    for e in ordered:
+        by_serie.setdefault(e["serie"], []).append(e)
         status_counts[e["status"]] = status_counts.get(e["status"], 0) + 1
+        m = e.get("maturity", "UNKNOWN")
+        maturity_counts[m] = maturity_counts.get(m, 0) + 1
 
     lines = [
-        f"# CoursIA Notebook Catalog",
-        f"",
-        f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"Total notebooks: {len(entries)}",
-        f"",
-        f"## Status Summary",
-        f"",
+        # Page-scoped responsive guard: the 8-column notebook tables are wider
+        # than a ~400px viewport; without this rule the PAGE itself scrolls
+        # horizontally on mobile (measured: 904px scrollWidth at 400px). The
+        # style only ships in this generated page, so the rest of the Quarto
+        # site is untouched. GitHub MD rendering sanitizes <style> -- harmless.
+        "<style>",
+        "/* Wide catalog tables scroll inside the page -- never widen the page (#15490). */",
+        "#quarto-document-content table { display: block; overflow-x: auto; }",
+        "</style>",
+        "",
+        "# CoursIA Notebook Catalog",
+        "",
+        f"Total notebooks: {len(ordered)}",
+        "",
+        "## Status Summary",
+        "",
     ]
-    for status in ["READY", "DEMO", "RESEARCH", "BROKEN"]:
-        count = status_counts.get(status, 0)
-        lines.append(f"- **{status}**: {count}")
+    for status in sorted(status_counts):
+        lines.append(f"- **{status}**: {status_counts[status]}")
+    lines.append(f"- **TOTAL**: {len(ordered)}")
 
-    # Maturity summary
-    maturity_counts = {}
-    for e in entries:
-        maturity_counts[e.get("maturity", "UNKNOWN")] = (
-            maturity_counts.get(e.get("maturity", "UNKNOWN"), 0) + 1
-        )
     lines.extend(["", "## Maturity Summary", ""])
-    for maturity in ["PRODUCTION", "BETA", "TEMPLATE", "ALPHA", "DRAFT"]:
-        count = maturity_counts.get(maturity, 0)
-        lines.append(f"- **{maturity}**: {count}")
+    for maturity in sorted(maturity_counts):
+        lines.append(f"- **{maturity}**: {maturity_counts[maturity]}")
+    lines.append(f"- **TOTAL**: {len(ordered)}")
+
+    series = _serie_order(by_serie)
+
+    # Aggregate serie/sous-serie table: every row is a disjoint bucket, so the
+    # column sums to the grand total exactly (asserted in tests).
+    lines.extend(["", "## Series / Sub-series Totals", ""])
+    lines.append("| Series | Sub-series | Notebooks |")
+    lines.append("|--------|-----------|-----------|")
+    for serie in series:
+        for bucket_name, bucket_items in _serie_buckets(by_serie[serie]):
+            lines.append(
+                f"| {_md_escape_cell(serie)} | {_md_escape_cell(bucket_name)} "
+                f"| {len(bucket_items)} |"
+            )
+    lines.append(f"| **TOTAL** | | **{len(ordered)}** |")
 
     lines.extend(["", "## By Series", ""])
-    for serie in SERIES_ORDER:
-        if serie not in by_serie:
-            continue
+    for serie in series:
         items = by_serie[serie]
-        statuses = {}
+        statuses: dict[str, int] = {}
+        maturities: dict[str, int] = {}
         for e in items:
             statuses[e["status"]] = statuses.get(e["status"], 0) + 1
+            m = e.get("maturity", "UNKNOWN")
+            maturities[m] = maturities.get(m, 0) + 1
         status_str = ", ".join(
-            f"{s}:{c}" for s, c in sorted(statuses.items())
+            f"{_md_escape_cell(s)}:{c}" for s, c in sorted(statuses.items())
         )
-        maturities = {}
-        for e in items:
-            maturities[e.get("maturity", "UNKNOWN")] = (
-                maturities.get(e.get("maturity", "UNKNOWN"), 0) + 1
-            )
         mat_str = ", ".join(
-            f"{m}:{c}" for m, c in sorted(maturities.items())
+            f"{_md_escape_cell(m)}:{c}" for m, c in sorted(maturities.items())
         )
         lines.append(f"### {serie} ({len(items)} notebooks) — {status_str} | {mat_str}")
         lines.append("")
-        lines.append(f"| # | Notebook | Kernel | Status | Maturity | Duration | Owner |")
-        lines.append(f"|---|----------|--------|--------|----------|----------|-------|")
-        for i, e in enumerate(items, 1):
-            name = truncate_at_word(e["title"], 50)
-            kernel = truncate_at_word(e["kernel"], 30)
-            maturity = e.get("maturity", "UNKNOWN")
-            duration = e.get("duree_estimee", "")
-            owner = e.get("owner_logique", "")
-            lines.append(f"| {i} | {name} | {kernel} | {e['status']} | {maturity} | {duration} | {owner} |")
-        lines.append("")
+        for bucket_name, bucket_items in _serie_buckets(items):
+            lines.append(f"#### {bucket_name} ({len(bucket_items)})")
+            lines.append("")
+            lines.append(
+                "| # | Notebook | Title | Kernel | Status | Maturity | Duration | Owner |"
+            )
+            lines.append(
+                "|---|----------|-------|--------|--------|----------|----------|-------|"
+            )
+            for i, e in enumerate(bucket_items, 1):
+                basename = Path(e["path"]).name if e.get("path") else ""
+                # Entry paths are relative to MyIA.AI.Notebooks/, but the MD
+                # artifact lives at repo root: the href AND the existence
+                # check both need the MyIA.AI.Notebooks/ prefix.
+                rel_link = (
+                    f"{NOTEBOOKS_DIR.name}/{e['path']}" if e.get("path") else ""
+                )
+                target = root / rel_link if rel_link else None
+                if target is not None and target.exists():
+                    notebook_cell = (
+                        f"[{_md_escape_cell(basename)}]({_md_href(rel_link)})"
+                    )
+                else:
+                    # Missing target: a link would 404 the rendered page --
+                    # keep the basename visible and SIGNAL the absence.
+                    notebook_cell = f"{_md_escape_cell(basename)} *(missing)*"
+                title = _md_escape_cell(truncate_at_word(e["title"], 50))
+                kernel = _md_escape_cell(truncate_at_word(e["kernel"], 30))
+                status_cell = _md_escape_cell(str(e.get("status", "")))
+                maturity_cell = _md_escape_cell(
+                    str(e.get("maturity", "UNKNOWN"))
+                )
+                duration_cell = _md_escape_cell(
+                    str(e.get("duree_estimee", ""))
+                )
+                owner_cell = _md_escape_cell(
+                    str(e.get("owner_logique", ""))
+                )
+                lines.append(
+                    f"| {i} | {notebook_cell} | {title} | {kernel} "
+                    f"| {status_cell} | {maturity_cell} | {duration_cell} | {owner_cell} |"
+                )
+            lines.append("")
 
     # Requirements summary
     req_counts = {
@@ -1459,16 +1588,18 @@ def main():
 
     if not args.md_only:
         json_path = out_dir / "COURSE_CATALOG.generated.json"
-        json_path.write_text(
-            json.dumps(entries, indent=2, ensure_ascii=False),
-            encoding="utf-8",
+        # write_bytes (not write_text): Path.write_text opens in text mode,
+        # which translates \n to os.linesep on Windows -> CRLF artifacts and
+        # guaranteed churn vs the Linux CI that owns main's catalog (#15490).
+        json_path.write_bytes(
+            json.dumps(entries, indent=2, ensure_ascii=False).encode("utf-8")
         )
         print(f"JSON: {json_path} ({len(entries)} entries)")
 
     if not args.json_only:
         md_path = out_dir / "COURSE_CATALOG.generated.md"
         report = generate_markdown_report(entries)
-        md_path.write_text(report, encoding="utf-8")
+        md_path.write_bytes(report.encode("utf-8"))
         print(f"MD:  {md_path}")
 
 

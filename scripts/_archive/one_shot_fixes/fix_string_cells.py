@@ -10,6 +10,17 @@ Usage:
     fix_string_cells.py <notebook_or_directory> [--dry-run] [--recursive]
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : scripts/notebook_tools/fix_string_cells.py
+# - Verdict recorded in : PR #9731; canonical test_fix_string_cells.py
+#
+# Per-function disposition :
+# - fix_notebook_sources() : split into canonical convert_string_to_list(),
+#   fix_list_newlines() and fix_notebook()
+# - fix_string_cells alias : abandoned; the canonical module exposes its CLI
+# - main() : superseded by the canonical argparse main()
+
 import json
 import sys
 import glob

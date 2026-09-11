@@ -159,13 +159,17 @@ class TestVerifyOne:
         assert "lean4-venv" in v["message"]
 
     def test_system_python_ok(self, tmp_path):
-        """Argv is /usr/bin/python3 (system) => OK, runtime uses active venv."""
+        """Argv is /usr/bin/python3 (system) => OK, runtime uses active venv.
+
+        The declared venv is unknown, so matches_default_venv must be None
+        (not True) -- nothing proves the match (#15223).
+        """
         nb, name, argv0 = _write_nb(tmp_path, argv0="/usr/bin/python3")
         with patch("jupyter_client.kernelspec.get_kernel_spec",
                    return_value=_mock_spec(argv0)):
             v = verify_one(nb)
         assert v["verdict"] == "OK"
-        assert v["matches_default_venv"] is True
+        assert v["matches_default_venv"] is None
         assert v["declared_venv"] is None
 
     def test_bare_python_ok(self, tmp_path):

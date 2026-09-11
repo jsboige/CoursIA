@@ -201,7 +201,7 @@ Inverse-vol weighted allocation with Ridge regression on features
 
 ### L4 Decision Transformer - Action-based trading (BEATS)
 
-First model to beat buy-and-hold across 24/26 symbols. Action-based (buy/hold/sell classification)
+First model to beat buy-and-hold across 24/26 symbols (panel @10bps; real out-of-sample temporal: NO-BEATS). Action-based (buy/hold/sell classification)
 massively outperforms forecast-based approaches (PatchTST). Median AUC 0.5582, 104 combos validated.
 
 ### QC Cloud strategies powered by these models

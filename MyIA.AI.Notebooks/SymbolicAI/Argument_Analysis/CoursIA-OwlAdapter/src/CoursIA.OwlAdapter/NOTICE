@@ -148,3 +148,16 @@ OWL2XML file serialization).
 ========================================================================
 End of NOTICE
 ========================================================================
+
+Textes de licence attachés (complément, LGPL v3 §4)
+----------------------------------------------------
+
+L'amont est dual-licensed « LGPL-3.0 OR AGPL-3.0 (for network use) ». La
+redistribution CoursIA est régie par la branche **LGPL-3.0** — la portée déjà
+déclarée ci-dessus (« distributed under the same LGPL-3.0 terms », LGPL v3
+section 5). Conformément à LGPL-3 section 4, le texte de la LGPL **et** celui
+de la GPL-3 (dont la LGPL est un jeu de permissions additionnelles) sont
+attachés au présent répertoire :
+
+  - `LICENSE-LGPL-3.0.txt` — texte canonique gnu.org, sha256 e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118
+  - `LICENSE-GPL-3.0.txt`  — texte canonique gnu.org, sha256 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986

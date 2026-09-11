@@ -155,7 +155,9 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -536,7 +538,190 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     }
 
 
-def lookup_pr_for_branch(branch: str) -> Optional[dict]:
+# ----------------------------------------------------------------------------
+# Resolution PR a trois etages (#15369)
+# ----------------------------------------------------------------------------
+# Mesure fondatrice (rapport fleet po-2023 du 09/09 04:27) : 4 fermes en
+# « gh pr list failed » -- quota GraphQL du compte partage epuise, toutes
+# les machines tirant en meme temps. La resolution d'ancre coutait UN
+# appel search par worktree, sans aucun cache : lineaire en nombre de
+# worktrees (265 sur po-2026, 103 sur ai-01), sur un budget horaire
+# COMMUN a la flotte. Trois etages, du moins couteux au plus couteux :
+#
+# 1. cache disque par branche : verdicts MERGED uniquement, gardes par
+#    headRefOid (un MERGED est definitif POUR CES commits ; une branche
+#    re-poussee/re-PR porte un oid different -> miss -> etage suivant ;
+#    CLOSED n'est jamais cache, reopen possible) ;
+# 2. lot unique `--limit N` indexe par headRefName : une requete par
+#    passe au lieu de N. La fenetre est cappee : une ABSENCE du lot
+#    n'est jamais un verdict -- les branches absentes retombent sur
+#    l'ancre. Une ERREUR gh au lot degrade aussi vers l'ancre : une
+#    optimisation ne doit pas refuser des retraits legitimes ;
+# 3. l'ancre historique `--state all --search "head:<branche>"` :
+#    AUTHORITATIVE par decision ecrite (.claude/rules/git-workflow.md) --
+#    inchangee. La remplacer par commits/<oid>/pulls (faux negatifs
+#    mesures sur PRs OPEN) serait une regression, pas une optimisation.
+
+PR_VERDICT_CACHE_VERSION = 1
+PR_LISTING_WINDOW = 1000
+
+
+def _pr_cache_path() -> Path:
+    """Un fichier de verdicts par depot (cle = sha1 du remote origin)."""
+    proc = run_git(".", "remote", "get-url", "origin", check=False)
+    url = proc.stdout.strip() if proc.returncode == 0 else "unknown-repo"
+    key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
+    return Path.home() / ".cache" / "coursia" / "prune_pr_verdicts" / f"{key}.json"
+
+
+class PrResolution:
+    """Resolution PR a trois etages : cache disque -> lot -> ancre."""
+
+    def __init__(self, cache_path: Optional[Path] = None,
+                 listing_window: int = PR_LISTING_WINDOW):
+        self.cache_path = cache_path
+        self.listing_window = listing_window
+        self._entries: dict = {}
+        self._cache_dirty = False
+        self._index: Optional[dict] = None
+        self.stats = {
+            "cache_hits": 0,
+            "listing_calls": 0,
+            "listing_hits": 0,
+            "listing_degraded": 0,
+            "anchor_calls": 0,
+            "cache_writes": 0,
+        }
+        if self.cache_path is not None:
+            self._load_cache()
+
+    def _load_cache(self) -> None:
+        """Le cache est une economie, jamais une autorite : illisible = vide."""
+        try:
+            data = json.loads(self.cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
+        if data.get("version") == PR_VERDICT_CACHE_VERSION:
+            self._entries = data.get("entries", {})
+
+    def flush(self) -> None:
+        if not self._cache_dirty or self.cache_path is None:
+            return
+        payload = {
+            "version": PR_VERDICT_CACHE_VERSION,
+            "entries": self._entries,
+        }
+        tmp = self.cache_path.with_suffix(".tmp")
+        try:
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp.write_text(json.dumps(payload), encoding="utf-8")
+            os.replace(tmp, self.cache_path)
+        except OSError:
+            return
+        self._cache_dirty = False
+
+    def _cache_get(self, branch: str, head_sha: Optional[str]) -> Optional[dict]:
+        entry = self._entries.get(branch)
+        if not entry or entry.get("state") != "MERGED":
+            return None
+        # Garde oid : le verdict MERGED vaut pour ces commits exactement.
+        if not head_sha or entry.get("headRefOid") != head_sha:
+            return None
+        return {
+            "number": entry["number"],
+            "state": "MERGED",
+            "url": entry.get("url"),
+            "headRefName": branch,
+            "headRefOid": entry.get("headRefOid"),
+        }
+
+    def _cache_put(self, row: dict) -> None:
+        if row.get("state") != "MERGED" or not row.get("headRefOid"):
+            return
+        self._entries[row["headRefName"]] = {
+            "number": row["number"],
+            "state": "MERGED",
+            "url": row.get("url"),
+            "headRefOid": row["headRefOid"],
+        }
+        self._cache_dirty = True
+        self.stats["cache_writes"] += 1
+
+    def _build_index(self) -> dict:
+        if self._index is not None:
+            return self._index
+        self.stats["listing_calls"] += 1
+        proc = run_gh(
+            "pr", "list",
+            "--state", "all",
+            "--json", "number,state,url,headRefName,headRefOid",
+            "--limit", str(self.listing_window),
+            check=False,
+        )
+        rows = None
+        if proc.returncode == 0:
+            try:
+                rows = json.loads(proc.stdout)
+            except json.JSONDecodeError:
+                rows = None
+        if rows is None:
+            # Echec du lot -> degradation vers l'ancre (comportement
+            # d'avant #15369). L'index reste construit-vide : la
+            # degradation ne se joue qu'une fois par passe.
+            self._index = {}
+            self.stats["listing_degraded"] += 1
+            return self._index
+        index: dict = {}
+        for row in rows:
+            name = row.get("headRefName")
+            if not name:
+                continue
+            # Plusieurs PRs par nom de branche (close+reopen, re-PR) :
+            # garder la plus recente = numero max, meme choix que le
+            # rows[0] de l'ancre (retournee par date desc).
+            if (name not in index
+                    or row.get("number", 0) > index[name].get("number", 0)):
+                index[name] = row
+        self._index = index
+        return index
+
+    def resolve(self, branch: str,
+                head_sha: Optional[str] = None) -> Optional[dict]:
+        cached = self._cache_get(branch, head_sha)
+        if cached is not None:
+            self.stats["cache_hits"] += 1
+            return cached
+        index = self._build_index()
+        if branch in index:
+            row = index[branch]
+            self._cache_put(row)
+            self.stats["listing_hits"] += 1
+            return row
+        row = anchor_search_pr_for_branch(branch)
+        self.stats["anchor_calls"] += 1
+        if row:
+            self._cache_put(row)
+        return row
+
+
+_RESOLUTION: Optional[PrResolution] = None
+
+
+def get_pr_resolution() -> PrResolution:
+    """Singleton de passe : une seule requete de lot, un seul flush."""
+    global _RESOLUTION
+    if _RESOLUTION is None:
+        _RESOLUTION = PrResolution(cache_path=_pr_cache_path())
+    return _RESOLUTION
+
+
+def reset_pr_resolution() -> None:
+    """Tests : detache le singleton (chaque passe doit reconstruire)."""
+    global _RESOLUTION
+    _RESOLUTION = None
+
+
+def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
     """Cherche la PR dont le headRefName = branch.
 
     Ancre autoritative : `gh pr list --state all --search "head:<branch>"`.
@@ -547,7 +732,7 @@ def lookup_pr_for_branch(branch: str) -> Optional[dict]:
         "pr", "list",
         "--state", "all",
         "--search", f"head:{branch}",
-        "--json", "number,state,url,headRefName",
+        "--json", "number,state,url,headRefName,headRefOid",
         "--limit", "5",
         check=False,
     )
@@ -564,6 +749,19 @@ def lookup_pr_for_branch(branch: str) -> Optional[dict]:
     # possible apres close+reopen), on prend la plus recente en premier
     # (gh retourne deja par date desc).
     return rows[0]
+
+
+def lookup_pr_for_branch(branch: str,
+                         head_sha: Optional[str] = None) -> Optional[dict]:
+    """Resolution PR d'une branche via la couche a trois etages (#15369).
+
+    L'ancre `--state all --search head:<branche>` reste la source
+    autoritative ; les etages cache disque et lot unique ne font que
+    l'EVITER quand le verdict est deja etabli (MERGED garde par oid) ou
+    disponible dans la fenetre du lot. Une absence ou un echec des etages
+    d'economie retombe TOUJOURS sur l'ancre.
+    """
+    return get_pr_resolution().resolve(branch, head_sha)
 
 
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
@@ -654,8 +852,14 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     return None
 
 
-def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
-    """Diagnostic complet d'un worktree."""
+def diagnose_worktree(wt_path: str, current_path: str,
+                      head_sha: Optional[str] = None) -> WorktreeStatus:
+    """Diagnostic complet d'un worktree.
+
+    `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
+    la garde oid du cache de verdicts MERGED (#15369) : sans lui, l'etage
+    cache est saute, jamais consulte a l'aveugle.
+    """
     info = get_worktree_info(wt_path, current_path)
 
     # Worktree courant : on ne tente JAMAIS de le retirer
@@ -810,7 +1014,7 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
     # Resolution PR
     pr = None
     if info["branch"]:
-        pr = lookup_pr_for_branch(info["branch"])
+        pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
     elif not info["branch"]:
         pr = lookup_pr_for_detached_head(wt_path)
 
@@ -1085,10 +1289,18 @@ def main() -> int:
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
-            statuses.append(diagnose_worktree(wt["path"], current_path))
+            statuses.append(
+                diagnose_worktree(
+                    wt["path"], current_path, head_sha=wt.get("head_sha")
+                )
+            )
         except RuntimeError as e:
             print(f"ERROR diagnosing {wt['path']}: {e}", file=sys.stderr)
             return 2
+
+    # Les verdicts MERGED etablis pendant la passe survivent a la passe :
+    # persistance du cache de verdicts (#15369).
+    get_pr_resolution().flush()
 
     # Application
     apply_results: list[dict] = []
@@ -1130,6 +1342,7 @@ def main() -> int:
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
             "dry_run": not args.apply,
+            "api_stats": get_pr_resolution().stats,
             "statuses": [s.to_dict() for s in statuses],
         }
         if args.apply:
@@ -1145,6 +1358,14 @@ def main() -> int:
             print(f"applied={removal_count}  errors={error_count}")
         else:
             print(render_text(statuses, dry_run=True))
+        # Budget API de la passe (#15369) : la mesure est un livrable, pas
+        # un side-effect silencieux.
+        st = get_pr_resolution().stats
+        print(
+            f"api: cache={st['cache_hits']} lot={st['listing_calls']}"
+            f" hits_lot={st['listing_hits']} ancre={st['anchor_calls']}"
+            f" degrade={st['listing_degraded']}"
+        )
 
     # Exit code
     if error_count > 0:

@@ -15,7 +15,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py`, `detect_paragraph_length.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) / **#15405** (paragraphes markdown > 2000 c, wall-of-text guard) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -252,6 +252,40 @@ python scripts/notebook_tools/detect_cjk_residue.py --family Probas    # une fam
 Baseline c.884 : 937 notebooks, **0 residu inattendu**, 2 allowed (fleet clean
 post-sweep). Le guard n'empeche que la recidive ; la correction d'un nouveau
 residu reste byte-surgical par notebook (cf #8428 fix pattern).
+
+### `detect_paragraph_length.py` (#15405, organe anti « wall-of-text »)
+
+Detecteur de paragraphes markdown trop longs : un seul bloc contigu de
+lignes non-vides > **2000 caracteres** est signale avec sa position et
+son extrait. Ignore les fences code (``` / ~~~), les lignes de tableau
+(`|`), les titres (`#` ... `######`), les commentaires HTML (`<!--
+... -->` dont le marqueur CATALOG-STATUS) et les directives Sphinx.
+Listes et blockquotes comptent (un item de liste de 10k c est un mur).
+
+Incident fondateur : le README Probas (PR #15405, commit `76d7a5bc`,
+remarque user 2026-09-10) livrait un paragraphe unique de **3336 c / 24
+phrases sur une seule ligne physique**. Aucun garde CI ne le detectait.
+
+Calibration 2026-09-10 (rglob sur 791 `*.md` / 23049 paragraphes) :
+p50=79, p75=274, p90=536, p95=760, p99=1437, max=13409. Le seuil 2000
+capture l'incident avec marge et signale 42 fichiers / 84 paragraphes
+(les autres sont de la prose technique legitime, sweeps a venir).
+
+```bash
+python scripts/notebook_tools/detect_paragraph_length.py README.md              # human-readable
+python scripts/notebook_tools/detect_paragraph_length.py --json README.md      # dict agrege CI-ready
+python scripts/notebook_tools/detect_paragraph_length.py --self-test           # temoin fondateur tire
+python scripts/notebook_tools/detect_paragraph_length.py README.md --fail-on-findings
+# exit 2 si au moins un paragraphe > 2000 c
+```
+
+Câblé dans `.github/workflows/paragraph-length-advisory.yml` (advisory,
+label `paragraph-length`, jamais bloquant a ce stade). Bascule
+bloquante = PR dediee apres que le sweep de resorption sur les 42
+fichiers pre-existants soit a zero.
+
+**Owner** : partition-mienne pour les PRs docs (relecture fichier-entier
+README series), cluster-manager pour la bascule bloquante.
 
 ---
 
