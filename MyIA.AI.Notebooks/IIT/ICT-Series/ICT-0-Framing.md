@@ -317,6 +317,7 @@ IIT/
 ├── ICT-8-AttractorLandscapesEWS.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
 ├── ICT-9-AgencyRegeneration.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
 ├── ICT-10-CatastropheGrammar.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
+├── ICT-36-CausalInterventionEngine.ipynb  # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (#15479)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -330,6 +331,7 @@ IIT/
     ├── reaction_diffusion.py # ✅ strate 2 : simulateur Gray-Scott (Laplacien périodique, diffusion pure de contrôle)
     ├── agency.py            # ✅ strate 2 : ablation do(·), structure, recovery_score, repair_gain, similarité spectrale
     ├── catastrophe.py       # ✅ charnière strate 2→3 : fronce (cusp), équilibres/plis, lacet d'hystérésis, représentant interne p̂
+    ├── causal_engine.py     # ✅ moteur commun d'interventions causales (ablate/clamp/patch/steer/interchange), contrôles appariés (#15479)
     ├── distances.py         # à venir : distances entre états / structures / trajectoires
     └── ...
 ```
