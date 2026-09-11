@@ -15,6 +15,7 @@ Ces tests attestent le contrat consommateur sur de vrais fichiers ``.npz``
 """
 
 import json
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -22,7 +23,7 @@ import pytest
 from ict import sae_traces as st
 
 
-def _write_trace(path, vals, *, instrument: str | None = "sae"):
+def _write_trace(path, vals, *, instrument: Optional[str] = "sae"):
     """Ecrit un .npz minimal pour les tests BOS-inf.
 
     Le contrat v1 (#15476) exige un discriminant (``instrument`` ou
