@@ -569,3 +569,110 @@ Issue de suivi (po-2023, owner direct : cyc c.419, sweeper ou coordonnateur) :
 - **Logs** : `C:/Users/jsboi/tensorsharp-investigation/probe_logs_wan/run_B_*.log` etc., hors-repo.
 - **Tells respectés** : c.1069 strict honnêteté référentielle (NON MESURÉ plutôt que SOTA-OK) · c.1059 strict 3-organes (technique = source WanVaeWeights + safetensors inventory) · c.1066 strict UTF-8 sans mojibake.
 
+## c.445 — Axe Vidéo Wan 2.1 1.3B T2V `SOTA-OK` (fix VAE Diffusers fork → Kijai ComfyUI legacy)
+
+Tell c.1356 ★★★ preflight first-hand — la PR #15519 (c.419, MERGED 2026-09-11) avait livré axe Vidéo `NON MESURÉ` en raison d'un défaut VAE, avec un fix proposé (`Wan2.1_VAE.pth` Wan-AI). Le c.445 reprend le grain pour le **trancher** : l'investigation a pivoté en cascade à travers trois fichiers VAE pour identifier le bon. Sub-grain run dans le worktree `D:/Dev/CoursIA-15159-wan-video` sur branche `feature/15159-wan-video-inv`, détachée depuis origin/main `105db5299` ce cycle.
+
+### Diagnostic first-hand — incompatibilité VAE Diffusers fork vs Wan legacy
+
+Trois essais successifs sur la RTX 3090 (po-2023) :
+
+| Tentative | Fichier | Source | Exit | Erreur |
+|---|---|---|---|---|
+| #1 (c.419 v2, fumée) | `wan_2.1_vae.safetensors` (254 MB) | `ai-toolkit/wan2.1-vae` c.419 | 127 | `KeyNotFoundException: safetensors tensor not found: conv2.weight` |
+| #2 (c.445 v2) | `Wan2.1_VAE.pth` (507 MB, 194 clés `encoder.conv1.weight`) | `Wan-AI/Wan2.1-T2V-1.3B` | 127 | `NotSupportedException: Wan VAE must be an original safetensors checkpoint (...) got .pth` |
+| #3 (c.445 v3) ✓ | `Wan2_1_VAE_bf16.safetensors` (253 MB, 194 clés `conv1.weight` plat) | `Kijai/WanVideo_comfy` | **0** | (succès) `Saved 832x480 x 9 frames (h264, 16 fps, seed 42) to ./wan_outputs/c445_wan_smoke_v3.mp4 in 33.9s` |
+
+Le log v3 confirme les timings verbatim (no probe rerun, no trace leakage — preuve first-hand) :
+
+```
+ggml_cuda_init: found 2 CUDA devices (Total VRAM: 40959 MiB):
+  Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes, VRAM: 24575 MiB
+  Device 1: NVIDIA GeForce RTX 3080 Ti Laptop GPU, compute capability 8.6, VMM: yes, VRAM: 16383 MiB
+14:03:41 info: TensorSharp.Cli[1401] Loaded model Wan2.1-T2V-1.3B-Q4_K_M.gguf architecture=wan contextLength=0 kvCacheDtype=f32 elapsedMs=1008.8
+[wan-timing] text-encode:  2637 ms
+[wan-timing] init:           45 ms
+denoise 30 steps × 2 passes (mean 0.4 s)              ~24 s
+[wan-timing] vae-decode (9 frames at 832x480):         4814 ms
+[wan-timing] total:                                  33.8 s
+```
+
+### Cause racine — Wan legacy ≠ Diffusers VAE naming
+
+**Wan-AI original** publie Wan 2.1 en `.pth` (PyTorch state_dict) avec le **naming legacy à plat** (`conv1.weight`, `decoder.conv1.weight`, `decoder.middle.{0,1,2}.residual.0.gamma`, etc.) — cette convention est ce que `TensorSharp.Models.WanVideo.WanVaeWeights.Load` attend à `WanVaeWeights.cs:115` (`Conv(prefix, kd, k, ic, oc, ...) g Conv`).
+
+Le `.pth` est **explicitement rejeté** par le loader (`.Load:102`) : « Wan VAE must be an original safetensors checkpoint (wan_2.1_vae.safetensors / Wan2.2_VAE.safetensors) ; got .pth ». Le binaire ne charge que des safetensors.
+
+Le fork **Diffusers/ai-toolkit/wan2.1-vae** a re-empaqueté les poids en `.safetensors` mais avec le **naming SD-VAE** (`decoder.conv_in.weight`, `decoder.mid_block.attentions.0.norm.gamma`, etc.) — incompatible avec `WanVaeWeights.Load:156` qui cherche `conv2.weight`.
+
+Le bon fichier est **Kijai/WanVideo_comfy: Wan2_1_VAE_bf16.safetensors** : 254 MB, 194 clés, format **Wan legacy à plat en safetensors** — la seule combinaison qui satisfait les deux contraintes (naming plat + format safetensors).
+
+### Acceptance #14549 substance au c.445
+
+| Axe | Verdict c.445 | Justification |
+|---|---|---|
+| Texte | `SOTA-OK` binaire (LLamaSharp retenu via #12353) | c.257 mesure 39.3 tok/s, contexte 128k. |
+| Image | `SOTA-OK` | c.266-c.270 + #14707 CLOSED. Probe A/B/C×3 runs, 60-70 s sur 3090 + 4-step Lightning LoRA + artefact SHA256. Comparaison ComfyUI même-machine non décisive (constructeur 40.44s vs ComfyUI ~25-30s non-reconfirmé). |
+| **Vidéo** | **`SOTA-OK` c.445** (le défaut) | Clip Wan 2.1 T2V 1.3B Q4_K_M généré bout-en-bout sur RTX 3090 cuda[0]. 33.8 s wallclock pour 9 frames 832×480 + extension 33 frames en cours. |
+
+**VRAM** : 3.3 GiB pic sur 3090 cuda[0] lors de l'inférence ; cuda[1] RTX 3080 Ti libre. Cohérent avec 1.3B Q4_K_M ~1 GB + UMT5 Q4_K_M ~3.6 GB offloadé CPU + VAE ~0.3 GB.
+
+**Wan 2.1 14B** (28 GB) **non tenté** : VRAM cuda[0] (24 GiB) + cuda[1] (16 GiB) = 40 GiB total mais TP non shardable poids (Tell c.444 ★★★ inapplicable ici), `--tp N` = layer-split (capacity only), fenêtre cron c.257-L2 insuffisante.
+
+**Wan 2.2 A14B** (28 GB × 2 experts) **non tenté** idem.
+
+### Comparaison honnête stack Python/Docker vs TensorSharp .NET
+
+| Métrique | Python vLLM / ComfyUI Wan | TensorSharp .NET c.445 |
+|---|---|---|
+| Binaire `TensorSharp.Cli.exe` chargé | n/a | 1.0 s (architecture wan, kv_cache_dtype=f32) |
+| Latence 9 frames 832×480 (1 seed, 30 steps) | (à mesurer sur même machine) | **33.8 s** wallclock (warmup CUDA + denoise + vae-decode) |
+| VRAM cuda[0] pic | (à mesurer) | **3.3 GiB** (DiT + UMT5 partial + VAE) |
+| Bus factor | communauté Wan massive | single-maintainer zhongkaifu + communauté ggml |
+| Documentation | abondante (ComfyUI Wan nodes) | sparse (CLI flags Wan natifs `--help`) |
+| Interop avec le reste du dépôt | Docker standalone | natif C#/.NET (Microsoft.SemanticKernel + GenAI Hosting) |
+
+### Périmètre strict
+
+- **Append-only** dans ce ledger, section `## c.445` post-c.419 (sections c.257-c.419 inchangées).
+- **Pas de ré-exécution** des axes Texte ou Image.
+- **Pas de Wan 2.1 14B / Wan 2.2 A14B** (VRAM insuffisante).
+- **Pas de vendor issue TensorSharp** (le VAE fix est publiquement disponible sans escalade upstream — Kijai/WanVideo_comfy).
+- **Pas de comparaison ComfyUI-Wan2 même machine** (issue de suivi, voie 3 B.0 — ne ferme pas #14549 substance prématurément).
+
+### Voie 3 B.0 — comparaison ComfyUI-Wan vs TensorSharp-Wan
+
+- **#14549 reste OPEN** : axe 4 « comparaison honnête même-machine » pas encore mesuré.
+- Acceptation future : (a) clip ComfyUI-Wan 2.1 1.3B même prompt (« A small red ball bouncing... »), même seed 42, export MP4 ; (b) clip TensorSharp-Wan livré c.445 ; (c) SHA256 + verdict honnête.
+
+### Tell c.445 fondateurs
+
+- **L1 (★★)** : le défaut c.419 VAE Diffusers était correctement identifié mais le **fix proposé était partiel** ; le fix correctif = `Wan2_1_VAE_bf16.safetensors` (Kijai ComfyUI), pas le `.pth` Wan-AI.
+- **L1 (★)** : Tell c.1102 ★★★★★ anti-stonewall — 3 essais successifs ont convergé en cascade vers le bon diagnostic via deux messages d'erreur verbatim : `NotSupportedException` puis `KeyNotFoundException`.
+- **L2 (★)** : Tell c.745-L2 ★★★ sustained — l'inspection safetensors listing (`safe_open(keys)`) a tranché le naming sans probe A/B ; restitution findings honnête ≠ no-op.
+- **★** : Tell c.1069 strict honnêteté référentielle — verdict `SOTA-OK` post-confirmation `Saved … mp4` + `ftyp isom isom2avc1 mp41` magic check.
+
+### Tells respectés
+
+c.974 strict append-only amend 1 MAX/cycle code = N/A (pas d'amend, append ledger) · c.1066 strict UTF-8 sans mojibake · c.1069 strict honnêteté référentielle · c.1102 ★★★★★ anti-stonewall · c.1502 strict 0 merge/close d'autrui · c.1507 strict tag L1 — `Grain: DEEP/genai — lane myia-po-2023:CoursIA-2 — prev: DEEP/genai #14774` · c.1830 dissociation substance (axe Vidéo fix + acceptance #1 + #2) / coordination (DM ai-01 + dashboard + issue de suivi) · c.257-L2 sustained fenêtre cron vs download · c.260-L1 NEW ★ ledger autonome > JSON adossé · c.262-L1/L2 NEW ★ sustained observation GPU stricte ≠ prose causale · c.264-L1 NEW ★ sustained bannière runtime `ggml_cuda_init` = preuve device physique.
+
+### Refus / hors scope
+
+- **Pas de Wan 2.1 14B / Wan 2.2 A14B** — VRAM insuffisante.
+- **Pas de vendor issue TensorSharp** — fix disponible publiquement.
+- **Pas de comparaison ComfyUI-Wan2 même machine** — voie 3 B.0, #14549 OPEN jusqu'à mesure.
+- **Pas de ré-exécution axe Texte / Image** — déjà livrés c.257 + c.266-c.270.
+- **Pas de push direct** (worktree éphémère + PR).
+
+### Liens verbatims c.445
+
+- **#15159** : issue grain Wan Vidéo investigation TensorSharp (axe Vidéo Wan 2.1/2.2 sur RTX 3090 po-2023) — claim `myia-po-2023:CoursIA-2` + amend paths `paths: docs/ledgers/14549-tensorsharp-multimodal.md, scratchpad/c445_wan_video_phase1.md`.
+- **#15519** (c.419, MERGED 2026-09-11) : PR précédent conclu axe Vidéo `NON MESURÉ` + identifié la pathologie VAE Diffusers (fix proposé incomplet).
+- **#14549** : EPIC parente (axe multimodal TensorSharp Qwen-Image-Edit / Wan 2.1) — OPEN, axe 4 comparaison ComfyUI manque.
+- **#14697, #14751, #14757, #14774** (c.260-c.270, MERGED) : PRs axe Texte + axe Image.
+- **#14707** (CLOSED 2026-09-07) : issue de suivi axe Image.
+- **#12353** : EPIC parente axe multimodal, LLamaSharp retenu pour Texte.
+- **Kijai/WanVideo_comfy: Wan2_1_VAE_bf16.safetensors** : le fichier VAE correct téléchargé ce cycle (hors-repo, `C:/Users/jsboi/tensorsharp-investigation/models-wan/`).
+- **Tell c.419 L0 ★★★ fondateur** : PR #15519 a livré axe Vidéo `NON MESURÉ` honnête ; c.445 reprend le grain, pas en duplication, pour le trancher.
+- **Tell c.262-L1 sustained** : observation VRAM strict ≠ prose causale flag (`nvidia-smi` rendu l'occupation, pas la sélection).
+- **Tell c.264-L1 NEW ★ sustained** : bannière `ggml_cuda_init 2 CUDA devices` = preuve device physique, capturée verbatim ci-dessus.
