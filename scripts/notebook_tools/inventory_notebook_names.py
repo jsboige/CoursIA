@@ -199,34 +199,6 @@ def _classify(path: str, stem: str, idx: str | None, kernel: str | None,
     if kernel is not None and not _kernel_known(kernel):
         return _CLASSIF_AMBIGU
     return _CLASSIF_CONFORME
-    # Exceptions d'abord (jamais absorbées dans « non conforme »).
-    if any(h in path for h in _PLATFORM_HINTS):
-        return _CLASSIF_EXCEPTION
-    if any(h in path for h in _VENDORED_HINTS):
-        return _CLASSIF_EXCEPTION
-    if any(h in path for h in _EXTERNAL_HINTS):
-        return _CLASSIF_EXCEPTION
-    # Nom non parsé : ambigu (sauf base implicite avec kernel connu).
-    if idx is None:
-        if kernel is not None and _kernel_known(kernel) and not suffix:
-            return _CLASSIF_CONFORME
-        return _CLASSIF_AMBIGU
-    # Suffixe de langue non reconnu = ambigu, sauf préfixe QC/Lean.
-    if suffix and suffix.lower() not in LANG_SUFFIXES:
-        if not (path.startswith("MyIA.AI.Notebooks/QuantConnect/projects/")
-                or "/Lean/" in path or "/lean/" in path):
-            return _CLASSIF_AMBIGU
-    # Idx à 1 chiffre : conforme si zero-pad, rename_proposed sinon.
-    if re.fullmatch(r"[1-9][a-z]?", idx):
-        if zero_padded is True:
-            return _CLASSIF_CONFORME
-        if zero_padded is False:
-            return _CLASSIF_RENAME
-        return _CLASSIF_AMBIGU
-    # Index multi-chiffres : conforme sauf kernel LU explicitement inconnu.
-    if kernel is not None and not _kernel_known(kernel):
-        return _CLASSIF_AMBIGU
-    return _CLASSIF_CONFORME
 
 
 def _suffix(stem: str) -> str:
