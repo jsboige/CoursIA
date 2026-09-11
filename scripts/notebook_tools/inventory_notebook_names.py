@@ -8,9 +8,9 @@ inconnu / suffixe reconnu / exception justifiée. Cette W0 produit
 l'inventaire déterministe qui rend les vagues de renommage réservables et
 vérifiables — sans renommer de notebook dans cette PR.
 
-Le parseur partage sa grammaire avec `check_duplicate_notebook_index.py` :
-`_INDEX_RE`, `index_key`, `strip_lang`, `LANG_SUFFIXES` sont importés depuis
-ce voisin (cf #15489 garde séparé). Aucune duplication de regex.
+Le parseur partage sa grammaire avec `naming_canon.py` (centralisé par #15503
+depuis `check_duplicate_notebook_index`) : `INDEX_RE`, `LANG_SUFFIXES`,
+`index_key`, `strip_lang` y sont définis. Aucune duplication de regex.
 
 Usage:
     python scripts/notebook_tools/inventory_notebook_names.py --base origin/main
@@ -36,20 +36,20 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__f
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-# Grammaire importée du garde voisin. Le parseur reste UNIQUE dans le dépôt
-# (cf #15488 body : « Le parseur doit partager sa grammaire avec les gardes
-# de #5081 et distinguer... »). Si l'import échoue, message d'erreur lisible.
+# Grammaire importée du canon de nommage (#15503 a centralisé LANG_SUFFIXES +
+# INDEX_RE dans naming_canon.py partagé entre gardes). Le parseur reste UNIQUE
+# dans le dépôt (cf #15488 body). Si l'import échoue, message d'erreur lisible.
 try:
-    from scripts.notebook_tools.check_duplicate_notebook_index import (
+    from scripts.notebook_tools.naming_canon import (
+        INDEX_RE,
         LANG_SUFFIXES,
-        _INDEX_RE,
         index_key,
         strip_lang,
     )
 except ImportError as e:
     sys.stderr.write(
-        "error: inventory_notebook_names.py depends on check_duplicate_notebook_index "
-        "for shared grammar (_INDEX_RE, index_key, strip_lang, LANG_SUFFIXES). "
+        "error: inventory_notebook_names.py depends on naming_canon "
+        "(INDEX_RE, LANG_SUFFIXES, index_key, strip_lang). "
         "Run from repo root. Original: %s\n" % e
     )
     sys.exit(2)
@@ -266,22 +266,32 @@ def notebooks_at(ref: str) -> list[str]:
     return [l.strip() for l in out.splitlines() if l.strip().lower().endswith(".ipynb")]
 
 
-def build_inventory(ref: str, baseline: int = 1244) -> dict:
+def build_inventory(ref: str, baseline: int | None = None) -> dict:
     """Construit l'inventaire canonique pour `ref`.
 
     Retourne un dict avec :
       `ref` : révision examinée.
-      `denominator` : nombre de notebooks scannés (== baseline en nominal).
-      `baseline` : attendu (1244 sauf écart documenté).
+      `denominator` : nombre de notebooks scannés.
+      `baseline` : attendu ; si None, déduit automatiquement du décompte de
+        HEAD (= la baseline « vivante » que le test fail #15523 a fixée).
+        Une baseline figée (entier explicite) reste possible pour les tests
+        historiques : passer l'entier directement à build_inventory.
       `by_classification` : comptage par classification.
       `entries` : liste de dicts, un par notebook.
 
     Tell c.1066 strict : dénombrement réel imprimé TOUJOURS, jamais
     confondu avec « 0 trouvé ». Tell c.745 ★★★ : aucune absorption
     silencieuse dans « non conforme » — exception / ambigu sont
-    comptés à part.
+    comptés à part. Tell c.15523 : baseline auto = HEAD évite que le rouge
+    `denominator != baseline` se répète à chaque ajout de notebook sur
+    main sans rebase frais de la PR.
     """
     paths = notebooks_at(ref)
+    # Tell c.15523 : baseline par défaut = décompte de HEAD (le dépôt évolue,
+    # une baseline figée devient fausse à chaque ajout). L'argument `baseline`
+    # explicite reste supporté pour les tests historiques.
+    if baseline is None:
+        baseline = len(notebooks_at("HEAD"))
     by_class: dict[str, int] = {
         _CLASSIF_CONFORME: 0,
         _CLASSIF_RENAME: 0,
@@ -424,8 +434,9 @@ def main():
                      "cibles et collisions (W0 #15488)."))
     ap.add_argument("--base", default="origin/main",
                     help="revision de base (defaut: origin/main)")
-    ap.add_argument("--baseline", type=int, default=1244,
-                    help="denominateur nominal (defaut: 1244)")
+    ap.add_argument("--baseline", type=int, default=None,
+                    help="denominateur nominal (defaut: auto=HEAD, soit la "
+                         "mesure du commit courant — Tell c.15523)")
     ap.add_argument("--json", action="store_true",
                     help="sortie JSON machine (defaut: humain)")
     ap.add_argument("--self-test", action="store_true",
