@@ -242,6 +242,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   ci-dessus : garde Python pur stdlib, garde same-repo au niveau job,
     #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
     "notebook-output-flood-ratchet.yml",
+    # jumeau output-collapse (#15327, owner myia-po-2023:CoursIA) : verdict
+    #   ADVISORY rendu par fast-lane TRANCHE2 (entree 5, check-run
+    #   `Output-collapse ratchet (base vs PR, advisory)`), shell
+    #   workflow_dispatch-ONLY pour re-run manuel -- meme profil que les deux
+    #   jumeaux ci-dessus. Detecteur check_output_collapse.py, stdlib-only,
+    #   garde same-repo au niveau job, aucun GITHUB_TOKEN cote job. L'organe a
+    #   recu l'approval design (Hermes 02:29Z) ; la review ai-01 03:33Z a
+    #   demande la voie 2 : allowlist canonique + test de politique rejoue
+    #   (test_current_repository_self_hosted_jobs_satisfy_isolation_policy,
+    #   scan du repo courant -- aucune autre liste a synchroniser).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "notebook-output-collapse-ratchet.yml",
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
