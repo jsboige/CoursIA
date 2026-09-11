@@ -34,8 +34,8 @@ xlam-function-calling-60k est couvert par le substitut documenté Hermes
 | GSM8K-train | Qwen3.5-0.8B | **0,1437** | 160 | 648,6 | 2222 |
 | Hermes-function-calling-v1 (singleturn) | MiniCPM5-2B | **0,2313** | 160 | 324,6 | 1424 |
 | Hermes-function-calling-v1 (singleturn) | Qwen3.5-0.8B | **0,2000** | 160 | 407,7 | 1789 |
-| DAPO-Math-17k | MiniCPM5-2B | *en cours d'exécution* | | | |
-| DAPO-Math-17k | Qwen3.5-0.8B | *en cours d'exécution* | | | |
+| DAPO-Math-17k | MiniCPM5-2B | **0,0375** | 160 | 1127,7 | 3296 |
+| DAPO-Math-17k | Qwen3.5-0.8B | **0,0063** | 160 | 1126,3 | 3436 |
 
 JSON bruts : `scripts/results/p15294_accessibility/` (non committe —
 `results/` est gitignore ; la table ci-dessus est la reference).
@@ -51,8 +51,21 @@ JSON bruts : `scripts/results/p15294_accessibility/` (non committe —
   GRPO sur ce couple est faible. Le couple GSM8K × Qwen3.5-0.8B n'est pas un
   candidat d'entraînement sans relance du protocole (k générations plus
   grand, ou prompts plus faciles).
-- La comparaison vs DAPO-Math-17k (le BEATS de #15099 était-il un artefact
-  de casting ?) sera tranchée par les deux runs DAPO en cours et ajoutée ici.
+- **DAPO-Math-17k : INACCESSIBLE aux deux backbones** — 0,04 (MiniCPM5-2B) et
+  0,006 (Qwen3.5-0.8B), à un ordre de grandeur sous le plancher de 20 %.
+  ~96-99 % des groupes de 4 générations sont uniformes (tout-échec) : un GRPO
+  sur ce couple n'a pratiquement aucun signal de gradient. Les complétions
+  sont longues (length_mean ~1127 vs 325-649 sur GSM8K/Hermes) mais vides de
+  récompense — le format math long de DAPO dépasse ce que ces modèles de base
+  résolvent en mode nonthinking à 384 tokens.
+- **Conséquence pour #15099 (BEATS-casting)** : tout claim BEATS mesuré sur
+  DAPO avec ces backbones n'est pas interprétable comme un gain
+  d'entraînement — la baseline de base est à ~0, la comparaison
+  avant/après mesure du bruit / de l'artefact d'évaluation, pas de
+  l'apprentissage. Le BEATS de #15099 sur DAPO relève bien de cette classe
+  d'artefact (casting ou baseline non accessible) ; les datasets validés pour
+  un entraînement interprétable restent GSM8K × MiniCPM5-2B et
+  Hermes × {MiniCPM5-2B, Qwen3.5-0.8B (limite basse)}.
 
 ## Reproduction
 
@@ -60,4 +73,5 @@ JSON bruts : `scripts/results/p15294_accessibility/` (non committe —
 python scripts/probe_15099_dapo_grpo.py baseline --model minicpm5 --dataset gsm8k
 ```
 
-GPU requis (4-bit NF4) ; prévoir ~25-40 min par run selon le backbone.
+GPU requis (4-bit NF4) ; prévoir ~25-40 min par run selon le backbone
+(~55-60 min sur DAPO — complétions plus longues).
