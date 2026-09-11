@@ -69,7 +69,9 @@ Fenetre, couts et capital strictement identiques pour les deux bras :
   remplie - un relachement de la mecanique de l'article, corrige : la
   variance exige desormais la fenetre PLEINE de 120 mois
   (`MIN_VARIANCE_OBSERVATIONS = VARIANCE_WINDOW`), et les deux bras ont
-  ete relances (v2) sur la fenetre 2007-2025. Les metriques v1 ci-dessous
+  ete relances (v2) sur la fenetre 2007-2025. 
+
+Les metriques v1 ci-dessous
   sont conservees uniquement pour tracabilite.
 - **Bug latent corrige** : le clone local portait
   `set_brokerage_model(INTERACTIVE_BROKERS...)`, qui rejette les cibles
