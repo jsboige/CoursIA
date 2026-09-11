@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 96
-breakdown: root=88, SocialChoice=8
-maturity: BETA=91, ALPHA=3, DRAFT=2
+pedagogical_count: 98
+breakdown: root=90, SocialChoice=8
+maturity: BETA=92, ALPHA=4, DRAFT=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -216,6 +216,7 @@ flowchart TD
 | 2 (C#, suite) | [GameTheory-02-NormalForm-Csharp-Part2](GameTheory-02-NormalForm-Csharp-Part2.ipynb) | C# (.NET) | Suite du jumeau C# : support enumeration et jeux N×N | 50 min |
 | 2b | [GameTheory-02b-Lean-Definitions](GameTheory-02b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
 | 2c | [GameTheory-02c-Travelers-Dilemma](GameTheory-02c-Travelers-Dilemma.ipynb) | Python | Le dilemme du voyageur (Basu 1994) : annonce $2–$100, la compagnie paie le montant le plus bas, +$2 au moins-disant / −$2 au plus-disant — l'élimination itérée des stratégies strictement dominées converge vers l'unique équilibre (2,2), que contredisent les comportements humains (~$100), et la sensibilité au bonus révèle le seuil r* = 1 où le paradoxe se dissout (contre-claim : robustesse du paradoxe au bonus mineur) | 45 min |
+| 2c (C#) | [GameTheory-02c-Travelers-Dilemma-Csharp](GameTheory-02c-Travelers-Dilemma-Csharp.ipynb) | C# (.NET) | **Jumeau C# de 2c** (maturation Chantier 5) : paiement, meilleure réponse, élimination itérée (domination faible), seuil r* = 1 et contre-claim de fragilité re-dérivés dans un second moteur — parité numérique complète avec 2c, mais un défaut hérité trouvé : les formulations « strictement dominées » et « unique équilibre dès r ≥ 1 » ne passent pas la re-dérivation (r = 1 : équilibres multiples), corrigées dans le twin et trackées pour 2c par #15461 | 40 min |
 | 3 | [GameTheory-03-Topology2x2](GameTheory-03-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
 | 3 (C#) | [GameTheory-03-Topology2x2-Csharp](GameTheory-03-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
 | 3a | [GameTheory-03a-Chemins-de-Swaps](GameTheory-03a-Chemins-de-Swaps.ipynb) | Python + Lean | Plus courts chemins de swaps sur les 576 jeux : BFS générateur et certificat Lean indépendant | 45 min |
@@ -475,12 +476,13 @@ flowchart LR
     N4 -. "balanced ⟹ Core non-vide" .-> L4
     N5 -. "optimalité proposant" .-> L5
     N6 -. "stabilité sous menace" .-> L6
-    style L1 fill:#e8f5e9
-    style L2 fill:#e8f5e9
-    style L3 fill:#e8f5e9
-    style L4 fill:#e8f5e9
-    style L5 fill:#e8f5e9
-    style L6 fill:#e8f5e9
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style L1 fill:#e8f5e9,color:#1b5e20
+    style L2 fill:#e8f5e9,color:#1b5e20
+    style L3 fill:#e8f5e9,color:#1b5e20
+    style L4 fill:#e8f5e9,color:#1b5e20
+    style L5 fill:#e8f5e9,color:#1b5e20
+    style L6 fill:#e8f5e9,color:#1b5e20
 ```
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.

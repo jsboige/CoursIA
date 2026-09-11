@@ -32,6 +32,7 @@ Deux comptes, selon le filtre CI :
   `c₂ ≠ c₃` → `absurd` clos les deux résiduels d'une ligne chacun. La
   **bi-implication R1 connectée est COMPLÈTE** (forward #3000 + backward
   #3124/#11227).
+
 - **Baisse historique 17 → 16 → 14 → 11** : #8766 a déchargé `trefoil_not_unknot`
   (composition), #9966 a surélevé à 17 (wall du wrapper
   `tricolorable_forward_r1`), puis le wall a été déchargé (16) et #11227 a
@@ -43,8 +44,10 @@ Deux comptes, selon le filtre CI :
   #11276 a ajouté **sans sorry** le transfer `tricolorable_forward_r2_up`
   PROVEN + les murs nommés `r2_append_only_wall` (L1151) et
   `r3_determined_wall` (L1293) qui bornent l'iff maître.
+
 - **Reidemeister.lean à 2 sorries réels** : `reidemeister_theorem` ×2
   (topologie PL des 3-variétés, hors portée Mathlib actuel).
+
 - **sorry prose** = **37** (raw, any-line matchant `sorry` — la prose de
   documentation des murs R2/R3 en a ajouté). Le mode CI officiel est
   **`real`** : strippe `--` et `/- -/`, puis compte le mot-bounded
@@ -76,19 +79,29 @@ Le compte `sorry` reste à 2 dans `Reidemeister.lean` (le pair
 ### Prouvés (axiomes `[propext, Quot.sound]` seulement, pas `sorryAx`)
 
 - [x] `trefoil_tricolorable` — le trèfle est 3-colorable (`Invariant.lean`)
+
 - [x] `unknot_not_tricolorable` — l'unknot n'est PAS 3-colorable (`Invariant.lean`)
+
 - [x] `trefoil_crossing_number` — nombre de croisements du trèfle = 3 (`Invariant.lean`,
   sous la définition provisionnelle `crossingNumberOfDiagram`)
+
 - [x] `Reidemeister1.symm` / `Reidemeister2.symm` / `Reidemeister3.symm`,
   `reidemeister_equiv_symm`, `reidemeister_equiv_equivalence` — symétrie des
   moves et clôture réflexive-transitive (`Reidemeister.lean`)
+
 - [x] `tricolorable_invariant_fails_under_pr1_model` — **contre-exemple certifié**
   réfutant `tricolorable_invariant` sous le modèle PR1 (diagnostic, cf. § Phase 5)
+
 - [x] `trefoil_wf`, `unknot_wf`, `figureEight_wf` — les 3 diagrammes nommés satisfont la parité PD de `KnotDiagram.wf`
+
 - [x] `Reidemeister1Connected.tricolorable_forward` (#3000, MERGED) — transfer **forward** de la 3-colorabilité d₁→d₂ sous le modèle R1 connecté (`Invariant.lean` L478, preuve complète sans sorry via `hcolF1`/`hcolF2b`/`hcolF2c`)
+
 - [x] `trefoil_not_unknot` (#8766, MERGED) — corollaire : le trèfle n'est pas l'unknot, **PROUVÉ** par composition de `tricolorable_invariant` (sorry-bearing) + `trefoil_tricolorable` + `unknot_not_tricolorable`. Le son du corollary est réduit à l'invariant transfer sorry — pas d'sorry indépendant propre.
+
 - [x] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED puis **COMPLÉTÉ par #11227**) — transfer **backward** d₂→d₁ **COMPLET** : `hcolPres` (cœur constructif) + `num` (#3163, parité `wf`) + les 2 résiduels §9.1 `fox`/`col` **DISCHARGÉS par #11227** — le mode kink all-distinct est vacuus (continuité over-strand `c₂ = c₄` du kink `⟨a,b,c,c⟩` force `col₂(b) = col₂(c) = col₃`, contredisant Fox all-distinct ; `absurd` clos en une ligne chacun). Avec #3000, la **bi-implication R1 connectée est PROUVÉE**.
+
 - [x] **Corridor Reidemeister #8696** (#9807 / #9873 / #9901 / #9913 / #9955, 5 PRs MERGED) — `Reidemeister1.symm`, `Reidemeister1'.implies_reidemeister1`, `Reidemeister2.symm`, `Reidemeister1Connected.{shares_edge, crossings_eq}`, `Reidemeister3Determined.implies_reidemeister3` : proofs par `⟨rfl, rfl⟩` après field-eqs refactor. **Aucun sorry ajouté**, **aucun sorry éliminé** (le corridor visait la clarté structurelle, pas la fermeture de théorèmes — `reidemeister_theorem` reste gated sur la topologie PL).
+
 - [x] `tricolorable_forward_r2_up` (#11276, MERGED) — transfer **forward** de la 3-colorabilité à travers le R2 **append-only** (modèle actuel) : **PROVEN sans sorry**. La même PR livre les **murs nommés** `r2_append_only_wall` (L1151 : le modèle R2 LIBRE est append-only avec bigon flottant — le bras descendant de l'iff maître est FAUX sous ce modèle, témoin formel) et `r3_determined_wall` (L1293) qui **bornent l'iff maître** : toute preuve du `tricolorable_invariant` restant devra passer par une re-modélisation connectée R2/R3 (track #2874).
 
 ### Scaffolding (sorry, cible formelle)

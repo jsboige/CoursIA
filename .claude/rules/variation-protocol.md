@@ -102,7 +102,7 @@ Le protocole ne mord que si `ai-01` cesse de merger passivement. À chaque passe
 
 **Ne jamais tenir une LIGHT plus d'une journée** : un hold prolongé fait réécrire le même travail par une autre lane. Passé 24 h : merger, ou fermer **en nommant le remplaçant**.
 
-Le HOLD **ne sanctionne jamais la lane en idle** ([coordinator-discipline.md](coordinator-discipline.md) R4) : il est **toujours accompagné d'un grain DEEP/MED nommé** du pool, poussé en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans remplacement = échec coordinateur.
+Le HOLD est **attache a la candidate**, jamais a la cadence de sa lane. Il ne sanctionne jamais la lane en idle ([coordinator-discipline.md](coordinator-discipline.md) R0/R4) et ne bloque jamais un nouveau grain DEEP/MED de contenu : il est **toujours accompagne d'un grain nomme** du pool, pousse en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans remplacement, ou HOLD utilise pour reduire les dispatchs, = echec coordinateur.
 
 ## 4. Obligation de provisionnement — ce qui lie ai-01 (HARD)
 
@@ -112,8 +112,9 @@ La cause racine est **autant** un défaut de provisionnement qu'un réflexe de f
 1. **Provisionne ≥1 grain DEEP/MED de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement uniquement `guard`/`tooling`/`docs` ne satisfait pas l'obligation — il garantit que toutes les lanes manqueront leur plancher.
    Deux corollaires mesurés : **agréger les GENRES des merges récents** avant de provisionner, pas seulement leurs tiers (« 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook`) ; et **un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle (précédent ICT).
 2. **Varie la loterie** d'un cycle à l'autre — le coordinateur applique G-VAR-3 à son propre dispatch.
+3. **Dissocie admission et production** : plusieurs candidates en HOLD, `DWELL`, review ou attente de merge ne diminuent jamais le provisionnement. La queue d'admission se résorbe par une piste de digestion parallèle ; elle n'applique aucune backpressure globale aux producteurs.
 
-Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige.
+Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige. Ralentir la production pour accommoder la digestion en est un autre.
 
 ## 5. Auto-détection
 

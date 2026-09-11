@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 49
-breakdown: Lean=49
-maturity: BETA=47, DRAFT=2
+pedagogical_count: 51
+breakdown: Lean=51
+maturity: BETA=49, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -76,6 +76,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 1 | [Lean-1-Setup](Lean-1-Setup.ipynb) | Installation elan, kernel Jupyter, vérification | 15 min |
 | 2 | [Lean-2-Dependent-Types](Lean-2-Dependent-Types.ipynb) | Calcul des Constructions, types, polymorphisme, déclarer ses propres types (`inductive`, `structure`, `deriving`) | 40 min |
 | 3 | [Lean-3-Propositions-Proofs](Lean-3-Propositions-Proofs.ipynb) | Prop, connecteurs, Curry-Howard, preuves par termes | 45 min |
+| 3b | [Lean-3b-Formalized-Formal-Logic](Lean-3b-Formalized-Formal-Logic.ipynb) | Pont Tweety ↔ Lean : les mêmes formules exécutées par le raisonneur et certifiées par le noyau (table par mondes possibles, validité/contre-modèle/preuve, métathéorèmes Tait consommés) - companion du lake `formal_logic_lean` (Foundation piné, Epic #15066) | 45 min |
 | 4 | [Lean-4-Quantifiers](Lean-4-Quantifiers.ipynb) | forall, exists, égalité, arithmétique Nat | 40 min |
 | 5 | [Lean-5-Tactics](Lean-5-Tactics.ipynb) | Mode tactique, apply/exact/intro/rw/simp | 50 min |
 
@@ -183,6 +184,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 1 | Setup | ~17 | - | - | **COMPLET** |
 | 2 | Dependent-Types | ~50 | 3 | 3 | **COMPLET** |
 | 3 | Propositions-Proofs | ~50 | 3 | 3 | **COMPLET** |
+| 3b | Formalized-Formal-Logic | ~22 | 3 | 0 | **NOUVEAU** (kernel python3 + lake `formal_logic_lean`, Epic #15066) |
 | 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
 | 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
 | 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
@@ -385,6 +387,7 @@ Lean/
 ├── Lean-1-Setup.ipynb              # Python kernel - diagnostics
 ├── Lean-2-Dependent-Types.ipynb    # Lean4 kernel
 ├── Lean-3-Propositions-Proofs.ipynb
+├── Lean-3b-Formalized-Formal-Logic.ipynb  # Python kernel - pont Tweety↔Lean (raisonneur + noyau, lake formal_logic_lean, Epic #15066)
 ├── Lean-4-Quantifiers.ipynb
 ├── Lean-5-Tactics.ipynb
 ├── Lean-6-Mathlib-Essentials.ipynb
