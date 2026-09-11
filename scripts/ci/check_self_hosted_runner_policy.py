@@ -185,6 +185,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "leaky-fixture-sweep.yml",
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
+    "mermaid-fill-color-advisory.yml",
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
@@ -222,6 +223,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "fabricated-output-gate.yml",
     "fast-lane-shadow.yml",
     "lane-claim-guard.yml",
+    # linux-runner-version-pin-advisory.yml (#15201, owner
+    #   myia-po-2023:CoursIA) : organe cron schedule+workflow_dispatch
+    #   UNIQUEMENT (advisory par construction, doctrine #12817), runs-on
+    #   statique [self-hosted, coursia-ephemeral, coursia-linux], garde
+    #   same-repo au niveau job malgre l'absence de trigger pull_request.
+    #   Pur-Python stdlib + gh binaire de l'image ; le GITHUB_TOKEN du run
+    #   ne sert qu'a LIRE releases/latest (permissions: contents: read).
+    #   Cron 23,53 -- offset des sweeps 13,43 et du starvation 19,49.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
     "markdown-rendering-guard.yml",
     "markdown-table-guard.yml",

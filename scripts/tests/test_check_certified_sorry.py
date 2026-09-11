@@ -178,7 +178,17 @@ def test_workflow_targets_match_manifest():
     raw = wf["jobs"]["proof-integrity"]["with"]["target-modules"]
     actual = {m.strip() for m in raw.split(",")}
     expected_set = set(expected)
-    allowed_companions = {"Abstraction", "Abstraction.Basic"}
+    # Companion targets are gated modules living OUTSIDE SocialChoice/ in the
+    # same lake. ProgramGames.Basic/_en joined via the B.3 wiring (#15221
+    # follow-up): same review status as Abstraction, pinned here so a future
+    # addition to target-modules is an explicit test change, never a silent
+    # drift. The root ProgramGames.lean is a docstring-only aggregator (no
+    # decls) and is deliberately NOT a target, same as the SocialChoice root.
+    allowed_companions = {
+        "Abstraction", "Abstraction.Basic",
+        "ProgramGames.Basic", "ProgramGames.Basic_en",
+        "ProgramGames.Bounded", "ProgramGames.Bounded_en",
+    }
     assert expected_set <= actual, (
         f"lean-social-choice.yml target-modules omitted entries from "
         f"SocialChoice/CERTIFIED.txt: workflow={sorted(actual)} "
@@ -191,10 +201,13 @@ def test_workflow_targets_match_manifest():
     required_paths = {
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction.lean",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/**.lean",
     }
     triggers = wf.get("on", wf.get(True))
     for event in ("push", "pull_request"):
         actual_paths = set(triggers[event]["paths"])
         assert required_paths <= actual_paths, (
             f"lean-social-choice.yml {event} does not trigger for all "
-            f"Abstraction modules: missing={sorted(required_paths - actual_paths)}")
+            f"companion modules (Abstraction, ProgramGames): "
+            f"missing={sorted(required_paths - actual_paths)}")
