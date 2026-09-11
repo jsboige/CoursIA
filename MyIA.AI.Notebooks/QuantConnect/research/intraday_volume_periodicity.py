@@ -19,6 +19,14 @@ executable en CLI (utile pour batch / CI / debug) :
    dominantes par top-N (ici 5).
 3. Confirme la detection de la periodicite injectee (periode 30 min).
 
+Le script expose les memes primitives que le notebook pour que les
+exercices puissent les appeler directement (sans re-implementation) :
+
+- generate_synthetic_volume(seed) : serie 1D numpy, axe t = minutes.
+- detect_periods(volume, top_n) : top-N (frequence, periode, puissance).
+- apply_hann_window(volume) : signal fenetre (centre * Hann).
+- aggregate_spectra(seed_list, n_days) : spectre moyen sur N jours.
+
 Usage :
     python intraday_volume_periodicity.py
 
@@ -105,6 +113,45 @@ def detect_periods(volume, top_n=5):
     return results
 
 
+def apply_hann_window(volume):
+    """Applique une fenetre de Hann au signal centre.
+
+    Parametre
+    ---------
+    volume : np.ndarray
+        Serie temporelle brute (pas forcement centree).
+
+    Retour
+    ------
+    np.ndarray
+        Signal centre * Hann, pret pour FFT.
+    """
+    n = len(volume)
+    window = np.hanning(n)
+    return (volume - volume.mean()) * window
+
+
+def aggregate_spectra(seed_list):
+    """Calcule le spectre moyen sur une liste de seeds (journees).
+
+    Parametre
+    ---------
+    seed_list : list[int]
+        Liste de seeds, un par journee.
+
+    Retour
+    ------
+    np.ndarray
+        Spectre moyen (meme taille que celui d'un jour individuel).
+    """
+    spectra = []
+    for seed in seed_list:
+        _, vol = generate_synthetic_volume(seed=seed)
+        s = np.abs(np.fft.rfft(vol - vol.mean())) ** 2
+        spectra.append(s)
+    return np.mean(np.array(spectra), axis=0)
+
+
 def main():
     t, volume = generate_synthetic_volume()
     print(
@@ -129,6 +176,18 @@ def main():
     else:
         print(f"\nWARN : la periodicite {expected_period:.0f} min injectee "
               f"n'est pas en tete (periode tete = {period_top:.1f} min).")
+
+    # Demonstration : aggregation multi-jours (5 seeds), exercice 3 du notebook.
+    spectrum_mean = aggregate_spectra([0, 1, 7, 42, 99])
+    idx_top_mean = np.argsort(spectrum_mean)[::-1][:5]
+    n = len(volume)
+    freqs = np.fft.rfftfreq(n, d=1.0)
+    print("\nTop 5 sur spectre moyen (5 jours, exercice 3 du notebook) :")
+    for i in idx_top_mean:
+        f = float(freqs[i])
+        period_min = 1.0 / f if f > 0 else float('inf')
+        print(f"  f = {f:.4f} cycle/min  ->  periode {period_min:.1f} min  "
+              f"(puissance {spectrum_mean[i]:.0f})")
     return 0
 
 
