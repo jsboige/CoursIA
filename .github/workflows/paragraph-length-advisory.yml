@@ -1,0 +1,139 @@
+name: Paragraph Length Advisory
+
+# The organ for "wall-of-text markdown paragraphs" (incident 2026-09-10 :
+# the README Probas shipped a 3336-char single-line paragraph in PR #15405
+# commit 76d7a5bc, no guard caught it). The signal: any markdown prose
+# paragraph > 2000 chars on a *single* run of non-empty lines, after
+# stripping code fences / tables / headings / HTML comments (CATALOG-STATUS).
+#
+# ADVISORY, never blocking at this stage (decision user 2026-09-10). The
+# job ALWAYS exits 0. The actionable payload is the `paragraph-length` LABEL,
+# NEVER the green conclusion of the job. Promote to blocking once the
+# residual corpus is at 0 and stable (post-sweep issue de suivi).
+#
+# Per-PR scope: scans ONLY the *.md files modified by the PR, not a
+# repo-wide scan on every push. Self-cover (#8822) lists the workflow
+# itself in `paths:`.
+#
+# Calibration 2026-09-10 (rglob, 791 *.md, 23049 paragraphs) :
+#   p50=79  p75=274  p90=536  p95=760  p99=1437  max=13409
+#   > 2000 c : 42 fichiers / 84 paragraphes (hors _archives, vendored)
+# These 42 pre-existing files are NOT corrected here -- sweep is its own
+# follow-up issue, tracked separately. This PR only adds the organ that
+# SHOULD HAVE CAUGHT the Probas paragraph in #15405.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.md'
+      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
+      # else it cannot re-run (so cannot remove its own label) once the matching
+      # paths leave the PR diff.
+      - '.github/workflows/paragraph-length-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: paragraph-length-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  paragraph-length-advisory:
+    name: "Paragraph length > 2000 chars advisory (label, non-blocking)"
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified markdown files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_OVERSIZED: paragraph-length
+          LABEL_UNMEASURED: paragraph-length-unmeasured
+        run: |
+          set -uo pipefail
+
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.md' \
+            | grep -v $'\r$' > changed_md.txt || true
+          COUNT=$(wc -l < changed_md.txt | tr -d ' ')
+          echo "Modified *.md in this PR: $COUNT"
+
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified markdown to check."
+            unset_label "$LABEL_OVERSIZED"; unset_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          # Advisory: ALWAYS exit 0. Job never fails; label is the signal.
+          # Detector returns rc 0/1/2 per file, but we don't propagate exit
+          # code here -- the JSON payload is what matters.
+          python scripts/notebook_tools/detect_paragraph_length.py \
+            --json $(cat changed_md.txt) > payload.json 2>&1 || true
+          cat payload.json
+
+          # Payload shape: {files: [{file, findings, counts, error?}], summary}
+          OVERSZ_COUNT=$(python -c "
+          import json
+          try:
+            d = json.load(open('payload.json'))
+            print(d['summary']['total_findings'])
+          except Exception:
+            print('UNREADABLE')
+          " 2>/dev/null || echo "UNREADABLE")
+          FLAG_COUNT=$(python -c "
+          import json
+          try:
+            d = json.load(open('payload.json'))
+            print(d['summary']['flagged_count'])
+          except Exception:
+            print('?')
+          " 2>/dev/null || echo "?")
+          echo "Oversized paragraphs across modified md: $OVERSZ_COUNT"
+          echo "Flagged files: $FLAG_COUNT"
+
+          ensure_label "$LABEL_OVERSIZED" \
+            "A modified markdown file carries a paragraph > 2000 chars (wall-of-text, see #15405 incident). Resorb before merge." "FBCA04"
+          ensure_label "$LABEL_UNMEASURED" \
+            "A modified markdown file could not be measured by detect_paragraph_length.py -- NOT verified (#8819)." "BFD4F2"
+
+          # #8819 guard: if the payload is unreadable, never claim green.
+          if [ "${OVERSZ_COUNT:-0}" = "UNREADABLE" ] 2>/dev/null; then
+            echo "::error::paragraph-length payload illisible -- gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          if [ "${OVERSZ_COUNT:-0}" -gt 0 ] 2>/dev/null; then
+            echo "::notice::$OVERSZ_COUNT oversized paragraph(s) across $FLAG_COUNT modified markdown file(s). See the '$LABEL_OVERSIZED' label."
+            set_label "$LABEL_OVERSIZED"
+          else
+            unset_label "$LABEL_OVERSIZED"
+          fi
+
+          echo "RESULT: $OVERSZ_COUNT oversized paragraph(s) across $FLAG_COUNT modified markdown file(s)."
+          exit 0
