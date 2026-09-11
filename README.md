@@ -57,7 +57,8 @@ flowchart LR
     GameTheory --> RL
     SymbolicAI(["SymbolicAI<br/>logique, planners, SMT, Lean"]) --> CaseStudies(["CaseStudies<br/>systèmes hybrides"])
 
-    classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
     class Search,Sudoku,ML,RL,Probas,GameTheory,SymbolicAI,CaseStudies,GenAI,QuantConnect track;
 ```
 
@@ -79,8 +80,9 @@ flowchart LR
     A4 -.-> AP
     A5 -.-> AP
 
-    classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px;
-    classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
+    classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3,color:#333;
     class A1,A2,A3,A4,A5 stage;
     class AP learn;
 ```

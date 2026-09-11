@@ -15,6 +15,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       # The gates' own implementation: a change to them must re-run them
@@ -33,6 +35,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       - '.github/workflows/lean-social-choice.yml'
@@ -109,6 +113,19 @@ jobs:
   # STRETCH doctrine), not a certified module. target-modules is pinned to
   # SocialChoice/CERTIFIED.txt by
   # scripts/tests/test_check_certified_sorry.py::test_workflow_targets_match_manifest.
+  #
+  # ProgramGames (B.3 wiring, #15221 follow-up): the L1 bounded-core modules
+  # (Basic + Basic_en, 0 sorry, 0 native_decide -- #15221) join target-modules
+  # as companion targets, same status as Abstraction. Bounded + Bounded_en
+  # landed AFTER this scope was written (#15395, 2026-09-10); they are added
+  # here (review digest on #15379) for the same reason: the path filter already
+  # fires on ProgramGames/**.lean, so leaving them out of target-modules would
+  # keep the B.3 hole for exactly the modules the filter was added for. The root
+  # ProgramGames.lean is a docstring-only aggregator (no decls), so it is not a
+  # target -- same precedent as the SocialChoice root. Gate coverage on these
+  # modules was the hole ai-01 named on #15221 (2026-09-08T19:22Z): the gate was
+  # wired on the lake but out of target for them, so a green proof-integrity
+  # certified nothing about ProgramGames.
   proof-integrity:
     # c.327 (ai-01 CHANGES_REQUESTED 2026-09-08): the two REAL compiles (`build`
     # and `proof-integrity`) must serialize. Depending only on the cheap
@@ -122,7 +139,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/GameTheory/game_theory_lean
       display-name: game_theory_lean
-      target-modules: "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,Abstraction,Abstraction.Basic"
+      target-modules: "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,Abstraction,Abstraction.Basic,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en"
       # allow-axioms inherits the workflow default (named standard set:
       # propext, funext, Classical.choice, Quot.*) -- same contract as conway.
       fail-on-sorry: true
