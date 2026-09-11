@@ -73,6 +73,8 @@ layout: default
 | Word embeddings, RNN, LSTM, seq2seq, Transformers | `GenAI/Texte/10*` |
 | Agents conversationnels, LUIS, Dialogflow | `GenAI/Plateformes-Conversationnelles` |
 
+<br><br>
+
 > Aucun des 8 arcs n'est perdu silencieusement : chacun renvoie vers un **owner
 > réel** ou est marqué **GAP** quand aucun notebook exécutable n'existe. Les
 > gaps restent à fermer par des notebooks atomiques additionnels (jamais autofermés).
@@ -582,17 +584,6 @@ sont accessibles dans le PPTX source hors Git. La voie canonique pour intégrer
 des figures complémentaires au deck est `image-overlay` (jamais `bg right` /
 `image-right` issus de convertisseurs, règle projet).
 
-**Figures retenues — assets strictement nécessaires (référencées)** :
-
-| Slide | Fichier | Taille | Intégré |
-|---|---|---:|---|
-| 18 | `slide_18_img_7fb42adf.png` | 91 KB | **oui** |
-| 19 | `slide_19_img_fe5c88d1.png` | 72 KB | **oui** |
-| 22 | `slide_22_img_752cd77a.png` | 35 KB | **oui** |
-| 24 | `slide_24_img_765dfaa8.png` | 158 KB | **oui** |
-| 28 | `slide_28_img_4b6f2b7a.png` | 63 KB | **oui** |
-| 29 | `slide_29_img_0094ef69.png` | 135 KB | **oui** |
-
 **Source** : PPTX canonique hors Git `G:\Mon Drive\MyIA\IA\Bibliographie IA\Slides\English\Artificial Intelligence - 6 - Natural Language Processing.pptx`
 (1.68 MB, mars 2022, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
 
@@ -605,6 +596,25 @@ des figures complémentaires au deck est `image-overlay` (jamais `bg right` /
 >   préservées non intégrées au corps sont **retirées du dépôt** (accessibles via
 >   le PPTX canonique hors Git). Le dossier `images/` passe de treize à **six**
 >   figures, toutes référencées par `image-overlay` dans le corps du deck.
+
+Voir slide suivante pour le tableau détaillé des six figures retenues.
+
+---
+
+# Annexe B — Tableau des figures retenues (référence)
+
+| Slide | Fichier | Taille | Intégré |
+|---|---|---:|---|
+| 18 | `slide_18_img_7fb42adf.png` | 91 KB | **oui** |
+| 19 | `slide_19_img_fe5c88d1.png` | 72 KB | **oui** |
+| 22 | `slide_22_img_752cd77a.png` | 35 KB | **oui** |
+| 24 | `slide_24_img_765dfaa8.png` | 158 KB | **oui** |
+| 28 | `slide_28_img_4b6f2b7a.png` | 63 KB | **oui** |
+| 29 | `slide_29_img_0094ef69.png` | 135 KB | **oui** |
+
+Tableau de référence — chacune des six lignes renvoie à un PNG référencé par
+un slide `image-overlay` du corps du deck. Le tableau complet figure ici pour
+traçabilité, hors du flux de présentation principal.
 
 ---
 
