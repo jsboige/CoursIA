@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Ensembles limites de l'apprentissage — Poincare-Bendixson (GameTheory-26).
 
-Backing notebook : GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb.
+Backing notebook : GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb.
 Source : Czechowski & Piliouras 2021, *Poincare-Bendixson Limit Sets in
 Multi-Agent Learning* — cite par chemin bibliotheque
 (G:/Mon Drive/MyIA/IA/Bibliographie IA/GameTheory/), jamais copiee.
