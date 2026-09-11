@@ -476,12 +476,13 @@ flowchart LR
     N4 -. "balanced ⟹ Core non-vide" .-> L4
     N5 -. "optimalité proposant" .-> L5
     N6 -. "stabilité sous menace" .-> L6
-    style L1 fill:#e8f5e9
-    style L2 fill:#e8f5e9
-    style L3 fill:#e8f5e9
-    style L4 fill:#e8f5e9
-    style L5 fill:#e8f5e9
-    style L6 fill:#e8f5e9
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style L1 fill:#e8f5e9,color:#1b5e20
+    style L2 fill:#e8f5e9,color:#1b5e20
+    style L3 fill:#e8f5e9,color:#1b5e20
+    style L4 fill:#e8f5e9,color:#1b5e20
+    style L5 fill:#e8f5e9,color:#1b5e20
+    style L6 fill:#e8f5e9,color:#1b5e20
 ```
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
