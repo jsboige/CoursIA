@@ -529,6 +529,44 @@ TRANCHE2: list[Guard] = [
         absorbed=True,
         warn_rc=(2,),
     ),
+    # Translation hot-drift ATTRIBUTION, advisory (#15322): a prose-realignment
+    # PR that edits the source of a cell carrying a deposited translation
+    # without resyncing its CSV row turns the repo-wide hot-subset ratchet
+    # (#13551) red on MAIN -- and every open PR inherits the red (36 PRs at
+    # once; incidents #15253 / #15136 / #15216). The ratchet must stay
+    # repo-wide; what was missing is the per-PR question: which cells does
+    # THIS diff put into the hot subset? The predicate is reused verbatim from
+    # scripts/translation/check_translation_sync.py (issue constraint: no
+    # second predicate that could diverge from the ratchet it protects); the
+    # delta (source cells changed between merge-base and head) isolates the
+    # PR's own contribution, so inherited main-side drift never flags. Advisory
+    # per the issue: neutral conclusion naming the cells; blocking only after
+    # the trigger rate is measured (calibration on 98 landed notebook PRs:
+    # 6 flagged, 6/6 true positives -- the 3 documented incidents plus 3
+    # repaired-after-the-fact landings the issue table did not list).
+    # Source : translation-hot-drift-advisory.yml (stub dispatch-only).
+    Guard(
+        name="Translation hot-drift (base vs PR, advisory)",
+        source="translation-hot-drift-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "translations/**/*.csv",
+            "scripts/translation/check_pr_translation_drift.py",
+            "scripts/translation/tests/test_check_pr_translation_drift.py",
+            ".github/workflows/translation-hot-drift-advisory.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/translation/check_pr_translation_drift.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/translation/check_pr_translation_drift.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
 ]
 
 

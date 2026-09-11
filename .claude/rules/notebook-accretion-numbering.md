@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Renumerotation et reclassement de notebooks — `renum()` / `reclass()`
 
 S'applique a **tout agent** qui envisage de renommer, renumeroter ou requalifier un notebook pedagogique, **et a tout reviewer** d'une PR `renum(...)` / `reclass(...)`. Source : convention d'accretion posee par le user, sign-off du 2026-09-04. Le geste avait ete re-derive a la main sur les **19** issues du corpus (seize tranchees, trois encore ouvertes) sans jamais etre ecrit ; c'est ce cout repete que cette regle ferme.
