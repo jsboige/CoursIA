@@ -117,13 +117,15 @@ Founding companion lemmas (issue #4048): elementary properties of the two centra
 
 ---
 
-## `Astar/Optimality.lean` — admissible ⇒ optimal (abstract optimality lemma)
+## `Astar/Optimality.lean` — the f-bound (abstract lemma: suffix-cost bound)
 
 **Module docstring (translated).**
 
-Flagship theorem of the series (issue #4048, register #3801 — prong B "non-trivial problem"). We prove the **f-bound** that is the exact optimality mechanism of A*: under an admissible heuristic, `h(start)` never exceeds the cost of a realized path to the goal. Applied to each suffix of the optimal path, this bound gives `f(node) = g(node) + h(node) ≤ optimal cost` at every point of the optimal path — hence A* (which deploys the node of minimal `f`) never crosses the optimal-cost frontier and returns a path of optimal cost (Hart, Nilsson & Raphael, 1968).
+Building block of the series (issue #4048, register #3801 — prong B "non-trivial problem"). We prove the **f-bound**: under an admissible heuristic, for every node `p.get i` of a path `p` going to the goal, `h(p.get i)` never exceeds the cost of the remaining suffix `pathCost (p.drop i)`. This is the mathematical core of the A* optimality argument (Hart, Nilsson & Raphael, 1968) — but **only this core**, in abstract form.
 
-We prove the **abstract form** (without modeling the full priority queue), as suggested by #4048: `hStar` is a "true optimal remaining cost" satisfying the lower-bound property `IsTrueRemainingCost`.
+The lake does **not** model the A* algorithm (no priority queue, no closed set, no returned path): there is therefore **no A* optimality theorem** here. The guarantee "admissible heuristic ⇒ A* returns a path of optimal cost" — **false** for the Graph-Search variant without re-opening (cf #14824) — is not proved.
+
+`hStar` is a "true optimal remaining cost": lower-bound property `IsTrueRemainingCost` (the abstract form, cf #4048).
 
 ### The "true optimal remaining cost" `hStar`
 
@@ -143,15 +145,13 @@ If `p` goes from `start` to `goal`, then for any index `i`, the suffix `p.drop i
 
 **f-bound at the start.** Admissible heuristic + `hStar` lower bound ⇒ `h(start) ≤ pathCost(p)` for every path `p` going to the goal from `start`. This is the f-bound (`f = g + h`) at the starting point.
 
-#### `admissible_implies_optimal` — theorem
+#### `admissible_le_suffix_cost` — theorem
 
-**A* admissible ⇒ optimal (abstract lemma).** Flagship theorem (issue #4048, register #3801).
+**f-bound on a suffix (admissible heuristic).** Flagship theorem (issue #4048, register #3801), formerly `admissible_implies_optimal` (renamed by #14864: the statement bounds a suffix cost, it does not prove optimality).
 
-Under an **admissible** heuristic, for every node `p.get i` of a path `p` going to the goal, the heuristic never exceeds the cost of the remaining suffix `pathCost (p.drop i)`. This is the **f-bound** at each node: combined with `f(node) = g(node) + h(node)` and the fact that `g + suffixCost = pathCost`, it gives `f(node) ≤ pathCost(optimal)` along the optimal path — the exact optimality mechanism of A* (deployment of the minimal `f` ⇒ the optimal-cost frontier is never crossed). See Hart, Nilsson & Raphael (1968).
+Under an **admissible** heuristic, for every node `p.get i` of a path `p` going to the goal, `h(p.get i) ≤ pathCost(p.drop i)`: an admissible heuristic never exceeds the cost of the remaining suffix. This is the **f-bound** (`f = g + h`) at each node — the abstract core of the A* optimality argument (Hart, Nilsson & Raphael, 1968).
 
-#### `admissible_implies_optimal_start` — theorem
-
-**Corollary: global bound at the start.** Special case `i = 0` (the starting node): `h(start) ≤ pathCost(p)`.
+**Scope — what this theorem does not say.** It bounds the heuristic by the suffix cost; it does **not** prove that A* returns a path of optimal cost. The lake models neither priority queue, nor closed set, nor returned path: the guarantee "admissible heuristic ⇒ optimal A*" (false for the Graph-Search variant without re-opening, cf #14824) is not a theorem of this lake.
 
 ---
 

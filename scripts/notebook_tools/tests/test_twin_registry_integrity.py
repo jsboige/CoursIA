@@ -340,12 +340,74 @@ def test_audit_filenames_bounded_for_windows():
     )
 
 
+def test_audit_index_unique_and_no_identical_duplicates_per_pair():
+    """#15345 : deux invariants du journal file-per-audit, invisibles a tout
+    garde de nommage (les deux cas constates portaient des noms canoniques ou
+    bornes).
+
+    1. Unicite du prefixe ``NNNN`` dans une paire : l'index zero-pade est la
+       cle de tri du journal (``sorted(glob)`` = ordre d'append, #14911) ;
+       deux fichiers au meme index rendent leur ordre relatif dependant du
+       reste du nom. Incident fondateur : #15225 (cap du lane slug a 48
+       chars) a AJOUTE la copie cappee sans retirer l'original long -- deux
+       ``0008`` dans gametheory-6-evolutiontrust.
+
+    2. Absence de deux attestations byte-identiques dans une paire : des
+       octets identiques ne portent aucune information incrementale (date,
+       lane et shas identiques), et ``_load_audits_from_files`` append chaque
+       fichier -- le journal double-compterait un audit unique. Incident
+       fondateur : gametheory-13-imperfectinfo-cfr 0003/0005, herites de la
+       liste inline de l'ancien registre mono-fichier (la migration #14940 a
+       copie 12 entrees vers 12 fichiers, doublon compris).
+
+    Controle positif : ce test est ROUGE sur le registre pre-deduplication
+    (les deux classes ci-dessus) et VERT apres suppression des deux copies
+    redundantes.
+    """
+    import hashlib
+
+    bad_index: list[str] = []
+    bad_dup: list[str] = []
+    for pair_dir in sorted(p for p in REGISTRY_DIR.iterdir() if p.is_dir()):
+        seen_idx: dict[str, str] = {}
+        seen_digest: dict[str, str] = {}
+        for f in sorted(pair_dir.glob("*.yaml")):
+            idx = f.name.split("-", 1)[0]
+            prev = seen_idx.setdefault(idx, f.name)
+            if prev != f.name:
+                bad_index.append(f"{pair_dir.name}: {prev} et {f.name}")
+            digest = hashlib.sha256(f.read_bytes()).hexdigest()
+            twin = seen_digest.setdefault(digest, f.name)
+            if twin != f.name:
+                bad_dup.append(f"{pair_dir.name}: {twin} et {f.name}")
+    assert not bad_index, (
+        f"prefixe NNNN duplique dans une paire (l'index est la cle de tri du "
+        f"journal, #14911/#15345) : {bad_index}"
+    )
+    assert not bad_dup, (
+        f"attestations byte-identiques intra-paire (le journal double-compte "
+        f"un audit unique, #15345) : {bad_dup}"
+    )
+
+
 # --- Verification d'integrite des sha attestes (#9399 volet b) ---
 
 
 def _repo_root() -> Path:
     # scripts/notebook_tools/tests/<file> -> repo root.
     return Path(__file__).resolve().parents[3]
+
+
+# Signatures par lesquelles git nomme LUI-MEME un graphe d'objets incomplet
+# (#15387). Le pool self-hosted reutilise son work dir : un job a profondeur
+# par defaut y laisse un clone shallow, le job suivant en `fetch-depth: 0`
+# tente un `fetch --unshallow`, et l'echec de ce fetch est avale par
+# actions/checkout (mesure #15492, run 34542167016). Volontairement ETROIT :
+# toute AUTRE sortie non nulle du walk reste un `RuntimeError`.
+_GRAPH_INCOMPLETE_SIGNATURES = (
+    "Could not read ",
+    "Failed to traverse parents of commit ",
+)
 
 
 def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
@@ -373,19 +435,53 @@ def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
     """
     import subprocess
 
-    # ``-m`` : montre le diff des merge commits contre chaque parent. Sans cette
-    # option, ``git log --raw`` supprime les diffs de merge -> un blob dont la
-    # premiere apparition est le RESULTAT d'une resolution de merge (typique des
-    # PRs twin ou un merge ``origin/main`` combine un header-hoist + un fix de
-    # runtime en un nouveau blob unique) est invisible au walker, et la rebaseline
-    # de ce blob echoue sur ``test_audit_shas_exist_in_file_history`` alors que le
-    # sha est un vrai blob git (``git cat-file`` / ``git ls-tree`` le confirment).
-    # ``-m`` reste dans les ancetres de HEAD (determinisme CI/local preserve, cf
-    # note supra sur le rejet de ``--all``) ; le parser deduplique via ``set()``.
-    proc = subprocess.run(
-        ["git", "log", "HEAD", "-m", "--raw", "--no-renames", "--abbrev=40", "--format="],
-        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
+    def _walk() -> subprocess.CompletedProcess:
+        # ``-m`` : montre le diff des merge commits contre chaque parent. Sans
+        # cette option, ``git log --raw`` supprime les diffs de merge -> un blob
+        # nee d'une resolution de merge (header-hoist + fix runtime combines)
+        # est invisible au walker alors que c'est un vrai blob git. ``-m``
+        # reste dans les ancetres de HEAD (determinisme CI/local, cf note sur
+        # le rejet de ``--all``) ; le parser deduplique via ``set()``.
+        return subprocess.run(
+            ["git", "log", "HEAD", "-m", "--raw", "--no-renames", "--abbrev=40", "--format="],
+            cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+
+    # #15387 : le job CI checkout en clone blobless (``filter: blob:none``,
+    # scripts-tests.yml) ou le walk peut echouer en cours de route (fetch lazy
+    # d'un tree). Le stdout PARTIEL d'un walk en echec ne doit JAMAIS etre
+    # parse comme un historique complet : les blobs tombes hors de la portion
+    # parcourue classifiaient « fabricated » a tort (6 faux rouges ML-8/SW-8/
+    # Z3-Python-06 sur des attestations legitimes, runs 2026-09-09). Un walk
+    # qui echoue n'est pas une absence mesuree : 1 retry, puis verdict
+    # d'infrastructure distinct -- jamais un verdict de fond.
+    proc = _walk()
+    if proc.returncode != 0:
+        proc = _walk()
+    if proc.returncode != 0:
+        # Un `RuntimeError` EST un echec de test ordinaire : le rollup ne le
+        # distingue pas d'un verdict de fond, si bien qu'une panne de runner
+        # faisait rougir un check REQUIS sur toute la flotte (#15492, #15513,
+        # #15517, #15523). Quand git NOMME lui-meme le graphe troue, on rend
+        # un SKIP -- c'est le « verdict d'infrastructure distinct » que #15387
+        # demandait, et que lever une exception ne pouvait pas produire. Le
+        # garde ne s'affaiblit pas : il cesse seulement de parler de FOND
+        # quand il n'a pas pu mesurer, et toute autre sortie non nulle leve.
+        stderr = proc.stderr.strip()
+        if any(sig in stderr for sig in _GRAPH_INCOMPLETE_SIGNATURES):
+            pytest.skip(
+                "HISTORY_WALK_INCOMPLETE (#15387) : graphe d'objets incomplet "
+                "sur le runner (work dir reutilise, unshallow avorte) -- panne "
+                "d'infrastructure, PAS un verdict de fond. La couverture de "
+                "test_audit_shas_exist_in_file_history est perdue pour ce run "
+                "seulement. stderr=" + stderr[:300]
+            )
+        raise RuntimeError(
+            "HISTORY_WALK_INCOMPLETE (#15387) : git log -m --raw a terminé "
+            f"avec le code {proc.returncode} ; l'historique parcouru est "
+            "incomplet et un verdict « fabricated » ne serait pas fiable. "
+            "stderr=" + proc.stderr.strip()[:500]
+        )
     path_blobs: dict[str, set[str]] = {}
     blob_paths: dict[str, set[str]] = {}
     for line in proc.stdout.splitlines():
@@ -611,6 +707,120 @@ def test_classify_attested_sha_ok_fabricated_crossfile_renamed():
     v, d = _classify_attested_sha("shaX_renamed", "A/X.ipynb", path_blobs, blob_paths, declared)
     assert v == "renamed"
     assert "X_old" in d
+
+
+# --- tests _build_blob_history walk en echec (#15387) ------------------------
+#
+# En CI (checkout blobless, scripts-tests.yml), le walk `git log -m --raw`
+# peut terminer en erreur avec un stdout PARTIEL. L'ancien code parsait ce
+# stdout comme un historique complet -> les blobs hors de la portion
+# parcourue classifiaient « fabricated » a tort (6 faux rouges ML-8/SW-8/
+# Z3-Python-06 sur des attestations legitimes, runs 2026-09-09). Un walk en
+# echec doit avorter avec un verdict d'infrastructure distinct, apres 1
+# retry -- jamais se deguiser en verdict de fond.
+
+
+def _fake_raw_line(old: str, new: str, path: str) -> str:
+    return f":100644 100644 {old} {new} M\t{path}"
+
+
+def test_walk_en_echec_avorte_avec_verdict_infrastructure(monkeypatch):
+    """git log exit != 0 deux fois -> RuntimeError HISTORY_WALK_INCOMPLETE,
+    pas un « fabricated » sur stdout partiel."""
+    import subprocess
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 128,
+            stdout=_fake_raw_line("f" * 40, "e" * 40, "A/X.ipynb") + "\n",
+            stderr="fatal: promisor fetch failure",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="HISTORY_WALK_INCOMPLETE"):
+        _build_blob_history(Path("."))
+    assert len(calls) == 2, "1 essai + 1 retry avant l'abort"
+
+
+@pytest.mark.parametrize(
+    "stderr_git",
+    [
+        # Les deux moities de la signature mesuree sur #15492 (run 34542167016).
+        "error: Could not read 0102d652b3e7e328f7e9d710e99e0098745bc4cd",
+        "fatal: Failed to traverse parents of commit bb02b3d1cf2e09a4e438260601e38b8e105f50f3",
+    ],
+)
+def test_graphe_incomplet_rend_un_skip_pas_un_echec_de_fond(monkeypatch, stderr_git):
+    """git NOMME le graphe troue -> SKIP (verdict d'infrastructure #15387).
+
+    Un `RuntimeError` ici est indiscernable d'un verdict de fond dans le
+    rollup : c'est ce qui bloquait #15492/#15513/#15517/#15523 sur une panne
+    de runner. Le retry reste du, le skip ne vient qu'apres.
+    """
+    import subprocess
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 128,
+            stdout=_fake_raw_line("f" * 40, "e" * 40, "A/X.ipynb") + "\n",
+            stderr=stderr_git,
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(pytest.skip.Exception, match="HISTORY_WALK_INCOMPLETE"):
+        _build_blob_history(Path("."))
+    assert len(calls) == 2, "1 essai + 1 retry avant le verdict d'infrastructure"
+
+
+def test_signature_inconnue_leve_toujours(monkeypatch):
+    """Le skip est ETROIT : une sortie non nulle non nommee reste un echec.
+
+    Contre-controle du test ci-dessus -- sans lui, elargir accidentellement
+    ``_GRAPH_INCOMPLETE_SIGNATURES`` transformerait le garde en no-op muet.
+    """
+    import subprocess
+
+    def fake_run(cmd, **kw):
+        return subprocess.CompletedProcess(
+            cmd, 1, stdout="", stderr="fatal: not a git repository",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="HISTORY_WALK_INCOMPLETE"):
+        _build_blob_history(Path("."))
+
+
+def test_walk_transitoire_retraye_puis_parse(monkeypatch):
+    """1er essai exit != 0 (stdout partiel avec un VRAI blob), retry OK :
+    c'est le stdout du RETRY qui est parse -- l'historique partiel du 1er
+    essai ne doit jamais alimenter path_blobs/blob_paths."""
+    import subprocess
+
+    real_line = _fake_raw_line("a" * 40, "b" * 40, "P/Y.ipynb")
+    state = {"n": 0}
+
+    def fake_run(cmd, **kw):
+        state["n"] += 1
+        if state["n"] == 1:
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout=_fake_raw_line("c" * 40, "d" * 40, "A/X.ipynb"),
+                stderr="fatal: transient",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout=real_line + "\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    path_blobs, blob_paths = _build_blob_history(Path("."))
+    assert "P/Y.ipynb" in path_blobs
+    assert ("b" * 40) in blob_paths
+    assert "A/X.ipynb" not in path_blobs, (
+        "la portion parcourue du walk echoue ne doit pas etre indexee"
+    )
 
 
 # --- tests verify_recorded_sha (#9399 volet b) ------------------------------

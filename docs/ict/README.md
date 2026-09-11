@@ -1,10 +1,10 @@
 # ICT — Index de la documentation de cadrage et de synthèse
 
-> **Portée.** Index thématique des 10 documents de cadrage et de synthèse de la série ICT (Integrated / Integrated-Coordination Theory de la strate 7). Tous sont au **grade C-documentaire** : positionnement, consolidation, cartographie — *aucun ne revendique un résultat démontré* ; ils nomment, articulent ou cartographient ce que les notebooks ICT expérimentent.
+> **Portée.** Index thématique des 12 documents de cadrage, de synthèse et de détail de la série ICT (Integrated / Integrated-Coordination Theory de la strate 7). Tous sont au **grade C-documentaire** : positionnement, consolidation, cartographie — *aucun ne revendique un résultat démontré* ; ils nomment, articulent ou cartographient ce que les notebooks ICT expérimentent.
 >
 > **Épics de rattachement.** [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT) · [#7395](https://github.com/jsboige/CoursIA/issues/7395) (méta-proxy ICT). Les issues-sources de chaque jambe sont citées dans le document correspondant.
 
-## Cartographie des 10 documents
+## Cartographie des 12 documents
 
 Les documents se répartissent en **trois modes d'écriture** explicitement distingués dans [`d1-c4-rencontre-meta.md`](d1-c4-rencontre-meta.md) §0 — *vertical* (un fil de lecture), *horizontal* (une cartographie), *méta* (une articulation entre deux livrables).
 
@@ -43,6 +43,19 @@ Lectures *horizontales* : où les fils se rejoignent, s'éloignent, se mélangen
 | Document | Rôle |
 |----------|------|
 | [`d1-c4-rencontre-meta.md`](d1-c4-rencontre-meta.md) | **Méta-cadrage D1 ↔ C4** — la rencontre du formel et de l'opérationnel. Reformule l'isomorphisme `ρ_c = (π_c, W_c, P_c)` en termes symétriques (D1 *nomme*, C4 *mesure* — et réciproquement), borne ce que le pont permet et interdit. N'écrivable qu'après que D1 et C4 eurent chacun leur cadrage autonome. |
+
+### Détail déporté du cadrage ICT-0
+
+Sections **sorties** de [`ICT-0-Framing.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md) sous
+[#15470](https://github.com/jsboige/CoursIA/issues/15470), à périmètre constant : contenu **verbatim**, le
+cadrage conservant le cadre de lecture, la carte des strates (qui fait foi) et les décisions tranchées.
+Hors des trois modes d'écriture ci-dessus — ce ne sont pas des documents autonomes, mais le détail durable
+du cadrage rendu à sa place.
+
+| Document | Rôle |
+|----------|------|
+| [`feuille-de-route-notebooks.md`](feuille-de-route-notebooks.md) | Inventaire notebook par notebook : sujet, strate (axe vertical), état de livraison, issues de rattachement et slots réservés. |
+| [`extensions-2026-07.md`](extensions-2026-07.md) | Les quatre fronts ouverts par le cadrage stratégique de 2026-07 (fin de la réversibilisation, canonicité des scalaires, secret/identité, discours) et la décision de numérotation par suffixe `b` ([#7260](https://github.com/jsboige/CoursIA/issues/7260)). |
 
 ## Parcours suggéré
 

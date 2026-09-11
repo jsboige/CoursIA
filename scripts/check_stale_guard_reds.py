@@ -74,6 +74,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -98,6 +99,19 @@ EXCLUDED_CHECKS = {"PR gate"}
 # couvre ~2 jours de cadence soutenue. Cout borne : un call check-runs par run
 # (cache par sha), uniquement pour les workflows emettant un rouge.
 MAIN_RUNS_WINDOW = 120
+
+# Re-mesure (#15350) : deps legeres des suites scripts/ -- le set du workflow
+# scripts-tests.yml est numpy/pandas/scipy/pyarrow : trop lourd a installer
+# pour chaque sweep. Les suites historiquement rouges (perimeter, translation
+# hot_subset) n'importent que ce set leger ; un ImportError residuel rend
+# SKIPPED_ENV (nomme, pas un faux rouge).
+REMEASURE_DEPS = ["pytest", "pyyaml", "requests", "bcrypt", "jupyter_client"]
+# Codes de sortie pytest : 0 passe, 1 echec(s), 2 interrompu, 3 erreur interne,
+# 4 erreur d'usage (node introuvable -> parsing trompeur), 5 rien collecte.
+# SEUL 1 est un re-rouge honnete ; tout le reste est un SKIPPED nomme -- un
+# organe qui traduirait un crash de rejeu en "toujours rouge" fabriquerait le
+# faux defaut que le criterion 3 interdit.
+PYTEST_RC = {0: "GREEN", 1: "RED", 2: "SKIPPED", 3: "SKIPPED", 4: "SKIPPED", 5: "SKIPPED"}
 
 
 def _run_gh(args: list[str]) -> str:
@@ -338,7 +352,7 @@ def analyse(data: dict, compare_fn: Callable[[str, str], str | None]) -> dict:
                                            ": vrai defaut, ne pas signaler"}); continue
             flagged.append({
                 "pr": num, "check": name, "merge_base": base, "fix_head": fix_head,
-                "remedy": "update-branch",
+                "run_id": rid, "remedy": "update-branch",
                 "why_not_rerun": (f"gh run rerun rejouerait la base gelee {base[:8]} "
                                   f"(le fix {fix_head[:8]} n'y est PAS) et rendrait le meme "
                                   "rouge ; seul gh pr update-branch recalcule la base"),
@@ -373,12 +387,103 @@ def apply(repo: str, result: dict, max_posts: int) -> None:
                     f"`{f['merge_base'][:12]}`, ANTERIEURE au fix `{f['fix_head'][:12]}` "
                     f"du garde sur main (garde vert a sa version courante).\n"
                     f"Remede : `gh pr update-branch {f['pr']}` (recalcule la base). "
-                    f"NE PAS `gh run rerun` : {f['why_not_rerun']}.")
+                    f"NE PAS `gh run rerun` : {f['why_not_rerun']}."
+                    + remeasure_lines(f.get("remeasure")))
             _run_gh(["pr", "comment", str(f["pr"]), "--repo", repo, "--body", body])
             _run_gh(["pr", "edit", str(f["pr"]), "--repo", repo, "--add-label", LABEL])
             print(f"[stale-guard-red] #{f['pr']}: signale ({f['check']})")
         except RuntimeError as e:
             print(f"[stale-guard-red] #{f['pr']}: echec non fatal ({e})", file=sys.stderr)
+
+
+def extract_failed_tests(log_text: str) -> list[str]:
+    r"""Node IDs pytest du --log-failed du run rouge. Pur, parsing borne.
+
+    Le short summary pytest imprime `FAILED path/test.py::test_name - Err...`
+    par test echoue. `\S+?::\S+?` s'arrete au premier blanc : un node a param
+    espace est TRONQUE -- son rejeu rendra rc!=1 (not found) et le verdict
+    sera SKIPPED, jamais un faux re-rouge (la table PYTEST_RC garantit la
+    direction de l'erreur).
+    """
+    seen: set[str] = set()
+    out = []
+    for m in re.finditer(r"FAILED (\S+?::\S+?)\s", log_text):
+        if m.group(1) not in seen:
+            seen.add(m.group(1))
+            out.append(m.group(1))
+    return out
+
+
+def remeasure_lines(verdict: dict | None) -> str:
+    """Lignes de commentaire rendues pour un verdict de re-mesure (pur)."""
+    if not verdict:
+        return ""
+    v = verdict.get("verdict")
+    if v == "GREEN":
+        return (f"\nRe-mesure ({verdict['n_tests']} test(s) rejoue(s) contre le "
+                f"merge-ref frais `{verdict['merge_sha'][:12]}`) : **VERT** -- les tests "
+                "qui echouaient passent sur la base corrigee + ce diff. "
+                "`update-branch` est sans risque et le seul geste restant.")
+    if v == "RED":
+        return (f"\nRe-mesure ({verdict['n_tests']} test(s) rejoue(s) contre le "
+                f"merge-ref frais `{verdict['merge_sha'][:12]}`) : **ROUGE** -- ce diff "
+                "echoue AUSSI contre la base corrigee. Ce n'est pas (que) un rouge "
+                "perime : la lane doit corriger son propre code.")
+    reason = verdict.get("reason") or "inconnue"
+    return f"\nRe-mesure non concluante : {reason} -- le dating ci-dessus reste la reference."
+
+
+def remeasure_pr(repo: str, pr_number: int, run_id: str, repo_dir: str) -> dict:
+    """Rejoue les tests echoues du run rouge contre le merge-ref FRAIS de la PR.
+
+    Acceptance 4 de #15350, tranchee : le fetch de `refs/pull/N/merge` fait
+    recalculer le merge par GitHub contre main COURANT -- il n'y a AUCUN push
+    sur la branche, donc aucun event synchronize : le plancher DWELL n'est pas
+    rearme. La penalite de lane reste le fait du seul geste update-branch,
+    desormais INFORMe par ce verdict.
+
+    Acceptance 3 : peut re-rougir. Uniquement via rc pytest == 1 (echecs
+    reels) ; crash/timeout/usage -> SKIPPED nomme.
+
+    MUTATION : checkout FETCH_HEAD dans repo_dir (derniere etape du sweep --
+    l'analyse et le posting n'en dependent plus). En calibration locale,
+    passer un worktree dedie.
+    """
+    try:
+        log = _run_gh(["run", "view", run_id, "--repo", repo, "--log-failed"])
+    except RuntimeError as e:
+        return {"verdict": "SKIPPED", "reason": f"log du run {run_id} indisponible ({str(e)[:60]})"}
+    nodes = extract_failed_tests(log)
+    if not nodes:
+        return {"verdict": "SKIPPED", "reason": "aucun node ID pytest dans le log (organe non-pytest ?)"}
+
+    def _git(*a: str, timeout: int = 120) -> None:
+        p = subprocess.run(["git", "-C", repo_dir, *a], capture_output=True, text=True, timeout=timeout)
+        if p.returncode != 0:
+            raise RuntimeError(f"git {a[0]}: {p.stderr.strip()[:120]}")
+
+    try:
+        _git("sparse-checkout", "disable", timeout=30)
+        _git("fetch", "-q", "origin", f"refs/pull/{pr_number}/merge")
+        merge_sha = subprocess.run(["git", "-C", repo_dir, "rev-parse", "FETCH_HEAD"],
+                                   capture_output=True, text=True, timeout=30).stdout.strip()
+        _git("checkout", "-q", "FETCH_HEAD")
+        p = subprocess.run([sys.executable, "-m", "pip", "install", "-q", *REMEASURE_DEPS],
+                           capture_output=True, text=True, timeout=180)
+        if p.returncode != 0:
+            return {"verdict": "SKIPPED", "reason": f"pip install echoue: {p.stderr.strip()[:80]}"}
+        t = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", *nodes],
+                           cwd=repo_dir, capture_output=True, text=True, timeout=600)
+    except (RuntimeError, subprocess.TimeoutExpired, OSError) as e:
+        return {"verdict": "SKIPPED", "reason": f"rejeu interrompu: {str(e)[:80]}"}
+    verdict = PYTEST_RC.get(t.returncode, "SKIPPED")
+    out = {"verdict": verdict, "n_tests": len(nodes), "merge_sha": merge_sha}
+    if verdict == "SKIPPED":
+        out["reason"] = f"pytest rc={t.returncode} (usage/collection/timeout) -- pas un verdict de fond"
+        out["tail"] = (t.stdout or "").strip().splitlines()[-1][:120] if (t.stdout or "").strip() else ""
+    elif verdict == "RED":
+        out["failed"] = extract_failed_tests(t.stdout or "")
+    return out
 
 
 def main() -> int:
@@ -390,6 +495,15 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true",
                     help="pose label + commentaire (defaut : lecture seule)")
     ap.add_argument("--max-posts", type=int, default=8)
+    ap.add_argument("--remeasure", action="store_true",
+                    help="rejoue les tests echoues des rouges signales contre le "
+                         "merge-ref frais (fetch pull/N/merge : zero push, DWELL "
+                         "intact) ; verdict capable de re-rougir (#15350)")
+    ap.add_argument("--max-remeasure", type=int, default=2,
+                    help="borne d'orthonance : re-mesures par passage (timeout job)")
+    ap.add_argument("--remeasure-dir", default=None,
+                    help="repertoire git ou rejouer (defaut : cwd). MUTATE le "
+                         "checkout -- en calibration, un worktree dedie")
     args = ap.parse_args()
 
     recorded: dict[tuple[str, str], str] = {}
@@ -425,6 +539,22 @@ def main() -> int:
         json.dump({"data": data, "compares": {f"{a}|{b}": s for (a, b), s in recorded.items()}},
                   open(args.dump, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 
+    if args.remeasure:
+        # DERNIERE etape avant posting : la re-mesure mute le checkout
+        # (checkout FETCH_HEAD) ; analyse/apply n'en dependent plus ensuite.
+        # Bornee (--max-remeasure) pour tenir le timeout du job sweep et
+        # l'orthonance locale (#11860) -- zero run GitHub cree, la re-mesure
+        # vit dans CE job.
+        rdir = args.remeasure_dir or os.getcwd()
+        for f in result["flagged"][:args.max_remeasure]:
+            rid = f.get("run_id") or ""
+            if not rid:
+                f["remeasure"] = {"verdict": "SKIPPED", "reason": "run_id non attribuable"}
+                continue
+            f["remeasure"] = remeasure_pr(args.repo, f["pr"], rid, rdir)
+            v = f["remeasure"].get("verdict")
+            print(f"[stale-guard-red] re-mesure #{f['pr']} ({f['check']}): {v}")
+
     if args.json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     else:
@@ -433,7 +563,8 @@ def main() -> int:
               f"| exclues: {len(result['excluded'])}")
         for f in result["flagged"]:
             print(f"  #{f['pr']} {f['check']} base={f['merge_base'][:8]} "
-                  f"fix={f['fix_head'][:8]} -> {f['remedy']}")
+                  f"fix={f['fix_head'][:8]} -> {f['remedy']}"
+                  + (f" [re-mesure: {f['remeasure']['verdict']}]" if f.get("remeasure") else ""))
         for e in result["excluded"]:
             print(f"  #{e['pr']} exclu: {e.get('check', '')} {e['reason']}", file=sys.stderr)
     if args.apply:

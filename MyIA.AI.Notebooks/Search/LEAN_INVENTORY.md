@@ -48,14 +48,16 @@ CP-SAT en oracle exact. Pas encore câblé.
 
 #### Théorèmes prouvés (0 sorry)
 
-- **`admissible_implies_optimal`** (flagship, phase-2) : A* sous heuristique admissible
-  renvoie un chemin de coût optimal.
+- **`admissible_le_suffix_cost`** (flagship, phase-1, anciennement `admissible_implies_optimal`) :
+  borne en `f` — sous heuristique admissible, `h(nœud)` ne dépasse jamais le coût du
+  suffixe restant du chemin allant au but (le cœur de l'argument d'optimalité de A*,
+  pas la garantie « chemin optimal renvoyé », cf #14824).
 - **`consistent_implies_path_bound`** / **`consistent_implies_admissible_bound`** (phase-2) :
   consistance ⟹ admissibilité par téléscopage.
 - **`consistent_implies_f_monotone`** (phase-3) : consistance ⟹ la fonction d'évaluation
   `f = g + h` est non-décroissante (pas de re-expansion de nœuds).
-- `admissible_implies_optimal_start` (cas de base), `admissible_head_bound` (borne sur le
-  nœud de tête), lemmes de support sur `head?`/`getLast?`.
+- `admissible_head_bound` (borne en `f` au départ), `suffix_pathFrom` (un suffixe
+  d'un chemin allant au but va encore au but), lemmes de support sur `head?`/`getLast?`.
 
 #### Honnêteté du périmètre (G.3/G.9)
 

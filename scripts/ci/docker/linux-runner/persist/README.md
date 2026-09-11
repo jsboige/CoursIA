@@ -18,6 +18,8 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `coursia-runner-start.sh` | **po-2024** | `/usr/local/bin/coursia-runner-start.sh` | reference |
 | `launch-runner.sh` | po-2024 | lancement manuel d'un slot | reference |
 | `hold-runner.ps1` | po-2024 (hote Windows) | tache planifiee | reference |
+| `coursia-lean.service` | **po-2024** | `/etc/systemd/system/coursia-lean.service` | reference |
+| `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
 | `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | reference |
 | `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (une version ad-hoc de 283 octets, sans documentation, occupe la place) |

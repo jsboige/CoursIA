@@ -5,7 +5,7 @@
   Les invariants de nœud distinguent les nœuds. Ce fichier scaffolde :
   1. Tricolorabilite (Fox 1962) — l'invariant non trivial le plus accessible
   2. Bornes sur le nombre de croisements
-  3. Nombre de denouement (definition seule, sorry)
+  3. Nombre de denouement (definition par infimum, cas trivial prouve)
 
   Epic #2874, Phase 1–2.
 
@@ -32,10 +32,11 @@
      effectif obtenu en énumérant les diagrammes réduits d'un nombre donné
      de croisements et en élimant ceux isotropes au nœud trivial.
 
-  3. **Nombre de dénouement** (`unknottingNumber`, définition seulement,
-     `sorry`) — minimum de mouvements R1 nécessaires pour réduire le nœud
-     au trivial ; invariant notoirement difficile à calculer (NP-difficile
-     dans le cas général, cf Lackenby 2015 poly-time).
+  3. **Nombre de dénouement** (`unknottingNumber`) — infimum du nombre de
+     changements de croisement nécessaires pour atteindre le nœud trivial,
+     modulo équivalence de Reidemeister ; le cas du nœud trivial est prouvé.
+     Cet invariant reste notoirement difficile à calculer (NP-difficile dans
+     le cas général, cf Lackenby 2015 poly-time).
 
   **Path B (invariant classique, mandat 2026-06-23)** : on impose la
   **continuité de l'arc over** à chaque croisement (les deux extrémités
@@ -2201,7 +2202,7 @@ theorem trefoil_crossing_number :
   unfold Knot.crossingNumberOfDiagram Knot.diagram trefoil trefoilDiagram
   decide
 
-/-! ## 7. Nombre de denouement (definition seule)
+/-! ## 7. Nombre de denouement
 
 Le nombre de denouement u(K) est le nombre minimum de changements de
 croisement necessaires pour ramener K a l'unknot. C'est un invariant
@@ -2243,15 +2244,34 @@ theorem changeCrossing_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
   rw [changeCrossingAll_eq_mirror]
   exact mirror_wf_preserves k h
 
-/-- Unknotting number: minimum crossing changes to reach the unknot. -/
-def Knot.unknottingNumber (k : Knot) : Nat := by
-  exact sorry
-  -- BLOQUE: requiert une infrastructure substantielle absente du projet :
-  --   1. Minimisation sur les classes d'equivalence (Knot.crossingNumber a le meme probleme)
-  --   2. Accessibilite dans un graphe de diagrammes
-  --   (L'operation de changement de croisement elle-meme est desormais justifiee par
-  --    `changeCrossing_wf_preserves`, derivee de `mirror_wf_preserves` — voir Epic #2874.)
-  -- Cible Phase 4+ — hors scope Phase 2
+/-- Changer le croisement d'indice `i`. Si `i` est hors borne, `List.modify`
+laisse la liste inchangée. Le nombre d'arêtes du diagramme est préservé. -/
+def Knot.changeCrossingAt (k : Knot) (i : Nat) : Knot where
+  diagram := {
+    crossings := k.diagram.crossings.modify i changeCrossing
+    numEdges := k.diagram.numEdges
+  }
+
+/-- `k` peut être ramené au nœud trivial par exactement `n` changements de
+croisement, suivis de mouvements de Reidemeister. -/
+def Knot.UnknottableIn (k : Knot) (n : Nat) : Prop :=
+  ∃ indices : List Nat, indices.length = n ∧
+    ReidemeisterEquiv (indices.foldl Knot.changeCrossingAt k).diagram unknotDiagram
+
+/-- Nombre de dénouement : minimum des longueurs de suites de changements de
+croisement qui ramènent `k` au nœud trivial, modulo Reidemeister.
+
+`Nat.sInf` est total par convention : si l'ensemble des longueurs atteignables
+est vide, `Nat.sInf_empty` donne la valeur sentinelle `0`. La finitude du nombre
+de dénouement pour tout nœud demanderait un théorème d'existence séparé. -/
+noncomputable def Knot.unknottingNumber (k : Knot) : Nat :=
+  sInf {n : Nat | k.UnknottableIn n}
+
+/-- Le nœud trivial a un nombre de dénouement nul : la liste vide de changements
+est témoin et l'équivalence de Reidemeister est réflexive. -/
+theorem unknot_unknottingNumber : unknot.unknottingNumber = 0 := by
+  rw [Knot.unknottingNumber, Nat.sInf_eq_zero]
+  exact Or.inl ⟨[], rfl, ReidemeisterEquiv.refl unknotDiagram⟩
 
 /-! ## 8. Transfer arriere (scaffolding de recherche — Epic #2874, Phase 5 PR3)
 
