@@ -34,6 +34,19 @@ def test_clean_body_passes():
     assert v["hits"] == {"body": [], "commits": [], "prev_invalid": []}
 
 
+def test_green_verdict_names_accepted_prev_targets():
+    """#15372 : le verdict vert cite les cibles prev: acceptees -- la
+    levee de commentaire du garde les nomme pour que le remplacement du
+    mur affiche ce qui fait tenir le vert."""
+    v = vpg.check(CLEAN_BODY)
+    assert v["guard_pass"] is True
+    assert v["prev_targets_accepted"] == [10067]
+    # Un body sans prev: reste vert avec une liste vide, pas une absence.
+    v2 = vpg.check("Grain: LIGHT/docs -- lane myia-po-2023:CoursIA")
+    assert v2["guard_pass"] is True
+    assert v2["prev_targets_accepted"] == []
+
+
 def test_offending_body_blocks():
     # A `prev: MED/fix #10067` in the BODY -> block.
     v = vpg.check(
