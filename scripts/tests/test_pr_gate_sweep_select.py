@@ -34,6 +34,7 @@ import json
 import os
 import re
 import subprocess
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import yaml
@@ -130,7 +131,7 @@ def test_gate_cancelled_alone_is_candidate(tmp_path):
     alors bloquee sans rien de rouge -- le defaut #11862 mot pour mot.
     """
     out = _run_selector(tmp_path, [_pr(101, [GATE_CANCELLED, OTHER_GREEN])])
-    assert out.strip() == "101 deadbeef false"
+    assert out.strip() == "101 deadbeef false 0"
 
 
 def test_gate_cancelled_with_other_red_abstains(tmp_path):
@@ -145,14 +146,14 @@ def test_other_cancelled_superseded_by_green_still_candidate(tmp_path):
     cancelled_old = ("Hermes review", "completed", "cancelled", "2026-01-01T09:00:00Z")
     green_new = ("Hermes review", "completed", "success", "2026-01-01T11:00:00Z")
     out = _run_selector(tmp_path, [_pr(103, [GATE_FAIL, cancelled_old, green_new])])
-    assert out.strip() == "103 deadbeef false"
+    assert out.strip() == "103 deadbeef false 0"
 
 
 def test_gate_failure_others_green_candidate(tmp_path):
     """Regression : le comportement d'origine (failure/timeout/action_required)
     reste candidat."""
     out = _run_selector(tmp_path, [_pr(104, [GATE_FAIL, OTHER_GREEN])])
-    assert out.strip() == "104 deadbeef false"
+    assert out.strip() == "104 deadbeef false 0"
 
 
 def test_no_gate_leg_skipped(tmp_path):
@@ -172,7 +173,7 @@ def test_two_gate_legs_and_not_latest_wins(tmp_path):
     latest-wins)."""
     gate_success_new = ("PR gate", "completed", "success", "2026-01-01T12:00:00Z")
     out = _run_selector(tmp_path, [_pr(107, [GATE_FAIL, gate_success_new, OTHER_GREEN])])
-    assert out.strip() == "107 deadbeef false"
+    assert out.strip() == "107 deadbeef false 0"
 
 
 def test_other_latest_cancelled_is_candidate(tmp_path):
@@ -198,7 +199,7 @@ def test_other_latest_cancelled_is_candidate(tmp_path):
     """
     cancelled_new = ("Hermes review", "completed", "cancelled", "2026-01-01T11:00:00Z")
     out = _run_selector(tmp_path, [_pr(108, [GATE_FAIL, cancelled_new])])
-    assert out.strip() == "108 deadbeef false"
+    assert out.strip() == "108 deadbeef false 0"
 
 
 def test_other_cancelled_plus_failure_still_abstains(tmp_path):
@@ -278,7 +279,7 @@ def test_same_run_rerun_latest_wins(tmp_path):
         ("Hermes review", "completed", "success", "2026-01-01T16:21:00Z", 111),
     ]
     out = _run_selector(tmp_path, [_pr(110, [GATE_FAIL] + fail_then_green)])
-    assert out.strip() == "110 deadbeef false"
+    assert out.strip() == "110 deadbeef false 0"
 
 
 def test_cross_workflow_green_and_red_keeps_pr_out(tmp_path):
@@ -339,7 +340,7 @@ def test_same_workflow_twin_runs_green_supersedes_red(tmp_path):
         113, [GATE_FAIL, guard_old, guard_new],
         workflows={33432764140: 555, 33435266510: 555},
     )])
-    assert out.strip() == "113 deadbeef false"
+    assert out.strip() == "113 deadbeef false 0"
 
 
 def test_distinct_workflows_same_name_still_separate(tmp_path):
@@ -359,3 +360,78 @@ def test_distinct_workflows_same_name_still_separate(tmp_path):
         workflows={900: 555, 901: 777},
     )])
     assert out.strip() == ""
+
+
+# --- #15375 : le tier de maturite (4e champ), mature-first a la purge --------
+
+
+def _ts(minutes_ago):
+    """Horodatage ISO Z dynamique -- le tier se mesure contre le `now` du
+    selecteur, donc les fixtures de ce bloc doivent etre RELATIVES (les dates
+    fixes 2026-01-01 du bloc historique sont toutes matures par construction,
+    ce qui est aussi pourquoi leurs assertions portent un rang 0)."""
+    return (datetime.now(timezone.utc) - timedelta(minutes=minutes_ago)
+            ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_verdict_older_than_floor_is_mature(tmp_path):
+    """Le coeur de #15375 forme 3 : un verdict de 180 min sur un plancher de
+    120 min est MATURE -- sa relance est immediatement conclusive (le gate
+    re-mesurera un head commit forcement plus vieux encore, voir la preuve
+    d'etancheite dans le selecteur). Rang 0, servi en priorite."""
+    gate_old = ("PR gate", "completed", "failure", _ts(180))
+    out = _run_selector(tmp_path, [_pr(120, [gate_old, OTHER_GREEN])])
+    assert out.strip() == "120 deadbeef false 0"
+
+
+def test_young_verdict_is_immature(tmp_path):
+    """Falsification : un verdict de 5 min n'a PAS franchise le plancher -- la
+    relance ne pourrait que re-rendre le meme FAIL de dwell. Rang 1, servi en
+    second, sous un cap retreint."""
+    gate_young = ("PR gate", "completed", "failure", _ts(5))
+    out = _run_selector(tmp_path, [_pr(121, [gate_young, OTHER_GREEN])])
+    assert out.strip() == "121 deadbeef false 1"
+
+
+def test_newest_red_leg_decides_the_tier(tmp_path):
+    """Deux legs de gate rouges : c'est la PLUS RECENTE qui gouverne le tier.
+    Une leg ancienne (3 h) ne peut pas faire passer la PR pour mature si une
+    leg rouge plus jeune (10 min) existe -- le bornage du dernier evenement
+    est la leg la plus recente, pas la plus ancienne."""
+    red_old = ("PR gate", "completed", "failure", _ts(200))
+    red_new = ("PR gate", "completed", "failure", _ts(10))
+    out = _run_selector(tmp_path, [_pr(122, [red_old, red_new, OTHER_GREEN])])
+    assert out.strip() == "122 deadbeef false 1"
+
+
+def test_unreadable_verdict_timestamp_is_immature_never_mature(tmp_path):
+    """Un `started_at` vide ou non ISO ne peut pas être lu comme age : tier 1
+    (conservateur). Jamais 0 -- mais la file immature le sert quand meme (cap
+    de repli), donc pas de famine, seulement une depriorisation."""
+    gate_nots = ("PR gate", "completed", "failure", "")
+    out = _run_selector(tmp_path, [_pr(123, [gate_nots, OTHER_GREEN])])
+    assert out.strip() == "123 deadbeef false 1"
+    gate_garbage = ("PR gate", "completed", "failure", "hier-matin")
+    out = _run_selector(tmp_path, [_pr(124, [gate_garbage, OTHER_GREEN])])
+    assert out.strip() == "124 deadbeef false 1"
+
+
+def test_workflow_pins_tier_sort_and_per_tier_caps():
+    """Garde structurelle : le workflow trie par le 4e champ (tier) avant le
+    numero de PR, et porte les deux caps par tier. Sans ce pin, un revert du
+    sort binaire ou des caps ramenerait le cap plat de 8 sans qu'aucun test
+    d'acceptance du selecteur ne rougisse (le selecteur emet le rang, mais
+    rien ne l'oblige a le CONSOMMER)."""
+    with open(WORKFLOW, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    run = str(next(
+        step.get("run", "") for step in doc["jobs"]["sweep"]["steps"]
+        if "MAX_MATURE" in str(step.get("run", ""))
+    ))
+    assert "MAX_MATURE=12" in run
+    assert "MAX_IMMATURE=4" in run
+    assert "MAX_POSTS=8" not in run
+    assert "sort -s -k4,4n -k1,1n" in run
+    # Le cap d'un tier ne doit pas arreter la boucle : les immatures ranges
+    # derriere doivent rester servis (continue, pas break).
+    assert "break" not in re.sub(r"#.*", "", run.split("MAX_MATURE=12")[1].split("done <")[0])
