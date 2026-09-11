@@ -4,7 +4,7 @@ name: Lean CI (assignment_lean)
 # Kuhn-Munkres Hungarian method correction skeleton (Munkres tribute #12598):
 # weak LP duality, zero-gap optimality certificate, equality graph, and the
 # Hungarian tightening preserving dual feasibility. Companion lake of the
-# notebook GameTheory-27-Munkres-Assignment.ipynb.
+# notebook GameTheory-23-Munkres-Assignment.ipynb.
 #
 # sorry-filter-mode=real, baseline=0: the library is fully sorry-free;
 # this guards that NO new `sorry` is introduced (never false-positives on
