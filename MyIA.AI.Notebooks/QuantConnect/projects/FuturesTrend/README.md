@@ -95,7 +95,7 @@ reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 | Signal entrée | Donchian 20j + filtre SMA50 | 6 horizons EWMAC (Carver pairs 8/32, 16/64, 32/128, 64/256, 16/48, 32/96) avec scalaire per-horizon `sqrt(slow/32)` (c.1063 increment) |
 | Carry factor | absent | **désactivé** (voir note ci-dessous ; c.1107 + c.1109) |
 | Multiplicateur régime | absent | vol-régime borné [0.5, 2] |
-| FDM (Forecast Diversification Multiplier) | absent | **requalifié honnêtement** en *breadth multiplier* clip [1, 2] (c.1109 REPAIR-3, voir note) |
+| FDM (Forecast Diversification Multiplier) | absent | **requalifié honnêtement** en *breadth multiplier* sign-invariant, clip [1, 2] (c.1109 REPAIR-3 + REPAIR-5 c.1111, voir note) |
 | Cap forecasts | n/a | +/-20 par forecast |
 | Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé, retarget du **delta** (pas d'aller-retour fabriqué, c.1109) |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
@@ -119,23 +119,59 @@ credentials). La méthode `_carry_forecast(front_close, deferred_close)`
 reste l'interface prévue — l'appelant futur (lane QC équipée) n'a qu'à passer
 les deux closes réelles.
 
-### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3)
+### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
 
-Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g`) a détecté que
-la formule `_fdm()` livrée c.1107 (`sum(|f|)/sqrt(sum(f^2))` clip `[1, 2]`)
-est un **breadth bonus**, pas une pénalité de concentration comme Carver
-chap. 9 l'aurait prescrit : le ratio monte (≥1) quand les signaux
-s'alignent, et monte aussi quand ils sont indépendants — c'est l'inverse
-de l'intention Carver. Sans estimateur de corrélation exogène, la formule
-instantanée ne peut pas pénaliser la concentration.
+Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g` pour c.1109,
+puis `msg-20260911T053342-rwwap4`) a détecté deux défauts sémantiques
+successifs sur la formule livrée c.1107 (`sum(|f|)/sqrt(sum(f^2))`
+clip `[1, 2]`) :
 
-**REPAIR-3 c.1109** (Tell c.1069 strict honnêteté référentielle) :
-- Renommage `_fdm` → `_breadth_multiplier` (honnêteté du nom)
-- Docstring Carver-true : bonus quand le book est unidirectionnel, pas pénalité
-- Clip inchangé `[1, 2]` (soft cap de gross leverage, conservateur)
-- Module docstring et class docstring mis à jour en conséquence
-- Le Carver FDM au sens propre reste une dette de fond (#15549 acceptance
-  follow-up : estimateur de corrélation rolling)
+**c.1109 REPAIR-3 — formule n'est PAS une pénalité de concentration.**
+La formule instantanée ne peut pas pénaliser la concentration sans
+estimateur de corrélation exogène : le ratio monte (≥1) quand les
+signaux s'alignent, et monte aussi quand ils sont indépendants — c'est
+l'inverse de l'intention Carver. `_fdm` est renommé `_breadth_multiplier`.
+
+**c.1111 REPAIR-5 — formule est sign-invariant.** L'adjoint a observé
+que `abs(float(f))` efface les signes, donc `[10,10]` et `[10,-10]`
+rendent **le même** `breadth = sqrt(2)`. La métrique mesure donc
+strictement la **concentration des magnitudes** (sign-invariant
+magnitude concentration), pas l'alignement directionnel, ni le book
+unidirectionnel, ni une pénalité Carver-true. La prose antérieure
+qui disait « bonus quand le book est unidirectionnel / aligned »
+(REPAIR-3 c.1109) avait tort sur ce point : `|f|` retire le signe à
+l'entrée, le multiplier est par construction sign-invariant. Le signe
+des forecasts est préservé séparément, en aval, par le ratio
+`forecast / abs_sum` dans `_rebalance`.
+
+**REPAIR-5 c.1111** (Tell c.1069 strict honnêteté référentielle, par
+adjoint po-2025 habilité n°3 urne `delivered` Tell c.15069 strict) :
+- Docstring `_breadth_multiplier` reformulée « sign-invariant magnitude
+  concentration » ; retrait des claims « one-directional / aligned » ;
+  précision que seul le multiplier est sign-invariant, le poids final
+  préserve le signe.
+- Clip `[1, 2]` décrit comme « soft cap on gross leverage when
+  magnitudes are concentrated » (au lieu de « when book is
+  one-directional »).
+- `config.json` corrigé : « Carver FDM with corrected clip [1,2] » →
+  « breadth multiplier clip [1, 2] — sign-invariant magnitude
+  concentration, NOT Carver FDM, REPAIR-3 c.1109 + REPAIR-5 c.1111 ».
+- Module docstring mis à jour (NOT a Carver FDM, NOT a directional-
+  alignment proxy).
+
+**REPAIR-6 c.1111 (worker, ce cycle)** : cohérence README ↔ source —
+le présent paragraphe remplace la note « REPAIR-3 c.1109 seule » qui
+disait encore « bonus quand le book est unidirectionnel », et la section
+« Statut courant » est étendue avec REPAIR-5 c.1111.
+
+**Règle d'or** : `_breadth_multiplier` répond à « quelle est la
+concentration des magnitudes ? », **pas** à « les forecasts sont-ils
+alignés ? » ni à « le book est-il unidirectionnel ? ». Pour ces
+dernières questions, il faut un estimateur signé exogène (moyenne
+signée, dispersion signée, corrélation rolling) qui n'est pas dans
+cette formule. Le Carver FDM au sens propre (estimateur
+signed-correlation rolling) reste une dette de fond (#15549 acceptance
+follow-up).
 
 ### Note Tell c.1069 strict — Retarget delta direct, pas d'aller-retour fabriqué (c.1109 REPAIR-3)
 
@@ -152,9 +188,9 @@ quand la cible est proche de la position actuelle.
   jambe existante quand le signe est conservé).
 - Les coûts backtestés deviennent comparables à un rebalancement réel.
 
-### Statut courant (c.1109, lane `myia-po-2027:CoursIA-2`)
+### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2`)
 
-- Le code **compile statiquement** (`ast.parse` PASS, 8 fonctions / 1 classe / 386
+- Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 465
   lignes, EOL LF, 0 secret literal).
 - **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
   QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
@@ -175,6 +211,19 @@ quand la cible est proche de la position actuelle.
   honnêteté référentielle) + retarget delta direct (pas d'aller-retour fabriqué).
   Préflight adjoint po-2025 `msg-20260911T043805-i7tl0g` ; jambe QC po-2026
   suspendue jusqu'au nouveau head exact.
+- **REPAIR-5 c.1111** : docstring `_breadth_multiplier` sign-invariant magnitude
+  concentration (Tell c.1069 strict honnêteté référentielle — l'`abs()` efface les
+  signes, `[10,10] == [10,-10]`) + `config.json` Carver FDM stale → breadth
+  multiplier sign-invariant. Préflight adjoint po-2025
+  `msg-20260911T053342-rwwap4` ; adjoint habilité n°3 urne `delivered`
+  Tell c.15069 strict a pushé le commit `5c316080f10f`. QC demeurait suspendu
+  jusqu'à cette dissipation par le worker (REPAIR-6 c.1111 = cohérence prose
+  README ↔ source).
+- **REPAIR-6 c.1111 (worker)** : cohérence README ↔ source REPAIR-5 — section
+  « Note Tell c.1069 strict — FDM requalifié » étendue avec le défaut sign-invariant
+  (la prose c.1109 disait « bonus quand le book est unidirectionnel », faux) +
+  statut courant étendu avec REPAIR-5. Amend borné scope unique
+  `FuturesTrend/README.md`. Push `--force-with-lease=refs/heads/feature/15549-carver13-futures:5c316080f10ffcf0dd011a4da1a7ce77dad20277`.
 
 ## Références
 
