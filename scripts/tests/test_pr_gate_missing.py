@@ -5,6 +5,13 @@ The ``classify`` and ``rollup_names`` functions are network-free; ``main`` (the
 gh wiring) is exercised end-to-end in CI dry-runs, not here. These fixtures
 encode the verdicts measured firsthand on the #10928 sample (2026-08-14):
 
+  - (#15621) the fixtures below build the classify() input BY HAND -- which is
+    exactly how three verdicts stayed unreachable for weeks: the collector had
+    been migrated to REST keys while main() kept reading GraphQL ones, and a
+    hand-built fixture cannot notice that. The `#15621` section at the end
+    therefore feeds classify() with the COLLECTOR'S OUTPUT (patched gh), never
+    with a hand-built dict.
+
   - #10902 : rollup = 5 CodeQL checks only, no ``PR gate`` -> missing
   - #10558 : same rollup, author app/github-actions -> bot_missing (structural)
   - #10898 : same shape before the re-push -> missing; after the re-push the
@@ -17,15 +24,25 @@ encode the verdicts measured firsthand on the #10928 sample (2026-08-14):
 
 import sys
 import os
+import io
+from contextlib import redirect_stderr
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pr_gate_missing import (  # noqa: E402
     classify,
+    classify_input,
     rollup_names,
+    list_open_prs,
+    has_label,
     GATE_NAME,
+    LABEL_BOT_DESC,
+    LABEL_CONFLICT_DESC,
+    LABEL_DESC,
     prescribe,
     remediation_for,
+    _gh_write,
     REMEDIATION_CONFLICT,
     REMEDIATION_SKIP_CI,
 )
@@ -217,3 +234,133 @@ def test_unknown_names_the_measurements():
     assert "pas determinee" in remedy
     assert "git merge" not in remedy
     assert "commit-tree" not in remedy
+
+
+# ---------------------------------------------------------------------------
+# (#15621) le collecteur et le consommateur partagent UNE seule forme
+#
+# Ces tests alimentent classify() avec la SORTIE du collecteur -- jamais avec un
+# dict ecrit a la main. C'est la difference qui compte : les fixtures ci-dessus
+# construisaient la forme attendue par le consommateur, donc elles sont restees
+# vertes pendant que le producteur, migre en REST (#14488), emettait
+# `base_ref_name` / `is_draft` / `author_login` la ou main() relisait
+# `baseRefName` / `isDraft` / `author`. Trois verdicts etaient des lors
+# inatteignables, et la production le montrait : `excluded_base: 0`,
+# `draft: 0` sur 60 PRs ouvertes (run 34621731008).
+# ---------------------------------------------------------------------------
+
+
+def _collector_row(number=1, base="main", draft=False, author="jsboige",
+                   labels=None):
+    """Une ligne exactement telle que le flux gh de `list_open_prs` la rend.
+
+    `labels` porte la forme de l'API REST (`[{"name": ...}]`), pas des chaines :
+    c'est la forme que `has_label()` lit, et la garder identique a celle du
+    payload REST evite un second dialecte.
+    """
+    return {
+        "number": number,
+        "draft": draft,
+        "base": base,
+        "author": author,
+        "labels": labels or [],
+        "sha": "sha%d" % number,
+    }
+
+
+def _collector_output(rows, check_run_names=("PR gate",)):
+    """`list_open_prs` sur un flux gh simule -- aucun appel reseau."""
+    with mock.patch("pr_gate_missing._gh_rows", lambda args: rows), \
+         mock.patch("pr_gate_missing._gh_json",
+                    lambda args: list(check_run_names)):
+        return list_open_prs("jsboige/CoursIA")
+
+
+def test_collector_output_excludes_non_main_base():
+    # Verdict inatteignable avant le fix : 5 PRs stackees ouvertes a la mesure
+    # (dont #15620) etaient classees `missing` avec cause `unknown`.
+    rows = _collector_output([_collector_row(15620, base="fix/15489-x")])
+    verdict, why = classify(rows[0])
+    assert verdict == "excluded_base", why
+
+
+def test_collector_output_excludes_drafts():
+    rows = _collector_output([_collector_row(15334, draft=True)])
+    verdict, why = classify(rows[0])
+    assert verdict == "draft", why
+
+
+def test_collector_output_flags_bot_pr_structurally():
+    rows = _collector_output([_collector_row(10558, author="app/github-actions")],
+                             check_run_names=("CodeQL",))
+    verdict, why = classify(rows[0])
+    assert verdict == "bot_missing", why
+
+
+def test_collector_output_carries_author_and_labels():
+    # Le symptome visible du defaut : le commentaire imprimait « auteur : » vide
+    # (vu sur #15620), et `labels` n'etait pas collecte du tout -- donc
+    # has_label() etait toujours faux et le remappage vers pr-gate-conflict
+    # impossible.
+    rows = _collector_output(
+        [_collector_row(4, author="jsboige",
+                        labels=[{"name": "pr-gate-missing"}])],
+        check_run_names=("CodeQL",))
+    assert classify(rows[0])[0] == "missing"
+    assert rows[0]["author_login"] == "jsboige"
+    assert has_label(rows[0], "pr-gate-missing")
+    assert not has_label(rows[0], "pr-gate-conflict")
+
+
+def test_classify_input_is_the_only_shape():
+    # Epingle le contrat : toucher a `classify_input` sans mettre a jour
+    # classify() (ou l'inverse) fait rougir ici au lieu de desactiver un verdict
+    # en silence.
+    row = classify_input(7, "main", False, "jsboige", [{"name": GATE_NAME}],
+                         [{"name": "pr-gate-missing"}])
+    assert set(row) == {"number", "base_ref_name", "is_draft",
+                        "author_login", "statusCheckRollup", "labels"}
+    assert row["labels"] == [{"name": "pr-gate-missing"}]
+    assert classify(row)[0] == "has_gate"
+
+
+def test_label_descriptions_within_github_limit():
+    # GitHub refuse une description de plus de 100 caracteres. Mesure #15621 :
+    # 108 / 121 / 145 -- `gh label create` echouait, l'echec etait avale, et les
+    # trois labels etaient absents du depot (404) alors que le sweep lisait
+    # `mode=apply` sept jours de suite.
+    for name, desc in (("pr-gate-missing", LABEL_DESC),
+                       ("pr-gate-missing-bot", LABEL_BOT_DESC),
+                       ("pr-gate-conflict", LABEL_CONFLICT_DESC)):
+        assert len(desc) <= 100, "%s: %d caracteres" % (name, len(desc))
+
+
+def _gh_proc(returncode, stderr=""):
+    class _Proc:
+        pass
+    p = _Proc()
+    p.returncode = returncode
+    p.stderr = stderr
+    p.stdout = ""
+    return p
+
+
+def test_write_failure_is_reported_not_swallowed():
+    # Critere d'acceptation 3 : un refus de gh n'est plus silencieux.
+    err = io.StringIO()
+    with mock.patch("pr_gate_missing.subprocess.run",
+                    lambda *a, **k: _gh_proc(1, "description is too long\n")), \
+         redirect_stderr(err):
+        ok = _gh_write(["label", "create", "pr-gate-missing"], "label create")
+    assert ok is False
+    assert "WARNING" in err.getvalue()
+    assert "too long" in err.getvalue()
+
+
+def test_write_success_stays_quiet():
+    err = io.StringIO()
+    with mock.patch("pr_gate_missing.subprocess.run",
+                    lambda *a, **k: _gh_proc(0)), redirect_stderr(err):
+        ok = _gh_write(["label", "create", "pr-gate-missing"], "label create")
+    assert ok is True
+    assert err.getvalue() == ""
