@@ -71,7 +71,7 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 ### Phase 3 : Vérification formelle (Lean, ~10h)
 
-La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*), étoffés de leurs compagnons natifs et dérivés (14b, 15c, 16g-16j, 17c, 21b, 22b, 22c). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la conjecture PFR par méthode entropique (Lean-21, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538). Les notebooks 24-30 étendent la vague 2026 : compagnons ERC-20 (Lean-24/24b, lake `erc20_lean`), calibration (Lean-26), cohérence et témoin (Lean-27), hommage à Munkres (Lean-28), conjecture de Tutte (Lean-29) et structure complexe de S⁶ (Lean-30). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*), étoffés de leurs compagnons natifs et dérivés (14b, 15c, 16g-16j, 17c, 21b, 22b, 22c). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-18, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-19), la conjecture PFR par méthode entropique (Lean-20, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-21, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-22, arXiv:2608.08538). Les notebooks 24-30 étendent la vague 2026 : compagnons ERC-20 (Lean-23/24b, lake `erc20_lean`), calibration (Lean-24), cohérence et témoin (Lean-25), hommage à Munkres (Lean-26), conjecture de Tutte (Lean-27) et structure complexe de S⁶ (Lean-28). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
 ### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
@@ -195,7 +195,7 @@ Documentation complète : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Vérification Formelle
 
-Série de **49 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b/15c), les jeux de Conway (Lean-16a-16j) avec ports natifs Lean, les noeuds de Conway (Lean-17/17b/17c), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14/14b), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la méthode entropique de la conjecture PFR (Lean-21/21b, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22/22b/22c, Papailiopoulos 2026), le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538), les compagnons ERC-20 (Lean-24/24b, lake `erc20_lean`), la calibration (Lean-26), la cohérence et le témoin (Lean-27), l'hommage à Munkres (Lean-28), la coloration d'arêtes et la conjecture de Tutte (Lean-29), et la structure complexe de S⁶ (Lean-30).
+Série de **49 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b/15c), les jeux de Conway (Lean-16a-16j) avec ports natifs Lean, les noeuds de Conway (Lean-17/17b/17c), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14/14b), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-18, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-19), la méthode entropique de la conjecture PFR (Lean-20/21b, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-21/22b/22c, Papailiopoulos 2026), le problème inverse de Galois refermé pour M₂₃ (Lean-22, arXiv:2608.08538), les compagnons ERC-20 (Lean-23/24b, lake `erc20_lean`), la calibration (Lean-24), la cohérence et le témoin (Lean-25), l'hommage à Munkres (Lean-26), la coloration d'arêtes et la conjecture de Tutte (Lean-27), et la structure complexe de S⁶ (Lean-28).
 
 ### Structure détaillée
 
@@ -221,13 +221,13 @@ Série de **49 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 14 | [Lean-14-Finiteness-Derivatives](Lean/Lean-14-Finiteness-Derivatives.ipynb) | Python | Finitude des dérivées, formalisation constructive, dépendance sur les réels | 3 |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean/Lean-14b-Finiteness-Lean-Companion.ipynb) | Lean 4 (WSL) | Finiteness des dérivées de Brzozowski — compagnon kernel Lean | 1 |
 | **Hommages et théorèmes** |   |   |   |   |
-| 13 | [Lean-15-Grothendieck-Tribute](Lean/Lean-15-Grothendieck-Tribute.ipynb) | Python | Hommage à Grothendieck : tour Mathlib, micro-formalisations | 3 |
-| 13b | [Lean-15b-Lean-Grothendieck](Lean/Lean-15b-Lean-Grothendieck.ipynb) | Python WSL | Grothendieck en Lean, atelier pratique : sources `grothendieck_lean/`, snippets via WSL | 3 |
+| 15 | [Lean-15-Grothendieck-Tribute](Lean/Lean-15-Grothendieck-Tribute.ipynb) | Python | Hommage à Grothendieck : tour Mathlib, micro-formalisations | 3 |
+| 15b | [Lean-15b-Lean-Grothendieck](Lean/Lean-15b-Lean-Grothendieck.ipynb) | Python WSL | Grothendieck en Lean, atelier pratique : sources `grothendieck_lean/`, snippets via WSL | 3 |
 | 15c | [Lean-15c-Lean-Grothendieck-Companion](Lean/Lean-15c-Lean-Grothendieck-Companion.ipynb) | Lean 4 (WSL) | Le lake Grothendieck par ses énoncés (companion formel natif) | 1 |
 | 14a | [Lean-16a-Conway-Man-and-Work](Lean/Lean-16a-Conway-Man-and-Work.ipynb) | Python WSL | Conway, l'homme et l'oeuvre : panorama des grands résultats, premières formalisations exécutées depuis `conway_lean` | 3 |
-| 14b | [Lean-16b-Conway-Game-of-Life-Lean](Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb) | Python WSL | Game of Life as Computation : Doomsday, FRACTRAN, Look-and-Say, Nim, Angel | 4 |
-| 14c | [Lean-16c-Conway-Game-of-Life-Golly](Lean/Lean-16c-Conway-Game-of-Life-Golly.ipynb) | Python | Game of Life en images : les 3 piliers, compagnon Golly | 4 |
-| 15 | [Lean-13-Kochen-Specker](Lean/Lean-13-Kochen-Specker.ipynb) | Python | Théorème de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
+| 16b | [Lean-16b-Conway-Game-of-Life-Lean](Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb) | Python WSL | Game of Life as Computation : Doomsday, FRACTRAN, Look-and-Say, Nim, Angel | 4 |
+| 16c | [Lean-16c-Conway-Game-of-Life-Golly](Lean/Lean-16c-Conway-Game-of-Life-Golly.ipynb) | Python | Game of Life en images : les 3 piliers, compagnon Golly | 4 |
+| 13 | [Lean-13-Kochen-Specker](Lean/Lean-13-Kochen-Specker.ipynb) | Python | Théorème de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
 | 16 | [Lean-16f-Conway-Free-Will-Theorem](Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb) | Python WSL | Théorème du libre arbitre (Conway-Kochen) : axiomes SPIN/TWIN/MIN, port formel adossé à `FreeWillTheorem.lean` | 2 |
 | 16d | [Lean-16d-Conway-Game-of-Life-Lean-Native](Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb) | Lean 4 / WSL | Port natif Lean du Game of Life : Life semantics, registres, preuves de conservation | 3 |
 | 16e | [Lean-16e-Conway-FRACTRAN-Lean-Native](Lean/Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | Lean 4 / WSL | Port natif Lean de FRACTRAN : encodage fractions, machine à fractions, premiers programmes | 3 |
@@ -240,26 +240,28 @@ Série de **49 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 17c | [Lean-17c-Knots-Companion-Formel](Lean/Lean-17c-Knots-Companion-Formel.ipynb) | Python | Le lake `knot_lean` par ses déclarations (compagnon formel) | 3 |
 | 18 | [Search-03e-AStar-Optimality](../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Python 3 | Optimalité de A* sous heuristique admissible/consistante : graphe pondéré ℝ≥0, `pathCost` additif, prédicats `Admissible`/`Consistent`, théorèmes phares `admissible_le_suffix_cost` + `consistent_implies_path_bound` - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 3 |
 | **Théorèmes phares 2026** |  |  |  |  |
-| 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
-| 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |
-| 21 | [Lean-21-PFR-Entropy-Method](Lean/Lean-21-PFR-Entropy-Method.ipynb) | Lean 4 (WSL) | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
-| 21b | [Lean-21b-PFR-Primitives-Transportables](Lean/Lean-21b-PFR-Primitives-Transportables.ipynb) | Python | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir | 0 |
-| 22 | [Lean-22-MIMO-Detection-Flips](Lean/Lean-22-MIMO-Detection-Flips.ipynb) | Python WSL | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 3 |
-| 22b | [Lean-22b-MIMO-Converse-Native](Lean/Lean-22b-MIMO-Converse-Native.ipynb) | Lean 4 (WSL) | Le lake `mimo_lean` par ses énoncés — compagnon formel natif | 1 |
-| 22c | [Lean-22c-Descente-Budget](Lean/Lean-22c-Descente-Budget.ipynb) | Python | Le budget de descente — quand la décroissance borne le nombre de flips | 5 |
-| 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean/Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Python WSL | Problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 à l'écran (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 3 |
+| 18 | [Lean-18-Sendov-Complex-Analysis](Lean/Lean-18-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
+| 19 | [Lean-19-Analysis-I-Tao-Workflow](Lean/Lean-19-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |
+| 20 | [Lean-20-PFR-Entropy-Method](Lean/Lean-20-PFR-Entropy-Method.ipynb) | Lean 4 (WSL) | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
+| 20b | [Lean-20b-PFR-Primitives-Transportables](Lean/Lean-20b-PFR-Primitives-Transportables.ipynb) | Python | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir | 0 |
+| 21 | [Lean-21-MIMO-Detection-Flips](Lean/Lean-21-MIMO-Detection-Flips.ipynb) | Python WSL | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 3 |
+| 21b | [Lean-21b-MIMO-Converse-Native](Lean/Lean-21b-MIMO-Converse-Native.ipynb) | Lean 4 (WSL) | Le lake `mimo_lean` par ses énoncés — compagnon formel natif | 1 |
+| 21c | [Lean-21c-Descente-Budget](Lean/Lean-21c-Descente-Budget.ipynb) | Python | Le budget de descente — quand la décroissance borne le nombre de flips | 5 |
+| 22 | [Lean-22-Galois-Probleme-Inverse-M23](Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb) | Python WSL | Problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 à l'écran (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 3 |
 | **ERC-20, calibration et théorèmes 2026 (suite)** |  |  |  |  |
-| 24 | [Lean-24-ERC20-Invariant-Companion](Lean/Lean-24-ERC20-Invariant-Companion.ipynb) | Python | ERC-20 sous Lean 4 — l'invariant de conservation prouvé (lake `erc20_lean`) | 4 |
-| 24b | [Lean-24b-Lean-ERC20-Native-Companion](Lean/Lean-24b-Lean-ERC20-Native-Companion.ipynb) | Lean 4 (WSL) | ERC-20 natif : l'invariant de conservation évalué sous le kernel Lean | 3 |
-| 26 | [Lean-26-Calibration-Native-Companion](Lean/Lean-26-Calibration-Native-Companion.ipynb) | Lean 4 (WSL) | Le lake `calibration_lean` par ses énoncés — compagnon formel natif | 1 |
-| 27 | [Lean-27-Coherence-et-Temoin](Lean/Lean-27-Coherence-et-Temoin.ipynb) | Python | Cohérence et témoin : de Finetti construit le livre qui paie, vNM légitime le pari | 5 |
-| 28 | [Lean-28-Munkres-Tribute](Lean/Lean-28-Munkres-Tribute.ipynb) | Lean 4 (WSL) | Hommage à James R. Munkres — le cours 18.901 dans Mathlib 4 | 4 |
-| 29 | [Lean-29-EdgeColoring-Tutte-Companion](Lean/Lean-29-EdgeColoring-Tutte-Companion.ipynb) | Lean 4 (WSL) | Coloration d'arêtes et conjecture de Tutte — compagnon formel | 1 |
-| 30 | [Lean-30-Complex-Structure-S6](Lean/Lean-30-Complex-Structure-S6.ipynb) | Python | Le problème de Hopf sur S⁶ — digestion d'une preuve constructive mécanisée | 3 |
+| 23 | [Lean-23-ERC20-Invariant-Companion](Lean/Lean-23-ERC20-Invariant-Companion.ipynb) | Python | ERC-20 sous Lean 4 — l'invariant de conservation prouvé (lake `erc20_lean`) | 4 |
+| 23b | [Lean-23b-Lean-ERC20-Native-Companion](Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb) | Lean 4 (WSL) | ERC-20 natif : l'invariant de conservation évalué sous le kernel Lean | 3 |
+| 24 | [Lean-24-Calibration-Native-Companion](Lean/Lean-24-Calibration-Native-Companion.ipynb) | Lean 4 (WSL) | Le lake `calibration_lean` par ses énoncés — compagnon formel natif | 1 |
+| 25 | [Lean-25-Coherence-et-Temoin](Lean/Lean-25-Coherence-et-Temoin.ipynb) | Python | Cohérence et témoin : de Finetti construit le livre qui paie, vNM légitime le pari | 5 |
+| 26 | [Lean-26-Munkres-Tribute](Lean/Lean-26-Munkres-Tribute.ipynb) | Lean 4 (WSL) | Hommage à James R. Munkres — le cours 18.901 dans Mathlib 4 | 4 |
+| 27 | [Lean-27-EdgeColoring-Tutte-Companion](Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb) | Lean 4 (WSL) | Coloration d'arêtes et conjecture de Tutte — compagnon formel | 1 |
+| 28 | [Lean-28-Complex-Structure-S6](Lean/Lean-28-Complex-Structure-S6.ipynb) | Python | Le problème de Hopf sur S⁶ — digestion d'une preuve constructive mécanisée | 3 |
+| 29 | [Lean-29-Hecke-Operators-Native](Lean/Lean-29-Hecke-Operators-Native.ipynb) | Lean 4 (WSL) | Les opérateurs de Hecke $T_p$ et $U_p$ — compagnon natif du lake `hecke_lean` (toolchain 4.33.0, #14784) | 9 |
+| 30 | [Lean-30-FormalGroups-Native](Lean/Lean-30-FormalGroups-Native.ipynb) | Lean 4 (WSL) | Groupes formels multivariés — compagnon natif du lake `formal_groups_lean` (toolchain 4.33.0, #14785) | 3 |
 
 ### Kernels requis
 
-- **Lean 4** (kernels `lean4` + `lean4-wsl`) : 19 notebooks à preuve native — `lean4` : 3, 5, 6 ; `lean4-wsl` : 2, 4, 11, 12b, 14b, 15c, 16d, 16e, 16h, 16j, 21, 22b, 24b, 26, 28, 29
+- **Lean 4** (kernels `lean4` + `lean4-wsl`) : 21 notebooks à preuve native — `lean4` : 3, 5, 6 ; `lean4-wsl` : 2, 4, 11, 12b, 14b, 15c, 16d, 16e, 16h, 16j, 20, 21b, 23b, 24, 26, 27, 29, 30
 - **Python** : les 30 companions — kernel `python3-wsl` pour 1, 7, 7b, 10 (setup, LLM, LeanDojo) ; kernel Python natif (`python3`) pour le reste, `global-3.13` pour Lean-8
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problèmes chemins)
@@ -514,15 +516,15 @@ SymbolicAI/
 │   └── README.md
 │
 ├── Lean/                      # Serie Lean 4 (49 notebooks : 19 proof natifs lean4/lean4-wsl + 30 companions Python)
-│   ├── Lean-1-Setup.ipynb ... Lean-30-Complex-Structure-S6.ipynb
+│   ├── Lean-1-Setup.ipynb ... Lean-28-Complex-Structure-S6.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   ├── conway_lean/            # Companion lean du Lean-16 (ports natifs Game of Life, FRACTRAN)
 │   ├── grothendieck_lean/      # Companion lean du Lean-15 (atelier Micro-Formalisation)
 │   ├── sensitivity_lean/       # Companion lean du Lean-12 (Huang 2019)
 │   ├── knot_lean/              # Companion lean du Lean-17 (noeuds de Conway)
-│   ├── galois_lean/            # Companion lean du Lean-23 (M₂₃ simple, PR #10486)
-│   ├── mimo_lean/              # Companion lean du Lean-22 (détection MIMO)
+│   ├── galois_lean/            # Companion lean du Lean-22 (M₂₃ simple, PR #10486)
+│   ├── mimo_lean/              # Companion lean du Lean-21 (détection MIMO)
 │   ├── calibration_lean/       # Companion lean du Lean-14 (finitude des dérivées)
 │   ├── finiteness_lean/        # Companion lean du Lean-14 (finitude Mathlib)
 │   ├── mathlib_examples/       # Exemples Mathlib
@@ -736,7 +738,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | Tweety (Python/JPype + C#/.NET + Lean) | 34 | 33 pédagogiques (14 Python + 18 C# jumeaux + 1 Lean Tw-5b) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
-| Lean (proofs natifs + companions Python) | 49 | 47 (96%) | 2 (Lean-16i-Translateur-Life + Lean-21b-PFR-Primitives-Transportables) | Très bon |
+| Lean (proofs natifs + companions Python) | 49 | 47 (96%) | 2 (Lean-16i-Translateur-Life + Lean-20b-PFR-Primitives-Transportables) | Très bon |
 | SemanticWeb (C# + Python) | 27 | 26 (12 C# + 14 Python) | 1 (RDF.Net-Legacy, référence historique) | Très bon |
 | Planners (PDDL classique + neuro-symbolique) | 25 | 25 (100%, y compris Planners-0-Setup — exercice de vérification d'environnement) | 0 ; archive Fast-Downward-Legacy hors compte | Très bon |
 | SmartContracts | 31 | 29 (94%) | 2 (SC-1-Setup-Foundry + SC-26-Final-Project) | Très bon |
@@ -745,7 +747,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; en date du 4 septembre 2026 il s'établit à **262** (y compris `root=1` : OR-tools-Stiegler, et le probe IKVM compté dans Tweety=34), hors les 4 fichiers `_archive/` (Fast-Downward-Legacy, 2 précurseurs EML SymbolicLearning, `Tweety.ipynb` legacy). Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-21b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
+**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; en date du 4 septembre 2026 il s'établit à **262** (y compris `root=1` : OR-tools-Stiegler, et le probe IKVM compté dans Tweety=34), hors les 4 fichiers `_archive/` (Fast-Downward-Legacy, 2 précurseurs EML SymbolicLearning, `Tweety.ipynb` legacy). Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-20b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
 
 > **Note (04/09, réconciliation fichier-entier — See #3973)** : décompositions vérifiées sur disque : **Tweety 34** = 14 Python + 18 C# + 1 Lean (Tweety-5b) + 1 probe ; **Lean 49** = 19 preuves natives (3 `lean4` + 16 `lean4-wsl`) + 30 companions Python (25 `python3` + 4 `python3-wsl` + 1 `global-3.13`) ; **SemanticWeb 27** = 13 C# (incl. RDF.Net-Legacy) + 14 Python (SW-14/15 ajoutés après la réconciliation c.1297) ; **Planners 25** = 15 Python + 9 C# jumeaux + 1 Lean (Planners-5b) ; **SmartContracts 31** = 30 Python + 1 `lean4-wsl` (SC-7c) ; **Argument_Analysis 28** = 10 Agentic (7 sources + 3 artefacts `_agent.ipynb`) + 17 analytiques + 1 groupe-I2 ; **SymbolicLearning 21** = 12 Python + 8 C# jumeaux + 1 Lean (SL-1b) ; **SMT 46** = 28 Z3-API (22 Python + 6 C# jumeaux) + 18 Z3-Linq2Z3 ; root = 1. Réconciliation précédente : 15 août 2026 (c.118, total 230). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` fait foi.
 
