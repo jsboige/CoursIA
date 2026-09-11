@@ -115,13 +115,18 @@ Chaque entry = 1 audit de famille/source, avec :
 ### Synthèse
 
 - **EXEC_PROVED global** : 31/31 (100%) — toutes cellules code exécutées, `execution_count != null`, `outputs: [...]` cohérents.
+
 - **Erreurs runtime** : 0/31.
+
 - **Violations C.1 réelles** : **0/31** (3 faux positifs initiaux sur Tweety-10-MLN-Csharp.ipynb cell 20/21/22 = commentaires `// pas de raise NotImplementedError` dans stubs d'exercice ; **re-vérifiés par lecture directe G.1 = 0 violation réelle** ; cf leçon L378 durcie c.376/c.388 appliquée).
+
 - **Vrais outils SOTA invoqués** :
   - **Tweety Java library via JPype bridge** (15 nb python3) — kernelspec `python3`, vrais appels Java/JVM
   - **Tweety .NET via .NET Interactive** (15 nb .net-csharp) — kernelspec `.net-csharp`, vrais appels NuGet
   - **Lean 4 via WSL** (1 nb Tweety-5b-Lean-Argumentation companion formel au lake `argumentation_lean`) — kernelspec `lean4-wsl`
+
 - **Workaround dégradé** : **0/31** (2 occurrences du mot « workaround » : (a) `Tweety-2-Basic-Logics-Csharp.ipynb` cell 18 = commentaire référençant leçon C171 PR #5147 + RECOVERABLE-MACHINE disclosure honnête VS Code Interactive pour .NET + Stop & Repair appliqué ; (b) `Tweety-3-Advanced-Logics.ipynb` cell 24 = disclosure honnête limitation SPASS parsing modal avec fallback sémantique Kripke. **Aucune dégradation cachée**, **disclosure authentique** comme attendu par sota-not-workaround.md).
+
 - **Problème non-trivial** (Prong B) : 31/31 OK — chaque notebook pose un problème Tweety avancé :
   - Tweety-1-Setup : bootstrap JVM/JPype + 76 jars Tweety
   - Tweety-2-Basic-Logics : parse formules PL/FOL via Tweety PlParser/FolParser
@@ -188,8 +193,11 @@ Chaque entry = 1 audit de famille/source, avec :
 ### Synthèse
 
 - **EXEC_PROVED global** : 20/20 (100%) — tous kernels exécutés, `execution_count != null`, `outputs: [...]` cohérents.
+
 - **Erreurs runtime** : 0/20.
+
 - **Violations C.1 réelles** : **0/20** (0 faux positif initial détecté — l'audit direct a tranché d'emblée via lecture exhaustive G.1).
+
 - **Vrais outils SOTA invoqués** :
   - **pyswip (SWI-Prolog binding)** : SL-4, SL-5, SL-6 (Python + .NET via Python-WSL bridge) — kernelspec `python3`/`python3-wsl`
   - **clingo (ASP solver)** : SL-6, SL-7, SL-8 — kernelspec `python3-wsl` pour WSL
@@ -203,12 +211,14 @@ Chaque entry = 1 audit de famille/source, avec :
   - **Transformers (AutoModel)** : SL-9 (LLM + ILP hybride)
   - **CNN** : SL-1, SL-2, SL-9, SL-11 (extraction features logiques)
   - **difflogic (Petersen NeurIPS 2022)** : SL-12 — kernel custom `difflogic-sl12` GPU-aware
+
 - **Workaround dégradé** : **0/20** (4 disclosures honnêtes vérifiés) :
   - (a) `SL-3-RelevanceLearning-Csharp.ipynb` cell contexte = disclosure RECOVERABLE-MACHINE : sklearn/Python from-scratch RBL comme substance pédagogique (jumelage cross-stack).
   - (b) `SL-4-InductiveLogicProgramming-Csharp.ipynb` cell 23 = verdict INTRINSIC honnête : Popper SOTA indisponible en .NET, le moteur FOIL from-scratch est le plafond atteignable.
   - (c) `SL-6-ModernILP-Csharp.ipynb` cell verdict = RECOVERABLE-MACHINE/INTRINSIC disclosure honnête : clingo/ASP/TensorFlow relèvent de l'externe.
   - (d) `SL-8-KnowledgeGraphs-ILP-Csharp.ipynb` cell verdict = RECOVERABLE-MACHINE clingo external.
   - **(e) `SL-12-DifferentiableLogicGateNetworks.ipynb`** : 2 mentions "workaround" dans la note historique documentant l'**abandon** d'une ancienne réimplémentation maison `Neurosymbolic-EML` (workaround dégénéré archivé le 2026-07-04) au profit de la **vraie lib `difflogic` (Petersen NeurIPS 2022)**. 1 disclosure RECOVERABLE-MACHINE (`CompiledLogicNet` export C compilé). **Aucune violation** — disclosure authentique d'une migration technique.
+
 - **Problème non-trivial (Prong B)** : **20/20 DISCRIMINATING** — chaque notebook pose un problème de Symbolic Learning avancé qui exerce la capacité distinctive de la lib :
   - SL-1 : concept learning booléen + règles Horn (Winston/CNN)
   - SL-2 : knowledge-based learning + RIGZ/Forget
@@ -829,9 +839,13 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 ### Notes de vérification G.1 (L378 durcie)
 
 - **Faux positifs C.1** : 0/36 (script python3 regex = 0 violation réelle sur 36 nb ; 214 hits disclosure bruts dont 100% correspondent à `TODO`/`# Indice`/`# Etape N` exercice pédagogique conformes C.1 ; cellules d'exercice = pattern `pass`/`return None`/`print("Exercice a completer")`/`return false; // TODO etudiant`, pas `raise NotImplementedError`).
+
 - **Faux positifs workaround** : 0/36 (1 mention explicite « simulation_mode = True par défaut » dans Sudoku-17 = disclosure honnête RECOVERABLE-USER-HAND, code path réel openai.OpenAI implémenté et documenté ; 1 mention explicite « IKVM limitation technique » dans Sudoku-11-Choco-Csharp = disclosure honnête RECOVERABLE-MACHINE ; 1 mention explicite « NumPyro fonctionne avec des limitations » dans Sudoku-15-Infer-Python = substitution linguistique assumée, pas un fallback dégradé ; 1 mention explicite « monstre regex tronque SFAz3+Z3 » dans Sudoku-13 = INTRINSIC disclosed limite académique prouvée).
+
 - **Faux positif CJK** : 0/36 fonctionnellement (2 chars CJK = `完整` localisés L398 Sudoku-13-Csharp = terme technique précis dans une documentation mixte FR/ZH sur une limitation de SFA → Z3, **pas une faute de frappe parasite**). A documenter honnêtement.
+
 - **Audit sub-agent vs audit worker** : sub-agent Sonnet (`a1642a03fd1215256`, model=sonnet, read-only) est invoqué en parallèle mais **les chiffres pivots ont été vérifiés firsthand par le worker** via 4 scripts python3 indépendants AVANT l'écriture de cette entry (1337 cells, 0 null exec, 0 err, 36/36 = 17+18+1 kernelspec cohérence, 0 C.1, 2 CJK localisés, 21 moteurs SOTA distincts). Quand le sub-agent aura livré son rapport, ses counts seront spot-checkés contre ces chiffres — pattern model-delegation c.398 durcie (G.1 2× : sub-agent + worker firsthand).
+
 - **Anti-régression** : aucun `# Solution` ou `# Exemple résolu` strippé ; aucun notebook dont les outputs ont été hand-edités (vérification : `execution_count != null` sur 525/525 cellules code + `output_type: error = 0` + examples résolus cell 25 de Sudoku-01-Backtracking-Python = `solve_puzzle()` retourne grille 9×9 complète).
 
 ### CJK filter
@@ -963,9 +977,13 @@ Part of #3801
 ### Synthèse
 
 - **EXEC_PROVED global** : 6/6 (100%) — tous kernels `python3` exécutés, `execution_count != null` sur 64/64 cellules code, `outputs: [...]` cohérents.
+
 - **Erreurs runtime** : 0/6.
+
 - **Violations C.1** : 0/6 (stubs exercices = pattern conforme `result = None  # TODO etudiant`, pas `raise NotImplementedError` ; vérifié G.1 firsthand).
+
 - **Structure pédagogique solution/student** : chaque étude de cas = 1 notebook **solution** (worked examples + exercices d'extension) + 1 notebook **student** (stubs). Cohabitation exemple/exercice conforme [exercise-example-labeling] — les solutions NE DOIVENT PAS être stubbées, les students NE DOIVENT PAS être résolues. Vérifié : solutions = implémentations réelles, students = stubs.
+
 - **Vrais outils SOTA invoqués** (vérifiés G.1 lecture directe du code) :
   - **Z3** (Diagnostic-Médical cell 11-12) — solveur de contraintes SMT pour validation des protocoles thérapeutiques (métformine/insuline, booléens + contraintes).
   - **A\*** (Diagnostic-Médical cell 6-7) — recherche de diagnostic par coût via `heapq` min-heap, états `EtatDiagnostic`.
@@ -975,6 +993,7 @@ Part of #3801
   - **Pyro** (Oncology cell 7-9) — inférence bayésienne du profil patient (Résistant/Normal/Sensible) via SVI + Trace_ELBO, prédiction du risque de neutropénie.
   - **torch** (Oncology) — backend tensor pour Pyro.
   - **scipy** (SmartGrid cell 3) — incertitude gaussienne (`erfc` survivor function) pour probabilité de défaillance du réseau.
+
 - **Workaround dégradé** : 0/6 (pas d'ASCII à la place de figures, pas de réimplémentation jouet d'un solveur — Z3/CP-SAT/Pyro invoqués réellement).
 
 ### Prong B — problème non-trivial (sota-not-workaround §B)
@@ -1403,9 +1422,13 @@ Pivot L335 anti-monoculture double-axe sustained **16ᵉ cycle** : c.421 = **reg
 ### Conclusions audit
 
 - **Substance ML/DataScienceWithAgents = SOTA-OK 27/27**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. scikit-learn + pandas + numpy + matplotlib + LangChain + LangChain-OpenAI + LangChain-Experimental + LiteLLM + google-generativeai + google-adk + mlflow + optuna + kaggle + tavily-python + duckduckgo-search = stack SOTA réelle sur problèmes data science + agents LLM discriminants.
+
 - **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+
 - **Pivot L335 légitimé** : 16ᵉ famille distincte, owner po-2025 strict, registre axe-2 SOTA OUTIL (≠ sweep §H.4 c.419-c.420 ≠ documentation c.416-c.418 ≠ §E intra-cellule c.413-c.415 ≠ MD047 c.406-c.412 ≠ figures c.347/c.350/c.407).
+
 - **L378 durcie** : G.1 firsthand (script python3 structural 708 cells + 294 code + 0 err + 0 C.1 + multi-patterns regex imports SOTA + secrets-hygiene grep dédié).
+
 - **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **ML/DataScienceWithAgents**). Entry #017 ajoute **5 moteurs SOTA nouveaux** au registre (**LiteLLM** multi-provider canon d'agents, **LangChain** agentique LLM, **LangChain-OpenAI** connecteur OpenAI, **LangChain-Experimental** agentique avancée, **DuckDuckGo-Search** moteur de recherche web agentique ; scikit-learn/pandas/numpy/matplotlib/seaborn déjà comptés dans entries précédentes, LiteLLM/LangChain/DuckDuckGo-Search + Optuna + Kaggle + Tavily-Python + Google-ADK nouveaux moteurs cumulés une fois entry #016 SmartContracts mergée cf cumul 34→47) = **47+ moteurs SOTA distincts cumulés** (selon PR #5994 SmartContracts entry #016, cumul = 47 moteurs ; entry #017 ajoute au-delà si PR #5994 pas encore mergée lors de l'audit, **10+ nouveaux moteurs cumulés** : LiteLLM, LangChain, LangChain-OpenAI, LangChain-Experimental, Optuna, Kaggle, Tavily-Python, DuckDuckGo-Search, Google-ADK, MLflow).
 
 Part of #3801
@@ -1557,10 +1580,15 @@ Famille `MyIA.AI.Notebooks/Probas/` **Advanced / extension** = 9 notebooks subst
 ### Vrais outils SOTA invoqués
 
 - **Microsoft.ML.Probabilistic (Infer.NET)** : 4 notebooks `Infer-{16,17,18,19}` (kernel `.net-csharp`) — Vraie SOTA Microsoft pour inférence bayésienne et modèles graphiques probabilistes. **Infer-16** utilise spécifiquement le namespace `.Distributions.Kernels` (SquaredExponential) + API `SparseGP` pour GP sparse avec inducing points (approximation O(nm²)). **Infer-17** filtre de Kalman = state-space continu (extension continue du HMM Infer-14). **Infer-18** change-point detection = inférence bayésienne du breakpoint + paramètres avant/après. **Infer-19** analyse de survie = modèle Weibull via transformée + bayésien sur durée censurée. EP/VMP natif, **18 déclarations `using Microsoft.ML.Probabilistic*` cumulées**.
+
 - **PyMC** : 4 notebooks `PyMC-{16,17,18,19}` (kernel `python3`) — Vraie SOTA Python pour inférence bayésienne MCMC. **PyMC-16** utilise `pm.gp.Latent` + `pm.gp.cov.ExpQuad` (covariance RBF) + NUTS sur hyperparamètres `LogNormal` (length-scale appris). **PyMC-17** value-add = estimation MCMC des variances Q/R (Infer.NET suppose connues) + forecasting. **PyMC-18** CompoundStep (NUTS + Metropolis) car breakpoint est variable discrète. **PyMC-19** value-add = inférer directement la forme Weibull `k` par NUTS + sélection de modèle par `az.loo` (PSIS-LOO). **86 mentions `pm.X` + `az.X` cumulées** (preuve d'usage massif, pas import décoratif).
+
 - **ArviZ** : PyMC-16/17/18/19 (cumulé avec PyMC) — Vraie SOTA Python pour diagnostics MCMC et visualisation bayésienne (`az.plot_trace`, `az.loo`, `az.summary`).
+
 - **DoWhy** : 1 notebook `Do-Calculus-Bridge` (kernel `coursia-ml-training`) — Vraie SOTA Microsoft pour **inférence causale end-to-end** (pywhy.org). Pipeline canonique Pearl en 4 étapes : (1) **Model** (`CausalModel` à partir d'un DAG GML), (2) **Identify** (`identify_effect` → critère backdoor/front-door/IV), (3) **Estimate** (`estimate_effect` → ajustement), (4) **Refute** (`refute_estimate` → placebo/random/data-subsets). **38 mentions SOTA cumulées** (3 `CausalModel` + 2 `identify_` + 33 `backdoor`).
+
 - **NetworkX** : Do-Calculus-Bridge (`networkx 3.6.1` advertised) — graphe DAG.
+
 - **pandas + scipy + numpy** : baselines pédagogiques présentes (pas workarounds).
 
 **Workaround dégradé** : **0/9**. Aucun ASCII art substituant une image générée, aucune réimplémentation jouet d'Infer.NET / PyMC / DoWhy, aucun stub à la place d'un appel de service. 4 paires C#/Python = traductions mot-à-mot du même algorithme probabiliste dans les deux langages via la série Parité #4956 (vrai port cross-language, pas une dégradation).
@@ -1654,10 +1682,15 @@ Total .ipynb: 9
 ### Conclusions audit
 
 - **Substance Probas/Infer-extension = exceptionnellement propre**, conforme aux règles SOTA-not-workaround (5 verdicts) + C.1/C.2 notebook-conventions + Stop & Repair.
+
 - **Pas de fix nécessaire** : audit = SOTA-OK 9/9, aucun PR de substance.
+
 - **Continuité c.423** : pivot légitime post-c.422 PR #6040 (entry §H.4 sweep self-cross-team Probas/Infer leaf #6031) — registre axe-2 SOTA OUTIL revisitée, family revisitée substance owner partition native cumulative Probas/Infer-extension (Sparse GP / Kalman / Change-Point / Survival / Do-Calculus-Bridge), **cross-granularité triple** (c.420 top-level + c.422 leaf + c.423 Advanced), **L335 anti-monoculture respecté** (substance NEUVE ≠ 17ᵉ PR sweep monotone §H.4 cross-team/owner, ≠ clôture admin, ≠ Argumentum PR-A close).
+
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (audit sub-agent haiku LMD + re-vérification worker 5 scripts python3) → 0 faux positif C.1, 3 disclosures techniques honnêtes vérifiées (Infer-16 approximation O(nm²), PyMC-17 value-add NUTS, Do-Calculus-Bridge advisory leakage), 0 workaround dégradé, 0 CJK parasite.
+
 - **Registre varié** : kernels utilisés = `.net-csharp` (4), `python3` (4), `coursia-ml-training` (1) = **3 kernels distincts**. Vrais outils SOTA : **Microsoft.ML.Probabilistic (Infer.NET natif)** + **PyMC** + **ArviZ** + **DoWhy** (Microsoft pywhy.org) + **NetworkX** + **pandas + scipy + numpy**. **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 83 cellules code).
+
 - **Cumulatif** : entry #018 = **16ᵉ famille distincte** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **Probas/Infer-extension**). Entry #018 ajoute **2 moteurs SOTA nouveaux** au registre (**ArviZ** + **DoWhy**) = **36 moteurs SOTA distincts cumulés** (Microsoft.SemanticKernel déjà compté #015 ; PyMC + Microsoft.ML.Probabilistic déjà comptés #005/#006 ; NetworkX + pandas + scipy + numpy déjà comptés #005/#008/#015). Inférence : prochaine entry revisitera soit une autre substance owner po-2025 strict non-couverte, soit pivote registre (axe-3 GenAI backlog ou axe-2 Lean hashlife N3/N4 po-2024/po-2026 ou QC strategy library).
 
 Part of #3801
@@ -1762,11 +1795,17 @@ La famille QC-Py **exerce des capacités distinctives** du moteur QuantConnect, 
 ### Conclusions audit
 
 - **Substance QuantConnect/Python = riche et honnête**, 53 notebooks en architecture bimodale (analytics SOTA-OK + plateforme QC RECOVERABLE-MACHINE by design), conforme aux règles SOTA-not-workaround (5 verdicts) + C.1/C.2 (modalité QC Cloud) + Stop & Repair.
+
 - **Pas de fix nécessaire** : audit = SOTA-OK 53/53 (491 cellules analytics EXEC_PROVED) avec disclosure honnête RECOVERABLE-MACHINE pour la couche plateforme QC (164 `[REFERENCE QC]` + Cloud-* seeds). Aucun PR de substance ; 11 CJK cosmétiques = hors-scope (PR accents future).
+
 - **Continuité c.40** : pivot légitime — entry #020 = pivot **prédit par la conclusion #018** (« QC strategy library » cité). Grain deep ai-01 R5 DECIDED (msg-20260711T155236-qtoglx) post-#4364 phantom root-caused + ICT-25 retiré.
+
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (re-vérification worker firsthand des métriques du summary — **correction QuantBook 2→29/53**, le summary sous-comptait l'API research QC) → 0 faux positif C.1, 3 disclosures honnêtes vérifiées (REFERENCE-QC modality, conda-torch GPU, Cloud-* seeds), 0 workaround dégradé, 11 CJK cosmétiques (non-bloquant).
+
 - **Collision-avoidance** : entry **#020** (pas #019) — #019 Lean 4 en vol PR #6050 OPEN (po-2026/po-2024 branche c424), `gh pr list --search` G.1 beforehand ([[collision-guard-mandatory-gh-pr-list]]).
+
 - **Registre varié** : kernels utilisés = `python3` (51) + `conda-torch` (2) = **2 kernels distincts** (premier kernel `conda-torch` GPU-RL du registre axe-2). Vrais outils SOTA : **QuantConnect Algorithm framework** + **QuantBook API** + **scikit-learn** + **PyTorch** + **HuggingFace transformers** + **xgboost** + **scipy** + numpy/pandas/matplotlib. **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` sur 767 cellules code.
+
 - **Cumulatif** : entry #020 = **nouvelle famille distincte** dans le registre axe-2 SOTA (**QuantConnect/Python** — plateforme de trading algorithmique cloud-native). Ajoute **2 moteurs SOTA nouveaux** au registre (**QuantConnect Algorithm framework** + **QuantBook research API**) + le kernel **conda-torch** (GPU-RL). Le registre compte désormais entries #001-#020 (entry #019 Lean 4 en vol PR #6050 OPEN, po-2026/po-2024). Inférence : prochaine entry revisitera soit la tranche QC-C# (jumeaux .NET), soit axe-2 Lean hashlife N3/N4 (po-2024/po-2026), soit axe-3 GenAI backlog.
 
 Part of #3801
@@ -1955,11 +1994,17 @@ La famille GenAI/Texte **exerce des capacités LLM distinctives** couvrant tout 
 ### Conclusions audit
 
 - **Substance GenAI/Texte = exceptionnellement propre**, 20 notebooks à **100% EXEC_PROVED** (record du registre axe-2), conforme aux règles SOTA-not-workaround (5 verdicts) + C.1/C.2 + secrets-hygiene + Stop & Repair.
+
 - **Pas de fix nécessaire** : audit = SOTA-OK 20/20 (268/268 exec, real LLM stream outputs), 0 workaround dégradé, 0 secret inline. 1 cosmetic note (10_LocalLlama pip-path, catégorie A).
+
 - **Continuité c.41** : rotation R6 honorée (famille GenAI vs c.40 QC, registre axe-2 EPIC #3801 mandat coordinator R5). #2161 GenAI/Texte enrichment saturé vérifié firsthand (scanner FP catché).
+
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (re-vérification worker firsthand — scanner `### Exercice` FP catché sur 12_Test_Time_Scaling qui utilise `## Exercice`, 0 faux positif C.1, secrets-hygiene 36 getenv-defaults classés model-names/URLs bénins) → 0 workaround dégradé, 4 disclosures honnêtes (USER-HAND cloud ×11, MACHINE local ×9, secrets clean, Pydantic workaround disclosed).
+
 - **Collision-avoidance** : entry **#022** (post #021 ML-Training landed, collision-guard `gh pr list --search "entry 021"` = empty ; #019 Lean #6050 en vol).
+
 - **Registre varié** : kernel `python3` (20). Vrais outils SOTA : **OpenAI Python SDK** + **Ollama/local Llama** + **Microsoft.SemanticKernel** + **Pydantic** + **OpenRouter** + **Open WebUI API**. **Zéro stub** C.1 sur 268 cellules code.
+
 - **Cumulatif** : entry #022 = **nouvelle famille distincte** dans le registre axe-2 SOTA (**GenAI/Texte** — orchestration LLM). Ajoute **2 moteurs SOTA nouveaux** au registre (**OpenAI Python SDK** + **Ollama/local Llama** ; SemanticKernel/Pydantic déjà #015, Anthropic SDK nouveau). Le registre compte désormais entries #001-#018 + #020 (QC-Py) + #021 (QC/ML-Training, ai-01) + #022 (GenAI/Texte, THIS) ; entry #019 Lean 4 #6050 OPEN en vol. Inférence : prochaine entry revisitera soit GenAI/Image-Audio-Video (autres sous-familles GenAI), soit ML/ML-Training-Pipeline, soit axe-2 Lean hashlife N3/N4.
 
 Part of #3801
@@ -2133,12 +2178,19 @@ PR #6046 (entry #018) = **OPEN MERGEABLE CLEAN** au moment de l'écriture de l'e
 ### Conclusions audit
 
 - **Substance Lean 4 = exceptionnellement riche et complète**, 24 lakefiles, 17/24 proof-complete ou thinly-stubbed (71 %), 4 partial (knot_lean SCAFFOLDING explicite + conway_lean HashlifeCorrectness + repeated_games_lean Folk + GittinsTheorem), 1 toolchain divergence documentée (social_choice_lean_peters), 1 raw axiom assumé (lean_game_defs arrow_impossibility).
+
 - **Pas de fix nécessaire** : audit = READ-ONLY forensique, aucun PR de substance. Toutes les SORRY documentées par fichier sont stables (connues et tracées côté c.422 + EPIC #2874 hashlife + tracker Gittins).
+
 - **Continuité c.424** : pivot légitime post-c.423 PR #6046 (entry #018) — registre axe-2 SOTA OUTIL tenu MAIS family revisitée Lean 4 axis (≠ Probas/Infer-extension c.423). Anti-monoculture L335 sustained 20ᵉ cycle.
+
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (audit sub-agent haiku LMD + re-vérification worker 5 scripts python3 + git blame recent + Read manuel des fichiers pivots) → 4 divergences détectées et résolues (owner-lane 8 lakes, sorry count disambiguation strict/lax, axiome count 3 vs 1, line count level file vs module). Documentation CONSERVATRICE des deux perspectives (sub-agent strict + worker lax).
+
 - **Registre varié** : toolchains = 2 distincts (23 × v4.31.0-rc1 + 1 × v4.27.0-rc1), config formats = 2 distincts (22 × lakefile.lean + 2 × lakefile.toml), kernels de substance = **kernel `lean4-wsl` unique axis** (1 seul kernel distinct couvrant 24 lakes). Vrais outils SOTA : **Lean 4 + Mathlib4 + Lean 4 tactic DSL** (`exact`/`apply`/`refine`/`simp`/`omega`/`nlinarith`/`polyrith`/`field_simp`/`linear_combination`/`calc`/`by_contra`) + multi-lib structure (3 lakes avec ≥2 libs).
+
 - **Owner-lane coverage** : 15 lakes po-2025 strict partition native cumulative + 9 lakes cross-team L143 SAFE applicable (7 GameTheory po-2024 + 2 cross-team utility). Audit consultatif additif, 0 PR de substance.
+
 - **Cumulatif** : entry #019 = **17ᵉ famille revisitée** dans le registre axe-2 SOTA. Cumul local = 19 entries (entry #019 ajouté ; #016 SmartContracts + #017 ML/DSWA + #018 Probas/Infer-extension cumulés localement). 36+ moteurs SOTA distincts cumulés (Lean 4 + Mathlib4 + tactic DSL confirmés substance auteur cumulative).
+
 - **Inférence pour c.425** : prochaine entry revisitera une substance owner po-2025 strict non-couverte ou pivote registre (axe-3 GenAI backlog, axe-2 Lean hashlife N3/N4 backlog #3846 po-2024/po-2026, ArgAnalysis PR-A c.371+ backlog, QC strategy library #1621/#569/#1409, ou cross-team L143 SAFE applicable).
 
 Part of #3801

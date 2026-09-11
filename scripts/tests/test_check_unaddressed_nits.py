@@ -3479,6 +3479,95 @@ def test_13639_sha_distant_du_marqueur_est_contexte():
     assert res["absent_sha_warnings"] == []
 
 
+# --- #15556 : un push qui ne change pas l'arbre n'invalide pas la levee ---
+
+TREE_A = "t" + "a" * 39   # arbre du commit rembobine ET de la tete
+TREE_B = "t" + "b" * 39   # arbre d'un vrai commit de contenu
+
+
+def test_15556_push_muet_arbre_identique_conserve_la_levee():
+    """Instance fondatrice (#15492) : wake-commit / amend de message
+    rembobinent la tete SANS toucher un byte du livrable -- l'arbre du SHA
+    cite est identique a l'arbre de la tete. La preuve avancee par la
+    phrase reste vraie : la levee est conservée, signalee comme artefact
+    non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_A},
+              _head_tree=TREE_A)
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "same_tree")]
+
+
+def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
+    """Controle negatif OBLIGATOIRE (acceptance 3 de l'issue) : une levee
+    posee avant un commit de CONTENU -- l'arbre cite differant de l'arbre
+    de la tete -- reste invalide. Le remede ne rend pas l'organe
+    permissif : c'est exactement le cas que B.0 existe pour attraper
+    (« un push muet est indiscernable d'un push qui repond »).
+
+    #15566 : ce chemin est aussi celui d'un REBASE -- un rebase fait
+    differer l'arbre, donc il retombe ici, sur le refus conservateur.
+    L'echappatoire qui pretendait l'absoudre a ete retiree (mesuree
+    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`) : c'est ce
+    test qui pinne le comportement retenu."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A)
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15556_sans_donnees_arbre_refus_conservateur():
+    """Audit retro / resolution serveur sans arbre : comportement
+    anterieur integralement preserve (refus). L'incertitude n'assouplit
+    jamais l'organe."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is False
+
+
+def test_15556_artefact_ne_masque_pas_un_vrai_refus():
+    """Une meme levee cite deux SHAs : l'un rembobine par push muet
+    (arbre identique), l'autre par un vrai commit de contenu. Le refus
+    gagne -- un artefact parmi les preuves ne sauve pas une levee dont
+    une autre preuve est morte."""
+    body = ("Les 2 nits sont adresses dans les commits 111aaaa111 et "
+            "222bbbb222.")
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, reply],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"111aaaa111": "fix(x,#0): typo",
+                                    "222bbbb222": "fix(y,#0): autre"},
+              _absent_sha_trees={"111aaaa111": TREE_A, "222bbbb222": TREE_B},
+              _head_tree=TREE_A)
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["222bbbb222"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_15556_headrefoid_prefere_au_dernier_oid():
+    """`_pr_head_oid` : headRefOid (present depuis #15556 dans FIELDS)
+    prime sur le dernier commit portant un oid -- sur une PR a plus de
+    commits que le plafond de la liste, le dernier affiche n'est pas
+    garanti etre la tete."""
+    data = {"headRefOid": "f" * 40,
+            "commits": [{"oid": "e" * 40}, {"oid": "d" * 40}]}
+    assert mod._pr_head_oid(data) == "f" * 40
+    assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
+    assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
+
+
 def test_13641_ref_par_prefixe_ne_compte_pas():
     """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
     matchait `#13639` dans un message contenant `#136390` (ticket adjacent
@@ -5538,8 +5627,9 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     captured = {}
 
     monkeypatch.setattr(mod, "gh_json", lambda args: dict(payload))
-    monkeypatch.setattr(mod, "_resolve_absent_sha_messages",
-                        lambda data, cap=5: {"abc123": "corps du message"})
+    monkeypatch.setattr(mod, "_resolve_absent_sha_state",
+                        lambda data, cap=5: {"abc123": {"message": "corps du message",
+                                                         "tree": None}})
     monkeypatch.setattr(mod, "review_threads", lambda pr: [])
     monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
 
@@ -5577,3 +5667,190 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     # tiendrait aussi pour une PR mergee : analyse_pr est pre-merge).
     delta = abs((captured["cutoff"] - datetime.now(timezone.utc)).total_seconds())
     assert delta < 30
+
+
+# --- #15468 : verbe de DISSIPATION dans le registre LIFT ------------------
+#
+# La voie 1 (commenter pour dissiper) etait morte par construction : un
+# commentaire worker-self qui NOMME l'etat qu'il dissipe (« 4 points
+# dissipés », « 2 contrats dissipés ») etait reclasse nouvelle reserve —
+# « dissipé » ne levait rien, le marqueur CHANGES_REQUESTED/BOT-CONCERN
+# cite restait une emission. Mesure du 10/09 : les 4 follow-ups de
+# dissipation de myia-po-2027:CoursIA-2 (#15280, #15423) classes
+# BOT-CONCERN mot pour mot (le chemin de la voie 3 escalade).
+#
+# Gardes preserves : la negation directe (« n'est pas dissipé ») et la
+# revalidation dont le verdict formel precede la dissipation (modele
+# #12798/#12836) gardent le classement BOT-CONCERN.
+
+def test_dissipation_reconnue_par_le_registre_lift():
+    """« dissipé » couvre la famille par sous-chaine (miroir _unaccent)."""
+    assert mod.has_marker("les 4 points dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("2 contrats dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("le concern dissipé", mod.LIFT_MARKERS)
+    assert mod.has_marker("la reserve dissipée", mod.LIFT_MARKERS)
+    assert mod.has_marker("les contrats dissipés (sans accents)", mod.LIFT_MARKERS)
+    assert mod.has_marker("ce nit ne concerne plus le head", mod.LIFT_MARKERS)
+
+
+def test_dissipation_negation_et_narration_restent_exclues():
+    """Les gardes existantes s'appliquent au verbe nouveau comme aux autres."""
+    assert not mod.has_live_lift("le point n'est pas dissipé, il reste ouvert")
+    assert not mod.has_live_lift("obtenir une dissipation explicite est exige")
+
+
+def test_dissipation_worker_self_nommant_le_verdict_ne_classe_plus():
+    """Corps fidele a 5618922001 / 5618520801 (reformulations propres UTF-8) :
+    la dissipation nomme le verdict qu'elle dissipe — c'est une resolution."""
+    body = ("**Follow-up dissipation** — head `8d503f9` inchange. Les 2 contrats "
+            "dissipes anterieurement (Tag `Grain:` premiere ligne + override "
+            "workflow_dispatch retire) demeurent materiellement verifies sur le "
+            "head courant. La chaine de dissipation du CHANGES_REQUESTED myia-ai-01 "
+            "(2026-09-09) est complete.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_accentuee_nommant_le_verdict_ne_classe_plus():
+    body = ("Follow-up dissipation B.0 — head `b0157070` apres second update-branch. "
+            "4 points dissipés (zéro exercice, structure, cellules consécutives, "
+            "citation) demeurent vérifiés sur le notebook courant. Le seul verdict "
+            "CHANGES_REQUESTED de myia-ai-01 (2026-09-09T22:44Z) est levé par l'amend.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_neguee_garde_le_classement():
+    """« n'est pas dissipé » = la reserve vit : pas de levee par negation."""
+    body = ("CHANGES_REQUESTED : le point 2 n'est pas dissipé, il reste ouvert sur "
+            "le head courant.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_verdict_formel_avant_dissipation_garde_la_reserve():
+    """Modele #12798/#12836 : la revalidation dont le verdict formel PRECEDE la
+    dissipation narree refute la levee — le registre nouveau ne la blanchit pas."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — le point 2 refute la dissipation "
+            "narree plus bas : la correction que la lane dit dissipée ne couvre "
+            "pas le head.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_locution_ne_concerne_plus_leve():
+    """« ne concerne plus » : la dissipation positive double-negation FR."""
+    body = ("Le nit CHANGES_REQUESTED ne concerne plus le head courant : l'amend "
+            "f29727a67 (ancetre verifie) a retire les 4 stubs.")
+    assert mod.classify("jsboige", body) is None
+
+
+# --- #15483 (extension cycle c.418) : pinning des residuels CHANGES_REQUESTED
+# ai-01 sur le commit `071c5763` (clusterManager-Myia structural review +
+# ai-01 CHANGES_REQUESTED). Les 4 formes infinitif/futur et le faux negatif
+# `ne concerne plus rien` doivent etre pinnés par test — sans quoi la voie 1
+# reparée peut recréer silencieusement la classe d'incident que #15468 documente
+# (dissipation crue, reserve éteinte).
+
+
+@pytest.mark.parametrize("body", [
+    # infinitif futur : « reste à dissiper »
+    "CHANGES_REQUESTED : ce point reste a dissiper sur le prochain push.",
+    "Le concern reste a dissiper dans la tranche qui suit — CHANGES_REQUESTED maintenu.",
+    # infinitif futur : « il faut dissiper »
+    "Il faut dissiper ce point avant de relancer la CI : CHANGES_REQUESTED sur la review.",
+    "Pour relancer, faut dissiper le residue du CHANGES_REQUESTED.",
+    # futur simple : « sera dissipé »
+    "Le concern sera dissipe au prochain push après l'amend. CHANGES_REQUESTED : a confirmer.",
+    "Cette reserve sera dissipee des que la voie 3 issue sera ouverte. CHANGES_REQUESTED.",
+    # obligation passive : « doit être dissipé »
+    "Le point 2 doit etre dissipe avant que le merge puisse passer. CHANGES_REQUESTED émis.",
+    "Cette reserve doit etre dissipée avant la prochaine passe. CHANGES_REQUESTED.",
+])
+def test_dissipation_pending_ne_leve_pas(body):
+    """#15483 instance fondatrice : les 4 formes infinitif/futur ne lèvent PAS.
+
+    Instance : CHANGES_REQUESTED ai-01 sur `071c5763` : le marqueur sous-
+    chaine `dissipé` blanchissait des réserves encore ouvertes. La garde
+    `_dissipation_is_pending` regarde 25 chars avant et 10 chars apres le
+    hit pour detecter la construction NON close. Sans elle, `classify()`
+    retournait `None` (dissipation acquise) — faux OK.
+
+    Chaque body inclut un `CHANGES_REQUESTED` EXPLICITE pour ouvrir le
+    nit (le verdict), puis la dissipation future ne le leve pas — la
+    garde distingue l'ACQUIS (passe compose `dissipé`) du NON-ACQUIS
+    (infinitif/futur)."""
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("body", [
+    # Intensification FR : « ne concerne plus rien »
+    "Le nit CHANGES_REQUESTED ne concerne plus rien sur le head courant.",
+    "Cette reserve ne concerne plus rien dans la pile de suivi.",
+    # Intensification : « ne concerne plus personne »
+    "Le lever du nit ne concerne plus personne, fermeture autorisee.",
+    # Intensification : « ne concerne plus aucun point »
+    "Le verdict ne concerne plus aucun point — la voie 3 a tout ferme.",
+])
+def test_locution_ne_concerne_plus_intensifie_leve(body):
+    """#15483 faux negatif : la locution intensifiee leve.
+
+    Instance : sans la garde `_lift_is_intensified_marker_negated`, le token
+    `rien` dans `_LIFT_NEGATION_TOKENS` rejetait « ne concerne plus rien »
+    comme negation applicative (faux negatif majeur) alors que c'est
+    l'intensification de la dissipation. Le predicat neutralise la negation
+    UNIQUEMENT quand l'intensifieur (`rien`/`personne`/`aucun`) est en TETE
+    de fenetre AFTER. Sans ce fix, les PRs dissipant totalement etaient
+    classees BOT-CONCERN a tort (c.1071 reformulation au lieu de la voie 1)."""
+    assert mod.classify("jsboige", body) is None
+
+
+def test_locution_ne_concerne_plus_rien_avec_verbe_actif_ne_leve_pas():
+    """#15483 residuel assume : « ne concerne plus rien faire » n'est PAS une
+    intensification — `rien` suivi d'un verbe actif redevient objet de
+    negation applicative. La garde exige l'intensifieur ISOLE (juste après
+    `plus`, sans verbe entre les deux)."""
+    body = ("Le concern CHANGES_REQUESTED ne concerne plus rien faire à la "
+            "CI : la rotation reste due, ce qui justifie la reserve.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_acquise_plus_pendant_garde_le_vivant():
+    """#15483 cas aggravant : « 2 contrats sont dissipés, 1 point reste à
+    dissiper » — un commentaire MIXTE leve partiellement. AVANT la garde,
+    les 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignoré → la
+    review complete etait classee `None` alors qu'un point VIVAIT. Pin : la
+    garde `_dissipation_is_pending` rend `None` -> `BOT-CONCERN` quand
+    l'AU MOINS UN hit tombe dans une construction PENDING."""
+    body = ("**Dissipation partielle** : les 2 contrats dissipés sur la voie "
+            "(a) sont clos, MAIS le point 3 reste à dissiper au prochain "
+            "push. CHANGES_REQUESTED maintenu. PR non mergeable en l'état.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_trois_points_dissipes_un_vivant():
+    """Variante du cas mixte avec 3 hits valides + 1 vivanted par PENDING —
+    le seul hit PENDING suffit à invalider toute la levee."""
+    body = ("**Follow-up dissipation** : 3 points sont dissipes (Tag Grain: "
+            "premiere ligne, override workflow_dispatch retire, sub-string "
+            "exempt), MAIS le concern de scope CHANGES_REQUESTED reste à "
+            "dissiper.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_participe_isole_leve_toujours():
+    """Regresssion negative : un participe ISOLE (`dissipé`, `dissipee`)
+    sans verbe de PENDING devant reste une LEVEE reelle. Les formes
+    narratives (« la reserve est dissipée », « les points dissipes ») doivent
+    toujours lever — la garde `_dissipation_is_pending` regarde les 25 chars
+    AVANT et n'attrape QUE si un verbe de PENDING est présent."""
+    body = ("Les 4 points sont dissipes sur le head courant apres l'amend "
+            "f29727a67 — verification first-hand OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_pending_fenetre_25_chars_avant_limite():
+    """Regresssion negative : la fenetre de PENDING est bornée à 25 chars
+    AVANT. Un verbe lointain (« il y a longtemps on devrait dissiper ») NE
+    doit PAS activer la garde de PENDING — c'est une narration sans rapport,
+    pas une construction non-acquise. Residuel assume documente dans #15483
+    (« frontiere documentee : au-dela, c'est une autre phrase »)."""
+    body = ("Il y a longtemps — pour ne pas dire dans la version initiale "
+            "de la PR — on a dissipe ce concern, qui est desormais ferme.")
+    assert mod.classify("jsboige", body) is None
