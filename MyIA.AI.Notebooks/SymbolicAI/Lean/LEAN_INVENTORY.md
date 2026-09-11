@@ -174,7 +174,7 @@ pour l'identification `23T5 = M23` que la couche proof-assistant ne reproduit pa
   tactique, 0 `native_decide`, 0 `axiom` déclaré. `Sporadic.card_M23` et
   `Sporadic.simple_M23` prouvés par chaîne de stabilisateurs à certificats
   (Schreier–Sims matérialisé).
-- **Notebook câblé** : 1 notebook (Lean-23-Galois-Probleme-Inverse-M23).
+- **Notebook câblé** : 1 notebook (Lean-22-Galois-Probleme-Inverse-M23).
 - **Suivi** : préprint #2608.08538 (cf. `galois_lean/README.md`).
 - **i18n** : EN-sibling à venir (EPIC #4980).
 - **Caveat build** : `lakefile.toml` utilise la forme **bare** + agrégateur racine (la

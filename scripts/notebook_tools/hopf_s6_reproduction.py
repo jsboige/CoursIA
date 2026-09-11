@@ -13,7 +13,7 @@ that reproduces the S^6 complex-structure proof on this machine:
     lake build Solution         # 248,818-line monolith (single file)
     lake exe comparator comparator/config.json   # Lean + nanoda kernels
 
-The notebook Lean-30-Complex-Structure-S6.ipynb consumes the JSON emitted by
+The notebook Lean-28-Complex-Structure-S6.ipynb consumes the JSON emitted by
 `check` so that every committed output traces back to a real artifact on disk
 (build.log, comparator.log written by the actual runs -- never hand-edited).
 
