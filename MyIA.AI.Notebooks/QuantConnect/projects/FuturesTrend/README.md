@@ -89,20 +89,48 @@ stratégie n° 13 de Robert Carver (*Advanced Futures Trading Strategies*, Harri
 2026-01-02). Cette variante coexiste avec `main.py` v3.1 sans le modifier — v3.1
 reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 
-| Composant | v3.1 (ETF, baseline) | Carver #13 |
-|-----------|----------------------|------------|
+| Composant | v3.1 (ETF, baseline) | Carver #13 (c.1107) |
+|-----------|----------------------|---------------------|
 | Univers | 6 ETF (SPY/GLD/EFA/VNQ/DBC/XLE) | 19 futures continus (ES/NQ/YM/ZN/ZB/ZF/6E/6B/6J/CL/NG/RB/GC/SI/HG/ZC/ZW/ZS/SB) |
 | Signal entrée | Donchian 20j + filtre SMA50 | 6 horizons EWMAC (Carver pairs 8/32, 16/64, 32/128, 64/256, 16/48, 32/96) |
-| Carry factor | absent | blend 60% trend + 40% carry |
+| Carry factor | absent | **désactivé** (voir note ci-dessous) |
 | Multiplicateur régime | absent | vol-régime borné [0.5, 2] |
-| FDM (Forecast Diversification Multiplier) | absent | appliqué au niveau portefeuille |
+| FDM (Forecast Diversification Multiplier) | absent | formule Carver corrigée, clip [1, 2] |
 | Cap forecasts | n/a | +/-20 par forecast |
 | Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
 
-**Statut courant** (c.1106, lane `myia-po-2027:CoursIA-2`) :
+### Note Tell c.1069 strict — Carry désactivé sur cette implémentation (c.1107)
 
-- Le code **compile statiquement** (`ast.parse` PASS, 9 fonctions / 1 classe / 371
+Le carry proxy front-only initialement livré (c.1106) réduisait à la pente
+`EWMA(8,32)` sur la même série de closes — formule bit-identique au signal
+`EWMAC(8,32)` déjà inclus dans la moyenne des 6 horizons EWMAC. Le blend 60/40
+trend+carry était donc un forecast 100% trend avec un coefficient 0.4 sur un
+signal dupliqué. Pour éviter de livrer une stratégie qui se présente à tort
+comme un blend trend+carry, l'implémentation c.1107 fait **trend-only** :
+`_carry_forecast(front, deferred)` reste défini comme stub utilisable mais
+n'est plus appelé depuis `_rebalance` ; le forecast est `trend_component` pur
+(moyenne des 6 EWMAC, capée à +/-20).
+
+Le carry **proprement dit** (rapport front/deferred via l'API `Future` chain)
+est documenté comme follow-up de l'acceptance #15549 : il demande la
+disponibilité de la chain API (présent en QC Cloud, pas en local sans
+credentials). La méthode `_carry_forecast(front_close, deferred_close)`
+reste l'interface prévue — l'appelant futur (lane QC équipée) n'a qu'à passer
+les deux closes réelles.
+
+### Note Tell c.1069 strict — FDM corrigé (c.1107)
+
+La docstring initiale annonçait un clip `[1/sqrt(N), 1]` mais la formule
+Carver `sum(|f|)/sqrt(sum(f^2))` rend entre **1** (signaux indépendants) et
+**sqrt(N)** (signaux alignés, concentration maximale), soit l'inverse de la
+borne annoncée. La borne `[0.2, 1.5]` clipait systématiquement au plafond 1.5,
+rendant le FDM inopérant. Correction c.1107 : clip `[1.0, 2.0]` (Carver
+handbook chap. 9, soft cap anti-concentration).
+
+**Statut courant** (c.1107, lane `myia-po-2027:CoursIA-2`) :
+
+- Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 359
   lignes, EOL LF, 0 secret literal).
 - **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
   QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
@@ -114,6 +142,11 @@ reste la **baseline ETF** à laquelle Carver #13 sera comparé.
   PSR/exposition/coûts/ordres sur fenêtre >= 2016-2026, **sans présumer** du
   Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023 (fenêtre
   favorable non-représentative).
+- **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
+  (`msg-20260911T040615-4c08xy`) avant lancement des runs QC Cloud — (a) carry
+  proxy identique à EWMAC(8,32), (b) FDM clip à l'inverse de la docstring. Les
+  deux sont corrigés sur la branche `feature/15549-carver13-futures` et
+  signalés ici en honnêteté référentielle.
 
 ## Références
 

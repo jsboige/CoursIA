@@ -239,23 +239,23 @@ class CarverThirteen(QCAlgorithm):
     def _fdm(self, forecasts):
         """Forecast Diversification Multiplier.
 
-        Carver rule: if the forecasts are highly correlated (each ~equal),
-        FDM < 1 to reduce risk concentration. If they are uncorrelated
-        (sum-of-squares comparable to sum), FDM -> 1.
-
-        A standard closed-form approximation:
+        Carver rule (chap. 9):
             FDM = sum(|f_i|) / sqrt(sum(f_i^2))
+
+        Returns between 1 (independent signals, no concentration) and
+        sqrt(N) (all N forecasts perfectly aligned = max concentration).
+        Carver applies a soft cap on the upper end to limit gross leverage
+        when signals align; we use [1.0, 2.0] as a conservative bound
+        consistent with his handbook examples.
         """
         arr = np.asarray([abs(float(f)) for f in forecasts], dtype=float)
         if arr.size == 0:
             return 1.0
-        abs_sum = float(np.sum(arr))
         sq_sum = float(np.sum(arr * arr))
         if sq_sum <= 0.0:
             return 1.0
-        # Bound to [1/sqrt(N), 1] where N is the number of forecasts; in
-        # practice Carver clamps to a sensible range (e.g., [0.2, 1.5]).
-        return float(np.clip(abs_sum / np.sqrt(sq_sum), 0.2, 1.5))
+        raw = float(np.sum(arr)) / float(np.sqrt(sq_sum))
+        return float(np.clip(raw, 1.0, 2.0))
 
     # ----- main daily entrypoint ------------------------------------------
 
@@ -276,33 +276,22 @@ class CarverThirteen(QCAlgorithm):
             if len(closes) < self.max_slow:
                 continue
 
-            # Carry: ratio of deferred contract close to front-month close.
-            # In QC, `add_future` returns a `Future` whose `Mapped` is the
-            # canonical front; the deferred contract's chain is exposed via
-            # the `current` chain. We approximate the carry via the front-
-            # month close history itself: a stable proxy in BACKWARDS_RATIO
-            # mode is the front-month settle vs itself, which we cannot use
-            # directly; so we instead use the EWMA slope of the price series
-            # as a coarse carry proxy when no term-structure data is in the
-            # history frame. NOTE: when run on QC Cloud with the `Future`
-            # chain API, this block would be replaced with a real
-            # front/deferred ratio. For tests on `quantbook.ipynb` and on a
-            # lane equipped with `quantconnect` Python package, replace
-            # `_carry_forecast(...)` with the chain-based implementation.
+            # Carry disabled in this implementation (issue #15549 cycle
+            # c.1107, REPAIR ADJOINT po-2025 `msg-20260911T040615-4c08xy`):
+            # the front-only proxy previously used here reduced to the
+            # EWMA(8,32) slope on the same close series, which is
+            # bit-identical to the EWMAC(8,32) signal already in the trend
+            # mean, producing a 100%-trend forecast weighted 0.4 on a
+            # duplicate. Rather than ship that, this port ships trend-only
+            # (six EWMAC horizons, vol-regime multiplier, FDM, cap).
             #
-            # Here we use a smoothed short-window EWM slope scaled into the
-            # same [-20, 20] range, explicitly named as a "carry proxy" so
-            # the smoke test is verifiable even without a deferred chain.
-            if len(closes) >= 30:
-                short = _ewma(closes, 8)
-                long = _ewma(closes, 32)
-                if np.isfinite(short) and np.isfinite(long) and long > 0:
-                    proxy_carry = (short - long) / long * CARVER_FORECAST_SCALAR
-                    carry_val = float(np.clip(proxy_carry, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP))
-                else:
-                    carry_val = 0.0
-            else:
-                carry_val = 0.0
+            # `_carry_forecast(front, deferred)` is preserved as a callable
+            # awaiting the QC Cloud `Future` chain API for a real
+            # front/deferred ratio. The Carver 2023 chap. 8 carry signal is
+            # distinct from any EWMAC slope on a single contract and must
+            # not be approximated by it. See the deferred follow-up in
+            # issue #15549 acceptance.
+            carry_val = 0.0
 
             # EWMAC forecasts across all six Carver pairs.
             ewmac_vals = [
@@ -311,11 +300,10 @@ class CarverThirteen(QCAlgorithm):
             ]
             trend_component = float(np.mean(ewmac_vals)) if ewmac_vals else 0.0
 
-            # Blend 60/40 trend + carry.
-            blended = (
-                CARVER_TREND_WEIGHT * trend_component
-                + CARVER_CARRY_WEIGHT * carry_val
-            )
+            # Trend-only blend on this implementation (carry disabled).
+            # The 60/40 trend+carry Carver blend is documented but not
+            # applied — see the carry stub above for the chain-API hook.
+            blended = trend_component
             raw_forecasts[ticker] = float(
                 np.clip(blended, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP)
             )
