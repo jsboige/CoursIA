@@ -2,6 +2,12 @@
 from AlgorithmImports import *
 import numpy as np
 from collections import deque
+
+# Pure-numpy breadth multiplier (REPAIR-8 c.1115). Imported here so the
+# CarverThirteen class and the unit tests share the same canonical formula
+# without forcing the tests to pull in AlgorithmImports (which requires
+# QC Cloud). See breadth_multiplier.py for the rationale.
+from breadth_multiplier import breadth_multiplier as _breadth_multiplier_pure
 # endregion
 
 
@@ -289,9 +295,19 @@ class CarverThirteen(QCAlgorithm):
     def _breadth_multiplier(self, forecasts):
         """Effective breadth multiplier — inverse concentration, sign-invariant
         (Tell c.1069 strict, REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7
-        c.1113 — successive honesty requalifications after adjoint po-2025
-        preflights `msg-20260911T043805-i7tl0g`, `msg-20260911T053342-rwwap4`,
-        `msg-20260911T063424-qnc0q9`).
+        c.1113 + REPAIR-8 c.1115 — successive honesty requalifications after
+        adjoint po-2025 preflights `msg-20260911T043805-i7tl0g`,
+        `msg-20260911T053342-rwwap4`, `msg-20260911T063424-qnc0q9`,
+        `msg-20260911T095727-s5n3kl`).
+
+        REPAIR-8 c.1115 — the formula is delegated to the pure-numpy
+        helper `breadth_multiplier` (in `breadth_multiplier.py`) so that
+        `tests/test_breadth_multiplier.py` and the production code path
+        share a single canonical implementation. Earlier iterations kept
+        a duplicate `_breadth_multiplier_standalone` in the test file;
+        that duplication is removed in REPAIR-8 (see commit). The method
+        below is now a thin wrapper preserving the CarverThirteen API
+        surface for any caller that holds a reference.
 
         Formula (instantaneous cross-sectional effective breadth of
         absolute magnitudes — INVERSE concentration):
@@ -326,14 +342,7 @@ class CarverThirteen(QCAlgorithm):
         magnitudes spread → trust the signal; one magnitude dominates
         → don't trust it more than the baseline.
         """
-        arr = np.asarray([abs(float(f)) for f in forecasts], dtype=float)
-        if arr.size == 0:
-            return 1.0
-        sq_sum = float(np.sum(arr * arr))
-        if sq_sum <= 0.0:
-            return 1.0
-        raw = float(np.sum(arr)) / float(np.sqrt(sq_sum))
-        return float(np.clip(raw, 1.0, 2.0))
+        return _breadth_multiplier_pure(forecasts)
 
     # ----- main daily entrypoint ------------------------------------------
 
