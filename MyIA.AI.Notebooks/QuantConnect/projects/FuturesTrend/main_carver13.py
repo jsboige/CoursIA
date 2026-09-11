@@ -142,6 +142,27 @@ class CarverThirteen(QCAlgorithm):
     """
 
     def initialize(self):
+        # REPAIR-9 c.1117 instrumentation: counters + snapshot log emitted
+        # at end-of-algorithm so the QC backtest output carries the actual
+        # reason for 0 orders — was it warming-up, empty history bulk, all
+        # instruments skipped, all forecasts zero, or something else?
+        # Adjoint po-2025 preflight `msg-20260911T131252-ezr0s6` reported
+        # 0 orders + Sharpe 0 / 2762 dates historical head 195d317; this
+        # instrumentation discriminates H1 (history bulk vide/sans
+        # symboles) from H2 (schedule ancré future ne tire pas) by
+        # counting each early-return branch and logging the bulk shape.
+        self._rebalance_call_count = 0
+        self._rebalance_early_returns = {
+            "warming_up": 0,
+            "bulk_empty": 0,
+            "no_raw_forecasts": 0,
+            "abs_sum_zero": 0,
+            "completed_no_order": 0,
+            "completed_with_orders": 0,
+        }
+        self._last_bulk_shape = None  # (rows, n_unique_symbols) or None
+        self._first_rebalance_logged = False
+
         # Window: 2016-01-01 -> 2026-12-31 per issue #15549 acceptance. The
         # v3.1 baseline ran 2015-2024; we re-anchor the window to 2016-2026
         # to match Carver's request for >= 2016 OOS.
@@ -347,7 +368,10 @@ class CarverThirteen(QCAlgorithm):
     # ----- main daily entrypoint ------------------------------------------
 
     def _rebalance(self):
+        self._rebalance_call_count += 1
+
         if self.is_warming_up:
+            self._rebalance_early_returns["warming_up"] += 1
             return
 
         # Bulk history: one call for all 19 instruments rather than 19
@@ -356,7 +380,25 @@ class CarverThirteen(QCAlgorithm):
         sym_list = list(self.symbols.values())
         bulk = self.history(sym_list, n_bars, Resolution.DAILY)
         if bulk.empty:
+            self._rebalance_early_returns["bulk_empty"] += 1
+            # Snapshot the bulk shape on the first empty bulk so the
+            # post-mortem can distinguish H1.0 (truly empty DataFrame)
+            # from H1.1 (empty after index slice).
+            if self._last_bulk_shape is None:
+                self._last_bulk_shape = (0, 0)
             return
+
+        # Snapshot the bulk shape on the first non-empty call so the
+        # post-mortem can confirm 19 symbols / >= 612 rows reached the
+        # slice. Subsequent calls do not overwrite (the shape is stable
+        # in steady state).
+        if self._last_bulk_shape is None:
+            try:
+                lvl0 = bulk.index.get_level_values(0)
+                n_unique = int(lvl0.unique().size) if hasattr(lvl0, "unique") else 0
+            except Exception:
+                n_unique = 0
+            self._last_bulk_shape = (int(bulk.shape[0]), n_unique)
 
         raw_forecasts = {}
         for ticker, sym in self.symbols.items():
@@ -364,7 +406,17 @@ class CarverThirteen(QCAlgorithm):
                 continue
             hist = bulk.loc[sym]
             closes = hist["close"].values if "close" in hist.columns else np.array([])
-            if len(closes) < self.max_slow:
+            # REPAIR-9 c.1117 guard tightening: require max_slow + 2 bars
+            # before even attempting the slowest EWMAC(64, 256). The
+            # EWMA(256) alpha = 2/(256+1) ≈ 0.0078 has a half-life of ~88
+            # bars, and the seed `out = values[0]` is non-trivially distant
+            # from the steady-state value for ~5 half-lives. Bound by
+            # max_slow + 2 (= 258) so the slowest pair has at least 2
+            # extra bars of EWMA burn-in before the forecast is read.
+            # Tell c.1069 strict: this is a tightening of the guard, not
+            # a speculative fix; the rationale is grounded in the EWMA
+            # half-life arithmetic documented above.
+            if len(closes) < self.max_slow + 2:
                 continue
 
             # Carry disabled in this implementation (issue #15549 cycle
@@ -412,6 +464,7 @@ class CarverThirteen(QCAlgorithm):
             self.forecasts[ticker] = raw_forecasts[ticker] * self._vol_multiplier(realised_vol)
 
         if not raw_forecasts:
+            self._rebalance_early_returns["no_raw_forecasts"] += 1
             return
 
         # Apply breadth multiplier at portfolio level.
@@ -420,9 +473,16 @@ class CarverThirteen(QCAlgorithm):
         # Position sizing: forecast -> weight via inverse-vol scaling.
         abs_sum = sum(abs(v) for v in self.forecasts.values())
         if abs_sum <= 0.0:
+            self._rebalance_early_returns["abs_sum_zero"] += 1
             return
 
         target_value = self.portfolio.total_portfolio_value * breadth
+        # REPAIR-9 c.1117: track whether this call actually submits any
+        # set_holdings. `set_holdings_issued_this_call` flips True the
+        # first time we call set_holdings (sign-change or same-side
+        # re-target); it stays False if all forecasts zero (after clip) or
+        # all |target_weight| below 0.01 (Carver dead-band).
+        set_holdings_issued_this_call = False
         for ticker, sym in self.symbols.items():
             forecast = self.forecasts.get(ticker, 0.0)
             target_weight = 0.0
@@ -458,15 +518,48 @@ class CarverThirteen(QCAlgorithm):
                     self.liquidate(sym)
                 if target_weight != 0.0:
                     self.set_holdings(sym, target_weight)
+                    set_holdings_issued_this_call = True
             else:
                 # Same-side re-target: idempotent set_holdings on the new
                 # absolute weight; no fabricated round-trip.
                 self.set_holdings(sym, target_weight)
+                set_holdings_issued_this_call = True
+
+        # REPAIR-9 c.1117: tally at the bottom of _rebalance so the
+        # end-of-algorithm log discriminates "ran fine but no signal"
+        # from "skipped before order placement".
+        if set_holdings_issued_this_call:
+            self._rebalance_early_returns["completed_with_orders"] += 1
+        else:
+            self._rebalance_early_returns["completed_no_order"] += 1
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
+        # REPAIR-9 c.1117: log the instrumentation tally so the QC backtest
+        # output carries the diagnostic discriminators that allow the
+        # adjoint to truncate H1 vs H2 without re-running the backtest.
+        # `bulk_shape` is None only if _rebalance never reached the bulk
+        # snapshot (all calls were warming_up returns, which would itself
+        # be a signal).
+        bulk_shape = self._last_bulk_shape
+        bulk_str = (
+            f"rows={bulk_shape[0]}, unique_syms={bulk_shape[1]}"
+            if bulk_shape is not None
+            else "never_reached"
+        )
+        n_inv = self._rebalance_call_count
+        er = self._rebalance_early_returns
+        completed = er["completed_with_orders"] + er["completed_no_order"]
         self.log(
             f"CARVER13: Final=${final:,.2f}, "
             f"Return={(final - 100000) / 100000:.2%}, "
-            f"Breadth-multiplied forecasts={len(self.forecasts)}"
+            f"Breadth-multiplied forecasts={len(self.forecasts)} "
+            f"| REPAIR-9 INSTRUMENTATION: "
+            f"rebalance_calls={n_inv}, "
+            f"completed_calls={completed} (with_orders={er['completed_with_orders']}, "
+            f"no_order={er['completed_no_order']}), "
+            f"early_returns={er['warming_up']}+{er['bulk_empty']}+"
+            f"{er['no_raw_forecasts']}+{er['abs_sum_zero']} "
+            f"(warming_up/bulk_empty/no_forecasts/abs_sum_zero), "
+            f"bulk_shape={bulk_str}"
         )
