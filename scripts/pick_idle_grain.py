@@ -156,12 +156,21 @@ REPO = "jsboige/CoursIA"
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     CONSOLIDATION,
+    DEFAULT_WINDOW_DAYS,
+    DELIVERY_DELIVERED,
+    DELIVERY_EMPTY_CORPUS,
+    DELIVERY_NONE_IN_WINDOW,
+    DELIVERY_UNAVAILABLE,
+    MERGED_FETCH_LIMIT,
     enrich_parent_families,
     EXPANSION,
     NEUTRAL,
     SERIES_SCALE_DEFAULT,
     cited_issues,
+    delivery_factor,
+    fetch_merged,
     fetch_series_visits,
+    measure_delivery,
     zone_balance,
     zone_umbrellas,
     zone_verdict,
@@ -720,7 +729,8 @@ def admissibility(item: dict, balance: dict | None,
 def weight(item: dict, prev_genre: str | None,
            visits: dict[int, int] | None = None,
            series: dict[str, dict] | None = None,
-           issue_to_family: dict[int, str] | None = None) -> float:
+           issue_to_family: dict[int, str] | None = None,
+           delivery: dict[int, float] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -778,19 +788,26 @@ def weight(item: dict, prev_genre: str | None,
             w /= 1.0 + (factor - 1.0) / 2.0
     item["family"] = fam
     item["family_new_notebooks"] = nb_new
+    # Age de derniere livraison reelle (#15491) : UMBRELLAS seulement -- c'est
+    # un signal de distribution entre EPICs, pas un bonus par grain. Neutre
+    # (1.0) tant que --delivery-boost-max vaut 0 : Phase 1 instrumente, la
+    # composition ne bouge pas.
+    if delivery and item.get("klass") == "umbrella":
+        w *= delivery.get(item["number"], 1.0)
     return w
 
 
 def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
          visits: dict[int, int] | None = None,
          series: dict[str, dict] | None = None,
-         issue_to_family: dict[int, str] | None = None) -> list[dict]:
+         issue_to_family: dict[int, str] | None = None,
+         delivery: dict[int, float] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits, series, issue_to_family)
+        w = weight(it, prev_genre, visits, series, issue_to_family, delivery)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -885,7 +902,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     return verdicts
 
 
-def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family):
+def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
+                   delivery=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Deux raisons de remplacer plutot que d annoter :
@@ -914,7 +932,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family):
             if len(got) >= want or not pool:
                 break
             cand = draw(pool, want - len(got), rng, prev, visits,
-                        series, issue_to_family)
+                        series, issue_to_family, delivery)
             if not cand:
                 break
             nums = [c["number"] for c in cand]
@@ -1108,6 +1126,48 @@ _PR_STATE_FRAGMENT = """
     } } } } } }
   }
 """
+
+
+def print_delivery(sig: dict, boost_max: float) -> None:
+    """Section texte du signal d'age de livraison (#15491 Phase 1).
+
+    Rend la fenetre demandee vs effective, la troncature, et par umbrella
+    l'etat, la date/l'age, le nombre de livraisons et le facteur theorique
+    au plafond de calibration. Une umbrella sans livraison reste TIRABLE :
+    l'annotation route vers le coordinateur (#13906), jamais vers un veto.
+    """
+    if not sig["items"]:
+        return
+    window = ("fenetre {}/{} j".format(sig["window_days_effective"],
+                                       sig["window_days_requested"]))
+    if sig["truncated"]:
+        window += " (TRONQUEE par la limite de fetch)"
+    if sig["corpus_error"]:
+        window += f" -- corpus: {sig['corpus_error']}"
+    print(f"Livraison umbrella ({window}, corpus {sig['corpus_size']} PRs "
+          f"mergees, boost applique x{boost_max:g}) :")
+    order = {DELIVERY_NONE_IN_WINDOW: 0, DELIVERY_DELIVERED: 1,
+             DELIVERY_UNAVAILABLE: 2, DELIVERY_EMPTY_CORPUS: 3}
+    rows = sorted(sig["items"].items(),
+                  key=lambda kv: (order.get(kv[1]["state"], 9),
+                                  -(kv[1]["age_days"] or 0.0)))
+    for num, it in rows[:8]:
+        line = "  #{:<6d} [{:>15s}] ".format(num, it["state"])
+        if it["state"] == DELIVERY_DELIVERED:
+            line += ("derniere {} (age {} j, {} livraison(s))".format(
+                (it["last_delivery"] or "")[:10], it["age_days"],
+                it["deliveries"]))
+        elif it["state"] == DELIVERY_NONE_IN_WINDOW:
+            line += "aucune declaration dans la fenetre"
+        else:
+            line += "mesure indisponible -- NEUTRE, jamais negligence prouvee"
+        line += " -- facteur theorique x{:.2f}".format(it["factor_theoretical"])
+        if it.get("body_route"):
+            line += " -- route: mise a jour body par le coordinateur (#13906)"
+        print(line)
+    if len(rows) > 8:
+        print(f"  (+{len(rows) - 8} autres umbrellas dans le JSON)")
+    print()
 
 
 def _hours_since(iso: str) -> float:
@@ -2432,6 +2492,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
                     help="delai avant qu'une issue neuve soit consommable "
                          f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--delivery-boost-max", type=float, default=0.0,
+                    help="#15491 Phase 1 : plafond du facteur d'age de derniere "
+                         "livraison des umbrellas (defaut 0 = inactif, kill "
+                         "switch ; activation proposee a 0.5 apres calibration)")
     ap.add_argument("--admit-reason", default=None, metavar="TEXTE",
                     help="passer outre le garde d'admission -- exige une "
                          "justification ECRITE, a reporter sur l'issue")
@@ -2644,6 +2708,28 @@ def main(argv: list[str] | None = None) -> int:
         pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
 
+    # Age de derniere livraison reelle des umbrellas (#15491 Phase 1). Le
+    # fetch repasse par le meme payload cache que fetch_series_visits : hit,
+    # pas de requete gh supplementaire. Fenetre identique a celle de la
+    # saturation, pour que les deux mesures se lisent ensemble.
+    umbrella_numbers = [it["number"] for it in pool if it["klass"] == "umbrella"]
+    delivery_prs, delivery_fetch_err = fetch_merged(
+        DEFAULT_WINDOW_DAYS,
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+        cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+    )
+    delivery_sig = measure_delivery(
+        delivery_prs, umbrella_numbers, now=NOW, days=DEFAULT_WINDOW_DAYS,
+        fetch_error=delivery_fetch_err)
+    delivery_weights = {
+        num: delivery_factor(item["state"], item["age_days"],
+                             delivery_sig["window_days_effective"],
+                             args.delivery_boost_max)
+        for num, item in delivery_sig["items"].items()
+    }
+
     # Admission AVANT les urnes : un grain inadmissible ne doit pas
     # apparaitre dans le tirage, sinon il est sous les yeux quand le
     # refus arrive -- et c'est lui qui gagne (meme raison que le garde
@@ -2765,7 +2851,8 @@ def main(argv: list[str] | None = None) -> int:
         else None)
 
     picks, claims, claim_conflicts = draw_unclaimed(
-        by_class, args, rng, visits, series, issue_to_family)
+        by_class, args, rng, visits, series, issue_to_family,
+        delivery=delivery_weights if args.delivery_boost_max > 0 else None)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
@@ -2791,6 +2878,12 @@ def main(argv: list[str] | None = None) -> int:
             "visits_error": visits_err,
             "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
+            "umbrella_delivery": {
+                **delivery_sig,
+                "items": {str(k): v for k, v in delivery_sig["items"].items()},
+                "boost_max_applied": args.delivery_boost_max,
+                "calibration_max": 0.5,
+            },
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
             "substance_drought": drought,
@@ -2884,6 +2977,7 @@ def main(argv: list[str] | None = None) -> int:
                   "en a aucun, d'en declarer un : une zone chaude sans EPIC "
                   "n'a personne de comptable pour la contrepartie.")
             print()
+    print_delivery(delivery_sig, args.delivery_boost_max)
     print(f"Pool ouvert : {len(pool)} issues.")
     print(f"Candidats apres admission/filtres : "
           f"{len(by_class['grain'])} grains "

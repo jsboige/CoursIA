@@ -1,27 +1,51 @@
 # Checkpoint Registry
 
+## Historique des mises à jour
+
 Auto-generated: 2026-05-03 22:29
+
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
+
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
+
 Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais révélé par loss_fn=linear)
+
 Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
+
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
+
 Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
+
 Updated: 2026-08-24 — M4 DLinear-vol §C re-run dé-biaisé + DM recentré (issue #12734): 2/3 BEATS, 1/3 INCONCLUSIVE — le 3/3 de #11011 était gonflé par le biais de HAR
+
 Updated: 2026-08-24 — M4 DLinear-vol §C extension ETF (Epic #1454): **NO BEATS** — l'edge brut (+16,75 %) est le biais² de la baseline HAR ; hors biais +0,3 %, dm_p_median 0,41
+
 Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barreau ETF direction 9/9 NO BEATS (#11427) absents du header — cf sections respectives
+
 Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/#11034/#11036) : M15 `refuted-de-biased` 3/3 (l'edge publié = biais² de HAR, var_ratio > 1 partout) ; M4 confirmé h=1/h=5, INCONCLUSIVE h=10 (p_median 0,0598, var_ratio < 1)
+
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
+
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
+
 Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
+
 Updated: 2026-09-02 — M5 HMM regime-switching HAR, première entrée + revalidation hors biais (Epic #1454) : ETH h=1 **BEATS confirmé** (+8,7 % hors biais, 4/4 seeds, 4,1σ) ; BTC h=1 s'effondre de +7,0 % à +1,3 % (~82 % de l'edge était le biais de HAR) ; 4/6 NO BEATS
+
 Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC revalidé contre HAR débiaisé train-only (Epic #1454, lane myia-po-2026, c.951) : h=1 BEATS 4/4 confirmé (var_ratio 0,778 — gain de précision, pas un offset) ; h=5/h=10 INCONCLUSIVE 0/4 (var_ratio > 1) ; vs M12 4/4 BEATS aux trois horizons ; verdict BTC inchangé, base non-artéfactée par le biais HAR
+
 Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC REPAIR P0 c.953 (PR #14592, preflight po-2025 adjoint `msg-20260904T105224-z6f9d7` head 8167044f) : **calibration symétrique** sur LJ/HAR/M12 + `var(ddof=0)` + sanity `mse = bias²+var` à 1e-9 + `panel_hash` SHA256 sur fenêtre canonique 360 bars (BTC 4 seeds → 1 hash `86f36cb46f539c6d`) + naming `mse_har_raw`/`mse_har_debiased` (NaN si non-débiaisé). **Verdict révisé** : h=1 BEATS 4/4 (inchangé, var_ratio=0,778) ; h=5 INCONCLUSIVE 0/4 contre HAR **et** M12 (était 4/4 BEATS vs M12) ; h=10 BEATEN BY 0/4 contre HAR (MSE 0,464 > 0,366 HAR-débiaisé ; était INCONCLUSIVE 0/4). Le claim c.951 « 4/4 BEATS vs M12 aux trois horizons » ne tient plus sous calibration symétrique : la tête précédente de M17 sur M12 aux h=5/h=10 était portée par le gap de calibration, pas par un gain de précision. Detail dans `docs/M17_HAR_LJ_ASYM.md` section c.953. `panel_hashes_consistent=True`, OLS bit-identique par seed (DM-MSE p-values identiques 6 décimales).
+
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-3 calibration (PR #14592, preflight po-2025 adjoint re-review head `b974f2721`, DM `msg-20260904T141944`) : **nombres c.953 ci-dessus SUPERSEDES** (signe du biais inversé `yhat - bias` → corrigé `yhat + bias`, application per-fold, M12 calibré `calibrate_bias=debias`, deux jambes HAR `mse_har_raw` != `mse_har_debiased`, `panel_hash` sur index+valeurs avec manifeste per (coin,horizon)). Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Round-3 calibration (this PR) ». [M17 HAR-LJ-Asym BTC run] — pending live run post-merge; round-3 calibration implemented, code PR #14592.
+
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM `msg-20260905T001520`, 3/6 PASS / 3/6 PARTIAL) : test OOS multi-fold discriminant `test_walk_forward_lj_asym_oos_target_invariance_multi_fold` (n_splits=3, biais per-fold **distincts**, invariance per-fold bit-identique rtol 1e-12, folds antérieurs inchangés, folds postérieurs = expanding-window retrain légitime asserté comme sensibilité, train-tail > 1.0 par fold) + provenance `bounds_train_test` (`{train_end_idx = n_splits·(n//(n_splits+1)), oos_start_idx = train_end+horizon, oos_end_idx}`) relayée par `_eval_one_coin` / `aggregate_verdicts` / manifeste (`bounds_per_coin_horizon`, `fc_lj_hash_per_fold` alignés sur `per_fold_bias`) ; placeholder `if False else None` supprimé. Tests 22 → 24 verts, suite 1194 passed / 0 failed. **[M17 HAR-LJ-Asym BTC run] LIVRÉ (round-4 code) — `python har_lj_asym.py --coins BTC-USD --skip-remote --debias --horizons 1 5 10 --seeds 0 7 42 99` en 467.9 s** : h=1 **BEATS 4/4** vs HAR et M12 (p<1e-6, mean_loss_diff<0, `_coherent_beats()` strict ✓) ; h=5/h=10 INCONCLUSIVE 0/4 (p>0.05, mean_loss_diff>0 ⇒ cohérent INCONCLUSIVE). Bornes effectives BTC : `train_end=1890` (5 folds × 378 jours), `n_oos=378-382`, `n_total=2272` jours. Bit-identity cross-seed OK (`per_fold_bias` et `fc_lj_hash_per_fold` identiques sur les 4 seeds, `bounds_consistent_across_seeds=True`). Précédent c.953 `h=1 BEATS p=0.839708` réfuté — sous round-3+4 calibration le verdict reste BEATS mais devient réellement significatif. Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Live BTC run (concern b — this PR) ». Manifest `scripts/results/m17_har_lj_asym.json` régénéré ; meta `manifest_m17_har_lj_asym.json` mis à jour avec `concern_addressing` round-3 + round-4.
+
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
+
 Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
+
 Updated: 2026-09-06 — iTransformer BTC log-RV revalidé contre HAR débiaisé train-only (#14860, lane myia-po-2026:CoursIA-2) : h=1/h=5/h=10 **NO BEATS** (4/4 seeds battues et DM p<0,05) ; var_ratio > 1 aux trois horizons — l'attention inversée (variable-as-token) ne bat pas la baseline HAR simple sur log-RV ; voir section §C iTransformer ci-dessous.
+
 Updated: 2026-09-08 — M19 MiniCPM5-2B GRPO+QLoRA sur DAPO-Math-17k, entrée §C (issue #15099 probe B, lane myia-po-2023:CoursIA) : **BEATS en trainabilité RL** vs Qwen3.5-0.8B — Δ accuracy eval held-out (40 problèmes × 4 générations, pré/post 100 steps bornés, même recette DAPO non-thinking) : MiniCPM5-2B **+0,0219 ± 0,0031** (2/2 seeds progressent, +88 % relatif, courbes saines, longueur stable) vs Qwen3.5-0.8B +0,0063 ± 0,0063 (1 seed plat, 1 seed modéré, reward train déclinant) ; intervalles ±1std disjoints. Réserves honnêtes : accuracies absolues 2-6 % (DAPO olympiaque pour ces tailles — la claim porte sur la trainabilité relative, pas sur un modèle math utilisable), et baseline 2,5× plus petite (0.8B vs 2B, désignée par l'issue). Détail section M19 + `docs/M19_MiniCPM5_GRPO.md` + manifestes `scripts/results/m19_minicpm5_grpo/`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)

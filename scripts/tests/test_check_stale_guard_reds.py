@@ -275,3 +275,116 @@ def test_locate_fix_head_red_on_main():
     hist = history([("failure", "s1"), ("success", "s2"), ("failure", "s3")])
     status, fix = mod.locate_fix_head(hist, "Scripts Tests (CPU)")
     assert status == "red_on_main"
+
+
+# --- re-mesure (#15350) : acceptance 2 (agir), 3 (re-rougir), 4 (DWELL) ---
+
+FAKE_LOG = """Set up job\t2026-09-10T06:54:00Z\tCurrent runner size:
+Run pytest\t2026-09-10T06:54:10Z\tFAILED scripts/tests/test_perimeter.py::test_audit_name_too_long - AssertionError: assert 123 > 69
+Run pytest\t2026-09-10T06:54:11Z\tFAILED scripts/tests/test_perimeter.py::test_audit_name_too_long - AssertionError: assert 123 > 69
+Run pytest\t2026-09-10T06:54:12Z\t1 failed, 431 passed in 38.2s
+"""
+
+
+def test_extract_failed_tests_parses_and_dedups():
+    nodes = mod.extract_failed_tests(FAKE_LOG)
+    assert nodes == ["scripts/tests/test_perimeter.py::test_audit_name_too_long"]
+
+
+def test_extract_failed_tests_nested_node_ids():
+    log = "FAILED a/b.py::TestCls::test_x - Error\nFAILED a/b.py::test_plain - E\n"
+    assert mod.extract_failed_tests(log) == [
+        "a/b.py::TestCls::test_x", "a/b.py::test_plain"]
+
+
+def test_extract_failed_tests_non_pytest_log_empty():
+    assert mod.extract_failed_tests("CodeQL analysis finished\nerror: rule X") == []
+
+
+def test_pytest_rc_table_only_rc1_is_red():
+    """Criterion 3 : SEUL l'echec pytest reel (rc=1) est un re-rouge. Un crash,
+    un node introuvable (rc=4) ou une collection vide (rc=5) traduits en
+    ROUGE fabriqueraient le faux defaut que l'issue interdit."""
+    assert mod.PYTEST_RC[0] == "GREEN"
+    assert mod.PYTEST_RC[1] == "RED"
+    for rc in (2, 3, 4, 5):
+        assert mod.PYTEST_RC[rc] == "SKIPPED"
+    assert mod.PYTEST_RC.get(137) == "SKIPPED" or mod.PYTEST_RC.get(137) is None
+
+
+def test_remeasure_lines_three_verdicts():
+    green = mod.remeasure_lines({"verdict": "GREEN", "n_tests": 1, "merge_sha": "abcdef12345678"})
+    assert "VERT" in green and "abcdef12345678"[:12] in green and "update-branch" in green
+    red = mod.remeasure_lines({"verdict": "RED", "n_tests": 2, "merge_sha": "abcdef12345678"})
+    assert "ROUGE" in red and "corriger" in red
+    skipped = mod.remeasure_lines({"verdict": "SKIPPED", "reason": "log indisponible"})
+    assert "non concluante" in skipped and "log indisponible" in skipped
+    assert mod.remeasure_lines(None) == ""
+
+
+def _fake_subprocess(pytest_rc):
+    """git/pip verts, pytest au rc parametre ; rev-parse rend un sha stable."""
+    def run(cmd, **kw):
+        class R:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        if cmd[0] == "git" and "rev-parse" in cmd:
+            r = R(); r.stdout = "feedfacefeedface\n"; return r
+        if cmd[1:3] == ["-m", "pytest"]:
+            r = R(); r.returncode = pytest_rc; return r
+        return R()
+    return run
+
+
+def test_remeasure_pr_green_when_replayed_tests_pass(monkeypatch, tmp_path):
+    monkeypatch.setattr(mod, "_run_gh", lambda a: FAKE_LOG if a[:3] == ["run", "view", "999"] else "")
+    monkeypatch.setattr(mod.subprocess, "run", _fake_subprocess(0))
+    v = mod.remeasure_pr("jsboige/CoursIA", 15318, "999", str(tmp_path))
+    assert v["verdict"] == "GREEN" and v["n_tests"] == 1
+    assert v["merge_sha"] == "feedfacefeedface"
+
+
+def test_remeasure_pr_red_only_on_real_failures(monkeypatch, tmp_path):
+    monkeypatch.setattr(mod, "_run_gh", lambda a: FAKE_LOG)
+    monkeypatch.setattr(mod.subprocess, "run", _fake_subprocess(1))
+    v = mod.remeasure_pr("jsboige/CoursIA", 15318, "999", str(tmp_path))
+    assert v["verdict"] == "RED"
+
+
+def test_remeasure_pr_usage_error_is_skip_not_red(monkeypatch, tmp_path):
+    monkeypatch.setattr(mod, "_run_gh", lambda a: FAKE_LOG)
+    monkeypatch.setattr(mod.subprocess, "run", _fake_subprocess(4))
+    v = mod.remeasure_pr("jsboige/CoursIA", 15318, "999", str(tmp_path))
+    assert v["verdict"] == "SKIPPED" and "rc=4" in v["reason"]
+
+
+def test_remeasure_pr_no_pytest_nodes_skips(monkeypatch, tmp_path):
+    monkeypatch.setattr(mod, "_run_gh", lambda a: "CodeQL finished clean")
+    v = mod.remeasure_pr("jsboige/CoursIA", 15318, "999", str(tmp_path))
+    assert v["verdict"] == "SKIPPED" and "node ID" in v["reason"]
+
+
+def test_remeasure_pr_git_failure_skips(monkeypatch, tmp_path):
+    def boom(cmd, **kw):
+        if cmd[0] == "git":
+            class R:
+                returncode = 128
+                stdout = ""
+                stderr = "fatal: not a git repository"
+            return R
+        class R2:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        return R2()
+    monkeypatch.setattr(mod, "_run_gh", lambda a: FAKE_LOG)
+    monkeypatch.setattr(mod.subprocess, "run", boom)
+    v = mod.remeasure_pr("jsboige/CoursIA", 15318, "999", str(tmp_path))
+    assert v["verdict"] == "SKIPPED" and "interrompu" in v["reason"]
+
+
+def test_flagged_entry_carries_run_id_for_remeasure():
+    result = mod.analyse(pr_fixture(), cmp_map({(FIX, OLD_BASE): "diverged"}))
+    f = result["flagged"][0]
+    assert f["run_id"] == "111"

@@ -58,6 +58,10 @@ SERIES_SCALE_DEFAULT = 2.0
 # pedagogique reel fait des milliers de lignes, un fichier de config non.
 NEW_NB_MIN_ADDITIONS = 200
 
+# Plafond du `gh pr list` de la fenetre mergee : l'atteindre tronque le
+# corpus, et `measure_delivery` doit pouvoir le signaler.
+MERGED_FETCH_LIMIT = 400
+
 _PARENT_RE = re.compile(
     r"(?:enfant\s+de|fille\s+de|sous-t\w+\s+de|part\s+of"
     r"|paire\s+\d+\s*/\s*\d+\s+de)[^#\n]{0,40}#(\d{4,6})\b",
@@ -181,12 +185,12 @@ def fetch_merged(
     stamp = (now - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
     command = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", "400", "--search", "merged:>=" + stamp,
+        "--limit", str(MERGED_FETCH_LIMIT), "--search", "merged:>=" + stamp,
         "--json", "number,title,body,files,mergedAt",
     ]
     identity = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", "400", "--window-days", str(days),
+        "--limit", str(MERGED_FETCH_LIMIT), "--window-days", str(days),
         "--json", "number,title,body,files,mergedAt",
     ]
 
@@ -230,6 +234,116 @@ def fetch_merged(
     except (subprocess.CalledProcessError, json.JSONDecodeError,
             subprocess.TimeoutExpired, OSError) as exc:
         return [], "{}: {}".format(type(exc).__name__, exc)
+
+
+# --- Age de derniere livraison reelle d'une umbrella (#15491, Phase 1) -------
+#
+# Distinct du delaissement (`updatedAt`) : une vieille Epic alimentee chaque
+# jour et une vieille Epic sans merge depuis des semaines restent mal
+# distinguees par les facteurs existants. Le signal mesure la derniere PR
+# mergee qui DECLARE servir l'umbrella -- via `cited_issues`, la regle de
+# declaration existante : le vocabulaire declare (`closes|fixes|resolves|see|
+# refs|part of`), les formes structurelles et les refs de titre. Une mention
+# incidente (`voir #N`, bare `EPIC #N` en prose) n'est pas une livraison.
+#
+# Quatre etats non confondables : un zero de corpus ne doit jamais se lire
+# comme un zero de livraison (lecon fetch_series_visits ci-dessus).
+
+DELIVERY_UNAVAILABLE = "unavailable"      # fetch/cache indisponible : neutre
+DELIVERY_EMPTY_CORPUS = "empty_corpus"    # fenetre valide mais 0 PR mergee
+DELIVERY_NONE_IN_WINDOW = "none_in_window"  # mesure valide, aucune declaration
+DELIVERY_DELIVERED = "delivered"          # livraison datee, age calculable
+
+
+def delivery_factor(state, age_days, window_days, boost_max):
+    """Facteur theorique d'age de livraison, gradue de 1.0 a 1.0 + boost_max.
+
+    Livraison toute recente (age 0) = 1.0 ; l'age croit vers le plafond quand
+    la derniere livraison vieillit jusqu'a l'horizon de la fenetre ; absence
+    valide dans la fenetre = plafond. Indisponible ou corpus vide = neutre :
+    un defaut de mesure ne doit jamais peser comme un delaissement prouve.
+    """
+    if boost_max <= 0:
+        return 1.0
+    if state == DELIVERY_NONE_IN_WINDOW:
+        return 1.0 + boost_max
+    if state != DELIVERY_DELIVERED or not window_days or window_days <= 0:
+        return 1.0
+    frac = min(max(age_days or 0.0, 0.0) / window_days, 1.0)
+    return 1.0 + boost_max * frac
+
+
+def measure_delivery(prs, umbrella_numbers, *, now, days,
+                     fetch_error=None, fetch_limit=MERGED_FETCH_LIMIT,
+                     calibration_max=0.5):
+    """Mesure l'age de derniere livraison reelle pour chaque umbrella.
+
+    Rend un dict stable (JSON-ready) : fenetre demandee vs effective,
+    troncature par la limite de fetch, et par umbrella l'etat, la date/l'age,
+    le nombre de livraisons, le facteur theorique au plafond de calibration
+    et la route coordinateur quand le body est suspect de peremption.
+
+    `body_route` suit #13906 : une umbrella sans livraison valide dans la
+    fenetre reste TIRABLE -- l'annotation route vers une mise a jour du body
+    par le coordinateur, jamais vers un veto du tirage.
+    """
+    requested = list(dict.fromkeys(int(n) for n in umbrella_numbers))
+    sig = {
+        "window_days_requested": days,
+        "window_days_effective": days,
+        "truncated": bool(prs) and len(prs) >= fetch_limit,
+        "corpus_size": len(prs or []),
+        "corpus_error": fetch_error,
+        "items": {},
+    }
+    corpus = list(prs or [])
+    if fetch_error and not corpus:
+        state = DELIVERY_UNAVAILABLE
+    elif not corpus:
+        state = DELIVERY_EMPTY_CORPUS
+    else:
+        state = None
+
+    if corpus:
+        stamps = sorted(
+            p["mergedAt"] for p in corpus
+            if p.get("mergedAt")
+        )
+        if stamps:
+            oldest = dt.datetime.fromisoformat(stamps[0].replace("Z", "+00:00"))
+            effective = (now - oldest).total_seconds() / 86400.0
+            sig["window_days_effective"] = round(min(float(days), effective), 2)
+
+    declared_by: dict[int, list[dict]] = {n: [] for n in requested}
+    if corpus and requested:
+        for pr in corpus:
+            for num in cited_issues(pr):
+                if num in declared_by:
+                    declared_by[num].append(pr)
+
+    for num in requested:
+        item = {"state": None, "last_delivery": None, "age_days": None,
+                "deliveries": 0, "factor_theoretical": None,
+                "body_route": None}
+        if state is not None:
+            item["state"] = state
+        else:
+            hits = declared_by.get(num) or []
+            if hits:
+                newest = max(h["mergedAt"] for h in hits if h.get("mergedAt"))
+                when = dt.datetime.fromisoformat(newest.replace("Z", "+00:00"))
+                item["state"] = DELIVERY_DELIVERED
+                item["last_delivery"] = newest
+                item["age_days"] = round((now - when).total_seconds() / 86400.0, 2)
+                item["deliveries"] = len(hits)
+            else:
+                item["state"] = DELIVERY_NONE_IN_WINDOW
+                item["body_route"] = "coord_update_13906"
+        item["factor_theoretical"] = round(delivery_factor(
+            item["state"], item["age_days"], sig["window_days_effective"],
+            calibration_max), 4)
+        sig["items"][num] = item
+    return sig
 
 
 _CAMEL_RE = re.compile(r"[a-z][A-Z]")

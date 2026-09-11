@@ -47,6 +47,26 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # #15359 — le relais n'avait AUCUN checkout : sur un runner
+      # self-hosted le workspace est vide, `git diff` échoue, et le
+      # `|| true` transformait la panne en `Touched decks: 0` vert
+      # (faux négatif silencieux, run 34315275538 sur #15334). Le bout
+      # de git diff exige les deux SHAs : `fetch-depth: 0` (historique
+      # complet) + `ref: head.sha` (le head réel de la PR, pas le ref
+      # merge). Clone partiel `blob:none` + sparse `slides/` (série
+      # #11843, même patron que le nocturne) : le diff et le `[ -f ]`
+      # n'ont besoin que de l'arbre + slides/. Le `|| true` est retiré :
+      # un relais qui ne peut pas savoir ce qu'il doit relayer doit
+      # rougir, pas rendre zéro.
+      - name: Checkout (blobless sparse, head de la PR)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            slides
+
       - name: Resolve touched deck paths from PR diff
         id: resolve
         env:
@@ -56,12 +76,10 @@ jobs:
           set -uo pipefail
           # #11923 + #14226 — la découverte reprend exactement la logique du
           # nocturne, pour qu'un deck qui aurait fait rougir le nocturne
-          # soit vu par ce relay. On évite le sparse-checkout (clone léger
-          # complet suffit, default depth 1 — pas de fetch-depth: 0) parce
-          # que la PR ne touche pas l'historique.
+          # soit vu par ce relay.
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED=$(git diff --name-only "${BASE}...${HEAD}" -- slides/ || true)
+          CHANGED=$(git diff --name-only "${BASE}...${HEAD}" -- slides/)
           if grep -qE 'slides/(theme-ia101|package(-lock)?\.json)' <<< "$CHANGED"; then
             # infra partagée touchée : tous les decks -- mais le sparse-checkout
             # du nocturne a peut-être ignoré certains. On les découvre par find.
