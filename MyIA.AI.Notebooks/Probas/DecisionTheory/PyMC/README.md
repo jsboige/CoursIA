@@ -75,7 +75,8 @@ flowchart TD
     BAY -->|"posterior = input"| A
     A --> B --> C --> D --> E
     D -.->|"formalisation"| LAKE
-    classDef lake fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
+    classDef lake fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class LAKE lake;
 ```
 
