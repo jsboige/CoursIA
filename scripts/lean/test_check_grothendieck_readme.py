@@ -66,6 +66,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = REPO_ROOT / "scripts" / "lean" / "check_grothendieck_readme.py"
@@ -82,6 +83,54 @@ def _run_checker(*args: str, expect_exit: int, cwd: Path | None = None) -> subpr
         errors="replace",
     )
     return proc
+
+
+def make_lake(
+    tmp: Path,
+    *,
+    disk_modules: list[str] | None = None,
+    readme_fr: str | None = None,
+    readme_en: str | None = None,
+    toolchain: str = "leanprover/lean4:v4.33.0",
+) -> Path:
+    """Build a minimal lake under ``tmp`` for behavioral tests of ``check_lake``.
+
+    ``disk_modules`` is a list of leaf basenames WITHOUT the ``_en`` suffix;
+    the helper writes both ``Foo.lean`` and ``Foo_en.lean`` for each. If
+    ``None``, no ``.lean`` files are written (an empty lake).
+
+    ``readme_fr`` / ``readme_en`` are written verbatim to README.md /
+    README.en.md. If ``None``, the README is omitted (an empty readme is
+    used as the assertion baseline).
+
+    ``toolchain`` is the content of ``lean-toolchain``; defaults to the
+    current production pin so the TOOLCHAIN_DRIFT class doesn't trip.
+    """
+    lake = tmp / "lake"
+    lake.mkdir()
+    if disk_modules is not None:
+        for mod in disk_modules:
+            (lake / f"{mod}.lean").write_text(f"-- {mod}\n", encoding="utf-8")
+            (lake / f"{mod}_en.lean").write_text(f"-- {mod}_en\n", encoding="utf-8")
+    if readme_fr is not None:
+        (lake / "README.md").write_text(readme_fr, encoding="utf-8")
+    if readme_en is not None:
+        (lake / "README.en.md").write_text(readme_en, encoding="utf-8")
+    (lake / "lean-toolchain").write_text(toolchain + "\n", encoding="utf-8")
+    return lake
+
+
+def _patch_disk(monkeypatch, checker_module, disk_fr: set[str], disk_en: set[str], umbrella: int = 0):
+    """Patch ``_git_ls_tree_disk`` so a test can drive ``check_lake`` with a
+    synthetic disk state without touching ``origin/main``.
+
+    Returns the mock object the caller can inspect.
+    """
+    return monkeypatch.patch.object(
+        checker_module,
+        "_git_ls_tree_disk",
+        lambda lake_root: (set(disk_fr), set(disk_en), umbrella),
+    )
 
 
 class TestHistoryAwareSkip(unittest.TestCase):
@@ -266,6 +315,203 @@ class TestStrictPromotion(unittest.TestCase):
             self.assertEqual(orphans[0]["severity"], "blocking")
         finally:
             fake_path.unlink()
+
+
+class TestCheckLakeDirect(unittest.TestCase):
+    """Behavioral pinning of the three production branches that the previous
+    round's tests did not exercise directly::
+
+        * OVERCOUNT   — README leaf-count strictly greater than disk
+        * ORPHAN_IN_TABLE (FR) — table mentions a module absent on disk
+        * ORPHAN_IN_TABLE (EN) — same, on README.en.md
+
+    These tests construct a **minimal temp lake** and call ``check_lake``
+    directly (not via ``--inject-fake``). They monkey-patch
+    ``_git_ls_tree_disk`` so a synthetic disk state can be driven without
+    touching ``origin/main``. The point is that each branch under test is
+    the **live** branch in ``check_lake`` — not the fake-augmented branch
+    that ``--inject-fake`` covers separately.
+
+    Each test exercises both ``strict=False`` (advisory) and ``strict=True``
+    (blocking) on the same underlying drift shape — so mutating the
+    severity expression in ``check_lake`` breaks at least one test.
+    """
+
+    def test_overcount_advisory_then_blocking(self):
+        """A README claiming more leaf modules than the disk contains
+        produces ``OVERCOUNT`` advisory without ``strict=True`` and
+        blocking with it.
+        """
+        import check_grothendieck_readme as cgr
+
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            lake = make_lake(
+                tmp,
+                disk_modules=["Adjunction", "CoversCoherent", "Spaces"],
+                readme_fr=(
+                    "# Lake\n\n"
+                    "Ce lake couvre **5 modules leaf** en FR.\n\n"
+                    "| # | FR | EN |\n"
+                    "|---|----|----|\n"
+                    "| 1 | `Adjunction.lean` | `Adjunction_en.lean` |\n"
+                    "| 2 | `CoversCoherent.lean` | `CoversCoherent_en.lean` |\n"
+                    "| 3 | `Spaces.lean` | `Spaces_en.lean` |\n"
+                ),
+                readme_en=(
+                    "# Lake (EN)\n\n"
+                    "This lake covers **5 leaf modules**.\n\n"
+                    "| # | FR | EN |\n"
+                    "|---|----|----|\n"
+                    "| 1 | `Adjunction.lean` | `Adjunction_en.lean` |\n"
+                    "| 2 | `CoversCoherent.lean` | `CoversCoherent_en.lean` |\n"
+                    "| 3 | `Spaces.lean` | `Spaces_en.lean` |\n"
+                ),
+            )
+
+            with mock.patch.object(cgr, "_git_ls_tree_disk",
+                                   lambda lr: ({"Adjunction", "CoversCoherent", "Spaces"},
+                                               {"Adjunction", "CoversCoherent", "Spaces"}, 0)), \
+                 mock.patch.object(cgr, "REPO_ROOT", lake.parent):
+                rpt_advisory = cgr.check_lake(lake, strict=False)
+                rpt_blocking = cgr.check_lake(lake, strict=True)
+
+            overs_advisory = [d for d in rpt_advisory.drifts if d.kind == "OVERCOUNT"]
+            overs_blocking = [d for d in rpt_blocking.drifts if d.kind == "OVERCOUNT"]
+
+            self.assertEqual(
+                len(overs_advisory), 1,
+                f"exactly one OVERCOUNT expected (advisory); got {rpt_advisory.drifts}",
+            )
+            self.assertEqual(overs_advisory[0].severity, "advisory",
+                             f"OVERCOUNT w/o strict must be advisory; got {overs_advisory[0].severity}")
+            self.assertFalse(rpt_advisory.blocking,
+                             f"OVERCOUNT advisory must NOT make the report blocking; drifts: {rpt_advisory.drifts}")
+
+            self.assertEqual(
+                len(overs_blocking), 1,
+                f"exactly one OVERCOUNT expected (blocking); got {rpt_blocking.drifts}",
+            )
+            self.assertEqual(overs_blocking[0].severity, "blocking",
+                             f"OVERCOUNT WITH strict must be blocking; got {overs_blocking[0].severity}")
+            self.assertTrue(rpt_blocking.blocking,
+                            f"OVERCOUNT blocking must promote the report to blocking; drifts: {rpt_blocking.drifts}")
+
+    def test_orphan_in_table_fr_advisory_then_blocking(self):
+        """A README.md table listing a module absent on disk produces
+        ``ORPHAN_IN_TABLE`` (FR) — advisory without ``--strict``, blocking
+        with it.
+        """
+        import check_grothendieck_readme as cgr
+
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            lake = make_lake(
+                tmp,
+                disk_modules=["Adjunction", "CoversCoherent"],
+                readme_fr=(
+                    "# Lake\n\n"
+                    "| # | FR | EN |\n"
+                    "|---|----|----|\n"
+                    "| 1 | `Adjunction.lean` | `Adjunction_en.lean` |\n"
+                    "| 2 | `CoversCoherent.lean` | `CoversCoherent_en.lean` |\n"
+                    "| 3 | `GhostModule.lean` | `GhostModule_en.lean` |\n"
+                ),
+                readme_en=(
+                    "# Lake (EN)\n\n"
+                    "| # | FR | EN |\n"
+                    "|---|----|----|\n"
+                    "| 1 | `Adjunction.lean` | `Adjunction_en.lean` |\n"
+                    "| 2 | `CoversCoherent.lean` | `CoversCoherent_en.lean` |\n"
+                ),
+            )
+
+            with mock.patch.object(cgr, "_git_ls_tree_disk",
+                                   lambda lr: ({"Adjunction", "CoversCoherent"},
+                                               {"Adjunction", "CoversCoherent"}, 0)), \
+                 mock.patch.object(cgr, "REPO_ROOT", lake.parent):
+                rpt_advisory = cgr.check_lake(lake, strict=False)
+                rpt_blocking = cgr.check_lake(lake, strict=True)
+
+            orphans_advisory = [d for d in rpt_advisory.drifts if d.kind == "ORPHAN_IN_TABLE"]
+            orphans_blocking = [d for d in rpt_blocking.drifts if d.kind == "ORPHAN_IN_TABLE"]
+
+            self.assertTrue(len(orphans_advisory) >= 1,
+                            f"at least one ORPHAN_IN_TABLE expected (FR); got {rpt_advisory.drifts}")
+            fr_advisory = next((d for d in orphans_advisory
+                                if "GhostModule" in d.detail), None)
+            self.assertIsNotNone(fr_advisory, f"FR-side orphan 'GhostModule' expected; got {orphans_advisory}")
+            self.assertEqual(fr_advisory.severity, "advisory",
+                             f"ORPHAN_IN_TABLE FR w/o strict must be advisory; got {fr_advisory.severity}")
+            self.assertFalse(rpt_advisory.blocking,
+                             f"advisory ORPHAN must NOT promote the report to blocking; drifts: {rpt_advisory.drifts}")
+
+            fr_blocking = next((d for d in orphans_blocking
+                                if "GhostModule" in d.detail), None)
+            self.assertIsNotNone(fr_blocking, f"FR-side orphan 'GhostModule' expected (blocking); got {orphans_blocking}")
+            self.assertEqual(fr_blocking.severity, "blocking",
+                             f"ORPHAN_IN_TABLE FR WITH strict must be blocking; got {fr_blocking.severity}")
+            self.assertTrue(rpt_blocking.blocking,
+                            f"blocking ORPHAN (FR) must promote the report to blocking; drifts: {rpt_blocking.drifts}")
+
+    def test_orphan_in_table_en_advisory_then_blocking(self):
+        """An ``README.en.md`` table listing a module absent on disk
+        produces ``ORPHAN_IN_TABLE`` (EN) — advisory without ``--strict``,
+        blocking with it. This pins the **second** live ORPHAN branch
+        (the production code splits on FR vs EN both via distinct
+        conditionals, both must be exercised).
+        """
+        import check_grothendieck_readme as cgr
+
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            lake = make_lake(
+                tmp,
+                disk_modules=["Adjunction", "Spaces"],
+                readme_fr=(
+                    "# Lake\n\n"
+                    "| # | FR | EN |\n"
+                    "|---|----|----|\n"
+                    "| 1 | `Adjunction.lean` | `Adjunction_en.lean` |\n"
+                    "| 2 | `Spaces.lean` | `Spaces_en.lean` |\n"
+                ),
+                readme_en=(
+                    "# Lake (EN)\n\n"
+                    "| # | FR | EN |\n"
+                    "|---|----|----|\n"
+                    "| 1 | `Adjunction.lean` | `Adjunction_en.lean` |\n"
+                    "| 2 | `Spaces.lean` | `Spaces_en.lean` |\n"
+                    "| 3 | `GhostENModule.lean` | `GhostENModule_en.lean` |\n"
+                ),
+            )
+
+            with mock.patch.object(cgr, "_git_ls_tree_disk",
+                                   lambda lr: ({"Adjunction", "Spaces"},
+                                               {"Adjunction", "Spaces"}, 0)), \
+                 mock.patch.object(cgr, "REPO_ROOT", lake.parent):
+                rpt_advisory = cgr.check_lake(lake, strict=False)
+                rpt_blocking = cgr.check_lake(lake, strict=True)
+
+            orphans_advisory = [d for d in rpt_advisory.drifts if d.kind == "ORPHAN_IN_TABLE"]
+            orphans_blocking = [d for d in rpt_blocking.drifts if d.kind == "ORPHAN_IN_TABLE"]
+
+            self.assertTrue(len(orphans_advisory) >= 1,
+                            f"at least one ORPHAN_IN_TABLE expected; got {rpt_advisory.drifts}")
+            en_advisory = next((d for d in orphans_advisory
+                                if "GhostENModule" in d.detail and "README.en.md" in d.detail), None)
+            self.assertIsNotNone(en_advisory, f"EN-side orphan 'GhostENModule' on README.en.md expected; got {orphans_advisory}")
+            self.assertEqual(en_advisory.severity, "advisory",
+                             f"ORPHAN_IN_TABLE EN w/o strict must be advisory; got {en_advisory.severity}")
+            self.assertFalse(rpt_advisory.blocking,
+                             f"advisory ORPHAN (EN) must NOT promote the report to blocking; drifts: {rpt_advisory.drifts}")
+
+            en_blocking = next((d for d in orphans_blocking
+                                if "GhostENModule" in d.detail and "README.en.md" in d.detail), None)
+            self.assertIsNotNone(en_blocking, f"EN-side orphan 'GhostENModule' expected (blocking); got {orphans_blocking}")
+            self.assertEqual(en_blocking.severity, "blocking",
+                             f"ORPHAN_IN_TABLE EN WITH strict must be blocking; got {en_blocking.severity}")
+            self.assertTrue(rpt_blocking.blocking,
+                            f"blocking ORPHAN (EN) must promote the report to blocking; drifts: {rpt_blocking.drifts}")
 
 
 def main() -> int:
