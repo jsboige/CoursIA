@@ -104,10 +104,13 @@ jobs:
           # (sys.path.insert module-level ignore sous importlib).
           # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
-          - suite-name: "ict/tests/ (42 package)"
+          # Floor 692 -> 703 : +11 items endpoints multi-lentilles sans
+          # ecrasement de semantique (#15479 tranche 4 / acceptance 3,
+          # ict/tests/test_lens_endpoints.py).
+          - suite-name: "ict/tests/ (43 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 692
+            test-floor: 703
 
     steps:
       - uses: actions/checkout@v4
