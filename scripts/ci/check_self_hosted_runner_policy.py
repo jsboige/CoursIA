@@ -340,6 +340,19 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   advisory.yml). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "translation-hot-drift-advisory.yml",
+    # #15405 (decision ai-01 2026-09-11, owner myia-ai-01:CoursIA) : garde
+    #   advisory pur-Python sur les paragraphes markdown depassant 2000
+    #   caracteres (detect_paragraph_length.py, stdlib-only). Declencheur
+    #   pull_request filtrant `**/*.md` + auto-couverture du workflow (#8822,
+    #   sans quoi le poseur de label ne peut plus retirer son propre label une
+    #   fois les chemins sortis du diff). Pose un label signe, jamais exit != 0.
+    #   `pull-requests: write` + GITHUB_TOKEN limites a l'API labels -- meme
+    #   profil que markdown-deaccent-advisory.yml / repeated-prose-advisory.yml,
+    #   deja admis a ce titre. Garde same-repo au niveau job (#13874) : les PRs
+    #   de fork se font skipper proprement par pr_gate. Runner = jambe Linux
+    #   containerisee (LINUX_RUNNER_LABELS). Rollback = revert de la PR
+    #   (l'entree disparait de l'allowlist).
+    "paragraph-length-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
