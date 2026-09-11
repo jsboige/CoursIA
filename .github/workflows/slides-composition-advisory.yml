@@ -16,20 +16,27 @@ name: Slides Composition Advisory
 #
 # ADVISORY, jamais bloquant sur les constats : les findings sortent en
 # ::warning file=,line= (annotations de PR), exit 0. Exit 1 uniquement sur
-# META-défaillance du gate lui-même — trois causes, même classe (#8807 trap 1,
+# META-défaillance du gate lui-même — quatre causes, même classe (#8807 trap 1,
 # « un gate qui énumère zéro cible est vert et muet ») :
 #   (a) zéro deck découvert alors que slides/ a changé ;
 #   (b) binaire slidev introuvable — aucun deck n'est mesurable ;
-#   (c) deck découvert mais serveur jamais prêt — ce deck n'est PAS mesuré.
+#   (c) deck découvert mais serveur jamais prêt — ce deck n'est PAS mesuré ;
+#   (d) contrôle positif NON signalé — la fixture dédiée doit rougir, sinon
+#       l'instrument est mort et « 0 constat » sur les decks ne prouve rien
+#       (#15545 : un scanner mort rendait le même vert, ex glyphBBox v1
+#       sur #15381 — branche image jamais atteinte, signal à 0 à vie).
 # (b) et (c) sont ajoutées après coup (#12147) : le gate a rendu trois verts
 # les 20-21/08 sans mesurer une seule slide — chemin node_modules faux d'un
 # niveau, puis warning + continue + exit 0. Un vert qui n'a rien mesuré est
-# indiscernable d'un vert qui n'a rien trouvé : c'est ce que ces trois causes
+# indiscernable d'un vert qui n'a rien trouvé : c'est ce que ces causes
 # séparent.
 #
-# Le contrôle positif (slide 5 S3-acculturation @ 6cabc826b DOIT être
-# signalée) vit côté tests locaux : run_composition_control.py — nécessite
-# l'objet git 6cabc826b, hors d'un checkout shallow CI.
+# Le contrôle positif CI s'appuie sur la fixture committée
+# slides/_composition-control (défaut HORS_CANVAS déterministe slide 2,
+# indépendant des fontes) — aucun objet git requis. Le contrôle local
+# historique (slide 5 S3-acculturation @ 6cabc826b via
+# run_composition_control.py) reste valable : il vérifie en plus le rendu
+# du thème réel sur un deck de production au commit fondateur.
 
 on:
   schedule:
@@ -130,24 +137,18 @@ jobs:
           # ---- decks touchés : le deck dont le dir a changé, ou TOUS si infra partagée ----
           CHANGED=$(git diff --name-only "$BASE...$HEAD" -- slides/ || true)
           if grep -qE 'slides/(theme-ia101|package(-lock)?\.json)' <<< "$CHANGED"; then
-            MAPS=$(find slides -name slides.md -not -path '*/node_modules/*' -not -path '*/archive/*')
+            # _composition-control est la fixture du contrôle positif (#15545) :
+            # son défaut est DÉLIBÉRÉ — la scanner comme un deck réel ne produirait
+            # que du bruit.
+            MAPS=$(find slides -name slides.md -not -path '*/node_modules/*' -not -path '*/archive/*' -not -path '*/_composition-control/*')
           else
             # Découverte par DIR (intention du commentaire ci-dessus) : un diff qui
             # touche slides/<dir>/ via son jumeau Marp (slides.marp.md), analysis/
             # ou images/ impacte le deck Slidev du dir même si slides.md lui-même
             # n'est pas dans le diff. L'ancien grep fichier-exact faisait sortir
             # trap 1 (meta-failure) sur ces diffs dir-seulement.
-            DIRS=$(grep -oE '^slides/[^/]+/' <<< "$CHANGED" | sort -u || true)
+            DIRS=$(grep -oE '^slides/[^/]+/' <<< "$CHANGED" | grep -v '^slides/_composition-control/' | sort -u || true)
             MAPS=$(for d in $DIRS; do [ -f "${d}slides.md" ] && printf '%s\n' "${d}slides.md"; done)
-          fi
-
-          if [ -z "$MAPS" ]; then
-            if [ -n "$CHANGED" ]; then
-              echo "::error title=Composition gate meta-failure::slides/ a changé mais aucun deck slides.md découvert dans le diff — gate muet, à investiguer (#8807 trap 1)"
-              exit 1
-            fi
-            echo "Aucun deck impacté." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
           fi
 
           # Le binaire vit dans slides/node_modules : npm ci tourne avec
@@ -178,6 +179,78 @@ jobs:
           WAIT_PERIOD=3
           TOTAL_WAIT_BUDGET_S=$((WAIT_MAX_ITER * WAIT_PERIOD))
           echo "Budget d'attente par deck : ${TOTAL_WAIT_BUDGET_S}s (mesuré ~70-90s sur runner ubuntu-24.04)." >> "$GITHUB_STEP_SUMMARY"
+
+          # ---- Contrôle positif : la fixture DOIT rougir (#15545) ----
+          # Avant de mesurer les vrais decks, on prouve que l'instrument
+          # mesure : la slide 2 de slides/_composition-control porte un
+          # défaut HORS_CANVAS déterministe (p en absolu top:600px sur
+          # canvas 552px — indépendant des fontes et du thème). Un scanner
+          # mort (chemin de flagging cassé, ex glyphBBox v1 sur #15381)
+          # rendrait « 0 constat » partout : indistinguable d'un vert honnête.
+          # C'est la seule condition où un advisory a le droit d'être
+          # bruyant : elle ne dit rien des decks, tout de l'instrument.
+          CTRL_DIR=slides/_composition-control
+          CTRL_PORT=8899
+          cp "$CTRL_DIR/slides.md" "$CTRL_DIR/dev.md"
+          (cd "$CTRL_DIR" && "$SLIDEV_BIN" dev.md --port "$CTRL_PORT" --open false \
+             > /tmp/slidev_$CTRL_PORT.log 2>&1) &
+          CTRL_PID=$!
+          CTRL_READY=0
+          for i in $(seq 1 "$WAIT_MAX_ITER"); do
+            curl -sf "http://localhost:$CTRL_PORT/" > /dev/null && CTRL_READY=1 && break
+            sleep "$WAIT_PERIOD"
+          done
+          CTRL_SCAN_EXIT=99
+          if [ "$CTRL_READY" -ne 1 ]; then
+            echo "::error title=Composition gate meta-failure::contrôle positif : serveur slidev de la fixture jamais prêt en ${TOTAL_WAIT_BUDGET_S}s -- instrument NON VALIDÉ, aucun deck mesuré"
+            echo "Contrôle positif : fixture jamais servie -- instrument non validé." >> "$GITHUB_STEP_SUMMARY"
+            tail -40 "/tmp/slidev_$CTRL_PORT.log" 2>/dev/null || true
+          else
+            python scripts/notebook_tools/scan_slidev_composition.py \
+              --url "http://localhost:$CTRL_PORT/" \
+              --slides-md "$CTRL_DIR/slides.md" \
+              --baseline-slide 2 --baseline-commit fixture \
+              --out "$COMP_OUT_DIR/_positive_control.json" > /tmp/scan_$CTRL_PORT.log 2>&1
+            CTRL_SCAN_EXIT=$?
+            # PASS attendu : exit 1 (constats présents) ET controle_positif=true.
+            # exit 2 = baseline NON signalée (scanner mort) ; exit 0 = rien
+            # mesuré du tout ; autre = crash.
+            CTRL_OK=$(python - "$COMP_OUT_DIR/_positive_control.json" <<'PYEOF'
+          import json, sys
+          try:
+              d = json.load(open(sys.argv[1], encoding="utf-8"))
+          except Exception:
+              print("unreadable"); sys.exit(0)
+          print("ok" if d.get("controle_positif_ok") is True else "ko")
+          PYEOF
+          )
+            if [ "$CTRL_SCAN_EXIT" -eq 1 ] && [ "$CTRL_OK" = "ok" ]; then
+              echo "Contrôle positif PASS : la slide baseline de la fixture est signalée (HORS_CANVAS déterministe)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error title=Composition gate meta-failure::contrôle positif NON signalé (scanner exit $CTRL_SCAN_EXIT, controle_positif=$CTRL_OK) -- instrument suspect, la mesure des decks qui suit est SANS GARANTIE (#8807 trap 1)"
+              echo "Contrôle positif FAIL : instrument suspect (exit $CTRL_SCAN_EXIT, controle_positif=$CTRL_OK)." >> "$GITHUB_STEP_SUMMARY"
+              tail -40 "/tmp/scan_$CTRL_PORT.log" 2>/dev/null || true
+              META_FAIL=1
+            fi
+          fi
+          rm -f "$CTRL_DIR/dev.md"
+          kill "$CTRL_PID" 2>/dev/null || true
+
+          if [ -z "$MAPS" ]; then
+            if [ -n "$CHANGED" ]; then
+              echo "::error title=Composition gate meta-failure::slides/ a changé mais aucun deck slides.md découvert dans le diff — gate muet, à investiguer (#8807 trap 1)"
+              exit 1
+            fi
+            echo "Aucun deck impacté." >> "$GITHUB_STEP_SUMMARY"
+            # #15545 — même sans deck à mesurer, un instrument mort doit se
+            # voir : le contrôle positif a tourné ci-dessus ; s'il a failé on
+            # rougit malgré l'absence de decks.
+            if [ "$META_FAIL" -ne 0 ]; then
+              exit 1
+            fi
+            exit 0
+          fi
+
           for MD in $MAPS; do
             DIR=$(dirname "$MD")
             PORT=$((PORT+1))
