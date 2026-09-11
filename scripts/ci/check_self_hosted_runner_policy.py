@@ -155,6 +155,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (mesure 2026-09-02) : ils ne peuvent pas affamer les gardes de PR.
     #   Exclus : markdown-table-guard / render-volume-delta-advisory (lourds),
     #   slides-composition-advisory (navigateurs hors image).
+    # #15347 (owner myia-po-2026:CoursIA) : cablage de l'organe G-VAR-3
+    #   refresh_stale_adjacency.py -- sur main + tests, aucun workflow ne
+    #   l'appelait (organe inerte, 24 h de blocage mesurees sur #15165).
+    #   Balayage cron horaire (schedule + workflow_dispatch) pur-Python +
+    #   gh bootstrap toolcache : simule le garde contre la sequence de merges
+    #   courante et appose le marqueur `<!-- refresh-adj -->` idempotent qui
+    #   re-declenche `pull_request: edited` -- jamais d'override (le garde
+    #   reste l'autorite, la simulation doit passer). Advisory by
+    #   construction : exit 0 toujours, rc=2 logge ::warning::, aucun secret,
+    #   GITHUB_TOKEN lecture seule + pull-requests: write (body edit).
+    #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
+    #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",
@@ -238,6 +252,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   ci-dessus : garde Python pur stdlib, garde same-repo au niveau job,
     #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
     "notebook-output-flood-ratchet.yml",
+    # jumeau output-collapse (#15327, owner myia-po-2023:CoursIA) : verdict
+    #   ADVISORY rendu par fast-lane TRANCHE2 (entree 5, check-run
+    #   `Output-collapse ratchet (base vs PR, advisory)`), shell
+    #   workflow_dispatch-ONLY pour re-run manuel -- meme profil que les deux
+    #   jumeaux ci-dessus. Detecteur check_output_collapse.py, stdlib-only,
+    #   garde same-repo au niveau job, aucun GITHUB_TOKEN cote job. L'organe a
+    #   recu l'approval design (Hermes 02:29Z) ; la review ai-01 03:33Z a
+    #   demande la voie 2 : allowlist canonique + test de politique rejoue
+    #   (test_current_repository_self_hosted_jobs_satisfy_isolation_policy,
+    #   scan du repo courant -- aucune autre liste a synchroniser).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "notebook-output-collapse-ratchet.yml",
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
@@ -346,6 +372,19 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   advisory.yml). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "translation-hot-drift-advisory.yml",
+    # #15405 (decision ai-01 2026-09-11, owner myia-ai-01:CoursIA) : garde
+    #   advisory pur-Python sur les paragraphes markdown depassant 2000
+    #   caracteres (detect_paragraph_length.py, stdlib-only). Declencheur
+    #   pull_request filtrant `**/*.md` + auto-couverture du workflow (#8822,
+    #   sans quoi le poseur de label ne peut plus retirer son propre label une
+    #   fois les chemins sortis du diff). Pose un label signe, jamais exit != 0.
+    #   `pull-requests: write` + GITHUB_TOKEN limites a l'API labels -- meme
+    #   profil que markdown-deaccent-advisory.yml / repeated-prose-advisory.yml,
+    #   deja admis a ce titre. Garde same-repo au niveau job (#13874) : les PRs
+    #   de fork se font skipper proprement par pr_gate. Runner = jambe Linux
+    #   containerisee (LINUX_RUNNER_LABELS). Rollback = revert de la PR
+    #   (l'entree disparait de l'allowlist).
+    "paragraph-length-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

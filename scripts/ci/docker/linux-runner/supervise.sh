@@ -73,7 +73,14 @@ set -uo pipefail
 REPO="${COURSIA_RUNNER_REPO:-jsboige/CoursIA}"
 IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.337.0}"
 LABELS="${COURSIA_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-linux}"
-NAME_PREFIX="${COURSIA_RUNNER_NAME_PREFIX:-myia-po-2024-linux-docker}"
+# #15152 : le prefixe de nom derive de la MACHINE, pas d'un hote code en dur.
+# L'ancien defaut `myia-po-2024-*` faisait enregistrer les runners de toute
+# autre machine sous l'identite de po-2024 cote GitHub -- inventaire menteur
+# (un runner d'ai-01 lu comme fantome de po-2024) + collision de nom si les
+# deux machines montent des pools simultanement. La surcharge ENV explicite
+# reste prioritaire ; hostname lowercasse pour les hotes a nom Windowsien.
+MACHINE_ID="${COURSIA_RUNNER_MACHINE_ID:-$(hostname | tr 'A-Z' 'a-z')}"
+NAME_PREFIX="${COURSIA_RUNNER_NAME_PREFIX:-${MACHINE_ID}-linux-docker}"
 STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-$HOME/.coursia-runner}"
 STOP_FILE="$STATE_DIR/stop"
 
@@ -114,7 +121,7 @@ WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
 # de volume toolcache/_work : aucun job d'execution ne doit leur atterrir,
 # le gate bascule dessus uniquement (item B, ai-01).
 WAITER_LABELS="${COURSIA_RUNNER_WAITER_LABELS:-self-hosted,coursia-waiter}"
-WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-myia-po-2024-linux-waiter}"
+WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-${MACHINE_ID}-linux-waiter}"
 WAITER_CPUS="${COURSIA_RUNNER_WAITER_CPUS:-1}"
 WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-1g}"
 WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
@@ -138,7 +145,7 @@ WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
 # survivent aux conteneurs, lake build devient incremental.
 LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.337.0}"
 LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
-LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
+LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-${MACHINE_ID}-lean-docker}"
 LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"
 # 2 slots * 6 cpus = 12 des 16 coeurs au pire ; l'hote workstation prime
 # (cf CONTRAINTE en tete de fichier) -- baisser N ou les caps si la machine
@@ -211,6 +218,21 @@ CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-0}"
 # pour ne jamais devenir la fuite disque qu'on pretend surveiller.
 LOG_MAX_BYTES="${COURSIA_RUNNER_LOG_MAX_BYTES:-33554432}"
 
+# #15095 Anti-emballement borne. Incident 07/09 (ai-01, 2 gels machine en
+# 90 min) : docker.service arrete + Restart=always => chaque slot recreait
+# un runner et rejouait son bootstrap 4 a 8 fois par minute (journal :
+# « conteneur termine (rc=0) » en boucle), ecriture ext4.vhdx 94-96 Mo/s,
+# load 69. L'ancien garde `[ rc -ne 0 ] && sleep 15 || sleep 2` etait plat
+# et traitait differemment rc=0 et rc!=0 alors que le martelement observe
+# etait precisement la branche rc=0. Le nouveau garde ne regarde PAS le
+# code de retour mais la DUREE DE VIE du conteneur : un cycle plus court
+# que HEALTHY_CYCLE_SECS est anormal (le bootstrap seul depasse), et la
+# respiration suit un backoff exponentiel plafonne, remis a zero uniquement
+# apres un cycle ayant vecu assez longtemps.
+HEALTHY_CYCLE_SECS="${COURSIA_RUNNER_HEALTHY_CYCLE_SECS:-60}"
+BACKOFF_BASE="${COURSIA_RUNNER_BACKOFF_BASE:-15}"
+BACKOFF_CAP="${COURSIA_RUNNER_BACKOFF_CAP:-900}"
+
 # Backoff exponentiel des boucles de slot (#15091 : « de vrais gardes surtout
 # en cas de panne »).
 #
@@ -253,6 +275,115 @@ export MSYS_NO_PATHCONV=1
 export MSYS2_ARG_CONV_EXCL='*'
 
 die() { echo "ERREUR: $*" >&2; exit 1; }
+
+# #15095 Garde de disponibilite du demon. Avant cette garde, un daemon
+# docker arrete laissait chaque cmd_* echouer sur image inspect / volume
+# create puis se faire relancer par Restart=always -- le superviseur ne
+# devait jamais marteler un daemon absent (cf incident en tete du bloc
+# HEALTHY_CYCLE_SECS). `docker info` sur le DOCKER_HOST epingle (le wrapper
+# persist/ l'exporte) est le probe le plus proche de ce que fera docker run.
+assert_docker_daemon() {
+  if ! docker info >/dev/null 2>&1; then
+    die "demon Docker indisponible sur DOCKER_HOST='${DOCKER_HOST:-default}' (docker info echoue, #15095) -- ne pas marteler : reparer le daemon, puis relancer. Le service systemd est BindsTo=docker.service (fail-closed)."
+  fi
+}
+
+# Review #15166 (v2) : les 3 bornes du backoff sont env-overridable ; une
+# config operateur invalide ne doit JAMAIS pouvoir atteindre les boucles --
+# BASE=0 produisait un backoff nul sans fin, et des valeurs proches de la
+# borne signee 64 bits faisaient deborder le doublement vers le negatif
+# puis 0 (boucle infinie dans cycle_backoff). Fail-closed AVANT tout cycle :
+# decimal strictement positif, domaine arithmetique garanti (18 chiffres
+# max < 2^60 : tout produit garde du calcul iteratif reste < 2^61, loin de
+# la borne signee), et BASE <= CAP (le plafond doit dominer la base).
+_validate_backoff_value() {
+  # $1 = nom de la variable d'environnement, $2 = valeur
+  case "$2" in
+    ''|*[!0-9]*)
+      die "COURSIA_RUNNER_* : $1='$2' n'est pas un entier decimal (#15166)."
+      ;;
+  esac
+  [ "${#2}" -le 18 ] \
+    || die "COURSIA_RUNNER_* : $1='$2' depasse le domaine arithmetique (18 chiffres max, #15166)."
+  [ "$2" -ge 1 ] \
+    || die "COURSIA_RUNNER_* : $1='$2' doit etre strictement positif (#15166)."
+}
+
+validate_backoff_env() {
+  _validate_backoff_value HEALTHY_CYCLE_SECS "$HEALTHY_CYCLE_SECS"
+  _validate_backoff_value BACKOFF_BASE "$BACKOFF_BASE"
+  _validate_backoff_value BACKOFF_CAP "$BACKOFF_CAP"
+  [ "$BACKOFF_BASE" -le "$BACKOFF_CAP" ] \
+    || die "COURSIA_RUNNER_* : BACKOFF_BASE=$BACKOFF_BASE > BACKOFF_CAP=$BACKOFF_CAP -- le plafond doit dominer la base (#15166)."
+}
+
+# #15095 Backoff post-cycle partage par slot_loop et waiter_loop. La duree
+# de vie (pas le rc) classe le cycle : court = anormal, exponentiel plafonne
+# (15,30,60,...,900 s) ; sain = respiration courte et remise a zero. Le rc
+# n'est plus qu'informatif -- l'incident 07/09 etait des rc=0 en rafale.
+# Review #15166 (3 durecissements) :
+# (1) l'exponentiel SATURE AVANT l'exponentiation : 15*2^60 deborde
+#     l'arithmetique signee 64 bits de bash -- cycle 61 negatif, cycle 65+
+#     nul, et le plafond n'atteint jamais ces valeurs (sleep 0 = retour du
+#     martellement ; StartLimitBurst ne couvre pas cette boucle interne) ;
+# (2) un cycle court qui a REELLEMENT execute un job (log du cycle portant
+#     l'execution) est du travail utile, pas une boucle vide -- il ne nourrit
+#     pas l'exponentiel ;
+# (3) un cycle long avec rc!=0 n'est PAS automatiquement sain -- compteur
+#     de courts conserve, respiration intermediaire, pas de "sainement".
+cycle_backoff() {
+  local tag="$1" lifetime="$2" rc="$3" work_log="${4:-}" log_off="${5:-0}"
+  local worked=0
+  if [ -n "$work_log" ] && [ -f "$work_log" ]; then
+    # Le log du cycle est CUMULATIF (rotate_log ne borne que par taille) :
+    # le signal de travail ne lit que la portion ecrite PAR CE cycle, a
+    # partir de l'offset capture avant le docker run.
+    # #15166 : `grep -q` sort des la premiere ligne et FERME le pipe pendant
+    # que tail ecrit encore -> SIGPIPE 141 -> sous `set -uo pipefail` la
+    # pipeline est non nulle et un cycle AYANT travaille est classe en boucle
+    # vide (backoff au lieu de sleep 2). Un gros log de cycle (>> tampon ~64
+    # Ko, cf test 28) revele la faute. `grep ... >/dev/null` lit tout jusqu'a
+    # EOF : tail se termine proprement, rc=0 sur match.
+    if tail -c "+$(( log_off + 1 ))" "$work_log" 2>/dev/null | grep "Running job" >/dev/null; then
+      worked=1
+    fi
+  fi
+  if [ "$lifetime" -lt "$HEALTHY_CYCLE_SECS" ]; then
+    if [ "$worked" -eq 1 ]; then
+      SHORT_CYCLES=0
+      echo "$tag cycle court AVEC travail (rc=$rc, ${lifetime}s) -- travail reel, pas une boucle vide : pas de backoff (#15166)" >&2
+      sleep 2
+      return
+    fi
+    SHORT_CYCLES=$(( SHORT_CYCLES + 1 ))
+    # Review #15166 (v2) : le doublement ne doit JAMAIS pouvoir depasser la
+    # borne signee 64 bits, quelle que soit la config valide. d est calcule
+    # ITERATIVEMENT : on ne double que si d <= CAP/2 (chaque produit reste
+    # <= 2*floor(CAP/2) <= CAP, dans le domaine) ; si les exp doublons ne
+    # tiennent pas tous dans la garde, la vraie valeur depasse CAP ->
+    # plafond. L'ancien probe `while p<=CAP && p<=2^62; p=p*2` debordait sur
+    # BASE=2^62/CAP maximale (p=2^63 -> -2^63 -> 0 -> boucle infinie) et
+    # sur BASE=0 (0 sans fin) ; ces configs sont desormais rejetees au
+    # demarrage (validate_backoff_env), et le calcul lui-meme est garde.
+    local exp=$(( SHORT_CYCLES - 1 ))
+    local d="$BACKOFF_BASE" i=0
+    while [ "$i" -lt "$exp" ] && [ "$d" -le "$(( BACKOFF_CAP / 2 ))" ]; do
+      d=$(( d * 2 ))
+      i=$(( i + 1 ))
+    done
+    [ "$i" -lt "$exp" ] && d="$BACKOFF_CAP"
+    echo "$tag cycle court (rc=$rc, ${lifetime}s, consecutifs=$SHORT_CYCLES) -- backoff ${d}s (#15095)" >&2
+    sleep "$d"
+  elif [ "$rc" -eq 0 ]; then
+    SHORT_CYCLES=0
+    echo "$tag conteneur termine sainement (rc=$rc, ${lifetime}s)"
+    sleep 2
+  else
+    echo "$tag cycle long mais rc=$rc (${lifetime}s) -- non qualifie sain, compteur de courts conserve a $SHORT_CYCLES (#15166)" >&2
+    sleep "$BACKOFF_MIN_SEC"
+  fi
+}
+SHORT_CYCLES=0
 
 # Contexte de build du runner : le dossier qui porte ce script porte aussi
 # Dockerfile et entrypoint.sh -- le garde de fraicheur compare le sibling du
@@ -564,8 +695,17 @@ slot_loop() {
       sleep "$wait_s"
       continue
     fi
+    # #15095 : la duree de vie du conteneur est mesuree depuis AVANT le run
+    # (offset pris avant rotate_log, comme le log_off du signal de travail).
+    local t0=$SECONDS
     rotate_log "$STATE_DIR/$name.log"
-    # --rm : le conteneur disparait avec le job. --ephemeral (dans l'entrypoint)
+    # Offset du log au debut du cycle : le signal de travail de cycle_backoff
+    # ne doit lire QUE ce que CE cycle ecrit (le log est cumulatif, cf le
+    # commentaire dans cycle_backoff).
+    local log_off
+    log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
+    log_off="${log_off:-0}"
+    # --rm : le conteneur disparaît avec le job. --ephemeral (dans l'entrypoint)
     # desenregistre le runner cote GitHub. Un cycle = un job, proprement --
     # mais le cache de depot (volume par slot) survit au conteneur (#14285).
     docker run --rm \
@@ -584,23 +724,21 @@ slot_loop() {
       -e ACTIONS_RUNNER_INPUT_LABELS="$labels" \
       "$image" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
-    echo "[slot $slot] conteneur termine (rc=$rc)"
-    # Anti-emballement (#15091). La forme precedente etait un delai FIXE de
-    # 15 s : sous panne durable, N slots produisaient N/15 e appels
-    # registration-token par seconde -- ~48/min a 12 slots -- indefiniment,
-    # pendant que rien ne pouvait aboutir. Une panne devenait une charge
-    # soutenue sur l'API et sur le daemon. Le backoff double le delai a chaque
-    # echec consecutif jusqu'au plafond, et le jitter disperse les N slots qui
-    # sans lui repartiraient tous dans la meme seconde.
+    # #15095 : la duree de vie du conteneur, pas son rc, pilote la
+    # respiration du cycle (cf cycle_backoff) -- un cycle court rc=0
+    # martelait docker 4-8 fois/min sur l'incident 07/09, exactement le
+    # trou que le compteur d'echecs rc!=0 laisse passer par construction.
+    local lifetime=$(( SECONDS - t0 ))
+    # #15091 : le compteur d'echecs consecutifs reste tenu a jour (il
+    # alimente le backoff du chemin token ci-dessus) ; la respiration
+    # post-run est deleguee a cycle_backoff, qui couvre les deux branches
+    # (cycle court quelle que soit rc, cycle sain) sans double sommeil.
     if [ "$rc" -ne 0 ]; then
       fails=$(( fails + 1 ))
-      wait_s="$(backoff_delay "$fails")"
-      echo "[slot $slot] echec consecutif #$fails -- attente ${wait_s}s avant relance" >&2
-      sleep "$wait_s"
     else
       fails=0
-      sleep 2
     fi
+    cycle_backoff "[slot $slot]" "$lifetime" "$rc" "$STATE_DIR/$name.log" "$log_off"
   done
   echo "[slot $slot] arret demande, boucle terminee"
 }
@@ -616,6 +754,8 @@ cmd_start() {
   [ "${2:-}" = "--force" ] && force=1
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  validate_backoff_env
+  assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
@@ -813,7 +953,11 @@ waiter_loop() {
       sleep "$wait_s"
       continue
     fi
+    local t0=$SECONDS
     rotate_log "$STATE_DIR/$name.log"
+    local log_off
+    log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
+    log_off="${log_off:-0}"
     docker run --rm \
       --name "$name" \
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
@@ -826,16 +970,15 @@ waiter_loop() {
       -e ACTIONS_RUNNER_INPUT_LABELS="$WAITER_LABELS" \
       "$IMAGE" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
-    echo "[waiter $slot] conteneur termine (rc=$rc)"
+    # #15095 + #15091 composes (cf boucle slot) : duree de vie pilote la
+    # respiration, compteur d'echecs tenu pour le chemin token.
+    local lifetime=$(( SECONDS - t0 ))
     if [ "$rc" -ne 0 ]; then
       fails=$(( fails + 1 ))
-      wait_s="$(backoff_delay "$fails")"
-      echo "[waiter $slot] echec consecutif #$fails -- attente ${wait_s}s avant relance" >&2
-      sleep "$wait_s"
     else
       fails=0
-      sleep 2
     fi
+    cycle_backoff "[waiter $slot]" "$lifetime" "$rc" "$STATE_DIR/$name.log" "$log_off"
   done
   echo "[waiter $slot] arret demande, boucle terminee"
 }
@@ -844,6 +987,8 @@ cmd_waiters() {
   local n="${1:-24}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  validate_backoff_env
+  assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
@@ -879,6 +1024,8 @@ cmd_lean() {
   local n="${1:-2}"
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
+  validate_backoff_env
+  assert_docker_daemon
   docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
     || die "image $LEAN_IMAGE absente -- construire d'abord :
     docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"

@@ -300,6 +300,11 @@ PILOT: list[Guard] = [
         source=FAST_LANE_NATIVE,
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_duplicate_notebook_index.py",
+            # Grammaire partagee (#15489) : une modification du canon change le
+            # verdict des DEUX gardes de nommage. Sans ce path, le canon pourrait
+            # deriver sans qu'aucun des deux ne soit rejoue -- l'angle mort
+            # inverse de celui que cette tranche ferme.
+            "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_duplicate_notebook_index.py",
               "--base", "{base_ref}", "--head", "HEAD"],
@@ -355,6 +360,7 @@ TRANCHE1: list[Guard] = [
         paths=[
             "MyIA.AI.Notebooks/GameTheory/**",
             "scripts/notebook_tools/check_series_zero_pad.py",
+            "scripts/notebook_tools/naming_canon.py",
             ".github/workflows/series-naming-gate.yml",
         ],
         argv=["python", "scripts/notebook_tools/check_series_zero_pad.py"],
@@ -392,8 +398,8 @@ TRANCHE1: list[Guard] = [
 # TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
 # canonique, conclusion reelle, workflow d'origine retire de pull_request),
 # trois formes moteur nouvelles par rapport a la tranche 1, portees par
-# QUATRE gardes (deux instances du ratchet autonome : failure-text puis
-# output-flood, #14959) :
+# CINQ gardes (trois instances du ratchet autonome : failure-text,
+# output-flood puis output-collapse advisory, #14959/#15327) :
 #
 #   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
 #     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
@@ -454,6 +460,40 @@ TRANCHE2: list[Guard] = [
             "{base_ref}",
         ],
         blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # Output-volume COLLAPSE ratchet, advisory (#15327): the two siblings
+    # above watch output GROWTH (flood) and failure banners; nothing watched
+    # contraction -- #15209 lost 72 % of its output chars (11 code cells
+    # executed "successfully", graceful-degradation guards if api_ok:) while
+    # every gate stayed green. Design constraint (ai-01 measurement on the
+    # issue, 2026-09-09): AGGREGATE contraction alone is ~100 % FP (3/3
+    # contractions > 50 % over 14 days were legitimate), so this ratchet
+    # flags per-CELL order-of-magnitude loss and graceful-degradation
+    # signatures (execution sautee / non configure / mode simulation /
+    # skipped), exempting the two mechanically detectable legitimate causes:
+    # content moved to a notebook created by the same diff, and
+    # diagnostic-text purge (CS####/warning lines). Advisory until the
+    # threshold is calibrated further on history (issue point 3).
+    # Source : notebook-output-collapse-ratchet.yml (stub dispatch-only).
+    Guard(
+        name="Output-collapse ratchet (base vs PR, advisory)",
+        source="notebook-output-collapse-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_collapse.py",
+            ".github/workflows/notebook-output-collapse-ratchet.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_collapse.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_output_collapse.py",
+            "{base_ref}",
+        ],
+        blocking=False,
         needs_base=True,
         absorbed=True,
     ),
