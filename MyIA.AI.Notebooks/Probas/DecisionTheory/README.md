@@ -48,7 +48,8 @@ flowchart TD
     F --> S --> R --> B --> C
     B -.->|"formalisation"| LAKE
     F -.->|"formalisation"| LAKE
-    classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
+    classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class LAKE lean;
 ```
 

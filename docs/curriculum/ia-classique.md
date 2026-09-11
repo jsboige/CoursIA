@@ -20,9 +20,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 171 |
+| Notebooks | 172 |
 | PRODUCTION | 0 |
-| BETA | 171 |
+| BETA | 172 |
 | ALPHA | 0 |
 
 ## Search/Applications (55 notebooks)
@@ -152,31 +152,32 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 16 | [CSP-9-Distributed](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb) | BETA | Oui |
 | 17 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb) | BETA | Oui |
 
-## Search/Part4-Metaheuristics (21 notebooks)
+## Search/Part4-Metaheuristics (22 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [MGS-1 : Introduction a MetaGeneticSharp et au moteur…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-01-Introduction.ipynb) | BETA | Oui |
-| 2 | [MGS-11 : Synergie d'iles complementaires -- exploration…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb) | BETA | Oui |
-| 3 | [MGS-13 — Visualiser les paysages dé-biaisés : pourquoi…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb) | BETA | Oui |
-| 4 | [MGS-14 — Trouver une synergie (et dire quand il n'y en…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb) | BETA | Oui |
-| 5 | [MGS-15 : Analyse de paysage -- la corrélation…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) | BETA | Oui |
-| 6 | [MGS-16-AlgorithmSelection : Sélectionner le bon…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) | BETA | Oui |
-| 7 | [MGS-17 — Contrôle de paramètres (Parameter Control)](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb) | BETA | Oui |
-| 8 | [MGS-18 — Banc CEC consolide : la combinaison des deux…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb) | BETA | Oui |
-| 9 | [MGS-19 — Recuit simulé décomposé : l'opérateur de…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | BETA | Oui |
-| 10 | [MGS-20 : Langage de composition pour métaheuristiques](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb) | BETA | Oui |
-| 11 | [MGS-21 : Représentation contre algorithme — la preuve…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb) | BETA | Oui |
-| 12 | [MGS-3 : L'Eukaryote -- sous-populations et chromosomes…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-03-Eukaryote.ipynb) | BETA | Oui |
-| 13 | [MGS-4 : Le Modèle Insulaire -- populations structurees…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-04-Islands.ipynb) | BETA | Oui |
-| 14 | [MGS-7 : TSP combinatoire -- la grammaire de composition…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb) | BETA | Oui |
-| 15 | [MGS-7d : Michalewicz (steep ridges) + Dixon-Price…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb) | BETA | Oui |
-| 16 | [MGS-8 : Fitness Landscape Explorer -- voir la surface…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb) | BETA | Oui |
-| 17 | [MGS-9 - Trouver l'Everest : relief reel et bassins…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb) | BETA | Oui |
+| 2 | [MGS-3 : L'Eukaryote -- sous-populations et chromosomes…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-03-Eukaryote.ipynb) | BETA | Oui |
+| 3 | [MGS-4 : Le Modèle Insulaire -- populations structurees…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-04-Islands.ipynb) | BETA | Oui |
+| 4 | [MGS-7 : TSP combinatoire -- la grammaire de composition…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb) | BETA | Oui |
+| 5 | [MGS-7d : Michalewicz (steep ridges) + Dixon-Price…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb) | BETA | Oui |
+| 6 | [MGS-8 : Fitness Landscape Explorer -- voir la surface…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb) | BETA | Oui |
+| 7 | [MGS-9 - Trouver l'Everest : relief reel et bassins…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb) | BETA | Oui |
+| 8 | [MGS-11 : Synergie d'iles complementaires -- exploration…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb) | BETA | Oui |
+| 9 | [MGS-13 — Visualiser les paysages dé-biaisés : pourquoi…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb) | BETA | Oui |
+| 10 | [MGS-14 — Trouver une synergie (et dire quand il n'y en…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb) | BETA | Oui |
+| 11 | [MGS-15 : Analyse de paysage -- la corrélation…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) | BETA | Oui |
+| 12 | [MGS-16-AlgorithmSelection : Sélectionner le bon…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) | BETA | Oui |
+| 13 | [MGS-17 — Contrôle de paramètres (Parameter Control)](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb) | BETA | Oui |
+| 14 | [MGS-18 — Banc CEC consolide : la combinaison des deux…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb) | BETA | Oui |
+| 15 | [MGS-19 — Recuit simulé décomposé : l'opérateur de…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | BETA | Oui |
+| 16 | [MGS-20 : Langage de composition pour métaheuristiques](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb) | BETA | Oui |
+| 17 | [MGS-21 : Représentation contre algorithme — la preuve…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb) | BETA | Oui |
 | 18 | [MGS-22 : MGS contre mealpy — le bench croisé lib-vs-lib…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb) | BETA | Oui |
 | 19 | [MGS-23 : DifferentialEvolution MGS contre mealpy —…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-23-DifferentialEvolution-vs-Mealpy.ipynb) | BETA | Oui |
 | 20 | [MGS-25 : WhaleOptimisation MGS contre mealpy — le WOA…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-25-WhaleOptimisation-vs-Mealpy.ipynb) | BETA | Oui |
 | 21 | [MGS-29 : GA MGS compose "Default" contre BaseGA mealpy…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb) | BETA | Oui |
+| 22 | [MGS-30 : Scatter Search MGS contre son ombre — la…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | BETA | Oui |
 
 ## Sudoku (38 notebooks)
 
