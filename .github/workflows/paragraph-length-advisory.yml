@@ -126,17 +126,17 @@ jobs:
           # ANY modified file flags the PR. Unmeasured = JSON unparseable
           # (script died or produced nothing).
           FINDINGS=$(python -c "
-import json, sys
-total = 0
-unmeasured = 0
-try:
-    payload = json.load(open('payload.json'))
-    total = payload.get('flagged_count', 0)
-    unmeasured = payload.get('error_count', 0)
-except Exception:
-    unmeasured = 1
-print(f'{total} {unmeasured}')
-")
+          import json, sys
+          total = 0
+          unmeasured = 0
+          try:
+              payload = json.load(open('payload.json'))
+              total = payload.get('flagged_count', 0)
+              unmeasured = payload.get('error_count', 0)
+          except Exception:
+              unmeasured = 1
+          print(f'{total} {unmeasured}')
+          ")
           FIND=$(echo "$FINDINGS" | awk '{print $1}')
           UNM=$(echo "$FINDINGS" | awk '{print $2}')
           echo "Oversized paragraphs across modified files: $FIND"
