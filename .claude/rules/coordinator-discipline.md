@@ -4,6 +4,63 @@ S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`), **chef de flotte** 
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
+## Garde d'identite — mesurer sa lane AVANT d'armer une cadence (HARD)
+
+Mandat user 2026-09-11. Cette section est **nommee, pas numerotee** : R1-R6 sont
+referencees par [lane-claim-protocol.md](lane-claim-protocol.md),
+[proactive-coordination.md](proactive-coordination.md),
+[variation-protocol.md](variation-protocol.md) et
+[submodule-maintenance.md](submodule-maintenance.md) — les renumeroter casserait
+ces renvois.
+
+**Avant tout `CronCreate` et avant tout merge**, une session qui s'apprete a
+coordonner mesure son identite. Trois mesures, dont la troisieme n'est pas
+automatisable :
+
+| # | Ce qui se mesure | Comment |
+|---|---|---|
+| 1 | **machine** | hostname normalise (`COMPUTERNAME` prime sur Windows) |
+| 2 | **workspace** | basename du **clone** (worktree principal), pas du worktree courant |
+| 3 | **unicite de session** | `ListAgents` **puis** un aller-retour `SendMessage` par pair `coursia-*` |
+
+Les deux premieres sont portees par l'organe — `exit 1` = ne pas armer :
+
+```bash
+python scripts/check_coordinator_identity.py --expect coordinator
+```
+
+**La troisieme ne l'est pas, et l'organe l'ecrit dans chacun de ses verdicts.**
+Un `exit 0` dit « la lane est la bonne », **jamais** « il est sur d'armer
+`/coordinate` » : les noms de session (`coursia-0f`) **n'encodent pas la lane**,
+seule une reponse du pair la qualifie.
+
+### Table de decision
+
+| Lane mesuree | Cadence a armer |
+|---|---|
+| `myia-ai-01:CoursIA`, **et** unique | `/coordinate` |
+| `myia-ai-01:CoursIA`, **une autre session active sur la meme lane** | arbitrer : **une seule** garde `/coordinate`. A defaut d'accord, **celle qui a detecte la collision cede** — regle deterministe, pour qu'un depart simultane ne produise ni deux coordinateurs ni zero |
+| `myia-po-2025:CoursIA-2` | `/coordinate-adjoint` |
+| toute autre lane | `/continue` (worker) |
+
+### Deux pieges que cette garde existe pour fermer
+
+- **Deux clones partagent une lane.** Sur ai-01, `D:/CoursIA` et `D:/dev/CoursIA`
+  rendent tous deux `myia-ai-01:CoursIA` : la chaine de lane ne les discrimine
+  pas, seul le chemin le fait. L'organe porte la racine canonique et **retrograde
+  en worker** (fail-CLOSED) une session lancee depuis le jumeau.
+- **`CronList` est session-locale** ([[session-local-view-read-as-global]]) : une
+  liste vide ne prouve rien au-dela de la session courante — surtout pas qu'aucun
+  cron de coordination ne tourne ailleurs sur la machine.
+
+Enchainer avec [[handover-must-disarm-outgoing-cron]] : **desarmer la cadence
+sortante d'abord**, armer ensuite.
+
+**Incident fondateur (2026-09-11)** : un reboot machine a tue la session
+coordinateur et son cron (`CronCreate` est session-only, L740). Deux sessions
+CoursIA se sont retrouvees vivantes sur `myia-ai-01` sans qu'aucun signal ne dise
+laquelle devait coordonner — `ListAgents` listait des noms, pas des lanes.
+
 ## Regle 0 : production avant digestion, sans perte de qualite (HARD)
 
 La production des lanes et la digestion (CI, reviews, merges) sont **deux pipelines paralleles**. Une saturation du second est un symptome a reparer ou a capaciter ; elle ne devient jamais une politique de ralentissement du premier.
