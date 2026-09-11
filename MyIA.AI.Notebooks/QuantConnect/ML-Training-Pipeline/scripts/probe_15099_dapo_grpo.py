@@ -18,6 +18,7 @@ Dataset : BytedTsinghua-SIA/DAPO-Math-17k (cache HF local, 1 791 700 lignes =
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import re
@@ -51,6 +52,15 @@ MODELS: dict[str, dict[str, str]] = {
     "qwen35": {
         "path_glob": "models--Qwen--Qwen3.5-0.8B/snapshots/*",
         "label": "Qwen3.5-0.8B",
+    },
+    # Etage >= 8-9B demande par #15293 (review user de #15249 : le casting
+    # 0.8B/2B est errone pour un exercice de raisonnement mathematique).
+    # Poids deja en cache local sur po-2024 — l'arm ne demande aucun
+    # telechargement, ce que la disponibilite intermittente de huggingface.co
+    # rend necessaire (cf corps de PR).
+    "qwen3_8b": {
+        "path_glob": "models--Qwen--Qwen3-8B/snapshots/*",
+        "label": "Qwen3-8B",
     },
 }
 
@@ -402,9 +412,7 @@ def mode_summarize() -> int:
     axes[1].set_xlabel("step")
     axes[0].legend(fontsize=7)
 
-    if "minicpm5" in summary["per_model"] and "qwen35" in summary["per_model"]:
-        mini, qwen = summary["per_model"]["minicpm5"], summary["per_model"]["qwen35"]
-
+    if len(summary["per_model"]) >= 2:
         def curves_healthy(model_key: str) -> bool:
             rl = [r for r in loaded if r["model_key"] == model_key]
             improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
@@ -421,19 +429,39 @@ def mode_summarize() -> int:
                         no_collapse = False
             return improved and no_collapse
 
-        mini_ok = curves_healthy("minicpm5")
-        qwen_ok = curves_healthy("qwen35")
-        disjoint = (mini["delta_mean"] - mini["delta_std"]
-                    > qwen["delta_mean"] + qwen["delta_std"])
-        beats = bool(mini_ok and disjoint)
-        summary["verdict"] = {
-            "mini_curves_healthy": mini_ok,
-            "qwen_curves_healthy": qwen_ok,
-            "delta_intervals_disjoint": disjoint,
-            "beats": beats,
-            "rule": ("BEATS si courbes MiniCPM5 saines (post>pre par seed, pas d'effondrement de longueur) "
-                     "ET delta eval moyen > qwen avec intervalles ±1std disjoints (≥2 seeds par modèle)"),
-        }
+        health = {k: curves_healthy(k) for k in summary["per_model"]}
+
+        # La comparaison est desormais N-aire : #15293 demande de rejouer le
+        # harnais au-dela de 2B et de dire si le classement tient a cette
+        # echelle. Une paire codee en dur interdisait de lire l'etage >= 8-9B.
+        pairs: dict[str, Any] = {}
+        for a, b in itertools.combinations(sorted(summary["per_model"]), 2):
+            pa, pb = summary["per_model"][a], summary["per_model"][b]
+            disjoint = (pa["delta_mean"] - pa["delta_std"]
+                        > pb["delta_mean"] + pb["delta_std"])
+            pairs[f"{a}_vs_{b}"] = {
+                "curves_healthy": {a: health[a], b: health[b]},
+                "delta_intervals_disjoint": disjoint,
+                "beats": bool(health[a] and disjoint),
+                "higher_delta": a if pa["delta_mean"] > pb["delta_mean"] else b,
+                "rule": (f"BEATS si courbes {MODELS[a]['label']} saines (post>pre par seed, "
+                         "pas d'effondrement de longueur) ET delta eval moyen > "
+                         f"{MODELS[b]['label']} avec intervalles +-1std disjoints (>=2 seeds par modele)"),
+            }
+        summary["pairs"] = pairs
+
+        # Forme historique conservee telle quelle (m19) : la re-execution du
+        # summarize sur les runs deja committes doit rendre le meme verdict.
+        if "minicpm5_vs_qwen35" in pairs:
+            legacy = pairs["minicpm5_vs_qwen35"]
+            summary["verdict"] = {
+                "mini_curves_healthy": health["minicpm5"],
+                "qwen_curves_healthy": health["qwen35"],
+                "delta_intervals_disjoint": legacy["delta_intervals_disjoint"],
+                "beats": legacy["beats"],
+                "rule": ("BEATS si courbes MiniCPM5 saines (post>pre par seed, pas d'effondrement de longueur) "
+                         "ET delta eval moyen > qwen avec intervalles ±1std disjoints (≥2 seeds par modèle)"),
+            }
     fig.tight_layout()
     png = REPO_RESULTS / "curves.png"
     fig.savefig(png, dpi=130)
