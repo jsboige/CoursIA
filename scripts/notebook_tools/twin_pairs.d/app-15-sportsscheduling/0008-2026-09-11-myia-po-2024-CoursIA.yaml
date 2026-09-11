@@ -6,7 +6,7 @@ content_python_sha: 6bc97a786ead73280efd5ab9062fd87f8625ba308268932374d4234885db
 content_csharp_sha: f633f237ad12bdd1e9c4a580533442ace2ceb1bc3522bf236a5afd8dc2ae6209
 reason: >-
   Re-attestation de parite -- canari hr_separator (#15227, lane myia-po-2024:CoursIA),
-  markdown-only. Le separateur decoratif de fin de derniere cellule markdown du cote C#
+  markdown-only. Le separateur decoratif standalone de la cellule markdown d'index 24 (sur 25, derniere) du cote C#
   (App-15b-SportsScheduling-CSharp.ipynb) est converti d'une regle horizontale en
   asterisques par scripts/notebook_tools/fix_hr_separator.py, dans le cadre de son
   allowlist (hors frontmatter, bloc cloture et setext). Cote C# SEUL : le jumeau Python
