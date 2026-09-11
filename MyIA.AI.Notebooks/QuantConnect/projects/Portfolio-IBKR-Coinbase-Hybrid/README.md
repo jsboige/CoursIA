@@ -234,7 +234,7 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
   crypto 2022) reste à Sharpe 0.916. L'allocation ne change que ~5% le Sharpe OOS — le levier
   dominant est le régime, pas le mix. 
 
-Multi-seed HAR-RV-J (passer du proxy au vrai modèle
+  Multi-seed HAR-RV-J (passer du proxy au vrai modèle
   seedé M12) reste à faire pour durcir le verdict.
 - **Phase 4 (paper harness)** : livrée (`paper_harness/`, PR #3942) — sleeves IBKR +
   Coinbase (+ legacy Binance), smoke tests par sleeve, circuit breakers (`risk.py`).
