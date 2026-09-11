@@ -89,15 +89,15 @@ stratégie n° 13 de Robert Carver (*Advanced Futures Trading Strategies*, Harri
 2026-01-02). Cette variante coexiste avec `main.py` v3.1 sans le modifier — v3.1
 reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 
-| Composant | v3.1 (ETF, baseline) | Carver #13 (c.1107) |
+| Composant | v3.1 (ETF, baseline) | Carver #13 (c.1109) |
 |-----------|----------------------|---------------------|
 | Univers | 6 ETF (SPY/GLD/EFA/VNQ/DBC/XLE) | 19 futures continus (ES/NQ/YM/ZN/ZB/ZF/6E/6B/6J/CL/NG/RB/GC/SI/HG/ZC/ZW/ZS/SB) |
-| Signal entrée | Donchian 20j + filtre SMA50 | 6 horizons EWMAC (Carver pairs 8/32, 16/64, 32/128, 64/256, 16/48, 32/96) |
-| Carry factor | absent | **désactivé** (voir note ci-dessous) |
+| Signal entrée | Donchian 20j + filtre SMA50 | 6 horizons EWMAC (Carver pairs 8/32, 16/64, 32/128, 64/256, 16/48, 32/96) avec scalaire per-horizon `sqrt(slow/32)` (c.1063 increment) |
+| Carry factor | absent | **désactivé** (voir note ci-dessous ; c.1107 + c.1109) |
 | Multiplicateur régime | absent | vol-régime borné [0.5, 2] |
-| FDM (Forecast Diversification Multiplier) | absent | formule Carver corrigée, clip [1, 2] |
+| FDM (Forecast Diversification Multiplier) | absent | **requalifié honnêtement** en *breadth multiplier* clip [1, 2] (c.1109 REPAIR-3, voir note) |
 | Cap forecasts | n/a | +/-20 par forecast |
-| Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé |
+| Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé, retarget du **delta** (pas d'aller-retour fabriqué, c.1109) |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
 
 ### Note Tell c.1069 strict — Carry désactivé sur cette implémentation (c.1107)
@@ -119,18 +119,42 @@ credentials). La méthode `_carry_forecast(front_close, deferred_close)`
 reste l'interface prévue — l'appelant futur (lane QC équipée) n'a qu'à passer
 les deux closes réelles.
 
-### Note Tell c.1069 strict — FDM corrigé (c.1107)
+### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3)
 
-La docstring initiale annonçait un clip `[1/sqrt(N), 1]` mais la formule
-Carver `sum(|f|)/sqrt(sum(f^2))` rend entre **1** (signaux indépendants) et
-**sqrt(N)** (signaux alignés, concentration maximale), soit l'inverse de la
-borne annoncée. La borne `[0.2, 1.5]` clipait systématiquement au plafond 1.5,
-rendant le FDM inopérant. Correction c.1107 : clip `[1.0, 2.0]` (Carver
-handbook chap. 9, soft cap anti-concentration).
+Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g`) a détecté que
+la formule `_fdm()` livrée c.1107 (`sum(|f|)/sqrt(sum(f^2))` clip `[1, 2]`)
+est un **breadth bonus**, pas une pénalité de concentration comme Carver
+chap. 9 l'aurait prescrit : le ratio monte (≥1) quand les signaux
+s'alignent, et monte aussi quand ils sont indépendants — c'est l'inverse
+de l'intention Carver. Sans estimateur de corrélation exogène, la formule
+instantanée ne peut pas pénaliser la concentration.
 
-**Statut courant** (c.1107, lane `myia-po-2027:CoursIA-2`) :
+**REPAIR-3 c.1109** (Tell c.1069 strict honnêteté référentielle) :
+- Renommage `_fdm` → `_breadth_multiplier` (honnêteté du nom)
+- Docstring Carver-true : bonus quand le book est unidirectionnel, pas pénalité
+- Clip inchangé `[1, 2]` (soft cap de gross leverage, conservateur)
+- Module docstring et class docstring mis à jour en conséquence
+- Le Carver FDM au sens propre reste une dette de fond (#15549 acceptance
+  follow-up : estimateur de corrélation rolling)
 
-- Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 359
+### Note Tell c.1069 strict — Retarget delta direct, pas d'aller-retour fabriqué (c.1109 REPAIR-3)
+
+Le préflight adjoint a aussi détecté que `_rebalance` liquidait toutes
+les positions investies avant `set_holdings`, ce qui **fabrique** un
+aller-retour (1 liquidate + 1 set_holdings = double commission) même
+quand la cible est proche de la position actuelle.
+
+**REPAIR-3 c.1109** :
+- Liquidation uniquement sur **changement de signe** (long → short ou
+  inverse) ou **cible ~ 0**.
+- `set_holdings(sym, target_weight)` est idempotent côté broker
+  (ajustement à la cible absolue, pas de commission synthétique sur la
+  jambe existante quand le signe est conservé).
+- Les coûts backtestés deviennent comparables à un rebalancement réel.
+
+### Statut courant (c.1109, lane `myia-po-2027:CoursIA-2`)
+
+- Le code **compile statiquement** (`ast.parse` PASS, 8 fonctions / 1 classe / 386
   lignes, EOL LF, 0 secret literal).
 - **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
   QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
@@ -144,9 +168,13 @@ handbook chap. 9, soft cap anti-concentration).
   favorable non-représentative).
 - **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
   (`msg-20260911T040615-4c08xy`) avant lancement des runs QC Cloud — (a) carry
-  proxy identique à EWMAC(8,32), (b) FDM clip à l'inverse de la docstring. Les
-  deux sont corrigés sur la branche `feature/15549-carver13-futures` et
-  signalés ici en honnêteté référentielle.
+  proxy identique à EWMAC(8,32), (b) FDM clip à l'inverse de la docstring.
+- **c.1063 increment** : scalaire per-horizon `sqrt(slow/32)`, warmup 2x cohérent,
+  history bulk 1 call. Détails dans le commit `e41a4eb8d632`.
+- **REPAIR-3 c.1109** : FDM requalifié en breadth multiplier (Tell c.1069 strict
+  honnêteté référentielle) + retarget delta direct (pas d'aller-retour fabriqué).
+  Préflight adjoint po-2025 `msg-20260911T043805-i7tl0g` ; jambe QC po-2026
+  suspendue jusqu'au nouveau head exact.
 
 ## Références
 

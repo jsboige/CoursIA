@@ -6,8 +6,8 @@ from collections import deque
 
 
 # Carver #13 (Carver 2023, *Advanced Futures Trading Strategies*, Harriman House,
-# ISBN 9780857199683) — six EWMAC horizons + carry + volatility-regime multiplier
-# [0.5, 2] + blend 60/40 + FDM (Forecast Diversification Multiplier) + cap +/-20.
+# ISBN 9780857199683) — six EWMAC horizons + volatility-regime multiplier
+# [0.5, 2] + breadth multiplier + cap +/-20.
 # Reference article: QuantConnect #15989 (Derek Melchin, 2026-01-02). The article
 # reports Sharpe 0.944 vs 0.749 benchmark over a 3-year favourable window
 # (2020-07 -> 2023-07); we deliberately do NOT pre-commit to that result. We
@@ -17,12 +17,20 @@ from collections import deque
 # Differences vs the v3.1 ETF baseline (main.py):
 # - True continuous futures (19 instruments) instead of 6 ETF proxies.
 # - Six EWMAC horizons (Carver pairs: 8/32, 16/64, 32/128, 64/256, 16/48, 32/96)
-#   with per-horizon scalar normalisation, not a single Donchian 20/10.
-# - Carry factor (slope of the term structure) blended 60% trend + 40% carry.
+#   with per-horizon scalar normalisation (c.1063), not a single Donchian 20/10.
+# - Carry factor: DISABLED on this port (c.1107 REPAIR ADJOINT, see
+#   `_carry_forecast` docstring + the carry stub in `_rebalance`). The
+#   blend is trend-only (mean of six EWMAC forecasts, capped at +/-20).
+#   Re-introduction of carry requires the QC Cloud `Future` chain API
+#   for a real front/deferred ratio (acceptance #15549 follow-up).
 # - Volatility regime multiplier cap in [0.5, 2].
-# - FDM (Forecast Diversification Multiplier) to penalise correlated forecasts.
+# - Breadth multiplier (formerly labelled FDM, c.1109 REPAIR): we apply
+#   the Carver-style gross-leverage adjustment honestly labelled as a
+#   breadth bonus [1, 2] — see _breadth_multiplier for the rationale.
 # - Cap forecasts in [-20, +20] per Carver rule (system layer, not per instrument).
-# - Position sizing: risk-targeted (vol-scaled), not fixed 33%.
+# - Position sizing: risk-targeted (vol-scaled), not fixed 33%; retarget
+#   the delta directly, liquidate only when sign change or target ~ 0
+#   (c.1109 REPAIR — no fabricated round-trip cost).
 #
 # Co-existence with main.py: this file is additive — main.py v3.1 stays intact as
 # the ETF baseline against which Carver #13 will be compared on a >= 2016-2026
@@ -106,17 +114,20 @@ def _annualised_vol(daily_returns, periods_per_year=252):
 
 
 class CarverThirteen(QCAlgorithm):
-    """Carver strategy #13 — EWMAC + carry + regime multiplier + FDM + cap.
+    """Carver strategy #13 — EWMAC + regime multiplier + breadth + cap.
 
     Workflow per instrument, per daily bar:
-    1. Compute six EWMAC forecasts (fast - slow EWM of price, scaled).
-    2. Compute carry forecast (annualised slope of term structure).
-    3. Blend: forecast = 0.6 * mean(EWMAC) + 0.4 * carry.
-    4. Cap forecast in [-20, +20].
-    5. Compute vol multiplier in [0.5, 2] from realised vs target vol.
-    6. Apply FDM (forecast diversification multiplier) at the portfolio level
-       after collecting all per-instrument forecasts.
-    7. Convert forecast to target weight via vol-scaled position sizing.
+    1. Compute six EWMAC forecasts (fast - slow EWM of price, scaled per
+       horizon via _carver_scalar).
+    2. Carry forecast DISABLED on this port (see module docstring); the
+       blend is trend-only: forecast = mean(EWMAC).
+    3. Cap forecast in [-20, +20].
+    4. Compute vol multiplier in [0.5, 2] from realised vs target vol.
+    5. Apply breadth multiplier at the portfolio level after collecting
+       all per-instrument forecasts (see _breadth_multiplier).
+    6. Convert forecast to target weight via vol-scaled position sizing;
+       retarget the delta directly — liquidate only on sign change or
+       target ~ 0.
     """
 
     def initialize(self):
@@ -237,6 +248,14 @@ class CarverThirteen(QCAlgorithm):
     def _carry_forecast(self, front_close, deferred_close):
         """Carry = annualised slope of the term structure (front vs deferred).
 
+        NOT CALLED on this port (c.1107 + c.1109 REPAIR): the inline
+        blend in `_rebalance` is trend-only (mean of six EWMAC forecasts),
+        and `CARVER_CARRY_WEIGHT = 0.0`. Re-introduction of carry
+        requires the QC Cloud `Future` chain API for a real front/deferred
+        ratio (acceptance #15549 follow-up). This stub is preserved as
+        the call site for the QC-equipped lane (po-2026) so the Carver
+        60/40 blend can be re-introduced byte-for-byte.
+
         Returns 0.0 if either series is unavailable.
         """
         if front_close is None or deferred_close is None:
@@ -262,17 +281,31 @@ class CarverThirteen(QCAlgorithm):
         raw_mult = CARVER_TARGET_VOL_ANNUAL / realised_vol_annual
         return float(np.clip(raw_mult, CARVER_VOL_MULT_MIN, CARVER_VOL_MULT_MAX))
 
-    def _fdm(self, forecasts):
-        """Forecast Diversification Multiplier.
+    def _breadth_multiplier(self, forecasts):
+        """Breadth multiplier — honest requalification of the prior FDM
+        (Tell c.1069 strict, REPAIR-3 c.1109 adjoint po-2025 preflight
+        `msg-20260911T043805-i7tl0g`).
 
-        Carver rule (chap. 9):
-            FDM = sum(|f_i|) / sqrt(sum(f_i^2))
+        Formula (instantaneous cross-sectional breadth proxy):
+            breadth = sum(|f_i|) / sqrt(sum(f_i^2))
 
-        Returns between 1 (independent signals, no concentration) and
-        sqrt(N) (all N forecasts perfectly aligned = max concentration).
-        Carver applies a soft cap on the upper end to limit gross leverage
-        when signals align; we use [1.0, 2.0] as a conservative bound
-        consistent with his handbook examples.
+        Reading (c.1109 honest requalification): when forecasts are
+        perfectly aligned (all same sign, same magnitude), the ratio
+        equals sqrt(N) — that's NOT a "penalty for concentration", it's
+        a **bonus when the book is one-directional**. When forecasts are
+        independent (zero mean cross-section), the ratio tends toward
+        sqrt(2N / pi) — also a bonus. The classical Carver FDM (chap. 9)
+        inverts this to penalise concentration; we do NOT do that here
+        because (a) it requires an exogenous correlation estimate the
+        instantaneous formula cannot supply, and (b) the QC Cloud backtest
+        window already enforces gross-leverage limits through margin and
+        position sizing.
+
+        Hence the multiplier is labelled *breadth*, not *FDM*, and is
+        clipped to [1.0, 2.0] as a soft cap on gross leverage when the
+        book is one-directional. The clip is conservative; we never
+        reduce gross exposure below the proportional sum because we have
+        no signal that the forecasts are spuriously aligned.
         """
         arr = np.asarray([abs(float(f)) for f in forecasts], dtype=float)
         if arr.size == 0:
@@ -313,7 +346,7 @@ class CarverThirteen(QCAlgorithm):
             # bit-identical to the EWMAC(8,32) signal already in the trend
             # mean, producing a 100%-trend forecast weighted 0.4 on a
             # duplicate. Rather than ship that, this port ships trend-only
-            # (six EWMAC horizons, vol-regime multiplier, FDM, cap).
+            # (six EWMAC horizons, vol-regime multiplier, breadth bonus, cap).
             #
             # `_carry_forecast(front, deferred)` is preserved as a callable
             # awaiting the QC Cloud `Future` chain API for a real
@@ -330,9 +363,10 @@ class CarverThirteen(QCAlgorithm):
             ]
             trend_component = float(np.mean(ewmac_vals)) if ewmac_vals else 0.0
 
-            # Trend-only blend on this implementation (carry disabled).
-            # The 60/40 trend+carry Carver blend is documented but not
-            # applied — see the carry stub above for the chain-API hook.
+            # Trend-only blend on this implementation (carry disabled,
+            # CARVER_CARRY_WEIGHT = 0.0). The 60/40 trend+carry Carver
+            # blend is documented but not applied — see the carry stub
+            # above for the chain-API hook.
             blended = trend_component
             raw_forecasts[ticker] = float(
                 np.clip(blended, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP)
@@ -352,38 +386,59 @@ class CarverThirteen(QCAlgorithm):
         if not raw_forecasts:
             return
 
-        # Apply FDM at portfolio level.
-        fdm = self._fdm(list(self.forecasts.values()))
+        # Apply breadth multiplier at portfolio level.
+        breadth = self._breadth_multiplier(list(self.forecasts.values()))
 
         # Position sizing: forecast -> weight via inverse-vol scaling.
         abs_sum = sum(abs(v) for v in self.forecasts.values())
         if abs_sum <= 0.0:
             return
 
-        # Liquidate any existing positions before re-targeting (the daily
-        # schedule fires before any market-data events).
-        for ticker, sym in self.symbols.items():
-            if self.portfolio[sym].invested:
-                self.liquidate(sym)
-
-        target_value = self.portfolio.total_portfolio_value * fdm
+        target_value = self.portfolio.total_portfolio_value * breadth
         for ticker, sym in self.symbols.items():
             forecast = self.forecasts.get(ticker, 0.0)
-            if forecast == 0.0:
-                continue
-            # Carver-style proportional weighting: each forecast's share of
-            # the absolute sum scales the gross exposure.
-            weight = (abs(forecast) / abs_sum) * target_value
-            signed_weight = np.sign(forecast) * weight / self.portfolio.total_portfolio_value
-            signed_weight = float(np.clip(signed_weight, -1.0, 1.0))
-            if abs(signed_weight) < 0.01:
-                continue
-            self.set_holdings(sym, signed_weight)
+            target_weight = 0.0
+            if forecast != 0.0:
+                # Carver-style proportional weighting: each forecast's
+                # share of the absolute sum scales the gross exposure.
+                weight = (abs(forecast) / abs_sum) * target_value
+                target_weight = np.sign(forecast) * weight / self.portfolio.total_portfolio_value
+                target_weight = float(np.clip(target_weight, -1.0, 1.0))
+                if abs(target_weight) < 0.01:
+                    target_weight = 0.0
+
+            # Retarget the delta directly to avoid fabricated round-trip
+            # costs (Tell c.1069 strict, REPAIR-3 c.1109 adjoint po-2025
+            # preflight `msg-20260911T043805-i7tl0g`):
+            # - liquidate only when sign change (long -> short or vice versa)
+            #   OR when target_weight ~ 0;
+            # - otherwise `set_holdings` is idempotent on the target
+            #   weight (the broker adjusts to the new absolute target, no
+            #   synthetic commission on the existing leg).
+            current_holding = self.portfolio[sym].quantity
+            current_weight = (
+                self.portfolio[sym].holdings_value / self.portfolio.total_portfolio_value
+                if self.portfolio.total_portfolio_value > 0
+                else 0.0
+            )
+            sign_change = (current_holding > 0 and target_weight < 0) or (
+                current_holding < 0 and target_weight > 0
+            )
+            if target_weight == 0.0 or sign_change:
+                # Either we want flat or the side flipped — liquidate first.
+                if self.portfolio[sym].invested:
+                    self.liquidate(sym)
+                if target_weight != 0.0:
+                    self.set_holdings(sym, target_weight)
+            else:
+                # Same-side re-target: idempotent set_holdings on the new
+                # absolute weight; no fabricated round-trip.
+                self.set_holdings(sym, target_weight)
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
         self.log(
             f"CARVER13: Final=${final:,.2f}, "
             f"Return={(final - 100000) / 100000:.2%}, "
-            f"FDM-applied forecasts={len(self.forecasts)}"
+            f"Breadth-multiplied forecasts={len(self.forecasts)}"
         )
