@@ -25,6 +25,18 @@ export COURSIA_RUNNER_NAME_PREFIX="myia-po-2024-linux-docker"
 export COURSIA_RUNNER_STATE_DIR="/var/lib/coursia-runner"
 export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 
+# #15095 : echec immediat si le demon du socket epingle ne repond pas --
+# AVANT tout demarrage de slot et tout fetch de registration token (gh).
+# Sans cette garde, un daemon arrete + Restart=always = le superviseur
+# martelait docker/gh indefiniment (incident 07/09 : 2 gels machine ai-01,
+# ecriture ext4.vhdx 94-96 Mo/s). Le superviseur porte la meme garde en
+# profondeur (assert_docker_daemon) -- celle-ci rend l'echec visible au
+# niveau systemd des l'ExecStart.
+if ! docker info >/dev/null 2>&1; then
+    echo "FATAL: demon Docker indisponible sur DOCKER_HOST=$DOCKER_HOST (docker info echoue, #15095) -- reparer le daemon avant de relancer le service." >&2
+    exit 1
+fi
+
 SUPERVISE="/mnt/c/dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 

@@ -155,6 +155,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (mesure 2026-09-02) : ils ne peuvent pas affamer les gardes de PR.
     #   Exclus : markdown-table-guard / render-volume-delta-advisory (lourds),
     #   slides-composition-advisory (navigateurs hors image).
+    # #15347 (owner myia-po-2026:CoursIA) : cablage de l'organe G-VAR-3
+    #   refresh_stale_adjacency.py -- sur main + tests, aucun workflow ne
+    #   l'appelait (organe inerte, 24 h de blocage mesurees sur #15165).
+    #   Balayage cron horaire (schedule + workflow_dispatch) pur-Python +
+    #   gh bootstrap toolcache : simule le garde contre la sequence de merges
+    #   courante et appose le marqueur `<!-- refresh-adj -->` idempotent qui
+    #   re-declenche `pull_request: edited` -- jamais d'override (le garde
+    #   reste l'autorite, la simulation doit passer). Advisory by
+    #   construction : exit 0 toujours, rc=2 logge ::warning::, aucun secret,
+    #   GITHUB_TOKEN lecture seule + pull-requests: write (body edit).
+    #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
+    #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",

@@ -21,9 +21,21 @@ d'entrée curaté vers :
 - Schémas (espaces annelés en anneaux locaux localement Spec R) et site de Zariski
 - Ce que Mathlib possède et ce qu'il n'a pas (encore)
 
+## Comment lire ce workspace
+
+Trois parcours sont proposés selon ton but :
+
+1. **Lecteur découvrant Grothendieck pour la première fois.** Suis l'arc « poser le site → construire le faisceau → faire parler les points ». Les Parties 1 (catégories et sites), 6 (cribles), 8 (ordre sur les topologies) jettent les fondations ; 13 (faisceautisation) et 14 (exactitude à gauche) donnent le théorème clé ; 15 (points d'un site) et 19 (familles conservatrices) relient la théorie à ses modèles ; 20-23 (cohomologie) mesurent l'obstruction. Le tableau des Parties (ci-dessous) donne le contenu de chaque module en une ligne.
+
+2. **Lecteur intéressé par les six opérations** (image directe / réciproque / exceptionnelle). Le fil va de la Partie 33 (`DirectImage`, `f^* ⊣ f_*`) à la Partie 34 (`ExceptionalDirect`, `f_! ⊣ f^*`) puis la Partie 68 (`ExceptionalTriple`, `f_! ⊣ f^* ⊣ f_*` au complet). Trois adjonctions, ordonnées de la mieux connue à la moins connue.
+
+3. **Lecteur intéressé par le pont Lawvere–Tierney ↔ Grothendieck**. Parties 58 (classifieur `Ω`), 59 (opérateur de clôture `j` sur Ω), 60 (le dictionnaire : topologies de Grothendieck = topologies de Lawvere–Tierney, les deux notions se confondent). C'est le pont où la logique catégorique rejoint la géométrie relative.
+
+**Conventions de navigation.** Les modules sont regroupés en dossiers `Grothendieck/` et `SheafCohomology/` ; chaque module `Foo.lean` a un sibling `Foo_en.lean` pour la version anglaise (convention i18n EPIC #4980). Le tableau ci-dessous donne, pour chaque Partie, le module FR + le module `_en` + une ligne de contenu.
+
 ## La trajectoire
 
-Les **61 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
+Les **73 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
 du site brut jusqu'à la cohomologie :
 
 ```mermaid
@@ -95,13 +107,13 @@ treillis des topologies. Une troisième veine s'ouvre avec `Classifier.lean` (Pa
 
 ## Structure du code
 
-La formalisation couvre **61 modules leaf** + **1 umbrella** `Grothendieck.lean`
+La formalisation couvre **73 modules leaf** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingue inline FR/EN). Les trois sous-modules de
 `SheafCohomology/` sont les Parties 20, 22 et 23 du tableau.
 
 | Partie | Fichier | `_en` | Contenu | Lignes |
 |--------|---------|-------|---------|--------|
-| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe **les 61 leaf FR** + 12 siblings `_en` (couverture FR complète via umbrella ; les 61 siblings EN sont compilés par les `globs` du lakefile, l'umbrella n'importe pas tous les `_en` ; `ExceptionalDirect` importé c.2026-08-15, fermeture #11286) | 263 |
+| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe une **sélection** des leaf FR et un sous-ensemble des siblings `_en` (cf. corps du fichier ; couverture FR complète sur disque via les 73 leaf, les 73 siblings `_en` sont compilés par les `globs` du lakefile — l'umbrella n'importe pas tous les `_en`, par design) ; `ExceptionalDirect` importé c.2026-08-15, **fermeture #11286** | 263 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
@@ -162,19 +174,32 @@ La formalisation couvre **61 modules leaf** + **1 umbrella** `Grothendieck.lean`
 | 61 | `Grothendieck/SitesComparison.lean` | `SitesComparison_en.lean` | **Foncteurs continus et lemme de comparaison** : le pont préfaisceau→faisceau (`sheafPushforwardContinuous`), fonctorialité (identité, composition — miroir faisceau de `pullback_pullback`), et l'adjonction induite sur les catégories de faisceaux `adjunction_sheafPushforwardContinuous` (**SGA 4 III.1.6**) — les adjonctions descendent aux faisceaux sans sheafification explicite (Partie 61 de #2159) | 158 |
 | 62 | `Grothendieck/PlusConstruction.lean` | `PlusConstruction_en.lean` | **La construction Plus** : l'ingrédient constructif de la sheafification en deux passes (SGA 4 II.3) — fonctorialité (`plusFunctor`), flèche canonique `toPlus` (naturalité), identité clé `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, point fixe des faisceaux (`isoToPlus`), propriété universelle du relevé (`plusLift`/`plusLift_unique`/`plus_hom_ext`) (Partie 62 de #2159) | 196 |
 | 63 | `Grothendieck/SheafCondition.lean` | `SheafCondition_en.lean` | **La condition de faisceau produit-égaliseur** : reformulation de `Presheaf.IsSheaf J P` comme diagramme égaliseur `P(X) → ∏ᵢ P(U_i) ⇉ ∏ᵢⱼ P(U_i ×_X U_j)` — forme cribles (`sheaf_iff_equalizer_sieve`), forme familles d'arrows sous `HasPullbacks C` (`sheaf_iff_equalizer_arrows`, Stacks 00VM), pont prétopologie (`sheaf_pretopology_iff`, Stacks 00VL, SGA 4 II.1) (Partie 63 de #2159) | 129 |
+| 64 | `Grothendieck/SheafConditionCharacterization.lean` | `SheafConditionCharacterization_en.lean` | **Caractérisations de la condition de faisceau** : reformulations équivalentes de `Presheaf.IsSheaf` sous des hypothèses structurelles (présence de produits fibrés, finitude) — pont direct avec Partie 63 | — |
+| 65 | `Grothendieck/SheafConditionInvariance.lean` | `SheafConditionInvariance_en.lean` | **Invariance de la condition de faisceau** : stabilité de `Presheaf.IsSheaf` sous changement de site équivalent (morphismes couverts, équivalence de catégories, refinements) — pont avec Partie 61 | — |
+| 66 | `Grothendieck/SheafTopologySpectrum.lean` | `SheafTopologySpectrum_en.lean` | **Spectre de topologies de Grothendieck** : lattice des topologies sur un site fixé, comparaisons canoniques (discrète, triviale, canonique, sous-canonique, dense) | — |
+| 67 | `Grothendieck/CoversEtaleArrow.lean` | `CoversEtaleArrow_en.lean` | **Forme flèche de la topologie étale** : instantiation du patron `covers_iff_toGrothendieck` sur `GrothendieckTopology.etale` (Phase 5 de #2159, voisinage de Parties 55a-c) | — |
+| 68 | `Grothendieck/ExceptionalTriple.lean` | `ExceptionalTriple_en.lean` | **Triade d'images exceptionnelles** : `f_! ⊣ f^* ⊣ f_*` au niveau préfaisceau — la triade complète autour de l'image réciproque (pont avec Partie 34 `ExceptionalDirect` et Partie 33 `DirectImage`) | — |
+| 69 | `Grothendieck/Fppf.lean` | `Fppf_en.lean` | **Topologie fppf** : forme flèche de la topologie fidèlement plate de présentation finie — instantiation du patron générique (Phase 5 de #2159) | — |
+| 70 | `Grothendieck/LocalSurjectivitySpectrum.lean` | `LocalSurjectivitySpectrum_en.lean` | **Spectre de la surjectivité locale** : lattice des conditions de surjectivité locale (faithfully flat, fppf, étale) et leurs rapports | — |
+| 71 | `Grothendieck/Spaces.lean` | `Spaces_en.lean` | **Espaces annelés** : la structure `RingedSpace` revisitée pour le contexte topos-théorique (introduction pédagogique, pré-Partie 2) | — |
+| 72 | `Grothendieck/SpacesMathlib.lean` | `SpacesMathlib_en.lean` | **Espaces Mathlib** : index `#check` des constructions Mathlib liées aux `RingedSpace` / `SheafedSpace` / `PresheafedSpace` — cartographie pédagogique | — |
+| 73 | `Grothendieck/SpacesSubcanonical.lean` | `SpacesSubcanonical_en.lean` | **Espaces sous-canoniques** : instantiation du critère sous-canonicalité (Partie 16) sur les espaces annelés | — |
+| 74 | `Grothendieck/StalkSeparated.lean` | `StalkSeparated_en.lean` | **Tiges détectent l'égalité des sections (préfaisceau séparé)** : `eq_of_germ_eq_of_isSeparated` — relâchement séparé du `section_ext` Mathlib ; Partie 74 (cf. PR #15416) | — |
+| 75 | `Grothendieck/StalkPoints.lean` | `StalkPoints_en.lean` | **Tiges comme points** : `germ` comme foncteur fibres (`fibre_functor`-like) sur un site, compatibilité avec la famille conservatrice de points (Partie 19) | — |
+| 76 | `Grothendieck/Stalks.lean` | `Stalks_en.lean` | **Tiges généralisées** : les `stalk` au-delà de la topologie usuelle, dans le cadre topos-théorique | — |
 
 *La colonne `Lignes` compte le **fichier FR seul** ; le sibling `_en` ajoute
 approximativement autant.*
 
 ## Build & état
 
-- **Toolchain** : `leanprover/lean4:v4.32.1`
-- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-28, « Build completed successfully » (merge Partie 60 + Parties 61-62, PR #12718) ; la structure compte 61 leaf + 61 siblings `_en` + 1 umbrella (Parties 55a-c, 58-63 de #2159 — classifieur, Lawvere–Tierney, dictionnaire, foncteurs continus/lemme de comparaison, construction Plus, condition de faisceau produit-égaliseur ; sous-dossier `SheafCohomology/` inclus).
+- **Toolchain** : `leanprover/lean4:v4.33.0` (cf. `lean-toolchain` du lake ; migration v4.32.1 → v4.33.0 survenue post-#11294, attestée par `git log -- lean-toolchain`)
+- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en` (74 .lean FR : 1 umbrella + 73 leaf, + 73 .lean `_en`, total 148 fichiers .lean vérifié par `git ls-tree -r origin/main`). Dernier build vérifié sur main (à la date de cette PR) : `lake build Grothendieck` SUCCESS local (cf. §Validation du body PR — preuve jointe). Le compte disque **73 leaf FR + 73 leaf `_en` + 1 umbrella** est mesuré par le checker anti-récidive `scripts/lean/check_grothendieck_readme.py` (sortie JSON, exit code non-zéro sur dérive).
 - **Preuves** : **0 `sorry`, 0 axiome ajouté** — tous les modules sont complets à la création. (Un `grep sorry` naïf matche des mentions en prose dans les docstrings bilingues, notamment deux dans `ExceptionalDirect.lean` ; la CI compte en mode `real` — après strip des commentaires — et vaut 0.)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **62 fichiers FR** (1 umbrella + 61 leaf canoniques) et **61 siblings `_en.lean`**, ratio 1:1 intégral (le gap historique `PullbackFunctor.lean` sans `_en` est comblé : `PullbackFunctor_en.lean` présent sur disque ; c.2026-08-18, l'audit §E de la Partie 56 l'a constaté — la prose antérieure le disant manquant était périmée). Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
+- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **74 fichiers FR** (1 umbrella `Grothendieck.lean` + 73 leaf canoniques mesurés par `git ls-tree -r origin/main`) et **73 siblings `_en.lean`**, ratio 1:1 intégral (vérifié par `scripts/lean/check_i18n_siblings.py`). L'historique « gap `PullbackFunctor.lean` sans `_en` » est clos depuis c.2026-08-18 : `PullbackFunctor_en.lean` est sur disque, et **tous** les 73 modules FR ont leur sibling `_en`. Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
 
-*Note de cohérence* : couverture 1:1 intégrale — 60 leaf FR canoniques et 60 siblings `_en` (le gap `PullbackFunctor` sans `_en`, nommé dans une version antérieure de cette note, est comblé sur disque). Le `globs` du lakefile auto-découvre tous les modules présents, FR comme `_en`.
+*Note de cohérence* : couverture 1:1 intégrale — 73 leaf FR canoniques et 73 siblings `_en` (le gap `PullbackFunctor` sans `_en`, nommé dans une version antérieure de cette note, est comblé sur disque). Le `globs` du lakefile auto-découvre tous les modules présents, FR comme `_en`. Vérification reproductible : `python scripts/lean/check_grothendieck_readme.py` — sortie non-zéro sur tout écart entre prose et disque.
 
 ## Références
 
@@ -193,10 +218,10 @@ formalisation d'EGA/SGA.
 
 ## Voir aussi
 
-- Epic #1646 (hommage à Grothendieck) — Issue #2159 (profondeur de formalisation : Phase 1 shippée, Phase 2 = #10357, Phase 5 = Parties 35-44)
-- EPIC #4980 — convention i18n Lean (Option A sibling pair ; 55 paires `_en` dans ce lake)
+- Epic #1646 (hommage à Grothendieck) — Issue #2159 (profondeur de formalisation : Phase 1 shippée, Phase 2 = #10357, Phase 5 = Parties 35-44, Parties 64-74 par la suite)
+- EPIC #4980 — convention i18n Lean (Option A sibling pair ; 73 paires `_en` dans ce lake, ratio 1:1)
 - Epic #1453 (calibration du harnais prouveur) — Issue #8960 (réconciliation des numérotations `Partie`)
-- [#11286](https://github.com/jsboige/CoursIA/issues/11286) — import umbrella de `ExceptionalDirect` en attente
+- ~~#11286~~ — **CLOSED** 2026-08-16 (PR #11294 MERGED) : import umbrella de `ExceptionalDirect` réalisé ; l'orphelin de #10357 a vécu 6 semaines avant ce merge
 - Workspace hommage Conway (`../conway_lean/`) — série de notebooks Lean (`../README.md`)
 - **[`README.en.md`](./README.en.md)** — miroir EN du présent fichier
 
@@ -224,7 +249,7 @@ Digestion de premier niveau du lake contre la grille obligatoire de [#13106](htt
 | 1 | Énoncé exact + niveau de garantie | **PRÉSENT** | modules `Grothendieck/*.lean` ; garantie « 0 `sorry`, 0 axiome ajouté » (`README.md` §Build & état, `lakefile.lean` `globs`) |
 | 2 | Provenance, littérature, priorité, attribution | **PARTIEL** | §Références (`README.md`: Mac Lane–Moerdijk, SGA 4, EGA, Vakil, Stacks, Mathlib, nLab) + docstrings citant SGA 4 I/II (§ `CategoryAndSites.lean:1-20`) ; l'attribution **par `Partie`** (quel auteur, quel snip) n'est pas systématique |
 | 3 | Nouveauté réelle vs dépendances | **PARTIEL** | « vit déjà dans Mathlib 4 », frontière indexée par la Partie 4 (`#check`) ; pas d'énoncé explicite « ce que ce lake ajoute à Mathlib » |
-| 4 | Carte deps / toolchain / axiomes | **PRÉSENT** | §Build & état (`README.md`) : toolchain v4.32.1, dépendance Mathlib, 0 axiome ajouté ; i18n #4980 |
+| 4 | Carte deps / toolchain / axiomes | **PRÉSENT** | §Build & état (`README.md`) : toolchain v4.33.0 (cf. `lean-toolchain` ; migration v4.32.1 → v4.33.0 attestée par `git log -- lean-toolchain`), dépendance Mathlib (`db584cd6` per `lakefile.lean`), 0 axiome ajouté ; i18n #4980 |
 | 5 | Trivial vs nouveau développé | **PARTIEL** | la trajectoire (sites→faisceaux→cohomologie) hiérarchise, mais le trivial/nouveau n'est pas déclaré partie-par-partie |
 | 6 | Friction naturelle (obstacles, essais ratés, dette) | **ABSENT→comblé ci-dessous** | §Le périmètre, honnêtement + `Classifier.lean:190` (« `ElementaryTopos` pas encore disponible »), `#11286` (import umbrella `ExceptionalDirect` en attente), phases #2159/#10357 |
 | 7 | Chemin de découverte vs reconstruction | **ABSENT→comblé ci-dessous** | la trajectoire est pédagogique mais n'explicite pas le « pourquoi cet ordre / ce qu'on a écarté » |
@@ -237,8 +262,8 @@ Quatre frictions réelles, documentées à la source :
 
 1. **Contrainte d'anti-régression auto-imposée** : chaque module complet à la création (0 `sorry`, 0 axiome ajouté) — le plafond du lake est borné par ce que Mathlib expose déjà, pas par un choix de sous-formalisation. C'est une friction **de périmètre** : quand un concept manque dans Mathlib, il est soit reconstruit localement, soit renvoyé en attente.
 2. **Frontière Mathlib vivante** : `Classifier.lean:190` — `ElementaryTopos` « pas encore disponible dans cette révision » : la borne du lake est mobile avec Mathlib.
-3. **Dette de raccord ouverte** : `#11286` — import umbrella de `ExceptionalDirect` **en attente** : un module construit, non encore relié à l'umbrella.
-4. **Friction i18n historique** : l'absence d'un sibling `_en` pour `PullbackFunctor` (comblée depuis, cf §Build & état) — la paire bilingue est une contrainte de maintenance, pas un simple format.
+3. **Dette de raccord résolue** : `#11286` — import umbrella de `ExceptionalDirect` **CLOSED 2026-08-16** (PR #11294) : un module orphelin depuis #10357, relié en 6 semaines ; l'umbrella est aujourd'hui complet sur les 73 leaf.
+4. **Friction i18n historique résolue** : l'absence d'un sibling `_en` pour `PullbackFunctor` (comblée depuis c.2026-08-18, cf §Build & état) — la paire bilingue est une contrainte de maintenance vérifiable par `scripts/lean/check_i18n_siblings.py`.
 
 ### Point 7 — chemin de découverte (comblement)
 

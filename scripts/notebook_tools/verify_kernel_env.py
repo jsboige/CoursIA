@@ -61,7 +61,10 @@ def _venv_from_interpreter(interpreter: Optional[str]) -> Optional[str]:
         return None
     from pathlib import PurePosixPath
     p = PurePosixPath(interpreter)
-    if p.name not in ("python", "python3") and not p.name.startswith("python"):
+    # Any python* interpreter name qualifies (python, python3, python3.10):
+    # WSL venvs often expose a versioned name. The former
+    # ``not in ("python", "python3")`` clause was subsumed by this check.
+    if not p.name.startswith("python"):
         return None
     if p.parent.name != "bin":
         return None
