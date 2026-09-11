@@ -65,7 +65,7 @@ jobs:
     # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,7 +87,11 @@ jobs:
           if [ "${DRY_RUN:-false}" = "true" ]; then
             python scripts/check_stale_guard_reds.py --repo "$REPO" --json
           else
-            python scripts/check_stale_guard_reds.py --repo "$REPO" --apply --json
+            # --remeasure (#15350) : la re-mesure vit dans CE job -- fetch du
+            # merge-ref frais + rejeu des tests echoues, zero run GitHub cree,
+            # zero push (plancher DWELL des PR intact). Bornee a 2 par passage
+            # (orthonance locale #11860 + timeout job releve 15 -> 25 min).
+            python scripts/check_stale_guard_reds.py --repo "$REPO" --apply --remeasure --json
           fi
 
           # Advisory organ: it signals, it never blocks.
