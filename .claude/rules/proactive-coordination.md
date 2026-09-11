@@ -25,22 +25,14 @@ Tirage pondéré dans **trois urnes** : **grain** (issue unitaire → la livrer)
 
 **Le picker ne décide pas.** Il propose ; l'agent tranche selon les critères de variété de sa lane et pose son `[CLAIMED]` (`check_lane_claim.py` avant d'**éditer**, cf [lane-claim-protocol.md](lane-claim-protocol.md)). Plutôt que rejouer aveuglément : demander davantage de candidats et passer les exclusions factuelles (`--exclude-issue`, labels, bornes age/inactivité, `--urns`) ; `--reroll` reste le dernier recours ; le cache ne touche jamais les organes minute-sensitive ([détail §Cache](../../docs/reference/proactive-coordination-detail.md)). **Aucun résultat vide filtré ne justifie un `[ASK coordinator]` ni un statut idle.**
 
-**Une exception, et elle passe avant tout : réparer son propre rouge (HARD, mandat user 2026-08-22).**
-Le picker **assigne la réparation** (sortie **0** — le grain rendu *est* la reprise) tant que la lane porte
-une PR **bloquée et ouverte depuis plus de 24 h** ; il nomme la liste, la cause et le geste. Une PR
-réparée et mergée tient le plancher R1, avec son tag `Grain:` d'origine. **Ce qui compte comme à
-reprendre** = ce qui **empêche vraiment le merge**, en **quatre** causes : un check **requis** en échec
-(`isRequired`), un conflit avec `main`, un `CHANGES_REQUESTED` non levé, et — **en tête des trois
-autres** — un **point de review non levé** (HARD, mandat user 2026-08-24 : reprendre ses vieilles PRs
-avant de produire), structurellement aveugle aux trois surfaces de [§B.0](../../CLAUDE.md) — la détection
-est déléguée à `check_unaddressed_nits.analyse`, **le même organe que le merge-gate** (s'ils
-divergeaient, une lane produirait du neuf sur une PR que le merge-gate refusera ; organe injoignable ≠
-ardoise propre : vérifier à la main avant de produire). Un advisory rouge n'est **pas** un rouge ;
-`mergeStateStatus: BLOCKED` vaut aussi « en attente de review ». Rouge non réparable par cette lane
-(garde cassée sur `main`, dépendance d'une autre PR) : l'**écrire en commentaire sur la PR**, puis
-`--ignore-red` — l'échappatoire se justifie par écrit, jamais en silence. Une PR sans tag `Grain:`
-lisible est invisible à ce garde : son tag manquant est lui-même le défaut à corriger, au coordinateur de
-les reprendre. Historique et mesure : [détail, section Réparer son rouge](../../docs/reference/proactive-coordination-detail.md).
+**Premiere action : reparer son propre rouge (HARD, mandat user 2026-08-22).** Le picker **assigne d'abord la reparation** (sortie **0** — le grain rendu *est* la reprise) tant que la lane porte une PR **bloquee et ouverte depuis plus de 24 h** ; il nomme la liste, la cause et le geste. `repair-first` ordonne la premiere action, **pas le cycle entier** : au debut de chaque session, la lane inventorie **toutes** ses PRs portant nits, reserves, `CHANGES_REQUESTED` ou threads inline non resolus, puis traite sequentiellement **tous** les points reparables qui la concernent — jamais un seul nit ou une seule PR. Chaque remarque recoit une correction reelle si necessaire et une reponse ecrite qui la nomme ; seules les attentes externes (`CI`, `DWELL`, re-review, merge ou dependance) peuvent rester. Une fois cette file reparable drainee, la lane tire immediatement plusieurs grains DEEP/MED de contenu, sequentiellement, tant que la fenetre reste ouverte.
+
+- **Une PR reparee et mergee tient le plancher R1** : ce n'est pas un a-cote, c'est du travail deja ecrit porte a son terme. Une PR seulement corrigee mais encore en attente externe ne le tient pas encore ; la lane continue donc a produire. Elle garde son tag `Grain:` d'origine — la reparation ne re-qualifie pas le tier.
+- **Ce qui compte comme a reprendre en premiere action** est ce qui **empeche vraiment le merge**, en **quatre** causes : un check **requis** en echec (champ GraphQL `isRequired`, pas un motif de nom), un conflit avec `main`, un `CHANGES_REQUESTED` non leve, et — **en tete des trois autres** — un **point de review non leve**. Il doit etre propose en premier lieu a chaque cycle ; il n'interdit jamais le grain suivant une fois l'action reparable effectuee. Un advisory rouge n'est **pas** un rouge ; `mergeStateStatus: BLOCKED` vaut aussi « en attente de review », que la lane ne peut pas lever.
+- **Les points de review passent en premier** car ils sont structurellement aveugles aux trois surfaces de [§B.0](../../CLAUDE.md) (nits du user en issue comments, réserves d'Hermes en préfixe de body, threads inline) : une PR peut être verte, sans conflit, sans `CHANGES_REQUESTED` — et rester non mergeable. Le picker délègue la détection à `check_unaddressed_nits.analyse`, **le même organe que le merge-gate** — s'ils divergeaient, une lane serait autorisée à produire du neuf sur une PR que le merge-gate refusera. La cause est listée d'abord parce que ce qui lève une remarque est **une phrase, pas un SHA**.
+- **Organe injoignable ≠ ardoise propre** : quand la lecture des points échoue, le picker tire quand même mais le **dit** — vérifier à la main (`python scripts/check_unaddressed_nits.py <N>`) avant de produire.
+- **Rouge non réparable par cette lane** (garde cassée sur `main`, dépendance d'une autre PR) : l'**écrire en commentaire sur la PR**, puis `--ignore-red`. L'échappatoire se justifie par écrit, elle ne se prend pas en silence.
+- **Portée écrite** : une PR sans tag `Grain:` lisible n'est imputable à aucune lane et reste invisible à ce garde. Son tag manquant est lui-même le défaut à corriger — c'est au coordinateur de les reprendre.
 
 6. **Variété obligatoire — le tarissement est structurellement interdit (HARD).** Les règles 1-5 interdisent l'idle ; celle-ci interdit la **monotonie**, et pose l'auto-alimentation comme **principe**, pas comme rattrapage du coordinateur. Une lane ne PEUT PAS se tarir : le worker pioche **de lui-même**, **varié**, même si le coordinateur est absent plusieurs cycles.
    - **Substance en plat principal** : chaque cycle, viser un grain d'EPIC de fond (preuve Lean, backtest/training, série notebook, moteur SOTA, sécu/infra).
@@ -49,7 +41,7 @@ les reprendre. Historique et mesure : [détail, section Réparer son rouge](../.
 
 7. **Never-idle ancré — le « forensic-floor » n'est PAS un livrable (HARD).** Les workers ont contourné 1-6 en inventant un **vocabulaire d'idle-honnête** qui *sonne* comme du travail. Parce qu'un nouveau synonyme est toujours inventable, l'autorité n'est **pas une liste de mots** mais un **test de résultat** :
 
-   > **Test de fin de cycle.** Ai-je, ce cycle, sorti un grain de **substance** du pool global et l'ai-je transformé en PR (ou fait avancer un livrable multi-cycle) ? **Si non, et que `gh issue list` renvoie >0** — *quel que soit le label* que je m'apprête à poster — **c'est un échec de méthode, pas un cycle honnête.** Un scan forensic qui trouve 0 défaut n'est **pas** un livrable : c'est le **prélude** au pick suivant, jamais sa substitution.
+   > **Test de fin de cycle.** Ai-je, ce cycle, sorti un grain de **substance** du pool global et l'ai-je transformé en PR (ou fait avancer un livrable multi-cycle) ? **Si non, et que `gh issue list` renvoie >0** — *quel que soit le label* que je m'apprête à poster — **c'est un échec de méthode, pas un cycle honnête.** Un scan forensic qui trouve 0 défaut, une `candidate-delivered`, une édition de body seule, un HOLD ou une attente mécanique ne sont **pas** des livrables : ce sont des préludes au pick suivant, jamais leur substitution.
 
    **Trois évasions mortes** (labels bannis : [détail, section Vocabulaire](../../docs/reference/proactive-coordination-detail.md)) :
    - **« Pas ma famille »** — FAUX : famille = préférence de **reporting**, pas frontière. **Seules deux vraies barrières** : (a) **GPU-only** ; (b) **vision-only** (→ lanes MiniMax/ai-01). Le reste est piochable partout.
