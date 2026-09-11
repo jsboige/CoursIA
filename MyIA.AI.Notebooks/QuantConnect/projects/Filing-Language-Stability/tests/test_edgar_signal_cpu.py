@@ -77,15 +77,20 @@ def _make_10k_html(
     """
     if item_1a_text is None:
         return b"<html><body>broken document with no Item 1A section</body></html>"
-    # DOIT contenir le marqueur "Risk Factors" en debut et "Item 1B" en fin ;
-    # la regex du module exige "Item 1A ... Risk Factors" puis "Item 1B".
-    # On utilise la forme canonique `Item 1A. Risk Factors`.
+    # Forme canonique : ``Item 1A. Risk Factors`` suivi directement
+    # de la prose narrative (lettres), puis ``Item 1B`` en fin. La
+    # regex du module exige ``Risk Factors`` puis un blanc NON-chiffre
+    # (le lookahead negatif ``(?!\\d)`` exclut la TOC qui suit par
+    # ``  5 Item 1B.`` = range de pages). Hermes review PR #15584
+    # (point 2).
     return (
         b"<html><body>"
         b"<h1>10-K</h1>"
         b"<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
-        b"Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-        b"Item 1A. Risk Factors " + item_1a_text.encode("utf-8") + b" Item 1B. "
+        b"Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\n"
+        b"Item 1A. Risk Factors "
+        + item_1a_text.encode("utf-8") + b"\n\n"
+        + b"Item 1B. Unresolved Staff Comments\n\n"
         b"Other unrelated text continuing for many paragraphs. "
         b"</p></body></html>"
     )
@@ -489,7 +494,7 @@ def test_csv_schema_complet(fake_fetcher, tmp_path):
         "extraction_mode_n": pair.extraction_newer,
         "extraction_mode_n_minus_1": pair.extraction_older,
         "similarity": f"{pair.similarity:.6f}" if pair.similarity else "",
-        "available_at": pair.available_at.strftime("%Y-%m-%d"),
+        "available_at": pair.available_at.strftime("%Y-%m-%dT%H:%M:%S"),
     }
     for key, expected in expectations.items():
         assert row[key] == expected, f"colonne {key!r}: attendu {expected!r}, reçu {row[key]!r}"
@@ -590,3 +595,123 @@ def test_list_recent_10k_zero_renvoie_liste_vide(fake_fetcher, tmp_path):
         _FIXTURE_CIK, n=0, cache_dir=tmp_path / "cache"
     )
     assert rows == []
+
+
+# ---------------------------------------------------------------------------
+# Hermes review PR #15584 -- les 3 CONCERNS leves par c.1070
+# ---------------------------------------------------------------------------
+
+
+def test_available_at_preserve_heure_acceptance():
+    """Fix Hermes #1 : l'heure d'acceptance est preservee dans available_at.
+
+    Un 10-K accepte a 14h23 mardi est dispo a 14h23 mardi (pas a
+    minuit le meme jour). Un 10-K accepte a 23h30 vendredi est dispo
+    a 23h30 vendredi ; un 10-K accepte samedi a 10h00 est dispo lundi
+    a 10h00 (l'avance week-end preserve l'heure).
+    """
+    older = es.FilingRecord(
+        cik=320193, accession="0000320193-24-000001",
+        period_of_report=date(2024, 9, 28), filing_date=date(2024, 10, 30),
+        acceptance_timestamp=datetime(2024, 10, 30, 8, 0, 0),
+        primary_document="a.htm",
+    )
+    newer = es.FilingRecord(
+        cik=320193, accession="0000320193-25-000001",
+        period_of_report=date(2025, 9, 27), filing_date=date(2025, 10, 29),
+        acceptance_timestamp=datetime(2025, 10, 31, 14, 23, 45),
+        primary_document="a.htm",
+    )
+    pair = es.FilingPair(
+        ticker="AAPL", newer=newer, older=older,
+        extraction_newer="item_1a", extraction_older="item_1a",
+        similarity=0.83, status="item_1a",
+    )
+    # Heure preservee
+    assert pair.available_at == datetime(2025, 10, 31, 14, 23, 45)
+
+
+def test_available_at_avance_weekend_preserve_heure():
+    """Fix Hermes #1 (bis) : l'avance week-end preserve l'heure, pas
+    seulement la date.
+
+    Pour exercer l'invariant, le ``max`` des deux acceptance_timestamp
+    doit tomber un week-end. On place donc newer et older tous deux
+    sur la meme fenetre, et c'est leur max qui tombe samedi.
+    """
+    older = es.FilingRecord(
+        cik=320193, accession="0000320193-24-000001",
+        period_of_report=date(2024, 9, 28), filing_date=date(2024, 11, 1),
+        acceptance_timestamp=datetime(2024, 11, 1, 13, 15, 0),  # vendredi
+        primary_document="a.htm",
+    )
+    newer = es.FilingRecord(
+        cik=320193, accession="0000320193-24-000002",
+        period_of_report=date(2024, 9, 28), filing_date=date(2024, 11, 2),
+        acceptance_timestamp=datetime(2024, 11, 2, 22, 30, 0),  # samedi
+        primary_document="a.htm",
+    )
+    pair = es.FilingPair(
+        ticker="AAPL", newer=newer, older=older,
+        extraction_newer="item_1a", extraction_older="item_1a",
+        similarity=0.83, status="item_1a",
+    )
+    # 2024-11-02 = samedi -> avance a lundi 2024-11-04, 22h30 preserve
+    assert pair.available_at == datetime(2024, 11, 4, 22, 30, 0)
+
+
+def test_extract_item_1a_exclut_TOC_si_section_reelle_existe():
+    """Fix Hermes #2 : la TOC (premier couple Item 1A..Item 1B) est exclue.
+
+    Le pattern AAPL observe par Hermes : la TOC contient 'Item 1A. Risk
+    Factors  5  Item 1B.' tout sur une ligne (range de pages, debute
+    par un chiffre), tandis que la section reelle debute par du texte
+    narratif (lettres). Le discriminant du regex est le lookahead
+    negatif ``(?!\\d)`` apres les blancs suivant 'Risk Factors' --
+    Hermes review PR #15584 (point 2).
+    """
+    # TOC : 'Item 1A. Risk Factors  5  Item 1B.' (chiffre apres blanc).
+    toc_line = "Item 1A.  Risk Factors  5  Item 1B.  Unresolved Staff Comments  20"
+    real_section = ("Lorem ipsum risk factor. " * 800)  # > MIN_ITEM_1A_CHARS
+    text = (
+        "Table of Contents\n"
+        + toc_line + "\n"
+        + "Item 2.   Properties  21  Item 3.   Legal Proceedings  22\n\n"
+        + "Item 1. Business\n\nMore business prose.\n\n"
+        # Section reelle : 'Risk Factors' suivi d'une lettre (prose).
+        + "Item 1A.  Risk Factors "
+        + real_section
+        + " Item 1B. Unresolved Staff Comments More text."
+    )
+    section, status = es.extract_item_1a(text)
+    assert status == "item_1a"
+    assert section is not None
+    # La section retournee doit commencer par la prose reelle, pas par
+    # la TOC.
+    assert section.lstrip().startswith("Lorem ipsum risk factor."), (
+        f"Section retournee doit etre la section reelle, pas la TOC. "
+        f"Lu: {section[:80]!r}..."
+    )
+
+
+def test_extract_item_1a_failure_reason_distincts():
+    """Fix Hermes #3 : les 2 causes d'echec sont exposees distinctement."""
+    assert es.EXTRACTION_FAILURE_NO_MATCH == "item_1a_absent"
+    assert es.EXTRACTION_FAILURE_TOO_SHORT == "section_too_short"
+    # Document sans aucune section Item 1A..Item 1B
+    no_match_text = "Plain document with no SEC structure at all."
+    assert es.extract_item_1a_failure_reason(no_match_text) == "item_1a_absent"
+    section, status = es.extract_item_1a(no_match_text)
+    assert status == "failed"
+    # Document avec un couple mais section trop courte (entre 200 chars
+    # et MIN_ITEM_1A_CHARS=5000 chars -- la regex matche mais le
+    # contenu est sous le seuil).
+    short_section = "x" * (es.MIN_ITEM_1A_CHARS - 1000)  # 4000 chars
+    short_text = f"Item 1A. Risk Factors {short_section} Item 1B. Unresolved."
+    assert es.extract_item_1a_failure_reason(short_text) == "section_too_short"
+    section, status = es.extract_item_1a(short_text)
+    assert status == "failed"
+    # Document OK -> reason vide
+    long = ("Risk factor sentence. " * 800)
+    ok_text = f"Item 1A. Risk Factors {long} Item 1B"
+    assert es.extract_item_1a_failure_reason(ok_text) == ""

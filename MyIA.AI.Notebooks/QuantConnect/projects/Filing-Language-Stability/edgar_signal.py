@@ -150,16 +150,24 @@ class FilingPair:
 
     @property
     def available_at(self) -> datetime:
-        """Date de disponibilite du score (anti-look-ahead).
+        """Date ET heure de disponibilite du score (anti-look-ahead, acceptance #3).
 
-        On prend le max des deux acceptance_timestamp, avance au prochain
-        jour de marche US si la borne tombe un week-end. Pas de garde sur
-        les jours feries US : un utilisateur du signal peut consulter le
-        calendrier NYSE ulterieurement ; on ne pretend pas le faire ici.
+        On prend le max des deux acceptance_timestamp (EDGAR publie un
+        timestamp a la seconde, pas une date). On avance au prochain
+        JOUR de marche US si la date tombe un week-end, mais l'heure est
+        preservee : un 10-K accepte a 23h30 vendredi n'est pas
+        miraculeusement disponible a minuit le meme jour, et un 10-K
+        accepte a 10h01 mardi reste 10h01 mardi. Sans preservation de
+        l'heure, le consommateur du CSV ne peut pas reconstruire la
+        disponibilite reelle -- Hermes review PR #15584 (point 1).
+
+        Pas de garde sur les jours feries US : un utilisateur du signal
+        peut consulter le calendrier NYSE ulterieurement ; on ne pretend
+        pas le faire ici.
         """
         ts = max(self.newer.acceptance_timestamp, self.older.acceptance_timestamp)
-        ts = _next_us_session(ts.date())
-        return datetime(ts.year, ts.month, ts.day)
+        next_date = _next_us_session(ts.date())
+        return datetime.combine(next_date, ts.time())
 
 
 def _next_us_session(d: date) -> date:
@@ -239,14 +247,31 @@ _SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
 _ARCHIVES_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/{doc}"
 
 # Regex Item 1A. Le pattern matche ``Item 1A`` (ou avec points espaces)
-# jusqu'a ``Item 1B``, en tolerant jusqu'a ~40 caracteres de separation
-# et l'option "Risk Factors" comme ancre.
+# suivi de ``Risk Factors`` puis d'au moins un blanc non chiffre en
+# premiere position significative. Le discriminant cle est le
+# lookahead negatif ``(?!\\d)`` apres les blancs : la table des
+# matieres ecrit "Item 1A. Risk Factors  5  Item 1B. ..." tout sur
+# une ligne (= range de pages, le premier caractere significatif
+# apres ``Risk Factors`` est un chiffre), tandis que la section
+# reelle debute par du texte narratif (lettre). Hermes review
+# PR #15584 (point 2) -- verifier byte-level sur AAPL 2025-10-31 : la
+# TOC a l'offset 19 123 ("...Item 1A. Risk Factors 5 Item 1B. ..."),
+# la section reelle a l'offset 38 434 ("...Item 1A. Risk Factors The
+# following summarizes..."). L'ancien pattern matchait la TOC, ce qui
+# capturait 87 KB de boilerplate au lieu des Risk Factors reels.
 _ITEM_1A_RE = re.compile(
-    r"Item\s*1A\b[^a-zA-Z0-9]{0,40}Risk\s*Factors(.{200,}?)Item\s*1B\b",
+    # Atomic group (?>[ \t]+) : pas de backtrack -- un TOC "Risk Factors  5" serait
+    # sinon accepte par backtrack (1 espace + ' ' qui passe le (?!\d)).
+    r"Item\s*1A\b[^a-zA-Z0-9]{0,40}Risk\s*Factors(?>[ \t]+)(?!\d)(.{200,}?)Item\s*1B\b",
     re.IGNORECASE | re.DOTALL,
 )
 _TAG_RE = re.compile(r"<[^>]+>")
-_WS_RE = re.compile(r"\s+")
+#: Normalise les espaces multiples en un seul SAUF les sauts de ligne :
+#: la regex d'extraction Item 1A utilise ``\n`` apres ``Risk Factors``
+#: comme discriminant anti-TOC (Hermes review PR #15584 point 2), donc
+#: on preserve la frontiere de paragraphe ici. ``[^\S\n]+`` = whitespace
+#: qui n'est PAS un saut de ligne.
+_WS_RE = re.compile(r"[^\S\n]+")
 
 
 def list_recent_10k(
@@ -321,12 +346,33 @@ def fetch_10k_text(
     return text[:MAX_TEXT_CHARS]
 
 
+#: Causes d'echec distinctes pour ``extract_item_1a``. La valeur de
+#: retour reste binaire (text | None) pour la compatibilite des
+#: consommateurs existants (FilingPair.extraction_*), mais la cause
+#: precise est exposee via ``extract_item_1a_failure_reason(text)`` --
+#: Hermes review PR #15584 (point 3) : un echec "regex n'a pas matche"
+#: n'est pas la meme cause qu'un "section trop courte" ; distinguer
+#: permet d'expliquer le taux 4/5 sans ambigulte.
+EXTRACTION_FAILURE_NO_MATCH = "item_1a_absent"
+EXTRACTION_FAILURE_TOO_SHORT = "section_too_short"
+EXTRACTION_FAILURE_REASON_LABELS = {
+    EXTRACTION_FAILURE_NO_MATCH: "regex n'a matche aucune section Item 1A..1B",
+    EXTRACTION_FAILURE_TOO_SHORT: "section matchee mais sous MIN_ITEM_1A_CHARS",
+}
+
+
 def extract_item_1a(text: str) -> tuple[str | None, str]:
     """Extrait la section Item 1A.
 
     Renvoie ``(text, "item_1a")`` si l'extraction depasse ``MIN_ITEM_1A_CHARS``
     caracteres, ``(None, "failed")`` sinon. Aucun mode intermediaire
     (``full_fallback``) n'est accepte -- acceptance #4.
+
+    L'ancrage du regex en debut de ligne (``^|\\n``) exclut la TOC :
+    une table des matieres contient "Item 1A ... Item 1B" tout sur une
+    ligne (= range de pages), la section reelle debute en debut de
+    paragraphe apres un retour a la ligne. Voir Hermes review
+    PR #15584 (point 2).
     """
     m = _ITEM_1A_RE.search(text)
     if m is None:
@@ -335,6 +381,22 @@ def extract_item_1a(text: str) -> tuple[str | None, str]:
     if len(section) < MIN_ITEM_1A_CHARS:
         return None, "failed"
     return section, "item_1a"
+
+
+def extract_item_1a_failure_reason(text: str) -> str:
+    """Diagnostique la cause d'echec d'``extract_item_1a`` sur un texte.
+
+    Renvoie :
+      - ``""`` si l'extraction a reussi (status serait ``item_1a``) ;
+      - ``item_1a_absent`` si le regex n'a pas matche ;
+      - ``section_too_short`` si le match existe mais est sous le seuil.
+    """
+    m = _ITEM_1A_RE.search(text)
+    if m is None:
+        return EXTRACTION_FAILURE_NO_MATCH
+    if len(m.group(1)) < MIN_ITEM_1A_CHARS:
+        return EXTRACTION_FAILURE_TOO_SHORT
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -458,7 +520,7 @@ def _row_from_pair(pair: FilingPair) -> dict[str, str]:
         "extraction_mode_n": pair.extraction_newer,
         "extraction_mode_n_minus_1": pair.extraction_older,
         "similarity": sim,
-        "available_at": _format_d(pair.available_at.date()),
+        "available_at": _format_dt(pair.available_at),
     }
 
 
@@ -515,9 +577,13 @@ __all__ = [
     "MIN_REQUEST_INTERVAL_SECONDS",
     "build_pair",
     "extract_item_1a",
+    "extract_item_1a_failure_reason",
     "fetch_10k_text",
     "list_recent_10k",
     "summarize",
     "tfidf_cosine",
     "write_csv",
+    "EXTRACTION_FAILURE_NO_MATCH",
+    "EXTRACTION_FAILURE_TOO_SHORT",
+    "EXTRACTION_FAILURE_REASON_LABELS",
 ]
