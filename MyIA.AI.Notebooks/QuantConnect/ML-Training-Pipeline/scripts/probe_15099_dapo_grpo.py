@@ -215,6 +215,15 @@ def build_trainer(
     cfg = GRPOConfig(
         output_dir=str(RUNS_ROOT / f"{model_key}_seed{seed}" / "trainer_out"),
         seed=seed,
+        # device_map explicite, jamais "auto". Sous 4-bit SANS
+        # llm_int8_enable_fp32_cpu_offload, le chemin d'offload d'accelerate est
+        # mort par construction : des qu'un module part sur CPU, le quantizer bnb
+        # leve « Some modules are dispatched on the CPU or the disk » AVANT tout
+        # entrainement -- mesure sur l'arm 8B (#15293), qui tient pourtant sur 8 Go
+        # (5,78 GiB, 4717,9 M parametres tous sur cuda:0) et echouait sur "auto".
+        # Forcer le GPU rend l'echec honnete : un modele qui ne tient pas OOM au
+        # lieu de lever une erreur opaque.
+        model_init_kwargs=dict(device_map={"": 0}),
         max_steps=steps,  # cap NON lineaire (lecon #13596)
         learning_rate=2e-5,
         warmup_steps=5,
