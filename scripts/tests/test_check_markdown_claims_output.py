@@ -59,6 +59,7 @@ from check_markdown_claims_output import (  # noqa: E402
     _is_labeled_enumeration_value,
     _is_legend_equation,
     _is_math_parameter_definition,
+    _is_monetary_value,
     _is_md_heading_line,
     _is_numeric_list_literal,
     _is_section_reference,
@@ -1649,3 +1650,190 @@ class TestRelationalClaims:
 
         assert result["verdict"] == "CLEAN"
         assert result["relational_claims"] == []
+
+
+class TestMonetaryProvenance15430:
+    """#15430: prices are documented external facts, never values the
+    previous code cell measured. Measured baseline on GenAI/SemanticKernel
+    + ML: 14 of 33 findings were tariffs against 1 true positive; the
+    exclusion must silence the tariff family while keeping the reference
+    fabrication (117,600, #15365) detected."""
+
+    def _scan_tmp(self, tmp_path, cells):
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture.ipynb"
+        p.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    def test_tariff_list_is_clean(self, tmp_path):
+        """The founding FP family: a multi-price list. Also pins the
+        phantom-math regression -- four '$' in one cell used to pair into
+        bogus math spans that un-exempted every price after the first."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("estimate()", [_stream_output("cout estime\n")]),
+            _md_cell(
+                "Tarifs de chaque service (DALL-E: $0.04/image, "
+                "Whisper: $0.006/min, TTS: $15/1M chars, "
+                "GPT-5.6-terra: $2.00/1M tokens) pour estimer."
+            ),
+        ])
+        assert result["verdict"] == "CLEAN"
+        assert result["findings"] == []
+
+    def test_currency_after_and_spaced_french_layout(self, tmp_path):
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("run()", [_stream_output("19 tokens total\n")]),
+            _md_cell("Soit ~0.00038$ avec GPT-4o, ou 0,04 $ par image."),
+        ])
+        assert result["verdict"] == "CLEAN"
+
+    def test_monetary_range_upper_bound_is_clean(self, tmp_path):
+        """'~$0.08-0.12' : the upper bound has no '$' of its own; it
+        inherits the provenance of the bound before it."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("run()", [_stream_output("pipeline ok\n")]),
+            _md_cell("Cout cumulatif : ~$0.08-0.12 par execution."),
+        ])
+        assert result["verdict"] == "CLEAN"
+
+    def test_tariff_unit_without_currency_is_clean(self, tmp_path):
+        """Review #15435: the without-currency exemption survives only via
+        the bounded lexical tariff context ('Abordable') -- not by the bare
+        unit suffix."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("run()", [_stream_output("done\n")]),
+            _md_cell("Abordable a 0.006/min, et 15/1M chars en volume."),
+        ])
+        assert result["verdict"] == "CLEAN"
+
+    def test_derived_metric_per_minute_stays_detected(self, tmp_path):
+        """Review #15435 (reserve NanoClaw 2026-09-10T03:21:32Z): '0,7
+        conflits/min' is a derived METRIC, not a price -- no currency, no
+        tariff context, it must stay confronted with the outputs."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("conflicts()", [_stream_output("0 conflit\n")]),
+            _md_cell("Le reordonnancement donne 0,7 conflits/min."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED"
+
+    def test_math_sandwich_bare_decimal_stays_detected(self, tmp_path):
+        """Review #15435 (2026-09-10T05:01:42Z): output 'metric: 0.24' +
+        prose '$0.5$' -- the '$' before the decimal is the OPENING math
+        delimiter, not currency, and the one after is its closing pair.
+        The BEFORE shortcut must not exempt it, and the AFTER check below
+        must not read the closing delimiter as a spaced/glued currency."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("compute()", [_stream_output("metric: 0.24\n")]),
+            _md_cell("La métrique dérivée vaut $0.5$."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        norms = {f["normalized"] for f in result["findings"]}
+        assert "0.5" in norms, result["findings"]
+
+    def test_tariff_currency_before_unit_after_stays_clean(self, tmp_path):
+        """Review #15435 (2026-09-10T05:01:42Z) counter-case: the sandwich
+        guard must not un-exempt the founding tariff form -- '$0.04' with
+        '/image' after is a price, no '$' closes the span."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("estimate()", [_stream_output("cout estime\n")]),
+            _md_cell("Tarif : $0.04/image pour la generation."),
+        ])
+        assert result["verdict"] == "CLEAN", result
+
+    def test_tokens_per_minute_metric_stays_detected(self, tmp_path):
+        """Review #15435: '15 tokens/min' -- same class: a throughput
+        metric the organ must keep checking."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("count_tokens()", [_stream_output("done\n")]),
+            _md_cell("Le service traite 15 tokens/min en moyenne."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED"
+
+    def test_reference_fabrication_still_detected(self, tmp_path):
+        """Positive control pinned by the issue: 117,600 (the #15365 /
+        SK-07 prose value that no cell ever printed) must stay flagged
+        after every exclusion added."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("speak()", [_stream_output("Audio genere\n")]),
+            _md_cell("Audio genere avec succes (117,600 bytes, ~7 secondes)."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert any(f["normalized"] == "117.600" or "117" in f["raw"]
+                   for f in result["findings"])
+
+    def test_non_monetary_measurement_stays_checked(self, tmp_path):
+        """The exclusion must not leak: a duration with no currency and
+        no tariff unit is still a class-(b) claim."""
+        result = self._scan_tmp(tmp_path, [
+            _code_cell("tts()", [_stream_output("OK\n")]),
+            _md_cell("La generation a pris 117,600 secondes."),
+        ])
+        assert result["verdict"] == "FABRICATION_DETECTED"
+
+    def test_math_span_close_is_not_currency(self):
+        """'... = 52.7$' closing a REAL math span is formula content, not
+        money (DecInfer-01 md[24] collateral): the AFTER direction stays
+        math-guarded."""
+        prose = r"60 minutes $\times 60 = 52.7$ secondes"
+        pos = prose.index("52.7")
+        assert not _is_monetary_value(prose, pos, pos + 4)
+
+    def test_predicate_currency_before_glued(self):
+        prose = "DALL-E: $0.04/image"
+        pos = prose.index("0.04")
+        assert _is_monetary_value(prose, pos, pos + 4)
+
+    def test_predicate_currency_before_spaced(self):
+        prose = "environ $ 15 par mois"
+        pos = prose.index("15")
+        assert _is_monetary_value(prose, pos, pos + 2)
+
+    def test_predicate_tariff_units(self):
+        # Review #15435: bare '15/1M chars' / '0,02 / mois' no longer
+        # exempt on the unit alone -- they carry a tariff context.
+        for text, num in [("$0.006/min", "0.006"),
+                          ("Tarif : 15/1M chars", "15"),
+                          ("Tarif : 0,02 / mois", "0,02"),
+                          ("9.90€/1k tokens", "9.90"),
+                          ("Abordable a 0.006/min", "0.006")]:
+            pos = text.index(num)
+            assert _is_monetary_value(text, pos, pos + len(num)), text
+
+    def test_predicate_metric_units_without_context(self):
+        """Review #15435: the negative face of the unit direction -- a bare
+        number/unit is a metric, not a price."""
+        for text, num in [("0,7 conflits/min", "0,7"),
+                          ("15 tokens/min", "15"),
+                          ("22 mots/heure", "22")]:
+            pos = text.index(num)
+            assert not _is_monetary_value(text, pos, pos + len(num)), text
+
+    def test_version_prefix_sk_and_package(self):
+        for prose in ["requis SK 1.39+ pour config",
+                      "Semantic Kernel 1.30+ recommande",
+                      "**`Microsoft.SemanticKernel` 1.60.0** est le coeur",
+                      "**`Microsoft.SemanticKernel.Agents.Core` 1.60.0**"]:
+            pos = prose.index("1.")
+            assert _is_version_token(prose, pos), prose
+
+    def test_bare_version_code_span_is_quoted(self):
+        """'(`1.60.0`) pinned' -- a code span whose entire content is a
+        dotted version is a package pin, not a measurement (#15430)."""
+        prose = "La version est epinglee (`1.60.0`) pour reproductibilite."
+        pos = prose.index("1.60.0")
+        assert _in_exception_code_span(prose, pos, pos + 6)
+
+    def test_one_dot_code_span_stays_checked(self):
+        """A one-dot span is a cited RESULT, not a version -- measured
+        false negatives of the lax form on ML-2.12/2.3/2.8: 'seuil optimal
+        **`0.21`** (cout attendu minimal `153.0`)', '(`h_ii` jusqu'a
+        `6.5`)'. The {2,3} dot-group floor keeps them checked (#15430)."""
+        for prose in [
+            "Le seuil optimal est **`0.21`** (cout attendu minimal `153.0`).",
+            "Les observations injectees (a `x = 6.0` et `6.5`) ressortent.",
+        ]:
+            for needle in ("0.21", "153.0", "6.5"):
+                pos = prose.find(needle)
+                if pos >= 0:
+                    assert not _in_exception_code_span(
+                        prose, pos, pos + len(needle)), prose

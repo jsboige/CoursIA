@@ -97,10 +97,16 @@ class TestIsFrontmatter:
         assert is_frontmatter(["  ", "\t"]) is False
 
     def test_yaml_key_with_underscore(self):
-        assert is_frontmatter(["transition: slide"]) is True
+        # Fixture corrected in the #14730 consolidation: the key must START with
+        # an underscore to test what the name announces. The previous fixture
+        # ("transition: slide") only exercised a plain alpha key, already
+        # covered by test_yaml_key_value. Ported from the legacy suite.
+        assert is_frontmatter(["_transition: slide"]) is True
 
     def test_yaml_key_with_dash(self):
-        assert is_frontmatter(["class: center"]) is True
+        # Fixture corrected in the #14730 consolidation: a dashed key exercises
+        # the [A-Za-z0-9_-]* part of YAML_KEY. Ported from the legacy suite.
+        assert is_frontmatter(["text-align: center"]) is True
 
     def test_mixed_yaml_and_heading(self):
         """Block with both YAML key and heading → NOT frontmatter (heading wins)."""
@@ -118,6 +124,18 @@ class TestIsFrontmatter:
         """An indented YAML line does not start with [A-Za-z_] at column 0, so it
         is not treated as frontmatter (anchors the YAML_KEY regex)."""
         assert is_frontmatter(["  layout: default"]) is False
+
+    # --- ported from the deleted legacy scripts/tests/test_extract_titles.py
+    # (#14730 consolidation): negative edges the canon lacked — an HTML-comment
+    # block and a numeric-start key must not read as frontmatter. ---
+
+    def test_comment_only(self):
+        """A block of only HTML comments is not frontmatter (no YAML key)."""
+        assert is_frontmatter(["<!-- comment -->"]) is False
+
+    def test_numeric_start_not_yaml(self):
+        """A numeric-start key does not match YAML_KEY (anchors [A-Za-z_])."""
+        assert is_frontmatter(["123: value"]) is False
 
 
 # --- title_of ---
@@ -158,6 +176,19 @@ class TestTitleOf:
     def test_h2_not_used_as_title(self):
         block = ["## Subtitle", "# Real Title"]
         assert title_of(block) == "Real Title"
+
+    # --- ported from the deleted legacy scripts/tests/test_extract_titles.py
+    # (#14730 consolidation): edges the canon lacked. ---
+
+    def test_h1_with_leading_whitespace(self):
+        """An h1 with whitespace BEFORE the # still titles (title_of strips the
+        line before matching, so indentation cannot hide the heading)."""
+        assert title_of(["  # Spaced Title  "]) == "Spaced Title"
+
+    def test_skips_h2_and_h3(self):
+        """Without any h1, h2/h3 lines are NOT promoted to title: the first
+        non-empty line becomes [no-h1] content, hash signs included."""
+        assert title_of(["## Subtitle", "### Sub-sub", "Content"]) == "[no-h1] ## Subtitle"
 
 
 # --- extract (integration) ---
@@ -248,6 +279,26 @@ class TestExtract:
         assert "1: One" in out
         assert "2: Two" in out
         assert "3: Three" in out
+
+    # --- ported from the deleted legacy scripts/tests/test_extract_titles.py
+    # (#14730 consolidation): the adjacency edge — root FM directly followed
+    # by per-slide FM, with no slide content between them. ---
+
+    def test_slide_fm_directly_after_root_fm(self, tmp_path, capsys):
+        """Per-slide frontmatter immediately after the root FM (no gap): the
+        empty block between them becomes slide 1 ([empty]), and the per-slide
+        FM merges with the following block, which becomes slide 2."""
+        md = tmp_path / "slides.md"
+        md.write_text(
+            "---\ntitle: Root\n---\n"
+            "---\nlayout: center\n---\n"
+            "# Centered Slide\n",
+            encoding="utf-8",
+        )
+        extract(md)
+        out = capsys.readouterr().out
+        assert "1: [empty]" in out
+        assert "2: Centered Slide" in out
 
 
 if __name__ == "__main__":
