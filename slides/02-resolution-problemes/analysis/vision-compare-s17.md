@@ -91,8 +91,9 @@ graph TD
   Timisoara --> Lugoj:::frontier
   Zerind --> Arad4[Arad]:::frontier
   Zerind --> Oradea2[Oradea]:::frontier
-  classDef root fill:#ccc,stroke:#333
-  classDef frontier fill:#fff,stroke:#00aa00,stroke-dasharray:5
+  %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+  classDef root fill:#ccc,stroke:#333,color:#333
+  classDef frontier fill:#fff,stroke:#00aa00,stroke-dasharray:5,color:#006600
 ```
 
 Cela reproduit fidèlement le codage couleur du PPTX (nœuds frontière en vert pointillé).

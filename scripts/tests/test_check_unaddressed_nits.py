@@ -3507,7 +3507,13 @@ def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
     posee avant un commit de CONTENU -- l'arbre cite differant de l'arbre
     de la tete -- reste invalide. Le remede ne rend pas l'organe
     permissif : c'est exactement le cas que B.0 existe pour attraper
-    (« un push muet est indiscernable d'un push qui repond »)."""
+    (« un push muet est indiscernable d'un push qui repond »).
+
+    #15566 : ce chemin est aussi celui d'un REBASE -- un rebase fait
+    differer l'arbre, donc il retombe ici, sur le refus conservateur.
+    L'echappatoire qui pretendait l'absoudre a ete retiree (mesuree
+    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`) : c'est ce
+    test qui pinne le comportement retenu."""
     res = run([USER_NIT, lift_citant_sha()],
               commits=[{"oid": NIT_OID, "committedDate": at(19)}],
               _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
@@ -3529,22 +3535,6 @@ def test_15556_sans_donnees_arbre_refus_conservateur():
     assert res["blocked"] is True
     assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
     assert res["voided_lifts"][0]["tree_differs"] is False
-
-
-def test_15556_rebase_sans_fichier_de_la_pr_touche_conserve():
-    """Cas rebase sans conflit : l'arbre global differant (main a avance)
-    mais AUCUN fichier de la PR n'est touche par la difference -- le
-    livrable est inchangé, la levee reste valide."""
-    res = run([USER_NIT, lift_citant_sha()],
-              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
-              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
-              _absent_sha_trees={"2d6e4c3642": TREE_B},
-              _head_tree=TREE_A,
-              _rewind_pr_files_untouched={"2d6e4c3642": True})
-    assert res["blocked"] is False
-    assert res["voided_lifts"] == []
-    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
-        [("2d6e4c3642", "pr_files_untouched")]
 
 
 def test_15556_artefact_ne_masque_pas_un_vrai_refus():
@@ -3576,87 +3566,6 @@ def test_15556_headrefoid_prefere_au_dernier_oid():
     assert mod._pr_head_oid(data) == "f" * 40
     assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
     assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
-
-
-def test_15556_file_paths_tronques_renvent_none(monkeypatch):
-    """Fail-safe de `_pr_file_paths` : une liste de fichiers au plafond de
-    pagination (troncature potentielle) est une NON-determination, jamais
-    une liste complete -- en deduire « fichiers inchanges » serait le
-    faux negatif que l'acceptance 3 interdit."""
-    monkeypatch.setattr(mod, "gh_json",
-                        lambda args: [{"filename": f"f{i}.py"} for i in range(100)])
-    assert mod._pr_file_paths({"number": 7}) is None
-    monkeypatch.setattr(mod, "gh_json", lambda args: [])
-    assert mod._pr_file_paths({"number": 7}) == set()
-    assert mod._pr_file_paths({}) is None
-
-
-def test_15556_compare_hors_fichiers_pr_marque_untouched(monkeypatch):
-    """`_rewind_pr_files_untouched` : la difference SHA rembobine -> tete
-    ne touche que des fichiers HORS de la PR (rebase sur main) : le SHA
-    est marque untouched. Elle touche un fichier de la PR : pas de
-    marque, le refus survit."""
-    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_B}}
-    head_oid, head_tree = "f" * 40, TREE_A
-    data = {"number": 7, "title": "t", "body": ""}
-
-    def fake_gh_json(args):
-        url = args[-1]
-        if "/pulls/7/files" in url:
-            return [{"filename": "src/livrable.py"}]
-        if "/compare/" in url:
-            return {"files": [{"filename": "README.md"}]}  # hors PR
-        raise AssertionError(f"appel inattendu: {url}")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
-    assert mod._rewind_pr_files_untouched(data, state, head_oid,
-                                          head_tree) == {"111aaaa111": True}
-
-    def fake_gh_json_touche(args):
-        url = args[-1]
-        if "/pulls/7/files" in url:
-            return [{"filename": "src/livrable.py"}]
-        if "/compare/" in url:
-            return {"files": [{"filename": "src/livrable.py"}]}  # DANS la PR
-        raise AssertionError(f"appel inattendu: {url}")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json_touche)
-    assert mod._rewind_pr_files_untouched(data, state, head_oid,
-                                          head_tree) == {}
-
-
-def test_15556_compare_au_plafond_fail_safe(monkeypatch):
-    """L'API compare tronque silencieusement a 300 fichiers : une liste au
-    plafond ne prouve RIEN sur les fichiers restants -- pas de marque."""
-    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_B}}
-
-    def fake_gh_json(args):
-        url = args[-1]
-        if "/pulls/7/files" in url:
-            return [{"filename": "src/livrable.py"}]
-        if "/compare/" in url:
-            return {"files": [{"filename": f"f{i}.py"} for i in range(300)]}
-        raise AssertionError(f"appel inattendu: {url}")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
-    assert mod._rewind_pr_files_untouched(
-        {"number": 7, "title": "t", "body": ""}, state, "f" * 40,
-        TREE_A) == {}
-
-
-def test_15556_meme_arbre_pas_de_compare_ni_de_files(monkeypatch):
-    """Un SHA rembobine d'arbre IDENTIQUE a la tete est deja un artefact :
-    ni l'appel compare ni l'appel fichiers de la PR ne sont dus pour lui
-    (le gate paie un appel par PR, pas par SHA, quand tout est muet)."""
-    state = {"111aaaa111": {"message": "fix(x,#7): typo", "tree": TREE_A}}
-
-    def fake_gh_json(args):
-        raise AssertionError("aucun appel reseau attendu ici")
-
-    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
-    assert mod._rewind_pr_files_untouched(
-        {"number": 7, "title": "t", "body": ""}, state, "f" * 40,
-        TREE_A) == {}
 
 
 def test_13641_ref_par_prefixe_ne_compte_pas():

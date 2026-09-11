@@ -3075,11 +3075,25 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 #
 # Le predicat se rattache donc au contenu : une levee citant un SHA
 # rembobine reste VALIDE si l'arbre du SHA rembobine est identique a
-# l'arbre de la tete (wake-commit, amend de message), ou si aucun fichier
-# de la PR n'est touche par la difference (rebase sans conflit). En cas
-# d'incertitude (arbre inconnu, pagination suspecte) : comportement
-# anterieur, le refus -- l'organe ne devient jamais permissif sur un
-# doute, c'est le cas que B.0 existe pour attraper.
+# l'arbre de la tete (wake-commit, amend de message). En cas
+# d'incertitude (arbre inconnu) : comportement anterieur, le refus --
+# l'organe ne devient jamais permissif sur un doute, c'est le cas que
+# B.0 existe pour attraper.
+#
+# #15566 -- l'echappatoire « rebase sans conflit » (aucun fichier de la PR
+# touche par la difference) est RETIREE, pas corrigee. Mesure sur une
+# vraie paire de rebase (39846a7a3 -> 9296031c6 : meme patch pose sur
+# deux bases) : `compare/{sha}...{head}` est une comparaison TROIS-POINTS
+# -- `merge_base_commit` rend d3107fce, pas le SHA cite -- et les fichiers
+# de la PR sont dans `changed` par construction, donc l'intersection
+# n'etait jamais vide et la marque n'a jamais pu etre posee sur une PR
+# non vide. Le code etait mort. Le corriger « en comparant merge_base
+# explicitement » serait un no-op (trois-points EST merge_base..head), et
+# l'API ne sert pas la forme deux-points (`..` rend 404, mesure sur une
+# paire parent/enfant). Une version exacte demanderait une comparaison de
+# blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
+# surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
+# au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3095,82 +3109,12 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
-def _pr_file_paths(data: dict, page_cap: int = 100) -> set[str] | None:
-    """Chemins des fichiers de la PR, bornes incluses.
-
-    None = determination impossible (PR sans numero, erreur reseau, ou
-    liste tronquee a la pagination) : l'appelant doit alors rester sur le
-    comportement strict -- ne JAMAIS deduire « fichiers inchanges » d'une
-    liste incomplete.
-    """
-    number = data.get("number")
-    if number is None:
-        return None
-    try:
-        files = gh_json(
-            ["api", f"repos/{REPO}/pulls/{number}/files?per_page={page_cap}"])
-    except subprocess.CalledProcessError:
-        return None
-    if not isinstance(files, list) or len(files) >= page_cap:
-        return None  # pagination potentiellement tronquee -> fail-safe
-    return {f.get("filename") for f in files if f.get("filename")}
-
-
-def _rewind_pr_files_untouched(data: dict, state: dict[str, dict],
-                               head_oid: str, head_tree: str,
-                               cap: int = 3) -> dict[str, bool]:
-    """SHAs rembobines rattaches a la PR dont AUCUN fichier de la PR n'a
-    bouge entre le SHA rembobine et la tete (cas rebase, #15556).
-
-    Compare cote serveur `{sha}...{head_oid}` : si aucun des fichiers
-    touches par la comparaison n'est un fichier de la PR, le livrable est
-    inchange et la levee reste valide. Fail-safe systematique : compare
-    irrecuperable, plus de `cap` candidats, fichiers de la PR inconnus ou
-    liste de compare au plafond (troncature silencieuse de l'API a 300)
-    -> le SHA n'est PAS marque untouched (le refus survit).
-    """
-    if not head_oid or not head_tree:
-        return {}
-    pr_refs: set[str] = set()
-    if data.get("number") is not None:
-        pr_refs.add(str(data["number"]))
-    for m in re.finditer(r"#(\d+)", (data.get("title") or "")
-                         + "\n" + (data.get("body") or "")):
-        pr_refs.add(m.group(1))
-    pr_refs.discard("")
-    rattachable = sorted(
-        s for s, v in state.items()
-        if v.get("message") and _message_refs_pr(v["message"], pr_refs)
-        and not (v.get("tree") and v["tree"] == head_tree))
-    if not rattachable:
-        return {}
-    pr_files = _pr_file_paths(data)
-    if pr_files is None:
-        return {}
-    untouched: dict[str, bool] = {}
-    for sha in rattachable[:cap]:
-        try:
-            compare = gh_json(
-                ["api", f"repos/{REPO}/compare/{sha}...{head_oid}"])
-        except subprocess.CalledProcessError:
-            continue
-        files = compare.get("files") or []
-        if len(files) >= 300:
-            continue  # troncature suspecte -> fail-safe
-        changed = {f.get("filename") for f in files}
-        if not (changed & pr_files):
-            untouched[sha] = True
-    return untouched
-
-
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
-    Assemble les trois vues que `analyse` consulte : messages (rattachement
-    #13639), arbres des commits rembobines et arbre de la tete (#15556),
-    puis la comparaison fichiers pour les seuls candidats rattaches dont
-    l'arbre differe -- un seul appel reseau par SHA, un par PR pour la
-    tete et les fichiers.
+    Assemble les deux vues que `analyse` consulte : messages (rattachement
+    #13639) et arbres des commits rembobines plus arbre de la tete
+    (#15556) -- un appel reseau par SHA, plus un pour la tete.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
@@ -3187,8 +3131,6 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
-    data["_rewind_pr_files_untouched"] = _rewind_pr_files_untouched(
-        data, state, head_oid, head_tree)
 
 
 def can_lift(comment: dict) -> bool:
@@ -3742,7 +3684,6 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         resolved = pr_data.get("_absent_sha_messages") or {}
         rewound_trees = pr_data.get("_absent_sha_trees") or {}
         head_tree = pr_data.get("_head_tree")
-        untouched = pr_data.get("_rewind_pr_files_untouched") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
@@ -3759,14 +3700,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # rembobine ET rattache. #15556 : avant de desnuer la
                     # levee, verifier que le push a reellement change le
                     # livrable -- wake-commit et amend de message poussent
-                    # un arbre IDENTIQUE, rebase sans conflit ne touche
-                    # aucun fichier de la PR. Sans donnees d'arbre (audit
+                    # un arbre IDENTIQUE. Sans donnees d'arbre (audit
                     # retro, resolution serveur impossible) : refus, le
                     # comportement anterieur n'est jamais assoupli.
-                    if untouched.get(sha):
-                        if artifact is None:
-                            artifact = (sha, "pr_files_untouched")
-                        continue
                     tree = rewound_trees.get(sha)
                     if tree and head_tree and tree == head_tree:
                         if artifact is None:

@@ -1,0 +1,67 @@
+name: Linux runner version pin advisory
+
+# Organe de pin de version des runners Linux self-hosted (#15201, suivi du
+# compromis #15182 -- reserve n.2 de la review NanoClaw, declaree mineure
+# mais qui nomme une panne reelle).
+#
+# Le compromis : `--disableupdate` dans l'entrypoint fige la version du
+# runner a celle de l'image (le self-update du runner --ephemeral ne serait
+# jamais conserve : le conteneur meurt avant, --rm efface le tarball). Le
+# geste de bump est un REBUILD image (ARG RUNNER_VERSION du Dockerfile),
+# documente en un seul endroit : le docblock de entrypoint.sh. Cf #15153,
+# #15164.
+#
+# Le cout cache : entre deux rebuilds, si GitHub releve sa version requise,
+# les slots restent ENREGISTRES et `online` -- et c'est GitHub qui refuse de
+# leur confier un job ("required runner version"). Vu du superviseur, rien
+# ne rougit : ni conteneur en erreur, ni boucle, ni sentinel. Mesure fond :
+# le 2026-09-08 (pivot au rebuild), l'image epinglee 2.336.0 alors que
+# GitHub exigeait 2.337.0 -- 5566 re-telechargements inutiles (~1,14 Tio,
+# entrypoint.sh:75-85). Le mode de panne s'appelle "online mais non
+# eligible" : un organe qui dit "online" ne mesure pas "eligible".
+#
+# Cet organe compare la pin (4 sites : Dockerfile ARG, Dockerfile.lean FROM,
+# supervise.sh IMAGE/LEAN_IMAGE) a la derniere release publiee
+# (`repos/actions/runner/releases/latest`, via gh + GITHUB_TOKEN) -- un PROXY
+# de l'exigence : la version minimale exigee n'est pas exposee par GitHub, et
+# l'ineligibilite qui pourrait en decouler n'est pas mesuree ici. Le rapport
+# nomme donc ce qu'il mesure (review #15366). Sorties : rc 0 pin a jour et en
+# phase ; rc 1 PIN_STALE ou IN_PHASE_FAILURE ; rc 2 release illisible -- un
+# defaut de lecture ne justifie JAMAIS un vert.
+#
+# Advisory PAR CONSTRUCTION (doctrine #12817) : schedule + workflow_dispatch
+# uniquement, jamais pull_request/push -- un run rouge ne bloque aucune PR.
+# Cron a l'offset des sweeps 13,43 et du starvation 19,49 (jamais de
+# collision). runs-on sur la jambe Linux self-hebergee (meme garde anti-fork
+# que le starvation) : l'image runner porte gh + python3, zéro dependance.
+
+on:
+  schedule:
+    - cron: '23,53 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read   # checkout du script + lecture des fichiers de pin
+
+concurrency:
+  group: linux-runner-version-pin-advisory
+  cancel-in-progress: false
+
+jobs:
+  version-pin:
+    name: Linux runner version pin advisory
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          # L'organe ne lit que scripts/ci (le predicat + les fichiers de pin) :
+          # clone partiel, pas de contenu hors portee (serie #11843).
+          sparse-checkout: |
+            scripts/ci
+      - name: Compare runner version pin to GitHub requirement
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/ci/check_runner_version_pin.py

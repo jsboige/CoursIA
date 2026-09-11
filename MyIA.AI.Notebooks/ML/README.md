@@ -356,12 +356,13 @@ flowchart LR
     NB4 -. "PAC ⇓ uniform_concentration" .-> L3
     NB5 -. "vote ≅ préférences agrégées" .-> L5
     NB6 -. "échantillon i.i.d. + Hoeffding" .-> L3
-    style L1 fill:#e8f5e9,stroke:#2e7d32
-    style L2 fill:#e8f5e9,stroke:#2e7d32
-    style L3 fill:#e8f5e9,stroke:#2e7d32
-    style L4 fill:#e8f5e9,stroke:#2e7d32
-    style L5 fill:#e8f5e9,stroke:#2e7d32
-    style L6 fill:#e8f5e9,stroke:#2e7d32
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style L1 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style L2 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style L3 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style L4 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style L5 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style L6 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 ```
 
 Lecture : chaque nœud **SIM** représente un notebook ML dont le résultat empirique (marge, ERM, ensemble, PAC) est *prouvé* par au moins un nœud **LEAN** via une flèche pointillée. Le **vert pâle** sur les nœuds Lean rappelle que la *preuve* est l'engagement de véracité du notebook — pas une décoration. Voir l'EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) et le hub central [P0](../README.md#lean) pour la cartographie complète (PR #5049). Cross-réf hubs voisins déjà livrés : [QuantConnect (PR #5047)](../QuantConnect/README.md), [GameTheory (PR #5050)](../GameTheory/README.md), [Probas (PR #5053)](../Probas/README.md), [SymbolicAI Lean (#5043 MERGED)](../SymbolicAI/Lean/README.md).

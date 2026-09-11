@@ -21,6 +21,12 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 | [ab-methodology.md](ab-methodology.md) | Méthodologie d'A/B pour comparer deux providers LLM sur les mêmes cibles Lean. |
 | [coordinator-workflow.md](coordinator-workflow.md) | Workflow coordinateur Lean (ai-01) : Lake build pre-merge + itération BG prover systématique. |
 
+## Recherche sur les moteurs formels
+
+| Document | Sujet |
+|---|---|
+| [life-sat-cost-frontier.md](life-sat-cost-frontier.md) | Frontière de coût reproductible du synthétiseur SAT de motifs Life : `FOUND`, `IMPOSSIBLE` borné et `TIMEOUT` honnête. |
+
 ## i18n FR/EN (EPIC #4980)
 
 | Document | Sujet |
