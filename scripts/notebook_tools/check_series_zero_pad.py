@@ -25,24 +25,37 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+# Grammaire de nom partagee (#5081/#15489) : le numero d'un `Prefixe-NN` se lit
+# avec les autres gardes de nommage, pas avec un motif local.
+_here = str(Path(__file__).resolve().parent)
+if _here not in sys.path:
+    sys.path.insert(0, _here)
+from naming_canon import parse_name  # noqa: E402
+
 
 def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
     """Fichiers de la serie dont le numero n'est PAS zero-pade.
 
-    Le lookahead ``(?!\\d)`` est ce qui distingue le chiffre unique du premier
-    chiffre d'un numero a deux chiffres : sur ``GameTheory-26-`` il echoue
-    (6 suit 2), sur ``GameTheory-3a-`` il reussit (a suit 3).
+    Le chiffre unique se lit dans le numero rendu par le parseur du canon
+    (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-26``
+    livre ``"26"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
+    LONGUEUR du numero et non sur un motif du nom complet -- un motif local
+    re-encode la grammaire du canon, et deux encodages divergent au premier cas
+    limite (c'est ce que #15489 corrige).
     """
-    pattern = re.compile(rf"^{re.escape(prefix)}-(\d)(?!\d)")
     out: list[dict] = []
     for path in sorted(series_dir.rglob(f"{prefix}-*")):
-        if path.is_file() and pattern.match(path.name):
+        if not path.is_file():
+            continue
+        parsed = parse_name(path.name)
+        if parsed.series != prefix or parsed.number is None:
+            continue
+        if len(parsed.number) == 1:
             try:
                 shown = path.relative_to(REPO_ROOT).as_posix()
             except ValueError:
