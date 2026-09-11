@@ -1,14 +1,19 @@
 """Non-regression #15201: l'organe de pin des runners Linux.
 
 Le compromis #15182 (`--disableupdate`) fige la version du runner a celle
-de l'image ; le rebuild etant manuel, l'ecart avec l'exigence GitHub courante
-grandit SANS RIEN QUI LE VOIE : les slots restent `online`, c'est GitHub qui
-refuse de leur confier un job. L'organe `check_runner_version_pin.py` doit :
-- comparer la pin (4 sites) a l'exigence GitHub courante et rouge quand
-  l'ecart est bloquant (mode de panne nomme : "online mais non eligible") ;
+de l'image ; le rebuild etant manuel, l'ecart avec la derniere release
+publiee du runner grandit SANS RIEN QUI LE VOIE : les slots restent
+`online`, c'est GitHub qui refuse de leur confier un job. L'organe
+`check_runner_version_pin.py` doit :
+- comparer la pin (4 sites) a la derniere release publiee (proxy de
+  l'exigence, qui n'est pas exposee) et rouge quand l'ecart est bloquant —
+  en nommant le fait MESURE, pas la consequence supposee
+  ("online mais non eligible" n'est pas mesure ici, cf. review #15366) ;
 - verifier que les sites de la pin sont en phase (verification
   cross-fichiers) ;
-- ne JAMAIS rendre "a jour" sur un defaut de lecture de l'exigence (rc 2).
+- ne JAMAIS rendre "a jour" sur un defaut de lecture de la release (rc 2) ;
+- refuser un `--required-version ""` au lieu de retomber silencieusement
+  sur l'appel API live.
 
 Levolet 1 est hermétique (faux depot injecte via --repo-root et
 --required-version, API fakee par injection de commande). Le volet 2 est le
@@ -70,15 +75,19 @@ def test_pin_a_jour_et_en_phase_rend_rc0(tmp_path: Path):
     assert verdict["pinned_version"] == "2.337.0"
 
 
-def test_exigence_superieure_rouge_pin_stale(tmp_path: Path):
-    """GitHub exige 2.338.0, la pin est a 2.337.0 : le slot est en ligne mais
-    ne recevra plus de job -- le rapport doit nommer le mode de panne."""
+def test_release_superieure_rouge_pin_stale(tmp_path: Path):
+    """La reference est 2.338.0, la pin est a 2.337.0 : le rapport rouge doit
+    nommer le fait MESURE (pin derriere la derniere release), sans affirmer
+    l'ineligibilite, qui n'est pas mesuree (review #15366)."""
     repo = _fake_repo(tmp_path)
     verdict = organ.report(organ.parse_pins(repo), required="2.338.0")
     assert verdict["status"] == "PIN_STALE"
     assert verdict["exit_code"] == 1
-    assert "online mais non eligible" in verdict["detail"]
     assert "2.338.0" in verdict["detail"]
+    assert "derniere release publiee" in verdict["detail"]
+    assert "mesuree" in verdict["detail"]
+    # La consequence NON mesuree ne doit plus etre affirmee nulle part.
+    assert "non eligible" not in verdict["detail"]
 
 
 def test_sites_desaccordes_rend_in_phase_failure(tmp_path: Path):
@@ -101,7 +110,7 @@ def test_site_manquant_est_une_erreur_de_mesure_pas_une_pin(tmp_path: Path):
     assert verdict["exit_code"] == 1
 
 
-def test_exigence_illisible_rend_rc2_pas_un_vert(tmp_path: Path):
+def test_release_illisible_rend_rc2_pas_un_vert(tmp_path: Path):
     """API injoignable (None) : aucun verdict possible -- rc 2, le rapport le
     dit explicitement au lieu de pretender que la pin est a jour."""
     repo = _fake_repo(tmp_path)
@@ -111,17 +120,26 @@ def test_exigence_illisible_rend_rc2_pas_un_vert(tmp_path: Path):
     assert verdict["guard_pass"] is None
 
 
-def test_fetch_required_version_parse_et_echoue(tmp_path: Path):
+def test_fetch_latest_release_parse_et_echoue(tmp_path: Path):
     """Injection de commande : `gh api` attendu rend v2.337.0 ; une commande
     qui echoue (403/timeout) rend None, jamais une valeur par defaut."""
-    ok = organ.fetch_required_version(
+    ok = organ.fetch_latest_release(
         gh=[sys.executable, "-c", 'print("v2.337.0")']
     )
     assert ok == "2.337.0"
-    fail = organ.fetch_required_version(
+    fail = organ.fetch_latest_release(
         gh=[sys.executable, "-c", "import sys; sys.exit(1)"]
     )
     assert fail is None
+
+
+def test_required_version_vide_refuse_sans_appel_api(tmp_path: Path):
+    """`--required-version ""` n'est pas « aucune exigence » : refus explicite
+    (argparse rc 2), et surtout AUCUN appel API live declenche en douce."""
+    repo = _fake_repo(tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        organ.main(["--repo-root", str(repo), "--required-version", ""])
+    assert exc.value.code == 2
 
 
 # --- volet 2 : controle positif du depot reel ---------------------------------

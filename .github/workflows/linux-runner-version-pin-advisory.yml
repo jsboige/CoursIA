@@ -21,10 +21,13 @@ name: Linux runner version pin advisory
 # eligible" : un organe qui dit "online" ne mesure pas "eligible".
 #
 # Cet organe compare la pin (4 sites : Dockerfile ARG, Dockerfile.lean FROM,
-# supervise.sh IMAGE/LEAN_IMAGE) a l'exigence courante
-# (`repos/actions/runner/releases/latest`, via gh + GITHUB_TOKEN). Sorties :
-# rc 0 pin a jour et en phase ; rc 1 PIN_STALE ou IN_PHASE_FAILURE ; rc 2
-# exigence illisible -- un defaut de lecture ne justifie JAMAIS un vert.
+# supervise.sh IMAGE/LEAN_IMAGE) a la derniere release publiee
+# (`repos/actions/runner/releases/latest`, via gh + GITHUB_TOKEN) -- un PROXY
+# de l'exigence : la version minimale exigee n'est pas exposee par GitHub, et
+# l'ineligibilite qui pourrait en decouler n'est pas mesuree ici. Le rapport
+# nomme donc ce qu'il mesure (review #15366). Sorties : rc 0 pin a jour et en
+# phase ; rc 1 PIN_STALE ou IN_PHASE_FAILURE ; rc 2 release illisible -- un
+# defaut de lecture ne justifie JAMAIS un vert.
 #
 # Advisory PAR CONSTRUCTION (doctrine #12817) : schedule + workflow_dispatch
 # uniquement, jamais pull_request/push -- un run rouge ne bloque aucune PR.
