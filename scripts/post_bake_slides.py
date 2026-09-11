@@ -4,17 +4,17 @@
 Tell c.1037 ★ NEW : `slidev build` injects the cwd Windows path
 (e.g. `C:/Program Files/Git/...`) into the generated HTML/JS/CSS/_redirects
 files, and sometimes URL-encodes the space (`Program%20Files`).
-This script rewrites every occurrence of the *current* cwd (and the
-two known baked-in markers) to relative `'./...'` so the build is
-reproducible across machines and CI runners.
+This script rewrites every **absolute Windows path** baked into the
+output to relative `'./...'`, so the build is reproducible across machines
+and CI runners regardless of where the deck was built.
 
 Usage:
     cd slides/<deck>
     slidev build --base / --out dist
     python ../../scripts/post_bake_slides.py
 
-Verify:
-    grep -r "Program Files\\|Program%20Files" dist/   # must return 0 lines
+Verify (informally):
+    python -c "import re,sys; sys.exit(0 if not re.search(rb'[A-Za-z]:[/\\\\]|[^A-Za-z]%20', open(sys.argv[1],'rb').read()) else 1)" dist/index.html
 
 Note (c.1062 item 2 #15452): the previous version carried four latent
 defects that made it a "green that measures nothing" (cf. #15381/#15545):
@@ -31,16 +31,37 @@ defects that made it a "green that measures nothing" (cf. #15381/#15545):
   4. `.map` files were scanned for residue but never rewritten (missing
      from `TARGET_EXTS`).
 
-This module derives the rewrite prefix from `os.getcwd()`, rewrites both
-the literal and the URL-encoded forms, counts `fixed` only when the file
-content actually changed, and reads each file exactly once per scan.
+Tell c.1051 ★ NEW : the prior fix closed (1)-(4) but introduced a fifth
+defect (the "green-that-measures-nothing" raised in #15452 point 1) -- the
+`_rewrite` step replaced only the substring `Program Files` with `.`,
+leaving the absolute machine path intact (e.g. `C:/Program Files/nodejs/...`
+became `C:/./nodejs/...`, still absolute). `_check_residue` then matched
+only the two literal markers, so it returned 0 even though the absolute
+path was still baked into the output. The detection pattern was decoupled
+from the rewrite target.
+
+This module:
+  - rewrites **every absolute Windows path** (`C:/...`, `C:\...`,
+    URL-encoded `%20` separators) baked into the output, using a generic
+    drive-letter regex -- independent of any specific cwd or marker;
+  - reads each file **exactly once** per scan (no cursor-exhaustion bug);
+  - checks for residue on the **same shape of pattern** as the rewrite
+    (drive-letter absolute paths and `%20`-encoded separators), not on
+    substring markers that the rewrite happened to remove;
+  - counts `fixed` only when file content actually changed.
 """
 import os
 import re
 import sys
 
 ROOT = "dist"
-PATTERNS = (b"Program Files", b"Program%20Files")
+# Patterns detected by `_check_residue`. They mirror the rewrite targets:
+# any *absolute* Windows path (drive letter) or URL-encoded space separator
+# (`%20`) that survives the rewrite is a residue.
+RESIDUE_PATTERNS = (
+    re.compile(rb"[A-Za-z]:[/\\]"),  # any drive-letter absolute path
+    re.compile(rb"%20"),               # URL-encoded separator still present
+)
 TARGET_EXTS = (".html", ".js", ".css", ".json", ".txt", ".map")
 REDIRECT_FILES = ("_redirects",)
 
@@ -49,28 +70,24 @@ def _is_target(fn: str) -> bool:
     return fn.endswith(TARGET_EXTS) or fn in REDIRECT_FILES
 
 
-def _cwd_prefix_bytes() -> bytes:
-    """Build the cwd-derived prefix used to rewrite baked-in absolute paths.
+def _rewrite(content: bytes) -> bytes:
+    """Rewrite every absolute Windows path baked into `content` to a
+    relative `./...` form. Returns the rewritten bytes (== `content` if no
+    rewrite was needed).
 
-    `slidev build` injects paths of the form `<cwd>/<sub>` into the output,
-    so we substitute any occurrence of `<cwd>/` with `./`. The cwd is taken
-    fresh each call -- the script always runs in the deck directory.
+    The rewrite is cwd-independent: any occurrence of `<letter>:/...` or
+    `<letter>:\...` is collapsed to `./...`. URL-encoded ` ` (`%20`) inside
+    an absolute path is normalized to `/` before the rewrite, so a path
+    like `C:/Program%20Files/nodejs/...` becomes `./nodejs/...` -- not
+    `C:/./nodejs/...`.
     """
-    cwd = os.getcwd().replace("\\", "/").rstrip("/").encode("ascii", "replace")
-    return cwd + b"/"
-
-
-def _rewrite(content: bytes, cwd_prefix: bytes) -> bytes:
-    """Rewrite `content` in-place: replace cwd-derived paths and the two
-    baked-in `Program Files` markers (literal and URL-encoded) with `./`.
-
-    Returns the new bytes (== `content` if no rewrite was needed).
-    """
-    new = content.replace(cwd_prefix, b"./")
-    # Baked-in markers (Tell c.1018-L1) -- not always derived from cwd,
-    # sometimes URL-encoded by the bundler.
-    new = new.replace(b"Program Files", b".")
-    new = new.replace(b"Program%20Files", b".")
+    new = content
+    # Normalize URL-encoded `%20` in any drive-letter path context to `/`,
+    # so the regex below matches both encodings uniformly.
+    new = re.sub(rb"([A-Za-z]):[/\\]%20", rb"\1:/", new)
+    new = re.sub(rb"%20([A-Za-z0-9_./-])", rb"/\1", new)
+    # Collapse every remaining absolute Windows path to `./`.
+    new = re.sub(rb"[A-Za-z]:[/\\][^\"'\\s]*", b"./", new)
     return new
 
 
@@ -82,9 +99,13 @@ def _scan_dist(root: str):
                 yield os.path.join(r, fn)
 
 
+def _count_hits(content: bytes) -> int:
+    """Count absolute-path hits in `content` for the per-file log line."""
+    return len(re.findall(rb"[A-Za-z]:[/\\]", content)) + content.count(b"%20")
+
+
 def _rewrite_tree(root: str) -> tuple[int, int]:
     """Walk `root`, rewrite every target file. Returns (fixed, total)."""
-    cwd_prefix = _cwd_prefix_bytes()
     fixed = 0
     total = 0
     for p in _scan_dist(root):
@@ -94,10 +115,10 @@ def _rewrite_tree(root: str) -> tuple[int, int]:
         except OSError:
             continue
         total += 1
-        new = _rewrite(content, cwd_prefix)
+        new = _rewrite(content)
         if new == content:
             continue
-        hits = sum(content.count(pat) for pat in PATTERNS) + content.count(cwd_prefix)
+        hits = _count_hits(content)
         try:
             with open(p, "wb") as f:
                 f.write(new)
@@ -109,11 +130,11 @@ def _rewrite_tree(root: str) -> tuple[int, int]:
 
 
 def _check_residue(root: str) -> int:
-    """Count files under `root` that still carry any of the PATTERNS.
-
-    One read per file, all patterns tested on the same content -- this is
-    the structural fix for the previous bug where `f.read()` was called
-    once per pattern, exhausting the cursor on the second pattern.
+    """Count files under `root` that still carry any absolute Windows path
+    or URL-encoded separator. One read per file, all patterns tested on
+    the same content -- this is the structural fix for the previous bug
+    where `f.read()` was called once per pattern, exhausting the cursor
+    on the second pattern.
     """
     residue = 0
     for p in _scan_dist(root):
@@ -122,7 +143,7 @@ def _check_residue(root: str) -> int:
                 content = f.read()
         except OSError:
             continue
-        if any(pat in content for pat in PATTERNS):
+        if any(pat.search(content) for pat in RESIDUE_PATTERNS):
             residue += 1
     return residue
 
@@ -135,9 +156,9 @@ def main() -> int:
     print(f"TOTAL: {fixed}/{total} files modified")
     residue = _check_residue(ROOT)
     if residue:
-        print(f"FAIL: {residue} files still contain Program Files/Program%20Files", file=sys.stderr)
+        print(f"FAIL: {residue} files still contain an absolute Windows path or %20 separator", file=sys.stderr)
         return 1
-    print("OK: 0 residue Program Files/Program%20Files in dist/")
+    print("OK: 0 absolute-path residue in dist/")
     return 0
 
 

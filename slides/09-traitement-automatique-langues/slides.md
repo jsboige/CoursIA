@@ -68,7 +68,7 @@ layout: default
 | Markov caché (HMM), Viterbi | `Probas/Infer/Infer-*` |
 | Automates finis, transducteurs (morphologie) | `SymbolicAI/SMT/Automata/`, `SymbolicAI/SMT/Z3-API/`, `Sudoku/` |
 | CRF / structured prediction | **GAP** — pas de notebook dédié (voir `Probas/Infer/Infer-*` pour HMM/Viterbi amont) |
-| Parsing CFG/PCFG, CYK | **GAP** — `SymbolicAI/Lean` contient CFG et grammaires, mais pas de CYK ni de notebook PCFG dédié |
+| Parsing CFG/PCFG, CYK | **GAP** — pas de CYK ni de notebook PCFG dédié |
 | Sémantique compositionnelle | `SymbolicAI/SemanticWeb` |
 | Word embeddings, RNN, LSTM, seq2seq, Transformers | `GenAI/Texte/10*` |
 | Agents conversationnels, LUIS, Dialogflow | `GenAI/Plateformes-Conversationnelles` |
@@ -571,7 +571,7 @@ layout: section
 - Bitcoin, DN/Encog, machine learning
 
 > Ces projets sont **historiques** (2018). Pour les projets modernes équivalents,
-> voir le syllabus courant (`MyIA.AI.Notebooks/GradeBookApp/`).
+> voir le syllabus courant (`GradeBookApp/`, racine du dépôt — moteur de notation, pas le syllabus).
 
 ---
 
@@ -584,18 +584,8 @@ sont accessibles dans le PPTX source hors Git. La voie canonique pour intégrer
 des figures complémentaires au deck est `image-overlay` (jamais `bg right` /
 `image-right` issus de convertisseurs, règle projet).
 
-**Source** : PPTX canonique hors Git `G:\Mon Drive\MyIA\IA\Bibliographie IA\Slides\English\Artificial Intelligence - 6 - Natural Language Processing.pptx`
-(1.68 MB, mars 2022, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
-
-> **Notes de cycle** :
-> - **c.1033** : 32 PNG initiaux → 19 retirés (≤30 KB, sans référence pédagogique
->   préservée). Le dossier `images/` est passé à **treize** figures (6 corps + 7
->   préservées).
-> - **c.1037** (CHANGES_REQUESTED ai-01 #15452, review `5170199962`) : critère
->   "assets strictement nécessaires" = PNG référencés par le rendu. Les 7 figures
->   préservées non intégrées au corps sont **retirées du dépôt** (accessibles via
->   le PPTX canonique hors Git). Le dossier `images/` passe de treize à **six**
->   figures, toutes référencées par `image-overlay` dans le corps du deck.
+**Source** : PPTX canonique `Artificial Intelligence - 6 - Natural Language Processing.pptx`
+hors dépôt (GDrive *Bibliographie IA*, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
 
 Voir slide suivante pour le tableau détaillé des six figures retenues.
 
