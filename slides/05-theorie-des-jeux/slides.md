@@ -201,7 +201,7 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-24-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
+*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-20-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
 
 ---
 layout: dense
