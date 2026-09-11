@@ -95,7 +95,7 @@ reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 | Signal entrée | Donchian 20j + filtre SMA50 | 6 horizons EWMAC (Carver pairs 8/32, 16/64, 32/128, 64/256, 16/48, 32/96) avec scalaire per-horizon `sqrt(slow/32)` (c.1063 increment) |
 | Carry factor | absent | **désactivé** (voir note ci-dessous ; c.1107 + c.1109) |
 | Multiplicateur régime | absent | vol-régime borné [0.5, 2] |
-| FDM (Forecast Diversification Multiplier) | absent | **requalifié honnêtement** en *breadth multiplier* sign-invariant, clip [1, 2] (c.1109 REPAIR-3 + REPAIR-5 c.1111, voir note) |
+| FDM (Forecast Diversification Multiplier) | absent | **requalifié honnêtement** en *breadth multiplier* sign-invariant (effective breadth of absolute magnitudes / INVERSE concentration), clip [1, 2] (c.1109 REPAIR-3 + c.1111 REPAIR-5 + c.1113 REPAIR-7, voir note) |
 | Cap forecasts | n/a | +/-20 par forecast |
 | Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé, retarget du **delta** (pas d'aller-retour fabriqué, c.1109) |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
@@ -135,39 +135,62 @@ l'inverse de l'intention Carver. `_fdm` est renommé `_breadth_multiplier`.
 **c.1111 REPAIR-5 — formule est sign-invariant.** L'adjoint a observé
 que `abs(float(f))` efface les signes, donc `[10,10]` et `[10,-10]`
 rendent **le même** `breadth = sqrt(2)`. La métrique mesure donc
-strictement la **concentration des magnitudes** (sign-invariant
-magnitude concentration), pas l'alignement directionnel, ni le book
-unidirectionnel, ni une pénalité Carver-true. La prose antérieure
+strictement la **largeur effective des magnitudes absolues** (effective
+breadth of absolute magnitudes), pas l'alignement directionnel, ni le
+book unidirectionnel, ni une pénalité Carver-true. La prose antérieure
 qui disait « bonus quand le book est unidirectionnel / aligned »
-(REPAIR-3 c.1109) avait tort sur ce point : `|f|` retire le signe à
+(REPAIR-3 c.1109) ou « sign-invariant magnitude concentration »
+(REPAIR-5 c.1111) avait tort sur ce point : `|f|` retire le signe à
 l'entrée, le multiplier est par construction sign-invariant. Le signe
 des forecasts est préservé séparément, en aval, par le ratio
 `forecast / abs_sum` dans `_rebalance`.
 
+**c.1113 REPAIR-7 — formule mesure une largeur effective, pas une
+concentration** (correction sémantique par adjoint po-2025 habilité
+n°3 Tell c.15069 strict). Le ratio `sum(|f|)/sqrt(sum(f^2))` range de
+**1.0** (une magnitude domine, le reste à 0 — concentration MAXIMUM)
+à **sqrt(N)** (toutes les magnitudes égales — concentration ZÉRO) :
+c'est l'**inverse** d'une mesure de concentration. Appeler cela «
+magnitude concentration » dans les itérations précédentes inversait
+la sémantique. La formule mesure une **largeur effective des magnitudes
+absolues** (effective breadth of absolute magnitudes, INVERSE
+concentration).
+
 **REPAIR-5 c.1111** (Tell c.1069 strict honnêteté référentielle, par
 adjoint po-2025 habilité n°3 urne `delivered` Tell c.15069 strict) :
-- Docstring `_breadth_multiplier` reformulée « sign-invariant magnitude
-  concentration » ; retrait des claims « one-directional / aligned » ;
-  précision que seul le multiplier est sign-invariant, le poids final
-  préserve le signe.
-- Clip `[1, 2]` décrit comme « soft cap on gross leverage when
-  magnitudes are concentrated » (au lieu de « when book is
-  one-directional »).
+- Docstring `_breadth_multiplier` reformulée « sign-invariant effective
+  breadth of absolute magnitudes » ; retrait des claims « one-directional
+  / aligned » et « magnitude concentration » ; précision que seul le
+  multiplier est sign-invariant, le poids final préserve le signe.
+- Clip `[1, 2]` décrit comme « soft cap on gross leverage » (lorsqu'une
+  magnitude domine, leverage capé à 1x ; lorsque les magnitudes sont
+  étalées, leverage amplifié jusqu'à 2x).
 - `config.json` corrigé : « Carver FDM with corrected clip [1,2] » →
-  « breadth multiplier clip [1, 2] — sign-invariant magnitude
-  concentration, NOT Carver FDM, REPAIR-3 c.1109 + REPAIR-5 c.1111 ».
+  « breadth multiplier clip [1, 2] — sign-invariant effective breadth of
+  absolute magnitudes / INVERSE concentration, NOT Carver FDM,
+  REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7 c.1113 ».
 - Module docstring mis à jour (NOT a Carver FDM, NOT a directional-
-  alignment proxy).
+  alignment proxy, NOT a concentration measure).
 
-**REPAIR-6 c.1111 (worker, ce cycle)** : cohérence README ↔ source —
+**REPAIR-6 c.1111 (worker)** : cohérence README ↔ source REPAIR-5 —
 le présent paragraphe remplace la note « REPAIR-3 c.1109 seule » qui
 disait encore « bonus quand le book est unidirectionnel », et la section
 « Statut courant » est étendue avec REPAIR-5 c.1111.
 
-**Règle d'or** : `_breadth_multiplier` répond à « quelle est la
-concentration des magnitudes ? », **pas** à « les forecasts sont-ils
-alignés ? » ni à « le book est-il unidirectionnel ? ». Pour ces
-dernières questions, il faut un estimateur signé exogène (moyenne
+**REPAIR-7 c.1113 (worker)** : cohérence sémantique « effective breadth /
+inverse concentration » + test CPU exécutable
+`tests/test_breadth_multiplier.py` protégeant le caractère sign-invariant
+(4 cas : `[10,10] == [10,-10]`, `[10,0]` clipé à 1, 4 magnitudes égales
+clipées à 2, exécution locale sans QC Cloud). Le caractère
+sign-invariant n'est plus seulement documenté, il est **protégé par
+un test**. Préflight adjoint habilité n°3
+`msg-20260911T063424-qnc0q9`.
+
+**Règle d'or** : `_breadth_multiplier` répond à « quelle est la largeur
+effective des magnitudes absolues ? » (= inverse concentration), **pas**
+à « les magnitudes sont-elles concentrées ? », ni à « les forecasts
+sont-ils alignés ? » ni à « le book est-il unidirectionnel ? ». Pour
+ces dernières questions, il faut un estimateur signé exogène (moyenne
 signée, dispersion signée, corrélation rolling) qui n'est pas dans
 cette formule. Le Carver FDM au sens propre (estimateur
 signed-correlation rolling) reste une dette de fond (#15549 acceptance
@@ -224,6 +247,19 @@ quand la cible est proche de la position actuelle.
   (la prose c.1109 disait « bonus quand le book est unidirectionnel », faux) +
   statut courant étendu avec REPAIR-5. Amend borné scope unique
   `FuturesTrend/README.md`. Push `--force-with-lease=refs/heads/feature/15549-carver13-futures:5c316080f10ffcf0dd011a4da1a7ce77dad20277`.
+- **REPAIR-7 c.1113 (worker)** : correction sémantique « effective breadth /
+  inverse concentration » (Tell c.1069 strict honnêteté référentielle, par
+  préflight adjoint po-2025 habilité n°3 urne `delivered` Tell c.15069 strict,
+  `msg-20260911T063424-qnc0q9`) — la formule `sum(|f|)/sqrt(sum(f^2))` mesure
+  une largeur effective (1 = concentré, sqrt(N) = étalé), pas une concentration.
+  Source `main_carver13.py` docstring `_breadth_multiplier` refondue + module
+  docstring ligne 27-29 ; `config.json` libellé cohérent ; README.md sections
+  « Note Tell c.1069 strict » et « Statut courant » étendues. Ajout d'un test
+  CPU exécutable `tests/test_breadth_multiplier.py` (4 cas : sign-invariant,
+  `[10,0]` clipé à 1, 4 magnitudes égales clipées à 2, exécution locale sans
+  QC Cloud) — le caractère sign-invariant n'est plus seulement documenté, il est
+  **protégé par un test**. Préflight adjoint habilité n°3 : QC demeure suspendu
+  jusqu'au nouveau head.
 
 ## Références
 

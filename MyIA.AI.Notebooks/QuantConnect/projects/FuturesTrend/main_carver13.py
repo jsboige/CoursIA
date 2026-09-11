@@ -24,9 +24,14 @@ from collections import deque
 #   Re-introduction of carry requires the QC Cloud `Future` chain API
 #   for a real front/deferred ratio (acceptance #15549 follow-up).
 # - Volatility regime multiplier cap in [0.5, 2].
-# - Breadth multiplier (formerly labelled FDM, c.1109 REPAIR): we apply
-#   the Carver-style gross-leverage adjustment honestly labelled as a
-#   breadth bonus [1, 2] — see _breadth_multiplier for the rationale.
+# - Breadth multiplier (formerly labelled FDM, c.1109 + c.1111 REPAIR-5 +
+#   c.1113 REPAIR-7): we apply the Carver-style gross-leverage adjustment
+#   honestly labelled as an *effective breadth of absolute magnitudes*
+#   (inverse concentration), clip [1, 2] — see _breadth_multiplier
+#   for the rationale. REPAIR-7 is semantic: the formula `sum(|f|)/sqrt(sum(f^2))`
+#   ranges 1 → sqrt(N), where 1 = one magnitude dominates, sqrt(N) = all
+#   |f_i| equal; this is the *breadth* of the absolute magnitudes
+#   (inverse concentration), NOT a measure of concentration.
 # - Cap forecasts in [-20, +20] per Carver rule (system layer, not per instrument).
 # - Position sizing: risk-targeted (vol-scaled), not fixed 33%; retarget
 #   the delta directly, liquidate only when sign change or target ~ 0
@@ -282,33 +287,44 @@ class CarverThirteen(QCAlgorithm):
         return float(np.clip(raw_mult, CARVER_VOL_MULT_MIN, CARVER_VOL_MULT_MAX))
 
     def _breadth_multiplier(self, forecasts):
-        """Breadth multiplier — honest requalification of the prior FDM
-        (Tell c.1069 strict, REPAIR-3 c.1109 adjoint po-2025 preflight
-        `msg-20260911T043805-i7tl0g`; REPAIR-5 c.1066 docstring honesty
-        after the same adjoint signalled that `abs()` makes the formula
-        sign-invariant, contradicting the prior "one-directional" claim).
+        """Effective breadth multiplier — inverse concentration, sign-invariant
+        (Tell c.1069 strict, REPAIR-3 c.1109 + REPAIR-5 c.1111 + REPAIR-7
+        c.1113 — successive honesty requalifications after adjoint po-2025
+        preflights `msg-20260911T043805-i7tl0g`, `msg-20260911T053342-rwwap4`,
+        `msg-20260911T063424-qnc0q9`).
 
-        Formula (instantaneous cross-sectional magnitude concentration):
+        Formula (instantaneous cross-sectional effective breadth of
+        absolute magnitudes — INVERSE concentration):
             breadth = sum(|f_i|) / sqrt(sum(f_i^2))
 
-        Reading (c.1109 + c.1066 honest requalification): `|f|` removes
-        the sign at the input, so the ratio is **sign-invariant** —
-        `[10, 10]` and `[10, -10]` yield the same `breadth`. The ratio
-        ranges from 1.0 (one forecast dominates, the rest are zero) to
-        sqrt(N) (all |f_i| equal); it measures how evenly the absolute
-        magnitudes are spread across the book, nothing more. It does
-        NOT measure whether forecasts are aligned in sign.
+        Reading (REPAIR-7 c.1113, semantic correction by adjoint po-2025
+        habilité n°3 Tell c.15069 strict): the ratio ranges from **1.0
+        (one |f_i| dominates, the rest are zero — MINIMUM effective
+        breadth, MAXIMUM concentration)** to **sqrt(N) (all |f_i| equal
+        — MAXIMUM effective breadth, ZERO concentration)**. This is the
+        *inverse* of a concentration measure: 1 = maximally concentrated,
+        sqrt(N) = maximally spread. Calling this a "magnitude
+        concentration" multiplier in earlier iterations inverted the
+        semantic — it is an **effective breadth of absolute magnitudes**.
 
-        The classical Carver FDM (chap. 9) penalises concentration and
-        requires an exogenous correlation estimate; we do NOT replicate
-        that here because the instantaneous formula cannot supply it.
-        Hence the multiplier is labelled *breadth*, not *FDM*, and is
-        clipped to [1.0, 2.0] as a **soft cap on gross leverage when
-        magnitudes are concentrated** — never below the proportional sum
-        of |f_i|, because we have no signal that the magnitudes are
-        spuriously concentrated either. The final portfolio weight
-        `forecast / abs_sum` (in `_rebalance`) preserves the sign; only
-        this multiplier is sign-invariant.
+        Sign-invariance (REPAIR-5 c.1111): `abs()` removes the sign at
+        the input, so `[10, 10]` and `[10, -10]` yield the same breadth
+        (sqrt(2)). This is verified by `tests/test_breadth_multiplier.py`
+        (executable CPU test, no QC Cloud required). The final
+        portfolio weight `forecast / abs_sum` (in `_rebalance`) preserves
+        the sign; only this multiplier is sign-invariant.
+
+        Relationship to Carver FDM (chap. 9): the Carver FDM penalises
+        cross-sectional concentration by scaling down gross leverage when
+        forecasts are correlated; it requires an exogenous correlation
+        estimate. The instantaneous formula above **cannot** supply that
+        estimate — it is a different quantity. Hence this multiplier is
+        labelled *breadth*, not *FDM*, and is clipped to [1.0, 2.0] as a
+        **soft cap on gross leverage** (when one magnitude dominates,
+        leverage is capped at 1x; when magnitudes are spread, leverage
+        is amplified up to 2x). The clip is asymmetric on intent:
+        magnitudes spread → trust the signal; one magnitude dominates
+        → don't trust it more than the baseline.
         """
         arr = np.asarray([abs(float(f)) for f in forecasts], dtype=float)
         if arr.size == 0:
