@@ -148,13 +148,13 @@ combinent ces queues par union bound sur les `N` colonnes du canal.
 
 ## Companion canonique
 
-Le compagnon natif est **[Lean-22b-MIMO-Converse-Native.ipynb](../Lean-22b-MIMO-Converse-Native.ipynb)**
+Le compagnon natif est **[Lean-21b-MIMO-Converse-Native.ipynb](../Lean-21b-MIMO-Converse-Native.ipynb)**
 (kernel `lean4-wsl`) — il visite les 35 déclarations de `NormTails` /
 `Converse` / `Bridge`, chacune interrogée par `#check` et sondée par
 `#print axioms` sur les théorèmes clés. Trois axiomes standards, zéro
 `sorry`, zéro axiome non standard.
 
-Lean-22b **distingue** le prouvé localement (les énoncés de ce lake) de
+Lean-21b **distingue** le prouvé localement (les énoncés de ce lake) de
 l'emprunté (les deux théorèmes SLT rappelés explicitement) — la lecture
 est self-contained, sans confusion de frontière.
 
