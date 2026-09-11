@@ -900,6 +900,17 @@ def wait_and_decide(
         sleep(poll_sec)
 
 
+def _workflow_command_escape(text: str) -> str:
+    """Escape text for a GitHub workflow-command (`::error::`) annotation.
+
+    A raw LF would end the annotation (truncating the reason), a raw CR
+    mangles it, and a raw `%` swallows the following bytes as a bogus
+    escape. Order is load-bearing: `%` must be escaped FIRST -- doing CR/LF
+    first would re-escape the `%` those substitutions introduce (%250D).
+    """
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
 def _optional_int(raw: str) -> "int | None":
     """`--pr ""` vaut « pas de PR », pas une erreur d'argparse.
 
@@ -1047,10 +1058,12 @@ def main(argv: Iterable[str] | None = None) -> int:
             advisory_jobs,
         )
     except GateError as exc:
-        # Rule 1: an unreadable state is a failure, never a pass.
-        print(f"[pr-gate] FAIL -- cannot establish check state: {exc}", file=sys.stderr)
-        _maybe_post_check_run(args, 1, f"FAIL -- cannot establish check state: {exc}")
-        return 1
+        # Rule 1: an unreadable state is a failure, never a pass. Fall
+        # through to the single emission tail instead of returning here: the
+        # old early return exited BEFORE the ::error:: point, leaving the
+        # most opaque failure mode (API unreadable at all) mute in the UI
+        # (#15472). Verdict semantics unchanged: code 1, same message.
+        code, message = 1, f"FAIL -- cannot establish check state: {exc}"
 
     # #13510: render a starvation as CANCELLED, not FAILURE. The PR stays
     # BLOCKED (a cancelled required check is not success), but the leg no
@@ -1133,7 +1146,14 @@ def main(argv: Iterable[str] | None = None) -> int:
         # dans l'UI. Legs DWELL rendus muets mesures sur #15472 (2026-09-10) :
         # 8 PR gates rouges sans cause organique, tous des DWELL (plancher de
         # merge, mandat 07/09) dont la re-agregation ne rend jamais compte.
-        print(f"::error::[pr-gate] {message}", file=sys.stderr, flush=True)
+        # Le message peut porter %, CR ou LF (stderr gh multi-ligne) : un LF
+        # brut tronque l'annotation, un % brut avale les octets suivants --
+        # echappement protocolaire workflow-command, % EN PREMIER (#15472).
+        print(
+            f"::error::[pr-gate] {_workflow_command_escape(message)}",
+            file=sys.stderr,
+            flush=True,
+        )
     return code
 
 

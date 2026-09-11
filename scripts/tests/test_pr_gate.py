@@ -70,6 +70,78 @@ def test_unreadable_api_exits_one(monkeypatch):
     assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
 
 
+def test_unreadable_api_carries_annotation(capsys, monkeypatch):
+    """#15472 repair 1: the `cannot establish check state` early return is
+    the most opaque failure mode (the API cannot be read at all); it must
+    reach the same ::error:: emission point as any other red, not exit
+    before it."""
+    def boom(*_args, **_kwargs):
+        raise pr_gate.GateError("gh api exploded")
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    captured = capsys.readouterr()
+    assert (
+        "::error::[pr-gate] FAIL -- cannot establish check state: gh api exploded"
+        in captured.err
+    )
+    # One log line, one annotation -- the same verdict never printed twice
+    # on the same surface.
+    assert captured.out.count("cannot establish check state") == 1
+    assert captured.err.count("cannot establish check state") == 1
+
+
+def test_annotation_escapes_workflow_command_metacharacters(capsys, monkeypatch):
+    """#15472 repair 2: an exception message can be multi-line and carry `%`
+    (raw gh stderr). A raw CR/LF splits or truncates the ::error::
+    annotation; a raw `%` eats the following bytes as a bogus escape.
+    Escape per the workflow-command protocol, `%` FIRST."""
+    def boom(*_args, **_kwargs):
+        raise pr_gate.GateError(
+            "gh api o/r failed (exit 1): HTTP 502\r\n100% of requests failed\ntrace end"
+        )
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    annotation = next(
+        ln for ln in capsys.readouterr().err.splitlines()
+        if ln.startswith("::error::")
+    )
+    assert "HTTP 502%0D%0A100%25 of requests failed" in annotation
+    assert "failed%0Atrace end" in annotation
+    # Order proof: `%` escaped before CR/LF, so %0D/%0A are never re-escaped.
+    assert "%250D" not in annotation and "%250A" not in annotation
+
+
+def test_workflow_command_escape_percent_first():
+    """Unit pin of the helper: the substitution order is load-bearing."""
+    assert (
+        pr_gate._workflow_command_escape("100% done\r\nnext")
+        == "100%25 done%0D%0Anext"
+    )
+
+
+def test_posted_check_run_message_is_not_escaped(monkeypatch):
+    """Escaping belongs to the workflow-command surface ONLY; the Checks-API
+    check-run (the PR's mergeState surface) carries the message verbatim."""
+    posted = {}
+
+    def fake_post(repo, sha, name, code, message):
+        posted["message"] = message
+        return {}
+
+    def boom(*_args, **_kwargs):
+        raise pr_gate.GateError("gh api failed (exit 1): 50%\r\nline2")
+
+    monkeypatch.setattr(pr_gate, "post_check_run", fake_post)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"])
+    assert code == 1
+    assert posted["message"] == (
+        "FAIL -- cannot establish check state: gh api failed (exit 1): 50%\r\nline2"
+    )
+
+
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
     pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])
