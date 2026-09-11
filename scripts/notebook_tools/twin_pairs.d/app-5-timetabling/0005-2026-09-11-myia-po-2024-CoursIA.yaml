@@ -1,0 +1,16 @@
+date: '2026-09-11'
+by: myia-po-2024:CoursIA
+python_sha: 63a0bb7f77ef4b5103c436c1dc9976d394b2e45c
+csharp_sha: dfb33334f88bc104a217d17c05c7b23cd3c1e24b
+content_python_sha: 1aa065cca423e8805bb8b7c38339b9b0364c5fc0c4c831c3e9458a51168d76ee
+content_csharp_sha: a6af73b2bfeb94f14402adc40f5c65ad4a81eb1c0b98644c95bb40cb39677791
+reason: >-
+  Re-attestation de parite -- canari hr_separator (#15227, lane myia-po-2024:CoursIA),
+  markdown-only. Le separateur decoratif de fin de derniere cellule markdown du cote C#
+  (App-5-Timetabling-CSharp.ipynb) est converti d'une regle horizontale en asterisques
+  par scripts/notebook_tools/fix_hr_separator.py, dans le cadre de son allowlist (hors
+  frontmatter, bloc cloture et setext). Cote C# SEUL : le jumeau Python ne porte aucun
+  separateur standalone equivalent, verifie sur origin/main par parcours JSON complet de
+  ses cellules markdown. Diff = 1 ligne de source JSON par fichier ; cellules code,
+  outputs, execution_count et metadata byte-identiques. Aucun strip outille posterieur :
+  le blob atteste ici est celui du HEAD de la PR. parity_level native-both intacte.
