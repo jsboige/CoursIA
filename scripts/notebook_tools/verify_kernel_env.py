@@ -61,7 +61,10 @@ def _venv_from_interpreter(interpreter: Optional[str]) -> Optional[str]:
         return None
     from pathlib import PurePosixPath
     p = PurePosixPath(interpreter)
-    if p.name not in ("python", "python3") and not p.name.startswith("python"):
+    # Any python* interpreter name qualifies (python, python3, python3.10):
+    # WSL venvs often expose a versioned name. The former
+    # ``not in ("python", "python3")`` clause was subsumed by this check.
+    if not p.name.startswith("python"):
         return None
     if p.parent.name != "bin":
         return None
@@ -182,7 +185,10 @@ def verify_one(notebook_path: Path, default_venv: str = DEFAULT_WSL_VENV) -> dic
         # the original PR #14930 stdout divergence warning covers at
         # runtime -- at the static level we can only note it.
         out["verdict"] = "OK"
-        out["matches_default_venv"] = True
+        # No declared venv to compare against: the match is unverified, so
+        # the field is null (not true) -- the schema documents None = unknown
+        # (#15223). A downstream consumer must not read true here.
+        out["matches_default_venv"] = None
         out["message"] = (
             f"kernelspec '{name}' argv[0]={interp!r} resolves to a system "
             "or bare interpreter; wsl_papermill uses the active venv at "

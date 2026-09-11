@@ -34,7 +34,7 @@ docker logs sd-forge-main --tail 100 -f
 |----------|-------------|--------|
 | `SD_FORGE_MAIN_API_KEY` | Cle API pour l'authentification | A definir |
 | `FORGE_USER` (via `WEB_USER`) | Utilisateur Gradio | `admin` |
-| `FORGE_PASSWORD` (via `WEB_PASSWORD`) | Mot de passe Gradio | `changeme` |
+| `FORGE_PASSWORD` (via `WEB_PASSWORD`) | Mot de passe Gradio | A definir (fail-closed : aucune valeur commitee) |
 
 ### Arguments CLI
 
@@ -101,7 +101,7 @@ Note : pas de `.gitignore` dedie. Le fichier `.env` est exclu via le `.gitignore
 - **WebUI** : http://localhost:7860
 - **Cloud** : https://stable-diffusion-webui-forge.myia.io
 - **API** : http://localhost:7860/sdapi/v1/
-- **Auth** : admin / changeme (modifier dans `.env`)
+- **Auth** : admin / (mot de passe a definir dans `.env` — aucune valeur par defaut commitee)
 
 ## Dockerfile Custom
 

@@ -572,3 +572,112 @@ def test_informative_is_false_on_an_empty_candidate_list():
     assert ss._informative([], None) is False
     assert ss._informative([], {}) is False
     assert ss._informative(["X"], None) is True
+
+
+# --- age de derniere livraison reelle des umbrellas (#15491 Phase 1) ---------
+
+import datetime as _dt  # noqa: E402
+
+
+def _delivery_pr(number, merged_at, body=""):
+    return {"number": number, "title": "pr %d" % number, "body": body,
+            "mergedAt": merged_at, "files": []}
+
+
+_NOW = _dt.datetime(2026, 9, 10, 12, 0, tzinfo=_dt.timezone.utc)
+
+
+def test_delivery_unavailable_when_fetch_failed_empty():
+    """Fetch/cache indisponible : toutes les umbrellas neutres, l'erreur rendue."""
+    sig = ss.measure_delivery([], [1101, 1102], now=_NOW, days=14,
+                              fetch_error="CalledProcessError: gh down")
+    assert sig["corpus_error"] == "CalledProcessError: gh down"
+    assert sig["corpus_size"] == 0
+    for num in (1101, 1102):
+        assert sig["items"][num]["state"] == ss.DELIVERY_UNAVAILABLE
+        assert sig["items"][num]["factor_theoretical"] == 1.0
+
+
+def test_delivery_empty_corpus_distinct_from_no_delivery():
+    """0 PR mergee dans la fenetre : EMPTY_CORPUS, pas NONE_IN_WINDOW --
+    un zero de corpus ne doit jamais se lire comme un zero de livraison."""
+    sig = ss.measure_delivery([], [1101], now=_NOW, days=14, fetch_error=None)
+    assert sig["items"][1101]["state"] == ss.DELIVERY_EMPTY_CORPUS
+    assert sig["items"][1101]["factor_theoretical"] == 1.0
+    assert sig["items"][1101]["body_route"] is None
+
+
+def test_delivery_none_in_window_routes_body_update():
+    """Mesure valide, aucune declaration : NONE_IN_WINDOW + route #13906.
+    L'umbrella reste tirable : le signal annote, il ne met pas de veto."""
+    corpus = [_delivery_pr(900, "2026-09-08T10:00:00Z", "See #1999")]
+    sig = ss.measure_delivery(corpus, [1101], now=_NOW, days=14)
+    item = sig["items"][1101]
+    assert item["state"] == ss.DELIVERY_NONE_IN_WINDOW
+    assert item["body_route"] == "coord_update_13906"
+    # Plafond du facteur au max de calibration, pas 1.0 : le delaissement
+    # de LIVRAISON est prouve, distinct du delaissement updatedAt.
+    assert item["factor_theoretical"] == 1.5
+
+
+def test_delivery_delivered_takes_newest_and_counts():
+    """Plusieurs PRs declarent l'umbrella : la plus recente porte la date,
+    le compte empeche de lire 'la livraison' comme l'unique."""
+    corpus = [
+        _delivery_pr(901, "2026-09-01T10:00:00Z", "Closes #1101"),
+        _delivery_pr(902, "2026-09-09T18:00:00Z", "See #1101"),
+    ]
+    sig = ss.measure_delivery(corpus, [1101], now=_NOW, days=14)
+    item = sig["items"][1101]
+    assert item["state"] == ss.DELIVERY_DELIVERED
+    assert item["last_delivery"] == "2026-09-09T18:00:00Z"
+    assert item["deliveries"] == 2
+    assert item["age_days"] == round((_NOW - _dt.datetime(
+        2026, 9, 9, 18, tzinfo=_dt.timezone.utc)).total_seconds() / 86400.0, 2)
+    assert item["body_route"] is None
+
+
+def test_delivery_incidental_mention_is_not_a_delivery():
+    """La regle de declaration existante (cited_issues) fait le tri : un
+    bare `EPIC #N` en prose mi-corps raconte le contexte, ne declare pas."""
+    corpus = [
+        _delivery_pr(903, "2026-09-09T10:00:00Z",
+                     "dont l'EPIC #1101 porte la consolidation"),
+    ]
+    sig = ss.measure_delivery(corpus, [1101], now=_NOW, days=14)
+    assert sig["items"][1101]["state"] == ss.DELIVERY_NONE_IN_WINDOW
+
+
+def test_delivery_window_effective_and_truncation():
+    """Fenetre demandee vs reelle rendues separement, et la troncature par
+    la limite de fetch signalelee -- sinon une fenetre courte se lirait
+    comme une absence de livraison."""
+    corpus = [_delivery_pr(904, "2026-09-08T10:00:00Z", "See #1999")]
+    sig = ss.measure_delivery(corpus, [], now=_NOW, days=14)
+    # Le plus vieux merge couvre 2 j : la fenetre EFFECTIVE est 2 j, pas 14.
+    assert sig["window_days_requested"] == 14
+    assert sig["window_days_effective"] == 2.08
+    assert sig["truncated"] is False
+    truncated = [_delivery_pr(n, "2026-09-09T10:00:00Z") for n in range(400)]
+    sig2 = ss.measure_delivery(truncated, [1101], now=_NOW, days=14,
+                               fetch_limit=400)
+    assert sig2["truncated"] is True
+
+
+def test_delivery_factor_graduation():
+    """Livraison toute recente = 1.0 ; age croissant vers le plafond quand
+    la derniere livraison vieillit jusqu'a l'horizon ; absence valide =
+    plafond ; indisponible = neutre ; boost 0 = kill switch total."""
+    assert ss.delivery_factor(ss.DELIVERY_DELIVERED, 0.0, 14, 0.5) == 1.0
+    assert ss.delivery_factor(ss.DELIVERY_DELIVERED, 7.0, 14, 0.5) == 1.25
+    assert ss.delivery_factor(ss.DELIVERY_DELIVERED, 14.0, 14, 0.5) == 1.5
+    assert ss.delivery_factor(ss.DELIVERY_DELIVERED, 40.0, 14, 0.5) == 1.5
+    assert ss.delivery_factor(
+        ss.DELIVERY_NONE_IN_WINDOW, None, 14, 0.5) == 1.5
+    assert ss.delivery_factor(
+        ss.DELIVERY_UNAVAILABLE, None, 14, 0.5) == 1.0
+    assert ss.delivery_factor(
+        ss.DELIVERY_EMPTY_CORPUS, None, 14, 0.5) == 1.0
+    for state in (ss.DELIVERY_DELIVERED, ss.DELIVERY_NONE_IN_WINDOW,
+                  ss.DELIVERY_UNAVAILABLE, ss.DELIVERY_EMPTY_CORPUS):
+        assert ss.delivery_factor(state, 12.0, 14, 0.0) == 1.0

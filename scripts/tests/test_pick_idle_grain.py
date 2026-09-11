@@ -2037,3 +2037,63 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
     assert calls == [15049, 15081]
+
+
+# --- age de derniere livraison reelle : hook weight (#15491 Phase 1) ---------
+
+def _umbrella(n, age=120, idle=40):
+    return {"number": n, "age": age, "idle": idle, "genre": "docs",
+            "klass": "umbrella", "polarity": "neutral",
+            "title": "EPIC %d" % n}
+
+
+def test_delivery_factor_boosts_umbrellas_only():
+    """Le signal est un facteur de distribution ENTRE EPICs : un grain
+    classique ne doit jamais le recevoir, meme present dans le dict."""
+    grain = {"number": 5, "age": 30, "idle": 1, "genre": "docs"}
+    factors = {5: 1.5, 6: 1.5}
+    assert pig.weight(dict(grain), None, None, None, None, factors) == \
+        pig.weight(dict(grain), None, None, None, None, None)
+    umb = _umbrella(6)
+    assert pig.weight(dict(umb), None, None, None, None, factors) == \
+        pig.weight(dict(umb), None, None, None, None, None) * 1.5
+
+
+def test_delivery_boost_zero_leaves_weight_unchanged():
+    """Phase 1 : --delivery-boost-max 0 (defaut) = kill switch. Les facteurs
+    calcules a 0 valent tous 1.0, le poids d'une umbrella ne bouge pas."""
+    umb = _umbrella(1101)
+    neutre = {1101: pig.delivery_factor(
+        pig.DELIVERY_NONE_IN_WINDOW, None, 14, 0.0)}
+    assert pig.weight(dict(umb), None, None, None, None, neutre) == \
+        pig.weight(dict(umb), None, None, None, None, None)
+
+
+def test_delivery_boost_spreads_without_monopoly():
+    """Acceptance statistique : a boost 0.5, la part de tirage des umbrellas
+    sans livraison croit, sans qu'aucune umbrella monopolise le tirage.
+    Deterministe : rng reseedes pareil pour les deux compositions."""
+    import random
+    starved = [_umbrella(1101), _umbrella(1102)]           # aucune livraison
+    fed = [_umbrella(1103), _umbrella(1104), _umbrella(1105)]  # age 0
+    items = starved + fed
+
+    def composition(factors):
+        rng = random.Random(42)
+        counts = {it["number"]: 0 for it in items}
+        for _ in range(400):
+            pick = pig.draw([dict(i) for i in items], 1, rng, None,
+                            {}, {}, {}, factors)
+            counts[pick[0]["number"]] += 1
+        return counts
+
+    baseline = composition(None)
+    boosted = composition({1101: 1.5, 1102: 1.5, 1103: 1.0,
+                           1104: 1.0, 1105: 1.0})
+    share_starved_base = sum(baseline[n] for n in (1101, 1102)) / 400
+    share_starved_boost = sum(boosted[n] for n in (1101, 1102)) / 400
+    assert share_starved_boost > share_starved_base, (
+        f"le boost doit favoriser les sans-livraison : "
+        f"{share_starved_boost:.2f} vs {share_starved_base:.2f}")
+    assert max(boosted.values()) / 400 < 0.5, (
+        f"aucune umbrella ne doit monopoliser : {boosted}")

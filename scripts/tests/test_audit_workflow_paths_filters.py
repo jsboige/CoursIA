@@ -95,6 +95,36 @@ def test_markdown_output():
     assert "pull_request" in result.stdout
 
 
+def test_exempt_documented_detected():
+    """#12773 : les gardes exempts de ``paths:`` par decision ecrite sont
+    rapportes comme tels par l'audit, et aucun workflow PR eligible ne reste
+    sans filtre ni exemption : si l'un des six disparait ou qu'un nouveau
+    workflow sans paths apparait, la mesure ``workflows_unfiltered_eligible``
+    rougit — c'est un oubli, pas une modif de decision.
+    """
+    result = run(["--json"])
+    assert result.returncode == 0, f"audit failed: {result.stderr}"
+    data = json.loads(result.stdout)
+    rows = {Path(r["file"]).name: r for r in data["rows"]}
+    expected = {
+        "pr-gate.yml",
+        "secret-scan.yml",
+        "perimeter-review-guard.yml",
+        "always-on-guards.yml",
+        "always-on-metadata-guards.yml",
+        "notebook-plan-loss-gate.yml",
+    }
+    for basename in expected:
+        row = rows.get(basename)
+        assert row is not None, f"{basename} missing from audit inventory"
+        assert row.get("exempt_documented"), (
+            f"{basename} should be reported as exempt-documented"
+        )
+    assert data["workflows_unfiltered_eligible"] == 0, (
+        "aucun workflow PR eligible ne doit rester sans filtre ni exemption"
+    )
+
+
 def test_pr_target_filter_excludes_main_detected():
     """#12773 : ``branches-ignore: [main]`` is an effective filter for the
     #10600 objective (do not fire on PRs targeting main). The audit must

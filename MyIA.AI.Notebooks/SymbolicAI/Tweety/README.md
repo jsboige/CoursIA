@@ -81,7 +81,8 @@ flowchart LR
     P4["<b>Phase 4</b><br/>Frameworks avancés<br/>ADF, WAF, ranking, probabiliste<br/>NB 7a-7b"]
     P5["<b>Phase 5</b><br/>Applications<br/>dialogues, vote, préférences<br/>NB 8-9"]
     P1 --> P2 --> P3 --> P4 --> P5
-    classDef core fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef core fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class P3 core;
 ```
 
