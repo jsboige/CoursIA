@@ -18,3 +18,4 @@ import Sensitivity.VectorSpace_en
 import Sensitivity.Operator_en
 import Sensitivity.MainTheorem_en
 import Sensitivity.Fourier_en
+import Sensitivity.TensorProductRepresentation_en

@@ -29,13 +29,16 @@ RESULTS="$TEST_DIR/results"
 ok() { echo "  PASS: $1"; echo "PASS $1" >> "$RESULTS"; }
 ko() { echo "  FAIL: $1"; echo "FAIL $1" >> "$RESULTS"; }
 
-# Stubs docker + gh + ps. Le stub docker simule une image A JOUR pour le
-# garde de fraicheur #14801/#15105 : au probe `run --entrypoint sha256sum`, il
-# rend le sha256 du VRAI sibling du checkout (bake a la generation du stub).
-# La fonction assert_image_fresh lit DEUX fichiers depuis #15105 (work_cache_
-# health.sh est source par l'entrypoint) : le stub repond aux deux probes.
-# STUB_IMG_ENTRYPOINT_SHA / STUB_IMG_HEALTH_SHA forcent un ecart pour tester
-# le refus (tests 9 et 29).
+# Stubs docker + gh + ps + hostname. Le stub docker simule une image A JOUR
+# pour le garde de fraicheur #14801/#15105 : au probe `run --entrypoint
+# sha256sum`, il rend le sha256 du VRAI sibling du checkout (bake a la
+# generation du stub). La fonction assert_image_fresh lit DEUX fichiers
+# depuis #15105 (work_cache_health.sh est source par l'entrypoint) : le stub
+# repond aux deux probes. STUB_IMG_ENTRYPOINT_SHA / STUB_IMG_HEALTH_SHA
+# forcent un ecart pour tester le refus (tests 9 et 29).
+# Le stub hostname rend le defaut de supervise.sh (#15152) deterministe :
+# le prefixe derive de la machine, il ne doit jamais dependre de l'hote qui
+# execute la suite.
 REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
 REPO_HEALTH_SHA="$(sha256sum "$SCRIPT_DIR/work_cache_health.sh" 2>/dev/null | awk '{print $1}')"
 cat > "$TEST_DIR/bin/docker" <<STUB
@@ -90,6 +93,15 @@ echo "sleep $*" >> "${SLEEP_LOG:-/dev/null}"
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/sleep"
+
+# Stub hostname (#15152) : le prefixe des runners derive du hostname, le
+# rendre deterministe -- la suite ne doit jamais dependre de l'hote qui
+# l'execute.
+cat > "$TEST_DIR/bin/hostname" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "${HOSTNAME_STUB:-myia-default-host}"
+STUB
+chmod +x "$TEST_DIR/bin/hostname"
 
 # Helper : executer supervise.sh avec env detourne. Timeout pour eviter le
 # hang de wait() -- cmd_start lance wait() qui attend les slot_loop infinis.
@@ -1416,6 +1428,48 @@ STUB
   else
     ko "attendu rc=0 et backoff=2^59 plat ; rc=$rc31 seq=[$seq31] bad=$bad err=$(head -3 "$TEST_DIR/err31.log")"
   fi
+)
+echo ""
+
+# --- Test 32 : les trois prefixes par defaut derivent du hostname (#15152) --
+# L'ancien defaut codait myia-po-2024 en dur dans les trois familles : les
+# runners de toute autre machine s'enregistraient sous l'identite de po-2024.
+# Le test source le script AVEC un hostname stubbe en majuscules -- le
+# hostname donne doit produire les trois prefixes, lowercasses, SANS qu'aucune
+# variable ENV ne soit posee ; puis la surcharge ENV explicite (le contrat des
+# wrappers persist/) doit rester prioritaire sur la derivation.
+echo "Test 32 : hostname donne -> les trois prefixes de famille derives (#15152)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  export HOSTNAME_STUB="MYIA-TestHost-32"
+  unset COURSIA_RUNNER_NAME_PREFIX COURSIA_RUNNER_WAITER_NAME_PREFIX \
+        COURSIA_LEAN_RUNNER_NAME_PREFIX COURSIA_RUNNER_MACHINE_ID
+  source_supervise
+  if [ "${NAME_PREFIX:-}" = "myia-testhost-32-linux-docker" ]; then
+    ok "NAME_PREFIX derive du hostname lowercasse (${NAME_PREFIX:-vide})"
+  else
+    ko "NAME_PREFIX='${NAME_PREFIX:-vide}', attendu myia-testhost-32-linux-docker"
+  fi
+  if [ "${WAITER_NAME_PREFIX:-}" = "myia-testhost-32-linux-waiter" ]; then
+    ok "WAITER_NAME_PREFIX derive (${WAITER_NAME_PREFIX:-vide})"
+  else
+    ko "WAITER_NAME_PREFIX='${WAITER_NAME_PREFIX:-vide}', attendu myia-testhost-32-linux-waiter"
+  fi
+  if [ "${LEAN_NAME_PREFIX:-}" = "myia-testhost-32-lean-docker" ]; then
+    ok "LEAN_NAME_PREFIX derive (${LEAN_NAME_PREFIX:-vide})"
+  else
+    ko "LEAN_NAME_PREFIX='${LEAN_NAME_PREFIX:-vide}', attendu myia-testhost-32-lean-docker"
+  fi
+  export COURSIA_RUNNER_WAITER_NAME_PREFIX="wrapper-explicit-w"
+  source_supervise
+  if [ "$WAITER_NAME_PREFIX" = "wrapper-explicit-w" ] \
+     && [ "$NAME_PREFIX" = "myia-testhost-32-linux-docker" ]; then
+    ok "surcharge ENV prioritaire, familles non surchargees restent derivees"
+  else
+    ko "surcharge ENV cassee : W='$WAITER_NAME_PREFIX' N='$NAME_PREFIX'"
+  fi
+  unset COURSIA_RUNNER_WAITER_NAME_PREFIX HOSTNAME_STUB
 )
 echo ""
 
