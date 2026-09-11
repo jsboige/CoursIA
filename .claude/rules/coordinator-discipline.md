@@ -43,6 +43,22 @@ seule une reponse du pair la qualifie.
 | `myia-po-2025:CoursIA-2` | `/coordinate-adjoint` |
 | toute autre lane | `/continue` (worker) |
 
+### La session qui cede change d'arbre, pas seulement de cadence
+
+Deux sessions sur la meme lane **et le meme clone** partagent HEAD, l'index et le
+stash. Le double-cron n'est qu'un probleme de cadence ; l'arbre de travail partage
+est un probleme de corruption silencieuse — un `checkout` / `rebase` / `stash`
+d'un cote pendant une lecture de l'autre ne fait rougir aucune garde
+([[concurrent-sessions-share-the-working-tree]]). La session qui cede **passe donc
+en `git worktree add`**, et pas seulement sous `/continue`.
+
+**Et cette garde ne discrimine pas ce cas-la** : `clone_ok` ne separe que des
+clones *distincts*. Deux sessions lancees depuis `D:/CoursIA` rendent toutes deux
+`exit 0` et le role COORDINATOR — mesure faite le 2026-09-11 entre `coursia-1c` et
+`coursia-0f`. Ce qui tranche est **l'aller-retour de la mesure 3**, jamais le code
+de sortie de l'organe. L'organe le dit de lui-meme (`uniqueness_measured: false`) :
+il documente cet incident, il ne le resout pas.
+
 ### Deux pieges que cette garde existe pour fermer
 
 - **Deux clones partagent une lane.** Sur ai-01, `D:/CoursIA` et `D:/dev/CoursIA`
