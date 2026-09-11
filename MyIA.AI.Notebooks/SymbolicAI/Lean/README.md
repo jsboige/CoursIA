@@ -162,17 +162,29 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 A l'issue de la série, vous saurez :
 
 - **Modéliser** un raisonnement mathématique dans le Calcul des Constructions : types dépendants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutôt que sur de l'abstraction nue.
+
 - **Prouver** un théorème en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmétique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
+
 - **Intégrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos — fiables surtout sur les preuves courtes, limites persistantes sur les preuves longues et la couverture Mathlib (usage en assistant, pas en oracle). Notebooks 7-9.
+
 - **Tracer et explorer** une base de preuves à grande échelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), réseaux de neurones vérifiés via IBP/CROWN (TorchLean). Notebooks 10-11.
+
 - **Porter** un théorème de recherche en Lean 4 : théorème de sensibilité (Huang 2019, hypercube et signing matrix), théorème de Kochen-Specker (Cabello 18 vecteurs, argument de parité, contextuality quantique). Notebooks 12, 13.
+
 - **Lire le langage grothendieckien** dans Mathlib 4 : catégories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes étales/lisses — comme entrée vers la géométrie algébrique formalisée. Notebook 15.
+
 - **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
+
 - **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
+
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
+
 - **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook 16g.
+
 - **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilité de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilité le long d'un twist R1 connecté, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
+
 - **Lire le paysage galoisien moderne** : la preuve formelle que **M₂₃ (groupe sporadique de Mathieu d'ordre 10 200 960) est simple** est *vendored* dans le companion `galois_lean/` (PR #10486, août 2026, Apache-2.0) ; la réalisation galoisienne — *M₂₃ groupe de Galois sur ℚ* — est **prouvée** dans le préprint (Huang–Jackson–Lee–Poonen–Pries–Zhang, arXiv:2608.08538, 9 août 2026 : polynôme explicite f₁ de degré 23, identification `23T5`) mais **non formalisée** — le notebook [Lean-23](Lean-23-Galois-Probleme-Inverse-M23.ipynb) exécute la preuve formelle côté groupe et vérifie f₁ computationnellement, les deux énoncés soigneusement distingués (Epic #10478).
+
 - **Construire le témoin d'une incohérence** : le Dutch book de de Finetti — si les prix violent l'inclusion-exclusion, un livret (+1,+1,−1,−1) encaisse l'écart uniformément dans tous les états (miroir exact du lake `decision_theory_lean`, arithmétique exacte `Fraction`), et un balayage borné certifie l'absence de livre sur le système réparé ; symétriquement, seule la transformation **affine** d'une utilité vNM préserve les préférences (0 divergence) quand le carré en fabrique (124 sur les 2145 paires de 66 loteries). Notebook 27.
 
 Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
