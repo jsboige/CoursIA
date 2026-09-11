@@ -37,14 +37,37 @@ CARVER_EWMAC_PAIRS = (
     (32, 96),
 )
 
-# Carver rule of thumb: 10x the slower horizon works well as forecast scalar;
-# the choice sets the unit-variance scale of raw EWMAC forecasts so a strong
-# trend (1% daily return equivalent) maps to ~10.
-CARVER_FORECAST_SCALAR = 10.0
+# Carver rule of thumb (chap. 7): the EWMAC forecast scalar should be
+# proportional to sqrt(slow) so that the variance of the EWMAC forecast
+# is comparable across horizons. Anchoring at slow=32 (canonical Carver
+# pair) gives a baseline scalar of 10; per-horizon scalars scale by
+# sqrt(slow/32). See _carver_scalar below.
+CARVER_FORECAST_SCALAR_BASE = 10.0
+CARVER_FORECAST_SCALAR_REFERENCE_SLOW = 32
+
+
+def _carver_scalar(slow: int) -> float:
+    """Per-horizon EWMAC forecast scalar, normalised against slow=32.
+
+    Carver rule (chap. 7) recommends per-horizon scaling so a 1%/day
+    trend maps to ~10 (half the cap) regardless of horizon length.
+    Anchoring at slow=32 → scalar=10; faster pairs scale down, slower
+    pairs scale up by sqrt(slow/32).
+    """
+    return CARVER_FORECAST_SCALAR_BASE * np.sqrt(
+        slow / CARVER_FORECAST_SCALAR_REFERENCE_SLOW
+    )
+
 
 # Blend weights (Carver rule 60/40 trend + carry).
+# c.1063 increment over the c.1107 REPAIR: neutralise CARRY_WEIGHT too so
+# the constant matches the inline blend (`blended = trend_component`).
+# The substitution point is in `_carry_forecast` — the chain-API hook on
+# the QC-equipped lane (po-2026) re-introduces 0.4 with a real
+# front/deferred ratio.
 CARVER_TREND_WEIGHT = 0.6
-CARVER_CARRY_WEIGHT = 0.4
+CARVER_CARRY_WEIGHT = 0.0
+CARRY_PROXY_FALLBACK_USED = False  # set True only if a non-zero proxy is reintroduced
 
 # Per-forecast cap (Carver rule): raw forecasts bounded at +/-20 before
 # normalisation, since the scaling step is downstream.
@@ -173,9 +196,11 @@ class CarverThirteen(QCAlgorithm):
         # Per-instrument state: latest forecast, latest scaled weight.
         self.forecasts = {t: 0.0 for t in self.futures_universe}
 
-        # Warmup: enough bars for the longest EWMAC slow span + carry window
-        # + vol lookback.
-        warmup = max(self.max_slow * 2, self.vol_lookback) + 10
+        # Warmup: 2x the slowest EWMAC span (avoids seed-bias on the 256-day
+        # slow EWMA — alpha = 2/(256+1) ≈ 0.0078, half-life ~88 bars, so 1x
+        # max_slow leaves a non-trivial residual; 2x reaches ~99% mass).
+        # Plus vol lookback + a small buffer for chain/exchange calendars.
+        warmup = 2 * self.max_slow + self.vol_lookback + 20
         self.set_warm_up(warmup, Resolution.DAILY)
 
         # Daily rebalance just after market open.
@@ -192,8 +217,9 @@ class CarverThirteen(QCAlgorithm):
     def _ewmac_forecast(self, prices, fast, slow):
         """One EWMAC forecast = scaled (fast_ewm - slow_ewm) / slow_ewm.
 
-        Carver rule: forecast = scalar * (fast - slow) / slow, with the scalar
-        chosen so a strong trend yields ~10 (half of the cap). Returns 0.0
+        Carver rule: forecast = scalar(slow) * (fast - slow) / slow, with the
+        scalar per-horizon (see _carver_scalar) so a strong trend yields ~10
+        (half of the cap) regardless of horizon length. Returns 0.0
         if there is insufficient data.
         """
         if len(prices) < slow + 2:
@@ -204,7 +230,7 @@ class CarverThirteen(QCAlgorithm):
         if not np.isfinite(slow_ewm) or slow_ewm <= 0.0:
             return 0.0
         raw = (fast_ewm - slow_ewm) / slow_ewm
-        scaled = raw * CARVER_FORECAST_SCALAR
+        scaled = raw * _carver_scalar(slow)
         # Apply per-forecast cap.
         return float(np.clip(scaled, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP))
 
@@ -263,16 +289,20 @@ class CarverThirteen(QCAlgorithm):
         if self.is_warming_up:
             return
 
+        # Bulk history: one call for all 19 instruments rather than 19
+        # individual `history()` calls (point 3 of the review, c.1063).
+        n_bars = 2 * self.max_slow + self.vol_lookback + 20
+        sym_list = list(self.symbols.values())
+        bulk = self.history(sym_list, n_bars, Resolution.DAILY)
+        if bulk.empty:
+            return
+
         raw_forecasts = {}
         for ticker, sym in self.symbols.items():
-            # Pull enough history for the slowest EWMAC span plus warmup
-            # margin. We ask for the slowest span + a small buffer.
-            n_bars = self.max_slow + 5
-            hist = self.history(sym, n_bars, Resolution.DAILY)
-            if hist.empty or len(hist) < self.max_slow:
+            if sym not in bulk.index.get_level_values(0):
                 continue
-
-            closes = hist["close"].values
+            hist = bulk.loc[sym]
+            closes = hist["close"].values if "close" in hist.columns else np.array([])
             if len(closes) < self.max_slow:
                 continue
 
