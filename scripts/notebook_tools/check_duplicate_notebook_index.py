@@ -29,6 +29,16 @@ serait rouge des sa naissance et chaque PR echouerait sur une dette qu'elle n'a 
 creee. Il empeche la recurrence, il ne solde pas le passe. Les collisions existantes
 se traitent par une issue (cf. #12753), pas par un gate qui bloque tout le monde.
 
+RENAMES -- un ajout deguise (#15489)
+------------------------------------
+Un `git mv vers-un-index-deja-pris` est precisement la collision que ce garde
+existe pour attraper, et c'etait le seul chemin qui lui echappait : par defaut Git
+presente un rename de contenu identique comme `R100`, que `--diff-filter=A` ecarte.
+La revision est donc lue en `--no-renames`, ou le rename apparait pour ce qu'il est
+du point de vue de l'index : une position liberee et une position occupee. Le
+rename reste une manoeuvre legitime (cf. #12753) ; c'est l'index en conflit qui est
+fautif, pas le deplacement.
+
 DEUX FAUX POSITIFS QUE LE PREMIER JET PRODUISAIT
 ------------------------------------------------
 Mesure repo-wide au moment d'ecrire ce fichier : 1116 notebooks sur `main`, un
@@ -62,53 +72,19 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
+from pathlib import Path
 
-# Suffixes marquant un rendu ALTERNATIF du meme item, pas un item concurrent.
-# -Csharp / -Python : paires de langage (GameTheory/SocialChoice).
-# _en / _fr         : siblings i18n (#4980).
-LANG_SUFFIXES = ("-csharp", "-python", "_en", "-en", "_fr", "-fr")
-
-# Index en tete de nom : un ou plusieurs nombres separes par . ou -, suivis d'un
-# separateur puis du titre. On capture TOUS les niveaux : "04-1" et non "04".
-#   3.1-Retropropagation      -> 3.1
-#   04-13-Audiobook           -> 04-13
-#   22_Evaluating             -> 22
-#   MGS-26-Equilibrium        -> (prefixe alphabetique : aucun index, ignore)
-#
-# Le suffixe de lettre est CAPTURE separement et fait partie de l'index. La serie
-# `02-ML-Cours` porte `2.3b`, `2.5b`, `2.8b`, `2.8c` : la lettre designe une variante
-# inseree entre deux items numerotes, c'est un index a part entiere. Sans le groupe
-# `[a-z]?`, le moteur retrograde par-dessus la lettre et rend `2` pour les quatre --
-# quatre notebooks legitimes deviennent six collisions. Ce faux positif n'a PAS ete
-# trouve par les tests unitaires mais par le balayage des 1116 notebooks de `main` :
-# un jeu de cas ecrit a la main ne contient que les formes auxquelles on a pense.
-_INDEX_RE = re.compile(r"^(\d+(?:[.\-]\d+)*)([a-z]?)[._\-\s]", re.I)
-
-
-def index_key(filename):
-    """Index de serie d'un nom de fichier, ou None s'il n'en porte pas."""
-    stem = re.sub(r"\.ipynb$", "", filename, flags=re.I)
-    m = _INDEX_RE.match(stem)
-    if not m:
-        return None
-    # Normalise separateurs de niveau et zero-padding : 04-1 et 4.1 sont le meme
-    # index. Sans cette normalisation, un zero-pad partiel ouvrirait une porte de
-    # contournement silencieuse.
-    parts = re.split(r"[.\-]", m.group(1))
-    return ".".join(str(int(p)) for p in parts) + m.group(2).lower()
-
-
-def strip_lang(filename):
-    """Nom sans son suffixe de langue, pour apparier les rendus d'un meme item."""
-    stem = re.sub(r"\.ipynb$", "", filename, flags=re.I)
-    low = stem.lower()
-    for suf in LANG_SUFFIXES:
-        if low.endswith(suf):
-            return stem[: -len(suf)]
-    return stem
+# Grammaire de nom partagee avec les autres gardes de nommage (#5081/#15489).
+# `LANG_SUFFIXES`, `INDEX_RE` (index multi-niveaux + lettre d'accretion) et les
+# deux primitives vivaient ici avant d'etre extraites dans `naming_canon.py` :
+# le garde de zero-pad lisait la meme realite avec un autre motif. Une seule
+# lecture, un seul endroit ou la corriger.
+_here = str(Path(__file__).resolve().parent)
+if _here not in sys.path:
+    sys.path.insert(0, _here)
+from naming_canon import index_key, strip_lang  # noqa: E402
 
 
 def _git(args):
@@ -121,7 +97,17 @@ def _git(args):
 
 
 def added_notebooks(base, head):
-    out = _git(["diff", "--diff-filter=A", "--name-only", "%s...%s" % (base, head)])
+    """Notebooks AJOUTES par la revision, RENAMES repliés en suppressions + additions.
+
+    `--no-renames` est le coeur du garde, pas un detail d'invocation. Sans lui,
+    `git mv 3.1-Autre.ipynb 3.1-Retropropagation.ipynb` sort en `R` (similarite
+    100 %), `--diff-filter=A` ne le retient pas, et la collision d'index -- qui est
+    exactement ce qu'un rename produit -- reste invisible. Le rename est une
+    manoeuvre legitime (cf. #12753) ; c'est l'index occupe qui est fautif, et une
+    vue qui l'efface transforme le garde en filtre a trous.
+    """
+    out = _git(["diff", "--no-renames", "--diff-filter=A", "--name-only",
+                "%s...%s" % (base, head)])
     return [l.strip() for l in out.splitlines() if l.strip().lower().endswith(".ipynb")]
 
 

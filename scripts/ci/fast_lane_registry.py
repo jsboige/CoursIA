@@ -300,6 +300,11 @@ PILOT: list[Guard] = [
         source=FAST_LANE_NATIVE,
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_duplicate_notebook_index.py",
+            # Grammaire partagee (#15489) : une modification du canon change le
+            # verdict des DEUX gardes de nommage. Sans ce path, le canon pourrait
+            # deriver sans qu'aucun des deux ne soit rejoue -- l'angle mort
+            # inverse de celui que cette tranche ferme.
+            "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_duplicate_notebook_index.py",
               "--base", "{base_ref}", "--head", "HEAD"],
@@ -355,6 +360,7 @@ TRANCHE1: list[Guard] = [
         paths=[
             "MyIA.AI.Notebooks/GameTheory/**",
             "scripts/notebook_tools/check_series_zero_pad.py",
+            "scripts/notebook_tools/naming_canon.py",
             ".github/workflows/series-naming-gate.yml",
         ],
         argv=["python", "scripts/notebook_tools/check_series_zero_pad.py"],
