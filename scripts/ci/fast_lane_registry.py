@@ -976,3 +976,40 @@ TRANCHE8: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 9 -- intervalle de credibilite DECLARE vs AFFICHE (#15592).
+#
+# Garde NATIF : il n'absorbe aucun workflow d'origine, il ferme une classe de
+# defaut. C'est pour cela qu'il a sa propre tranche plutot qu'une place dans
+# `PILOT` (qui absorbe des workflows existants) ou dans `TRANCHE8` (scopee
+# Smart Contracts -- y ranger un garde arviz rendrait son en-tete faux).
+#
+# Le defaut fondeur est #15156 : `hdi_prob=` remplace par `ci_prob=` sans
+# `ci_kind`, donc sans re-execution. En arviz 1.1, `ci_kind` vaut `None` par
+# defaut et la bibliotheque le resout en `"eti"` -- la migration s'executait,
+# la sortie restait en `hdi`, et plus rien ne comparait les deux.
+#
+# PORTEE : arbre ENTIER, et le garde est BLOQUANT. Ce n'est legitime que si la
+# baseline est verte -- mesuree, pas supposee : 18 cellules a colonne
+# d'intervalle sur 1254 notebooks, 0 desaccord, avant enregistrement.
+# ---------------------------------------------------------------------------
+TRANCHE9: list[Guard] = [
+    Guard(
+        name="interval-kind-consistency-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_interval_kind_consistency.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python",
+            "scripts/notebook_tools/check_interval_kind_consistency.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
