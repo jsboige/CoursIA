@@ -80,8 +80,49 @@ self.max_positions = 3      # Concentration maximale
 - Pyramiding (ajouter sur confirmation de tendance).
 - Dynamisation de l'univers (rotation sectorielle).
 
+## Variante Carver #13 (portage substantiel — issue #15549)
+
+Le fichier `main_carver13.py` (classe `CarverThirteen`) est un **portage local** de la
+stratégie n° 13 de Robert Carver (*Advanced Futures Trading Strategies*, Harriman House
+2023, ISBN 9780857199683), telle que recréée dans l'article QuantConnect
+*Futures Trend Following and Carry in Different Risk Regimes* (#15989, Derek Melchin,
+2026-01-02). Cette variante coexiste avec `main.py` v3.1 sans le modifier — v3.1
+reste la **baseline ETF** à laquelle Carver #13 sera comparé.
+
+| Composant | v3.1 (ETF, baseline) | Carver #13 |
+|-----------|----------------------|------------|
+| Univers | 6 ETF (SPY/GLD/EFA/VNQ/DBC/XLE) | 19 futures continus (ES/NQ/YM/ZN/ZB/ZF/6E/6B/6J/CL/NG/RB/GC/SI/HG/ZC/ZW/ZS/SB) |
+| Signal entrée | Donchian 20j + filtre SMA50 | 6 horizons EWMAC (Carver pairs 8/32, 16/64, 32/128, 64/256, 16/48, 32/96) |
+| Carry factor | absent | blend 60% trend + 40% carry |
+| Multiplicateur régime | absent | vol-régime borné [0.5, 2] |
+| FDM (Forecast Diversification Multiplier) | absent | appliqué au niveau portefeuille |
+| Cap forecasts | n/a | +/-20 par forecast |
+| Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé |
+| Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
+
+**Statut courant** (c.1106, lane `myia-po-2027:CoursIA-2`) :
+
+- Le code **compile statiquement** (`ast.parse` PASS, 9 fonctions / 1 classe / 371
+  lignes, EOL LF, 0 secret literal).
+- **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
+  QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
+  0 hit). La jambe QC Cloud (compile/backtests) sera déléguée à une lane CoursIA-2
+  équipée, sur cette branche, **sans transmission de secret** (Tell secrets-hygiene
+  règle 1 : jamais de clair sur dashboard/PR/commit, `os.getenv("KEY","<literal>")`
+  interdit).
+- **Verdict futur** : `BEATS` / `NO BEATS` / `INCONCLUSIVE` selon Sharpe/CAGR/MaxDD/
+  PSR/exposition/coûts/ordres sur fenêtre >= 2016-2026, **sans présumer** du
+  Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023 (fenêtre
+  favorable non-représentative).
+
 ## Références
 
 - Curtis Faith (2007), *Way of the Turtle* — règles de trend-following Donchian.
 - Moskowitz, Ooi & Pedersen (2012), *Time Series Momentum* — trend-following multi-actifs.
+- Carver, Robert (2023), *Advanced Futures Trading Strategies: 30 Fully Tested
+  Strategies for Multiple Trading Styles and Time Frames*, Harriman House,
+  ISBN 9780857199683 — source primaire de la stratégie n° 13 (EWMAC + carry +
+  vol-régime + FDM).
+- QuantConnect research article #15989 (Derek Melchin, 2026-01-02) — recréation
+  pédagogique de la stratégie n° 13 sur QC Cloud.
 - Analyse détaillée : `research.ipynb`.

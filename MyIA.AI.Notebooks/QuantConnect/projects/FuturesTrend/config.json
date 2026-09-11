@@ -3,6 +3,6 @@
     "name": "FuturesTrend",
     "id": 1,
     "parameters": {},
-    "description": "Multi-asset ETF trend-following: concentrated positions on the strongest SMA50-filtered trends across a diversified ETF universe.",
+    "description": "Multi-asset trend-following. Two strategies co-exist in this project: (1) v3.1 baseline (main.py, ETF universe, Donchian + SMA50, fixed 33% sizing, Sharpe 0.07 / PSR 0.007% over 2015-2024); (2) Carver #13 port (main_carver13.py, 19 continuous futures, six EWMAC horizons, carry 60/40 blend, vol-regime multiplier [0.5, 2], FDM, cap +/-20) per Carver 2023 and QuantConnect research article #15989 (Derek Melchin, 2026-01-02). The Carver #13 port is the subject of issue #15549; it is recorded here so that QC Cloud recognises both algorithm entry points without modifying the baseline.",
     "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
 }
