@@ -144,7 +144,7 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 | 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.html) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.html) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
 | 12 | [App-19-ProceduralGeneration-WFC](Applications/CSP/App-19-ProceduralGeneration-WFC.html) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
-| 12 (C#) | [App-19-ProceduralGeneration-WFC-Csharp](Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
+| 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.html) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
 | 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.html) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
 | 16 | [App-26-CoveringArrays-Guarantee-Audit](Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
@@ -369,18 +369,18 @@ Search/
 │   │   ├── App-4-JobShopScheduling.ipynb
 │   │   ├── App-5-Timetabling.ipynb
 │   │   ├── App-6-Minesweeper.ipynb
-│   │   ├── App-6-Minesweeper-Csharp.ipynb
+│   │   ├── App-6-Minesweeper-CSharp.ipynb
 │   │   ├── App-7-Wordle.ipynb
 │   │   ├── App-8-MiniZinc.ipynb
 │   │   ├── App-11-Picross.ipynb
 │   │   ├── App-15-SportsScheduling.ipynb
 │   │   ├── App-16-Crossword-CSP.ipynb
-│   │   ├── App-16-Crossword-CSP-Csharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
+│   │   ├── App-16-Crossword-CSP-CSharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
 │   │   ├── App-19-ProceduralGeneration-WFC.ipynb
-│   │   ├── App-19-ProceduralGeneration-WFC-Csharp.ipynb
+│   │   ├── App-19-ProceduralGeneration-WFC-CSharp.ipynb
 │   │   ├── App-20-SudokuBenchmark-Python.ipynb   # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   │   ├── App-20b-SudokuBenchmark-CSharp.ipynb
-│   │   └── (+ jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/8-Csharp, marathon #4956)
+│   │   └── (+ jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/6/8-CSharp, marathon #4956)
 │   │
 │   └── Hybrid/                            # Metaheuristiques (10 notebooks : 5 binômes)
 │       ├── App-9-EdgeDetection.ipynb
