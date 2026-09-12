@@ -45,9 +45,11 @@ HISTORICAL_STRONG_PAIRS = _mod.HISTORICAL_STRONG_PAIRS
 
 
 def _pr(number: int, paths: list[str], title: str = "", body: str = "",
-        base_ref: str = "", head_ref: str = "") -> PrRow:
+        base_ref: str = "", head_ref: str = "", state: str = "open",
+        merged_at: str = "") -> PrRow:
     return PrRow(number=number, title=title, paths=tuple(paths), body=body,
-                 base_ref=base_ref, head_ref=head_ref)
+                 base_ref=base_ref, head_ref=head_ref, state=state,
+                 merged_at=merged_at)
 
 
 class TestDetectPathCollisions(unittest.TestCase):
@@ -272,6 +274,252 @@ class TestHistoricalPairs(unittest.TestCase):
                     proc.returncode, 0,
                     f"fixture path {path} does not exist in the checkout",
                 )
+
+
+class TestTerminalMergedPairs(unittest.TestCase):
+    """#15578: the collision must NOT vanish when one side merges.
+
+    The founding instance: #15455 merged at 2026-09-11T08:37Z while #15513 was
+    still open, over five identical paths. Under the pre-fix pool
+    (``--state open`` only) the pair was invisible -- so the organ was loudest
+    while the risk was theoretical and mute once the substance was on ``main``.
+    """
+
+    def test_founding_instance_is_terminal_not_silent(self):
+        """Acceptance 1+2: a merged side yields a TERMINAL verdict, named."""
+        f_open, f_merged, f_paths, f_extra = _mod.FOUNDING_TERMINAL_PAIR
+        result = detect_path_collisions([
+            _pr(f_open, list(f_paths), title="tooling(notebook): detecteur"),
+            _pr(f_merged, list(f_paths) + [f_extra],
+                title="tooling(#15405): detecteur",
+                state="merged", merged_at="2026-09-11T08:37:34Z"),
+        ])
+        self.assertEqual(result.n_collisions, 1)
+        c = result.collisions[0]
+        # Deterministic pair order is (lowest, highest) -- #15455 < #15513.
+        self.assertEqual((c.a_number, c.b_number), (f_merged, f_open))
+        self.assertEqual(c.tier, "terminal")
+        self.assertEqual(c.merged_side, f_merged)
+        self.assertEqual(len(c.shared_paths), len(f_paths))
+        self.assertEqual(result.terminal_collisions, [c])
+
+    def test_terminal_is_distinct_from_the_open_tiers(self):
+        """The verdict is terminal, NOT a graduation of strong/weak."""
+        _, f_merged, f_paths, _ = _mod.FOUNDING_TERMINAL_PAIR
+        result = detect_path_collisions([
+            _pr(1, list(f_paths), title="fix(#42): same issue"),
+            _pr(f_merged, list(f_paths), title="fix(#42): same issue",
+                state="merged"),
+        ])
+        c = result.collisions[0]
+        self.assertEqual(c.tier, "terminal")
+        self.assertNotEqual(c.tier, "strong")
+        # A terminal pair is NOT strong: it must not reach the label path,
+        # which would tag the merged side of a closed thread.
+        self.assertEqual(result.strong_collisions, [])
+
+    def test_both_merged_pair_is_history_not_a_collision(self):
+        """Acceptance 4: two merged sides are both on main -> NOTHING."""
+        result = detect_path_collisions([
+            _pr(900050, ["gone/x.md"], state="merged"),
+            _pr(900051, ["gone/x.md"], state="merged"),
+        ])
+        self.assertEqual(result.n_collisions, 0)
+        self.assertIn((900050, 900051), result.merged_pairs_excluded)
+
+    def test_terminal_carries_the_measured_overlap_ratio(self):
+        """Acceptance 3: the verdict is auditable, not merely asserted.
+
+        The founding pair's real overlap is 5 of 5 and 5 of 6 -> 0.833..., so a
+        fixture scoring a perfect 1.00 would hide how close the gate runs to
+        its threshold.
+        """
+        f_open, f_merged, f_paths, f_extra = _mod.FOUNDING_TERMINAL_PAIR
+        result = detect_path_collisions([
+            _pr(f_open, list(f_paths)),
+            _pr(f_merged, list(f_paths) + [f_extra], state="merged"),
+        ])
+        c = result.collisions[0]
+        self.assertAlmostEqual(c.overlap_ratio, 5 / 6)
+
+    def test_incidental_low_overlap_merged_pair_is_excluded(self):
+        """A shared ``.gitignore`` is not a double delivery (#15578 calibration).
+
+        Ungated, this measurement put 95 pairs on 36 of 63 open PRs -- every
+        other open PR -- which is the "reports everything" collapse the module
+        docstring warns about.
+        """
+        result = detect_path_collisions([
+            _pr(900070, [".gitignore"] + [f"big/{i}.py" for i in range(11)]),
+            _pr(900071, [".gitignore"], state="merged"),
+        ])
+        self.assertEqual(result.n_collisions, 0)
+        self.assertIn((900070, 900071), result.merged_low_overlap_excluded)
+        self.assertEqual(result.terminal_collisions, [])
+
+    def test_overlap_ratio_boundary_is_inclusive(self):
+        """Exactly at the threshold is KEPT: the gate is a floor, not a cliff."""
+        n_shared = int(round(_mod.TERMINAL_MIN_OVERLAP_RATIO * 4))
+        shared = [f"s/{i}.py" for i in range(n_shared)]
+        result = detect_path_collisions([
+            _pr(900080, shared + [f"a/{i}.py" for i in range(4 - n_shared)]),
+            _pr(900081, shared + [f"b/{i}.py" for i in range(4 - n_shared)],
+                state="merged"),
+        ])
+        self.assertEqual(result.terminal_collisions[0].overlap_ratio,
+                         _mod.TERMINAL_MIN_OVERLAP_RATIO)
+
+    def test_overlap_ratio_of_an_empty_side_is_zero(self):
+        """A degenerate denominator must never read as a perfect overlap."""
+        empty = _mod.PrRow(number=1, title="", paths=())
+        other = _mod.PrRow(number=2, title="", paths=("a/x.md",))
+        self.assertEqual(
+            _mod.terminal_overlap_ratio(("a/x.md",), empty, other), 0.0,
+        )
+
+    def test_open_pair_tier_untouched_beside_a_merged_row(self):
+        """Acceptance 4: no inflation, no deflation of open/open pairs."""
+        result = detect_path_collisions([
+            _pr(1, ["open/y.md"], title="fix(#500): a"),
+            _pr(2, ["open/y.md"], title="fix(#500): b"),
+            _pr(3, ["gone/z.md"], title="merged", state="merged"),
+        ])
+        self.assertEqual(result.n_collisions, 1)
+        self.assertEqual(result.collisions[0].tier, "strong")
+        self.assertIsNone(result.collisions[0].merged_side)
+
+    def test_weak_open_pair_stays_weak_beside_a_merged_row(self):
+        result = detect_path_collisions([
+            _pr(1, ["README.md"], title="docs(#1): a"),
+            _pr(2, ["README.md"], title="docs(#2): b"),
+            _pr(3, ["gone/z.md"], state="merged"),
+        ])
+        self.assertEqual(result.collisions[0].tier, "weak")
+
+    def test_actionable_selector_keeps_terminal_and_drops_weak(self):
+        """--same-issue-only must not swallow the loudest signal it has."""
+        _, f_merged, f_paths, _ = _mod.FOUNDING_TERMINAL_PAIR
+        result = detect_path_collisions([
+            _pr(1, ["README.md"], title="docs(#1): a"),
+            _pr(2, ["README.md"], title="docs(#2): b"),
+            _pr(700, list(f_paths), title="open side"),
+            _pr(f_merged, list(f_paths), title="merged side", state="merged"),
+        ])
+        self.assertEqual(
+            sorted(c.tier for c in result.actionable_collisions()),
+            ["terminal"],
+        )
+
+    def test_terminal_render_names_the_merged_side_and_main(self):
+        """Acceptance 2: the comment SAYS the substance is already on main."""
+        f_open, f_merged, f_paths, _ = _mod.FOUNDING_TERMINAL_PAIR
+        result = detect_path_collisions([
+            _pr(f_open, list(f_paths), title="tooling(notebook): detecteur"),
+            _pr(f_merged, list(f_paths), title="tooling(#15405): detecteur",
+                state="merged"),
+        ])
+        body = render_comment(
+            f_open, "tooling(notebook): detecteur",
+            collisions_for_pr(f_open, result.collisions),
+        )
+        self.assertIn("terminal", body)
+        self.assertIn(f"#{f_merged}", body)
+        self.assertIn("`main`", body)
+        self.assertIn(_mod.COMMENT_MARKER_END, body)
+
+    def test_merged_side_render_does_not_claim_the_open_side_is_merged(self):
+        """Rendering for the merged number names the merged one, not the other."""
+        f_open, f_merged, f_paths, _ = _mod.FOUNDING_TERMINAL_PAIR
+        result = detect_path_collisions([
+            _pr(f_open, list(f_paths), title="open side"),
+            _pr(f_merged, list(f_paths), title="merged side", state="merged"),
+        ])
+        body = render_comment(
+            f_merged, "merged side", collisions_for_pr(f_merged, result.collisions)
+        )
+        self.assertIn(f"**#{f_merged}**", body)
+        self.assertIn("est deja sur", body)
+
+    def test_widening_the_pool_does_not_churn_open_pair_comments(self):
+        """The pre-existing comment body is byte-identical -> no mass re-post.
+
+        Widening the pool must not rewrite the comment of a PR whose situation
+        did not change: a churned body means a PATCH per open PR on the first
+        run, which is exactly the write storm the marker protocol avoids.
+        """
+        open_rows = [
+            _pr(1, ["x.ipynb"], title="fix(#9): a"),
+            _pr(2, ["x.ipynb"], title="fix(#9): b"),
+        ]
+        before = detect_path_collisions(open_rows)
+        after = detect_path_collisions(
+            open_rows + [_pr(3, ["gone/z.md"], title="m", state="merged")]
+        )
+        b_before = render_comment(1, "fix(#9): a",
+                                  collisions_for_pr(1, before.collisions))
+        b_after = render_comment(1, "fix(#9): a",
+                                 collisions_for_pr(1, after.collisions))
+        self.assertEqual(b_before, b_after)
+        self.assertNotIn("terminal", b_before)
+
+
+class TestMergedPoolWiring(unittest.TestCase):
+    """The gh-side wiring of #15578: window filter + never comment a merge."""
+
+    def test_list_recently_merged_prs_filters_state_and_window(self):
+        payload = [
+            {"number": 10, "title": "in window", "state": "MERGED",
+             "mergedAt": "2026-09-10T00:00:00Z", "files": [{"path": "a.md"}]},
+            {"number": 11, "title": "too old", "state": "MERGED",
+             "mergedAt": "2026-08-01T00:00:00Z", "files": [{"path": "a.md"}]},
+            {"number": 12, "title": "not merged after all", "state": "OPEN",
+             "mergedAt": "", "files": [{"path": "a.md"}]},
+        ]
+        with mock.patch.object(_mod, "_gh_json", return_value=payload):
+            rows = _mod.list_recently_merged_prs("owner/repo", "2026-09-08", 500)
+        self.assertEqual([r.number for r in rows], [10])
+        self.assertTrue(rows[0].is_merged)
+
+    def test_merged_window_zero_disables_the_merged_pool(self):
+        """0 is a real opt-out, and it must not call the merged listing."""
+        calls = []
+
+        def _fake_merged(repo, since, limit):
+            calls.append(since)
+            return []
+
+        with mock.patch.object(_mod, "list_open_prs", return_value=[]),              mock.patch.object(_mod, "list_recently_merged_prs",
+                               side_effect=_fake_merged),              mock.patch.object(_mod, "_repo_default", return_value="o/r"),              mock.patch.object(_mod, "scan_markers", return_value=({}, set())),              mock.patch.object(_mod, "label_strong_pairs", return_value=None):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = _mod._cli(["--merged-window-days", "0"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(calls, [])
+
+    def test_cli_comments_the_open_side_and_never_the_merged_one(self):
+        """Acceptance 2 wired: the write set is the OPEN side of the pair."""
+        f_open, f_merged, f_paths, _ = _mod.FOUNDING_TERMINAL_PAIR
+        open_rows = [_pr(f_open, list(f_paths), title="open side")]
+        merged_rows = [_pr(f_merged, list(f_paths), title="merged side",
+                           state="merged")]
+        written: list[int] = []
+        posted_bodies: list[str] = []
+
+        def _capture_post(repo, number, body, dry_run):
+            written.append(number)
+            posted_bodies.append(body)
+            return True
+
+        with mock.patch.object(_mod, "list_open_prs", return_value=open_rows),              mock.patch.object(_mod, "list_recently_merged_prs",
+                               return_value=merged_rows),              mock.patch.object(_mod, "_repo_default", return_value="o/r"),              mock.patch.object(_mod, "scan_markers", return_value=({}, set())),              mock.patch.object(_mod, "label_strong_pairs", return_value=None),              mock.patch.object(_mod, "post_comment", side_effect=_capture_post):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = _mod._cli([])
+        self.assertEqual(rc, 0)
+        self.assertEqual(written, [f_open])
+        self.assertNotIn(f_merged, written)
+        self.assertIn("terminal", posted_bodies[0])
+        self.assertIn(str(f_merged), posted_bodies[0])
 
 
 class TestCommentProtocol(unittest.TestCase):

@@ -135,7 +135,17 @@ jobs:
   # les steps ; le checkout vit ICI car une action locale ne se résout
   # qu'une fois le dépôt materialisé dans le workspace.
   # Retour arrière = remettre `uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main`
-  # avec ses `with:` + retirer runs-on/if/steps du job.
+  # + retirer runs-on/if/steps du job, ET retirer `build-jobs:` du bloc `with:`
+  # -- dans le job `ci` COMME dans le job `proof-integrity`, les deux le portent.
+  # `build-jobs` est un input de la COMPOSITE ACTION seulement :
+  # le reusable n'en declare que quatre (`project-path`, `display-name`,
+  # `sorry-baseline`, `sorry-filter-mode`). Le laisser en place rend le fichier
+  # de workflow INVALIDE -- il n'est alors plus charge du tout, et le gate
+  # disparait en silence au lieu de tomber en erreur visible.
+  # Aucune restauration de toolchain n'est requise de ce cote : le reusable
+  # installe elan lui-meme (step `Install elan`, .github/workflows/lean-build.yml)
+  # puis `lake exe cache get`. Le toolchain pre-cuit est ce que le pool
+  # coursia-lean apporte EN PLUS, pas ce qui manque a la voie hebergee.
   ci:
     name: "Lean CI (knot_lean)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]

@@ -62,16 +62,26 @@ def test_founding_case_12014_surfaces_12077(monkeypatch):
 
 
 def test_query_shape_bounded_one_per_candidate(monkeypatch):
-    """Cout borne : exactement une requete par candidat tire, jamais le pool.
+    """Cout borne : une requete PR par candidat tire, jamais le pool.
 
     La commande doit chercher les PRs MERGEES referencant le numero
-    (troisieme surface de grounding, cf #12174).
+    (troisieme surface de grounding, cf #12174). c.1115 voie 1 ajoute un
+    appel `gh issue view N --comments` conditionnel (uniquement si pas de
+    PR couvrante) -- verifie separement dans
+    `test_marker_check_one_request_per_pick_invariant`.
     """
     calls = []
-    _patch_gh(monkeypatch, [[], []], calls)
+    # Patch retourne TOUJOURS [] -- traite comme "pas de PR couvrante",
+    # declenche le check marqueur qui retourne aussi [] (charge vide).
+    # recent_delivery appelle donc 2x par pick (pr list + issue view).
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
     pig.recent_delivery([_pick(n=1), _pick(n=2)])
-    assert len(calls) == 2
-    for cmd, n in zip(calls, (1, 2)):
+    pr_list = [c for c in calls if c[1] == "pr" and c[2] == "list"]
+    assert len(pr_list) == 2
+    for cmd, n in zip(pr_list, (1, 2)):
         # --state all depuis #12504 : ouvertes ET mergees dans la MEME
         # requete, donc l'invariant "une par candidat" tient toujours.
         assert "--state" in cmd and "all" in cmd
@@ -500,7 +510,7 @@ def test_inheritance_does_not_swallow_other_causes(monkeypatch):
     assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
 
 
-AGG = "Always-on guards -- 12 organes, 1 checkout"
+AGG = "Always-on guards -- 13 organes, 1 checkout"
 
 
 def _agg_red(run_id, name=AGG, required=True):
@@ -2097,3 +2107,148 @@ def test_delivery_boost_spreads_without_monopoly():
         f"{share_starved_boost:.2f} vs {share_starved_base:.2f}")
     assert max(boosted.values()) / 400 < 0.5, (
         f"aucune umbrella ne doit monopoliser : {boosted}")
+
+
+# --- LIVRÉ-urn via marqueur [INFO] candidate-delivered (c.1115 voie 1) -------
+#
+# Le sweep quotidien 05:37Z retracte le label `candidate-delivered` sur
+# activite de commentaire post-merge ; or les lanes elles-memes postent des
+# commentaires `[INFO] candidate-delivered` quand elles en rencontrent une.
+# Resultat : des LIVRE-urn restent sans label alors qu'un marqueur en
+# commentaire les designe explicitement. Tell c.1060-L1 reformule (msg-20260912T165428-k6rbfc,
+# ai-01 spec) : la klasse `delivered` doit etre posee sur signal label OU
+# marqueur, avec 1 requete par candidat tire (invariant recent_delivery l.958).
+#
+# Cas fondateur (2026-09-12) : #14373 (4 commentaires `[INFO candidate-delivered]`
+# de 4 lanes distinctes, PR #14455 MERGED, label absent au moment du test).
+
+
+def _patch_gh_dispatch(calls, monkeypatch, pr_payload, comments_payload):
+    """Dispatcher : repond selon la sous-commande gh (pr list vs issue view).
+
+    `calls` (premier arg, positionnel obligatoire) est une liste mutable
+    enrichie en place pour permettre les assertions sur le nombre d'appels
+    et les commandes exactes.
+    """
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        # gh pr list ... | gh issue view N ...
+        if cmd[1:3] == ["issue", "view"]:
+            return _FakeCompleted(json.dumps(comments_payload))
+        return _FakeCompleted(json.dumps(pr_payload))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def _delivered_marker_comment(body=(
+    "[INFO] candidate-delivered — verification first-hand du geste 1 "
+    "sur origin/main, MERGE 6d0bd02093.")):
+    return {"body": body, "author": {"login": "jsboige"}}
+
+
+def test_marker_only_surfaces_delivered_urn(monkeypatch):
+    """c.1115 voie 1 controle positif : pas de PR couvrante, marqueur en
+    commentaire -> klass mutee a delivered, note ajoutee. Cas fondateur
+    #14373 (label absent, 4 marqueurs multi-lanes)."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+            {"body": "Commentaire sans marqueur, hors perimetre."},
+            _delivered_marker_comment(
+                body="[INFO candidate-delivered] verifie par po-2023 c.485"),
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert "MARQUEUR" in notes[14373]
+    assert "[INFO]" in notes[14373]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_no_marker_no_label_no_note(monkeypatch):
+    """Pas de PR couvrante, pas de marqueur -> pas de signal (regression
+    preservee). Couvre le cas standard 'issue vivante sans livraison'."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "Commentaire normal d'un humain."},
+            {"body": "Autre commentaire sans [INFO] candidate-delivered."},
+        ]})
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
+
+
+def test_marker_check_one_request_per_pick_invariant(monkeypatch):
+    """L'invariant recent_delivery (1 requete par candidat tire) tient aussi
+    pour le check marqueur : pour 3 picks SANS PR couvrante, exactement 3
+    appels a `gh pr list` ET 3 appels a `gh issue view`."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": []})
+    pig.recent_delivery([_pick(n=1), _pick(n=2), _pick(n=3)])
+    pr_list = [c for c in calls if c[1] == "pr" and c[2] == "list"]
+    issue_view = [c for c in calls if c[1] == "issue" and c[2] == "view"]
+    assert len(pr_list) == 3
+    assert len(issue_view) == 3
+    # Verification qu'on ne scanne PAS le pool : les appels `issue view`
+    # prennent un numero explicite, pas un filtre large.
+    for cmd in issue_view:
+        assert cmd[3] in {"1", "2", "3"}
+
+
+def test_marker_does_not_shortcut_pr_check(monkeypatch):
+    """Si une PR OUVERTE couvre l'issue, le marqueur en commentaire ne doit
+    pas detourner l'annotation : TRAVAIL EN COURS prime (priorite du signal,
+    l.1044)."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch,
+        pr_payload=[{"number": 15755, "state": "OPEN",
+                     "isDraft": False, "mergedAt": None}],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+        ]})
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert notes[15794].startswith("TRAVAIL EN COURS")
+    assert picks[0]["klass"] == "grain"  # PAS mute : TRAVAIL EN COURS prime
+    # Et on n'a PAS appele gh issue view pour ce pick (shortcut evite).
+    issue_view = [c for c in calls if c[1] == "issue" and c[2] == "view"]
+    assert issue_view == []
+
+
+def test_marker_check_failure_treated_as_no_signal(monkeypatch):
+    """Si `gh issue view` timeout/rate-limit, _has_delivered_marker retourne
+    None ; recent_delivery continue sans annoter (best-effort, parite avec
+    la doctrine candidate-delivered : signale sans casser le flux)."""
+    def boom(cmd, **kwargs):
+        if cmd[1:3] == ["issue", "view"]:
+            raise pig.subprocess.TimeoutExpired(cmd, 20)
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    # Pas de LIVRE-urn annotation, pas de mutation de klasse.
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
+
+
+def test_marker_regex_matches_both_bracket_forms(monkeypatch):
+    """Le pattern couvre les deux formes employees : `[INFO] candidate-delivered`
+    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf Tell c.1115
+    voie 1 : unification lexicale sans casser l'existant."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "[INFO candidate-delivered] variante espace au lieu de ]"},
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert picks[0]["klass"] == "delivered"

@@ -148,6 +148,10 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
 #   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
 #                           les fichiers AJOUTES (#12753)
+#   - kernel-suffix-canon-guard : bloquant, delta base-vs-head sur les fichiers
+#                           AJOUTES, avec une CONFIG d'adoption lue a l'execution
+#                           (seul garde de la voie rapide dont le verdict depend
+#                           d'un fichier de donnees, #15489)
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -311,6 +315,83 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+
+    # Defaut 3 de #15489 : "aucun garde dedie n'impose la casse canonique
+    # `Python` / `CSharp` / `Lean` apres adoption d'une serie". La tranche
+    # #15503 avait livre le parseur partage en declarant ce point hors de sa
+    # portee (un module qui normalise la casse ne peut pas la juger).
+    #
+    # Porte aux fichiers AJOUTES, et c'est ce qui rend le garde possible : la
+    # mesure de l'arbre donne 114 `-Csharp` contre 16 `-CSharp`. Un garde qui
+    # imposerait la casse canonique a tout le corpus condamnerait la majorite
+    # de ses propres notebooks et serait desactive ; un garde qui ne l'impose
+    # nulle part ne ferme rien. D'ou la CONFIG d'adoption explicite
+    # (`kernel_suffix_canon.json`), lue a l'execution : les series qui ont
+    # tranche (mesure : `Search/Applications` 15 canoniques contre 5 herites)
+    # sont tenues, les autres gardent leur convention -- et leurs 114 fichiers
+    # herites ne rougissent jamais, puisqu'ils ne sont pas des ajouts.
+    #
+    # C'est le seul garde de la voie rapide dont le verdict depend d'un fichier
+    # de donnees : `kernel_suffix_canon.json` figure donc dans `paths`, sinon
+    # une revision qui declare une nouvelle serie adoptee -- ou en revoque une --
+    # ne rejouerait pas le garde dont elle change la portee.
+    Guard(
+        name="kernel-suffix-canon-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_kernel_suffix_canon.py",
+            "scripts/notebook_tools/kernel_suffix_canon.json",
+            # Liste partagee des suffixes de noyau : l'en retirer un rend le
+            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
+            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            "scripts/notebook_tools/naming_canon.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
+              "--base", "{base_ref}", "--head", "HEAD"],
+        blocking=True,
+        needs_base=True,
+    ),
+    # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
+    # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
+    # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
+    # compare les ajouts a la base, jamais entre eux : 0 hit la ou 1 etait
+    # attendu), et deux PRs qui visent le meme slot sous des noms DIFFERENTS
+    # (une collision de chemins n'est pas une collision de slot, donc
+    # `check_pr_path_collisions.py` est muet par construction sur ce cas).
+    #
+    # `--offline` est le point delicat : la source « PRs ouvertes » demande `gh`
+    # et le reseau, dont la voie rapide ne dispose pas. Le garde n'invente pas un
+    # vert pour autant -- il ECRIT la source indisponible dans sa sortie, et
+    # juge ce que la CI peut juger : arbre + cibles de la revision + table
+    # declaree. Rendre un garde silencieux sur une source qu'il n'a pas lue
+    # serait le meme mensonge que de confondre « rien trouve » et « rien
+    # regarde ».
+    #
+    # Neutrallite mesuree avant ce cablage, sur les trois PRs ouvertes qui
+    # renumerotent le plus (10, 17 et 8 cibles) : exit 0, zero conflit sur les
+    # trois. C'est la lecture des SUPPRESSIONS qui produit ce resultat -- sans
+    # elle, ces 35 cibles auraient rougi sur le slot qu'elles venaient de
+    # liberer, et ce garde aurait ete desactive des sa premiere heure.
+    #
+    # Second garde de la voie rapide dont le verdict depend d'un fichier de
+    # donnees : `slot_reservations.json` figure donc dans `paths`, sinon une
+    # revision qui declare -- ou revoque -- une reservation ne rejouerait pas le
+    # garde dont elle change la portee.
+    Guard(
+        name="slot-reservation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_slot_reservation.py",
+            "scripts/notebook_tools/slot_reservations.json",
+            # Le canon fournit la lecture du nom (index normalise, appariement
+            # des rendus alternatifs) : le modifier change qui occupe quoi.
+            "scripts/notebook_tools/naming_canon.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_slot_reservation.py",
+              "--base", "{base_ref}", "--head", "HEAD", "--offline"],
+        blocking=True,
+        needs_base=True,
+    ),
 ]
 
 
@@ -351,14 +432,27 @@ TRANCHE1: list[Guard] = [
         blocking=True,
         absorbed=True,
     ),
-    # Forme 2 : scan globs, bloque sur convention zero-pad GameTheory
-    # (#11840/#12586). Source : series-naming-gate.yml (job affiche
-    # `zero-pad guard (GameTheory serie)`).
+    # Forme 2 : scan globs, bloque sur la convention zero-pad des series
+    # DECLAREES (#11840/#12586, portee explicite #15489 defaut 5). Source :
+    # series-naming-gate.yml (job affiche `zero-pad guard (series declarees)`).
+    # Les globs ci-dessous MIROITENT `scripts/notebook_tools/zero_pad_series.json`
+    # -- le garde est lance sans argument et lit le registre, mais la voie
+    # rapide doit savoir quand le declencher sans lire le JSON au chargement
+    # (ce module ne fait AUCUNE E/S, cf son docstring). Un test de parite
+    # rougit si le miroir et le registre divergent.
     Guard(
-        name="zero-pad guard (GameTheory serie)",
+        name="zero-pad guard (series declarees)",
         source="series-naming-gate.yml",
         paths=[
             "MyIA.AI.Notebooks/GameTheory/**",
+            "MyIA.AI.Notebooks/GenAI/FineTuning/**",
+            "MyIA.AI.Notebooks/IIT/**",
+            "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/PyMC/**",
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+            "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
+            "MyIA.AI.Notebooks/Sudoku/**",
+            "scripts/notebook_tools/zero_pad_series.json",
             "scripts/notebook_tools/check_series_zero_pad.py",
             "scripts/notebook_tools/naming_canon.py",
             ".github/workflows/series-naming-gate.yml",
@@ -398,8 +492,8 @@ TRANCHE1: list[Guard] = [
 # TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
 # canonique, conclusion reelle, workflow d'origine retire de pull_request),
 # trois formes moteur nouvelles par rapport a la tranche 1, portees par
-# QUATRE gardes (deux instances du ratchet autonome : failure-text puis
-# output-flood, #14959) :
+# CINQ gardes (trois instances du ratchet autonome : failure-text,
+# output-flood puis output-collapse advisory, #14959/#15327) :
 #
 #   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
 #     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
@@ -460,6 +554,40 @@ TRANCHE2: list[Guard] = [
             "{base_ref}",
         ],
         blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # Output-volume COLLAPSE ratchet, advisory (#15327): the two siblings
+    # above watch output GROWTH (flood) and failure banners; nothing watched
+    # contraction -- #15209 lost 72 % of its output chars (11 code cells
+    # executed "successfully", graceful-degradation guards if api_ok:) while
+    # every gate stayed green. Design constraint (ai-01 measurement on the
+    # issue, 2026-09-09): AGGREGATE contraction alone is ~100 % FP (3/3
+    # contractions > 50 % over 14 days were legitimate), so this ratchet
+    # flags per-CELL order-of-magnitude loss and graceful-degradation
+    # signatures (execution sautee / non configure / mode simulation /
+    # skipped), exempting the two mechanically detectable legitimate causes:
+    # content moved to a notebook created by the same diff, and
+    # diagnostic-text purge (CS####/warning lines). Advisory until the
+    # threshold is calibrated further on history (issue point 3).
+    # Source : notebook-output-collapse-ratchet.yml (stub dispatch-only).
+    Guard(
+        name="Output-collapse ratchet (base vs PR, advisory)",
+        source="notebook-output-collapse-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_collapse.py",
+            ".github/workflows/notebook-output-collapse-ratchet.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_collapse.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_output_collapse.py",
+            "{base_ref}",
+        ],
+        blocking=False,
         needs_base=True,
         absorbed=True,
     ),
@@ -938,6 +1066,95 @@ TRANCHE8: list[Guard] = [
             "--compare-head", "{head_json}", "--json",
         ],
         swap_paths=["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"],
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 9 -- intervalle de credibilite DECLARE vs AFFICHE (#15592).
+#
+# Garde NATIF : il n'absorbe aucun workflow d'origine, il ferme une classe de
+# defaut. C'est pour cela qu'il a sa propre tranche plutot qu'une place dans
+# `PILOT` (qui absorbe des workflows existants) ou dans `TRANCHE8` (scopee
+# Smart Contracts -- y ranger un garde arviz rendrait son en-tete faux).
+#
+# Le defaut fondeur est #15156 : `hdi_prob=` remplace par `ci_prob=` sans
+# `ci_kind`, donc sans re-execution. En arviz 1.1, `ci_kind` vaut `None` par
+# defaut et la bibliotheque le resout en `"eti"` -- la migration s'executait,
+# la sortie restait en `hdi`, et plus rien ne comparait les deux.
+#
+# PORTEE : arbre ENTIER, et le garde est BLOQUANT. Ce n'est legitime que si la
+# baseline est verte -- mesuree, pas supposee : 18 cellules a colonne
+# d'intervalle sur 1254 notebooks, 0 desaccord, avant enregistrement.
+# ---------------------------------------------------------------------------
+TRANCHE9: list[Guard] = [
+    Guard(
+        name="interval-kind-consistency-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_interval_kind_consistency.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python",
+            "scripts/notebook_tools/check_interval_kind_consistency.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 10 (c.1090) -- ferme l'angle mort remonte par Hermes Concern sur la
+# PR #15631 (2026-09-11T19:06:00Z) :
+#
+#   'Invalid Notebook / outputs is a required property /
+#    Using nbformat v5.10.4 and nbconvert v7.17.0'
+#
+# Le c.1082 fabrication de GameTheory-06g-Bounded-Agents-Lean.ipynb a omis
+# la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
+# accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
+# cle n'a jamais ete injectee -- resultat : un notebook structurellement
+# invalide contre le schema nbformat 5.10.4.
+#
+# Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
+# mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
+# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
+# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+#
+# Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
+# code. `outputs: []` est PASS (la forme canonique d'une cellule non executee
+# / stub), `outputs: <non-list>` est FAIL. Il complement sans dupliquer les
+# gardes H.1/H.3/C.1 du `notebook-execution-required.yml` -- trois invariants
+# distincts, trois organes distincts.
+#
+# Dette repo-wide (c.1084 sweep initial sur main d14b1ac098) : 0 defective
+# code-cell / 0 notebook. Le corpus est deja conforme au moment du cablage.
+# On peut donc demarrer en `blocking=True` -- un garde qui protege un
+# invariant deja tenu est ce qu'il y a de plus sain : il empeche la
+# recurrence sans pourrir le merge-gate. Si la dette etait >0, on aurait
+# demarre ADVISORY + migration par lots avant de basculer en bloquant.
+# ---------------------------------------------------------------------------
+TRANCHE10: list[Guard] = [
+    Guard(
+        name="Notebook outputs required (H.4 schema)",
+        source="notebook-outputs-required.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_notebook_outputs_required.py",
+            ".github/workflows/notebook-outputs-required.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_notebook_outputs_required.py",
+            "--pr-diff", "{base_ref}", "HEAD", "--json",
+        ],
+        blocking=True,
         needs_base=True,
         absorbed=True,
     ),
