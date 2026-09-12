@@ -87,6 +87,7 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 > → le sibling root `_en` ne serait PAS type-checké par la CI sans ajouter
 > `globs = ["Bayesian.*", "Bayesian_en"]` (pattern #6585, cf `decision_theory_lean`).
 > Syntaxe TOML globs **non encore éprouvée dans le repo** (aucun lakefile.toml
+
 > n'utilise globs) → router vers une lane Lean-build-capable (po-2023/po-2026) pour
 > livrer le grain + vérifier le build.
 
@@ -152,6 +153,7 @@ sur les deux gros lakes n'est PAS un chantier de traduction FR→EN propre. Dist
   contenu, ce n'est pas une régression). Lake **PEDA** haute valeur, **lane active
   po-2026** → `[CLAIMED]` **par fichier** obligatoire (anti-double-claim R3).
 - **Queues « near-done » (priorité 3, « 1-2 restants »)** : les résidus scannés sont
+
   en fait des **umbrellas/lakefiles type (D)** (ex. `argumentation_lean/Argumentation.lean`
   = umbrella `/-! … -/`), pas des gaps substantiels. Ces lakes sont **effectivement
   complets** côté modules.
