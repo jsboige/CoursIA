@@ -87,7 +87,22 @@ def _rewrite(content: bytes) -> bytes:
     new = re.sub(rb"([A-Za-z]):[/\\]%20", rb"\1:/", new)
     new = re.sub(rb"%20([A-Za-z0-9_./-])", rb"/\1", new)
     # Collapse every remaining absolute Windows path to `./`.
-    new = re.sub(rb"[A-Za-z]:[/\\][^\"'\\s]*", b"./", new)
+    # The negated class excludes ONLY `"`, `'`, and `\` (the quote and
+    # backslash bytes that delimit a path inside JS/CSS strings). Whitespace
+    # and the letter `s` are KEPT in the matched path: the previous pattern
+    # `rb"[^\"'\\s]*"` -- inside `rb"…"`, `\\s` is THREE chars (literal `\`
+    # then literal `s`) interpreted by the regex engine as the class
+    # `[^"'\\s]` which excludes `{", ', \, s}`. The `*` therefore stopped at
+    # the first `s` byte in the path -- the Tell c.1051-L1 ★ NEW fondateur
+    # symptom was exactly that:
+    #     b"C:/Program Files/nodejs/lib/app.js"
+    #         -> b"./s/nodejs/lib/app.js"   (truncated at the 's' of Files)
+    #         -> b"./"                     (whole path collapsed, after fix)
+    # The fix keeps the class narrow: only the bytes that actually end a
+    # path inside a string literal (`"`, `'`, `\`). Whitespace stays in the
+    # match so `C:/Program Files/...` collapses to `./` instead of
+    # `./ Files/...`.
+    new = re.sub(rb"""[A-Za-z]:[/\\][^"'\\]*""", b"./", new)
     return new
 
 

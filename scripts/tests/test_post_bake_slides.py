@@ -229,3 +229,58 @@ def test_residue_pattern_matches_remaining_absolute_path(tmp_path: Path) -> None
     _write(tmp_path / "dist" / "a.html", bad)
     _write(tmp_path / "dist" / "b.html", b'import x from "C:/Users/dev/lib/x.js";')
     assert _check_residue(str(tmp_path / "dist")) == 2
+
+
+# --- equality controls: byte-exact rewrite output --------------------------
+
+def test_rewrite_byte_exact_no_s_in_path_issue_15452() -> None:
+    """Issue #15452 / Tell c.1051-L1 ★ NEW fondateur : the rewrite regex
+    used `[^\"'\\s]*` inside a raw bytes string, which in a regex literal
+    is a 4-char sequence (backslash + backslash + s) interpreted by the
+    regex engine as `[^"'\\s]` -- the `\\s` is NOT the usual whitespace
+    shorthand (Python's regex parser sees `\\` then `s` as TWO chars); it
+    is the class `\\s` which excludes `{", ', \, s}`. The `*` therefore
+    stops at the FIRST `s` byte in the path, leaving the rest untouched.
+
+    Concrete regression ai-01 measured on the previous fix:
+        input : C:/Program Files/nodejs/lib/app.js
+        bug   : ./s/nodejs/lib/app.js   (truncated at the 's' of Files)
+        want  : ./                       (whole path collapsed)
+
+    This test pins the BYTE-EXACT equality output the rewrite must produce.
+    It fails on the previous fix (and on the current `_rewrite` until the
+    regex is repaired) and passes on the corrected shape-based pattern
+    (negated class excludes ONLY `"`, `'`, and `\` -- the bytes that
+    actually delimit a path inside JS/CSS strings).
+
+    Acceptance: every absolute Windows path collapses to `./`. The `%20`
+    URL-encoded form is normalized to `/` first, then collapsed in the
+    same pass. Backslash-separated paths (`C:\\...`) match only the prefix
+    `C:\\` (backslash is the path delimiter), giving `./` + the rest of
+    the string -- which is still residue-free from a `_check_residue`
+    standpoint (no drive-letter prefix survives).
+    """
+    from scripts.post_bake_slides import _rewrite
+
+    cases = [
+        # (input, expected_output) -- byte-exact equality
+        (b"prefix C:/Program Files/nodejs/lib/app.js\";",
+         b"prefix ./\";"),
+        (b"src=\"C:/Users/MYIA/jupyter/lib/app.js\"",
+         b"src=\"./\""),
+        (b"src=\"C:/no/s_in_path/lib/app.js\"",
+         b"src=\"./\""),
+        # URL-encoded `%20` normalized before the rewrite collapses
+        (b"import x from \"C:/Program%20Files/nodejs/lib/app.js\";",
+         b"import x from \"./\";"),
+        # Backslash form: only the `C:\` prefix collapses, the rest of
+        # the backslash-separated path stays (acceptable: no drive letter
+        # left, so `_check_residue` agrees).
+        (br'import x from "C:\Program Files\nodejs\lib\app.js";',
+         br'import x from "./\nodejs\lib\app.js";'),
+    ]
+    for src, expected in cases:
+        out = _rewrite(src)
+        assert out == expected, (
+            f"rewrite mismatch:\n  in : {src!r}\n  out: {out!r}\n  exp: {expected!r}"
+        )
