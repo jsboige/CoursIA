@@ -29,6 +29,12 @@ WORKFLOW = os.path.join(
     REPO_ROOT, ".github", "workflows", "always-on-guards.yml"
 )
 
+# Sites ecrivant le litteral canonique dans always-on-guards.yml (job unique
+# `always-on-guards`, 20 etapes, consommateurs aux indices 5-7 et 9-14).
+# Valeur IDENTIQUE a la base de #15697 : c'est l'invariant que le corps
+# revendique (« point unique de changement, les sites sont inchanges »).
+PR_BODY_WRITE_SITES = 9
+
 
 def _doc():
     with open(WORKFLOW, encoding="utf-8") as f:
@@ -80,13 +86,15 @@ def test_bootstrap_null_guard_and_fallback():
 
 
 def test_consumer_sites_unchanged():
-    """Les organes restent inchanges : quatre sites ecrivent /tmp/pr_body.txt
-    depuis ``${PR_BODY:-}`` -- le point unique de changement tient."""
+    """Les organes restent inchanges : NEUF sites ecrivent /tmp/pr_body.txt
+    depuis ``${PR_BODY:-}`` -- le point unique de changement tient. Le pin
+    est EXACT, pas un plancher : c'est l'invariant que le corps revendique,
+    et un ``>= N`` laisserait passer la suppression de sites consommateurs."""
     run_all = "\n".join(
         str(s.get("run", "")) for s in _steps(_doc())
     )
-    assert run_all.count("pr_body.txt") >= 4
-    assert 'printf \'%s\' "${PR_BODY:-}" > /tmp/pr_body.txt' in run_all
+    literal = 'printf \'%s\' "${PR_BODY:-}" > /tmp/pr_body.txt'
+    assert run_all.count(literal) == PR_BODY_WRITE_SITES
 
 
 FAKE_GH = textwrap.dedent(

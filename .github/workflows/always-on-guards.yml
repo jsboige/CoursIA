@@ -197,7 +197,7 @@ jobs:
       # dernier run restait affiche sur un corps qui n'existe plus --
       # 72 h sur #15303, 15 h sur #15587, les deux sans faute de lane.
       # Une seule lecture en tete de job, exportee dans PR_BODY : les
-      # quatre sites ecrivant /tmp/pr_body.txt sont inchanges.
+      # neuf sites ecrivant /tmp/pr_body.txt sont inchanges.
       # Repli : appel API vide/echoue -> payload de l'evenement (photo-
       # graphie au declenchement). Jamais bloquant sur une panne de
       # lecture. `// empty` : un corps null rendrait le literal "null".
