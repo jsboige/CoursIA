@@ -37,11 +37,20 @@ docs/reference/wsl-kernels-detail.md.
 """
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+# The Windows console stdout is cp1252, while WSL/lake output carries glyphs it
+# cannot encode (the build stamps ``✔ [n/m] Built ...``, and Lean echoes ∀ / ↦).
+# Unreconciled, ``print(r.stdout...)`` raises UnicodeEncodeError *after* the
+# build has already succeeded, so the run reports a failure that did not happen
+# (same class as #13140). Reconcile stdout once here instead of at each print.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 WSL_DISTRO = "Ubuntu"
 # Canonical matched-REPL install paths (one per toolchain tag).
@@ -50,6 +59,7 @@ REPL_TOOLCHAIN_TAGS = {
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
     "v4.32.1": "repl-4.32.1",
+    "v4.33.0": "repl-4.33.0",
     "v4.33.1": "repl-4.33.1",
     "v4.34.0-rc1": "repl-4.34.0-rc1",
 }
@@ -98,6 +108,7 @@ REPL_PY_PATCH = '''    @staticmethod
                    'v4.31.0-rc1': 'repl-4.31.0-rc1',
                    'v4.32.0': 'repl-4.32.0',
                    'v4.32.1': 'repl-4.32.1',
+                   'v4.33.0': 'repl-4.33.0',
                    'v4.33.1': 'repl-4.33.1',
                    'v4.34.0-rc1': 'repl-4.34.0-rc1'}
         try:
@@ -201,12 +212,29 @@ def _reorder_lean_path_drvfs_first(lean_path, elan_root):
 
 
 def _wsl(cmd, timeout=120):
-    """Run a command inside WSL, return CompletedProcess."""
+    """Run a command inside WSL, return CompletedProcess.
+
+    cwd is forced to a neutral directory, and the GIT_* repo-redirection vars are
+    dropped. wsl.exe already puts the WSL process in the *Windows* cwd, and every
+    ``_wsl`` command is self-contained (each one ``cd`` where it needs to). When
+    the caller runs from a git WORKTREE that matters: the worktree's ``.git`` is a
+    FILE holding ``gitdir: D:/.../.git/worktrees/<name>``, a Windows path WSL
+    resolves into ``<wsl-cwd>/D:/.../...`` -- git then dies with "not a git
+    repository" and returns an EMPTY stdout, which ``_resolve_repl_source_tag``
+    reads as "no tag <= want" and reports as a misleading ``NO-SOURCE-TAG``.
+    Workers are mandated to work in worktrees, so this made ``build-repl``
+    silently unusable exactly where it is needed (measured 2026-09-12: v4.33.0
+    resolution returned None from a worktree, and the same silent empty-stdout
+    path is why the ``repl-4.33.1`` key was advertised but never built).
+    """
     full = ["wsl.exe", "-d", WSL_DISTRO, "--", "bash", "-lc", cmd]
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR")}
     # encoding explicite : la sortie WSL porte de l'unicode Lean (forall, mapsto).
     # text=True seul decode via la locale -> crash sur hote cp1252 (#12811).
     return subprocess.run(full, capture_output=True, text=True, timeout=timeout,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace",
+                          cwd=os.path.expanduser("~"), env=env)
 
 
 def _find_repl_py():
@@ -385,13 +413,29 @@ def cmd_build_repl(tag, default=False):
     # test brackets piped through wsl.exe -> bash -lc get mangled at the
     # argument boundary (a [ \"$(...)\" = tag ] check reported a mismatch on
     # a checkout that was in fact correct).
-    _wsl(
+    #
+    # ``git checkout --force`` (not the bare form): when the requested tag has
+    # no exact repl source tag, the build overrides ``lean-toolchain`` in place
+    # (see ``override`` above) and leaves the checkout DIRTY. A later
+    # ``build-repl`` then aborts mid-sequence with "Your local changes to the
+    # following files would be overwritten by checkout: lean-toolchain" -- and
+    # because the old form piped through ``| tail -1``, the abort was silent and
+    # the operator only saw a bare CHECKOUT-MISMATCH with no cause. That is how
+    # the ``v4.33.1`` key came to be advertised in REPL_TOOLCHAIN_TAGS yet never
+    # built. The override is the script's own artifact and is regenerated on
+    # every build, so discarding it here is the intended semantics; the failure
+    # is now surfaced instead of swallowed.
+    prep = _wsl(
         f"export PATH=$HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin; "
         f"mkdir -p ~/repl-build && cd ~/repl-build && "
         f"if [ ! -d repl ]; then git clone https://github.com/leanprover-community/repl.git; fi && "
-        f"cd repl && git fetch --tags --force origin 2>&1 | tail -1; "
-        f"git checkout {src_tag} 2>&1 | tail -1",
+        f"cd repl && git fetch --tags --force -q origin && "
+        f"git checkout --force {src_tag} && echo CHECKOUT-OK",
         timeout=300)
+    if "CHECKOUT-OK" not in (prep.stdout or ""):
+        print("CHECKOUT-FAILED: "
+              + " ".join(((prep.stdout or "") + " " + (prep.stderr or "")).split())[-600:])
+        return 1
     head = (_wsl("cd ~/repl-build/repl && git rev-parse HEAD", timeout=30).stdout or "").strip()
     tagc = (_wsl(f"cd ~/repl-build/repl && git rev-parse {src_tag}^{{commit}}",
                  timeout=30).stdout or "").strip()
