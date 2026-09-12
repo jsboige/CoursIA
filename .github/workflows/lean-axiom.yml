@@ -79,14 +79,24 @@ jobs:
   axiom-check:
     name: "Proof integrity (${{ inputs.display-name }})"
     runs-on: ubuntu-latest
-    # Bound the job at 60 minutes (≈ 2× worst observed axiom-check wall-clock on
-    # conway_lean audit, See #15698): without it a wedged `lake exe env lean`
-    # or `LeanVerifier.check_axioms` ties up the runner for the full 6 h GH
-    # Actions default, and the check never concludes -- so the PR gate sits
-    # BLOCKED on a verdict that never lands. The timeout turns the wedge into
-    # a red check instead of a forever-pending one, so the merge-gate can
-    # actually see the regression.
-    timeout-minutes: 60
+    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
+    #
+    # Sans borne, un `lake exe env lean` ou un `LeanVerifier.check_axioms`
+    # enlise retient le runner les 6 h du defaut GH Actions et le check ne
+    # conclut jamais -- le PR gate reste BLOCKED sur un verdict qui n'atterrit
+    # pas. La borne convertit l'enlisement en check ROUGE, que le merge-gate
+    # peut voir.
+    #
+    # 300 et pas 60. Maximum LEGITIME mesure de `proof-integrity` = 177 min,
+    # conclusion `success` (job 102677021168, step `lean-axiom` de 2 h 55) ;
+    # 1 succes sur 20 depasse 60 min, mediane 8 min (30 runs, 2026-09-12). La
+    # fenetre de 12 runs qui justifiait « 60 = 2x le pire observe » ratait la
+    # queue de distribution : le pire observe n'etait pas le pire legitime.
+    #
+    # NE PAS RESSERRER sur l'intuition : le maximum legitime et la pathologie
+    # vivent dans la meme plage de temps de mur. 300 laisse 1,7x de marge et
+    # rend le runner 3 h avant le defaut GH.
+    timeout-minutes: 300
     steps:
     - uses: actions/checkout@v4
 

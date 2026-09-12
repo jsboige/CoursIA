@@ -142,11 +142,17 @@ jobs:
     name: "Lean CI (knot_lean)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Bound the job at 60 minutes (See #15698): the prior wedge (knot_lean
-    # proof-integrity, run 103451688746) tied up half the coursia-lean pool
-    # for 3h17m without ever concluding. A bound here turns a wedge into a
-    # red check that the merge-gate can actually see.
-    timeout-minutes: 60
+    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
+    #
+    # L'enlisement d'origine (knot_lean proof-integrity, run 103451688746) a
+    # retenu la moitie du pool coursia-lean 3 h 17 sans jamais conclure. La
+    # borne convertit l'enlisement en check ROUGE, visible du merge-gate.
+    #
+    # 300 et pas 60 : maximum LEGITIME mesure du job `ci` = 215 min (succes),
+    # 3 succes au-dessus de 60 min sur 23, mediane 7 min (30 runs, 2026-09-12).
+    # Le maximum legitime et la pathologie vivent dans la meme plage : aucun
+    # seuil de temps de mur ne les separe. NE PAS RESSERRER.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lean-build
@@ -189,10 +195,18 @@ jobs:
     needs: ci
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Bound at 60 minutes (See #15698): this is the job that wedged for
-    # 3h17m in the original incident. The bound converts a wedge into a
-    # red check so the merge-gate can act on it.
-    timeout-minutes: 60
+    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
+    #
+    # C'est CE job qui s'est enlise 3 h 17 dans l'incident d'origine. La borne
+    # convertit l'enlisement en check ROUGE, sur lequel le merge-gate peut agir.
+    #
+    # 300 et pas 60 : maximum LEGITIME mesure de `proof-integrity` = 177 min,
+    # conclusion `success` (job 102677021168, branche
+    # feature/2874-conway-trivial-alexander, step `lean-axiom` 22:58:13Z ->
+    # 01:53:13Z = 2 h 55). Un `timeout-minutes: 60` l'aurait TUE -- exactement
+    # le faux positif que ce fichier cherche a eviter. Mediane 8 min sur
+    # 20 succes : la queue vient du cache Mathlib froid. NE PAS RESSERRER.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lean-axiom
