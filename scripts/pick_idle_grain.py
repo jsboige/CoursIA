@@ -118,6 +118,19 @@ gardes divergeaient, une lane pourrait etre autorisee a produire du neuf sur
 une PR que le merge-gate refusera. Voir `red_backlog` et
 `unaddressed_review_points`.
 
+Ardoise de lane : la mesure qui rend un faux "rien livre" impossible (L721)
+--------------------------------------------------------------------------
+Mesure du 2026-09-12 : une lane a envoye une escalation URGENT claimant
+"x22 cycles, rien livre par ma lane, pool tari structurellement" alors
+qu'elle avait cree 8 PRs DEEP de genre CONTENU dans les 48 h precedentes,
+la plus recente 10 h avant l'alerte (337 issues ouvertes a cet instant).
+La lecon L721 (proactive-coordination.md) dit deja d'interroger le TAG de
+lane, jamais `--author` ; ce qui manquait n'etait pas une regle de plus
+mais la mesure rendue au moment ou la decision se prend. Le picker affiche
+donc l'ardoise de la lane appelante (PRs mergees 24 h / 7 j, par tier et
+par classe CONTENU/META) sur les deux chemins, reparation comme tirage.
+Elle est INFORMATIONNELLE : aucun gate, aucun changement du tirage.
+
 Usage
 -----
     python scripts/pick_idle_grain.py --lane myia-po-2026:CoursIA
@@ -2722,6 +2735,236 @@ def print_drought_banner(d: dict, restricted: int, fell_back: bool) -> None:
     print()
 
 
+# --- L721 : ardoise de lane, la mesure rendue AU MOMENT de la decision --------
+#
+# Mesure du 2026-09-12. La lane myia-po-2023:CoursIA-2 a envoye une
+# escalation URGENT claimant "x22 cycles, rien livre par ma lane, pool
+# global tari structurellement" -- alors que cette meme lane avait CREE
+# 8 PRs DEEP de genre CONTENU dans les 48 h precedentes (#15662, #15607,
+# #15595, #15582, #15542, #15540, #15537, #15519), la plus recente 10 h
+# avant l'alerte, et que 337 issues etaient ouvertes a cet instant.
+#
+# La lecon L721 (proactive-coordination.md, "stale-tracker guard") dit
+# deja de compter par le TAG de lane, jamais par `--author` (le compte de
+# poussee `jsboige` est partage par toutes les lanes -- 50 PRs ouvertes
+# sur 55 sous ce login, mesure du 2026-08-22). La regle etait correcte ;
+# rien ne la faisait mordre. Ajouter une regle de plus serait l'echec-
+# pendule : ce qui manquait est un ORGANE qui rend la mesure visible au
+# moment ou la decision se prend. Le picker est le premier geste de
+# chaque cycle (regle 5 de proactive-coordination) : c'est lui qui porte
+# l'ardoise.
+#
+# Elle est INFORMATIONNELLE : elle ne change pas le tirage, ne refuse
+# rien, n'ajoute aucune condition bloquante. Un garde qui refuserait sur
+# une ardoise vide reproduirait l'incident des "lanes 2" (un garde qui
+# drainait les lanes actives) -- et une ardoise vide PEUT etre vraie, au
+#quel cas c'est un fait a escalader, pas un motif de blocage.
+
+LANE_RECORD_WINDOW_HOURS = 24
+LANE_RECORD_WINDOW_DAYS = 7
+# ~100 merges/jour sur la flotte => ~700 attendues sur 7 j ; 1000 laisse
+# la marge, et le franchissement est SURVEILLE (champ `truncated` du
+# record), pas muet -- convention POOL_FETCH_LIMIT.
+LANE_RECORD_FETCH_LIMIT = 1000
+LANE_RECORD_TIERS = ("DEEP", "MED", "LIGHT")
+
+
+def fetch_lane_record_prs(
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+) -> tuple[list[dict], str | None]:
+    """Corpus brut de l'ardoise : les PRs mergees des 7 derniers jours.
+
+    Rend ``(prs, erreur)``. En cas d'echec, liste vide ET erreur nommee :
+    l'ardoise sera rendue NON MESUREE, jamais un zero d'absence de mesure
+    (un zero silencieux fabriquerait exactement le faux "rien livre" que
+    cet organe existe pour refuter).
+
+    Le filtre de date est SERVEUR (``--search merged:>=...``) : la lecon
+    de ``fetch_visits`` (mesure du 2026-08-23 -- 44 % de la population de
+    la fenetre perdue par un tri par date de creation coupe a N puis filtre
+    cote client) vaut ici mot pour mot. Une ardoise sous-comptee
+    CONSENTIRAIT le faux constat d'idle au lieu de le refuter.
+    """
+    cutoff = NOW - dt.timedelta(days=LANE_RECORD_WINDOW_DAYS)
+    stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    command = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", str(LANE_RECORD_FETCH_LIMIT),
+        "--search", f"merged:>={stamp}",
+        "--json", "number,body,mergedAt",
+    ]
+    identity = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", str(LANE_RECORD_FETCH_LIMIT),
+        "--window-days", str(LANE_RECORD_WINDOW_DAYS),
+        "--json", "number,body,mergedAt",
+    ]
+
+    def fetch_raw() -> list[dict]:
+        out = subprocess.run(
+            command,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True, timeout=60,
+        ).stdout
+        return json.loads(out)
+
+    try:
+        prs = _cached_payload(
+            "lane_record", identity, fetch_raw,
+            cache=cache, cache_mode=cache_mode,
+            ttl_seconds=VISITS_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+        )
+    except (subprocess.CalledProcessError, json.JSONDecodeError,
+            subprocess.TimeoutExpired, OSError) as exc:
+        return [], f"{type(exc).__name__}: {exc}"
+
+    cache_entry = (cache_status or {}).get("lane_record") or {}
+    if cache_entry.get("status") == "stale":
+        # Le payload date du dernier refresh reussi : le bacquet 24 h est
+        # potentiellement ampute des merges les plus recents. Le dire
+        # plutot que de rendre une mesure retiree pour une mesure fraiche.
+        return prs, ("cache stale apres echec du refresh: " + str(
+            cache_entry.get("error") or "erreur inconnue"))
+    return prs, None
+
+
+def _lane_record_bucket() -> dict:
+    return {"total": 0,
+            "by_tier": {tier: 0 for tier in LANE_RECORD_TIERS},
+            "contenu": 0, "meta": 0, "hors_enumeration": 0,
+            "prs": []}
+
+
+def lane_delivery_record(lane: str, prs: list[dict] | None, *,
+                         now: dt.datetime | None = None,
+                         error: str | None = None,
+                         truncated: bool = False) -> dict:
+    """Ardoise de `lane` : ses PRs MERGEES par fenetre, tier et classe.
+
+    Fenetres : 24 h et 7 j. Decompte par tier DECLARE (DEEP/MED/LIGHT ; un
+    tier hors enumeration garde sa propre cle plutot que d'etre jete -- un
+    compte qui somme a moins que le total sans le dire est un sous-compte)
+    et par classe de genre (CONTENU / META, l'enumeration fermee de
+    variation-protocol reprise telle quelle des constantes du module ; un
+    genre non resolu compte `hors_enumeration`, fail-CLOSED et NOMME --
+    meme politique que `substance_drought`).
+
+    L'attribution suit le TAG DE LANE -- via `parse_grain_tag`,
+    l'extracteur PARTAGE avec variation-tag-guard.yml (formes tolerees :
+    `Grain:`, `## Grain` + ligne suivante, `**Grain** :`, casse
+    indifferentes), jamais `--author` : l'auteur GitHub ne porte aucune
+    information de lane sur ce depot. Une PR sans tag lisible n'est
+    comptee nulle part (deviner sa lane serait pire -- meme arithmetique
+    que `red_backlog` et `unattributed_blocked_prs`).
+    """
+    now = NOW if now is None else now
+    cutoffs = {
+        "24h": now - dt.timedelta(hours=LANE_RECORD_WINDOW_HOURS),
+        "7d": now - dt.timedelta(days=LANE_RECORD_WINDOW_DAYS),
+    }
+    buckets = {"24h": _lane_record_bucket(), "7d": _lane_record_bucket()}
+    undated = 0
+    for pr in prs or []:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if not tag or tag.get("lane") != lane:
+            continue
+        raw_merged = pr.get("mergedAt") or ""
+        try:
+            merged = dt.datetime.fromisoformat(raw_merged.replace("Z", "+00:00"))
+        except ValueError:
+            undated += 1
+            continue
+        tier = tag.get("tier") or "?"
+        genre = canonicalize_genre(tag.get("genre") or "")
+        if genre in CONTENU:
+            klass = "contenu"
+        elif genre in META:
+            klass = "meta"
+        else:
+            klass = "hors_enumeration"
+        item = {"number": pr.get("number"), "tier": tier,
+                "genre": tag.get("genre"), "mergedAt": raw_merged}
+        for key, cutoff in cutoffs.items():
+            if merged >= cutoff:
+                bucket = buckets[key]
+                bucket["total"] += 1
+                bucket["by_tier"][tier] = bucket["by_tier"].get(tier, 0) + 1
+                bucket[klass] += 1
+                bucket["prs"].append(item)
+    return {
+        "lane": lane,
+        "measured": error is None,
+        "error": error,
+        "truncated": bool(truncated),
+        "windows": buckets,
+        "undated": undated,
+    }
+
+
+def print_lane_record(record: dict | None) -> None:
+    """L'ardoise en texte -- le rappel L721 qui rend un faux "rien livre"
+    impossible a ecrire honnetement.
+
+    Rien sur un record absent (modes sans lane) : pas de paragraphe
+    parasite. Le cas NON MESURE parle en MAJUSCULES comme les autres
+    fail-open du picker ("NON MESUREE" lisible au survol) et donne la
+    commande de verification manuelle -- un record illisible est une
+    question, pas une mesure de zero.
+    """
+    if not record:
+        return
+    lane = record.get("lane")
+    if not record.get("measured"):
+        cutoff = (NOW - dt.timedelta(days=LANE_RECORD_WINDOW_DAYS)).strftime("%Y-%m-%d")
+        print(f"ARDOISE DE LA LANE NON MESUREE ({record.get('error') or 'erreur inconnue'}) :")
+        print("ce tirage ne dit RIEN des livraisons recentes de la lane -- un zero")
+        print("d'ardoise ne serait pas une mesure (L721). Verifier a la main AVANT")
+        print("d'escalader un constat d'idle :")
+        print(f"  gh pr list --state merged --search 'merged:>={cutoff}' "
+              f"--json number,body,mergedAt")
+        print()
+        return
+    print(f"Ardoise de la lane {lane} -- PRs MERGEES dont le body porte "
+          f"`lane {lane}` (L721) :")
+    for key, label in (("24h", "24 h"), ("7d", "7 j")):
+        b = record["windows"][key]
+        tiers = " / ".join(f"{t} {b['by_tier'].get(t, 0)}"
+                           for t in LANE_RECORD_TIERS)
+        extra = ""
+        if b["hors_enumeration"]:
+            extra = f" | hors-enumeration {b['hors_enumeration']}"
+        print(f"  {label:>4} : {b['total']} merge(s) | {tiers} "
+              f"| CONTENU {b['contenu']} / META {b['meta']}{extra}")
+    if record.get("undated"):
+        print(f"  ({record['undated']} PR(s) sans mergedAt lisible, non comptees)")
+    if record.get("truncated"):
+        print(f"  ATTENTION : corpus tronque a la limite de fetch "
+              f"({LANE_RECORD_FETCH_LIMIT}) -- les comptes ci-dessus sont des")
+        print("  bornes INFERIEURES, pas des totaux.")
+    w24 = record["windows"]["24h"]
+    w7 = record["windows"]["7d"]
+    if w24["total"] == 0 and w7["total"] == 0:
+        print("  0 merge sur les deux fenetres. Avant d'ecrire 'rien livre par ma")
+        print("  lane', verifier que tes PRs portent le tag `Grain: ... lane")
+        print(f"  {lane}` : une PR sans tag lisible n'est comptee nulle part.")
+    else:
+        pool = w24["prs"] if w24["prs"] else w7["prs"]
+        top = sorted(pool, key=lambda p: p.get("mergedAt") or "",
+                     reverse=True)[:3]
+        listing = ", ".join(f"#{p['number']} {p['tier']}/{p['genre']}"
+                            for p in top)
+        print(f"  derniers merges : {listing}")
+        print("Avant d'ecrire 'rien livre par ma lane' ou 'pool tari' : confronter")
+        print("le constat a CETTE mesure. L'attribution se lit sur le tag `Grain:`,")
+        print("jamais sur --author (le compte de poussee jsboige est partage par")
+        print("toutes les lanes).")
+    print()
+
+
 # --- #14591 Volet A : persistance CSV de --prev-genre entre cycles ----------------
 #
 # Le picker penalise le genre precedent via --prev-genre (G-VAR-3, variation-
@@ -3041,6 +3284,23 @@ def main(argv: list[str] | None = None) -> int:
               "a reporter sur l'issue.")
         return 1
 
+    # L721 : ardoise de la lane, calculee AVANT le garde rouge pour que les
+    # DEUX chemins (reparation comme tirage) la portent -- c'est au moment ou
+    # la lane consulte l'outil que la mesure doit etre sous ses yeux.
+    # INFORMATIONNELLE : aucun gate, aucun changement du tirage (cf section
+    # L721 en tete de fichier).
+    lane_record = None
+    if args.lane:
+        record_prs, record_err = fetch_lane_record_prs(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+        )
+        lane_record = lane_delivery_record(
+            args.lane, record_prs, error=record_err,
+            truncated=record_err is None
+            and len(record_prs) >= LANE_RECORD_FETCH_LIMIT)
+
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
     backlog = red_backlog(args.lane, args.red_hours, args.red_count,
@@ -3055,10 +3315,14 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"lane": args.lane, "mode": "repair",
                               "assignment": "reparer-son-rouge",
                               "grain": (backlog.get("red") or [None])[0],
-                              "red_hours": args.red_hours, **backlog},
+                              "red_hours": args.red_hours,
+                              "lane_record": lane_record, **backlog},
                              ensure_ascii=False, indent=2))
         else:
             print_red_assignment(args.lane, backlog, args.red_hours)
+            # Apres l'assignation : l'en-tete "GRAIN DU CYCLE" doit rester la
+            # premiere ligne lue (test pinné), l'ardoise vient en rappel.
+            print_lane_record(lane_record)
         return 0
     if not args.json:
         print_nits_gap(backlog)
@@ -3273,6 +3537,7 @@ def main(argv: list[str] | None = None) -> int:
             },
             "red_backlog": backlog,
             "substance_drought": drought,
+            "lane_record": lane_record,
             "cache": cache_status,
             "filters": {
                 "active": filter_active,
@@ -3363,6 +3628,7 @@ def main(argv: list[str] | None = None) -> int:
                   "en a aucun, d'en declarer un : une zone chaude sans EPIC "
                   "n'a personne de comptable pour la contrepartie.")
             print()
+    print_lane_record(lane_record)
     print_delivery(delivery_sig, args.delivery_boost_max)
     print(f"Pool ouvert : {len(pool)} issues.")
     print(f"Candidats apres admission/filtres : "
