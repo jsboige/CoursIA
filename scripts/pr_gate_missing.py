@@ -56,10 +56,17 @@ LABEL_DEFAULT = "pr-gate-missing"
 LABEL_BOT_DEFAULT = "pr-gate-missing-bot"
 LABEL_COLOR = "b60205"  # red -- "invisible required-context blocker, needs a push"
 LABEL_BOT_COLOR = "d93f0b"  # orange -- "structural bot case (GITHUB_TOKEN anti-recursion)"
-LABEL_DESC = ("PR gate absent du rollup: contexte requis jamais rapporte -- "
-              "PR verrouillee malgre des checks verts (#10928)")
-LABEL_BOT_DESC = ("PR du bot sans PR gate: structural (push GITHUB_TOKEN ne cree "
-                  "pas de workflow run) -- merge admin ou push humain (#10928)")
+# GitHub refuses a label description longer than 100 characters, and `gh label
+# create` fails on it. Measured 2026-09-12 (#15621): the three descriptions
+# were 108 / 121 / 145 characters, so all three creations failed with HTTP 404
+# and the failure was invisible -- `ensure_label` swallowed the exit code. The
+# "label" half of this organ's payload had never existed. `MAX_LABEL_DESC`
+# makes the ceiling explicit and `test_pr_gate_missing.py` pins it, because
+# these strings drift by nature (one appended issue number is enough).
+MAX_LABEL_DESC = 100
+
+LABEL_DESC = "PR gate absent du rollup alors que des checks sont verts (#10928)"
+LABEL_BOT_DESC = "PR du bot sans PR gate: push GITHUB_TOKEN, merge admin (#10928)"
 
 # Issue #14477 (cause 5, mesuree 2026-09-03 sur #14220) : une PR en conflit
 # avec main ne recoit AUCUN run `pull_request` -- GitHub ne calcule pas de
@@ -68,15 +75,28 @@ LABEL_BOT_DESC = ("PR du bot sans PR gate: structural (push GITHUB_TOKEN ne cree
 # aucun run). Label distinct : le remede n'est pas un push, c'est un conflit.
 LABEL_CONFLICT_DEFAULT = "pr-gate-conflict"
 LABEL_CONFLICT_COLOR = "fdd0a2"  # saumon -- "PR dirty, remede = resoudre le conflit"
-LABEL_CONFLICT_DESC = ("PR gate absent car la PR est en conflit avec main "
-                       "(mergeable_state=dirty) -- aucun run pull_request tant "
-                       "que le conflit n'est pas resolu (#14477)")
+LABEL_CONFLICT_DESC = "PR gate absent car la PR est en conflit avec main (#14477)"
 
 # The exact check-run name posted by pr_gate.py --self-name "PR gate" and
 # required by main's branch protection. Renaming here silently detaches the
 # detector (same invariant as pr-gate.yml: keep the string stable).
 GATE_NAME = "PR gate"
 BOT_LOGIN = "app/github-actions"
+
+
+def is_bot_author(login: str) -> bool:
+    """The same GitHub App bot, spelled by two APIs (#15621).
+
+    REST (what ``list_open_prs`` reads since #14488) renders the Actions app
+    as ``github-actions[bot]``; GraphQL rendered it ``app/github-actions`` --
+    the spelling ``BOT_LOGIN`` still carries. A bot must not flip to a human
+    verdict because the collector changed API: measured live 2026-09-12, the
+    catalog's long-lived PR #15678 (author ``app/github-actions`` per GraphQL,
+    ``github-actions[bot]`` per REST) classified ``missing`` instead of
+    ``bot_missing``. Any ``*[bot]`` suffix is a bot login by GitHub's own
+    naming rule, which also covers a future app bot.
+    """
+    return login == BOT_LOGIN or login.endswith("[bot]")
 
 # Marker framing the advisory comment, so re-runs can find and update it.
 COMMENT_MARKER_START = "<!-- PR-GATE-MISSING:START -->"
@@ -193,7 +213,7 @@ def classify(pr: dict) -> tuple[str, str]:
         return ("draft", f"#{number} draft PR, non mergeable")
     if GATE_NAME in rollup_names(pr):
         return ("has_gate", f"#{number} PR gate present (conclusion: {len(rollup_names(pr))} checks)")
-    if pr.get("author_login") == BOT_LOGIN:
+    if is_bot_author(pr.get("author_login") or ""):
         return ("bot_missing", f"#{number} bot PR, no PR gate (structural)")
     return ("missing", f"#{number} PR gate absent du rollup")
 
@@ -237,8 +257,8 @@ def prescribe(pr: dict) -> tuple[str, str]:
                 f"base_ref_changed={changed}, dernier run PR gate={last or 'aucun'}")
     if "[skip ci]" in head_subject(pr):
         return ("skip_ci", f"sujet de tete porte le token [skip ci] : {head_subject(pr)[:72]!r}")
-    if pr.get("author_login") == BOT_LOGIN:
-        return ("bot", "auteur app/github-actions -- push GITHUB_TOKEN sans run")
+    if is_bot_author(pr.get("author_login") or ""):
+        return ("bot", f"auteur {pr.get('author_login')} -- push GITHUB_TOKEN sans run")
     return ("unknown",
             f"mergeable_state={ms}, pas de base_ref_changed, sujet sans [skip ci], "
             f"auteur {pr.get('author_login')}")
@@ -327,6 +347,50 @@ def _gh_lines(args: list[str]) -> list[str]:
     return [line for line in proc.stdout.splitlines() if line.strip()]
 
 
+#: The keys :func:`classify` reads off one row produced by
+#: :func:`list_open_prs`. Declared ONCE, here, because a re-map between the
+#: producer and the consumer is SILENT: a missing key raises nothing, it
+#: renders the ``.get()`` default, and the verdict it guards becomes
+#: structurally unreachable rather than wrong.
+#:
+#: Measured 2026-09-12 (#15621): the producer had been migrated to REST
+#: (flat ``base_ref_name`` / ``is_draft`` / ``author_login``) while ``main()``
+#: still rebuilt each row with the GraphQL names (``baseRefName`` /
+#: ``isDraft`` / ``author``). Three of the five verdicts -- ``excluded_base``,
+#: ``draft``, ``bot_missing`` -- could therefore never be returned, the pool's
+#: author field printed empty, and 7 healthy PRs were published as defects
+#: with a comment demanding a manual investigation. `test_pr_gate_missing.py`
+#: pins this set against the PRODUCER's real output, not against a row built
+#: by hand in the shape the consumer happens to want -- that is the blind spot
+#: that let the collapse live.
+PR_ROW_KEYS = frozenset({
+    "number",
+    "base_ref_name",
+    "is_draft",
+    "author_login",
+    "statusCheckRollup",
+    "labels",
+})
+
+
+def normalize_row(pr: dict) -> dict:
+    """One row of :func:`list_open_prs` -> the dict :func:`classify` reads.
+
+    The single translation point between the producer and the consumer. It
+    reads exactly :data:`PR_ROW_KEYS` and no GraphQL alias: if the producer
+    ever renames a field, the contract test fails here rather than a verdict
+    vanishing behind a ``.get()`` default.
+    """
+    return {
+        "number": pr.get("number"),
+        "base_ref_name": pr.get("base_ref_name"),
+        "is_draft": bool(pr.get("is_draft")),
+        "author_login": pr.get("author_login") or "",
+        "statusCheckRollup": pr.get("statusCheckRollup") or [],
+        "labels": pr.get("labels") or [],
+    }
+
+
 def list_open_prs(repo: str) -> list[dict]:
     """Open PRs with the fields classify() needs -- REST, not GraphQL.
 
@@ -346,7 +410,8 @@ def list_open_prs(repo: str) -> list[dict]:
     pulls = _gh_rows([
         "api", f"repos/{repo}/pulls?state=open&per_page=100", "--paginate",
         "--jq", '.[] | {number, draft: .draft, base: .base.ref, '
-                'author: .user.login, sha: .head.sha}',
+                'author: .user.login, sha: .head.sha, '
+                'labels: [.labels[].name]}',
     ])
     out: list[dict] = []
     for p in pulls:
@@ -363,6 +428,11 @@ def list_open_prs(repo: str) -> list[dict]:
             "is_draft": bool(p.get("draft")),
             "author_login": p.get("author") or "",
             "statusCheckRollup": rollup,
+            # #15621: `labels` was never emitted, so `has_label()` was always
+            # false and the generic -> conflict label migration never fired --
+            # the generic label was re-applied on every pass instead of being
+            # replaced. The row promises PR_ROW_KEYS; this is the key it owed.
+            "labels": p.get("labels") or [],
         })
     return out
 
@@ -413,18 +483,39 @@ def enrich_candidate(repo: str, number: int) -> dict:
     }
 
 
-def ensure_label(repo: str, name: str, color: str, desc: str, dry_run: bool) -> None:
+def ensure_label(repo: str, name: str, color: str, desc: str, dry_run: bool) -> bool:
+    """Create-or-update a label. Returns False when the write failed (#15621).
+
+    The exit code used to be dropped on the floor (``check=False`` plus a
+    captured stderr nobody read), so three failed creations -- HTTP 404, one
+    per description over GitHub's 100-character ceiling -- produced a silently
+    label-less organ: the run printed 7 flagged PRs, `gh pr list --label
+    pr-gate-missing` returned ``[]``, and nothing in the sweep log said why.
+    A failed write is now named with its `gh` stderr.
+    """
     if dry_run:
-        return
-    subprocess.run(
+        return True
+    completed = subprocess.run(
         ["gh", "label", "create", name, "--repo", repo,
          "--color", color, "--description", desc, "--force"],
         capture_output=True, text=True, check=False, encoding="utf-8",
     )
+    if completed.returncode != 0:
+        print(
+            f"[pr-gate-missing] WARN -- label {name!r} non cree "
+            f"(exit {completed.returncode}): "
+            f"{(completed.stderr or completed.stdout).strip()[:300]}",
+            flush=True,
+        )
+        return False
+    return True
 
 
 def has_label(pr: dict, name: str) -> bool:
-    return any((lab.get("name") == name) for lab in (pr.get("labels") or []))
+    # #15621: `labels` is a list of NAME STRINGS -- the shape the producer
+    # emits (`labels: [.labels[].name]`). It used to be read as the GraphQL
+    # list of objects (`.name` on each), matching nothing the producer sent.
+    return name in (pr.get("labels") or [])
 
 
 def apply_label(repo: str, number: int, name: str, dry_run: bool) -> None:
@@ -548,14 +639,7 @@ def main(argv: list[str] | None = None) -> int:
 
     for pr in prs:
         number = pr["number"]
-        enriched = {
-            "number": number,
-            "base_ref_name": pr.get("baseRefName"),
-            "is_draft": pr.get("isDraft", False),
-            "author_login": (pr.get("author") or {}).get("login", ""),
-            "statusCheckRollup": pr.get("statusCheckRollup") or [],
-            "labels": (pr.get("labels") or []),
-        }
+        enriched = normalize_row(pr)
         verdict, why = classify(enriched)
         counts[verdict] = counts.get(verdict, 0) + 1
 
@@ -575,10 +659,32 @@ def main(argv: list[str] | None = None) -> int:
             if number in labeled_conflict:
                 remove_label(repo, number, args.label_conflict, args.dry_run)
                 print(f"  #{number:<6} has_gate   {why}  (conflict label retracted)")
-        elif verdict == "draft":
-            pass  # quiet -- the common non-defect case
-        else:  # excluded_base
-            pass  # quiet -- PRs targeting a feature branch never see PR gate
+        elif verdict in ("draft", "excluded_base"):
+            # Not defects: a draft is not mergeable yet, and a PR targeting a
+            # feature branch never sees `pr-gate.yml` at all (it fires on
+            # `pull_request: branches: [main]`).
+            #
+            # #15621: these two used to fall through silently -- the label
+            # fall-through existed ONLY on `has_gate`. So the shape collapse
+            # above was not merely mis-counting: the 5 PRs with a base != main
+            # and the 2 drafts each received a label AND a comment asserting an
+            # unmeasured cause ("auteur : (pas une PR bot)", "investigation
+            # manuelle"), and correcting the shape alone would leave them
+            # labelled FOR LIFE -- reclassified correctly, but with no path
+            # back out of the flag. The retraction is what makes the
+            # correction retroactive.
+            retracted = False
+            for name, holders, tag in (
+                (args.label, labeled, "label"),
+                (args.label_bot, labeled_bot, "bot label"),
+                (args.label_conflict, labeled_conflict, "conflict label"),
+            ):
+                if number in holders:
+                    remove_label(repo, number, name, args.dry_run)
+                    print(f"  #{number:<6} {verdict:<10} {why}  ({tag} retracted)")
+                    retracted = True
+            if not retracted:
+                pass  # quiet -- the common non-defect case
 
     print(f"[pr-gate-missing] done: {counts} causes={causes}")
     return 0
