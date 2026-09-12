@@ -162,7 +162,7 @@ RAG-et-Memoire-Semantique/
 
 Cette section documente l'**infrastructure** de mémoire sémantique : le backend Qdrant qui ancre des agents. Pour le versant **applicatif** du RAG (*Retrieval-Augmented Generation*) sur des documents texte, deux notebooks de la section [Texte](../Texte/) sont complémentaires :
 
-- [`5_RAG_Modern.ipynb`](../Texte/5_RAG_Modern.ipynb) — construire un pipeline RAG moderne (découpage, embeddings, recherche, génération augmentée) : le pendant « application » de l'infrastructure décrite ici.
+- [`5_RAG_Modern.ipynb`](../Texte/05_RAG_Modern.ipynb) — construire un pipeline RAG moderne (découpage, embeddings, recherche, génération augmentée) : le pendant « application » de l'infrastructure décrite ici.
 - [`14_Persistent_Memory.ipynb`](../Texte/14_Persistent_Memory.ipynb) — donner une mémoire persistante à un agent conversationnel : le même besoin de mémoire long-terme, vu côté application plutôt que côté infrastructure.
 
 Le notebook pratique de cette section, [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb), fait le pont : il manipule Qdrant directement (embeddings → upsert → recherche → index de payload) sur une base **en mémoire**, sans aucune dépendance externe.
@@ -176,7 +176,7 @@ Le notebook pratique de cette section, [`01-Hands-On-Grounding.ipynb`](01-Hands-
 ## FAQ
 
 **Q : Cette section parle-t-elle de RAG ?**
-R : Oui, mais du **côté backend** (base vectorielle, embeddings, indexation). Le côté *application* (pipeline RAG complet : découper, indexer, rechercher, générer) est traité dans la section [Texte](../Texte/) via [`5_RAG_Modern.ipynb`](../Texte/5_RAG_Modern.ipynb).
+R : Oui, mais du **côté backend** (base vectorielle, embeddings, indexation). Le côté *application* (pipeline RAG complet : découper, indexer, rechercher, générer) est traité dans la section [Texte](../Texte/) via [`5_RAG_Modern.ipynb`](../Texte/05_RAG_Modern.ipynb).
 
 **Q : Faut-il Docker pour suivre le notebook ?**
 R : Non. Le notebook `01-Hands-On-Grounding.ipynb` utilise Qdrant **en mémoire** (client Python Qdrant), zéro dépendance externe. Docker n'est requis que pour reproduire l'infrastructure de production décrite dans le document 02.
@@ -198,7 +198,7 @@ R : La mémoire sémantique est *indexée par le sens* (embeddings + recherche v
 - **Faire tourner les notebooks.** [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) fonctionne en mémoire, sans Docker, en quelques minutes ; [`02-Retrieval-Avance.ipynb`](02-Retrieval-Avance.ipynb) mesure réellement HyDE et un cross-encoder multilingue sur CPU ; [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) construit un word2vec en NumPy, puis le compare à un transformer contextuel ; [`04-Tokenisation-From-Scratch.ipynb`](04-Tokenisation-From-Scratch.ipynb) construit un BPE à la main et mesure le coût du choix de tokenizer ; [`05-Stockage-Vectoriel.ipynb`](05-Stockage-Vectoriel.ipynb) déplie un HNSW à la main et mesure le compromis rappel-exact vs ANN ; [`05b-Stockage-Vectoriel-Serveur.ipynb`](05b-Stockage-Vectoriel-Serveur.ipynb) rejoue le compromis sur un serveur Qdrant réel ; [`06-KernelMemory-InProcess.ipynb`](06-KernelMemory-InProcess.ipynb) (.NET 9, modèle GGUF d'embeddings mis en cache, inférence llama.cpp CPU) délègue le pipeline à Kernel Memory et mesure le compromis granularité/rappel — sans service ni conteneur ; [`07-KernelMemory-Python-Quickstart.ipynb`](07-KernelMemory-Python-Quickstart.ipynb) en est le jumeau Python en mode service : le conteneur `kernelmemory/service` piloté en HTTP, ingestion d'un corpus hétérogène (textes français, PDF réel, code source), citations, réponse sourcée et épreuve de persistance ; [`09-KernelMemory-Multimodal.ipynb`](09-KernelMemory-Multimodal.ipynb) pousse jusqu'à la frontière modale : le schéma PNG accepté mais jamais indexé (plafond OCR du service OSS), puis rendu cherchable par le pont vision, mesure avant/après à l'appui.
 - **Brancher un agent.** Le document [03 - Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md) montre comment relier Claude Code ou Roo Code à Qdrant via MCP.
 
-Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`5_RAG_Modern.ipynb`](../Texte/5_RAG_Modern.ipynb) et [`14_Persistent_Memory.ipynb`](../Texte/14_Persistent_Memory.ipynb) de la section Texte.
+Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`5_RAG_Modern.ipynb`](../Texte/05_RAG_Modern.ipynb) et [`14_Persistent_Memory.ipynb`](../Texte/14_Persistent_Memory.ipynb) de la section Texte.
 
 ## Annexes
 
@@ -219,7 +219,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 - [Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md)
 - [Incidents et leçons](docs/04-Incidents-et-Lecons.md)
 - [Documentation Qdrant officielle](https://qdrant.tech/documentation/)
-- RAG appliqué au texte : [5_RAG_Modern](../Texte/5_RAG_Modern.ipynb) · [14_Persistent_Memory](../Texte/14_Persistent_Memory.ipynb)
+- RAG appliqué au texte : [5_RAG_Modern](../Texte/05_RAG_Modern.ipynb) · [14_Persistent_Memory](../Texte/14_Persistent_Memory.ipynb)
 - [GenAI (parent)](../README.md)
 - [Vibe-Coding — front-ends agents (Claude Code, Roo Code, Claw Systems)](../Vibe-Coding/README.md)
 
