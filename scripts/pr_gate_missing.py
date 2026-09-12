@@ -171,9 +171,9 @@ REMEDIATION_UNKNOWN = (
 )
 
 REMEDIATION_BOT = (
-    "PR ouverte par le bot du depot (son login est nomme ci-dessus ; il "
-    "s'ecrit `github-actions[bot]` en REST et `app/github-actions` en GraphQL) "
-    "sans `PR gate` dans son "
+    "PR ouverte par le bot du depot (son login est nomme dans la ligne "
+    "« Cause mesuree » ci-dessous ; il s'ecrit `github-actions[bot]` en REST et "
+    "`app/github-actions` en GraphQL) sans `PR gate` dans son "
     "rollup : cas **structurel** (issue #10928). Un push fait avec "
     "`GITHUB_TOKEN` ne cree pas de nouveau workflow run (regle anti-recursion "
     "GitHub), donc le contexte requis ne sera jamais rapporte par un push du "
