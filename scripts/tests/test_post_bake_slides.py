@@ -1,39 +1,37 @@
 """Anti-faux-vert tests for scripts/post_bake_slides.py.
 
-These tests pin the four latent defects that ai-01 measured on the previous
-version of `post_bake_slides.py` (cf. #15452 item 2 / DM msg-20260911T025004):
+Three generations of pins live in this file:
 
-  1. cwd-derived rewrite prefix (the old regex was hard-coded to
-     `C:/Program Files/Git/`).
-  2. both literal (`Program Files`) and URL-encoded (`Program%20Files`)
-     forms rewritten.
-  3. residue check reads each file exactly once (the old code called
-     `f.read()` once per pattern, hitting EOF on the second).
-  4. `.map` files included in `TARGET_EXTS` (the old code scanned them
-     for residue but never rewrote them).
+  - c.1037 (#15452 item 2): the four latent defects (hard-coded prefix,
+    URL-encoded form, cursor-exhaustion, missing `.map`).
+  - c.1051 (#15452 point 1): the "green-that-measures-nothing" -- the
+    rewrite left the absolute path intact while the residue check
+    returned 0.
+  - #15703: the coordinator-decided contract. The whole-path collapse of
+    the c.1051 fix is SUPERSEDED -- the acceptance pins, one test each:
 
-Tell c.1051 ★ NEW : a fifth positive control pins the "green-that-measures-
-nothing" defect raised in #15452 point 1. The previous fix rewrote only
-the substring `Program Files` to `.`, leaving the absolute machine path
-(`C:/Program Files/nodejs/...`) intact as `C:/./nodejs/...` while
-`_check_residue` returned 0 because it matched the marker that was just
-removed. The new detection pattern is shape-based (absolute Windows
-paths, `%20` separators), so the test below fails on the previous fix
-and passes on the new one.
+    1. `_rewrite` replaces the **build-root prefix** by `.` and leaves
+       the rest of the path byte-intact (equality test, as #15699 did).
+    2. an absolute path OUTSIDE the build root makes the post-bake FAIL
+       naming the offending path -- never silently rewritten.
+    3. the matcher never crosses whitespace nor `<`, `>`, `)`: the
+       negative-control HTML fragment leaves the markup intact.
+    4. `%20` normalization is bounded to the absolute-path context:
+       prose `Program%20Files` survives.
+    5. the docstring describes what the code does (the obsolete
+       `./nodejs/...` promise is gone).
 
-Each test materializes a fake `dist/` tree under a `tmp_path`, runs the
-script's pure functions on it, and asserts on the file content and the
-reported counters. The tests are positive controls: they fail on the
-previous version and pass on the fix.
+Each test materializes a fake `dist/` tree under a `tmp_path` (or calls
+the pure functions directly) and asserts on byte-exact content, the
+reported counters, and the process exit code. The tests are positive
+controls: each fails on the c.1051 version and passes on the contract.
 """
 from __future__ import annotations
 
-import io
 import os
 import re
 import subprocess
 import sys
-from contextlib import redirect_stdout
 from pathlib import Path
 
 import pytest
@@ -41,91 +39,164 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "post_bake_slides.py"
 
+DECK_ROOT = "D:/deck/dist"
 
-# --- pure-function unit tests ------------------------------------------------
 
 def _write(p: Path, content: bytes) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_bytes(content)
 
 
-def test_rewrite_substitutes_any_absolute_windows_path(tmp_path: Path) -> None:
-    """Tell c.1051 ★ NEW : the rewrite must collapse any drive-letter
-    absolute path, not just a cwd-derived prefix or the substring
-    `Program Files`. Reproduces the case ai-01 measured:
+def _tmp_posix(tmp_path: Path) -> str:
+    """The tmp_path in the forward-slash absolute form the bake machine
+    would embed in the output; the subprocess build root is
+    `<tmp_posix>/dist` (os.path.abspath(ROOT) with cwd=tmp_path)."""
+    return str(tmp_path).replace(os.sep, "/")
 
-        before : C:/Program Files/nodejs/lib/@slidev/client/app.js
-        after  : ./nodejs/lib/@slidev/client/app.js
-    """
+
+# --- acceptance 1: build-root prefix, byte-exact ---------------------------
+
+def test_rewrite_replaces_build_root_prefix_byte_exact() -> None:
+    """#15703 acceptance 1: the ONLY rewrite is the build-root prefix ->
+    `.`, rest of the path byte-intact. Supersedes the c.1051 whole-path
+    collapse (`C:/... -> ./`), which destroyed the meaningful part of
+    in-root references."""
     from scripts.post_bake_slides import _rewrite
 
-    content = b'import x from "C:/Program Files/nodejs/lib/@slidev/client/app.js";'
-    new = _rewrite(content)
-    assert b"C:/Program Files" not in new, new
-    assert b"./" in new, new
-    # The replacement must NOT leave an absolute path behind.
-    assert not re.search(rb"[A-Za-z]:[/\\]", new), new
+    cases = [
+        # (input, expected_output) -- byte-exact equality
+        (b'src="D:/deck/dist/assets/app.js"', b'src="./assets/app.js"'),
+        # case-insensitive drive letter / path (Windows semantics)
+        (b'src="d:/Deck/Dist/assets/app.js"', b'src="./assets/app.js"'),
+        # native backslash separator in the baked path
+        (rb'src="D:\deck\dist\assets\app.js"', b'src="./assets/app.js"'),
+        # token equal to the root itself collapses to `.`
+        (b'x "D:/deck/dist"', b'x "."'),
+        # deep rest preserved verbatim
+        (b'"D:/deck/dist/a/b/c.js"', b'"./a/b/c.js"'),
+        # %20 INSIDE the path context is normalized (bounded, acceptance 4)
+        (b'href="D:/deck/dist/Program%20Files/x.js"',
+         b'href="./Program/Files/x.js"'),
+    ]
+    for src, expected in cases:
+        out = _rewrite(src, DECK_ROOT)
+        assert out == expected, (
+            f"rewrite mismatch:\n  in : {src!r}\n  out: {out!r}\n  exp: {expected!r}"
+        )
 
 
-def test_rewrite_handles_url_encoded_separator(tmp_path: Path) -> None:
-    """Tell c.1051 ★ NEW : URL-encoded `%20` inside a drive-letter path
-    must be normalized first, then the whole path collapsed to `./`."""
-    from scripts.post_bake_slides import _rewrite
-
-    content = b'import x from "C:/Program%20Files/nodejs/lib/app.js";'
-    new = _rewrite(content)
-    assert b"Program%20Files" not in new, new
-    assert b"%20" not in new, new
-    assert b"./" in new, new
-
-
-def test_rewrite_passes_through_content_without_absolute_path(tmp_path: Path) -> None:
+def test_rewrite_passes_through_content_without_absolute_path() -> None:
     """Files that don't carry an absolute Windows path must be left
     untouched (no spurious `./` insertion that would break legitimate
     content such as markdown body text)."""
     from scripts.post_bake_slides import _rewrite
 
     content = b"<p>plain markdown body</p>\nplain text"
-    new = _rewrite(content)
-    assert new == content, (new, content)
+    assert _rewrite(content, DECK_ROOT) == content
 
 
-def test_rewrite_handles_backslash_separator(tmp_path: Path) -> None:
-    """Windows-native backslash paths (`C:\\...`) must also collapse to
-    `./...` -- not just POSIX-style forward slashes."""
-    from scripts.post_bake_slides import _rewrite
+# --- acceptance 2: out-of-root is REJECTED, named --------------------------
 
-    content = rb'import x from "C:\Program Files\nodejs\lib\app.js";'
-    new = _rewrite(content)
-    assert b"C:\\" not in new, new
-    assert b"./" in new, new
+def test_rewrite_out_of_root_raises_named_path() -> None:
+    """#15703 acceptance 2 (unit): an absolute path outside the build
+    root raises OutOfRootPathError naming it. A prose path with spaces is
+    named in its bounded form (up to the first whitespace); a fully
+    quoted path is named in full."""
+    from scripts.post_bake_slides import OutOfRootPathError, _rewrite
+
+    with pytest.raises(OutOfRootPathError, match="C:/Program"):
+        _rewrite(b'import x from "C:/Program Files/nodejs/lib/app.js";', DECK_ROOT)
+    with pytest.raises(OutOfRootPathError, match="C:/Program%20Files/nodejs/lib/app.js"):
+        _rewrite(b'import x from "C:/Program%20Files/nodejs/lib/app.js";', DECK_ROOT)
 
 
-def test_rewrite_handles_both_encodings(tmp_path: Path) -> None:
-    """Defect 2 (c.1037): both literal and URL-encoded forms must be rewritten."""
-    from scripts.post_bake_slides import _rewrite
+def test_out_of_root_fails_post_bake_without_writing(tmp_path: Path) -> None:
+    """#15703 acceptance 2 (integration): the post-bake FAILS (exit 1)
+    with the offending path named in stderr, and -- two-phase design --
+    NO file is written: the in-root sibling that would have been
+    rewritten is still byte-identical on disk."""
+    tmp_posix = _tmp_posix(tmp_path)
+    out_of_root = b'import x from "C:/Program Files/nodejs/lib/app.js";'
+    in_root = (f"import y from '{tmp_posix}/dist/lib/app.js';").encode()
+    _write(tmp_path / "dist" / "a.html", out_of_root)
+    _write(tmp_path / "dist" / "b.html", in_root)
 
-    content = (
-        b"literal: C:/Program Files marker\n"
-        b"encoded: C:/Program%20Files marker\n"
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        cwd=tmp_path,
+        capture_output=True,
     )
-    new = _rewrite(content)
-    assert b"Program Files" not in new
-    assert b"Program%20Files" not in new
+    assert result.returncode == 1, (
+        f"exit={result.returncode} stdout={result.stdout!r} stderr={result.stderr!r}"
+    )
+    err = result.stderr.decode("utf-8", "replace")
+    assert "FAIL" in err, err
+    assert "C:/Program" in err, err
+    assert (tmp_path / "dist" / "a.html").read_bytes() == out_of_root
+    assert (tmp_path / "dist" / "b.html").read_bytes() == in_root
 
+
+# --- acceptance 3: the matcher never eats markup ---------------------------
+
+def test_rewrite_does_not_eat_markup() -> None:
+    """#15703 acceptance 3: the negative control of residu 1. The c.1051
+    greedy class consumed `</p>\\n<script src=` when a path was cited in
+    prose. Under the contract: an IN-ROOT prose path is rewritten and the
+    markup stays byte-intact; an OUT-OF-ROOT prose path raises, and the
+    error names the bounded token only -- proof the matcher never
+    reached the markup."""
+    from scripts.post_bake_slides import OutOfRootPathError, _rewrite
+
+    frag_in_root = (
+        b'<p>chemin D:/deck/dist/data et autres</p>\n'
+        b'<script src="app.js"></script>'
+    )
+    assert _rewrite(frag_in_root, DECK_ROOT) == (
+        b'<p>chemin ./data et autres</p>\n'
+        b'<script src="app.js"></script>'
+    )
+
+    frag_out_of_root = (
+        b'<p>chemin C:/Users/MYIA/data et autres</p>\n'
+        b'<script src="app.js"></script>'
+    )
+    with pytest.raises(OutOfRootPathError) as ei:
+        _rewrite(frag_out_of_root, DECK_ROOT)
+    assert "C:/Users/MYIA/data" in str(ei.value)
+    assert "script" not in str(ei.value)
+
+
+# --- acceptance 4: %20 bounded to the path context -------------------------
+
+def test_prose_percent20_survives() -> None:
+    """#15703 acceptance 4 (unit): `Program%20Files` in prose (no
+    drive-letter context) survives the rewrite byte-identically. The
+    c.1037 global `%20 -> /` substitution turned it into
+    `Program/Files` in every prose paragraph."""
+    from scripts.post_bake_slides import _rewrite
+
+    content = b"<p>see Program%20Files in the docs</p>\nplain text"
+    assert _rewrite(content, DECK_ROOT) == content
+
+
+# --- c.1037 guards still in force under the contract -----------------------
 
 def test_check_residue_reads_each_file_once(tmp_path: Path) -> None:
-    """Defect 3 (c.1037): residue check must detect both an absolute path
-    and a URL-encoded separator even when only one read per file is
-    performed. The old code called f.read() once per pattern and missed
-    the second pattern because of EOF.
-    """
-    _write(tmp_path / "dist" / "a.html", b"import x from 'C:/Program Files/lib/app.js';")
-    _write(tmp_path / "dist" / "b.html", b"import x from 'C:/Program%20Files/lib/app.js';")
+    """c.1037 defect 3: residue check must detect a remaining absolute
+    path even with one read per file. Fixtures carry IN-ROOT paths under
+    the subprocess build root (`<tmp>/dist`) so the rewrite succeeds and
+    the residue check returns 0 on genuinely clean output."""
+    tmp_posix = _tmp_posix(tmp_path)
+    _write(
+        tmp_path / "dist" / "a.html",
+        f"import x from '{tmp_posix}/dist/lib/app.js';".encode(),
+    )
+    _write(
+        tmp_path / "dist" / "b.html",
+        f"import x from '{tmp_posix}/dist/Program%20Files/lib/app.js';".encode(),
+    )
     _write(tmp_path / "dist" / "c.html", b"plain: nothing to see here")
 
-    # Run as a subprocess so the cwd-sensitive logic does not poison the
-    # import; cwd is set to tmp_path.
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
         cwd=tmp_path,
@@ -136,17 +207,22 @@ def test_check_residue_reads_each_file_once(tmp_path: Path) -> None:
         result.stdout.decode("utf-8", "replace")
     )
     assert result.returncode == 0
+    out_a = (tmp_path / "dist" / "a.html").read_bytes()
+    out_b = (tmp_path / "dist" / "b.html").read_bytes()
+    assert b"./lib/app.js" in out_a, out_a
+    # %20 normalized INSIDE the path context (bounded), never in prose.
+    assert b"./Program/Files/lib/app.js" in out_b, out_b
 
 
 def test_map_files_are_rewritten(tmp_path: Path) -> None:
-    """Defect 4 (c.1037): `.map` files must be in TARGET_EXTS -- the old
+    """c.1037 defect 4: `.map` files must be in TARGET_EXTS -- the old
     version scanned them for residue but never rewrote them, leaving a
     permanent FAIL on any bundler that emits the cwd path inside a
-    sourcemap.
-    """
+    sourcemap."""
+    tmp_posix = _tmp_posix(tmp_path)
     _write(
         tmp_path / "dist" / "assets" / "app.js.map",
-        b'{"sources":["C:/Program Files/Git/somewhere/app.ts"]}',
+        f'{{"sources":["{tmp_posix}/dist/src/app.ts"]}}'.encode(),
     )
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
@@ -157,20 +233,24 @@ def test_map_files_are_rewritten(tmp_path: Path) -> None:
         f"exit={result.returncode} stdout={result.stdout!r} stderr={result.stderr!r}"
     )
     out = (tmp_path / "dist" / "assets" / "app.js.map").read_bytes()
-    assert b"Program Files" not in out
+    assert b'"./src/app.ts"' in out, out
     assert not re.search(rb"[A-Za-z]:[/\\]", out), out
 
 
-# --- integration test: positive control ------------------------------------
-
 def test_full_run_reports_modified_files(tmp_path: Path) -> None:
-    """End-to-end: a `dist/` with mixed content must come out residue-free
-    with `fixed >= 1` and `total >= 3`. Hits counter must reflect real
-    substitutions, not phantom hits on a regex that did not match.
-    """
-    _write(tmp_path / "dist" / "index.html", b'<script src="C:/Program Files/Git/foo.js"></script>')
-    _write(tmp_path / "dist" / "chunks" / "app.js", b"console.log('C:/Program Files/Git/x')")
-    _write(tmp_path / "dist" / "404.html", b"encoded C:/Program%20Files here")
+    """End-to-end: a `dist/` with mixed content comes out residue-free
+    with the right TOTAL counter; prose `%20` survives untouched
+    (#15703 acceptance 4, integration); no drive-letter path remains."""
+    tmp_posix = _tmp_posix(tmp_path)
+    _write(
+        tmp_path / "dist" / "index.html",
+        f'<script src="{tmp_posix}/dist/assets/foo.js"></script>'.encode(),
+    )
+    _write(
+        tmp_path / "dist" / "chunks" / "app.js",
+        f"console.log('{tmp_posix}/dist/x')".encode(),
+    )
+    _write(tmp_path / "dist" / "404.html", b"encoded Program%20Files here")
     _write(tmp_path / "dist" / "ok.txt", b"plain text, nothing to rewrite")
 
     result = subprocess.run(
@@ -182,23 +262,20 @@ def test_full_run_reports_modified_files(tmp_path: Path) -> None:
         f"exit={result.returncode} stdout={result.stdout!r} stderr={result.stderr!r}"
     )
     stdout = result.stdout.decode("utf-8")
-    assert "TOTAL: 3/4 files modified" in stdout, stdout
-    # Residue check must agree with the rewrite.
+    assert "TOTAL: 2/4 files modified" in stdout, stdout
+    assert b'./assets/foo.js' in (tmp_path / "dist" / "index.html").read_bytes()
+    assert b"'./x'" in (tmp_path / "dist" / "chunks" / "app.js").read_bytes()
+    # Prose %20 survives (acceptance 4); no absolute path survives.
+    assert (tmp_path / "dist" / "404.html").read_bytes() == b"encoded Program%20Files here"
     for p in (tmp_path / "dist").rglob("*"):
         if p.is_file():
             data = p.read_bytes()
             assert not re.search(rb"[A-Za-z]:[/\\]", data), p
-            assert b"%20" not in data, p
 
-
-# --- regression guards -------------------------------------------------------
 
 def test_fixed_counter_does_not_count_no_op_substitution(tmp_path: Path) -> None:
-    """Defect 1 follow-up (c.1037): `fixed` must be 0 when nothing actually
-    changed in the file. The old code incremented `fixed` whenever
-    `hits > 0` on `b"Program Files"` even if the actual `PATH_RE.sub()`
-    produced no change.
-    """
+    """c.1037 defect 1 follow-up: `fixed` must be 0 when nothing actually
+    changed in the file."""
     _write(tmp_path / "dist" / "nothing.html", b"plain text without any marker")
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
@@ -211,76 +288,28 @@ def test_fixed_counter_does_not_count_no_op_substitution(tmp_path: Path) -> None
 
 
 def test_residue_pattern_matches_remaining_absolute_path(tmp_path: Path) -> None:
-    """Tell c.1051 ★ NEW : `_check_residue` must catch a file whose rewrite
-    would have left an absolute path behind. This is the positive control
-    that the old fix's `_check_residue(b"Program Files", b"Program%20Files")`
-    could NOT catch (because it matched the literal substring, which the
-    rewrite had already consumed).
-    """
-    from scripts.post_bake_slides import _rewrite, _check_residue
+    """c.1051 guard: `_check_residue` must catch files that still carry a
+    drive-letter absolute path (e.g. put back by a downstream tool) --
+    the count is per FILE, so two dirty files give 2, not 0."""
+    from scripts.post_bake_slides import _check_residue
 
-    bad = b'import x from "C:/./nodejs/lib/app.js";'
-    new = _rewrite(bad)
-    # The new rewrite MUST collapse `C:/./nodejs/...` too.
-    assert not re.search(rb"[A-Za-z]:[/\\]", new), new
-    # Two files with absolute paths survive the rewrite (simulating a
-    # downstream tool that puts them back in) -- residue check must catch
-    # both, so the count is 2, not 0.
-    _write(tmp_path / "dist" / "a.html", bad)
+    _write(tmp_path / "dist" / "a.html", b'import x from "C:/./nodejs/lib/app.js";')
     _write(tmp_path / "dist" / "b.html", b'import x from "C:/Users/dev/lib/x.js";')
     assert _check_residue(str(tmp_path / "dist")) == 2
 
 
-# --- equality controls: byte-exact rewrite output --------------------------
+# --- acceptance 5: docstring describes the code ----------------------------
 
-def test_rewrite_byte_exact_no_s_in_path_issue_15452() -> None:
-    """Issue #15452 / Tell c.1051-L1 ★ NEW fondateur : the rewrite regex
-    used `[^\"'\\s]*` inside a raw bytes string, which in a regex literal
-    is a 4-char sequence (backslash + backslash + s) interpreted by the
-    regex engine as `[^"'\\s]` -- the `\\s` is NOT the usual whitespace
-    shorthand (Python's regex parser sees `\\` then `s` as TWO chars); it
-    is the class `\\s` which excludes `{", ', \, s}`. The `*` therefore
-    stops at the FIRST `s` byte in the path, leaving the rest untouched.
+def test_docstring_describes_the_code() -> None:
+    """#15703 acceptance 5: the docstrings no longer carry the c.1051
+    PROMISE (`C:/Program%20Files/nodejs/...` becomes `./nodejs/...`)
+    that contradicted the code, and document the build-root contract
+    actually implemented. The c.1051 HISTORY note (what the old code
+    wrongly produced, `C:/./nodejs/...`) legitimately stays."""
+    import scripts.post_bake_slides as pbs
 
-    Concrete regression ai-01 measured on the previous fix:
-        input : C:/Program Files/nodejs/lib/app.js
-        bug   : ./s/nodejs/lib/app.js   (truncated at the 's' of Files)
-        want  : ./                       (whole path collapsed)
-
-    This test pins the BYTE-EXACT equality output the rewrite must produce.
-    It fails on the previous fix (and on the current `_rewrite` until the
-    regex is repaired) and passes on the corrected shape-based pattern
-    (negated class excludes ONLY `"`, `'`, and `\` -- the bytes that
-    actually delimit a path inside JS/CSS strings).
-
-    Acceptance: every absolute Windows path collapses to `./`. The `%20`
-    URL-encoded form is normalized to `/` first, then collapsed in the
-    same pass. Backslash-separated paths (`C:\\...`) match only the prefix
-    `C:\\` (backslash is the path delimiter), giving `./` + the rest of
-    the string -- which is still residue-free from a `_check_residue`
-    standpoint (no drive-letter prefix survives).
-    """
-    from scripts.post_bake_slides import _rewrite
-
-    cases = [
-        # (input, expected_output) -- byte-exact equality
-        (b"prefix C:/Program Files/nodejs/lib/app.js\";",
-         b"prefix ./\";"),
-        (b"src=\"C:/Users/MYIA/jupyter/lib/app.js\"",
-         b"src=\"./\""),
-        (b"src=\"C:/no/s_in_path/lib/app.js\"",
-         b"src=\"./\""),
-        # URL-encoded `%20` normalized before the rewrite collapses
-        (b"import x from \"C:/Program%20Files/nodejs/lib/app.js\";",
-         b"import x from \"./\";"),
-        # Backslash form: only the `C:\` prefix collapses, the rest of
-        # the backslash-separated path stays (acceptable: no drive letter
-        # left, so `_check_residue` agrees).
-        (br'import x from "C:\Program Files\nodejs\lib\app.js";',
-         br'import x from "./\nodejs\lib\app.js";'),
-    ]
-    for src, expected in cases:
-        out = _rewrite(src)
-        assert out == expected, (
-            f"rewrite mismatch:\n  in : {src!r}\n  out: {out!r}\n  exp: {expected!r}"
-        )
+    assert "becomes `./nodejs/...`" not in pbs.__doc__, pbs.__doc__
+    assert "becomes `./nodejs/...`" not in pbs._rewrite.__doc__
+    assert "build root" in pbs.__doc__.lower()
+    assert "build-root" in pbs._rewrite.__doc__.lower()
+    assert "OutOfRootPathError" in pbs._rewrite.__doc__
