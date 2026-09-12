@@ -235,7 +235,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 
 | Section | Contenu |
 |---------|---------|
-| SPC (1924) | Baseline Statistical Process Control : `|x - mean| > 3*std` en une ligne |
+| SPC (1924) | Baseline Statistical Process Control : `\\|x - mean\\| > 3*std` en une ligne |
 | Auto-encodeur | Reconstruction de fenêtres (`MLPRegressor`) — perd face à SPC sur un benchmark trivial |
 | Piège 1 — trivialité | Un algorithme centenaire résout le benchmark → rien de difficile |
 | Piège 2 — densité | Anomalie < 1 % (réaliste) vs > 50 % (benchmarks défaillants, Wu & Keogh) |
