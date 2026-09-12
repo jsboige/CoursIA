@@ -975,11 +975,7 @@ $h(Z)$ est une courbe du plan BP.
    arcs lents qui l'attendent. Pont
    [ICT-14](ICT-14-FreeEnergySurprise.ipynb)
    (représentation = capture d'un saillant par un champ réceptif).
-3. 
-
-
-
-**Pathologie = collapsus d'attracteur.** « Une pathologie est une
+3. **Pathologie = collapsus d'attracteur.** « Une pathologie est une
    simplification : un attracteur de faible dimension prenant la place
    d'un attracteur complexe » offre une lecture thomienne des
    **dissociations** : la dissociation comme **régime où la dynamique
@@ -1125,11 +1121,7 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
    valeur ponctuelle mais par son **comportement sous perturbation**.
    Pont vers Huang 2019 $s(f) \geq \sqrt{\deg(f)}$ (cf. matrice #7734
    ICT-15b).
-3. 
-
-
-
-**Genre = préprogramme + dispositions privatives.** Thom confirme et
+3. **Genre = préprogramme + dispositions privatives.** Thom confirme et
    approfondit la lecture strate-7 « genre = préprogramme » (déjà au
    §Ch.8 §B (bis)) : un genre est un **obstacle au flux génétique** qui
    capture et oriente le substrat, **modifiable par accident local**, et
