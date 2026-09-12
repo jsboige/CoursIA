@@ -1,5 +1,9 @@
 # Release notes
 
+## 1.5.0
+
+- AGENTGUARD003 : extension du diagnostic aux invocations nues de `Task.Factory.StartNew(...)` et `Task<TResult>.Factory.StartNew(...)`. Le filtre reste semantique (`System.Threading.Tasks.TaskFactory` / `TaskFactory<TResult>`) et conserve les exemptions pour `await`, affectation, discard, retour et homonymes utilisateur. Voir issue #15780.
+
 ## 1.4.0
 
 - AGENTGUARD005b : variante `ConfigureAwait(bool).GetAwaiter().GetResult()` ecappee au filtre semantique d'AGENTGUARD005 (le receiver du `GetAwaiter` y est `ConfiguredTaskAwaitable`). Le diagnostic transpose la borne semantique sur le receiver du `ConfigureAwait` (memes exemptions : `ValueTask<T>`, awaiters custom, homonymes). Le message explique pourquoi `ConfigureAwait(false)` ne sauve pas (capture de `SynchronizationContext` reduite, mais blocage du thread reste entier). Voir issue #13842 pour la motivation et la voie 2 retenue.
