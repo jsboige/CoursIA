@@ -1159,6 +1159,21 @@ RED_COUNT_DEFAULT = 3
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
 
+# Quatre conclusions ne mesurent RIEN du code : le check a ete COUPE
+# (`timeout-minutes`, `cancel-in-progress`, famine de runner) ou n'a jamais
+# demarre. Meme taxonomie que `CONCLUSION_UNCONCLUDED` de scripts/pr_gate.py,
+# qui separe deja les deux dans SON message depuis #15693.
+#
+# `CANCELLED` n'est deliberement PAS dans CHECK_FAILED -- un run coupe par
+# `concurrency` n'est pas un echec (69 `cancelled` pour 0 echec reel sur un
+# SHA de main le 2026-08-21, cf test_cancelled_is_not_a_failure). Il est ici
+# parce qu'un AGREGATEUR qui le ANDe, lui, rend FAILURE : l'exclusion qui
+# protege le cas simple laisse passer le cas agrege.
+CHECK_UNCONCLUDED = {"CANCELLED", "TIMED_OUT", "STALE", "STARTUP_FAILURE"}
+
+# Les rouges dont une lane peut vraiment faire quelque chose.
+CHECK_REALLY_RED = CHECK_FAILED - CHECK_UNCONCLUDED
+
 # #13420 : un check "en vol" est celui dont la file peut encore bouger. C'est
 # lui qui date la saturation -- pas la PR qui le porte. La chaine vide couvre
 # le CheckRun reel, dont `conclusion` est `null` tant qu'il n'a pas conclu.
@@ -1438,6 +1453,38 @@ def _has_failed_check(state: dict | None) -> bool:
                for c in contexts)
 
 
+def cut_constituents(contexts: list[dict]) -> tuple[list[str], bool]:
+    """Constituants COUPES, et « un vrai rouge existe-t-il ailleurs ? ».
+
+    Rend `(noms_coupes, un_vrai_rouge_existe)` en ne regardant QUE les checks
+    non-agregateurs : un agregateur rouge ne peut pas etre sa propre preuve.
+
+    C'est le discriminant de #15763. Mesure du 2026-09-12 sur #15657 et #15660,
+    lues sur le head exact :
+
+        PR gate             | conclusion=FAILURE   | isRequired=true
+        ICT tests/ (55)     | conclusion=CANCELLED | isRequired=false
+        Scripts Tests (CPU) | conclusion=CANCELLED | isRequired=false
+
+    `CANCELLED` etant hors de CHECK_FAILED, ces deux constituants ne tombaient
+    NI dans `causes` NI dans `advisory` : le picker ne les mis-attribuait meme
+    pas, il les rendait INVISIBLES, et la lane recevait `check requis en echec :
+    PR gate` tout court -- un agregateur a reparer, sans rien qui dise quoi.
+    """
+    cut: list[str] = []
+    real_red = False
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if is_aggregator_check(name):
+            continue
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict in CHECK_REALLY_RED:
+            real_red = True
+        elif verdict in CHECK_UNCONCLUDED and name not in cut:
+            cut.append(name)
+    return cut, real_red
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
@@ -1472,6 +1519,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     commits = state.get("commits", {}).get("nodes") or []
     rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
     contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut, real_red = cut_constituents(contexts)
     for ctx in contexts:
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
@@ -1488,7 +1536,32 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             if keys <= inherited:
                 continue
         if ctx.get("isRequired"):
-            cause = f"check requis en echec : {name}"
+            # #15763 : un AGREGATEUR requis rouge dont aucun constituant n'est
+            # un vrai rouge, mais dont au moins un a ete COUPE, n'est pas
+            # reparable par cette lane. Le dire, avec le geste qui le leve --
+            # meme forme que `file_saturation` ci-dessous, qui traite deja un
+            # faux-rouge non-reparable sans pour autant dispenser la lane de
+            # la justification ecrite qu'exige `--ignore-red`.
+            #
+            # Fail-CLOSED dans le bon sens : des qu'UN constituant porte un
+            # vrai rouge (FAILURE / ACTION_REQUIRED / ERROR), la cause reste
+            # « check requis en echec » et la lane repare. On ne dispense
+            # jamais d'une reparation reelle ; on cesse seulement d'en
+            # prescrire une qui n'existe pas.
+            if is_aggregator_check(name) and cut and not real_red:
+                cause = (
+                    f"{name} rouge par constituant(s) COUPE(S), pas par un "
+                    f"defaut de code : {', '.join(cut[:3])} -- NON REPARABLE "
+                    f"par la lane (un kill `timeout-minutes` ou un "
+                    f"`cancel-in-progress` rend `cancelled`, jamais `failure` : "
+                    f"la couleur ne distingue pas « le code est faux » de « la "
+                    f"machine a ete coupee »). Geste : rejouer la jambe "
+                    f"(`gh run rerun <run_id> --job <job_id>`), ou commenter la "
+                    f"PR pour imputer le rouge a la base puis `--ignore-red`. "
+                    f"Ne PAS chercher quoi corriger dans le diff."
+                )
+            else:
+                cause = f"check requis en echec : {name}"
             if cause not in causes:
                 causes.append(cause)
         elif name not in advisory:
