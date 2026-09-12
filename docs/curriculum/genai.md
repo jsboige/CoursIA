@@ -242,19 +242,19 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 14 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
 | 15 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
 | 16 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
-| 17 | [1. Introduction a l'IA generative avec l'API OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb) | BETA | Non |
+| 17 | [01. Introduction a l'IA generative avec l'API OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb) | BETA | Non |
 | 18 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
 | 19 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
 | 20 | [TAL — du mot aux dépendances : le pipeline linguistique…](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) | BETA | Oui |
-| 21 | [2. Prompt Engineering : Techniques Avancées](../../MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb) | ALPHA | Non |
-| 22 | [3. Structured Outputs : Sorties JSON Garanties](../../MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb) | BETA | Non |
-| 23 | [Function Calling : Connecter les LLMs au Monde Réel](../../MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb) | BETA | Non |
-| 24 | [5. RAG Modern - Retrieval Augmented Generation](../../MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb) | BETA | Non |
-| 25 | [PDF et Web Search : Sources Documentaires avec OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb) | BETA | Non |
-| 26 | [Code Interpreter : Exécution de Code avec OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb) | BETA | Non |
-| 27 | [8. Reasoning Models](../../MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb) | BETA | Non |
-| 28 | [9. Production Patterns](../../MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb) | BETA | Non |
-| 29 | [9b. Prompt Security & Red-Teaming sur notre stack…](../../MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb) | BETA | Non |
+| 21 | [02. Prompt Engineering : Techniques Avancées](../../MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb) | ALPHA | Non |
+| 22 | [03. Structured Outputs : Sorties JSON Garanties](../../MyIA.AI.Notebooks/GenAI/Texte/03_Structured_Outputs.ipynb) | BETA | Non |
+| 23 | [04. Function Calling : Connecter les LLMs au Monde Réel](../../MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb) | BETA | Non |
+| 24 | [05. RAG Modern - Retrieval Augmented Generation](../../MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb) | BETA | Non |
+| 25 | [06. PDF et Web Search : Sources Documentaires avec OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/06_PDF_Web_Search.ipynb) | BETA | Non |
+| 26 | [07. Code Interpreter : Exécution de Code avec OpenAI](../../MyIA.AI.Notebooks/GenAI/Texte/07_Code_Interpreter.ipynb) | BETA | Non |
+| 27 | [08. Reasoning Models](../../MyIA.AI.Notebooks/GenAI/Texte/08_Reasoning_Models.ipynb) | BETA | Non |
+| 28 | [09. Production Patterns](../../MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb) | BETA | Non |
+| 29 | [09b. Prompt Security & Red-Teaming sur notre stack…](../../MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb) | BETA | Non |
 
 ## GenAI/Vibe-Coding (8 notebooks)
 

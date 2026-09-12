@@ -24,7 +24,10 @@ Il ne certifie **pas** : la casse canonique des suffixes de langue (`Python` /
 `CSharp` / `Lean`), la reservation d'un slot contre les PR ouvertes, ni la
 configuration par serie du zero-pad. Ce sont les points 3 a 5 de #15489, laisses
 hors de cette tranche — les revendiquer ici sans les implementer ferait passer un
-module partiel pour le canon entier.
+module partiel pour le canon entier. Le point 3 est depuis livre par
+`check_kernel_suffix_canon.py`, qui lit `KERNEL_LANG_SUFFIXES` ci-dessous : le
+canon fournit la LISTE des suffixes de noyau, le garde juge leur casse. Un
+module ne peut pas juger la casse d'un nom qu'il vient de normaliser.
 
 REGLE DE NON-REGRESSION — extraction a comportement constant
 ------------------------------------------------------------
@@ -38,10 +41,30 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+# Suffixes de NOYAU : ceux dont la mesure de l'arbre montre qu'ils NOMMENT le
+# moteur qui execute le notebook. Sous-ensemble extrait de LANG_SUFFIXES pour que
+# le garde de casse (#15489 defaut 3) ne juge que ceux-la -- `_en`/`_fr` sont des
+# siblings i18n (#4980) et `-Lean` un marqueur de contenu ; leur imposer une
+# "casse canonique de noyau" n'a pas de sens.
+#
+#   130 x -Csharp/-CSharp -> 130 x `.net-csharp`
+#    44 x -Python         ->  41 x `python3`, 2 x `coursia-ml-training`,
+#                              1 x `.net-csharp` (le defaut, cf le garde)
+#
+# `-Lean` est volontairement ABSENT : dans ce depot il marque le contenu, pas le
+# moteur. Le pendant reellement Lean porte `-Native`
+# (`Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb` -> `lean4-wsl`) et 2 des 4
+# `-Lean` tournent sous `python3`. Le declarer comme noyau ferait crier le garde
+# a tort sur ~50 notebooks de `SymbolicAI/Lean`. `-FSharp` est absent aussi :
+# aucun kernelspec F# n'existe dans l'arbre et `.net-csharp` est partage par les
+# langages .NET. Exclusions mesurees, pas oublis.
+KERNEL_LANG_SUFFIXES = ("-csharp", "-python")
+
 # Suffixes marquant un rendu ALTERNATIF du meme item, pas un item concurrent.
-# -Csharp / -Python : paires de langage (GameTheory/SocialChoice).
-# _en / _fr / -en / -fr : siblings i18n (#4980).
-LANG_SUFFIXES = ("-csharp", "-python", "_en", "-en", "_fr", "-fr")
+# = les noyaux ci-dessus + le rendu Lean (sibling de contenu) + les siblings
+# i18n (#4980). Ceux-la servent a APPARIER deux rendus (`strip_lang`), jamais a
+# juger un moteur.
+LANG_SUFFIXES = KERNEL_LANG_SUFFIXES + ("-lean", "_en", "-en", "_fr", "-fr")
 
 # Index en tete de nom : un ou plusieurs nombres separes par . ou -, suivis d'un
 # separateur puis du titre. On capture TOUS les niveaux : "04-1" et non "04".

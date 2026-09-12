@@ -182,6 +182,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "exercises-advisory.yml",
     "grain-orphans-sweep.yml",
     "h1-hygiene-advisory.yml",
+    # #12156 piste 1 (owner myia-po-2024:CoursIA) : advisory epic-wide-sur-
+    #   umbrella. Balayage cron hebdomadaire (schedule + workflow_dispatch)
+    #   pur-Python, GH_TOKEN lecture seule + issues: write. Aucun trigger
+    #   pull_request -> aucune garde same-repo requise (tranche 4 #14283,
+    #   meme profil que candidate-delivered-advisory). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "lane-claim-epic-wide-advisory.yml",
     "leaky-fixture-sweep.yml",
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",

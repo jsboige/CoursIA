@@ -42,7 +42,7 @@ La **similarité** entre deux vecteurs se mesure le plus souvent par le **cosinu
 
 C'est le socle du motif **RAG** (*Retrieval-Augmented Generation*) : au lieu de tout demander au modèle de mémoire, on **récupère** d'abord les fragments pertinents dans la base vectorielle, puis on les **injecte** dans le contexte pour que la génération soit ancrée sur des faits réels.
 
-> **Pont vers le RAG appliqué au texte.** Cette section traite le RAG du point de vue de l'*infrastructure* — la base vectorielle qui sert de mémoire à une flotte d'agents. Pour le même motif vu *en application* sur des documents, la section [Texte](../../Texte/) propose deux notebooks complémentaires : [`5_RAG_Modern.ipynb`](../../Texte/5_RAG_Modern.ipynb) (un pipeline RAG complet de bout en bout) et [`14_Persistent_Memory.ipynb`](../../Texte/14_Persistent_Memory.ipynb) (donner une mémoire persistante à un agent conversationnel). Et pour manipuler Qdrant soi-même sans rien installer, le [notebook pratique de cette section](../01-Hands-On-Grounding.ipynb).
+> **Pont vers le RAG appliqué au texte.** Cette section traite le RAG du point de vue de l'*infrastructure* — la base vectorielle qui sert de mémoire à une flotte d'agents. Pour le même motif vu *en application* sur des documents, la section [Texte](../../Texte/) propose deux notebooks complémentaires : [`05_RAG_Modern.ipynb`](../../Texte/05_RAG_Modern.ipynb) (un pipeline RAG complet de bout en bout) et [`14_Persistent_Memory.ipynb`](../../Texte/14_Persistent_Memory.ipynb) (donner une mémoire persistante à un agent conversationnel). Et pour manipuler Qdrant soi-même sans rien installer, le [notebook pratique de cette section](../01-Hands-On-Grounding.ipynb).
 
 ## 4. La base vectorielle comme mémoire d'une flotte
 
