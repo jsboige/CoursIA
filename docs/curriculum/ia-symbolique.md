@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 261 |
+| Notebooks | 264 |
 | PRODUCTION | 0 |
-| BETA | 255 |
+| BETA | 258 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -63,7 +63,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 26 | [Argument_Analysis — Argumentation basée sur les valeurs…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb) | BETA | Oui |
 | 27 | [I2 - Génération de contre-arguments par raisonnement…](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb) | BETA | Oui |
 
-## SymbolicAI/Lean (49 notebooks)
+## SymbolicAI/Lean (50 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -109,13 +109,14 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 40 | [Lean-30 : Le problème de Hopf sur S⁶ — digestion d'une…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-30-Complex-Structure-S6.ipynb) | BETA | Non |
 | 41 | [Lean-31 : les opérateurs de Hecke $T_p$ et $U_p$ —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Hecke-Operators-Native.ipynb) | BETA | Non |
 | 42 | [Lean-32 : groupes formels multivariés — compagnon natif](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-32-FormalGroups-Native.ipynb) | BETA | Non |
-| 43 | [Lean 4 - Quantificateurs et Logique du Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-4-Quantifiers.ipynb) | BETA | Non |
-| 44 | [Lean 5 - Mode Tactique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-5-Tactics.ipynb) | BETA | Non |
-| 45 | [Lean 6 - Mathlib4 : La Bibliotheque Mathematique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb) | BETA | Non |
-| 46 | [Lean 7 - Integration des LLMs pour l'Assistance aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7-LLM-Integration.ipynb) | BETA | Non |
-| 47 | [Lean 7b - Exemples Progressifs et Benchmarks](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7b-Examples.ipynb) | BETA | Non |
-| 48 | [Lean 8 - Agents Autonomes pour Demonstration de…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8-Agentic-Proving.ipynb) | BETA | Non |
-| 49 | [Lean 9 : Multi-Agents avec Semantic Kernel](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb) | BETA | Non |
+| 43 | [Lean-3b — Formalized Formal Logic : le laboratoire…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3b-Formalized-Formal-Logic.ipynb) | BETA | Non |
+| 44 | [Lean 4 - Quantificateurs et Logique du Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-4-Quantifiers.ipynb) | BETA | Non |
+| 45 | [Lean 5 - Mode Tactique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-5-Tactics.ipynb) | BETA | Non |
+| 46 | [Lean 6 - Mathlib4 : La Bibliotheque Mathematique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb) | BETA | Non |
+| 47 | [Lean 7 - Integration des LLMs pour l'Assistance aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7-LLM-Integration.ipynb) | BETA | Non |
+| 48 | [Lean 7b - Exemples Progressifs et Benchmarks](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7b-Examples.ipynb) | BETA | Non |
+| 49 | [Lean 8 - Agents Autonomes pour Demonstration de…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8-Agentic-Proving.ipynb) | BETA | Non |
+| 50 | [Lean 9 : Multi-Agents avec Semantic Kernel](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb) | BETA | Non |
 
 ## SymbolicAI/Planners (25 notebooks)
 
@@ -265,7 +266,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 30 | [SC-26 : Projet Final - DApp Complete](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project.ipynb) | BETA | Oui |
 | 31 | [SC-27 : Dette d'irréversibilité — la boucle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite.ipynb) | BETA | Oui |
 
-## SymbolicAI/SymbolicLearning (22 notebooks)
+## SymbolicAI/SymbolicLearning (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -275,22 +276,24 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 4 | [SL-10 --- Apprentissage Actif d'Automates (L*…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb) | BETA | Oui |
 | 5 | [SL-11 --- Capstone : un pipeline neuro-symbolique de…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb) | BETA | Non |
 | 6 | [SL-12 : Differentiable Logic Gate Networks](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb) | BETA | Non |
-| 7 | [SL-12b : Synthèse logique spectrale — Fourier booléen…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb) | BETA | Oui |
-| 8 | [SL-1b — Apprentissage PAC formellement : le lake…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) | BETA | Non |
-| 9 | [SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb) | ALPHA | Oui |
-| 10 | [SL-2 --- Apprentissage et Connaissance (EBL & RBL)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | BETA | Oui |
-| 11 | [SL-3 — Apprentissage basé sur la pertinence (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb) | BETA | Oui |
-| 12 | [SL-3 --- Apprentissage Base sur la Pertinence (RBL…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb) | BETA | Oui |
-| 13 | [SL-4 — Programmation Logique Inductive (ILP) — Twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb) | BETA | Oui |
-| 14 | [SL-4 --- Programmation Logique Inductive (ILP)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | BETA | Non |
-| 15 | [SL-5 - Resolution Inverse & ILP (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb) | ALPHA | Oui |
-| 16 | [SL-5 --- Resolution Inverse et Progol (ILP bottom-up)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) | BETA | Oui |
-| 17 | [SL-6 (C#) : Moteurs ILP modernes — apprendre des…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb) | BETA | Oui |
-| 18 | [SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb) | BETA | Non |
-| 19 | [SL-7 : Integration Neuro-Symbolique](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb) | BETA | Non |
-| 20 | [SL-8 (C#) : ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | BETA | Oui |
-| 21 | [SL-8 - ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb) | BETA | Oui |
-| 22 | [SL-9 - LLMs et Apprentissage Symbolique : Generation et…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb) | BETA | Non |
+| 7 | [SL-12b-PavlovDLS-Reproduction — artefact Pavlov (DLS…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb) | BETA | Oui |
+| 8 | [SL-12b : Synthèse logique spectrale — Fourier booléen…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb) | BETA | Oui |
+| 9 | [SL-13 : DISCOVER léger — diagnostic de structure TPR…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb) | BETA | Non |
+| 10 | [SL-1b — Apprentissage PAC formellement : le lake…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) | BETA | Non |
+| 11 | [SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb) | ALPHA | Oui |
+| 12 | [SL-2 --- Apprentissage et Connaissance (EBL & RBL)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | BETA | Oui |
+| 13 | [SL-3 — Apprentissage basé sur la pertinence (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb) | BETA | Oui |
+| 14 | [SL-3 --- Apprentissage Base sur la Pertinence (RBL…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb) | BETA | Oui |
+| 15 | [SL-4 — Programmation Logique Inductive (ILP) — Twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb) | BETA | Oui |
+| 16 | [SL-4 --- Programmation Logique Inductive (ILP)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | BETA | Non |
+| 17 | [SL-5 - Resolution Inverse & ILP (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb) | ALPHA | Oui |
+| 18 | [SL-5 --- Resolution Inverse et Progol (ILP bottom-up)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) | BETA | Oui |
+| 19 | [SL-6 (C#) : Moteurs ILP modernes — apprendre des…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb) | BETA | Oui |
+| 20 | [SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb) | BETA | Non |
+| 21 | [SL-7 : Integration Neuro-Symbolique](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb) | BETA | Non |
+| 22 | [SL-8 (C#) : ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | BETA | Oui |
+| 23 | [SL-8 - ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb) | BETA | Oui |
+| 24 | [SL-9 - LLMs et Apprentissage Symbolique : Generation et…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb) | BETA | Non |
 
 ## SymbolicAI/Tweety (34 notebooks)
 
