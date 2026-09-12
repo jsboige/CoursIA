@@ -639,10 +639,11 @@ rotate_log() {
 # use ») vivait dans $STATE_DIR/<nom>.log, que le journal ne nommait pas.
 #
 # Ce que ce garde fait, et ce qu'il ne fait pas :
-#   - il ATTEND la liberation du nom, en sondant : la reprise est immediate au
-#     lieu d'attendre la prochaine marche du backoff -- jusqu'a 82 s de plus
-#     que le job orphelin, exactement le « au-dela de la duree du job
-#     orphelin » que l'acceptance ferme ;
+#   - il ATTEND la liberation du nom, en sondant : la reprise se fait dans la
+#     seconde qui suit la liberation (au plus un intervalle de sondage), au lieu
+#     d'attendre la prochaine marche du backoff -- `BACKOFF_BASE` ->
+#     `BACKOFF_CAP` a 300 s (cf le bloc BORNES). C'est ce « au-dela de la duree
+#     du job orphelin » que l'acceptance ferme ;
 #   - il ne retire un conteneur que si son etat est PROUVE non en cours
 #     (`created`, `exited`, `dead`), c'est-a-dire s'il n'execute aucun job.
 #     C'est la SEULE force admise : `docker rm -f` sur un conteneur en cours
