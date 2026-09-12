@@ -1597,8 +1597,8 @@ class TestD01CompletedSolutionWithTodo:
         ``a trancher`` / ``unknown`` / ``a completer`` / ``a definir`` /
         ``TODO``); no line-tail comment is required. A REAL classifier
         returning ``"unknown"`` would currently over-flag -- accepted in
-        favour of not under-counting textbook placeholder cells. See
-        counter-test below.
+        favour of not under-counting textbook placeholder cells (the whitelist
+        is unconditional; no counter-test can pass against it today).
         """
         assert _is_stub_code(source) is True, source
 
@@ -1710,6 +1710,126 @@ class TestD01CompletedSolutionWithTodo:
             assert cnt.count == 3, (
                 f"{nb.name}: expected 3 exercises, got {cnt.count}"
             )
+
+
+class TestGenericNoneAssignGate15713:
+    """#15713 (follow-up #15688, Hermes demand 1): the generic ``<name> = None``
+    marker is retained only for the placeholder-passthrough shape -- the
+    None-assigned name flows UNCHANGED to a bare ``return <name>`` and is
+    never reassigned a computed value."""
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Kokoro-01-5 cell 38 (distilled, Hermes demand 2a): the 109-line
+            # Inflect-Nano demo INITIALIZES ``inflect_samples = None`` then
+            # overwrites it inside a computing pipeline; no bare
+            # ``return inflect_samples`` exists.
+            "inflect_loaded = False\n"
+            "inflect_samples = None\n"
+            "inflect_sample_rate = 24000\n"
+            "try:\n"
+            "    snap_dir = snapshot_download(repo_id='owensong/Inflect-Nano-v1')\n"
+            "    inflect_samples = vmodel(mel).squeeze().detach().cpu().numpy()\n"
+            "    inflect_samples = np.clip(inflect_samples, -1.0, 1.0)\n"
+            "    print('INFLECT-NANO ok', len(inflect_samples))\n"
+            "except Exception as exc:\n"
+            "    print('modele non disponible :', exc)\n",
+            # AI-Engine-WordPress crossed-delete cell (distilled): the None
+            # init is overwritten with a computed tuple under an ``if``;
+            # 'exercice' appears only inside a print.
+            "croise = None\n"
+            "if ADMIN_MDP:\n"
+            "    ok = login_wordpress(session_autre, 'consent.admin', ADMIN_MDP)\n"
+            "    statut_c, rep_c = api_files(session_autre, nonce, 'delete')\n"
+            "    croise = (statut_c, rep_c)\n"
+            "    print('delete croise :', statut_c)\n"
+            "else:\n"
+            "    print('(absent : test croise non execute -- voir exercice 2)')\n",
+            # Guard-variable idiome in a working cell: ``best = None`` is a
+            # loop sentinel, OVERWRITTEN by the computing loop below -- a
+            # solution, not a placeholder.
+            "best = None\n"
+            "for score in scores:\n"
+            "    if best is None or score > best:\n"
+            "        best = score\n"
+            "print('meilleur :', best)\n",
+        ],
+    )
+    def test_demo_none_initialization_is_not_stub_issue_15713(self, source):
+        assert _is_stub_code(source) is False, source
+
+    def test_none_assign_reassigned_then_returned_is_not_stub_issue_15713(self):
+        """A function whose None default is OVERWRITTEN with a computed value
+        before ``return`` is a real solution, not a placeholder."""
+        source = (
+            "def synthese(donnees):\n"
+            "    resultat = None\n"
+            "    if donnees:\n"
+            "        resultat = sum(donnees) / len(donnees)\n"
+            "    return resultat\n"
+        )
+        assert _is_stub_code(source) is False, source
+
+    def test_passthrough_none_assign_stays_stub_issue_15713(self):
+        """The gate must not swallow the #15676 idioms it exists to protect:
+        AEV/Claudish ``<name> = None`` + bare ``return <name>`` passthrough."""
+        source = (
+            "def verificateur(code, probleme):\n"
+            "    # Indice : passes == total.\n"
+            "    resultat = None  # TODO etudiant\n"
+            "    return resultat\n"
+        )
+        assert _is_stub_code(source) is True, source
+
+    def test_header_does_not_pair_to_none_init_demo_issue_15713(self, tmp_path):
+        """Kokoro-01-5 layout (Hermes demand 2b): the ``Exercice 3`` header is
+        followed FIRST by the Inflect-Nano demo cell, which merely initializes
+        ``inflect_samples = None``. The demo must not steal the pairing: the
+        header finds no stub in its window and is dropped, and the real
+        Exercice 3 stub (after the demo, outside the window) is counted by the
+        code-cell pass -- the notebook keeps exactly its 3 exercises, not 4."""
+        nb = _write_nb(
+            tmp_path / "kokoro_like.ipynb",
+            [
+                _md("# Kokoro TTS local\n"),
+                _md("## Exercice 1 : premier rendu\n"),
+                _code(
+                    "# Exercice 1 : premier rendu\n"
+                    "rendu = None  # TODO etudiant\n"
+                    "return rendu\n"
+                ),
+                _md("## Exercice 2 : voix multiples\n"),
+                _code(
+                    "# Exercice 2 : voix multiples\n"
+                    "comparaison = None  # TODO etudiant\n"
+                    "return comparaison\n"
+                ),
+                _md("## Exercice 3 : dialogue multi-voix\n"),
+                _code(
+                    "# Demonstration Inflect-Nano-v1 : TTS ultra-leger\n"
+                    "print('INFLECT-NANO-V1 - TTS ULTRA-LEGER')\n"
+                    "inflect_loaded = False\n"
+                    "inflect_samples = None\n"
+                    "try:\n"
+                    "    inflect_samples = vmodel(mel).numpy()\n"
+                    "    inflect_samples = np.clip(inflect_samples, -1.0, 1.0)\n"
+                    "except Exception as exc:\n"
+                    "    print('modele absent :', exc)\n"
+                ),
+                _md("Duree estimee : 15-20 minutes. Objectif : alterner les voix.\n"),
+                _code(
+                    "# Exercice 3 : dialogue multi-voix\n"
+                    "dialogue = None  # TODO etudiant\n"
+                    "return dialogue\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            f"expected 3 exercises (the demo must not steal the Exercice 3 "
+            f"pairing), got {result.count}"
+        )
 
 
 class TestD01UnpairedHeaders:
