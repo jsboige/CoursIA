@@ -110,13 +110,13 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 79 | [GameTheory-18 : Open Games et Lentilles -- la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles.ipynb) | BETA | Oui |
 | 80 | [GameTheory-18b : Casser la composition — où la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition.ipynb) | BETA | Oui |
 | 81 | [GameTheory-19 : L'abstraction a dette mesurable](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette.ipynb) | BETA | Oui |
-| 82 | [GameTheory 24b : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite.ipynb) | BETA | Oui |
-| 83 | [GameTheory-25 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-25-Loi-II-Translateur-Life.ipynb) | BETA | Oui |
-| 84 | [GameTheory-26 — Ensembles limites : Poincaré-Bendixson…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb) | BETA | Oui |
-| 85 | [GameTheory-27 — L'algorithme de Kuhn-Munkres :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-27-Munkres-Assignment.ipynb) | BETA | Oui |
-| 86 | [GameTheory 27b — Le lake assignment_lean par son…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-27b-Lean-Assignment-Native.ipynb) | BETA | Non |
-| 87 | [GameTheory-28 : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-28-Humour-Banc.ipynb) | BETA | Oui |
-| 88 | [GameTheory-28b : Banc humour — passer à l'échelle](../../MyIA.AI.Notebooks/GameTheory/GameTheory-28b-Humour-Banc-Dur.ipynb) | BETA | Non |
+| 82 | [GameTheory 20b : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb) | BETA | Oui |
+| 83 | [GameTheory-21 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-21-Loi-II-Translateur-Life.ipynb) | BETA | Oui |
+| 84 | [GameTheory-22 — Ensembles limites : Poincaré-Bendixson…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-22-Ensembles-Limites-Poincare-Bendixson.ipynb) | BETA | Oui |
+| 85 | [GameTheory-23 — L'algorithme de Kuhn-Munkres :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-23-Munkres-Assignment.ipynb) | BETA | Oui |
+| 86 | [GameTheory 23b — Le lake assignment_lean par son…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-23b-Lean-Assignment-Native.ipynb) | BETA | Non |
+| 87 | [GameTheory-24 : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24-Humour-Banc.ipynb) | BETA | Oui |
+| 88 | [GameTheory-24b : Banc humour — passer à l'échelle](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Humour-Banc-Dur.ipynb) | BETA | Non |
 
 ## GameTheory/SocialChoice (8 notebooks)
 
