@@ -98,7 +98,7 @@ ALLOWED: dict[str, str] = {
     # --- Notebooks: deliberate multilingual demos (CJK is the subject) ---
     "GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb":
         "demo TTS multilingue legiTIME (japonais volontaire pour la synthese)",
-    "GenAI/Texte/9_Production_Patterns.ipynb":
+    "GenAI/Texte/09_Production_Patterns.ipynb":
         "demo multilingue legiTIME (cell[20]: 你好，世界！ = 'Hello World' mandarin, aux cotes de Ciao mondo! italien)",
     # --- Source files: irreducible legit CJK that mixes with Latin (#8826) ---
     # The detector itself DOCUMENTS the leak class in its docstring (cites

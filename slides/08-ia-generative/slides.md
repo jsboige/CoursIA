@@ -573,6 +573,8 @@ class: genai-illustrated genai-ecosystem-hosting
 
 - **Cloud géré :** Hugging Face Inference, Groq, RunPod, Vast.ai, AWS / Azure / GCP.
 - **Local :** Oobabooga, Ollama, vLLM. Quantification AWQ, GGUF, EXL2/3 pour faire tenir un modèle sur un GPU limité.
+- **Containerisation :** Docker et Docker Compose encapsulent les services (modèles, API, monitoring).
+- **Hybride :** *(non couvert par les notebooks de la série — voir `extracted/content.md` l.370-373).*
 
 </v-clicks>
 
@@ -580,7 +582,7 @@ class: genai-illustrated genai-ecosystem-hosting
 
 <div v-click="2" class="genai-visual vllm-figure"><img src="./images/img_028.png" alt="Logo vLLM, moteur d'inférence local haute performance" /></div>
 
-<p v-click="3" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb">11_Quantization.ipynb</a>.</p>
+<p v-click="3" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb">00-2-Docker-Services-Management.ipynb</a>.</p>
 
 ---
 layout: image-overlay
