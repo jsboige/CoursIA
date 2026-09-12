@@ -226,8 +226,13 @@ def _rank_mean_axis0(a: np.ndarray) -> np.ndarray:
         uniq, starts = np.unique(sorted_col, return_index=True)
         ends = np.append(starts[1:], n)
         # rang moyen d'une valeur = moyenne des ordinaux du groupe
+        # pas de zip(..., strict=True) : l'argument n'existe qu'a partir de
+        # Python 3.10, et la CI ICT tourne en 3.9 (pin pyphi 1.2.0). Les trois
+        # listes sortent de np.unique(..., return_index=True) sur la meme
+        # colonne : elles ont meme longueur par construction, la garde est
+        # structurelle, pas dynamique.
         mean_rank = {
-            v: (s + 1 + e) / 2.0 for v, s, e in zip(uniq, starts, ends, strict=True)
+            v: (s + 1 + e) / 2.0 for v, s, e in zip(uniq, starts, ends)
         }
         out[:, j] = np.array([mean_rank[v] for v in col])
     return out
