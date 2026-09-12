@@ -165,3 +165,31 @@ python scripts/lean/count_code_sorry.py --json  # distinct_code_sorry inchangé 
 - Tell c.589 voie 3 strict — anti-régression Lean
 
 — lane myia-po-2027:CoursIA-2 c.1119
+
+---
+
+## Addendum c.1119 — observation `lake build Knots` 4.33.0 first-hand
+
+`lake update` SUCCESS exit 0 (Mathlib 4.33.0 clone complet, 470 commits analysés via clone miroir offline). `lake build Knots` **build FAILED sur 5 modules Mathlib internes, PAS sur Knots.Invariant** :
+
+```
+Some required targets logged failures:
+- Qq.Typ
+- Batteries.Tactic.Alias
+- ProofWidgets.Component.MakeEditLink
+- Mathlib.Util.CompileInductive
+- Mathlib.Tactic.Core
+error: build failed
+```
+
+Les modules `Knots.MathlibPrerequisites` et `Knots.MathlibPrerequisites_en` ont été **built SUCCESS** (lignes 5-6 de la sortie lake). Knots.Invariant n'a pas été atteint dans la chaîne — le build s'arrête sur un défaut d'environnement Lean 4.33.0 + Mathlib 4.33.0 sur Windows natif (mismatch toolchain/cache signalé par `lake update` : « Mathlib uses a different lean-toolchain »).
+
+**Conséquence méthodologique** :
+
+- Le diagnostic `bb5364cb2f` cassant Knots.Invariant **n'a pas pu être reproduit first-hand** dans ce cycle — le build s'arrête avant Knots.Invariant sur un défaut d'environnement Windows indépendant.
+- La reproduction baseline v4.32.1 (`lake build Knots` en 4.32.1) a aussi timeout (5min cold-cache, task b3i6dklcr) — **pas de comparaison possible** ce cycle.
+- Le diagnostic reste valide comme **hypothèse documentée** (commit Mathlib le plus suspect) mais sa confirmation first-hand reste **à faire cycle prochain** dans un environnement Lean 4.33.0 stable (CI Linux pool `coursia-lean` recommandé — voir issue #14773 Phases 4-5).
+
+**Implication sur le plan de fix** : la réécriture `inferInstanceAs` documentée dans ce diagnostic reste **la bonne approche** une fois Knots.Invariant atteint par le build, indépendamment du défaut d'environnement Windows. Le pattern compagnon (`docs/lean/decidable_instance_propagation.md` PR #9780) est l'archétype de fix pour les instances Decidable qui dépendent transitivement d'instances globales supprimées par Mathlib 4.33.0.
+
+— lane myia-po-2027:CoursIA-2 c.1119 (addendum post-merge investigation)
