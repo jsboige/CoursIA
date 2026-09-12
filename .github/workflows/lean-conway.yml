@@ -262,13 +262,18 @@ jobs:
   # that keeps its own copy of the list detects everyone's drift but its own.
   target-coverage:
     name: conway target-coverage
-    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
-    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
-    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
-    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
-    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Routage #14337 tranche 2 (decision ai-01 2026-09-04, migration narrow
+    # heritage G-VAR-1 Tell c.531-L2 strict) : bascule `coursia-linux` vers
+    # `coursia-lean` pour beneficier du cache Mathlib chaud (image
+    # Dockerfile.lean = elan + leanprover/lean4:v4.32.1 baked in, .lake/packages
+    # garde au chaud dans le volume _work par slot). Pattern PR #15303 tranche
+    # 1 sur lean-social-choice.yml (po-2024 c.1020). Le `if:` ci-dessous est la
+    # garde anti-fork exigee par scripts/ci/check_self_hosted_runner_policy.py ;
+    # un `runs-on` STATIQUE la rend auditable (une expression dynamique leve
+    # DYNAMIC_RUNS_ON). Les PRs de fork sautent le job -- pr_gate.py compte
+    # `skipped` comme OK. Allowlist deja presente (ligne 128 du policy script,
+    # tranche 3c #14283). Retour arriere = remettre `coursia-linux` + push.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
     steps:
       - uses: actions/checkout@v4
