@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.32.1` (migration post-#11325, cf #11256).
 
-## État des sorries (vérifié 2026-09-10 contre `origin/main`, **10 réels**)
+## État des sorries (vérifié 2026-09-13 sur la tête de #15440, `bf4738d02fad`, **8 réels**)
 
 Deux comptes, selon le filtre CI :
 
@@ -13,22 +13,23 @@ Deux comptes, selon le filtre CI :
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 3 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
-| `Knots/Invariant.lean` | **0** | 15 |
-| `Knots/Conway.lean` | 6 | 11 |
+| `Knots/Invariant.lean` | **0** | 5 |
+| `Knots/Conway.lean` | 4 | 9 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **10** | **37** |
+| **Total** | **8** | **25** |
 
-- **sorry réels** = ce qui manque vraiment comme preuve. **10** au total (code-only
+- **sorry réels** = ce qui manque vraiment comme preuve. **8** au total (code-only
   après strip `--`/`/- -/`, mesuré par `scripts/lean/count_code_sorry.py` champ
-  `distinct_code_sorry`, baseline CI `lean-knot.yml` recalibrée à `"10"`
-  par #15082), tous stables : 0 dans `Invariant.lean`
+  `distinct_code_sorry`, baseline CI `lean-knot.yml` recalibrée à `"8"`
+  par #15440), tous stables : 0 dans `Invariant.lean`
   (`Knot.unknottingNumber` **DISCHARGÉ par #15082** : redéfini via `Nat.sInf` de
   `{n | k.UnknottableIn n}` + témoin `unknot_unknottingNumber = 0` prouvé —
   0 sorry résiduel, voir § Phase 5 / § #14992 pour la modélisation indexée
   des changements de croisement et l'accessibilité Reidemeister), 2
-  `reidemeister_theorem` (PL), 6 Conway (les 2 defs `IsSmoothlySlice` /
-  `IsTopologicallySlice := sorry` + 4 `exact sorry` de bornes), 2 Lidman. Les
+  `reidemeister_theorem` (PL), 4 Conway (les 2 defs `IsSmoothlySlice` /
+  `IsTopologicallySlice := sorry` + les 2 bornes `conway_not_smoothly_slice`
+  et `conway_topologically_slice`), 2 Lidman. Les
   **2 résiduels §9.1 `fox`/`col` du backward transfer ont été DISCHARGÉS par
   #11227** : le mode kink all-distinct est **vacuus** — le kink R1 `C = ⟨a,b,c,c⟩`
   a `e₃ = e₄ = c`, la continuité d'over-strand Path B `c₂ = c₄` force
@@ -37,7 +38,7 @@ Deux comptes, selon le filtre CI :
   **bi-implication R1 connectée est COMPLÈTE** (forward #3000 + backward
   #3124/#11227).
 
-- **Baisse historique 17 → 16 → 14 → 11 → 10** : #8766 a déchargé `trefoil_not_unknot`
+- **Baisse historique 17 → 16 → 14 → 11 → 10 → 8** : #8766 a déchargé `trefoil_not_unknot`
   (composition), #9966 a surélevé à 17 (wall du wrapper
   `tricolorable_forward_r1`), puis le wall a été déchargé (16) et #11227 a
   clos fox/col (14) ; la lecture fine par fichier au 2026-08-28 (post-strip
@@ -47,6 +48,10 @@ Deux comptes, selon le filtre CI :
   quand le script en attribue 6 (6 déclarations à 1 `sorry` chacune — mesure
   2026-08-28 re-vérifiée le 2026-09-11). **#15082 a ensuite déchargé
   `Knot.unknottingNumber` via `Nat.sInf` (-1), amenant le baseline à 10.**
+  **#15440 a enfin déchargé les deux bornes d'Alexander de Conway
+  (`conway_trivial_alexander`, nœud 11n34, et `KT_trivial_alexander`, nœud
+  11n42), amenant le baseline à 8** — les deux preuves sont dans le même diff,
+  donc c'est ce seul commit qui porte `10 → 8` (§ ci-dessous).
   #11276 a ajouté **sans sorry** le transfer `tricolorable_forward_r2_up`
   PROVEN + les murs nommés `r2_append_only_wall` (L1151) et
   `r3_determined_wall` (L1293) qui bornent l'iff maître.
@@ -54,22 +59,44 @@ Deux comptes, selon le filtre CI :
 - **Reidemeister.lean à 2 sorries réels** : `reidemeister_theorem` ×2
   (topologie PL des 3-variétés, hors portée Mathlib actuel).
 
-- **sorry prose** = **37** (raw, any-line matchant `sorry` — la prose de
-  documentation des murs R2/R3 en a ajouté). Le mode CI officiel est
-  **`real`** : strippe `--` et `/- -/`, puis compte le mot-bounded
-  `\bsorry\b`. La CI gate sur baseline **10** (alignée avec
+- **sorry prose** = **25** (raw, any-line matchant `sorry` — la prose de
+  documentation des murs R2/R3 en a ajouté). Colonne **re-mesurée le
+  2026-09-13** : la valeur précédente (**37**) était recopiée de l'état du
+  2026-08-17 sans re-mesure, annonçant 15 lignes pour `Invariant.lean` et 11
+  pour `Conway.lean` là où le disque en portait alors 5 et 12 (mesure `git
+  show` sur le commit qui a écrit cette table, `b5e15b39b588`). Le mode CI
+  officiel est **`real`** : strippe `--` et `/- -/`, puis compte le
+  mot-bounded `\bsorry\b`. La CI gate sur baseline **8** (alignée avec
   `LEAN_INVENTORY.md`, voir #13312).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 10**
-(alignement post-#13312, mesure 2026-09-10 ; historique : prose-header 25→28
+La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 8**
+(alignement post-#13312, mesure 2026-09-13 ; historique : prose-header 25→28
 dans #3124, baissée à 27 après #3163, re-bumpée à 28 par #3003 ;
 switch prose-header→real à baseline 17 le 2026-07-11 ; 16 après #8766, re-17
 par #9966, 16 au wall discharge, 14 après #11227, **11 après mesure
 `count_code_sorry.py` 2026-08-28**, **10 après #15082** (`Knot.unknottingNumber`
-DISCHARGÉ via `Nat.sInf` — voir § Phase 5 / § #14992) : toute PR qui ajoute
+DISCHARGÉ via `Nat.sInf` — voir § Phase 5 / § #14992), **8 après #15440** (les
+deux bornes d'Alexander de Conway) : toute PR qui ajoute
 un sorry réel fait monter le compte real et échoue la CI, sauf justification
 documentée dans le
 body PR.
+
+## Pourquoi `10 → 8` et non `10 → 9 → 8`
+
+Le compte est passé de 10 à 8 en **un seul pas** ; le palier à 9 n'a jamais
+existé sur `main`. Le split de #14821 prévoyait deux unités — unité 2
+(`conway_trivial_alexander`) pour `10 → 9`, unité 3 (`KT_trivial_alexander`)
+pour `9 → 8`. L'unité 3 a bien été livrée en PR #15460, mais **mergée dans la
+base de #15440**, pas dans `main` : `baseRefName:
+lean/2874-conway-proof-split`, merge commit `62286af5d1b4`
+(2026-09-11T14:09:57Z). Vérifié : `git merge-base --is-ancestor 62286af5d1b4
+origin/main` est **faux**, et `main` mesure toujours **10** à ce jour
+(`Knots/Conway.lean` : 6 sorries réels). Les deux théorèmes sont donc dans le
+diff de **#15440**, qui porte seul `10 → 8`.
+
+Conséquence pratique : le `state: MERGED` que GitHub affiche sur #15460
+signifie « mergée dans sa base », indiscernable d'un atterrissage sur `main`
+pour qui lit le seul label. Aucune PR ne montre de diff `9 → 8` sur `main`.
 
 **Corridor Reidemeister #8696** (c.8162-c.8169, 5 PRs MERGED 2026-07-29 →
 2026-08-08) : les **6 sites** où le move-surgery `with` était utilisé ont été
@@ -415,7 +442,7 @@ résiduels `fox`/`col` (mode all-distinct vacuus, `#11227`) sont clos — la
 (sorry-bearing) et des deux lemmes composants. Le **transfer forward R2-up**
 (`tricolorable_forward_r2_up`, #11276) est **prouvé sans sorry**, encadré par
 les murs nommés `r2_append_only_wall`/`r3_determined_wall` (**14 sorry réels**
-au total à l'époque de #11227 ; baseline CI recalibrée à 10 post-#15082,
+au total à l'époque de #11227 ; baseline CI recalibrée à 8 post-#15440,
 cf. § État des sorries).
 
 Le **corridor Reidemeister #8696** (5 PRs MERGED, c.8162-c.8169) a par
