@@ -29,13 +29,19 @@ import pr_gate  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _no_step_summary_env(monkeypatch):
-    """Keep unit-test runs of main() from writing into the real step summary
-    of the pytest job itself (Actions sets GITHUB_STEP_SUMMARY for every
-    step, so without this the #15693 publication would append "PR gate:
-    FAIL" sections to the test workflow's own summary page). Tests that
-    exercise the summary set the variable explicitly."""
+def _no_publication_env(monkeypatch):
+    """Keep unit-test runs of main() from publishing into the pytest job's own
+    surfaces.
+
+    Actions sets GITHUB_STEP_SUMMARY and GITHUB_RUN_ID for EVERY step, so
+    without this the #15693 publication would append "PR gate: FAIL" sections
+    to the test workflow's own summary page -- and, worse, the check-run
+    PATCH would call the real Jobs API on the pytest job's own run. Tests
+    that exercise either surface set the variables explicitly.
+    """
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ATTEMPT", raising=False)
 
 
 # --- helpers -----------------------------------------------------------------
@@ -1464,11 +1470,19 @@ def test_dwell_disabled_by_default(monkeypatch):
 # Measured 2026-09-12 on 5/5 red PRs: the required check reported FAILURE
 # with `output.summary: null` while the cause lived only in the job log --
 # every red gate became an investigation (#15548 burned cycles on an infra
-# famine while the real blocker was already repaired 18 min earlier). The
-# fix publishes the exact verdict string to $GITHUB_STEP_SUMMARY (which
-# GitHub feeds into the AUTO check-run's output.summary) and splits the
-# FAIL message into states with OPPOSITE repairs: real reds vs checks that
-# never concluded. The fail-closed rules stay untouched.
+# famine while the real blocker was already repaired 18 min earlier).
+#
+# The issue's stated remedy -- "$GITHUB_STEP_SUMMARY feeds the AUTO
+# check-run's output.summary" -- is FALSE, and the tests below pin what was
+# measured instead: the step summary renders on the run page but the
+# check-run summary stays null (1098 `github-actions` check-runs over 40
+# main commits, all null; this file's own red gate renders the summary while
+# its `output.summary` returns null). The check-run surface is therefore
+# PATCHed in place -- the only write that reaches a required leg, since a
+# POSTed twin lands in a foreign suite and GitHub ANDs the two (#11519).
+#
+# The FAIL message splits into states with OPPOSITE repairs: real reds vs
+# checks that never concluded. The fail-closed rules stay untouched.
 
 
 def test_bad_entries_carry_their_conclusion():
@@ -1662,3 +1676,209 @@ def test_step_summary_and_posted_check_run_coexist(tmp_path, monkeypatch):
     assert "FAIL -- failing checks: Lean CI (failure)" in summary.read_text(
         encoding="utf-8"
     )
+
+
+# --- #15693 -- the check-run surface: PATCH our own check-run ----------------
+#
+# Why these tests exist at all: the step summary above does NOT reach the
+# check-run, so without the PATCH the required leg still reports "Process
+# completed with exit code 1" with a null summary. The PATCH is the only
+# write that reaches it, and it is a fragile call (App-only auth, a job-id
+# lookup, a fork token that cannot write) -- so each failure mode is pinned
+# as a degradation that leaves the verdict alone.
+
+
+def _jobs_two_attempts(name=None):
+    name = name or pr_gate.DEFAULT_SELF_NAME
+    return {"jobs": [
+        {"id": 1111, "name": name, "run_attempt": "1"},
+        {"id": 4242, "name": name, "run_attempt": "2"},
+    ]}
+
+
+def test_own_job_id_picks_the_current_attempt():
+    """A re-run leaves the superseded attempt in the same listing. Matching
+    it would publish the verdict into a check-run nothing reads again."""
+    got = pr_gate.own_job_id("o/r", "99", pr_gate.DEFAULT_SELF_NAME, "2",
+                             fetch=lambda _p: _jobs_two_attempts())
+    assert got == 4242
+
+
+def test_own_job_id_is_none_when_the_name_is_absent():
+    assert pr_gate.own_job_id(
+        "o/r", "99", pr_gate.DEFAULT_SELF_NAME, "2",
+        fetch=lambda _p: _jobs_two_attempts(name="un autre job"),
+    ) is None
+
+
+def test_check_run_output_is_patched_with_the_verdict(monkeypatch):
+    """Acceptance 1 on the surface it names: the REQUIRED check carries the
+    motive, as the exact verdict string (log == summary). PATCH, not POST --
+    a POSTed twin bearing this required name lands in a foreign suite and is
+    ANDed with the original by GitHub (#11519)."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path, "fields": fields}) or {},
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1,
+        "FAIL -- failing checks: Lean CI (failure)",
+        ["ICT tests/ (55) (cancelled)"],
+        "2",
+    )
+    assert ok is True
+    assert seen["path"] == "repos/o/r/check-runs/4242", "in place, own suite"
+    assert seen["fields"]["output[summary]"] == (
+        "FAIL -- failing checks: Lean CI (failure)\n"
+        "\n"
+        "Advisory (not blocking):\n"
+        "- ICT tests/ (55) (cancelled)"
+    )
+    assert seen["fields"]["output[title]"].startswith(
+        "PR gate: FAIL -- failing checks"
+    )
+
+
+def test_check_run_output_is_reached_from_the_emission_tail(monkeypatch):
+    """The wiring: main() publishes on the check-run surface when Actions
+    gives it a run id -- not only when a test calls the helper."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path}) or {},
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    assert code == 1
+    assert seen["path"] == "repos/o/r/check-runs/4242"
+
+
+def test_check_run_output_is_a_noop_without_a_run_id(monkeypatch):
+    """Local runs (no GITHUB_RUN_ID) must not touch the network -- the same
+    no-op contract the step summary has without GITHUB_STEP_SUMMARY."""
+    def boom(_path):
+        raise AssertionError("aucun appel reseau attendu hors Actions")
+
+    monkeypatch.setattr(pr_gate, "_gh_api", boom)
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("pas de PATCH")),
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+
+
+def test_check_run_output_patch_failure_never_flips_the_verdict(capsys, monkeypatch):
+    """A refused PATCH (fork token is read-only, API hiccup, App auth) is a
+    degraded rendering: the verdict stays FAIL and the run keeps its exit
+    code. Publication must never be load-bearing on the verdict."""
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+
+    def refuse(_path, _fields):
+        raise pr_gate.GateError("You must authenticate via a GitHub App.")
+
+    monkeypatch.setattr(pr_gate, "_gh_api_patch", refuse)
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 0, "PASS", (), "2"
+    )
+    assert ok is False
+    assert "WARN -- check-run output not published" in capsys.readouterr().out
+
+
+def test_check_run_output_unresolved_job_id_is_a_warning(capsys, monkeypatch):
+    """A run whose job list is unreadable (or names a different job) must
+    not raise: the caller has already computed the verdict."""
+    monkeypatch.setattr(
+        pr_gate, "_gh_api", lambda _p: _jobs_two_attempts(name="un autre job")
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1, "FAIL", (), "2"
+    )
+    assert ok is False
+    assert "no job named" in capsys.readouterr().out
+
+
+def test_no_check_run_output_flag_disables_the_patch(monkeypatch):
+    """Escape hatch: a leg can keep the run-page summary and stay silent on
+    the check-run surface."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("pas de PATCH")),
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--no-check-run-output"]
+    )
+    assert code == 1
+
+
+def test_post_check_run_mode_keeps_its_own_contract(monkeypatch):
+    """The operator harness (`--post-check-run`) POSTs onto the PR head; its
+    own auto check-run sits on the default branch and is not the PR's gate
+    leg, so it must not be PATCHed."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("pas de PATCH")),
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    monkeypatch.setattr(pr_gate, "_gh_api_post", lambda *_a, **_k: {})
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
+    )
+    assert code == 1
+
+
+def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):
+    """One builder, two surfaces: acceptance 1 asks the summary to name the
+    cause "the same as the log", and the only durable way to keep that true
+    is a shared body -- so a DWELL verdict's guidance lands on both."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update(fields) or {},
+    )
+    dwell_msg = (
+        "tete du 2026-09-07T11:55:00Z, 5 min -- plancher 120 min, reste "
+        "115 min, leve au premier balayage suivant 2026-09-07T13:55:00Z."
+    )
+    monkeypatch.setattr(
+        pr_gate, "_merge_dwell", _FakeDwell(verdict=(False, dwell_msg)),
+        raising=False,
+    )
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_k: (0, "PASS"))
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
+    )
+    assert code == 1
+    body = pr_gate.verdict_body("DWELL -- " + dwell_msg)
+    assert seen["output[summary]"] == body, "check-run: le corps partage"
+    assert "2026-09-07T13:55:00Z" in seen["output[summary]"]
+    assert "Ne pas re-pusher" in seen["output[summary]"]
+    assert body in summary.read_text(encoding="utf-8"), "step summary: le meme corps"
