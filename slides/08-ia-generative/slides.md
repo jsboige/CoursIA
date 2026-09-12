@@ -482,7 +482,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb">3_Structured_Outputs.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/03_Structured_Outputs.ipynb">3_Structured_Outputs.ipynb</a>.</p>
 
 ---
 
@@ -497,7 +497,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb">4_Function_Calling.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb">4_Function_Calling.ipynb</a>.</p>
 
 ---
 
@@ -512,7 +512,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb">5_RAG_Modern.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb">5_RAG_Modern.ipynb</a>.</p>
 
 ---
 
@@ -560,7 +560,7 @@ class: genai-illustrated genai-ecosystem-models
 
 <div v-click="2" class="genai-visual hf-figure"><img src="./images/img_024.png" alt="Logo Hugging Face, plateforme de diffusion et d'inférence" /></div>
 
-<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb">1_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a>.</p>
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb">1_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a>.</p>
 
 ---
 layout: image-overlay
@@ -664,7 +664,7 @@ class: genai-illustrated genai-ecosystem-tools
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb">9b_Prompt_Security_RedTeam.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb">9b_Prompt_Security_RedTeam.ipynb</a>.</p>
 
 ---
 
