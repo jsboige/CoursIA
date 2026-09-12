@@ -232,7 +232,7 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
   **Verdict : INCONCLUSIVE (regime-dependent).** L'OOS BEATS le target, mais la fenêtre
   2023-2025 est un bull crypto+equity sans crash ; le stress-inclusive IS (incluant l'hiver
   crypto 2022) reste à Sharpe 0.916. L'allocation ne change que ~5% le Sharpe OOS — le levier
-  dominant est le régime, pas le mix. 
+  dominant est le régime, pas le mix.
 
   Multi-seed HAR-RV-J (passer du proxy au vrai modèle
   seedé M12) reste à faire pour durcir le verdict.
