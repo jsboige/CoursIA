@@ -225,7 +225,7 @@ def main() -> int:
             agrees += 1
 
     summary = {
-        "notebook": str(args.notebook),
+        "notebook": Path(args.notebook).name,
         "engine_mode": args.engine,
         "table_size": len(EXPECTED_TABLE),
         "agrees": agrees,
@@ -236,7 +236,7 @@ def main() -> int:
     if args.json:
         print(json.dumps(summary, indent=2, ensure_ascii=False))
     else:
-        print(f"Notebook: {args.notebook}")
+        print(f"Notebook: {Path(args.notebook).name}")
         print(f"Mode extraction moteur: {args.engine}")
         print(f"Table oracle: {len(EXPECTED_TABLE)} paires (independance structurelle)")
         print(f"Agreements: {agrees}/{len(EXPECTED_TABLE)}")
