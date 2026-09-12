@@ -4,7 +4,7 @@
 series: GenAI-Video
 pedagogical_count: 22
 breakdown: Video=22
-maturity: BETA=18, ALPHA=3, DRAFT=1
+maturity: BETA=18, ALPHA=4
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
