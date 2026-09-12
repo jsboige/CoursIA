@@ -79,7 +79,14 @@ LABEL_CONFLICT_DESC = ("PR gate absent: PR en conflit avec main, aucun run "
 # required by main's branch protection. Renaming here silently detaches the
 # detector (same invariant as pr-gate.yml: keep the string stable).
 GATE_NAME = "PR gate"
-BOT_LOGIN = "app/github-actions"
+# The bot's login spelling depends on the API that measured it: REST reads
+# `.user.login` -> "github-actions[bot]" (what list_open_prs emits), GraphQL
+# returns "app/github-actions", and the bare app slug shows up on some
+# endpoints. Comparing to ONE spelling made `bot_missing` unreachable for
+# every other one (#15758) -- same families as
+# guard_comment_upsert.GUARD_BOT_LOGINS and pick_idle_grain.AUTOMATION_AUTHORS.
+BOT_LOGINS = frozenset({"github-actions[bot]", "app/github-actions",
+                        "github-actions"})
 
 # Marker framing the advisory comment, so re-runs can find and update it.
 COMMENT_MARKER_START = "<!-- PR-GATE-MISSING:START -->"
@@ -146,7 +153,8 @@ REMEDIATION_UNKNOWN = (
 )
 
 REMEDIATION_BOT = (
-    "PR ouverte par le bot (`app/github-actions`) sans `PR gate` dans son "
+    "PR ouverte par le bot d'automatisation (`github-actions[bot]` en REST, "
+    "`app/github-actions` en GraphQL) sans `PR gate` dans son "
     "rollup : cas **structurel** (issue #10928). Un push fait avec "
     "`GITHUB_TOKEN` ne cree pas de nouveau workflow run (regle anti-recursion "
     "GitHub), donc le contexte requis ne sera jamais rapporte par un push du "
@@ -196,7 +204,7 @@ def classify(pr: dict) -> tuple[str, str]:
         return ("draft", f"#{number} draft PR, non mergeable")
     if GATE_NAME in rollup_names(pr):
         return ("has_gate", f"#{number} PR gate present (conclusion: {len(rollup_names(pr))} checks)")
-    if pr.get("author_login") == BOT_LOGIN:
+    if pr.get("author_login") in BOT_LOGINS:
         return ("bot_missing", f"#{number} bot PR, no PR gate (structural)")
     return ("missing", f"#{number} PR gate absent du rollup")
 
@@ -224,7 +232,9 @@ def prescribe(pr: dict) -> tuple[str, str]:
         retarget  -> un ``base_ref_changed`` postérieur au dernier run
                      ``pull_request`` : remede = commit vide a arbre identique
         skip_ci   -> token ``[skip ci]`` dans le sujet de tete (cause #10898)
-        bot       -> PR ``app/github-actions`` (cause #10558)
+        bot       -> PR du bot d'automatisation, toute orthographe
+                     (``github-actions[bot]`` REST / ``app/github-actions``
+                     GraphQL ; cause #10558)
         unknown   -> aucune des quatre : nommer les mesures, ne rien prescrire
 
     Returns:
@@ -240,8 +250,9 @@ def prescribe(pr: dict) -> tuple[str, str]:
                 f"base_ref_changed={changed}, dernier run PR gate={last or 'aucun'}")
     if "[skip ci]" in head_subject(pr):
         return ("skip_ci", f"sujet de tete porte le token [skip ci] : {head_subject(pr)[:72]!r}")
-    if pr.get("author_login") == BOT_LOGIN:
-        return ("bot", "auteur app/github-actions -- push GITHUB_TOKEN sans run")
+    if pr.get("author_login") in BOT_LOGINS:
+        return ("bot",
+                f"auteur {pr.get('author_login')} (bot) -- push GITHUB_TOKEN sans run")
     return ("unknown",
             f"mergeable_state={ms}, pas de base_ref_changed, sujet sans [skip ci], "
             f"auteur {pr.get('author_login')}")

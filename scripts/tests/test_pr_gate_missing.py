@@ -326,6 +326,50 @@ def test_classify_input_is_the_only_shape():
     assert classify(row)[0] == "has_gate"
 
 
+# ---------------------------------------------------------------------------
+# (#15758) le login du bot depend de l'API qui le mesure
+#
+# Le collecteur lit REST `.user.login` -> `github-actions[bot]` ; GraphQL
+# renvoie `app/github-actions` ; le slug nu `github-actions` apparait selon
+# l'endpoint. Comparer a UNE seule orthographe rendait `bot_missing`
+# inatteignable avec la forme meme du producteur (convention partagee avec
+# guard_comment_upsert.GUARD_BOT_LOGINS et pick_idle_grain.AUTOMATION_AUTHORS).
+# Chaque orthographe passe par `classify_input()` -- la fabrique reelle --
+# jamais par un dict construit a la main avec les cles du consommateur.
+# ---------------------------------------------------------------------------
+
+
+def test_bot_verdict_reachable_for_every_measured_spelling():
+    # Critere 1 : quelle que soit l'orthographe mesuree, la PR bot est
+    # `bot_missing` / cause `bot` -- pas `missing`/`unknown`.
+    for spelling in ("github-actions[bot]", "app/github-actions",
+                     "github-actions"):
+        row = classify_input(10558, "main", False, spelling,
+                             _codeql_only_rollup())
+        verdict, why = classify(row)
+        assert verdict == "bot_missing", "%s: %s" % (spelling, why)
+        cause, detail = prescribe(row)
+        assert cause == "bot", spelling
+        assert spelling in detail  # la valeur lue, pas une orthographe supposee
+
+
+def test_human_pr_not_absorbed_by_bot_predicate():
+    # Critere 2 : le predicat bot ne s'attrape pas les auteurs humains.
+    row = classify_input(10902, "main", False, "jsboige", _codeql_only_rollup())
+    verdict, why = classify(row)
+    assert verdict == "missing", why
+    assert prescribe(row)[0] == "unknown"
+
+
+def test_bot_with_gate_still_has_gate_any_spelling():
+    # Critere 4 : elargir le predicat bot ne derobe pas `has_gate`.
+    rollup = _codeql_only_rollup() + [{"name": GATE_NAME, "conclusion": "SUCCESS"}]
+    for spelling in ("github-actions[bot]", "app/github-actions",
+                     "github-actions"):
+        row = classify_input(10558, "main", False, spelling, rollup)
+        assert classify(row)[0] == "has_gate", spelling
+
+
 def test_label_descriptions_within_github_limit():
     # GitHub refuse une description de plus de 100 caracteres. Mesure #15621 :
     # 108 / 121 / 145 -- `gh label create` echouait, l'echec etait avale, et les
