@@ -12,10 +12,10 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 670 items.
+#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 686 items.
 #     55 != 1046 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1046/670), le label garde les strates (55/42).
+#     floor garde la collection (1046/686), le label garde les strates (55/42).
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
@@ -128,10 +128,11 @@ jobs:
             test-args: tests
             test-floor: 1071
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
-          # #9478) -> 670 items collectes (le "strates == collection" d'origine
-          # est tombe : le parametrize est devenu massif ici aussi ; compte mesure
-          # 2x sur origin/main@5302d974aa, CI-confirme run 34307798875 -- mesure
-          # separee exigee par le scope #15471 avant de toucher ce floor).
+          # #9478) -> 686 items collectes = 670 (mesure 2x sur
+          # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests
+          # case 5 attention-schema #8182 (PR #15547, CI-mesure 686 au run
+          # 34555990972 sur le head 7d737b4f8b -- le "strates == collection"
+          # d'origine est tombe : le parametrize est devenu massif ici aussi).
           # Rootdir = ict/tests/ pour que le pytest.ini local
           # (mode prepend, neutralise --import-mode=importlib) s'applique -- sinon
           # test_reversibility_budget / test_time_arrow n'executent jamais
@@ -141,7 +142,7 @@ jobs:
           - suite-name: "ict/tests/ (42 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 692
+            test-floor: 708
 
     steps:
       - uses: actions/checkout@v4
