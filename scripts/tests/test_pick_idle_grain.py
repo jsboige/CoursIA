@@ -322,6 +322,10 @@ def _patch_backlog(monkeypatch, prs, states, nits=None):
     # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
     # numeros), et la suite deviendrait non deterministe sans jamais rougir.
     monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
+    # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
+    # rouge -- meme neutralisation par defaut, meme raison (reseau +
+    # determinisme). Les tests qui veulent une ardoise la re-patchent apres.
+    monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
 
 
 def _pr(n, lane, age_hours, *, draft=False):
