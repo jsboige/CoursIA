@@ -351,6 +351,47 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+    # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
+    # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
+    # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
+    # compare les ajouts a la base, jamais entre eux : 0 hit la ou 1 etait
+    # attendu), et deux PRs qui visent le meme slot sous des noms DIFFERENTS
+    # (une collision de chemins n'est pas une collision de slot, donc
+    # `check_pr_path_collisions.py` est muet par construction sur ce cas).
+    #
+    # `--offline` est le point delicat : la source « PRs ouvertes » demande `gh`
+    # et le reseau, dont la voie rapide ne dispose pas. Le garde n'invente pas un
+    # vert pour autant -- il ECRIT la source indisponible dans sa sortie, et
+    # juge ce que la CI peut juger : arbre + cibles de la revision + table
+    # declaree. Rendre un garde silencieux sur une source qu'il n'a pas lue
+    # serait le meme mensonge que de confondre « rien trouve » et « rien
+    # regarde ».
+    #
+    # Neutrallite mesuree avant ce cablage, sur les trois PRs ouvertes qui
+    # renumerotent le plus (10, 17 et 8 cibles) : exit 0, zero conflit sur les
+    # trois. C'est la lecture des SUPPRESSIONS qui produit ce resultat -- sans
+    # elle, ces 35 cibles auraient rougi sur le slot qu'elles venaient de
+    # liberer, et ce garde aurait ete desactive des sa premiere heure.
+    #
+    # Second garde de la voie rapide dont le verdict depend d'un fichier de
+    # donnees : `slot_reservations.json` figure donc dans `paths`, sinon une
+    # revision qui declare -- ou revoque -- une reservation ne rejouerait pas le
+    # garde dont elle change la portee.
+    Guard(
+        name="slot-reservation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_slot_reservation.py",
+            "scripts/notebook_tools/slot_reservations.json",
+            # Le canon fournit la lecture du nom (index normalise, appariement
+            # des rendus alternatifs) : le modifier change qui occupe quoi.
+            "scripts/notebook_tools/naming_canon.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_slot_reservation.py",
+              "--base", "{base_ref}", "--head", "HEAD", "--offline"],
+        blocking=True,
+        needs_base=True,
+    ),
 ]
 
 
