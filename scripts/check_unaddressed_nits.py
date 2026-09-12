@@ -159,6 +159,44 @@ _PERSONA_MARKERS_RE = re.compile(
     # le backtick reste EXCLU : `` `[Hermes]` `` est une citation (#13030).
     r"(?m)(?:^|[\s*])\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
 )
+# #14850 — prefixe de lane tierce : voie distincte d'un autre agent du cluster
+# qui pousse sous le meme login partage `jsboige`. Le format canonique est
+# `[machine-po-YYYY:CoursIA-2]` (Tell c.677-L4 body PR HORS worktree +
+# convention owner:workspace du `[CLAIMED]` lane). Le complement facultatif
+# ` (...)` peut suivre. La voie NUЕ par meme login (commentaire ordinaire
+# SANS prefixe) n'a aucune signature distincte et reste indiscernable d'une
+# auto-reponse de l'auteur de la reserve -- c'est exactement le defaut de
+# discrimination que #14850 nomme.
+_CROSS_LANE_LIFT_RE = re.compile(
+    # #14850 — la lane est en-tete de paragraphe (apres decoration `* ` ou
+    # `# ` admise). Caracteres autorises : lettres, chiffres, tirets, points,
+    # underscores, deux-points (format `owner:workspace`). Refuse les crochets
+    # ULTERIEURS (` > [lane]`) par l'ancre `^` + decoration de debut de ligne.
+    r"(?m)^[#>*+\-\s]*\[\s*[A-Za-z][\w.\-]*:\s*[A-Za-z][\w.\-]*(?:\s+[^\]]+)?\]"
+)
+# #14850 — prefixe de ROLE GENERIQUE : `[ai-01]`, `[po-2026]`, etc. Le format
+# est `[identifiant]` (un seul token, sans `:` ni whitespace), pose en tete
+# de paragraphe apres decoration `* ` ou `# `. Distinct des personas
+# (Hermes/NanoClaw, L156) et des lanes (owner:workspace, L170) : un prefixe
+# role comme `[ai-01]` est l'identite de l'agent qui pousse sous un login
+# partage (typiquement `jsboige` ou `clusterManager-Myia`). Le scope d'un
+# tel lift est SA voix, pas la voie nue -- sans le reconnaitre, le filet
+# accepte une levee `[ai-01] Je leve ma propre reserve` par `jsboige` comme
+# levant une reserve user voix nue de `jsboige` (incident fondateur #14795,
+# 21:11:29Z).
+#
+# Les TAGS DE PROTOCOLE (`[DONE]`, `[INFO]`, `[WARN]`, `[ASK]`, `[REPLY]`,
+# `[ACK]`, `[TASK]`, `[BLOCKED]`, `[CLAIMED]`, `[DISPATCH→inbox]`,
+# `[ESCALATION]`, ...) ne sont PAS des prefixes de role : ils qualifient
+# le TYPE du commentaire, pas l'emetteur. Un `[DONE] les 2 nits sont
+# adresses, commit abc123.` reste voie nue de l'auteur -- le tag est
+# un attribut de workflow, pas une identite d'agent.
+_ROLE_PREFIX_RE = re.compile(
+    r"(?m)^[#>*+\-\s]*\[\s*(?!Hermes\b|NanoClaw\b|Hermes self-bot\b|OVERRIDE\b"
+    r"|DONE\b|INFO\b|WARN\b|ERROR\b|ASK\b|REPLY\b|ACK\b|TASK\b|BLOCKED\b"
+    r"|CLAIMED\b|ESCALATION\b|PROPOSAL\b|GRAIN\b)"
+    r"[A-Za-z][\w.\-]*\s*\]"
+)
 # #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
 # prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
 # des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
@@ -3540,31 +3578,159 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "", nit_body: str = "") -> bool:
         if lift_author == nit_author:
-            # #14947 -- meme login n'est pas meme voix. `jsboige` est A LA FOIS
-            # le compte du user et l'identite de poussee des personas (#13316).
-            # Une levee marquee `[Hermes]` / `[NanoClaw]` signe la revue de la
-            # persona sur SON propre travail ; elle ne repond pas a une remarque
-            # ecrite en voix nue par le user sous le meme login. B.0 : « se lever
-            # soi-meme une reserve d'autrui n'est pas y repondre, c'est la
-            # declarer repondue ».
+            # #14947 ET #14850 -- meme login n'est pas meme voix. `jsboige`
+            # est A LA FOIS le compte du user, l'identite de poussee partagee
+            # des personas (#13316), ET le login sous lequel les lanes
+            # cross-poussent. Le discriminateur de B.0 -- « une levee
+            # emise sous un prefixe de role ne doit pas eteindre une reserve
+            # user » (acceptance 1 de #14850) -- impose que la levee soit
+            # SCOPEE A L'EMETTEUR (acceptance 2) : un LGTM `[Hermes]` leve
+            # les reserves `[Hermes]`, pas les reserves user voix nue ;
+            # un commentaire `[myia-po-2024:CoursIA-2]` leve les reserves de
+            # CETTE lane, pas les reserves user voix nue.
             #
-            # Le discriminant n'est pas neuf : #13609 tient deja le marqueur de
-            # persona pour une identite CROSS-login (la persona leve sa propre
-            # reserve sous l'autre login). Il vaut a fortiori SAME-login, ou la
-            # borne d'auteur #11145 ne discrimine plus rien.
+            # Le discriminant par ROLE du lift determine a quelles reserves
+            # il peut s'appliquer. Sans discriminant de role, la levee est
+            # voix nue -- elle ne leve que les reserves VOIX NUE de meme
+            # auteur (le self-lift nominatif de B.0).
             #
-            # Incident fondateur #14937 : nit user 19:20:05Z (« Concern: le
-            # notebook ne devrait-il pas etre une accretion... »), review
-            # `[Hermes]` a 19:26:40Z terminee par un « RAS » nu -- six minutes
-            # plus tard, sur un tout autre objet (re-execution des cellules).
-            # Le RAS eteignait le nit : rc=0, PR mergeable, remarque user perdue.
-            # La levee etant PAR PR et non par reserve, un acquit de routine de
-            # la persona suffisait a solder la voix du user.
-            if (_PERSONA_MARKERS_RE.search(_strip_quoted(lift_body or ""))
-                    and not _PERSONA_MARKERS_RE.search(
-                        _strip_quoted(nit_body or ""))):
-                return False
-            return True
+            # Incident fondateur #14937 (persona leve sa propre voix) :
+            # nit user 19:20:05Z (« Concern: ... »), review `[Hermes]` a
+            # 19:26:40Z terminee par un « RAS » -- le RAS eteignait le nit
+            # user voix nue. Defaut fondateur de la voie PERSONA levee en
+            # voix nue.
+            #
+            # Incident fondateur #14850 (voie nue par meme login eteint
+            # reserve user, mesure sur #14795 head `2510e3a4`) : la review
+            # Hermes de 18:29:00Z terminee par « Verdict : LGTM » eteignait
+            # la reserve user voix nue posee a 18:09:49Z. PR #14949 a cru
+            # fermer ce cas en verifiant que le lift porte `[Hermes]` mais
+            # que le nit ne le porte pas -- mais le filet ne discriminait
+            # pas le SCOPE complet : un LGTM `[Hermes]` etait compte
+            # comme lift PR-wide. Le present fix ferme la discrimination
+            # par ROLE du lift :
+            #
+            #   * Lift voix nue par `jsboige` ne leve que les reserves
+            #     voix nue du MEME auteur. Sur le cas fondateur #14850,
+            #     le LGTM `[Hermes]` 18:29:00Z de `jsboige` ne leve PAS
+            #     la reserve `Concern:` voix nue 18:09:49Z de `jsboige` :
+            #     les roles sont distincts (Hermes vs user).
+            #
+            #   * Lift `[Hermes]` / `[NanoClaw]` par `jsboige` ne leve que
+            #     les reserves `[Hermes]` / `[NanoClaw]` (par SCOPE EMETTEUR).
+            #     Si la reserve est voix nue (`Concern:`), elle est HORS
+            #     scope persona -- le LGTM persona ne l'eteint pas.
+            #
+            #   * Lift `[machine:workspace]` (cross-lane) par `jsboige`
+            #     ne leve que les reserves `[machine:workspace]` (meme
+            #     lane). Si la reserve est voix nue user, elle est HORS
+            #     scope de la lane tierce -- cf. mesure #14850 sur le
+            #     commentaire 18:28:07Z `[myia-po-2024:CoursIA-2]` qui
+            #     etait compte comme levee alors qu'il eteignait la
+            #     reserve user voix nue.
+            #
+            #   * Lift `[OVERRIDE] lane <machine>` par coordinateur leve
+            #     tout (autorite coordinateur, Tell c.11639). La voie
+            #     override reste ouverte comme echappatoire nommee.
+            stripped_lift = _strip_quoted(lift_body or "")
+            stripped_nit = _strip_quoted(nit_body or "")
+            # Voie 0 -- override coordinateur (Tell c.11639). Meme login
+            # ou pas, l'arbitre tiers nomme par `[OVERRIDE] lane <machine>`
+            # leve. Fail-CLOSED sur la pose en tete (#13030). Premier
+            # discriminant verifie pour ne pas etre bloque par les voies
+            # 1-3 : un override par coordinateur sur sa propre reserve
+            # voix nue doit lever (autorite coordinateur).
+            if OVERRIDE_LANE.search(stripped_lift):
+                return True
+            # Voie 1 -- lift PERSONA scope aux reserves PERSONA.
+            # Si la reserve est voix nue (pas de marqueur persona), elle
+            # est HORS scope persona -- bloque. Si elle porte persona,
+            # elle est dans le scope persona -- leve. Discriminant
+            # symetrique de #14947 (persona leve sa propre voix) ETENDU
+            # au scope par role de #14850 : la persona peut lever SA
+            # reserve posee en persona, mais pas la reserve user voix nue
+            # posee sous meme login partage.
+            lift_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_lift))
+            nit_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_nit))
+            if lift_has_persona and nit_has_persona:
+                return True
+            if lift_has_persona and not nit_has_persona:
+                return False  # #14850 scope : lift persona ne leve pas user
+            # Voie 2 -- lift CROSS-LANE scope aux reserves CROSS-LANE.
+            # Un commentaire preface d'une lane tierce `[owner:workspace]`
+            # ne leve que les reserves de CETTE lane. Si la reserve est
+            # voix nue user ou persona, elle est HORS scope de la lane
+            # tierce -- bloque. Accepte le prefixe en debut de ligne
+            # (Tell c.677-L4 body PR HORS worktree), refuse la citation
+            # ulterieure (` > [lane]`) par l'ancre `^`.
+            lift_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_lift))
+            nit_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_nit))
+            if lift_has_lane and nit_has_lane:
+                return True
+            if lift_has_lane and not nit_has_lane:
+                return False  # #14850 scope : lift lane tierce ne leve pas user
+            # Voie 3 -- self-lift voix nue par l'auteur de SA reserve voix nue.
+            # L'auteur leve SA PROPRE reserve voix nue par une phrase de
+            # levee NOMINATIVE (`EXPLICIT_LIFT_MARKERS` : « Je leve »,
+            # « Levee de », « Lève la »). C'est la voie legitime que B.0
+            # preserve (« ce qui leve une remarque est une phrase ») et
+            # que la borne d'auteur #11145 preservait. Sans phrase
+            # nominative, c'est une declaration de verdict globale qui
+            # n'eteint pas la reserve voix nue specifique -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes vs user.
+            #
+            # Anti-regression couverte : la self-levee explicite
+            # (« Levée de ma reserve : cellule 12 corrigee »,
+            # test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve) et
+            # le self-lift par meme persona (`clusterManager-Myia` levant
+            # SA reserve `[Hermes]` par un « RAS sur le fond »,
+            # test_ras_francais_leve_dans_une_reponse) doivent rester
+            # valides. Les deux sont portes par `EXPLICIT_LIFT_MARKERS`
+            # ou un LIFT_MARKER faible DANS LE CONTEXTE d'une reserve
+            # deja persona-membre (couvert par voie 1 ci-dessus).
+            #
+            # #14850 -- defense en profondeur : un prefixe de ROLE generique
+            # (`[ai-01]`, `[po-2026]`, etc.) dans le lift, meme accompagne
+            # d'un LIFT_MARKER, ne leve PAS une reserve voix nue du meme
+            # login partage. Le lift `[ai-01] Je leve ma propre reserve`
+            # par `jsboige` n'a pas voix sur la reserve user voix nue de
+            # `jsboige` (incident fondateur #14795 21:11:29Z). Le reserve
+            # voix nue exige une levee voix nue -- la discrimination de voie
+            # par ROLE tient par symetrie : persona, lane, override ET
+            # role-prefix sont HORS scope de la voie nue.
+            #
+            # Note -- un LIFT_MARKER (broad, pas seulement EXPLICIT) suffit
+            # ici : le test de discrimination est sur le PREFIXE du lift,
+            # pas sur la force du marqueur. Une levee voie nue par l'auteur
+            # de la reserve voie nue peut employer « sont adresses »,
+            # « RAS », « LGTM » -- c'est l'ancien comportement preserve
+            # (#12319). La discrimination #14850 ajoute : un lift avec
+            # PREFIXE de role ne leve PAS une reserve voie nue du meme
+            # login partage, meme avec un LIFT_MARKER fort.
+            #
+            # Anti-regression couverte : `test_auteur_du_nit_leve_son_nit`
+            # (clusterManager-Myia leve SA reserve `[Hermes]` par un
+            # « reserve levee » voix nue). Le discriminant est sur le
+            # PREFIXE du LIFT, pas sur celui de la reserve -- une reserve
+            # `[Hermes]` n'est pas une reserve « user voix nue » au sens
+            # strict, mais elle est levee par la voie nue de l'auteur de
+            # la persona (clusterManager-Myia, voie nue, LIFT_MARKER).
+            # Voie 3 leve donc si le lift est voie nue (pas de prefixe
+            # distinct), independamment du scope du nit (la garde
+            # persona-vs-user est deja portee par voie 1).
+            stripped_lift_role = stripped_lift
+            lift_has_role = bool(_ROLE_PREFIX_RE.search(stripped_lift_role))
+            if (lift_has_persona is False
+                    and lift_has_lane is False
+                    and lift_has_role is False
+                    and has_live_lift(lift_body or "")):
+                return True
+            # Voie nue par meme login, sans discriminant de ROLE ni
+            # phrase de levee EXPLICITE : voie NUE par l'auteur de la
+            # reserve, sans signature distincte. C'est l'auto-reponse
+            # de l'auteur de la reserve sur sa propre remarque -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes sur reserve user.
+            return False
         # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
         # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
         # propre reserve sous l'autre login, c'est sa levee. Le marqueur
