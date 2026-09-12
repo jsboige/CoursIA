@@ -13,9 +13,10 @@
 | [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
 | [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
 | [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
+| [DoWhy-5 — L'instrument faible](DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `Quasi-Experimental.ipynb` |
 | [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 
-**Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des quatre notebooks de la constellation (ci-dessous) rend le pont plus concret.
+**Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
 ## Ce que le pont ajoute
 
@@ -51,3 +52,9 @@ Exercices de DoWhy-2 :
 1. **Le contrefactuel inverse** — pour un étudiant non traité à `V > 0`, estimer son `Y` sous `T := 1` et comparer à son observation : aurait-il gagné au mentorat ?
 2. **La CATE par sous-groupe** — déduire de la série d'écarts individuels l'effet moyen pour `V > 0.5` vs `V < -0.5`, interpréter le signe.
 3. **La méthode survit-elle au tirage ?** — re-générer le monde (`seed=7`), refitter, re-mesurer moyenne et écart-type des écarts : la structure doit survivre, pas les individus.
+
+Exercices de DoWhy-5 (variable instrumentale via `dowhy`) :
+
+1. **L'exclusion respectée vs VIOLEE** — générer un DGP `effet_direct_z = 0.5`, vérifier que `dowhy` identifie l'estimand `iv`, et constater l'écart entre `tau dowhy` et `TAU_VRAI = 2.0` ; verdict local NON_IDENTIFIABLE en mode terrain.
+2. **Le F-stat comme garde-fou** — faire varier la taille d'échantillon `n ∈ {500, 1000, 2000, 5000}` sur instrument faible, observer comment le F-stat monte avec `n` (sans faire passer l'identification, qui reste structurelle).
+3. **Verdict NON_IDENTIFIABLE sur DAG incomplet** — démontrer que `dowhy` identifie un estimand `iv` même quand l'exclusion est structurellement violée ; le verdict NON_IDENTIFIABLE doit venir du praticien, pas de `dowhy`.
