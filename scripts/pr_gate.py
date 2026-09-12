@@ -1566,5 +1566,58 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     )
 
 
+def _crash_fallback_publish(exc: BaseException) -> None:
+    """(#15825) A crashed gate still owes its check-run a non-empty title.
+
+    Measured 2026-09-12: 9 of 43 `PR gate` failures in the open population
+    render ``output.title = null`` -- an organ that goes red without a
+    motive. The emission tail publishes the verdict, but an unhandled
+    exception anywhere under it used to bypass publication entirely: the
+    auto check-run concluded ``failure`` carrying nothing. This fallback
+    PATCHes the crash motive from environment-derived parameters (main()
+    may have died before parsing anything), and never raises: a publication
+    failure must not mask the original crash.
+    """
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    if not repo or not run_id:
+        return
+    try:
+        publish_check_run_output(
+            repo, run_id, DEFAULT_SELF_NAME, 1,
+            f"FAIL -- pr_gate internal error: {type(exc).__name__}: {exc}",
+        )
+    except Exception as pub_exc:
+        print(
+            f"[pr-gate] WARN -- crash fallback not published: {pub_exc!r}",
+            flush=True,
+        )
+
+
+def _entry(argv: "Iterable[str] | None" = None) -> int:
+    """Mute-failure guard (#15825 criterion 1): impossible by construction.
+
+    Any conclusion that is not ``success`` must carry a non-empty
+    ``output.title`` -- including the crash path. main()'s GateError paths
+    already fall through to the single emission tail; this wrapper closes
+    the remaining hole (a non-GateError exception) by publishing a fallback
+    title, printing the same ``[pr-gate] FAIL`` + ``::error::`` motif, and
+    exiting nonzero. Verdict semantics unchanged: an unreadable state is a
+    failure, never a pass (rule 1).
+    """
+    try:
+        return main(argv)
+    except Exception as exc:
+        _crash_fallback_publish(exc)
+        print(f"[pr-gate] FAIL -- internal error: {exc!r}", flush=True)
+        print(
+            f"::error::[pr-gate] internal error: "
+            f"{_workflow_command_escape(repr(exc))}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return 1
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_entry())
