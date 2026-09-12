@@ -245,25 +245,34 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
       `ref` : révision examinée.
       `denominator` : nombre de notebooks scannés.
       `baseline` : attendu ; si None, déduit automatiquement du décompte de
-        HEAD (= la baseline « vivante » que le test fail #15523 a fixée).
-        Une baseline figée (entier explicite) reste possible pour les tests
-        historiques : passer l'entier directement à build_inventory.
+        la même révision que `denominator` (le test fail #15523 a fixé
+        HEAD à l'origine, mais cela cassait toute PR qui ajoute un
+        notebook : baseline > denominator, delta=-1 systématique, gate
+        rouge sans défaut substance). Une baseline figée (entier
+        explicite) reste possible pour les tests historiques : passer
+        l'entier directement à build_inventory.
       `by_classification` : comptage par classification.
       `entries` : liste de dicts, un par notebook.
 
     Tell c.1066 strict : dénombrement réel imprimé TOUJOURS, jamais
     confondu avec « 0 trouvé ». Tell c.745 ★★★ : aucune absorption
     silencieuse dans « non conforme » — exception / ambigu sont
-    comptés à part. Tell c.15523 : baseline auto = HEAD évite que le rouge
-    `denominator != baseline` se répète à chaque ajout de notebook sur
-    main sans rebase frais de la PR.
+    comptés à part. Tell c.15814-L1 ★ NEW : baseline auto = `ref` pour
+    que la comparaison baseline == denominator tienne sur la même
+    révision (le test cherche un écart de classification, pas un écart
+    de scope).
     """
     paths = notebooks_at(ref)
-    # Tell c.15523 : baseline par défaut = décompte de HEAD (le dépôt évolue,
-    # une baseline figée devient fausse à chaque ajout). L'argument `baseline`
-    # explicite reste supporté pour les tests historiques.
+    # Tell c.15814-L1 ★ NEW : baseline par défaut = même ref que denominator.
+    # Tell c.15523 (l'origine) choisissait HEAD : c'est vrai sur main (où la
+    # PR n'a pas encore bougé) mais faux sur la branche PR qui ajoute un
+    # notebook (baseline = HEAD branche > denominator = origin/main sans le
+    # notebook) — gate rouge mécanique. Aligner les deux sur `ref` rend la
+    # comparaison self-consistent et fait son job : détecter un écart de
+    # classification (conforme / exception / ambigu / rename_proposed) entre
+    # deux lectures de la même révision, pas un changement de scope.
     if baseline is None:
-        baseline = len(notebooks_at("HEAD"))
+        baseline = len(paths)
     by_class: dict[str, int] = {
         _CLASSIF_CONFORME: 0,
         _CLASSIF_RENAME: 0,
