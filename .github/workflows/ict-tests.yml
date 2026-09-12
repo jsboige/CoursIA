@@ -104,10 +104,13 @@ jobs:
           # (sys.path.insert module-level ignore sous importlib).
           # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
-          - suite-name: "ict/tests/ (42 package)"
+          # Floor 692 -> 715 : +23 items du POC S-Lens (bancs copy_offset /
+          # variable_binding, oracles, probes, agregation multi-runs ;
+          # #15481, ict/tests/test_slens.py = 43e strate du package).
+          - suite-name: "ict/tests/ (43 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 692
+            test-floor: 715
 
     steps:
       - uses: actions/checkout@v4
