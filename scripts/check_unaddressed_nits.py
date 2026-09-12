@@ -2904,7 +2904,10 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
     Une phrase de l'auteur de la PR ne leve pas la reserve d'un tiers
     (voie 1 close pour lui, #11145), mais un report nomme avant merge est
     un geste delibere que B.0 credite — l'auteur de la PR est explicitement
-    ouvert comme nommeur (borne #13563).
+    ouvert comme nommeur (borne #13563). #14705 elargit au coordinateur
+    (``LIFT_OVERRIDE_LOGINS``) : B.0 est son gate, et un report se falsifie
+    en n'ouvrant pas l'issue — ce que les conditions 1-6 verifient deja —
+    pas en se declarant.
 
     `issue_info=None` coupe la voie — `analyse()` reste pur pour les tests
     (aucun appel reseau n'y est tolere). Retourne des tuples
@@ -3859,7 +3862,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                              and _lift_eligible(lifter, login, lift_body, body)
                              for (t, lifter, lift_body) in explicit_lifts)
                       # #14218 conditions 5+6 — voir commentaire `followup_lifts`
-                      or any(when < t < cutoff and namer in (login, pr_author)
+                      # #14705 — le coordinateur est un nommeur credite : la
+                      # voie 3 REPORT (elle n'affirme pas la reserve traitee),
+                      # et B.0 est le gate du coordinateur.
+                      or any(when < t < cutoff
+                             and (namer in (login, pr_author)
+                                  or namer in LIFT_OVERRIDE_LOGINS)
                              and when < info.created_at
                              and _issue_references_pr(info, pr_number)
                              for (t, namer, info) in followup_lifts))
@@ -3888,8 +3896,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # garantie — l'issue existe et fut creee AVANT le cutoff —
                     # et reste ouverte a l'auteur : un report nomme avant
                     # merge est un geste delibere que B.0 credite. Borne
-                    # nommeur (c.705) : {auteur du blocage, auteur de la PR}.
-                    or any(when < t < cutoff and namer in (login, pr_author)
+                    # nommeur (c.705) : {auteur du blocage, auteur de la PR}
+                    # ; #14705 y ajoute le coordinateur (LIFT_OVERRIDE_LOGINS)
+                    # — B.0 est son gate, et un report se falsifie en n'ouvrant
+                    # pas l'issue, ce que les conditions 1-6 verifient deja.
+                    or any(when < t < cutoff
+                           and (namer in (login, pr_author)
+                                or namer in LIFT_OVERRIDE_LOGINS)
                            and when < info.created_at
                            and _issue_references_pr(info, pr_number)
                            for (t, namer, info) in followup_lifts)):
@@ -3907,7 +3920,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body, body)
                   for (t, lift_author, lift_body) in explicit_lifts
               ) or _approved_lifts_reserve(login, when, pr_author)
-              or any(when < t < cutoff and namer in (login, pr_author)
+              # #14705 — meme elargissement nommeur que les deux surfaces
+              # voie 3 ci-dessus (reserve Hermes, blocage).
+              or any(when < t < cutoff
+                     and (namer in (login, pr_author)
+                          or namer in LIFT_OVERRIDE_LOGINS)
                      and when < info.created_at
                      and _issue_references_pr(info, pr_number)
                      for (t, namer, info) in followup_lifts)):
