@@ -210,15 +210,21 @@ NAV_VOCAB_RE = re.compile(
     re.I,
 )
 
-# A metadata strip: ``**Durée estimée** : ~6 min | **Prérequis** : PyTorch`` or
-# ``**Durée totale : 2h10** | [README](..)``. #15719 names this class explicitly
-# ("métadonnées de forme ``**Durée estimée** : ... | **Prérequis** : ...``"). The
-# colon is required BEFORE the first pipe, which is what separates a metadata
-# line from a borderless table row whose first cell merely starts with such a
-# word (``**Durée** | 2h`` has no colon there and stays a table row).
-META_STRIP_RE = re.compile(
-    r'^\s*\*\*\s*(?:Dur[ée]e|Pr[ée]requis|Temps)\b[^|\n]*:', re.I
-)
+# #15719 names this class explicitly ("métadonnées de forme
+# ``**Durée estimée** : ... | **Prérequis** : ...``"). The colon is required
+# BEFORE the first pipe, which is what separates a metadata line from a
+# borderless table row whose first cell merely starts with such a word
+# (``**Durée** | 2h`` has no colon there and stays a table row).
+#
+# That colon-before-the-pipe IS the property; the label whitelist this rule
+# opened with was incidental, and it was the incidental part that broke:
+# ``GameTheory/LEAN_INVENTORY.md`` carries seven ``**Compilation** : ``lake
+# build`` — SUCCESS | **COMPLET : 0 sorry**`` banners -- structurally identical
+# to the ``Durée``/``Prérequis`` ones, and a whitelist cannot foresee the next
+# label. The rule is therefore stated on the property itself, anchored on the
+# bold label at line start (a real bordered row starts with its cell pipe:
+# ``| **Navigation** : x | y |`` is untouched).
+META_STRIP_RE = re.compile(r'^\s*\*\*[^|\n]*:', re.I)
 
 
 def _has_delimiter_pipe(line):

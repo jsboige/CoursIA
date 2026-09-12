@@ -240,6 +240,29 @@ class TestNavAndMetadataStripExcluded:
             "**Durée totale : 2h10** | [README des notebooks](notebooks/README.md)"
         ) is False
 
+    def test_metadata_strip_with_an_unlisted_label_excluded(self):
+        # #15850 residual, measured on ``GameTheory/LEAN_INVENTORY.md``: seven
+        # ``**Compilation** : ... | **...**`` banners survived the label
+        # whitelist. The colon before the first pipe is the property; the label
+        # is not, so any bold label of the family is excluded.
+        assert _has_delimiter_pipe(
+            "**Compilation** : `lake build` — SUCCESS | **COMPLET : 0 sorry**"
+        ) is False
+        assert _has_delimiter_pipe(
+            "**Compilation** : `lake build` — SUCCESS | voir README"
+        ) is False
+        # And a label nobody has written yet.
+        assert _has_delimiter_pipe("**Build status** : green | **Tests** : 31/31") is False
+
+    def test_borderless_row_with_unlisted_label_still_detected(self):
+        # FALSIFIABILITY: generalising the label must NOT generalise away the
+        # colon requirement -- a borderless row opening on a bold word with no
+        # colon before the pipe is still a row.
+        assert _has_delimiter_pipe("**Compilation** | 0 sorry") is True
+        assert _has_delimiter_pipe("**Build status** | green") is True
+        # A real table row keeps its leading cell pipe, whatever its label.
+        assert _has_delimiter_pipe("| **Compilation** : x | y |") is True
+
     def test_bordered_row_starting_with_nav_label_still_detected(self):
         # FALSIFIABILITY: a real bordered row merely CONTAINING the label is a
         # row -- the guard anchors the bold label at line start, and a GFM table
@@ -281,6 +304,22 @@ class TestNavAndMetadataStripExcluded:
             "| 1 | 2 |",
             "",
             "**Duree estimee** : ~2 min | **Prerequis** : pandas, numpy",
+        ]
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW"
+            for f in detect_md_table_syntax(lines)
+        )
+
+    def test_unlisted_metadata_label_after_table_not_orphan(self):
+        # The measured #15850 residual, end to end: the seven
+        # ``LEAN_INVENTORY.md`` banners are ORPHAN_TABLE_ROW findings that a
+        # whitelist could not reach.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "**Compilation** : `lake build` — SUCCESS | **COMPLET : 0 sorry**",
         ]
         assert not any(
             f["pathology"] == "ORPHAN_TABLE_ROW"
