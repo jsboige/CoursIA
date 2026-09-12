@@ -142,6 +142,11 @@ jobs:
     name: "Lean CI (knot_lean)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Bound the job at 60 minutes (See #15698): the prior wedge (knot_lean
+    # proof-integrity, run 103451688746) tied up half the coursia-lean pool
+    # for 3h17m without ever concluding. A bound here turns a wedge into a
+    # red check that the merge-gate can actually see.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lean-build
@@ -184,6 +189,10 @@ jobs:
     needs: ci
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Bound at 60 minutes (See #15698): this is the job that wedged for
+    # 3h17m in the original incident. The bound converts a wedge into a
+    # red check so the merge-gate can act on it.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lean-axiom
@@ -227,6 +236,10 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
+    # Bound at 30 minutes (See #15698): this is a lightweight Python scan,
+    # not a Lean build -- a wedge here is much cheaper than on `ci`/`proof-
+    # integrity`, but still must not pin a runner forever.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

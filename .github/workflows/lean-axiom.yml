@@ -79,6 +79,14 @@ jobs:
   axiom-check:
     name: "Proof integrity (${{ inputs.display-name }})"
     runs-on: ubuntu-latest
+    # Bound the job at 60 minutes (≈ 2× worst observed axiom-check wall-clock on
+    # conway_lean audit, See #15698): without it a wedged `lake exe env lean`
+    # or `LeanVerifier.check_axioms` ties up the runner for the full 6 h GH
+    # Actions default, and the check never concludes -- so the PR gate sits
+    # BLOCKED on a verdict that never lands. The timeout turns the wedge into
+    # a red check instead of a forever-pending one, so the merge-gate can
+    # actually see the regression.
+    timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
 

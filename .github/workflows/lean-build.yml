@@ -70,6 +70,11 @@ jobs:
   ci:
     name: "Lean CI (${{ inputs.display-name }})"
     runs-on: ubuntu-latest
+    # Bound the job at 60 minutes (≈ 2× the worst observed 31 min on conway_lean
+    # audit, See #15698): without it a wedged Lean process ties up the runner
+    # for the full 6 h GH Actions default, and the check never concludes. The
+    # timeout turns the wedge into a red check instead of a forever-pending one.
+    timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
 
