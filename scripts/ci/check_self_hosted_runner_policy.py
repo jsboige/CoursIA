@@ -182,9 +182,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "exercises-advisory.yml",
     "grain-orphans-sweep.yml",
     "h1-hygiene-advisory.yml",
+    # #12156 piste 1 (owner myia-po-2024:CoursIA) : advisory epic-wide-sur-
+    #   umbrella. Balayage cron hebdomadaire (schedule + workflow_dispatch)
+    #   pur-Python, GH_TOKEN lecture seule + issues: write. Aucun trigger
+    #   pull_request -> aucune garde same-repo requise (tranche 4 #14283,
+    #   meme profil que candidate-delivered-advisory). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "lane-claim-epic-wide-advisory.yml",
     "leaky-fixture-sweep.yml",
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
+    "mermaid-fill-color-advisory.yml",
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
@@ -222,6 +230,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "fabricated-output-gate.yml",
     "fast-lane-shadow.yml",
     "lane-claim-guard.yml",
+    # linux-runner-version-pin-advisory.yml (#15201, owner
+    #   myia-po-2023:CoursIA) : organe cron schedule+workflow_dispatch
+    #   UNIQUEMENT (advisory par construction, doctrine #12817), runs-on
+    #   statique [self-hosted, coursia-ephemeral, coursia-linux], garde
+    #   same-repo au niveau job malgre l'absence de trigger pull_request.
+    #   Pur-Python stdlib + gh binaire de l'image ; le GITHUB_TOKEN du run
+    #   ne sert qu'a LIRE releases/latest (permissions: contents: read).
+    #   Cron 23,53 -- offset des sweeps 13,43 et du starvation 19,49.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
     "markdown-rendering-guard.yml",
     "markdown-table-guard.yml",
@@ -232,6 +250,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   ci-dessus : garde Python pur stdlib, garde same-repo au niveau job,
     #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
     "notebook-output-flood-ratchet.yml",
+    # jumeau output-collapse (#15327, owner myia-po-2023:CoursIA) : verdict
+    #   ADVISORY rendu par fast-lane TRANCHE2 (entree 5, check-run
+    #   `Output-collapse ratchet (base vs PR, advisory)`), shell
+    #   workflow_dispatch-ONLY pour re-run manuel -- meme profil que les deux
+    #   jumeaux ci-dessus. Detecteur check_output_collapse.py, stdlib-only,
+    #   garde same-repo au niveau job, aucun GITHUB_TOKEN cote job. L'organe a
+    #   recu l'approval design (Hermes 02:29Z) ; la review ai-01 03:33Z a
+    #   demande la voie 2 : allowlist canonique + test de politique rejoue
+    #   (test_current_repository_self_hosted_jobs_satisfy_isolation_policy,
+    #   scan du repo courant -- aucune autre liste a synchroniser).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "notebook-output-collapse-ratchet.yml",
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",

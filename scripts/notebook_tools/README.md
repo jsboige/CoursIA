@@ -15,7 +15,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py`, `detect_paragraph_length.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) / **#15405** (paragraphes markdown > 2000 c, wall-of-text guard) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py`, `detect_paragraph_length.py`, `detect_mermaid_fill_without_color.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) / **#15405** (paragraphes markdown > 2000 c, wall-of-text guard) / **#15022** (mermaid fill sans color, clair-sur-clair theme sombre) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -286,6 +286,30 @@ fichiers pre-existants soit a zero.
 
 **Owner** : partition-mienne pour les PRs docs (relecture fichier-entier
 README series), cluster-manager pour la bascule bloquante.
+### `detect_mermaid_fill_without_color.py` (#15022, PR #15502)
+
+Regression-guard du defect **#15022** (signale par le user) : une regle mermaid
+`style`/`classDef` portant `fill:` sans `color:` force un fond clair en
+laissant le libelle heriter la couleur de texte du theme — clair-sur-clair en
+mode sombre GitHub. Le fix #15502 avait verifie les 10 regles du README Probas
+**a la main** ; ce detecteur mecanise la verification (demande review
+NanoClaw : « le motif peut revenir, sur ce fichier comme sur les 24 autres »).
+Scanne les `.md` trackes + cellules markdown des `.ipynb`, fence `mermaid`
+seulement, commentaires `%%` exclus. Cable en advisory par
+`.github/workflows/mermaid-fill-color-advisory.yml` (labels
+`mermaid-fill-color` / `mermaid-fill-color-unmeasured`, jamais bloquant).
+
+```bash
+python scripts/notebook_tools/detect_mermaid_fill_without_color.py --self-test  # prouve qu'il tire
+python scripts/notebook_tools/detect_mermaid_fill_without_color.py README.md    # un fichier
+python scripts/notebook_tools/detect_mermaid_fill_without_color.py --check      # exit 1 si finding
+```
+
+Baseline fleet (origin/main, 2026-09-11) : **25 fichiers / 90 regles fautives**
+sur 204 regles `fill:` — le README Probas porte exactement les 10 regles du
+fix #15502 (ground truth retrouve). Le residuel pre-existant fait l'objet
+d'une issue de suivi (sweep par familles) ; l'advisory ne flague que les
+fichiers modifies par une PR.
 
 ---
 
@@ -549,6 +573,37 @@ pour le fallback Playwright + execution **via QC Cloud** (`mcp__qc-mcp-lite__*`)
 `generate_catalog.py`, `verify_catalog_readme.py`, `catalog_coverage.py`,
 `fix_catalog_drift.py` : regeneration du catalogue (`COURSE_CATALOG.generated.json`,
 marqueurs `<!-- CATALOG-STATUS:START -->...:END -->`).
+
+**Regle d'exclusion du scan** (#15606) : le generateur n'indexe PAS tout
+l'arbre — l'ecart arbre/catalogue est structurel et deliberé. Le scan itere
+les repertoires de serie sous `MyIA.AI.Notebooks/` puis ecarte chaque notebook
+sous le PREMIER motif applicable, dans cet ordre de précédence :
+
+1. `git_non_tracke` — fichier non suivi par git (quand `--git-tracked-only`,
+   le mode du cron) ;
+2. `suffixe_executed` — stem finissant par `_executed` ;
+3. `segment_exclu:<segment>` — un segment du chemin est dans `EXCLUDE_ALWAYS`
+   (`.ipynb_checkpoints`, `obj`, `bin`, `__pycache__`, `.git`) ;
+4. `pedagogical:<motif>` — le chemin relatif a la serie CONTIENT un substring
+   de `EXCLUDE_PEDAGOGICAL` (`research`, `archive`, `_archive`, `_archives`,
+   `_output`, `output`, `partner-course`, `examples`) ;
+5. `serie_exclue:<nom>` — serie entiere dans `EXCLUDE_ALWAYS` ou cachée (dot).
+6. `racine_non_parcourue` — un `.ipynb` pose directement a la racine de
+   `MyIA.AI.Notebooks/` n'est jamais visite (le scan itere les series, pas
+   les fichiers racine ; `GradeBook.ipynb` est l'instance vivante) ;
+7. `json_illisible` — notebook que `analyze_notebook` ne peut pas parser.
+
+Le generateur EMET ce compte a chaque run (`excluded N <motif>` par ligne,
+visible dans les logs de `catalog-cron.yml`) : la reconciliation
+`arbre = indexes + exclus par motif` se fait par construction, sans document
+humain a maintenir. Toute alarme « catalogue incomplet » doit d'abord
+confronter ce compte — un notebook absent du catalogue ET d'aucun motif est
+seulement alors un vrai oubli. Mesure de reference (2026-09-11, origin/main,
+attribution deterministic par tri des motifs) : 1254 ipynb trackes =
+1136 indexes + 117 `pedagogical:*` (98 research, 8 _archive, 6 examples,
+3 partner-course, 2 output) + 1 racine_non_parcourue. Le catalogue commis
+(1130) est en retard de 6 sur ce compte (notebooks du jour non encore
+ingeres par le cron de 16:00 — rattrapes au tick suivant).
 
 **Regle HARD catalog-pr-hygiene R1** : JAMAIS regenerer le catalogue sur
 une branche feature (propriete de l'automatisation). Qui regenere alors :
