@@ -186,6 +186,40 @@ ORPHAN_LOOKAHEAD = 30
 # tables: a GFM table row never starts with a list marker. See #10097.
 LIST_MARKER_RE = re.compile(r'^ {0,3}(?:[-*+]|[0-9]{1,9}[.)])(?:[ \t]+|$)')
 
+# A navigation strip: ``**Navigation** : [..](..) | [..](..)`` (the space before
+# the colon is optional; a bare ``Index`` word may sit in a cell). The pipes
+# separate navigation links, never table columns -- GFM parses no table there,
+# so an ORPHAN_TABLE_ROW on such a line is a false positive. Killed here at the
+# source, never "repaired" by inventing a header: #15719 names this class
+# explicitly. The guard is anchored on the bold label at line start, so a real
+# bordered row ``| **Navigation** : x | y |`` is untouched.
+NAV_STRIP_RE = re.compile(r'^\s*\*\*\s*Navigation\s*\*\*\s*:')
+
+# The unlabelled twin of the above, the QC-Py-Cloud form:
+# ``[< Retour au sommaire](../README.md) | [Suivant : Risk Parity >](./x.ipynb)``.
+# Requires EVERY pipe-separated segment to be a markdown link AND at least one
+# link text to carry navigation vocabulary -- a genuine two-column link table
+# row (``| [a](a.md) | [b](b.md) |``) has a leading cell pipe and no nav wording,
+# so it is not matched.
+NAV_LINK_LINE_RE = re.compile(
+    r'^\s*\[[^\]]*\]\([^)]*\)\s*(?:\|\s*\[[^\]]*\]\([^)]*\)\s*)+$'
+)
+NAV_VOCAB_RE = re.compile(
+    r'Pr[ée]c[ée]dent|Suivant|Retour|Sommaire|\bIndex\b|\bNext\b|\bPrev\b|'
+    r'\bPrevious\b|\bBack\b|\bHome\b',
+    re.I,
+)
+
+# A metadata strip: ``**Durée estimée** : ~6 min | **Prérequis** : PyTorch`` or
+# ``**Durée totale : 2h10** | [README](..)``. #15719 names this class explicitly
+# ("métadonnées de forme ``**Durée estimée** : ... | **Prérequis** : ...``"). The
+# colon is required BEFORE the first pipe, which is what separates a metadata
+# line from a borderless table row whose first cell merely starts with such a
+# word (``**Durée** | 2h`` has no colon there and stays a table row).
+META_STRIP_RE = re.compile(
+    r'^\s*\*\*\s*(?:Dur[ée]e|Pr[ée]requis|Temps)\b[^|\n]*:', re.I
+)
+
 
 def _has_delimiter_pipe(line):
     """True if ``line`` has a pipe that could be a GFM table column delimiter.
@@ -196,9 +230,15 @@ def _has_delimiter_pipe(line):
     Mirrors the protection already applied by ``_column_count`` (which handles
     code/math/escaped) and extends it to bare ``P(X|Y)`` plain-text conditional
     notation that ``$...$`` stripping does not reach. A list-item line (CommonMark
-    marker) is never a table row, so its pipes are content regardless.
+    marker) is never a table row, so its pipes are content regardless. Same for
+    the navigation and metadata strips of #15719 -- their pipes separate links or
+    labelled fields, never cells.
     """
     if LIST_MARKER_RE.match(line):
+        return False
+    if NAV_STRIP_RE.match(line) or META_STRIP_RE.match(line):
+        return False
+    if NAV_LINK_LINE_RE.match(line) and NAV_VOCAB_RE.search(line):
         return False
     t = CODE_SPAN_RE.sub('', line)
     t = MATH_SPAN_RE.sub('', t)
