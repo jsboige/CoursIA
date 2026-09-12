@@ -13,9 +13,10 @@ Three distinct causes were measured firsthand on 2026-08-14 (issue #10928):
   - #10898 : the head commit's SUBJECT contained the literal ``[skip ci]`` --
     GitHub skipped every ``pull_request`` workflow (only CodeQL ran). Fixed by a
     re-push whose message does not carry the token.
-  - #10558 : PR opened by the bot (``app/github-actions``). A push made with
-    ``GITHUB_TOKEN`` does not create a new workflow run (GitHub anti-recursion)
-    -- structural, by design, but nowhere written.
+  - #10558 : PR opened by the bot (``github-actions[bot]`` in REST,
+    ``app/github-actions`` in GraphQL -- both recognised since #15758). A push
+    made with ``GITHUB_TOKEN`` does not create a new workflow run (GitHub
+    anti-recursion) -- structural, by design, but nowhere written.
   - #10902 : unknown cause; the PR was ``DIRTY`` and its rebase re-triggered CI.
 
 This tool is an ADVISORY organ, never blocking (it cannot block: the missing
@@ -79,7 +80,31 @@ LABEL_CONFLICT_DESC = ("PR gate absent: PR en conflit avec main, aucun run "
 # required by main's branch protection. Renaming here silently detaches the
 # detector (same invariant as pr-gate.yml: keep the string stable).
 GATE_NAME = "PR gate"
-BOT_LOGIN = "app/github-actions"
+
+# Le bot du depot n'a pas UNE orthographe : elle depend de l'API qui le rend.
+# Mesure #15758 (2026-09-12, sur #15678) : REST -- la source du collecteur,
+# `/pulls` puis `.user.login` -- ecrit `github-actions[bot]` ; GraphQL (`gh pr
+# view --json author`) ecrit `app/github-actions` ; le champ brut
+# `author.login` ecrit `github-actions`. La constante unique d'origine portait
+# l'orthographe GraphQL pendant que le collecteur lisait en REST, donc
+# l'egalite etait fausse pour TOUTE PR du bot : `bot_missing` et la cause
+# `bot` etaient structurellement inatteignables. Les trois orthographes
+# mesurees sont ici, comme dans les autres organes qui lisent un auteur
+# (`ci/guard_comment_upsert.py` GUARD_BOT_LOGINS, `pick_idle_grain.py`
+# AUTOMATION_AUTHORS, `review_coverage.py`).
+BOT_LOGINS = frozenset({"app/github-actions", "github-actions[bot]",
+                        "github-actions"})
+
+
+def is_bot_author(login: object) -> bool:
+    """L'auteur est-il le bot du depot, quelle que soit l'orthographe rendue ?
+
+    Point de comparaison UNIQUE : les deux sites (`classify`, verdict
+    `bot_missing`, et `prescribe`, cause `bot`) l'appellent, donc une
+    quatrieme orthographe ne peut pas n'en corriger qu'un seul.
+    """
+    return (login or "") in BOT_LOGINS
+
 
 # Marker framing the advisory comment, so re-runs can find and update it.
 COMMENT_MARKER_START = "<!-- PR-GATE-MISSING:START -->"
@@ -146,7 +171,9 @@ REMEDIATION_UNKNOWN = (
 )
 
 REMEDIATION_BOT = (
-    "PR ouverte par le bot (`app/github-actions`) sans `PR gate` dans son "
+    "PR ouverte par le bot du depot (son login est nomme ci-dessus ; il "
+    "s'ecrit `github-actions[bot]` en REST et `app/github-actions` en GraphQL) "
+    "sans `PR gate` dans son "
     "rollup : cas **structurel** (issue #10928). Un push fait avec "
     "`GITHUB_TOKEN` ne cree pas de nouveau workflow run (regle anti-recursion "
     "GitHub), donc le contexte requis ne sera jamais rapporte par un push du "
@@ -196,8 +223,10 @@ def classify(pr: dict) -> tuple[str, str]:
         return ("draft", f"#{number} draft PR, non mergeable")
     if GATE_NAME in rollup_names(pr):
         return ("has_gate", f"#{number} PR gate present (conclusion: {len(rollup_names(pr))} checks)")
-    if pr.get("author_login") == BOT_LOGIN:
-        return ("bot_missing", f"#{number} bot PR, no PR gate (structural)")
+    if is_bot_author(pr.get("author_login")):
+        return ("bot_missing",
+                f"#{number} bot PR, no PR gate (structural; auteur "
+                f"{pr.get('author_login')})")
     return ("missing", f"#{number} PR gate absent du rollup")
 
 
@@ -224,7 +253,8 @@ def prescribe(pr: dict) -> tuple[str, str]:
         retarget  -> un ``base_ref_changed`` postérieur au dernier run
                      ``pull_request`` : remede = commit vide a arbre identique
         skip_ci   -> token ``[skip ci]`` dans le sujet de tete (cause #10898)
-        bot       -> PR ``app/github-actions`` (cause #10558)
+        bot       -> auteur = bot du depot, quelle que soit l'orthographe
+                     rendue (cause #10558 ; multi-orthographe #15758)
         unknown   -> aucune des quatre : nommer les mesures, ne rien prescrire
 
     Returns:
@@ -240,8 +270,10 @@ def prescribe(pr: dict) -> tuple[str, str]:
                 f"base_ref_changed={changed}, dernier run PR gate={last or 'aucun'}")
     if "[skip ci]" in head_subject(pr):
         return ("skip_ci", f"sujet de tete porte le token [skip ci] : {head_subject(pr)[:72]!r}")
-    if pr.get("author_login") == BOT_LOGIN:
-        return ("bot", "auteur app/github-actions -- push GITHUB_TOKEN sans run")
+    if is_bot_author(pr.get("author_login")):
+        return ("bot",
+                f"auteur {pr.get('author_login')} (bot du depot) -- "
+                "push GITHUB_TOKEN sans run")
     return ("unknown",
             f"mergeable_state={ms}, pas de base_ref_changed, sujet sans [skip ci], "
             f"auteur {pr.get('author_login')}")
