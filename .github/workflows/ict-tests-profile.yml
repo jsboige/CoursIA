@@ -54,6 +54,7 @@ name: ICT-Series Tests Profile Probe
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       # Self-cover (#8822) : la sonde se re-declenche quand son propre
       # fichier change -- c'est son seul declencheur PR. Les runs de mesure

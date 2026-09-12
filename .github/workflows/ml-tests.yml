@@ -10,6 +10,7 @@ on:
       - '.github/workflows/ml-tests.yml'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/**'
       - 'tests/**'
