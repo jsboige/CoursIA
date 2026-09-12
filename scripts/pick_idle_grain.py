@@ -679,6 +679,201 @@ def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
                   "[INFO] candidate-delivered avec preuve et rend la main)")
 
 
+# --- Signal de livraison : ne jamais servir un grain deja livre ------------
+#
+# Mesure du 2026-09-12 (escalade de la lane myia-po-2023:CoursIA-2,
+# `msg-20260912T174921-p9mfe0`) : 18 grains dont le travail etait DEJA livre
+# ont ete servis a une seule lane en 2 cycles. La lane a du les refuter au
+# lieu de produire, et restait a `R1 NOT HELD` pour la 9e fois. Le picker
+# savait classer le LABEL `candidate-delivered` (klass `delivered`, urne
+# reservee #15069) mais etait AVEUGLE au COMMENTAIRE `[INFO]
+# candidate-delivered` -- le marqueur que le protocole demande pourtant
+# nommement a une lane worker de poster en rendant la main.
+#
+# Les deux surfaces ne se recouvrent PAS. Mesure sur le pool ouvert du
+# 2026-09-12 (339 issues) : 59 portent le label, 60 portent le marqueur en
+# commentaire, 54 ne portent QUE le commentaire. Le corpus reellement expose
+# est donc majoritairement celui que le label ne voit pas.
+#
+# Deux couts, deux chemins : le label est deja dans le payload du pool (une
+# seule requete `gh issue list --json labels` pour tout le pool, zero appel
+# supplementaire) ; le commentaire coute une requete par issue, et n'est donc
+# sonde que sur les candidats TIRES -- jamais un balayage du pool. La meme
+# borne que `recent_delivery`.
+DELIVERED_LABEL = "candidate-delivered"
+DELIVERED_COMMENT_MARKER = "[INFO] candidate-delivered"
+# Plafond dur de sondes par tirage : la boucle de remplacement d'une urne peut
+# en theorie la parcourir entiere, et une urne de 167 grains ne doit pas
+# produire 167 requetes.
+DELIVERED_SIGNAL_MAX_PROBES = 16
+# Sentinelle rendue par une sonde qui n'a PAS ete tentee (plafond atteint).
+# Distincte de ``None`` : les deux sont fail-OPEN, mais l'une est un echec de
+# lecture et l'autre une economie voulue -- les confondre ferait afficher
+# << lecture en echec >> sur des candidats jamais interroges.
+DELIVERED_SIGNAL_UNPROBED = object()
+
+
+def has_delivered_signal(issue_number: int,
+                         lane: str | None = None) -> bool | None:
+    """Le marqueur `[INFO] candidate-delivered` est-il dans les commentaires ?
+
+    TRI-ETAT, et c'est tout l'objet de la fonction : un echec de lecture n'est
+    pas une absence de signal. ``True`` = marqueur present, ``False`` = aucun
+    marqueur, ``None`` = la lecture a echoue (reseau, 403, payload illisible)
+    et l'appelant doit tirer quand meme EN LE DISANT.
+
+    ``lane`` n'entre pas dans le verdict (le signal vaut pour toutes les
+    lanes) : il est accepte pour que la sonde et son appelant partagent une
+    signature unique, et pour les sondes de test qui veulent la lire.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        comments = (json.loads(out) or {}).get("comments") or []
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    for comment in comments:
+        if DELIVERED_COMMENT_MARKER in (comment.get("body") or ""):
+            return True
+    return False
+
+
+def delivered_probe_inert(issue_number: int, lane: str | None = None) -> bool:
+    """Sonde inerte : aucun signal, aucun appel reseau.
+
+    Defaut de ``draw_unclaimed`` : un test unitaire qui appelle la fonction
+    directement ne doit pas emettre une requete `gh` par candidat tire. Qui
+    veut le vrai signal l'injecte (ou passe par ``main``).
+    """
+    return False
+
+
+def delivered_signal_reason(
+    item: dict,
+    lane: str | None = None,
+    probe=None,
+    failures: list[int] | None = None,
+) -> str | None:
+    """Pourquoi ecarter ce candidat de l'urne `grain`, ou ``None``.
+
+    Portee : l'urne `grain` SEULE. Deux urnes ne l'appellent jamais --
+
+    - `delivered` (#15069) : elle sert precisement a remettre ces issues aux
+      lanes habilitees, pour fermeture ;
+    - `umbrella` : le canal label ne marque JAMAIS un EPIC, par decision
+      mesuree et ecrite (`.github/workflows/candidate-delivered-advisory.yml`
+      L21-24 : « EPICs are excluded ... the checkbox heuristic suggested in
+      #10466 was measured firsthand and is UNRELIABLE »). Un commentaire
+      « [INFO] candidate-delivered *partiel* » sur un EPIC (#12208 : « L'EPIC
+      reste vivante comme parapluie de tracking ») n'est pas un verdict de
+      fermeture : une lane n'y claime jamais l'EPIC entier, elle y pioche ou
+      y cree un sous-grain (proactive-coordination R5). Ecarter une umbrella
+      retirerait une source de grains de CONTENU, l'inverse du but.
+
+    Le label est teste EN PREMIER parce qu'il ne coute rien ; la sonde de
+    commentaire n'est atteinte que s'il est absent. Ce n'est pas une
+    micro-optimisation : c'est ce qui fait que 59 des 113 issues signalees
+    du pool du 2026-09-12 sont ecartees sans un seul appel reseau.
+    """
+    if probe is None:
+        probe = delivered_probe_inert
+    labels = {str(label).casefold() for label in item.get("labels") or []}
+    if DELIVERED_LABEL in labels:
+        return (
+            "SIGNAL LIVRAISON (label `" + DELIVERED_LABEL + "`) : le travail de "
+            "cette issue est deja livre. Elle reste servie par l'urne "
+            "`delivered` aux lanes habilitees (#15069), jamais comme grain de "
+            "production."
+        )
+    verdict = probe(item["number"], lane)
+    if verdict == DELIVERED_SIGNAL_UNPROBED:
+        return None
+    if verdict is None:
+        # Fail-OPEN, et rapporte. Traduire cet echec en silence reviendrait a
+        # lire << pas de signal >> dans une page blanche -- exactement le
+        # defaut que ce filtre corrige, deplace d'un cran.
+        if failures is not None:
+            failures.append(item["number"])
+        return None
+    if verdict:
+        return (
+            "SIGNAL LIVRAISON (commentaire `" + DELIVERED_COMMENT_MARKER +
+            "`) : une lane a deja rendu la main sur cette issue en la "
+            "refutant. La re-servir comme grain de production fait bruler un "
+            "cycle a la lane qui la recoit."
+        )
+    return None
+
+
+
+def print_delivered_signal_report(
+    withheld: list,
+    state: dict,
+    include_delivered: bool,
+) -> None:
+    """Rend compte du filtre de livraison : ecartes, non lus, non sondes.
+
+    Extrait de ``main`` pour etre testable sans harnais complet : les trois
+    etats (ecarte / lecture en echec / non sonde) ont trois messages
+    DIFFERENTS et deux d'entre eux sont des fail-OPEN. Les confondre
+    reviendrait a lire un silence comme une couverture -- le defaut exact que
+    ce filtre corrige, deplace d'un cran.
+    """
+    if include_delivered:
+        return
+    dropped = [it for it, cause in withheld if cause.startswith("LIVRAISON")]
+    if dropped:
+        numbers = ", ".join(f"#{it['number']}" for it in dropped)
+        print(f"Signal de livraison : {len(dropped)} candidat(s) "
+              f"ECARTE(S) de l'urne grain : {numbers}.")
+        print("   Label `" + DELIVERED_LABEL + "` ou commentaire `"
+              + DELIVERED_COMMENT_MARKER + "` -- le travail est deja livre ;")
+        print("   les re-servir comme grain ferait bruler un cycle a la lane "
+              "qui")
+        print("   les recoit. Urne `delivered` et `--include-delivered` "
+              "restent")
+        print("   les deux chemins pour les traiter.")
+    failed = sorted(set(state.get("failures") or []))
+    if failed:
+        numbers = ", ".join(f"#{num}" for num in failed)
+        print(f"!! signal de livraison NON LU sur {numbers} "
+              f"({len(failed)} candidat(s)) : la lecture n'a pas pu etre faite")
+        print("   (reseau, 403, payload illisible). Le tirage est MAINTENU et")
+        print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
+        print("   ABOUTI n'est PAS une absence de signal. Verifier a la main")
+        print("   (`gh issue view <N> --comments`) avant de produire dessus.")
+    if state.get("budget_hit"):
+        print(f"!! signal de livraison NON SONDE au-dela de "
+              f"{DELIVERED_SIGNAL_MAX_PROBES} candidats : le plafond de "
+              "sondes")
+        print("   est atteint, la fin de l'urne n'a pas ete verifiee. Les "
+              "candidats")
+        print("   non sondes sont CONSERVES (fail-open).")
+    if dropped or failed or state.get("budget_hit"):
+        print()
+
+
+def print_empty_draw_notice(withheld: list, picks: list,
+                            include_delivered: bool) -> None:
+    """Un tirage vide se DIT, et nomme le filtre quand il en est la cause."""
+    if picks:
+        return
+    print("TIRAGE VIDE : aucun candidat retenu apres filtres et gardes.")
+    if not include_delivered and any(
+            cause.startswith("LIVRAISON") for _, cause in withheld):
+        print("   Une partie s'explique par le signal de livraison ci-dessus :")
+        print("   ces issues sont deja livrees, pas inaccessibles. Le vivier")
+        print("   de production est donc plus petit que le pool, et ce n'est")
+        print("   PAS une absence de travail pour la lane.")
+    print("   Ce n'est pas un refus de la lane : relancer avec --reroll, ou")
+    print("   elargir les filtres (`--urns`, bornes d'age/inactivite).")
+    print()
+
+
 def _csv_values(groups: list[str] | None) -> list[str]:
     """Flatten repeatable comma-separated CLI values, ignoring empty fields."""
     return [
@@ -1010,7 +1205,7 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
-                   delivery=None):
+                   delivery=None, delivered_probe=None, delivered_state=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Deux raisons de remplacer plutot que d annoter :
@@ -1031,6 +1226,31 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
              ("umbrella", args.umbrellas, args.prev_genre),
              ("delivered", args.delivered, None))
     picks, claims, conflicts = [], {}, []
+    # Portee du filtre de livraison : l'urne `grain` SEULE. L'urne
+    # `delivered` est ce qui remet ces issues aux lanes habilitees (#15069)
+    # -- la traverser la viderait de son sens. L'urne `umbrella` non plus :
+    # le canal label n'y marque jamais un EPIC par decision mesuree
+    # (candidate-delivered-advisory.yml : EPICs exclus, heuristique checkbox
+    # UNRELIABLE), et un « candidate-delivered partiel » sur un parapluie de
+    # tracking n'est pas un verdict de fermeture -- on y pioche ou on y cree
+    # un sous-grain (R5), on ne l'ecarte pas. `--include-delivered` reste
+    # l'echappatoire nommee.
+    include_delivered = bool(getattr(args, "include_delivered", False))
+    state = (delivered_state if delivered_state is not None
+             else {"failures": [], "budget_hit": False})
+    failures = state.setdefault("failures", [])
+    budget = [DELIVERED_SIGNAL_MAX_PROBES]
+
+    def _counted_probe(number, lane_name):
+        # Decompte la requete REELLE, pas le test de label : le label est
+        # court-circuite avant d'arriver ici, et reste donc gratuit meme
+        # apres epuisement du plafond.
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return (delivered_probe or delivered_probe_inert)(number, lane_name)
+
     for cls, want, prev in urnes:
         pool = list(by_class[cls])
         got = []
@@ -1056,8 +1276,19 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         ". Une autre lane tient ce grain -- ecrire dessus "
                         "produirait la collision, pas le livrable. Candidat "
                         "remplace dans la meme urne.")))
-                else:
-                    got.append(c)
+                    continue
+                if cls == "grain" and not include_delivered:
+                    # Le label est teste A COUT NUL et vaut meme quand le
+                    # plafond de sondes est epuise ; seule la sonde de
+                    # commentaire est plafonnee, et son epuisement est
+                    # fail-OPEN (le candidat est conserve).
+                    reason = delivered_signal_reason(
+                        c, args.lane, _counted_probe, failures)
+                    if reason is not None:
+                        conflicts.append((c, "LIVRAISON : " + reason + (
+                            " Candidat remplace dans la meme urne.")))
+                        continue
+                got.append(c)
         picks.extend(got)
     return picks, claims, conflicts
 
@@ -2663,6 +2894,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-idle-days", type=int, default=None)
     ap.add_argument("--urns", default="grain,umbrella,delivered",
                     help="urnes admises : grain,umbrella,delivered")
+    ap.add_argument("--include-delivered", dest="include_delivered",
+                    action="store_true",
+                    help="ne PAS ecarter de l'urne grain les issues "
+                         "portant un signal de livraison (label "
+                         "candidate-delivered ou commentaire [INFO] "
+                         "candidate-delivered) -- echappatoire nommee, "
+                         "typiquement pour une lane habilitee a fermer")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
@@ -2717,6 +2955,17 @@ def main(argv: list[str] | None = None) -> int:
     effective_cache_mode = args.cache
     if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None:
         effective_cache_mode = "off"
+    # Sonde de livraison. Sous pytest, la sonde par defaut est INERTE : un
+    # test unitaire ne doit pas emettre une requete `gh` par candidat tire.
+    # Meme precedent d'environnement que le mode cache juste au-dessus ; un
+    # test qui veut le signal l'injecte explicitement.
+    delivered_probe = (
+        delivered_probe_inert
+        if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
+        else has_delivered_signal
+    )
+    delivered_state: dict = {"failures": [], "budget_hit": False}
+
     payload_cache = PayloadCache(args.cache_dir)
     cache_status: dict[str, dict[str, Any]] = {}
 
@@ -2982,7 +3231,8 @@ def main(argv: list[str] | None = None) -> int:
 
     picks, claims, claim_conflicts = draw_unclaimed(
         by_class, args, rng, visits, series, issue_to_family,
-        delivery=delivery_weights if args.delivery_boost_max > 0 else None)
+        delivery=delivery_weights if args.delivery_boost_max > 0 else None,
+        delivered_probe=delivered_probe, delivered_state=delivered_state)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
@@ -3015,6 +3265,12 @@ def main(argv: list[str] | None = None) -> int:
                 "calibration_max": 0.5,
             },
             "recent_delivery": {str(k): v for k, v in delivery.items()},
+            "delivered_signal": {
+                "include_delivered": bool(args.include_delivered),
+                "probes_failed": sorted(set(delivered_state["failures"])),
+                "budget_hit": delivered_state["budget_hit"],
+                "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
+            },
             "red_backlog": backlog,
             "substance_drought": drought,
             "cache": cache_status,
@@ -3119,7 +3375,8 @@ def main(argv: list[str] | None = None) -> int:
     elif withheld:
         dwell_n = sum(1 for _, c in withheld if c.startswith("DWELL"))
         claim_n = sum(1 for _, c in withheld if c.startswith("CLAIM"))
-        zone_n = len(withheld) - dwell_n - claim_n
+        delivered_n = sum(1 for _, c in withheld if c.startswith("LIVRAISON"))
+        zone_n = len(withheld) - dwell_n - claim_n - delivered_n
         # Les trois causes ne se rangent pas ensemble : dwell et zone
         # reviennent d'elles-memes, un grain tenu par une autre lane revient
         # quand CETTE lane le relache. Les fondre dans "zone sans remede"
@@ -3128,6 +3385,8 @@ def main(argv: list[str] | None = None) -> int:
                  f"{zone_n} en zone sans remede"]
         if claim_n:
             parts.append(f"{claim_n} tenue(s) par une autre lane")
+        if delivered_n:
+            parts.append(f"{delivered_n} deja LIVRE(s)")
         print(f"Retenues hors tirage : {len(withheld)} "
               f"({', '.join(parts)}). "
               "Dwell et zone reviennent d'elles-memes -- aucune n'est refusee "
@@ -3135,6 +3394,10 @@ def main(argv: list[str] | None = None) -> int:
         if claim_n:
             print("   Un grain tenu revient quand sa lane pose [RELEASED], ou "
                   "sur arbitrage [OVERRIDE] du coordinateur.")
+        if delivered_n:
+            print("   Un grain ecarte comme DEJA LIVRE ne revient pas par le")
+            print("   tirage : il reste servable par l'urne `delivered` a une")
+            print("   lane habilitee (#15069), ou par `--include-delivered`.")
         for it, cause in sorted(withheld, key=lambda kv: -kv[0]["number"])[:3]:
             print(f"   #{it['number']:<7} {cause.split(chr(58))[0]:<18} {it['title'][:46]}")
     if backlog.get("triggers"):
@@ -3184,6 +3447,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(pad + "-> " + quoi + " (renumeroter un numero eleve en "
                       "lettre d'un numero existant, ou fondre plusieurs "
                       "lettres en un petit nombre), pas une instance de plus.")
+    print_delivered_signal_report(withheld, delivered_state,
+                                  args.include_delivered)
+    print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)
     if visits_err:
