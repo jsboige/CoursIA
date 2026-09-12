@@ -224,23 +224,25 @@ La série GenAI a un parti pris structurant que les autres hubs n'ont pas : **ch
 | **◐ Cloud API** | API propriétaire (OpenAI/Anthropic/HuggingFace) | Coût par token/image, zéro GPU, qualité par défaut élevée |
 | **◯ Hybride** | Les deux chemins sont démontrés (au choix selon contexte) | Notebooks basculent automatiquement si `.env` configuré |
 
-Cette partition traverse les **13 entrées** du marqueur `CATALOG-STATUS` ci-dessus (12 sous-séries + le notebook racine d'index) et structure le déploiement concret. Les volumes détaillés par sous-série et par maturité restent dans ce marqueur autoritatif ; le tableau ci-dessous récapitule la même information sous l'angle pédagogique **« qui consomme quoi »** plutôt que « qui contient combien » :
+Cette partition traverse les **14 sous-séries** du marqueur `CATALOG-STATUS` en fin de fichier et structure le déploiement concret. Les volumes détaillés par sous-série et par maturité restent dans ce marqueur **autoritatif** ; le tableau ci-dessous en reprend les volumes sous l'angle pédagogique **« qui consomme quoi »** plutôt que « qui contient combien ». **Le périmètre du compte est le catalogue** (`pedagogical_count`) : **215** notebooks — jamais l'arbre versionné (220) ni le parcours étudiant (200) ; les trois périmètres et leurs instruments sont nommés dans [`docs/reference/notebook-counters.md`](../../docs/reference/notebook-counters.md).
 
-| Sous-série | Notebooks | Stack dominante | Service / modèle phare |
-|------------|-----------|-----------------|------------------------|
+| Sous-série | Notebooks au catalogue | Stack dominante | Service / modèle phare |
+|------------|------------------------|-----------------|------------------------|
 | [00-GenAI-Environment](00-GenAI-Environment/) | 6 | ◯ Hybride | Docker Compose : ComfyUI/Qwen, Whisper, MusicGen, Forge |
-| [Image](Image/) | 20 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
-| [Audio](Audio/) | 30 | ◯ Hybride | **Whisper V3** + **Kokoro TTS** (self-hosted) ⇄ **OpenAI TTS** (Cloud) |
-| [Video](Video/) | 17 | ◯ Hybride | **HunyuanVideo** + **Wan** (self-hosted) ⇄ **Sora** (Cloud) |
-| [Texte](Texte/) | 20 | ◐ Cloud API | **GPT-4o-mini** (~0,15 $/M tokens) ; Structured Outputs + Function Calling |
+| [Image](Image/) | 17 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
+| [Audio](Audio/) | 31 | ◯ Hybride | **Whisper V3** + **Kokoro TTS** (self-hosted) ⇄ **OpenAI TTS** (Cloud) |
+| [Video](Video/) | 22 | ◯ Hybride | **HunyuanVideo** + **Wan** (self-hosted) ⇄ **Sora** (Cloud) |
+| [Texte](Texte/) | 30 | ◐ Cloud API | **GPT-4o-mini** (~0,15 $/M tokens) ; Structured Outputs + Function Calling |
 | [SemanticKernel](SemanticKernel/) | 20 | ◯ Hybride | SDK Microsoft .NET 9 + plugins Python ; orchestration multi-agents |
-| [FineTuning](FineTuning/) | 5 | ● self-hosted | **LoRA/QLoRA/SFT/DPO** sur GPU local ; PEFT + Transformers |
-| [PostTraining](PostTraining/) | 7 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
-| [CaseStudies](CaseStudies/) | 4 | ◯ Hybride | Projets étudiants bout-en-bout |
-| [Plateformes-Conversationnelles](Plateformes-Conversationnelles/) | 7 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) ; AI-Engine (WordPress) |
-| [Vibe-Coding](Vibe-Coding/) | 6 | ◯ Hybride | **Claude Code** + **Roo Code** ; **Claw-Systems** (bots Hermes/NanoClaw) + **Claudish** (proxy multi-provider) |
-| [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 1 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
-| [racine](.) | 1 | ◯ Hybride | Index général |
+| [Integrations-DotNet](Integrations-DotNet/) | 11 | ◯ Hybride | **.NET Aspire** + OpenTelemetry (services GenAI locaux) ; EFCore + **Copilot SDK** |
+| [FineTuning](FineTuning/) | 7 | ● self-hosted | **LoRA/QLoRA/SFT/DPO** sur GPU local ; PEFT + Transformers |
+| [PostTraining](PostTraining/) | 16 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
+| [CaseStudies](CaseStudies/) | 5 | ◯ Hybride | Projets étudiants bout-en-bout |
+| [FallacyDetection](FallacyDetection/) | 4 | ◐ Cloud API | **HuggingFace `datasets`** — taxonomie + couverture des fallacies |
+| [Plateformes-Conversationnelles](Plateformes-Conversationnelles/) | 28 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) ; AI-Engine (WordPress) |
+| [Vibe-Coding](Vibe-Coding/) | 8 | ◯ Hybride | **Claude Code** + **Roo Code** ; **Claw-Systems** (bots Hermes/NanoClaw) + **Claudish** (proxy multi-provider) |
+| [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 10 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
+| **Total** | **215** | — | = `pedagogical_count` du marqueur `CATALOG-STATUS` |
 
 **LLMs texte : le chemin self-hosted existe aussi.** La ligne Texte est ◐ Cloud API en dominante, mais les notebooks 10-12 (llama.cpp, quantization GPTQ/AWQ, vLLM) montrent comment servir localement les mêmes capacités — c'est exactement la voie que le cluster CoursIA emprunte en production, avec ses propres endpoints vLLM internes qui alimentent les sous-agents des workflows d'automatisation.
 

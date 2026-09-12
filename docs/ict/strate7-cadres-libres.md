@@ -1,10 +1,13 @@
 # ICT — Cadrage strate 7 D1 — variables libres bien choisies, free coordinates de 2e ordre, jeu évolutif G_t et mécanisme M
 
 > **Statut.** Document de cadrage formel, grade **C-documentaire** (cadrage, pas de dispatch expérimental). Consolide la **jambe D1** de la strate 7, à côté de la jambe D2 (5 bancs d'essai contrôlés [#7746](https://github.com/jsboige/CoursIA/issues/7746) — MERGED, ICT-26 → ICT-30) et de la jambe D3 ([#7747](https://github.com/jsboige/CoursIA/issues/7747) — cadrage narratif *boussole de la strate 7*, livré en PR [#9579](https://github.com/jsboige/CoursIA/pull/9579) MERGED c.1243, [`strate7-boussole-myth.md`](strate7-boussole-myth.md)). D1 et D3 sont **complémentaires, pas redondants** : D1 fixe *le formalisme* (variables libres, jeu évolutif, 6 proxys, dette d'irréversibilité), D3 fixe *la boussole narrative* (deux cascades d'investissement performatif, les trois verbes comme variables libres, mechanism design schmidhuberesque). Le présent document tient au grade C : **nommé sans démonstration**, posé pour cadrer, jamais revendiqué comme résultat.
+
 >
 > **Objet.** Documenter (a) **l'objet de la strate 7** : les *free coordinates* / *freebits de second ordre* — l'incertitude sur l'**espace lui-même** (vs l'incertitude sur une valeur dans un espace fixé, qui est le freebit d'Aaronson), (b) **le jeu évolutif** `G_t = (N, L_t, S_t, A_t, U_t, P_t)` et son **mécanisme** `M` qui décide ce qui devient public, (c) les **6 proxys mesurables** qui rendent la strate 7 falsifiable (pas un horizon, un **banc d'essai**), (d) la **discipline des variables libres bien choisies** — self-référence ≠ performativité, la qualité du choix est composante de la performativité, et (e) le **reframe épistémique honnête** : on ne ramène pas un scalaire, on ramène une *forme meilleure pour la même question*.
+
 >
 > **Discipline.** Cadrage grade C, **AUCUNE nouvelle dépendance expérimentale** n'est créée. Les ancres citées (notebooks ICT-26 → ICT-30, modules `grothendieck_lean`, fichiers `docs/ict/`, PRs [#9579](https://github.com/jsboige/CoursIA/pull/9579) [#9551](https://github.com/jsboige/CoursIA/pull/9551) [#9547](https://github.com/jsboige/CoursIA/pull/9547) [#9546](https://github.com/jsboige/CoursIA/pull/9546)) sont sur `origin/main` au moment de la rédaction. Le document **ne propose pas** de test direct de la strate 7 — les bancs existent déjà (D2) et la tresse de la strate 7 a été cartographiée horizontalement (D1 livré en aval de la tresse, mais logiquement en amont de la pose des bancs : *laisser la mer monter, banc par banc*). Issue-source : [#7745](https://github.com/jsboige/CoursIA/issues/7745). See [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT). *Part of* [#7395](https://github.com/jsboige/CoursIA/issues/7395) (méta-proxy ICT).
+
 >
 > **Avertissement méthodologique.** La strate 7 est la plus spéculative et la plus risquée : on y touche à **ce qui rend l'agent capable de redéfinir l'espace dans lequel il agit**. Le cadrage assume explicitement cette difficulté (le scalaire avait la mauvaise forme, cf. §0) et **ne livre pas** la strate 7 comme résultat : la pose des 6 proxys est une **grille de falsifiabilité** (qui rend dicibles des *NON-résultats* honnêtes), pas un cahier des charges pour démontrer une thèse. Cf. [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) §« Ce que ce document n'est pas » — on ne confond pas une grille avec un verdict.
 
@@ -228,18 +231,32 @@ Le passage « nommé sans démonstration » au rang « construit » ou « mesur�
 ## Voir aussi
 
 - **Epic umbrella** : [#4588](https://github.com/jsboige/CoursIA/issues/4588) (ICT strate 5+) — toute la série ICT se rapporte à cet Epic.
+
 - **Issue source** : [#7745](https://github.com/jsboige/CoursIA/issues/7745) — cadrage strate 7 (D1) — free coordinates de 2e ordre, jeu évolutif, 6 proxys. Le présent document en est la livraison.
+
 - **Jambe D2 (bancs d'essai)** : [#7746](https://github.com/jsboige/CoursIA/issues/7746) — MERGED. 5 bancs ICT-26 → ICT-30, qui *opérationnalisent* le 6-uplet de D1.
+
 - **Jambe D3 (boussole narrative)** : [#7747](https://github.com/jsboige/CoursIA/issues/7747), [`strate7-boussole-myth.md`](strate7-boussole-myth.md) — MERGED PR [#9579](https://github.com/jsboige/CoursIA/pull/9579) c.1243. Boussole et mythe fondateur, *complément narratif* de D1 (D3 raconte, D1 formalise).
+
 - **Cadrage N2 (trajectoires de représentations)** : [#7396](https://github.com/jsboige/CoursIA/issues/7396), [`cadrage-trajectoires-representations.md`](cadrage-trajectoires-representations.md) — PR [#8541](https://github.com/jsboige/CoursIA/pull/8541) MERGED. Pivot états → représentations, antécédent direct de D1 (les *représentations* sont le terrain sur lequel les *free coordinates* opèrent).
+
 - **Cartographie tresse (B4 non-recollement)** : [#7738](https://github.com/jsboige/CoursIA/issues/7738), [`tresse-cartographie.md`](tresse-cartographie.md) — PR [#9551](https://github.com/jsboige/CoursIA/pull/9551) MERGED c.1239. Le 6-uplet de D1 *hérite* du non-recollement entre les 4 opérations (Grothendieck / Schmidhuber / Thom / Friston).
+
 - **Dissolution des scalaires (5e fil)** : [#7736](https://github.com/jsboige/CoursIA/issues/7736), [`dissolution-scalaires.md`](dissolution-scalaires.md) — PR [#9547](https://github.com/jsboige/CoursIA/pull/9547) MERGED c.1238. Le reframe de D1 §0 *construit* explicitement sur cette dissolution : *le scalaire avait la mauvaise forme*.
+
 - **Problème de la représentation interne (4e fil)** : [#7735](https://github.com/jsboige/CoursIA/issues/7735), [`genealogy-representation-interne.md`](genealogy-representation-interne.md) — PR [#8061](https://github.com/jsboige/CoursIA/pull/8061) MERGED. La généalogie de `p̂` (ICT-10 → ICT-17) qui motive l'idée que la *représentation* est l'objet qu'il faut étendre, pas l'état.
+
 - **Matrice de dissociations** : [#7734](https://github.com/jsboige/CoursIA/issues/7734), [`dissociations-matrix.md`](dissociations-matrix.md) — la matrice 4-objets `(s, q, π, W)` que le présent D1 *contourne* volontairement (les free coordinates opèrent *sur* `L`, pas dans l'espace `(s, q, π, W)`) — choix méthodologique explicite, pas un oubli.
+
 - **Matrice inversée (chantier 3/3)** : [#9533](https://github.com/jsboige/CoursIA/issues/9533), PRs [#9546](https://github.com/jsboige/CoursIA/pull/9546) [#9572](https://github.com/jsboige/CoursIA/pull/9572) [#9588](https://github.com/jsboige/CoursIA/pull/9588) — la matrice inversée en *générateur d'expériences* (cadrage 4-cases, case 3 chiffrée, case 4 chiffrée) ; la strate 7 n'est **pas** dans la matrice inversée (la matrice 4-objets est strate ≤ 5), mais le geste de *générer des expériences* est commun à l'esprit de D1.
+
 - **Jambe C3 (morphogenèse rhétorique)** : [#7742](https://github.com/jsboige/CoursIA/issues/7742) — *gelée* tant que corpus public non branché. Mentionnée en §2.4 comme point de rencontre.
+
 - **Jambe C4 (grammaire de propagation)** : [#7743](https://github.com/jsboige/CoursIA/issues/7743) — la jauge `π, W, causalité` du seuil de bascule représentation → transformation du tout. Mentionnée en §2.4.
+
 - **Veille TOE ↔ conscience (jalon 2/3)** : [#8182](https://github.com/jsboige/CoursIA/issues/8182) — l'iceberg de Jaimungal et le carrefour Schreiber ; la strate 7 ne s'y aventure pas publiquement.
+
 - **Discipline grade C** : [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) — l'invariant d'ICT n'est pas dans le monde mais dans la *méthode*, et tout cadrage grade C est posé comme témoin de lecture, pas comme claim.
+
 
 — *CoursIA-2 — c.1246 (po-2025) — 2026-08-06*
