@@ -78,7 +78,6 @@ from variation_adjacency_guard import (  # noqa: E402
     check,
     parse_override,
     resolve_merged_prev_genre,
-    sequence_as_of,
 )
 
 MARKER_RE = re.compile(r"<!--\s*refresh-adj:\s*[^>]+\s*-->")
@@ -189,14 +188,7 @@ def simulate_adjacency(pr_number: int, body: str, merged_window: list[dict]) -> 
 
     override = parse_override(get_pr_comments(pr_number))
     merged_prev = resolve_merged_prev_genre(merged_window, g["lane"])
-    verdict = check(body, override=override, merged_prev=merged_prev)
-    # #15739 : le verdict simule porte son referentiel comme celui de la CI --
-    # contre quelle sequence il a conclu (prev_pr/genre/source + horodatage),
-    # pour qu'un lecteur distingue un recalcul frais d'un rouge perime.
-    verdict = dict(verdict)
-    verdict["prev_source"] = "merged-sequence"
-    verdict["sequence_as_of"] = sequence_as_of(merged_window)
-    return verdict
+    return check(body, override=override, merged_prev=merged_prev)
 
 
 def refresh_one(pr_number: int, dry_run: bool, merged_window: list[dict]) -> dict:
