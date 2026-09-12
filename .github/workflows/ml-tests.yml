@@ -33,7 +33,15 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 15
+    # Budget de 30 min, pas 15 (#15531, mesure 2026-09-11). Le runtime honnete
+    # de la suite est 5:42 (910 tests) ; le mur a 15 min n'etait pas le runtime,
+    # c'etait la contention intermittente du pool ephemeral -- meme commit
+    # 5ef6d259 a 342,50 s sur po-2024-linux-docker-4 et 342,71 s sur ai-01-wsl-7,
+    # contre 71 % de la suite en 14:52 sur po-2024-linux-docker-9/-10 (3-4x plus
+    # lent, variance intra-run : eval_rl_dt 120->533 s, moe_experts 15->521 s).
+    # 30 couvre le pire cas extrapole (~21 min) avec marge. La cure est la
+    # gouvernance du pool (#15574) ; ce budget est la mitigation, pas la cure.
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4

@@ -148,6 +148,10 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
 #   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
 #                           les fichiers AJOUTES (#12753)
+#   - kernel-suffix-canon-guard : bloquant, delta base-vs-head sur les fichiers
+#                           AJOUTES, avec une CONFIG d'adoption lue a l'execution
+#                           (seul garde de la voie rapide dont le verdict depend
+#                           d'un fichier de donnees, #15489)
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -311,6 +315,42 @@ PILOT: list[Guard] = [
         blocking=True,
         needs_base=True,
     ),
+
+    # Defaut 3 de #15489 : "aucun garde dedie n'impose la casse canonique
+    # `Python` / `CSharp` / `Lean` apres adoption d'une serie". La tranche
+    # #15503 avait livre le parseur partage en declarant ce point hors de sa
+    # portee (un module qui normalise la casse ne peut pas la juger).
+    #
+    # Porte aux fichiers AJOUTES, et c'est ce qui rend le garde possible : la
+    # mesure de l'arbre donne 114 `-Csharp` contre 16 `-CSharp`. Un garde qui
+    # imposerait la casse canonique a tout le corpus condamnerait la majorite
+    # de ses propres notebooks et serait desactive ; un garde qui ne l'impose
+    # nulle part ne ferme rien. D'ou la CONFIG d'adoption explicite
+    # (`kernel_suffix_canon.json`), lue a l'execution : les series qui ont
+    # tranche (mesure : `Search/Applications` 15 canoniques contre 5 herites)
+    # sont tenues, les autres gardent leur convention -- et leurs 114 fichiers
+    # herites ne rougissent jamais, puisqu'ils ne sont pas des ajouts.
+    #
+    # C'est le seul garde de la voie rapide dont le verdict depend d'un fichier
+    # de donnees : `kernel_suffix_canon.json` figure donc dans `paths`, sinon
+    # une revision qui declare une nouvelle serie adoptee -- ou en revoque une --
+    # ne rejouerait pas le garde dont elle change la portee.
+    Guard(
+        name="kernel-suffix-canon-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_kernel_suffix_canon.py",
+            "scripts/notebook_tools/kernel_suffix_canon.json",
+            # Liste partagee des suffixes de noyau : l'en retirer un rend le
+            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
+            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            "scripts/notebook_tools/naming_canon.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
+              "--base", "{base_ref}", "--head", "HEAD"],
+        blocking=True,
+        needs_base=True,
+    ),
 ]
 
 
@@ -351,14 +391,27 @@ TRANCHE1: list[Guard] = [
         blocking=True,
         absorbed=True,
     ),
-    # Forme 2 : scan globs, bloque sur convention zero-pad GameTheory
-    # (#11840/#12586). Source : series-naming-gate.yml (job affiche
-    # `zero-pad guard (GameTheory serie)`).
+    # Forme 2 : scan globs, bloque sur la convention zero-pad des series
+    # DECLAREES (#11840/#12586, portee explicite #15489 defaut 5). Source :
+    # series-naming-gate.yml (job affiche `zero-pad guard (series declarees)`).
+    # Les globs ci-dessous MIROITENT `scripts/notebook_tools/zero_pad_series.json`
+    # -- le garde est lance sans argument et lit le registre, mais la voie
+    # rapide doit savoir quand le declencher sans lire le JSON au chargement
+    # (ce module ne fait AUCUNE E/S, cf son docstring). Un test de parite
+    # rougit si le miroir et le registre divergent.
     Guard(
-        name="zero-pad guard (GameTheory serie)",
+        name="zero-pad guard (series declarees)",
         source="series-naming-gate.yml",
         paths=[
             "MyIA.AI.Notebooks/GameTheory/**",
+            "MyIA.AI.Notebooks/GenAI/FineTuning/**",
+            "MyIA.AI.Notebooks/IIT/**",
+            "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/PyMC/**",
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+            "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
+            "MyIA.AI.Notebooks/Sudoku/**",
+            "scripts/notebook_tools/zero_pad_series.json",
             "scripts/notebook_tools/check_series_zero_pad.py",
             "scripts/notebook_tools/naming_canon.py",
             ".github/workflows/series-naming-gate.yml",
@@ -973,6 +1026,43 @@ TRANCHE8: list[Guard] = [
         ],
         swap_paths=["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"],
         needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 9 -- intervalle de credibilite DECLARE vs AFFICHE (#15592).
+#
+# Garde NATIF : il n'absorbe aucun workflow d'origine, il ferme une classe de
+# defaut. C'est pour cela qu'il a sa propre tranche plutot qu'une place dans
+# `PILOT` (qui absorbe des workflows existants) ou dans `TRANCHE8` (scopee
+# Smart Contracts -- y ranger un garde arviz rendrait son en-tete faux).
+#
+# Le defaut fondeur est #15156 : `hdi_prob=` remplace par `ci_prob=` sans
+# `ci_kind`, donc sans re-execution. En arviz 1.1, `ci_kind` vaut `None` par
+# defaut et la bibliotheque le resout en `"eti"` -- la migration s'executait,
+# la sortie restait en `hdi`, et plus rien ne comparait les deux.
+#
+# PORTEE : arbre ENTIER, et le garde est BLOQUANT. Ce n'est legitime que si la
+# baseline est verte -- mesuree, pas supposee : 18 cellules a colonne
+# d'intervalle sur 1254 notebooks, 0 desaccord, avant enregistrement.
+# ---------------------------------------------------------------------------
+TRANCHE9: list[Guard] = [
+    Guard(
+        name="interval-kind-consistency-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_interval_kind_consistency.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python",
+            "scripts/notebook_tools/check_interval_kind_consistency.py",
+        ],
+        blocking=True,
         absorbed=True,
     ),
 ]
