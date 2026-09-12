@@ -164,7 +164,7 @@ Intelligence Artificielle - IV
   - P(vrai) = 1 and P(faux) = 0
   - P(A ∨ B) = P(A) + P(B) - P(A ∧ B)
 
-<!-- Image: images/img_001.png -->
+<img src="./images/img_001.png" alt="Axiomes des probabilités : normalisation et bornes de Kolmogorov" style="display:block; width:100%; max-height:240px; object-fit:contain; margin:4px auto;">
 
 *Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (variables aléatoires, distributions) · [Infer-2-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb) (mixtures, tables de probabilités).*
 
@@ -198,8 +198,8 @@ Intelligence Artificielle - IV
 
 # Probabilités des variables continues
 
-<!-- Image: images/img_002.png -->
-<!-- Image: images/img_003.png -->
+<img src="./images/img_002.png" alt="Probabilités sur variables continues — figure 1 de 2" style="display:inline-block; margin:0 6px; max-width:47%; vertical-align:middle;">
+<img src="./images/img_003.png" alt="Probabilités sur variables continues — figure 2 de 2" style="display:inline-block; margin:0 6px; max-width:47%; vertical-align:middle;">
 
 
 ---
@@ -254,8 +254,8 @@ layout: dense
     - = (0.016 + 0.064) / (0.108 + 0.012 + 0.016 + 0.064)
     - = 0.4
 
-<!-- Image: images/img_004.png -->
-<!-- Image: images/img_005.png -->
+<img src="./images/img_004.png" alt="Inférence par énumération — figure 1 de 2 : parcours de la distribution conjointe" style="display:inline-block; margin:0 6px; max-width:47%; vertical-align:middle;">
+<img src="./images/img_005.png" alt="Inférence par énumération — figure 2 de 2 : tableau résultant" style="display:inline-block; margin:0 6px; max-width:47%; vertical-align:middle;">
 
 *Notebooks : [Infer-3-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb) (énumération, élimination de variables) · [PyMC-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) (même approche en PyMC).*
 
@@ -283,7 +283,7 @@ layout: dense
   - Complexité en espace en O(dⁿ) pour stocker la distribution conjointe
   - Comment trouver les nombres pour O(dⁿ) entrées?
 
-<!-- Image: images/img_006.png -->
+<img src="./images/img_006.png" alt="Normalisation d'une distribution conditionnelle" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -300,7 +300,7 @@ layout: dense
   - Puissant mais rare
   - Ex du dentiste: des centaines de variables dépendantes
 
-<!-- Image: images/img_007.png -->
+<img src="./images/img_007.png" alt="Indépendance de deux événements : P(A|B) = P(A)" style="display:block; margin:10px auto; max-width:100%;">
 
 *Notebooks : [Infer-4-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb) (indépendances encodées par la topologie).*
 
@@ -356,7 +356,7 @@ layout: dense
   - P(Cause, Effet₁, …, Effetₙ) = P(Cause) πᵢ P(Effetᵢ | Cause)
   - Le nombre de paramètres est linéaire en n
 
-<!-- Image: images/img_008.png -->
+<img src="./images/img_008.png" alt="Bayes et indépendance conditionnelle : factorisation de la distribution conjointe" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -425,7 +425,7 @@ layout: section
   - Weather est indépendant des autres variables
   - Toothache et Catch sont conditionnellement indépendants, étant donné Cavity
 
-<!-- Image: images/img_009.png -->
+<img src="./images/img_009.png" alt="Réseau bayésien Weather–Toothache–Catch–Cavity : la topologie encode les indépendances" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -449,7 +449,7 @@ layout: section
 
 # Example (suite)
 
-<!-- Image: images/img_010.png -->
+<img src="./images/img_010.png" alt="Réseau bayésien de l'alarme : Burglary, Earthquake → Alarm → JohnCalls, MaryCalls" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -465,7 +465,7 @@ layout: section
 - **Pour le réseau burglary:**
   - 1 + 1 + 4 + 2 + 2 = 10 nombres (vs. 2⁵ - 1 = 31)
 
-<!-- Image: images/img_011.png -->
+<img src="./images/img_011.png" alt="CPT du réseau alarme : 1+1+4+2+2 = 10 nombres au lieu de 31 pour la conjointe" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -479,7 +479,7 @@ layout: section
   - P(j ∧ m ∧ a ∧ ¬b ∧ ¬e)
   - = P(j | a) P(m | a) P(a | ¬b, ¬e) P(¬b) P(¬e)
 
-<!-- Image: images/img_012.png -->
+<img src="./images/img_012.png" alt="Sémantique d'un réseau bayésien : distribution conjointe factorisée en produits de CPT" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -505,7 +505,7 @@ layout: section
 - **Supposons qu'on choisisse l'ordre M, J, A, B, E**
   - P(J | M) = P(J)?
 
-<!-- Image: images/img_013.png -->
+<img src="./images/img_013.png" alt="Construction dans l'ordre M, J, A, B, E — étape 1 : ajout de MaryCalls" style="display:block; width:100%; max-height:190px; object-fit:contain; margin:8px auto;">
 
 
 ---
@@ -518,7 +518,7 @@ layout: section
   - Non
   - P(A | J, M) = P(A | J)? P(A | J, M) = P(A)?
 
-<!-- Image: images/img_014.png -->
+<img src="./images/img_014.png" alt="Ordre M, J, A, B, E — étape 2 : JohnCalls doit dépendre de MaryCalls" style="display:block; width:100%; max-height:190px; object-fit:contain; margin:8px auto;">
 
 
 ---
@@ -533,7 +533,7 @@ layout: section
   - P(B | A, J, M) = P(B | A)?
   - P(B | A, J, M) = P(B)?
 
-<!-- Image: images/img_015.png -->
+<img src="./images/img_015.png" alt="Ordre M, J, A, B, E — étape 3 : Alarm conditionnée par J et M" style="display:block; width:100%; max-height:190px; object-fit:contain; margin:8px auto;">
 
 
 ---
@@ -550,7 +550,7 @@ layout: section
   - P(E | B, A, J, M) = P(E | A)?
   - P(E | B, A, J, M) = P(E | A, B)?
 
-<!-- Image: images/img_016.png -->
+<img src="./images/img_016.png" alt="Ordre M, J, A, B, E — étape 4 : Burglary conditionnée par A, J, M" style="display:block; width:100%; max-height:190px; object-fit:contain; margin:8px auto;">
 
 
 ---
@@ -567,7 +567,7 @@ layout: section
   - P(E | B, A, J, M) = P(E | A)? No
   - P(E | B, A, J, M) = P(E | A, B)? Yes
 
-<!-- Image: images/img_017.png -->
+<img src="./images/img_017.png" alt="Ordre M, J, A, B, E — réseau final : 13 nombres nécessaires, moins compact" style="display:block; width:100%; max-height:190px; object-fit:contain; margin:8px auto;">
 
 
 ---
@@ -580,7 +580,7 @@ layout: section
 - **Le réseau est moins compact:**
   - 1 + 2 + 4 + 2 + 4 = 13 nombres nécessaires
 
-<!-- Image: images/img_018.png -->
+<img src="./images/img_018.png" alt="Réseau de l'ordre non causal : indépendances plus difficiles à lire que le réseau causal" style="display:block; width:100%; max-height:250px; object-fit:contain; margin:8px auto;">
 
 
 ---
@@ -704,7 +704,7 @@ layout: two-cols
   - Gaussienne: moyenne → Gaussienne, précision → Gamma
   - https://en.wikipedia.org/wiki/Conjugate_prior
 
-<!-- Image: images/img_027.jpg -->
+<img src="./images/img_027.jpg" alt="Distribution a priori conjuguée entre variables discrètes et continues" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -877,7 +877,7 @@ layout: section
 
 # Modèles de Markov
 
-<!-- Image: images/img_033.png -->
+<img src="./images/img_033.png" alt="Modèle de Markov : la chaîne des états au fil du temps, l'état présent résume l'histoire" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -885,7 +885,7 @@ layout: section
 
 # Distribution de probabilités
 
-<!-- Image: images/img_034.png -->
+<img src="./images/img_034.png" alt="Distribution de probabilités d'un processus markovien paramétrée par la transition" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -900,7 +900,7 @@ layout: section
 - **On note que la chaîne est simplement un Réseau bayésien (extensible):**
   - On peut toujours utiliser le raisonnement des RB classiques si on tronque la chaîne à une longueur donnée
 
-<!-- Image: images/img_035.png -->
+<img src="./images/img_035.png" alt="Indépendance conditionnelle markovienne : le présent écran le passé du futur" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -908,7 +908,7 @@ layout: section
 
 # Exemple: Chaîne de Markov
 
-<!-- Image: images/img_036.png -->
+<img src="./images/img_036.png" alt="Exemple de chaîne de Markov : transitions entre les temps t-1, t et t+1" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -916,7 +916,7 @@ layout: section
 
 # Inférence sur chaînes de Markov
 
-<!-- Image: images/img_037.png -->
+<img src="./images/img_037.png" alt="Inférence sur chaînes de Markov : estimation de l'état courant" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -924,7 +924,7 @@ layout: section
 
 # Distribution conjointe de modèle de Markov
 
-<!-- Image: images/img_038.png -->
+<img src="./images/img_038.png" alt="Distribution conjointe d'un modèle de Markov : produit des transitions" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -932,7 +932,7 @@ layout: section
 
 # Récapitulatif modèles de Markov
 
-<!-- Image: images/img_039.png -->
+<img src="./images/img_039.png" alt="Récapitulatif des modèles de Markov : matrice de transition et distribution initiale" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -940,7 +940,7 @@ layout: section
 
 # Algorithme Mini-Forward
 
-<!-- Image: images/img_040.png -->
+<img src="./images/img_040.png" alt="Algorithme Mini-Forward : propagation des probabilités à chaque étape" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -952,9 +952,9 @@ layout: section
 - **Depuis une observation initiale de pluie:**
 - **Depuis une autre distribution initiale P(X₁):**
 
-<!-- Image: images/img_041.png -->
-<!-- Image: images/img_042.png -->
-<!-- Image: images/img_043.png -->
+<img src="./images/img_041.png" alt="Exécution de Mini-Forward — figure 1 de 3" style="display:inline-block; margin:0 6px; max-width:31%; vertical-align:middle;">
+<img src="./images/img_042.png" alt="Exécution de Mini-Forward — figure 2 de 3" style="display:inline-block; margin:0 6px; max-width:31%; vertical-align:middle;">
+<img src="./images/img_043.png" alt="Exécution de Mini-Forward — figure 3 de 3" style="display:inline-block; margin:0 6px; max-width:31%; vertical-align:middle;">
 
 
 ---
@@ -970,9 +970,9 @@ layout: section
 
 - **Question: Quel est P(X) au temps t = infini?**
 
-<!-- Image: images/img_044.png -->
-<!-- Image: images/img_045.png -->
-<!-- Image: images/img_046.png -->
+<img src="./images/img_044.png" alt="Exemple de distribution stationnaire — figure 1 de 3" style="display:inline-block; margin:0 6px; max-width:31%; vertical-align:middle;">
+<img src="./images/img_045.png" alt="Exemple de distribution stationnaire — figure 2 de 3" style="display:inline-block; margin:0 6px; max-width:31%; vertical-align:middle;">
+<img src="./images/img_046.png" alt="Exemple de distribution stationnaire — figure 3 de 3" style="display:inline-block; margin:0 6px; max-width:31%; vertical-align:middle;">
 
 
 ---
@@ -994,7 +994,7 @@ layout: section
   - Renvoyait la liste de pages contenant vos mots clés par ordre décroissant de page rank
   - Maintenant tous les moteurs de recherche utilisent l'analyse de lien avec d'autres facteurs (le page rank devient en fait de moins en moins important)
 
-<!-- Image: images/img_047.png -->
+<img src="./images/img_047.png" alt="Application à l'analyse des liens web : chaîne de Markov sur les pages" style="display:block; width:100%; max-height:40px; object-fit:contain; margin:2px auto;">
 
 
 ---
@@ -1010,7 +1010,7 @@ layout: section
   - You observe outputs (effects) at each time step
 - **As a Bayes' net:**
 
-<!-- Image: images/img_048.png -->
+<img src="./images/img_048.png" alt="Hidden Markov Model : états cachés et observations émises" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1018,7 +1018,7 @@ layout: section
 
 # Example
 
-<!-- Image: images/img_049.png -->
+<img src="./images/img_049.png" alt="Exemple de HMM : états cachés reliés aux observations" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1026,7 +1026,7 @@ layout: section
 
 # Hidden Markov Models
 
-<!-- Image: images/img_050.png -->
+<img src="./images/img_050.png" alt="HMM : séquence d'états cachés et d'observations" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1052,7 +1052,7 @@ layout: section
   - Observations are acoustic signals (continuous valued)
   - States are specific positions in specific words (so, tens of thousands)
 
-<!-- Image: images/img_051.png -->
+<img src="./images/img_051.png" alt="Exemples réels de HMM — figure 1 de 3" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1064,7 +1064,7 @@ layout: section
   - Observations are words (tens of thousands)
   - States are translation options
 
-<!-- Image: images/img_052.png -->
+<img src="./images/img_052.png" alt="Exemples réels de HMM — figure 2 de 3" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1076,7 +1076,7 @@ layout: section
   - Observations are range readings (continuous)
   - States are positions on a map (continuous)
 
-<!-- Image: images/img_053.png -->
+<img src="./images/img_053.png" alt="Exemples réels de HMM — figure 3 de 3" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1087,7 +1087,7 @@ layout: section
 - **HMMs have two important independence properties:**
   - Markov hidden process, future depends on past via the present
 
-<!-- Image: images/img_054.png -->
+<img src="./images/img_054.png" alt="Indépendance conditionnelle dans un HMM — figure 1 de 3" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1099,7 +1099,7 @@ layout: section
   - Markov hidden process, future depends on past via the present
   - Current observation independent of all else given current state
 
-<!-- Image: images/img_055.png -->
+<img src="./images/img_055.png" alt="Indépendance conditionnelle dans un HMM — figure 2 de 3" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1112,7 +1112,7 @@ layout: section
   - Current observation independent of all else given current state
 - **Quiz: does this mean that observations are independent given no evidence?**
 
-<!-- Image: images/img_056.png -->
+<img src="./images/img_056.png" alt="Indépendance conditionnelle dans un HMM — figure 3 de 3" style="display:block; margin:10px auto; max-width:100%;">
 
 
 
@@ -1154,7 +1154,7 @@ layout: section
 - **Learning: Generating a HMM from a sequence of observations**
 - **Solution: Forward-Backward Algorithm**
 
-<!-- Image: images/img_057.png -->
+<img src="./images/img_057.png" alt="Apprentissage d'un HMM : estimation des transitions et des émissions" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1167,7 +1167,7 @@ layout: section
   - Damp
   - Soggy
 
-<!-- Image: images/img_058.png -->
+<img src="./images/img_058.png" alt="Recherche exhaustive : énumération de toutes les séquences d'états" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1182,7 +1182,7 @@ layout: section
   - + ...
   - + Pr(dry, damp, soggy | rainy, rainy, rainy)
 
-<!-- Image: images/img_059.png -->
+<img src="./images/img_059.png" alt="Recherche exhaustive : explosion combinatoire des chemins" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1192,7 +1192,7 @@ layout: section
 
 - **We can calculate the probability of reaching an intermediate state in the trellis as the sum of all possible paths to that state**
 
-<!-- Image: images/img_060.png -->
+<img src="./images/img_060.png" alt="Programmation dynamique : réutilisation des sous-problèmes" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1202,7 +1202,7 @@ layout: section
 
 - **αₜ(j) = Pr(observation | hidden state is j) × Pr(all paths to state j at time t)**
 
-<!-- Image: images/img_061.png -->
+<img src="./images/img_061.png" alt="Programmation dynamique : propagation avant des probabilités" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1210,7 +1210,7 @@ layout: section
 
 # A better solution: dynamic programming
 
-<!-- Image: images/img_062.png -->
+<img src="./images/img_062.png" alt="Programmation dynamique : treillis des états dans le temps" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1218,7 +1218,7 @@ layout: section
 
 # A better solution: dynamic programming
 
-<!-- Image: images/img_063.png -->
+<img src="./images/img_063.png" alt="Programmation dynamique : reconstruction du chemin le plus probable" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1432,7 +1432,7 @@ layout: section
   - Urgent
   - …
 
-<!-- Image: images/img_076.png -->
+<img src="./images/img_076.png" alt="Agent fondé sur l'utilité : sélection d'action par utilité espérée" style="display:block; width:100%; max-height:110px; object-fit:contain; margin:6px auto;">
 
 *Notebooks : [DecInfer-01-Utility-Foundations](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (axiomes, fondements) · [DecInfer-03-Utility-Money](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb) (utilité monétaire, aversion au risque) · [DecInfer-05-Decision-Networks](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb) (réseaux de décision).*
 

@@ -71,7 +71,7 @@ from .sae_traces import (
     binarize_quantile,
     states_from_panel,
 )
-from .sae_traces import load_traces as _sae_load_traces
+from .sae_traces import _load_npz_unchecked as _sae_load_npz_unchecked
 
 __all__ = [
     "load_traces",
@@ -87,7 +87,7 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # Chargement (garde-fou anti-mélange Track S/SAE <-> Track P, #5681)
 # --------------------------------------------------------------------------- #
-def load_traces(path: str | Path) -> dict:
+def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     """Recharge un ``.npz`` de traces **J-Lens Track P** (persona, 4B).
 
     Garde-fou anti-mélange : valide la nature de la trace via ``meta["lens"]`` et
@@ -103,19 +103,33 @@ def load_traces(path: str | Path) -> dict:
     * ``meta["track"]`` commence par ``"P"`` ou est absent -> **accepte** (fixture
       Track P nominale, ou rétro-compatibilité).
 
+    Validation du **contrat de trace v1** (:mod:`ict.trace_contract`, #15476),
+    même discipline que :func:`ict.jlens_traces.load_traces` : ce chargeur ne
+    délègue PAS à :func:`ict.sae_traces.load_traces` (qui enforce
+    ``instrument == 'sae'`` et refuserait systématiquement une trace Track P
+    legacy ``lens='jacobian'``). Il lit le ``.npz`` via
+    :func:`ict.sae_traces._load_npz_unchecked`, applique ses gardes Track P,
+    puis le contrat avec ``expected='jlens'`` (legacy ``lens='jacobian'``
+    accepté en rétro-compatibilité). Un manifeste sans ``instrument`` NI
+    ``lens`` est stampé ``instrument='jlens'`` par cet adaptateur
+    (rétro-compat documentée par
+    ``tests/test_jlens_trackP_traces.py::test_load_traces_accepts_missing_track_and_lens``).
+    Le paramètre ``strict`` (défaut ``False``) suit la même convention que
+    :func:`ict.sae_traces.load_traces`.
+
     Retourne ``{"meta": dict, "prompts": {(set_name, i): {"ids", "vals",
     "tokens"}}}`` -- même structure que :func:`ict.sae_traces.load_traces`.
     """
-    traces = _sae_load_traces(path)
-    meta = traces.get("meta", {})
-    lens = meta.get("lens")
-    if lens == "sae":
+    raw_meta, prompts = _sae_load_npz_unchecked(path)
+    # Gardes Track P posées AVANT l'enforce contrat : les tests #5681 matchent
+    # les ValueError historiques ("sae" / "Track S").
+    if raw_meta.get("lens") == "sae":
         raise ValueError(
             f"trace {path} porte meta['lens']='sae' : c'est une trace SAE, pas "
             f"J-Lens Track P. Utiliser ict.sae_traces.load_traces (garde-fou "
             f"anti-mélange du tete-a-tete #5681 Track P)."
         )
-    track = meta.get("track", "")
+    track = raw_meta.get("track", "")
     if isinstance(track, str) and track.startswith("S"):
         raise ValueError(
             f"trace {path} porte meta['track']={track!r} : c'est une fixture "
@@ -123,4 +137,11 @@ def load_traces(path: str | Path) -> dict:
             f"Modèles distincts = substrats non comparables directement "
             f"(garde-fou anti-mélange Track S/Track P #5681)."
         )
-    return traces
+    # Rétro-compat : manifeste sans discriminant -> cet adaptateur (consommateur
+    # J-Lens Track P) déclare 'jlens' avant la validation du contrat.
+    if raw_meta.get("instrument") is None and raw_meta.get("lens") is None:
+        raw_meta["instrument"] = "jlens"
+    from .trace_contract import validate_manifest, enforce_instrument
+    meta = validate_manifest(raw_meta, strict=strict, expected="jlens")
+    enforce_instrument(meta, "jlens")
+    return {"meta": meta, "prompts": prompts}
