@@ -74,6 +74,7 @@ import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
+import Grothendieck.StalkGluing
 import Grothendieck.Subcanonical
 import Grothendieck.TopologyDictionary
 import Grothendieck.TopologyDictionary_en

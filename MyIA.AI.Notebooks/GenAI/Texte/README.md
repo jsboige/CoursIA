@@ -231,13 +231,13 @@ python scripts/notebook_tools/notebook_tools.py execute GenAI/Texte --timeout 30
 
 Le fil rouge de cette série est la progression de l'interaction basique avec un LLM vers la maîtrise complète en production. Voici comment les tiers s'articulent :
 
-1. **Tier 1** (fondations) : [1_OpenAI_Intro](1_OpenAI_Intro.ipynb) couvre l'API OpenAI et les tokens. [2_PromptEngineering](2_PromptEngineering.ipynb) explore les techniques de prompting (zero-shot, few-shot, chain-of-thought). À la fin, vous savez interagir efficacement avec un LLM.
+1. **Tier 1** (fondations) : [1_OpenAI_Intro](01_OpenAI_Intro.ipynb) couvre l'API OpenAI et les tokens. [2_PromptEngineering](02_PromptEngineering.ipynb) explore les techniques de prompting (zero-shot, few-shot, chain-of-thought). À la fin, vous savez interagir efficacement avec un LLM.
 
-2. **Tier 2** (sorties structurées) : [3_Structured_Outputs](3_Structured_Outputs.ipynb) maîtrise les formats JSON et Pydantic. [4_Function_Calling](4_Function_Calling.ipynb) connecte le LLM à des outils externes. Ces deux notebooks sont essentiels pour tout système qui pilote d'autres modèles génératifs (image, audio, video).
+2. **Tier 2** (sorties structurées) : [3_Structured_Outputs](03_Structured_Outputs.ipynb) maîtrise les formats JSON et Pydantic. [4_Function_Calling](04_Function_Calling.ipynb) connecte le LLM à des outils externes. Ces deux notebooks sont essentiels pour tout système qui pilote d'autres modèles génératifs (image, audio, video).
 
-3. **Tier 3** (augmentation) : [5_RAG_Modern](5_RAG_Modern.ipynb) et [6_PDF_Web_Search](6_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](7_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
+3. **Tier 3** (augmentation) : [5_RAG_Modern](05_RAG_Modern.ipynb) et [6_PDF_Web_Search](06_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](07_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
 
-4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](9b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
+4. **Tier 4** (production et local) : [8_Reasoning_Models](08_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](09_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
 
 5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
@@ -291,7 +291,7 @@ Le mode strict (`strict=True`) impose des contraintes sur les schémas JSON :
 - **Pas de profondeur excessive** (> 5 niveaux d'imbrication).
 - Le schéma doit être **déterministe** : chaque champ a exactement un type possible.
 
-Si le mode strict échoue, retirer `strict=True` et utiliser le mode par défaut (moins strict, mais le schéma est quand même respecté dans ~95% des cas). Le notebook [3_Structured_Outputs](3_Structured_Outputs.ipynb) montre les deux approches.
+Si le mode strict échoue, retirer `strict=True` et utiliser le mode par défaut (moins strict, mais le schéma est quand même respecté dans ~95% des cas). Le notebook [3_Structured_Outputs](03_Structured_Outputs.ipynb) montre les deux approches.
 
 ### Function calling : le modèle appelle un outil inexistant
 
@@ -301,7 +301,7 @@ Ce phénomène (hallucination d'outils) arrive quand :
 - Le prompt utilisateur est vague et le modèle "invente" un outil pour répondre.
 - Trop d'outils sont déclarés simultanément (> 10).
 
-Mitigation : fournir des descriptions précises pour chaque outil, valider les arguments côté client avant exécution, et limiter le nombre d'outils actifs. Le notebook [4_Function_Calling](4_Function_Calling.ipynb) montre le pattern de validation.
+Mitigation : fournir des descriptions précises pour chaque outil, valider les arguments côté client avant exécution, et limiter le nombre d'outils actifs. Le notebook [4_Function_Calling](04_Function_Calling.ipynb) montre le pattern de validation.
 
 ### RAG : les réponses sont hors-sujet ou inventées
 
@@ -320,7 +320,7 @@ Les modèles raisonnants consomment des **reasoning tokens** (non visibles) en p
 - **Latence** : les modèles raisonnants prennent plus de temps (10-60s vs 2-5s). Pas adaptés au temps réel.
 - **Usage** : excellents pour les tâches de planification, l'analyse multi-étapes, et la décomposition de problèmes complexes. Inutiles pour le simple formatage ou l'extraction.
 
-Le notebook [8_Reasoning_Models](8_Reasoning_Models.ipynb) compare les coûts et la qualité entre modèles raisonnants et classiques.
+Le notebook [8_Reasoning_Models](08_Reasoning_Models.ipynb) compare les coûts et la qualité entre modèles raisonnants et classiques.
 
 ### LLM local (vLLM) : erreur CUDA ou OOM
 
