@@ -403,6 +403,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   containerisee (LINUX_RUNNER_LABELS). Rollback = revert de la PR
     #   (l'entree disparait de l'allowlist).
     "paragraph-length-advisory.yml",
+    # #14598 sous-grain (owner myia-po-2025:CoursIA, claim c. issue) : sonde
+    #   TEMPORAIRE de mesure non censuree de tests/ (55) -- le plafond
+    #   production 30 min d'ict-tests.yml censure a droite les runs coupes
+    #   (6/11 des 30 derniers). Workflow diagnostique separe : pull_request
+    #   self-cover (declenche seulement par son propre fichier) +
+    #   workflow_dispatch, concurrency FIXE sans cancel-in-progress (une
+    #   mesure ne doit pas etre interrompue), timeout 90 min, pytest
+    #   --durations=25, venv per-job #14571, garde same-repo universelle au
+    #   niveau job, runs-on STATIQUE. Pur test pytest, aucun secret, aucun
+    #   GITHUB_TOKEN cote job, aucun label pose. Retirer ce workflow ET cette
+    #   entree dans la PR qui re-calibre le plafond d'apres la mesure
+    #   (acceptance reprise #14598). Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
+    "ict-tests-profile.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

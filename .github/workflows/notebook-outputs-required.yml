@@ -1,0 +1,229 @@
+name: Notebook outputs required (H.4 schema)
+
+# C.1084 — ferme l'angle mort remonte par Hermes (PR #15631, Concern
+# 2026-09-11T19:06:00Z) :
+#
+#   'Invalid Notebook / outputs is a required property /
+#    Using nbformat v5.10.4 and nbconvert v7.17.1'
+#
+# Le notebook livre (GameTheory-06g-Bounded-Agents-Lean.ipynb) avait 9/9
+# cellules code SANS la cle `outputs` (pas `outputs: []` vide -- la cle etait
+# absente du dict). Papermill a accepte (validator permissif), n'a rien
+# produit en sortie (kernel `lean4-wsl` hang faute de `.lake/`), et la cle
+# n'a jamais ete injectee. Le resultat : un notebook qui s'ouvre dans Jupyter,
+# parse en JSON, passe `execution_count is not None`, et EST pourtant invalide
+# contre le schema nbformat 5.10.4.
+#
+# Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule code.
+# Complement sans doublon du garde `notebook-execution-required.yml` (qui
+# verifie `execution_count != null`, zero erreur, C.1) et de
+# `notebook-cell-source-parses.yml` (parse de la cellule). Trois invariants
+# distincts, trois organes distincts -- la separation compte : un garde qui
+# tente de tous les porter devient opaque sur ses verdicts.
+#
+# Mandat Hermes explicite sur la PR #15631 : 'Creer l'organe de CI pour que ca
+# ne se reproduise pas'.
+#
+# Verdict :
+#   exit 0 -> PASS (toute cellule code a `outputs: list`)
+#   exit 1 -> FAIL (au moins une cellule manquante / mal typee)
+#   exit 2 -> erreur (notebook illisible / argument invalide)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/check_notebook_outputs_required.py'
+      - '.github/workflows/notebook-outputs-required.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: notebook-outputs-required-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  detect-changes:
+    name: Detect notebook changes (outputs-required)
+    runs-on: ubuntu-latest
+    # Garde anti-fork : un PR depuis un fork externe ne doit pas declencher
+    # ce job. Pattern repris de `notebook-execution-required.yml` pour
+    # coherence. Le job est GitHub-hosted (ubuntu-latest) -- le detecteur
+    # est stdlib-only et n'a besoin d'aucune specificite runner (cf.
+    # Hermes CONCERNS PR #15638 review 2026-09-11T20:33:58Z, B2).
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      notebooks: ${{ steps.detect.outputs.notebooks }}
+      has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Detect changed notebooks
+        id: detect
+        run: |
+          # PR : diff contre la base. push : pas d'inputs -- on scanne HEAD.
+          if [ -n "${{ github.event.inputs.notebook_paths }}" ]; then
+            NOTEBOOKS="${{ github.event.inputs.notebook_paths }}"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            NOTEBOOKS=$(git diff --name-only --diff-filter=ACM \
+              origin/${{ github.base_ref }} HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          else
+            # push to main : scan complet via git ls-tree du tree courant.
+            NOTEBOOKS=$(git ls-tree -r --name-only HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          fi
+
+          # Filtrer checkpoints, archives, _output, research (memes exclusions
+          # que dans check_latex_control_chars.py / check_notebook_outputs_required.py).
+          NOTEBOOKS=$(echo "$NOTEBOOKS" | grep -v '/.ipynb_checkpoints/' \
+            | grep -v '/archive/' | grep -v '/_output/' | grep -v '/research/' \
+            || true)
+
+          # grep -c imprime "0" ET exit 1 sur no-match ; "|| echo 0" ajouterait
+          # un second "0", produisant une ligne $GITHUB_OUTPUT invalide.
+          # "|| true" garde le "0" de grep et avale juste l'exit.
+          COUNT=$(echo "$NOTEBOOKS" | grep -c '\.ipynb$' || true)
+          echo "notebooks<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTEBOOKS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "has_notebooks=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Detected $COUNT notebook(s) changed"
+
+  validate:
+    name: Validate 'outputs' key on every code cell
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      # Pas de `actions/setup-python` ici : ubuntu-latest fournit deja Python,
+      # et le detecteur utilise UNIQUEMENT la stdlib (json + pathlib +
+      # subprocess). C'est le contraste voulu avec notebook-execution-required
+      # (qui depend de nbformat pour H.1/H.3) : ce garde est volontairement
+      # minimal pour rester rapide et deterministe -- son role est de completer,
+      # pas de dupliquer.
+
+      - name: Run outputs-required check
+        # Pattern miroir de notebook-execution-required.yml :
+        # `tee` au lieu de `>` seul pour preserver stdout visible ;
+        # `set +e` + PIPESTATUS capture pour laisser le rc du detecteur
+        # driver le verdict (sans cela, un bug dans la passe `tee` cacherait
+        # le rc reel).
+        run: |
+          set +e
+          python scripts/notebook_tools/check_notebook_outputs_required.py \
+            --pr-diff origin/${{ github.base_ref }} HEAD \
+            --json 2>&1 | tee /tmp/outputs_required.json
+          VALIDATOR_EXIT=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$VALIDATOR_EXIT" -ne 0 ]; then
+            echo ""
+            echo "::error::Notebook outputs-required check failed (exit $VALIDATOR_EXIT)."
+            echo "Cause: at least one code cell is missing or has a non-list 'outputs' key."
+            echo "Fix: re-execute the notebook so Papermill populates 'outputs',"
+            echo "     OR add 'outputs: []' explicitly to the affected cells."
+            echo ""
+            echo "Validator JSON output:"
+            cat /tmp/outputs_required.json
+            exit 1
+          fi
+
+          OCCURRENCES=$(python -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
+          echo "All notebooks pass: $OCCURRENCES defective code-cell(s) found."
+
+      - name: Post validation summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## Notebook outputs-required (H.4 schema): ';
+            let status = 'SKIPPED';
+            let summary = '';
+            try {
+              const results = JSON.parse(fs.readFileSync('/tmp/outputs_required.json', 'utf8'));
+              const total = results.occurrences || 0;
+              const nbCount = (results.notebooks || []).length;
+              const errCount = (results.errors || []).length;
+              if (total > 0) {
+                status = 'FAIL';
+                body += `**FAIL** (${total} defective cell(s) in ${nbCount} notebook(s))\n\n`;
+                for (const r of (results.notebooks || [])) {
+                  body += `### ${r.notebook}\n\n`;
+                  for (const d of (r.defects || [])) {
+                    body += `- cell#${d.cell_index} id=${d.cell_id}: ${d.reason}\n`;
+                  }
+                  body += `\n`;
+                }
+                body += `### How to fix\n\n`;
+                body += 'A code cell without an `outputs` key violates the nbformat 5.10.4 strict schema:\n\n';
+                body += '```python\n';
+                body += '# Option 1: re-execute the notebook so Papermill fills outputs\n';
+                body += 'python scripts/notebook_tools/notebook_tools.py execute <path>\n\n';
+                body += '# Option 2: add an empty outputs list explicitly (stub cells)\n';
+                body += '# Find cells missing the key in the .ipynb JSON and add:\n';
+                body += '#   "outputs": [],\n';
+                body += '# immediately after the "source" entry.\n';
+                body += '```\n\n';
+                body += 'See Hermes Concern on PR #15631 (2026-09-11T19:06:00Z) for the founding incident.\n';
+              } else if (errCount > 0) {
+                status = 'ERROR';
+                body += `**ERROR** (${errCount} unreadable notebook(s))\n\n`;
+                for (const e of (results.errors || [])) {
+                  body += `- ${e.notebook}: ${e.error}\n`;
+                }
+              } else {
+                status = 'PASS';
+                body += `**PASS** (every code cell carries an \`outputs: list\`)\n`;
+              }
+              summary = body;
+            } catch (e) {
+              summary = body + 'SKIPPED (validator did not produce JSON)\n';
+            }
+            core.info(summary);
+
+            // Post/update the PR comment. Wrap in try/catch : un 403 sur
+            // createComment ne doit JAMAIS rougir la gate (cf. lecon
+            // notebook-execution-required -- un cosmetic step ne rougit
+            // jamais une execution-verdict step).
+            try {
+              if (context.eventName === 'pull_request') {
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                });
+                const marker = 'Notebook outputs-required (H.4 schema):';
+                const existing = comments.find(c =>
+                  c.user.type === 'Bot' && c.body.includes(marker));
+                if (existing) {
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    comment_id: existing.id, body: summary,
+                  });
+                } else {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    issue_number: context.issue.number, body: summary,
+                  });
+                }
+              }
+            } catch (e) {
+              core.warning('Could not post outputs-required summary comment: ' + e.message);
+            }
