@@ -12,21 +12,26 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 678 items.
-#     55 != 1046 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
+#     @pytest.mark.parametrize) : tests/ = 1078 items, ict/tests/ = 678 items.
+#     55 != 1078 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1046/678), le label garde les strates (55/42).
+#     floor garde la collection (1078/678), le label garde les strates (55/42).
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
 # le 34 etait faux des l'inception. Les floors precedents (746/42, ai-01 @
 # dbfbf73ab) ont DERIVE en silence -- la collecte croissait sans que rien ne
-# le signale (746 -> 1046 / 42 -> 670, #15471). Les floors actuels (1046/678)
+# le signale (746 -> 1046 / 42 -> 670, #15471). Les floors actuels (1078/678)
 # sont mesures firsthand sur origin/main@5302d974aa (po-2023, venv Python 3.9
 # + pyphi 1.2.0 + numpy 1.26.4, deux collectes consecutives identiques) et
 # confirmes par la CI au run 34307798875 (main@9433e9a09d : 1046/670) ; le
 # second est remonte a 678 par #15665 (8 tests sae_dictionary), mesure locale
 # `--collect-only` = 678 et CI `Collected 678 > floor 670` (run 34658302553).
+# Le premier est remonte 1046 -> 1078 dans la MEME #15665, en rider attribue :
+# les +32 items viennent de main deja merge (trace contract #15548 et suits),
+# pas des fichiers de cette PR (ict/tests/ only) -- branche fraiche
+# (merge-base = main@162779ec061f), collecte locale 1078, annotation CI
+# "Collected 1078 > floor 1046" sur le run 34668612378.
 # Ils sont enforce par la collection floor-guard ci-dessous, pas seulement par ce
 # commentaire -- et depuis #15471 le guard emet aussi un ::warning quand la
 # collecte DEPASSE le floor (drift ascendant = floor a remonter dans la PR qui
@@ -81,16 +86,18 @@ jobs:
       matrix:
         include:
           # tests/ : 55 strates (34 originales + 21 edge-cases spectral/bistable/
-          # sensitivity consolides depuis ict/tests/, #9478) -> 1046 items collectes
+          # sensitivity consolides depuis ict/tests/, #9478) -> 1078 items collectes
           # (cf. test-floor : le floor compte la COLLECTION parametree, PAS les
-          # strates ; 55 != 1046 par construction ; compte mesure 2x sur
-          # origin/main@5302d974aa, CI-confirme run 34307798875). Rootdir herite du
+          # strates ; 55 != 1078 par construction ; compte mesure 2x sur
+          # origin/main@5302d974aa, CI-confirme run 34307798875 pour les 1046
+          # d'alors ; remonte a 1078 par #15665 en rider attribue -- les +32
+          # viennent de main deja merge, cf. header). Rootdir herite du
           # pyproject.toml d'ICT-Series/ (pip install -e . rend le package ict/
           # importable depuis n'importe quel cwd).
           - suite-name: "tests/ (55)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-floor: 1046
+            test-floor: 1078
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 678 items collectes (le "strates == collection" d'origine
           # est tombe : le parametrize est devenu massif ici aussi ; compte mesure
