@@ -245,6 +245,31 @@ def test_label_ecarte_le_grain_meme_si_klass_ne_l_a_pas_classe(monkeypatch):
 
 # --- surface 2 : le COMMENTAIRE, une requete par candidat TIRE -------------
 
+def test_umbrella_portant_le_marqueur_reste_tiree_controle_positif(monkeypatch):
+    """Controle POSITIF (review #15809) : l'urne `umbrella` n'est PAS filtree.
+
+    Deux raisons, toutes deux mesurees :
+    - le canal label ne marque JAMAIS un EPIC -- decision ecrite dans
+      `.github/workflows/candidate-delivered-advisory.yml` (« EPICs are
+      excluded ... the checkbox heuristic suggested in #10466 was measured
+      firsthand and is UNRELIABLE »). Filtrer l'umbrella par la porte du
+      commentaire serait un comportement neuf sans precedent dans l'organe ;
+    - le marqueur de #12208, l'exhibit lui-meme, dit « candidate-delivered
+      PARTIEL » et conclut « L'EPIC reste vivante comme parapluie de
+      tracking ». Une lane n'y claime jamais l'EPIC entier, elle y pioche ou
+      y cree un sous-grain (proactive-coordination R5) : servir une umbrella
+      partiellement livree est le MODE D'EMPLOI de l'urne, pas un cycle
+      brule. Ce test est ce qui distingue « les umbrellas sont protegees »
+      de « le filtre ne mord nulle part »."""
+    _patch_draw(monkeypatch, [200])
+    by = _by(umbrella=[_item(200, klass="umbrella")])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=0, umbrellas=1), random.Random(7), None, None,
+        None, delivered_probe=_probe(200))
+    assert [p["number"] for p in picks] == [200]
+    assert conflicts == []
+
+
 def test_commentaire_marqueur_ecarte_le_grain(monkeypatch):
     _patch_draw(monkeypatch, [1, 2])
     by = _by(grain=[_item(1), _item(2)])

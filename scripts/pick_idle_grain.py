@@ -715,11 +715,21 @@ def delivered_signal_reason(
     probe=None,
     failures: list[int] | None = None,
 ) -> str | None:
-    """Pourquoi ecarter ce candidat des urnes de PRODUCTION, ou ``None``.
+    """Pourquoi ecarter ce candidat de l'urne `grain`, ou ``None``.
 
-    L'urne `delivered` (#15069) n'appelle JAMAIS cette fonction : elle sert
-    precisement a remettre ces issues aux lanes habilitees, pour fermeture.
-    Ce qui est protege ici, ce sont les urnes `grain` et `umbrella`.
+    Portee : l'urne `grain` SEULE. Deux urnes ne l'appellent jamais --
+
+    - `delivered` (#15069) : elle sert precisement a remettre ces issues aux
+      lanes habilitees, pour fermeture ;
+    - `umbrella` : le canal label ne marque JAMAIS un EPIC, par decision
+      mesuree et ecrite (`.github/workflows/candidate-delivered-advisory.yml`
+      L21-24 : « EPICs are excluded ... the checkbox heuristic suggested in
+      #10466 was measured firsthand and is UNRELIABLE »). Un commentaire
+      « [INFO] candidate-delivered *partiel* » sur un EPIC (#12208 : « L'EPIC
+      reste vivante comme parapluie de tracking ») n'est pas un verdict de
+      fermeture : une lane n'y claime jamais l'EPIC entier, elle y pioche ou
+      y cree un sous-grain (proactive-coordination R5). Ecarter une umbrella
+      retirerait une source de grains de CONTENU, l'inverse du but.
 
     Le label est teste EN PREMIER parce qu'il ne coute rien ; la sonde de
     commentaire n'est atteinte que s'il est absent. Ce n'est pas une
@@ -776,7 +786,7 @@ def print_delivered_signal_report(
     if dropped:
         numbers = ", ".join(f"#{it['number']}" for it in dropped)
         print(f"Signal de livraison : {len(dropped)} candidat(s) "
-              f"ECARTE(S) des urnes de production : {numbers}.")
+              f"ECARTE(S) de l'urne grain : {numbers}.")
         print("   Label `" + DELIVERED_LABEL + "` ou commentaire `"
               + DELIVERED_COMMENT_MARKER + "` -- le travail est deja livre ;")
         print("   les re-servir comme grain ferait bruler un cycle a la lane "
@@ -1173,11 +1183,15 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
              ("umbrella", args.umbrellas, args.prev_genre),
              ("delivered", args.delivered, None))
     picks, claims, conflicts = [], {}, []
-    # Le filtre de livraison ne touche QUE les urnes de production : l'urne
-    # `delivered` est ce qui remet ces issues aux lanes habilitees (#15069),
-    # la traverser la viderait de son sens. `--include-delivered` est
-    # l'echappatoire nommee de la lane habilitee qui veut malgre tout tirer
-    # ces issues du vivier ordinaire.
+    # Portee du filtre de livraison : l'urne `grain` SEULE. L'urne
+    # `delivered` est ce qui remet ces issues aux lanes habilitees (#15069)
+    # -- la traverser la viderait de son sens. L'urne `umbrella` non plus :
+    # le canal label n'y marque jamais un EPIC par decision mesuree
+    # (candidate-delivered-advisory.yml : EPICs exclus, heuristique checkbox
+    # UNRELIABLE), et un « candidate-delivered partiel » sur un parapluie de
+    # tracking n'est pas un verdict de fermeture -- on y pioche ou on y cree
+    # un sous-grain (R5), on ne l'ecarte pas. `--include-delivered` reste
+    # l'echappatoire nommee.
     include_delivered = bool(getattr(args, "include_delivered", False))
     state = (delivered_state if delivered_state is not None
              else {"failures": [], "budget_hit": False})
@@ -1220,7 +1234,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         "produirait la collision, pas le livrable. Candidat "
                         "remplace dans la meme urne.")))
                     continue
-                if cls != "delivered" and not include_delivered:
+                if cls == "grain" and not include_delivered:
                     # Le label est teste A COUT NUL et vaut meme quand le
                     # plafond de sondes est epuise ; seule la sonde de
                     # commentaire est plafonnee, et son epuisement est
@@ -2825,7 +2839,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="urnes admises : grain,umbrella,delivered")
     ap.add_argument("--include-delivered", dest="include_delivered",
                     action="store_true",
-                    help="ne PAS ecarter des urnes de production les issues "
+                    help="ne PAS ecarter de l'urne grain les issues "
                          "portant un signal de livraison (label "
                          "candidate-delivered ou commentaire [INFO] "
                          "candidate-delivered) -- echappatoire nommee, "
