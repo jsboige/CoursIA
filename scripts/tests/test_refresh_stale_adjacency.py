@@ -163,7 +163,7 @@ def _setup_fake_for_pr(fake_run: FakeRun, pr: int, body: str,
                     "--jq")] = (
         0, "[]", "")
     checks = [
-        ["Always-on guards -- 12 organes, 1 checkout",
+        ["Always-on guards -- 13 organes, 1 checkout",
          "fail" if always_on_failing else "success", "0s", "https://x"],
     ]
     checks_text = "\n".join("\t".join(row) for row in checks) + "\n"

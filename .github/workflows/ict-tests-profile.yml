@@ -1,0 +1,163 @@
+name: ICT-Series Tests Profile Probe
+
+# SONDE TEMPORAIRE #14598 -- mesure NON CENSUREE de la suite tests/ (55).
+#
+# Pourquoi cette sonde existe : le workflow de production ict-tests.yml porte
+# un plafond timeout-minutes: 30 (Option A, #14598). Le diagnostic des 30
+# derniers runs (commentaire ai-01 sur #14598, 2026-09-12) montre 6 runs sur
+# 11 coupes a 30.4-30.5 min : GitHub rend "cancelled" pour un timeout de job,
+# pas "failure" -- ces durees sont CENSUREES A DROITE. Elles disent "> 30 min"
+# et rien de plus. L'unique succes tient 28.6 min et il est par construction
+# le plus rapide des runs ayant termine. Calibrer un plafond sur des
+# observations tronquees lirait la troncature comme une mesure (acceptance
+# reprise 1 de #14598 : un chiffre produit par la borne qu'on veut calibrer
+# ne peut pas calibrer cette borne).
+#
+# Ce que fait cette sonde -- et rien d'autre :
+#   - MEME suite (tests/, 55 strates / 1046 items), meme pool de runners
+#     (coursia-ephemeral / coursia-linux), meme Python 3.9, meme venv per-job
+#     (fix #14571) que ict-tests.yml ; SEUL le plafond change : 90 min.
+#   - pytest --durations=25 --durations-min=0 : classement des 25 items les
+#     plus lents, toute duree confondue (acceptance 2 : "nommer ce qui prend
+#     le temps").
+#   - elapsed + runner + exit code pytest dans GITHUB_STEP_SUMMARY.
+#   - log complet en artifact (if: always()) -- sur timeout 90 min, le log
+#     partiel livre au mieux (fenetre de cleanup courte) reste la preuve du
+#     point atteint.
+#
+# Ce que cette sonde NE fait PAS :
+#   - elle ne touche PAS a ict-tests.yml : le plafond de production reste
+#     30 min, INCHANGE. Tant que la mesure n'a pas re-calibre ce plafond, les
+#     runs de production annules a 30 min restent censure a droite.
+#   - elle n'est PAS un gate : aucune floor de collection, aucun verdict de
+#     couverture -- l'exit code pytest est seulement propage honnetement.
+#   - elle ne pose AUCUN label (check_workflow_label_paths.py hors scope).
+#
+# Retrait : une fois la mesure collectee et le plafond justifie par ecrit
+# contre elle (acceptance 3), retirer ce fichier ET son entree dans
+# SELF_HOSTED_WORKFLOW_ALLOWLIST (scripts/ci/check_self_hosted_runner_policy.py)
+# dans la meme PR.
+#
+# Concurrency FIXE (groupe constant, pas de cle github.ref) +
+# cancel-in-progress: false : une mesure en cours ne doit JAMAIS etre
+# annulee (par un push sur la PR ni par une autre sonde) -- une mesure
+# interrompue est censuree, exactement le defaut que cette sonde existe pour
+# eviter. Un 2e declenchement file d'attente derriere le 1er. Le groupe fixe
+# protege aussi le pool : jamais deux sondes simultanees sur coursia-linux.
+#
+# Routage : runner STATIQUE [self-hosted, coursia-ephemeral, coursia-linux]
+# (jambe Linux #14283 tranche 3), garde anti-fork IDENTIQUE a ict-tests.yml,
+# exigee par scripts/ci/check_self_hosted_runner_policy.py ; un runs-on
+# STATIQUE la rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+# Les PRs de fork sautent le job -- pr_gate.py compte skipped comme OK.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      # Self-cover (#8822) : la sonde se re-declenche quand son propre
+      # fichier change -- c'est son seul declencheur PR. Les runs de mesure
+      # utiles partent de workflow_dispatch (sur main, hors PR).
+      - '.github/workflows/ict-tests-profile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ict-tests-profile
+  cancel-in-progress: false
+
+jobs:
+  ict-tests-profile:
+    name: ICT tests/ (55) uncensored probe (#14598)
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Plafond de securite 90 min : la borne de production (30) censure a
+    # droite ; 90 min laisse la distribution respirer sans ouvrir la porte a
+    # un job enlise pour toujours (#15698 : un plafond est la seule protection
+    # contre un job parti sans retour -- on releve, on ne retire pas).
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: pip
+          cache-dependency-path: MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml
+
+      - name: Install ict package + deps dans venv per-job (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+        # Identique au step d'install d'ict-tests.yml (fix #14571a) : le
+        # toolcache du runner coursia-ephemeral est PERSISTANT entre
+        # conteneurs, un pip install -e . hors venv y ecrit des .pth qui
+        # empoisonnent les jobs ulterieurs (#14559/#14571). Le venv sous
+        # $RUNNER_TEMP est detruit en fin de job -> zero contamination.
+        # L'export GITHUB_PATH est INDISPENSABLE : sans lui le step suivant
+        # invoquerait le pytest systeme, pas celui du venv.
+        id: install
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        env:
+          ICT_PROFILE_VENV: ${{ runner.temp }}/ict-profile-venv
+        run: |
+          python -m venv "$ICT_PROFILE_VENV"
+          # shellcheck disable=SC1091
+          source "$ICT_PROFILE_VENV/bin/activate"
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+          # Garde-fou #14571 : verifier que pip show rapporte le site-packages
+          # du venv, pas celui du toolcache partage.
+          if ! pip show ict-series 2>/dev/null | grep -q "$ICT_PROFILE_VENV"; then
+            echo "::error title=ICT install hors venv::pip show ict-series ne pointe pas vers \$ICT_PROFILE_VENV -- l'install a ecrit dans le toolcache partage, defaut #14571 reproduit. Venv: $ICT_PROFILE_VENV"
+            pip show ict-series || true
+            exit 1
+          fi
+          echo "ICT install OK in venv (pip show ict-series -> $ICT_PROFILE_VENV)"
+          python -c "import ict; print('ict import OK, __file__=', ict.__file__)"
+          echo "$ICT_PROFILE_VENV/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests/ (55) -- mesure non censuree (plafond sonde 90 min)
+        # Invocation = production (ict-tests.yml, matrix tests/) + drapeaux
+        # de mesure : EXACTEMENT
+        #   pytest tests --tb=short -v --durations=25 --durations-min=0
+        # Rootdir ICT-Series/ (piege d'import #9387 : pyproject.toml local).
+        # Exit code : le shell GHA est bash -eo pipefail ; on neutralise -e
+        # le temps de la fenetre de mesure, on capture PIPESTATUS[0] (le code
+        # de PYTEST, pas celui de tee) et on le re-exporte en fin de step --
+        # la sonde ne masque jamais le verdict reel de la suite.
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        env:
+          ICT_PROFILE_LOG: ${{ runner.temp }}/ict-tests-profile.log
+        run: |
+          set +e
+          start=$(date +%s)
+          pytest tests --tb=short -v --durations=25 --durations-min=0 2>&1 | tee "$ICT_PROFILE_LOG"
+          pytest_rc=${PIPESTATUS[0]}
+          elapsed=$(( $(date +%s) - start ))
+          set -e
+          {
+            echo "## Sonde #14598 -- tests/ (55), mesure non censuree (plafond sonde 90 min)"
+            echo ""
+            echo "- elapsed: ${elapsed}s (~$((elapsed / 60)) min)"
+            echo "- runner: ${RUNNER_NAME:-unknown}"
+            echo "- pytest exit code: ${pytest_rc} (0 = success, 1 = tests en echec, autres = voir doc pytest)"
+            echo ""
+            echo "Sonde temporaire #14598. Le plafond de production 30 min d'ict-tests.yml"
+            echo "reste INCHANGE : les runs de production annules a 30 min sont censure"
+            echo "a droite -- cette sonde est le point non censure de la distribution."
+            echo "Retirer ce workflow apres collecte et re-calibrage du plafond."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$pytest_rc"
+
+      - name: Upload full probe log
+        # if: always() : le log est livre meme quand pytest echoue (la mesure
+        # importe plus que le verdict) et au mieux sur timeout 90 min.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ict-tests-profile-log
+          path: ${{ runner.temp }}/ict-tests-profile.log
+          if-no-files-found: warn
+          retention-days: 14

