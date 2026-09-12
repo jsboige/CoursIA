@@ -245,6 +245,58 @@ def test_crash_fallback_publish_failure_does_not_mask_the_crash(
     assert "crash fallback not published" in out.out
 
 
+def test_crash_fallback_propagates_the_current_run_attempt(
+    monkeypatch, capsys
+):
+    """Le repli de crash doit viser le check-run de la tentative COURANTE.
+
+    Mesure de l'adjudant (head `1c7f57119a`) : sur un `run_attempt=2` qui
+    porte encore les jobs des tentatives 1 et 2, la voie normale filtre par
+    `GITHUB_RUN_ATTEMPT` mais le repli ne le transmettait pas -- il resolvait
+    alors le titre de crash sur le check-run SUPERSEDE de la tentative 1, et
+    la tentative courante gardait `output.title = null` : le defaut meme que
+    #15825 elimine, sur le chemin qui doit justement le couvrir.
+    """
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom au run_attempt 2")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message,
+                     advisory=(), run_attempt=None, **_k):
+        seen["run_attempt"] = run_attempt
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["run_attempt"] == "2", (
+        "sans la tentative courante, le repli PATCH le check-run supersede et "
+        "le defaut #15825 survit sur le run_attempt > 1"
+    )
+    capsys.readouterr()
+
+
+def test_crash_fallback_preserves_the_traceback(monkeypatch, capsys):
+    """Le titre du check-run tient sur une ligne, donc le repli ne garde que
+    `repr(exc)` ; la trame causale doit rester lisible dans le log."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("cause racine a diagnostiquer")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    captured = capsys.readouterr()
+    assert "Traceback (most recent call last)" in captured.err
+    assert "cause racine a diagnostiquer" in captured.err
+
+
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
     pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])

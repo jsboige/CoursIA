@@ -161,6 +161,7 @@ import re
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -1577,6 +1578,12 @@ def _crash_fallback_publish(exc: BaseException) -> None:
     PATCHes the crash motive from environment-derived parameters (main()
     may have died before parsing anything), and never raises: a publication
     failure must not mask the original crash.
+
+    ``run_attempt`` is propagated for the same reason the normal path passes
+    it: a re-run leaves the superseded attempts' jobs in the same run, and
+    without the filter the selector resolves the crash motive onto the
+    SUPERSEDED check-run -- leaving the current attempt carrying
+    ``output.title = null``, the very defect #15825 removes.
     """
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     run_id = os.environ.get("GITHUB_RUN_ID", "")
@@ -1586,6 +1593,7 @@ def _crash_fallback_publish(exc: BaseException) -> None:
         publish_check_run_output(
             repo, run_id, DEFAULT_SELF_NAME, 1,
             f"FAIL -- pr_gate internal error: {type(exc).__name__}: {exc}",
+            run_attempt=os.environ.get("GITHUB_RUN_ATTEMPT"),
         )
     except Exception as pub_exc:
         print(
@@ -1608,6 +1616,9 @@ def _entry(argv: "Iterable[str] | None" = None) -> int:
     try:
         return main(argv)
     except Exception as exc:
+        # `repr(exc)` alone loses the causal frame -- the check-run title has
+        # to stay one line, but the log is where the crash is diagnosable.
+        traceback.print_exc()
         _crash_fallback_publish(exc)
         print(f"[pr-gate] FAIL -- internal error: {exc!r}", flush=True)
         print(
