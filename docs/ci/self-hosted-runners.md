@@ -33,7 +33,9 @@ Pour chaque job disposant de timestamps cohérents :
 - **minutes-runner par heure murale** = somme du travail des jobs / durée de la fenêtre ;
 - **équivalents runners moyens** = somme du travail / durée de la fenêtre, les deux exprimées en minutes.
 
-`run_started_at` n'est pas utilisé pour l'attente : l'API peut le rendre égal au `created_at` du run alors que ses jobs attendent encore. Un job annulé après avoir démarré a consommé un runner et compte dans le travail. Un job `skipped` ou encore en file ne devient jamais une durée zéro : il apparaît dans `incomplete_or_untimed_jobs` et réduit `timing_coverage`. GitHub peut aussi inverser deux timestamps adjacents d'exactement une seconde à cause de leur précision : ces jobs sont exclus du calcul et comptés dans `timestamp_skew_jobs`; une inversion supérieure à une seconde casse la mesure (`exit 2`).
+L'analyse publie aussi les distributions d'attente et de travail (`p50`, `p90`, `max`) dans `by_label` et `by_runner`. Un job qui porte plusieurs labels contribue une fois à chacun d'eux ; les groupes sont triés lexicalement pour rendre les replays déterministes. Les identités absentes restent visibles sous `<unlabelled>` et `<unassigned>` au lieu d'être supprimées. Chaque groupe expose `jobs`, `timed_jobs`, `incomplete_or_untimed_jobs`, `timestamp_skew_jobs` et `timing_coverage` : un percentile sans job temporisable vaut `null`, jamais zéro.
+
+`run_started_at` n'est pas utilisé pour l'attente : l'API peut le rendre égal au `created_at` du run alors que ses jobs attendent encore. Un job annulé après avoir démarré a consommé un runner et compte dans le travail. Un job `skipped` ou encore en file ne devient jamais une durée zéro : il apparaît dans `incomplete_or_untimed_jobs` et réduit `timing_coverage`. GitHub peut aussi inverser des timestamps adjacents à cause de leur précision : ces jobs sont exclus du calcul et comptés dans `timestamp_skew_jobs`, sans transformer l'anomalie en durée négative ou nulle.
 
 La provenance est classée en trois catégories :
 
@@ -58,10 +60,11 @@ Avant toute bascule, relever au minimum :
 3. la couverture temporelle ;
 4. les minutes-runner/heure ;
 5. le détail par workflow et par conclusion ;
-6. les comptes `same_repo`, `fork` et `unknown` ;
-7. les rafales `runs_created_per_minute`.
+6. les p50/p90/max d'attente et de travail par label et par runner, avec leurs dénominateurs ;
+7. les comptes `same_repo`, `fork` et `unknown` ;
+8. les rafales `runs_created_per_minute`.
 
-Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger.
+Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger. Les distributions par label et runner localisent une saturation observée ; elles ne révèlent pas à elles seules combien de runners partagent un hôte physique, son plafond de concurrence, ni la politique de capacité à retenir. Ces décisions exigent une mesure de topologie distincte.
 
 ## Topologie retenue
 
