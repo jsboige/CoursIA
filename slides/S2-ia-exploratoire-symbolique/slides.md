@@ -41,7 +41,7 @@ layout: cover
   - Comment utiliser les données et l'expérience ?
 - Application: le langage naturel
 
-<!-- Image: images/img_001.jpg -->
+<img src="./images/img_001.jpg" alt="Panorama des approches de l'IA : probabiliste, multi-agents, apprentissage, langage naturel" style="display:block; margin:10px auto; width:100%; max-height:40px; object-fit:contain; margin:2px auto -34px;">
 
 
 
@@ -98,7 +98,7 @@ layout: cover
 - **Théorie du contrôle** : Maximiser une fonction objective dans le temps
 - **Linguistique** : Représentation de connaissances, grammaire
 
-<!-- Image: images/img_002.png -->
+<img src="./images/img_002.png" alt="Disciplines fondatrices de l'IA : psychologie, informatique, théorie du contrôle, linguistique" style="display:block; margin:10px auto; width:100%; max-height:165px; object-fit:contain; margin:2px auto -34px;">
 
 
 ---
@@ -121,7 +121,7 @@ layout: cover
 - **2000s** : Data mining, reconnaissances, apprentissage bayésien, web sémantique
 - **2010s** : Big data, deep learning, chatbots, smart contracts, cloud, architectures hybrides
 
-<!-- Image: images/img_003.png -->
+<img src="./images/img_003.png" alt="Chronologie de l'IA des années 1990 aux années 2010 : agents, data mining, deep learning" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -171,7 +171,7 @@ layout: cover
   - **Fonction d'agent: de l'historique des perceptions (percepts) vers les actions:**
     - [f: P* A]
 
-<!-- Image: images/img_006.png -->
+<img src="./images/img_006.png" alt="Fonction d'agent : de l'historique des perceptions vers les actions" style="display:block; margin:10px auto; width:100%; max-height:285px; object-fit:contain; margin:2px auto -34px;">
 
 
 
@@ -275,7 +275,7 @@ layout: cover
 
 # Environnement de tâche (exemples)
 
-<!-- Image: images/img_013.png -->
+<img src="./images/img_013.png" alt="Agents et environnements de tâche : capteurs en entrée, effecteurs en sortie, exemples" style="display:block; margin:10px auto; max-width:100%;">
 
 
 
@@ -343,7 +343,7 @@ layout: cover
 - **Compromis**
   - Flexibilité vs complexité
 
-<!-- Image: images/img_016.png -->
+<img src="./images/img_016.png" alt="Niveaux de représentation de l'environnement : atomique, factorisée, structurée" style="display:block; margin:10px auto; max-width:100%;">
 
 
 
@@ -412,7 +412,7 @@ layout: section
   - e.g., Arad, Sibiu, Fagaras, Bucharest
   - Solution optimale = cout minimal
 
-<!-- Image: images/img_018.png -->
+<img src="./images/img_018.png" alt="Formulation d'un problème : actions de conduite entre villes et coût de chemin" style="display:block; margin:10px auto; width:100%; max-height:48px; object-fit:contain; margin:2px auto -34px;">
 
 <!-- Illustration : carte de Roumanie avec chemins explores par A* -->
 
@@ -518,7 +518,7 @@ layout: two-cols
 - **Principe**
   - On tri les nœuds en ordre décroissant de désirabilité
 
-<!-- Image: images/img_025.png -->
+<img src="./images/img_025.png" alt="Exploration informée : fonction d'évaluation développant les nœuds les plus désirables" style="display:block; margin:10px auto; width:100%; max-height:100px; object-fit:contain; margin:2px auto -34px;">
 
 <!-- Demo : comparaison visuelle Greedy vs A* sur PathFinding.js -->
 
@@ -573,8 +573,8 @@ layout: two-cols
     - Phénotype
     - Fonction d'adaptation
 
-<!-- Image: images/img_028.png -->
-<!-- Image: images/img_029.png -->
+<img src="./images/img_028.png" alt="Combinaison d'algorithmes et d'intelligence naturelle — figure 1 de 2" style="display:inline-block; margin:0 6px -34px; max-height:70px; object-fit:contain; max-width:47%; vertical-align:middle;">
+<img src="./images/img_029.png" alt="Combinaison d'algorithmes et d'intelligence naturelle — figure 2 de 2" style="display:inline-block; margin:0 6px -34px; max-height:70px; object-fit:contain; max-width:47%; vertical-align:middle;">
 
 <!-- Demo : visualisation convergence dans le notebook GeneticSharp -->
 
@@ -618,7 +618,7 @@ layout: two-cols
 - **Techniques probabilistes**
   - Expectiminimax, méthodes de Monte-Carlo
 
-<!-- Image: images/img_030.png -->
+<img src="./images/img_030.png" alt="Panorama des techniques de résolution, dont les techniques probabilistes" style="display:block; margin:10px auto; width:100%; max-height:110px; object-fit:contain; margin:2px auto -34px;">
 
 
 ---
@@ -637,7 +637,7 @@ layout: two-cols
   - Permet l'utilisation de méthodes générales
     - plus puissantes que les algorithmes standards d'exploration
 
-<!-- Image: images/img_031.png -->
+<img src="./images/img_031.png" alt="Problème de satisfaction de contraintes : formulation standard d'exploration" style="display:block; margin:10px auto; width:100%; max-height:185px; object-fit:contain; margin:2px auto -34px;">
 
 
 ---
@@ -695,8 +695,8 @@ layout: two-cols
   - Contrainte de rupture de symétrie
     - ex: ordre alphabétique: NT<SA<WA
 
-<!-- Image: images/img_036.png -->
-<!-- Image: images/img_037.png -->
+<img src="./images/img_036.png" alt="Symétries en coloration de graphe : n! permutations équivalentes — figure 1 de 2" style="display:inline-block; margin:0 6px -34px; max-height:90px; object-fit:contain; max-width:47%; vertical-align:middle;">
+<img src="./images/img_037.png" alt="Symétries en coloration de graphe : n! permutations équivalentes — figure 2 de 2" style="display:inline-block; margin:0 6px -34px; max-height:90px; object-fit:contain; max-width:47%; vertical-align:middle;">
 
 
 ---

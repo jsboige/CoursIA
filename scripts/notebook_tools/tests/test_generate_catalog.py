@@ -8,6 +8,7 @@ classify_maturity.
 import json
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -1919,6 +1920,123 @@ class TestGenerateMarkdownReport:
             "#quarto-document-content table { display: block; overflow-x: auto; }"
             in report
         )
+
+
+# --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---
+
+def _write_nb(path: Path, cells=None) -> None:
+    """Write a minimal valid notebook at path (parents created)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells if cells is not None else [], "metadata": {}}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+
+class TestScanExclusions:
+    """L'écart arbre/catalogue doit se réconcilier par construction :
+    chaque notebook écarté est compté sous son motif exact, dans l'ordre
+    de précédence réel des règles du scan."""
+
+    def test_reconciliation_par_motif(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        # Une série saine : 1 gardé + 1 par motif d'exclusion.
+        _write_nb(root / "SerieA" / "keep.ipynb")
+        _write_nb(root / "SerieA" / "research" / "r.ipynb")
+        _write_nb(root / "SerieA" / "deep" / "_archive" / "a.ipynb")
+        _write_nb(root / "SerieA" / "old_executed.ipynb")
+        _write_nb(root / "SerieA" / ".ipynb_checkpoints" / "c.ipynb")
+        # Racine : jamais parcourue (le scan itère les séries).
+        _write_nb(root / "GradeBook-like.ipynb")
+        # Série entière exclue.
+        _write_nb(root / "obj" / "serie-exclue.ipynb")
+        # JSON illisible : analyze_notebook rend None.
+        bad = root / "SerieA" / "broken.ipynb"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_text("{not json", encoding="utf-8")
+
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(exclusions=exclusions)
+
+        assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
+        assert exclusions == Counter({
+            "pedagogical:research": 1,
+            "pedagogical:_archive": 1,
+            "suffixe_executed": 1,
+            "segment_exclu:.ipynb_checkpoints": 1,
+            "racine_non_parcourue": 1,
+            "serie_exclue:obj": 1,
+            "json_illisible": 1,
+        })
+
+    def test_precedence_premiere_regle_gagnante(self, tmp_path, monkeypatch):
+        """Un notebook cumulant plusieurs motifs (research/ + _executed)
+        est compté sous le PREMIER motif applicable — suffixe avant substring."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        _write_nb(root / "SerieA" / "research" / "both_executed.ipynb")
+
+        exclusions = Counter()
+        gc.scan_all_notebooks(exclusions=exclusions)
+        assert exclusions == Counter({"suffixe_executed": 1})
+
+    def test_git_non_tracke_seulement_avec_le_flag(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        _write_nb(root / "SerieA" / "a.ipynb")
+        _write_nb(root / "SerieA" / "b.ipynb")
+        # _git_tracked_files mocké : SEULEMENT a.ipynb est suivi.
+        monkeypatch.setattr(
+            gc, "_git_tracked_files",
+            lambda: {"MyIA.AI.Notebooks/SerieA/a.ipynb"},
+        )
+
+        # Sans le flag : rien de filtré, aucune exclusion.
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(exclusions=exclusions)
+        assert len(entries) == 2 and not exclusions
+
+        # Avec --git-tracked-only : b.ipynb compté sous son motif.
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(
+            git_tracked_only=True, exclusions=exclusions
+        )
+        assert [e["path"] for e in entries] == ["SerieA/a.ipynb"]
+        assert exclusions == Counter({"git_non_tracke": 1})
+
+    def test_motif_substring_deterministe(self, tmp_path, monkeypatch):
+        """Un chemin contenant plusieurs substrings de EXCLUDE_PEDAGOGICAL
+        est attribué au motif le plus spécifique (tri déterministe), pas a
+        l'ordre d'itération du set."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        # "_archive" contient aussi "archive" : "_archive" (trié avant) gagne.
+        _write_nb(root / "SerieA" / "x_archive_y" / "n.ipynb")
+
+        exclusions = Counter()
+        gc.scan_all_notebooks(exclusions=exclusions)
+        assert exclusions == Counter({"pedagogical:_archive": 1})
+
+    def test_sans_compteur_comportement_inchange(self, tmp_path, monkeypatch):
+        """Sans le paramètre exclusions, le scan rend exactement ce qu'avant
+        (signature additive : les appelants existants ne changent pas)."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        _write_nb(root / "SerieA" / "keep.ipynb")
+        _write_nb(root / "SerieA" / "research" / "r.ipynb")
+
+        entries = gc.scan_all_notebooks()
+        assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
 
 
 if __name__ == "__main__":
