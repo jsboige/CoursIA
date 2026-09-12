@@ -1066,3 +1066,55 @@ TRANCHE9: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 10 (c.1090) -- ferme l'angle mort remonte par Hermes Concern sur la
+# PR #15631 (2026-09-11T19:06:00Z) :
+#
+#   'Invalid Notebook / outputs is a required property /
+#    Using nbformat v5.10.4 and nbconvert v7.17.0'
+#
+# Le c.1082 fabrication de GameTheory-06g-Bounded-Agents-Lean.ipynb a omis
+# la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
+# accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
+# cle n'a jamais ete injectee -- resultat : un notebook structurellement
+# invalide contre le schema nbformat 5.10.4.
+#
+# Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
+# mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
+# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
+# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+#
+# Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
+# code. `outputs: []` est PASS (la forme canonique d'une cellule non executee
+# / stub), `outputs: <non-list>` est FAIL. Il complement sans dupliquer les
+# gardes H.1/H.3/C.1 du `notebook-execution-required.yml` -- trois invariants
+# distincts, trois organes distincts.
+#
+# Dette repo-wide (c.1084 sweep initial sur main d14b1ac098) : 0 defective
+# code-cell / 0 notebook. Le corpus est deja conforme au moment du cablage.
+# On peut donc demarrer en `blocking=True` -- un garde qui protege un
+# invariant deja tenu est ce qu'il y a de plus sain : il empeche la
+# recurrence sans pourrir le merge-gate. Si la dette etait >0, on aurait
+# demarre ADVISORY + migration par lots avant de basculer en bloquant.
+# ---------------------------------------------------------------------------
+TRANCHE10: list[Guard] = [
+    Guard(
+        name="Notebook outputs required (H.4 schema)",
+        source="notebook-outputs-required.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_notebook_outputs_required.py",
+            ".github/workflows/notebook-outputs-required.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_notebook_outputs_required.py",
+            "--pr-diff", "{base_ref}", "HEAD", "--json",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
