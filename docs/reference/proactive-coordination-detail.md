@@ -200,3 +200,46 @@ Avant que le tirage ne devienne systématique (R5), le plafond de veine portait 
 L'amendement ai-01 du 2026-08-16T22:53Z (verbatim : « on ne jette pas du travail écrit ») borne l'interdit : **le plafond ne bloque jamais la tranche en cours**, seulement la PR suivante.
 
 Anti-pattern fondateur : continuer à claimer `#11224`/`#11271` après la 3ᵉ tranche sans passer par le picker = monoculture auto-référence, le défaut structurel que la veine-mesure a justement rendu visible.
+
+## Plancher de session — pourquoi « plusieurs grains dont un DUR » (mandat user 2026-09-12)
+
+Le plancher R1 a lu « ≥1 PR entre 2 wakeups » depuis le mandat du 2026-05-23. Ce qu'il mesurait
+— est-ce que la lane a livré ? — a cessé d'être la question dès que la flotte a atteint son régime :
+la réponse est « oui » dix fois par jour et par lane, et le plancher ne discrimine plus rien.
+
+**Mesure du 2026-09-12T16:39Z**, attribution par le tag `Grain:` (jamais `--author` : l'identité de
+poussée `jsboige` est partagée, cf. L721) :
+
+| Fenêtre | merges | DEEP | MED | LIGHT | CONTENU | META |
+|---|---:|---:|---:|---:|---:|---:|
+| 7 jours | **583** (83,3/jour) | 88 — **15 %** | 400 | 88 | 314 | 260 |
+| 48 heures | **196** (98,0/jour) | 35 — **18 %** | 113 | 45 | **82** | **109** |
+
+Deux lectures, et c'est la seconde qui a décidé du durcissement :
+
+1. **Le volume n'est pas le défaut.** 98 PRs mergees par jour sur ~11 lanes. Une règle qui répète
+   « ne t'arrête pas après une PR » corrige un problème que la flotte n'a plus.
+2. **La dureté et le contenu décrochent.** 15 % de DEEP sur la semaine ; et sur 48 h le **META passe
+   devant le CONTENU** (109 contre 82) alors qu'il reste derrière sur 7 jours (260 contre 314). La
+   flotte construit l'atelier plus vite qu'elle n'y fabrique — exactement le défaut que G-VAR-1
+   nomme, et qu'un plancher « DEEP ou MED » laissait passer puisque MED tenait 400 merges sur 583.
+
+**Le contraste par lane rend le mécanisme lisible** — le volume et la substance ne sont pas corrélés :
+
+| lane | merges 7 j | CONTENU | DEEP |
+|---|---:|---:|---:|
+| `myia-po-2023:CoursIA` | 108 | 39 | **8** |
+| `myia-po-2026:CoursIA` | 98 | 35 | 6 |
+| `myia-po-2024:CoursIA` | 71 | 51 | 15 |
+| `myia-po-2027:CoursIA-2` | 41 | 32 | **10** |
+| `myia-ai-01:CoursIA` (coordinateur) | 38 | 7 | **1** |
+
+La lane au plus gros volume de la flotte est l'avant-dernière en dureté ; celle à 41 merges rend
+quatre fois plus de CONTENU par merge. Et **la lane la plus méta de la flotte est celle du
+coordinateur** : 1 DEEP en sept jours, 0 sur 48 h. Le durcissement de R1 s'applique d'abord à lui —
+c'est la lecture honnête de ce tableau, et elle interdit de le lire comme un reproche aux lanes.
+
+**Ce que la mesure ne dit pas.** Les tiers sont **déclarés** : un DEEP sur-coté compte ici comme un
+DEEP. Le durcissement déplace donc une partie de la charge sur la re-qualification de tag au
+merge-gate ([variation-protocol.md](../../.claude/rules/variation-protocol.md) §3), qui existe
+précisément pour ça. Un futur recomptage devra être lu avec cette réserve, pas sans elle.
