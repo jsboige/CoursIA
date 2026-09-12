@@ -193,7 +193,12 @@ def test_bench_vary_one_facteur_gele_identique_libre_different():
     bench = FactoredBench(Mess3(), RRXOR())
     vy = bench.vary_one(40, frozen="a", seed_frozen=77, seeds_varying=[1, 2, 3])
     reps = np.stack(vy["varying_obs"])
-    assert np.array_equal(reps[0], reps[0])
+    # le facteur gele ne depend PAS des seeds libres : meme trajectoire gelee
+    # quand on change la liste des seeds qui varient. Sans cette mesure, la
+    # propriete ne reposait que sur la construction du code (un seul appel a
+    # sample(n, seed_frozen)), ce qu'aucune assertion ne verifiait.
+    vy_autres_seeds = bench.vary_one(40, frozen="a", seed_frozen=77, seeds_varying=[4, 5])
+    assert np.array_equal(vy["fixed_obs"], vy_autres_seeds["fixed_obs"])
     assert not np.array_equal(reps[0], reps[1])
     assert not np.array_equal(reps[1], reps[2])
     # gele : meme trajectoire reconstruite par le meme seed
