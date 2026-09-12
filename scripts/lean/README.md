@@ -325,3 +325,28 @@ mais reçoit des paths POSIX-style en entrée (`REPO_ROOT=/c/...`). Bug mesuré 
 
 Voir aussi : `lean-wdac-olean-wholesale-copy.md`, `lean-knot-build-windows-cache.md`,
 `lean-rc1-convergence-method.md` dans `~/.claude/projects/c--dev-CoursIA-2/memory/`.
+
+## `life_components.py` — le schéma symbolique au-dessus du moteur cellulaire (tranche 1+2 de #15635)
+
+Le moteur cellulaire (`life_synthesize.py`, `life_synthesize_sat.py`) cherche un
+motif en énumérant des cellules. Il ignore ce que la communauté Life sait déjà
+des briques connues. Ce module ajoute la couche **symbolique** : un format
+versionné pour décrire des *motifs/composants* et des *réactions*, validé par
+**replay** dans le moteur du dépôt plutôt que par confiance dans les
+métadonnées déclarées.
+
+```
+python scripts/lean/life_components.py --fixture scripts/lean/life_components_fixture.json
+python -m pytest scripts/lean/tests/test_life_components.py -q
+```
+
+Le validateur sort `0` si période, translation, population, boîte, enveloppe,
+catégorie, symétries, phases, produit, stabilisation, clearance et nature
+correspondent au replay ; `1` sinon, en nommant le champ fautif. Deux règles de
+fond : une symétrie n'est admissible que si elle **préserve le vecteur de
+translation** (sinon les quatre orientations d'un glider se confondraient), et
+une réaction dont le produit déclaré ne correspond pas à l'évolution jointe de
+ses réactifs est refusée.
+
+Document complet (périmètre, ce qui est mesuré vs déclaré, provenance des faits,
+limites assumées) : [`docs/lean/life-components-schema.md`](../../docs/lean/life-components-schema.md).
