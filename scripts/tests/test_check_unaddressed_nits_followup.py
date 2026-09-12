@@ -430,3 +430,108 @@ def test_14218_mutation_si_predicat_retire_les_fp_rougissent():
         # mutation representative, et on documente la borne.
     finally:
         mod._issue_references_pr = saved
+
+
+# --- #14705 — voie 3 ouverte au coordinateur (B.0 est son gate) -----------------
+#
+# Cas fondateur : #14673 (réserve Hermes du 2026-09-04, report #14704 nommé
+# par myia-ai-01). Toutes les conditions de substance passaient ; seule
+# l'identité du nommeur échouait (`namer='myia-ai-01'` hors
+# `(login, pr_author)`), et le merge a dû passer par `[OVERRIDE] lane` — la
+# porte d'arbitrage EXCEPTIONNEL — pour un report que B.0 prévoit comme voie
+# ORDINAIRE.
+#
+# La borne nommeur garde sa raison d'être sur les voies 1/2 (se lever
+# soi-même n'est pas répondre, #11145/#12798) ; elle ne transpose pas à la
+# voie 3, qui affirme le CONTRAIRE — la réserve n'est pas traitée, elle est
+# reportée. Un report se falsifie en n'ouvrant pas l'issue ; les conditions
+# 1-6 (#14218) le vérifient côté serveur. L'identité du nommeur n'y ajoute
+# rien — sauf à retirer au coordinateur la seule voie que B.0 lui donne.
+
+_PR_14705 = 14673  # la PR réelle du cas fondateur
+
+REPORT_COORD = {
+    "author": {"login": "myia-ai-01"},
+    "createdAt": at(12),
+    "body": "Le nit d'attribution est reporte sciemment sur l'issue #500.",
+}
+
+
+def test_14705_coordinateur_leve_reserve_hermes():
+    """Le cas mesuré (#14673) : réserve Hermes, pr-auteur == jsboige,
+    nommeur == coordinateur, issue ouverte postérieure référençant la PR —
+    lève SANS [OVERRIDE]."""
+    res = run([REPORT_COORD], reviews=[HERMES_NIT],
+              issue_info=resolver(ISSUE_OK, pr_number=_PR_14705),
+              number=_PR_14705)
+    assert res["blocked"] is False, (
+        "Un report nommé par le coordinateur satisfaisant les conditions 1-6 "
+        "doit lever la réserve sans [OVERRIDE] (#14705).")
+
+
+def test_14705_coordinateur_leve_blocage():
+    """Surface blocage : même élargissement nommeur (borne c.705 + #14705)."""
+    block = {"author": {"login": "myia-po-2025"}, "createdAt": at(10),
+             "body": "[BLOCAGE] lane myia-po-2025:CoursIA — l'attribution "
+                     "est fausse, pas de merge sans correctif."}
+    res = run([block, REPORT_COORD],
+              issue_info=resolver(ISSUE_OK, pr_number=_PR_14705),
+              number=_PR_14705)
+    assert res["blocked"] is False, (
+        "La voie 3 d'un blocage doit créditer le report du coordinateur.")
+
+
+def test_14705_coordinateur_leve_changes_requested():
+    """Surface re-review CHANGES_REQUESTED : même élargissement nommeur."""
+    cr = {"author": {"login": "hermes-bot"}, "state": "CHANGES_REQUESTED",
+          "submittedAt": at(10),
+          "body": "CHANGES_REQUESTED: 2 edge cases non couverts."}
+    res = run([REPORT_COORD], reviews=[cr],
+              issue_info=resolver(ISSUE_OK, pr_number=_PR_14705),
+              number=_PR_14705)
+    assert res["blocked"] is False, (
+        "La voie 3 d'un CHANGES_REQUESTED doit créditer le report du "
+        "coordinateur.")
+
+
+def test_14705_tiers_non_coordinateur_ne_leve_pas():
+    """Contrôle négatif (acceptance #14705) : un compte tiers QUELCONQUE (ni
+    nit-auteur, ni pr-auteur, ni coordinateur) ne lève toujours pas —
+    l'élargissement AJOUTE le coordinateur à la borne, il ne la supprime pas."""
+    third = dict(REPORT, author={"login": "myia-po-2025"})
+    res = run([USER_NIT, third],
+              issue_info=resolver(ISSUE_OK, pr_number=_PR_14705),
+              number=_PR_14705)
+    assert res["blocked"] is True, (
+        "Un tiers non coordinateur ne doit pas lever via la voie 3.")
+
+
+def test_14705_coordinateur_conditions_toujours_exigees():
+    """L'élargissement ne court-circuite pas les conditions 1-6 : un report du
+    coordinateur sur une issue qui ne RÉFÉRENCE PAS la PR ne lève pas."""
+    unrelated = make_issue(
+        _PR_14705, datetime(2026, 8, 14, 11, 0, tzinfo=timezone.utc),
+        title="Inspection du lundi", body="Quelques notes sans rapport.")
+    resolver_unrelated = lambda n: unrelated if n == 500 else None
+    res = run([USER_NIT, REPORT_COORD], issue_info=resolver_unrelated,
+              number=_PR_14705)
+    assert res["blocked"] is True, (
+        "Le coordinateur reste soumis à la condition 6 (l'issue doit citer "
+        "la PR) : l'identité ne remplace pas la substance.")
+
+
+def test_14705_mutation_sans_constante_les_fp_rougissent():
+    """Mutation (précédent #14218) : `LIFT_OVERRIDE_LOGINS` vidé -> les
+    contrôles positifs coordinateur rougissent. Prouve que les tests
+    #14705 valident la borne coordinateur, pas un vert par hasard."""
+    saved = mod.LIFT_OVERRIDE_LOGINS
+    try:
+        mod.LIFT_OVERRIDE_LOGINS = set()
+        res = run([REPORT_COORD], reviews=[HERMES_NIT],
+                  issue_info=resolver(ISSUE_OK, pr_number=_PR_14705),
+                  number=_PR_14705)
+        assert res["blocked"] is True, (
+            "Sans LIFT_OVERRIDE_LOGINS, le report coordinateur ne doit plus "
+            "lever — sinon les tests #14705 ne testent pas la borne.")
+    finally:
+        mod.LIFT_OVERRIDE_LOGINS = saved
