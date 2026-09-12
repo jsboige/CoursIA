@@ -2631,6 +2631,90 @@ _COORDINATOR_INJUNCTION_RE = re.compile(
 _COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
     r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
 )
+# #15772 -- la negation LOCALE d'une injonction structurelle ne couvre pas le
+# cas ou plusieurs occurrences du radical vivent dans le meme body, et ou
+# seule l'une est prefixede d'une negation. Avant : le predicat etait GLOBAL
+# (`_COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised)`) -- un seul
+# `pas de hold` dans le body suffisait a neutraliser TOUTES les injonctions,
+# y compris une 2e occurrence non-negatee (cas fondateur : commentaire
+# `11:27:40Z` de #15748 -- « NE PAS ATTENDRE -- enchainer un autre grain ;
+# c'est la candidate qui attend, pas la lane » -- le 2e `attend` est
+# descriptif, sans negation, et fabrique un faux positif BOT-CONCERN).
+#
+# Le correctif est **par occurrence** : pour chaque match de
+# `_COORDINATOR_INJUNCTION_RE`, regarder si la fenetre gauche bornee (meme
+# proposition) contient une negation eligible. Si TOUS les matches sont
+# neutralises, pas d'injonction. Sinon, l'injonction tient.
+#
+# Jeu de negations retenu (cf acceptance #15772 point 4 -- justifie par ses
+# FAUX NEGATIFS, pas par ses hits, l.lecon du motif « code-only » qui
+# sous-comptait en silence, `anti-regression.md`) :
+#   - `ne pas`        : negation classique deux-mots, capture le fondateur
+#   - `n' ... pas`    : elision « n'est pas », « n'a pas » -- la negation
+#                       peut etre separee du verbe par un auxiliaire
+#   - `sans`          : « sans attendre », « sans merger »
+#   - `jamais`        : « jamais d'attente », « jamais de hold »
+#   - `pas de`        : « pas de hold », « pas d'attente » (forme deja couverte
+#                       par l'ancienne liste, preservee par defaut)
+#   - `inutile de`    : « inutile d'attendre » (verdict d'inutilite = anti-injonction)
+#   - `aucune raison de` / `aucun besoin de` : verdict de non-necessite
+#   - `non`           : « non bloquant », « non attente » -- glyphe, pas prose
+#
+# Faux negatifs connus et ACCEPTES (acceptance #15772 point 4) : la liste
+# est JUSTIFIEE par les formes qu'elle rate -- et chaque ratee est documentee
+# ici pour qu'une PR de suivi puisse l'elargir sans nouvelle investigation.
+#   - `n'<mot>` sans `pas` (elision sans auxiliaire, rare en francais courant)
+#   - `ni ... ni ...` (rare, et la seconde negation est deja couverte)
+#   - `point d'attente`, `aucunement`, `nullement` (formes savantes rares)
+# Negations qui s'appliquent au MOT-VERBE dans la proposition (le verbe
+# d'injonction peut etre a la frontiere droite de la proposition,
+# c.-a-d. JUSTE devant le match INJ). Ces negations sont cherchees dans
+# la fenetre gauche de chaque match INJ (cf `_is_injunction_match_negated`).
+_INJUNCTION_NEGATION_LEFT_RE = re.compile(
+    r"(?i)(?:"
+    r"\bne\s+pas\b|"
+    r"\bn['’]\s*(?:est|aie|ai|avais|avons|avez|aura|aurai|fut|fut|fusse)\s+pas\b|"
+    r"\bsans\b|"
+    r"\bjamais\b|"
+    r"\bpas\s+de\b|"
+    r"\binutile\s+de\b|"
+    r"\binutiles?\s+d['’]\b|"
+    r"\baucune?\s+raison\s+de\b|"
+    r"\b(?:aucun|aucune)\s+besoin\s+de\b"
+    r")",
+)
+# Negations COLLEES au token d'injonction lui-meme : « aucun hold »,
+# « aucune attente », « non bloquant ». Ces negations sont par construction
+# deja collees au mot qu'elles neguent -- le predicat par-occurrence les
+# cherche sur la portion `match + mot gauche immediat` (4 chars avant le
+# match INJ, pour tolerer une apostrophe comme dans « aucun·e attente »).
+# On ne peut pas les chercher dans la fenetre gauche classique parce
+# que le match INJ couvre le token (`hold`, `attente`, etc.), et chercher
+# `aucun hold` dans la fenetre gauche RATERAIT le cas fondateur de #13598
+# (`« Il n'y a aucun hold sur cette PR. »` -- la fenetre gauche de `hold`
+# est `« Il n'y a aucun »`, qui ne contient pas `hold`).
+_INJUNCTION_NEGATION_PREFIXED_RE = re.compile(
+    r"(?i)\b(?:"
+    r"(?:aucun|aucune|aucuns|aucunes)\s+(?:hold|wait|bloque|attend|attente|attendre|stop|arr[êe]t)\b|"
+    r"non\s+(?:bloquant|attend|attente|attendre|hold|wait|stop|merge|merger|fusionner)\b"
+    r")",
+)
+# Fenetre gauche en chars : une negation de la liste vit dans la meme
+# PROPOSITION que l'injonction qu'elle neutralise. Une proposition va du
+# dernier separateur fort (`.`, `!`, `?`, `:`, `\n`, debut de body) au
+# separateur suivant. 256 chars couvrent largement les phrases courtes
+# du registre coordinateur, avec une marge de securite raisonnable.
+# Au-dela, on est dans une proposition distincte, et la negation n'y
+# neutralise plus l'injonction locale.
+#
+# Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+# minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+# candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+# `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+# d'ouverture et le `, pas la lane`), et la negation doit neutraliser
+# l'injonction descriptive. Une fenetre courte (48 chars) ratait ce cas
+# parce que la negation etait a plus de 48 chars du 2e `attend`.
+_INJUNCTION_NEGATION_WINDOW_CHARS = 256
 # #13912 -- le mot `hold` en MENTION NOMINALE d'un hold tenu par un tiers n'est
 # pas une EMISSION. La voie #13598 n'attrape ce cas qu'a demi : le lookahead
 # `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))` ecarte les NOMS DE
@@ -2698,6 +2782,87 @@ def _hold_match_is_emission(body: str) -> bool:
     return False
 
 
+# Separateurs de proposition : on utilise UNIQUEMENT les separateurs FORTS
+# (`.`, `!`, `?`, double `\n`). Les separateurs faibles (`:`, `;`, simple `\n`)
+# ne coupent pas une phrase logique -- le fondateur verbatim de #15748 inclut
+# un `\n` au milieu d'une meme proposition (« c'est la\ncandidate qui attend »)
+# que traiter comme un saut de proposition ferait passer a cote du fix.
+# Les separateurs faibles (`:`, `;`) sont des liasons intra-phrase.
+_PROPOSITION_SEPARATORS_RE = re.compile(r"[.!?]|\n\n")
+
+
+def _proposition_start(normalised: str, pos: int) -> int:
+    """#15772 : index du debut de la proposition qui contient `pos`.
+
+    Une proposition va du dernier separateur fort (`.`, `!`, `?`, `:`, `\\n`,
+    debut de body) au separateur suivant. Renvoie 0 si aucun separateur
+    precedent n'existe dans la fenetre `_INJUNCTION_NEGATION_WINDOW_CHARS`.
+    """
+    window_start = max(0, pos - _INJUNCTION_NEGATION_WINDOW_CHARS)
+    head = normalised[window_start:pos]
+    seps = list(_PROPOSITION_SEPARATORS_RE.finditer(head))
+    if not seps:
+        return window_start
+    last_sep_end = seps[-1].end()
+    return window_start + last_sep_end
+
+
+def _is_injunction_match_negated(normalised: str, span: tuple[int, int]) -> bool:
+    """#15772 : l'occurrence d'injonction a `span` est-elle neutralisee par
+    une negation LOCALE dans la MEME PROPOSITION ?
+
+    Discriminant : la negation doit etre dans la meme proposition que
+    l'injonction (entre le dernier separateur fort et l'injonction). Une
+    negation dans une proposition PRECEDENTE (separee par `.` / `!` / `?` /
+    `:` / `\\n`) ne neutralise PAS l'injonction de la proposition courante.
+
+    Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+    minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+    candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+    `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+    d'ouverture et le `, pas la lane`), et la negation neutralise les
+    deux occurrences d'injonction de la phrase.
+
+    Anti-regression : « NE PAS ATTENDRE que la CI verdisse. Plus tard,
+    HOLD cette PR attend le grain. » -- `NE PAS ATTENDRE` vit dans la
+    proposition 1, le HOLD reel + `attend` dans la proposition 2 ; les
+    separateurs (`.` puis `\\n\\n`) coupent la portee de la negation.
+    """
+    start = span[0]
+    prop_start = _proposition_start(normalised, start)
+    proposition = normalised[prop_start:start]
+    # 1. Negations LOCALE-LEFT (chercher dans la fenetre gauche de la proposition)
+    if _INJUNCTION_NEGATION_LEFT_RE.search(proposition):
+        return True
+    # 2. Negations COLLEES au token d'injonction (chercher `match + 4 chars
+    # gauche` -- le prefixe `aucun`/`aucune` peut etre 4 chars avant le match
+    # INJ). Si le token INJ est precede de `aucun ` ou `aucune ` ou `non `
+    # dans cette fenetre courte, l'occurrence est neutralisee.
+    short_left_window = max(0, start - 12)
+    short_window = normalised[short_left_window:start + 20]
+    if _INJUNCTION_NEGATION_PREFIXED_RE.search(short_window):
+        return True
+    return False
+
+
+def _all_injunctions_negated(normalised: str) -> bool:
+    """#15772 : TOUTES les occurrences d'injonction structurelle sont-elles
+    neutralisees par une negation locale ?
+
+    Renvoie True si le body ne porte aucune injonction (defaut), OU si
+    chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE` est
+    neutralisee par une negation LOCALE (cf `_is_injunction_match_negated`).
+
+    Substitue l'ancien predicat GLOBAL `_COORDINATOR_INJUNCTION_NEGATED_RE.
+    search(normalised)`, qui ratait le cas fondateur de #15772 (body avec
+    une negation + une occurrence descriptive non-negatee).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return True
+    return all(_is_injunction_match_negated(normalised, m.span()) for m in matches)
+
+
 def _coordinator_emission_informal(body: str) -> bool:
     """#13598 : le coordinateur EMET-il un hold en francais courant ?
 
@@ -2706,7 +2871,7 @@ def _coordinator_emission_informal(body: str) -> bool:
     un ARBITRAGE (OVERRIDE pose). Cible : 1 auteur (LIFT_OVERRIDE_LOGINS).
     """
     normalised = _unaccent(body)
-    if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+    if _all_injunctions_negated(normalised):
         return False
     # #13912 -- sur le mot `hold`, demasquer les MENTIONS NOMINALES d'un hold
     # tiers (cf review ai-01 sur #13706 : « moteur sous hold user (#10038) »).
