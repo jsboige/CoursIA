@@ -272,16 +272,48 @@ def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
     assert any("non bloquant" in c and "Papermill ratchet" in c for c in causes)
 
 
-def test_cancelled_is_not_a_failure():
-    """Un run annule par `concurrency` n'est pas un echec.
+def test_unconcluded_required_is_a_distinct_cause():
+    """#15769 : un requis annule n'est ni un vert ni un echec de lane.
 
-    Les confondre est le faux positif qui rend un garde de cascade
-    inutilisable : le 2026-08-21, un SHA de main portait 69 `cancelled`
-    pour 0 echec reel.
+    Un check requis CANCELLED empeche le merge sans que la lane puisse rien :
+    avant #15769, le `continue` sur `verdict not in CHECK_FAILED` le filtrait
+    exactement comme un advisory vert, AVANT le test `isRequired` -- la PR
+    etait BLOCKED sans aucune cause rendue (7 PRs simultanees le 2026-09-12).
+    La cause doit nommer l'etat et ne JAMAIS dire « echec » : imputer un
+    CANCELLED a la lane l'envoie chercher un rouge qui n'existe pas, le cycle
+    brule que la R0 de coordinator-discipline interdit.
     """
-    assert pig.blocking_causes(_state(checks=[("PR gate", "CANCELLED", True)])) == []
-    assert pig.blocking_causes(_state(checks=[("PR gate", "SKIPPED", True)])) == []
-    assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == []
+    assert pig.blocking_causes(_state(checks=[("PR gate", "CANCELLED", True)])) == [
+        "check requis non conclu : PR gate (CANCELLED)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "STALE", True)])) == [
+        "check requis non conclu : PR gate (STALE)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "SKIPPED", True)])) == [
+        "check requis non conclu : PR gate (SKIPPED)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == [
+        "check requis non conclu : PR gate (NEUTRAL)"]
+
+
+def test_unconcluded_failure_control_renders_en_echec():
+    """Controle positif (acceptance #15769.3) : meme entree, requis FAILURE.
+
+    Sans lui, un test vert ne distinguerait pas « la cause CANCELLED est
+    rendue » de « toutes les causes sont rendues » : le refus de confondre
+    CANCELLED avec FAILURE (2026-08-21 : 69 cancelled pour 0 echec sur un
+    SHA de main) doit SURVIVRE a l'ajout de la cause non conclue.
+    """
+    causes = pig.blocking_causes(_state(checks=[("PR gate", "FAILURE", True)]))
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_unconcluded_advisory_is_still_silent():
+    """Le complement du garde d'origine : seul un REQUIS non conclu cause.
+
+    Un advisory annule reste du bruit que la lane ne doit pas reparer.
+    """
+    assert pig.blocking_causes(_state(checks=[
+        ("fast-lane (ombre): perimeter-review-guard", "CANCELLED", False),
+        ("PR gate", "SUCCESS", True),
+    ])) == []
 
 
 def test_conflicts_are_a_red():

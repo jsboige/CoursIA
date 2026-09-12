@@ -98,6 +98,9 @@ Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
 1. **check requis en echec** -- lu sur le champ GraphQL `isRequired`, ce que la
    protection de branche exige vraiment, et non "au moins un check rouge", qui
    rougissait 52 PRs sur 55 le 2026-08-22 en comptant les advisories ;
+   variante #15769 : un requis **non conclu** (CANCELLED/STALE/SKIPPED/NEUTRAL)
+   rend la cause distincte « check requis non conclu » -- le geste est la
+   reprise coordinateur, jamais une reparation de lane ;
 2. **conflit avec main** ;
 3. **CHANGES_REQUESTED non leve** ;
 4. **point de review non leve** (mandat 2026-08-24 : "ne plus produire tant
@@ -1159,6 +1162,14 @@ RED_COUNT_DEFAULT = 3
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
 
+# #15769 : conclusions non concluantes d'un check TERMINE. Ni vert (un requis
+# dans cet etat empeche le merge) ni un echec de lane (imputer un CANCELLED a
+# la lane l'envoie chercher un rouge qui n'existe pas -- regime nominal sous
+# file chargee : `--timeout-min 45` du slot rend `cancelled`, jamais
+# `failure`). Rendu par `blocking_causes` comme cause DISTINCTE « non conclue »,
+# dont le geste (re-agregation par le coordinateur) n'est pas celui d'un echec.
+CHECK_UNCONCLUDED = {"CANCELLED", "STALE", "SKIPPED", "NEUTRAL"}
+
 # #13420 : un check "en vol" est celui dont la file peut encore bouger. C'est
 # lui qui date la saturation -- pas la PR qui le porte. La chaine vide couvre
 # le CheckRun reel, dont `conclusion` est `null` tant qu'il n'a pas conclu.
@@ -1476,6 +1487,17 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
+            # #15769 : un requis non conclu (CANCELLED/STALE/SKIPPED/NEUTRAL)
+            # empeche le merge sans que la lane puisse quoi que ce soit -- le
+            # `continue` historique le filtrait exactement comme un advisory
+            # vert, AVANT le test `isRequired` : la PR etait BLOCKED sans
+            # aucune cause rendue (7 PRs simultanees le 2026-09-12). Cause
+            # distincte d'un echec : le geste est la reprise coordinateur, pas
+            # une reparation de lane. Un advisory non conclu reste du bruit.
+            if verdict in CHECK_UNCONCLUDED and ctx.get("isRequired"):
+                cause = f"check requis non conclu : {name} ({verdict})"
+                if cause not in causes:
+                    causes.append(cause)
             continue
         if inherited:
             # #13545/#14537 : rouge impute a la base (cause commune corroboree
