@@ -85,7 +85,13 @@ def test_sous_espaces_identiques_angles_nuls_recouvrement_un():
     # meme sous-espace, base differente (melange lineaire inversible)
     mix = u @ np.array([[1.0, 0.3], [-0.2, 0.9]])
     theta = principal_angles(u, mix)
-    assert np.allclose(theta, 0.0, atol=1e-8)
+    # atol=1e-6, PAS 1e-8 : principal_angles rend arccos(clip(s)) et s vaut 1 a
+    # 1 ulp pres pour deux bases du meme sous-espace ; arccos AMPLIFIE cet ULP
+    # en sqrt(2*eps) ~ 1.49e-8, au-dessus de 1e-8 selon la LAPACK employee
+    # (mesure : numpy 1.26.4 -> serie 1.0 exacte, numpy 2.5.3 -> 0.9999999999999999).
+    # Meme tolerance que le test frere recouvrement_partiel (abs=1e-6), qui
+    # mesure la meme metrique.
+    assert np.allclose(theta, 0.0, atol=1e-6)
     assert subspace_overlap(u, mix) == pytest.approx(1.0, abs=1e-8)
 
 
@@ -143,7 +149,7 @@ def _blobs(n_per: int, gap: float, seed: int):
     return feats, labels
 
 
-def test_blobs_bien_separesent_z_eleve_blobs_confondus_z_faible():
+def test_blobs_bien_separes_z_eleve_blobs_confondus_z_faible():
     feats_far, labels = _blobs(120, gap=6.0, seed=9)
     out_far = separation_zscore(feats_far, labels, n_random=100, seed=10)
     assert out_far["z"] > 20.0
@@ -163,7 +169,13 @@ def test_relabelisation_aleatoire_pure_z_proche_de_zero():
 
 
 def test_separation_rejette_entrees_invalides():
-    with pytest.raises(GateError):
+    # np.errstate : la premiere entree est VOLONTAIREMENT degeneree (zeros), et
+    # numpy emet un RuntimeWarning "invalid value encountered in subtract" depuis
+    # le calcul de separation AVANT que la garde ne rejette. On le declare ici
+    # (scoped a l'appel fautif) plutot que de laisser le warning polluer la
+    # sortie de suite ; on ne masque rien du contrat teste, qui reste le rejet.
+    with np.errstate(invalid="ignore"), pytest.raises(GateError):
         separation_zscore(np.zeros((10, 2)), np.zeros(10), n_random=5)
+    # n_random < 2 est valide AVANT tout calcul : aucune valeur degeneree evaluee.
     with pytest.raises(GateError):
         separation_zscore(np.zeros((10, 2)), np.zeros(10), n_random=1)
