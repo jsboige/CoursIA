@@ -24,9 +24,14 @@ gestes de niveau agent, hors de portee d'un script. Un `exit 0` dit donc « la
 lane est la bonne », jamais « il est sur d'armer /coordinate ».
 
 Codes de sortie :
-    0 -- la lane mesuree correspond au role attendu
-    1 -- elle n'y correspond pas ; la commande de repli est imprimee
+    0 -- role VERIFIE conforme : la lane mesuree correspond au role exige
+         par `--expect <role>`
+    1 -- role VERIFIE non conforme ; la commande de repli est imprimee
     2 -- la mesure elle-meme a echoue (hors depot git, hostname introuvable)
+    3 -- rapport seul (`--expect auto`, defaut) : la conformite n'est PAS
+         verifiee -- sous `auto` le role attendu serait le role mesure
+         (tautologie), le rapport le dit (`verified: false`) au lieu de la
+         pretendre
 """
 
 from __future__ import annotations
@@ -56,6 +61,24 @@ ROLE_COMMANDS = {
 CANONICAL_ROOTS = {
     COORDINATOR_LANE: "d:/coursia",
 }
+
+# Index de consultation insensible a la casse : sur Windows/NTFS le basename
+# du clone peut arriver en casse non canonique (`coursia` vs `CoursIA`), et la
+# cle brute raterait la table -> `canonical is None` -> clone_ok vrai pour un
+# jumeau, silencieusement. Seul le LOOKUP se normalise ; la lane RENDUE dans
+# le rapport garde la casse reelle du dossier (identite affichee).
+_CANONICAL_ROOTS_NORM = {
+    lane.lower(): root for lane, root in CANONICAL_ROOTS.items()
+}
+
+# Ligne de portee rendue sur TOUS les chemins de sortie, y compris l'echec de
+# mesure (exit 2) : c'est le garde-fou voulu omnipresent — un chemin d'erreur
+# ne doit pas le faire disparaitre.
+_PORTEE_LINE = (
+    "PORTEE    : l'unicite de session n'est PAS mesuree ici. "
+    "Avant d'armer, enumerer les pairs (`ListAgents`) et qualifier chacun "
+    "par un aller-retour `SendMessage` — un nom de session n'encode pas la lane."
+)
 
 
 def _normalise(path: str) -> str:
@@ -106,9 +129,12 @@ def measure_repo_root(start: Optional[Path] = None) -> Optional[Path]:
 
 
 def role_for_lane(lane: str) -> str:
-    if lane == COORDINATOR_LANE:
+    # Comparaison insensible a la casse : le basename du clone garde sa casse
+    # reelle (NTFS), elle ne doit pas decider du role d'une lane privilegiee.
+    key = lane.lower()
+    if key == COORDINATOR_LANE.lower():
         return "coordinator"
-    if lane == ADJOINT_LANE:
+    if key == ADJOINT_LANE.lower():
         return "adjoint"
     return "worker"
 
@@ -119,6 +145,7 @@ def build_report(expect: str) -> dict:
     if root is None:
         return {
             "ok": False,
+            "verified": False,
             "error": "hors depot git : le workspace ne peut pas etre mesure",
             "machine": machine,
             "workspace": None,
@@ -128,10 +155,12 @@ def build_report(expect: str) -> dict:
         }
 
     workspace = root.name
+    # La lane garde la casse REELLE du dossier (identite affichee) ; seules
+    # les consultations de tables se font en casse normalisee.
     lane = f"{machine}:{workspace}"
     role = role_for_lane(lane)
 
-    canonical = CANONICAL_ROOTS.get(lane)
+    canonical = _CANONICAL_ROOTS_NORM.get(lane.lower())
     measured_root = _normalise(str(root))
     clone_ok = canonical is None or measured_root == canonical
 
@@ -141,9 +170,24 @@ def build_report(expect: str) -> dict:
         # depuis un jumeau (fail-CLOSED).
         role = "worker"
 
-    expected_role = role if expect == "auto" else expect
+    # Forme (a) retenue pour `auto` : le rapport cesse de pretendre verifier.
+    # `ok` vaudrait `role == role` (tautologie), donc il devient None, le
+    # rapport porte `verified: false`, la ligne rendue dit « rapporte, non
+    # verifie » et le code de sortie (3) se distingue de 0/1. L'unique
+    # appelant repertorie du depot (.claude/rules/coordinator-discipline.md)
+    # passe deja `--expect coordinator` explicite : aucun appelant existant
+    # ne consomme le mode auto, qui reste ouvert pour la decouverte de lane.
+    if expect == "auto":
+        expected_role = None
+        ok = None
+        verified = False
+    else:
+        expected_role = expect
+        ok = role == expected_role
+        verified = True
     return {
-        "ok": role == expected_role,
+        "ok": ok,
+        "verified": verified,
         "error": None,
         "machine": machine,
         "workspace": workspace,
@@ -152,7 +196,8 @@ def build_report(expect: str) -> dict:
         "clone_ok": clone_ok,
         "lane": lane,
         "role": role,
-        "expect": expected_role,
+        "expect": expect,
+        "expected_role": expected_role,
         "command": ROLE_COMMANDS[role],
         "uniqueness_measured": False,
     }
@@ -160,7 +205,12 @@ def build_report(expect: str) -> dict:
 
 def render(report: dict) -> str:
     if report.get("error"):
-        return f"MESURE IMPOSSIBLE : {report['error']}\n  machine : {report['machine']}"
+        # La portee survit AUSSI au chemin d'echec : c'est le garde-fou voulu
+        # omnipresent, un exit 2 ne doit pas le faire disparaitre.
+        return (
+            f"MESURE IMPOSSIBLE : {report['error']}\n"
+            f"  machine : {report['machine']}\n{_PORTEE_LINE}"
+        )
 
     lines = [
         f"machine   : {report['machine']}",
@@ -173,12 +223,13 @@ def render(report: dict) -> str:
             f"CLONE     : racine hors canonique ({report['canonical_root']}) — "
             "lane retrogradee en WORKER (fail-CLOSED)"
         )
-    lines.append(
-        "PORTEE    : l'unicite de session n'est PAS mesuree ici. "
-        "Avant d'armer, enumerer les pairs (`ListAgents`) et qualifier chacun "
-        "par un aller-retour `SendMessage` — un nom de session n'encode pas la lane."
-    )
-    if not report["ok"]:
+    lines.append(_PORTEE_LINE)
+    if not report["verified"]:
+        lines.append(
+            f"VERDICT   : role mesure `{report['role']}` — rapporte, non "
+            "verifie ; passer `--expect <role>` pour un verdict opposable."
+        )
+    elif not report["ok"]:
         lines.append(
             f"VERDICT   : role attendu `{report['expect']}`, role mesure "
             f"`{report['role']}` — ne PAS armer `{ROLE_COMMANDS[report['expect']]}`, "
@@ -197,7 +248,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         "--expect",
         choices=["auto", "coordinator", "adjoint", "worker"],
         default="auto",
-        help="role attendu ; `auto` (defaut) rapporte celui que la lane implique",
+        help="role attendu ; `auto` (defaut) RAPPORTE le role sans le verifier "
+        "(exit 3) — pour un verdict opposable, exiger un role explicite",
     )
     parser.add_argument("--json", action="store_true", help="sortie JSON")
     args = parser.parse_args(argv)
@@ -207,6 +259,10 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if report.get("error"):
         return 2
+    if not report["verified"]:
+        # Mode rapport : aucun verdict de conformite n'a ete rendu — code de
+        # sortie distinct de 0/1 pour qu'un wrapper ne le lise pas « conforme ».
+        return 3
     return 0 if report["ok"] else 1
 
 
