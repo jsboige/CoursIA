@@ -107,10 +107,20 @@ jobs:
           # Floor 692 -> 715 : +23 items du POC S-Lens (bancs copy_offset /
           # variable_binding, oracles, probes, agregation multi-runs ;
           # #15481, ict/tests/test_slens.py = 43e strate du package).
+          # Floor 715 -> 719 : +4 items verrouillant les defauts corriges apres
+          # la premiere mesure (recodage des classes de valeur sur un
+          # vocabulaire non dense, verdict causal qui n'etiquete plus un effet
+          # absent comme dommage global, run d'ablation exclu du gate de
+          # stabilite, architecture de reference absente refusee au lieu d'etre
+          # devinee). Mesure locale `pytest ict/tests --collect-only -q` : 719.
+          # Floor 719 -> 720 : +1 item saturant le ratio de selectivite — hors
+          # cible sous le plancher de mesure = inf (jamais on_rel/eps, une
+          # magnitude artefact de la constante interne), intervention sans
+          # effet = 0.0 (jamais selective).
           - suite-name: "ict/tests/ (43 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 715
+            test-floor: 720
 
     steps:
       - uses: actions/checkout@v4

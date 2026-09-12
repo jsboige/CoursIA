@@ -481,15 +481,21 @@ def self_location_table(
             vals = np.asarray(values)
             if vals.shape[0] != n:
                 raise ValueError(f"{key}: {vals.shape[0]} valeurs != {n} positions")
+            # Les classes sont RECODEES en indices compacts 0..c-1 : le vocabulaire
+            # de valeurs d'un banc peut ne pas commencer a 0 (binding : ids
+            # n_vars..n_vars+n_vals-1). La lecture lineaire rend un argmax sur ces
+            # indices, donc la cible passee a ``probe_metrics`` doit etre la MEME
+            # recodee — comparer l'indice a l'id brut rendrait exact_hit nul par
+            # construction sur tout vocabulaire non dense (defaut corrige ici).
             classes = np.unique(vals)
             index = {int(v): i for i, v in enumerate(classes)}
-            y_val = np.zeros((n, len(classes)))
-            for i, v in enumerate(vals):
-                y_val[i, index[int(v)]] = 1.0
+            y_cls = np.array([index[int(v)] for v in vals], dtype=np.float64)
+            y_val = np.eye(len(classes))[y_cls.astype(np.int64)]
             w_val = ridge_probe(acts[tr], y_val[tr], alpha=alpha)
-            m_val = probe_metrics(acts[te], vals[te], w_val)
+            m_val = probe_metrics(acts[te], y_cls[te], w_val)
             row["value_exact"] = m_val["exact_hit"]
             row["value_rmse"] = m_val["rmse"]
+            row["value_classes"] = int(len(classes))
         rows.append(row)
     return rows
 
@@ -543,11 +549,10 @@ def shuffle_control_scores(
     perm = rng.permutation(n_train)
     classes = np.unique(values)
     index = {int(v): i for i, v in enumerate(classes)}
-    y_val = np.zeros((n, len(classes)))
-    for i, v in enumerate(values):
-        y_val[i, index[int(v)]] = 1.0
+    y_cls = np.array([index[int(v)] for v in values], dtype=np.float64)
+    y_val = np.eye(len(classes))[y_cls.astype(np.int64)]
     w_shuf = ridge_probe(acts[tr], y_val[tr][perm], alpha=alpha)
-    m_shuf = probe_metrics(acts[te], values[te], w_shuf)
+    m_shuf = probe_metrics(acts[te], y_cls[te], w_shuf)
     n_labels = int(positions.max()) + 1
     y_pos = np.eye(n_labels)[positions]
     w_pos = ridge_probe(acts[tr], y_pos[tr][perm], alpha=alpha)
@@ -583,12 +588,18 @@ def location_causal_verdict(
     selective = off <= max_off_target
     if selective and effect >= min_follow and gap >= min_gap:
         verdict = "causal"
+    elif effect < min_follow:
+        # Aucun effet apparie mesure. Le dommage eventuel reste reporte comme
+        # champ separe (``off_target_rel``, ``selectivity_ok``) mais il ne peut
+        # pas etiqueter le panneau "global_damage" : ce label affirme un effet,
+        # et une intervention sans effet qui abime tout de meme le modele est un
+        # resultat NEGATIF, pas un dommage global. L'ordre des branches est ce
+        # qui garde le verdict fidele a ce qui a ete mesure.
+        verdict = "no_effect"
     elif not selective:
         verdict = "global_damage"
-    elif effect >= min_follow:
-        verdict = "undiscriminated"      # effet present mais sham non separe
     else:
-        verdict = "no_effect"
+        verdict = "undiscriminated"      # effet present mais sham non separe
     return {
         "verdict": verdict,
         "follow_donor": effect,
@@ -617,6 +628,7 @@ class PromotionEvidence:
     second_task_shuffle: float = float("nan")
     second_task_causal: str = ""
     seeds_stable: bool = True
+    reference_arch: str = ""       # regime de position sur lequel le gate est juge
     notes: list[str] = field(default_factory=list)
 
 
@@ -719,26 +731,42 @@ def run_metrics(run: Mapping[str, Any], *, alpha: float = 1e-2,
 
 def evidence_from_runs(
     runs: Sequence[Mapping[str, Any]], *, task: str = "copy_offset",
-    second_task: str = "variable_binding", stability_tol: float = 0.10,
+    second_task: str = "variable_binding", reference_arch: str = "rope",
+    stability_tol: float = 0.10,
 ) -> tuple[PromotionEvidence, list[dict[str, Any]]]:
     """Agrege les runs d'un POC en :class:`PromotionEvidence` + table detaillee.
 
-    La stabilite multi-seeds est exigeante : l'ecart de localisation au-dessus
-    du shuffle doit rester positif pour CHAQUE seed du banc primaire (une
-    moyenne qui tient grace a une seed sur quatre n'est pas une generalisation).
+    Le gate se juge sur **une** architecture de position, celle de reference :
+    la variance entre graines d'un meme regime repond a "le resultat se
+    reproduit-il ?", alors que l'ecart entre regimes repond a une AUTRE question
+    ("quel encodage positionnel faut-il ?"). Melanger les deux dans un meme test
+    de stabilite fait passer une heterogeneite d'architecture pour une
+    instabilite de graine — les runs d'ablation sont donc rapportes mais exclus
+    du gate.
+
+    La stabilite multi-graines reste exigeante : l'ecart de localisation
+    au-dessus du shuffle doit rester positif pour CHAQUE graine, et l'amplitude
+    des ecarts ne doit pas trahir une moyenne portee par une seule graine.
     """
     rows = [run_metrics(r) for r in runs]
     primary = [r for r in rows if r["task"] == task]
-    secondary = [r for r in rows if r["task"] == second_task]
     if not primary:
         raise ValueError(f"aucun run pour le banc primaire {task!r}")
+    reference = [r for r in primary if r["arch"] == reference_arch]
+    if not reference:
+        raise ValueError(
+            f"aucun run de l'architecture de reference {reference_arch!r} "
+            f"sur le banc primaire {task!r} : le gate ne peut pas se juger "
+            "sur une architecture absente de la matrice"
+        )
+    ablation = [r for r in primary if r["arch"] != reference_arch]
 
-    gains = [r["position_exact"] - r["position_exact_shuffle"] for r in primary]
+    gains = [r["position_exact"] - r["position_exact_shuffle"] for r in reference]
     seeds_stable = all(g > 0 for g in gains) and (
         max(gains) - min(gains) <= stability_tol * max(1.0, max(gains))
     )
-    best_primary = max(primary, key=lambda r: r["position_exact"])
-    causal_verdicts = [r["causal"]["verdict"] for r in primary]
+    best_primary = max(reference, key=lambda r: r["position_exact"])
+    causal_verdicts = [r["causal"]["verdict"] for r in reference]
     # le verdict causal agrege = le plus frequent (mode) ; un partage exact
     # n'est pas une preuve de selectivite et retombe sur le pire cas.
     causal_mode = max(set(causal_verdicts), key=causal_verdicts.count)
@@ -746,15 +774,36 @@ def evidence_from_runs(
         causal_mode = "undiscriminated"
 
     notes: list[str] = []
-    if secondary:
-        sec_best = max(secondary, key=lambda r: r["position_exact"])
+    if ablation:
+        notes.append(
+            f"stabilite multi-graines mesuree sur {reference_arch!r} seul "
+            f"({len(reference)} graines) ; {len(ablation)} run(s) d'ablation "
+            "sur d'autres regimes de position sont rapportes dans la table "
+            "mais exclus du gate (l'ecart entre regimes n'est pas de "
+            "l'instabilite de graine)"
+        )
+
+    secondary = [r for r in rows if r["task"] == second_task]
+    sec_ref = [r for r in secondary if r["arch"] == reference_arch]
+    if sec_ref:
+        sec_best = max(sec_ref, key=lambda r: r["position_exact"])
         sec_gain = sec_best["position_exact"] - sec_best["position_exact_shuffle"]
         sec_causal = max(
-            [r["causal"]["verdict"] for r in secondary],
-            key=[r["causal"]["verdict"] for r in secondary].count,
+            [r["causal"]["verdict"] for r in sec_ref],
+            key=[r["causal"]["verdict"] for r in sec_ref].count,
         )
         sec_pos = float(sec_best["position_exact"])
         sec_shuf = float(sec_best["position_exact_shuffle"])
+        peers = [r for r in secondary if r["arch"] != reference_arch]
+        if peers and max(r["position_exact"] for r in peers) > sec_pos:
+            top = max(peers, key=lambda r: r["position_exact"])
+            notes.append(
+                f"sur le second banc, un autre regime ({top['arch']!r}) "
+                f"localise mieux la reference ({top['position_exact']:.3f}) "
+                f"que le regime de reference {reference_arch!r} "
+                f"({sec_pos:.3f}) : la localisation du second banc depend de "
+                "l'encodage positionnel"
+            )
     else:
         sec_pos = sec_shuf = float("nan")
         sec_causal = ""
@@ -771,6 +820,7 @@ def evidence_from_runs(
         second_task_shuffle=sec_shuf,
         second_task_causal=sec_causal,
         seeds_stable=bool(seeds_stable),
+        reference_arch=reference_arch,
         notes=notes,
     )
     if not np.isfinite(sec_gain):

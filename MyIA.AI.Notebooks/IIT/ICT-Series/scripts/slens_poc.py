@@ -322,6 +322,20 @@ def patch_experiment(model: MicroTransformer, task: str, seed: int, n_pairs: int
     _, _, caps_final_patched = model(xa, patch=(patch_layer, pivot, donor_vals),
                                      capture=True)
     final_layer = "post_stack"
+    n_positions = int(caps_final_a[final_layer].shape[-2])
+    # ``damage_metrics`` retire de son jeu "hors cible" les coordonnees
+    # ``positions x features`` qu'on lui declare et mesure leur norme de
+    # deplacement : le jeu declare est donc la CIBLE, son complement est le
+    # dommage. Pour un echange a ``pivot`` dans un transformer causal, la cible
+    # n'est pas la seule ligne ``pivot`` mais tout son CONE CAUSAL — la ligne
+    # pivot et toutes celles qui l'attendent, qui changent par construction
+    # (c'est le mecanisme de l'intervention, pas un dommage). Declarer la seule
+    # ligne pivot comptait la propagation aval comme du dommage
+    # (off_target_rel ~0.33 sur un banc ou le modele reste exact a 1.000) et
+    # rendait le verdict ``causal`` inatteignable quelle que soit la mesure.
+    # Le dommage redevient ce qu'il doit etre : un deplacement la ou la
+    # causalite interdit qu'il y en ait — les positions ANTERIEURES au pivot.
+    cone = tuple(range(pivot, n_positions))
     damages = []
     for i in range(n_pairs):
         # l'intervention est un ECHANGE apparie hote<->donneur : on declare
@@ -329,7 +343,7 @@ def patch_experiment(model: MicroTransformer, task: str, seed: int, n_pairs: int
         # la mesure de dommage porte sur le panneau de l'hote avant/apres.
         spec = causal_engine.InterventionSpec(
             operation="interchange", instrument="slens", layer=patch_layer,
-            positions=(pivot,), features=tuple(range(caps_final_a[final_layer].shape[-1])),
+            positions=cone, features=tuple(range(caps_final_a[final_layer].shape[-1])),
             run="host", paired_run="donor", seed=seed,
         )
         damages.append(causal_engine.damage_metrics(
@@ -344,6 +358,10 @@ def patch_experiment(model: MicroTransformer, task: str, seed: int, n_pairs: int
         "random_target": float(np.mean(rand_pred == target_b[unpaired])),
         "base_accuracy": float(np.mean(base_pred == target_a)),
         "pivot": int(pivot),
+        # ``target_rel``   = deplacement DANS le cone causal (mecanisme) ;
+        # ``off_target_rel`` = deplacement AVANT le pivot (doit rester ~0 :
+        #                      la causalite l'interdit) ;
+        # ``selectivity_ratio`` = rapport des deux.
         "target_rel": _agg("target_rel"),
         "off_target_rel": _agg("off_target_rel"),
         "selectivity_ratio": _agg("selectivity_ratio"),
@@ -355,17 +373,28 @@ def patch_experiment(model: MicroTransformer, task: str, seed: int, n_pairs: int
 # --------------------------------------------------------------------------- #
 
 def _jsonable(value):
-    """Convertit recursivement les scalaires numpy en types JSON natifs."""
+    """Convertit recursivement les scalaires numpy en types JSON natifs.
+
+    Les flottants NON FINIS sont rendus ``None``. ``json.dumps`` les ecrit
+    ``Infinity``/``NaN``, que la RFC 8259 n'autorise pas : la matrice commitee
+    cesserait d'etre du JSON strict pour tout lecteur autre que Python (le
+    ``json`` de la stdlib les relit, un parseur conforme les refuse). Le cas est
+    atteignable depuis ``damage_metrics``, qui rend ``inf`` des que le
+    deplacement hors cible tombe sous son plancher de mesure, et
+    ``selectivity_ratio`` est committe dans ``patch_stats``.
+    """
     if isinstance(value, dict):
         return {str(k): _jsonable(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_jsonable(v) for v in value]
     if isinstance(value, (np.floating, np.integer)):
-        return value.item()
+        value = value.item()
     if isinstance(value, np.bool_):
         return bool(value)
     if isinstance(value, np.ndarray):
-        return value.tolist()
+        return _jsonable(value.tolist())
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
     return value
 
 
@@ -485,7 +514,11 @@ def main() -> None:
         "pred": pred,
         "predictions_accuracy": np.array(acc),
         "success_by_pos": by_pos,
-        "patch_stats": np.array(json.dumps(patch_stats, ensure_ascii=False)),
+        # par _jsonable : patch_stats peut porter selectivity_ratio == inf
+        # (hors cible sous le plancher de mesure), et json.dumps l'ecrirait
+        # ``Infinity`` -- non strict RFC 8259 -- DANS le npz.
+        "patch_stats": np.array(json.dumps(_jsonable(patch_stats),
+                                           ensure_ascii=False)),
     }
     arrays.update(acts_head)
     arrays.update(acts_layer)

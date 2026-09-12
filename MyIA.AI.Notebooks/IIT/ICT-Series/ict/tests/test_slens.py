@@ -183,6 +183,35 @@ def test_shuffle_control_falls_to_floor():
 # 5. Self-location par tete
 # --------------------------------------------------------------------------- #
 
+def test_self_location_reads_values_on_a_sparse_label_space():
+    """Un vocabulaire de valeurs qui ne commence pas a 0 reste lisible.
+
+    Recoder les classes en indices compacts pour la regression puis passer les
+    ids BRUTS a la metrique rendait ``value_exact`` nul par construction des que
+    le premier id observe n'est pas 0 — le cas du banc binding, dont les valeurs
+    vivent dans ``n_vars..n_vars+n_vals-1`` (defaut corrige : la cible passee a
+    la metrique est la meme recodee que la regression).
+    """
+    rng = np.random.default_rng(21)
+    n, n_pos, n_val, shift = 600, 8, 6, 5
+    positions = rng.integers(0, n_pos, size=n)
+    values = shift + rng.integers(0, n_val, size=n)      # ids 5..10, pas 0..5
+    acts = np.concatenate(
+        [np.eye(n_pos)[positions] + rng.normal(scale=0.05, size=(n, n_pos)),
+         np.eye(n_val)[values - shift] + rng.normal(scale=0.05, size=(n, n_val))],
+        axis=1,
+    )
+    rows = slens.self_location_table({"L0": acts}, positions, values=values,
+                                     alpha=1e-6, n_labels=n_pos)
+    assert rows[0]["value_exact"] > 0.9
+    assert rows[0]["value_classes"] == n_val
+    # memes probes sur le meme recodage, appariement detruit : le plancher doit
+    # rester au niveau du hasard — sinon c'est le recodage qui produit le score.
+    floor = slens.shuffle_control_scores(
+        acts, positions, values, rng=np.random.default_rng(2), alpha=1e-6)
+    assert floor["value_exact"] < 0.45
+
+
 def test_self_location_detects_linear_position_code_and_rejects_noise():
     rng = np.random.default_rng(11)
     n, n_pos, d = 600, 8, 12
@@ -243,6 +272,24 @@ def test_location_causal_verdict_follows_only_paired_effect():
     assert damaged["verdict"] == "global_damage"
     none = slens.location_causal_verdict(0.2, 0.15, 0.1, damage_ok)
     assert none["verdict"] == "no_effect"
+
+
+def test_causal_verdict_does_not_label_an_absent_effect_as_global_damage():
+    """Un dommage global presuppose un effet mesure.
+
+    Une intervention qui ne deplace PAS la prediction mais abime le modele est
+    un resultat NEGATIF : l'etiqueter ``global_damage`` affirmait un effet que
+    la mesure n'avait pas vu. Le dommage reste reporte comme champ separe.
+    """
+    damaged = {"off_target_rel": 0.33, "target_rel": 0.31, "selectivity_ratio": 0.94}
+    v = slens.location_causal_verdict(0.074, 0.195, 0.062, damaged)
+    assert v["verdict"] == "no_effect"
+    assert v["selectivity_ok"] is False         # le dommage n'est pas tu
+    assert v["off_target_rel"] == pytest.approx(0.33)
+    # un effet FORT assorti du meme dommage reste etiquete global_damage :
+    # c'est le cas que le label decrit.
+    assert slens.location_causal_verdict(
+        0.9, 0.1, 0.1, damaged)["verdict"] == "global_damage"
 
 
 # --------------------------------------------------------------------------- #
@@ -371,7 +418,9 @@ def _seq_metrics(position_exacts, shuffle_floor=0.10, causal="causal"):
 
     def fake(run, **_):
         return {
-            "task": run["meta"]["task"], "arch": "x", "seed": 0, "table": [],
+            "task": run["meta"]["task"],
+            "arch": run["meta"].get("arch", "x"),
+            "seed": 0, "table": [],
             "best_unit": "L0H0",
             "position_exact": next(it),
             "position_exact_shuffle": shuffle_floor,
@@ -382,8 +431,8 @@ def _seq_metrics(position_exacts, shuffle_floor=0.10, causal="causal"):
     return fake
 
 
-def _run(task: str) -> dict:
-    return {"meta": {"task": task}, "arrays": {}}
+def _run(task: str, arch: str = "rope") -> dict:
+    return {"meta": {"task": task, "arch": arch}, "arrays": {}}
 
 
 def test_evidence_from_runs_requires_every_seed_above_its_floor(monkeypatch):
@@ -432,3 +481,31 @@ def test_evidence_from_runs_rejects_a_set_without_primary_bench(monkeypatch):
     monkeypatch.setattr(slens, "run_metrics", _seq_metrics([0.9]))
     with pytest.raises(ValueError, match="aucun run pour le banc primaire"):
         slens.evidence_from_runs([_run("variable_binding")])
+
+
+def test_evidence_from_runs_excludes_the_ablation_from_the_stability_test(monkeypatch):
+    """La stabilite multi-graines porte sur l'architecture de reference.
+
+    Un run d'ablation (autre regime de position) a une localisation differente
+    par construction : le meler aux graines ferait passer une heterogeneite
+    d'architecture pour une instabilite de graine, et le gate conclurait
+    INCONCLUSIVE sur un resultat stable.
+    """
+    # 4 graines de reference parfaitement stables, puis l'ablation tres basse
+    monkeypatch.setattr(
+        slens, "run_metrics", _seq_metrics([0.9, 0.9, 0.9, 0.9, 0.10])
+    )
+    runs = [_run("copy_offset", "rope")] * 4 + [_run("copy_offset", "none")]
+    ev, rows = slens.evidence_from_runs(runs)
+    assert len(rows) == 5
+    assert ev.reference_arch == "rope"
+    assert ev.seeds_stable is True
+    assert any("ablation" in n for n in ev.notes)
+    # un seul banc -> demonstrateur specialise, jamais PROMOTE ici
+    assert slens.promotion_verdict(ev) == "SPECIALIZED_ONLY"
+
+
+def test_evidence_from_runs_refuses_an_absent_reference_architecture(monkeypatch):
+    monkeypatch.setattr(slens, "run_metrics", _seq_metrics([0.9] * 2))
+    with pytest.raises(ValueError, match="architecture de reference"):
+        slens.evidence_from_runs([_run("copy_offset", "none")] * 2)
