@@ -487,8 +487,9 @@ def damage_metrics(
     selective (acceptance #15479). On mesure la norme relative du deplacement
     hors cible : ``off_target_rel`` doit rester proche de 0 pour une
     intervention propre ; ``target_rel`` documente l'ampleur voulue. Le rapport
-    ``selectivity_ratio = target_rel / max(off_target_rel, eps)`` alimente le
-    verdict.
+    ``selectivity_ratio`` alimente le verdict : c'est ``target_rel`` rapporte au
+    deplacement hors cible, et il vaut ``inf`` -- jamais un grand nombre -- quand
+    ce deplacement tombe sous le plancher de mesure (cf. le corps de la fonction).
     """
     if panel_before.shape != panel_after.shape:
         raise ValueError("panneaux avant/apres de formes differentes")
@@ -502,10 +503,25 @@ def damage_metrics(
     on = float(np.linalg.norm(diff[~mask])) if (~mask).any() else 0.0
     off_rel = off / max(base, eps)
     on_rel = on / max(base, eps)
+    # ``eps`` est deja le plancher declare de cette fonction : il borne
+    # ``off_rel``. Un deplacement hors cible qui y tombe n'est donc pas
+    # « petit », il est INDISTINGUABLE DE ZERO -- et le rapport n'est pas
+    # grand, il est NON BORNE. Rendre ``on_rel / eps`` faisait dependre la
+    # magnitude publiee d'une constante interne (462774272000.00 mesures sur le
+    # banc copy_offset pour une intervention parfaitement propre) et invitait a
+    # la lire comme une mesure. ``inf`` dit ce que le chiffre ne dit pas, et
+    # reste compatible avec le seuil du verdict, qui teste ``>= min_selectivity``.
+    # Reste le cas ou RIEN ne bouge, cible et hors cible au plancher : aucun
+    # rapport n'y est mesurable, et une intervention sans effet ne doit pas
+    # ressortir selective -- d'ou 0.0.
+    if off_rel <= eps:
+        selectivity = float("inf") if on_rel > 0.0 else 0.0
+    else:
+        selectivity = on_rel / off_rel
     return {
         "target_rel": on_rel,
         "off_target_rel": off_rel,
-        "selectivity_ratio": on_rel / max(off_rel, eps),
+        "selectivity_ratio": selectivity,
     }
 
 
