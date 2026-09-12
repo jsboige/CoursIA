@@ -151,9 +151,9 @@ def get_pr_checks(pr_number: int) -> dict:
 
 
 def is_always_on_guards_failing(pr_number: int) -> bool:
-    """True if `Always-on guards -- 12 organes, 1 checkout` is currently FAIL."""
+    """True if `Always-on guards -- 13 organes, 1 checkout` is currently FAIL."""
     checks = get_pr_checks(pr_number)
-    name = "Always-on guards -- 12 organes, 1 checkout"
+    name = "Always-on guards -- 13 organes, 1 checkout"
     return checks.get(name) == "fail"
 
 
