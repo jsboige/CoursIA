@@ -123,9 +123,46 @@ jobs:
           # (#15479 tranche 2, tests/test_causal_hooks.py -- importorskip
           # FONCTION-niveau : comptes a la collecte meme sans torch, skips a
           # l'execution seulement, convention test_jlens_traces.py).
+          # PARALLELISATION (#14598 levier b) -- cette jambe UNIQUEMENT.
+          # Mesure de concentration sur la sonde `ict-tests-profile.yml`
+          # (run 34676978324, --durations=25 --durations-min=0) : 25 items
+          # = 792,56 s sur 890,36 s, soit 89,0 % du temps ; les 1054 autres
+          # items = 97,80 s (11,0 %). Ces 25 items vivent dans 6 modules :
+          #
+          #   test_basin_landscape2d.py  255,08 s      test_collective_adoption.py  56,63 s
+          #   test_basin_family.py       184,03 s      test_scale_free.py           19,76 s
+          #   test_basin_asym.py         149,48 s      test_inhibited_invention.py   4,85 s
+          #   test_bridge_testing.py     122,73 s
+          #
+          # POURQUOI `loadscope` ET PAS le defaut `load` : les 6 modules
+          # declarent 7 fixtures `scope="module"`. Sous `--dist load` les
+          # tests d'un module s'eparpillent sur les workers et la fixture est
+          # RECONSTRUITE une fois par worker -- la parallelisation paierait
+          # plus cher que le gain. `loadscope` garde un module entier sur un
+          # worker : exactement une construction par module, comme aujourd'hui.
+          #
+          # POURQUOI 4 ET PAS `auto` : sous `loadscope` l'unite est le module
+          # (ces 6 modules ne declarent AUCUNE classe de test -- verifie
+          # firsthand), donc le chemin critique ne peut pas descendre sous le
+          # plus gros module, 255,08 s. Repartition LPT des 7 modules sur 4
+          # workers : [255] [184] [149+57] [123+20+5] -> makespan 255 s. A 8
+          # workers le makespan reste 255 s : AU-DELA DE 4, ZERO GAIN. Et
+          # `auto` lit les CPU de l'HOTE, pas la part du conteneur : plusieurs
+          # conteneurs `coursia-ephemeral` co-locataires demanderaient chacun
+          # N workers sur N coeurs partages -- c'est la sur-souscription qui
+          # est le suspect n°1 de la variance 2,050 x mesuree. Un nombre fixe
+          # et petit capte tout le gain sans ajouter au probleme.
+          #
+          # SURETE : `tests/` ne porte AUCUN `conftest.py` et AUCUNE fixture
+          # `scope="session"` (verifie firsthand sur origin/main) -- les deux
+          # choses qui rendent une suite hostile a xdist. Les 3 seuls sites
+          # d'ecriture fichier passent par `tmp_path` ou
+          # `tempfile.NamedTemporaryFile` (noms uniques par test). Ni socket,
+          # ni port, ni `os.environ[...] =`, ni `chdir`.
           - suite-name: "tests/ (56)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
+            test-parallel: "-n 4 --dist loadscope"
             test-floor: 1071
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 670 items collectes (le "strates == collection" d'origine
@@ -138,9 +175,18 @@ jobs:
           # (sys.path.insert module-level ignore sous importlib).
           # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
+          # SEQUENTIELLE, deliberement. Cette jambe n'a PAS ete mesuree par
+          # la sonde, et elle n'est pas en danger : 6,85 min (run 34674233673)
+          # et 8,35 min (run 34684756616) contre 15,1 / 25,4 min pour l'autre
+          # jambe des memes runs. Elle porte en plus un `conftest.py` et un
+          # `pytest.ini` propres (mode prepend, cf. #9387). Paralleliser ce
+          # qu'on n'a pas mesure, sur la jambe qui ne coute rien, serait du
+          # risque sans contrepartie -- `test-parallel` reste vide ici, et
+          # c'est un choix, pas un oubli.
           - suite-name: "ict/tests/ (42 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
+            test-parallel: ""
             test-floor: 692
 
     steps:
@@ -171,7 +217,7 @@ jobs:
           source "$ICT_VENV/bin/activate"
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest
+          pip install pytest pytest-xdist
           # Garde-fou : verifier que `pip show` rapporte le site-packages du venv,
           # pas celui du toolcache partage. Un editable install fait pointer
           # `ict.__file__` vers le source-tree (par design), donc on interroge pip.
@@ -184,9 +230,16 @@ jobs:
           python -c "import ict; print('ict import OK, __file__=', ict.__file__)"
           echo "$ICT_VENV/bin" >> "$GITHUB_PATH"
 
+      # `matrix.test-parallel` est VIDE sur la jambe ict/tests/ : l'invocation
+      # y reste mot pour mot celle d'avant. Le floor-guard ci-dessous, lui,
+      # n'est JAMAIS parallelise -- il compte une collecte (`--co -q`), et le
+      # resume canonique "N tests collected" qu'il parse n'a pas la meme forme
+      # sous xdist. Il garde donc l'invocation sequentielle, qui reste
+      # identique au step Run de la jambe non parallelisee (piege d'import
+      # #9387 : `pytest`, jamais `python -m pytest`).
       - name: Run ${{ matrix.suite-name }}
         working-directory: ${{ matrix.test-cwd }}
-        run: pytest ${{ matrix.test-args }} --tb=short -v
+        run: pytest ${{ matrix.test-args }} ${{ matrix.test-parallel }} --tb=short -v
 
       # Collection floor-guard (#9387). Acceptance de l'issue : "une panne
       # d'infra doit se distinguer d'un finding". pytest exit-code couvre deja
