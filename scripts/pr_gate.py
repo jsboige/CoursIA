@@ -799,18 +799,39 @@ def own_job_id(
     `run_attempt` filters out the superseded attempts a re-run leaves in the
     same listing; without it the first name match could be a previous
     attempt's check-run, whose output nothing will ever read again.
+
+    The listing is paged through (per_page=100): our job may sit past the
+    first hundred (#15749). Exhausting the pages without a match still
+    yields None -- the degradation is unchanged, never a verdict flip.
     """
     api = fetch if fetch is not None else _gh_api
-    payload = api(f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100")
-    if not isinstance(payload, dict):
-        raise GateError(f"unexpected jobs payload for run {run_id}")
-    for job in payload.get("jobs") or []:
-        if not isinstance(job, dict):
-            continue
-        if run_attempt is not None and str(job.get("run_attempt")) != str(run_attempt):
-            continue
-        if job.get("name") == job_name:
-            return job.get("id")
+    # Paginate the jobs listing (per_page=100 cap) with the same motif as
+    # fetch_checks below: a run carrying more than 100 jobs would leave our
+    # job off page 1 and the verdict motif would silently go unpublished
+    # again (#15749). total_count is the authoritative stop condition; a
+    # partial page (< 100 jobs) is the defensive fallback that also keeps
+    # total_count-less payloads terminating.
+    page = 1
+    while True:
+        payload = api(
+            f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100&page={page}"
+        )
+        if not isinstance(payload, dict):
+            raise GateError(f"unexpected jobs payload for run {run_id}")
+        jobs = payload.get("jobs") or []
+        for job in jobs:
+            if not isinstance(job, dict):
+                continue
+            if run_attempt is not None and str(job.get("run_attempt")) != str(run_attempt):
+                continue
+            if job.get("name") == job_name:
+                return job.get("id")
+        if len(jobs) < 100:
+            break
+        total = payload.get("total_count")
+        if total is not None and page * 100 >= total:
+            break
+        page += 1
     return None
 
 

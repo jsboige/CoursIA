@@ -78,6 +78,7 @@ from variation_adjacency_guard import (  # noqa: E402
     check,
     parse_override,
     resolve_merged_prev_genre,
+    sequence_as_of,
 )
 
 MARKER_RE = re.compile(r"<!--\s*refresh-adj:\s*[^>]+\s*-->")
@@ -151,9 +152,9 @@ def get_pr_checks(pr_number: int) -> dict:
 
 
 def is_always_on_guards_failing(pr_number: int) -> bool:
-    """True if `Always-on guards -- 12 organes, 1 checkout` is currently FAIL."""
+    """True if `Always-on guards -- 13 organes, 1 checkout` is currently FAIL."""
     checks = get_pr_checks(pr_number)
-    name = "Always-on guards -- 12 organes, 1 checkout"
+    name = "Always-on guards -- 13 organes, 1 checkout"
     return checks.get(name) == "fail"
 
 
@@ -188,7 +189,14 @@ def simulate_adjacency(pr_number: int, body: str, merged_window: list[dict]) -> 
 
     override = parse_override(get_pr_comments(pr_number))
     merged_prev = resolve_merged_prev_genre(merged_window, g["lane"])
-    return check(body, override=override, merged_prev=merged_prev)
+    verdict = check(body, override=override, merged_prev=merged_prev)
+    # #15739 : le verdict simule porte son referentiel comme celui de la CI --
+    # contre quelle sequence il a conclu (prev_pr/genre/source + horodatage),
+    # pour qu'un lecteur distingue un recalcul frais d'un rouge perime.
+    verdict = dict(verdict)
+    verdict["prev_source"] = "merged-sequence"
+    verdict["sequence_as_of"] = sequence_as_of(merged_window)
+    return verdict
 
 
 def refresh_one(pr_number: int, dry_run: bool, merged_window: list[dict]) -> dict:
