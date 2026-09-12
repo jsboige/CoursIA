@@ -200,6 +200,7 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 ### Références croisées
 
 - Pour aller plus loin sur ce qui précède (anatomie d'un cycle worker `/continue`, garde-fous auto-chargés, situation dans le parcours pédagogique) : [CLUSTER-ORCHESTRATION.md](docs/CLUSTER-ORCHESTRATION.md)
+- Pour le passage de la topologie anonymisée à la galerie nominative fonctionnelle et la liste des séries-workspaces accessibles depuis la flotte : [CLUSTER-ORCHESTRATION.md § Séries-workspaces et page collective](docs/CLUSTER-ORCHESTRATION.md#séries-workspaces-et-page-collective)
 - Architecture des MCPs (processus, cycle de vie, redémarrage Python) : [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md)
 - Spécialisations infrastructure (machines, GPUs, dispatch par mission) : [docs/reference/cluster-agents.md](../../../docs/reference/cluster-agents.md)
 - Mémoire sémantique (Qdrant, embeddings, indexation, notebook Hands-On) : [RAG et Mémoire Sémantique](../RAG-et-Memoire-Semantique/)
