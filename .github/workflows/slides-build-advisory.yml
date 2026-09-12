@@ -83,8 +83,19 @@ on:
     # The `paths` filter is not cosmetic: it is the scope guarantee (acceptance
     # 3). A PR outside slides/ never wakes this job at all, and the job never
     # holds a self-hosted slot to prove it had nothing to do.
+    #
+    # The SECOND entry is not part of that scope, it is a consequence of the
+    # job POSING A LABEL. #8822, enforced blocking by label-paths-guard.yml
+    # ("Label-poser workflows self-cover"): a label-poser that is paths-filtered
+    # without covering its own file can never re-run once the matching paths
+    # leave the diff -- so it can never REMOVE the label it added, and the label
+    # outlives the defect it names. Measured: without this line the guard names
+    # this very file. A workflow-only PR therefore fires this job and gets the
+    # "no deck impacted" exit 0 -- cheap, and the price of a label that can be
+    # taken back.
     paths:
       - 'slides/**'
+      - '.github/workflows/slides-build-advisory.yml'
   schedule:
     # Nocturnal sweep -- post-merge main verification.
     # Tranche 1 #12817 : sortir les advisory lourds de pull_request
