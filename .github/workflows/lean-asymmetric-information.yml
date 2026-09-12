@@ -46,6 +46,7 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lakefile.toml'

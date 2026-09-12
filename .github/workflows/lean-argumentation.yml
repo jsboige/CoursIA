@@ -32,6 +32,7 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.lean'
