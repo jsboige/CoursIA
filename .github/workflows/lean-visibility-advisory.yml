@@ -42,11 +42,18 @@ concurrency:
 jobs:
   lean-visibility-advisory:
     name: "Lean visibility drift (advisory label, non-blocking)"
-    # Routage #14283 tranche 3 : jambe Linux auto-hébergée. Le `if:` est la
-    # garde anti-fork exigée par scripts/ci/check_self_hosted_runner_policy.py
+    # Routage #14337 tranche 3 (narrow héritage G-VAR-1 Tell c.531-L2 strict,
+    # suite po-2024 c.1020 tranche 1 + ma lane c.508 tranche 2) : bascule
+    # `coursia-linux` -> `coursia-lean` pour beneficier du cache Mathlib
+    # chaud (image Dockerfile.lean baked in). Le scan visibilité parse les
+    # declarations Lean avec un contexte Mathlib -- le cache chaud elimine
+    # le redownload des 200+ modules Mathlib a chaque run PR. Le `if:` est
+    # la garde anti-fork exigee par scripts/ci/check_self_hosted_runner_policy.py
     # (runs-on STATIQUE = auditable). Les PRs de fork sautent le job --
-    # pr_gate.py compte `skipped` comme OK.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # pr_gate.py compte `skipped` comme OK. Allowlist deja presente
+    # (ligne 129 du policy script -- lean-visibility-advisory). Retour
+    # arriere = remettre `coursia-linux` + push.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
