@@ -1,0 +1,17 @@
+date: '2026-09-12'
+by: myia-po-2025:CoursIA-2
+python_sha: fae03adf2174f9ef984282a16c5e43d3dfc9891c
+csharp_sha: 4b0adfc0b62bd7ddb32a7439088432e5e3cf1cfd
+content_python_sha: 9f6748889b17f6fe1e239d6ff0ec3bce2e02d0c9b5febd06d1e2524ecf491355
+content_csharp_sha: febbe8cbaa7a5772e8254660c67a489a2a3401dc0db450e34b234fb02c970131
+reason: >-
+  Re-attestation cote C# uniquement (EPIC #14122 T7, purge warnings) : ajout de
+  '#nullable enable' en tete de la cellule 2 (modele STRIPS) -- seule cellule
+  source modifiee, les 6 annotations nullable existantes (object?,
+  IEnumerable<string>? x3, State?) etant intentionnelles mais sans directive de
+  contexte (defaut disabled en notebook). Re-execution integrale .net-csharp
+  11/11, 0 erreur : warnings CS8632 6 -> 0, stdout pedagogiques byte-identiques
+  sur les 11 cellules (plans BFS, compteurs de noeuds, resultats Fast Downward
+  identiques). Axe de parite intact (domaines modelises, BFS from-scratch, pont
+  FD Docker) ; jumeau Python byte-identique. probeAddresses banner strippe
+  (normalisation outillee) avant commit.
