@@ -29,6 +29,7 @@ import re
 import subprocess
 import sys
 import unicodedata
+from collections import Counter
 from pathlib import Path
 from urllib.parse import quote
 
@@ -1233,37 +1234,77 @@ def scan_all_notebooks(
     series_filter: str | None = None,
     git_meta: dict | None = None,
     git_tracked_only: bool = False,
+    exclusions: Counter[str] | None = None,
 ) -> list[dict]:
-    """Scan all notebooks and return catalog entries."""
+    """Scan all notebooks and return catalog entries.
+
+    Quand ``exclusions`` est fourni (un ``collections.Counter``), chaque
+    notebook écarté du catalogue y est compté sous son motif exact, dans
+    l'ordre de précédence réel des règles du scan — pour que l'écart
+    arbre/catalogue se réconcilie par construction et qu'aucune alarme
+    « catalogue incomplet » ne puisse confondre une exclusion voulue avec
+    un notebook oublié (#15606 point 2). La règle est documentée dans
+    scripts/notebook_tools/README.md (section Catalogue).
+    """
     tracked = _git_tracked_files() if git_tracked_only else None
     entries = []
     dirs = sorted(NOTEBOOKS_DIR.iterdir()) if not series_filter else [
         NOTEBOOKS_DIR / series_filter
     ]
 
+    def _count(motif: str, nb_path: Path) -> None:
+        if exclusions is not None:
+            exclusions[motif] += 1
+
     for series_dir in dirs:
         if not series_dir.is_dir():
             continue
         if series_dir.name in EXCLUDE_ALWAYS or series_dir.name.startswith("."):
+            for nb_path in sorted(series_dir.rglob("*.ipynb")):
+                if tracked and str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/") not in tracked:
+                    continue
+                _count(f"serie_exclue:{series_dir.name}", nb_path)
             continue
 
         for nb_path in sorted(series_dir.rglob("*.ipynb")):
-            rel = str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/")
-            if tracked and rel not in tracked:
+            if tracked and str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/") not in tracked:
+                _count("git_non_tracke", nb_path)
                 continue
             if pedagogical and nb_path.stem.endswith("_executed"):
+                _count("suffixe_executed", nb_path)
                 continue
             parts = nb_path.relative_to(series_dir).parts
-            if any(part in EXCLUDE_ALWAYS for part in parts):
+            always_part = next(
+                (part for part in parts if part in EXCLUDE_ALWAYS), None
+            )
+            if always_part is not None:
+                _count(f"segment_exclu:{always_part}", nb_path)
                 continue
             if pedagogical and any(
                 exc in str(nb_path.relative_to(series_dir))
                 for exc in EXCLUDE_PEDAGOGICAL
             ):
+                motif = next(
+                    exc for exc in sorted(EXCLUDE_PEDAGOGICAL)
+                    if exc in str(nb_path.relative_to(series_dir))
+                )
+                _count(f"pedagogical:{motif}", nb_path)
                 continue
             entry = analyze_notebook(nb_path, pedagogical, git_meta=git_meta)
             if entry:
                 entries.append(entry)
+            else:
+                _count("json_illisible", nb_path)
+
+    # Le scan itère les RÉPERTOIRES de série : un .ipynb posé directement à la
+    # racine de MyIA.AI.Notebooks/ n'est jamais visité (#15606 — GradeBook.ipynb
+    # est l'instance vivante). Compté sous son propre motif pour que la
+    # réconciliation arbre/catalogue ne laisse aucun écart inexpliqué.
+    if exclusions is not None and not series_filter:
+        for nb_path in sorted(NOTEBOOKS_DIR.glob("*.ipynb")):
+            if tracked and str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/") not in tracked:
+                continue
+            exclusions["racine_non_parcourue"] += 1
 
     return entries
 
@@ -1521,6 +1562,7 @@ def main():
     )
     args = parser.parse_args()
 
+    scan_exclusions: Counter[str] = Counter()
     pedagogical = not args.all
     git_meta = build_git_metadata()
     forensic_meta = build_forensic_metadata()
@@ -1538,7 +1580,19 @@ def main():
     entries = scan_all_notebooks(
         pedagogical=pedagogical, series_filter=args.series,
         git_meta=git_meta, git_tracked_only=args.git_tracked_only,
+        exclusions=scan_exclusions,
     )
+
+    # Compte des exclusions par motif (#15606 point 2) : la règle d'exclusion
+    # du scan est ÉMISE à chaque run pour que l'écart arbre/catalogue se
+    # réconcilie sans document humain — la réponse ne se périme pas.
+    total_excl = sum(scan_exclusions.values())
+    print(
+        f"Scan: {len(entries)} notebooks indexes, "
+        f"{total_excl} exclus par la regle (cf scripts/notebook_tools/README.md, Catalogue)"
+    )
+    for motif, n in sorted(scan_exclusions.items(), key=lambda kv: (-kv[1], kv[0])):
+        print(f"  excluded {n:>4}  {motif}")
 
     # Preserve curated git fields from origin/main for entries not
     # touched on the current branch (prevents stale-branch blanching)

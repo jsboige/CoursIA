@@ -1,0 +1,15 @@
+{
+  "_role": "Table de reservation publiee des slots de notebooks (#15489, defaut 4). Source 'declared' de check_slot_reservation.py : un slot declare ici est signale comme declare_reserved a quiconque vise le meme (repertoire, index), y compris quand l'arbre et les PRs ouvertes ne disent rien.",
+  "_why_empty": "Mesure du 2026-09-11, arbre origin/main : aucune table de mapping publiee de ce type n'existe dans le depot. Le fichier est donc livre VIDE -- le mecanisme existe, le contenu est une mesure, pas une supposition. Ne pas y verser une reservation de circonstance : une PR ouverte est deja couverte par la source 'open_prs', qui se libere toute seule au merge. Une entree ici est un engagement DURABLE, qui survit au merge de toutes les PRs.",
+  "_when_to_use": [
+    "un slot est gouverne par un document hors depot (plan de cours, sommaire de livre, calendrier d'une ecole) qui fixe l'index avant que le notebook existe ;",
+    "une serie a decide de laisser un trou volontaire (index retire pour ne pas renumeroer les suivants) ;",
+    "un index est tenu par un travail annonce publiquement mais pas encore ouvert en PR, et le trou durerait plusieurs cycles."
+  ],
+  "_when_not_to_use": [
+    "reserver un index pour SA PROPRE PR a venir : c'est un claim de lane (check_lane_claim.py), pas une reservation de slot -- et une reservation publiee posee pour soi est un verrou que personne n'a approuve.",
+    "reserver un slot deja tenu sur main : l'arbre le dit deja, la ligne est morte et masque la vraie question (renommer l'existant ?)."
+  ],
+  "_how_to_extend": "Ajouter un objet dans 'reserved' : {dir, index, holder, note, since}. 'dir' est le repertoire POSIX du depot (sans slash final, vide pour la racine), 'index' l'indice normalise tel que le lit naming_canon.index_key (zero-pad resorbe : '04-2' et '4.2' s'ecrivent '4.2'), 'holder' la lane ou le document qui tient le slot, 'since' la date de la decision. Un index sans 'holder' nomme est accepte mais s'affiche 'sans detenteur nomme' -- une reservation anonyme n'est pas arbitrable.",
+  "reserved": []
+}

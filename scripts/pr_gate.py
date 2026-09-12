@@ -52,6 +52,44 @@ Waits for every other check on the head SHA to settle, then fails if any of
 them failed. One name to require; it covers whatever CI happens to exist,
 now and later, with no per-workflow wiring to maintain.
 
+## Publication (#15693)
+
+A verdict this script computes is worthless if only the job log carries it:
+the surface a lane reads on a red PR is the required check's
+`output.summary`, which measured `null` while the cause (`pr_gate.py`'s own
+verdict string) lived only in the log -- 5/5 red PRs in the issue, plus a
+re-measurement of #15724, #15720, #15718.
+
+**The obvious mechanism does not work, and that is measured, not assumed.**
+Writing `$GITHUB_STEP_SUMMARY` renders a summary on the run page but does
+NOT populate the auto check-run's `output.summary`: on this file's own red
+gate (run 34681884304) the step summary renders while
+`gh api .../check-runs/<id> --jq .output.summary` returns `null`; the
+SUCCESSFUL sweep job (103506691766) writes the same organ and is null too;
+and a scan of 1098 `github-actions` check-runs over 40 main commits finds
+ZERO with a non-null summary. Every check-run that does carry one was
+created by the Checks API (POST) -- e.g. the shadow aggregator's
+`fast-lane (ombre): *`. POSTing a twin bearing THIS required name is not an
+option either: it lands in a foreign suite and GitHub ANDs the two, which is
+why the stale-sweep re-runs the original run instead of posting beside it
+(78 PRs blocked, #11519).
+
+So the verdict is published on two surfaces: the step summary
+(`write_step_summary`, the run page) and, for the check-run itself,
+:func:`publish_check_run_output`, which PATCHes our own check-run's
+`output` in place -- the only write that reaches the required leg, and one
+that needs a GitHub App token (a PAT is refused), hence the job's own.
+
+The FAIL message separates three states with opposite repairs: real reds
+("failing checks"), checks that never concluded (cancelled/timed_out/stale/
+startup_failure -- nothing was measured about the code, so rerun), and the
+DWELL floor (head timestamp + earliest lift time, no action). Advisory
+non-green checks are listed as not blocking. The fail-closed RULES are
+untouched: an unconcluded check still fails the gate (rule 1/3), only the
+message stops misattributing the repair. The `workflow_run` sweep path keeps
+POSTing its own check-run with its output fields (`--post-check-run`),
+exactly as before.
+
 ## Design rules that matter
 
 1. **Bias to fail.** Timeout, API error, or a check with no verdict => exit 1.
@@ -119,6 +157,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -138,6 +177,19 @@ CONCLUSION_OK = frozenset({"success", "neutral", "skipped"})
 # de-duplication it can no longer mean "superseded", only "no verdict".
 CONCLUSION_BAD = frozenset(
     {"failure", "timed_out", "cancelled", "action_required", "stale", "startup_failure"}
+)
+
+# Four of the six CONCLUSION_BAD members mean the check MEASURED NOTHING about
+# the code (cancelled by runner famine, timed out, stale, never started). The
+# other two (failure, action_required) are real reds. #15693: the published
+# verdict separates the two -- "failing checks: X" on a cancelled X asserts
+# something false about the code and invites fixing what is not broken
+# (measured on #15548: the lane investigated an infra famine while its real
+# blocker, already repaired 18 min earlier, went unread). The fail-closed RULE
+# is untouched: an unconcluded check still fails the gate (rule 1/3); only the
+# MESSAGE stops lying about which gesture repairs it (rerun, not a code fix).
+CONCLUSION_UNCONCLUDED = frozenset(
+    {"cancelled", "timed_out", "stale", "startup_failure"}
 )
 
 DEFAULT_SELF_NAME = "PR gate"
@@ -452,6 +504,10 @@ def classify(
     kept separate rather than merged into `ok` so a caller can print "advisory
     X failed" instead of silently rewriting a failure into a pass.
 
+    `bad` entries carry their conclusion as a suffix ("name (conclusion)",
+    #15693) so `verdict` can separate real reds from checks that never
+    concluded without re-reading the check set.
+
     `advisory_jobs` is the roster of job names whose parent workflow carries
     the advisory marker but the job itself does not (e.g.
     ``machine-dep-timing`` -> ``machine-dep-timing-advisory``); the gate would
@@ -523,7 +579,11 @@ def classify(
         elif conclusion in CONCLUSION_OK:
             ok.append(name)
         elif conclusion in CONCLUSION_BAD:
-            bad.append(name)
+            # #15693: carry the conclusion so `verdict` can separate real
+            # reds from checks that never concluded (same annotation style
+            # as the advisory list below -- the bare name loses exactly the
+            # information the published message needs).
+            bad.append(f"{name} ({conclusion})")
         else:
             # Unknown conclusion: bias to fail (rule 1). A conclusion GitHub
             # adds later must not silently become a pass.
@@ -541,6 +601,33 @@ def _report_advisory(advisory: Sequence[str]) -> None:
     """
     for entry in advisory:
         print(f"[pr-gate] advisory (not blocking): {entry}", flush=True)
+
+
+# Suffix added by `classify` to every CONCLUSION_BAD entry ("name
+# (conclusion)"). Used by `_split_bad` to route each entry to its clause
+# without re-reading the check set; anchored at end-of-string because the
+# annotation is always the LAST parenthesised group of the entry.
+_UNCONCLUDED_SUFFIX_RE = re.compile(
+    r" \((?:cancelled|timed_out|stale|startup_failure)\)$"
+)
+
+
+def _split_bad(bad: Sequence[str]) -> tuple[list[str], list[str]]:
+    """Split annotated `bad` entries into (real reds, never-concluded).
+
+    Real reds are `failure`/`action_required` (and unknown conclusions, which
+    rule 1 refuses) -- the lane has code work. Never-concluded are the four
+    CONCLUSION_UNCONCLUDED members -- nothing was measured about the code and
+    the repair is a rerun (#15693 three-state refinement).
+    """
+    failed: list[str] = []
+    unconcluded: list[str] = []
+    for entry in bad:
+        if _UNCONCLUDED_SUFFIX_RE.search(entry):
+            unconcluded.append(entry)
+        else:
+            failed.append(entry)
+    return failed, unconcluded
 
 
 def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[int, str]:
@@ -570,7 +657,22 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
     not look like a benign display issue.
     """
     if bad:
-        return 1, "FAIL -- failing checks: " + ", ".join(bad)
+        # #15693: one FAIL prefix, two clauses with OPPOSITE repairs. A real
+        # red names the check under "failing checks" (the historical phrase --
+        # greppable, and what the log annotation has carried since #15472).
+        # A check that never concluded is named separately with its repair
+        # gesture: "failing checks: X" on a cancelled X told #15548's lane
+        # its code was broken when the runner famine had eaten the verdict.
+        failed, unconcluded = _split_bad(bad)
+        parts = []
+        if failed:
+            parts.append("failing checks: " + ", ".join(failed))
+        if unconcluded:
+            parts.append(
+                "checks that never concluded (rerun the run -- this is not "
+                "a code failure): " + ", ".join(unconcluded)
+            )
+        return 1, "FAIL -- " + "; ".join(parts)
     if not settled:
         if pending:
             return 1, (
@@ -645,6 +747,157 @@ def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
         return json.loads(body)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api -X POST {path} returned non-JSON: {exc}") from exc
+
+
+def _gh_api_patch(path: str, fields: dict[str, str]) -> dict:
+    """Call `gh api -X PATCH <path>` with one `-f key=value` per field.
+
+    Same contract as :func:`_gh_api_post`: raises `GateError` on any failure,
+    so the caller decides whether that is fatal (rule 1) or a degradation.
+    """
+    cmd = ["gh", "api", "-X", "PATCH", path]
+    for key, value in fields.items():
+        cmd += ["-f", f"{key}={value}"]
+    try:
+        completed = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+            check=False,
+        )
+    except FileNotFoundError as exc:  # pragma: no cover - environment problem
+        raise GateError(f"gh CLI not available: {exc}") from exc
+
+    if completed.returncode != 0:
+        raise GateError(
+            f"gh api -X PATCH {path} failed (exit {completed.returncode}): "
+            f"{completed.stderr.strip()[:400]}"
+        )
+    body = completed.stdout.strip()
+    if not body:
+        return {}
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise GateError(f"gh api -X PATCH {path} returned non-JSON: {exc}") from exc
+
+
+def own_job_id(
+    repo: str,
+    run_id: str,
+    job_name: str,
+    run_attempt: "str | None" = None,
+    *,
+    fetch=None,
+) -> "int | None":
+    """The check-run id of OUR OWN job, or None when it cannot be resolved.
+
+    A job IS a check-run: `GET /actions/runs/<id>/jobs` reports `id`, and the
+    Checks API serves that same number (`/check-runs/<id>`) -- measured on
+    job 103506691766, whose `check_run_url` ends in its own job id.
+
+    `run_attempt` filters out the superseded attempts a re-run leaves in the
+    same listing; without it the first name match could be a previous
+    attempt's check-run, whose output nothing will ever read again.
+
+    The listing is paged through (per_page=100): our job may sit past the
+    first hundred (#15749). Exhausting the pages without a match still
+    yields None -- the degradation is unchanged, never a verdict flip.
+    """
+    api = fetch if fetch is not None else _gh_api
+    # Paginate the jobs listing (per_page=100 cap) with the same motif as
+    # fetch_checks below: a run carrying more than 100 jobs would leave our
+    # job off page 1 and the verdict motif would silently go unpublished
+    # again (#15749). total_count is the authoritative stop condition; a
+    # partial page (< 100 jobs) is the defensive fallback that also keeps
+    # total_count-less payloads terminating.
+    page = 1
+    while True:
+        payload = api(
+            f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100&page={page}"
+        )
+        if not isinstance(payload, dict):
+            raise GateError(f"unexpected jobs payload for run {run_id}")
+        jobs = payload.get("jobs") or []
+        for job in jobs:
+            if not isinstance(job, dict):
+                continue
+            if run_attempt is not None and str(job.get("run_attempt")) != str(run_attempt):
+                continue
+            if job.get("name") == job_name:
+                return job.get("id")
+        if len(jobs) < 100:
+            break
+        total = payload.get("total_count")
+        if total is not None and page * 100 >= total:
+            break
+        page += 1
+    return None
+
+
+def publish_check_run_output(
+    repo: str,
+    run_id: str,
+    job_name: str,
+    code: int,
+    message: str,
+    advisory: Sequence[str] = (),
+    run_attempt: "str | None" = None,
+    *,
+    fetch=None,
+    patch=None,
+) -> bool:
+    """PATCH the verdict onto the AUTO check-run's `output` (acceptance 1).
+
+    Why PATCH and not POST. A second check-run bearing the required name
+    lands in a FOREIGN check suite and GitHub ANDs the two, so a posted
+    verdict never replaces a stale one -- the measurement that removed
+    POSTing from pr-gate-stale-sweep.yml (78 PRs blocked, #11519) and the
+    reason `pr-gate-rerun.yml` re-runs the original run instead of posting
+    beside it. PATCH edits the check-run IN PLACE, in its own suite, which is
+    what `gh run rerun` does for the conclusion -- and what the conclusion's
+    MOTIVE needs just as much.
+
+    The PATCH must be authenticated by a GitHub App: a PAT is refused with
+    "You must authenticate via a GitHub App" (measured 2026-09-12). The job's
+    own `GITHUB_TOKEN` is an installation token of the app that owns this
+    check-run, which is why the call is made from inside the job and with
+    that token.
+
+    Returns True when the output was written. Every other outcome -- no job
+    id resolvable, token refused, fork PR (read-only token), network -- is
+    False plus a warning to the log. Publication must never flip a verdict:
+    the exit code and the log line stay the source of truth.
+    """
+    try:
+        job_id = own_job_id(
+            repo, run_id, job_name, run_attempt, fetch=fetch
+        )
+    except GateError as exc:
+        print(f"[pr-gate] WARN -- check-run id unresolved: {exc}", flush=True)
+        return False
+    if not job_id:
+        print(
+            f"[pr-gate] WARN -- no job named {job_name!r} in run {run_id}; "
+            "check-run output not published",
+            flush=True,
+        )
+        return False
+
+    title = message.splitlines()[0] if message else job_name
+    writer = patch if patch is not None else _gh_api_patch
+    try:
+        writer(
+            f"repos/{repo}/check-runs/{job_id}",
+            {
+                "output[title]": f"{job_name}: {title}"[:255],
+                "output[summary]": verdict_body(message, advisory),
+            },
+        )
+    except GateError as exc:
+        print(f"[pr-gate] WARN -- check-run output not published: {exc}", flush=True)
+        return False
+    return True
 
 
 # Seconds to hold the step open after a successful self-cancel POST, so the
@@ -786,6 +1039,7 @@ def wait_and_decide(
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
+    detail: "dict | None" = None,
 ) -> tuple[int, str]:
     """Poll until the check set is stable, then decide.
 
@@ -802,6 +1056,12 @@ def wait_and_decide(
     whose own name does not carry the marker. Empty frozenset (default) disables
     the workflow-name side of `is_advisory` -- the historical behaviour, kept
     for tests that do not care.
+
+    `detail`, when a dict is given, is filled with the advisory list of the
+    LAST classification before the verdict (`detail["advisory"]`) so `main`
+    can publish it in the step summary (#15693) without changing this
+    function's 2-tuple return. The last classify is authoritative: the
+    deadline path re-classifies into `final_*` and overwrites the entry.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -812,6 +1072,8 @@ def wait_and_decide(
     while True:
         checks = fetch(repo, sha)
         pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
+        if detail is not None:
+            detail["advisory"] = list(advisory)
 
         if bad:
             # Fail fast: a failure cannot be undone by waiting longer.
@@ -849,6 +1111,8 @@ def wait_and_decide(
             final_pending, final_bad, final_ok, final_advisory = classify(
                 final_checks, self_name, adv_jobs
             )
+            if detail is not None:
+                detail["advisory"] = list(final_advisory)
             if not final_pending and not final_bad:
                 # Everything settled in the gap: treat as a clean settle.
                 # Still consult the delivery canary (rule 8) so an empty
@@ -911,6 +1175,80 @@ def _workflow_command_escape(text: str) -> str:
     return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
+def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
+    """The published text of a verdict -- ONE builder, two surfaces (#15693).
+
+    Both the step summary and the check-run `output.summary` are rendered
+    from this string, so the two can never drift: acceptance 1 asks the
+    summary to name the cause "the same as the log", and the only way to
+    keep that true over time is to have a single source.
+
+    The DWELL floor gets its do-not-repush guidance (a reaction push resets
+    the 120-min floor from the new head); advisory checks are listed as
+    non-blocking (#15548: a cancelled advisory read as the blocker while the
+    real one was already repaired 18 min earlier).
+    """
+    lines = [message]
+    if message.startswith("DWELL"):
+        lines += [
+            "",
+            "Plancher mecanique -- rien a reparer dans la PR. Ne pas "
+            "re-pusher (un re-push remet le plancher a zero depuis la "
+            "nouvelle tete) ; le balayage horaire leve seul.",
+        ]
+    if advisory:
+        lines += ["", "Advisory (not blocking):"]
+        lines += [f"- {entry}" for entry in advisory]
+    return "\n".join(lines)
+
+
+def write_step_summary(
+    code: int, message: str, advisory: Sequence[str] = ()
+) -> None:
+    """Publish the verdict to the job's STEP SUMMARY (#15693).
+
+    This is the surface GitHub renders at the top of the run page -- the page
+    a human opens from the red check. It is NOT the check-run's
+    `output.summary`, and the difference is measured, not assumed:
+
+        run 34681884304 (this file's own red gate, 2026-09-12): the step
+        summary IS rendered on the run page -- `curl .../actions/runs/
+        34681884304 | grep 'failing checks'` returns the verdict -- while
+        `gh api .../check-runs/103521890556 --jq .output.summary` returns
+        null. Same for the SUCCESSFUL sweep job 103506691766 (its log writes
+        `$GITHUB_STEP_SUMMARY`; its check-run summary is null), and a scan of
+        1098 `github-actions` check-runs over 40 main commits finds ZERO with
+        a non-null summary. Every check-run that does carry one is created by
+        the Checks API (POST), e.g. the shadow aggregator's
+        `fast-lane (ombre): *`.
+
+    So the issue's premise -- "$GITHUB_STEP_SUMMARY feeds the auto
+    check-run's output.summary" -- is false on this repository, and this
+    function alone would not satisfy acceptance 1. It is kept because the
+    run-page rendering is real and useful; the check-run surface is served
+    separately by :func:`publish_check_run_output`.
+
+    No-op when `GITHUB_STEP_SUMMARY` is unset (local runs). A write failure
+    degrades to a warning: publication must never flip a verdict -- the
+    exit code and the log line remain the source of truth.
+    """
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    lines = [
+        f"## PR gate: {'PASS' if code == 0 else 'FAIL'}",
+        "",
+        "```",
+        verdict_body(message, advisory),
+        "```",
+    ]
+    try:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write("\n".join(lines) + "\n")
+    except OSError as exc:
+        print(f"[pr-gate] WARN -- step summary not written: {exc}", flush=True)
+
+
 def _optional_int(raw: str) -> "int | None":
     """`--pr ""` vaut « pas de PR », pas une erreur d'argparse.
 
@@ -971,8 +1309,18 @@ def main(argv: Iterable[str] | None = None) -> int:
         "--run-id",
         default=None,
         help=(
-            "Workflow run id used to self-cancel on starvation (#13510); "
-            "defaults to $GITHUB_RUN_ID when the script runs inside Actions."
+            "Workflow run id used to self-cancel on starvation (#13510) and "
+            "to locate our own check-run for publication (#15693); defaults "
+            "to $GITHUB_RUN_ID when the script runs inside Actions."
+        ),
+    )
+    parser.add_argument(
+        "--no-check-run-output",
+        action="store_true",
+        help=(
+            "Ne pas publier le verdict dans l'`output` de notre propre "
+            "check-run (#15693). Le resume du run (step summary) reste "
+            "ecrit. Utile si un leg doit rester muet sur cette surface."
         ),
     )
     parser.add_argument(
@@ -1018,6 +1366,9 @@ def main(argv: Iterable[str] | None = None) -> int:
             "reporting PASS without polling.",
             flush=True,
         )
+        # #15693: even the fork short-circuit publishes -- a student PR's
+        # check-run should not be the only one whose summary stays null.
+        write_step_summary(0, "PASS -- fork PR short-circuit (issue #10072)")
         # The workflow_run re-aggregation path runs on the default branch, so it
         # cannot read the fork flag from the pull_request payload. It still POSTs
         # here: a fork PR must surface `success` on its head SHA to match the
@@ -1046,6 +1397,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     # blocked 44h/9h before the fix landed.
     advisory_jobs = derive_advisory_jobs(args.workflows_dir)
 
+    detail: dict = {}
     try:
         code, message = wait_and_decide(
             args.repo,
@@ -1056,6 +1408,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             args.settle_polls,
             always_on_jobs,
             advisory_jobs,
+            detail=detail,
         )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall
@@ -1064,41 +1417,6 @@ def main(argv: Iterable[str] | None = None) -> int:
         # most opaque failure mode (API unreadable at all) mute in the UI
         # (#15472). Verdict semantics unchanged: code 1, same message.
         code, message = 1, f"FAIL -- cannot establish check state: {exc}"
-
-    # #13510: render a starvation as CANCELLED, not FAILURE. The PR stays
-    # BLOCKED (a cancelled required check is not success), but the leg no
-    # longer claims a failure that never happened, and pr-gate-stale-sweep
-    # already treats a cancelled gate leg as a re-run candidate (#11862) --
-    # the same recovery channel as a supersession-cancel. Workflow-run mode
-    # only: --post-check-run runs on the default branch as an operator
-    # harness whose own run is NOT the PR's gate leg, so it keeps POSTing
-    # the verdict instead of cancelling itself.
-    if (
-        code == 1
-        and message.startswith("STARVED")
-        and not args.no_self_cancel
-        and not args.post_check_run
-    ):
-        run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
-        if run_id:
-            print(
-                f"[pr-gate] STARVED -- constituents still pending, nothing "
-                f"red; cancelling own run {run_id} so the leg concludes "
-                "CANCELLED, not FAILURE (#13510). The PR stays blocked; "
-                "pr-gate-stale-sweep will re-aggregate.",
-                flush=True,
-            )
-            if cancel_own_run(args.repo, run_id):
-                # Hold the step open so the cancel signal lands before we
-                # exit (see CANCEL_GRACE_SEC). Exit code stays 1: if the
-                # cancel lost the race, rule 1 still holds.
-                time.sleep(CANCEL_GRACE_SEC)
-        else:
-            print(
-                "[pr-gate] STARVED but no run id resolvable (local run) -- "
-                "FAIL per rule 1",
-                flush=True,
-            )
 
     # --- plancher de merge (mandat user 2026-09-07) ---------------------
     #
@@ -1137,6 +1455,71 @@ def main(argv: Iterable[str] | None = None) -> int:
                     print("[pr-gate] {}".format(dwell_msg), flush=True)
                 else:
                     code, message = 1, "DWELL -- {}".format(dwell_msg)
+
+    # --- #15693: publish the verdict BEFORE the #13510 self-cancel --------
+    #
+    # The dwell block above has already applied the final message rewrite
+    # (dwell only fires on code==0; the self-cancel below only on code==1 +
+    # STARVED -- the two rewrites are mutually exclusive, so the summary
+    # written here is final). Writing BEFORE the self-cancel matters: a
+    # cancelled job can be torn down before this process reaches its
+    # emission tail, and a STARVED leg still owes the lane its named
+    # constituents. The fork short-circuit publishes at its own early
+    # return; local runs (no GITHUB_STEP_SUMMARY) no-op inside.
+    advisory = detail.get("advisory", ())
+    write_step_summary(code, message, advisory)
+    # The check-run surface, which the step summary does NOT reach (measured;
+    # see `write_step_summary`). This is the one acceptance 1 names: the
+    # required check itself must carry its motive. Skipped on the operator
+    # harness (`--post-check-run`), whose contract is to POST its verdict on
+    # the PR head -- its own auto check-run sits on the default branch and is
+    # not the PR's gate leg.
+    run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
+    if run_id and not args.no_check_run_output and not args.post_check_run:
+        publish_check_run_output(
+            args.repo,
+            run_id,
+            args.self_name,
+            code,
+            message,
+            advisory,
+            os.environ.get("GITHUB_RUN_ATTEMPT"),
+        )
+
+    # #13510: render a starvation as CANCELLED, not FAILURE. The PR stays
+    # BLOCKED (a cancelled required check is not success), but the leg no
+    # longer claims a failure that never happened, and pr-gate-stale-sweep
+    # already treats a cancelled gate leg as a re-run candidate (#11862) --
+    # the same recovery channel as a supersession-cancel. Workflow-run mode
+    # only: --post-check-run runs on the default branch as an operator
+    # harness whose own run is NOT the PR's gate leg, so it keeps POSTing
+    # the verdict instead of cancelling itself.
+    if (
+        code == 1
+        and message.startswith("STARVED")
+        and not args.no_self_cancel
+        and not args.post_check_run
+    ):
+        run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
+        if run_id:
+            print(
+                f"[pr-gate] STARVED -- constituents still pending, nothing "
+                f"red; cancelling own run {run_id} so the leg concludes "
+                "CANCELLED, not FAILURE (#13510). The PR stays blocked; "
+                "pr-gate-stale-sweep will re-aggregate.",
+                flush=True,
+            )
+            if cancel_own_run(args.repo, run_id):
+                # Hold the step open so the cancel signal lands before we
+                # exit (see CANCEL_GRACE_SEC). Exit code stays 1: if the
+                # cancel lost the race, rule 1 still holds.
+                time.sleep(CANCEL_GRACE_SEC)
+        else:
+            print(
+                "[pr-gate] STARVED but no run id resolvable (local run) -- "
+                "FAIL per rule 1",
+                flush=True,
+            )
 
     print(f"[pr-gate] {message}", flush=True)
     _maybe_post_check_run(args, code, message)

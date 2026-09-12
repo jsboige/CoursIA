@@ -85,10 +85,14 @@ jobs:
           # origin/main@5302d974aa, CI-confirme run 34307798875). Rootdir herite du
           # pyproject.toml d'ICT-Series/ (pip install -e . rend le package ict/
           # importable depuis n'importe quel cwd).
-          - suite-name: "tests/ (55)"
+          # Floor 1046 -> 1071 : +25 items hooks torch du moteur causal
+          # (#15479 tranche 2, tests/test_causal_hooks.py -- importorskip
+          # FONCTION-niveau : comptes a la collecte meme sans torch, skips a
+          # l'execution seulement, convention test_jlens_traces.py).
+          - suite-name: "tests/ (56)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-floor: 1046
+            test-floor: 1071
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 670 items collectes (le "strates == collection" d'origine
           # est tombe : le parametrize est devenu massif ici aussi ; compte mesure
@@ -98,10 +102,12 @@ jobs:
           # (mode prepend, neutralise --import-mode=importlib) s'applique -- sinon
           # test_reversibility_budget / test_time_arrow n'executent jamais
           # (sys.path.insert module-level ignore sous importlib).
+          # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
+          # (#15479 tranche 1, ict/tests/test_causal_engine.py).
           - suite-name: "ict/tests/ (42 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 670
+            test-floor: 692
 
     steps:
       - uses: actions/checkout@v4
