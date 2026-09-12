@@ -284,8 +284,8 @@ docker ps | grep -E "whisper|kokoro|musicgen"
 # Redémarrer un service spécifique
 cd docker-configurations && docker compose restart whisper-api kokoro-tts
 
-# Vérifier le bearer token (drift bcrypt)
-cat GenAI/.env | grep COMFYUI_BEARER_TOKEN
+# Vérifier le bearer token (drift bcrypt) — COMFYUI_API_TOKEN (principal), COMFYUI_AUTH_TOKEN (alias)
+grep -E '^(COMFYUI_API_TOKEN|COMFYUI_AUTH_TOKEN)=' GenAI/.env
 ```
 
 Les notebooks ont une **graceful degradation** : sans token, ils basculent vers les APIs cloud (OpenAI TTS/Whisper).
