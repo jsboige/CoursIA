@@ -72,6 +72,10 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Bound at 30 minutes (See #15698): this is a cheap text-level grep gate,
+    # not a Lean build -- a wedge here is much cheaper than on `build`/`proof-
+    # integrity`, but still must not pin a runner forever.
+    timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v4
@@ -147,6 +151,11 @@ jobs:
   build:
     name: "Lake build"
     runs-on: ubuntu-latest
+    # Bound at 60 minutes (See #15698): a full Lake build on game_theory_lean
+    # (Mathlib + SocialChoice modules) routinely takes 20-30 minutes; a wedge
+    # here must not pin a runner forever. The bound converts a wedge into a
+    # red check that the merge-gate can act on.
+    timeout-minutes: 60
     # Serialized behind the CHEAP text-level gate (fail fast before spending a
     # Mathlib build). proof-integrity now depends on THIS job (c.327) so the two
     # full compiles run in series instead of in parallel.
