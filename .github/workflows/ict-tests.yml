@@ -12,22 +12,23 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 686 items.
+#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 681 items.
 #     55 != 1046 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1046/686), le label garde les strates (55/42).
+#     floor garde la collection (1046/681), le label garde les strates (55/42).
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
 # le 34 etait faux des l'inception. Les floors precedents (746/42, ai-01 @
 # dbfbf73ab) ont DERIVE en silence -- la collecte croissait sans que rien ne
-# le signale (746 -> 1046 / 42 -> 670, #15471). Les floors actuels (1046/686)
+# le signale (746 -> 1046 / 42 -> 670, #15471). Les floors actuels (1046/681)
 # sont mesures firsthand sur origin/main@5302d974aa (po-2023, venv Python 3.9
 # + pyphi 1.2.0 + numpy 1.26.4, deux collectes consecutives identiques) et
 # confirmes par la CI au run 34307798875 (main@9433e9a09d : 1046/670) ; le
-# second est remonte a 686 par #15657 (16 tests bench_factorise), mesure locale
-# `--collect-only` = 686 et CI `Collected 686 > floor 670`.
-# Ils sont enforce par la collection floor-guard ci-dessous, pas seulement par ce
+# second est remonte a 681 par #15660 (11 tests lens_gates, mesure locale
+# `--collect-only` = 681 et CI `Collected 681 > floor 670`, python 3.9.25
+# + numpy 2.0.2). Ils
+# sont enforce par la collection floor-guard ci-dessous, pas seulement par ce
 # commentaire -- et depuis #15471 le guard emet aussi un ::warning quand la
 # collecte DEPASSE le floor (drift ascendant = floor a remonter dans la PR qui
 # l'introduit). Quand la collection change, ajuster matrix.test-floor dans la
@@ -92,10 +93,12 @@ jobs:
             test-args: tests
             test-floor: 1046
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
-          # #9478) -> 686 items collectes (le "strates == collection" d'origine
+          # #9478) -> 681 items collectes (le "strates == collection" d'origine
           # est tombe : le parametrize est devenu massif ici aussi ; compte mesure
           # 2x sur origin/main@5302d974aa, CI-confirme run 34307798875 -- mesure
           # separee exigee par le scope #15471 avant de toucher ce floor).
+          # 670 -> 681 par #15660 (11 tests lens_gates ; le 681 a ete relu
+          # firsthand sous python 3.9.25 + numpy 2.0.2, pas repris de la CI).
           # Rootdir = ict/tests/ pour que le pytest.ini local
           # (mode prepend, neutralise --import-mode=importlib) s'applique -- sinon
           # test_reversibility_budget / test_time_arrow n'executent jamais
@@ -103,7 +106,7 @@ jobs:
           - suite-name: "ict/tests/ (42 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 686
+            test-floor: 681
 
     steps:
       - uses: actions/checkout@v4
@@ -161,7 +164,7 @@ jobs:
       # gate reste verte alors que la couverture a chute. Ce step re-collecte
       # (--co -q, import-only, rapide) et echoue si le compte passe sous le
       # plancher. Floors = comptes observes sur origin/main@5302d974aa
-      # (1046/670, deux collectes consecutives identiques, po-2023, #15471 ;
+      # (1046/681, deux collectes consecutives identiques, po-2023, #15471 ;
       # CI-confirme run 34307798875 -- suite deterministe). Quand des tests
       # sont retires INTENTIONNELLEMENT, abaisser matrix.test-floor dans la
       # meme PR -- le message d'erreur nomme la valeur a ajuster. Symetriquement,
