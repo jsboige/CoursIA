@@ -151,6 +151,49 @@ from typing import Any
 
 REPO = "jsboige/CoursIA"
 
+# c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
+# si label `candidate-delivered` OU marqueur `[INFO] candidate-delivered` en
+# commentaire. Le sweep quotidien retracte le label sur activite de commentaire
+# (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
+# invisibles au seul filtre labels. Le pattern matche les deux formes
+# employees par les lanes : `[INFO] candidate-delivered` et `[INFO
+# candidate-delivered]` (espace au lieu de `]`).
+_DELIVERED_MARKER_RE = re.compile(
+    r"\[INFO[\s_]candidate-delivered", re.IGNORECASE)
+
+
+def _has_delivered_marker(issue_number: int) -> bool | None:
+    """Retourne True si l'issue porte un marqueur [INFO] candidate-delivered.
+
+    Cout : 1 requete HTTP par appel (invariant recent_delivery l.958 preserve --
+    appelee seulement sur les candidats TIRES, jamais sur le pool). Retourne
+    None si la lecture echoue (timeout, rate-limit) ; l'appelant traite None
+    comme "pas de signal" et continue, exactement comme une absence.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number),
+             "--repo", REPO, "--comments", "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=20,
+        ).stdout
+        payload = json.loads(out)
+    except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+        return None
+    # Tolérance : la charge utile peut être [] (issue introuvable, ou mock de
+    # test ancien), {comments: [...]} (gh standard), voire {data: ...}. Le
+    # contrat utile est "iterable de dict avec .body" ; tout le reste = pas
+    # de signal.
+    if not isinstance(payload, dict):
+        return False
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list):
+        return False
+    return any(_DELIVERED_MARKER_RE.search((c.get("body") or "")
+                                          if isinstance(c, dict) else "")
+               for c in comments)
+
+
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
 # le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
@@ -1067,6 +1110,20 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
+            # c.1115 voie 1 (Tell c.1060-L1 reformule ai-01) : pas de PR
+            # couvrante, mais le label `candidate-delivered` peut etre absent
+            # alors que le marqueur `[INFO] candidate-delivered` est present
+            # en commentaire (sweep 05:37Z retracte sur activite). Cout : 1
+            # requete par pick, invariant recent_delivery preserve.
+            if _has_delivered_marker(n):
+                notes[n] = (
+                    f"LIVRE-urn VIA MARQUEUR [INFO] candidate-delivered en "
+                    f"commentaire (label GitHub absent/decay -- sweep "
+                    f"quotidien retracte sur activite post-merge, documentee "
+                    f"dans l'en-tete du workflow advisory). Verifier "
+                    f"firsthand `gh issue view {n} --comments` AVANT de "
+                    f"claimer ; substance deja livree par une autre lane.")
+                p["klass"] = "delivered"
             continue
 
         # Une PR fermee-sans-fusion n'atteste de rien : on l'ecarte ici plutot
