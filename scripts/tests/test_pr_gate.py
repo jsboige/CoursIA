@@ -1711,6 +1711,35 @@ def test_own_job_id_is_none_when_the_name_is_absent():
     ) is None
 
 
+def test_own_job_id_paginates_past_the_first_hundred_jobs():
+    """#15749: the jobs listing caps at per_page=100 and own_job_id did NOT
+    page through. A run carrying more than 100 jobs leaves OUR job off page
+    1, the lookup degrades to None, and the verdict motif silently goes
+    unpublished again -- the exact repair #15693 made, disarmed. fetch_checks
+    paginates correctly in this same file; own_job_id now reuses the motif."""
+    from urllib.parse import parse_qs, urlparse
+
+    target = {"id": 777, "name": pr_gate.DEFAULT_SELF_NAME, "run_attempt": "3"}
+    filler = [{"id": i, "name": f"matrix {i}", "run_attempt": "3"}
+              for i in range(100)]
+    fetched = []
+
+    def paged(path):
+        q = parse_qs(urlparse(path).query)
+        page = int(q.get("page", ["1"])[0])
+        assert q.get("per_page") == ["100"], path
+        fetched.append(page)
+        if page == 1:
+            return {"jobs": list(filler), "total_count": 101}
+        assert page == 2, f"unexpected page {page}"
+        return {"jobs": [target], "total_count": 101}
+
+    got = pr_gate.own_job_id("o/r", "99", pr_gate.DEFAULT_SELF_NAME, "3",
+                             fetch=paged)
+    assert got == 777
+    assert fetched == [1, 2], fetched
+
+
 def test_check_run_output_is_patched_with_the_verdict(monkeypatch):
     """Acceptance 1 on the surface it names: the REQUIRED check carries the
     motive, as the exact verdict string (log == summary). PATCH, not POST --
