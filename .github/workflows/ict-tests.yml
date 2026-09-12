@@ -67,13 +67,47 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Timeout etire 15 -> 30 min (#14598 acceptance Option A) : diagnostic
-    # first-hand 30 derniers runs montre success 353-951s (mediane ~800s),
-    # cancelled des 925s (=hit timeout 15 min). Pas de drift temporel, juste
-    # variabilite charge partagee conteneur Docker self-heberge po-2024.
-    # Step Run lui-meme timeout 12 min legitimes sous charge. Fix orthogonal
-    # a #14571 (defaut install FIXE par #14595 venv per-job).
-    timeout-minutes: 30
+    # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
+    # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes
+    # dessus le 2026-09-12 (#15657, #15660, #15609 -- 30,5 / 30,4 / 30,4 min,
+    # toutes `cancelled`, aucune `failure`).
+    #
+    # Le 60 est choisi CONTRE une mesure, pas contre une marge de confort.
+    # Sonde hors plafond `ict-tests-profile.yml` (timeout 90 min, MEME commande,
+    # MEME pool de runners), job 103508457858 / run 34676978324, runner
+    # po-2024-linux-docker-2 :
+    #
+    #     1076 passed, 3 skipped, 7 warnings in 890.36s (0:14:50)
+    #     step `Run` = 15,23 min mur
+    #
+    # Run tue (#15609, job 103531764037, runner po-2024-linux-docker-4), compare
+    # sur le PREFIXE STRICTEMENT IDENTIQUE de la suite -- memes deux items
+    # d'ancrage dans les deux logs (test_active_inference.py::
+    # test_belief_pdf_normalized -> test_pregnance_animat.py::
+    # test_behavioral_reversibility_verdict) :
+    #
+    #     prefixe sonde  =  847,22 s        prefixe tue = 1737,00 s
+    #     ratio          =  2,050 x         <- variance RUNNER, pas derive de suite
+    #
+    # Extrapole au total : 30,42 min contre un budget de step de 28,94 min
+    # (30 min de job - 1,06 min d'install). DEFICIT 89 s, soit 5,1 % : le
+    # plafond de 30 etait pose SUR la frontiere, pas au-dessus. Le run tue
+    # progressait normalement, a 58 % de la suite, une seconde avant la coupe.
+    #
+    # 60 min = 3,94 x le nominal mesure (15,23 min) et 1,97 x le pire cas
+    # observe (30,42 min). Ce n'est PAS le correctif de fond -- la suite met
+    # 89 % de son temps dans 25 items sur 6 modules, et `-n --dist loadscope`
+    # ramene le chemin critique a ~4,25 min nominal (mesure #14598). C'est le
+    # plafond qui cesse de tuer du contenu pendant que ce correctif se valide.
+    #
+    # A RELIRE quand la parallelisation atterrit : un plafond dimensionne pour
+    # une suite sequentielle de 30 min n'a plus de sens sur une suite de 9 min.
+    #
+    # Ce qu'un `cancelled` ne dit pas : un kill par `timeout-minutes` rend
+    # conclusion `cancelled`, JAMAIS `failure`. La couleur ne distingue pas
+    # « le code est faux » de « la machine a ete coupee » -- ne pas imputer a
+    # une lane un rouge produit par cette ligne.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
