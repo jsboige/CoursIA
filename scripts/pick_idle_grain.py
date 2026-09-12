@@ -1168,7 +1168,7 @@ CHECK_IN_FLIGHT = {"PENDING", "QUEUED", "IN_PROGRESS", "WAITING", "EXPECTED", ""
 # enfant qui tombe -- corroborer sur leur nom ne prouve jamais une cause
 # commune ("plusieurs PRs echouent cet agregat" != "plusieurs PRs echouent
 # pour la meme cause"). Le nom "Always-on guards" embarque en plus un compte
-# d'organes qui derive ("-- 12 organes, 1 checkout"), donc meme l'identite
+# d'organes qui derive ("-- 13 organes, 1 checkout"), donc meme l'identite
 # nominale n'est pas stable. Le match est donc un PREFIXE pour lui, un nom
 # exact pour "PR gate".
 AGGREGATOR_CHECK_PREFIXES = ("Always-on guards",)
