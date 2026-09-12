@@ -113,6 +113,24 @@ def test_validate_manifest_legacy_lens_jacobian_is_jlens():
     assert m_out["instrument"] == "jlens"
 
 
+def test_validate_manifest_legacy_lens_jacobian_is_jlens_trackp():
+    """Retro-compat v1.1.0 (#15536) : lens='jacobian' + expected='jlens_trackp'
+    -> instrument='jlens_trackp'. Le loader Track P herite les fixtures legacy
+    J-Lens (persona 4B, #5681) ; la discrimination S/P reste au garde 'track'
+    du loader, pas au contrat."""
+    m = {"d_model": 4096, "k": 50, "layer": 16, "lens": "jacobian"}
+    m_out = validate_manifest(m, expected="jlens_trackp")
+    assert m_out["instrument"] == "jlens_trackp"
+
+
+def test_validate_manifest_jlens_trackp_in_enum():
+    """v1.1.0 (#15536) : l'instrument 'jlens_trackp' est declare dans l'enum."""
+    assert "jlens_trackp" in INSTRUMENTS
+    m = build_manifest("jlens_trackp", d_model=4096, k=50, layer=16)
+    m_out = validate_manifest(m)
+    assert m_out["instrument"] == "jlens_trackp"
+
+
 def test_validate_manifest_unknown_instrument_refused():
     """Un instrument hors enum (ex: 'foo') est REFUSE meme en non-strict."""
     m = {"d_model": 4096, "k": 50, "layer": 16, "instrument": "foo"}
@@ -208,6 +226,28 @@ def test_enforce_instrument_legacy_jacobian_passes():
     """Retro-compat : lens='jacobian' + enforce('jlens')."""
     m = {"d_model": 4096, "k": 50, "layer": 16, "lens": "jacobian"}
     enforce_instrument(m, "jlens")  # pas d'exception
+
+
+def test_enforce_instrument_legacy_jacobian_trackp_passes():
+    """Retro-compat v1.1.0 (#15536) : lens='jacobian' + enforce('jlens_trackp')
+    -- fixtures Track P legacy du pipeline J-Lens (persona 4B, #5681)."""
+    m = {"d_model": 4096, "k": 50, "layer": 16, "lens": "jacobian"}
+    enforce_instrument(m, "jlens_trackp")  # pas d'exception
+
+
+def test_enforce_instrument_trackp_refuses_declared_jlens():
+    """Anti-melange v1.1.0 : un manifeste qui DECLARE instrument='jlens' est
+    refuse par enforce('jlens_trackp') -- la remappance legacy trackp ne
+    concerne que les manifestes SANS discriminant declare."""
+    m = {"d_model": 4096, "k": 50, "layer": 16, "instrument": "jlens"}
+    try:
+        enforce_instrument(m, "jlens_trackp")
+    except TraceContractError as e:
+        assert "jlens_trackp" in str(e)
+        return
+    raise AssertionError(
+        "enforce_instrument aurait dû refuser instrument='jlens' "
+        "pour expected='jlens_trackp'")
 
 
 def test_enforce_instrument_no_metadata_refused():
