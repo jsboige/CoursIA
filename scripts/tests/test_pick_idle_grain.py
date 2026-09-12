@@ -500,7 +500,7 @@ def test_inheritance_does_not_swallow_other_causes(monkeypatch):
     assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
 
 
-AGG = "Always-on guards -- 12 organes, 1 checkout"
+AGG = "Always-on guards -- 13 organes, 1 checkout"
 
 
 def _agg_red(run_id, name=AGG, required=True):
