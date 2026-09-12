@@ -106,14 +106,23 @@
 .genai-ecosystem-models .hf-figure { left: 625px; top: 175px; width: 260px; height: 170px; }
 
 /* Écosystème hébergement : Groq face bullet 1 "Cloud", vLLM face bullet 2 "Local". */
-.genai-ecosystem-hosting li:nth-child(1) { width: 50%; min-height: 180px; }
-.genai-ecosystem-hosting li:nth-child(2) { width: 50%; min-height: 180px; }
+.genai-ecosystem-hosting li:nth-child(1) { width: 50%; min-height: 150px; }
+.genai-ecosystem-hosting li:nth-child(2) { width: 50%; min-height: 150px; }
 .genai-ecosystem-hosting .groq-figure { left: 615px; top: 100px; width: 320px; height: 150px; }
 .genai-ecosystem-hosting .vllm-figure { left: 615px; top: 305px; width: 320px; height: 150px; }
 /* c.1092 REPAIR footer-hors-clip (#15463 CHANGES_REQUESTED ai-01 21:38Z) :
    footer reference positionné absolute pour sortir du flux et garantir son placement
    dans le canvas (980x552 logique). z-index 3 passe au-dessus des visuels.
    Spécifique a .genai-ecosystem-hosting (1 slide affectée), zero collatéral. */
+/* #15689 REPAIR bloc-hors-clip : les deux min-height de 180 px reservaient 360 px
+   sur 552 pour que les puces 1-2 fassent face aux visuels Groq/vLLM ; avec les deux
+   puces que #15463 a restaurees, le flux atteignait 579 px et poussait le footer
+   absolute hors du clip. A 150 px le flux tient dans 552 (marge 33 px : mesure
+   layout.scrollHeight 579 -> 552, footer bas 561 -> 534 logiques).
+   `bottom: 18px` (#15463) reste inchange : flux ajuste, le footer repasse
+   entierement dans le clip, avec 31 px de degagement au-dessus de la puce 4.
+   Cout mesure : la puce 2 remonte de 30 px, son alignement avec vLLM passe de 25 a
+   55 px d'ecart -- a arbitrer visuellement, non corrige ici. */
 .genai-ecosystem-hosting p.notebook-reference {
   position: absolute;
   bottom: 18px;
