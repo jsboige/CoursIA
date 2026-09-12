@@ -1171,9 +1171,14 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
     if message.startswith("DWELL"):
         lines += [
             "",
-            "Plancher mecanique -- rien a reparer dans la PR. Ne pas "
-            "re-pusher (un re-push remet le plancher a zero depuis la "
-            "nouvelle tete) ; le balayage horaire leve seul.",
+            "Plancher mecanique -- rien a reparer dans la PR, et rien "
+            "a attendre : enchainer un autre grain, c'est la candidate "
+            "qui attend, pas la lane. Ne pas re-pusher (un re-push "
+            "remet le plancher a zero depuis la nouvelle tete). Une "
+            "fois le plancher ecoule, rejouer cette jambe "
+            "(`gh run rerun <run_id> --job <job_id>`) ou laisser le "
+            "balayage la reprendre -- sa cadence mesuree est de 2 h 33 "
+            "a 5 h 18, pas horaire (#15197).",
         ]
     if advisory:
         lines += ["", "Advisory (not blocking):"]
@@ -1321,7 +1326,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             "merge (mandat user 2026-09-07 : 120). 0 = desactive. Evalue "
             "APRES que les constituants ont conclu verts, hors de la boucle "
             "d'attente : aucun runner n'est tenu a dormir. Le rouge se leve "
-            "seul au balayage horaire de pr-gate-stale-sweep.yml. Voir "
+            "seul au balayage periodique de pr-gate-stale-sweep.yml "
+            "(cadence mesuree 2 h 33 - 5 h 18, pas horaire -- #15197), "
+            "ou en rejouant la jambe. Une lane n'attend jamais ce "
+            "balayage : elle enchaine un autre grain (#15726). Voir "
             "scripts/ci/merge_dwell.py."
         ),
     )
@@ -1406,7 +1414,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     # Le plancher n'entre PAS dans la boucle d'attente. `wait_and_decide`
     # tient un slot de runner tant qu'il poll ; l'y faire dormir 120 min
     # tiendrait ce slot 120 min par PR. Le rouge rendu ici est rejoue par
-    # pr-gate-stale-sweep.yml (cron horaire) des que le plancher est ecoule.
+    # pr-gate-stale-sweep.yml des que le plancher est ecoule -- a une
+    # cadence mesuree de 2 h 33 a 5 h 18, pas horaire malgre son cron
+    # (#15197) : la lane rejoue la jambe elle-meme si elle veut merger.
     if code == 0 and args.dwell_min > 0:
         if _merge_dwell is None:
             # Rule 1 ne s'applique pas a une capacite absente : le module

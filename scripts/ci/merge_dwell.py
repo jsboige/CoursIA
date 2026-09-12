@@ -40,16 +40,24 @@ organes deja en place rejouent precisement ce cas de figure, sans qu'aucun ne
 soit a ecrire :
 
   * `pr-gate-rerun.yml` -- `workflow_run` sur la fin d'un garde ;
-  * `pr-gate-stale-sweep.yml` -- balayage horaire (`cron: '7 * * * *'`) qui
+  * `pr-gate-stale-sweep.yml` -- balayage periodique (`cron: '7 * * * *'`,
+    mais cadence REELLE mesuree 2 h 33 - 5 h 18 entre tirs, #15197) qui
     selectionne exactement « une jambe `PR gate` rouge alors que tout le reste
     est vert », c'est-a-dire l'etat qu'une PR en attente de plancher presente,
     et **re-lance le run d'origine** (un POST d'un check-run homonyme atterrit
     dans une suite etrangere et GitHub ANDe les deux -- mesure #11519).
 
 Consequence a assumer et a dire : le plancher est un PLANCHER, pas une
-horloge. Une PR devient mergeable au premier balayage horaire suivant
-l'ecoulement des 2 h -- donc entre 2 h 00 et 3 h 00 apres son dernier commit,
-pas a 2 h 00 pile.
+horloge. Une PR devient mergeable au premier balayage suivant l'ecoulement
+des 2 h -- donc, a la cadence mesuree, entre 2 h 00 et ~7 h 20 apres son
+dernier commit, pas a 2 h 00 pile et pas a 3 h 00 non plus.
+
+Et la consequence qui compte pour une lane : cette fenetre est trop large
+pour etre attendue. Le verdict le dit donc explicitement -- on enchaine un
+autre grain, et on rejoue la jambe soi-meme apres l'ecoulement si on veut
+la merger sans attendre le balayage. Le message NE DOIT PAS dire qu'aucun
+geste n'est requis : c'etait faux (le balayage n'est pas horaire) et cela
+transformait un minuteur en instruction d'attente. Voir #15726.
 
 La date lue est celle du COMMITTER, pas de l'auteur
 ---------------------------------------------------
@@ -147,11 +155,16 @@ def evaluate(
         "%Y-%m-%dT%H:%M:%SZ"
     )
     return False, remaining, (
-        "tete du {}, {:.0f} min -- plancher {:.0f} min, reste {:.0f} min, "
-        "leve au premier balayage suivant {}. "
-        "Le balayage horaire (pr-gate-stale-sweep.yml, cron '7 * * * *') "
-        "re-agrege cette jambe des que le plancher est ecoule ; aucun geste "
-        "manuel n'est requis. Urgence (main rouge) : poser le label `{}` sur "
+        "tete du {}, {:.0f} min -- plancher {:.0f} min, reste {:.0f} min ; "
+        "ecoule a {}. "
+        "Rien a corriger dans le code : cette jambe est un minuteur. "
+        "NE PAS ATTENDRE -- enchainer un autre grain ; c'est la candidate "
+        "qui attend, pas la lane. Passe cette heure, la jambe se re-agrege "
+        "au balayage suivant (pr-gate-stale-sweep.yml ; cadence MESUREE "
+        "2 h 33 - 5 h 18 entre tirs, pas horaire malgre son cron "
+        "'7 * * * *' -- #15197), ou tout de suite en la rejouant soi-meme "
+        "(`gh run rerun <run_id> --job <job_id>`). "
+        "Urgence (main rouge) : poser le label `{}` sur "
         "la PR.".format(stamp, age_min, dwell_min, remaining, lift, WAIVER_LABEL)
     )
 
