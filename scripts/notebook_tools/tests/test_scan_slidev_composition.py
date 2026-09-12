@@ -267,7 +267,7 @@ def test_controle_positif_warning_when_baseline_omitted():
             "canvas_w": 980, "canvas_h": 552,
             "BORNE": "ADVISORY",
             "ctrl_positif_ok": None, "ctrl_positif_msg": None,
-            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_occ": 0,
+            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_rec": 0, "n_occ": 0,
         }
         exec(block, ns)
         return ns["report"]
@@ -280,3 +280,39 @@ def test_controle_positif_warning_when_baseline_omitted():
     rpt2 = _build(7)
     assert rpt2["controle_positif_armed"] is True
     assert rpt2["controle_positif_warning"] is None
+
+
+# ---- Fixture du contrôle positif CI (#15545) -------------------------------
+# La fixture slides/_composition-control/slides.md est le contrat entre le
+# workflow slides-composition-advisory.yml (--baseline-slide 2) et le
+# scanner : si quelqu'un réordonne ses slides ou édite le défaut délibéré,
+# le contrôle CI casse de façon opaque (baseline absente / non signalée).
+# Ce test verrouille les invariants AVANT que la CI ne les lise.
+
+FIXTURE = Path(__file__).resolve().parents[3] / "slides" / "_composition-control" / "slides.md"
+
+
+def test_positive_control_fixture_exists_and_counts():
+    assert FIXTURE.exists(), f"fixture contrôle positif absente : {FIXTURE}"
+    slides = split_slides_source(FIXTURE.read_text(encoding="utf-8"))
+    assert len(slides) == 2, "la fixture doit compter exactement 2 slides (baseline = 2)"
+
+
+def test_positive_control_fixture_baseline_defect_deterministic():
+    src = FIXTURE.read_text(encoding="utf-8")
+    slides = split_slides_source(src)
+    baseline = slides[1]["source"] if "source" in slides[1] else None
+    # fallback : le texte de la slide 2 par lignes
+    if baseline is None:
+        lines = src.split("\n")
+        start, end = slides[1]["start_line"] - 1, (slides[1 + 1]["start_line"] - 1) if len(slides) > 2 else len(lines)
+        baseline = "\n".join(lines[start:end])
+    # défaut déterministe : p en absolu AU-DELÀ du canvas par défaut (552 px)
+    assert "top:600px" in baseline, "le défaut HORS_CANVAS délibéré (top:600px) doit rester sur la slide 2"
+    assert "<p" in baseline, "le tag débordant doit rester un P (content_overflow ne compte que CONTENT_TAGS)"
+
+
+def test_positive_control_fixture_canvas_default():
+    # le contrôle CI suppose le canvas par défaut 980×552 : top:600px déborde
+    # de 48 px. Un canvasHeight headmatter > 600 casserait la garantie.
+    assert parse_headmatter_canvas(FIXTURE) == (980, 552)
