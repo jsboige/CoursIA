@@ -8,21 +8,31 @@ exist.
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
 Usage:
-    python scripts/check_docs_links.py               # Full scan
-    python scripts/check_docs_links.py --baseline     # Write baseline report
-    python scripts/check_docs_links.py --check        # Check against baseline
-    python scripts/check_docs_links.py --quiet        # Minimal output (for CI)
-    python scripts/check_docs_links.py --orphans      # Also report orphan docs
+    python scripts/check_docs_links.py                        # Full scan
+    python scripts/check_docs_links.py --baseline             # Write baseline report
+    python scripts/check_docs_links.py --check                # Check against baseline
+    python scripts/check_docs_links.py --check --base origin/main
+    python scripts/check_docs_links.py --quiet                # Minimal output (for CI)
+    python scripts/check_docs_links.py --orphans              # Also report orphan docs
+
+``--check`` accepts two independent excuses for a broken link. The frozen
+``baseline_docs_links.json`` covers paths with no comparison revision (manual
+dispatch, plain full scan). ``--base REF`` additionally excuses a link that was
+ALREADY broken at REF: without it, a single broken link on ``main`` reddens
+``check-links`` on every open PR until someone regenerates the baseline, which
+nothing does (#15766).
 
 Exit codes:
-    0 = all links valid (or only pre-existing broken links in baseline mode)
+    0 = all links valid (or only excused broken links)
     1 = new broken links found (regression)
     2 = error during execution
 """
 
 import argparse
 import json
+import posixpath
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -170,17 +180,16 @@ def find_scan_files() -> list[Path]:
     return files
 
 
-def scan_file(filepath: Path) -> list[LinkRef]:
-    """Extract all relative links from a markdown file.
+def scan_content(content: str, rel_source: str) -> list[LinkRef]:
+    """Extract all relative links from markdown ``content``.
+
+    ``rel_source`` is the repo-relative posix path the content comes from: link
+    targets resolve against its directory, so the same routine serves both the
+    working tree and a ``git show`` read of an arbitrary revision.
 
     Skips links inside fenced code blocks (```...```).
     """
     refs = []
-    try:
-        content = filepath.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, PermissionError, OSError):
-        return refs
-
     in_code_block = False
     for line_num, line in enumerate(content.splitlines(), 1):
         stripped = line.strip()
@@ -199,10 +208,6 @@ def scan_file(filepath: Path) -> list[LinkRef]:
             text = match.group(1)
             target = match.group(2)
             if _is_valid_target(target):
-                try:
-                    rel_source = str(filepath.relative_to(REPO_ROOT)).replace("\\", "/")
-                except ValueError:
-                    rel_source = str(filepath)
                 refs.append(LinkRef(
                     source=rel_source,
                     target=target,
@@ -210,6 +215,19 @@ def scan_file(filepath: Path) -> list[LinkRef]:
                     text=text,
                 ))
     return refs
+
+
+def scan_file(filepath: Path) -> list[LinkRef]:
+    """Extract all relative links from a markdown file on disk."""
+    try:
+        content = filepath.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, PermissionError, OSError):
+        return []
+    try:
+        rel_source = filepath.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        rel_source = str(filepath)
+    return scan_content(content, rel_source)
 
 
 def _is_quarto_render_target(html_path: Path, root: Path) -> bool:
@@ -261,6 +279,113 @@ def check_link(target: str, source_path: Path, root: Path = REPO_ROOT) -> bool:
     return resolved.suffix.lower() == ".html" and _is_quarto_render_target(
         resolved, root
     )
+
+
+def _git_show(rev: str, rel_path: str) -> str | None:
+    """Content of ``rel_path`` at ``rev``, or None when it is not readable.
+
+    The return code is inspected BEFORE the stdout is used: a partial clone can
+    exit non-zero and still emit a body, which would then be scanned as if it
+    were the file (#15387).
+    """
+    proc = subprocess.run(
+        ["git", "show", f"{rev}:{rel_path}"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def _git_tree_files(rev: str) -> set[str] | None:
+    """Every blob path (repo-relative posix) at ``rev``, or None if unreachable.
+
+    None is the caller's signal that the comparison revision could not be read;
+    the caller then falls back to the frozen baseline rather than inventing
+    regressions it cannot substantiate.
+    """
+    proc = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", rev],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+
+
+def _tree_dirs(files: set[str]) -> set[str]:
+    """Directories implied by a file listing (git stores no empty directory)."""
+    dirs: set[str] = set()
+    for name in files:
+        parts = name.split("/")
+        for i in range(1, len(parts)):
+            dirs.add("/".join(parts[:i]))
+    return dirs
+
+
+def _link_exists_in_tree(target: str, source_rel: str, files: set[str],
+                         dirs: set[str], quarto_yml: str | None) -> bool:
+    """Existence oracle over a git tree listing, mirroring ``check_link``."""
+    try:
+        decoded = unquote(target)
+    except (ValueError, TypeError):
+        return False
+
+    rel = posixpath.normpath(posixpath.join(posixpath.dirname(source_rel), decoded))
+    if rel.startswith(("/", "..")):
+        return False  # escapes the repo, as in check_link
+    if any(rel == sm or rel.startswith(sm + "/") for sm in SUBMODULE_PATHS):
+        return True
+    if rel in files or rel.rstrip("/") in dirs:
+        return True
+    # Quarto-generated pages are absent from the source tree by design: valid
+    # only when the sibling notebook exists and project.render lists it.
+    if rel.endswith(".html") and quarto_yml is not None:
+        notebook = rel[:-5] + ".ipynb"
+        return notebook in files and f'"{notebook}"' in quarto_yml
+    return False
+
+
+def preexisting_broken(broken_refs: list[LinkRef], rev: str) -> set[tuple[str, str]] | None:
+    """Among ``broken_refs``, those already broken at ``rev``.
+
+    Only the sources carrying a broken link at HEAD are read at ``rev``: the
+    question is never "what was broken there" but "was THIS link already
+    broken", so the base revision is consulted source by source instead of
+    being scanned wholesale.
+
+    A link counts as pre-existing only when the source existed at ``rev``,
+    carried the same target, and that target was already absent there. A target
+    deleted by the branch, or a link the branch introduced, stays a regression.
+
+    Returns None when ``rev`` cannot be read.
+    """
+    if not broken_refs:
+        return set()
+    tree = _git_tree_files(rev)
+    if tree is None:
+        return None
+    dirs = _tree_dirs(tree)
+    quarto_yml = _git_show(rev, "_quarto.yml")
+
+    wanted: dict[str, set[str]] = {}
+    for ref in broken_refs:
+        wanted.setdefault(ref.source, set()).add(ref.target)
+
+    preexisting: set[tuple[str, str]] = set()
+    for source, targets in wanted.items():
+        if source not in tree:
+            continue  # created by this branch: nothing pre-existed
+        content = _git_show(rev, source)
+        if content is None:
+            continue
+        base_targets = {r.target for r in scan_content(content, source)}
+        for target in targets:
+            if target in base_targets and not _link_exists_in_tree(
+                target, source, tree, dirs, quarto_yml
+            ):
+                preexisting.add((source, target))
+    return preexisting
 
 
 def find_orphan_docs(scanned_files: list[Path], all_refs: list[LinkRef]) -> list[str]:
@@ -344,17 +469,22 @@ def load_baseline(path: Path = BASELINE_PATH) -> dict | None:
         return None
 
 
-def check_regression(result: ScanResult, baseline: dict) -> list[LinkRef]:
-    """Find broken links that are NOT in the baseline (new regressions)."""
+def check_regression(result: ScanResult, baseline: dict,
+                     preexisting: set[tuple[str, str]] | None = None) -> list[LinkRef]:
+    """Find broken links that are NOT already excused (new regressions).
+
+    Two independent excuses apply. The frozen ``baseline`` covers the
+    non-PR paths (dispatch, plain full scan) where no comparison revision is
+    available. ``preexisting`` — computed against the branch's base revision —
+    covers the PR path: a link already broken before the branch is not this
+    branch's regression, and would otherwise redden every open PR at once
+    (#15766).
+    """
     baseline_targets = {
         (b["source"], b["target"]) for b in baseline.get("broken_links", [])
     }
-    new_broken = []
-    for ref in result.broken:
-        key = (ref.source, ref.target)
-        if key not in baseline_targets:
-            new_broken.append(ref)
-    return new_broken
+    excused = baseline_targets | (preexisting or set())
+    return [ref for ref in result.broken if (ref.source, ref.target) not in excused]
 
 
 def format_report(result: ScanResult, show_orphans: bool = False) -> str:
@@ -386,6 +516,9 @@ def main():
                         help="Write current state as baseline")
     parser.add_argument("--check", action="store_true",
                         help="Check for regressions against baseline")
+    parser.add_argument("--base", metavar="REF", default=None,
+                        help="With --check: a broken link already broken at REF "
+                             "(e.g. origin/main) is not a regression")
     parser.add_argument("--orphans", action="store_true",
                         help="Also report orphan docs")
     parser.add_argument("--quiet", action="store_true",
@@ -403,30 +536,38 @@ def main():
             return
 
         if args.check:
+            preexisting = None
+            if args.base:
+                preexisting = preexisting_broken(result.broken, args.base)
+                if preexisting is None and not args.quiet:
+                    print(f"WARNING: {args.base!r} is not readable, comparing against the "
+                          f"frozen baseline only.", file=sys.stderr)
+
             baseline = load_baseline()
-            if baseline is None:
+            if baseline is None and preexisting is None:
                 if not args.quiet:
                     print("No baseline found. Run with --baseline first.")
-                # If no baseline, any broken link is a regression
+                # Nothing can excuse a broken link: every one is a regression
                 if result.broken:
                     if not args.quiet:
                         print(format_report(result))
                     sys.exit(1)
                 sys.exit(0)
 
-            new_broken = check_regression(result, baseline)
+            new_broken = check_regression(result, baseline or {}, preexisting)
             if new_broken:
                 if not args.quiet:
                     print(f"REGRESSION: {len(new_broken)} new broken link(s):")
                     for ref in new_broken:
                         print(f"  {ref.source}:{ref.line} -> {ref.target}")
-                    print(f"\nBaseline had {len(baseline.get('broken_links', []))} known broken.")
+                    print(f"\nExcused: {len((baseline or {}).get('broken_links', []))} from baseline"
+                          f" + {len(preexisting or ())} already broken at {args.base or '(no base)'}.")
                 sys.exit(1)
-            else:
-                if not args.quiet:
-                    print(f"OK: No new broken links. "
-                          f"({len(result.broken)} pre-existing, {result.total_links} total)")
-                sys.exit(0)
+
+            if not args.quiet:
+                print(f"OK: No new broken links. "
+                      f"({len(result.broken)} pre-existing, {result.total_links} total)")
+            sys.exit(0)
 
         # Default: full scan
         if not args.quiet:
