@@ -13,8 +13,60 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `smoke_test_epita_is.py` | Smoke tests du parcours EPITA-IS (notebooks + preuves) |
 | `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
 | `count_code_sorry.py` | Compte les `sorry` **hors commentaires** (la vraie dette) et liste les theoremes vacuous (`: True`) — ce que `grep -c sorry` surestime de ~11x (voir ci-dessous) |
+| `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), postcondition zero-orphelin (voir ci-dessous, #15666) |
 
 Tests unitaires dans `tests/`.
+
+---
+
+## `lean_exec.py` — organe d'execution confine (T1 de #15666)
+
+Incident du 2026-09-12 : ~30 `lean.exe` a ~95 % CPU ont etouffe une machine
+worker (DriveFS, puis Claudish, puis reboot). Le lease par arbre
+`agent_tests/prover/tree_lock.py` ne voit structurellement pas les autres
+worktrees ; il **reste** (exclusivite d'un acteur prover par arbre) et devient le
+second etage sous l'admission machine-wide.
+
+T1 livre exactement trois choses :
+
+1. **Cap machine-wide** de la population `lean`/`lake` — etat partage hors de tout
+   worktree (`%LOCALAPPDATA%\CoursIA\lean_exec\` / `$XDG_STATE_HOME/coursia/lean_exec/`),
+   admission sous verrou fichier (la fenetre count->spawn est fermee), fail-closed
+   si la population n'est pas mesurable.
+2. **Confinement de l'arbre** : Job Object Windows cree avec `kill-on-close`,
+   plafond memoire, cap CPU et priorite reduite ; la racine est lancee
+   `CREATE_SUSPENDED`, assignee au job, puis reprise — aucun enfant ne peut
+   naitre hors du job. Le handle vit pendant tout le run : un crash du
+   superviseur tue l'arbre par le noyau. Cote POSIX/WSL : `setsid` + kill du
+   groupe (scope systemd quand disponible).
+3. **Postcondition zero-orphelin** verifiee apres chaque run, apres une fenetre
+   de grace : des survivants donnent un **echec visible** (exit `126` + liste des
+   pids), jamais un « propre » silencieux.
+
+Le parallelisme est toujours borne : `LEAN_NUM_THREADS` est pose pour les enfants
+et `-Kjobs=N` est insere dans un `lake build` nu (jamais le defaut qui prend la
+machine).
+
+```bash
+python scripts/lean/lean_exec.py status            # population, cap, runs vivants
+python scripts/lean/lean_exec.py run --timeout 600 -- lake env lean Fichier.lean
+python scripts/lean/lean_exec.py run --json --budget 2 -- lake build
+```
+
+Codes de sortie stables : `0` succes, `1` echec de la commande enfant (code reel
+dans le JSON), `124` timeout, `125` admission refusee (cap atteint / telemetrie
+indisponible), `126` cleanup incomplet (orphelins), `127` erreur interne,
+`130` interruption. Chaque run publie ses metriques en JSON
+(`<state>/last_run.json` : pid, backend, duree, population avant, orphelins).
+
+Configuration : `LEAN_EXEC_CAP` (defaut `min(8, max(2, nproc/2))`),
+`LEAN_EXEC_BUDGET` (defaut 2), `LEAN_EXEC_JOBS` (defaut `nproc/4`),
+`LEAN_EXEC_MEM_FRAC` (0.80), `LEAN_EXEC_CPU_PCT` (90), `LEAN_EXEC_STATE_DIR`
+(isolation tests), `LEAN_EXEC_WSL=off` (desactive la sonde WSL).
+
+**Hors T1** (autres tranches de l'EPIC) : admission fine / budget mesure (T2),
+politique de backend et coherence de cache (T3), garde CI + migration des 35
+appels directs (T4), procedure operateur et validation de charge bornee (T5).
 
 ---
 
