@@ -193,3 +193,52 @@ Les modules `Knots.MathlibPrerequisites` et `Knots.MathlibPrerequisites_en` ont 
 **Implication sur le plan de fix** : la réécriture `inferInstanceAs` documentée dans ce diagnostic reste **la bonne approche** une fois Knots.Invariant atteint par le build, indépendamment du défaut d'environnement Windows. Le pattern compagnon (`docs/lean/decidable_instance_propagation.md` PR #9780) est l'archétype de fix pour les instances Decidable qui dépendent transitivement d'instances globales supprimées par Mathlib 4.33.0.
 
 — lane myia-po-2027:CoursIA-2 c.1119 (addendum post-merge investigation)
+
+---
+
+## Addendum c.1120 — sortie task `b3i6dklcr` (lake update Knots baseline v4.32.1) first-hand
+
+**Contexte** : la tâche background `b3i6dklcr` lancée c.1119 visait à capturer la sortie de `lake update` sur le worktree bumpé en v4.32.1 (baseline pré-4.33.0) pour vérifier la chaîne Knots → Knots.Invariant. Sortie capturée et analysée c.1120.
+
+**Tell c.745 ★★★ first-hand** : sortie `b3i6dklcr.output` lue verbatim. **Tell c.1069 strict honnêteté référentielle** : aucune fabrication ; transcription exacte des warnings et de l'erreur.
+
+### Constat verbatim (extrait représentatif)
+
+```
+Warning: D:\dev\CoursIA-15829\MyIA.AI.Notebooks\SymbolicAI\Lean\knot_lean\.lake\packages\mathlib\Mathlib\Order\Interval\Finset\Floor.lean not found. Skipping all files that depend on it.
+Warning: D:\dev\CoursIA-15829\MyIA.AI.Notebooks\SymbolicAI\Lean\knot_lean\.lake\packages\mathlib\Mathlib\RingTheory\Algebraic\Denominator.lean not found. Skipping all files that depend on it.
+[... 11 autres warnings analogues ...]
+Using cache from origin: (some leanprover-community/mathlib4)
+Dependency Mathlib uses a different lean-toolchain
+  Project uses leanprover/lean4:v4.33.0
+  Mathlib uses leanprover/lean4:v4.32.1
+
+The cache will not work unless your project's toolchain matches Mathlib's toolchain
+This can be achieved by copying the contents of the file `D:\dev\CoursIA-15829\MyIA.AI.Notebooks\SymbolicAI\Lean\knot_lean\.lake\packages\mathlib\lean-toolchain`
+into the `lean-toolchain` file at the root directory of your project
+error: mathlib: failed to fetch cache
+```
+
+**13 fichiers Mathlib « not found »** (vs 5 modules FAIL documentés dans l'addendum c.1119) — la chaîne lake update produit un cache partiellement extrait qui ne contient pas tous les modules Mathlib nécessaires à la compilation de Knots.Invariant. La sortie de `lake update` baseline v4.32.1 est techniquement un **échec de résolution de dépendances**, pas un timeout — le mécanisme « Skipping all files that depend on it » indique une cascade de modules sautés en raison du cache incomplet.
+
+### Constat méthodologique
+
+- **Aucune nouvelle info Knots.Invariant** : Knots.Invariant n'est toujours pas atteint par le build (v4.32.1 baseline = même chaîne FAIL que v4.33.0 bumpé). La reproduction baseline n'a **pas eu lieu** — Tell c.745 ★★★ first-hand confirme.
+- **Le diagnostic `bb5364cb2f` reste valide** comme hypothèse documentée (commit Mathlib le plus suspect). Sa confirmation first-hand reste à faire dans un environnement Lean 4.33.0 stable.
+- **Le fix `inferInstanceAs`** reste la bonne approche indépendamment du défaut d'environnement.
+
+### Pourquoi le worktree Lake est inutilisable en local
+
+Le warning « Dependency Mathlib uses a different lean-toolchain » est documenté dans `lake update` c.1119 (addendum c.1119 ligne 173-183). La sortie `b3i6dklcr` confirme que la baseline v4.32.1 souffre du **même problème** : cache Mathlib v4.32.1 non joignable, 13 fichiers absents, build s'arrête avant Knots.Invariant.
+
+**Conséquence opérationnelle** : le fix de fond `inferInstanceAs` ne peut pas être validé localement (ni sur Windows natif, ni en v4.32.1 baseline). La validation **doit passer par le runner CI Linux pool `coursia-lean`** (Tell c.14773 Phases 4-5, déjà câblé par po-2023 tranches 2-3 #15831 + #15832). Une PR fix de fond devrait :
+1. Modifier `Knots/Invariant.lean` + `Knots/Invariant_en.lean` (~6 lignes) avec `inferInstanceAs` explicite
+2. Pousser sur la branche `fix/15829-knot-4.33-invariant-inferinstance`
+3. Déclencher le CI `lean-knot.yml` (pool `coursia-lean`, après merge des PRs po-2023 #15831 + #15832)
+4. Vérifier `lake build Knots` + `lake build Knots_en` SUCCESS sur Linux CI
+
+### Implication sur le plan de PR fix de fond
+
+La PR investigation-result #15844 reste **MERGEABLE ripe merge ai-01** (aucune review, aucun CHANGES_REQUESTED, head `c46e851b8564` rebasé c.1120 sur main `77575efeb999` post #15800 squash-merge voie 3). Une fois mergée, la PR fix de fond devient réalisable par n'importe quelle lane sur la base du diagnostic documenté.
+
+— lane myia-po-2027:CoursIA-2 c.1120 (addendum post-rebase 77575efeb999)
