@@ -129,7 +129,9 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
-      PR_BODY: ${{ github.event.pull_request.body }}
+      # PR_BODY n'est plus fixe ici : lue en LIVE par l'etape de bootstrap
+      # "#15697" ci-dessous (un env de job STATIQUE primerait sur le
+      # GITHUB_ENV exporte par cette etape, lui coupant la parole).
       PR_AUTHOR: ${{ github.event.pull_request.user.login }}
       IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
 
@@ -185,6 +187,38 @@ jobs:
       # un _quarto.yml invalide.
       - name: "Installer dependances detecteurs (pyyaml, Pillow)"
         run: pip install --quiet pyyaml Pillow
+
+      # -----------------------------------------------------------------
+      # BODY LIVE (#15697) : les organes qui lisent le corps (tag Grain:,
+      # prev:, [CLAIMED], mots-cles de fermeture) le lisent A L'EXECUTION,
+      # pas dans le payload de l'evenement. Le corps d'une PR se modifie
+      # SANS commit, et un amendement par github-actions (GITHUB_TOKEN)
+      # n'emet AUCUN evenement (anti-recursion documentee) : le verdict du
+      # dernier run restait affiche sur un corps qui n'existe plus --
+      # 72 h sur #15303, 15 h sur #15587, les deux sans faute de lane.
+      # Une seule lecture en tete de job, exportee dans PR_BODY : les
+      # quatre sites ecrivant /tmp/pr_body.txt sont inchanges.
+      # Repli : appel API vide/echoue -> payload de l'evenement (photo-
+      # graphie au declenchement). Jamais bloquant sur une panne de
+      # lecture. `// empty` : un corps null rendrait le literal "null".
+      # -----------------------------------------------------------------
+      - name: "Body live : lecture API a l'execution (#15697)"
+        env:
+          PAYLOAD_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          LIVE=""
+          if [ -n "${PR_NUMBER:-}" ]; then
+            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null || true)
+          fi
+          if [ -n "$LIVE" ]; then
+            echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
+            BODY="$LIVE"
+          else
+            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
+            BODY="${PAYLOAD_BODY:-}"
+          fi
+          delim="BODY_LIVE_EOF_$$"
+          printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 
       # -----------------------------------------------------------------
       # ORGANES ADVISORY (sortent toujours en 0 ; labels et commentaires
