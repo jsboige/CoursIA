@@ -49,13 +49,14 @@ claude --version
 #### Linux / WSL
 
 ```bash
-# Installation via script
-curl -fsSL https://install.claude.com | sh
+# Installation via le script officiel (binaire natif, Node.js non requis)
+curl -fsSL https://claude.ai/install.sh | bash
 
-# Ajouter au PATH (si necessaire)
-echo 'export PATH="$HOME/.claude/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+# Si "claude --version" reste introuvable apres avoir rouvert le terminal :
+# echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 ```
+
+Le binaire natif vit sous `~/.local/bin` (cf. encadré ci-dessus) et les installations natives se mettent à jour automatiquement en arrière-plan. Source consultée le 2026-09-12 : [code.claude.com/docs/en/quickstart](https://code.claude.com/docs/en/quickstart).
 
 **Verification :**
 
