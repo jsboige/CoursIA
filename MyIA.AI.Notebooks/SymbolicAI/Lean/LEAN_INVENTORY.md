@@ -24,7 +24,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 10² | 15 | 4 | PEDA/REF | #2874, #3003, #14821 |
+| `knot_lean` | v4.32.1 | 8² | 15 | 4 | PEDA/REF | #2874, #3003, #14821 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
@@ -33,7 +33,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 | `mathlib_examples` | v4.32.1 | 0 | 4 | 0 | REF | référence |
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
 | `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
-| **Total** | — | **11** | **263** | — | — | — |
+| **Total** | — | **9** | **263** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans
 `Conway/Life/HashlifeCorrectness.lean` — sous-but auto-contenu destiné au harnais de preuve
@@ -43,28 +43,36 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 ont été closes** (P4 décomposé en `p4_double_nine_shape` / `p4_wave1_ih` / `p4_wave2_ih`
 sorry-free, vérifié par `lake build Conway.Life` post-#4780), seule `HashlifeCorrectness`
 reste en cible prover. Régression de compte documentée et HONNÊTE — pas un défaut.
-² `knot_lean` = **research-HOLD** : théorie des nœuds (#2874). Compte **mesuré sur `origin/main`
-le 2026-09-11** : **10 distincts** (`count_code_sorry.py --json`, champ `distinct_code_sorry`),
-soit `0 (Basic) + 2 (Reidemeister) + 0 (Invariant, post-#15082) + 6 (Conway) + 2 (Lidman)
-+ 0 (Mathlib) = 10`. La baseline CI `lean-knot.yml` porte la même valeur (`sorry-baseline: "10"`).
-La majorité des 10 restants sont des **définitions non définies** (`IsSmoothlySlice`,
+² `knot_lean` = **research-HOLD** : théorie des nœuds (#2874). Compte **mesuré le 2026-09-13 sur
+la tête de #15440 (`bf4738d02fad`)** : **8 distincts** (`count_code_sorry.py --json`, champ `distinct_code_sorry`),
+soit `0 (Basic) + 2 (Reidemeister) + 0 (Invariant, post-#15082) + 4 (Conway) + 2 (Lidman)
++ 0 (Mathlib) = 8`. La baseline CI `lean-knot.yml` porte la même valeur (`sorry-baseline: "8"`).
+La majorité des 8 restants sont des **définitions non définies** (`IsSmoothlySlice`,
 `IsTopologicallySlice := sorry`, etc.) et des preuves de transfert classique ouvertes.
 Le pont GF(3) Path B (`triColorFoxCondition_iff_sum_mod_three`) est **prouvé** (#3003,
 sorry net-zéro vs `main`) et `trefoil_not_unknot` **prouvé** (#8766). Niveau recherche, pas un
 gap pédagogique.
 
-**Évolution documentée** (3 → 12 → 11 → 10) — n'est PAS une régression silencieuse :
+**Évolution documentée** (3 → 12 → 11 → 10 → 8) — n'est PAS une régression silencieuse :
 - **3** (inventaire 2026-07-15) → **12** (2026-08-27, montée initiale recherche HOLD)
 - **12 → 11** (2026-08-28, #8766 `trefoil_not_unknot` + #11227 `fox`/`col` §9.1)
 - **11 → 10** (2026-09-09, #15082 `unknottingNumber` par `Nat.sInf`, baseline CI recalibrée)
+- **10 → 8** (2026-09-13, #15440 : `conway_trivial_alexander` + `KT_trivial_alexander`, les
+  deux bornes d'Alexander de `Conway.lean`, baseline CI recalibrée à `"8"`)
 
-**Trajectoire à venir** — `10 → 9` par #15440 (`conway_trivial_alexander`, unité 2 du split
-#14821) puis `9 → 8` par #15460 (`KT_trivial_alexander`, unité 3). Ces deux PRs portent
-elles-mêmes la recalibration `10 → 9 → 8` de la baseline CI dans `lean-knot.yml`.
+**Pourquoi un seul pas `10 → 8`, et non `10 → 9 → 8`** — le split de #14821 prévoyait deux
+unités (unité 2 : `conway_trivial_alexander` pour `10 → 9` ; unité 3 : `KT_trivial_alexander`
+pour `9 → 8`). L'unité 3 a été livrée en PR #15460, mais **mergée dans la base de #15440**
+(`baseRefName: lean/2874-conway-proof-split`, merge commit `62286af5d1b4`,
+2026-09-11T14:09:57Z), **pas dans `main`** : `git merge-base --is-ancestor 62286af5d1b4
+origin/main` est **faux**, et `main` mesure 10 tant que #15440 n'est pas mergée. Les deux
+théorèmes sont donc dans le diff de #15440, qui porte seul `10 → 8`. À retenir : un
+`state: MERGED` sur une PR dont la base est une autre branche de PR ne dit **rien** de son
+atterrissage sur `main`.
 
-Cette unité 4 synchronise la présente table et `knot_lean/README.md` sur l'état **mesuré à
-date**, pas sur l'état projeté : les deux fichiers restent ainsi vrais quel que soit l'ordre de
-merge vis-à-vis de #15440/#15460. Cf. `knot_lean/README.md` pour la trace par fichier.
+Cette unité de synchronisation aligne la présente table et `knot_lean/README.md` sur l'état
+**mesuré à la tête de #15440** — c'est-à-dire l'état que `main` prendra quand #15440 mergera.
+Cf. `knot_lean/README.md` pour la trace par fichier.
 ³ `calibration_lean` est un **composant de harnais** (prover calibration, déplacé depuis
 GameTheory, #1764). Les `· sorry` inline de `Calibration/Nash.lean` sont un **fixture de
 test intentionnel** (le harnais doit gérer un *sorry-increase* 1→2 sans régression) — pas
@@ -115,11 +123,12 @@ théorème de Conway.
 - **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
 - **`.lean` files** : 15 (vs 6 modules déclarés 2026-07-15 — cf. EN-siblings comptés
   dans la mesure brute)
-- **sorry (production)** : **11 distincts** (22 code_sorry bruts = 11 FR + 11 EN,
+- **sorry (production)** : **8 distincts** (16 code_sorry bruts = 8 FR + 8 EN,
   dédoublonnés via `count_code_sorry.py distinct_code_sorry`) — recherche-HOLD,
-  évolution 3 (2026-07-15) → 12 (2026-08-27) → **11** (2026-08-28, mesure
-  canonique post-#11211/#11227). Majorité = `:= sorry` sur définitions non
-  définies.
+  évolution 3 (2026-07-15) → 12 (2026-08-27) → 11 (2026-08-28, mesure
+  canonique post-#11211/#11227) → 10 (2026-09-09, #15082) → **8** (2026-09-13,
+  #15440, les deux bornes d'Alexander de `Conway.lean`). Majorité = `:= sorry`
+  sur définitions non définies.
 - **Notebook câblé** : 4 notebooks (vs 2 déclarés — 2 notebooks EN-siblings comptés).
 - **Suivi** : #2874 (mandate-C trio MERGED #3997/#3999/#4003), #3003 (Path B GF(3) SHIPPED).
 - **i18n** : 7/7 modules EN-siblings (100 %, livré #6429/#6440 par po-2025).
