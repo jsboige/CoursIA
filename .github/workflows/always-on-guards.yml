@@ -951,13 +951,29 @@ jobs:
           # et un blocage calcule sur 'merged-sequence' n'ont pas la meme
           # valeur probante, et rien ne les distinguait dans la sortie.
           PREV_SRC=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_source','?'))" 2>/dev/null || echo "?")
-          echo "::error::G-VAR-3 LIGHT-genre adjacency [predecesseur lu sur: $PREV_SRC]: $REASON"
+          # #15739 : le REFERENTIEL complet du verdict -- contre quoi il a
+          # conclu. Un rouge d'adjacence est une fonction de la sequence de
+          # merges AU MOMENT du check ; des qu'une autre PR de la lane merge,
+          # le rouge affiche devient perime sans que rien ne le re-tourne. Le
+          # referential rend la peremption VISIBLE (prev #N + genre + source +
+          # horodatage de la sequence) et la commande de recalcul est DANS le
+          # message, pas dans une doc a retrouver.
+          PREV_PR=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_pr','?'))" 2>/dev/null || echo "?")
+          PREV_GENRE=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_genre','?'))" 2>/dev/null || echo "?")
+          SEQ_AS_OF=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('sequence_as_of') or 'n/a')" 2>/dev/null || echo "n/a")
+          echo "::error::G-VAR-3 LIGHT-genre adjacency [prev: #${PREV_PR} ${PREV_GENRE} via ${PREV_SRC} ; sequence de merges au ${SEQ_AS_OF}]: $REASON"
 
           gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
           <!-- vtr-adjacency-block -->
           **G-VAR-3 : deux grains LIGHT du meme genre consecutifs -- bloquant (#11170).**
 
           ${REASON}
+
+          **Referentiel du verdict (#15739)** -- ce verdict a ete calcule contre : predecesseur \#${PREV_PR} (\`${PREV_GENRE}\`, source \`${PREV_SRC}\`), sequence de merges arretee au \`${SEQ_AS_OF}\`. Un merge posterieur de la meme lane peut l'avoir invalide -- recalculer avec :
+
+          \`\`\`bash
+          python scripts/ci/variation_adjacency_guard.py --pr-number ${PR_NUMBER}
+          \`\`\`
 
           variation-protocol.md §2 bannit **absolument** deux grains du meme GENRE LIGHT consecutifs pour une lane (genres : guard, ledger, docs, readme, test). Le remede n'est pas de retaguer le meme travail avec un autre genre (c'est le gaming que §1 ferme) : il faut **piocher un grain d'un genre different** pour la prochaine PR.
 
