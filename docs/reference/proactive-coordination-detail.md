@@ -34,17 +34,15 @@ PR cible : #<MMM> en cours.
 
 Pas de `[BLOCKED]` ni `[DONE pas de travail]`. Wakeup vide = opportunite backlog, pas blocage.
 
-## Mapping machine → track principale + side-track (cycle courant)
+## Pourquoi il n'y a pas de mapping machine → track
 
-| Machine | Track principale | Side-track autonome (Epic) | Sous-agents async |
-|---------|------------------|----------------------------|-------------------|
-| **po-2026** | Proving BG (lot de cibles ; Lattice INTRACTABLE → #1452) | #1453 harness co-evolution (forensic) | `general-purpose` |
-| **po-2024** | Trading #1409 | #1454 Training & Post-Training (RL/PPO + GenAI fine-tuning) | `qc-*`, `notebook-designer`, `notebook-iterative-builder` |
-| **po-2023** | Audiobook #1273 (v4 + prosodie + wrapup) | GenAI series #1385 | `notebook-modernizer/executor/validator`, `infer-notebook-enricher` |
-| **po-2025** | #1455 TP→exemples guides + nouveaux exercices | Modernisation #999 | `series-improver`, `notebook-cleaner/enricher/designer/cell-iterator` |
-| **ai-01** | Coordination + merges + reviews | #1453 + #1454 partagees | idem, async |
+Ce fichier a porté jusqu'au 2026-09-12 un tableau « Mapping machine → track principale + side-track (**cycle courant**) ». Le « (cycle courant) » de son titre était le défaut : un fichier versionné ne peut pas porter l'état d'un cycle, et celui-là ne l'a pas porté. Sur ses **7 assignations numérotées, 5 pointaient une issue CLOSED** — #1409 (fermée le 2026-07-26), #1273 (2026-06-02), #1385 (2026-05-26), #1455 (2026-06-11), #999 (2026-05-23) ; trois des quatre lignes worker avaient une track principale fermée, et po-2023 comme po-2025 avaient **les deux colonnes** fermées.
 
-Epics co-evolutives partagees avec ai-01 : #1453 + #1454. Le **pionnier** (po-2024/po-2026) defriche sur sa carte, **ai-01 approfondit sur la grosse carte**.
+Un steer qui pointe une issue CLOSED est un **phantom** au sens de R5 de [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) : le worker brûle son cycle à le réfuter au lieu de produire. Le tableau en fabriquait cinq, en permanence, depuis un fichier auto-référencé par le harnais.
+
+**Ce qui le remplace est le tirage**, déjà la voie par défaut depuis le mandat du 2026-08-20 (R5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md)) : `python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre>`. Le steering nommé du coordinateur reste l'exception qui passe devant — mais il se **grounde firsthand au moment où il est posé** (`gh issue view N`), ce qu'un tableau écrit une fois ne peut structurellement pas faire. Le roster des spécialistes async, lui, n'a jamais eu besoin d'être partitionné par machine : il vit dans [subagents-reference.md](subagents-reference.md), et R3 dit de déléguer la side-track au specialist qui couvre le sujet, quelle que soit la lane.
+
+Cette section existe pour que le tableau ne soit pas **re-inventé** : son absence est un choix mesuré, pas un oubli de maintenance.
 
 ## Cadence
 
