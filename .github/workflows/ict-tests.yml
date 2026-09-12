@@ -12,10 +12,13 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1107 items, ict/tests/ = 752 items.
-#     55 != 1107 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
+#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 763 items.
+#     57 != 1148 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1107/752), le label garde les strates (55/42).
+#     floor garde la collection (1148/763), le label garde les strates (57/44).
+#     Les strates 57 (tests/, +1 test_regards) et 44 (ict/tests/, +1
+#     test_lens_gates) sont celles de cette branche ; le "55/42" des lignes
+#     ci-dessus est la prose d'origine heritee -- le label du matrix fait foi.
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
@@ -30,19 +33,19 @@ name: ICT-Series Tests
 # collecte DEPASSE le floor (drift ascendant = floor a remonter dans la PR qui
 # l'introduit). Quand la collection change, ajuster matrix.test-floor dans la
 # meme PR.
-# Mesure firsthand po-2027 (2026-09-13, worktree detache REBASE sur origin/main,
-# python 3.9.25 + numpy 1.26.4 + scipy + matplotlib SANS torch -- la forme de
-# l'env CI, verifiee fidele : le job 103632939140 (main@5772d72dc7) porte
-# "Collected: 692 tests (floor: 692)", identique a la mesure locale) :
-# tests/ = 1107 SUR ORIGIN/MAIN (la prose du header de main annoncait encore
-# 1046/670 alors que son floor etait deja 1071 -- incoherence heritee, corrigee ici)
-# et ict/tests/ = 744 sur origin/main actuel (728 base commune des trois tranches
-# + 16 items bench_factorise #15657, MERGED -- le header de main annonce encore
-# 724 en prose : la prose a pris du retard sur le floor, la valeur fait foi)
-# -> 752 sur cette branche (+ 8 items sae_dictionary #15665). Les mesures
-# anterieures du 2026-09-12 (692 -> 708 / 700) portaient sur un main LOCAL
-# PERIME, anterieur a l'arrivee de ict/tests/test_attention_schema.py (#15547)
-# sur origin/main.
+# RE-MESURE firsthand po-2027 (2026-09-13, arbre REBASE sur origin/main COURANT,
+# python 3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 SANS torch --
+# la forme de l'env CI) :
+#   tests/     = 1148 items  (origin/main collecte 1148 : 1107 + 41 test_regards
+#                             portes par main -- aucun apport de cette PR)
+#   ict/tests/ = 763 items   (origin/main : 752 ; cette branche : +11 lens_gates)
+# 752 + 11 = 763 ferme l'arithmetique. Un floor mesure contre un origin/main
+# PERIME est faux quelle que soit la qualite de la mesure locale : c'est la
+# TROISIEME re-mesure de ce commit (739 -> 752-base -> 763), chacune causee
+# par un floor de main qui a bouge sous elle (#8182 case 4 +20 items, puis
+# #15665 +8 items sae_dictionary). La mesure du 2026-09-12 portait sur un main
+# LOCAL PERIME ; celle du 13/09 matin sur un origin/main pre-#15665.
+# Fichiers test_*.py dans ict/tests/ : 46 sur origin/main, 47 sur cette branche.
 # Le venv local AVEC torch collecte 1111 en tests/ : les 4 items d'ecart sont
 # tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
@@ -141,10 +144,12 @@ jobs:
           # Floor 1071 -> 1107 : +36 de DRIFT MAIN, aucun apport de la branche
           # qui a mesure ce rattrapage -- origin/main@4793dc31cd1f collectait
           # 1107 sous py3.9.25 sans torch (mesure firsthand po-2027).
-          # Floor 1107 -> 1148 (cette PR) : +41 items du banc fini de composition
-          # (tests/test_regards.py). Mesure locale avec torch : 1111 -> 1152 ;
-          # les 4 items de test_sae_traces_layout.py, conditionnes par torch,
-          # restent hors de l'env CI.
+          # Floor 1107 -> 1148 : +41 items du banc fini de composition
+          # (tests/test_regards.py) portes par MAIN. Mesure locale avec torch :
+          # 1111 -> 1152 ; les 4 items de test_sae_traces_layout.py,
+          # conditionnes par torch, restent hors de l'env CI. Cette branche
+          # (lens_gates) n'apporte RIEN a tests/ : 1148 = le floor de main,
+          # conserve tel quel pour ne pas abaisser le cliquet.
           - suite-name: "tests/ (57)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
@@ -170,20 +175,22 @@ jobs:
           # package, collection locale mesuree 728) -- porte par MAIN
           # egalement, posterieurement.
           # Floor cumulatif : 728 (base commune) -> 744 (+16 bench_factorise
-          # #15657, MERGED) -> 752 (cette PR, +8 items sae_dictionary #15665).
-          # Ne PAS conserver le 736 anterieur de la branche : il derivait de
-          # la base 728 pre-#15657 ; post-merge le floor doit compter contre
-          # le main COURANT (744), sinon la branche abaisse le cliquet au
-          # lieu de le monter -- et le garde directionnel ne le verrait pas
-          # (collected > floor n'emet qu'un ::warning non bloquant).
-          # 744 + 8 = 752 ferme l'arithmetique, et 752 EST la collection
-          # mesuree sur l'arbre rebase (45 fichiers test_*.py cote origin/main,
-          # 46 cote branche ; py3.9.25 + numpy 1.26.4 + scipy 1.13.1
-          # + matplotlib 3.9.4, SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (43 package)"
+          # #15657, MERGED) -> 752 (+8 items sae_dictionary #15665) -- TOUT
+          # PORTE PAR MAIN. Ne PAS conserver le 739 anterieur de la branche :
+          # il derivait de la base 728 pre-#15657/#15665 ; post-merge le floor
+          # doit compter contre le main COURANT (752), sinon la branche
+          # abaisse le cliquet au lieu de le monter -- et le garde
+          # directionnel ne le verrait pas (collected > floor n'emet qu'un
+          # ::warning non bloquant).
+          # Floor 752 -> 763 (cette PR) : +11 items lens_gates #15660, mesures
+          # sur l'arbre REBASE sur origin/main COURANT. 752 + 11 = 763 ferme
+          # l'arithmetique (47 fichiers test_*.py cote branche, 46 cote main ;
+          # py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4,
+          # SANS torch -- la forme de l'env CI).
+          - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 752
+            test-floor: 763
 
     steps:
       - uses: actions/checkout@v4

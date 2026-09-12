@@ -96,9 +96,21 @@ def principal_angles(basis_u: Array, basis_v: Array) -> Array:
 
 
 def subspace_overlap(basis_u: Array, basis_v: Array) -> float:
-    """Recouvrement spectral dans [0, 1] : somme des cos^2 des angles principaux, normalisee par la plus petite dimension."""
+    """Recouvrement spectral dans [0, 1] : somme des cos^2 des angles principaux, normalisee par la plus petite dimension.
+
+    Le diviseur est le NOMBRE D'ANGLES MESURES (``len(theta)``), pas un rang
+    recalcule sur les bases brutes : ``principal_angles`` orthonormalise par QR
+    avec garde de rang (``_orthonormalize`` LEVE sur base deficiente), si bien
+    que ses bases de sortie sont pleine-colonne par construction. Un
+    ``matrix_rank`` mesure sur les bases brutes peut rendre MOINS que ce nombre
+    de colonnes (base presque deficiente : tolerance au-dessus de la garde QR,
+    en-dessous de celle de numpy) ; le diviseur serait alors trop petit, la
+    somme porterait plus de termes qu'il n'en divise, et le recouvrement
+    pourrait depasser 1 -- hors de l'intervalle annonce. Diviser par
+    ``len(theta)`` aligne la normalisation sur ce qui est effectivement somme.
+    """
     theta = principal_angles(basis_u, basis_v)
-    k = min(np.linalg.matrix_rank(basis_u), np.linalg.matrix_rank(basis_v))
+    k = int(theta.size)
     if k == 0:
         raise GateError("sous-espace de dimension nulle")
     return float((np.cos(theta) ** 2).sum() / k)
