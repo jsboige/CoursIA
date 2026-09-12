@@ -201,7 +201,7 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-24-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
+*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-20-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
 
 ---
 layout: dense
@@ -253,6 +253,14 @@ layout: dense
   - Autres: jouer equilibres de Nash = 1 equilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 
+*Notebook : [GameTheory-10-ForwardInduction-SPE](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb) (equilibres de sous-jeu, induction sur plusieurs manches).*
+
+---
+layout: dense
+---
+
+# Menaces credibles -- punition et engagement
+
 ## Stratégies de punition
 
 - Ex: Prisonnier puis Argent gratuit -> equilibre faible (0,0) = menace de punition
@@ -265,6 +273,14 @@ layout: dense
 - Ex: bruler le pont derriere soi -> Rend la menace credible
 
 <img src="./images/img_017.png" alt="Se lier les mains : bruler le pont rend la menace credible" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
+
+*Notebooks : [GameTheory-09b-Commitment-Stackelberg](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg.ipynb) (se lier les mains, menace credible) · [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (strategies de punition).*
+
+---
+layout: dense
+---
+
+# Jeux a étapes -- induction arriere et repetition
 
 ## Problemes de l'induction arriere
 
@@ -286,7 +302,7 @@ layout: dense
 <img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (folk theorem, punition) · [GameTheory-06-EvolutionTrust](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb) (evolution de la confiance) · [GameTheory-09b-Commitment-Stackelberg](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg.ipynb) (se lier les mains).*
+*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb) (evolution de la confiance).*
 
 ---
 layout: dense
@@ -330,6 +346,14 @@ layout: dense
 
 <img src="./images/img_025.png" alt="Equilibre de lame de couteau : instabilite autour de x=0" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
+*Notebook : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
+
+---
+layout: dense
+---
+
+# Formes stratégiques avancees -- causalite et cycles
+
 ## Modèles causaux
 
 - Proprietes causales des inputs -> Statiques comparees
@@ -351,7 +375,7 @@ layout: dense
 <img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (topologie complete, cf slide suivante) · [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) (deformation, RPS) · [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb).*
+*Notebooks : [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) (deformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb) (somme nulle, EU = 0).*
 
 ---
 layout: dense
@@ -396,7 +420,14 @@ layout: default
 
 <img src="./images/img_030.png" alt="Duel : equilibre a meme distance" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
-## Loi de Hotelling et l'electeur median
+*Notebook : [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence d'un equilibre hors matrice finie).*
+
+---
+layout: default
+---
+
+# Loi de Hotelling et l'electeur median
+
 
 - 2 vendeurs de glace sur la plage, choix de l'emplacement
   - Equilibre = les deux au milieu
@@ -435,6 +466,14 @@ layout: dense
 
 <img src="./images/img_032.png" alt="Formalisation Bayesienne : joueurs, etats, types et croyances" style="display:block; margin:4px auto; max-height:30px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebook : [GameTheory-11-BayesianGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb) (types, croyances, formalisation).*
+
+---
+layout: dense
+---
+
+# Jeux Bayesiens -- equilibres et dilemme du Sheriff
+
 ## Equilibres de Nash Bayesien
 
 - Objectif = maximisation de la recompense esperee
@@ -472,7 +511,15 @@ layout: dense
 
 - Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
 
-## Jeux de signalisation
+*Notebook : [GameTheory-17b-Asymmetric-Information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb) — croyances consistantes et rationalite sequentielle.*
+
+---
+layout: dense
+---
+
+# Jeux de signalisation -- pooling, separating, semi-separation
+
+## Trois categories de PBE
 
 - Emetteur S (connait son type) -> message m, Recepteur R -> action a
 - 3 catégories de PBE:
@@ -490,7 +537,7 @@ layout: dense
 
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17b-Asymmetric-Information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb).*
+*Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb) (screening formalise).*
 
 ---
 layout: section
@@ -646,7 +693,14 @@ layout: dense
 
 <img src="./images/img_040.png" alt="Theoremes de l'electeur median : resultats de vote" style="display:block; margin:4px auto; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
-## Si pas de vainqueur de Condorcet
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, electeur median).*
+
+---
+layout: dense
+---
+
+# En l'absence de vainqueur de Condorcet
+
 
 - Méthode **Minimax**: celui qui fait le mieux au pire
   - Mais très stratégique (ex: anarchistes)
@@ -683,7 +737,14 @@ layout: dense
 <img src="./images/img_044.png" alt="Scrutin au jugement majoritaire : mediane des scores" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-## Scrutins stochastiques
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Borda, assentiment, jugement majoritaire).*
+
+---
+layout: dense
+---
+
+# Scrutins stochastiques
+
 
 - **Scrutin Stochocratique**: option preferee puis tirage au sort
   - Theoreme d'Hylland: seule méthode avec unanimite non stratégique
@@ -716,6 +777,14 @@ layout: default
 
 <img src="./images/img_048.png" alt="Negociation a offres alternees : fenetre d'accord et partage a l'equilibre" style="display:block; margin:10px auto; max-height:200px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebooks : [GameTheory-04d-Marchandage-Asymetrique](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique.ipynb) (offres alternees, discompte) · [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (ultimatum).*
+
+---
+layout: dense
+---
+
+# Negociation -- protocoles et concession
+
 ## Domaines orientes tâches
 
 - Offres (T1, T2) de repartitions de tâches parmi T
@@ -726,7 +795,7 @@ layout: default
 - Mesure de l'aversion au risque de conflit
 - Le risque plus faible concede, sinon tirage au sort
 
-*Notebooks : [GameTheory-04d-Marchandage-Asymetrique](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique.ipynb) (offres alternees) · [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (ultimatum). Zeuthen : pas de notebook dedie.*
+*Zeuthen et la concession monotone : pas de notebook dedie dans la serie — la mesure d'aversion au risque reste traitee en cours.*
 
 ---
 layout: default
@@ -808,6 +877,14 @@ layout: dense
 
 - Possibilite de dialogue -> maximisation commune
 - Division en partie cooperative et partie competitive (valeur co-co)
+
+*Notebook : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (point de selle, Stackelberg differentiel).*
+
+---
+layout: dense
+---
+
+# Equilibres differentiels -- boucle ouverte et Markoviens
 
 ## Equilibres en boucle ouverte
 

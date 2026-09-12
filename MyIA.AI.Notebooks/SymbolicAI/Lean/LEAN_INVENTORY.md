@@ -24,7 +24,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 8² | 15 | 4 | PEDA/REF | #2874, #3003 |
+| `knot_lean` | v4.32.1 | 8² | 15 | 4 | PEDA/REF | #2874, #3003, #14821 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
@@ -33,7 +33,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 | `mathlib_examples` | v4.32.1 | 0 | 4 | 0 | REF | référence |
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
 | `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
-| **Total** | — | **12** | **263** | — | — | — |
+| **Total** | — | **11** | **263** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans
 `Conway/Life/HashlifeCorrectness.lean` — sous-but auto-contenu destiné au harnais de preuve

@@ -8,6 +8,7 @@ classify_maturity.
 import json
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,7 @@ from generate_catalog import (
     detect_requirements,
     determine_status,
     extract_title,
+    generate_markdown_report,
     has_markdown_intro_conclusion,
 )
 
@@ -1680,6 +1682,361 @@ class TestClassifyReproducibility:
     def test_partial_exec_is_static_ok(self):
         assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
         assert classify_reproducibility("NO_CODE") == "STATIC_OK"
+
+
+# --- generate_markdown_report (#15490) ---
+
+
+def _catalog_entry(path, title=None, **overrides):
+    """Build a minimal catalog entry for report-level tests."""
+    from pathlib import PurePosixPath
+
+    p = PurePosixPath(path)
+    serie = p.parts[0] if len(p.parts) > 1 else ""
+    sous = p.parts[1] if len(p.parts) > 2 else ""
+    entry = {
+        "path": path,
+        "title": title if title is not None else p.stem,
+        "serie": serie,
+        "sous_serie": sous,
+        "kernel": "Python 3",
+        "status": "READY",
+        "maturity": "BETA",
+        "duree_estimee": "15min",
+        "owner_logique": "po-2023",
+        "requires_api": False,
+        "requires_gpu": False,
+        "requires_cloud": False,
+        "requires_wsl": False,
+        "executable_locally": True,
+    }
+    entry.update(overrides)
+    return entry
+
+
+class TestGenerateMarkdownReport:
+    """Direct tests of the rendered catalog page (#15490 acceptance)."""
+
+    def test_hierarchy_serie_sous_serie_and_racine(self, tmp_path):
+        entries = [
+            _catalog_entry("Search/Part1-Foundations/nb-a.ipynb"),
+            _catalog_entry("Search/Part2-CSP/nb-b.ipynb"),
+            _catalog_entry("Search/nb-root.ipynb"),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### Search (3 notebooks)" in report
+        # Racine bucket first, sous-series after (deterministic order)
+        assert report.index("#### Racine (1)") < report.index(
+            "#### Part1-Foundations (1)"
+        )
+        assert report.index("#### Part1-Foundations (1)") < report.index(
+            "#### Part2-CSP (1)"
+        )
+
+    def test_totals_reconcile_to_grand_total(self, tmp_path):
+        import re as _re
+
+        entries = [
+            _catalog_entry("Search/Part1-Foundations/nb-a.ipynb"),
+            _catalog_entry("Search/nb-root.ipynb"),
+            _catalog_entry("ML/nb-c.ipynb", status="NO_CODE", maturity="DRAFT"),
+            _catalog_entry("ML/nb-d.ipynb", status="BROKEN", maturity="ALPHA"),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # Aggregate table: sum of the bucket rows == grand total (4). The
+        # TOTAL row (`| **TOTAL** | | **4** |`) has an empty middle cell and a
+        # bold count, so it deliberately does NOT match the row regex.
+        rows = _re.findall(r"^\| (\S.+) \| (\S.+) \| (\d+) \|$", report, _re.M)
+        assert rows, "aggregate table missing"
+        assert sum(int(n) for _, _, n in rows) == len(entries) == 4
+        assert "| **TOTAL** | | **4** |" in report
+        # Status Summary (first section only) sums to the same total.
+        # The explicit `- **TOTAL**: 4` bullet is excluded (it is the
+        # reconciliation line, not a status bucket).
+        status_section = report.split("## Maturity Summary")[0]
+        status_counts = _re.findall(
+            r"^- \*\*(\w+)\*\*: (\d+)$", status_section, _re.M
+        )
+        assert sum(int(n) for k, n in status_counts if k != "TOTAL") == 4
+        # Maturity Summary too
+        maturity_section = report.split("## Maturity Summary")[1].split(
+            "## Series / Sub-series Totals"
+        )[0]
+        maturity_counts = _re.findall(
+            r"^- \*\*(\w+)\*\*: (\d+)$", maturity_section, _re.M
+        )
+        assert sum(int(n) for k, n in maturity_counts if k != "TOTAL") == 4
+
+    def test_unknown_serie_still_renders_after_series_order(self, tmp_path):
+        entries = [
+            _catalog_entry("Search/nb-a.ipynb"),
+            _catalog_entry("ZebraSerie/nb-z.ipynb"),  # absent from SERIES_ORDER
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### ZebraSerie (1 notebooks)" in report
+        assert report.index("### Search") < report.index("### ZebraSerie")
+
+    def test_statuses_and_future_values_render_dynamically(self, tmp_path):
+        entries = [
+            _catalog_entry("ML/nb-a.ipynb", status="NO_CODE"),
+            _catalog_entry("ML/nb-b.ipynb", status="SOME_FUTURE_STATUS"),
+            _catalog_entry("ML/nb-c.ipynb", maturity="FUTURE_MATURITY"),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "- **NO_CODE**: 1" in report
+        assert "- **SOME_FUTURE_STATUS**: 1" in report
+        assert "- **FUTURE_MATURITY**: 1" in report
+
+    def test_basename_untruncated_and_distinct_from_title(self, tmp_path):
+        long_name = "Search/Part1-Foundations/" + (
+            "a-very-long-basename-that-never-gets-truncated-in-the-cell.ipynb"
+        )
+        target = tmp_path / "MyIA.AI.Notebooks" / long_name
+        target.parent.mkdir(parents=True)
+        target.write_text("{}", encoding="utf-8")
+        entries = [_catalog_entry(
+            long_name, title="A completely different pedagogical title",
+        )]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "a-very-long-basename-that-never-gets-truncated-in-the-cell.ipynb" in report
+        assert "A completely different pedagogical title" in report
+
+    def test_link_encoding_spaces_and_accents(self, tmp_path):
+        rel = "Search/Part1-Foundations/Nb été (fr).ipynb"
+        amp_rel = "ML/ML.Net/Data&Features.ipynb"
+        for r in (rel, amp_rel):
+            target = tmp_path / "MyIA.AI.Notebooks" / r
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("{}", encoding="utf-8")
+        entries = [_catalog_entry(rel), _catalog_entry(amp_rel)]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # href = repo-root-relative (MyIA.AI.Notebooks/ prefix), percent-encoded
+        assert (
+            "](MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Nb%20%C3%A9t%C3%A9%20%28fr%29.ipynb)" in report
+        )
+        # Display keeps the accent, URL does not
+        assert "[Nb été (fr).ipynb](" in report
+        # '&' stays LITERAL: Quarto does not decode %26 (#15490) -- encoding it
+        # broke the real ML.Net Data&Features links at render time.
+        assert "](MyIA.AI.Notebooks/ML/ML.Net/Data&Features.ipynb)" in report
+        assert "%26" not in report
+
+    def test_cell_escaping_pipes_backticks_brackets(self, tmp_path):
+        import re as _re
+
+        entries = [
+            _catalog_entry(
+                "ML/nb-a.ipynb",
+                title="Title with | pipe `code` [bracket]",
+                kernel="Kernel|X",
+            ),
+        ]
+        (tmp_path / "MyIA.AI.Notebooks" / "ML").mkdir(parents=True)
+        (tmp_path / "MyIA.AI.Notebooks" / "ML" / "nb-a.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # No UNESCAPED pipe inside cells: the row still has exactly 8 columns
+        # (9 structural pipes incl. edges). Escaped `\|` pipes are excluded by
+        # the lookbehind, so 1 escaped pipe in the title + 1 in the kernel
+        # must not widen the row.
+        title_row = next(
+            ln for ln in report.splitlines() if "Title with" in ln
+        )
+        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 9
+        assert "\\|" in title_row
+        assert "\\`" in title_row and "\\[bracket\\]" in title_row
+
+    def test_cell_escaping_status_maturity_duration_owner(self, tmp_path):
+        """Every text cell in a notebook row must be escaped, not just title/kernel.
+
+        Regression for the c.412 adjoint preflight: status/maturity/duree_estimee/owner_logique
+        came from entry fields and could carry `|`, backticks, or brackets. A naive
+        raw interpolation widened or corrupted the table.
+        """
+        import re as _re
+
+        entries = [
+            _catalog_entry(
+                "ML/nb-a.ipynb",
+                status="WIP | needs review",
+                maturity="BETA [draft]",
+                duree_estimee="[15] `min`",
+                owner_logique="po-2023|lane",
+            ),
+        ]
+        (tmp_path / "MyIA.AI.Notebooks" / "ML").mkdir(parents=True)
+        (tmp_path / "MyIA.AI.Notebooks" / "ML" / "nb-a.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        # Locate the row carrying this entry. The basename appears in the row.
+        row = next(
+            ln for ln in report.splitlines() if "nb-a.ipynb" in ln and "Title" not in ln
+        )
+        # 8 columns => 9 structural `|` chars (no escaped). Any new unescaped pipe
+        # in status/maturity/duration/owner would widen the row.
+        assert len(_re.findall(r"(?<!\\)\|", row)) == 9, (
+            f"unescaped pipe in status/maturity/duration/owner widened the row:\n{row}"
+        )
+        # The dangerous payloads survive the escape and stay visible in the cell.
+        assert "\\|" in row
+        assert "\\`" in row
+        assert "\\[draft\\]" in row
+        assert "\\[15\\]" in row
+
+    def test_missing_target_no_link_and_signalled(self, tmp_path):
+        entries = [_catalog_entry("ML/ghost-notebook.ipynb")]  # not created
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "](ML/ghost-notebook.ipynb)" not in report
+        assert "ghost-notebook.ipynb *(missing)*" in report
+
+    def test_deterministic_and_lf_two_generations_identical(self, tmp_path):
+        entries = [
+            _catalog_entry("ML/nb-b.ipynb"),
+            _catalog_entry("ML/nb-a.ipynb"),
+            _catalog_entry("Search/Part1-Foundations/nb-c.ipynb"),
+        ]
+        first = generate_markdown_report(entries, repo_root=tmp_path)
+        second = generate_markdown_report(entries, repo_root=tmp_path)
+        assert first == second
+        assert "\r" not in first
+        # Caller-order independence: the report sorts by path itself
+        assert first.index("nb-a.ipynb") < first.index("nb-b.ipynb")
+        # No wall-clock timestamp survived
+        assert "Generated:" not in first
+
+    def test_responsive_style_block_present(self, tmp_path):
+        """Mobile guard: the page must not scroll horizontally (#15490).
+
+        The emitted <style> turns wide tables into scrollable containers
+        (verified against the rendered page at 400px in the PR body).
+        """
+        report = generate_markdown_report(
+            [_catalog_entry("ML/nb-a.ipynb")], repo_root=tmp_path
+        )
+        assert (
+            "#quarto-document-content table { display: block; overflow-x: auto; }"
+            in report
+        )
+
+
+# --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---
+
+def _write_nb(path: Path, cells=None) -> None:
+    """Write a minimal valid notebook at path (parents created)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells if cells is not None else [], "metadata": {}}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+
+class TestScanExclusions:
+    """L'écart arbre/catalogue doit se réconcilier par construction :
+    chaque notebook écarté est compté sous son motif exact, dans l'ordre
+    de précédence réel des règles du scan."""
+
+    def test_reconciliation_par_motif(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        # Une série saine : 1 gardé + 1 par motif d'exclusion.
+        _write_nb(root / "SerieA" / "keep.ipynb")
+        _write_nb(root / "SerieA" / "research" / "r.ipynb")
+        _write_nb(root / "SerieA" / "deep" / "_archive" / "a.ipynb")
+        _write_nb(root / "SerieA" / "old_executed.ipynb")
+        _write_nb(root / "SerieA" / ".ipynb_checkpoints" / "c.ipynb")
+        # Racine : jamais parcourue (le scan itère les séries).
+        _write_nb(root / "GradeBook-like.ipynb")
+        # Série entière exclue.
+        _write_nb(root / "obj" / "serie-exclue.ipynb")
+        # JSON illisible : analyze_notebook rend None.
+        bad = root / "SerieA" / "broken.ipynb"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_text("{not json", encoding="utf-8")
+
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(exclusions=exclusions)
+
+        assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
+        assert exclusions == Counter({
+            "pedagogical:research": 1,
+            "pedagogical:_archive": 1,
+            "suffixe_executed": 1,
+            "segment_exclu:.ipynb_checkpoints": 1,
+            "racine_non_parcourue": 1,
+            "serie_exclue:obj": 1,
+            "json_illisible": 1,
+        })
+
+    def test_precedence_premiere_regle_gagnante(self, tmp_path, monkeypatch):
+        """Un notebook cumulant plusieurs motifs (research/ + _executed)
+        est compté sous le PREMIER motif applicable — suffixe avant substring."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        _write_nb(root / "SerieA" / "research" / "both_executed.ipynb")
+
+        exclusions = Counter()
+        gc.scan_all_notebooks(exclusions=exclusions)
+        assert exclusions == Counter({"suffixe_executed": 1})
+
+    def test_git_non_tracke_seulement_avec_le_flag(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        _write_nb(root / "SerieA" / "a.ipynb")
+        _write_nb(root / "SerieA" / "b.ipynb")
+        # _git_tracked_files mocké : SEULEMENT a.ipynb est suivi.
+        monkeypatch.setattr(
+            gc, "_git_tracked_files",
+            lambda: {"MyIA.AI.Notebooks/SerieA/a.ipynb"},
+        )
+
+        # Sans le flag : rien de filtré, aucune exclusion.
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(exclusions=exclusions)
+        assert len(entries) == 2 and not exclusions
+
+        # Avec --git-tracked-only : b.ipynb compté sous son motif.
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(
+            git_tracked_only=True, exclusions=exclusions
+        )
+        assert [e["path"] for e in entries] == ["SerieA/a.ipynb"]
+        assert exclusions == Counter({"git_non_tracke": 1})
+
+    def test_motif_substring_deterministe(self, tmp_path, monkeypatch):
+        """Un chemin contenant plusieurs substrings de EXCLUDE_PEDAGOGICAL
+        est attribué au motif le plus spécifique (tri déterministe), pas a
+        l'ordre d'itération du set."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        # "_archive" contient aussi "archive" : "_archive" (trié avant) gagne.
+        _write_nb(root / "SerieA" / "x_archive_y" / "n.ipynb")
+
+        exclusions = Counter()
+        gc.scan_all_notebooks(exclusions=exclusions)
+        assert exclusions == Counter({"pedagogical:_archive": 1})
+
+    def test_sans_compteur_comportement_inchange(self, tmp_path, monkeypatch):
+        """Sans le paramètre exclusions, le scan rend exactement ce qu'avant
+        (signature additive : les appelants existants ne changent pas)."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        _write_nb(root / "SerieA" / "keep.ipynb")
+        _write_nb(root / "SerieA" / "research" / "r.ipynb")
+
+        entries = gc.scan_all_notebooks()
+        assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
 
 
 if __name__ == "__main__":

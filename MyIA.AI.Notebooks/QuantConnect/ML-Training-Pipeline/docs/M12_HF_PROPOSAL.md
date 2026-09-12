@@ -13,7 +13,7 @@
 Le pipeline ML/trading a consolidé un verdict net (cf [`docs/archive/ml-trading-state.md`](../../../../docs/archive/ml-trading-state.md) + `CURRICULUM.md` FINAL VERDICT) :
 
 - **Direction / return forecasting = ÉPUISÉ** (0 BEATS / 14 FAILS POST-FIX : MTGNN, LSTM, Transformer, PatchTST, iTransformer, Mamba, STGAT sur SPY/BTC/multi). Ne pas ré-attempter.
-- **Les seuls edges survivants = vol-forecasting + politique d'action apprise** : les 4 V2 KEEPERS (**M12 HAR-RV-J** p=7.9e-7, M15 LSTM h=32, S3 HMM, S4 v2 Ridge) + L4 Decision Transformer (24/26).
+- **Les seuls edges survivants = vol-forecasting + politique d'action apprise** : les 4 V2 KEEPERS (**M12 HAR-RV-J** p=7.9e-7, M15 LSTM h=32, S3 HMM, S4 v2 Ridge) + L4 Decision Transformer (24/26 panel @10bps ; OOT réel 04/09 NO-BEATS).
 - **M12 HAR-RV-J = KEEPER le plus solide** : BEATS cluster-wide, p=7.9e-7, 64/84 (76.2 %), delta-Sharpe médian +0.0032 vs HAR Classic.
 
 Le gate `ml-trading-state.md` §B est explicite (lignes 113-116) :

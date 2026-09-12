@@ -44,13 +44,19 @@ taux de sur-accusation reel :
    est la porte assumee par l'auteur, pas une dispense ; il est visible dans
    la sortie machine comme ``LOST_SECTION_JUSTIFIED_BY_BODY``.
 
-Comparaison STRUCTURELLEMENT bornée : un notebook ou le nombre de cellules
-markdown differe entre base et head est REPORTE en ``STRUCTURE_DRIFT`` (un
-finding bloquant) au lieu de tomber dans la comparaison cellule-par-cellule
-qui produirait des faux positifs position-par-position (cf. la discussion
-similaire pour `_compare_cells` de `detect_md_content_loss.py`, design #1
-de #8655). Le diff de PLAN est lui-meme robuste au decalage : on compare
-des ENSEMBLES de titres, pas des positions.
+Comparaison STRUCTURELLEMENT bornee : un notebook ou le nombre de cellules
+markdown differe entre base et head est REPORTE en ``STRUCTURE_DRIFT`` --
+un finding INFORMATIF, NON bloquant. La premiere redaction court-circuitait
+l'analyse sur ce drift (borne transposee de `_compare_cells` de
+`detect_md_content_loss.py`, design #1 de #8655, ou la comparaison de
+volume PAR CELLULE exige un appariement positionnel) ; or le diff de PLAN
+compare des ENSEMBLES de titres puis cherche la substance par texte, aucune
+passe n'apparie des positions : le drift ne peut y cacher aucune perte, et
+la borne rougissait sur tout enrichissement AJOUTANT une cellule markdown
+(le geste pedagogique standard du depot -- FP mesures : #15403 ajout pur, 0
+titre perdu ; #15390). La detection de perte tourne donc toujours, drift ou
+pas ; un titre reellement disparu et introuvable reste ``LOST_SECTION``
+bloquant meme sous drift.
 
 Usage
 -----
@@ -463,6 +469,13 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     # -- meme politique, distinction preservee par path_exists_at_ref.
     if not path_exists_at_ref(nb_path, base_ref):
         head_h = extract_headings(nb_head)
+        # Meme jeu de cles de stats que les branches comparees : le render
+        # texte de main() indexe base_md_cells/head_md_cells/cell_count_stable
+        # -- leur absence faisait crasher new_file en KeyError (#15147, une
+        # PR de renommages traite chaque nouveau chemin comme un new_file).
+        head_md_count = sum(
+            1 for c in nb_head.get("cells", []) if c.get("cell_type") == "markdown"
+        )
         return {
             "notebook": str(nb_path),
             "base_ref": base_ref,
@@ -470,6 +483,9 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
             "new_file": True,
             "findings": [],
             "stats": {
+                "base_md_cells": 0,
+                "head_md_cells": head_md_count,
+                "cell_count_stable": False,
                 "base_headings": 0,
                 "head_headings": len(head_h),
                 "findings_count": 0,
@@ -489,41 +505,34 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     base_norm_set: set[str] = {_normalize_heading(t) for _, _, t in base_h_list}
     head_norm_set: set[str] = {_normalize_heading(t) for _, _, t in head_h_list}
 
-    # STRUCTURE_DRIFT : si le compte de cellules markdown differe entre base
-    # et head, on ne peut PAS garantir qu'une disparition de titre reflete
-    # reelement une perte de plan (une fusion de cellules peut absorber un
-    # titre dans une autre ; une scission peut l'eclater). On rapporte la
-    # STRUCTURE sans comparer cellule-par-cellule -- un seul finding
-    # bloquant, lisible d'un coup d'oeil. Cf. design #1 #8655 transpose ici.
+    # STRUCTURE_DRIFT : le compte de cellules markdown differe entre base et
+    # head. Signal INFORMATIF, non bloquant -- le diff de plan compare des
+    # ENSEMBLES de titres puis cherche la substance par texte, aucune de ces
+    # passes n'apparie des positions de cellules : une fusion/scission ne
+    # peut pas y cacher une perte (un titre disparu reste absent de
+    # l'ensemble head, substance comprise). La premiere redaction
+    # court-circuitait ici (borne transposee de detect_md_content_loss, ou
+    # la comparaison de volume PAR CELLULE exige un appariement positionnel)
+    # et rougissait sur tout enrichissement AJOUTANT une cellule markdown --
+    # le geste pedagogique standard du depot (FP mesures : #15403, ajout
+    # pur, 0 titre perdu ; #15390). La detection de perte tourne donc
+    # TOUJOURS, drift ou pas. Cf. #8655 design #1 pour l'origine de la borne.
     base_md_count = sum(1 for c in nb_base.get("cells", []) if c.get("cell_type") == "markdown")
     head_md_count = sum(1 for c in nb_head.get("cells", []) if c.get("cell_type") == "markdown")
+    cell_count_stable = base_md_count == head_md_count
     findings: list[dict] = []
-    if base_md_count != head_md_count:
+    if not cell_count_stable:
         findings.append({
             "kind": "STRUCTURE_DRIFT",
             "base_md_cells": base_md_count,
             "head_md_cells": head_md_count,
             "detail": (
                 "le nombre de cellules markdown differe entre base et head "
-                "-- divergence de structure, diff de plan non fiable "
-                "(scission/fusion peut deplacer un titre dans une autre "
-                "cellule, invisible au diff ENSEMBLE)."
+                "-- signal informatif, non bloquant : le diff de plan "
+                "compare des ENSEMBLES de titres et reste fiable au "
+                "decalage de cellules."
             ),
         })
-        return {
-            "notebook": str(nb_path),
-            "base_ref": base_ref,
-            "head_ref": head_label,
-            "findings": findings,
-            "stats": {
-                "base_md_cells": base_md_count,
-                "head_md_cells": head_md_count,
-                "cell_count_stable": False,
-                "base_headings": len(base_h_list),
-                "head_headings": len(head_h_list),
-                "findings_count": len(findings),
-            },
-        }
 
     # Candidats : titres normalises presents a la base, absents au head.
     candidates: list[tuple[int, str, str, int, str, str]] = []
@@ -566,7 +575,7 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
         "stats": {
             "base_md_cells": base_md_count,
             "head_md_cells": head_md_count,
-            "cell_count_stable": True,
+            "cell_count_stable": cell_count_stable,
             "base_headings": len(base_h_list),
             "head_headings": len(head_h_list),
             "candidates_count": len(candidates),
@@ -639,6 +648,19 @@ def _apply_body_justifications(findings: list[dict], justified_norm_titles: set[
         else:
             out.append(f)
     return out
+
+
+def _blocking_findings(findings: list[dict]) -> list[dict]:
+    """Findings qui font rougir ``--check`` : ``LOST_SECTION`` non justifiees.
+
+    ``SUBSTANCE_FOUND`` (perte apparente, substance retrouvee ailleurs) et
+    ``STRUCTURE_DRIFT`` (signal informatif de compte de cellules -- la
+    detection de perte tourne malgre lui, cf. scan_notebook) ne bloquent
+    pas, pas plus que les ``LOST_SECTION_JUSTIFIED_BY_BODY``.
+    """
+    return [f for f in findings
+            if not str(f.get("kind", "")).endswith("JUSTIFIED_BY_BODY")
+            and f.get("kind") not in ("SUBSTANCE_FOUND", "STRUCTURE_DRIFT")]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -751,10 +773,7 @@ def main(argv: list[str] | None = None) -> int:
                           f"'{f['base_heading_normalized']}'){suffix}")
 
     if args.check and result["findings"]:
-        blocking = [f for f in result["findings"]
-                     if not str(f.get("kind", "")).endswith("JUSTIFIED_BY_BODY")
-                     and f.get("kind") != "SUBSTANCE_FOUND"]
-        if blocking:
+        if _blocking_findings(result["findings"]):
             return 1
     return 0
 

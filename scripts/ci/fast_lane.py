@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
-    TRANCHE7, TRANCHE8, Guard,
+    TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, Guard,
 )
 
 SHADOW_PREFIX = "fast-lane (ombre): "
@@ -84,17 +84,65 @@ def guard_applies(guard: Guard, changed: list[str]) -> bool:
     return any(path_matches(f, p) for f in changed for p in guard.paths)
 
 
-def changed_files(base_ref: str) -> list[str]:
-    out = subprocess.run(
+def _run_diff(base_ref: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
         ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
-        cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
-    if out.returncode != 0:
-        raise SystemExit(
-            "[fast-lane] impossible de calculer le diff contre "
-            f"{base_ref} : {out.stderr.strip()}"
+
+
+def _refetch_base(base_ref: str) -> subprocess.CompletedProcess:
+    """Refetch a remote branch into the exact remote-tracking ref used by diff."""
+    prefix = "origin/"
+    if not base_ref.startswith(prefix) or base_ref == prefix:
+        return subprocess.CompletedProcess(
+            args=[], returncode=2, stdout="",
+            stderr=f"base ref non refetchable: {base_ref!r}",
         )
-    return [line.strip() for line in out.stdout.splitlines() if line.strip()]
+    branch = base_ref[len(prefix):]
+    refspec = f"+refs/heads/{branch}:refs/remotes/origin/{branch}"
+    return subprocess.run(
+        ["git", "fetch", "--refetch", "--filter=blob:none", "origin",
+         refspec],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+
+
+def changed_files(base_ref: str) -> list[str]:
+    first = _run_diff(base_ref)
+    if first.returncode == 0:
+        return [line.strip() for line in first.stdout.splitlines()
+                if line.strip()]
+
+    print(
+        "[fast-lane][infrastructure] diff initial illisible contre "
+        f"{base_ref}; refetch cible de la branche de base",
+        file=sys.stderr,
+    )
+    fetched = _refetch_base(base_ref)
+    second = _run_diff(base_ref) if fetched.returncode == 0 else None
+    if second is not None and second.returncode == 0:
+        print(
+            "[fast-lane][infrastructure] base reparee; diff relu apres "
+            "refetch cible",
+            file=sys.stderr,
+        )
+        return [line.strip() for line in second.stdout.splitlines()
+                if line.strip()]
+
+    fetch_error = fetched.stderr.strip() or f"exit {fetched.returncode}"
+    retry_error = (
+        second.stderr.strip() if second is not None
+        else "diff non retente car le refetch a echoue"
+    )
+    raise SystemExit(
+        "[fast-lane][infrastructure][fail-closed] diff illisible; aucun "
+        "verdict de garde n'a ete calcule. "
+        f"base={base_ref}; erreur initiale={first.stderr.strip()}; "
+        f"refetch={fetch_error}; nouvelle lecture={retry_error}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +364,8 @@ def main(argv: list[str] | None = None) -> int:
           f"contre {args.base_ref}")
 
     guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
-              + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8
+              + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
+              + TRANCHE10
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:

@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 263
-breakdown: Lean=49, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=22, root=1
-maturity: BETA=253, ALPHA=6, DRAFT=4
+pedagogical_count: 268
+breakdown: Lean=52, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=24, root=1
+maturity: BETA=258, ALPHA=6, DRAFT=4
 -->
 
 > **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
@@ -46,9 +46,10 @@ flowchart TD
     LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
     TW -.->|"induction logique (FOIL)"| SL
 
-    classDef found fill:#e8f0fe,stroke:#1a73e8
-    classDef app fill:#e6f4ea,stroke:#188038
-    classDef bridge fill:#fef7e0,stroke:#f9ab00
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef found fill:#e8f0fe,stroke:#1a73e8,color:#174ea6
+    classDef app fill:#e6f4ea,stroke:#188038,color:#137333
+    classDef bridge fill:#fef7e0,stroke:#f9ab00,color:#856404
     class TW,SW,LEAN found
     class SMT,PL,SC app
     class AA,SL bridge

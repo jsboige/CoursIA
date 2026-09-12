@@ -1,0 +1,79 @@
+/* 05-theorie-des-jeux — tenir dans le cadre 980x552.
+ *
+ * Mesure au rendu headless (scan_slidev_composition, deck servi par
+ * `slidev dev`, parcouru via window.__slidev__.nav) : 16 slides sur 39
+ * portaient des elements hors canvas au moment du claim de #14888 —
+ * pas 9 sur 36 comme le dit le body de l'issue, redige avant que
+ * #15115 n'ajoute 21 ancres in-slide et 3 slides.
+ *
+ * Deux populations distinctes, deux correctifs distincts :
+ *
+ *  - STRUCTUREL (+91 a +436 px) : saturation d'origine du layout
+ *    `dense`, cinq slides marp compactees par slide Slidev. Traite
+ *    dans slides.md par decoupe (4 splits), pas ici — aucune
+ *    compression typographique ne recupere 436 px.
+ *
+ *  - MARGINAL (+2 a +39 px) : la ligne d'ancre `*Notebook : [...]*`
+ *    posee par #15115 EST elle-meme le debordement. Au corps du layout
+ *    `dense` (15 px, line-height 1.5) elle coute 22 px sur une ligne,
+ *    45 sur deux, et fait sortir du cadre des slides qui y tenaient
+ *    avant elle — slide 4 mesuree a y=532->554 sur un canvas de 552.
+ *
+ * La regle ci-dessous traite le second cas. Elle vit ici et non dans
+ * `theme-ia101/layouts/dense.vue` parce que le layout est partage par
+ * d'autres decks qui ne portent pas d'ancres : le blast radius d'une
+ * retouche du theme depasse le defaut mesure. Elle vit ici et non
+ * dans un bloc `<style>` du markdown parce qu'un `<style>` de deck
+ * Slidev est scope A SA SLIDE — verifie firsthand par sonde DOM : le
+ * selecteur matchait (`element.matches(...)` vrai) et la font-size
+ * calculee restait a 15 px. Slidev auto-charge en revanche le
+ * `style.css` de la racine du deck (precedents : decks 02, 06, 08,
+ * S3, S8).
+ *
+ * Le selecteur ne vise que le dernier paragraphe fait d'une seule
+ * emphase — c'est-a-dire exactement la forme `*Notebook(s) : ...*`,
+ * et rien d'autre du corps.
+ *
+ * Il n'est PAS restreint au layout `dense` : la slide « Allocation par
+ * la negociation » est en `layout: default` et portait la meme ancre a
+ * 54 px sur deux lignes (bbox 516->570 pour un canvas de 552). Un pied
+ * de page reste un pied de page quel que soit le layout ; le fichier
+ * etant deja local au deck, elargir ici ne deborde sur aucun autre.
+ */
+
+.slidev-layout > p:last-child:has(> em:only-child) {
+  font-size: 0.72em;
+  line-height: 1.15;
+  margin-top: 3px;
+  margin-bottom: 0;
+  opacity: 0.82;
+}
+
+/* ------------------------------------------------------------------ *
+ * Compression typographique verticale — pattern des decks 02 et 06.
+ *
+ * Les slides `dense` de ce deck empilent 4 a 6 sections H2 heritees de
+ * la compaction marp d'origine. Resserrer les marges de titres et
+ * l'interligne des listes ne retire aucun contenu et ne retouche
+ * aucune image : c'est de l'espace vertical mort recupere.
+ * ------------------------------------------------------------------ */
+
+/* 1. Titres : recuperer l'espace des marges. */
+.slidev-layout h1 {
+  margin-bottom: 0.35em;
+}
+.slidev-layout h2 {
+  margin-top: 0.45em;
+  margin-bottom: 0.2em;
+}
+
+/* 2. Listes : interligne resserre. */
+.slidev-layout li {
+  line-height: 1.3;
+  margin: 0.1em 0;
+}
+
+/* 3. Paragraphes des slides a sections empilees. */
+.slidev-layout p {
+  margin: 0.35em 0;
+}
