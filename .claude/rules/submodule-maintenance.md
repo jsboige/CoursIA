@@ -59,7 +59,7 @@ Ce qui reste vrai, et qui est le seul point à retenir : **`HEAD` distant n'est 
 
 Avant de traiter un backlog de sous-module comme de la négligence, **vérifier qu'un gate existe et se déclenche** :
 
-- `MetaGeneticSharp` n'a **aucun workflow**.
+- `MetaGeneticSharp` porte un workflow `dotnet-ci` depuis c.990 (PR #53 mergée 2026-09-08T09:06:40Z sur `jsboige/MetaGeneticSharp`). État détaillé dans le tableau R3 ci-dessous : **run main `dbcd40473e0fad04505b362276e8d3acf6982926` en FAILURE Windows** (run `34208179870` ubuntu SUCCESS / windows FAILURE 2026-09-08T09:08:40Z — NUnit Adapter 4.6.0.0 "Test Run Successful" 180/180 mais exit code 1 sur le step test postérieur). **Substitution R3 reste OUI tant qu'aucun run main complet vert**.
 - `semantic-fleet` en a plusieurs, mais aucun ne s'est déclenché sur les PRs concernées — bases de *stack* hors des branches sur lesquelles ils sont câblés.
 
 Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est **un** défaut structurel, et le corriger vaut mieux que relancer les auteurs. Le manque de CI se traite en **issue de suivi nommée**, pas en reproche de lane.
@@ -70,7 +70,7 @@ Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est *
 
 **Cinq états de gate** (mesurés firsthand par la commande de la colonne « vérifié le ») :
 
-1. **Absent** (`MetaGeneticSharp`, `Automata`) — aucun workflow, aucun run. Substitution R3 active par défaut.
+1. **Absent** (`Automata`) — aucun workflow, aucun run. Substitution R3 active par défaut. (`MetaGeneticSharp` n'est plus dans cet état depuis c.990 — voir tableau R3.)
 2. **Câblé, jamais déclenché sur pile en cours** (`Z3.Linq`) — workflows existent et sont actifs, mais le déclenchement ne couvre pas les PRs/processus visés (base de stack hors-trigger). Substitution R3 **active**, et le **déclencheur** doit être qualifié pour cesser (pas seulement le câblage).
 3. **Câblé, déclenché, vert récent** (cas général à viser) — un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer.
 4. **Drift / perte de gate** — un submod listé en (3) qui perd son workflow (suppression, mise hors-service) **redevient** soumis à la substitution. Bascule trackée.
@@ -92,7 +92,7 @@ done
 
 | Submodule | Workflow CI | Run vert récent | Substitution R3 | Vérifié le (PR) |
 |---|---|---|---|---|
-| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
+| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Câblé, déclenché, rouge récent** (1 workflow `dotnet-ci`, 8 runs totaux ; run #7 ubuntu+windows SUCCESS sur PR avant merge ; **run `34208179870` post-merge sur `main` SHA `dbcd40473e0fad04505b362276e8d3acf6982926` ubuntu SUCCESS 2026-09-08T09:07:35Z, windows FAILURE 2026-09-08T09:08:40Z** — aucun message d'erreur explicite, NUnit Adapter 4.6.0.0 "Test Run Successful" 180/180 mais exit code 1 sur le step test postérieur ; investigate flaky-windows à part, démontre-le par un second run vert sur le même SHA, pas un run vert sur un autre SHA) | non-vert (job Windows) | **OUI** (jusqu'à un run main complet vert postérieur au merge #53 — la règle R3.5 reste valable tant que A2 est partiel : bump cite SHA upstream + 2 vérifications firsthand, cf body ci-dessous) | c.1003 (#15190, post-DM ai-01 2026-09-08T15:21Z — état corrigé post-CHANGES_REQUESTED) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | **Câblé, jamais déclenché sur pile** (3 workflows actifs, 5 runs totaux, dernier build vert 2026-09-04) | n/a sur pile | OUI | #14566 (#14558, c.14463) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
 | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | **Câblé, déclenché, vert récent** (5 workflows / 5 actifs, 4479 runs totaux, `Build` success 2026-09-07T04:08:13Z sur `master` SHA `bab289c05bb6` ; master HEAD courant `f5acc7bedd05`, build re-déclenché 2026-09-07T09:21:11Z) | vert | NON | #15007 (c.956, 2026-09-07) |

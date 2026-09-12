@@ -358,6 +358,150 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-! #### The Fox fact: the over-strand pair shares one arc class
+
+The docstring of `alexanderEntry` claims that "every row sums to zero".
+That is not a property of the row alone: it follows from a structural fact
+about `arcPartition` — at every crossing, the two over-strand labels `e2`
+and `e4` belong to one and the same class. `mergePair` merges precisely
+that pair, and the fold afterwards only ever unites classes, never splits
+one: this is the combinatorial translation of the Wirtinger relation. The
+lemmas below establish it for every diagram whose edge labels live in the
+range `1..numEdges` (cf `EdgesInRange`).
+-/
+
+/-- Two edge labels share one class of the partition `P`. -/
+def SameClass (P : List (List Nat)) (x y : Nat) : Prop :=
+  ∃ C ∈ P, x ∈ C ∧ y ∈ C
+
+/-- The label `z` is carried by at least one class of `P`. -/
+def Covered (P : List (List Nat)) (z : Nat) : Prop := ∃ C ∈ P, z ∈ C
+
+/-- One step of the `arcPartition` fold: merge the over-strand pair. -/
+def mergeStep (P : List (List Nat)) (p : Nat × Nat) : List (List Nat) :=
+  mergePair P p.1 p.2
+
+/-- Unfolded form of `mergePair`: the untouched classes, then the merged
+class. -/
+lemma mergePair_eq (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y =
+      (P.filter (fun C => !C.contains x && !C.contains y)) ++
+      [(P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups] := rfl
+
+/-- The merged class carries every label of a class of the `hit` filter. -/
+lemma mem_merged {P : List (List Nat)} {C : List Nat} {z x y : Nat}
+    (hC : C ∈ P) (hz : z ∈ C) (hxy : (C.contains x || C.contains y) = true) :
+    z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
+  rw [List.mem_eraseDups, List.mem_flatten]
+  exact ⟨C, List.mem_filter.mpr ⟨hC, hxy⟩, hz⟩
+
+/-- A class carrying neither `x` nor `y` stays untouched in `keep`. -/
+lemma keep_filter {P : List (List Nat)} {C : List Nat} {x y : Nat}
+    (hC : C ∈ P) (hmem : ¬(C.contains x || C.contains y) = true) :
+    C ∈ (P.filter (fun C => !C.contains x && !C.contains y)) := by
+  refine List.mem_filter.mpr ⟨hC, ?_⟩
+  simpa using hmem
+
+/-- `mergePair` never drops an already covered label. -/
+lemma covered_mergePair {P : List (List Nat)} {x y z : Nat} (h : Covered P z) :
+    Covered (mergePair P x y) z := by
+  obtain ⟨C, hC, hz⟩ := h
+  by_cases hmem : (C.contains x || C.contains y) = true
+  · refine ⟨_, ?_, mem_merged hC hz hmem⟩
+    rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+  · refine ⟨C, ?_, hz⟩
+    rw [mergePair_eq, List.mem_append]; left
+    exact keep_filter hC hmem
+
+/-- `mergePair` splits no class: two labels that shared a class still do. -/
+lemma sameClass_mergePair {P : List (List Nat)} {x y a b : Nat}
+    (h : SameClass P a b) : SameClass (mergePair P x y) a b := by
+  obtain ⟨C, hC, ha, hb⟩ := h
+  by_cases hmem : (C.contains x || C.contains y) = true
+  · refine ⟨_, ?_, mem_merged hC ha hmem, mem_merged hC hb hmem⟩
+    rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+  · refine ⟨C, ?_, ha, hb⟩
+    rw [mergePair_eq, List.mem_append]; left
+    exact keep_filter hC hmem
+
+/-- `mergePair` effectively gathers `x` and `y` into one class, as soon as
+both are covered (the `hit` filter is then nonempty and the merged class
+carries them both). -/
+lemma sameClass_mergePair_self {P : List (List Nat)} {x y : Nat}
+    (hx : Covered P x) (hy : Covered P y) : SameClass (mergePair P x y) x y := by
+  obtain ⟨Cx, hCx, hx'⟩ := hx
+  obtain ⟨Cy, hCy, hy'⟩ := hy
+  have hmx : (Cx.contains x || Cx.contains y) = true := by
+    rw [Bool.or_eq_true]; left; exact List.contains_iff_mem.mpr hx'
+  have hmy : (Cy.contains x || Cy.contains y) = true := by
+    rw [Bool.or_eq_true]; right; exact List.contains_iff_mem.mpr hy'
+  refine ⟨_, ?_, mem_merged hCx hx' hmx, mem_merged hCy hy' hmy⟩
+  rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+
+/-- The fold preserves shared membership. -/
+lemma sameClass_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {a b : Nat}
+    (h : SameClass P a b) : SameClass (pairs.foldl mergeStep P) a b := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (sameClass_mergePair h)
+
+/-- Every pair met during the fold ends up in one class. -/
+lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (hcover : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
+    ∀ q ∈ pairs, SameClass (pairs.foldl mergeStep P) q.1 q.2 := by
+  induction pairs generalizing P with
+  | nil => intro q hq; simp at hq
+  | cons p ps ih =>
+      intro q hq
+      rw [List.foldl_cons]
+      rcases List.mem_cons.mp hq with rfl | hqs
+      · exact sameClass_foldl (sameClass_mergePair_self
+          (hcover q (List.mem_cons.mpr (Or.inl rfl))).1
+          (hcover q (List.mem_cons.mpr (Or.inl rfl))).2)
+      · exact ih (P := mergeStep P p)
+          (fun r hr => ⟨covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).1,
+                        covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).2⟩)
+          q hqs
+
+/-- Every label of the range `1..n` is covered by the initial singletons. -/
+lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :
+    Covered ((List.range n).map (fun i => [i + 1])) z := by
+  refine ⟨[z], ?_, by simp⟩
+  rw [List.mem_map]
+  exact ⟨z - 1, by rw [List.mem_range]; omega, by simp only [Nat.sub_add_cancel h1]⟩
+
+/-- The four edge labels of every crossing live in the diagram's range
+`1..numEdges`. -/
+def EdgesInRange (d : KnotDiagram) : Prop :=
+  ∀ c ∈ d.crossings, 1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧
+    1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
+    1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧
+    1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges
+
+/-- The `arcPartition` fold in `foldl` form over `mergeStep`. -/
+lemma arcPartition_eq (d : KnotDiagram) :
+    arcPartition d = (d.crossings.map (fun c => (c.e2, c.e4))).foldl mergeStep
+      ((List.range d.numEdges).map (fun i => [i + 1])) := rfl
+
+/-- **The Fox fact**: at every crossing of a diagram with labels in range,
+the two over-strand labels belong to one and the same class of the arc
+partition. It is this fact — not the mere cardinal guard of
+`alexanderPolynomialAux` — that carries the zero row sum of the Alexander
+matrix (cf `alexanderEntry_sum_zero` below). -/
+theorem arcPartition_sameClass_overStrand (d : KnotDiagram) (h : EdgesInRange d)
+    {c : PDCrossing} (hc : c ∈ d.crossings) :
+    SameClass (arcPartition d) c.e2 c.e4 := by
+  rw [arcPartition_eq]
+  have hcover : ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.2 := by
+    intro q hq
+    rw [List.mem_map] at hq
+    obtain ⟨c', hc', rfl⟩ := hq
+    obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
+    exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
+  exact sameClass_foldl_of_mem hcover (c.e2, c.e4) (List.mem_map.mpr ⟨c, hc, rfl⟩)
+
 /-- Control: the arc partition of the corrected Conway code — 11 arcs
 covering the 22 edges (non-degeneracy condition of the Alexander minor:
 the guard `arcs'.length = rest.length + 1` of `alexanderPolynomialAux`
@@ -388,6 +532,320 @@ noncomputable def alexanderEntry (c : PDCrossing) (C : List Nat) : Polynomial �
   (if C.contains c.e1 then Polynomial.X else 0)
     + (if C.contains c.e3 then -(1 : Polynomial ℤ) else 0)
     + (if C.contains c.e2 || C.contains c.e4 then 1 - Polynomial.X else 0)
+
+/-! #### The Alexander rows sum to zero
+
+Under the uniqueness hypotheses — each under-strand label carried by exactly
+one class, the over-strand pair meeting exactly one class — every row of the
+Alexander matrix sums to zero: `t − 1 + (1 − t) = 0`. It is this fact that
+makes the (n−1)×(n−1) minor independent, up to a sign, of the choice of the
+struck column: the normative claim in the docstring of `alexanderEntry`
+becomes a theorem here. `arcPartition_sameClass_overStrand` provides the
+combinatorial half (the over-strand pair shares one class); the verification
+that `arcPartition` satisfies the uniqueness hypotheses (`countP` = 1 per
+label) is established in the next section (`arcPartition_countP_label`).
+-/
+
+/-- Sum of an indicator map: `w` is counted once per carrying class. -/
+lemma sum_map_indicator (P : List (List Nat)) (p : List Nat → Bool) (w : Polynomial ℤ) :
+    (P.map (fun C => if p C then w else 0)).sum = w * (P.countP p : Polynomial ℤ) := by
+  induction P with
+  | nil => simp
+  | cons D Ps ih =>
+      by_cases hD : p D = true
+      · simp only [List.map_cons, List.sum_cons, ih, List.countP_cons, hD, if_true]
+        push_cast
+        ring
+      · simp only [List.map_cons, List.sum_cons, ih, List.countP_cons, hD, Bool.false_eq_true,
+          if_false]
+        push_cast
+        ring
+
+/-- The sum of a three-term map distributes over the three sums. -/
+lemma sum_map_three (P : List (List Nat)) (f g h : List Nat → Polynomial ℤ) :
+    (P.map (fun C => f C + g C + h C)).sum =
+      (P.map f).sum + (P.map g).sum + (P.map h).sum := by
+  induction P with
+  | nil => simp
+  | cons D Ps ih => simp only [List.map_cons, List.sum_cons, ih]; abel
+
+/-- **Zero row sum**: if each under-strand label is carried by exactly one
+class and the over-strand pair meets exactly one class, then the
+`alexanderEntry` row sums to zero. This is the Fox fact that makes the
+(n−1)×(n−1) minor independent, up to a sign, of the choice of the struck
+column — the foundation requested by See #14962 before any normalization
+fix. -/
+theorem alexanderEntry_sum_zero (P : List (List Nat)) (c : PDCrossing)
+    (h1 : P.countP (fun C => C.contains c.e1) = 1)
+    (h3 : P.countP (fun C => C.contains c.e3) = 1)
+    (h24 : P.countP (fun C => C.contains c.e2 || C.contains c.e4) = 1) :
+    (P.map (alexanderEntry c)).sum = 0 := by
+  have hmap : (P.map (alexanderEntry c)) = P.map (fun C : List Nat =>
+      ((if C.contains c.e1 then (Polynomial.X : Polynomial ℤ) else 0)
+        + (if C.contains c.e3 then (-(1 : Polynomial ℤ)) else 0)
+        + (if C.contains c.e2 || C.contains c.e4 then (1 : Polynomial ℤ) - Polynomial.X
+           else 0))) := by
+    congr 1
+  rw [hmap, sum_map_three, sum_map_indicator, h1, sum_map_indicator, h3, sum_map_indicator, h24]
+  push_cast
+  ring
+
+/-! #### `arcPartition` is a partition: `countP` = 1 uniqueness
+
+The previous section rested on uniqueness hypotheses (`countP` = 1). This
+section establishes them for the actual `arcPartition`: classes are pairwise
+disjoint (an invariant `mergePair` preserves), duplicate-free, and cover the
+whole range `1..numEdges`. It follows that every row of the Alexander matrix
+sums to zero with no additional hypothesis — the residual named on
+See #14962 is discharged. -/
+
+/-- Two distinct classes of `P` are disjoint. -/
+def ClassesDisjoint (P : List (List Nat)) : Prop :=
+  ∀ C ∈ P, ∀ D ∈ P, C ≠ D → ∀ z, z ∈ C → z ∉ D
+
+/-- The initial singletons are pairwise disjoint. -/
+lemma classesDisjoint_singles {n : Nat} :
+    ClassesDisjoint ((List.range n).map (fun i => [i + 1])) := by
+  intro C hC D hD hne z hzC hzD
+  rw [List.mem_map] at hC hD
+  obtain ⟨i, hi, rfl⟩ := hC
+  obtain ⟨j, hj, rfl⟩ := hD
+  simp only [List.mem_singleton] at hzC hzD
+  exact hne (by congr 1; omega)
+
+/-- The `keep` filter (classes carrying neither `x` nor `y`) never meets the
+merged block: a `z` of an untouched class lies in no touched class. -/
+lemma not_mem_merged_of_keep {P : List (List Nat)} {C : List Nat} {x y z : Nat}
+    (hP : ClassesDisjoint P)
+    (hC : C ∈ P) (hkeep : (C.contains x || C.contains y) ≠ true) :
+    z ∈ C → z ∉ (P.filter (fun D => D.contains x || D.contains y)).flatten.eraseDups := by
+  intro hz hmem
+  rw [List.mem_eraseDups, List.mem_flatten] at hmem
+  obtain ⟨D, hD, hzD⟩ := hmem
+  rw [List.mem_filter] at hD
+  obtain ⟨hDP, hDhit⟩ := hD
+  have hne : C ≠ D := by
+    intro heq; subst heq; exact hkeep hDhit
+  exact hP C hC D hDP hne z hz hzD
+
+/-- `mergePair` preserves disjointness of classes. -/
+lemma classesDisjoint_mergePair {P : List (List Nat)} {x y : Nat}
+    (hP : ClassesDisjoint P) : ClassesDisjoint (mergePair P x y) := by
+  intro C hC D hD hne z hzC hzD
+  rw [mergePair_eq, List.mem_append] at hC hD
+  rcases hC with hC | hC <;> rcases hD with hD | hD
+  · rw [List.mem_filter] at hC hD
+    exact hP C hC.1 D hD.1 hne z hzC hzD
+  · rw [List.mem_filter] at hC
+    rw [List.mem_singleton] at hD
+    subst hD
+    refine not_mem_merged_of_keep hP hC.1 ?_ hzC hzD
+    cases hA : C.contains x <;> cases hB : C.contains y <;> simp_all
+  · rw [List.mem_filter] at hD
+    rw [List.mem_singleton] at hC
+    subst hC
+    refine not_mem_merged_of_keep hP hD.1 ?_ hzD hzC
+    cases hA : D.contains x <;> cases hB : D.contains y <;> simp_all
+  · rw [List.mem_singleton] at hC hD
+    exact hne (hC.trans hD.symm)
+
+/-- Class disjointness survives the full fold. -/
+lemma classesDisjoint_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (h : ClassesDisjoint P) : ClassesDisjoint (pairs.foldl mergeStep P) := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (classesDisjoint_mergePair h)
+
+/-- The initial singletons are pairwise distinct. -/
+lemma pairwise_singles {n : Nat} :
+    ((List.range n).map (fun i => [i + 1])).Pairwise (fun C D => C ≠ D) :=
+  List.Pairwise.map (fun i => [i + 1])
+    (fun a b h heq => by
+      injection heq with h1
+      exact h (by omega))
+    List.nodup_range
+
+/-- A covered label stays in the merged block. -/
+lemma mem_merged_of_covered {P : List (List Nat)} {x y : Nat} (hx : Covered P x) :
+    x ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
+  obtain ⟨C, hCP, hx'⟩ := hx
+  refine List.mem_eraseDups.mpr (List.mem_flatten.mpr ⟨C, ?_, hx'⟩)
+  refine List.mem_filter.mpr ⟨hCP, ?_⟩
+  rw [Bool.or_eq_true]
+  exact Or.inl (List.contains_iff_mem.mpr hx')
+
+/-- `mergePair` preserves duplicate-freeness: the merged block, which carries
+`x`, cannot be an untouched class, which does not carry `x`. -/
+lemma pairwise_mergePair {P : List (List Nat)} {x y : Nat}
+    (hnd : P.Pairwise (fun C D => C ≠ D)) (hx : Covered P x) :
+    (mergePair P x y).Pairwise (fun C D => C ≠ D) := by
+  rw [mergePair_eq, List.pairwise_append]
+  have hkeep : (P.filter (fun C => !C.contains x && !C.contains y)).Pairwise
+      (fun C D => C ≠ D) := List.Pairwise.filter _ hnd
+  refine ⟨hkeep, List.pairwise_singleton _ _, ?_⟩
+  intro C hC D hDm
+  rw [List.mem_filter] at hC
+  obtain ⟨hCP, hcond⟩ := hC
+  have hfx : C.contains x = false := by
+    cases hA : C.contains x <;> cases hB : C.contains y <;> simp_all
+  rw [List.mem_singleton] at hDm
+  intro heq
+  subst heq
+  subst hDm
+  have h1 : ((P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups).contains x = true :=
+    List.contains_iff_mem.mpr (mem_merged_of_covered hx)
+  rw [h1] at hfx
+  exact Bool.noConfusion hfx
+
+/-- The two partition invariants traverse the full fold. -/
+lemma foldl_partition_inv {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D))
+    (hcov : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
+    ClassesDisjoint (pairs.foldl mergeStep P) ∧
+      (pairs.foldl mergeStep P).Pairwise (fun C D => C ≠ D) := by
+  induction pairs generalizing P with
+  | nil => exact ⟨hd, hnd⟩
+  | cons p ps ih =>
+      rw [List.foldl_cons]
+      refine ih (classesDisjoint_mergePair hd)
+        (pairwise_mergePair hnd (hcov p (List.mem_cons_self ..)).1) ?_
+      intro q hq
+      have hc := hcov q (List.mem_cons_of_mem _ hq)
+      exact ⟨covered_mergePair hc.1, covered_mergePair hc.2⟩
+
+/-- Coverage of a label survives the full fold. -/
+lemma covered_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {z : Nat}
+    (h : Covered P z) : Covered (pairs.foldl mergeStep P) z := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (covered_mergePair h)
+
+/-- A pairwise-distinct list all of whose elements equal `a` has length at
+most one. -/
+lemma pairwise_all_eq_length_le_one {α : Type} {l : List α} {a : α}
+    (hnd : l.Pairwise (fun x y => x ≠ y)) (hall : ∀ x ∈ l, x = a) : l.length ≤ 1 := by
+  cases l with
+  | nil => simp
+  | cons b t =>
+      cases t with
+      | nil => simp
+      | cons c t' =>
+          exfalso
+          have hbc : b = c := (hall b (by simp)).trans (hall c (by simp)).symm
+          cases hnd with
+          | cons hhead _ => exact absurd hbc (hhead c (by simp))
+
+/-- Self-contained `countP`/`filter` bridge. -/
+lemma countP_length_filter {α : Type} {p : α → Bool} (l : List α) :
+    l.countP p = (l.filter p).length := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+      by_cases h : p a = true
+      · simp [h, ih]
+      · simp [h, ih]
+
+/-- **Under-strand uniqueness**: in a duplicate-free partition, a covered label
+belongs to exactly one class. -/
+lemma countP_contains_eq_one {P : List (List Nat)} {z : Nat}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hcov : Covered P z) :
+    P.countP (fun C => C.contains z) = 1 := by
+  obtain ⟨C₀, hC₀P, hz₀⟩ := hcov
+  have hfC₀ : C₀ ∈ P.filter (fun C => C.contains z) :=
+    List.mem_filter.mpr ⟨hC₀P, List.contains_iff_mem.mpr hz₀⟩
+  have hall : ∀ D ∈ P.filter (fun C => C.contains z), D = C₀ := by
+    intro D hD
+    rw [List.mem_filter] at hD
+    obtain ⟨hDP, hzD⟩ := hD
+    rw [List.contains_iff_mem] at hzD
+    by_contra hne
+    exact hd C₀ hC₀P D hDP (Ne.symm hne) z hz₀ hzD
+  have hndf : (P.filter (fun C => C.contains z)).Pairwise (fun C D => C ≠ D) :=
+    List.Pairwise.filter _ hnd
+  have hge : 0 < (P.filter (fun C => C.contains z)).length := List.length_pos_of_mem hfC₀
+  have hle : (P.filter (fun C => C.contains z)).length ≤ 1 :=
+    pairwise_all_eq_length_le_one hndf hall
+  rw [countP_length_filter]
+  omega
+
+/-- **Over-strand uniqueness**: if `x` and `y` share one class of a
+duplicate-free partition, exactly one class carries `x` or `y`. -/
+lemma countP_over_eq_one {P : List (List Nat)} {x y : Nat}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hsc : SameClass P x y) :
+    P.countP (fun C => C.contains x || C.contains y) = 1 := by
+  obtain ⟨C₀, hC₀P, hx₀, hy₀⟩ := hsc
+  have hfC₀ : C₀ ∈ P.filter (fun C => C.contains x || C.contains y) := by
+    refine List.mem_filter.mpr ⟨hC₀P, ?_⟩
+    rw [Bool.or_eq_true]
+    exact Or.inl (List.contains_iff_mem.mpr hx₀)
+  have hall : ∀ D ∈ P.filter (fun C => C.contains x || C.contains y), D = C₀ := by
+    intro D hD
+    rw [List.mem_filter] at hD
+    obtain ⟨hDP, horD⟩ := hD
+    rw [Bool.or_eq_true] at horD
+    rcases horD with hxD | hyD
+    · rw [List.contains_iff_mem] at hxD
+      by_contra hne
+      exact hd C₀ hC₀P D hDP (Ne.symm hne) x hx₀ hxD
+    · rw [List.contains_iff_mem] at hyD
+      by_contra hne
+      exact hd C₀ hC₀P D hDP (Ne.symm hne) y hy₀ hyD
+  have hndf : (P.filter (fun C => C.contains x || C.contains y)).Pairwise
+      (fun C D => C ≠ D) := List.Pairwise.filter _ hnd
+  have hge : 0 < (P.filter (fun C => C.contains x || C.contains y)).length :=
+    List.length_pos_of_mem hfC₀
+  have hle : (P.filter (fun C => C.contains x || C.contains y)).length ≤ 1 :=
+    pairwise_all_eq_length_le_one hndf hall
+  rw [countP_length_filter]
+  omega
+
+/-- Every pair of the fold is covered by the initial singletons. -/
+lemma crossings_covered_singles {d : KnotDiagram} (h : EdgesInRange d) :
+    ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.2 := by
+  intro q hq
+  rw [List.mem_map] at hq
+  obtain ⟨c', hc', rfl⟩ := hq
+  obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
+  exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
+
+/-- Every label of the range `1..numEdges` is covered by the partition. -/
+lemma arcPartition_covered {d : KnotDiagram} {z : Nat}
+    (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
+    Covered (arcPartition d) z := by
+  rw [arcPartition_eq]
+  exact covered_foldl (covered_singles hz1 hz2)
+
+/-- **`arcPartition` is a partition**: disjoint classes, no duplicates. -/
+theorem arcPartition_classes (d : KnotDiagram) (h : EdgesInRange d) :
+    ClassesDisjoint (arcPartition d) ∧
+      (arcPartition d).Pairwise (fun C D => C ≠ D) := by
+  rw [arcPartition_eq]
+  exact foldl_partition_inv classesDisjoint_singles pairwise_singles
+    (crossings_covered_singles h)
+
+/-- **Hypotheses `h1`/`h3` are a theorem**: every label of the range is
+carried by exactly one class of `arcPartition`. -/
+theorem arcPartition_countP_label (d : KnotDiagram) (h : EdgesInRange d) {z : Nat}
+    (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
+    (arcPartition d).countP (fun C => C.contains z) = 1 := by
+  obtain ⟨hd, hnd⟩ := arcPartition_classes d h
+  exact countP_contains_eq_one hd hnd (arcPartition_covered hz1 hz2)
+
+/-- **Unconditional row sum**: for any diagram with in-range labels, every
+row of the Alexander matrix sums to zero — the loop between the Fox fact
+and the zero sum closes, with no uniqueness hypothesis left to the
+reader. -/
+theorem alexanderRow_sum_zero (d : KnotDiagram) (h : EdgesInRange d)
+    {c : PDCrossing} (hc : c ∈ d.crossings) :
+    ((arcPartition d).map (alexanderEntry c)).sum = 0 := by
+  obtain ⟨h1lo, h1hi, _, _, h3lo, h3hi, _, _⟩ := h c hc
+  exact alexanderEntry_sum_zero (arcPartition d) c
+    (arcPartition_countP_label d h h1lo h1hi)
+    (arcPartition_countP_label d h h3lo h3hi)
+    (countP_over_eq_one (arcPartition_classes d h).1 (arcPartition_classes d h).2
+      (arcPartition_sameClass_overStrand d h hc))
 
 /-- Type of Alexander polynomial values: ℤ[t]. -/
 abbrev AlexanderPoly := Polynomial ℤ
@@ -522,6 +980,9 @@ the determinant |P(−1)| = 5 = det(4_1) are reproduced, but the polynomial
 shape diverges from the classical value on the 4-crossing class — anomaly
 exhaustively documented (2736 orientation-valid wirings tested, including
 the DT [4,6,8,2] wiring) in the follow-up issue opened with this PR.
+The divergence is formalized below (`alexander_figureEight_not_classical`:
+not a unit) and repaired by the signed variant
+(`alexander_figureEight_signed`: the exact classical value).
 -/
 theorem alexander_figureEight :
     alexanderPolynomial figureEight =
@@ -534,6 +995,127 @@ theorem alexander_figureEight :
   rw [det_three_aux]
   simp only [Matrix.of_apply]
   simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-! #### 4-crossing class divergence — diagnosis and signed variant
+
+Diagnosis of anomaly #14962: the `alexanderEntry` row is the Fox row of a
+**positive** crossing (derivative of the Wirtinger relation
+`x_o x_i x_o⁻¹ = x_out`, abelianized). Since the PD code does not encode
+chirality, the unsigned matrix treats every crossing as positive. On an
+all-positive diagram — the `3_1` trefoil of `Basic.lean`, whose three
+crossings are documented positive — the matrix IS the Alexander matrix and
+the designated minor recovers the classical value. On the figure-eight
+knot `4_1` (amphichiral, two crossings of each sign in any minimal
+alternating diagram), the matrix is wrong on the negative crossings: the
+minor returns `−2t² + 2t − 1`, outside the unit class of the classical
+`t² − 3t + 1` (see `alexander_figureEight_not_classical` below) — so the
+divergence is NOT a representative artifact (no symmetrization or Conway
+normalization `Δ(1) = 1` can repair it), but a chirality artifact. The
+determinant survives: `|P(−1)| = 5 = det(4_1)`
+(`alexander_figureEight_eval_neg_one`).
+
+The signed variant `alexanderPolynomialSigned` takes chirality as data and
+recovers the classical value on the figure-eight: the alternating labeling
+`[−, +, −, +]` of the DT-derived diagram returns exactly `t² − 3t + 1`,
+its mirror `[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class,
+as amphichirality demands. -/
+
+/-- Alexander row of a **negative** crossing: Fox derivative of the mirror
+Wirtinger relation `x_o⁻¹ x_i x_o = x_out`, multiplied by the unit `t` to
+stay polynomial — `+1` on the incoming under-arc, `−t` on the outgoing
+under-arc, `t−1` on the over-arc. Each row sums to zero, as for
+`alexanderEntry`. -/
+noncomputable def alexanderEntryNeg (c : PDCrossing) (C : List Nat) : Polynomial ℤ :=
+  (if C.contains c.e1 then 1 else 0)
+    + (if C.contains c.e3 then -Polynomial.X else 0)
+    + (if C.contains c.e2 || C.contains c.e4 then Polynomial.X - 1 else 0)
+
+/-- Signed Alexander row: `true` (positive crossing) → `alexanderEntry`,
+`false` (negative crossing) → `alexanderEntryNeg`. -/
+noncomputable def alexanderEntrySigned (c : PDCrossing) (s : Bool)
+    (C : List Nat) : Polynomial ℤ :=
+  if s then alexanderEntry c C else alexanderEntryNeg c C
+
+/-- Signed Alexander polynomial of a diagram: same designated minor as
+`alexanderPolynomialAux`, each crossing carrying its sign (sign list
+parallel to the crossings; the first crossing's sign is unused — its row
+is eliminated by the minor, `getD true` neutral). -/
+noncomputable def alexanderPolynomialSigned (d : KnotDiagram)
+    (signs : List Bool) : AlexanderPoly :=
+  let arcs := arcPartition d
+  match d.crossings, arcs with
+  | [], _ => 1
+  | _ :: rest, arcs' =>
+      if arcs'.length = rest.length + 1 then
+        (Matrix.of fun (i j : Fin rest.length) =>
+          alexanderEntrySigned ((rest[i.1]?).getD ⟨1, 1, 1, 1⟩)
+            ((signs[i.1 + 1]?).getD true) ((arcs'[j.1]?).getD [])).det
+      else 0
+
+/-- The divergence is not a unit: the designated value on the figure-eight
+equals `ε · t^k · (t² − 3t + 1)` for NO unit `ε = ±1` and no exponent `k`.
+Proof by evaluations: at `0` the designated value returns `−1`, forcing
+`k = 0` then `ε = −1`; at `2` it returns `−5` while `ε · 2^k · (2² − 3·2 + 1)`
+then equals `1`. -/
+theorem alexander_figureEight_not_classical :
+    ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomial figureEight =
+        Polynomial.C ε * Polynomial.X ^ k * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  rintro ⟨k, ε, -, h⟩
+  rcases k with _ | k
+  · have h0 := congrArg (Polynomial.eval 0) h
+    have h2 := congrArg (Polynomial.eval 2) h
+    rw [alexander_figureEight, pow_zero] at h0 h2
+    simp only [Polynomial.eval_one, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_one,
+      mul_zero, add_zero, zero_add, zero_sub] at h0 h2
+    norm_num at h0 h2
+    omega
+  · have h0 := congrArg (Polynomial.eval 0) h
+    rw [alexander_figureEight, pow_succ] at h0
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+      Polynomial.eval_C, Polynomial.eval_X, pow_two, mul_assoc, mul_zero, zero_mul,
+      mul_one, add_zero, zero_add, zero_sub] at h0
+    norm_num at h0
+
+/-- The knot determinant survives the divergence: the designated value at
+`−1` equals `−5`, so `|P(−1)| = 5 = det(4_1)` (classical: for a knot,
+`det = |Δ(−1)|`; `4_1` is amphichiral). The unsigned minor loses the
+polynomial shape but not its value at `−1`. -/
+theorem alexander_figureEight_eval_neg_one :
+    (alexanderPolynomial figureEight).eval (-1) = -5 := by
+  rw [alexander_figureEight]
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_X, pow_two, mul_zero, mul_one, add_zero, zero_add, zero_sub]
+  norm_num
+
+/-- The signed variant recovers the classical value on the figure-eight:
+the alternating labeling `[−, +, −, +]` of the DT-derived diagram returns
+exactly `t² − 3t + 1` under the same designated minor, and its mirror
+`[+, −, +, −]` returns `t · (t² − 3t + 1)` — same unit class, as
+amphichirality of `4_1` demands. -/
+theorem alexander_figureEight_signed :
+    alexanderPolynomialSigned figureEightDiagram [false, true, false, true]
+      = Polynomial.X ^ 2 - 3 * Polynomial.X + 1 := by
+  simp only [alexanderPolynomialSigned, figureEightDiagram]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
+  ring
+
+/-- Mirror of the previous: the opposite alternating labeling `[+, −, +, −]`
+returns `t · (t² − 3t + 1)` — same unit class, as amphichirality demands
+(the two mirror diagrams represent the same knot). -/
+theorem alexander_figureEight_signed_mirror :
+    alexanderPolynomialSigned figureEightDiagram [true, false, true, false]
+      = Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  simp only [alexanderPolynomialSigned, figureEightDiagram]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
   ring
 
 /-- Trivial Alexander polynomial of the Conway knot — classical content

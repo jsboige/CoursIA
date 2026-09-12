@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 263
-breakdown: Lean=49, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=22, root=1
-maturity: BETA=253, ALPHA=6, DRAFT=4
+pedagogical_count: 268
+breakdown: Lean=52, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=24, root=1
+maturity: BETA=258, ALPHA=6, DRAFT=4
 -->
 
 > **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
@@ -46,9 +46,10 @@ flowchart TD
     LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
     TW -.->|"induction logique (FOIL)"| SL
 
-    classDef found fill:#e8f0fe,stroke:#1a73e8
-    classDef app fill:#e6f4ea,stroke:#188038
-    classDef bridge fill:#fef7e0,stroke:#f9ab00
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef found fill:#e8f0fe,stroke:#1a73e8,color:#174ea6
+    classDef app fill:#e6f4ea,stroke:#188038,color:#137333
+    classDef bridge fill:#fef7e0,stroke:#f9ab00,color:#856404
     class TW,SW,LEAN found
     class SMT,PL,SC app
     class AA,SL bridge
@@ -237,7 +238,7 @@ Série de **49 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 17 | [Lean-17a-Knots-Conway-Proofs](Lean/Lean-17a-Knots-Conway-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
 | 17b | [Lean-17b-Knots-Invariants-Companion](Lean/Lean-17b-Knots-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
 | 17c | [Lean-17c-Knots-Companion-Formel](Lean/Lean-17c-Knots-Companion-Formel.ipynb) | Python | Le lake `knot_lean` par ses déclarations (compagnon formel) | 3 |
-| 18 | [Search-03e-AStar-Optimality](../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Python 3 | Optimalité de A* sous heuristique admissible/consistante : graphe pondéré ℝ≥0, `pathCost` additif, prédicats `Admissible`/`Consistent`, théorèmes phares `admissible_implies_optimal` + `consistent_implies_path_bound` - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 3 |
+| 18 | [Search-03e-AStar-Optimality](../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Python 3 | Optimalité de A* sous heuristique admissible/consistante : graphe pondéré ℝ≥0, `pathCost` additif, prédicats `Admissible`/`Consistent`, théorèmes phares `admissible_le_suffix_cost` + `consistent_implies_path_bound` - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 3 |
 | **Théorèmes phares 2026** |  |  |  |  |
 | 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
 | 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |

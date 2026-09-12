@@ -68,7 +68,7 @@ def test_index_shift_not_misattributed():
     got = analyze(base([("a", 3000)]), nb([("zz", 10), ("a", 3000)]))
     assert got["cells"] == []
     # TOTAL keeps the pure-ratchet semantics: the notebook went 3000 -> 3010,
-    # both abovs TOTAL_CAP, so the total axis fires (same as the sibling's
+    # both above TOTAL_CAP, so the total axis fires (same as the sibling's
     # 0 -> N = regression). This is NOT an index-shift artifact.
     assert got["regressed"] is True
     assert got["total"] == {"base": 3000, "head": 3010, "delta": 10}

@@ -141,7 +141,6 @@ GenAI/
 ├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
 ├── Aspire/                  # Hosting/observabilité .NET (AppHost, services, OpenTelemetry)
 ├── CaseStudies/             # Études de cas étudiants GenAI (4 projets agentiques)
-├── EPF/                     # [archive] Sorties étudiantes EPF alimentant GenAI/CaseStudies/
 ├── FallacyDetection/        # Taxonomie + datasets + couverture cross-notebooks fallacy
 ├── Integrations-DotNet/     # Hub d'intégrations .NET GenAI (EFCore + CopilotSDK, voir PR #14431)
 ├── Plateformes-Conversationnelles/  # Interfaces GenAI conversationnelles (nommées par fonction)
@@ -151,7 +150,7 @@ GenAI/
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
 
-> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. `EPF/` est un répertoire d'archive (voir [`EPF/README.md`](EPF/README.md)) — sorties étudiantes EPF préservées comme trace, pas un parcours actif.
+> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. La provenance des réalisations étudiantes EPF est portée par la section « Généalogie » de [`CaseStudies/README.md`](CaseStudies/README.md).
 
 ### 00-GenAI-Environment - Votre point de départ
 
@@ -213,9 +212,6 @@ Série pédagogique sur [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/a
 
 Hub thématique dédié aux **bindings .NET** des API GenAI : EFCore (requêtes compilées sur metadata), CopilotSDK (intégration Microsoft Copilot), et les futurs arrivants (TUnit.Testcontainers, AppHost configurations). Voir [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) pour le contexte de création et la liste à venir.
 
-### EPF - Sorties étudiantes (archive)
-
-Sous-répertoire d'**archive** contenant les `_output.ipynb` produits par les étudiantes EPF (Dorian & Bastien pour Recipe-Maker, Louise & Jeanne Céline pour Medical-Chatbot). Préservé comme trace des sessions pédagogiques qui ont nourri [`GenAI/CaseStudies/`](CaseStudies/README.md). **Pas un parcours actif** — voir [`EPF/README.md`](EPF/README.md) pour le détail et la distinction avec le `MyIA.AI.Notebooks/CaseStudies/` top-level.
 ## Théorie — Stack self-hosted ⇄ Cloud API
 
 <a id="stack-self-hosted-vs-cloud"></a>
@@ -228,23 +224,25 @@ La série GenAI a un parti pris structurant que les autres hubs n'ont pas : **ch
 | **◐ Cloud API** | API propriétaire (OpenAI/Anthropic/HuggingFace) | Coût par token/image, zéro GPU, qualité par défaut élevée |
 | **◯ Hybride** | Les deux chemins sont démontrés (au choix selon contexte) | Notebooks basculent automatiquement si `.env` configuré |
 
-Cette partition traverse les **13 entrées** du marqueur `CATALOG-STATUS` ci-dessus (12 sous-séries + le notebook racine d'index) et structure le déploiement concret. Les volumes détaillés par sous-série et par maturité restent dans ce marqueur autoritatif ; le tableau ci-dessous récapitule la même information sous l'angle pédagogique **« qui consomme quoi »** plutôt que « qui contient combien » :
+Cette partition traverse les **14 sous-séries** du marqueur `CATALOG-STATUS` en fin de fichier et structure le déploiement concret. Les volumes détaillés par sous-série et par maturité restent dans ce marqueur **autoritatif** ; le tableau ci-dessous en reprend les volumes sous l'angle pédagogique **« qui consomme quoi »** plutôt que « qui contient combien ». **Le périmètre du compte est le catalogue** (`pedagogical_count`) : **215** notebooks — jamais l'arbre versionné (220) ni le parcours étudiant (200) ; les trois périmètres et leurs instruments sont nommés dans [`docs/reference/notebook-counters.md`](../../docs/reference/notebook-counters.md).
 
-| Sous-série | Notebooks | Stack dominante | Service / modèle phare |
-|------------|-----------|-----------------|------------------------|
+| Sous-série | Notebooks au catalogue | Stack dominante | Service / modèle phare |
+|------------|------------------------|-----------------|------------------------|
 | [00-GenAI-Environment](00-GenAI-Environment/) | 6 | ◯ Hybride | Docker Compose : ComfyUI/Qwen, Whisper, MusicGen, Forge |
-| [Image](Image/) | 20 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
-| [Audio](Audio/) | 30 | ◯ Hybride | **Whisper V3** + **Kokoro TTS** (self-hosted) ⇄ **OpenAI TTS** (Cloud) |
-| [Video](Video/) | 17 | ◯ Hybride | **HunyuanVideo** + **Wan** (self-hosted) ⇄ **Sora** (Cloud) |
-| [Texte](Texte/) | 20 | ◐ Cloud API | **GPT-4o-mini** (~0,15 $/M tokens) ; Structured Outputs + Function Calling |
+| [Image](Image/) | 17 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
+| [Audio](Audio/) | 31 | ◯ Hybride | **Whisper V3** + **Kokoro TTS** (self-hosted) ⇄ **OpenAI TTS** (Cloud) |
+| [Video](Video/) | 22 | ◯ Hybride | **HunyuanVideo** + **Wan** (self-hosted) ⇄ **Sora** (Cloud) |
+| [Texte](Texte/) | 30 | ◐ Cloud API | **GPT-4o-mini** (~0,15 $/M tokens) ; Structured Outputs + Function Calling |
 | [SemanticKernel](SemanticKernel/) | 20 | ◯ Hybride | SDK Microsoft .NET 9 + plugins Python ; orchestration multi-agents |
-| [FineTuning](FineTuning/) | 5 | ● self-hosted | **LoRA/QLoRA/SFT/DPO** sur GPU local ; PEFT + Transformers |
-| [PostTraining](PostTraining/) | 7 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
-| [CaseStudies](CaseStudies/) | 4 | ◯ Hybride | Projets étudiants bout-en-bout |
-| [Plateformes-Conversationnelles](Plateformes-Conversationnelles/) | 7 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) ; AI-Engine (WordPress) |
-| [Vibe-Coding](Vibe-Coding/) | 6 | ◯ Hybride | **Claude Code** + **Roo Code** ; **Claw-Systems** (bots Hermes/NanoClaw) + **Claudish** (proxy multi-provider) |
-| [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 1 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
-| [racine](.) | 1 | ◯ Hybride | Index général |
+| [Integrations-DotNet](Integrations-DotNet/) | 11 | ◯ Hybride | **.NET Aspire** + OpenTelemetry (services GenAI locaux) ; EFCore + **Copilot SDK** |
+| [FineTuning](FineTuning/) | 7 | ● self-hosted | **LoRA/QLoRA/SFT/DPO** sur GPU local ; PEFT + Transformers |
+| [PostTraining](PostTraining/) | 16 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
+| [CaseStudies](CaseStudies/) | 5 | ◯ Hybride | Projets étudiants bout-en-bout |
+| [FallacyDetection](FallacyDetection/) | 4 | ◐ Cloud API | **HuggingFace `datasets`** — taxonomie + couverture des fallacies |
+| [Plateformes-Conversationnelles](Plateformes-Conversationnelles/) | 28 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) ; AI-Engine (WordPress) |
+| [Vibe-Coding](Vibe-Coding/) | 8 | ◯ Hybride | **Claude Code** + **Roo Code** ; **Claw-Systems** (bots Hermes/NanoClaw) + **Claudish** (proxy multi-provider) |
+| [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 10 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
+| **Total** | **215** | — | = `pedagogical_count` du marqueur `CATALOG-STATUS` |
 
 **LLMs texte : le chemin self-hosted existe aussi.** La ligne Texte est ◐ Cloud API en dominante, mais les notebooks 10-12 (llama.cpp, quantization GPTQ/AWQ, vLLM) montrent comment servir localement les mêmes capacités — c'est exactement la voie que le cluster CoursIA emprunte en production, avec ses propres endpoints vLLM internes qui alimentent les sous-agents des workflows d'automatisation.
 
@@ -408,7 +406,6 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 - **[tutorials/](tutorials/README.md)** — guides pratiques transverses (écosystème OpenRouter, prompt engineering DALL-E 3, workflows pédagogiques, accessibilité GPT-5 multimodal). Quatre guides approfondissent un fournisseur ou un cas d'usage qui déborde d'une seule modalité. À consulter en parallèle d'un notebook quand on cherche un éclairage transverse.
 - **[_research/](_research/)** — documents de recherche bruts en cours de maturation (gate Phase 3-5 de l'Epic ICT). Non destiné à un parcours étudiant ; citer depuis les notebooks qui les exploitent (ex. `FallacyDetection/02_fallacy_datasets_landscape.ipynb` pour l'inventaire SAE Qwen3.5).
-- **[EPF/](EPF/README.md)** — répertoire d'**archive** (sorties étudiantes EPF alimentant [`CaseStudies/`](CaseStudies/README.md)). Pas un parcours pédagogique actif ; voir [`EPF/README.md`](EPF/README.md) pour la distinction avec `MyIA.AI.Notebooks/CaseStudies/` top-level.
 
 > **Archive** : le fichier historique `VALIDATION_SUMMARY.md` (daté 2026-02-25, états de validation pré-`catalog-cron.yml`) a été retiré du dépôt le 2026-09-03 — la source de vérité autoritative pour les volumes est désormais le marqueur `CATALOG-STATUS` (auto-régénéré chaque nuit, voir [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md) R1).
 
@@ -418,5 +415,5 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 series: GenAI
 pedagogical_count: 215
 breakdown: Audio=31, Texte=30, Plateformes-Conversationnelles=28, Video=22, SemanticKernel=20, Image=17, PostTraining=16, Integrations-DotNet=11, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, FineTuning=7, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=4
-maturity: BETA=181, ALPHA=19, DRAFT=12, TEMPLATE=3
+maturity: BETA=180, ALPHA=21, DRAFT=11, TEMPLATE=3
 -->

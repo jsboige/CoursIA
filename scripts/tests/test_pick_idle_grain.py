@@ -62,16 +62,26 @@ def test_founding_case_12014_surfaces_12077(monkeypatch):
 
 
 def test_query_shape_bounded_one_per_candidate(monkeypatch):
-    """Cout borne : exactement une requete par candidat tire, jamais le pool.
+    """Cout borne : une requete PR par candidat tire, jamais le pool.
 
     La commande doit chercher les PRs MERGEES referencant le numero
-    (troisieme surface de grounding, cf #12174).
+    (troisieme surface de grounding, cf #12174). c.1115 voie 1 ajoute un
+    appel `gh issue view N --comments` conditionnel (uniquement si pas de
+    PR couvrante) -- verifie separement dans
+    `test_marker_check_one_request_per_pick_invariant`.
     """
     calls = []
-    _patch_gh(monkeypatch, [[], []], calls)
+    # Patch retourne TOUJOURS [] -- traite comme "pas de PR couvrante",
+    # declenche le check marqueur qui retourne aussi [] (charge vide).
+    # recent_delivery appelle donc 2x par pick (pr list + issue view).
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
     pig.recent_delivery([_pick(n=1), _pick(n=2)])
-    assert len(calls) == 2
-    for cmd, n in zip(calls, (1, 2)):
+    pr_list = [c for c in calls if c[1] == "pr" and c[2] == "list"]
+    assert len(pr_list) == 2
+    for cmd, n in zip(pr_list, (1, 2)):
         # --state all depuis #12504 : ouvertes ET mergees dans la MEME
         # requete, donc l'invariant "une par candidat" tient toujours.
         assert "--state" in cmd and "all" in cmd
@@ -500,7 +510,7 @@ def test_inheritance_does_not_swallow_other_causes(monkeypatch):
     assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
 
 
-AGG = "Always-on guards -- 12 organes, 1 checkout"
+AGG = "Always-on guards -- 13 organes, 1 checkout"
 
 
 def _agg_red(run_id, name=AGG, required=True):
@@ -795,6 +805,11 @@ def test_adjacency_detected_from_body_when_caller_omits_flag(monkeypatch, capsys
         "fait (cf #13967)"
     )
     assert "gh pr update-branch" not in out
+    assert "DECLAREE, NON MESUREE" in out, (
+        "#15184 : sans fenetre mergee consultee, le rouge d'adjacence du "
+        "picker est un CONSEIL fonde sur declaration -- la branche "
+        "specialisee doit le dire, pas le presenter comme un blocage prouve"
+    )
 
 
 def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys):
@@ -815,6 +830,78 @@ def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys)
         "genres distincts = pas d'adjacence = conseil generic applicable"
     )
     assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
+def test_adjacency_med_advisory_not_specialized_branch(monkeypatch, capsys):
+    """#15184 frontiere du picker : un corps `MED/lean` apres `MED/lean`
+    (genre hors LIGHT_GENRES) rend chez l'organe le verdict §2 ADVISORY --
+    `adjacent: True` sans `unmeasured` ni `blocking` -- qui reste hors la
+    branche specialisee : le conseil generique s'applique (un push peut
+    reparer le rouge ; l'adjacence hors-LIGHT releve du jugement
+    coordinateur, #11170). Sans ce controle, un `_is_adjacency_red` elargi
+    a `adjacent` reduirait la branche specialisee a toutes les PRs MED
+    rouges de genre non-light. (Un `MED/guard` n'est PAS un cas advisory :
+    `guard` est un genre LIGHT meme a tier MED -- le tier ne spare que les
+    genres non resolus, #13585.)
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: MED/lean -- lane myia-po-2026:CoursIA -- "
+            "prev: MED/lean #15150\n")
+    pr = _pr_with_body(104, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {104: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out
+    assert "gh pr update-branch" in out, (
+        "adjacence hors liste LIGHT = advisory : le push reste le "
+        "premier geste, la branche specialisee est reservee a "
+        "l'adjacence de genre LIGHT (bloquee mesuree ou suspconnee "
+        "declaree)"
+    )
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
+def test_adjacency_red_reports_epistemic_kind(monkeypatch):
+    """#15184 (review) : `_is_adjacency_red` rend le STATUT epistemique --
+    "declared" (conseil sur declaration : le seul cas que le picker peut
+    produire, `check(body)` sans `merged_prev` resout toujours
+    prev_source="declared") ou "measured" (blocage prouve sur sequence
+    mergee) -- pas un bool agrege. La branche specialisee s'en sert pour
+    distinguer conseil declare et blocage prouve.
+    """
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    assert pig._is_adjacency_red(body) == "declared"
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import variation_adjacency_guard as vag
+    monkeypatch.setattr(vag, "check", lambda b: {
+        "guard_pass": False, "blocking": True, "adjacent": True,
+        "unmeasured": False})
+    assert pig._is_adjacency_red(body) == "measured"
+    monkeypatch.setattr(vag, "check", lambda b: {
+        "guard_pass": True, "blocking": False, "adjacent": True,
+        "unmeasured": False})
+    assert pig._is_adjacency_red(body) is False
+
+
+def test_adjacency_measured_wording_distinguishes_proven_block(
+        monkeypatch, capsys):
+    """#15184 : quand le statut est "measured" (blocage PROUVE par fenetre
+    mesuree), la branche specialisee doit le dire -- ne pas presenter un
+    blocage prouve comme un simple conseil declare, ni l'inverse.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    pr = _pr_with_body(105, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {105: red})
+    monkeypatch.setattr(pig, "_is_adjacency_red", lambda b: "measured")
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "MESUREE" in out and "PROUVE" in out
+    assert "DECLAREE, NON MESUREE" not in out
 
 
 def test_adjacency_caller_override_still_respected(monkeypatch, capsys):
@@ -1960,3 +2047,208 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
     assert calls == [15049, 15081]
+
+
+# --- age de derniere livraison reelle : hook weight (#15491 Phase 1) ---------
+
+def _umbrella(n, age=120, idle=40):
+    return {"number": n, "age": age, "idle": idle, "genre": "docs",
+            "klass": "umbrella", "polarity": "neutral",
+            "title": "EPIC %d" % n}
+
+
+def test_delivery_factor_boosts_umbrellas_only():
+    """Le signal est un facteur de distribution ENTRE EPICs : un grain
+    classique ne doit jamais le recevoir, meme present dans le dict."""
+    grain = {"number": 5, "age": 30, "idle": 1, "genre": "docs"}
+    factors = {5: 1.5, 6: 1.5}
+    assert pig.weight(dict(grain), None, None, None, None, factors) == \
+        pig.weight(dict(grain), None, None, None, None, None)
+    umb = _umbrella(6)
+    assert pig.weight(dict(umb), None, None, None, None, factors) == \
+        pig.weight(dict(umb), None, None, None, None, None) * 1.5
+
+
+def test_delivery_boost_zero_leaves_weight_unchanged():
+    """Phase 1 : --delivery-boost-max 0 (defaut) = kill switch. Les facteurs
+    calcules a 0 valent tous 1.0, le poids d'une umbrella ne bouge pas."""
+    umb = _umbrella(1101)
+    neutre = {1101: pig.delivery_factor(
+        pig.DELIVERY_NONE_IN_WINDOW, None, 14, 0.0)}
+    assert pig.weight(dict(umb), None, None, None, None, neutre) == \
+        pig.weight(dict(umb), None, None, None, None, None)
+
+
+def test_delivery_boost_spreads_without_monopoly():
+    """Acceptance statistique : a boost 0.5, la part de tirage des umbrellas
+    sans livraison croit, sans qu'aucune umbrella monopolise le tirage.
+    Deterministe : rng reseedes pareil pour les deux compositions."""
+    import random
+    starved = [_umbrella(1101), _umbrella(1102)]           # aucune livraison
+    fed = [_umbrella(1103), _umbrella(1104), _umbrella(1105)]  # age 0
+    items = starved + fed
+
+    def composition(factors):
+        rng = random.Random(42)
+        counts = {it["number"]: 0 for it in items}
+        for _ in range(400):
+            pick = pig.draw([dict(i) for i in items], 1, rng, None,
+                            {}, {}, {}, factors)
+            counts[pick[0]["number"]] += 1
+        return counts
+
+    baseline = composition(None)
+    boosted = composition({1101: 1.5, 1102: 1.5, 1103: 1.0,
+                           1104: 1.0, 1105: 1.0})
+    share_starved_base = sum(baseline[n] for n in (1101, 1102)) / 400
+    share_starved_boost = sum(boosted[n] for n in (1101, 1102)) / 400
+    assert share_starved_boost > share_starved_base, (
+        f"le boost doit favoriser les sans-livraison : "
+        f"{share_starved_boost:.2f} vs {share_starved_base:.2f}")
+    assert max(boosted.values()) / 400 < 0.5, (
+        f"aucune umbrella ne doit monopoliser : {boosted}")
+
+
+# --- LIVRÉ-urn via marqueur [INFO] candidate-delivered (c.1115 voie 1) -------
+#
+# Le sweep quotidien 05:37Z retracte le label `candidate-delivered` sur
+# activite de commentaire post-merge ; or les lanes elles-memes postent des
+# commentaires `[INFO] candidate-delivered` quand elles en rencontrent une.
+# Resultat : des LIVRE-urn restent sans label alors qu'un marqueur en
+# commentaire les designe explicitement. Tell c.1060-L1 reformule (msg-20260912T165428-k6rbfc,
+# ai-01 spec) : la klasse `delivered` doit etre posee sur signal label OU
+# marqueur, avec 1 requete par candidat tire (invariant recent_delivery l.958).
+#
+# Cas fondateur (2026-09-12) : #14373 (4 commentaires `[INFO candidate-delivered]`
+# de 4 lanes distinctes, PR #14455 MERGED, label absent au moment du test).
+
+
+def _patch_gh_dispatch(calls, monkeypatch, pr_payload, comments_payload):
+    """Dispatcher : repond selon la sous-commande gh (pr list vs issue view).
+
+    `calls` (premier arg, positionnel obligatoire) est une liste mutable
+    enrichie en place pour permettre les assertions sur le nombre d'appels
+    et les commandes exactes.
+    """
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        # gh pr list ... | gh issue view N ...
+        if cmd[1:3] == ["issue", "view"]:
+            return _FakeCompleted(json.dumps(comments_payload))
+        return _FakeCompleted(json.dumps(pr_payload))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def _delivered_marker_comment(body=(
+    "[INFO] candidate-delivered — verification first-hand du geste 1 "
+    "sur origin/main, MERGE 6d0bd02093.")):
+    return {"body": body, "author": {"login": "jsboige"}}
+
+
+def test_marker_only_surfaces_delivered_urn(monkeypatch):
+    """c.1115 voie 1 controle positif : pas de PR couvrante, marqueur en
+    commentaire -> klass mutee a delivered, note ajoutee. Cas fondateur
+    #14373 (label absent, 4 marqueurs multi-lanes)."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+            {"body": "Commentaire sans marqueur, hors perimetre."},
+            _delivered_marker_comment(
+                body="[INFO candidate-delivered] verifie par po-2023 c.485"),
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert "MARQUEUR" in notes[14373]
+    assert "[INFO]" in notes[14373]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_no_marker_no_label_no_note(monkeypatch):
+    """Pas de PR couvrante, pas de marqueur -> pas de signal (regression
+    preservee). Couvre le cas standard 'issue vivante sans livraison'."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "Commentaire normal d'un humain."},
+            {"body": "Autre commentaire sans [INFO] candidate-delivered."},
+        ]})
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
+
+
+def test_marker_check_one_request_per_pick_invariant(monkeypatch):
+    """L'invariant recent_delivery (1 requete par candidat tire) tient aussi
+    pour le check marqueur : pour 3 picks SANS PR couvrante, exactement 3
+    appels a `gh pr list` ET 3 appels a `gh issue view`."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": []})
+    pig.recent_delivery([_pick(n=1), _pick(n=2), _pick(n=3)])
+    pr_list = [c for c in calls if c[1] == "pr" and c[2] == "list"]
+    issue_view = [c for c in calls if c[1] == "issue" and c[2] == "view"]
+    assert len(pr_list) == 3
+    assert len(issue_view) == 3
+    # Verification qu'on ne scanne PAS le pool : les appels `issue view`
+    # prennent un numero explicite, pas un filtre large.
+    for cmd in issue_view:
+        assert cmd[3] in {"1", "2", "3"}
+
+
+def test_marker_does_not_shortcut_pr_check(monkeypatch):
+    """Si une PR OUVERTE couvre l'issue, le marqueur en commentaire ne doit
+    pas detourner l'annotation : TRAVAIL EN COURS prime (priorite du signal,
+    l.1044)."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch,
+        pr_payload=[{"number": 15755, "state": "OPEN",
+                     "isDraft": False, "mergedAt": None}],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+        ]})
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert notes[15794].startswith("TRAVAIL EN COURS")
+    assert picks[0]["klass"] == "grain"  # PAS mute : TRAVAIL EN COURS prime
+    # Et on n'a PAS appele gh issue view pour ce pick (shortcut evite).
+    issue_view = [c for c in calls if c[1] == "issue" and c[2] == "view"]
+    assert issue_view == []
+
+
+def test_marker_check_failure_treated_as_no_signal(monkeypatch):
+    """Si `gh issue view` timeout/rate-limit, _has_delivered_marker retourne
+    None ; recent_delivery continue sans annoter (best-effort, parite avec
+    la doctrine candidate-delivered : signale sans casser le flux)."""
+    def boom(cmd, **kwargs):
+        if cmd[1:3] == ["issue", "view"]:
+            raise pig.subprocess.TimeoutExpired(cmd, 20)
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    # Pas de LIVRE-urn annotation, pas de mutation de klasse.
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
+
+
+def test_marker_regex_matches_both_bracket_forms(monkeypatch):
+    """Le pattern couvre les deux formes employees : `[INFO] candidate-delivered`
+    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf Tell c.1115
+    voie 1 : unification lexicale sans casser l'existant."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "[INFO candidate-delivered] variante espace au lieu de ]"},
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert picks[0]["klass"] == "delivered"

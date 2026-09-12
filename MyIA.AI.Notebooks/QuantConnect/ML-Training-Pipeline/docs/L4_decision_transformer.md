@@ -125,6 +125,17 @@ ne vit pas dans le temps, il reste cantonné au panel/cross-section. Résultats 
 seed complets (séries de retours incluses pour re-calcul DM) :
 `results/xrp_dt_validation/holdout_oot_20260904_164308.json` (gitignored).
 
+**Reproductibilité du verdict.** Les JSON de verdict et les CSV de marché sont
+**gitignored** : `results/` est un artefact machine-local d'entraînement, et la politique du
+pipeline garde le dépôt sur les protocoles et verdicts, pas sur les sorties d'entraînement ni
+les données de marché. Ce qui est cité pour permettre la réfutation : bornes exactes, sha256
+du dataset (`71d8aee9d0bda18b`), verdicts par seed et séries de retours par seed **dans** le
+JSON. Pour rejouer : re-télécharger `XRP-USD.csv` via yfinance (bornes 2018-01-01 →
+2026-09-04), vérifier le sha256, puis relancer l'instrument gelé —
+`scripts/train_dt_multiseed.py` avec `--train-end 2025-06-30` (seeds 0/1/7/42/99, 30 epochs),
+puis `scripts/validate_xrp_dt_holdout.py` (jambe §C + conjonction ci-dessus) ; le hash est
+recalculé sur la tranche gelée, ce qui rend l'absence de contamination vérifiable.
+
 ## Implication pour le ladder
 
 | Échelon | Paradigme | Verdict |

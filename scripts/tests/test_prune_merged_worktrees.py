@@ -373,7 +373,7 @@ class TestDiagnoseRefusalCauses:
         monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
         monkeypatch.setattr(
             pmw, "lookup_pr_for_branch",
-            lambda *a: {"state": "MERGED", "number": 42, "url": "u"},
+            lambda *a, **k: {"state": "MERGED", "number": 42, "url": "u"},
         )
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REMOVE"
@@ -389,7 +389,7 @@ class TestDiagnoseRefusalCauses:
         monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
         monkeypatch.setattr(
             pmw, "lookup_pr_for_branch",
-            lambda *a: {"state": "MERGED", "number": 42, "url": "u"},
+            lambda *a, **k: {"state": "MERGED", "number": 42, "url": "u"},
         )
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
@@ -800,6 +800,287 @@ def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
 
 
 # ---------------------------------------------------------------------------
+# Tests PrResolution -- couche a trois etages (#15369)
+# ---------------------------------------------------------------------------
+
+_PR_OID_A = "a" * 40
+_PR_OID_B = "b" * 40
+
+
+def _row(number, state, branch, oid=_PR_OID_A):
+    return {
+        "number": number, "state": state,
+        "url": f"https://example/pr/{number}",
+        "headRefName": branch, "headRefOid": oid,
+    }
+
+
+def _seed_cache_file(path, entries):
+    path.write_text(json.dumps({
+        "version": pmw.PR_VERDICT_CACHE_VERSION,
+        "entries": entries,
+    }), encoding="utf-8")
+
+
+def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload):
+    """Les deux commandes gh se distinguent par '--search' (ancre seule)."""
+    def fake_gh(*args, **kwargs):
+        if "--search" in args:
+            return _fake_proc(json_payload=anchor_payload)
+        return _fake_proc(json_payload=listing_payload)
+    monkeypatch.setattr(pmw, "run_gh", fake_gh)
+
+
+class TestPrResolution:
+    """#15369 : cache disque MERGED-seul garde par oid, lot unique a
+    fenetre cappee, ancre autoritaire. Tout etage d'economie qui echoue,
+    ignore la branche ou ne peut pas trancher (head_sha inconnu) retombe
+    sur l'ancre -- son absence n'est JAMAIS un verdict."""
+
+    def test_cache_hit_merges_without_gh(self, tmp_path, monkeypatch):
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/merged": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+
+        def _no_gh(*a, **k):
+            raise AssertionError("cache hit ne doit declencher AUCUN appel gh")
+
+        monkeypatch.setattr(pmw, "run_gh", _no_gh)
+        res = pmw.PrResolution(cache_path=cache)
+        row = res.resolve("feature/merged", head_sha=_PR_OID_A)
+        assert row is not None and row["state"] == "MERGED"
+        assert row["number"] == 42
+        assert res.stats["cache_hits"] == 1
+        assert res.stats["listing_calls"] == 0
+        assert res.stats["anchor_calls"] == 0
+
+    def test_cache_oid_mismatch_never_answers_merged(self, tmp_path, monkeypatch):
+        """Branche re-poussee (nouveau head) : le MERGED cache vaut pour
+        d'autres commits. Une re-PR ouverte doit pouvoir se manifester --
+        la garde porte l'oid, pas le nom de branche."""
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/repushed": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        _stub_gh_listing_then_anchor(
+            monkeypatch,
+            listing_payload=[],
+            anchor_payload=[_row(43, "OPEN", "feature/repushed", oid=_PR_OID_B)],
+        )
+        res = pmw.PrResolution(cache_path=cache)
+        row = res.resolve("feature/repushed", head_sha=_PR_OID_B)
+        assert row["state"] == "OPEN", (
+            "un MERGED cache d'un autre oid ne doit jamais masquer la "
+            "PR courante de la branche"
+        )
+        assert res.stats["cache_hits"] == 0
+        assert res.stats["anchor_calls"] == 1
+
+    def test_cache_without_head_sha_falls_through(self, tmp_path, monkeypatch):
+        """head_sha inconnu (HEAD absent du porcelain) : la garde oid ne
+        peut pas trancher -> jamais de verdict depuis le cache."""
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/guard": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        _stub_gh_listing_then_anchor(monkeypatch, [], [])
+        res = pmw.PrResolution(cache_path=cache)
+        row = res.resolve("feature/guard", head_sha=None)
+        assert row is None
+        assert res.stats["cache_hits"] == 0
+
+    def test_listing_hit_avoids_anchor_and_is_shared(self, tmp_path, monkeypatch):
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if "--search" in args:
+                raise AssertionError(
+                    "branche dans le lot : l'ancre ne doit pas etre appelee")
+            return _fake_proc(json_payload=[
+                _row(100, "MERGED", "feature/in-window", oid=_PR_OID_A),
+                _row(99, "OPEN", "feature/also-in", oid=_PR_OID_B),
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        res = pmw.PrResolution(cache_path=None)
+        r1 = res.resolve("feature/in-window", head_sha=_PR_OID_A)
+        assert r1["number"] == 100 and r1["state"] == "MERGED"
+        r2 = res.resolve("feature/also-in")
+        assert r2["number"] == 99
+        # Un seul appel de lot pour la passe entiere.
+        assert res.stats["listing_calls"] == 1
+        assert res.stats["listing_hits"] == 2
+        assert res.stats["anchor_calls"] == 0
+
+    def test_listing_keeps_max_number_per_branch(self, tmp_path, monkeypatch):
+        """close+reopen / re-PR : deux PRs partagent headRefName et le lot
+        n'est pas garanti trie par date. Garder numero max = le verdict le
+        plus recent, meme choix que le rows[0] de l'ancre (date desc)."""
+        monkeypatch.setattr(pmw, "run_gh", lambda *a, **k: _fake_proc(
+            json_payload=[
+                _row(41, "CLOSED", "feature/re-pr", oid=_PR_OID_A),
+                _row(57, "OPEN", "feature/re-pr", oid=_PR_OID_B),
+            ]))
+        res = pmw.PrResolution(cache_path=None)
+        row = res.resolve("feature/re-pr")
+        assert row["number"] == 57
+
+    def test_listing_error_degrades_to_anchor_once(self, tmp_path, monkeypatch):
+        anchor_rows = [_row(77, "MERGED", "feature/anchor-only", oid=_PR_OID_A)]
+
+        def fake_gh(*args, **kwargs):
+            if "--search" in args:
+                wanted = next(
+                    a for a in args if str(a).startswith("head:"))[len("head:"):]
+                payload = [r for r in anchor_rows
+                           if r["headRefName"] == wanted]
+                return _fake_proc(json_payload=payload)
+            return _fake_proc(returncode=1, stdout="rate limited")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        res = pmw.PrResolution(cache_path=None)
+        row = res.resolve("feature/anchor-only", head_sha=_PR_OID_A)
+        assert row["number"] == 77 and row["state"] == "MERGED"
+        assert res.stats["listing_degraded"] == 1
+        # La degradation ne rejoue pas le lot a chaque branche : la
+        # deuxieme resolution va direct a l'ancre.
+        assert res.resolve("feature/other") is None
+        assert res.stats["listing_calls"] == 1
+        assert res.stats["anchor_calls"] == 2
+
+    def test_capped_window_miss_falls_to_anchor_never_absent(self, tmp_path, monkeypatch):
+        """Branche hors fenetre --limit 1000 : son absence du lot n'est
+        PAS un verdict. L'ancre tranche (ici OPEN -> le travailleur vit)."""
+        _stub_gh_listing_then_anchor(
+            monkeypatch,
+            listing_payload=[],
+            anchor_payload=[_row(88, "OPEN", "feature/old", oid=_PR_OID_A)],
+        )
+        res = pmw.PrResolution(cache_path=None)
+        row = res.resolve("feature/old", head_sha=_PR_OID_A)
+        assert row is not None and row["state"] == "OPEN"
+        assert res.stats["anchor_calls"] == 1
+
+    def test_closed_rows_never_cached(self, tmp_path, monkeypatch):
+        """CLOSED peut rouvrir : le cache ne fige JAMAIS ce verdict
+        (divergence assumee avec la suggestion de l'issue, documentee).
+        Un fichier pre-seed reste byte-identique : rien a ecrire."""
+        cache = tmp_path / "cache.json"
+        seeded = {
+            "feature/already": {
+                "number": 7, "state": "MERGED",
+                "url": "https://example/pr/7",
+                "headRefOid": _PR_OID_A,
+            },
+        }
+        _seed_cache_file(cache, seeded)
+        _stub_gh_listing_then_anchor(
+            monkeypatch,
+            listing_payload=[_row(90, "CLOSED", "feature/closed", oid=_PR_OID_A)],
+            anchor_payload=[],
+        )
+        res = pmw.PrResolution(cache_path=cache)
+        row = res.resolve("feature/closed", head_sha=_PR_OID_A)
+        assert row["state"] == "CLOSED"
+        assert res.stats["cache_writes"] == 0
+        res.flush()
+        assert json.loads(cache.read_text(encoding="utf-8"))["entries"] == seeded
+
+    def test_merged_from_listing_persisted_and_replayed(self, tmp_path, monkeypatch):
+        cache = tmp_path / "cache.json"
+        _stub_gh_listing_then_anchor(
+            monkeypatch,
+            listing_payload=[_row(91, "MERGED", "feature/keep", oid=_PR_OID_A)],
+            anchor_payload=[],
+        )
+        res = pmw.PrResolution(cache_path=cache)
+        res.resolve("feature/keep", head_sha=_PR_OID_A)
+        assert res.stats["cache_writes"] == 1
+        res.flush()
+        assert cache.exists()
+
+        # Passe suivante : cache disque -> zero appel gh.
+        def _no_gh(*a, **k):
+            raise AssertionError("relecture cache ne doit pas appeler gh")
+
+        monkeypatch.setattr(pmw, "run_gh", _no_gh)
+        res2 = pmw.PrResolution(cache_path=cache)
+        row = res2.resolve("feature/keep", head_sha=_PR_OID_A)
+        assert row["state"] == "MERGED" and row["number"] == 91
+        assert res2.stats["cache_hits"] == 1
+
+    def test_squash_merge_control_repush_misses_cache(self, tmp_path, monkeypatch):
+        """Controle squash-merge : branche squash-mergee puis recree
+        depuis main = head NOUVEAU -> l'oid garde fait rater le cache ->
+        l'ancre (aucune PR pour ce head) rend None -> REFUSE
+        no_pr_match, jamais REMOVE sur un souvenir."""
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/squash": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        _stub_gh_listing_then_anchor(monkeypatch, [], [])
+        res = pmw.PrResolution(cache_path=cache)
+        row = res.resolve("feature/squash", head_sha=_PR_OID_B)
+        assert row is None
+        assert res.stats["cache_hits"] == 0
+
+    def test_flush_swallows_oserror(self, tmp_path, monkeypatch):
+        """Le cache est une economie : un echec d'ecriture ne doit jamais
+        faire echouer la passe."""
+        cache = tmp_path / "cache.json"
+        _stub_gh_listing_then_anchor(
+            monkeypatch,
+            listing_payload=[_row(93, "MERGED", "feature/x", oid=_PR_OID_A)],
+            anchor_payload=[],
+        )
+        res = pmw.PrResolution(cache_path=cache)
+        res.resolve("feature/x", head_sha=_PR_OID_A)
+
+        def boom(*a, **k):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(Path, "write_text", boom)
+        res.flush()  # ne doit pas lever
+
+    def test_lookup_delegates_to_singleton_with_oid(self, monkeypatch):
+        seen = {}
+
+        class FakeRes:
+            stats = {}
+
+            def resolve(self, branch, head_sha=None):
+                seen["branch"] = branch
+                seen["head_sha"] = head_sha
+                return None
+
+        monkeypatch.setattr(pmw, "_RESOLUTION", FakeRes())
+        try:
+            pmw.lookup_pr_for_branch("feature/deleg", head_sha="cafe")
+            assert seen == {"branch": "feature/deleg", "head_sha": "cafe"}
+        finally:
+            pmw.reset_pr_resolution()
+        assert pmw._RESOLUTION is None
+
+
+# ---------------------------------------------------------------------------
 # Tests render_text -- fidelite au disque en mode --apply (#14476)
 # ---------------------------------------------------------------------------
 
@@ -968,7 +1249,8 @@ class TestToleratedCleanup14619:
                 untracked=["bg_logs/", "lake_7012.log.relaunch"]),
         )
         monkeypatch.setattr(
-            pmw, "lookup_pr_for_branch", lambda b: dict(_MERGED_PR))
+            pmw, "lookup_pr_for_branch",
+            lambda b, head_sha=None: dict(_MERGED_PR))
         s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
         assert s.decision == "REMOVE"
 
@@ -978,7 +1260,8 @@ class TestToleratedCleanup14619:
             lambda *a, **k: _fake_info(untracked=["residu.bin"]),
         )
         monkeypatch.setattr(
-            pmw, "lookup_pr_for_branch", lambda b: dict(_MERGED_PR))
+            pmw, "lookup_pr_for_branch",
+            lambda b, head_sha=None: dict(_MERGED_PR))
         s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "untolerated_untracked:1"
@@ -1262,7 +1545,8 @@ class TestEndToEndHermetic14693:
     def _merged_anchor(self, monkeypatch):
         monkeypatch.setattr(
             pmw, "lookup_pr_for_branch",
-            lambda branch: dict(self.MERGED_PR, headRefName=branch),
+            lambda branch, head_sha=None: dict(
+                self.MERGED_PR, headRefName=branch),
         )
 
     def test_tolerated_artifacts_only_is_removed(self, tmp_path, monkeypatch):

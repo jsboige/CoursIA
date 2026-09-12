@@ -151,17 +151,69 @@ from typing import Any
 
 REPO = "jsboige/CoursIA"
 
+# c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
+# si label `candidate-delivered` OU marqueur `[INFO] candidate-delivered` en
+# commentaire. Le sweep quotidien retracte le label sur activite de commentaire
+# (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
+# invisibles au seul filtre labels. Le pattern matche les deux formes
+# employees par les lanes : `[INFO] candidate-delivered` et `[INFO
+# candidate-delivered]` (espace au lieu de `]`).
+_DELIVERED_MARKER_RE = re.compile(
+    r"\[INFO[\s_]candidate-delivered", re.IGNORECASE)
+
+
+def _has_delivered_marker(issue_number: int) -> bool | None:
+    """Retourne True si l'issue porte un marqueur [INFO] candidate-delivered.
+
+    Cout : 1 requete HTTP par appel (invariant recent_delivery l.958 preserve --
+    appelee seulement sur les candidats TIRES, jamais sur le pool). Retourne
+    None si la lecture echoue (timeout, rate-limit) ; l'appelant traite None
+    comme "pas de signal" et continue, exactement comme une absence.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number),
+             "--repo", REPO, "--comments", "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=20,
+        ).stdout
+        payload = json.loads(out)
+    except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+        return None
+    # Tolérance : la charge utile peut être [] (issue introuvable, ou mock de
+    # test ancien), {comments: [...]} (gh standard), voire {data: ...}. Le
+    # contrat utile est "iterable de dict avec .body" ; tout le reste = pas
+    # de signal.
+    if not isinstance(payload, dict):
+        return False
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list):
+        return False
+    return any(_DELIVERED_MARKER_RE.search((c.get("body") or "")
+                                          if isinstance(c, dict) else "")
+               for c in comments)
+
+
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
 # le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     CONSOLIDATION,
+    DEFAULT_WINDOW_DAYS,
+    DELIVERY_DELIVERED,
+    DELIVERY_EMPTY_CORPUS,
+    DELIVERY_NONE_IN_WINDOW,
+    DELIVERY_UNAVAILABLE,
+    MERGED_FETCH_LIMIT,
     enrich_parent_families,
     EXPANSION,
     NEUTRAL,
     SERIES_SCALE_DEFAULT,
     cited_issues,
+    delivery_factor,
+    fetch_merged,
     fetch_series_visits,
+    measure_delivery,
     zone_balance,
     zone_umbrellas,
     zone_verdict,
@@ -255,6 +307,66 @@ def infer_genre(title: str, labels: list[str]) -> str:
         if re.search(pattern, hay):
             return genre
     return "docs"
+
+
+def genre_signal_present(title: str, labels: list[str]) -> bool:
+    """Le titre porte-t-il un signal de genre, ou `infer_genre` s'est-il
+    replie sur son defaut ?
+
+    `infer_genre` rend `docs` -- un genre **META** -- quand AUCUNE regle ne
+    matche. Ce repli est une **absence de signal**, pas un verdict META, et
+    il est indiscernable d'un `docs` reellement annonce par le titre. La
+    restriction de secheresse lisait les deux de la meme facon et les
+    retirait tous deux du tirage, ce qui donnait une probabilite
+    **exactement nulle** a des Epics de contenu.
+
+    Mesure du 2026-09-12, 322 issues ouvertes : 72 des 115 umbrellas
+    classees META le sont par ce repli -- dont #15475 (ICT Toolkit),
+    #15481 (S-Lens), #15397 (Thom), #13992 (Matrix Profile), #13924-26
+    (ADK / BigQuery), #14467 (reward hacking), #4588 (IIT -> ICT). Aucune
+    n'est de la documentation.
+    """
+    hay = (title + " " + " ".join(labels)).lower()
+    return any(re.search(pattern, hay) for pattern, _ in GENRE_RULES)
+
+
+def drought_admits(item: dict) -> bool:
+    """La restriction de secheresse admet-elle cet item ?
+
+    Trois cas d'admission, dont **un seul** etait implemente :
+
+    1. le genre est de la classe CONTENU -- le cas d'origine ;
+    2. l'item est une **umbrella** : tirer une Epic veut dire *creer un
+       sous-grain dedans* (R5 de proactive-coordination : « piocher ou creer
+       un sous-grain dedans, jamais claimer l'EPIC entier »). Le genre de
+       l'Epic ne decrit donc **jamais** le livrable ; filtrer les umbrellas
+       dessus filtre sur une grandeur qui ne predit pas ce qui sera livre.
+       L'obligation de contenu reste entiere, elle porte sur le sous-grain
+       -- et la banniere la nomme ;
+    3. le genre vient du **repli** de `infer_genre` (aucune regle matchee) :
+       une absence de signal ne vaut pas un verdict META.
+
+    Direction d'echec : admettre a tort coute **un** grain META, et la
+    secheresse persiste alors d'elle-meme au merge suivant (le compte
+    s'incremente) -- c'est auto-correcteur. Exclure a tort coute une
+    invisibilite **permanente**. D'ou l'admission en cas de doute, a
+    l'inverse du fail-CLOSED qui gouverne le COMPTAGE de la secheresse
+    (`substance_drought`), ou le doute doit au contraire compter
+    NON-CONTENU : les deux directions sont coherentes, car compter large et
+    tirer large vont dans le meme sens -- plus de contenu exige, plus de
+    candidats pour le fournir.
+
+    Les genres META reellement annonces (`guard`, `tooling`, `docs`,
+    `readme`, `test`, `ledger`, `refactor`) matchent tous une regle de
+    `GENRE_RULES` : la sequence guard -> tooling -> docs -> test que ce
+    garde existe pour briser reste donc exclue. Les dents sont conservees
+    la ou elles mordent, retirees la ou elles se trompaient.
+    """
+    if item["genre"] in CONTENU:
+        return True
+    if item.get("klass") == "umbrella":
+        return True
+    return not item.get("genre_confident", True)
 
 
 def authoritative_genre(body: str) -> str | None:
@@ -390,6 +502,10 @@ def fetch_pool(
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
             "genre": declared_genre if declared_genre else infer_genre(title, labels),
+            # Le genre est-il **soutenu** (declare par l'auteur, ou une regle
+            # de titre a matche), ou est-ce le repli `docs` de `infer_genre` ?
+            # Cf `genre_signal_present` : le repli ne vaut pas un verdict META.
+            "genre_confident": bool(declared_genre) or genre_signal_present(title, labels),
             "body": body,
             "parent": parent_issue(body),
             "polarity": polarity(title, body),
@@ -720,7 +836,8 @@ def admissibility(item: dict, balance: dict | None,
 def weight(item: dict, prev_genre: str | None,
            visits: dict[int, int] | None = None,
            series: dict[str, dict] | None = None,
-           issue_to_family: dict[int, str] | None = None) -> float:
+           issue_to_family: dict[int, str] | None = None,
+           delivery: dict[int, float] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -778,19 +895,26 @@ def weight(item: dict, prev_genre: str | None,
             w /= 1.0 + (factor - 1.0) / 2.0
     item["family"] = fam
     item["family_new_notebooks"] = nb_new
+    # Age de derniere livraison reelle (#15491) : UMBRELLAS seulement -- c'est
+    # un signal de distribution entre EPICs, pas un bonus par grain. Neutre
+    # (1.0) tant que --delivery-boost-max vaut 0 : Phase 1 instrumente, la
+    # composition ne bouge pas.
+    if delivery and item.get("klass") == "umbrella":
+        w *= delivery.get(item["number"], 1.0)
     return w
 
 
 def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
          visits: dict[int, int] | None = None,
          series: dict[str, dict] | None = None,
-         issue_to_family: dict[int, str] | None = None) -> list[dict]:
+         issue_to_family: dict[int, str] | None = None,
+         delivery: dict[int, float] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits, series, issue_to_family)
+        w = weight(it, prev_genre, visits, series, issue_to_family, delivery)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -885,7 +1009,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     return verdicts
 
 
-def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family):
+def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
+                   delivery=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Deux raisons de remplacer plutot que d annoter :
@@ -914,7 +1039,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family):
             if len(got) >= want or not pool:
                 break
             cand = draw(pool, want - len(got), rng, prev, visits,
-                        series, issue_to_family)
+                        series, issue_to_family, delivery)
             if not cand:
                 break
             nums = [c["number"] for c in cand]
@@ -985,6 +1110,20 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
+            # c.1115 voie 1 (Tell c.1060-L1 reformule ai-01) : pas de PR
+            # couvrante, mais le label `candidate-delivered` peut etre absent
+            # alors que le marqueur `[INFO] candidate-delivered` est present
+            # en commentaire (sweep 05:37Z retracte sur activite). Cout : 1
+            # requete par pick, invariant recent_delivery preserve.
+            if _has_delivered_marker(n):
+                notes[n] = (
+                    f"LIVRE-urn VIA MARQUEUR [INFO] candidate-delivered en "
+                    f"commentaire (label GitHub absent/decay -- sweep "
+                    f"quotidien retracte sur activite post-merge, documentee "
+                    f"dans l'en-tete du workflow advisory). Verifier "
+                    f"firsthand `gh issue view {n} --comments` AVANT de "
+                    f"claimer ; substance deja livree par une autre lane.")
+                p["klass"] = "delivered"
             continue
 
         # Une PR fermee-sans-fusion n'atteste de rien : on l'ecarte ici plutot
@@ -1086,7 +1225,7 @@ CHECK_IN_FLIGHT = {"PENDING", "QUEUED", "IN_PROGRESS", "WAITING", "EXPECTED", ""
 # enfant qui tombe -- corroborer sur leur nom ne prouve jamais une cause
 # commune ("plusieurs PRs echouent cet agregat" != "plusieurs PRs echouent
 # pour la meme cause"). Le nom "Always-on guards" embarque en plus un compte
-# d'organes qui derive ("-- 12 organes, 1 checkout"), donc meme l'identite
+# d'organes qui derive ("-- 13 organes, 1 checkout"), donc meme l'identite
 # nominale n'est pas stable. Le match est donc un PREFIXE pour lui, un nom
 # exact pour "PR gate".
 AGGREGATOR_CHECK_PREFIXES = ("Always-on guards",)
@@ -1108,6 +1247,48 @@ _PR_STATE_FRAGMENT = """
     } } } } } }
   }
 """
+
+
+def print_delivery(sig: dict, boost_max: float) -> None:
+    """Section texte du signal d'age de livraison (#15491 Phase 1).
+
+    Rend la fenetre demandee vs effective, la troncature, et par umbrella
+    l'etat, la date/l'age, le nombre de livraisons et le facteur theorique
+    au plafond de calibration. Une umbrella sans livraison reste TIRABLE :
+    l'annotation route vers le coordinateur (#13906), jamais vers un veto.
+    """
+    if not sig["items"]:
+        return
+    window = ("fenetre {}/{} j".format(sig["window_days_effective"],
+                                       sig["window_days_requested"]))
+    if sig["truncated"]:
+        window += " (TRONQUEE par la limite de fetch)"
+    if sig["corpus_error"]:
+        window += f" -- corpus: {sig['corpus_error']}"
+    print(f"Livraison umbrella ({window}, corpus {sig['corpus_size']} PRs "
+          f"mergees, boost applique x{boost_max:g}) :")
+    order = {DELIVERY_NONE_IN_WINDOW: 0, DELIVERY_DELIVERED: 1,
+             DELIVERY_UNAVAILABLE: 2, DELIVERY_EMPTY_CORPUS: 3}
+    rows = sorted(sig["items"].items(),
+                  key=lambda kv: (order.get(kv[1]["state"], 9),
+                                  -(kv[1]["age_days"] or 0.0)))
+    for num, it in rows[:8]:
+        line = "  #{:<6d} [{:>15s}] ".format(num, it["state"])
+        if it["state"] == DELIVERY_DELIVERED:
+            line += ("derniere {} (age {} j, {} livraison(s))".format(
+                (it["last_delivery"] or "")[:10], it["age_days"],
+                it["deliveries"]))
+        elif it["state"] == DELIVERY_NONE_IN_WINDOW:
+            line += "aucune declaration dans la fenetre"
+        else:
+            line += "mesure indisponible -- NEUTRE, jamais negligence prouvee"
+        line += " -- facteur theorique x{:.2f}".format(it["factor_theoretical"])
+        if it.get("body_route"):
+            line += " -- route: mise a jour body par le coordinateur (#13906)"
+        print(line)
+    if len(rows) > 8:
+        print(f"  (+{len(rows) - 8} autres umbrellas dans le JSON)")
+    print()
 
 
 def _hours_since(iso: str) -> float:
@@ -1407,7 +1588,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     return causes
 
 
-def _is_adjacency_red(body: str) -> bool:
+def _is_adjacency_red(body: str) -> str | bool:
     """Verdict LIGHT-genre adjacency pour le corps d'une PR rouge (#13967).
 
     Pont entre l'organe `scripts/ci/variation_adjacency_guard.py` (verdict
@@ -1417,6 +1598,22 @@ def _is_adjacency_red(body: str) -> bool:
     cause. Enveloppe tolérante : si l'organe est indisponible (import,
     panne), on rend False -- les trois conseils generiques restent le
     fallback sur, jamais un crash de picker.
+
+    #15184 (distinction demandee en review) : la valeur rendue distingue le
+    STATUT EPISTEMIQUE du rouge, pas seulement sa presence --
+      * `"measured"`  : blocking=True -- blocage PROUVE par l'organe sur
+        sequence mergee (fenetre mesuree). Non produit par le picker
+        actuel -- `check(body)` sans `merged_prev` resout toujours
+        prev_source="declared" -- mais le contrat est pinné pour le jour
+        ou un caller lui passera la sequence.
+      * `"declared"`  : unmeasured=True -- conseil fonde sur la
+        DECLARATION du body (predicat LIGHT matche, prev non mesure).
+        C'est le seul cas que le picker voit ; le CI ne ban pas cette
+        donnee (#15184), le picker CONSEILLE seulement.
+      * `False`       : pas d'adjacence evaluable.
+    Les deux premieres valeurs sont truthy : `all(r.get("is_adjacency"))`
+    et l'override `pr["is_adjacency"] = True/False` des callers restent
+    valides sans changement.
     """
     try:
         sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
@@ -1427,10 +1624,14 @@ def _is_adjacency_red(body: str) -> bool:
         verdict = vag.check(body)
     except Exception:  # noqa: BLE001 - idem : organe optionnel, picker robuste
         return False
-    # L'organe est fail-CLOSED : blocking=True <=> LIGHT adjacency reelle
-    # (cf docstring `check`). On conserve `adjacent` pour les diagnostics
-    # futurs (DEEP/MED adjacency = advisory, hors branche specialised).
-    return bool(verdict.get("blocking"))
+    if verdict.get("blocking"):
+        return "measured"
+    if verdict.get("unmeasured"):
+        return "declared"
+    # `adjacent` (DEEP/MED, advisory) reste hors branche specialised : le
+    # contrat fondateur #13967 couvre l'adjacence LIGHT, pas l'advisory
+    # DEEP/MED.
+    return False
 
 
 def _newest_start_hours(stamps) -> float | None:
@@ -2020,10 +2221,34 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         # ne retaguez pas le meme travail ») -- ici on le dit EN CLAIR
         # pour que la lane ne perde pas son cycle a pousser une PR dont
         # la cause est ailleurs.
-        print("Cause determinante : `adjacency` (G-VAR-3, organe "
-              "variation_adjacency_guard). Aucun des trois gestes generiques")
-        print("ne leve ce blocage : la cause n'est pas dans le diff, elle est")
-        print("dans le **genre du grain suivant**. Le remede :")
+        # #15184 (review) : distinguer CONSEIL fonde sur declaration et
+        # BLOCAGE prouve par fenetre mesuree. `_is_adjacency_red` rend le
+        # statut epistemique ("declared" / "measured") ; un override
+        # `is_adjacency=True` pose par un caller ne porte pas de statut --
+        # on ne reclame jamais "mesure/proouve" sans le verdict de l'organe.
+        kinds = [r["is_adjacency"] if isinstance(r.get("is_adjacency"), str)
+                 else "declared"
+                 for r in red if r.get("is_adjacency")]
+        n_measured = sum(1 for k in kinds if k == "measured")
+        if n_measured == len(kinds):
+            print("Cause determinante : `adjacency` MESUREE (G-VAR-3, sequence")
+            print("mergee -- blocage PROUVE par l'organe variation_adjacency_guard).")
+            print("Aucun des trois gestes generiques ne leve ce blocage : la cause")
+            print("n'est pas dans le diff, elle est dans le **genre du grain")
+            print("suivant**. Le remede :")
+        elif n_measured:
+            print(f"Cause determinante : `adjacency` (G-VAR-3) -- {n_measured} PR(s)")
+            print(f"MESUREE(s) (blocage prouve, sequence mergee) + "
+                  f"{len(kinds) - n_measured} DECLAREE(s)")
+            print("(conseil sur donnee non mesuree). Les trois gestes generiques")
+            print("sont invariants au predicat dans les deux cas. Le remede :")
+        else:
+            print("Cause determinante : `adjacency` DECLAREE, NON MESUREE (G-VAR-3")
+            print("advisory -- prev lu dans le body, pas de fenetre mergee consultee")
+            print("par le picker ; le CI ne BAN pas cette donnee depuis #15184, le")
+            print("picker CONSEILLE). Les trois gestes generiques ne changent pas le")
+            print("genre non plus -- la cause n'est pas dans le diff, elle est dans")
+            print("le **genre du grain suivant**. Le remede :")
         print()
         print("  -> Piocher un grain d'UN AUTRE genre (LIGHT/{guard,ledger,")
         print("     docs,readme,test} apres un autre grain du meme genre est")
@@ -2244,11 +2469,20 @@ def print_drought_banner(d: dict, restricted: int, fell_back: bool) -> None:
         print("coordinateur (variation-protocol section 4), ne pas la traverser")
         print("en silence.")
     else:
-        print(f"Le tirage ci-dessous est RESTREINT aux genres CONTENU "
-              f"({restricted} candidats). Ce n'est pas un refus : la lane")
-        print("recoit un grain, et ce grain tient le plancher. Prendre un META")
-        print("de plus avant d'avoir casse la sequence, c'est la monoculture")
-        print("que le mandat interdit.")
+        print(f"Le tirage ci-dessous est RESTREINT ({restricted} candidats) : "
+              f"les genres CONTENU, plus")
+        print("les umbrellas et les items dont le genre n'est qu'un repli de")
+        print("l'inference de titre. Ce n'est pas un refus : la lane recoit un")
+        print("grain, et ce grain tient le plancher. Prendre un META de plus")
+        print("avant d'avoir casse la sequence, c'est la monoculture que le")
+        print("mandat interdit.")
+        print()
+        print("Si le candidat retenu est une UMBRELLA ou porte un genre replie,")
+        print("l'obligation de contenu n'est pas levee -- elle se deplace sur le")
+        print("SOUS-GRAIN : le grain cree dedans doit etre DEEP/MED et porter un")
+        print("genre CONTENU. Une Epic dont le titre ressemble a de la doc peut")
+        print("parfaitement abriter une preuve Lean ; c'est le livrable qui tient")
+        print("le plancher, jamais le titre de l'Epic.")
     print()
     print("Echappatoire : si la secheresse n'est pas reparable par cette lane")
     print("(aucun grain de contenu dans sa capability -- GPU-only, vision-only),")
@@ -2388,6 +2622,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
                     help="delai avant qu'une issue neuve soit consommable "
                          f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--delivery-boost-max", type=float, default=0.0,
+                    help="#15491 Phase 1 : plafond du facteur d'age de derniere "
+                         "livraison des umbrellas (defaut 0 = inactif, kill "
+                         "switch ; activation proposee a 0.5 apres calibration)")
     ap.add_argument("--admit-reason", default=None, metavar="TEXTE",
                     help="passer outre le garde d'admission -- exige une "
                          "justification ECRITE, a reporter sur l'issue")
@@ -2600,6 +2838,28 @@ def main(argv: list[str] | None = None) -> int:
         pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
 
+    # Age de derniere livraison reelle des umbrellas (#15491 Phase 1). Le
+    # fetch repasse par le meme payload cache que fetch_series_visits : hit,
+    # pas de requete gh supplementaire. Fenetre identique a celle de la
+    # saturation, pour que les deux mesures se lisent ensemble.
+    umbrella_numbers = [it["number"] for it in pool if it["klass"] == "umbrella"]
+    delivery_prs, delivery_fetch_err = fetch_merged(
+        DEFAULT_WINDOW_DAYS,
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+        cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+    )
+    delivery_sig = measure_delivery(
+        delivery_prs, umbrella_numbers, now=NOW, days=DEFAULT_WINDOW_DAYS,
+        fetch_error=delivery_fetch_err)
+    delivery_weights = {
+        num: delivery_factor(item["state"], item["age_days"],
+                             delivery_sig["window_days_effective"],
+                             args.delivery_boost_max)
+        for num, item in delivery_sig["items"].items()
+    }
+
     # Admission AVANT les urnes : un grain inadmissible ne doit pas
     # apparaitre dans le tirage, sinon il est sous les yeux quand le
     # refus arrive -- et c'est lui qui gagne (meme raison que le garde
@@ -2677,7 +2937,7 @@ def main(argv: list[str] | None = None) -> int:
         drought = substance_drought(args.lane, grains_hist, args.drought_run,
                                     grains_err)
         if drought["triggered"] and not args.ignore_drought:
-            restricted = {k: [it for it in v if it["genre"] in CONTENU]
+            restricted = {k: [it for it in v if drought_admits(it)]
                           for k, v in by_class.items()}
             # Degradation gracieuse : si la restriction vide les urnes, on rend
             # le tirage NON restreint plutot que rien. Ne rien rendre
@@ -2721,7 +2981,8 @@ def main(argv: list[str] | None = None) -> int:
         else None)
 
     picks, claims, claim_conflicts = draw_unclaimed(
-        by_class, args, rng, visits, series, issue_to_family)
+        by_class, args, rng, visits, series, issue_to_family,
+        delivery=delivery_weights if args.delivery_boost_max > 0 else None)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
@@ -2747,6 +3008,12 @@ def main(argv: list[str] | None = None) -> int:
             "visits_error": visits_err,
             "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
+            "umbrella_delivery": {
+                **delivery_sig,
+                "items": {str(k): v for k, v in delivery_sig["items"].items()},
+                "boost_max_applied": args.delivery_boost_max,
+                "calibration_max": 0.5,
+            },
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
             "substance_drought": drought,
@@ -2840,6 +3107,7 @@ def main(argv: list[str] | None = None) -> int:
                   "en a aucun, d'en declarer un : une zone chaude sans EPIC "
                   "n'a personne de comptable pour la contrepartie.")
             print()
+    print_delivery(delivery_sig, args.delivery_boost_max)
     print(f"Pool ouvert : {len(pool)} issues.")
     print(f"Candidats apres admission/filtres : "
           f"{len(by_class['grain'])} grains "

@@ -159,6 +159,44 @@ _PERSONA_MARKERS_RE = re.compile(
     # le backtick reste EXCLU : `` `[Hermes]` `` est une citation (#13030).
     r"(?m)(?:^|[\s*])\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
 )
+# #14850 — prefixe de lane tierce : voie distincte d'un autre agent du cluster
+# qui pousse sous le meme login partage `jsboige`. Le format canonique est
+# `[machine-po-YYYY:CoursIA-2]` (Tell c.677-L4 body PR HORS worktree +
+# convention owner:workspace du `[CLAIMED]` lane). Le complement facultatif
+# ` (...)` peut suivre. La voie NUЕ par meme login (commentaire ordinaire
+# SANS prefixe) n'a aucune signature distincte et reste indiscernable d'une
+# auto-reponse de l'auteur de la reserve -- c'est exactement le defaut de
+# discrimination que #14850 nomme.
+_CROSS_LANE_LIFT_RE = re.compile(
+    # #14850 — la lane est en-tete de paragraphe (apres decoration `* ` ou
+    # `# ` admise). Caracteres autorises : lettres, chiffres, tirets, points,
+    # underscores, deux-points (format `owner:workspace`). Refuse les crochets
+    # ULTERIEURS (` > [lane]`) par l'ancre `^` + decoration de debut de ligne.
+    r"(?m)^[#>*+\-\s]*\[\s*[A-Za-z][\w.\-]*:\s*[A-Za-z][\w.\-]*(?:\s+[^\]]+)?\]"
+)
+# #14850 — prefixe de ROLE GENERIQUE : `[ai-01]`, `[po-2026]`, etc. Le format
+# est `[identifiant]` (un seul token, sans `:` ni whitespace), pose en tete
+# de paragraphe apres decoration `* ` ou `# `. Distinct des personas
+# (Hermes/NanoClaw, L156) et des lanes (owner:workspace, L170) : un prefixe
+# role comme `[ai-01]` est l'identite de l'agent qui pousse sous un login
+# partage (typiquement `jsboige` ou `clusterManager-Myia`). Le scope d'un
+# tel lift est SA voix, pas la voie nue -- sans le reconnaitre, le filet
+# accepte une levee `[ai-01] Je leve ma propre reserve` par `jsboige` comme
+# levant une reserve user voix nue de `jsboige` (incident fondateur #14795,
+# 21:11:29Z).
+#
+# Les TAGS DE PROTOCOLE (`[DONE]`, `[INFO]`, `[WARN]`, `[ASK]`, `[REPLY]`,
+# `[ACK]`, `[TASK]`, `[BLOCKED]`, `[CLAIMED]`, `[DISPATCH→inbox]`,
+# `[ESCALATION]`, ...) ne sont PAS des prefixes de role : ils qualifient
+# le TYPE du commentaire, pas l'emetteur. Un `[DONE] les 2 nits sont
+# adresses, commit abc123.` reste voie nue de l'auteur -- le tag est
+# un attribut de workflow, pas une identite d'agent.
+_ROLE_PREFIX_RE = re.compile(
+    r"(?m)^[#>*+\-\s]*\[\s*(?!Hermes\b|NanoClaw\b|Hermes self-bot\b|OVERRIDE\b"
+    r"|DONE\b|INFO\b|WARN\b|ERROR\b|ASK\b|REPLY\b|ACK\b|TASK\b|BLOCKED\b"
+    r"|CLAIMED\b|ESCALATION\b|PROPOSAL\b|GRAIN\b)"
+    r"[A-Za-z][\w.\-]*\s*\]"
+)
 # #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
 # prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
 # des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
@@ -487,6 +525,40 @@ LIFT_MARKERS = (
     #     « ERASME »/« rasoir » : word-bound par `_WORD_BOUNDED_LIFT_RE`.
     "rien à signaler", "rien à traiter", "c'est traité",
     "RAS",
+    # #15468 — verbes de DISSIPATION : la voie 1 (commenter pour dissiper)
+    # etait morte par construction — un commentaire worker-self qui nomme
+    # l'etat qu'il dissipe (« 4 points dissipés », « les contrats dissipés »)
+    # etait reclasse nouvelle reserve car « dissipé » ne levait rien.
+    # « dissipé » (cle miroir `_unaccent` = « dissipe ») couvre par sous-
+    # chaine la famille entiere : dissipé(e)(s), dissipe, dissipent,
+    # dissipation. La negation directe (« n'est pas dissipé ») et la
+    # narration nominale (« une dissipation ») restent exclues par les
+    # gardes existantes (_lift_is_negated / _lift_is_narrated).
+    "dissipé",
+    # #15483 (extension c.418) — INFINITIF et PARTICIPE PRESENT ajouter pour
+    # couvrir les constructions NON closes (« reste à dissiper », « faut
+    # dissiper », « devant dissiper », « en dissipant »). La garde
+    # `_dissipation_is_pending` distingue INFINITIF (PENDING) vs PASSE
+    # COMPOSE (LEVE) — ce qui impose que les deux formes soient
+    # interceptées au meme niveau du registre.
+    "dissiper", "dissipant", "dissipée", "dissipe", "dissipées", "dissipés",
+    # #15468 — locution de dissipation : « ce nit ne concerne plus le
+    # head ». Le token « plus » vit DANS le marqueur (hors des fenetres de
+    # negation de _lift_is_negated, qui ne regardent pas a l'interieur du
+    # match) — la construction est une dissipation positive, pas une
+    # negation de levee.
+    "ne concerne plus",
+    # #15483 (extension c.418) — intensification FR : « ne concerne plus rien »,
+    # « ne concerne plus personne », « ne concerne plus aucun point ».
+    # L'intensifieur (`rien`/`personne`/`aucun`) est l'OBJET de la negation
+    # grammaticale (« plus rien » = « rien de plus »), pas l'inverse — c'est
+    # la dissipation la plus FORTE possible, et `_lift_is_negated` la
+    # rejetait a tort via le token `rien` dans `_LIFT_NEGATION_TOKENS`.
+    # La garde `_lift_is_intensified_marker_negated` neutralise l'effet de
+    # negation sur le marqueur `ne concerne plus` UNIQUEMENT quand
+    # l'intensifieur est en TETE de fenetre AFTER (sous-clause composee).
+    "ne concerne plus rien", "ne concerne plus personne",
+    "ne concerne plus aucun point", "ne concerne plus aucune reserve",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -1941,7 +2013,160 @@ def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
     return False
 
 
-# #14564 — marqueurs LIFT reconnus par MOTIF plutot que par sous-chaine.
+# #15483 (extension cycle c.418) — formes NON-ACQUISES du verbe de dissipation.
+# Le registre `_LIFT_MARKERS` matche la sous-chaine `dissip[eé]` (_unaccent
+# ramene tout a `dissipe`) sans distinguer le PASSE COMPOSE (« les 4 points
+# dissipés », levee reelle) du FUTUR/INFINITIF/OBLIGATION (« ce point reste à
+# dissiper », « il faut dissiper », « sera dissipé au prochain push »,
+# « doit être dissipé ») — un hit dans une construction NON close le validait
+# quand même comme levee, et un commentaire mixte
+# (« les 2 contrats sont dissipés, 1 point reste à dissiper ») levait toute
+# la review au lieu de garder la reservation sur le vivant.
+#
+# Discrimination : on regarde les 25 chars AVANT et 10 chars APRES le hit,
+# et on cherche un motif de PENDING obligatoire/futur/passif-devoir :
+#   * infinitif futur     : « reste à dissiper », « faut dissiper »
+#   * futur simple        : « sera dissipé », « sera dissipe »
+#   * obligation passive  : « doit être dissipé », « doit etre dissipe »
+#   * futur compose        : « sera dissipé au prochain push »
+#   * infinitif introduit  : « a dissiper », « a dissipé » seul apres verbe de
+#                            futur ("aura à dissiper »)
+# La fenetre est bornee à 25+10 chars : au-dela, c'est une autre phrase, un
+# autre commentaire, ou une narration sans rapport — frontiere documentee dans
+# l'instance fondatrice #15483 (CHANGES_REQUESTED ai-01 sur `071c5763`,
+# clusterManager-Myia « COMMENTED » + ai-01 « le nouveau marqueur sous-chaine
+# `dissipé` blanchit des réserves encore ouvertes : ce point reste à dissiper,
+# il faut dissiper, sera dissipé au prochain push et doit être dissipé »).
+_DISSPATION_PENDING_PATTERNS = re.compile(
+    r"(?:"  # groupe non capturant : alternatives en OU
+    r"\breste\s+(?:à|a)\s+dissip"     # « reste à dissiper » / « reste a dissiper »
+    r"|\bfaut\s+dissip"               # « il faut dissiper »
+    r"|\bsera\s+dissip"               # « sera dissipé »
+    r"|\bdoit\s+(?:etre|être)\s+dissip"  # « doit etre dissipé »
+    r"|\bdevra\s+(?:etre|être)\s+dissip"  # « devra etre dissipé »
+    r"|\b(?:a|à)\s+dissiper\b"        # « à dissiper »
+    r"|\bsera\s+(?:dissipé|dissipe)"  # variante passe-compose futur
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _dissipation_is_pending(window_before: str, window_after: str, marker: str) -> bool:
+    """Le hit `dissip[eé]` vit-il dans une construction NON-acquise ?
+
+    Renvoie True si une forme infinitif/futur/obligation est detectee
+    dans la fenetre etroite [max(0, i-25):i_end+10] OU si le pattern matche
+    en JUXTAPOSANT la fin de window_before avec le debut de marker (cas
+    « dissipe » dans `reste a dissiper` : `_unaccent('dissipe')` est
+    sous-chaine de `_unaccent('dissiper')`, mais le pattern regarde apres la
+    fin du hit). On elargit la fenetre avec la racine du marker pour
+    couvrir ce cas (la sous-chaine `dissip` est AJOUTEE comme prefixe de
+    la sous-clause).
+
+    Residuel assume (documente dans #15483) :
+      * negation interne au compose « pas encore dissipé » est deja couverte
+        par `_lift_is_negated` ; cette garde ne RE-couvre pas la negation,
+        elle ajoute UNIQUEMENT les formes de PENDING.
+      * un hit `dissipe` precede d'un nom abstrait sans verbe
+        (« l'etat dissipe », « le risque dissipe ») est un PARTICIPE
+        ISOLE = levee reelle. Le regex exige un VERBE DE PENDING explicite
+        (« reste/faut/sera/doit », « à dissiper »), donc un participe nu
+        passe.
+      * un hit `dissipe` au milieu d'une negation externe
+        (« ils ne sont pas dissipe, d'autres oui ») matche deja le token
+        `pas` dans `_lift_is_negated` — pas de double-traitement.
+    """
+    # La racine commune du marqueur dissipation (`dissip` après unaccent)
+    # est ajoutee comme JUXTAPOSITION entre window_before et window_after.
+    # Ça permet au pattern `reste\s+(?:à|a)\s+dissip` de matcher même si le
+    # hit `_unaccent(marker)` est `dissipe` (sous-chaine de `dissiper`) :
+    # sinon le `_unaccent('dissipe').find('reste a dissip')` rate car le
+    # pattern regarde apres la FIN du hit, et le `r` final de `dissiper`
+    # (« consomme » par le hit long) est APRES la frontiere du hit court.
+    root = "dissip"
+    combined = window_before + root + window_after
+    return bool(_DISSPATION_PENDING_PATTERNS.search(combined))
+
+
+# #15483 (extension cycle c.418) — faux negatif de la locution « ne concerne plus ».
+# Le token `rien` est dans `_LIFT_NEGATION_TOKENS` (couvre « ne plus rien »
+# ordinaire), mais dans la LOCUTION « ne concerne plus rien » c'est
+# l'INTENSIFICATION de la dissipation (« ne concerne plus rien du tout »), pas
+# l'annulation. Sans exception, la dissipation totale la plus forte possible
+# (« ce nit ne concerne plus rien ») etait classee BOT-CONCERN.
+#
+# Discrimination : si le marker LIFT matchant COMMENCE par `ne concerne plus`
+# ET le token `_LIFT_NEGATION_TOKENS` qui suit est l'un des 3 « INTENSIFIEURS
+# AUTORISES » (`rien`, `personne`, `aucun`, `aucune`) EN DEBUT de segment
+# consecutif (pas separe par une frontiere de phrase) ET n'est PAS SUIVI
+# D'UN VERBE ACTIF, on neutralise l'effet de negation — la sous-clause
+# `"plus rien"` est un objet compose, pas une negation applicative.
+_INTENSIFIED_LIFT_NEG_EXCEPTIONS = frozenset({"rien", "personne", "aucun", "aucune"})
+
+# Mots-outils et verbes actifs : un intensifieur suivi d'un de ces mots
+# N'EST PAS une intensification (le mot-outil ou le verbe reprend la
+# portee propositionnelle et `rien` redevient negation applicative,
+# cf. exemple fondateur « ne concerne plus rien faire à la CI »).
+_INTENSIFIED_LIFT_FOLLOWING_BLOCKERS = frozenset({
+    "a", "à", "de", "du", "des", "la", "le", "les",
+    "l'", "l",  # apostrophe
+    "que", "qui", "quoi", "dont", "ou", "où",
+    # verbes actifs courants en FR
+    "faire", "va", "aller", "peut", "doit", "faut", "sera",
+    "reste", "reste", "permet", "permettre",
+})
+
+
+def _lift_is_intensified_marker_negated(window_before: str, window_after: str) -> bool:
+    """Vrai si la negation post-marker tombe dans la sous-clause
+    INTENSIFICATRICE de la locution dissipation (« ne concerne plus rien »).
+
+    Heuristique : on cherche un token `_LIFT_NEGATION_TOKENS` au DEBUT de la
+    fenetre AFTER (apres strip des separateurs), restreint aux 4 intensifieurs
+    autorises, et exige l'absence de mot-outil ou verbe actif IMMEDIAT
+    apres. Si l'intensifieur est seul (juste apres `plus`, sans reprise
+    propositionnelle), c'est une intensification — pas une negation
+    applicative.
+
+    Residuel assume (documente dans #15483) : un commentaire comme
+    « ne concerne plus rien faire à la CI » (verbe actif `rien faire`)
+    n'est PAS une intensification ; il peut legitimer BOT-CONCERN. Le
+    predicat exige un intensifieur isole (juste apres `plus`, sans mot-
+    outil ni verbe entre les deux), donc « rien faire » ne le neutralise
+    pas — `rien` est suivi de `faire` qui est dans
+    `_INTENSIFIED_LIFT_FOLLOWING_BLOCKERS`.
+    """
+    head = _unaccent(window_after).lower().lstrip(" \t\n.,;:!?")
+    if not head:
+        return False
+    # Le premier token significatif de la fenetre AFTER est-il un intensifieur ?
+    first_tok = head.split(" ", 1)[0].rstrip("'")
+    if first_tok not in _INTENSIFIED_LIFT_NEG_EXCEPTIONS:
+        return False
+    # Le token SUIVANT (apres l'intensifieur) est-il un mot-outil ou un
+    # verbe actif ? Si oui, l'intensifieur n'EST PAS isolé → PAS une
+    # intensification (le mot-outil/verbe reprend la portee propositionnelle).
+    parts = head.split()
+    if len(parts) >= 2 and parts[1].rstrip("'") in _INTENSIFIED_LIFT_FOLLOWING_BLOCKERS:
+        return False
+    return True
+
+
+def _lift_is_intensified_marker_negated_marker_active(window_after: str) -> bool:
+    """Variante pour marker `ne concerne plus rien` (intensifieur INCLUS) :
+    le premier token APRES le marker est-il un mot-outil / verbe actif ?
+    Si oui, l'intensifieur n'est PAS en fin de phrase → PAS une
+    intensification (le mot-outil/verbe reprend la portee).
+
+    Cas fondateur : « ne concerne plus rien faire à la CI » — marker
+    `ne concerne plus rien` (inclu), suivi de `faire à la CI`. `faire`
+    est dans `_INTENSIFIED_LIFT_FOLLOWING_BLOCKERS` → return False.
+    """
+    head = _unaccent(window_after).lower().lstrip(" \t\n.,;:!?")
+    if not head:
+        return False
+    first_tok = head.split(" ", 1)[0].rstrip("'")
+    return first_tok in _INTENSIFIED_LIFT_FOLLOWING_BLOCKERS
 # La cle est le marqueur minuscule/desaccentue (`_unaccent(marker).lower()`),
 # comme `_WORD_BOUNDED_MARKERS` cote CONCERN. Seul « RAS » y est : la
 # sous-chaine nue vit aussi dans « ERASME », « rasoir », « CRAS » — un mot
@@ -1970,6 +2195,15 @@ def _live_lift_positions(normalised: str) -> list[int]:
     lieu, alors que le token `levee` matchait sans prise en compte de
     la negation. Le predicat `_lift_is_negated` regarde 15 chars avant
     ET apres le marker.
+    #15483 — extension dissipation : un seul hit `dissip[eé]` (ou sa
+    famille infinitive) dans une construction NON close (« reste à
+    dissiper », « il faut dissiper », « sera dissipé », « doit être
+    dissipé ») doit EMPECHER toute levée : les constructions infinies
+    sont sémantiquement incompatibles avec une LIFT réelle (réserve
+    encore ouverte). On post-filtre donc : si, dans une fenêtre large
+    autour de la zone des hits dissipation, au moins un hit tombe dans
+    une construction PENDING, on invalide TOUS les hits dissipation de
+    cette zone — la levée n'est pas acquise.
     """
     out: list[int] = []
     for marker in LIFT_MARKERS:
@@ -1986,11 +2220,139 @@ def _live_lift_positions(normalised: str) -> list[int]:
         for i, i_end in hits:
             window_before = normalised[max(0, i - 30):i]
             window_after = normalised[i_end:i_end + 15]
+            # #15483 — fenetre etendue pour la garde de PENDING dissipation :
+            # les constructions « reste à dissiper », « il faut dissiper »,
+            # « sera dissipé », « doit être dissipé » peuvent avoir leurs
+            # verbes de PENDING jusqu'à 25 chars avant le hit `dissip[eé]`.
+            # La fenetre `_live_lift_positions` reste à 30/15 par defaut (les
+            # autres families de markers n'en profitent pas) ; on elargit
+            # localement juste pour la garde `_dissipation_is_pending`.
+            window_before_25 = normalised[max(0, i - 25):i]
+            window_after_10 = normalised[i_end:i_end + 10]
+            dissip_is_pending = m.startswith("dissip") and _dissipation_is_pending(
+                window_before_25, window_after_10, m
+            )
+            # #15483 — extensions cycle c.418 — locution intensifiee
+            # `ne concerne plus [rien|personne|...]` : le predicat couvre
+            # 2 cas. (1) marker `ne concerne plus` suivi de l'intensifieur
+            # ISOLE → intensification (positif). (2) marker `ne concerne
+            # plus rien` deja present dans LIFT_MARKERS mais suivi d'un
+            # VERBE ACTIF (`rien faire`, `rien a faire`) → PAS une
+            # intensification (le verbe reprend la portee). Le helper
+            # couvre les 2 : pour le second, le `rien` n'est PAS en tete
+            # de fenetre after (il est DANS le marker), donc le predicat
+            # echoue ; on ajoute un check `marker.endswith(intensif)` +
+            # verbe actif en tete apres.
+            intensified_marker = (
+                m.startswith("ne concerne plus") and _lift_is_intensified_marker_negated(
+                    window_before, window_after
+                )
+            ) or (
+                m in ("ne concerne plus rien",)
+                and _lift_is_intensified_marker_negated_marker_active(
+                    window_after
+                )
+            )
+            # #15483 — `_dissipation_is_pending` COURT-CIRCUITE les autres
+            # gardes (narrated / arrow / negated) : le predicat detecte une
+            # CONSTRUCTION VERBALE NON CLOSE (« reste a dissiper », « faut
+            # dissiper », « sera dissipé », « doit etre dissipé ») qui prime
+            # sur la classification narrative generique (`_lift_is_narrated`
+            # classifie a tort les verbes « reste »/`faut` precedes de
+            # `a` comme narrés via `LIFT_NARRATION_CITERS = ('a',)`).
+            # Sans ce court-circuit, un commentaire « Le concern reste a
+            # dissiper » etait rejete comme narré AVANT d'evaluer le
+            # PENDING — la garde narrative GENERIQUE ne peut distinguer
+            # « une dissipation » (narration) de « le concern reste a
+            # dissiper » (PENDING). Discrimination lexicale forte via
+            # `_dissipation_is_pending` doit primer.
+            if dissip_is_pending:
+                continue
             if not _lift_is_narrated(window_before) \
                     and not _arrow_precedes(normalised, i) \
-                    and not _lift_is_negated(window_before, window_after):
+                    and not _lift_is_negated(window_before, window_after) \
+                    and not intensified_marker:
                 out.append(i)
+    # #15483 — post-filtrage MIXTE. Si le body contient AU MOINS UN hit
+    # dissipation en construction PENDING (infinitif/futur), TOUS les
+    # hits dissipation de la zone large (±100 chars autour de la fenetre
+    # de PENDING) sont invalides. Cas aggravant fondateur : « 2 contrats
+    # sont dissipés, 1 point reste à dissiper » — AVANT cette garde, les
+    # 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignore → la
+    # review complete classee `None` alors qu'un point VIVAIT.
+    out = _invalidate_dissipation_in_pending_zone(normalised, out)
     return out
+
+
+def _invalidate_dissipation_in_pending_zone(normalised: str, positions: list[int]) -> list[int]:
+    """Invalide les hits dissipation acquis dans une PHRASE contenant un PENDING.
+
+    Strategie : on cherche TOUS les hits VERBAUX PENDING (racine
+    dissipation + verbe de pending dans la fenetre 25 chars avant). Le
+    nom « dissipation » SEUL (sans verbe) n'est PAS un PENDING — c'est
+    une narration nominale deja couverte par `_lift_is_narrated` /
+    `_lift_is_intensified_marker_negated`. On isole donc les PENDING par
+    la MEME garde `_dissipation_is_pending` appliquee a chaque hit de
+    la racine dissipation.
+
+    Zone d'invalidation = de la frontiere PHRASE precedente (`.`, `!`,
+    `?`, `\n`, `**`) au prochain PENDING — c'est la « phrase logique ».
+    Un PENDING dans une AUTRE phrase (séparée par un terminateur) n'invalide
+    PAS les hits acquis de la premiere.
+
+    Cas mixtes documentes :
+      * « 2 contrats dissipés, MAIS le point 3 reste a dissiper » → meme
+        phrase logique (« , » n'est PAS terminateur) → invalide les 2 hits
+        « dissipés » → LIFT None → pas de levee.
+      * « les 4 points dissipés ... en attendant le push qui doit
+        dissiper X » → les 2 dans la meme phrase si pas de point intermediaire.
+      * « les 4 points dissipés. Le push qui doit dissiper X suit. » →
+        2 phrases distinctes (point separe) → les 4 restent acquis,
+        la dissipation de la premiere est OK ; le PENDING de la seconde
+        ouvre un nouveau concern à dissiper (mais ne retroagit pas).
+
+    Terminateurs reconnus : `.`, `!`, `?`, `\n`, `\r`, `**`, `…`.
+    """
+    if not positions:
+        return positions
+    # PENDING positions dans le body.
+    pending_positions: list[int] = []
+    dissip_roots = ("dissipe", "dissipant", "dissipee", "dissipes", "dissipees")
+    for root in dissip_roots:
+        start = 0
+        while True:
+            j = normalised.find(root, start)
+            if j == -1:
+                break
+            j_end = j + len(root)
+            window_before_25 = normalised[max(0, j - 25):j]
+            window_after_10 = normalised[j_end:j_end + 10]
+            if _dissipation_is_pending(window_before_25, window_after_10, root):
+                pending_positions.append(j)
+            start = j + 1
+    if not pending_positions:
+        return positions
+    # Pour chaque PENDING, calculer la frontiere PHRASE precedente (le
+    # dernier terminateur AVANT la position) puis invalider les hits acquis
+    # entre cette frontiere et la position du PENDING (inclus).
+    _TERMINATORS = (".", "!", "?", "\n", "\r", "**")
+    new_positions: list[int] = []
+    for pos in positions:
+        # La frontiere de phrase pour ce hit = la position max des
+        # terminateurs AVANT pos. Si aucun terminateur, c'est 0
+        # (debut du body).
+        prev_terminator = -1
+        for term in _TERMINATORS:
+            t = normalised.rfind(term, 0, pos)
+            if t > prev_terminator:
+                prev_terminator = t
+        # zone_start = position juste après le terminateur (ou 0)
+        zone_start = prev_terminator + 1
+        # Si un PENDING vit dans la zone [zone_start, pos], invalider.
+        blocked = any(zone_start <= pp <= pos + 200 for pp in pending_positions)
+        if not blocked:
+            new_positions.append(pos)
+    return new_positions
 
 
 def has_live_lift(body: str) -> bool:
@@ -2269,6 +2631,90 @@ _COORDINATOR_INJUNCTION_RE = re.compile(
 _COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
     r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
 )
+# #15772 -- la negation LOCALE d'une injonction structurelle ne couvre pas le
+# cas ou plusieurs occurrences du radical vivent dans le meme body, et ou
+# seule l'une est prefixede d'une negation. Avant : le predicat etait GLOBAL
+# (`_COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised)`) -- un seul
+# `pas de hold` dans le body suffisait a neutraliser TOUTES les injonctions,
+# y compris une 2e occurrence non-negatee (cas fondateur : commentaire
+# `11:27:40Z` de #15748 -- « NE PAS ATTENDRE -- enchainer un autre grain ;
+# c'est la candidate qui attend, pas la lane » -- le 2e `attend` est
+# descriptif, sans negation, et fabrique un faux positif BOT-CONCERN).
+#
+# Le correctif est **par occurrence** : pour chaque match de
+# `_COORDINATOR_INJUNCTION_RE`, regarder si la fenetre gauche bornee (meme
+# proposition) contient une negation eligible. Si TOUS les matches sont
+# neutralises, pas d'injonction. Sinon, l'injonction tient.
+#
+# Jeu de negations retenu (cf acceptance #15772 point 4 -- justifie par ses
+# FAUX NEGATIFS, pas par ses hits, l.lecon du motif « code-only » qui
+# sous-comptait en silence, `anti-regression.md`) :
+#   - `ne pas`        : negation classique deux-mots, capture le fondateur
+#   - `n' ... pas`    : elision « n'est pas », « n'a pas » -- la negation
+#                       peut etre separee du verbe par un auxiliaire
+#   - `sans`          : « sans attendre », « sans merger »
+#   - `jamais`        : « jamais d'attente », « jamais de hold »
+#   - `pas de`        : « pas de hold », « pas d'attente » (forme deja couverte
+#                       par l'ancienne liste, preservee par defaut)
+#   - `inutile de`    : « inutile d'attendre » (verdict d'inutilite = anti-injonction)
+#   - `aucune raison de` / `aucun besoin de` : verdict de non-necessite
+#   - `non`           : « non bloquant », « non attente » -- glyphe, pas prose
+#
+# Faux negatifs connus et ACCEPTES (acceptance #15772 point 4) : la liste
+# est JUSTIFIEE par les formes qu'elle rate -- et chaque ratee est documentee
+# ici pour qu'une PR de suivi puisse l'elargir sans nouvelle investigation.
+#   - `n'<mot>` sans `pas` (elision sans auxiliaire, rare en francais courant)
+#   - `ni ... ni ...` (rare, et la seconde negation est deja couverte)
+#   - `point d'attente`, `aucunement`, `nullement` (formes savantes rares)
+# Negations qui s'appliquent au MOT-VERBE dans la proposition (le verbe
+# d'injonction peut etre a la frontiere droite de la proposition,
+# c.-a-d. JUSTE devant le match INJ). Ces negations sont cherchees dans
+# la fenetre gauche de chaque match INJ (cf `_is_injunction_match_negated`).
+_INJUNCTION_NEGATION_LEFT_RE = re.compile(
+    r"(?i)(?:"
+    r"\bne\s+pas\b|"
+    r"\bn['’]\s*(?:est|aie|ai|avais|avons|avez|aura|aurai|fut|fut|fusse)\s+pas\b|"
+    r"\bsans\b|"
+    r"\bjamais\b|"
+    r"\bpas\s+de\b|"
+    r"\binutile\s+de\b|"
+    r"\binutiles?\s+d['’]\b|"
+    r"\baucune?\s+raison\s+de\b|"
+    r"\b(?:aucun|aucune)\s+besoin\s+de\b"
+    r")",
+)
+# Negations COLLEES au token d'injonction lui-meme : « aucun hold »,
+# « aucune attente », « non bloquant ». Ces negations sont par construction
+# deja collees au mot qu'elles neguent -- le predicat par-occurrence les
+# cherche sur la portion `match + mot gauche immediat` (4 chars avant le
+# match INJ, pour tolerer une apostrophe comme dans « aucun·e attente »).
+# On ne peut pas les chercher dans la fenetre gauche classique parce
+# que le match INJ couvre le token (`hold`, `attente`, etc.), et chercher
+# `aucun hold` dans la fenetre gauche RATERAIT le cas fondateur de #13598
+# (`« Il n'y a aucun hold sur cette PR. »` -- la fenetre gauche de `hold`
+# est `« Il n'y a aucun »`, qui ne contient pas `hold`).
+_INJUNCTION_NEGATION_PREFIXED_RE = re.compile(
+    r"(?i)\b(?:"
+    r"(?:aucun|aucune|aucuns|aucunes)\s+(?:hold|wait|bloque|attend|attente|attendre|stop|arr[êe]t)\b|"
+    r"non\s+(?:bloquant|attend|attente|attendre|hold|wait|stop|merge|merger|fusionner)\b"
+    r")",
+)
+# Fenetre gauche en chars : une negation de la liste vit dans la meme
+# PROPOSITION que l'injonction qu'elle neutralise. Une proposition va du
+# dernier separateur fort (`.`, `!`, `?`, `:`, `\n`, debut de body) au
+# separateur suivant. 256 chars couvrent largement les phrases courtes
+# du registre coordinateur, avec une marge de securite raisonnable.
+# Au-dela, on est dans une proposition distincte, et la negation n'y
+# neutralise plus l'injonction locale.
+#
+# Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+# minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+# candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+# `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+# d'ouverture et le `, pas la lane`), et la negation doit neutraliser
+# l'injonction descriptive. Une fenetre courte (48 chars) ratait ce cas
+# parce que la negation etait a plus de 48 chars du 2e `attend`.
+_INJUNCTION_NEGATION_WINDOW_CHARS = 256
 # #13912 -- le mot `hold` en MENTION NOMINALE d'un hold tenu par un tiers n'est
 # pas une EMISSION. La voie #13598 n'attrape ce cas qu'a demi : le lookahead
 # `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))` ecarte les NOMS DE
@@ -2336,6 +2782,87 @@ def _hold_match_is_emission(body: str) -> bool:
     return False
 
 
+# Separateurs de proposition : on utilise UNIQUEMENT les separateurs FORTS
+# (`.`, `!`, `?`, double `\n`). Les separateurs faibles (`:`, `;`, simple `\n`)
+# ne coupent pas une phrase logique -- le fondateur verbatim de #15748 inclut
+# un `\n` au milieu d'une meme proposition (« c'est la\ncandidate qui attend »)
+# que traiter comme un saut de proposition ferait passer a cote du fix.
+# Les separateurs faibles (`:`, `;`) sont des liasons intra-phrase.
+_PROPOSITION_SEPARATORS_RE = re.compile(r"[.!?]|\n\n")
+
+
+def _proposition_start(normalised: str, pos: int) -> int:
+    """#15772 : index du debut de la proposition qui contient `pos`.
+
+    Une proposition va du dernier separateur fort (`.`, `!`, `?`, `:`, `\\n`,
+    debut de body) au separateur suivant. Renvoie 0 si aucun separateur
+    precedent n'existe dans la fenetre `_INJUNCTION_NEGATION_WINDOW_CHARS`.
+    """
+    window_start = max(0, pos - _INJUNCTION_NEGATION_WINDOW_CHARS)
+    head = normalised[window_start:pos]
+    seps = list(_PROPOSITION_SEPARATORS_RE.finditer(head))
+    if not seps:
+        return window_start
+    last_sep_end = seps[-1].end()
+    return window_start + last_sep_end
+
+
+def _is_injunction_match_negated(normalised: str, span: tuple[int, int]) -> bool:
+    """#15772 : l'occurrence d'injonction a `span` est-elle neutralisee par
+    une negation LOCALE dans la MEME PROPOSITION ?
+
+    Discriminant : la negation doit etre dans la meme proposition que
+    l'injonction (entre le dernier separateur fort et l'injonction). Une
+    negation dans une proposition PRECEDENTE (separee par `.` / `!` / `?` /
+    `:` / `\\n`) ne neutralise PAS l'injonction de la proposition courante.
+
+    Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+    minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+    candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+    `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+    d'ouverture et le `, pas la lane`), et la negation neutralise les
+    deux occurrences d'injonction de la phrase.
+
+    Anti-regression : « NE PAS ATTENDRE que la CI verdisse. Plus tard,
+    HOLD cette PR attend le grain. » -- `NE PAS ATTENDRE` vit dans la
+    proposition 1, le HOLD reel + `attend` dans la proposition 2 ; les
+    separateurs (`.` puis `\\n\\n`) coupent la portee de la negation.
+    """
+    start = span[0]
+    prop_start = _proposition_start(normalised, start)
+    proposition = normalised[prop_start:start]
+    # 1. Negations LOCALE-LEFT (chercher dans la fenetre gauche de la proposition)
+    if _INJUNCTION_NEGATION_LEFT_RE.search(proposition):
+        return True
+    # 2. Negations COLLEES au token d'injonction (chercher `match + 4 chars
+    # gauche` -- le prefixe `aucun`/`aucune` peut etre 4 chars avant le match
+    # INJ). Si le token INJ est precede de `aucun ` ou `aucune ` ou `non `
+    # dans cette fenetre courte, l'occurrence est neutralisee.
+    short_left_window = max(0, start - 12)
+    short_window = normalised[short_left_window:start + 20]
+    if _INJUNCTION_NEGATION_PREFIXED_RE.search(short_window):
+        return True
+    return False
+
+
+def _all_injunctions_negated(normalised: str) -> bool:
+    """#15772 : TOUTES les occurrences d'injonction structurelle sont-elles
+    neutralisees par une negation locale ?
+
+    Renvoie True si le body ne porte aucune injonction (defaut), OU si
+    chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE` est
+    neutralisee par une negation LOCALE (cf `_is_injunction_match_negated`).
+
+    Substitue l'ancien predicat GLOBAL `_COORDINATOR_INJUNCTION_NEGATED_RE.
+    search(normalised)`, qui ratait le cas fondateur de #15772 (body avec
+    une negation + une occurrence descriptive non-negatee).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return True
+    return all(_is_injunction_match_negated(normalised, m.span()) for m in matches)
+
+
 def _coordinator_emission_informal(body: str) -> bool:
     """#13598 : le coordinateur EMET-il un hold en francais courant ?
 
@@ -2344,7 +2871,7 @@ def _coordinator_emission_informal(body: str) -> bool:
     un ARBITRAGE (OVERRIDE pose). Cible : 1 auteur (LIFT_OVERRIDE_LOGINS).
     """
     normalised = _unaccent(body)
-    if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+    if _all_injunctions_negated(normalised):
         return False
     # #13912 -- sur le mot `hold`, demasquer les MENTIONS NOMINALES d'un hold
     # tiers (cf review ai-01 sur #13706 : « moteur sous hold user (#10038) »).
@@ -2580,7 +3107,10 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
     Une phrase de l'auteur de la PR ne leve pas la reserve d'un tiers
     (voie 1 close pour lui, #11145), mais un report nomme avant merge est
     un geste delibere que B.0 credite — l'auteur de la PR est explicitement
-    ouvert comme nommeur (borne #13563).
+    ouvert comme nommeur (borne #13563). #14705 elargit au coordinateur
+    (``LIFT_OVERRIDE_LOGINS``) : B.0 est son gate, et un report se falsifie
+    en n'ouvrant pas l'issue — ce que les conditions 1-6 verifient deja —
+    pas en se declarant.
 
     `issue_info=None` coupe la voie — `analyse()` reste pur pour les tests
     (aucun appel reseau n'y est tolere). Retourne des tuples
@@ -2704,15 +3234,20 @@ def _message_refs_pr(message: str, pr_refs: set[str]) -> bool:
     return bool(cited & pr_refs)
 
 
-def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
+def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
     """Resoudre cote serveur les SHAs cites mais absents des commits de la PR.
 
     S'execute UNIQUEMENT dans le chemin `gate` (reseau) : `analyse` reste
-    pur et lit le resultat via `data["_absent_sha_messages"]`. Sans entree
-    resolue, `analyse` reste en mode avertissement -- l'audit retro, qui
-    n'appelle jamais ceci, ne peut donc pas produire de faux blocage.
-    Capped a `cap` appels : plus de 5 SHAs absents cites sur une seule PR
-    est extraordinaire, et chaque appel paie un aller-retour API.
+    pur et lit le resultat via `data["_absent_sha_messages"]` (le message)
+    et `data["_absent_sha_trees"]` (l'arbre du commit rembobine, #15556).
+    Sans entree resolue, `analyse` reste en mode avertissement -- l'audit
+    retro, qui n'appelle jamais ceci, ne peut donc pas produire de faux
+    blocage. Capped a `cap` appels : plus de 5 SHAs absents cites sur une
+    seule PR est extraordinaire, et chaque appel paie un aller-retour API.
+
+    #15556 : le MEME appel porte deja l'arbre du commit (`commit.tree.sha`)
+    -- le capter ici evite un second aller-retour par SHA au moment de
+    distinguer push muet (arbre identique) et push de contenu.
     """
     oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
     oids.discard("")
@@ -2722,16 +3257,86 @@ def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
     for c in (data.get("comments") or []) + (data.get("reviews") or []):
         cited |= _cited_shas(c.get("body") or "")
     absent = sorted(s for s in cited if not any(o.startswith(s) for o in oids))
-    messages: dict[str, str] = {}
+    state: dict[str, dict] = {}
     for sha in absent[:cap]:
         try:
             commit = gh_json(["api", f"repos/{REPO}/commits/{sha}"])
         except subprocess.CalledProcessError:
             continue  # non resoluble -> analyse restera en mode avertissement
         head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
-        if head:
-            messages[sha] = head
-    return messages
+        tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+        if head or tree:
+            state[sha] = {"message": head or "", "tree": tree}
+    return state
+
+
+# --- #15556 : identite de CONTENU, pas de SHA ------------------------------
+#
+# Sur #15492, sept rounds de reparation ont ete consommes par une boucle :
+# pousser un wake-commit (le remede canonique aux checks qui ne s'arment
+# pas) rembobine la tete, rembobiner invalide les levees qui citaient
+# l'ancienne tete, invalider oblige a relever, relever oblige a re-pousser.
+# Deux levees valides ont ete detruites par un push qui n'avait pas bouge
+# UN BYTE du livrable -- l'arbre etait identique, seul le SHA avait change.
+#
+# Le predicat se rattache donc au contenu : une levee citant un SHA
+# rembobine reste VALIDE si l'arbre du SHA rembobine est identique a
+# l'arbre de la tete (wake-commit, amend de message). En cas
+# d'incertitude (arbre inconnu) : comportement anterieur, le refus --
+# l'organe ne devient jamais permissif sur un doute, c'est le cas que
+# B.0 existe pour attraper.
+#
+# #15566 -- l'echappatoire « rebase sans conflit » (aucun fichier de la PR
+# touche par la difference) est RETIREE, pas corrigee. Mesure sur une
+# vraie paire de rebase (39846a7a3 -> 9296031c6 : meme patch pose sur
+# deux bases) : `compare/{sha}...{head}` est une comparaison TROIS-POINTS
+# -- `merge_base_commit` rend d3107fce, pas le SHA cite -- et les fichiers
+# de la PR sont dans `changed` par construction, donc l'intersection
+# n'etait jamais vide et la marque n'a jamais pu etre posee sur une PR
+# non vide. Le code etait mort. Le corriger « en comparant merge_base
+# explicitement » serait un no-op (trois-points EST merge_base..head), et
+# l'API ne sert pas la forme deux-points (`..` rend 404, mesure sur une
+# paire parent/enfant). Une version exacte demanderait une comparaison de
+# blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
+# surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
+# au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
+
+
+def _pr_head_oid(data: dict) -> str:
+    """OID de la tete de la PR : `headRefOid` si present, sinon le dernier
+    commit portant un `oid` (le plus recent de la liste chronologique)."""
+    head = (data.get("headRefOid") or "").lower()
+    if head:
+        return head
+    for c in reversed(data.get("commits") or []):
+        oid = (c.get("oid") or "").lower()
+        if oid:
+            return oid
+    return ""
+
+
+def _attach_absent_sha_context(data: dict) -> None:
+    """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
+
+    Assemble les deux vues que `analyse` consulte : messages (rattachement
+    #13639) et arbres des commits rembobines plus arbre de la tete
+    (#15556) -- un appel reseau par SHA, plus un pour la tete.
+    """
+    state = _resolve_absent_sha_state(data)
+    data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
+                                    if v.get("message")}
+    data["_absent_sha_trees"] = {s: v["tree"] for s, v in state.items()
+                                 if v.get("tree")}
+    head_oid = _pr_head_oid(data)
+    head_tree = ""
+    if head_oid:
+        try:
+            commit = gh_json(["api", f"repos/{REPO}/commits/{head_oid}"])
+            head_tree = ((commit.get("commit") or {}).get("tree")
+                         or {}).get("sha") or ""
+        except subprocess.CalledProcessError:
+            head_tree = ""
+    data["_head_tree"] = head_tree
 
 
 def can_lift(comment: dict) -> bool:
@@ -3138,31 +3743,159 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "", nit_body: str = "") -> bool:
         if lift_author == nit_author:
-            # #14947 -- meme login n'est pas meme voix. `jsboige` est A LA FOIS
-            # le compte du user et l'identite de poussee des personas (#13316).
-            # Une levee marquee `[Hermes]` / `[NanoClaw]` signe la revue de la
-            # persona sur SON propre travail ; elle ne repond pas a une remarque
-            # ecrite en voix nue par le user sous le meme login. B.0 : « se lever
-            # soi-meme une reserve d'autrui n'est pas y repondre, c'est la
-            # declarer repondue ».
+            # #14947 ET #14850 -- meme login n'est pas meme voix. `jsboige`
+            # est A LA FOIS le compte du user, l'identite de poussee partagee
+            # des personas (#13316), ET le login sous lequel les lanes
+            # cross-poussent. Le discriminateur de B.0 -- « une levee
+            # emise sous un prefixe de role ne doit pas eteindre une reserve
+            # user » (acceptance 1 de #14850) -- impose que la levee soit
+            # SCOPEE A L'EMETTEUR (acceptance 2) : un LGTM `[Hermes]` leve
+            # les reserves `[Hermes]`, pas les reserves user voix nue ;
+            # un commentaire `[myia-po-2024:CoursIA-2]` leve les reserves de
+            # CETTE lane, pas les reserves user voix nue.
             #
-            # Le discriminant n'est pas neuf : #13609 tient deja le marqueur de
-            # persona pour une identite CROSS-login (la persona leve sa propre
-            # reserve sous l'autre login). Il vaut a fortiori SAME-login, ou la
-            # borne d'auteur #11145 ne discrimine plus rien.
+            # Le discriminant par ROLE du lift determine a quelles reserves
+            # il peut s'appliquer. Sans discriminant de role, la levee est
+            # voix nue -- elle ne leve que les reserves VOIX NUE de meme
+            # auteur (le self-lift nominatif de B.0).
             #
-            # Incident fondateur #14937 : nit user 19:20:05Z (« Concern: le
-            # notebook ne devrait-il pas etre une accretion... »), review
-            # `[Hermes]` a 19:26:40Z terminee par un « RAS » nu -- six minutes
-            # plus tard, sur un tout autre objet (re-execution des cellules).
-            # Le RAS eteignait le nit : rc=0, PR mergeable, remarque user perdue.
-            # La levee etant PAR PR et non par reserve, un acquit de routine de
-            # la persona suffisait a solder la voix du user.
-            if (_PERSONA_MARKERS_RE.search(_strip_quoted(lift_body or ""))
-                    and not _PERSONA_MARKERS_RE.search(
-                        _strip_quoted(nit_body or ""))):
-                return False
-            return True
+            # Incident fondateur #14937 (persona leve sa propre voix) :
+            # nit user 19:20:05Z (« Concern: ... »), review `[Hermes]` a
+            # 19:26:40Z terminee par un « RAS » -- le RAS eteignait le nit
+            # user voix nue. Defaut fondateur de la voie PERSONA levee en
+            # voix nue.
+            #
+            # Incident fondateur #14850 (voie nue par meme login eteint
+            # reserve user, mesure sur #14795 head `2510e3a4`) : la review
+            # Hermes de 18:29:00Z terminee par « Verdict : LGTM » eteignait
+            # la reserve user voix nue posee a 18:09:49Z. PR #14949 a cru
+            # fermer ce cas en verifiant que le lift porte `[Hermes]` mais
+            # que le nit ne le porte pas -- mais le filet ne discriminait
+            # pas le SCOPE complet : un LGTM `[Hermes]` etait compte
+            # comme lift PR-wide. Le present fix ferme la discrimination
+            # par ROLE du lift :
+            #
+            #   * Lift voix nue par `jsboige` ne leve que les reserves
+            #     voix nue du MEME auteur. Sur le cas fondateur #14850,
+            #     le LGTM `[Hermes]` 18:29:00Z de `jsboige` ne leve PAS
+            #     la reserve `Concern:` voix nue 18:09:49Z de `jsboige` :
+            #     les roles sont distincts (Hermes vs user).
+            #
+            #   * Lift `[Hermes]` / `[NanoClaw]` par `jsboige` ne leve que
+            #     les reserves `[Hermes]` / `[NanoClaw]` (par SCOPE EMETTEUR).
+            #     Si la reserve est voix nue (`Concern:`), elle est HORS
+            #     scope persona -- le LGTM persona ne l'eteint pas.
+            #
+            #   * Lift `[machine:workspace]` (cross-lane) par `jsboige`
+            #     ne leve que les reserves `[machine:workspace]` (meme
+            #     lane). Si la reserve est voix nue user, elle est HORS
+            #     scope de la lane tierce -- cf. mesure #14850 sur le
+            #     commentaire 18:28:07Z `[myia-po-2024:CoursIA-2]` qui
+            #     etait compte comme levee alors qu'il eteignait la
+            #     reserve user voix nue.
+            #
+            #   * Lift `[OVERRIDE] lane <machine>` par coordinateur leve
+            #     tout (autorite coordinateur, Tell c.11639). La voie
+            #     override reste ouverte comme echappatoire nommee.
+            stripped_lift = _strip_quoted(lift_body or "")
+            stripped_nit = _strip_quoted(nit_body or "")
+            # Voie 0 -- override coordinateur (Tell c.11639). Meme login
+            # ou pas, l'arbitre tiers nomme par `[OVERRIDE] lane <machine>`
+            # leve. Fail-CLOSED sur la pose en tete (#13030). Premier
+            # discriminant verifie pour ne pas etre bloque par les voies
+            # 1-3 : un override par coordinateur sur sa propre reserve
+            # voix nue doit lever (autorite coordinateur).
+            if OVERRIDE_LANE.search(stripped_lift):
+                return True
+            # Voie 1 -- lift PERSONA scope aux reserves PERSONA.
+            # Si la reserve est voix nue (pas de marqueur persona), elle
+            # est HORS scope persona -- bloque. Si elle porte persona,
+            # elle est dans le scope persona -- leve. Discriminant
+            # symetrique de #14947 (persona leve sa propre voix) ETENDU
+            # au scope par role de #14850 : la persona peut lever SA
+            # reserve posee en persona, mais pas la reserve user voix nue
+            # posee sous meme login partage.
+            lift_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_lift))
+            nit_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_nit))
+            if lift_has_persona and nit_has_persona:
+                return True
+            if lift_has_persona and not nit_has_persona:
+                return False  # #14850 scope : lift persona ne leve pas user
+            # Voie 2 -- lift CROSS-LANE scope aux reserves CROSS-LANE.
+            # Un commentaire preface d'une lane tierce `[owner:workspace]`
+            # ne leve que les reserves de CETTE lane. Si la reserve est
+            # voix nue user ou persona, elle est HORS scope de la lane
+            # tierce -- bloque. Accepte le prefixe en debut de ligne
+            # (Tell c.677-L4 body PR HORS worktree), refuse la citation
+            # ulterieure (` > [lane]`) par l'ancre `^`.
+            lift_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_lift))
+            nit_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_nit))
+            if lift_has_lane and nit_has_lane:
+                return True
+            if lift_has_lane and not nit_has_lane:
+                return False  # #14850 scope : lift lane tierce ne leve pas user
+            # Voie 3 -- self-lift voix nue par l'auteur de SA reserve voix nue.
+            # L'auteur leve SA PROPRE reserve voix nue par une phrase de
+            # levee NOMINATIVE (`EXPLICIT_LIFT_MARKERS` : « Je leve »,
+            # « Levee de », « Lève la »). C'est la voie legitime que B.0
+            # preserve (« ce qui leve une remarque est une phrase ») et
+            # que la borne d'auteur #11145 preservait. Sans phrase
+            # nominative, c'est une declaration de verdict globale qui
+            # n'eteint pas la reserve voix nue specifique -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes vs user.
+            #
+            # Anti-regression couverte : la self-levee explicite
+            # (« Levée de ma reserve : cellule 12 corrigee »,
+            # test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve) et
+            # le self-lift par meme persona (`clusterManager-Myia` levant
+            # SA reserve `[Hermes]` par un « RAS sur le fond »,
+            # test_ras_francais_leve_dans_une_reponse) doivent rester
+            # valides. Les deux sont portes par `EXPLICIT_LIFT_MARKERS`
+            # ou un LIFT_MARKER faible DANS LE CONTEXTE d'une reserve
+            # deja persona-membre (couvert par voie 1 ci-dessus).
+            #
+            # #14850 -- defense en profondeur : un prefixe de ROLE generique
+            # (`[ai-01]`, `[po-2026]`, etc.) dans le lift, meme accompagne
+            # d'un LIFT_MARKER, ne leve PAS une reserve voix nue du meme
+            # login partage. Le lift `[ai-01] Je leve ma propre reserve`
+            # par `jsboige` n'a pas voix sur la reserve user voix nue de
+            # `jsboige` (incident fondateur #14795 21:11:29Z). Le reserve
+            # voix nue exige une levee voix nue -- la discrimination de voie
+            # par ROLE tient par symetrie : persona, lane, override ET
+            # role-prefix sont HORS scope de la voie nue.
+            #
+            # Note -- un LIFT_MARKER (broad, pas seulement EXPLICIT) suffit
+            # ici : le test de discrimination est sur le PREFIXE du lift,
+            # pas sur la force du marqueur. Une levee voie nue par l'auteur
+            # de la reserve voie nue peut employer « sont adresses »,
+            # « RAS », « LGTM » -- c'est l'ancien comportement preserve
+            # (#12319). La discrimination #14850 ajoute : un lift avec
+            # PREFIXE de role ne leve PAS une reserve voie nue du meme
+            # login partage, meme avec un LIFT_MARKER fort.
+            #
+            # Anti-regression couverte : `test_auteur_du_nit_leve_son_nit`
+            # (clusterManager-Myia leve SA reserve `[Hermes]` par un
+            # « reserve levee » voix nue). Le discriminant est sur le
+            # PREFIXE du LIFT, pas sur celui de la reserve -- une reserve
+            # `[Hermes]` n'est pas une reserve « user voix nue » au sens
+            # strict, mais elle est levee par la voie nue de l'auteur de
+            # la persona (clusterManager-Myia, voie nue, LIFT_MARKER).
+            # Voie 3 leve donc si le lift est voie nue (pas de prefixe
+            # distinct), independamment du scope du nit (la garde
+            # persona-vs-user est deja portee par voie 1).
+            stripped_lift_role = stripped_lift
+            lift_has_role = bool(_ROLE_PREFIX_RE.search(stripped_lift_role))
+            if (lift_has_persona is False
+                    and lift_has_lane is False
+                    and lift_has_role is False
+                    and has_live_lift(lift_body or "")):
+                return True
+            # Voie nue par meme login, sans discriminant de ROLE ni
+            # phrase de levee EXPLICITE : voie NUE par l'auteur de la
+            # reserve, sans signature distincte. C'est l'auto-reponse
+            # de l'auteur de la reserve sur sa propre remarque -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes sur reserve user.
+            return False
         # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
         # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
         # propre reserve sous l'autre login, c'est sa levee. Le marqueur
@@ -3260,7 +3993,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_info)
 
     # #13639 -- passer les levees au crible du SHA rembobine (voir
-    # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
+    # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). #15556 : le
+    # refus se rattache desormais a l'identite de CONTENU -- un push muet
+    # (wake-commit, amend de message, rebase sans fichier de la PR touche)
+    # ne desnue plus la levee ; cf _attach_absent_sha_context. Inerte sans
     # OIDs connus : le pre-filtre d'audit (sans `commits`) et les fixtures
     # sans `oid` sautent ce passage -- comportement inchange. Limite assumee
     # : ce pre-filtre d'audit ne verra donc jamais cette classe de defaut
@@ -3270,6 +4006,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                    for c in (pr_data.get("commits") or []) if c.get("oid")]
     voided_lifts: list[dict] = []
     absent_sha_warnings: list[dict] = []
+    rewind_artifacts: list[dict] = []
     if commit_oids:
         pr_refs: set[str] = set()
         if pr_data.get("number") is not None:
@@ -3279,10 +4016,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             pr_refs.add(m.group(1))
         pr_refs.discard("")
         resolved = pr_data.get("_absent_sha_messages") or {}
+        rewound_trees = pr_data.get("_absent_sha_trees") or {}
+        head_tree = pr_data.get("_head_tree")
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
+            refused_known_change = False
             warned = None
+            artifact = None
             for sha in sorted(_cited_shas(lift_body)):
                 if any(oid.startswith(sha) for oid in commit_oids):
                     continue  # present dans la PR : preuve valide
@@ -3290,15 +4031,33 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     continue  # citation de contexte : ni refus, ni signalement
                 message = resolved.get(sha)
                 if message and _message_refs_pr(message, pr_refs):
-                    refused = sha  # rembobine ET rattache : la levee est nue
+                    # rembobine ET rattache. #15556 : avant de desnuer la
+                    # levee, verifier que le push a reellement change le
+                    # livrable -- wake-commit et amend de message poussent
+                    # un arbre IDENTIQUE. Sans donnees d'arbre (audit
+                    # retro, resolution serveur impossible) : refus, le
+                    # comportement anterieur n'est jamais assoupli.
+                    tree = rewound_trees.get(sha)
+                    if tree and head_tree and tree == head_tree:
+                        if artifact is None:
+                            artifact = (sha, "same_tree")
+                        continue
+                    refused = sha
+                    if tree and head_tree:
+                        refused_known_change = True
                     break
                 warned = sha  # non resoluble ou sans rapport : avertir
             if refused:
                 voided_lifts.append(
-                    {"author": lifter, "at": t.isoformat(), "sha": refused})
+                    {"author": lifter, "at": t.isoformat(), "sha": refused,
+                     "tree_differs": refused_known_change})
             else:
                 kept_lifts.append((t, lifter, lift_body))
-                if warned:
+                if artifact:
+                    rewind_artifacts.append(
+                        {"author": lifter, "at": t.isoformat(),
+                         "sha": artifact[0], "reason": artifact[1]})
+                elif warned:
                     absent_sha_warnings.append(
                         {"author": lifter, "at": t.isoformat(), "sha": warned})
         explicit_lifts = kept_lifts
@@ -3434,7 +4193,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                              and _lift_eligible(lifter, login, lift_body, body)
                              for (t, lifter, lift_body) in explicit_lifts)
                       # #14218 conditions 5+6 — voir commentaire `followup_lifts`
-                      or any(when < t < cutoff and namer in (login, pr_author)
+                      # #14705 — le coordinateur est un nommeur credite : la
+                      # voie 3 REPORT (elle n'affirme pas la reserve traitee),
+                      # et B.0 est le gate du coordinateur.
+                      or any(when < t < cutoff
+                             and (namer in (login, pr_author)
+                                  or namer in LIFT_OVERRIDE_LOGINS)
                              and when < info.created_at
                              and _issue_references_pr(info, pr_number)
                              for (t, namer, info) in followup_lifts))
@@ -3463,8 +4227,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # garantie — l'issue existe et fut creee AVANT le cutoff —
                     # et reste ouverte a l'auteur : un report nomme avant
                     # merge est un geste delibere que B.0 credite. Borne
-                    # nommeur (c.705) : {auteur du blocage, auteur de la PR}.
-                    or any(when < t < cutoff and namer in (login, pr_author)
+                    # nommeur (c.705) : {auteur du blocage, auteur de la PR}
+                    # ; #14705 y ajoute le coordinateur (LIFT_OVERRIDE_LOGINS)
+                    # — B.0 est son gate, et un report se falsifie en n'ouvrant
+                    # pas l'issue, ce que les conditions 1-6 verifient deja.
+                    or any(when < t < cutoff
+                           and (namer in (login, pr_author)
+                                or namer in LIFT_OVERRIDE_LOGINS)
                            and when < info.created_at
                            and _issue_references_pr(info, pr_number)
                            for (t, namer, info) in followup_lifts)):
@@ -3482,7 +4251,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body, body)
                   for (t, lift_author, lift_body) in explicit_lifts
               ) or _approved_lifts_reserve(login, when, pr_author)
-              or any(when < t < cutoff and namer in (login, pr_author)
+              # #14705 — meme elargissement nommeur que les deux surfaces
+              # voie 3 ci-dessus (reserve Hermes, blocage).
+              or any(when < t < cutoff
+                     and (namer in (login, pr_author)
+                          or namer in LIFT_OVERRIDE_LOGINS)
                      and when < info.created_at
                      and _issue_references_pr(info, pr_number)
                      for (t, namer, info) in followup_lifts)):
@@ -3639,12 +4412,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "ignored_overrides": ignored_overrides,
         "voided_lifts": voided_lifts,
         "absent_sha_warnings": absent_sha_warnings,
+        "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
     }
 
 
-FIELDS = "number,title,body,mergedAt,author,comments,reviews,commits,url,state"
+FIELDS = ("number,title,body,mergedAt,author,comments,reviews,commits,url,"
+          "state,headRefOid")
 
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
@@ -3689,11 +4464,27 @@ def _print_unevaluated(result: dict) -> None:
 
 
 def _print_sha_notes(result: dict) -> None:
-    """#13639 : nommer les levees dont la preuve citee manque de la PR."""
+    """#13639 : nommer les levees dont la preuve citee manque de la PR.
+
+    #15556 : distinguer l'ARTEFACT du vrai defaut -- un push muet
+    (wake-commit, amend de message) ne change pas l'arbre, la preuve citee
+    reste byte-pour-byte vraie ; seul le SHA a change. Les deux cas ne
+    demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
+    """
+    for a in result.get("rewind_artifacts") or []:
+        why = ("arbre identique à la tête"
+               if a["reason"] == "same_tree"
+               else "fichiers de la PR inchangés")
+        print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
+              f"rembobiné par un push muet ({why}) — preuve conservée, "
+              f"non bloquant")
     for v in result.get("voided_lifts") or []:
+        detail = (" — l'arbre DIFFÈRE de la tête : vraie réserve à reposer"
+                  if v.get("tree_differs")
+                  else " — arbre non comparable, refus conservateur")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
-              f"mais rembobiné par un push ultérieur)")
+              f"mais rembobiné par un push ultérieur){detail}")
     for w in result.get("absent_sha_warnings") or ():
         print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
               f"(absent des commits, non rattaché à cette PR) — non bloquant")
@@ -3714,9 +4505,9 @@ def analyse_pr(pr: int) -> dict:
     visible immediatement.
     """
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
-    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
-    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
+    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+    _attach_absent_sha_context(data)
     return analyse(data, review_threads(pr), datetime.now(timezone.utc),
                    issue_info=gh_issue_info,
                    dismissed_improperly=improper_dismissals(pr))
@@ -3724,9 +4515,9 @@ def analyse_pr(pr: int) -> dict:
 
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
-    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
-    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
+    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+    _attach_absent_sha_context(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff,

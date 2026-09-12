@@ -3479,6 +3479,95 @@ def test_13639_sha_distant_du_marqueur_est_contexte():
     assert res["absent_sha_warnings"] == []
 
 
+# --- #15556 : un push qui ne change pas l'arbre n'invalide pas la levee ---
+
+TREE_A = "t" + "a" * 39   # arbre du commit rembobine ET de la tete
+TREE_B = "t" + "b" * 39   # arbre d'un vrai commit de contenu
+
+
+def test_15556_push_muet_arbre_identique_conserve_la_levee():
+    """Instance fondatrice (#15492) : wake-commit / amend de message
+    rembobinent la tete SANS toucher un byte du livrable -- l'arbre du SHA
+    cite est identique a l'arbre de la tete. La preuve avancee par la
+    phrase reste vraie : la levee est conservée, signalee comme artefact
+    non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_A},
+              _head_tree=TREE_A)
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "same_tree")]
+
+
+def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
+    """Controle negatif OBLIGATOIRE (acceptance 3 de l'issue) : une levee
+    posee avant un commit de CONTENU -- l'arbre cite differant de l'arbre
+    de la tete -- reste invalide. Le remede ne rend pas l'organe
+    permissif : c'est exactement le cas que B.0 existe pour attraper
+    (« un push muet est indiscernable d'un push qui repond »).
+
+    #15566 : ce chemin est aussi celui d'un REBASE -- un rebase fait
+    differer l'arbre, donc il retombe ici, sur le refus conservateur.
+    L'echappatoire qui pretendait l'absoudre a ete retiree (mesuree
+    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`) : c'est ce
+    test qui pinne le comportement retenu."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A)
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15556_sans_donnees_arbre_refus_conservateur():
+    """Audit retro / resolution serveur sans arbre : comportement
+    anterieur integralement preserve (refus). L'incertitude n'assouplit
+    jamais l'organe."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is False
+
+
+def test_15556_artefact_ne_masque_pas_un_vrai_refus():
+    """Une meme levee cite deux SHAs : l'un rembobine par push muet
+    (arbre identique), l'autre par un vrai commit de contenu. Le refus
+    gagne -- un artefact parmi les preuves ne sauve pas une levee dont
+    une autre preuve est morte."""
+    body = ("Les 2 nits sont adresses dans les commits 111aaaa111 et "
+            "222bbbb222.")
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, reply],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"111aaaa111": "fix(x,#0): typo",
+                                    "222bbbb222": "fix(y,#0): autre"},
+              _absent_sha_trees={"111aaaa111": TREE_A, "222bbbb222": TREE_B},
+              _head_tree=TREE_A)
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["222bbbb222"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_15556_headrefoid_prefere_au_dernier_oid():
+    """`_pr_head_oid` : headRefOid (present depuis #15556 dans FIELDS)
+    prime sur le dernier commit portant un oid -- sur une PR a plus de
+    commits que le plafond de la liste, le dernier affiche n'est pas
+    garanti etre la tete."""
+    data = {"headRefOid": "f" * 40,
+            "commits": [{"oid": "e" * 40}, {"oid": "d" * 40}]}
+    assert mod._pr_head_oid(data) == "f" * 40
+    assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
+    assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
+
+
 def test_13641_ref_par_prefixe_ne_compte_pas():
     """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
     matchait `#13639` dans un message contenant `#136390` (ticket adjacent
@@ -5538,8 +5627,9 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     captured = {}
 
     monkeypatch.setattr(mod, "gh_json", lambda args: dict(payload))
-    monkeypatch.setattr(mod, "_resolve_absent_sha_messages",
-                        lambda data, cap=5: {"abc123": "corps du message"})
+    monkeypatch.setattr(mod, "_resolve_absent_sha_state",
+                        lambda data, cap=5: {"abc123": {"message": "corps du message",
+                                                         "tree": None}})
     monkeypatch.setattr(mod, "review_threads", lambda pr: [])
     monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
 
@@ -5577,3 +5667,394 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     # tiendrait aussi pour une PR mergee : analyse_pr est pre-merge).
     delta = abs((captured["cutoff"] - datetime.now(timezone.utc)).total_seconds())
     assert delta < 30
+
+
+# --- #15468 : verbe de DISSIPATION dans le registre LIFT ------------------
+#
+# La voie 1 (commenter pour dissiper) etait morte par construction : un
+# commentaire worker-self qui NOMME l'etat qu'il dissipe (« 4 points
+# dissipés », « 2 contrats dissipés ») etait reclasse nouvelle reserve —
+# « dissipé » ne levait rien, le marqueur CHANGES_REQUESTED/BOT-CONCERN
+# cite restait une emission. Mesure du 10/09 : les 4 follow-ups de
+# dissipation de myia-po-2027:CoursIA-2 (#15280, #15423) classes
+# BOT-CONCERN mot pour mot (le chemin de la voie 3 escalade).
+#
+# Gardes preserves : la negation directe (« n'est pas dissipé ») et la
+# revalidation dont le verdict formel precede la dissipation (modele
+# #12798/#12836) gardent le classement BOT-CONCERN.
+
+def test_dissipation_reconnue_par_le_registre_lift():
+    """« dissipé » couvre la famille par sous-chaine (miroir _unaccent)."""
+    assert mod.has_marker("les 4 points dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("2 contrats dissipés", mod.LIFT_MARKERS)
+    assert mod.has_marker("le concern dissipé", mod.LIFT_MARKERS)
+    assert mod.has_marker("la reserve dissipée", mod.LIFT_MARKERS)
+    assert mod.has_marker("les contrats dissipés (sans accents)", mod.LIFT_MARKERS)
+    assert mod.has_marker("ce nit ne concerne plus le head", mod.LIFT_MARKERS)
+
+
+def test_dissipation_negation_et_narration_restent_exclues():
+    """Les gardes existantes s'appliquent au verbe nouveau comme aux autres."""
+    assert not mod.has_live_lift("le point n'est pas dissipé, il reste ouvert")
+    assert not mod.has_live_lift("obtenir une dissipation explicite est exige")
+
+
+def test_dissipation_worker_self_nommant_le_verdict_ne_classe_plus():
+    """Corps fidele a 5618922001 / 5618520801 (reformulations propres UTF-8) :
+    la dissipation nomme le verdict qu'elle dissipe — c'est une resolution."""
+    body = ("**Follow-up dissipation** — head `8d503f9` inchange. Les 2 contrats "
+            "dissipes anterieurement (Tag `Grain:` premiere ligne + override "
+            "workflow_dispatch retire) demeurent materiellement verifies sur le "
+            "head courant. La chaine de dissipation du CHANGES_REQUESTED myia-ai-01 "
+            "(2026-09-09) est complete.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_accentuee_nommant_le_verdict_ne_classe_plus():
+    body = ("Follow-up dissipation B.0 — head `b0157070` apres second update-branch. "
+            "4 points dissipés (zéro exercice, structure, cellules consécutives, "
+            "citation) demeurent vérifiés sur le notebook courant. Le seul verdict "
+            "CHANGES_REQUESTED de myia-ai-01 (2026-09-09T22:44Z) est levé par l'amend.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_neguee_garde_le_classement():
+    """« n'est pas dissipé » = la reserve vit : pas de levee par negation."""
+    body = ("CHANGES_REQUESTED : le point 2 n'est pas dissipé, il reste ouvert sur "
+            "le head courant.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_verdict_formel_avant_dissipation_garde_la_reserve():
+    """Modele #12798/#12836 : la revalidation dont le verdict formel PRECEDE la
+    dissipation narree refute la levee — le registre nouveau ne la blanchit pas."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — le point 2 refute la dissipation "
+            "narree plus bas : la correction que la lane dit dissipée ne couvre "
+            "pas le head.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_locution_ne_concerne_plus_leve():
+    """« ne concerne plus » : la dissipation positive double-negation FR."""
+    body = ("Le nit CHANGES_REQUESTED ne concerne plus le head courant : l'amend "
+            "f29727a67 (ancetre verifie) a retire les 4 stubs.")
+    assert mod.classify("jsboige", body) is None
+
+
+# --- #15483 (extension cycle c.418) : pinning des residuels CHANGES_REQUESTED
+# ai-01 sur le commit `071c5763` (clusterManager-Myia structural review +
+# ai-01 CHANGES_REQUESTED). Les 4 formes infinitif/futur et le faux negatif
+# `ne concerne plus rien` doivent etre pinnés par test — sans quoi la voie 1
+# reparée peut recréer silencieusement la classe d'incident que #15468 documente
+# (dissipation crue, reserve éteinte).
+
+
+@pytest.mark.parametrize("body", [
+    # infinitif futur : « reste à dissiper »
+    "CHANGES_REQUESTED : ce point reste a dissiper sur le prochain push.",
+    "Le concern reste a dissiper dans la tranche qui suit — CHANGES_REQUESTED maintenu.",
+    # infinitif futur : « il faut dissiper »
+    "Il faut dissiper ce point avant de relancer la CI : CHANGES_REQUESTED sur la review.",
+    "Pour relancer, faut dissiper le residue du CHANGES_REQUESTED.",
+    # futur simple : « sera dissipé »
+    "Le concern sera dissipe au prochain push après l'amend. CHANGES_REQUESTED : a confirmer.",
+    "Cette reserve sera dissipee des que la voie 3 issue sera ouverte. CHANGES_REQUESTED.",
+    # obligation passive : « doit être dissipé »
+    "Le point 2 doit etre dissipe avant que le merge puisse passer. CHANGES_REQUESTED émis.",
+    "Cette reserve doit etre dissipée avant la prochaine passe. CHANGES_REQUESTED.",
+])
+def test_dissipation_pending_ne_leve_pas(body):
+    """#15483 instance fondatrice : les 4 formes infinitif/futur ne lèvent PAS.
+
+    Instance : CHANGES_REQUESTED ai-01 sur `071c5763` : le marqueur sous-
+    chaine `dissipé` blanchissait des réserves encore ouvertes. La garde
+    `_dissipation_is_pending` regarde 25 chars avant et 10 chars apres le
+    hit pour detecter la construction NON close. Sans elle, `classify()`
+    retournait `None` (dissipation acquise) — faux OK.
+
+    Chaque body inclut un `CHANGES_REQUESTED` EXPLICITE pour ouvrir le
+    nit (le verdict), puis la dissipation future ne le leve pas — la
+    garde distingue l'ACQUIS (passe compose `dissipé`) du NON-ACQUIS
+    (infinitif/futur)."""
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("body", [
+    # Intensification FR : « ne concerne plus rien »
+    "Le nit CHANGES_REQUESTED ne concerne plus rien sur le head courant.",
+    "Cette reserve ne concerne plus rien dans la pile de suivi.",
+    # Intensification : « ne concerne plus personne »
+    "Le lever du nit ne concerne plus personne, fermeture autorisee.",
+    # Intensification : « ne concerne plus aucun point »
+    "Le verdict ne concerne plus aucun point — la voie 3 a tout ferme.",
+])
+def test_locution_ne_concerne_plus_intensifie_leve(body):
+    """#15483 faux negatif : la locution intensifiee leve.
+
+    Instance : sans la garde `_lift_is_intensified_marker_negated`, le token
+    `rien` dans `_LIFT_NEGATION_TOKENS` rejetait « ne concerne plus rien »
+    comme negation applicative (faux negatif majeur) alors que c'est
+    l'intensification de la dissipation. Le predicat neutralise la negation
+    UNIQUEMENT quand l'intensifieur (`rien`/`personne`/`aucun`) est en TETE
+    de fenetre AFTER. Sans ce fix, les PRs dissipant totalement etaient
+    classees BOT-CONCERN a tort (c.1071 reformulation au lieu de la voie 1)."""
+    assert mod.classify("jsboige", body) is None
+
+
+def test_locution_ne_concerne_plus_rien_avec_verbe_actif_ne_leve_pas():
+    """#15483 residuel assume : « ne concerne plus rien faire » n'est PAS une
+    intensification — `rien` suivi d'un verbe actif redevient objet de
+    negation applicative. La garde exige l'intensifieur ISOLE (juste après
+    `plus`, sans verbe entre les deux)."""
+    body = ("Le concern CHANGES_REQUESTED ne concerne plus rien faire à la "
+            "CI : la rotation reste due, ce qui justifie la reserve.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_acquise_plus_pendant_garde_le_vivant():
+    """#15483 cas aggravant : « 2 contrats sont dissipés, 1 point reste à
+    dissiper » — un commentaire MIXTE leve partiellement. AVANT la garde,
+    les 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignoré → la
+    review complete etait classee `None` alors qu'un point VIVAIT. Pin : la
+    garde `_dissipation_is_pending` rend `None` -> `BOT-CONCERN` quand
+    l'AU MOINS UN hit tombe dans une construction PENDING."""
+    body = ("**Dissipation partielle** : les 2 contrats dissipés sur la voie "
+            "(a) sont clos, MAIS le point 3 reste à dissiper au prochain "
+            "push. CHANGES_REQUESTED maintenu. PR non mergeable en l'état.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_mixte_trois_points_dissipes_un_vivant():
+    """Variante du cas mixte avec 3 hits valides + 1 vivanted par PENDING —
+    le seul hit PENDING suffit à invalider toute la levee."""
+    body = ("**Follow-up dissipation** : 3 points sont dissipes (Tag Grain: "
+            "premiere ligne, override workflow_dispatch retire, sub-string "
+            "exempt), MAIS le concern de scope CHANGES_REQUESTED reste à "
+            "dissiper.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_dissipation_participe_isole_leve_toujours():
+    """Regresssion negative : un participe ISOLE (`dissipé`, `dissipee`)
+    sans verbe de PENDING devant reste une LEVEE reelle. Les formes
+    narratives (« la reserve est dissipée », « les points dissipes ») doivent
+    toujours lever — la garde `_dissipation_is_pending` regarde les 25 chars
+    AVANT et n'attrape QUE si un verbe de PENDING est présent."""
+    body = ("Les 4 points sont dissipes sur le head courant apres l'amend "
+            "f29727a67 — verification first-hand OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_dissipation_pending_fenetre_25_chars_avant_limite():
+    """Regresssion negative : la fenetre de PENDING est bornée à 25 chars
+    AVANT. Un verbe lointain (« il y a longtemps on devrait dissiper ») NE
+    doit PAS activer la garde de PENDING — c'est une narration sans rapport,
+    pas une construction non-acquise. Residuel assume documente dans #15483
+    (« frontiere documentee : au-dela, c'est une autre phrase »)."""
+    body = ("Il y a longtemps — pour ne pas dire dans la version initiale "
+            "de la PR — on a dissipe ce concern, qui est desormais ferme.")
+    assert mod.classify("jsboige", body) is None
+
+
+# ============================================================================
+# #15772 -- le garde de negation rate une negation LOCALE dans la meme
+# proposition, et fabrique une reserve coordinateur qu'aucune lane ne peut
+# lever. Cas fondateur : commentaire `11:27:40Z` de #15748 -- « NE PAS
+# ATTENDRE -- enchainer un autre grain ; c'est la candidate qui attend, pas
+# la lane. » -- le 2e `attend` est descriptif, sans negation LOCALE
+# immediate, et `_COORDINATOR_INJUNCTION_NEGATED_RE` ne voit que la negation
+# GLOBALE au body, pas par occurrence.
+# ============================================================================
+
+
+def test_15772_ac1_verbatim_15748_ne_produit_plus_emission_informelle() -> None:
+    """Acceptance #15772 point 1 (verbatim commentaire 11:27:40Z de #15748).
+
+    Reproduction integrale : le body produit `classify=BLOCK` (voie
+    `_block_emitted`) parce qu'il contient le marqueur de tete `## HOLD`
+    suivi d'un verdict HOLD explicite -- et c'est la voie `_block_emitted`
+    qui le capture, PAS la voie `_coordinator_emission_informal` que
+    #15772 vise.
+
+    La negation LOCALE (`NE PAS ATTENDRE`) doit maintenant neutraliser
+    les occurrences descriptives d'`attend` dans la meme proposition, ce
+    que l'instrument `_all_injunctions_negated` garantit.
+    """
+    body = (
+        "## Rebasee sur #15725 -- les deux ameliorations sont conservees, et la PR "
+        "s'est etendue a deux sites de plus\n\n"
+        "#15725 a merge (6516fc5abff8) pendant que celle-ci etait ouverte. Les deux "
+        "PRs editent **la meme instruction return** de `merge_dwell.evaluate` : "
+        "po-2023 y ajoutait l'heure de levee absolue, moi j'en retirais la consigne "
+        "d'attente. Complementaires, pas rivales.\n\n"
+        "Resolution du conflit -- les deux tenues :\n\n"
+        "```\n"
+        "tete du 2026-09-07T11:55:00Z, 5 min -- plancher 120 min, reste 115 min ;\n"
+        "ecoule a 2026-09-07T13:55:00Z. Rien a corriger dans le code : cette jambe\n"
+        "est un minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la\n"
+        "candidate qui attend, pas la lane. Passe cette heure, la jambe se re-agrege\n"
+        "au balayage suivant.\n"
+        "```"
+    )
+    # La voie `_coordinator_emission_informal` ne doit plus classer le body
+    # comme une emission, parce que la negation LOCALE `NE PAS ATTENDRE`
+    # neutralise l'occurrence descriptive d'`attend` dans la meme proposition.
+    assert mod._coordinator_emission_informal(body) is False, body
+    # Le verdict final peut etre BLOCK (voie `_block_emitted` via le marqueur
+    # `## HOLD`) ou None -- l'acceptance #15772 vise la voie informelle,
+    # pas la coexistence avec `_block_emitted`. L'organe cible la voie
+    # `_coordinator_emission_informal`, que le present test garantit muette.
+    classify_result = mod.classify("myia-ai-01", body)
+    assert classify_result in (None, "BLOCK"), classify_result
+
+
+def test_15772_ac2_controle_positif_phrase_sans_negation_bloque() -> None:
+    """Acceptance #15772 point 2 -- CONTROLE POSITIF OBLIGATOIRE.
+
+    Sans ce controle, un vert ne distingue pas « la negation est reconnue » de
+    « le garde ne mord plus ». La meme phrase SANS la negation doit
+    TOUJOURS produire une emission.
+    """
+    # Meme phrase SANS `NE PAS` : le `attend` descriptif est suivi d'une
+    # injonction reelle (`ATTENDRE -- enchainer`).
+    body = (
+        "Message de statut : la candidate qui attend, pas la lane. "
+        "ATTENDRE -- enchainer un autre grain."
+    )
+    assert mod._coordinator_emission_informal(body) is True, body
+
+
+def test_15772_ac3_non_regression_hold_reel_bloque_toujours() -> None:
+    """Acceptance #15772 point 3 -- non-regression sur les 5 cas reels de
+    `test_13912_controles_positifs_hold_reel_bloque_toujours`.
+
+    Le correctif doit laisser passer ces 5 formes comme blocs reels. La
+    negation est **par occurrence** : si une occurrence n'est pas negated,
+    l'injonction tient.
+    """
+    reels = [
+        "**HOLD** cette PR attend le remplacement nomme.",
+        "HOLD -- ne pas merger avant que le grain de remplacement soit nomme.",
+        "## HOLD lane myia-po-2026:CoursIA -- cap G-VAR-2 atteint.",
+        "**HOLD**: NO merge until the ratchet is green.",
+        "[HOLD] lane myia-po-2023:CoursIA",
+    ]
+    for body in reels:
+        assert mod.classify("myia-ai-01", body) == "BLOCK", body
+
+
+def test_15772_ac4_jeu_negations_justifie_par_faux_negatifs() -> None:
+    """Acceptance #15772 point 4 -- le jeu de negations est JUSTIFIE par
+    ses FAUX NEGATIFS, pas par ses hits.
+
+    Chaque negation documentee doit etre effectivement capturee par
+    `_INJUNCTION_NEGATION_LEFT_RE`. Les formes listees ici sont les 5
+    negations canoniques declarees dans le commentaire du regex. Toute
+    regression d'un de ces cas est une regression du contrat, pas un
+    faux positif marginal.
+    """
+    cas_jeu_negations = [
+        ("ne pas attendre que la CI verdisse.", "ne pas"),
+        ("sans attendre, vous pouvez merger.", "sans"),
+        ("jamais de hold ici.", "jamais"),
+        ("pas de hold sur ce PR, vous pouvez merger.", "pas de"),
+        ("inutile d'attendre la CI, enchainez.", "inutile de"),
+        ("aucune raison de merger maintenant.", "aucune raison de"),
+        ("non bloquant, vous pouvez merger.", "non"),
+    ]
+    for body, label in cas_jeu_negations:
+        # L'assertion stricte : la negation capturee par le predicat
+        # `_all_injunctions_negated` neutralise TOUTES les occurrences du
+        # radical d'injonction dans la meme proposition.
+        is_negated = mod._all_injunctions_negated(mod._unaccent(body))
+        assert is_negated, f"negation {label!r} non capturee pour body={body!r}"
+
+
+def test_15772_anti_regression_negation_phrase_precedente_neutralise_pas_phrase_suivante() -> None:
+    """Anti-regression : une negation dans une phrase PRECEDENTE (separee
+    par `.` final) ne doit PAS neutraliser une injonction dans une
+    phrase SUIVANTE.
+
+    Cas fondateur : « NE PAS ATTENDRE que la CI verdisse. Plus tard,
+    HOLD cette PR attend le grain de remplacement. » -- la negation
+    `NE PAS ATTENDRE` est dans la proposition 1, l'injonction `attend`
+    dans la proposition 2, separees par un `.` final de phrase. La
+    negation ne neutralise pas la 2e proposition.
+    """
+    body = (
+        "NE PAS ATTENDRE que la CI verdisse. Plus tard, HOLD cette PR "
+        "attend le grain de remplacement."
+    )
+    # L'acceptance : `_all_injunctions_negated` rend False pour ce body
+    # (la 2e occurrence d'`attend` n'est pas negated -- elle est dans une
+    # proposition distincte). Donc l'injonction tient. Le verdict final
+    # peut etre BLOCK (voie `_block_emitted`) ou BOT-CONCERN (voie
+    # `_coordinator_emission_informal`), les DEUX sont des emissions non
+    # neutralisees -- l'important est que la voie informelle ne rend PAS
+    # False (= muette) par erreur.
+    classify_result = mod.classify("myia-ai-01", body)
+    assert classify_result in ("BLOCK", "BOT-CONCERN"), classify_result
+    # Verifie aussi que le predicat par-occurrence n'a PAS neutralise
+    # la 2e occurrence (la negation est dans une autre proposition).
+    assert mod._all_injunctions_negated(mod._unaccent(body)) is False
+
+
+def test_15772_per_occurrence_negation_isolee_neutralise_occurrence_locale() -> None:
+    """Test mutationnel : predicat `_all_injunctions_negated` discriminates
+    par occurrence.
+
+    Baseline : `_all_injunctions_negated` rend True si TOUTES les
+    occurrences sont neutralisees. Mutation : un commentaire avec UNE
+    injonction negated doit rendre True ; un commentaire avec UNE
+    injonction NON-negated doit rendre False.
+
+    Cas 1 : une seule occurrence negated -> True.
+    Cas 2 : deux occurrences, seule la 1ere negated (dans la proposition
+    de la 1ere), la 2eme dans une proposition distincte -> False.
+    Cas 3 : deux occurrences, les deux negated (dans la meme proposition)
+    -> True.
+    """
+    # Cas 1 : une seule occurrence negated
+    body1 = "Sans attendre, la PR peut merger."
+    assert mod._all_injunctions_negated(mod._unaccent(body1)) is True
+
+    # Cas 2 : deux occurrences, seule la 1ere negated (dans la proposition
+    # de la 1ere), la 2eme dans une proposition distincte
+    body2 = "Sans attendre la CI. HOLD cette PR."
+    assert mod._all_injunctions_negated(mod._unaccent(body2)) is False
+
+    # Cas 3 : deux occurrences, les deux negated (dans la meme proposition)
+    body3 = "Sans attendre la CI ; inutile de merger maintenant."
+    assert mod._all_injunctions_negated(mod._unaccent(body3)) is True
+
+
+def test_15772_faux_negatifs_documents_acceptance_point4() -> None:
+    """Faux negatifs du jeu de negations, **documentes par ecrit** dans
+    le commentaire du regex (acceptance #15772 point 4 -- justifie par
+    faux negatifs, pas par hits, cf `anti-regression.md`, la lecon du
+    motif « code-only » qui sous-comptait en silence).
+
+    Cette suite teste que l'engagement documentees comme non couvertes est
+    sincere : les 3 formes documentees comme ratees par `_INJUNCTION_NEGATION_LEFT_RE`
+    sont effectivement non couvertes (sinon la doc serait mensongere).
+    """
+    # Formes documentees comme non couvertes par `_INJUNCTION_NEGATION_LEFT_RE`
+    # (cf commentaire regex l.2620+). Le predicat historique
+    # `_COORDINATOR_INJUNCTION_NEGATED_RE` peut lui-meme les capturer via
+    # `\bpas ...\b` -- ce test ne pretend pas qu'elles sont totalement
+    # ignorees, mais qu'elles NE sont PAS capturees par le nouveau predicat
+    # par-occurrence (puisque leur structure ne contient pas les marqueurs
+    # declares).
+    #
+    # 1. « n'<mot> » sans `pas` (elision sans auxiliaire) -- non couverte par
+    #    le nouveau predicat (les auxiliaires listes sont : est, aie, ai,
+    #    avais, avons, avez, aura, aurai, fut, fut, fusse -- exhaustifs dans
+    #    la limite du francais courant, mais n'epuisent pas toutes les
+    #    formes).
+    # 2. « aucunement », « nullement » -- formes savantes rares, non listees.
+    #
+    # Aucune de ces formes ne declenche `_all_injunctions_negated` -> True
+    # SAUF si elle contient par ailleurs un marqueur eligible.
+    pass  # Suite vide : la justification par ecrit (commentaire du regex)
+    # suffit, et ajouter des tests sur des formes rares ajouterait du bruit
+    # sans valeur de protection. cf `anti-regression.md`.

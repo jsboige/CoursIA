@@ -14,17 +14,29 @@ Coverage map (mirrors the acceptance criteria of #10332):
   - test_override_pass_picks_first_marker     : multiple markers -> first wins
   - test_override_motif_extraction            : regex anchoring (not in prose)
   - test_override_label_case_sensitive        : case-sensitive label match
+
+Fetch-failure restitution (#15342) -- a read error is never an absence:
+  - test_fetch_error_label_fetcher_raises     : label unreadable -> None + cause
+  - test_fetch_error_comment_fetcher_raises   : comments unreadable -> None + cause
+  - test_fetch_error_both_sides_unreadable    : both None, both causes, fail-closed
+  - test_gh_label_fetcher_no_repo_env_raises  : real fetcher raises FetchError
+  - test_gh_comment_fetcher_no_repo_env_raises: real fetcher raises FetchError
 """
 
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ci.translation_override_required import (  # noqa: E402
+    FetchError,
     OVERRIDE_LABEL,
     _extract_marker,
     check,
+    gh_comment_fetcher,
+    gh_label_fetcher,
 )
 
 
@@ -140,6 +152,88 @@ def test_override_label_case_sensitive():
     assert verdict["guard_pass"] is False
     assert verdict["label_present"] is False
     assert verdict["marker_present"] is True
+
+
+def test_fetch_error_label_fetcher_raises():
+    """#15342: label read failure renders as unreadable (None), not absence.
+
+    The comment side is readable (fast path) and DOES carry the marker -- the
+    verdict must say the labels could not be read, never claim the override
+    was not posed.
+    """
+    def raising_label_fetcher(pr_number: int) -> list[str]:
+        raise FetchError("gh pr view rc=1: HTTP 403 resource not accessible")
+
+    verdict = check(
+        pr_number=999,
+        comment_bodies=["[TRANSLATION-OVERRIDE] resync per-cell 9 lignes"],
+        label_fetcher=raising_label_fetcher,
+    )
+    assert verdict["guard_pass"] is False
+    assert verdict["override_applied"] is False
+    assert verdict["label_present"] is None
+    assert verdict["marker_present"] is True  # measured on the readable side
+    assert "gh pr view rc=1" in verdict["fetch_error"]
+    assert "impossible de lire les labels" in verdict["reason"]
+    assert "403" in verdict["reason"]
+    # The absence phrasing must NOT appear for a side that was never read.
+    assert "no override label" not in verdict["reason"]
+
+
+def test_fetch_error_comment_fetcher_raises():
+    """#15342: comment read failure renders as unreadable (None), not absence."""
+    def raising_comment_fetcher(pr_number: int) -> list[dict]:
+        raise FetchError("gh api rc=1: rate limit exceeded")
+
+    verdict = check(
+        pr_number=999,
+        label_names=[OVERRIDE_LABEL],
+        comment_fetcher=raising_comment_fetcher,
+    )
+    assert verdict["guard_pass"] is False
+    assert verdict["override_applied"] is False
+    assert verdict["label_present"] is True  # measured on the readable side
+    assert verdict["marker_present"] is None
+    assert "rate limit" in verdict["fetch_error"]
+    assert "impossible de lire les commentaires" in verdict["reason"]
+    # The absence phrasing must NOT appear for a side that was never read.
+    assert "no comment marker" not in verdict["reason"]
+
+
+def test_fetch_error_both_sides_unreadable():
+    """#15342: both fetchers fail -> both None, both causes, still fail-closed."""
+    def raising(pr_number: int):
+        raise RuntimeError("network down")
+
+    verdict = check(
+        pr_number=999,
+        label_fetcher=raising,
+        comment_fetcher=raising,
+    )
+    assert verdict["guard_pass"] is False
+    assert verdict["override_applied"] is False
+    assert verdict["label_present"] is None
+    assert verdict["marker_present"] is None
+    assert "labels: RuntimeError: network down" in verdict["fetch_error"]
+    assert "comments: RuntimeError: network down" in verdict["fetch_error"]
+    assert "impossible de lire les labels et les commentaires" in verdict["reason"]
+    assert "absence mesuree" in verdict["reason"]
+
+
+def test_gh_label_fetcher_no_repo_env_raises(monkeypatch):
+    """#15342: the real gh fetcher raises FetchError instead of returning []."""
+    monkeypatch.delenv("GH_REPO", raising=False)
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    with pytest.raises(FetchError, match="GITHUB_REPOSITORY"):
+        gh_label_fetcher(999)
+
+
+def test_gh_comment_fetcher_no_repo_env_raises(monkeypatch):
+    """#15342: the real gh fetcher raises FetchError instead of returning []."""
+    monkeypatch.delenv("GH_REPO", raising=False)
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    with pytest.raises(FetchError, match="GITHUB_REPOSITORY"):
+        gh_comment_fetcher(999)
 
 
 def test_12773_translation_guard_paths_filter_includes_translations_dir():

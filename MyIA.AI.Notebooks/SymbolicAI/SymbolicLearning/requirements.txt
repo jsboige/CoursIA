@@ -12,6 +12,12 @@
 # SL-10: standard library (L* d'Angluin)
 # SL-12b: numpy + matplotlib (synthese logique spectrale : FWHT, PTF ternaires,
 #         Sinkhorn, Metropolis/parallel tempering -- CPU uniquement)
+# SL-12b': numpy seul CPU (reproduction Phase 1+2 Pavlov arXiv 2601.13953 :
+#          transformee de Walsh exacte, routeur lineaire signe vs Sinkhorn-constrained
+#          proxy, separation mesuree -- pas de GPU, pas de PyTorch)
+# SL-13: numpy + torch CPU (diagnostic DISCOVER leger -- factorisation TPR par ALS,
+#        reinjection decoder, constituent surgery, white-box vs atomique,
+#        controle capacite/L2,1 -- CPU uniquement)
 
 # Scientific computing (SL-3, SL-5, SL-12b)
 numpy>=1.24

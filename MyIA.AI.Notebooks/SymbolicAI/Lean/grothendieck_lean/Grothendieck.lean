@@ -39,6 +39,7 @@ import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
+import Grothendieck.Fppf
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -73,6 +74,7 @@ import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
+import Grothendieck.StalkGluing
 import Grothendieck.Subcanonical
 import Grothendieck.TopologyDictionary
 import Grothendieck.TopologyDictionary_en

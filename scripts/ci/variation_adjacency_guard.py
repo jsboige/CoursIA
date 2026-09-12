@@ -105,6 +105,52 @@ from variation_light_cap import (  # noqa: E402
     genre_resolves,
 )
 
+# Same directory as this guard: the date-sliced merged-window fetcher. The
+# self-sufficient recompute mode (#15739) reuses it rather than re-deriving
+# the slicing -- the `--page` incident (fetch_merged_prs_since.py header)
+# came from exactly such a re-derivation.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fetch_merged_prs_since import fetch as fetch_merged_window  # noqa: E402
+from fetch_merged_prs_since import since_date  # noqa: E402
+
+
+def sequence_as_of(merged_prs: list[dict] | None) -> str | None:
+    """Freshest merge the verdict could see -- the staleness boundary (#15739).
+
+    A same-lane merge with ``mergedAt`` AFTER this timestamp post-dates the
+    verdict's referential and may have moved the predecessor: the red stays
+    displayed while nothing re-runs it. Surfacing the boundary lets a worker
+    distinguish a live red from a stale one. ``mergedAt`` is ISO-8601, so the
+    lexicographic max is the chronologic one. None when the window was absent
+    (the verdict then rests on the ``declared`` axis -- `prev_source` says so).
+    """
+    if not merged_prs:
+        return None
+    return max((pr.get("mergedAt") or "") for pr in merged_prs) or None
+
+
+def _gh_pr_body_comments(pr_number: int) -> dict | None:
+    """``{body, comments}`` of a PR via gh; None when the fetch fails.
+
+    Self-sufficient recompute mode only -- CI passes files, humans paste
+    ``--pr-number N`` (#15739). Failure yields None and the caller degrades
+    loudly (exit 2), never silently to declared data.
+    """
+    try:
+        res = subprocess.run(
+            ["gh", "pr", "view", str(pr_number), "--json", "body,comments",
+             "--jq", "{body: .body, comments: "
+                     "[.comments[] | {author: .author.login, body: .body}]}"],
+            capture_output=True, text=True, timeout=20,
+            encoding="utf-8", errors="replace",
+        )
+        if res.returncode != 0:
+            return None
+        return json.loads(res.stdout)
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, TypeError):
+        return None
+
+
 
 # --- G-VAR-3 override (#11708) --------------------------------------------
 #
@@ -413,6 +459,31 @@ def check(body: str | None, override: dict | None = None,
     # word alone: the retag is asked (note GENRE-UNKNOWN below), the ban
     # is not applied.
     if genre_counts_light(genre, g.get("tier")):
+        # #15184: a `declared` predecessor is unmeasured -- the `prev:` field is
+        # frozen at PR-open time (#12095/#11963), so a hard ban on it rests on
+        # data the lane did not produce while the PR sat open. The merged window
+        # being absent, unreadable, or empty for the lane is a degraded path,
+        # NOT a measurement. Refuse to issue the absolute ban of section 2 on
+        # unmeasured data: downgrade to advisory and let the coordinator, not
+        # CI, adjudicate adjacency (verified by the caller carrying an explicit
+        # `unmeasured` verdict the merge gate can read).
+        if prev_source == "declared":
+            return {
+                "guard_pass": True, "blocking": False, "adjacent": False,
+                "unmeasured": True,
+                "genre": genre, "prev_genre": prev_genre, "lane": lane,
+                "prev_source": prev_source,
+                "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
+                "reason": (
+                    f"G-VAR-3: {genre} succede a {prev_genre} mais le "
+                    f"predecesseur vient du champ `prev:` declare "
+                    f"({declared_prev_genre} #{declared_prev_pr or '?'}) -- "
+                    f"donnee NON MESUREE (fenetre merge absente, illisible ou "
+                    f"sans grain pour la lane). Un ban absolu (section 2) ne se "
+                    f"rend pas sur une mesure non faite (#15184). ADVISORY : le "
+                    f"coordinateur, pas la CI, tranche l'adjacence."
+                ),
+            }
         unknown_note = ""
         if not genre_resolves(genre):
             unknown_note = (
@@ -532,8 +603,10 @@ def check(body: str | None, override: dict | None = None,
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    p.add_argument("--body-file", metavar="FILE", required=True,
-                   help="path to the PR body")
+    p.add_argument("--body-file", metavar="FILE", default=None,
+                   help="path to the PR body. Absent avec --pr-number : mode "
+                        "recalcul autonome (#15739) -- le garde fetch son "
+                        "propre body, ses commentaires et la fenetre de merges.")
     p.add_argument("--comments-file", metavar="FILE", default=None,
                    help="JSON list of {author, body} PR comments, scanned for "
                         "a coordinator [G-VAR-3 OVERRIDE] marker (#11708)")
@@ -546,48 +619,106 @@ def main(argv: list[str] | None = None) -> int:
                    help="PR number, to fetch the CURRENT PR's diff files for "
                         "the #14357 disjoint-files exemption. Without it the "
                         "exemption cannot be evaluated and the gate is "
-                        "fail-closed (no exemption).")
+                        "fail-closed (no exemption). Alone (no --body-file) : "
+                        "self-sufficient recompute -- the exact command the "
+                        "stale-red message tells a worker to paste (#15739).")
     args = p.parse_args(argv)
 
-    try:
-        with open(args.body_file, encoding="utf-8") as f:
-            body = f.read()
-    except OSError as e:
-        print(json.dumps({"guard_pass": False, "reason": f"caller error: {e}"}),
-              file=sys.stderr)
-        return 2
+    if not args.body_file and not args.pr_number:
+        p.error("--body-file ou --pr-number requis (mode CI : fichiers ; "
+                "mode recalcul : --pr-number seul, #15739)")
 
+    self_fetch = args.body_file is None
     override = None
-    if args.comments_file:
-        try:
-            with open(args.comments_file, encoding="utf-8") as f:
-                override = parse_override(json.load(f))
-        except (OSError, ValueError) as e:
-            print(json.dumps({"warning": f"comments unreadable: {e}"}),
-                  file=sys.stderr)
-
+    seq_as_of = None
     merged_prev = None
     merged_fallback_note = None
-    if args.merged_prs_file:
+    merged_prs = None
+
+    if self_fetch:
+        # #15739 : la commande `--pr-number N` seule doit marcher telle
+        # qu'elle est copier-collee depuis le message d'un rouge perime. Un
+        # fetch qui echoue est un echec BRUYANT (exit 2) -- jamais un repli
+        # silencieux sur le prev: declare, qui ferait recalculer le worker
+        # contre le mauvais axe en croyant tenir le frais.
+        payload = _gh_pr_body_comments(args.pr_number)
+        if payload is None:
+            print(json.dumps({
+                "guard_pass": False, "blocking": False,
+                "reason": (f"#15739 recalcul autonome : fetch gh pr view "
+                           f"#{args.pr_number} illisible (gh absent, reseau, "
+                           f"ou PR inexistante) -- aucun verdict rendu."),
+            }), file=sys.stderr)
+            return 2
+        body = payload.get("body") or ""
+        override = parse_override(payload.get("comments") or [])
         try:
-            with open(args.merged_prs_file, encoding="utf-8") as f:
-                merged_prs = json.load(f)
-            g = gt.parse_grain_tag(body)
-            merged_prev = resolve_merged_prev_genre(merged_prs, g["lane"] if g else None)
-            if merged_prev[0] is None and merged_prs:
-                # #12636: the merged window was fetched and is non-empty, but the
-                # lane has no grain in it. The guard falls back to the declared
-                # `prev:` -- that fallback must be VISIBLE, never silent (the
-                # pre-#12095 silent fallback is exactly the defect fixed here,
-                # and a window that misses the lane deserves a note, not a mute).
-                merged_fallback_note = (
-                    f"lane {g['lane'] if g else None} absente du window merge "
-                    f"({len(merged_prs)} PRs) -- predecesseur resolu depuis le "
-                    f"prev: declare (#12636)"
-                )
-        except (OSError, ValueError) as e:
-            print(json.dumps({"warning": f"merged-prs unreadable: {e}"}),
+            merged_prs = fetch_merged_window(since_date(21))
+        except (RuntimeError, OSError) as e:
+            print(json.dumps({
+                "guard_pass": False, "blocking": False,
+                "reason": f"#15739 recalcul autonome : fenetre de merges illisible ({e}).",
+            }), file=sys.stderr)
+            return 2
+        g_probe = gt.parse_grain_tag(body)
+        merged_prev = resolve_merged_prev_genre(
+            merged_prs, g_probe["lane"] if g_probe else None)
+        if merged_prev[0] is None and merged_prs:
+            merged_fallback_note = (
+                f"lane {g_probe['lane'] if g_probe else None} absente du window "
+                f"merge ({len(merged_prs)} PRs) -- predecesseur resolu depuis "
+                f"le prev: declare (#12636)"
+            )
+    else:
+        try:
+            with open(args.body_file, encoding="utf-8") as f:
+                body = f.read()
+        except OSError as e:
+            print(json.dumps({"guard_pass": False, "reason": f"caller error: {e}"}),
                   file=sys.stderr)
+            return 2
+
+        if args.comments_file:
+            try:
+                with open(args.comments_file, encoding="utf-8") as f:
+                    override = parse_override(json.load(f))
+            except (OSError, ValueError) as e:
+                print(json.dumps({"warning": f"comments unreadable: {e}"}),
+                      file=sys.stderr)
+
+        if args.merged_prs_file:
+            try:
+                with open(args.merged_prs_file, encoding="utf-8") as f:
+                    merged_prs = json.load(f)
+                g = gt.parse_grain_tag(body)
+                merged_prev = resolve_merged_prev_genre(merged_prs, g["lane"] if g else None)
+                if merged_prev[0] is None and merged_prs:
+                    # #12636: the merged window was fetched and is non-empty, but the
+                    # lane has no grain in it. The guard falls back to the declared
+                    # `prev:` -- that fallback must be VISIBLE, never silent (the
+                    # pre-#12095 silent fallback is exactly the defect fixed here,
+                    # and a window that misses the lane deserves a note, not a mute).
+                    merged_fallback_note = (
+                        f"lane {g['lane'] if g else None} absente du window merge "
+                        f"({len(merged_prs)} PRs) -- predecesseur resolu depuis le "
+                        f"prev: declare (#12636)"
+                    )
+            except (OSError, ValueError) as e:
+                # #15184: the unreadable path must be LOUD in the JSON verdict, not
+                # only on stderr -- the pre-#12636 silent fallback is the defect
+                # this closes, and a window that was fetched but could not be read
+                # deserves the same note as a window that missed the lane.
+                merged_fallback_note = (
+                    f"window merge illisible ({e}) -- predecesseur resolu depuis le "
+                    f"prev: declare (#15184)"
+                )
+                print(json.dumps({"warning": f"merged-prs unreadable: {e}"}),
+                      file=sys.stderr)
+
+    # #15739 : le referentiel du verdict. Sans fenetre de merges, le verdict
+    # repose sur l'axe declared (prev_source le dit) et il n'y a pas de
+    # sequence a dater.
+    seq_as_of = sequence_as_of(merged_prs)
 
     # #14357: the disjoint-files exemption needs the current PR's diff AND a
     # MEASURED predecessor. When the predecessor resolved to the merged
@@ -604,8 +735,9 @@ def main(argv: list[str] | None = None) -> int:
 
     verdict = check(body, override=override, merged_prev=merged_prev,
                     prev_files=prev_files, current_files=current_files)
+    verdict = dict(verdict)
+    verdict["sequence_as_of"] = seq_as_of
     if merged_fallback_note:
-        verdict = dict(verdict)
         verdict["prev_source"] = "declared"
         verdict["prev_fallback"] = merged_fallback_note
         verdict["reason"] = f"{verdict.get('reason', '')} {merged_fallback_note}".strip()

@@ -4,6 +4,18 @@ S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`), **chef de flotte** 
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
+## Regle 0 : production avant digestion, sans perte de qualite (HARD)
+
+La production des lanes et la digestion (CI, reviews, merges) sont **deux pipelines paralleles**. Une saturation du second est un symptome a reparer ou a capaciter ; elle ne devient jamais une politique de ralentissement du premier.
+
+- Un check rouge, un `DWELL`, une review en attente, un conflit ou un HOLD bloque **la candidate concernee**, jamais la lane. La lane traite ce qu'elle peut reparer, puis poursuit aussitot un nouveau grain DEEP/MED de contenu pendant toute attente externe.
+- `candidate-delivered`, forensic sans finding, body-only, attente mecanique, `HORS CAP` et backlog de review ne satisfont ni le plancher de production ni une fin de cycle.
+- Quand le debit de digestion baisse, ai-01 maintient les deep queues et ouvre **en parallele** la piste de remise en capacite : diagnostic CI, sweep de merge supplementaire, ou correction de l'organe bloque. Il ne reduit pas les dispatchs pour rendre la queue confortable.
+- ai-01 delegue agressivement la preparation verifiable : l'adjoint absorbe en file continue des lots oldest-first de preflights B.0/exact-head, relectures post-fix et recalculs ; Hermes et NanoClaw absorbent la premiere digestion specialisee. Chaque lot inventorie toutes les reserves de chaque candidate et remonte chaque READY sans attendre la fin du lot. Ces avis preparent la decision sans remplacer la lecture B.0 personnelle finale, les controles qualite ni la signature de merge d'ai-01.
+- **Aucun de mes messages n'est un prealable (HARD, mandat user 2026-09-12).** Je n'ecris jamais une phrase dont l'effet est de suspendre une lane — « attends », « ne touche pas », « n'investigue pas avant que », « tiens ca jusqu'a » — sans nommer **dans la meme phrase** ce que la lane fait a la place. Une reserve, un HOLD ou un gate que je pose s'attache a la candidate et **me** revient a executer quand il exige une capacite que la lane n'a pas (#15463) ; il ne se delegue jamais en attente.
+- **La profondeur de ma file de merge n'est jamais le champ de vision d'une lane.** Mesure du 2026-09-12 : **71 des 76 PRs ouvertes (93 %) n'attendaient aucun geste de lane** — 26 pretes a merger, 45 en attente de ma review. Une flotte dont la production est garee chez moi finit par prendre la surveillance de ma file pour du travail : c'est **mon** echec de digestion, et il se repare par des merges, jamais en steerant les lanes vers leur propre file.
+- Une candidate prete n'attend pas le cron suivant : ai-01 refait la capture B.0/exact-head/gates et merge des qu'elle est sure. Les controles B.0, H.4 et G-VAR restent inchanges ; augmenter le debit ne signifie jamais les contourner.
+
 ## Regle 1 : ai-01 merge activement sous `myia-ai-01`
 
 Le compte `myia-ai-01` **a** le droit `MergePullRequest` sur `jsboige/CoursIA` (verifie firsthand 2026-08-08 : 6 merges consecutifs sans aucun `gh auth switch`). Le `404` sur la protection de branche (#9991) dit que `jsboige` est requis pour **lire/modifier cette protection**, PAS pour merger — ne pas confondre.

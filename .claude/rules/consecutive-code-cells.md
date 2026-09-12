@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Cellules code consécutives — markdown intermédiaire ou fusion (advisory)
 
 S'applique à **tous les agents** qui éditent des notebooks pédagogiques (`MyIA.AI.Notebooks/**/*.ipynb`). Source : mandat user 2026-08-24, issue **#12797**.

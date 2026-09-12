@@ -4,34 +4,39 @@
 # /etc/systemd/system/coursia-runner.service (systemctl enable --now).
 #
 # Parametres machine : NAME_PREFIX (po-2024 -> myia-po-2024-linux-docker) et
-# N slots (po-2024 -> 8, dispatch capacite #14288 2026-09-02) vivent dans le
-# wrapper coursia-runner-start.sh (N porte par l'argument ExecStart).
+# N slots vivent dans le wrapper coursia-runner-start.sh (N porte par
+# l'argument ExecStart). po-2024 est passe de 8 a 12 slots le 2026-09-09
+# (mission P0 ai-01, msg-20260909T011024-jgamgp : famine 682 en queue / 10 in_progress,
+# marge CPU mesuree nproc=16 loadavg=0.08 autorise 12 slots × 3 vCPU = 36 vCPU
+# sur 16 nproc, overcommit 2.25× acceptable en pratique). Le defaut wrapper
+# (N=4) reste le filet -- `start 12` ici est l'intention explicite pour cette
+# machine, pas une dependance au defaut.
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
-# Wants= au lieu de Requires= (cf #14347 item 2, reserve Hermes sur #14341) :
-# un docker.service en echec au boot DOIT retarder le service et le maintenir
-# en retry (Restart=always), pas le faire sortir de la liste des unites.
-# Le superviseur est resilient par conception : sa boucle de slots retente
-# docker toutes les 15 s, et le holder reprend au prochain logon.
-Wants=docker.service
+# #15095 : Requires+BindsTo INVERSE le choix Wants= de #14347 item 2. Le
+# 07/09, docker.service arrete laissait ce service en Restart=always
+# marteler docker run + fetch_token pour zero travail utile (2 gels machine
+# sur ai-01 en 90 min : ecriture ext4.vhdx 94-96 Mo/s, load 69, iowait
+# 37-63 %). Fail-closed desormais : docker tombe OU echoue au boot => le
+# superviseur est ARRETE (propagation Requires+BindsTo), pas laisse a
+# retenter. Retour du daemon = geste operateur explicite
+# (systemctl start coursia-runner) -- l'hote prime sur la CI.
+Requires=docker.service
+BindsTo=docker.service
 After=docker.service
-
-# #15091 : plafond de redemarrage. Les deux unites portaient Restart=always
-# + RestartSec=30 SANS aucune borne : un docker.service indisponible faisait
-# relancer indefiniment N boucles de slots, chacune retentant docker run
-# toutes les 15 s. Releve sur ai-01 avant l arret du 2026-09-07 :
-# "activating (auto-restart)", NRestarts=10. Au-dela de 5 demarrages en
-# 10 min, l unite passe desormais en "failed" et cesse -- un etat lisible,
-# qui se voit dans systemctl status, la ou une boucle muette ne se voyait
-# que dans le debit disque.
-# En [Unit] et non en [Service] : ces deux directives y ont ete deplacees en
-# systemd 229 (elles restent acceptees en [Service], avec un avertissement).
-StartLimitIntervalSec=600
+# Borne de rafale au niveau unite (#15095) : 5 tentatives de demarrage par
+# fenetre de 300 s, puis le service passe en failed et SORS de sa boucle de
+# restart -- sans cette limite, Restart=always + daemon absent = la boucle
+# infinie que l'incident a mesure, deplacee au niveau systemd.
+StartLimitIntervalSec=300
 StartLimitBurst=5
+# En [Unit] et non en [Service] : deplacees en systemd 229 (acceptees en
+# [Service] avec un avertissement). Une SEULE paire -- jamais deux blocs
+# (union merge = directive dupliquee, test d'unicite #15166).
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-runner-start.sh start 8
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 12
 ExecStop=/usr/local/bin/coursia-runner-start.sh stop
 Restart=always
 RestartSec=30

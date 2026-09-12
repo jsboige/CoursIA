@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 171 |
+| Notebooks | 173 |
 | PRODUCTION | 0 |
-| BETA | 171 |
+| BETA | 173 |
 | ALPHA | 0 |
 
-## Search/Applications (55 notebooks)
+## Search/Applications (56 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -69,21 +69,22 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 38 | [App-18: Optimisation d'Hyperparametres - Approches…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | BETA | Oui |
 | 39 | [App-18b : Optimisation d'Hyperparametres - Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | BETA | Oui |
 | 40 | [App-18b : Optimisation d'Hyperparametres (Python —…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | BETA | Oui |
-| 41 | [App-22 — Sélection empirique d'algorithmes : trois…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | BETA | Oui |
-| 42 | [App-23 — Cryptanalyse différentielle de PRESENT par SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | BETA | Oui |
-| 43 | [App-24 — MAPF : auditer les garanties des solveurs](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) | BETA | Non |
-| 44 | [App-25 — Enchères combinatoires : Winner Determination…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | BETA | Oui |
-| 45 | [App-27 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | BETA | Oui |
-| 46 | [App-28 — Learning to branch](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb) | BETA | Oui |
-| 47 | [App-29 — Équilibrage de chaîne d'assemblage (SALBP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | BETA | Oui |
-| 48 | [App-30 — Ordonnancement d'assemblage orbital](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) | BETA | Oui |
-| 49 | [App-31 — RCPSP/max : quand la faisabilité devient le…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb) | BETA | Oui |
-| 50 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb) | BETA | Oui |
-| 51 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | BETA | Oui |
-| 52 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |
-| 53 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
-| 54 | [App-14b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb) | BETA | Oui |
-| 55 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
+| 41 | [App-18c — Rustuna vs Optuna : mesurer un portage Rust…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb) | BETA | Oui |
+| 42 | [App-22 — Sélection empirique d'algorithmes : trois…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | BETA | Oui |
+| 43 | [App-23 — Cryptanalyse différentielle de PRESENT par SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | BETA | Oui |
+| 44 | [App-24 — MAPF : auditer les garanties des solveurs](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) | BETA | Non |
+| 45 | [App-25 — Enchères combinatoires : Winner Determination…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | BETA | Oui |
+| 46 | [App-27 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | BETA | Oui |
+| 47 | [App-28 — Learning to branch](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb) | BETA | Oui |
+| 48 | [App-29 — Équilibrage de chaîne d'assemblage (SALBP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | BETA | Oui |
+| 49 | [App-30 — Ordonnancement d'assemblage orbital](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) | BETA | Oui |
+| 50 | [App-31 — RCPSP/max : quand la faisabilité devient le…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb) | BETA | Oui |
+| 51 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb) | BETA | Oui |
+| 52 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | BETA | Oui |
+| 53 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |
+| 54 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
+| 55 | [App-14b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb) | BETA | Oui |
+| 56 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
 
 ## Search/Part1-Foundations (40 notebooks)
 
@@ -152,31 +153,32 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 16 | [CSP-9-Distributed](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb) | BETA | Oui |
 | 17 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb) | BETA | Oui |
 
-## Search/Part4-Metaheuristics (21 notebooks)
+## Search/Part4-Metaheuristics (22 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [MGS-1 : Introduction a MetaGeneticSharp et au moteur…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb) | BETA | Oui |
-| 2 | [MGS-11 : Synergie d'iles complementaires -- exploration…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb) | BETA | Oui |
-| 3 | [MGS-13 — Visualiser les paysages dé-biaisés : pourquoi…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb) | BETA | Oui |
-| 4 | [MGS-14 — Trouver une synergie (et dire quand il n'y en…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb) | BETA | Oui |
-| 5 | [MGS-15 : Analyse de paysage -- la corrélation…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) | BETA | Oui |
-| 6 | [MGS-16-AlgorithmSelection : Sélectionner le bon…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) | BETA | Oui |
-| 7 | [MGS-17 — Contrôle de paramètres (Parameter Control)](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb) | BETA | Oui |
-| 8 | [MGS-18 — Banc CEC consolide : la combinaison des deux…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb) | BETA | Oui |
-| 9 | [MGS-19 — Recuit simulé décomposé : l'opérateur de…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | BETA | Oui |
-| 10 | [MGS-20 : Langage de composition pour métaheuristiques](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb) | BETA | Oui |
-| 11 | [MGS-21 : Représentation contre algorithme — la preuve…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb) | BETA | Oui |
-| 12 | [MGS-3 : L'Eukaryote -- sous-populations et chromosomes…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb) | BETA | Oui |
-| 13 | [MGS-4 : Le Modèle Insulaire -- populations structurees…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb) | BETA | Oui |
-| 14 | [MGS-7 : TSP combinatoire -- la grammaire de composition…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7-TSP.ipynb) | BETA | Oui |
-| 15 | [MGS-7d : Michalewicz (steep ridges) + Dixon-Price…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb) | BETA | Oui |
-| 16 | [MGS-8 : Fitness Landscape Explorer -- voir la surface…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb) | BETA | Oui |
-| 17 | [MGS-9 - Trouver l'Everest : relief reel et bassins…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb) | BETA | Oui |
+| 1 | [MGS-1 : Introduction a MetaGeneticSharp et au moteur…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-01-Introduction.ipynb) | BETA | Oui |
+| 2 | [MGS-3 : L'Eukaryote -- sous-populations et chromosomes…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-03-Eukaryote.ipynb) | BETA | Oui |
+| 3 | [MGS-4 : Le Modèle Insulaire -- populations structurees…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-04-Islands.ipynb) | BETA | Oui |
+| 4 | [MGS-7 : TSP combinatoire -- la grammaire de composition…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb) | BETA | Oui |
+| 5 | [MGS-7d : Michalewicz (steep ridges) + Dixon-Price…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb) | BETA | Oui |
+| 6 | [MGS-8 : Fitness Landscape Explorer -- voir la surface…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb) | BETA | Oui |
+| 7 | [MGS-9 - Trouver l'Everest : relief reel et bassins…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb) | BETA | Oui |
+| 8 | [MGS-11 : Synergie d'iles complementaires -- exploration…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb) | BETA | Oui |
+| 9 | [MGS-13 — Visualiser les paysages dé-biaisés : pourquoi…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb) | BETA | Oui |
+| 10 | [MGS-14 — Trouver une synergie (et dire quand il n'y en…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb) | BETA | Oui |
+| 11 | [MGS-15 : Analyse de paysage -- la corrélation…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb) | BETA | Oui |
+| 12 | [MGS-16-AlgorithmSelection : Sélectionner le bon…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb) | BETA | Oui |
+| 13 | [MGS-17 — Contrôle de paramètres (Parameter Control)](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb) | BETA | Oui |
+| 14 | [MGS-18 — Banc CEC consolide : la combinaison des deux…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb) | BETA | Oui |
+| 15 | [MGS-19 — Recuit simulé décomposé : l'opérateur de…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | BETA | Oui |
+| 16 | [MGS-20 : Langage de composition pour métaheuristiques](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb) | BETA | Oui |
+| 17 | [MGS-21 : Représentation contre algorithme — la preuve…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb) | BETA | Oui |
 | 18 | [MGS-22 : MGS contre mealpy — le bench croisé lib-vs-lib…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb) | BETA | Oui |
 | 19 | [MGS-23 : DifferentialEvolution MGS contre mealpy —…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-23-DifferentialEvolution-vs-Mealpy.ipynb) | BETA | Oui |
 | 20 | [MGS-25 : WhaleOptimisation MGS contre mealpy — le WOA…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-25-WhaleOptimisation-vs-Mealpy.ipynb) | BETA | Oui |
 | 21 | [MGS-29 : GA MGS compose "Default" contre BaseGA mealpy…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb) | BETA | Oui |
+| 22 | [MGS-30 : Scatter Search MGS contre son ombre — la…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | BETA | Oui |
 
 ## Sudoku (38 notebooks)
 
