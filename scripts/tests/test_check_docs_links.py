@@ -9,6 +9,7 @@ Validates all acceptance criteria from issue #2453:
 """
 
 import json
+import subprocess
 import textwrap
 from pathlib import Path
 
@@ -18,6 +19,7 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import check_docs_links
 from check_docs_links import (
     BASELINE_PATH,
     LinkRef,
@@ -28,11 +30,15 @@ from check_docs_links import (
     find_scan_files,
     format_report,
     load_baseline,
+    preexisting_broken,
     run_scan,
+    scan_content,
     scan_file,
     write_baseline,
     _is_valid_target,
+    _link_exists_in_tree,
     _should_skip,
+    _tree_dirs,
     REPO_ROOT,
 )
 
@@ -405,6 +411,149 @@ class TestRegressionDetection:
         result = ScanResult(broken=[])  # All fixed now
         new_broken = check_regression(result, baseline)
         assert len(new_broken) == 0
+
+
+class TestPreexistingExcuse:
+    """--check accepts links already broken at the comparison revision (#15766)."""
+
+    def test_preexisting_link_is_not_a_regression(self):
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/gone.md", line=3, text="gone"),
+        ])
+        new_broken = check_regression(
+            result, {}, preexisting={("README.md", "docs/gone.md")})
+        assert new_broken == []
+
+    def test_unrelated_preexisting_does_not_mask_a_new_link(self):
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/gone.md", line=3, text="gone"),
+            LinkRef(source="CLAUDE.md", target="docs/fresh.md", line=9, text="fresh"),
+        ])
+        new_broken = check_regression(
+            result, {}, preexisting={("README.md", "docs/gone.md")})
+        assert [r.target for r in new_broken] == ["docs/fresh.md"]
+
+    def test_baseline_and_preexisting_both_excuse(self):
+        baseline = {"broken_links": [
+            {"source": "README.md", "target": "docs/old.md", "line": 1, "text": "old"},
+        ]}
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/old.md", line=1, text="old"),
+            LinkRef(source="PARCOURS.md", target="docs/gone.md", line=2, text="gone"),
+        ])
+        new_broken = check_regression(
+            result, baseline, preexisting={("PARCOURS.md", "docs/gone.md")})
+        assert new_broken == []
+
+    def test_no_preexisting_keeps_legacy_semantics(self):
+        """Omitting the comparison revision behaves exactly as before."""
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/gone.md", line=3, text="gone"),
+        ])
+        assert len(check_regression(result, {})) == 1
+
+
+class TestLinkExistsInTree:
+    """The git-tree existence oracle mirrors check_link on a file listing."""
+
+    FILES = {"docs/a.md", "docs/sub/b.md", "README.md"}
+
+    def test_existing_file(self):
+        assert _link_exists_in_tree("./a.md", "docs/a.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+    def test_missing_file(self):
+        assert not _link_exists_in_tree("./nope.md", "docs/a.md", self.FILES,
+                                        _tree_dirs(self.FILES), None)
+
+    def test_parent_traversal_inside_repo(self):
+        assert _link_exists_in_tree("../README.md", "docs/a.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+    def test_directory_target(self):
+        assert _link_exists_in_tree("./sub/", "docs/a.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+    def test_escaping_the_repo_is_broken(self):
+        assert not _link_exists_in_tree("../../outside.md", "docs/a.md", self.FILES,
+                                        _tree_dirs(self.FILES), None)
+
+    def test_html_needs_listed_notebook(self):
+        files = self.FILES | {"docs/nb.ipynb"}
+        dirs = _tree_dirs(files)
+        assert not _link_exists_in_tree("./nb.html", "docs/a.md", files, dirs, "")
+        assert _link_exists_in_tree("./nb.html", "docs/a.md", files, dirs,
+                                    '"docs/nb.ipynb"')
+
+    def test_submodule_path_is_valid(self, monkeypatch):
+        monkeypatch.setattr(check_docs_links, "SUBMODULE_PATHS", {"vendor/lib"})
+        assert _link_exists_in_tree("vendor/lib/x.py", "README.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+
+class TestPreexistingBrokenAgainstRealGit:
+    """End-to-end: only links already broken at the base revision are excused."""
+
+    @staticmethod
+    def _git(root: Path, *args: str) -> None:
+        subprocess.run(
+            ["git", "-c", "user.email=t@example.com", "-c", "user.name=t", *args],
+            cwd=root, check=True, capture_output=True,
+        )
+
+    def _fixture(self, tmp_path: Path, monkeypatch) -> Path:
+        root = tmp_path / "repo"
+        (root / "docs").mkdir(parents=True)
+        self._git(root, "init", "-q")
+        # Base revision: one link whose target is already missing, one that works.
+        (root / "docs" / "present.md").write_text("# present\n", encoding="utf-8")
+        (root / "docs" / "a.md").write_text(
+            "[gone](./missing.md)\n[ok](./present.md)\n", encoding="utf-8")
+        self._git(root, "add", "-A")
+        self._git(root, "commit", "-q", "-m", "base")
+        # Head revision: unchanged a.md, plus a new file carrying a new broken link.
+        (root / "docs" / "b.md").write_text("[newgone](../nope.md)\n", encoding="utf-8")
+        self._git(root, "add", "-A")
+        self._git(root, "commit", "-q", "-m", "head")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", root)
+        return root
+
+    def test_only_already_broken_links_are_excused(self, tmp_path, monkeypatch):
+        self._fixture(tmp_path, monkeypatch)
+        refs = [
+            LinkRef(source="docs/a.md", target="./missing.md", line=1, text="gone"),
+            LinkRef(source="docs/a.md", target="./present.md", line=2, text="ok"),
+            LinkRef(source="docs/b.md", target="../nope.md", line=1, text="newgone"),
+        ]
+        excused = preexisting_broken(refs, "HEAD~1")
+
+        assert excused == {("docs/a.md", "./missing.md")}
+        # The link whose target existed at base is a real regression now, and the
+        # file added by this branch has nothing to excuse it.
+        remaining = check_regression(ScanResult(broken=refs), {}, excused)
+        assert sorted(r.target for r in remaining) == ["../nope.md", "./present.md"]
+
+    def test_unreadable_revision_returns_none(self, tmp_path, monkeypatch):
+        self._fixture(tmp_path, monkeypatch)
+        refs = [LinkRef(source="docs/a.md", target="./missing.md", line=1, text="x")]
+        assert preexisting_broken(refs, "no-such-rev-15766") is None
+
+    def test_no_broken_refs_short_circuits(self, tmp_path, monkeypatch):
+        """Nothing broken at HEAD means no revision needs to be read at all."""
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        assert preexisting_broken([], "no-such-rev-15766") == set()
+
+    def test_scan_content_matches_scan_file(self, tmp_path, monkeypatch):
+        """The extracted scanner keeps the on-disk behaviour byte for byte."""
+        f = tmp_path / "x.md"
+        body = "# t\n\n[ok](./y.md)\n\n```\n[skip](./z.md)\n```\n"
+        f.write_text(body, encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        from_file = scan_file(f)
+        from_content = scan_content(body, "x.md")
+        assert [(r.source, r.target, r.line) for r in from_file] == \
+               [(r.source, r.target, r.line) for r in from_content]
+        assert [r.target for r in from_content] == ["./y.md"]
 
 
 class TestSelfCheck:
