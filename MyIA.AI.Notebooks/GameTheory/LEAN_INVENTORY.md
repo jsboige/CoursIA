@@ -216,7 +216,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 ### 10. assignment_lean
 
-**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-27-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
+**Objectif** : squelette de correction de l'algorithme d'affectation de Kuhn-Munkres (hongrois) — lake compagnon du notebook GameTheory-23-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). Le primal (matrice de coûts, couplage parfait, valeur), le dual (potentiels, faisabilité, **dualité faible**), le certificat d'optimalité à écart nul, et les invariants structurels de l'algorithme (graphe d'égalité, **invariant de sortie**, **le serrage hongrois préserve la faisabilité duale**). Terminaison et complexité O(n³) volontairement hors scope.
 
 **Toolchain** : v4.32.1 | **Dépendances** : Mathlib4
 

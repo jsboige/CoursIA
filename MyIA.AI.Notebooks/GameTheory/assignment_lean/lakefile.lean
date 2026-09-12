@@ -2,7 +2,7 @@ import Lake
 open Lake DSL
 
 -- Hommage James R. Munkres (1930-2026), issue #12598 (1/3) :
--- lake compagnon du notebook GameTheory-27-Munkres-Assignment.ipynb.
+-- lake compagnon du notebook GameTheory-23-Munkres-Assignment.ipynb.
 -- Kuhn (1955) / Munkres (1957), methode hongroise pour le probleme
 -- d'affectation. Le lake formalise la charpente de correction :
 -- dualite faible LP, certificat d'optimalite a gap nul, et preservation

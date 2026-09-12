@@ -352,6 +352,151 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-! #### Le fait de Fox : la paire de dessus partage une classe d'arcs
+
+La docstring d'`alexanderEntry` avance que « chaque ligne somme à zéro ».
+Ce n'est pas une propriété de la ligne seule : c'est la conséquence d'un fait
+structurel de `arcPartition` — en chaque croisement, les deux étiquettes de
+dessus `e2` et `e4` appartiennent à une même classe. `mergePair` fusionne
+précisément cette paire, et le repli ne fait ensuite qu'unir des classes,
+jamais en scinder une : c'est la traduction combinatoire de la relation de
+Wirtinger. Les lemmes qui suivent l'établissent pour tout diagramme dont les
+étiquettes d'arêtes vivent dans la plage `1..numEdges` (cf `EdgesInRange`).
+-/
+
+/-- Deux étiquettes d'arêtes partagent une classe de la partition `P`. -/
+def SameClass (P : List (List Nat)) (x y : Nat) : Prop :=
+  ∃ C ∈ P, x ∈ C ∧ y ∈ C
+
+/-- L'étiquette `z` est portée par au moins une classe de `P`. -/
+def Covered (P : List (List Nat)) (z : Nat) : Prop := ∃ C ∈ P, z ∈ C
+
+/-- Étape du repli de `arcPartition` : fusionner la paire de dessus. -/
+def mergeStep (P : List (List Nat)) (p : Nat × Nat) : List (List Nat) :=
+  mergePair P p.1 p.2
+
+/-- Forme dépliée de `mergePair` : les classes intactes, puis la classe
+fusionnée. -/
+lemma mergePair_eq (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y =
+      (P.filter (fun C => !C.contains x && !C.contains y)) ++
+      [(P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups] := rfl
+
+/-- La classe fusionnée porte toute étiquette d'une classe du filtre `hit`. -/
+lemma mem_merged {P : List (List Nat)} {C : List Nat} {z x y : Nat}
+    (hC : C ∈ P) (hz : z ∈ C) (hxy : (C.contains x || C.contains y) = true) :
+    z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
+  rw [List.mem_eraseDups, List.mem_flatten]
+  exact ⟨C, List.mem_filter.mpr ⟨hC, hxy⟩, hz⟩
+
+/-- Une classe qui ne porte ni `x` ni `y` reste intacte dans `keep`. -/
+lemma keep_filter {P : List (List Nat)} {C : List Nat} {x y : Nat}
+    (hC : C ∈ P) (hmem : ¬(C.contains x || C.contains y) = true) :
+    C ∈ (P.filter (fun C => !C.contains x && !C.contains y)) := by
+  refine List.mem_filter.mpr ⟨hC, ?_⟩
+  simpa using hmem
+
+/-- `mergePair` ne fait pas disparaître une étiquette déjà couverte. -/
+lemma covered_mergePair {P : List (List Nat)} {x y z : Nat} (h : Covered P z) :
+    Covered (mergePair P x y) z := by
+  obtain ⟨C, hC, hz⟩ := h
+  by_cases hmem : (C.contains x || C.contains y) = true
+  · refine ⟨_, ?_, mem_merged hC hz hmem⟩
+    rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+  · refine ⟨C, ?_, hz⟩
+    rw [mergePair_eq, List.mem_append]; left
+    exact keep_filter hC hmem
+
+/-- `mergePair` ne scinde aucune classe : deux étiquettes qui partageaient une
+classe continuent de la partager. -/
+lemma sameClass_mergePair {P : List (List Nat)} {x y a b : Nat}
+    (h : SameClass P a b) : SameClass (mergePair P x y) a b := by
+  obtain ⟨C, hC, ha, hb⟩ := h
+  by_cases hmem : (C.contains x || C.contains y) = true
+  · refine ⟨_, ?_, mem_merged hC ha hmem, mem_merged hC hb hmem⟩
+    rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+  · refine ⟨C, ?_, ha, hb⟩
+    rw [mergePair_eq, List.mem_append]; left
+    exact keep_filter hC hmem
+
+/-- `mergePair` réunit effectivement `x` et `y` dans une même classe, dès lors
+que l'un et l'autre sont couverts (le filtre `hit` n'est alors pas vide et la
+classe fusionnée les porte tous les deux). -/
+lemma sameClass_mergePair_self {P : List (List Nat)} {x y : Nat}
+    (hx : Covered P x) (hy : Covered P y) : SameClass (mergePair P x y) x y := by
+  obtain ⟨Cx, hCx, hx'⟩ := hx
+  obtain ⟨Cy, hCy, hy'⟩ := hy
+  have hmx : (Cx.contains x || Cx.contains y) = true := by
+    rw [Bool.or_eq_true]; left; exact List.contains_iff_mem.mpr hx'
+  have hmy : (Cy.contains x || Cy.contains y) = true := by
+    rw [Bool.or_eq_true]; right; exact List.contains_iff_mem.mpr hy'
+  refine ⟨_, ?_, mem_merged hCx hx' hmx, mem_merged hCy hy' hmy⟩
+  rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+
+/-- Le repli préserve l'appartenance partagée. -/
+lemma sameClass_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {a b : Nat}
+    (h : SameClass P a b) : SameClass (pairs.foldl mergeStep P) a b := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (sameClass_mergePair h)
+
+/-- Toute paire rencontrée pendant le repli finit dans une même classe. -/
+lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (hcover : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
+    ∀ q ∈ pairs, SameClass (pairs.foldl mergeStep P) q.1 q.2 := by
+  induction pairs generalizing P with
+  | nil => intro q hq; simp at hq
+  | cons p ps ih =>
+      intro q hq
+      rw [List.foldl_cons]
+      rcases List.mem_cons.mp hq with rfl | hqs
+      · exact sameClass_foldl (sameClass_mergePair_self
+          (hcover q (List.mem_cons.mpr (Or.inl rfl))).1
+          (hcover q (List.mem_cons.mpr (Or.inl rfl))).2)
+      · exact ih (P := mergeStep P p)
+          (fun r hr => ⟨covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).1,
+                        covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).2⟩)
+          q hqs
+
+/-- Toute étiquette de la plage `1..n` est couverte par les singletons initiaux. -/
+lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :
+    Covered ((List.range n).map (fun i => [i + 1])) z := by
+  refine ⟨[z], ?_, by simp⟩
+  rw [List.mem_map]
+  exact ⟨z - 1, by rw [List.mem_range]; omega, by simp only [Nat.sub_add_cancel h1]⟩
+
+/-- Les quatre étiquettes d'arête de chaque croisement vivent dans la plage
+`1..numEdges` du diagramme. -/
+def EdgesInRange (d : KnotDiagram) : Prop :=
+  ∀ c ∈ d.crossings, 1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧
+    1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
+    1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧
+    1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges
+
+/-- Le repli de `arcPartition` en forme de `foldl` sur `mergeStep`. -/
+lemma arcPartition_eq (d : KnotDiagram) :
+    arcPartition d = (d.crossings.map (fun c => (c.e2, c.e4))).foldl mergeStep
+      ((List.range d.numEdges).map (fun i => [i + 1])) := rfl
+
+/-- **Le fait de Fox** : en chaque croisement d'un diagramme à étiquettes en
+plage, les deux étiquettes de dessus appartiennent à une même classe de la
+partition d'arcs. C'est ce fait — et non la seule garde de cardinal de
+`alexanderPolynomialAux` — qui porte la somme de ligne nulle de la matrice
+d'Alexander (cf `alexanderEntry_sum_zero` ci-dessous). -/
+theorem arcPartition_sameClass_overStrand (d : KnotDiagram) (h : EdgesInRange d)
+    {c : PDCrossing} (hc : c ∈ d.crossings) :
+    SameClass (arcPartition d) c.e2 c.e4 := by
+  rw [arcPartition_eq]
+  have hcover : ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.2 := by
+    intro q hq
+    rw [List.mem_map] at hq
+    obtain ⟨c', hc', rfl⟩ := hq
+    obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
+    exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
+  exact sameClass_foldl_of_mem hcover (c.e2, c.e4) (List.mem_map.mpr ⟨c, hc, rfl⟩)
+
 /-- Contrôle : la partition d'arcs du code Conway corrigé — 11 arcs couvrant
 les 22 arêtes (condition de non-dégénérescence du mineur d'Alexander : la
 garde `arcs'.length = rest.length + 1` de `alexanderPolynomialAux` passe).
@@ -382,6 +527,64 @@ noncomputable def alexanderEntry (c : PDCrossing) (C : List Nat) : Polynomial �
   (if C.contains c.e1 then Polynomial.X else 0)
     + (if C.contains c.e3 then -(1 : Polynomial ℤ) else 0)
     + (if C.contains c.e2 || C.contains c.e4 then 1 - Polynomial.X else 0)
+
+/-! #### Les lignes d'Alexander somment à zéro
+
+Sous les hypothèses d'unicité — chaque étiquette du dessous portée par
+exactement une classe, la paire de dessus rencontrant exactement une classe —
+chaque ligne de la matrice d'Alexander somme à zéro : `t − 1 + (1 − t) = 0`.
+C'est ce fait qui rend le mineur (n−1)×(n−1) indépendant, à un signe près, du
+choix de la colonne frappée : l'affirmation normative de la docstring
+d'`alexanderEntry` devient ici un théorème. `arcPartition_sameClass_overStrand`
+fournit la moitié combinatoire (la paire de dessus partage une classe) ;
+la vérification que `arcPartition` satisfait les hypothèses d'unicité
+(`countP` = 1 par étiquette) reste à établir — tranche suivante de See #14962.
+-/
+
+/-- Somme d'une carte indicatrice : le `w` est compté une fois par classe
+porteuse. -/
+lemma sum_map_indicator (P : List (List Nat)) (p : List Nat → Bool) (w : Polynomial ℤ) :
+    (P.map (fun C => if p C then w else 0)).sum = w * (P.countP p : Polynomial ℤ) := by
+  induction P with
+  | nil => simp
+  | cons D Ps ih =>
+      by_cases hD : p D = true
+      · simp only [List.map_cons, List.sum_cons, ih, List.countP_cons, hD, if_true]
+        push_cast
+        ring
+      · simp only [List.map_cons, List.sum_cons, ih, List.countP_cons, hD, Bool.false_eq_true,
+          if_false]
+        push_cast
+        ring
+
+/-- La somme d'une carte à trois termes se distribue sur les trois sommes. -/
+lemma sum_map_three (P : List (List Nat)) (f g h : List Nat → Polynomial ℤ) :
+    (P.map (fun C => f C + g C + h C)).sum =
+      (P.map f).sum + (P.map g).sum + (P.map h).sum := by
+  induction P with
+  | nil => simp
+  | cons D Ps ih => simp only [List.map_cons, List.sum_cons, ih]; abel
+
+/-- **Somme de ligne nulle** : si chaque étiquette du dessous est portée par
+exactement une classe et si la paire de dessus rencontre exactement une
+classe, alors la ligne d'`alexanderEntry` somme à zéro. C'est le fait de Fox
+qui rend le mineur (n−1)×(n−1) indépendant, à un signe près, du choix de la
+colonne frappée — le socle demandé par See #14962 avant toute correction de
+normalisation. -/
+theorem alexanderEntry_sum_zero (P : List (List Nat)) (c : PDCrossing)
+    (h1 : P.countP (fun C => C.contains c.e1) = 1)
+    (h3 : P.countP (fun C => C.contains c.e3) = 1)
+    (h24 : P.countP (fun C => C.contains c.e2 || C.contains c.e4) = 1) :
+    (P.map (alexanderEntry c)).sum = 0 := by
+  have hmap : (P.map (alexanderEntry c)) = P.map (fun C : List Nat =>
+      ((if C.contains c.e1 then (Polynomial.X : Polynomial ℤ) else 0)
+        + (if C.contains c.e3 then (-(1 : Polynomial ℤ)) else 0)
+        + (if C.contains c.e2 || C.contains c.e4 then (1 : Polynomial ℤ) - Polynomial.X
+           else 0))) := by
+    congr 1
+  rw [hmap, sum_map_three, sum_map_indicator, h1, sum_map_indicator, h3, sum_map_indicator, h24]
+  push_cast
+  ring
 
 /-- Type des valeurs du polynôme d'Alexander : ℤ[t]. -/
 abbrev AlexanderPoly := Polynomial ℤ
