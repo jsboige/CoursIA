@@ -359,7 +359,42 @@ STUB_PATTERNS = [
     # `display` form, such stubs were under-counted (e.g. GameTheory-5 cell Ex2,
     # `display("Exercice 2 a completer ...")` with no `// TODO`/`// Indice`).
     re.compile(r'(?:Console\.WriteLine|display)\(\$?["\']Exercice', re.IGNORECASE),
-    re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
+    # Generic ``<name> = None`` placeholder. Was previously ``result = None``
+    # ONLY (the original C.1 idiome), which under-counted 3 notebook audits:
+    # AEV (13b_Agent_Evaluation) ``resultat = None``, Claudish
+    # ``response_json = None``, OWUI uses ``return -1`` (covered by the next
+    # pattern). Any name, with optional inline / line-tail ``# TODO``/``# ...
+    # a completer`` (ignored by the matcher -- the assignment shape alone is
+    # the marker). NOT applied to the bare ``result = None`` form already
+    # covered; this is a superset.
+    re.compile(r"^\s*[A-Za-z_]\w*\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
+    # Sentinelle return: ``return -1  # valeur "a completer"``, ``return ...
+    # # placeholder``, etc. The numeric/string literal alone doesn't distinguish
+    # a computed ``return -1`` (rare in pedagogy) from a placeholder, so the
+    # marker is the **line-tail comment** carrying placeholder vocabulary
+    # (``a completer``, ``a remplir``, ``placeholder``, ``neutre``, ``stub``).
+    # Match the whole-line-tail ``return <lit>  # ... <vocab>`` shape -- a
+    # returned literal in mid-cell without a sentinel comment stays a derived
+    # return. (OWUI issue #15676 -- ``return -1  # valeur "a completer
+    # (placeholder neutre)"`` in cell 11.)
+    re.compile(
+        r"\breturn\s+-?\d+\s*#.*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+        re.IGNORECASE,
+    ),
+    # Pure-sentinelle string literals: ``return "a determiner"``,
+    # ``return "a trancher"``, ``return "a completer"``, ``return "unknown"``,
+    # ``return "a definir"``, ``return "TODO"``. The string ITSELF spells the
+    # placeholder -- no line-tail comment needed. OWUI issue #15676 -- cells
+    # 13 (``classer`` -> ``return "a determiner"``) and 15 (``verdict`` ->
+    # ``return "a trancher"``); AEV uses the variable form (``return resultat``
+    # with ``resultat = None``). Membership in a short whitelist is safer than
+    # a free regex: a real ``return "unknown"`` exists in some notebooks (a
+    # classifier output), and the cost of a missed exercise is much smaller
+    # than a false positive that over-counts a worked solution.
+    re.compile(
+        r'\breturn\s+["\'](?:a\s+(?:d[eé]terminer|trancher|compl[eé]ter|remplir|d[eé]finir)|unknown|TODO|à compléter)["\']',
+        re.IGNORECASE,
+    ),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),
     # "a completer" / "to complete" LINE-COMMENT stub markers. A scaffolded
