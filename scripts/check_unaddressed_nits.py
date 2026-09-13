@@ -2531,7 +2531,7 @@ def _lift_participle_after(head: str, end: int) -> bool:
 _NARRATION_BEFORE_RE = re.compile(
     r"\b(?:levee?|levement|je\s+leve|lifted?|retrait|annulation"
     r"|chronologie|historique|etat|resume|recap(?:itulatif)?|bilan"
-    r"|contexte|suite)\b[^\n]{0,24}$",
+    r"|contexte|suite(?!\s*:))\b[^\n]{0,24}$",
     re.IGNORECASE,
 )
 

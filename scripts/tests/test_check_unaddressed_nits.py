@@ -2674,6 +2674,9 @@ def test_16005_narration_en_titre_ne_pose_pas():
     assert mod.classify(
         "jsboige", "Historique du blocage posé hier, pour mémoire."
     ) is None
+    assert mod.classify(
+        "jsboige", "## Suite du blocage — ce qui reste en attente"
+    ) is None
 
 
 def test_16005_emissions_reelles_restent_detectees():
@@ -2692,6 +2695,9 @@ def test_16005_emissions_reelles_restent_detectees():
     ) == "BLOCK"
     assert mod.classify(
         "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
     ) == "BLOCK"
 
 
