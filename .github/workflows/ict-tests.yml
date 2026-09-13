@@ -12,10 +12,10 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 686 items.
-#     55 != 1046 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
+#     @pytest.mark.parametrize) : tests/ = 1107 items, ict/tests/ = 724 items.
+#     55 != 1107 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1046/686), le label garde les strates (55/42).
+#     floor garde la collection (1107/724), le label garde les strates (55/42).
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
@@ -30,6 +30,19 @@ name: ICT-Series Tests
 # collecte DEPASSE le floor (drift ascendant = floor a remonter dans la PR qui
 # l'introduit). Quand la collection change, ajuster matrix.test-floor dans la
 # meme PR.
+# Mesure firsthand po-2027 (2026-09-13, worktree detache REBASE sur origin/main,
+# python 3.9.25 + numpy 1.26.4 + scipy + matplotlib SANS torch -- la forme de
+# l'env CI, verifiee fidele : le job 103632939140 (main@5772d72dc7) porte
+# "Collected: 692 tests (floor: 692)", identique a la mesure locale) :
+# tests/ = 1107 SUR ORIGIN/MAIN (la prose du header de main annoncait encore
+# 1046/670 alors que son floor etait deja 1071 -- incoherence heritee, corrigee ici)
+# et ict/tests/ = 708 sur origin/main -> 724 sur cette branche (+16 items
+# bench_factorise #15657). La mesure anterieure du 2026-09-12 annoncait 692 -> 708 :
+# elle portait sur un main LOCAL PERIME, anterieur a l'arrivee de
+# ict/tests/test_attention_schema.py (#15547) sur origin/main ; le chiffre de la
+# branche etait donc faux de 16, et le floor avec lui.
+# Le venv local AVEC torch collecte 1111 en tests/ : les 4 items d'ecart sont
+# tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
 # documente dans #9387 (acceptance : une panne d'infra doit se distinguer d'un finding).
 #
@@ -123,10 +136,13 @@ jobs:
           # (#15479 tranche 2, tests/test_causal_hooks.py -- importorskip
           # FONCTION-niveau : comptes a la collecte meme sans torch, skips a
           # l'execution seulement, convention test_jlens_traces.py).
+          # Floor 1071 -> 1107 (cette PR) : +36 de DRIFT MAIN, aucun apport de
+          # la branche -- origin/main@4793dc31cd1f collecte 1107 sous py3.9.25
+          # sans torch, la branche collecte 1107 (mesure firsthand po-2027).
           - suite-name: "tests/ (56)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-floor: 1071
+            test-floor: 1107
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 686 items collectes = 670 (mesure 2x sur
           # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests
@@ -139,13 +155,28 @@ jobs:
           # (sys.path.insert module-level ignore sous importlib).
           # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
-          # Floor 708 -> 728 : +20 items case 4 self-model minimal
-          # #8182 (PR case 4, ict/tests/test_self_model_minimal.py --
-          # 43e strate package, collection locale mesuree 728).
+          # Floor 692 -> 708 : +16 items case 5 attention-schema #8182
+          # (PR #15547, ict/tests/test_attention_schema.py) -- porte par MAIN.
+          # (La prose de main ci-dessus annonce encore 686 : elle est en retard
+          # d'un cran sur son propre floor, 708.)
+          # Floor 708 -> 728 : +20 items case 4 self-model minimal #8182
+          # (PR case 4, ict/tests/test_self_model_minimal.py -- 43e strate
+          # package, collection locale mesuree 728) -- porte par MAIN
+          # egalement, posterieurement.
+          # Floor 728 -> 744 (cette PR) : +16 items bench_factorise #15657,
+          # mesures sur l'arbre REBASE (44 fichiers test_*.py cote origin/main,
+          # 45 cote branche). La mesure anterieure de cette branche
+          # (708 -> 724) est SUPERSEDEE, pas corrigee de quelques items : elle
+          # portait sur un origin/main PERIME, anterieur a l'arrivee du 44e
+          # module -- un floor mesure contre un origin/main perime est faux
+          # quelle que soit la qualite de la mesure locale. 728 + 16 = 744
+          # ferme l'arithmetique, et 744 EST la collection mesuree sur l'arbre
+          # rebase (py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4,
+          # SANS torch -- la forme de l'env CI).
           - suite-name: "ict/tests/ (43 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 728
+            test-floor: 744
 
     steps:
       - uses: actions/checkout@v4
