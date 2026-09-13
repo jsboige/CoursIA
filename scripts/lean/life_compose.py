@@ -926,6 +926,7 @@ class Searcher:
                                 break
                         if not consistent:
                             continue
+                        # matérialisation de l'itérateur d'offsets (1 fois)
                         offset_iter: Iterator[tuple[int, int]]
                         if offset is not None:
                             offset_iter = iter([offset])
@@ -934,8 +935,31 @@ class Searcher:
                             offset_iter = iter([(0, 0)])
                         else:
                             offset_iter = iter(self._extent_grid(state))
-                        for e in offset_iter:
-                            # dérivation des spawns (phase énumérée, R4 filtre)
+                        offsets = list(offset_iter)
+                        # -- R4 HOIST (#15635 T6) ----------------------------------
+                        # Le check R4 (congruence de phase) ne dépend PAS de `e` ni
+                        # de `p0` après évaluation : forced = (decl.phase - t_fire)
+                        # % motif.period est calculable avant la boucle sur
+                        # offsets. On hoist pour éviter de répéter le test à
+                        # chaque itération de e (gain O(len(offsets)) par phases).
+                        # Compteur `r4_phase` : on l'incrémente de len(offsets)
+                        # pour préserver le décompte byte-exact (avant : +1 par
+                        # itération e qui échouait).
+                        if "r4" not in ablate and spawn_slots:
+                            r4_skip = False
+                            for i in spawn_slots:
+                                decl = reaction.reactants[i]
+                                motif = catalog.motifs[decl.motif_id]
+                                forced = (decl.phase - t_fire) % motif.period
+                                if phase_map[i] != forced:
+                                    counters["r4_phase"] += len(offsets)
+                                    r4_skip = True
+                                    break
+                            if r4_skip:
+                                continue
+                        # -- fin R4 HOIST -----------------------------------------
+                        for e in offsets:
+                            # dérivation des spawns (R4 hoisté au-dessus)
                             spawns: list[Spawn] = []
                             ok = True
                             for i in spawn_slots:
@@ -943,13 +967,6 @@ class Searcher:
                                 motif = catalog.motifs[decl.motif_id]
                                 tx, ty = motif.translation_step
                                 p0 = phase_map[i]
-                                if "r4" not in ablate:
-                                    forced = decl.phase - t_fire
-                                    forced %= motif.period
-                                    if p0 != forced:
-                                        counters["r4_phase"] += 1
-                                        ok = False
-                                        break
                                 corner = _motif_phase_offsets(
                                     catalog, decl.motif_id
                                 )[decl.phase]

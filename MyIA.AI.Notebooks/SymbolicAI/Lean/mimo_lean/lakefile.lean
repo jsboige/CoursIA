@@ -5,9 +5,9 @@ open Lake DSL
 # Lake mimo_lean — détection MIMO par descente à flips (Lean 4)
 
 Port formel de l'algorithme de détection MIMO par flips de coordonnées
-(Papailiopoulos, 2026 — cf issue #10984). Le lake naît directement sur
-`v4.32.1` (fin de la migration #10986) — Mathlib résolu à
-`520045ab14e26149ee970e2e617ca04b09bde5d6` (cf `lake-manifest.json`).
+(Papailiopoulos, 2026 — cf issue #10984). Le lake cible désormais
+`v4.33.0` (rollout #14773) — Mathlib résolu à
+`db584cd6d46c92f209a44c0f1c829460d327499d` (cf `lake-manifest.json`).
 
 Six libs compilées, deux phases utilitaires + quatre phases du papier §11 :
 
@@ -25,8 +25,9 @@ Six libs compilées, deux phases utilitaires + quatre phases du papier §11 :
 - **Phase 3b / Converse** (`Converse.lean`) : converse §11 — concentration
   Hanson–Wright du bruit (`‖w‖²` chi-square), union bound
   `(1−p)^n ≤ e^{−np}`, appui sur le lake externe
-  `YuanheZ/lean-stat-learning-theory` (SLT, pinned
-  `d0f506f0a695018265dccb33bcb05e2f5ca1c876`, Apache 2.0).
+  `YuanheZ/lean-stat-learning-theory` (SLT, base
+  `d0f506f0a695018265dccb33bcb05e2f5ca1c876`, Apache 2.0) avec un commit de
+  compatibilité Lean 4.33 borné à la preuve du cas de rayon nul.
 - **Phase 4 / Bridge** (`Bridge.lean`, grignotage #11148) : pont entre
   `mimoObj` (Phase 2) et converse (Phase 3b) — identité de différence de
   coût `cost_diff`, fragment de converse connecté au ML.
@@ -41,11 +42,18 @@ Convention i18n #4980 : docstrings FR par défaut, sibling `_en`
 package «mimo_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
-
+/-
+Le fork SLT ajoute à la base upstream d0f506f une unique adaptation de preuve
+pour Lean 4.33 ; son lake reste épinglé à Mathlib 4.32. Lake 5 résout les
+dépendances directes dans l'ordre inverse de leur déclaration : Mathlib doit
+rester en dernier pour que sa fermeture transitive 4.33 (Batteries, Qq, Cli,
+etc.) l'emporte sur celle de SLT.
+-/
 require slt from git
-  "https://github.com/YuanheZ/lean-stat-learning-theory.git" @ "d0f506f0a695018265dccb33bcb05e2f5ca1c876"
+  "https://github.com/jsboige/lean-stat-learning-theory.git" @ "0b1020a4771037b89d0b3809913608d177c09a14"
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 @[default_target]
 lean_lib «Descent» where

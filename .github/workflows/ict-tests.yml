@@ -12,10 +12,10 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1046 items, ict/tests/ = 670 items.
-#     55 != 1046 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
+#     @pytest.mark.parametrize) : tests/ = 1107 items, ict/tests/ = 752 items.
+#     55 != 1107 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1046/670), le label garde les strates (55/42).
+#     floor garde la collection (1107/752), le label garde les strates (55/42).
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
@@ -30,6 +30,22 @@ name: ICT-Series Tests
 # collecte DEPASSE le floor (drift ascendant = floor a remonter dans la PR qui
 # l'introduit). Quand la collection change, ajuster matrix.test-floor dans la
 # meme PR.
+# Mesure firsthand po-2027 (2026-09-13, worktree detache REBASE sur origin/main,
+# python 3.9.25 + numpy 1.26.4 + scipy + matplotlib SANS torch -- la forme de
+# l'env CI, verifiee fidele : le job 103632939140 (main@5772d72dc7) porte
+# "Collected: 692 tests (floor: 692)", identique a la mesure locale) :
+# tests/ = 1107 SUR ORIGIN/MAIN (la prose du header de main annoncait encore
+# 1046/670 alors que son floor etait deja 1071 -- incoherence heritee, corrigee ici)
+# et ict/tests/ = 744 sur origin/main actuel (728 base commune des trois tranches
+# + 16 items bench_factorise #15657, MERGED -- le header de main annonce encore
+# 724 en prose : la prose a pris du retard sur le floor, la valeur fait foi)
+# -> 752 sur origin/main (#15665 MERGED) -> 780 sur cette branche (+ 28
+# items POC S-Lens #15481). Les mesures
+# anterieures du 2026-09-12 (692 -> 708 / 700) portaient sur un main LOCAL
+# PERIME, anterieur a l'arrivee de ict/tests/test_attention_schema.py (#15547)
+# sur origin/main.
+# Le venv local AVEC torch collecte 1111 en tests/ : les 4 items d'ecart sont
+# tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
 # documente dans #9387 (acceptance : une panne d'infra doit se distinguer d'un finding).
 #
@@ -67,13 +83,47 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Timeout etire 15 -> 30 min (#14598 acceptance Option A) : diagnostic
-    # first-hand 30 derniers runs montre success 353-951s (mediane ~800s),
-    # cancelled des 925s (=hit timeout 15 min). Pas de drift temporel, juste
-    # variabilite charge partagee conteneur Docker self-heberge po-2024.
-    # Step Run lui-meme timeout 12 min legitimes sous charge. Fix orthogonal
-    # a #14571 (defaut install FIXE par #14595 venv per-job).
-    timeout-minutes: 30
+    # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
+    # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes
+    # dessus le 2026-09-12 (#15657, #15660, #15609 -- 30,5 / 30,4 / 30,4 min,
+    # toutes `cancelled`, aucune `failure`).
+    #
+    # Le 60 est choisi CONTRE une mesure, pas contre une marge de confort.
+    # Sonde hors plafond `ict-tests-profile.yml` (timeout 90 min, MEME commande,
+    # MEME pool de runners), job 103508457858 / run 34676978324, runner
+    # po-2024-linux-docker-2 :
+    #
+    #     1076 passed, 3 skipped, 7 warnings in 890.36s (0:14:50)
+    #     step `Run` = 15,23 min mur
+    #
+    # Run tue (#15609, job 103531764037, runner po-2024-linux-docker-4), compare
+    # sur le PREFIXE STRICTEMENT IDENTIQUE de la suite -- memes deux items
+    # d'ancrage dans les deux logs (test_active_inference.py::
+    # test_belief_pdf_normalized -> test_pregnance_animat.py::
+    # test_behavioral_reversibility_verdict) :
+    #
+    #     prefixe sonde  =  847,22 s        prefixe tue = 1737,00 s
+    #     ratio          =  2,050 x         <- variance RUNNER, pas derive de suite
+    #
+    # Extrapole au total : 30,42 min contre un budget de step de 28,94 min
+    # (30 min de job - 1,06 min d'install). DEFICIT 89 s, soit 5,1 % : le
+    # plafond de 30 etait pose SUR la frontiere, pas au-dessus. Le run tue
+    # progressait normalement, a 58 % de la suite, une seconde avant la coupe.
+    #
+    # 60 min = 3,94 x le nominal mesure (15,23 min) et 1,97 x le pire cas
+    # observe (30,42 min). Ce n'est PAS le correctif de fond -- la suite met
+    # 89 % de son temps dans 25 items sur 6 modules, et `-n --dist loadscope`
+    # ramene le chemin critique a ~4,25 min nominal (mesure #14598). C'est le
+    # plafond qui cesse de tuer du contenu pendant que ce correctif se valide.
+    #
+    # A RELIRE quand la parallelisation atterrit : un plafond dimensionne pour
+    # une suite sequentielle de 30 min n'a plus de sens sur une suite de 9 min.
+    #
+    # Ce qu'un `cancelled` ne dit pas : un kill par `timeout-minutes` rend
+    # conclusion `cancelled`, JAMAIS `failure`. La couleur ne distingue pas
+    # « le code est faux » de « la machine a ete coupee » -- ne pas imputer a
+    # une lane un rouge produit par cette ligne.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -89,38 +139,65 @@ jobs:
           # (#15479 tranche 2, tests/test_causal_hooks.py -- importorskip
           # FONCTION-niveau : comptes a la collecte meme sans torch, skips a
           # l'execution seulement, convention test_jlens_traces.py).
-          - suite-name: "tests/ (56)"
+          # Floor 1071 -> 1107 : +36 de DRIFT MAIN, aucun apport de la branche
+          # qui a mesure ce rattrapage -- origin/main@4793dc31cd1f collectait
+          # 1107 sous py3.9.25 sans torch (mesure firsthand po-2027).
+          # Floor 1107 -> 1148 (cette PR) : +41 items du banc fini de composition
+          # (tests/test_regards.py). Mesure locale avec torch : 1111 -> 1152 ;
+          # les 4 items de test_sae_traces_layout.py, conditionnes par torch,
+          # restent hors de l'env CI.
+          - suite-name: "tests/ (57)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-floor: 1071
+            test-floor: 1148
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
-          # #9478) -> 670 items collectes (le "strates == collection" d'origine
-          # est tombe : le parametrize est devenu massif ici aussi ; compte mesure
-          # 2x sur origin/main@5302d974aa, CI-confirme run 34307798875 -- mesure
-          # separee exigee par le scope #15471 avant de toucher ce floor).
+          # #9478) -> 686 items collectes = 670 (mesure 2x sur
+          # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests
+          # case 5 attention-schema #8182 (PR #15547, CI-mesure 686 au run
+          # 34555990972 sur le head 7d737b4f8b -- le "strates == collection"
+          # d'origine est tombe : le parametrize est devenu massif ici aussi).
           # Rootdir = ict/tests/ pour que le pytest.ini local
           # (mode prepend, neutralise --import-mode=importlib) s'applique -- sinon
           # test_reversibility_budget / test_time_arrow n'executent jamais
           # (sys.path.insert module-level ignore sous importlib).
           # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
-          # Floor 692 -> 715 : +23 items du POC S-Lens (bancs copy_offset /
-          # variable_binding, oracles, probes, agregation multi-runs ;
-          # #15481, ict/tests/test_slens.py = 43e strate du package).
-          # Floor 715 -> 719 : +4 items verrouillant les defauts corriges apres
-          # la premiere mesure (recodage des classes de valeur sur un
-          # vocabulaire non dense, verdict causal qui n'etiquete plus un effet
-          # absent comme dommage global, run d'ablation exclu du gate de
-          # stabilite, architecture de reference absente refusee au lieu d'etre
-          # devinee). Mesure locale `pytest ict/tests --collect-only -q` : 719.
-          # Floor 719 -> 720 : +1 item saturant le ratio de selectivite — hors
-          # cible sous le plancher de mesure = inf (jamais on_rel/eps, une
-          # magnitude artefact de la constante interne), intervention sans
-          # effet = 0.0 (jamais selective).
+          # Floor 692 -> 708 : +16 items case 5 attention-schema #8182
+          # (PR #15547, ict/tests/test_attention_schema.py) -- porte par MAIN.
+          # Floor 708 -> 728 : +20 items case 4 self-model minimal #8182
+          # (ict/tests/test_self_model_minimal.py -- 43e strate package) --
+          # porte par MAIN egalement, posterieurement.
+          # Floor cumulatif : 728 (base commune) -> 744 (+16 bench_factorise
+          # #15657, MERGED) -> 752 (+8 items sae_dictionary #15665, MERGED)
+          # : tout ce cumul est desormais sur origin/main. Ne PAS conserver
+          # un floor de branche derive d'une base pre-#15657/#15665 :
+          # post-merge le floor doit compter contre le main COURANT, sinon
+          # la branche abaisse le cliquet au lieu de le monter -- et le garde
+          # directionnel ne le verrait pas (collected > floor n'emet qu'un
+          # ::warning non bloquant).
+          # Floor 752 -> 780 (cette PR) : +28 items du POC S-Lens, en trois
+          # paliers mesures sur la branche et cumules ici (692 -> 715 -> 719
+          # -> 720 cote branche, soit +23 +4 +1) :
+          #   +23 : bancs copy_offset / variable_binding, oracles, probes,
+          #         agregation multi-runs (#15481, ict/tests/test_slens.py
+          #         = 43e strate du package) ;
+          #   +4  : verrouillage des defauts corriges apres la premiere mesure
+          #         (recodage des classes de valeur sur un vocabulaire non
+          #         dense, verdict causal qui n'etiquete plus un effet absent
+          #         comme dommage global, run d'ablation exclu du gate de
+          #         stabilite, architecture de reference absente refusee au
+          #         lieu d'etre devinee) ;
+          #   +1  : saturation du ratio de selectivite -- hors cible sous le
+          #         plancher de mesure = inf (jamais on_rel/eps, une magnitude
+          #         artefact de la constante interne), intervention sans effet
+          #         = 0.0 (jamais selective).
+          # 752 + 28 = 780 ferme l'arithmetique, et 780 EST la collection
+          # mesuree sur l'arbre merge (py3.9.25 + numpy 1.26.4 + scipy 1.13.1
+          # + matplotlib 3.9.4, SANS torch -- la forme de l'env CI).
           - suite-name: "ict/tests/ (43 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 720
+            test-floor: 780
 
     steps:
       - uses: actions/checkout@v4
