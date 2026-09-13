@@ -1,7 +1,7 @@
 {
   "_comment": "Pedagogy-density baseline (#10479). Burn down, do not grow. One float per TRACKED pedagogical notebook: chars of markdown prose per code cell (continuous metric). Population: `git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS minus setup/out-of-corpus kinds. Regenerate with: python scripts/notebook_tools/pedagogy_density.py --update-baseline",
   "metric": "prose_chars / code_cells",
-  "count": 811,
+  "count": 810,
   "notebooks": {
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb": 934.562,
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb": 801.688,
@@ -76,7 +76,6 @@
     "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb": 1326.214,
     "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb": 1412.538,
     "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb": 1245.75,
-    "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb": 1803.333,
     "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb": 1620.176,
     "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb": 1608.462,
     "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb": 1471.933,
