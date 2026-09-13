@@ -8,7 +8,7 @@ name: Always-on guards
 # dont le travail reel additionne ~178 s de runner. Chacun paiait son propre
 # `actions/checkout` + `setup-python` et surtout OCCUPAIT UN SLOT -- c'est
 # le slot, pas la minute-CPU, qui est la ressource rare a 14 runners
-# heberges. Ce workflow paie un checkout et enchaine les douze organes.
+# heberges. Ce workflow paie un checkout et enchaine les treize organes.
 #
 # Sources absorbees (les fichiers RESTENT, dormants -- declencheurs
 # pull_request retires, jobs conserves verbatim pour la tracabilite et les
@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 12 organes, 1 checkout"
+    name: "Always-on guards -- 13 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -566,6 +566,68 @@ jobs:
           fi
           exit 0
 
+      # #15740 :: trivial-diff -- advisory (blocking=False a la naissance, le
+      # user a demande « lever un warning », pas un blocage). Concern user sur
+      # #15724 (2026-09-12T08:00:33Z) : « Celui de cette PR pourrait clairement
+      # lever un warning par sa trivialite (en contre-exemple, une correction
+      # de 2 lignes d'un bug critique serait acceptable) ». Le contre-exemple
+      # interdit la taille comme critere PRINCIPAL -> croisement de trois
+      # signaux dans scripts/check_trivial_diff.py : genre META (light-genre
+      # G-VAR-2) ET volume sous le bar ancre ET aucune exception ecrite
+      # (forme #15719). Le fix 2-lignes d'un bug reel echappe par la jambe
+      # GENRE (tooling/notebook-*/qc/lean ne sont pas META) -- sans exception.
+      # `edited` est dans les types: -> ajouter l'exception au body re-deroule
+      # cet organe et retire le label (#15697 : le garde lit le corps a l'event).
+      - name: "Trivial-diff advisory (warning sur la trivialite, #15740)"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          gh pr view "$PR_NUMBER" --json body,additions,deletions,changedFiles > /tmp/pr_full.json 2>/tmp/pr_full.err || true
+          [ -s /tmp/pr_full.err ] && { echo "--- gh pr view stderr ---"; cat /tmp/pr_full.err; } || true
+
+          python3 scripts/check_trivial_diff.py --pr-json /tmp/pr_full.json > /tmp/trivial.json 2>/tmp/trivial.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/trivial.json 2>/dev/null || true
+          [ -s /tmp/trivial.err ] && { echo "--- detector stderr ---"; cat /tmp/trivial.err; } || true
+
+          VERDICT=$(python3 -c "import json; print(json.load(open('/tmp/trivial.json')).get('verdict'))" 2>/dev/null || echo "None")
+          if [ "$VERDICT" != "trivial" ]; then
+            echo "Verdict trivial-diff : ${VERDICT} -- rien a signaler."
+            gh pr edit "$PR_NUMBER" --remove-label trivial-diff-advisory 2>/dev/null || true
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/trivial.json')).get('reason',''))" 2>/dev/null || echo "")
+
+          # #15621 : description <= 100 caracteres sinon gh label create 404
+          # en silence (check=False historique) -- longueur epinglee en dur ici.
+          gh label create trivial-diff-advisory \
+            --description "Diff trivial : grain META mecanique sans fournee ni exception ecrite (#15740)" \
+            --color C2A76D --force 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --add-label trivial-diff-advisory 2>/dev/null || true
+
+          MARK="<!-- trivial-diff-15740 -->"
+          if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
+            BODY="${MARK}
+          **Trivial-diff advisory** (#15740, non bloquant).
+          ${REASON}
+          La demande : une fournee (le geste pourrait comprendre ~10x plus d'instances), OU une exception ecrite dans le body de la forme « exception seulement residu final mesure » (#15719). Editer le body re-deroule cet organe et retire le label."
+            gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+          fi
+
+          echo "::warning::Trivial-diff (#15740) : ${REASON}"
+          exit 0
+
       # Porte de lane-claim-guard.yml :: check-lane-claim-advisory.
       - name: "Advisory lane-claim labels (adoption telemetry, non-blocking, #10223)"
         if: github.event_name == 'pull_request'
@@ -951,13 +1013,29 @@ jobs:
           # et un blocage calcule sur 'merged-sequence' n'ont pas la meme
           # valeur probante, et rien ne les distinguait dans la sortie.
           PREV_SRC=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_source','?'))" 2>/dev/null || echo "?")
-          echo "::error::G-VAR-3 LIGHT-genre adjacency [predecesseur lu sur: $PREV_SRC]: $REASON"
+          # #15739 : le REFERENTIEL complet du verdict -- contre quoi il a
+          # conclu. Un rouge d'adjacence est une fonction de la sequence de
+          # merges AU MOMENT du check ; des qu'une autre PR de la lane merge,
+          # le rouge affiche devient perime sans que rien ne le re-tourne. Le
+          # referential rend la peremption VISIBLE (prev #N + genre + source +
+          # horodatage de la sequence) et la commande de recalcul est DANS le
+          # message, pas dans une doc a retrouver.
+          PREV_PR=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_pr','?'))" 2>/dev/null || echo "?")
+          PREV_GENRE=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_genre','?'))" 2>/dev/null || echo "?")
+          SEQ_AS_OF=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('sequence_as_of') or 'n/a')" 2>/dev/null || echo "n/a")
+          echo "::error::G-VAR-3 LIGHT-genre adjacency [prev: #${PREV_PR} ${PREV_GENRE} via ${PREV_SRC} ; sequence de merges au ${SEQ_AS_OF}]: $REASON"
 
           gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
           <!-- vtr-adjacency-block -->
           **G-VAR-3 : deux grains LIGHT du meme genre consecutifs -- bloquant (#11170).**
 
           ${REASON}
+
+          **Referentiel du verdict (#15739)** -- ce verdict a ete calcule contre : predecesseur \#${PREV_PR} (\`${PREV_GENRE}\`, source \`${PREV_SRC}\`), sequence de merges arretee au \`${SEQ_AS_OF}\`. Un merge posterieur de la meme lane peut l'avoir invalide -- recalculer avec :
+
+          \`\`\`bash
+          python scripts/ci/variation_adjacency_guard.py --pr-number ${PR_NUMBER}
+          \`\`\`
 
           variation-protocol.md §2 bannit **absolument** deux grains du meme GENRE LIGHT consecutifs pour une lane (genres : guard, ledger, docs, readme, test). Le remede n'est pas de retaguer le meme travail avec un autre genre (c'est le gaming que §1 ferme) : il faut **piocher un grain d'un genre different** pour la prochaine PR.
 

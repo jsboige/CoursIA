@@ -417,9 +417,17 @@ PILOT: list[Guard] = [
 # couvre deja tout ce que ces trois gardes demandent.
 # ---------------------------------------------------------------------------
 TRANCHE1: list[Guard] = [
-    # Forme 1 : scan global simple, sans base. Source : docs-link-check.yml
-    # (job `check-links`). Le nom du garde est le nom du JOB, pas celui du
-    # workflow -- c'est lui que le rollup affichait.
+    # Forme 1 : scan global. Source : docs-link-check.yml (job `check-links`).
+    # Le nom du garde est le nom du JOB, pas celui du workflow -- c'est lui que
+    # le rollup affichait.
+    #
+    # `--base {base_ref}` (#15766) : le baseline fige est a `broken_links: []`
+    # et rien ne le regenere, donc un seul lien casse sur `main` rendait ce
+    # garde rouge sur TOUTE PR ouverte (`check-links` + `Always-on guards` +
+    # `PR gate`), quel que soit le contenu de la PR. Comparer a la base rend
+    # l'excuse exacte : un lien deja casse avant la branche n'est pas la
+    # regression de la branche. Le baseline fige reste la voie des executions
+    # hors PR (dispatch, scan complet), ou aucune base n'est disponible.
     Guard(
         name="check-links",
         source="docs-link-check.yml",
@@ -428,9 +436,11 @@ TRANCHE1: list[Guard] = [
             ".claude/rules/**", "docs/**", "**/README.md",
             "scripts/check_docs_links.py",
         ],
-        argv=["python", "scripts/check_docs_links.py", "--check"],
+        argv=["python", "scripts/check_docs_links.py", "--check",
+              "--base", "{base_ref}"],
         blocking=True,
         absorbed=True,
+        needs_base=True,
     ),
     # Forme 2 : scan globs, bloque sur la convention zero-pad des series
     # DECLAREES (#11840/#12586, portee explicite #15489 defaut 5). Source :

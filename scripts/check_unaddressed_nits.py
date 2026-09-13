@@ -159,6 +159,44 @@ _PERSONA_MARKERS_RE = re.compile(
     # le backtick reste EXCLU : `` `[Hermes]` `` est une citation (#13030).
     r"(?m)(?:^|[\s*])\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
 )
+# #14850 — prefixe de lane tierce : voie distincte d'un autre agent du cluster
+# qui pousse sous le meme login partage `jsboige`. Le format canonique est
+# `[machine-po-YYYY:CoursIA-2]` (Tell c.677-L4 body PR HORS worktree +
+# convention owner:workspace du `[CLAIMED]` lane). Le complement facultatif
+# ` (...)` peut suivre. La voie NUЕ par meme login (commentaire ordinaire
+# SANS prefixe) n'a aucune signature distincte et reste indiscernable d'une
+# auto-reponse de l'auteur de la reserve -- c'est exactement le defaut de
+# discrimination que #14850 nomme.
+_CROSS_LANE_LIFT_RE = re.compile(
+    # #14850 — la lane est en-tete de paragraphe (apres decoration `* ` ou
+    # `# ` admise). Caracteres autorises : lettres, chiffres, tirets, points,
+    # underscores, deux-points (format `owner:workspace`). Refuse les crochets
+    # ULTERIEURS (` > [lane]`) par l'ancre `^` + decoration de debut de ligne.
+    r"(?m)^[#>*+\-\s]*\[\s*[A-Za-z][\w.\-]*:\s*[A-Za-z][\w.\-]*(?:\s+[^\]]+)?\]"
+)
+# #14850 — prefixe de ROLE GENERIQUE : `[ai-01]`, `[po-2026]`, etc. Le format
+# est `[identifiant]` (un seul token, sans `:` ni whitespace), pose en tete
+# de paragraphe apres decoration `* ` ou `# `. Distinct des personas
+# (Hermes/NanoClaw, L156) et des lanes (owner:workspace, L170) : un prefixe
+# role comme `[ai-01]` est l'identite de l'agent qui pousse sous un login
+# partage (typiquement `jsboige` ou `clusterManager-Myia`). Le scope d'un
+# tel lift est SA voix, pas la voie nue -- sans le reconnaitre, le filet
+# accepte une levee `[ai-01] Je leve ma propre reserve` par `jsboige` comme
+# levant une reserve user voix nue de `jsboige` (incident fondateur #14795,
+# 21:11:29Z).
+#
+# Les TAGS DE PROTOCOLE (`[DONE]`, `[INFO]`, `[WARN]`, `[ASK]`, `[REPLY]`,
+# `[ACK]`, `[TASK]`, `[BLOCKED]`, `[CLAIMED]`, `[DISPATCH→inbox]`,
+# `[ESCALATION]`, ...) ne sont PAS des prefixes de role : ils qualifient
+# le TYPE du commentaire, pas l'emetteur. Un `[DONE] les 2 nits sont
+# adresses, commit abc123.` reste voie nue de l'auteur -- le tag est
+# un attribut de workflow, pas une identite d'agent.
+_ROLE_PREFIX_RE = re.compile(
+    r"(?m)^[#>*+\-\s]*\[\s*(?!Hermes\b|NanoClaw\b|Hermes self-bot\b|OVERRIDE\b"
+    r"|DONE\b|INFO\b|WARN\b|ERROR\b|ASK\b|REPLY\b|ACK\b|TASK\b|BLOCKED\b"
+    r"|CLAIMED\b|ESCALATION\b|PROPOSAL\b|GRAIN\b)"
+    r"[A-Za-z][\w.\-]*\s*\]"
+)
 # #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
 # prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
 # des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
@@ -2593,6 +2631,90 @@ _COORDINATOR_INJUNCTION_RE = re.compile(
 _COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
     r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
 )
+# #15772 -- la negation LOCALE d'une injonction structurelle ne couvre pas le
+# cas ou plusieurs occurrences du radical vivent dans le meme body, et ou
+# seule l'une est prefixede d'une negation. Avant : le predicat etait GLOBAL
+# (`_COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised)`) -- un seul
+# `pas de hold` dans le body suffisait a neutraliser TOUTES les injonctions,
+# y compris une 2e occurrence non-negatee (cas fondateur : commentaire
+# `11:27:40Z` de #15748 -- « NE PAS ATTENDRE -- enchainer un autre grain ;
+# c'est la candidate qui attend, pas la lane » -- le 2e `attend` est
+# descriptif, sans negation, et fabrique un faux positif BOT-CONCERN).
+#
+# Le correctif est **par occurrence** : pour chaque match de
+# `_COORDINATOR_INJUNCTION_RE`, regarder si la fenetre gauche bornee (meme
+# proposition) contient une negation eligible. Si TOUS les matches sont
+# neutralises, pas d'injonction. Sinon, l'injonction tient.
+#
+# Jeu de negations retenu (cf acceptance #15772 point 4 -- justifie par ses
+# FAUX NEGATIFS, pas par ses hits, l.lecon du motif « code-only » qui
+# sous-comptait en silence, `anti-regression.md`) :
+#   - `ne pas`        : negation classique deux-mots, capture le fondateur
+#   - `n' ... pas`    : elision « n'est pas », « n'a pas » -- la negation
+#                       peut etre separee du verbe par un auxiliaire
+#   - `sans`          : « sans attendre », « sans merger »
+#   - `jamais`        : « jamais d'attente », « jamais de hold »
+#   - `pas de`        : « pas de hold », « pas d'attente » (forme deja couverte
+#                       par l'ancienne liste, preservee par defaut)
+#   - `inutile de`    : « inutile d'attendre » (verdict d'inutilite = anti-injonction)
+#   - `aucune raison de` / `aucun besoin de` : verdict de non-necessite
+#   - `non`           : « non bloquant », « non attente » -- glyphe, pas prose
+#
+# Faux negatifs connus et ACCEPTES (acceptance #15772 point 4) : la liste
+# est JUSTIFIEE par les formes qu'elle rate -- et chaque ratee est documentee
+# ici pour qu'une PR de suivi puisse l'elargir sans nouvelle investigation.
+#   - `n'<mot>` sans `pas` (elision sans auxiliaire, rare en francais courant)
+#   - `ni ... ni ...` (rare, et la seconde negation est deja couverte)
+#   - `point d'attente`, `aucunement`, `nullement` (formes savantes rares)
+# Negations qui s'appliquent au MOT-VERBE dans la proposition (le verbe
+# d'injonction peut etre a la frontiere droite de la proposition,
+# c.-a-d. JUSTE devant le match INJ). Ces negations sont cherchees dans
+# la fenetre gauche de chaque match INJ (cf `_is_injunction_match_negated`).
+_INJUNCTION_NEGATION_LEFT_RE = re.compile(
+    r"(?i)(?:"
+    r"\bne\s+pas\b|"
+    r"\bn['’]\s*(?:est|aie|ai|avais|avons|avez|aura|aurai|fut|fut|fusse)\s+pas\b|"
+    r"\bsans\b|"
+    r"\bjamais\b|"
+    r"\bpas\s+de\b|"
+    r"\binutile\s+de\b|"
+    r"\binutiles?\s+d['’]\b|"
+    r"\baucune?\s+raison\s+de\b|"
+    r"\b(?:aucun|aucune)\s+besoin\s+de\b"
+    r")",
+)
+# Negations COLLEES au token d'injonction lui-meme : « aucun hold »,
+# « aucune attente », « non bloquant ». Ces negations sont par construction
+# deja collees au mot qu'elles neguent -- le predicat par-occurrence les
+# cherche sur la portion `match + mot gauche immediat` (4 chars avant le
+# match INJ, pour tolerer une apostrophe comme dans « aucun·e attente »).
+# On ne peut pas les chercher dans la fenetre gauche classique parce
+# que le match INJ couvre le token (`hold`, `attente`, etc.), et chercher
+# `aucun hold` dans la fenetre gauche RATERAIT le cas fondateur de #13598
+# (`« Il n'y a aucun hold sur cette PR. »` -- la fenetre gauche de `hold`
+# est `« Il n'y a aucun »`, qui ne contient pas `hold`).
+_INJUNCTION_NEGATION_PREFIXED_RE = re.compile(
+    r"(?i)\b(?:"
+    r"(?:aucun|aucune|aucuns|aucunes)\s+(?:hold|wait|bloque|attend|attente|attendre|stop|arr[êe]t)\b|"
+    r"non\s+(?:bloquant|attend|attente|attendre|hold|wait|stop|merge|merger|fusionner)\b"
+    r")",
+)
+# Fenetre gauche en chars : une negation de la liste vit dans la meme
+# PROPOSITION que l'injonction qu'elle neutralise. Une proposition va du
+# dernier separateur fort (`.`, `!`, `?`, `:`, `\n`, debut de body) au
+# separateur suivant. 256 chars couvrent largement les phrases courtes
+# du registre coordinateur, avec une marge de securite raisonnable.
+# Au-dela, on est dans une proposition distincte, et la negation n'y
+# neutralise plus l'injonction locale.
+#
+# Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+# minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+# candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+# `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+# d'ouverture et le `, pas la lane`), et la negation doit neutraliser
+# l'injonction descriptive. Une fenetre courte (48 chars) ratait ce cas
+# parce que la negation etait a plus de 48 chars du 2e `attend`.
+_INJUNCTION_NEGATION_WINDOW_CHARS = 256
 # #13912 -- le mot `hold` en MENTION NOMINALE d'un hold tenu par un tiers n'est
 # pas une EMISSION. La voie #13598 n'attrape ce cas qu'a demi : le lookahead
 # `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))` ecarte les NOMS DE
@@ -2660,6 +2782,87 @@ def _hold_match_is_emission(body: str) -> bool:
     return False
 
 
+# Separateurs de proposition : on utilise UNIQUEMENT les separateurs FORTS
+# (`.`, `!`, `?`, double `\n`). Les separateurs faibles (`:`, `;`, simple `\n`)
+# ne coupent pas une phrase logique -- le fondateur verbatim de #15748 inclut
+# un `\n` au milieu d'une meme proposition (« c'est la\ncandidate qui attend »)
+# que traiter comme un saut de proposition ferait passer a cote du fix.
+# Les separateurs faibles (`:`, `;`) sont des liasons intra-phrase.
+_PROPOSITION_SEPARATORS_RE = re.compile(r"[.!?]|\n\n")
+
+
+def _proposition_start(normalised: str, pos: int) -> int:
+    """#15772 : index du debut de la proposition qui contient `pos`.
+
+    Une proposition va du dernier separateur fort (`.`, `!`, `?`, `:`, `\\n`,
+    debut de body) au separateur suivant. Renvoie 0 si aucun separateur
+    precedent n'existe dans la fenetre `_INJUNCTION_NEGATION_WINDOW_CHARS`.
+    """
+    window_start = max(0, pos - _INJUNCTION_NEGATION_WINDOW_CHARS)
+    head = normalised[window_start:pos]
+    seps = list(_PROPOSITION_SEPARATORS_RE.finditer(head))
+    if not seps:
+        return window_start
+    last_sep_end = seps[-1].end()
+    return window_start + last_sep_end
+
+
+def _is_injunction_match_negated(normalised: str, span: tuple[int, int]) -> bool:
+    """#15772 : l'occurrence d'injonction a `span` est-elle neutralisee par
+    une negation LOCALE dans la MEME PROPOSITION ?
+
+    Discriminant : la negation doit etre dans la meme proposition que
+    l'injonction (entre le dernier separateur fort et l'injonction). Une
+    negation dans une proposition PRECEDENTE (separee par `.` / `!` / `?` /
+    `:` / `\\n`) ne neutralise PAS l'injonction de la proposition courante.
+
+    Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+    minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+    candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+    `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+    d'ouverture et le `, pas la lane`), et la negation neutralise les
+    deux occurrences d'injonction de la phrase.
+
+    Anti-regression : « NE PAS ATTENDRE que la CI verdisse. Plus tard,
+    HOLD cette PR attend le grain. » -- `NE PAS ATTENDRE` vit dans la
+    proposition 1, le HOLD reel + `attend` dans la proposition 2 ; les
+    separateurs (`.` puis `\\n\\n`) coupent la portee de la negation.
+    """
+    start = span[0]
+    prop_start = _proposition_start(normalised, start)
+    proposition = normalised[prop_start:start]
+    # 1. Negations LOCALE-LEFT (chercher dans la fenetre gauche de la proposition)
+    if _INJUNCTION_NEGATION_LEFT_RE.search(proposition):
+        return True
+    # 2. Negations COLLEES au token d'injonction (chercher `match + 4 chars
+    # gauche` -- le prefixe `aucun`/`aucune` peut etre 4 chars avant le match
+    # INJ). Si le token INJ est precede de `aucun ` ou `aucune ` ou `non `
+    # dans cette fenetre courte, l'occurrence est neutralisee.
+    short_left_window = max(0, start - 12)
+    short_window = normalised[short_left_window:start + 20]
+    if _INJUNCTION_NEGATION_PREFIXED_RE.search(short_window):
+        return True
+    return False
+
+
+def _all_injunctions_negated(normalised: str) -> bool:
+    """#15772 : TOUTES les occurrences d'injonction structurelle sont-elles
+    neutralisees par une negation locale ?
+
+    Renvoie True si le body ne porte aucune injonction (defaut), OU si
+    chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE` est
+    neutralisee par une negation LOCALE (cf `_is_injunction_match_negated`).
+
+    Substitue l'ancien predicat GLOBAL `_COORDINATOR_INJUNCTION_NEGATED_RE.
+    search(normalised)`, qui ratait le cas fondateur de #15772 (body avec
+    une negation + une occurrence descriptive non-negatee).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return True
+    return all(_is_injunction_match_negated(normalised, m.span()) for m in matches)
+
+
 def _coordinator_emission_informal(body: str) -> bool:
     """#13598 : le coordinateur EMET-il un hold en francais courant ?
 
@@ -2668,7 +2871,7 @@ def _coordinator_emission_informal(body: str) -> bool:
     un ARBITRAGE (OVERRIDE pose). Cible : 1 auteur (LIFT_OVERRIDE_LOGINS).
     """
     normalised = _unaccent(body)
-    if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+    if _all_injunctions_negated(normalised):
         return False
     # #13912 -- sur le mot `hold`, demasquer les MENTIONS NOMINALES d'un hold
     # tiers (cf review ai-01 sur #13706 : « moteur sous hold user (#10038) »).
@@ -3540,31 +3743,159 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "", nit_body: str = "") -> bool:
         if lift_author == nit_author:
-            # #14947 -- meme login n'est pas meme voix. `jsboige` est A LA FOIS
-            # le compte du user et l'identite de poussee des personas (#13316).
-            # Une levee marquee `[Hermes]` / `[NanoClaw]` signe la revue de la
-            # persona sur SON propre travail ; elle ne repond pas a une remarque
-            # ecrite en voix nue par le user sous le meme login. B.0 : « se lever
-            # soi-meme une reserve d'autrui n'est pas y repondre, c'est la
-            # declarer repondue ».
+            # #14947 ET #14850 -- meme login n'est pas meme voix. `jsboige`
+            # est A LA FOIS le compte du user, l'identite de poussee partagee
+            # des personas (#13316), ET le login sous lequel les lanes
+            # cross-poussent. Le discriminateur de B.0 -- « une levee
+            # emise sous un prefixe de role ne doit pas eteindre une reserve
+            # user » (acceptance 1 de #14850) -- impose que la levee soit
+            # SCOPEE A L'EMETTEUR (acceptance 2) : un LGTM `[Hermes]` leve
+            # les reserves `[Hermes]`, pas les reserves user voix nue ;
+            # un commentaire `[myia-po-2024:CoursIA-2]` leve les reserves de
+            # CETTE lane, pas les reserves user voix nue.
             #
-            # Le discriminant n'est pas neuf : #13609 tient deja le marqueur de
-            # persona pour une identite CROSS-login (la persona leve sa propre
-            # reserve sous l'autre login). Il vaut a fortiori SAME-login, ou la
-            # borne d'auteur #11145 ne discrimine plus rien.
+            # Le discriminant par ROLE du lift determine a quelles reserves
+            # il peut s'appliquer. Sans discriminant de role, la levee est
+            # voix nue -- elle ne leve que les reserves VOIX NUE de meme
+            # auteur (le self-lift nominatif de B.0).
             #
-            # Incident fondateur #14937 : nit user 19:20:05Z (« Concern: le
-            # notebook ne devrait-il pas etre une accretion... »), review
-            # `[Hermes]` a 19:26:40Z terminee par un « RAS » nu -- six minutes
-            # plus tard, sur un tout autre objet (re-execution des cellules).
-            # Le RAS eteignait le nit : rc=0, PR mergeable, remarque user perdue.
-            # La levee etant PAR PR et non par reserve, un acquit de routine de
-            # la persona suffisait a solder la voix du user.
-            if (_PERSONA_MARKERS_RE.search(_strip_quoted(lift_body or ""))
-                    and not _PERSONA_MARKERS_RE.search(
-                        _strip_quoted(nit_body or ""))):
-                return False
-            return True
+            # Incident fondateur #14937 (persona leve sa propre voix) :
+            # nit user 19:20:05Z (« Concern: ... »), review `[Hermes]` a
+            # 19:26:40Z terminee par un « RAS » -- le RAS eteignait le nit
+            # user voix nue. Defaut fondateur de la voie PERSONA levee en
+            # voix nue.
+            #
+            # Incident fondateur #14850 (voie nue par meme login eteint
+            # reserve user, mesure sur #14795 head `2510e3a4`) : la review
+            # Hermes de 18:29:00Z terminee par « Verdict : LGTM » eteignait
+            # la reserve user voix nue posee a 18:09:49Z. PR #14949 a cru
+            # fermer ce cas en verifiant que le lift porte `[Hermes]` mais
+            # que le nit ne le porte pas -- mais le filet ne discriminait
+            # pas le SCOPE complet : un LGTM `[Hermes]` etait compte
+            # comme lift PR-wide. Le present fix ferme la discrimination
+            # par ROLE du lift :
+            #
+            #   * Lift voix nue par `jsboige` ne leve que les reserves
+            #     voix nue du MEME auteur. Sur le cas fondateur #14850,
+            #     le LGTM `[Hermes]` 18:29:00Z de `jsboige` ne leve PAS
+            #     la reserve `Concern:` voix nue 18:09:49Z de `jsboige` :
+            #     les roles sont distincts (Hermes vs user).
+            #
+            #   * Lift `[Hermes]` / `[NanoClaw]` par `jsboige` ne leve que
+            #     les reserves `[Hermes]` / `[NanoClaw]` (par SCOPE EMETTEUR).
+            #     Si la reserve est voix nue (`Concern:`), elle est HORS
+            #     scope persona -- le LGTM persona ne l'eteint pas.
+            #
+            #   * Lift `[machine:workspace]` (cross-lane) par `jsboige`
+            #     ne leve que les reserves `[machine:workspace]` (meme
+            #     lane). Si la reserve est voix nue user, elle est HORS
+            #     scope de la lane tierce -- cf. mesure #14850 sur le
+            #     commentaire 18:28:07Z `[myia-po-2024:CoursIA-2]` qui
+            #     etait compte comme levee alors qu'il eteignait la
+            #     reserve user voix nue.
+            #
+            #   * Lift `[OVERRIDE] lane <machine>` par coordinateur leve
+            #     tout (autorite coordinateur, Tell c.11639). La voie
+            #     override reste ouverte comme echappatoire nommee.
+            stripped_lift = _strip_quoted(lift_body or "")
+            stripped_nit = _strip_quoted(nit_body or "")
+            # Voie 0 -- override coordinateur (Tell c.11639). Meme login
+            # ou pas, l'arbitre tiers nomme par `[OVERRIDE] lane <machine>`
+            # leve. Fail-CLOSED sur la pose en tete (#13030). Premier
+            # discriminant verifie pour ne pas etre bloque par les voies
+            # 1-3 : un override par coordinateur sur sa propre reserve
+            # voix nue doit lever (autorite coordinateur).
+            if OVERRIDE_LANE.search(stripped_lift):
+                return True
+            # Voie 1 -- lift PERSONA scope aux reserves PERSONA.
+            # Si la reserve est voix nue (pas de marqueur persona), elle
+            # est HORS scope persona -- bloque. Si elle porte persona,
+            # elle est dans le scope persona -- leve. Discriminant
+            # symetrique de #14947 (persona leve sa propre voix) ETENDU
+            # au scope par role de #14850 : la persona peut lever SA
+            # reserve posee en persona, mais pas la reserve user voix nue
+            # posee sous meme login partage.
+            lift_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_lift))
+            nit_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_nit))
+            if lift_has_persona and nit_has_persona:
+                return True
+            if lift_has_persona and not nit_has_persona:
+                return False  # #14850 scope : lift persona ne leve pas user
+            # Voie 2 -- lift CROSS-LANE scope aux reserves CROSS-LANE.
+            # Un commentaire preface d'une lane tierce `[owner:workspace]`
+            # ne leve que les reserves de CETTE lane. Si la reserve est
+            # voix nue user ou persona, elle est HORS scope de la lane
+            # tierce -- bloque. Accepte le prefixe en debut de ligne
+            # (Tell c.677-L4 body PR HORS worktree), refuse la citation
+            # ulterieure (` > [lane]`) par l'ancre `^`.
+            lift_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_lift))
+            nit_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_nit))
+            if lift_has_lane and nit_has_lane:
+                return True
+            if lift_has_lane and not nit_has_lane:
+                return False  # #14850 scope : lift lane tierce ne leve pas user
+            # Voie 3 -- self-lift voix nue par l'auteur de SA reserve voix nue.
+            # L'auteur leve SA PROPRE reserve voix nue par une phrase de
+            # levee NOMINATIVE (`EXPLICIT_LIFT_MARKERS` : « Je leve »,
+            # « Levee de », « Lève la »). C'est la voie legitime que B.0
+            # preserve (« ce qui leve une remarque est une phrase ») et
+            # que la borne d'auteur #11145 preservait. Sans phrase
+            # nominative, c'est une declaration de verdict globale qui
+            # n'eteint pas la reserve voix nue specifique -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes vs user.
+            #
+            # Anti-regression couverte : la self-levee explicite
+            # (« Levée de ma reserve : cellule 12 corrigee »,
+            # test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve) et
+            # le self-lift par meme persona (`clusterManager-Myia` levant
+            # SA reserve `[Hermes]` par un « RAS sur le fond »,
+            # test_ras_francais_leve_dans_une_reponse) doivent rester
+            # valides. Les deux sont portes par `EXPLICIT_LIFT_MARKERS`
+            # ou un LIFT_MARKER faible DANS LE CONTEXTE d'une reserve
+            # deja persona-membre (couvert par voie 1 ci-dessus).
+            #
+            # #14850 -- defense en profondeur : un prefixe de ROLE generique
+            # (`[ai-01]`, `[po-2026]`, etc.) dans le lift, meme accompagne
+            # d'un LIFT_MARKER, ne leve PAS une reserve voix nue du meme
+            # login partage. Le lift `[ai-01] Je leve ma propre reserve`
+            # par `jsboige` n'a pas voix sur la reserve user voix nue de
+            # `jsboige` (incident fondateur #14795 21:11:29Z). Le reserve
+            # voix nue exige une levee voix nue -- la discrimination de voie
+            # par ROLE tient par symetrie : persona, lane, override ET
+            # role-prefix sont HORS scope de la voie nue.
+            #
+            # Note -- un LIFT_MARKER (broad, pas seulement EXPLICIT) suffit
+            # ici : le test de discrimination est sur le PREFIXE du lift,
+            # pas sur la force du marqueur. Une levee voie nue par l'auteur
+            # de la reserve voie nue peut employer « sont adresses »,
+            # « RAS », « LGTM » -- c'est l'ancien comportement preserve
+            # (#12319). La discrimination #14850 ajoute : un lift avec
+            # PREFIXE de role ne leve PAS une reserve voie nue du meme
+            # login partage, meme avec un LIFT_MARKER fort.
+            #
+            # Anti-regression couverte : `test_auteur_du_nit_leve_son_nit`
+            # (clusterManager-Myia leve SA reserve `[Hermes]` par un
+            # « reserve levee » voix nue). Le discriminant est sur le
+            # PREFIXE du LIFT, pas sur celui de la reserve -- une reserve
+            # `[Hermes]` n'est pas une reserve « user voix nue » au sens
+            # strict, mais elle est levee par la voie nue de l'auteur de
+            # la persona (clusterManager-Myia, voie nue, LIFT_MARKER).
+            # Voie 3 leve donc si le lift est voie nue (pas de prefixe
+            # distinct), independamment du scope du nit (la garde
+            # persona-vs-user est deja portee par voie 1).
+            stripped_lift_role = stripped_lift
+            lift_has_role = bool(_ROLE_PREFIX_RE.search(stripped_lift_role))
+            if (lift_has_persona is False
+                    and lift_has_lane is False
+                    and lift_has_role is False
+                    and has_live_lift(lift_body or "")):
+                return True
+            # Voie nue par meme login, sans discriminant de ROLE ni
+            # phrase de levee EXPLICITE : voie NUE par l'auteur de la
+            # reserve, sans signature distincte. C'est l'auto-reponse
+            # de l'auteur de la reserve sur sa propre remarque -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes sur reserve user.
+            return False
         # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
         # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
         # propre reserve sous l'autre login, c'est sa levee. Le marqueur
