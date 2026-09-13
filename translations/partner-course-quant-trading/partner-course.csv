@@ -9488,11 +9488,12 @@ alloc_df = pd.DataFrame(results)
 print(""Allocation analysis (simplified proxy, not actual backtest):"")
 print(alloc_df.round(4).to_string(index=False))
 print(f""\nBest allocation (by Sharpe proxy): {alloc_df.loc[alloc_df['Sharpe'].idxmax(), 'Sector%']}/{alloc_df.loc[alloc_df['Sharpe'].idxmax(), 'Def%']}"")",,,,,,,,9ed14755cb901cc6,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-40187a37,markdown,fr,7b82648a7b5b8f70,"## 6. Calibration du MaxDrawdown Circuit Breaker
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-40187a37,markdown,fr,6ac2f7831b537974,"## 6. Calibration du MaxDrawdown Circuit Breaker
 
 L'output de la cellule [14] caractérise la **distribution des drawdowns SPY** sur 2015-2024 (proxy pour le drawdown du portfolio).
 
 **Distribution cumulée** :
+
 | Seuil DD | Temps passé sous le seuil | Lecture |
 |---|---|---|
 | > 5% | 10.6% du temps | Normal — volatilité standard |
@@ -9507,7 +9508,7 @@ Le main.py calibre le **circuit breaker à 15%**. **La cellule imprime `may trig
 
 Le composite framework (momentum + defensive) **réduit matériellement la fréquence et l'amplitude des drawdowns réels** vs SPY nu — c'est ce que le backtest main.py est censé démontrer (MaxDD attendu < 17% d'après le README du kit).","## 6. Calibration of the MaxDrawdown Circuit Breaker
 
-The main.py uses a circuit breaker at 15% maximum drawdown. Analysis of the distribution of drawdowns to validate this threshold.",,,,,,,7b82648a7b5b8f70,6759fbec512d5d2c,,,,,,,
+The main.py uses a circuit breaker at 15% maximum drawdown. Analysis of the distribution of drawdowns to validate this threshold.",,,,,,,6ac2f7831b537974,6759fbec512d5d2c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-4ee3fae2,code,fr,9dd6ac62f121ed42,"# Drawdown analysis for SPY (proxy for portfolio)
 spy_ret = returns['SPY'] if 'SPY' in returns.columns else returns.iloc[:, -1]
 cumulative = (1 + spy_ret).cumprod()
