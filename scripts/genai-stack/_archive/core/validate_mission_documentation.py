@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
-# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
-# DISPOSITION: abandoned | Successor: (none) | Reason: DOUBLON EXACT de core/
+# Archive header (standard _archive convention, 2026-02 archivage + 2026-09 standardisation #13749 tranche 2A)
+# - Date archived : 2026-02 (consolidation genai-stack)
+# - Superseded by : none (DOUBLON EXACT de utils/validate_mission_documentation.py)
+# - Verdict recorded in : scripts/genai-stack/_archive/ARCHIVE_README.md + PR #13749 tranche 2A (c.1127)
+#
+# Per-function disposition :
+# - DocumentationValidator : doublon exact avec utils/validate_mission_documentation.py ; aucun des deux n'est appelé depuis un script actif -- dead-end
+# - (toutes les méthodes) : aucun consommateur, à ne pas ressusciter
 #
 """
 Validation finale de la documentation de la mission ComfyUI-Login

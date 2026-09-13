@@ -1,5 +1,10 @@
-# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
-# DISPOSITION: abandoned | Successor: (none) | Reason: Proxy debug ponctuel
+# Archive header (standard _archive convention, 2026-02 archivage + 2026-09 standardisation #13749 tranche 2A)
+# - Date archived : 2026-02 (consolidation genai-stack)
+# - Superseded by : none (proxy debug ponctuel, dead-end)
+# - Verdict recorded in : scripts/genai-stack/_archive/ARCHIVE_README.md + PR #13749 tranche 2A (c.1127)
+#
+# Per-function disposition :
+# - (module-level proxy debug) : dead-end, à ne pas ressusciter
 #
 import requests
 import os

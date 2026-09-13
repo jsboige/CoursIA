@@ -1,6 +1,13 @@
 # encoding: utf-8
-# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
-# DISPOSITION: superseded | Successor: genai.py validate | Reason: Importe token_manager + comfyui_client_helper (legacy)
+# Archive header (standard _archive convention, 2026-02 archivage + 2026-09 standardisation #13749 tranche 2A)
+# - Date archived : 2026-02 (consolidation genai-stack)
+# - Superseded by : genai.py validate (commands/validate.py)
+# - Verdict recorded in : scripts/genai-stack/_archive/ARCHIVE_README.md + PR #13749 tranche 2A (c.1127)
+#
+# Per-function disposition :
+# - token_manager (import legacy) : remplacé par core/auth_manager.py (genai.py auth)
+# - ComfyUIClient / ComfyUIConfig (import legacy) : remplacés par core/comfyui_client.py (réduction 1418 → 269 LOC)
+# - (toute la logique de tests) : absorbée par commands/validate.py (genai.py validate --full)
 #
 """
 Fichier consolidé de tests pour le système Qwen ComfyUI.

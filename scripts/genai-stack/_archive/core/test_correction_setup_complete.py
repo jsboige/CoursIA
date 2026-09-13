@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
-# DISPOSITION: abandoned | Successor: (none) | Reason: Importe `setup_complete_qwen` inexistant (CASSE)
+# Archive header (standard _archive convention, 2026-02 archivage + 2026-09 standardisation #13749 tranche 2A)
+# - Date archived : 2026-02 (consolidation genai-stack)
+# - Superseded by : none (closed dead-end, import cassé)
+# - Verdict recorded in : scripts/genai-stack/_archive/ARCHIVE_README.md + PR #13749 tranche 2A (c.1127)
+#
+# Per-function disposition :
+# - (module-level Script de test) : import `setup_complete_qwen` inexistant (CASSE, auto-admis) -- dead-end, à ne pas ressusciter
 #
 """
 Script de test pour valider la correction de la logique dans setup_complete_qwen.py

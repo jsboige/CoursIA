@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
-# DISPOSITION: superseded | Successor: genai.py auth audit | Reason: Importe docker_qwen_manager inexistant (CASSE)
+# Archive header (standard _archive convention, 2026-02 archivage + 2026-09 standardisation #13749 tranche 2A)
+# - Date archived : 2026-02 (consolidation genai-stack)
+# - Superseded by : genai.py auth audit (commands/auth.py)
+# - Verdict recorded in : scripts/genai-stack/_archive/ARCHIVE_README.md + PR #13749 tranche 2A (c.1127)
+#
+# Per-function disposition :
+# - (module-level Script de diagnostic) : import `docker_qwen_manager` inexistant (CASSE, auto-admis) -- remplacé par `genai.py auth audit`
+# - DiagnosticUtils (import cassé) : absorbé dans commands/validate.py
+# - ComfyUIClient / ComfyUIConfig (import legacy) : remplacés par core/comfyui_client.py (réduction 1418 → 269 LOC)
 #
 """
 Script de diagnostic complet pour l'authentification ComfyUI
