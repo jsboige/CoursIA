@@ -9,10 +9,11 @@ prose and ASCII diagrams; ``git show fe04e1f37`` (worktree ``g1-genai``)
 restores 8 files. Running the scanner over that RESTORED, known-correct content
 reports **13 findings** -- every one of them a false positive by construction.
 
-Those 13 findings fall into four families. Three are still open; each case
-below carries the family's minimal reproduction, and is marked ``xfail`` so the
-suite fails loudly the day it is repaired (``strict=True``: an unexpected pass
-is a FAILURE, which is the point -- a marker that flips silently is a debt).
+Those 13 findings fall into four families. Three are still open. The two
+families reducible to local fragments carry minimal reproductions marked
+``xfail(strict=True)``, so the suite fails loudly the day either is repaired.
+The whole-file JS family is instead recorded as ``skip`` pending the named
+arbitrage; it is inventory evidence, not an executable repair signal.
 
 Family A (a ``$...$`` math span bridged across a cell delimiter, e.g. the
 ``($/1M tokens)`` header) was repaired by #15975 and is covered by that PR's
@@ -91,9 +92,11 @@ def test_js_logical_or_in_code_block_is_not_a_table():
         "ORPHAN_TABLE_ROW on prose. Measured 2026-09-13 on "
         "MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO.ipynb cell[12]: the "
         "line 'l'optimum **pi*(y|x) = (1/Z) pi_ref(y|x) exp(r(x,y)/beta)**' is "
-        "read as a continuation row of the table 5 lines above, because "
-        "_has_delimiter_pipe treats the math bars in pi*(y|x) as cell "
-        "delimiters. Retired by #15719 (its exact scope: ORPHAN_TABLE_ROW)."
+        "read as a continuation row of the table 5 lines above. The "
+        "conditional-notation guard requires a letter immediately before '(', "
+        "so it strips pi_ref(y|x) but misses the suffixed identifier pi*(y|x); "
+        "the remaining bars are then treated as cell delimiters. Retired by "
+        "#15719 (its exact scope: ORPHAN_TABLE_ROW)."
     ),
 )
 def test_prose_pipe_after_table_is_not_an_orphan_row():
