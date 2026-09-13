@@ -1,8 +1,36 @@
 # M12 HAR-RV-J -- Andersen-Bollerslev-Diebold (2007) Jump Decomposition
 
-**Status:** BEATS (Cycle 31) -- p=7.9e-7, win_rate=76.2%, but MSE degradation and h=5 weakness
+**Statut :** NO BEATS (revalidation cluster sept actifs, 2026-09-13, protocole symétrique — voir « Revalidation cluster (2026-09-13) » ci-dessous). Le BEATS du Cycle 31 (2026-05-13) n'est **pas confirmé** sous ce protocole ; ce n'est pas une réfutation définitive (protocoles et fenêtres diffèrent). Historique Cycle 31 préservé intégralement en aval.
 
-## Verdict
+## Revalidation cluster (2026-09-13) — protocole symétrique sept actifs (#16004)
+
+Revalidation exécutée par `scripts/m12_har_rv_j.py` sur le cluster de sept actifs (BTC, ETH, SOL, LTC, XRP, ADA, DOT en USD) aux horizons 1, 5 et 10 : vingt-et-un couples actif × horizon, évalués **tous** (contrat fail-closed : une seule unité non évaluable = échec sans verdict). L'agrégation transpose exactement celle de `scripts/har_asymmetric.py` (M16) : verdict DM-MSE par couple, réduction par actif (BEATS si majorité stricte d'horizons BEATS, NO BEATS si au moins un horizon NO BEATS, sinon INCONCLUSIVE), puis sign-test binomial exact unilatéral sur les sept verdicts d'actifs.
+
+**Protocole.** Walk-forward 5 folds (expanding, refit 22 j) ; calibration du biais signé **train-only et symétrique** (fenêtre identique de 60 jours pour la baseline HAR et le candidat HAR-RV-J) ; frais 50 bps ; DM sur la perte MSE. L'OLS est déterministe : `n_seeds_effective=1` par unité, les labels de seed demandés `[0, 7, 42, 99]` sont des contrôles non applicables, jamais comptés comme observations.
+
+**Verdict cluster : NO BEATS** — 0 actif BEATS sur 7, sign-test exact unilatéral p = 1,000000 (seuil alpha = 0,05).
+
+| Actif | Verdict | Horizons BEATS | Horizons NO BEATS | DM p (horizons NO BEATS) |
+|-------|---------|----------------|-------------------|--------------------------|
+| ADA-USD | NO BEATS | 0/3 | 3 | 0,0207 / 0,0234 / 0,0256 |
+| ETH-USD | NO BEATS | 0/3 | 2 | 0,0288 (h=5) / 0,0358 (h=10) |
+| BTC-USD | INCONCLUSIVE | 0/3 | 0 | — |
+| DOT-USD | INCONCLUSIVE | 0/3 | 0 | — |
+| LTC-USD | INCONCLUSIVE | 0/3 | 0 | — |
+| SOL-USD | INCONCLUSIVE | 0/3 | 0 | — |
+| XRP-USD | INCONCLUSIVE | 0/3 | 0 | — |
+
+Au niveau configuration (descriptif uniquement, n=21 — les horizons d'un même actif sont dépendants) : 0 couple BEATS en DM-MSE ; médiane delta-Sharpe +0,0009. Par horizon (descriptif) : h=1 edge −0,0119 (DM p médian 0,1130, diff. de perte +3,2667) ; h=5 +0,0053 (0,0874, +5,8894) ; h=10 −0,0095 (0,0880, +1,9526). La différence de perte DM positive partout : là où elle est significative, elle va **contre** HAR-RV-J.
+
+**Biais signés OOS (`prévision − cible`), moyennes par horizon.** HAR brut : −0,049 / −0,074 / −0,091 (h=1/5/10). HAR calibré : −0,013 / −0,018 / −0,023. HAR-RV-J calibré : **+0,103 / +0,095 / +0,017** — après la même calibration train-only, le résidu du candidat reste plus biaisé que celui de la baseline. Les écarts les plus amples apparaissent sur les actifs à fenêtre courte : médiane par actif du biais HRJ calibré — XRP +1,953, SOL −1,018, LTC +0,483, DOT −0,482, ADA −0,256, contre BTC −0,002 et ETH −0,012. Ce constat est descriptif et n'établit pas de causalité liée à la longueur des fenêtres.
+
+**Manifeste données.** BTC-USD 2018-05-15 → 2024-08-09 (2 278 jours RV, Bitstamp) ; ETH-USD 2019-10-21 → 2023-12-15 (1 495 jours RV, Binance) ; SOL/LTC/XRP/ADA/DOT 2024-09-14 → 2026-09-13 (724 jours RV chacun, yfinance). Fenêtres **non homogènes** : cinq actifs ne portent qu'environ 724 jours.
+
+**Lecture nuancée vis-à-vis du Cycle 31.** Sous calibration symétrique et agrégation par actif, le BEATS du Cycle 31 (p=7.9e-7, 64/84, calibration asymétrique de la seule baseline et pseudo-réplication par 4 seeds d'un OLS déterministe) **n'est pas confirmé**. Ce résultat ne le réfute pas définitivement : protocoles et fenêtres diffèrent, et cinq actifs du cluster n'ont ici que ~724 jours de données. L'hypothèse selon laquelle l'asymétrie de calibration du Cycle 31 portait une part de son avantage mesuré, et celle selon laquelle la calibration du biais est instable sur fenêtres ~724 jours, sont des **interprétations** cohérentes avec les biais signés ci-dessus — pas des démonstrations. Ce verdict rejoint celui de M16 (HAR asymétrique, même contrat cluster : NO BEATS, p = 0,9921875).
+
+**Artefacts.** `scripts/results/m12_har_rv_j/results.json` (97 061 octets, agrégé falsifiable : biais signés, p-values DM, preuves de folds par unité, manifeste données) et `scripts/results/m12_har_rv_j/m12_har_rv_j_results.csv` (43 026 octets). Sweep réel : 21/21 unités, 0 échec, 220 s. Notebook consommateur réexécuté : `m12_har_rv_j_research.ipynb` (5 cellules code, sorties réelles).
+
+## Verdict (Cycle 31, 2026-05-13 — historique, protocole asymétrique)
 
 M12 HAR-RV-J **BEATS** HAR Classic on Sharpe via Kelly position sizing (sign-test p=7.9e-7, 64/84 combos). However, the edge is nuanced:
 
