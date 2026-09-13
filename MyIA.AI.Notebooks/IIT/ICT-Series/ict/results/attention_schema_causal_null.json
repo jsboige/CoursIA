@@ -1,0 +1,15 @@
+{
+ "policy": "patch lam=1 calib_obj1<-calib_obj2, fenêtre suffixe, état empirique",
+ "flip_by_seed": {
+  "0": 0.0,
+  "1": 0.0,
+  "7": 0.0,
+  "42": 0.0,
+  "99": 0.09090909090909094
+ },
+ "scale_intact_median": 0.6363636363636364,
+ "sigma_null": 0.0406557814090871,
+ "epsilon_flip": 0.012935930448345895,
+ "formula": "epsilon_flip = 0.5 × sigma_null × composition(intact, sig_neutre)_médian",
+ "n_graines": 5
+}
