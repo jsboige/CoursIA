@@ -155,6 +155,13 @@ def measure_motif(cells: Iterable[Cell], max_period: int = MAX_PERIOD) -> Measur
 
     C'est l'oracle de la tranche : toute metadonnee declaree dans le catalogue
     est comparee a cette mesure.
+
+    Cout : O(max_period * |grid|) appels a `step`, au lieu de O(max_period^2 * |grid|)
+    dans la version qui recalculait `evolve(p, grid)` from scratch pour chaque p.
+    La trajectoire cumulative `step^i(grid)` est partagee entre la detection de
+    la periode et le calcul des phases (acceptance #1 de #15635 : memes
+    periodes, memes phases, memes controles negatifs, byte-equivalence des
+    rapports).
     """
     seq = [tuple(c) for c in cells]
     grid = set(seq)
@@ -164,15 +171,21 @@ def measure_motif(cells: Iterable[Cell], max_period: int = MAX_PERIOD) -> Measur
         raise SchemaError("cellules dupliquees : la forme n'est pas un ensemble")
 
     base = normalize(grid)
+    # Trajectoire cumulative : trajectory[i] == step^i(grid) pour i >= 1.
+    # La comparaison `normalize(image) == base` sur chaque generation detecte
+    # la periode minimale ; les phases sont ensuite extraites de la trajectoire
+    # deja calculee, sans recalcul `evolve(k, grid)` pour k=0..period-1.
+    trajectory: list[Grid] = [grid]
     for period in range(1, max_period + 1):
-        image = evolve(period, grid)
+        trajectory.append(step(trajectory[-1]))
+        image = trajectory[period]
         if normalize(image) == base:
             translation = _translation_between(grid, image)
             if max(abs(translation[0]), abs(translation[1])) > MAX_TRANSLATION:
                 raise SchemaError(
                     f"translation {translation} hors domaine (>{MAX_TRANSLATION})"
                 )
-            phases = {k: normalize(evolve(k, grid)) for k in range(period)}
+            phases = {k: normalize(trajectory[k]) for k in range(period)}
             acc: Grid = set()
             for phase in phases.values():
                 acc |= set(phase)

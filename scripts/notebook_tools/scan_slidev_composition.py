@@ -562,6 +562,18 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
 CONTENT_TAGS = {
     "P", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "TD", "TH", "BLOCKQUOTE",
     "PRE", "CODE", "IMG", "SVG", "CANVAS", "VIDEO", "IFRAME", "SPAN",
+    # Inline text tags. A link/emphasis cut at the canvas edge IS visible
+    # when its text extends past the visible region -- issue #15664 founded
+    # this gap with deck 05-theorie-des-jeux slide 10 where `EM > A > A > A`
+    # (the per-notebook anchor line) overflowed by 1 px and was reported as
+    # `container_only: true`. These inherit the bbox of their parent block in
+    # normal flow, so adding them does NOT inflate `n_elem` for slides
+    # already counted via their parent P/LI/EM — the counter-test in
+    # `tests/test_scan_slidev_composition.py` covers the regression risk.
+    # `ABBR` is included because the deck-rendering layer uses it for
+    # underlined glossary hits; without it, an inline abbreviation edge
+    # cut would slip through.
+    "A", "EM", "STRONG", "B", "I", "ABBR",
 }
 
 
@@ -569,7 +581,15 @@ def content_overflow(r: dict) -> bool:
     """Un débordement est un défaut VISUEL seulement s'il coupe du contenu
     (texte, image, code). Un conteneur seul qui déborde (le classique
     `div.slidev-layout` à [0,0,980,587]) est une boîte CSS dont le dépassement
-    n'est pas nécessairement visible — la slide n'est pas comptée."""
+    n'est pas nécessairement visible — la slide n'est pas comptée.
+
+    Les balises inline ``A``/``EM``/``STRONG``/``B``/``I``/``ABBR`` héritent
+    en général de la bbox de leur bloc parent (P/LI/H*), donc l'ajouter ne
+    change pas le verdict par slide — sauf quand le débordement touche
+    l'inline lui-même (slide 10 @ #14888/#15661 deck 05-théorie-des-jeux :
+    ``EM > A > A > A`` ancre multi-notebooks coupée à +1 px, rendue
+    ``container_only: true`` alors que la coupure est techniquement réelle).
+    """
     return any(h.get("tag") in CONTENT_TAGS for h in r.get("hors_canvas", []))
 
 

@@ -35,7 +35,12 @@ allocation + execution gate) **does not beat S4 v2 alone**.
 | **L5 full** (trend + VT + gate) | 0.613 | **-0.236** |
 | no-VT (trend + gate, no vol-targeting) | 0.589 | -0.260 |
 
-Per-seed (L5 full vs S4 v2): 0 -> -0.338 | 1 -> -0.267 | 7 -> +0.040 | 42 -> -0.380.
+| Seed | Δ Sharpe |
+|------|----------|
+| 0 | -0.338 |
+| 1 | -0.267 |
+| 7 | +0.040 |
+| 42 | -0.380 |
 
 ## Key Findings
 

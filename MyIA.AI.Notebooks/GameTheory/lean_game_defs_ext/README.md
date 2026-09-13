@@ -89,7 +89,9 @@ Compagnon formel de `GameTheory-11-BayesianGames.ipynb`, il couvre l'Epic #2610
   faiblement** toute autre enchère (`spa_truthful_dominant1/2`, argument pointwise
   classique) — donc BNE sincère **pour tout `n`** sans `decide` ; le type haut
   capture une rente d'information strictement positive.
-- **Valeur de l'information** (`Information.lean`) : `valueNoInfo ≤ valueSignal ≤
+- **Valeur de l'info
+
+rmation** (`Information.lean`) : `valueNoInfo ≤ valueSignal ≤
   valuePerfect` et la **monotonie de Blackwell** (`valueSignal_mono` : un signal
   plus fin vaut toujours au moins autant, via factorisation σ = h ∘ τ) ;
   exemple « parapluie » chiffré par `decide`.
