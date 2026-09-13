@@ -461,6 +461,13 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.wav
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/output/mert2-corpus/*.wav
 
+# SheetSage2 (04-16) - audio->partition artifacts (regenerable by re-execution, kept local)
+# Whole directory: the model writes many artifact types (score.abc, *.mid, *.lab,
+# events.json, tokens.txt, playback.json) whose extension set drifts with the model
+# version. Enumerating them would rot; the directory is fully regenerable by
+# re-running the notebook, so the tree is ignored as a whole.
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/output/sheetsage2/
+
 # SymbolicAI notebook execution artifacts (regenerable, kept local, not committed)
 # Generated on notebook execution (matplotlib savefig / pyvis save). They are NOT
 # displayed inline nor embedded in committed cell outputs, so versioning them is
