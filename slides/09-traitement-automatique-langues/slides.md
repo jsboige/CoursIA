@@ -66,16 +66,18 @@ layout: default
 |---|---|
 | n-grammes, modèles de langue | `GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb` |
 | Markov caché (HMM), Viterbi | `Probas/Infer/Infer-*` |
-| Automates finis, transducteurs (morphologie) | `Search/Z3/Sudoku/Lean` |
-| CRF / structured prediction | `Probas/Infer/CRF` |
-| Parsing CFG/PCFG, CYK | `SymbolicAI/Lean` |
+| Automates finis, transducteurs (morphologie) | `SymbolicAI/SMT/Automata/`, `SymbolicAI/SMT/Z3-API/`, `Sudoku/` |
+| CRF / structured prediction | **GAP** — pas de notebook dédié (voir `Probas/Infer/Infer-*` pour HMM/Viterbi amont) |
+| Parsing CFG/PCFG, CYK | **GAP** — pas de CYK ni de notebook PCFG dédié |
 | Sémantique compositionnelle | `SymbolicAI/SemanticWeb` |
 | Word embeddings, RNN, LSTM, seq2seq, Transformers | `GenAI/Texte/10*` |
 | Agents conversationnels, LUIS, Dialogflow | `GenAI/Plateformes-Conversationnelles` |
 
+<br><br>
+
 > Aucun des 8 arcs n'est perdu silencieusement : chacun renvoie vers un **owner
-> exécutable** du dépôt. Les gaps restent à fermer par des notebooks atomiques
-> additionnels (jamais autofermés).
+> réel** ou est marqué **GAP** quand aucun notebook exécutable n'existe. Les
+> gaps restent à fermer par des notebooks atomiques additionnels (jamais autofermés).
 
 ---
 layout: section
@@ -257,6 +259,9 @@ layout: default
 | Régulier | DFA | Patterns, regex |
 
 ---
+layout: image-overlay
+image: ./images/slide_18_img_7fb42adf.png
+---
 
 # 18. Grammaires probabilistes
 
@@ -278,6 +283,11 @@ VP → V     [0.6]
 **Lexique** : listes de mots autorisés par catégorie (noms, verbes, adjectifs,
 mots fonctionnels). Classes ouvertes (mots ajoutés au fil du temps).
 
+*Figure historique (PCFG)* : extrait du PPTX original 2018.
+
+---
+layout: image-overlay
+image: ./images/slide_19_img_fe5c88d1.png
 ---
 
 # 19. Analyse syntaxique — Parsing
@@ -296,6 +306,8 @@ vs.
 > « Have the students in section 2 of Computer Science 101 taken the exam? »
 
 **Solution** : stocker les résultats intermédiaires → **Chart parsing**, **CYK**.
+
+*Figure historique (Chart parsing)* : extrait du PPTX original 2018.
 
 ---
 
@@ -323,7 +335,8 @@ layout: section
 Du sens au contexte
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/slide_22_img_752cd77a.png
 ---
 
 # 22. Interprétation sémantique
@@ -338,6 +351,8 @@ de ses parties.
 **Verbes** : prédicats au même titre que les syntagmes verbaux (VP).
 
 **Entraînement** : à partir d'exemples annotés (parallélisme syntaxe-sémantique).
+
+*Figure historique (sémantique compositionnelle)* : extrait du PPTX original 2018.
 
 ---
 
@@ -356,6 +371,9 @@ de ses parties.
 > « Who did the agent tell you to give the gold to? » → trace `_`licenciée par `who`
 
 ---
+layout: image-overlay
+image: ./images/slide_24_img_765dfaa8.png
+---
 
 # 24. Fouille d'arguments
 
@@ -370,6 +388,8 @@ de ses parties.
 - Outils d'annotation : **OVA+**
 
 **Applications** : détection de sophismes, journalisme automatisé, aide à la décision.
+
+*Figure historique (AIF / RDF)* : extrait du PPTX original 2018.
 
 ---
 layout: section
@@ -428,7 +448,8 @@ layout: section
 De RNN à Transformers
 
 ---
-layout: default
+layout: image-overlay
+image: ./images/slide_28_img_4b6f2b7a.png
 ---
 
 # 28. Modèles profonds
@@ -448,6 +469,11 @@ LLM modernes.
 > post-2018 (BERT, GPT, T5, etc.), voir `GenAI/Texte/10*` et `GenAI/Texte/13*`
 > du dépôt.
 
+*Figure historique (seq2seq + attention)* : extrait du PPTX original 2018.
+
+---
+layout: image-overlay
+image: ./images/slide_29_img_0094ef69.png
 ---
 
 # 29. Agents conversationnels
@@ -466,6 +492,8 @@ LLM modernes.
 
 **Voir** : `GenAI/Plateformes-Conversationnelles/*` pour les notebooks modernes
 (open-webUI, Qwen, etc.).
+
+*Figure historique (architecture bot)* : extrait du PPTX original 2018.
 
 ---
 layout: default
@@ -510,13 +538,21 @@ layout: section
 |---|---|
 | n-grammes, modèles de langue | `GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb` |
 | HMM, Viterbi | `Probas/Infer/*` |
-| Automates finis, transducteurs | `Search/Z3/Sudoku/Lean` |
-| CRF, structured prediction | `Probas/Infer/*` |
-| Parsing CFG/PCFG | `SymbolicAI/Lean` |
+| Automates finis, transducteurs | `SymbolicAI/SMT/Automata/`, `SymbolicAI/SMT/Z3-API/`, `Sudoku/` |
+| CRF, structured prediction | _gap_ (pas de notebook dédié dans le dépôt) |
+| Parsing CFG/PCFG | _gap_ (couverture partielle via Lean ; pas de parser CFG/PCFG autonome) |
 | Sémantique | `SymbolicAI/SemanticWeb` |
 | RNN, LSTM, seq2seq, attention | `GenAI/Texte/10*` |
 | Transformers, LLMs | `GenAI/Texte/11*`, `13*` |
 | Bots conversationnels | `GenAI/Plateformes-Conversationnelles/*` |
+
+> **Note** : les trois dernières lignes du tableau initial confondaient couverture
+> `Probas/Infer/*` et `SymbolicAI/Lean` pour CRF et CFG/PCFG alors qu'aucun notebook
+> du dépôt n'aborde ces techniques de front. Les chemins réels vérifiés
+> firsthand pour les automates finis sont `SymbolicAI/SMT/Automata/`,
+> `SymbolicAI/SMT/Z3-API/` et `Sudoku/` — le chemin `Search/Z3/Sudoku/Lean`
+> cité antérieurement est un fantôme. Ces écarts sont marqués `gap` pour
+> ne pas induire les étudiants en erreur.
 
 ---
 
@@ -535,7 +571,40 @@ layout: section
 - Bitcoin, DN/Encog, machine learning
 
 > Ces projets sont **historiques** (2018). Pour les projets modernes équivalents,
-> voir le syllabus courant (`MyIA.AI.Notebooks/GradeBookApp/`).
+> voir le syllabus courant (`GradeBookApp/`, racine du dépôt — moteur de notation, pas le syllabus).
+
+---
+
+# Annexe — Figures historiques préservées (référence)
+
+Le dépôt ne conserve désormais que les **six PNG strictement nécessaires**
+(assets référencés par le rendu) — un par slide d'`image-overlay` (slides 18,
+19, 22, 24, 28, 29). Tous les autres diagrammes du PPTX canonique (≥30 KB ou non)
+sont accessibles dans le PPTX source hors Git. La voie canonique pour intégrer
+des figures complémentaires au deck est `image-overlay` (jamais `bg right` /
+`image-right` issus de convertisseurs, règle projet).
+
+**Source** : PPTX canonique `Artificial Intelligence - 6 - Natural Language Processing.pptx`
+hors dépôt (GDrive *Bibliographie IA*, Tell bibliography-hygiene règle : hors dépôt, licence d'origine préservée).
+
+Voir slide suivante pour le tableau détaillé des six figures retenues.
+
+---
+
+# Annexe B — Tableau des figures retenues (référence)
+
+| Slide | Fichier | Taille | Intégré |
+|---|---|---:|---|
+| 18 | `slide_18_img_7fb42adf.png` | 91 KB | **oui** |
+| 19 | `slide_19_img_fe5c88d1.png` | 72 KB | **oui** |
+| 22 | `slide_22_img_752cd77a.png` | 35 KB | **oui** |
+| 24 | `slide_24_img_765dfaa8.png` | 158 KB | **oui** |
+| 28 | `slide_28_img_4b6f2b7a.png` | 63 KB | **oui** |
+| 29 | `slide_29_img_0094ef69.png` | 135 KB | **oui** |
+
+Tableau de référence — chacune des six lignes renvoie à un PNG référencé par
+un slide `image-overlay` du corps du deck. Le tableau complet figure ici pour
+traçabilité, hors du flux de présentation principal.
 
 ---
 
