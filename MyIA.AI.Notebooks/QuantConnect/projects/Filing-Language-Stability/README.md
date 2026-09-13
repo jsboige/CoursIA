@@ -62,9 +62,9 @@ même modèle de frais actions à 5 bps :
 
 | Jambe | Backtest Cloud | Ordres | Sharpe | CAGR | MaxDD |
 |---|---|---:|---:|---:|---:|
-| EDGAR top 2 | `6925405070da5709b872a4c444c49167` | 66 | 0,151 | 7,482 % | 31,4 % |
-| Panier éligible égal | `d2df4148759f9a83b93d6f445e061dca` | 117 | 0,429 | 13,390 % | 18,4 % |
-| SPY | `fa7010e78b1c42f335e7bd73eea500d1` | 3 | 0,193 | 8,607 % | 24,5 % |
+| EDGAR top 2 | `b99f7afcff7ec09e2d522ab915a56da7` | 66 | 0,151 | 7,482 % | 31,4 % |
+| Panier éligible égal | `716eee17e4e77d50e999c8eadc0b6fb9` | 117 | 0,429 | 13,390 % | 18,4 % |
+| SPY | `e7f6ef5f242445b6f995e3cee14626a0` | 3 | 0,193 | 8,607 % | 24,5 % |
 
 **Verdict : NO BEATS.** La sélection EDGAR est dominée OOS par les deux
 contrôles : Sharpe inférieur de 0,278 au panier égal et de 0,042 à SPY, CAGR
