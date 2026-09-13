@@ -495,9 +495,39 @@ Les serveurs MCP etendent les capacités de Claude Code.
 
 #### 1. Serveur de Recherche Web (SearXNG)
 
+Le MCP SearXNG requiert une instance dont le format JSON est activé (le conteneur
+`searxng/searxng:latest` le désactive par défaut : `/search?...&format=json` répond
+alors `403`). Lancez une instance locale :
+
 ```bash
-claude mcp add --transport http searxng https://search.myia.io/
+mkdir -p searxng
+cat > searxng/settings.yml << 'EOF'
+use_default_settings: true
+server:
+  secret_key: "remplacez-par-une-chaine-aleatoire-longue"
+search:
+  formats:
+    - html
+    - json
+EOF
+docker run -d --name searxng -p 8181:8080 -v "$(pwd)/searxng:/etc/searxng" searxng/searxng:latest
 ```
+
+> `server.secret_key` est obligatoire dès que vous montez votre propre
+> `settings.yml` — sans elle, le worker SearXNG refuse de démarrer.
+
+Puis déclarez le serveur MCP :
+
+```bash
+claude mcp add --transport http searxng http://localhost:8181/
+```
+
+Vérification : `curl 'http://localhost:8181/search?q=test&format=json'` doit
+répondre `200` avec un objet JSON.
+
+Si vous disposez d'une instance privée authentifiée (fournie par l'établissement),
+remplacez l'URL locale par la sienne et ajoutez les en-têtes d'authentification
+correspondants (`claude mcp add --help`) — ce n'est jamais le chemin par défaut.
 
 #### 2. Serveur Playwright (Automatisation Navigateur)
 

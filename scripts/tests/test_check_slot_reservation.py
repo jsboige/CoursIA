@@ -35,9 +35,16 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 _SCRIPT = (Path(__file__).resolve().parent.parent / "notebook_tools"
            / "check_slot_reservation.py")
+
+# Le module est importe pour eprouver ses fonctions pures (`pr_claims`,
+# `ambiguous_pr_numbers`) et son lecteur `gh`, que le harnais `--offline`
+# ci-dessus ne peut pas atteindre.
+sys.path.insert(0, str(_SCRIPT.parent))
+import check_slot_reservation as csr  # noqa: E402
 
 SERIES = "MyIA.AI.Notebooks/GenAI/Audio"
 
@@ -360,7 +367,170 @@ class TestDistinctStates(unittest.TestCase):
             self.assertEqual(doc["mode"], "revision")
             self.assertEqual(doc["states"]["duplicate_within_revision"], 2)
             self.assertEqual(doc["sources"]["open_prs"]["status"], "unavailable")
+            # La lecture de `status` est une source a part, et elle se dit
+            # indisponible elle aussi : une source muette n'est pas une source
+            # absente (cf #15734).
+            self.assertEqual(doc["sources"]["open_prs_removed"]["status"],
+                             "unavailable")
             self.assertEqual(doc["sources"]["base"]["notebooks"], 1)
+
+
+class TestOpenPrSourceDiscriminatesOnStatus(unittest.TestCase):
+    """#15734 -- « une entree a `additions == 0` » ne veut pas dire « suppression ».
+
+    Mesure du 2026-09-12, 54 PRs ouvertes / 101 entrees `.ipynb`, les deux API
+    croisees (0 desaccord de compteur) : `modified` 70, `renamed` 27, `added` 4,
+    `removed` **0**. La source n'avait donc jamais vu la seule chose que son
+    filtre `additions > 0` pretendait ecarter.
+
+    Severite honnete : **latente, nulle sur ce pool**. La seule entree vivante a
+    `additions == 0` (#15729) porte un nom sans index, que `slot_of` ecartait
+    deja -- l'ancien filtre et le nouveau rendent le meme verdict sur elle. Ce
+    qui est faux est la REGLE, et la classe qu'elle rouvre est celle d'un
+    `git mv` pur (`(0, 0)`) sur un `NN-N-Nom.ipynb` indexe, c'est-a-dire le
+    premier commit d'une tranche de renumeration.
+
+    La charge `gh pr list --json files` ne permet PAS de trancher -- c'est
+    exactement pourquoi `removed` est un parametre, resolu par `status`
+    ailleurs, et pourquoi son absence veut dire « reserver ».
+    """
+
+    SLOT = SERIES + "/04-2-Alpha.ipynb"
+
+    def _claims(self, prs, removed):
+        return csr.pr_claims(prs, removed).get(csr.slot_of(self.SLOT), [])
+
+    def test_modification_that_only_deletes_lines_holds_the_slot(self):
+        """La forme vivante dans le pool : #15729, `(0, 12)`, `status=modified`.
+
+        Le nom de ce notebook ne porte pas d'index, donc l'impact du defaut est
+        latent -- c'est la regle qui est fautive, et elle l'est pour tout
+        `NN-N-Nom.ipynb` (cf docstring du module)."""
+        prs = [{"number": 15729, "files": [
+            {"path": self.SLOT, "additions": 0, "deletions": 12}]}]
+        self.assertEqual(len(self._claims(prs, {15729: set()})), 1,
+                         "retirer 12 lignes d'un notebook, c'est l'EDITER, pas "
+                         "le supprimer : le slot reste tenu")
+
+    def test_byte_identical_rename_holds_the_slot(self):
+        """Le cas nomme par #15734 : `(0, 0)`. Aucune instance vivante, mais a
+        couvert par la meme regle -- c'est la forme d'un `git mv` pur."""
+        prs = [{"number": 1, "files": [
+            {"path": self.SLOT, "additions": 0, "deletions": 0}]}]
+        self.assertEqual(len(self._claims(prs, {1: set()})), 1)
+
+    def test_unresolved_status_reserves_rather_than_releases(self):
+        """Sens d'echec : cet organe est un preflight, sous-reserver en silence
+        est son seul mode de panne non rattrapable."""
+        prs = [{"number": 2, "files": [
+            {"path": self.SLOT, "additions": 0, "deletions": 12}]}]
+        self.assertEqual(len(self._claims(prs, None)), 1)
+        self.assertEqual(len(self._claims(prs, {})), 1)
+        self.assertEqual(len(self._claims(prs, {2: set()})), 1)
+
+    def test_real_removal_releases(self):
+        """Le seul cas ou le slot est REELLEMENT libere : `status=removed`."""
+        prs = [{"number": 3, "files": [
+            {"path": self.SLOT, "additions": 0, "deletions": 12}]}]
+        self.assertEqual(self._claims(prs, {3: {self.SLOT}}), [])
+
+    def test_written_entries_are_untouched_by_the_change(self):
+        """Non-regression : les 100/101 entrees a `additions > 0` reservent
+        exactement comme avant, `removed` vide ou non."""
+        prs = [{"number": 4, "files": [
+            {"path": self.SLOT, "additions": 8, "deletions": 2}]}]
+        self.assertEqual(len(self._claims(prs, {4: set()})), 1)
+        self.assertEqual(len(self._claims(prs, {})), 1)
+
+    def test_ambiguous_set_is_exactly_the_zero_addition_notebooks(self):
+        prs = [
+            {"number": 1, "files": [{"path": self.SLOT, "additions": 0, "deletions": 1}]},
+            {"number": 2, "files": [{"path": self.SLOT, "additions": 4, "deletions": 0}]},
+            {"number": 3, "files": [{"path": "docs/x.md", "additions": 0, "deletions": 4}]},
+            {"number": 4, "files": [{"path": self.SLOT, "additions": 0, "deletions": 4},
+                                    {"path": self.SLOT, "additions": 2, "deletions": 0}]},
+        ]
+        self.assertEqual(csr.ambiguous_pr_numbers(prs), [1, 4],
+                         "seules les PRs a entree .ipynb `additions == 0` exigent "
+                         "une lecture de `status` ; un .md n'en est pas une, et "
+                         "une PR ne compte qu'une fois")
+
+
+class TestRemovalReaderContract(unittest.TestCase):
+    """Le contrat du LECTEUR de `status`, epingle.
+
+    Lecon de #15759 : un test qui devine la forme du producteur, ou qui la lui
+    fournit a la main, passe vert par construction. Ici on epingle donc les
+    arguments `gh` reellement passes ET le sens d'echec -- pas seulement la
+    fonction de parsing.
+    """
+
+    def _patched(self, stdout, returncode=0):
+        seen = {}
+
+        class _Result:
+            def __init__(self):
+                self.stdout = stdout
+                self.stderr = "boom" if returncode else ""
+                self.returncode = returncode
+
+        def fake(argv, **kwargs):
+            seen["argv"] = list(argv)
+            return _Result()
+
+        status: dict = {}
+        with mock.patch.object(csr.subprocess, "run", fake):
+            removed = csr.load_removed_paths([15729], None, status)
+        return removed, status, seen
+
+    def test_reader_asks_the_files_endpoint_for_status_and_paginates(self):
+        removed, _status, seen = self._patched("")
+        argv = seen["argv"]
+        joined = " ".join(argv)
+        self.assertEqual(argv[0], "gh")
+        self.assertEqual(argv[1], "api")
+        self.assertIn("pulls/15729/files", argv[2])
+        self.assertIn("--paginate", argv,
+                      "un PR a plus de 100 fichiers doit rendre toutes ses pages")
+        self.assertIn(".status", joined,
+                      "le discriminant est `status` ; le lire est tout l'objet "
+                      "de cette lecture")
+
+    def test_reader_uses_the_repo_placeholder_when_no_repo_is_imposed(self):
+        _removed, _status, seen = self._patched("")
+        self.assertIn("{owner}/{repo}", seen["argv"][2],
+                      "sans --repo explicite, `gh` doit resoudre le depot courant "
+                      "comme le fait deja la source PRs")
+
+    def test_only_removed_rows_are_collected(self):
+        out = ("MyIA.AI.Notebooks/GenAI/Audio/04-1-Gone.ipynb\tremoved\n"
+               "MyIA.AI.Notebooks/GenAI/Audio/04-2-Edited.ipynb\tmodified\n")
+        removed, status, _seen = self._patched(out)
+        self.assertEqual(removed, {15729: {
+            "MyIA.AI.Notebooks/GenAI/Audio/04-1-Gone.ipynb"}})
+        self.assertEqual(status["open_prs_removed"]["status"], "ok")
+        self.assertEqual(status["open_prs_removed"]["removed"], 1)
+
+    def test_a_failed_read_keeps_the_slots_reserved_and_says_so(self):
+        removed, status, _seen = self._patched("", returncode=1)
+        self.assertEqual(removed, {},
+                         "aucune PR dans la carte => ses slots restent RESERVES")
+        self.assertEqual(status["open_prs_removed"]["status"], "partial")
+        self.assertEqual(status["open_prs_removed"]["failed"], [15729])
+
+    def test_no_ambiguous_pr_costs_no_call(self):
+        called = []
+
+        def fake(argv, **kwargs):
+            called.append(argv)
+            raise AssertionError("aucun appel `gh` ne doit partir sans PR ambigue")
+
+        status: dict = {}
+        with mock.patch.object(csr.subprocess, "run", fake):
+            removed = csr.load_removed_paths([], None, status)
+        self.assertEqual(removed, {})
+        self.assertEqual(called, [])
+        self.assertEqual(status["open_prs_removed"]["status"], "not_needed")
 
 
 if __name__ == "__main__":

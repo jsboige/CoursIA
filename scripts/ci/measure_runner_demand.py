@@ -248,6 +248,80 @@ def _duration_minutes(start: str, end: str, label: str) -> float | None:
     return (b - a).total_seconds() / 60.0
 
 
+def _percentile(values: list[float], quantile: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    position = (len(ordered) - 1) * quantile
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    fraction = position - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
+
+
+def _timing_group() -> dict:
+    return {
+        "jobs": 0,
+        "timed_jobs": 0,
+        "incomplete_or_untimed_jobs": 0,
+        "timestamp_skew_jobs": 0,
+        "queue_waits": [],
+        "runtimes": [],
+    }
+
+
+def _record_job(group: dict, state: str, wait: float | None, work: float | None) -> None:
+    group["jobs"] += 1
+    if state == "incomplete":
+        group["incomplete_or_untimed_jobs"] += 1
+    elif state == "skew":
+        group["timestamp_skew_jobs"] += 1
+    else:
+        group["timed_jobs"] += 1
+        group["queue_waits"].append(wait)
+        group["runtimes"].append(work)
+
+
+def _render_timing_groups(groups: dict[str, dict], key: str) -> list[dict]:
+    rendered = []
+    for name in sorted(groups):
+        group = groups[name]
+        waits = group["queue_waits"]
+        runtimes = group["runtimes"]
+        rendered.append({
+            key: name,
+            "jobs": group["jobs"],
+            "timed_jobs": group["timed_jobs"],
+            "incomplete_or_untimed_jobs": group["incomplete_or_untimed_jobs"],
+            "timestamp_skew_jobs": group["timestamp_skew_jobs"],
+            "timing_coverage": (
+                round(group["timed_jobs"] / group["jobs"], 6)
+                if group["jobs"] else None
+            ),
+            "queue_wait_minutes": {
+                percentile: (
+                    round(value, 3) if value is not None else None
+                )
+                for percentile, value in (
+                    ("p50", _percentile(waits, 0.5)),
+                    ("p90", _percentile(waits, 0.9)),
+                    ("max", max(waits) if waits else None),
+                )
+            },
+            "runtime_minutes": {
+                percentile: (
+                    round(value, 3) if value is not None else None
+                )
+                for percentile, value in (
+                    ("p50", _percentile(runtimes, 0.5)),
+                    ("p90", _percentile(runtimes, 0.9)),
+                    ("max", max(runtimes) if runtimes else None),
+                )
+            },
+        })
+    return rendered
+
+
 def analyze(snapshot: dict) -> dict:
     if snapshot.get("schema_version") != 1:
         raise MeasurementError("unsupported or missing snapshot schema_version")
@@ -267,7 +341,8 @@ def analyze(snapshot: dict) -> dict:
         lambda: {"runs": 0, "jobs": 0, "timed_jobs": 0, "runner_minutes": 0.0, "queue_minutes": 0.0}
     )
     workflow_conclusions: dict[str, Counter] = defaultdict(Counter)
-    workflow_conclusions: dict[str, Counter] = defaultdict(Counter)
+    label_data: dict[str, dict] = defaultdict(_timing_group)
+    runner_data: dict[str, dict] = defaultdict(_timing_group)
     total_jobs = timed_jobs = incomplete_jobs = skipped_without_start = 0
     timestamp_skew_jobs = 0
     runner_minutes = queue_minutes = 0.0
@@ -295,15 +370,30 @@ def analyze(snapshot: dict) -> dict:
         for job in jobs:
             total_jobs += 1
             workflow_data[workflow]["jobs"] += 1
+            raw_labels = job.get("labels")
+            if not isinstance(raw_labels, list) or any(
+                not isinstance(label, str) for label in raw_labels
+            ):
+                raise MeasurementError(f"job {job.get('id')} labels must be a list of strings")
+            labels = sorted({label for label in raw_labels if label})
+            if not labels:
+                labels = ["<unlabelled>"]
+            runner = str(job.get("runner_name") or "<unassigned>")
+            groups = [label_data[label] for label in labels] + [runner_data[runner]]
+
             started, completed = job.get("started_at"), job.get("completed_at")
             created_job = job.get("created_at")
             if not started:
                 incomplete_jobs += 1
                 if job.get("conclusion") == "skipped":
                     skipped_without_start += 1
+                for group in groups:
+                    _record_job(group, "incomplete", None, None)
                 continue
             if not completed:
                 incomplete_jobs += 1
+                for group in groups:
+                    _record_job(group, "incomplete", None, None)
                 continue
             if not created_job:
                 raise MeasurementError(f"started job {job.get('id')} has no created_at")
@@ -311,6 +401,8 @@ def analyze(snapshot: dict) -> dict:
             wait = _duration_minutes(created_job, started, f"job {job.get('id')} queue wait")
             if work is None or wait is None:
                 timestamp_skew_jobs += 1
+                for group in groups:
+                    _record_job(group, "skew", wait, work)
                 continue
             timed_jobs += 1
             runner_minutes += work
@@ -318,6 +410,8 @@ def analyze(snapshot: dict) -> dict:
             workflow_data[workflow]["timed_jobs"] += 1
             workflow_data[workflow]["runner_minutes"] += work
             workflow_data[workflow]["queue_minutes"] += wait
+            for group in groups:
+                _record_job(group, "timed", wait, work)
 
     by_workflow = []
     for name, data in workflow_data.items():
@@ -357,6 +451,8 @@ def analyze(snapshot: dict) -> dict:
         "run_conclusions": dict(sorted(conclusions.items())),
         "runs_created_per_minute": dict(sorted(burst.items())),
         "by_workflow": by_workflow,
+        "by_label": _render_timing_groups(label_data, "label"),
+        "by_runner": _render_timing_groups(runner_data, "runner_name"),
     }
 
 
