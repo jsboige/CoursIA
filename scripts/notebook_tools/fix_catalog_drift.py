@@ -1,8 +1,12 @@
 """One-shot fix: swap `breakdown: projects=48, Python=48` → `breakdown: Python=48, projects=48`
 in MyIA.AI.Notebooks/QuantConnect/README.md, preserving CRLF/LF unchanged.
 
-Used to unblock UNSTABLE PRs whose CI fails on `Notebook catalog drift` due to
-non-deterministic Counter.most_common() tie-break (Windows vs Linux sort order).
+Historique : ecrit pour debloquer des PRs rendues UNSTABLE par le check
+`Notebook catalog drift`, a l'epoque ou `PR gate` le comptait comme un check
+requis. Ce check est **advisory** depuis #15998 -- un drift ne bloque plus
+aucune PR, puisque le catalogue est regenere par catalog-cron.yml sur main
+(#2632/#2744). Le script reste utile comme reparation locale d'un drift de
+tie-break Counter.most_common() non deterministe (tri Windows vs Linux).
 
 Usage: python scripts/notebook_tools/fix_catalog_drift.py
 """
