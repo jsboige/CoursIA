@@ -201,7 +201,7 @@ L'amendement ai-01 du 2026-08-16T22:53Z (verbatim : « on ne jette pas du travai
 
 Anti-pattern fondateur : continuer à claimer `#11224`/`#11271` après la 3ᵉ tranche sans passer par le picker = monoculture auto-référence, le défaut structurel que la veine-mesure a justement rendu visible.
 
-## Plancher de session — pourquoi « plusieurs grains dont un DUR » (mandat user 2026-09-12)
+## Plancher durci — pourquoi « plusieurs grains dont un DUR » (mandat user 2026-09-12)
 
 Le plancher R1 a lu « ≥1 PR entre 2 wakeups » depuis le mandat du 2026-05-23. Ce qu'il mesurait
 — est-ce que la lane a livré ? — a cessé d'être la question dès que la flotte a atteint son régime :
