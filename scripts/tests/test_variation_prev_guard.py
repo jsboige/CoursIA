@@ -617,6 +617,104 @@ def test_fenced_block_is_masked_too():
     assert vpg.find_prev_target_pr_numbers(body) == [14501]
 
 
+# --------------------------------------------------------------------------
+# #15932 -- the fence ABOVE the tag line. `test_fenced_block_is_masked_too`
+# above only holds when the real tag line comes FIRST; the first-line race is
+# what leaked.
+# --------------------------------------------------------------------------
+
+# Shape of the real #15925 body (compressed): the reproduction block is a
+# `python` fence whose first statement quotes a defective tag verbatim, and it
+# sits ABOVE the author's own trailer. `_first_grain_line` took the first
+# `Grain:` substring it met -- inside the fence -- so `_declared_prev_pr`
+# returned the QUOTE's target (15832, CLOSED/unmerged) instead of the real
+# trailer (15924, OPEN), and the guard red-lit the PR with
+# `prev-abandoned -> [15832]` on a predecessor the author never pointed at.
+#
+# The real trailer is held OPEN on purpose (the section NOTE convention): a
+# leaking mask must turn this red, and only the CLOSED quote can do that. The
+# teeth therefore sit entirely on the mask, not on the predicate.
+FENCED_CITATION_ABOVE_TAG = (
+    "## Reproduction\n"
+    "```python\n"
+    'body = "Grain: MED/lean -- lane myia-x:CoursIA -- prev: MED/lean #15832"\n'
+    "vpg.check(body, [], current_pr=15869, prev_targets=meta)\n"
+    "```\n"
+    "\n"
+    "## Suite\n"
+    "Grain: LIGHT/tooling -- lane myia-po-2023:CoursIA -- prev: MED/tooling #15924\n"
+)
+
+FENCED_CITATION_TARGETS = {
+    "15832": {"kind": "pr", "state": "CLOSED", "merged": False},
+    "15924": {"kind": "pr", "state": "OPEN", "merged": False},
+}
+
+
+def test_fenced_citation_above_the_tag_line_is_not_a_declaration():
+    # The #15932 defect, first-hand.
+    assert vpg._declared_prev_pr(FENCED_CITATION_ABOVE_TAG) == 15924
+    assert 15832 not in vpg.find_prev_target_pr_numbers(FENCED_CITATION_ABOVE_TAG)
+    v = vpg.check(FENCED_CITATION_ABOVE_TAG, current_pr=15925,
+                  prev_targets=FENCED_CITATION_TARGETS)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_fenced_citation_does_not_trip_prev_self():
+    # Symmetric half: the quote names the CURRENT PR (mine-po-2023's body
+    # quotes it with `current_pr=15869`), which must not read as a
+    # self-reference either -- `find_prev_self_references` falls back to
+    # `_declared_prev_pr` (l.281), the same function that leaked.
+    assert vpg.find_prev_self_references(FENCED_CITATION_ABOVE_TAG, 15832) == []
+
+
+def test_plain_citation_above_the_tag_line_still_fails():
+    # NEGATIVE CONTROL -- the mask is not a blanket amnesty on the ORDER. The
+    # SAME clause, written in plain text above the tag line, is a real
+    # declaration and must still be rejected. This is the pair that proves
+    # the pass above was earned by the fence.
+    body = ("## Reproduction\n"
+            "Grain: MED/lean -- lane myia-x:CoursIA -- prev: MED/lean #15832\n"
+            "\n"
+            "Grain: LIGHT/tooling -- lane myia-po-2023:CoursIA -- prev: MED/tooling #15924\n")
+    assert vpg._declared_prev_pr(body) == 15832
+    v = vpg.check(body, current_pr=15925, prev_targets=FENCED_CITATION_TARGETS)
+    assert v["hits"]["prev_invalid"] == [
+        {"location": "body", "kind": "prev-abandoned", "prev_pr": 15832}]
+    assert v["guard_pass"] is False
+
+
+def test_mask_fenced_blocks_keeps_the_inline_span_surface():
+    # The narrow mask is the whole point (#15932): a fully backticked tag line
+    # must SURVIVE it, or `test_fully_backticked_tag_is_still_evaluated`'s
+    # blind-spot control becomes a silent bypass -- a lane would wrap its tag
+    # in backticks and every `prev:` invariant would go quiet.
+    backticked = "`Grain: MED/guard -- lane a:b -- prev: MED/guard #14548`\n"
+    assert gt.mask_fenced_blocks(backticked) == backticked
+    # ... while the WIDE mask does blank it (that is why the two are split).
+    assert "14548" not in gt.mask_code_spans(backticked)
+
+
+def test_mask_fenced_blocks_shape_and_both_fence_characters():
+    fenced = "avant\n```python\nGrain: MED/qc -- prev: MED/qc #14548\n```\napres\n"
+    masked = gt.mask_fenced_blocks(fenced)
+    assert "14548" not in masked
+    assert len(masked) == len(fenced)
+    lines = masked.splitlines()
+    assert len(lines) == len(fenced.splitlines())
+    assert lines[0] == "avant" and lines[-1] == "apres"
+    # every line of the fence is blanked to the SAME length as its original
+    assert all(l == " " * len(o) for l, o in zip(lines[1:-1], fenced.splitlines()[1:-1]))
+    # `~~~` is a fence too, and an UNCLOSED fence masks to the end -- which is
+    # exactly what GitHub renders, so what a reviewer sees.
+    assert "14548" not in gt.mask_fenced_blocks("avant\n~~~\nGrain: a:b -- prev: a #14548\n")
+    # A 4-space indented block is deliberately NOT masked (nested lists carry
+    # legitimate markers there -- see check_lane_claim's scope note).
+    assert gt.mask_fenced_blocks("    Grain: a:b -- prev: a #14548\n") == \
+        "    Grain: a:b -- prev: a #14548\n"
+
+
 def test_plain_prev_at_an_abandoned_pr_still_fails():
     # NEGATIVE CONTROL -- the mask is not a blanket amnesty. The SAME clause
     # as the citation above, written in plain text (the canonical tag), at
