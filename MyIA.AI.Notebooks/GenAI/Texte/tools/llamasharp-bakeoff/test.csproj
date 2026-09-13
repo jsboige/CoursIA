@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Harnais de mesure LLamaSharp pour le bake-off du notebook GenAI/Texte 10e (#15570).
+       La source est versionnee ici ; le notebook publie ce projet en self-contained
+       puis execute Test.exe en processus externe reel. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Test</AssemblyName>
+    <RootNamespace>LlamaSharpBakeOff</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Self-contained win-x64 par defaut : `dotnet publish test.csproj` (cellule du notebook)
+         produit un Test.exe autonome embarquant le runtime .NET 8 et les binaires natifs. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishDir Condition="'$(PublishDir)'==''">publish/</PublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LLamaSharp" Version="0.27.0" />
+    <!-- cuda12 embarque le backend CUDA 12 ET le fallback CPU ; NativeLibraryConfig
+         affiche la selection (PreferCuda/AVX2/AutoFallback) au demarrage. -->
+    <PackageReference Include="LLamaSharp.Backend.cuda12" Version="0.27.0" />
+  </ItemGroup>
+
+</Project>
