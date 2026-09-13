@@ -29,7 +29,7 @@ Time-Series Momentum (Moskowitz-Ooi-Pedersen 2012) on 25-symbol anti-bias panier
 | 126d     | 0.84        | 0.81      | -2.20                | 1.09      | -0.28 | 0.07               | NO BEATS |
 | 252d     | 0.75        | 0.73      | -2.28                | 1.09      | -0.36 | 0.05               | NO BEATS |
 | 126d stress | 0.84     | 0.62      | -19.07               | 1.09      | -0.47 | 0.07               | NO BEATS |
-| 126d stress | 0.81     | -19.13    | 1.15      | -20.28| 5519   | NO BEATS |
+| 126d stress | 0.81     | -19.13    | 1.15      | -20.28 |  | 5519   | NO BEATS |
 
 ## Key Findings
 

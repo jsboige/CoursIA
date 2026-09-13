@@ -75,6 +75,7 @@ Les templates dans `templates/` sont des points de départ pour vos projets. Cha
 - Comprendre le QC Algorithm Framework
 
 **Modules de l'Alpha Framework** :
+
 | Module | Rôle | Classe |
 |--------|------|--------|
 | **AlphaModel** | Générer les signaux (Insights) | `MomentumAlphaModel` |
