@@ -79,6 +79,21 @@ class TestColumnCount:
         assert _column_count("| OpenAI tts-1 | $15.00 | ~$0.75 |") == 3
         assert _column_count("| a | $1 | $2 | $3 |") == 4
 
+    def test_currency_unit_bridged_span_keeps_delimiter(self):
+        # A `$/1M tokens` UNIT differs from an amount: its `$` is preceded by
+        # `(` and the next `$` is followed by `/`, both non-alnum, so the
+        # KaTeX-faithful boundary DOES close the span -- across the cell
+        # delimiter. The neutralized match must keep that pipe, else the header
+        # counts one column short and every data row is flagged COL_MISMATCH
+        # (measured on g1-genai's pricing tables, 2026-09-13).
+        assert _column_count(
+            "| Modèle | Input ($/1M tokens) | Output ($/1M tokens) |"
+        ) == 3
+        assert _column_count(
+            "| Modèle | Input ($/1M tokens) | Output ($/1M tokens) | "
+            "Vitesse | Précision |"
+        ) == 5
+
     def test_multiple_backtick_spans(self):
         assert _column_count("| a | `b|c` | `d|e` |") == 3
 

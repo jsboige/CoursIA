@@ -351,6 +351,37 @@ def _build_fence_state(lines):
     return state
 
 
+def _is_padded_delimiter(span, index):
+    """True if ``span[index]`` is a ``|`` acting as a table cell delimiter.
+
+    ``MATH_SPAN_RE`` can conservatively bridge two currency markers across a cell
+    delimiter (``Input ($/1M) | Output ($/1M)``): a whitespace-padded pipe inside
+    such a match is that delimiter, not math content.
+    """
+    return (
+        index > 0
+        and index + 1 < len(span)
+        and span[index - 1].isspace()
+        and span[index + 1].isspace()
+    )
+
+
+def _math_span_filler(match):
+    """Replace a ``MATH_SPAN_RE`` match, keeping the delimiters it swallowed.
+
+    The span is neutralized, but a whitespace-padded pipe inside it is preserved
+    (see ``_is_padded_delimiter``). Without this, the header
+    ``| Modèle | Input ($/1M tokens) | Output ($/1M tokens) | Vitesse |`` loses its
+    middle delimiter, counts one column short, and every data row of that table
+    is reported as ``COL_MISMATCH``.
+    """
+    span = ESCAPED_PIPE_RE.sub('', match.group(0))
+    return ''.join(
+        '|' if char == '|' and _is_padded_delimiter(span, index) else 'X'
+        for index, char in enumerate(span)
+    )
+
+
 def _column_count(line):
     """Count GFM table columns in a line.
 
@@ -361,7 +392,7 @@ def _column_count(line):
     bordered ``| a | b | c |``). Returns the logical column count.
     """
     tmp = CODE_SPAN_RE.sub('X', line)
-    tmp = MATH_SPAN_RE.sub('X', tmp)
+    tmp = MATH_SPAN_RE.sub(_math_span_filler, tmp)
     tmp = ESCAPED_PIPE_RE.sub('X', tmp)
     parts = tmp.split('|')
     if parts and parts[0].strip() == '':
@@ -400,13 +431,7 @@ def _has_bare_pipe_in_math_span(line):
         for index, char in enumerate(span):
             if char != '|':
                 continue
-            is_padded_delimiter = (
-                index > 0
-                and index + 1 < len(span)
-                and span[index - 1].isspace()
-                and span[index + 1].isspace()
-            )
-            if not is_padded_delimiter:
+            if not _is_padded_delimiter(span, index):
                 return True
     return False
 
