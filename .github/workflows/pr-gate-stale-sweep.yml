@@ -284,6 +284,39 @@ jobs:
           import json, os, re, sys
           from datetime import datetime, timezone
 
+          # --- Exemption advisory : COPIE VERBATIM de scripts/pr_gate.py ------
+          # `is_advisory` (rule 6 de la-bas) : un check qui se declare
+          # non-bloquant par son NOM -- ou celui de son workflow -- ne compte
+          # pas comme un rouge. Ce selecteur DOIT la porter : un selecteur de
+          # REPARATION ne doit jamais etre plus STRICT que la gate qu'il
+          # repare (#15976 -- meme principe que le commentaire du fold
+          # ci-dessous). Mesure fondatrice : `scan_md_hierarchy drift
+          # (advisory)` = failure suffisait a exclure #15757 du balayage,
+          # alors que `pr_gate.py` la jugeait, elle, reparable -- le sweep
+          # retirait du champ exactement les PRs qu'il existe pour reprendre.
+          #
+          # POURQUOI UNE COPIE ET NON UN IMPORT : ce sweep tourne SANS
+          # checkout (cf. le commentaire de l'etape -- ~40 s de runner
+          # economisees par passage, toutes les 20 min, sur un depot dont le
+          # probleme mesure EST la penurie de runners). Importer pr_gate.py --
+          # le module du check REQUIS de main -- ferait en plus mourir la
+          # SELECTION sur toute panne d'import de la gate : l'organe advisory
+          # s'eteindrait SILENCIEUSEMENT, ce qui est precisement la classe de
+          # defaut la plus chere a reperer, celle que #15976 documente.
+          # La divergence copie/source est donc fermee par un test qui compare
+          # l'AST des DEUX fonctions :
+          #   scripts/tests/test_pr_gate_sweep_select.py::
+          #   test_inline_is_advisory_matches_pr_gate_source
+          # Modifier l'une sans l'autre rougit la suite : les deux copies ne
+          # peuvent pas deriver en silence.
+          ADVISORY_MARKER = "advisory"
+
+          def is_advisory(name: str, workflow_name: str = "") -> bool:
+              low = (name or "").lower()
+              if ADVISORY_MARKER in low:
+                  return True
+              return ADVISORY_MARKER in (workflow_name or "").lower()
+
           # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
           # A check counts as settled-green when it has completed with a
           # conclusion that does not redden a rollup. neutral / skipped are
@@ -444,9 +477,32 @@ jobs:
               # bloquants : `startup_failure`, `stale` et toute conclusion
               # future inconnue continuent d'exclure.
               OTHERS_NOT_BLOCKING = GREEN | {"cancelled"}
-              red_others = [(k, c) for k, c in others
-                            if (c.get("conclusion") or "")
-                            not in OTHERS_NOT_BLOCKING]
+              # #15976 -- SECONDE exemption, meme principe que le `cancelled`
+              # ci-dessus : un check ADVISORY n'est pas un rouge. La gate
+              # elle-meme range un advisory non-vert dans son seau `advisory`,
+              # jamais dans `bad` (scripts/pr_gate.py, rule 6) : un selecteur
+              # qui le compterait comme bloquant serait strictement plus strict
+              # que la gate, et exclurait la PR pour une mauvaise raison.
+              #
+              # Blanchir n'est PAS le risque ici : le sweep ne merge rien, il
+              # RELANCE la gate, qui re-lit l'etat live et conclut sur ses
+              # propres regles -- ou l'advisory ne compte pas non plus. Le
+              # cout d'un faux positif d'eligibilite reste une minute de
+              # runner ; celui du faux negatif est une PR BLOCKED a jamais.
+              reds_blocking = [(k, c) for k, c in others
+                               if (c.get("conclusion") or "")
+                               not in OTHERS_NOT_BLOCKING]
+              tolerated = [(k, c) for k, c in reds_blocking if is_advisory(k[1])]
+              red_others = [(k, c) for k, c in reds_blocking
+                            if not is_advisory(k[1])]
+              if tolerated:
+                  # Un blanchiment SILENCIEUX serait indistinguable d'un filtre
+                  # debranche (#11808) -- nommer ce qui a ete tolere. Sur
+                  # stderr : stdout alimente candidates.txt.
+                  print(f'[stale-sweep] #{p["number"]}: advisory red tolerated '
+                        "(not a blocker): "
+                        + ", ".join(f"{k[1]}={c.get('conclusion')}"
+                                    for k, c in tolerated), file=sys.stderr)
               if red_others:
                   _diag(p, "red", [
                       f"{k[1]}[run {k[0]}]={c.get('conclusion')}"
