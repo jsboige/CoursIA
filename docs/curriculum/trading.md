@@ -20,9 +20,9 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 222 |
+| Notebooks | 224 |
 | PRODUCTION | 0 |
-| BETA | 204 |
+| BETA | 206 |
 | ALPHA | 18 |
 
 ## ML/DataScienceWithAgents (57 notebooks)
@@ -128,36 +128,38 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 1 | [Percolation-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb) | BETA | Oui |
 | 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb) | ALPHA | Oui |
 
-## Probas/DecisionTheory (26 notebooks)
+## Probas/DecisionTheory (28 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Du graphe causal au do-calculus — le pont entre les…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb) | BETA | Oui |
 | 2 | [DoWhy-1 — Exiger un estimand : l'identification causale…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-1-Estimand-et-Intervention.ipynb) | BETA | Oui |
 | 3 | [DoWhy-2 — Le contrefactuel individuel : quand l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-2-Contrefactuel-Individuel.ipynb) | BETA | Oui |
-| 4 | [Méthodes quasi-expérimentales — identifier l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb) | BETA | Oui |
-| 5 | [DecInfer-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) | BETA | Oui |
-| 6 | [DecInfer-02-Théorème de représentation de von…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb) | BETA | Oui |
-| 7 | [DecInfer-03-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb) | BETA | Oui |
-| 8 | [DecInfer-04-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) | BETA | Oui |
-| 9 | [DecInfer-05-Decision-Networks : Reseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb) | BETA | Oui |
-| 10 | [DecInfer-06-Value-Information : Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) | BETA | Oui |
-| 11 | [DecInfer-07-Expert-Systems : Decisions Robustes et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Expert-Systems.ipynb) | BETA | Oui |
-| 12 | [DecInfer-08-Sequential : MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb) | BETA | Oui |
-| 13 | [DecInfer-09-Preuves formelles — Indice de Gittins](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb) | BETA | Oui |
-| 14 | [DecInfer-10-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | BETA | Oui |
-| 15 | [DecPyMC-1-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb) | BETA | Oui |
-| 16 | [DecPyMC-10 : Ruine et capital — le processus de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-10-Ruine-Lundberg.ipynb) | BETA | Oui |
-| 17 | [DecPyMC-11 — Valeur de l'Information en Souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | BETA | Oui |
-| 18 | [DecPyMC-12 — Fréquence × sévérité hiérarchique : le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb) | BETA | Oui |
-| 19 | [DecPyMC-2-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) | BETA | Oui |
-| 20 | [DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-3-Multi-Attribute.ipynb) | BETA | Oui |
-| 21 | [DecPyMC-4-Decision-Networks : Reseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-4-Decision-Networks.ipynb) | BETA | Oui |
-| 22 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-5-Value-Information.ipynb) | BETA | Oui |
-| 23 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
-| 24 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
-| 25 | [DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-8-Actuarial-Credibility.ipynb) | BETA | Oui |
-| 26 | [DecPyMC-9 : Du risque à la prime — prime pure,…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb) | BETA | Oui |
+| 4 | [DoWhy-3 — La découverte de structure : le graphe qu'on…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-3-Decouverte-de-Structure.ipynb) | BETA | Oui |
+| 5 | [DoWhy-5 — L'instrument faible : quand le pipeline IV…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-5-Instrument-Faible.ipynb) | BETA | Oui |
+| 6 | [Méthodes quasi-expérimentales — identifier l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb) | BETA | Oui |
+| 7 | [DecInfer-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) | BETA | Oui |
+| 8 | [DecInfer-02-Théorème de représentation de von…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb) | BETA | Oui |
+| 9 | [DecInfer-03-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb) | BETA | Oui |
+| 10 | [DecInfer-04-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) | BETA | Oui |
+| 11 | [DecInfer-05-Decision-Networks : Reseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb) | BETA | Oui |
+| 12 | [DecInfer-06-Value-Information : Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb) | BETA | Oui |
+| 13 | [DecInfer-07-Expert-Systems : Decisions Robustes et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Expert-Systems.ipynb) | BETA | Oui |
+| 14 | [DecInfer-08-Sequential : MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb) | BETA | Oui |
+| 15 | [DecInfer-09-Preuves formelles — Indice de Gittins](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb) | BETA | Oui |
+| 16 | [DecInfer-10-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | BETA | Oui |
+| 17 | [DecPyMC-1-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb) | BETA | Oui |
+| 18 | [DecPyMC-10 : Ruine et capital — le processus de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-10-Ruine-Lundberg.ipynb) | BETA | Oui |
+| 19 | [DecPyMC-11 — Valeur de l'Information en Souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | BETA | Oui |
+| 20 | [DecPyMC-12 — Fréquence × sévérité hiérarchique : le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb) | BETA | Oui |
+| 21 | [DecPyMC-2-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) | BETA | Oui |
+| 22 | [DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-3-Multi-Attribute.ipynb) | BETA | Oui |
+| 23 | [DecPyMC-4-Decision-Networks : Reseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-4-Decision-Networks.ipynb) | BETA | Oui |
+| 24 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-5-Value-Information.ipynb) | BETA | Oui |
+| 25 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
+| 26 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
+| 27 | [DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-8-Actuarial-Credibility.ipynb) | BETA | Oui |
+| 28 | [DecPyMC-9 : Du risque à la prime — prime pure,…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb) | BETA | Oui |
 
 ## Probas/Infer (21 notebooks)
 

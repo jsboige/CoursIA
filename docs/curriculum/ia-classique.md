@@ -20,9 +20,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 173 |
+| Notebooks | 174 |
 | PRODUCTION | 0 |
-| BETA | 173 |
+| BETA | 174 |
 | ALPHA | 0 |
 
 ## Search/Applications (56 notebooks)
@@ -153,7 +153,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 16 | [CSP-9-Distributed](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb) | BETA | Oui |
 | 17 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb) | BETA | Oui |
 
-## Search/Part4-Metaheuristics (22 notebooks)
+## Search/Part4-Metaheuristics (23 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -177,8 +177,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 18 | [MGS-22 : MGS contre mealpy — le bench croisé lib-vs-lib…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb) | BETA | Oui |
 | 19 | [MGS-23 : DifferentialEvolution MGS contre mealpy —…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-23-DifferentialEvolution-vs-Mealpy.ipynb) | BETA | Oui |
 | 20 | [MGS-25 : WhaleOptimisation MGS contre mealpy — le WOA…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-25-WhaleOptimisation-vs-Mealpy.ipynb) | BETA | Oui |
-| 21 | [MGS-29 : GA MGS compose "Default" contre BaseGA mealpy…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb) | BETA | Oui |
-| 22 | [MGS-30 : Scatter Search MGS contre son ombre — la…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | BETA | Oui |
+| 21 | [MGS-28 : Bare Bones PSO MGS contre mealpy — le PSO sans…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-28-BareBonesPSO-vs-Mealpy.ipynb) | BETA | Oui |
+| 22 | [MGS-29 : GA MGS compose "Default" contre BaseGA mealpy…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb) | BETA | Oui |
+| 23 | [MGS-30 : Scatter Search MGS contre son ombre — la…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | BETA | Oui |
 
 ## Sudoku (38 notebooks)
 

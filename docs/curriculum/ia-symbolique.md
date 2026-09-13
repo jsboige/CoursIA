@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 264 |
+| Notebooks | 265 |
 | PRODUCTION | 0 |
-| BETA | 258 |
+| BETA | 259 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -295,7 +295,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 23 | [SL-8 - ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb) | BETA | Oui |
 | 24 | [SL-9 - LLMs et Apprentissage Symbolique : Generation et…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb) | BETA | Non |
 
-## SymbolicAI/Tweety (34 notebooks)
+## SymbolicAI/Tweety (35 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -322,14 +322,15 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 21 | [Argumentation Abstraite (Dung)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | BETA | Oui |
 | 22 | [Tweety-5b — Théorie de l'argumentation de Dung…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb) | BETA | Non |
 | 23 | [Tweety-5d — Synthèse certifiée d'extensions stables :…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | BETA | Non |
-| 24 | [Tweety-6 — Argumentation structuree (twin C# / .NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb) | BETA | Oui |
-| 25 | [Argumentation Structuree](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb) | BETA | Oui |
-| 26 | [Tweety-7a : Frameworks d'Argumentation Etendus (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb) | BETA | Oui |
-| 27 | [Frameworks d'Argumentation Étendus](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb) | BETA | Oui |
-| 28 | [Tweety-7b - Ranking Probabilistic Conditional Logic en…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | BETA | Oui |
-| 29 | [Sémantiques de Classement et Argumentation Probabiliste](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | BETA | Oui |
-| 30 | [Dialogues Multi-Agents Argumentatifs (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb) | BETA | Oui |
-| 31 | [Dialogues Multi-Agents Argumentatifs](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb) | BETA | Oui |
-| 32 | [Préférences et Théorie du Vote en C# / .NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb) | ALPHA | Oui |
-| 33 | [Préférences et Théorie du Vote](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb) | ALPHA | Oui |
-| 34 | [Tweety .NET - Probe Phase 1 axe 2 : initialisation du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes/Tweety-IKVM-Init-Probe.ipynb) | BETA | Oui |
+| 24 | [Tweety-5e — Laboratoire propositionnel : validité,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5e-Propositional-Lab-Lean.ipynb) | BETA | Non |
+| 25 | [Tweety-6 — Argumentation structuree (twin C# / .NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb) | BETA | Oui |
+| 26 | [Argumentation Structuree](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb) | BETA | Oui |
+| 27 | [Tweety-7a : Frameworks d'Argumentation Etendus (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb) | BETA | Oui |
+| 28 | [Frameworks d'Argumentation Étendus](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb) | BETA | Oui |
+| 29 | [Tweety-7b - Ranking Probabilistic Conditional Logic en…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | BETA | Oui |
+| 30 | [Sémantiques de Classement et Argumentation Probabiliste](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | BETA | Oui |
+| 31 | [Dialogues Multi-Agents Argumentatifs (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb) | BETA | Oui |
+| 32 | [Dialogues Multi-Agents Argumentatifs](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb) | BETA | Oui |
+| 33 | [Préférences et Théorie du Vote en C# / .NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb) | ALPHA | Oui |
+| 34 | [Préférences et Théorie du Vote](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb) | ALPHA | Oui |
+| 35 | [Tweety .NET - Probe Phase 1 axe 2 : initialisation du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes/Tweety-IKVM-Init-Probe.ipynb) | BETA | Oui |
