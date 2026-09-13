@@ -205,6 +205,62 @@ Les 4 mecanismes correctifs (chaque cycle, par lane) :
 
 **Tell d'auto-detection** (avant de poster un steer) : « (a) ce grain est-il verifie OPEN/non-sature firsthand a l'instant ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? ». Trois oui requis. Sinon = phantom, le worker idlera.
 
+### 2.6 Garde d'identite de lane — recit, arbitrage et pieges (2026-09-11)
+
+> Deporte de [`.claude/rules/coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md)
+> le 2026-09-13 (#15204, slimming du harnais auto-charge). **La garde n'a PAS ete deportee** : la table
+> des trois mesures, l'invocation de l'organe, l'avertissement sur `exit 0` et la table de decision
+> restent dans la rule, ou elles sont operatoires. Ce qui suit est le recit de l'incident et la
+> justification des defauts d'arbitrage — le contexte qui explique *pourquoi* la garde a cette forme,
+> pas la garde elle-meme. L'organe reel est `scripts/check_coordinator_identity.py` et ses tests : ils
+> portent les deux premieres mesures et **ne coutent rien au contexte**.
+
+**Incident fondateur (2026-09-11).** Un reboot machine a tue la session coordinateur et son cron
+(`CronCreate` est session-only, L740). Deux sessions CoursIA se sont retrouvees vivantes sur
+`myia-ai-01` sans qu'aucun signal ne dise laquelle devait coordonner — `ListAgents` listait des **noms
+de session**, pas des lanes. L'arbitrage s'est regle **par accord** au premier aller-retour : le defaut
+deterministe n'a pas eu a jouer, et il ne faut pas lire cet episode comme son precedent. Ce qui a
+departage est ce que la table de decision nomme desormais — une session portait le cron arme, l'autre
+avait un `CronList` vide.
+
+**Pourquoi les deux criteres de defaut sont asymetriques.** « Celle qui detient deja un cron arme »,
+puis « la session demarree le plus tot » : chaque session peut rendre son `CronList` et son heure de
+demarrage, donc les deux criteres sont **lisibles des deux cotes**. « Celle qui a detecte la collision
+cede » ne l'est pas — une detection **simultanee** ferait ceder les deux et ne laisserait **aucun**
+coordinateur, precisement ce que le defaut existe pour empecher.
+
+**La session qui cede change d'arbre, pas seulement de cadence.** Deux sessions sur la meme lane **et
+le meme clone** partagent HEAD, l'index et le stash. Le double-cron n'est qu'un probleme de cadence ;
+l'arbre de travail partage est un probleme de **corruption silencieuse** — un `checkout` / `rebase` /
+`stash` d'un cote pendant une lecture de l'autre ne fait rougir aucune garde
+([[concurrent-sessions-share-the-working-tree]]). La session qui cede passe donc en
+`git worktree add`, et pas seulement sous `/continue`.
+
+**Ce que la garde ne discrimine pas — mesure du 2026-09-11.** `clone_ok` ne separe que des clones
+*distincts*. Deux sessions lancees depuis `D:/CoursIA` rendent toutes deux `exit 0` et le role
+COORDINATOR : mesure faite entre `coursia-1c` et `coursia-0f`. Ce qui tranche est **l'aller-retour de
+la mesure 3**, jamais le code de sortie de l'organe — lequel le dit de lui-meme en rendant
+`uniqueness_measured: false`. Il documente cet angle mort, il ne le resout pas.
+
+**Piege 1 — deux clones partagent une lane.** Sur ai-01, `D:/CoursIA` et `D:/dev/CoursIA` rendent tous
+deux `myia-ai-01:CoursIA` : la chaine de lane ne les discrimine pas, seul le chemin le fait. L'organe
+porte la racine canonique et **retrograde en worker** (fail-CLOSED) une session lancee depuis le
+jumeau.
+
+**Piege 2 — `CronList` est session-locale** ([[session-local-view-read-as-global]]). Une liste vide ne
+prouve rien au-dela de la session courante — surtout pas qu'aucun cron de coordination ne tourne
+ailleurs sur la machine. **La recurrence est mesuree, et elle n'a pas la forme de la premiere** : le
+2026-09-13, deux cadences de coordination tournaient simultanement sur `myia-ai-01`, aveugles l'une a
+l'autre — un cycle 4 h arme depuis la lane `CoursIA`, un cycle 6 h arme depuis la lane
+`roo-extensions`. La collision n'opposait donc pas deux sessions d'un meme workspace, mais **deux
+workspaces d'une meme machine** : la chaine `machine:workspace` les distingue correctement, et
+c'est la **vue** qui manquait, pas la mesure. Resolu par une cadence unique. L'ironie vaut d'etre
+inscrite : #15648 est la PR qui construit la garde contre exactement cela, et l'incident s'est
+reproduit sur son auteur pendant qu'elle attendait d'etre mergee.
+
+Enchainer avec [[handover-must-disarm-outgoing-cron]] : **desarmer la cadence sortante d'abord**,
+armer ensuite.
+
 
 ## 3. Secrets via RooSync — recits et justification datee
 
