@@ -1,0 +1,73 @@
+{
+  "case": "case4_self_model_minimal",
+  "prediction": "R_self = propa(q(soi))/propa(q(autrui)) ∈ [0.50, 2.00] ET discrimination ≥ ε_self",
+  "substrate": "Qwen3.5-2B-Base, couche 12/24, SAE Qwen-Scope W32K-L0_50 (top-k=50) — même substrat que case 5 #15547 ; le pré-enregistrement nommait J-Lens Track P 4B-instruct, non publié (note #5681)",
+  "calibration": {
+    "r_neutre_by_seed": {
+      "0": 0.9333333333333333,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 0.9230769230769231,
+      "4": 1.0
+    },
+    "sigma_self": 0.039490509350109636,
+    "propa_other_median_scale": 0.8666666666666667,
+    "epsilon_self": 0.017112554051714177,
+    "formula": "ε_self = 0.5 × σ_self × propa(q(autrui))_médian",
+    "notes": []
+  },
+  "main": {
+    "r_self_by_seed": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 0.9230769230769231,
+      "4": 0.9230769230769231
+    },
+    "propa_by_seed": {
+      "0": {
+        "self_state": 1.0,
+        "other_agent": 1.0
+      },
+      "1": {
+        "self_state": 0.9333333333333333,
+        "other_agent": 0.9333333333333333
+      },
+      "2": {
+        "self_state": 0.8666666666666667,
+        "other_agent": 0.8666666666666667
+      },
+      "3": {
+        "self_state": 0.8,
+        "other_agent": 0.8666666666666667
+      },
+      "4": {
+        "self_state": 0.8,
+        "other_agent": 0.8666666666666667
+      }
+    },
+    "r_median": 1.0,
+    "ci95_bootstrap_n200": [
+      0.9230769230769231,
+      1.0
+    ],
+    "discrimination_median": 0.0
+  },
+  "verdict": "INCONCLUSIF",
+  "kill_details": [
+    "discrimination médiane 0.0000 < ε_self 0.0171",
+    "R_self ∈ [0.85, 1.15] sur 5/5 graines (indistinguable du ratio neutre — self ≈ autrui)"
+  ],
+  "diagnostics_post_hoc": {
+    "note": "NON scelle par le pre-enregistrement (c.1245) - diagnostics ajoutes APRES le verdict, pour documenter la cause instrumentale eventuelle. Miroir du diagnostic case 5 (#15547). N'influence aucun seuil.",
+    "jaccard_top64_self_vs_other_by_seed": {
+      "0": 0.58,
+      "1": 0.641,
+      "7": 0.684,
+      "42": 0.6,
+      "99": 0.542
+    },
+    "jaccard_top64_moyen": 0.61,
+    "lecture": "Les signatures top-64 self/autrui partagent ~61 % de features (Jaccard), moins qu'en case 5 (~73 %) mais toujours largement au-dessus d'un seuil de discrimination : les memes features omni-presentes (ponctuation/format, cf. case 5 #15547) dominent les deux signatures, d'ou propa quasi-uniforme et discrimination mediane 0.0. Cause instrumentale, pas phenomenologique."
+  }
+}

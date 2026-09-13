@@ -124,6 +124,69 @@ def test_content_overflow_ignores_container_only_boxes():
     assert content_overflow({"hors_canvas": []}) is False
 
 
+def test_content_overflow_counts_inline_anchors_issue_15664():
+    """Issue #15664 -- A / EM / STRONG / B / I / ABBR cut at the canvas edge.
+
+    Deck 05-théorie-des-jeux slide 10 (case fondateur, #14888 / #15661) :
+    le bloc ``EM > A > A > A`` ("*Notebook : [GameTheory-01] .. [Probas] ..
+    [Lean] ..*") déborde de 1 px sous canvas (bbox ``[36, 538, 791, 553]``)
+    alors que le DIV conteneur ``slidev-layout`` est la seule chose
+    réputée déborder à première vue. Avant le fix, le compte rendait
+    ``container_only: True`` -- la coupure de l'ancre était invisible.
+    Après le fix : chaque inline coupé compte comme contenu.
+    """
+    # Ancre seule qui déborde (cas fondateur 1 px) = défaut
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+        {"tag": "EM", "cls": "", "bbox": [36, 538, 791, 553]},
+    ]}) is True
+    # A seul qui déborde (ancre multi-notebooks)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+        {"tag": "A", "cls": "", "bbox": [94, 538, 241, 553]},
+    ]}) is True
+    # STRONG (terme mis en avant) coupé
+    assert content_overflow({"hors_canvas": [
+        {"tag": "STRONG", "cls": "", "bbox": [48, 565, 480, 600]},
+    ]}) is True
+    # B / I (rares en markdown mais rendus en HTML par certains thèmes)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "B", "cls": "", "bbox": [10, 580, 800, 620]},
+    ]}) is True
+    assert content_overflow({"hors_canvas": [
+        {"tag": "I", "cls": "", "bbox": [10, 580, 800, 620]},
+    ]}) is True
+    # ABBR (souligné pour les renvois de glossaire)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "ABBR", "cls": "", "bbox": [48, 580, 200, 600]},
+    ]}) is True
+
+
+def test_container_only_still_true_when_only_divs_overflow():
+    """Counter-test #15664 acceptance #2 : un slide dont SEUL le conteneur DIV
+    déborde reste `container_only` après l'ajout de A/EM/STRONG. C'est ce qui
+    ferme la régression du faux négatif : étendre CONTENT_TAGS doit continuer
+    à ignorer les boîtes CSS pures, sans quoi on sur-compte.
+
+    Reproduit la slide 5 S3-acculturation fondateur : DIV seul qui déborde
+    en bas (slidev-layout étiré pour un effet de pleine-page), pas un défaut
+    visuel réel, doit rester invisible.
+    """
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+    ]}) is False
+    # Combinaison DIV + P qui déborde : reste défaut (P déjà contenu avant)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout", "bbox": [0, 0, 980, 587]},
+        {"tag": "P", "cls": "", "bbox": [48, 560, 932, 600]},
+    ]}) is True
+    # Combinaison DIV + IMG : IMG est contenu (avant ET après le fix)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout", "bbox": [0, 0, 980, 587]},
+        {"tag": "IMG", "cls": "", "bbox": [327, 0, 653, 700]},
+    ]}) is True
+
+
 def test_occupation_F1_unilateral_band_flagged():
     """F1 — bande unilatérale marquée (gap >= 55 %) : le cas fondateur #13223.
 

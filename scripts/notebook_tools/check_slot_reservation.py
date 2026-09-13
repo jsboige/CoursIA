@@ -69,10 +69,42 @@ separe).
 SOURCES : CE QU'UNE PR OUVERTE DIT DE SES SLOTS
 -----------------------------------------------
 `gh pr list --json files` ne rend que `path`, `additions`, `deletions` -- pas de
-`changeType` (mesure faite). Une ecriture se reconnait donc a `additions > 0` :
-un chemin a `additions == 0` est une suppression PURE, c'est-a-dire un slot
-LIBERE, pas un slot reserve. Sans ce filtre, chaque PR qui renomme un notebook
-reserverait le slot qu'elle vient de quitter.
+`status` ni de `changeType` (mesure faite). Un premier jet en a conclu que
+`additions == 0` valait « suppression pure, donc slot LIBERE ». C'est faux, et
+la mesure du 2026-09-12 le dit : 54 PRs ouvertes, 101 entrees `.ipynb`, les deux
+API croisees (0 desaccord de compteur, 0 entree presente d'un seul cote) --
+
+    status=modified 70 | renamed 27 | added 4 | removed 0
+
+`additions == 0` recouvre donc des etats qui ne sont PAS des suppressions :
+
+  - une **modification qui ne retire que des lignes** (#15729,
+    `status=modified`, `(0, 12)`) ;
+  - un **rename byte-identique** (`(0, 0)`, #15734) ;
+  - un fichier **ajoute vide**.
+
+IMPACT MESURE : **latent, nul sur le pool du 2026-09-12**. La seule entree
+vivante a `additions == 0` est #15729, et son nom ne porte AUCUN index
+(`index_key("GameTheory-06e-...")` rend `None`) : `slot_of` l'ecartait donc deja
+et l'ancien filtre comme le nouveau rendent le meme verdict sur elle. Le defaut
+n'a pas brule. Il n'en est pas moins reel : la forme fautive est exactement
+celle qu'une tranche de renumeration produit des son PREMIER commit -- un
+`git mv` pur d'un `NN-N-Nom.ipynb`, `(0, 0)` -- et c'est la fenetre pendant
+laquelle deux lanes peuvent viser le meme slot. Ce correctif ferme la classe ;
+il ne repare pas un incendie, et ne doit pas etre presente comme tel.
+
+La justification ecrite de ce filtre -- « sans lui, chaque PR qui renomme
+reserverait le slot qu'elle vient de quitter » -- est sans objet : mesure, **0
+des 27 renames** publient leur chemin QUITTE dans `files[]` ; un rename n'y
+figure que sous son chemin d'arrivee. Le chemin quitte n'est pas dans la liste,
+il ne peut donc rien reserver.
+
+Le seul discriminant honnete est `status`, que seul
+`gh api repos/.../pulls/<n>/files` expose. Il n'est paye QUE pour les PRs dont
+une entree `.ipynb` porte `additions == 0` -- l'ensemble ambigu, soit 1 PR sur
+54 le 2026-09-12 -- et jamais en `--offline`. Une PR dont la resolution echoue
+voit ses slots RESERVES : sous-reserver en silence etant le seul mode de panne
+que cet organe ne rattrape pas, l'echec va dans l'autre sens et se dit.
 
 MESURES SUR L'ARBRE ET LE POOL VIVANTS (2026-09-11)
 ---------------------------------------------------
@@ -148,6 +180,7 @@ DEFAULT_RESERVATIONS = Path(__file__).resolve().parent / "slot_reservations.json
 SOURCE_BASE = "base"
 SOURCE_REVISION = "revision"
 SOURCE_OPEN_PRS = "open_prs"
+SOURCE_OPEN_PRS_REMOVED = "open_prs_removed"
 SOURCE_DECLARED = "declared"
 
 # Precedence du verdict quand plusieurs sources se disputent le meme slot. Du
@@ -233,27 +266,94 @@ def group_by_slot(paths, source, detail=""):
     return out
 
 
-def pr_claims(prs):
+def pr_claims(prs, removed=None):
     """Slots tenus par les PRs ouvertes.
 
-    `prs` = la charge rendue par ``gh pr list --json number,files``. Un chemin a
-    ``additions == 0`` est une suppression pure : la PR LIBERE ce slot, elle ne
-    le reserve pas (cf docstring).
+    `prs` = la charge rendue par ``gh pr list --json number,files``.
+    `removed` = ``{numero de PR: {chemins}}``, les chemins REELLEMENT retires --
+    la seule chose que `gh pr list --json files` ne sait pas dire (cf docstring).
+
+    Une entree n'est donc ecartee que si son chemin figure dans `removed`.
+    `additions == 0` n'est plus un motif d'exclusion : mesure, il recouvre aussi
+    la modification qui ne retire que des lignes et le rename byte-identique.
     """
     claims: dict[tuple[str, str], list[Occupant]] = {}
     for pr in prs or []:
         num = pr.get("number")
+        gone = (removed or {}).get(num) or set()
         for f in pr.get("files") or []:
             path = f.get("path") or ""
             if not path.lower().endswith(".ipynb"):
                 continue
-            if not (f.get("additions") or 0) > 0:
-                continue
+            if path in gone:
+                continue          # suppression PURE : ce slot est libere
             slot = slot_of(path)
             if slot is None:
                 continue
             claims.setdefault(slot, []).append(Occupant(path, SOURCE_OPEN_PRS, "#%s" % num))
     return claims
+
+
+def ambiguous_pr_numbers(prs):
+    """PRs dont la charge `gh pr list` ne suffit pas a trancher.
+
+    Critere : au moins une entree `.ipynb` a `additions == 0`. Ce sont les seules
+    pour lesquelles `status` doit etre lu (`gh api .../files`), et elles sont
+    rares -- 1 PR sur 54 au 2026-09-12, la ou `additions > 0` suffit seul.
+    """
+    out = []
+    for pr in prs or []:
+        for f in pr.get("files") or []:
+            if not (f.get("path") or "").lower().endswith(".ipynb"):
+                continue
+            if not (f.get("additions") or 0) > 0:
+                out.append(pr.get("number"))
+                break
+    return out
+
+
+def load_removed_paths(numbers, repo, status):
+    """Chemins reellement retires par ces PRs (`status == "removed"`).
+
+    Seul `gh api .../pulls/<n>/files` expose `status`. Une PR dont la lecture
+    echoue n'entre PAS dans la carte : ses slots restent donc reserves, ce qui
+    est le bon sens d'echec pour un preflight (cf docstring), et l'echec est
+    ecrit dans `status` plutot que tu.
+    """
+    removed: dict[int, set[str]] = {}
+    if not numbers:
+        status[SOURCE_OPEN_PRS_REMOVED] = {"status": "not_needed", "prs": 0,
+                                           "removed": 0, "failed": []}
+        return removed
+    failed = []
+    for num in numbers:
+        # `{owner}`/`{repo}` sont resolus par `gh` depuis le depot courant quand
+        # aucun `--repo` n'est impose : la meme tolerance que la source PRs.
+        path = ("repos/%s/pulls/%d/files?per_page=100" % (repo, num) if repo
+                else "repos/{owner}/{repo}/pulls/%d/files?per_page=100" % num)
+        try:
+            r = subprocess.run(["gh", "api", path, "--paginate", "--jq",
+                                '.[] | [.filename, .status] | @tsv'],
+                               capture_output=True, text=True, encoding="utf-8",
+                               errors="replace")
+        except FileNotFoundError:
+            failed.append(num)
+            continue
+        if r.returncode != 0:
+            failed.append(num)
+            continue
+        gone = set()
+        for line in (r.stdout or "").splitlines():
+            cols = line.split("\t")
+            if len(cols) >= 2 and cols[1].strip() == "removed":
+                gone.add(cols[0])
+        removed[num] = gone
+    status[SOURCE_OPEN_PRS_REMOVED] = {
+        "status": "ok" if not failed else "partial",
+        "prs": len(numbers), "removed": sum(len(v) for v in removed.values()),
+        "failed": failed,
+    }
+    return removed
 
 
 def declared_claims(doc):
@@ -342,6 +442,7 @@ def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
     """Source PR ouvertes. Toute indisponibilite est ECRITE dans `status`."""
     if offline:
         status[SOURCE_OPEN_PRS] = {"status": "unavailable", "reason": "--offline"}
+        status[SOURCE_OPEN_PRS_REMOVED] = {"status": "unavailable", "reason": "--offline"}
         return {}
     args = ["pr", "list", "--state", "open", "--limit", str(limit),
             "--json", "number,files"]
@@ -365,7 +466,7 @@ def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
     if exclude_pr:
         prs = [p for p in prs if p.get("number") != exclude_pr]
     status[SOURCE_OPEN_PRS] = {"status": "ok", "prs": len(prs)}
-    return pr_claims(prs)
+    return pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status))
 
 
 def load_declared(path, status):
@@ -463,15 +564,32 @@ def self_test():
         ("NEGATIF       slot reellement libre",
          [A], merge(group_by_slot(["MyIA.AI.Notebooks/X/04-1-Previous.ipynb"], SOURCE_BASE)),
          set(), ["free"]),
-        # --- la source PR ouvertes ne reserve pas ce qu'une PR supprime ---
-        # `gh pr list --json files` ne rend pas `changeType` : c'est
-        # `additions == 0` qui distingue une suppression pure d'une ecriture.
-        ("FAUX POSITIF  PR qui SUPPRIME un notebook ne reserve pas son slot",
+        # --- la source PR ouvertes : c'est `status` qui tranche, pas `additions` ---
+        # Ce bloc portait auparavant un unique scenario « (0, 12) -> free », en
+        # supposant qu'`additions == 0` signifiait « suppression pure ». Ce
+        # fixture EST la forme de #15729, mesure vivante : `status=modified`,
+        # une edition reelle. Le scenario affirmait donc l'inverse du fait, et
+        # couvrait la suppression REELLE par un proxy qui ne la designe pas.
+        ("VRAI POSITIF  modification qui ne retire que des lignes RESERVE (#15729)",
          [A], pr_claims([{"number": 1, "files": [
-             {"path": C, "additions": 0, "deletions": 12}]}]), set(), ["free"]),
-        ("VRAI POSITIF  PR qui ECRIT un notebook reserve son slot",
+             {"path": C, "additions": 0, "deletions": 12}]}], {1: set()}),
+         set(), ["reserved_by_open_pr"]),
+        ("VRAI POSITIF  rename byte-identique RESERVE son slot (#15734)",
          [A], pr_claims([{"number": 2, "files": [
-             {"path": C, "additions": 8, "deletions": 2}]}]), set(), ["reserved_by_open_pr"]),
+             {"path": C, "additions": 0, "deletions": 0}]}], {2: set()}),
+         set(), ["reserved_by_open_pr"]),
+        ("VRAI POSITIF  statut NON lu (echec) : RESERVE, jamais sous-reserver",
+         [A], pr_claims([{"number": 3, "files": [
+             {"path": C, "additions": 0, "deletions": 12}]}]),
+         set(), ["reserved_by_open_pr"]),
+        ("NEGATIF       suppression REELLE (status=removed) ne reserve pas",
+         [A], pr_claims([{"number": 4, "files": [
+             {"path": C, "additions": 0, "deletions": 12}]}], {4: {C}}),
+         set(), ["free"]),
+        ("VRAI POSITIF  PR qui ECRIT un notebook reserve son slot",
+         [A], pr_claims([{"number": 5, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {5: set()}),
+         set(), ["reserved_by_open_pr"]),
     ]
 
     print("")
@@ -482,7 +600,27 @@ def self_test():
         print("  %-4s %-62s -> %s (attendu %s)"
               % ("OK" if ok else "KO", label, got, list(want)))
 
-    total = len(_SLOT_CASES) + len(scenarios)
+    print("")
+    print("--- ensemble ambigu : quelles PRs exigent une lecture de `status` ---")
+    amb_cases = [
+        ("entree .ipynb a additions==0 -> ambigue",
+         [{"number": 1, "files": [{"path": C, "additions": 0, "deletions": 12}]}], [1]),
+        ("toutes les entrees .ipynb ecrites -> non ambigue",
+         [{"number": 2, "files": [{"path": C, "additions": 3, "deletions": 1}]}], []),
+        ("un .md a additions==0 n'est pas une entree de notebook",
+         [{"number": 3, "files": [{"path": "docs/x.md", "additions": 0, "deletions": 4}]}], []),
+        ("deux entrees dont une ambigue -> la PR compte UNE fois",
+         [{"number": 4, "files": [{"path": C, "additions": 0, "deletions": 4},
+                                  {"path": B, "additions": 2, "deletions": 0}]}], [4]),
+    ]
+    for label, prs, want in amb_cases:
+        got = ambiguous_pr_numbers(prs)
+        ok = got == want
+        ko += 0 if ok else 1
+        print("  %-4s %-62s -> %s (attendu %s)"
+              % ("OK" if ok else "KO", label, got, want))
+
+    total = len(_SLOT_CASES) + len(scenarios) + len(amb_cases)
     print("")
     print("%s : %d cas, %d echec(s)" % ("ECHEC" if ko else "SUCCES", total, ko))
     return 2 if ko else 0
@@ -570,6 +708,17 @@ def main(argv=None):
     pr_status = status.get(SOURCE_OPEN_PRS, {})
     if pr_status.get("status") == "ok":
         print("  open_prs  : %d PR(s) ouverte(s)" % pr_status.get("prs", 0))
+        rem = status.get(SOURCE_OPEN_PRS_REMOVED, {})
+        if rem.get("status") == "ok":
+            print("    retraits  : %d PR(s) ambigue(s) (additions==0) lue(s), "
+                  "%d chemin(s) reellement retire(s)"
+                  % (rem.get("prs", 0), rem.get("removed", 0)))
+        elif rem.get("status") == "partial":
+            print("    retraits  : %d PR(s) NON lue(s) -> leurs slots sont RESERVES "
+                  "(sous-reserver serait le sens d'echec non rattrapable)"
+                  % len(rem.get("failed") or []))
+        else:
+            print("    retraits  : %s" % rem.get("status", "?"))
     else:
         print("  open_prs  : INDISPONIBLE (%s)" % pr_status.get("reason", "?"))
     dec_status = status.get(SOURCE_DECLARED, {})

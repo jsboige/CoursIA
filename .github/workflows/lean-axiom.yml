@@ -79,6 +79,24 @@ jobs:
   axiom-check:
     name: "Proof integrity (${{ inputs.display-name }})"
     runs-on: ubuntu-latest
+    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
+    #
+    # Sans borne, un `lake exe env lean` ou un `LeanVerifier.check_axioms`
+    # enlise retient le runner les 6 h du defaut GH Actions et le check ne
+    # conclut jamais -- le PR gate reste BLOCKED sur un verdict qui n'atterrit
+    # pas. La borne convertit l'enlisement en check ROUGE, que le merge-gate
+    # peut voir.
+    #
+    # 300 et pas 60. Maximum LEGITIME mesure de `proof-integrity` = 177 min,
+    # conclusion `success` (job 102677021168, step `lean-axiom` de 2 h 55) ;
+    # 1 succes sur 20 depasse 60 min, mediane 8 min (30 runs, 2026-09-12). La
+    # fenetre de 12 runs qui justifiait « 60 = 2x le pire observe » ratait la
+    # queue de distribution : le pire observe n'etait pas le pire legitime.
+    #
+    # NE PAS RESSERRER sur l'intuition : le maximum legitime et la pathologie
+    # vivent dans la meme plage de temps de mur. 300 laisse 1,7x de marge et
+    # rend le runner 3 h avant le defaut GH.
+    timeout-minutes: 300
     steps:
     - uses: actions/checkout@v4
 
