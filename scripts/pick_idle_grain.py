@@ -1478,6 +1478,14 @@ AGGREGATOR_CHECK_NAMES = {"PR gate"}
 # Banniere finale de l'agregateur always-on-guards.yml : l'organe en echec
 # vit dans l'ANNOTATION du check-run, pas dans son nom.
 _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(?:\(|$)")
+# #15910 : un agregateur rouge **par DWELL** n'a AUCUN organe en echec -- il n'y
+# a rien a reparer, la cause est un minuteur. `pr_gate.py` dit deja le bon
+# verdict et le rend dans l'annotation du check-run ; on lit ce texte pour
+# distinguer « il n'y avait rien a lire » de « je n'ai pas pu lire ». Sans lui,
+# `fetch_check_organs` rend [] dans les deux cas et le rouge retombe sur la lane.
+# La FORME du message n'est pas re-decrite ici : elle appartient a son emetteur
+# (`scripts/ci/merge_dwell.py`), qui en expose l'inverse (cf
+# `_dwell_message_parser`). Une copie locale deriverait en silence.
 
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
@@ -1646,6 +1654,58 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     return organs
 
 
+def fetch_check_dwell(check_run_id: int) -> dict | None:
+    """Echeance d'un plancher de DWELL, ou None si l'annotation n'en porte pas.
+
+    #15910 : un agregateur rouge par DWELL n'a **aucun organe** tombe -- le
+    plancher vaut 120 min et seul l'ecoulement du temps le leve. Sans cette
+    lecture, ``fetch_check_organs`` rend ``[]`` et l'appelant confond « rien a
+    lire » (le DWELL est la cause) avec « pas pu lire » (fail-closed, rouge
+    rendu a la lane) : la lane brulait son cycle a chercher dans son diff une
+    cause inexistante, et trois PRs poussees dans la meme fenetre suffisaient a
+    declencher P0 par le seul minuteur.
+
+    Le FORMAT du message n'est pas re-decrit ici : il appartient a
+    `scripts/ci/merge_dwell.py`, qui l'emet (`evaluate`) et qui en expose
+    l'inverse (`parse_pending_message`). Une copie locale deriverait en silence.
+
+    Best-effort comme son voisin : annotation illisible -> ``None``, et
+    l'appelant retombe sur le fail-closed (le rouge reste a la lane).
+    """
+    parser = _dwell_message_parser()
+    if parser is None:
+        return None
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
+        return None
+    for ann in annotations or []:
+        parsed = parser(ann.get("message") or "")
+        if parsed:
+            return parsed
+    return None
+
+
+def _dwell_message_parser():
+    """`merge_dwell.parse_pending_message`, ou None si l'import est impossible.
+
+    Import tardif et defensif, comme `_is_adjacency_red` : l'organe est
+    optionnel, une `ImportError` ici ne doit pas casser le tirage -- elle doit
+    seulement rendre le DWELL illisible, c'est-a-dire retomber sur le
+    fail-closed d'avant #15910 (le rouge reste a la lane).
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        from merge_dwell import parse_pending_message  # noqa: PLC0415 - import tardif
+        return parse_pending_message
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
+
+
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
     """Cles de CAUSE d'un check rouge, pas de son nom de job (#14537, #14567).
 
@@ -1742,7 +1802,8 @@ def _has_failed_check(state: dict | None) -> bool:
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
-                    resolved_keys_by_name: dict[str, set[str]] | None = None
+                    resolved_keys_by_name: dict[str, set[str]] | None = None,
+                    dwell_by_name: dict[str, dict] | None = None
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -1777,6 +1838,14 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
+            continue
+        if dwell_by_name and name in dwell_by_name:
+            # #15910 : ce rouge est un MINUTEUR, pas un defaut. Le gate le dit
+            # dans son texte (plancher de 120 min) ; le compter comme « check
+            # requis en echec » envoyait la lane chercher dans son diff une
+            # cause qui n'existe pas. Le seul geste correct est l'attente -- on
+            # ne fabrique donc aucune cause, et le declencheur `count` ne peut
+            # plus basculer tout le cycle sur une reparation inexistante.
             continue
         if inherited:
             # #13545/#14537 : rouge impute a la base (cause commune corroboree
@@ -2132,7 +2201,7 @@ def red_backlog(lane: str, threshold_hours: float,
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
                 "nits_unavailable": None, "base_inherited": [],
-                "base_unresolved": [],
+                "base_unresolved": [], "dwell_waiting": [],
                 "saturation_hours": sat_threshold}
 
     mine, others = [], []
@@ -2165,6 +2234,7 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    dwell_cache: dict[int, dict] = {}
     unresolved_aggregates: list[tuple[str, int]] = []
     inherited: dict[str, list[int]] = {}
     if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
@@ -2175,6 +2245,7 @@ def red_backlog(lane: str, threshold_hours: float,
                                      organ_cache=organ_cache,
                                      unresolved_out=unresolved_aggregates)
     red = []
+    dwell_waiting: list[dict] = []
     for pr in mine:
         state = states.get(pr["number"])
         if state is None:
@@ -2194,9 +2265,33 @@ def red_backlog(lane: str, threshold_hours: float,
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
                 keys_by_name.setdefault(ctx_name, set()).update(
                     failed_check_keys(ctx, organ_cache))
+        # #15910 : un agregateur rouge par DWELL n'a pas d'organe a lire. On ne
+        # paie la lecture d'annotation que pour les agregateurs dont AUCUN
+        # organe n'a pu etre resolu -- exactement le cas ambigu, jamais le cas
+        # nominal (un organe nomme tranche deja la question).
+        dwell_by_name: dict[str, dict] = {}
+        for ctx in _failed_contexts(state):
+            ctx_name = ctx.get("name") or ctx.get("context") or "?"
+            if not is_aggregator_check(ctx_name):
+                continue
+            if keys_by_name and keys_by_name.get(ctx_name):
+                continue
+            ctx_run_id = ctx.get("databaseId")
+            if ctx_run_id is None:
+                continue
+            if ctx_run_id not in dwell_cache:
+                dwell_cache[ctx_run_id] = fetch_check_dwell(ctx_run_id) or {}
+            dwell = dwell_cache[ctx_run_id]
+            if dwell:
+                dwell_by_name[ctx_name] = dwell
+        for ctx_name, info in sorted(dwell_by_name.items()):
+            dwell_waiting.append({"number": pr["number"], "check": ctx_name,
+                                  "lift_at": info.get("lift_at"),
+                                  "remaining_min": info.get("remaining_min")})
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
-                                 resolved_keys_by_name=keys_by_name)
+                                 resolved_keys_by_name=keys_by_name,
+                                 dwell_by_name=dwell_by_name)
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -2232,6 +2327,19 @@ def red_backlog(lane: str, threshold_hours: float,
                         "causes": causes,
                         "is_adjacency": is_adj})
     red.sort(key=lambda r: -r["age_hours"])
+
+    # #15910 : un agregateur tranche par DWELL n'est PAS « non resolu ». Sans ce
+    # retrait, `impute_base_reds` (qui a lu l'annotation AVANT la boucle) le
+    # classe dans `base_unresolved` et la sortie annonce « organe non lisible --
+    # pas pu trancher » sur le rouge dont on vient d'etablir qu'il n'y a rien a
+    # reparer : deux lignes qui se contredisent, et la lane repart chercher.
+    # Portee volontairement limitee aux PRs de la lane : lire le DWELL d'une PR
+    # etrangere couterait jusqu'a 16 lectures d'annotation sur l'echantillon de
+    # corroboration, pour une surface qui ne decide rien pour cette lane.
+    resolved_dwell = {(item["check"], item["number"]) for item in dwell_waiting}
+    if resolved_dwell:
+        unresolved_aggregates[:] = [pair for pair in unresolved_aggregates
+                                    if pair not in resolved_dwell]
 
     triggers = []
     if any(nits_by_pr.get(r["number"]) for r in red):
@@ -2276,6 +2384,10 @@ def red_backlog(lane: str, threshold_hours: float,
             # sinon l'absence d'imputation se lirait comme une acquittement.
             "base_unresolved": [{"check": name, "prs": sorted(nums)}
                                 for name, nums in sorted(unresolved_by_name.items())],
+            # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
+            # reparer, ni un rouge impute a la base : un minuteur qu'aucune
+            # lane ne peut avancer en poussant (pousser le remet a zero).
+            "dwell_waiting": dwell_waiting,
             "nits_unavailable": nits_unavailable}
 
 
@@ -2310,6 +2422,36 @@ def print_base_inherited(backlog: dict) -> None:
         print(f"  - {item['check']} : organe non lisible sur {prs} -- pas pu")
         print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
         print(f"    l'annotation du check-run avant d'invoquer la base).")
+    print()
+
+
+def print_dwell_waiting(backlog: dict) -> None:
+    """Agregateurs rouges par DWELL : un minuteur, aucun geste requis (#15910).
+
+    `pr_gate.py` n'applique le plancher d'anciennete que sur le chemin VERT
+    (`code == 0`) : quand tout est vert et que la tete est trop jeune, il rend
+    malgre tout un code non nul. Cote picker, ce rouge n'avait aucun organe a
+    lire (il n'y a rien a reparer) et retombait donc sur la lane comme un grain
+    reparable -- un cycle entier pouvait partir sur une reparation inexistante.
+    Le seul geste que ce rouge attend est le temps : le balayage horaire
+    `pr-gate-stale-sweep.yml` le leve tout seul. Pousser le remet a ZERO.
+    """
+    items = backlog.get("dwell_waiting") or []
+    if not items:
+        return
+    print("PLANCHER DE DWELL -- un minuteur, pas un defaut, aucun geste requis :")
+    for item in items:
+        # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
+        # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
+        # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
+        # min). L'heure de levee absolue est la seule donnee qui ne vieillit
+        # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
+        reste = item.get("remaining_min")
+        reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
+        quand = f" -- levable au balayage suivant {item['lift_at']}" if item.get("lift_at") else ""
+        print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
+    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+    print("base. NE PAS repousser : un push remet le plancher a zero.")
     print()
 
 
@@ -2522,6 +2664,7 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)
+    print_dwell_waiting(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
@@ -3327,6 +3470,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
+        print_dwell_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()

@@ -73,6 +73,7 @@ labels.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from datetime import datetime, timedelta, timezone
 
@@ -81,6 +82,20 @@ DEFAULT_DWELL_MIN = 120.0
 
 #: Label qui leve le plancher sur une PR donnee.
 WAIVER_LABEL = "merge-dwell-waived"
+
+#: Forme du message « plancher non ecoule », pour les consommateurs qui ne
+#: peuvent pas reevaluer le plancher eux-memes. Le picker en est un : il ne voit
+#: que le TEXTE du gate (ni date de committer ni labels sous la main), et il a
+#: besoin de distinguer « ce rouge est un minuteur » de « ce rouge est un
+#: defaut ». La forme vit ici, avec l'emetteur, parce qu'une copie chez le
+#: lecteur deriverait en silence -- le lecteur cesserait de matcher et le rouge
+#: DWELL redeviendrait un grain dit reparable sans qu'aucun test ne rougisse.
+_DWELL_PENDING_RE = re.compile(
+    r"tete du (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)[^\n]*?"
+    r"plancher (\d+) min[^\n]*?"
+    r"reste (\d+) min[^\n]*?"
+    r"suivant (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)"
+)
 
 
 class DwellError(RuntimeError):
@@ -154,6 +169,25 @@ def evaluate(
         "manuel n'est requis. Urgence (main rouge) : poser le label `{}` sur "
         "la PR.".format(stamp, age_min, dwell_min, remaining, lift, WAIVER_LABEL)
     )
+
+
+def parse_pending_message(message: str) -> "dict | None":
+    """Champs du plancher NON ecoule dans un message de `evaluate`, ou None.
+
+    Inverse de la branche « plancher en cours » de `evaluate` : c'est ce que lit
+    un consommateur qui n'a pas de quoi recalculer le plancher lui-meme (#15910).
+
+    ``None`` couvre les DEUX autres verdicts du gate -- plancher ecoule et
+    derogation par label -- et tout texte etranger. Les distinguer importe : un
+    plancher ecoule est un rouge qui va tomber seul au prochain balayage, une
+    derogation dit que le plancher ne mord pas du tout, et aucun des deux n'est
+    « un plancher de 0 minute ».
+    """
+    match = _DWELL_PENDING_RE.search(message or "")
+    if not match:
+        return None
+    return {"head_at": match.group(1), "dwell_min": int(match.group(2)),
+            "remaining_min": int(match.group(3)), "lift_at": match.group(4)}
 
 
 def _gh_json(path: str) -> object:
