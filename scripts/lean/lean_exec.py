@@ -571,10 +571,22 @@ def resume_process(pid: int) -> int:
     """Reprend un processus cree suspendu (CREATE_SUSPENDED) : resume chaque
     thread du pid. Necessaire pour que la racine n'execute rien avant d'etre
     assignee au Job Object — c'est ce qui ferme la fenetre ou un enfant
-    pourrait naitre hors du job."""
+    pourrait naitre hors du job.
+
+    Rend le nombre de threads **effectivement suspendus** qui ont ete repris
+    (jamais le nombre de threads ouverts) : l'appelant s'en sert comme
+    assertion de confinement (`if n_resumed == 0:` ⇒ le root n'etait pas
+    suspendu ⇒ le confinement n'a pas ete livre). Un root jamais suspendu rend
+    donc 0, meme si ses threads ont tous pu etre ouverts (#15900)."""
     if os.name != "nt":
         return 0
     k32 = ctypes.windll.kernel32
+    # `ResumeThread` rend le suspend count PRECEDENT du thread (winbase.h), ou
+    # (DWORD)-1 en echec ; le defaut ctypes (c_int) lirait ce -1 en signe.
+    # C'est cette valeur qui distingue un thread suspendu d'un thread
+    # seulement OUVRABLE — le compteur precedent ne pouvait pas le faire, et
+    # la garde fail-closed en aval ne se declenchait donc jamais.
+    k32.ResumeThread.restype = ctypes.c_ulong
     TH32CS_SNAPTHREAD = 0x00000004
     THREAD_SUSPEND_RESUME = 0x0002
 
@@ -603,9 +615,10 @@ def resume_process(pid: int) -> int:
                         THREAD_SUSPEND_RESUME, False, entry.th32ThreadID
                     )
                     if h:
-                        k32.ResumeThread(h)
+                        prev = k32.ResumeThread(h)
                         k32.CloseHandle(h)
-                        resumed += 1
+                        if prev != 0xFFFFFFFF and prev > 0:
+                            resumed += 1
                 if not k32.Thread32Next(snap, ctypes.byref(entry)):
                     break
     finally:
