@@ -433,7 +433,19 @@ TRANCHE1: list[Guard] = [
         source="docs-link-check.yml",
         paths=[
             "CLAUDE.md", "index.md", "PARCOURS.md",
-            ".claude/rules/**", "docs/**", "**/README.md",
+            # `.claude/agents/**` and `.claude/skills/**` were scanned by the
+            # organ since #7422 but watched by no gate path: editing a sub-agent
+            # or skill definition never ran check-links (#15867, found by the
+            # `test_every_declared_scope_is_reachable_from_the_gate` parity test
+            # that pins this list against SCAN_SCOPES).
+            ".claude/rules/**", ".claude/agents/**", ".claude/skills/**",
+            "docs/**", "**/README.md",
+            # Decks (#15867): the organ scans `slides/**/slides.md`, so the gate
+            # must fire when a deck changes -- otherwise a deck-only PR like
+            # #15865 (17 dead links) never runs it. Mirror of DECK_DIR in
+            # `scripts/check_docs_links.py`; pinned by
+            # `test_deck_scope_is_wired_into_the_fast_lane`.
+            "slides/**",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",

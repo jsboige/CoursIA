@@ -1053,3 +1053,11 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 # d'une lane (ou d'un agent etudiant) les embarquait dans sa PR.
 /scratchpad/
 /canary.txt
+
+# Harnais LLamaSharp bake-off (GenAI/Texte 10e, #15570) : artefacts locaux
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/models/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/publish/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/bin/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/

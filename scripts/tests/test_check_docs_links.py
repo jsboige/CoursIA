@@ -26,6 +26,7 @@ from check_docs_links import (
     ScanResult,
     check_link,
     check_regression,
+    find_deck_files,
     find_orphan_docs,
     find_scan_files,
     format_report,
@@ -663,6 +664,222 @@ class TestFormatReport:
         report = format_report(result)
         assert "Scanned 0 files, 0 links" in report
         assert "No broken links found" in report
+
+
+# ---------------------------------------------------------------------------
+# Deck scope (#15867)
+# ---------------------------------------------------------------------------
+
+
+class TestDeckScope:
+    """`slides/<deck>/slides.md` is scanned, and an empty scope fails loudly."""
+
+    def test_decks_are_scanned_on_the_repo(self):
+        """Acceptance 1: decks are part of the scanned file set."""
+        rel_paths = {
+            str(f.relative_to(REPO_ROOT)).replace("\\", "/")
+            for f in find_scan_files()
+        }
+        decks = {p for p in rel_paths if p.endswith("/slides.md")}
+        assert decks, "no deck file reached the scan"
+        assert all(p.startswith("slides/") for p in decks)
+
+    def test_deck_scope_is_not_the_whole_slides_tree(self):
+        """The deck scope must stay deck-only.
+
+        Measured on origin/main 2026-09-13: `slides/**/*.md` is 119 files and
+        734 broken links of 1367 (`analysis/`, `extracted/`, `*.marp.md`) --
+        widening the scope there would redden every PR.
+
+        Asserted on `find_deck_files()` itself: the pre-existing repo-wide
+        README sweep legitimately brings in `slides/**/README.md`, which is not
+        this scope's doing.
+        """
+        decks = find_deck_files()
+        assert decks
+        assert all(d.name == "slides.md" for d in decks)
+        assert not [
+            d for d in decks
+            if "/analysis/" in d.as_posix()
+            or "/extracted/" in d.as_posix()
+            or d.name.endswith(".marp.md")
+        ], f"non-deck markdown leaked into the deck scope: {decks}"
+
+    def test_existing_but_empty_deck_scope_raises(self, tmp_path, monkeypatch):
+        """Trap 1: `slides/` present yet holding no deck must not scan silently."""
+        (tmp_path / "slides" / "01-vide").mkdir(parents=True)
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        with pytest.raises(check_docs_links.DeckScopeEmpty):
+            find_deck_files()
+
+    def test_absent_deck_dir_is_not_an_error(self, tmp_path, monkeypatch):
+        """A tree without `slides/` (as in most fixtures) simply has no deck."""
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        assert find_deck_files() == []
+
+    def test_deck_linked_outside_slides_resolves(self, tmp_path, monkeypatch):
+        """Trap 2: a deck link may leave `slides/` and target a notebook.
+
+        `..` must be normalised before testing existence, or every deck link
+        reads as broken (or as valid).
+        """
+        repo = tmp_path
+        nb = repo / "MyIA.AI.Notebooks" / "GameTheory"
+        nb.mkdir(parents=True)
+        (nb / "GameTheory-02-NormalForm.ipynb").write_text("{}", encoding="utf-8")
+        deck_dir = repo / "slides" / "05-theorie-des-jeux"
+        deck_dir.mkdir(parents=True)
+        deck = deck_dir / "slides.md"
+        deck.write_text(
+            "*Notebooks : [GameTheory-02-NormalForm]"
+            "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb).*\n"
+            "[mort](../../MyIA.AI.Notebooks/GameTheory/GameTheory-99-Absent.ipynb)\n",
+            encoding="utf-8",
+        )
+        refs = scan_file(deck)
+        assert [r.target for r in refs] == [
+            "../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb",
+            "../../MyIA.AI.Notebooks/GameTheory/GameTheory-99-Absent.ipynb",
+        ]
+        assert check_link(refs[0].target, deck, root=repo) is True
+        assert check_link(refs[1].target, deck, root=repo) is False
+
+    def test_real_deck_links_are_all_valid(self):
+        """Acceptance 3: the 108 deck links on main stay all valid.
+
+        No false positive is introduced on the existing corpus; this is the
+        count the issue measured (#15867).
+        """
+        deck_broken = [
+            ref for ref in run_scan().broken
+            if ref.source.startswith("slides/")
+        ]
+        assert deck_broken == [], (
+            "the deck scope introduced false positives on the existing corpus: "
+            f"{[(r.source, r.line, r.target) for r in deck_broken]}"
+        )
+
+
+class TestPositiveControl:
+    """`--expect-broken N` -- the control that tells "clean" from "blind"."""
+
+    def _broken_tree(self, tmp_path, monkeypatch):
+        (tmp_path / "slides" / "03-logique").mkdir(parents=True)
+        (tmp_path / "slides" / "03-logique" / "slides.md").write_text(
+            "[cassee](../../MyIA.AI.Notebooks/absent.ipynb)\n", encoding="utf-8"
+        )
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        monkeypatch.setattr("check_docs_links.BASELINE_PATH",
+                            tmp_path / "baseline.json")
+
+    def test_control_is_met_on_a_deliberately_broken_tree(self, tmp_path, monkeypatch):
+        """Acceptance 2: a dead link written on a deck is detected."""
+        self._broken_tree(tmp_path, monkeypatch)
+        result = run_scan()
+        assert [r.target for r in result.broken] == [
+            "../../MyIA.AI.Notebooks/absent.ipynb"
+        ]
+
+    def test_met_control_does_not_exit_2(self, tmp_path, monkeypatch):
+        """Armed + broken == a genuine finding (rc=1), not a control failure."""
+        self._broken_tree(tmp_path, monkeypatch)
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "1"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 1
+
+    def test_same_tree_fails_the_control_under_a_higher_threshold(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Discrimination, on ONE tree: the threshold, not the tree, decides.
+
+        Raising the expectation above what the organ can see must flip rc=1
+        (finding) into rc=2 (control unmet) -- which is what makes a dead
+        detection path detectable instead of green.
+        """
+        self._broken_tree(tmp_path, monkeypatch)
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "2"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "POSITIVE CONTROL FAILED" in capsys.readouterr().err
+
+    def test_clean_scan_under_an_armed_control_exits_2(self, monkeypatch, capsys):
+        """A genuinely clean tree under an armed control is a FAILURE, not a pass.
+
+        `run_scan` is stubbed: the claim under test is the control's verdict on
+        a zero-broken result, not path resolution.
+        """
+        monkeypatch.setattr("check_docs_links.run_scan", lambda report_orphans=False: ScanResult())
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "1"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "POSITIVE CONTROL FAILED" in capsys.readouterr().err
+
+    def test_gate_mode_does_not_print_the_advisory(self, monkeypatch, capsys):
+        """`--check` success stays a single summary line: no advisory noise.
+
+        The gate runs on every PR; an advisory printed on every green run is
+        trained away within a week, so it is confined to the bare scan.
+        """
+        monkeypatch.setattr("check_docs_links.run_scan",
+                            lambda report_orphans=False: ScanResult())
+        monkeypatch.setattr("check_docs_links.load_baseline",
+                            lambda *a, **k: {"broken_links": []})
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--check"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 0
+        assert "WARNING" not in capsys.readouterr().err
+
+
+class TestDeckScopeWiring:
+    """Adding the scope to the organ is worthless if the gate never runs it."""
+
+    def test_deck_scope_is_wired_into_the_fast_lane(self):
+        """The `check-links` gate must fire when a deck changes.
+
+        `docs-link-check.yml` is `workflow_dispatch`-only since #12567: for PRs
+        the organ is rendered by the fast lane, which decides from `paths`. A
+        scope added to the organ alone leaves deck-only PRs unchecked -- the
+        #15865 case.
+        """
+        sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+        try:
+            import fast_lane_registry
+        finally:
+            sys.path.pop(0)
+        guard = next(
+            g for g in fast_lane_registry.TRANCHE1 if g.name == "check-links"
+        )
+        assert "slides/**" in guard.paths, (
+            "the check-links gate does not watch slides/ -- a deck-only PR "
+            "would never run the organ (#15867)"
+        )
+
+    def test_every_declared_scope_is_reachable_from_the_gate(self):
+        """Parity: each scanned scope must have a matching gate trigger."""
+        sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+        try:
+            import fast_lane_registry
+        finally:
+            sys.path.pop(0)
+        guard = next(
+            g for g in fast_lane_registry.TRANCHE1 if g.name == "check-links"
+        )
+        for scope in check_docs_links.SCAN_SCOPES:
+            if scope.endswith("/"):
+                assert any(p.startswith(scope) for p in guard.paths), (
+                    f"scope {scope!r} is scanned but no gate path covers it"
+                )
+            else:
+                assert scope in guard.paths, (
+                    f"scope {scope!r} is scanned but the gate never watches it"
+                )
+        assert any(
+            p.startswith(f"{check_docs_links.DECK_DIR}/") for p in guard.paths
+        ), "the deck scope is scanned but the gate never watches it"
 
 
 if __name__ == "__main__":

@@ -141,13 +141,16 @@ jobs:
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
           # Floor 692 -> 708 : +16 items case 5 attention-schema execute
           # (#15547, run case5 sur main).
-          # Floor 708 -> 732 : +24 items case 5bis axes causaux (#15798,
-          # ict/tests/test_attention_schema_causal.py ; collecte locale
-          # ict-py39 confirmee 732 sur le head de cette PR).
-          - suite-name: "ict/tests/ (42 package)"
+          # Floor 708 -> 728 : +20 items case 4 self-model minimal
+          # #8182 (PR #15879, ict/tests/test_self_model_minimal.py --
+          # 43e strate package).
+          # Floor 728 -> 752 : +24 items case 5bis axes causaux (#15798,
+          # ict/tests/test_attention_schema_causal.py -- 44e strate,
+          # collecte locale ict-py39 confirmee sur le head merge de cette PR).
+          - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 732
+            test-floor: 752
 
     steps:
       - uses: actions/checkout@v4
