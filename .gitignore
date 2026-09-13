@@ -459,6 +459,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.wav
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/output/mert2-corpus/*.wav
 
 # SymbolicAI notebook execution artifacts (regenerable, kept local, not committed)
 # Generated on notebook execution (matplotlib savefig / pyvis save). They are NOT
