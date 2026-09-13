@@ -711,6 +711,53 @@ theorem periodic_fix_toGrid_zero (g : Grid) (hg : Canonical g) {T : Nat}
     toGrid_shift_grid _ 0 0 _ _
   rw [hshift, ← evolve_shift, hrt, hper]
 
+/-- **Tranche 8a — capture des oscillateurs de période arbitraire.** Généralisation
+    de `jumpCapturedF_of_period_divides` : la divisibilité `T ∣ 2^c.level` n'y
+    servait qu'à fabriquer `hself` (« le saut de horizon `2^c.level` retombe sur le
+    motif »), ce qui exclut de facto toute période non dyadique — un oscillateur de
+    période minimale `T` impair ne satisfait jamais `evolve (2^ℓ) g = g`. Ici la
+    retombée exacte est remplacée par le repli modulo (`evolve_mod_period` : le
+    saut atterrit sur la phase `2^c.level % T`), et la seule contrepartie demandée
+    est **spatiale** : chaque phase de l'orbite tient dans la boîte de la phase de
+    départ (`hwin`, bornes `[0, 2^c.level)²` au cadrage origine — exactement ce que
+    `cellWfF_toGrid_bounds` donne pour la phase elle-même). La géométrie
+    `padCenter2` et la queue arithmétique sont inchangées : une phase dans la boîte
+    décalée de `3·2^(c.level-1)` reste dans la fenêtre centrale
+    `[2^c.level, 2^c.level + 2^(c.level+1))²`. `T = 1` (nature morte) et le cas
+    dyadique restent des instances : `hwin` y est trivialement la boîte de la
+    phase. -/
+theorem jumpCapturedF_of_period_mod (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hwin : ∀ i, i < T → ∀ p ∈ evolve i (c.toGrid (0, 0)),
+      (0 : Int) ≤ p.1 ∧ p.1 < (2 ^ c.level : Int) ∧
+        (0 : Int) ≤ p.2 ∧ p.2 < (2 ^ c.level : Int)) :
+    jumpCapturedF c = true := by
+  have hr' : 2 ^ c.level % T < T := Nat.mod_lt _ hT0
+  have hmod : evolve (2 ^ c.level) (c.toGrid (0, 0))
+      = evolve (2 ^ c.level % T) (c.toGrid (0, 0)) :=
+    evolve_mod_period _ hper _
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
+          (evolve (2 ^ c.level % T) (c.toGrid (0, 0))) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hmod]
+  rw [jumpCapturedF_iff]
+  intro p hp
+  rw [hfinal, mem_shift] at hp
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin _ hr' _ hp
+  dsimp only at hb1 hb2 hb3 hb4
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  omega
+
 /-- **Capture de la reconstruction d'une phase périodique.** Pour toute
     phase canonique `g` d'un oscillateur `T`-périodique (`T > 1` a fortiori
     `0 < T`), dont le niveau de reconstruction divise l'horizon du saut
