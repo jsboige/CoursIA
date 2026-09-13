@@ -34,7 +34,7 @@ Examples:
     python verify_all_tweety.py --analyze-outputs --verbose  # Analyze existing outputs
     python verify_all_tweety.py --execute --verbose          # Full execution test
     python verify_all_tweety.py --cell-by-cell               # Cell-by-cell execution
-    python verify_all_tweety.py --notebook Tweety-1-Setup    # Single notebook
+    python verify_all_tweety.py --notebook Tweety-01-Setup-Python    # Single notebook
 """
 
 import argparse
