@@ -19,6 +19,7 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -1770,6 +1771,45 @@ def test_check_run_output_is_patched_with_the_verdict(monkeypatch):
     assert seen["fields"]["output[title]"].startswith(
         "PR gate: FAIL -- failing checks"
     )
+
+
+def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch):
+    """#15859 acceptance 1, 2 and 4 at the decision surface.
+
+    A DWELL red's check-run TITLE names the floor and its ABSOLUTE lift
+    time. The message is built by the real merge_dwell.evaluate() (as
+    main() wires it at the dwell block), not a fixture string, so the pin
+    covers the whole chain: evaluate -> "DWELL -- " prefix -> first line
+    -> title. The lift asserted in the title IS head + dwell minutes --
+    the unit-level form of the update-branch positive control: whatever
+    the last commit is (a fresh push, or the merge commit an update-branch
+    creates), the title announces the floor re-armed from THAT commit.
+    """
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path, "fields": fields}) or {},
+    )
+    committed = datetime(2026, 9, 13, 10, 0, 0, tzinfo=timezone.utc)
+    _ok, _remaining, dwell_msg = pr_gate._merge_dwell.evaluate(
+        committed, committed + timedelta(minutes=45), 120.0
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1,
+        "DWELL -- {}".format(dwell_msg),
+    )
+    assert ok is True
+    title = seen["fields"]["output[title]"]
+    assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
+    assert "plancher 120 min" in title
+    # The lift the title announces is the head commit + 120 min -- readable
+    # without recomputing anything (acceptance 2), and re-armed from the
+    # newest commit after any push or update-branch (acceptance 4).
+    assert "leve au premier balayage suivant 2026-09-13T12:00:00Z" in title
+    assert "Plancher mecanique -- rien a reparer" in seen["fields"]["output[summary]"]
 
 
 def test_check_run_output_is_reached_from_the_emission_tail(monkeypatch):
