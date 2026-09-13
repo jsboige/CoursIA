@@ -143,6 +143,7 @@ Investigation `nbformat` Python pour identifier les cellules sources et valider 
 
 **🔁 Doublons intentionnels inter-arborescences (audit c.657, doctrine #5780, miroir de la note du MANIFEST 01-Foundation)** :
 Deux des figures de cette racine sont des **doublons exacts** (SHA1 identique) avec le dossier `01-Foundation/assets/readme/` :
+
 | Figure racine | Figure locale | SHA1 (vérifié 2026-07-19) | Statut doctrine #5780 |
 |---------------|---------------|---------------------------|------------------------|
 | `video4-esrgan.png` (racine Video) | `vid1-esrgan.png` (01-Foundation) | `620f78d33b723f8a1ddf4cf54eed79e308a66945` (byte-identique) | **Doublon intentionnel** : racine Video README illustre la figure dans le contexte narratif multi-modèles ; 01-Foundation README l'illustre dans le contexte pédagogique « Enhancement ESRGAN ». Alt-texts différents mais même binaire, doctrine #5780. |
