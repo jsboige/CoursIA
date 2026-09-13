@@ -186,18 +186,37 @@ runs:
                           # L1058 (rfl fail masked as CI PASS, 2026-06-14).
         if [ -n "$LAKE_BUILD_JOBS" ]; then export LEAN_NUM_THREADS="$LAKE_BUILD_JOBS"; fi
         lake exe cache get || true
-        # `tail` keeps the SUCCESS path terse, but on FAILURE it also truncates the
-        # `File.lean:L:C: error:` line — lake builds in parallel and pushes an early
-        # failure ~8000 lines out of the tail window (See #8915). Tee the full log so
-        # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
-        # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
-        # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
-        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
-          :
-        else
-          rc=$?
-          echo "::group::Error lines from the full lake log (See #8915)"
-          grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
-          echo "::endgroup::"
-          exit "$rc"
-        fi
+        # Heartbeat (#15709): `tail` renders its window only at EOF, so a long
+        # lake build is INVISIBLE from the step log — the wedged knot_lean runs
+        # (3 h 13 and 2 h 10 of total console silence, cache HIT and cache MISS
+        # alike) were cancelled blind at arbitrary durations. While the pipeline
+        # is alive, print elapsed time + the log's last line every 10 min.
+        # Read-only observability: the pipeline runs in a subshell whose exit
+        # status `wait` propagates, so the #8915 failure group and the
+        # 2026-06-14 pipefail invariant below are unchanged.
+        (
+          # `tail` keeps the SUCCESS path terse, but on FAILURE it also truncates the
+          # `File.lean:L:C: error:` line — lake builds in parallel and pushes an early
+          # failure ~8000 lines out of the tail window (See #8915). Tee the full log so
+          # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
+          # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
+          # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
+          if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+            :
+          else
+            rc=$?
+            echo "::group::Error lines from the full lake log (See #8915)"
+            grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
+            echo "::endgroup::"
+            exit "$rc"
+          fi
+        ) &
+        _lake_pipeline=$!
+        _elapsed=0
+        while kill -0 "$_lake_pipeline" 2>/dev/null; do
+          sleep 600
+          kill -0 "$_lake_pipeline" 2>/dev/null || break
+          _elapsed=$((_elapsed + 10))
+          echo "[lake-heartbeat] still running after ${_elapsed} min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
+        done
+        wait "$_lake_pipeline"
