@@ -1,0 +1,158 @@
+name: Queue ghost watch (advisory)
+
+# Watcher anti-derive pour le compteur de zombies QUEUED (#14367).
+#
+# Contexte : depuis le 2026-08-19T03:03Z-05:15Z, le repo CoursIA porte 18
+# workflow runs en status=queued que l'API refuse de purger (cancel=409,
+# delete=403). Ces 18 zombies forment un offset constant dans le compteur
+# total_count. Le workaround `gh_queue_health.py --cutoff 2026-08-20` les
+# isole du compteur live depuis #13579, mais le workaround est passif :
+# aucun organe ne signale si un NOUVEAU type de zombie apparait (post-cutoff)
+# ou si la file live se remplit.
+#
+# Ce workflow transforme le workaround passif en guard actif :
+#   * cron quotidien (off-:00, anti-stampede 04:17 UTC)
+#   * appelle `gh_queue_health.py --watch` qui collapse les 4 verdicts de
+#     mesure en 3 buckets exploitables (OK / DRIFT / BROKEN, cf
+#     watch_verdict() dans le script).
+#   * exit 0 sur OK (steady state : 18 historiques, 0 live) -- pas d'alerte.
+#   * exit 1 sur DRIFT (nouveau zombie ou file live) -- ouvre une issue
+#     avec le payload JSON en body pour diagnostic.
+#   * exit 2 sur BROKEN (instrument casse) -- ouvre une issue dediee
+#     "queue-ghost-watch-broken" avec stderr.
+#
+# Pourquoi advisory et pas bloquant : les checks PR ne sont pas concernes
+# (le verdict ne touche pas une PR), un rouge recurrent ne peut donc pas
+# bloquer une merge. Le nom porte "watch" (analogue aux autres advisory
+# cron : runner-starvation, candidate-delivered, etc.).
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 04:17 UTC.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log only, do not open drift issues'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read   # checkout
+  issues: write    # open drift issues
+  actions: read    # not strictly required (no run inspection)
+
+concurrency:
+  group: queue-ghost-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: "Watch queued ghost drift"
+    # Routage analogue a candidate-delivered-advisory : cron pur-Python sur
+    # la branche par defaut, jamais declenchable par un fork. Pas de garde
+    # same-repo requise (cf en-tete de check_self_hosted_runner_policy.py).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run watcher
+        id: watch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          python scripts/ci/gh_queue_health.py --watch --repo jsboige/CoursIA \
+            --output /tmp/queue-ghost-watch.json
+          rc=$?
+          echo "exit_code=${rc}"
+          echo "exit_code=${rc}" >> "$GITHUB_OUTPUT"
+          exit ${rc}
+
+      - name: Surface DRIFT as an issue
+        if: steps.watch.outputs.exit_code == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "[queue-ghost-watch] DRIFT detected (dry-run, no issue opened)"
+            cat /tmp/queue-ghost-watch.json
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          with open("/tmp/queue-ghost-watch.json", encoding="utf-8") as fh:
+              payload = json.load(fh)
+
+          verdict_watch = payload.get("verdict_watch", "?")
+          verdict_measure = payload.get("verdict_measurement", "?")
+          counts = payload.get("counts", {})
+          ghosts_sample = payload.get("ghosts", [])[:5]
+          live_sample = payload.get("live", [])[:5]
+
+          body_lines = [
+              "## Queue ghost drift detected (#14367)",
+              "",
+              f"- watch verdict: **{verdict_watch}**",
+              f"- measurement verdict: **{verdict_measure}**",
+              f"- cutoff: `{payload.get('cutoff')}`",
+              f"- total snapshot size: `{counts.get('total')}`",
+              f"- ghosts: `{counts.get('ghosts')}`",
+              f"- live: `{counts.get('live')}`",
+              f"- parse failures: `{counts.get('parse_failures')}`",
+              "",
+              "### Ghosts (sample, first 5)",
+              "",
+          ]
+          for g in ghosts_sample:
+              body_lines.append(
+                  f"- `{g.get('id')}` {g.get('name')} "
+                  f"({g.get('created_at')}) {g.get('html_url') or ''}"
+              )
+          body_lines += ["", "### Live (sample, first 5)", ""]
+          for lv in live_sample:
+              body_lines.append(
+                  f"- `{lv.get('id')}` {lv.get('name')} "
+                  f"({lv.get('created_at')}) {lv.get('html_url') or ''}"
+              )
+          body_lines += [
+              "",
+              "### Full payload",
+              "",
+              "```json",
+              json.dumps(payload, indent=2, ensure_ascii=False),
+              "```",
+              "",
+              "See #14367 for the workaround history and the watch_verdict() "
+              "split rationale.",
+              "",
+              "cc myia-ai-01 : this is an actionable alert, not a stale-floor "
+              "reminder -- the historical 18 ghosts are filtered separately.",
+          ]
+          body = "\n".join(body_lines)
+          title = (
+              f"queue-ghost-watch DRIFT: {counts.get('ghosts')} ghosts, "
+              f"{counts.get('live')} live"
+          )
+          cmd = [
+              "gh", "issue", "create",
+              "--repo", "jsboige/CoursIA",
+              "--title", title,
+              "--body", body,
+              "--label", "queue-ghost-watch,ci",
+          ]
+          proc = subprocess.run(cmd, check=False)
+          sys.exit(proc.returncode)
+          PY
