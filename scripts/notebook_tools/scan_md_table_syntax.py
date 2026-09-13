@@ -29,7 +29,17 @@ breaks rendering on at least one common renderer, not a post-render check):
     recognized table row. GitHub's notebook renderer splits cells before math
     rendering, so ``$|F_B| / |A|$`` creates phantom columns. Regular ``.md``
     rendering remains out of scope because it handles this notation correctly.
-    The portable notebook fix is pipe-free LaTeX such as ``\\lvert``/``\\rvert``.
+    The portable notebook fix is pipe-free LaTeX using the ``\\lvert``/``\\rvert``
+    pair (the form the scanner's own test and the notebooks use), with TWO
+    rules that are not optional -- omitting either one is what produced the
+    two defects caught by hand on #15958 and #15965:
+      1. never glue a LaTeX command to the letter that follows it -- ``\\lvert``
+         must be separated from its operand by a space or ``{}`` (gluing makes
+         the command undefined, e.g. a trailing ``s``);
+      2. the closing delimiter is ``\\rvert``, never a second ``\\lvert``
+         (two openers silently pair across the span instead of closing it).
+    Those broken tokens are deliberately NOT spelled out here: prose that
+    shows them is copy-pasteable as-is, which is how they spread.
 
   - **NO_SEP**: a run of 3+ consecutive ``|``-shaped lines with NO
     ``:?-+:?`` separator row among them. GFM does not recognize the block as a
@@ -520,7 +530,9 @@ def detect_md_table_syntax(
                         "detail": (
                             "pipe brute dans un span mathematique ($...$) d'une "
                             "cellule de table -> le renderer notebook decoupe la "
-                            "cellule et casse la table ; utiliser \\lvert/\\rvert"
+                            "cellule et casse la table ; utiliser \\lvert/\\rvert "
+                            "en separant la commande de son operande (espace ou "
+                            "{}) et en fermant par \\rvert, pas par \\lvert"
                         ),
                         "snippet": c_line.strip()[:80],
                     })
