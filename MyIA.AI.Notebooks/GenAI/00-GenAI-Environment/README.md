@@ -38,7 +38,7 @@ Ce module configure l'environnement technique avant toute exploration GenAI. Les
 |--------|--------|
 | Python | 3.10+ avec dépendances (`pip install -r requirements.txt`) |
 | Docker Desktop | v29.5+ recommandé pour les notebooks GPU |
-| Clés API | `.env` dans `GenAI/` : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN` |
+| Clés API | `.env` dans `GenAI/` : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_API_TOKEN` |
 | GPU | Optionnel pour ce module, requis pour les sous-domaines Image/Audio/Video |
 
 ## FAQ
@@ -52,7 +52,8 @@ Le notebook [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) configure les
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENROUTER_API_KEY=sk-or-v1-...
-COMFYUI_BEARER_TOKEN=...
+COMFYUI_API_TOKEN=...
+# COMFYUI_AUTH_TOKEN est un alias synchronisé : même valeur que COMFYUI_API_TOKEN.
 ```
 
 Points fréquents :
