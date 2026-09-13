@@ -58,7 +58,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 10b | `10b_Inference_Mechanics.ipynb` | KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM | 75 min |
 | 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM | 50 min |
 | 10d | `10d_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
-| 10e | `10e_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 14.14 tok/s (vs 99.4% pad TensorSharp) — kernel `.NET Interactive` localement bloqué par AppLocker (escalade user) | 50 min |
+| 10e | `10e_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 70,11 tok/s GPU (vs 99.4% pad TensorSharp) — subprocess .NET 8 self-contained, harnais versionné `tools/llamasharp-bakeoff/` (#15570) | 50 min |
 | 10f | `10f_ORTGenAI_DotNet_BakeOff.ipynb` | Phase 3 du bake-off : ONNX Runtime GenAI 0.15.2 charge Qwen3-4B ONNX int4 avec l’EP CUDA prouvée, rejoue les quatre invites communes et tranche le go/no-go par axe face à TensorSharp et LLamaSharp | 45 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
@@ -132,6 +132,32 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 - Docker avec support GPU pour servir le modèle réel avec vLLM
 - Ollama ou vLLM installé pour les notebooks de déploiement
 - PyTorch CPU suffit pour la partie from scratch de `10b`; un endpoint vLLM authentifié est requis pour ses mesures TTFT/ITL
+
+### Harnais de mesure LLamaSharp (10e, `tools/llamasharp-bakeoff/`)
+
+Le binaire `Test.exe` que le notebook `10e_LLamaSharp_DotNet_BakeOff.ipynb` mesure en
+processus externe est **compilé depuis la source versionnée** dans
+`tools/llamasharp-bakeoff/` (`test.csproj` + `Program.cs`, LLamaSharp 0.27.0,
+self-contained .NET 8 + backend CUDA 12). Reproduction sur une machine propre :
+
+1. **Modèle** — télécharger `Qwen3-4B-Q4_K_M.gguf` (2,4 Go) depuis
+   [`Qwen/Qwen3-4B-GGUF`](https://huggingface.co/Qwen/Qwen3-4B-GGUF) vers
+   `tools/llamasharp-bakeoff/models/` (gitignoré). sha256 de la lignée officielle :
+   `7485fe6f11af29433bc51cab58009521…`.
+2. **Compiler** — `dotnet publish -c Release -r win-x64 --self-contained true -o publish`
+   depuis `tools/llamasharp-bakeoff/` (le RID est obligatoire, cf §4 du notebook).
+3. **Runtime CUDA** — le paquet `LLamaSharp.Backend.Cuda12.Windows` ne livre pas
+   `cudart64_12`/`cublas64_12`/`cublasLt64_12` ; les wheels
+   `nvidia-cuda-runtime-cu12==12.4.127` et `nvidia-cublas-cu12==12.4.5.8` (canal
+   officiel, sans CUDA Toolkit ni UAC) les fournissent, à colocaliser auprès de
+   `ggml-cuda.dll` (`publish/runtimes/win-x64/native/cuda12/`).
+4. **Sonde de détection** — sans CUDA Toolkit, LLamaSharp n'énumère jamais le candidat
+   CUDA : poser `%CUDA_PATH%` pointant vers un `version.json` portant la clé
+   `libcublas` (le notebook, cellule 4bis, fait les étapes 3-4 automatiquement).
+
+Le notebook exécute ces étapes lui-même (cellules 3, 4bis, 4ter) : exécuté depuis ce
+dossier de série, il recompile, répare et mesure sans dépendre d'aucun artefact hors
+dépôt.
 
 ## Parcours suggéré
 

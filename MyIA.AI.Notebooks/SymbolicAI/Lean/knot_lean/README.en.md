@@ -47,6 +47,7 @@ Two counts, depending on the filter:
 - **prose sorries** (any line containing `sorry`) = **37** currently (the
   R2/R3 wall documentation prose added mentions). The CI `lean-knot.yml`
   switched to **`real` mode** (`sorry-baseline: "14"`) — the real mode
+
   strips `--` line comments and `/- -/` block comments, then counts the
   word-bounded `\bsorry\b` — it is now the sole official CI mode for
   knot_lean. The 37 count is preserved as a raw/any-line indicator. This
@@ -96,6 +97,7 @@ CI, unless justified in the PR body.
 - [x] `trefoil_not_unknot` (#8766, MERGED) — corollary: the trefoil is
   not the unknot, **PROVEN** by composition of `tricolorable_invariant`
   (sorry-bearing) + `trefoil_tricolorable` + `unknot_not_tricolorable` —
+
   no independent sorry of its own.
 - [x] `tricolorable_forward_r2_up` (#11276, MERGED) — **forward**
   transfer of 3-colorability across the **append-only** R2 (current

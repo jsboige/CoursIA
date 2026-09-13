@@ -60,6 +60,10 @@
 #   COURSIA_RUNNER_BACKOFF_MAX_SEC      slot. NON inertes : 5 s -> 300 s.
 #   COURSIA_RUNNER_BACKOFF_JITTER_PCT   dispersion du backoff. NON inerte :
 #                                       25 %. 0 = rafale synchronisee.
+#   COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS  sondage du nom de conteneur avant
+#   COURSIA_RUNNER_NAME_RECLAIM_WARN_SECS  docker run, et cadence de
+#                                       l'avertissement de reprise (#15278).
+#                                       NON inertes : 5 s et 60 s.
 #
 # Le detail de chaque borne -- ce qu'elle couvre, ce qu'elle ne peut PAS
 # couvrir, et la mesure qui l'etablit -- est dans le bloc BORNES plus bas et
@@ -297,22 +301,28 @@ assert_docker_daemon() {
 # max < 2^60 : tout produit garde du calcul iteratif reste < 2^61, loin de
 # la borne signee), et BASE <= CAP (le plafond doit dominer la base).
 _validate_backoff_value() {
-  # $1 = nom de la variable d'environnement, $2 = valeur
-  case "$2" in
+  # $1 = nom de la variable d'environnement, $2 = valeur, $3 = reference
+  local var="$1" val="$2" ref="${3:-#15166}"
+  case "$val" in
     ''|*[!0-9]*)
-      die "COURSIA_RUNNER_* : $1='$2' n'est pas un entier decimal (#15166)."
+      die "COURSIA_RUNNER_* : $var='$val' n'est pas un entier decimal ($ref)."
       ;;
   esac
-  [ "${#2}" -le 18 ] \
-    || die "COURSIA_RUNNER_* : $1='$2' depasse le domaine arithmetique (18 chiffres max, #15166)."
-  [ "$2" -ge 1 ] \
-    || die "COURSIA_RUNNER_* : $1='$2' doit etre strictement positif (#15166)."
+  [ "${#val}" -le 18 ] \
+    || die "COURSIA_RUNNER_* : $var='$val' depasse le domaine arithmetique (18 chiffres max, $ref)."
+  [ "$val" -ge 1 ] \
+    || die "COURSIA_RUNNER_* : $var='$val' doit etre strictement positif ($ref)."
 }
 
 validate_backoff_env() {
   _validate_backoff_value HEALTHY_CYCLE_SECS "$HEALTHY_CYCLE_SECS"
   _validate_backoff_value BACKOFF_BASE "$BACKOFF_BASE"
   _validate_backoff_value BACKOFF_CAP "$BACKOFF_CAP"
+  # #15278 : les deux bornes du garde de reprise du nom obeissent a la meme
+  # exigence fail-closed -- une valeur non numerique atteindrait `[ -ge ]` et
+  # `sleep` dans la boucle de sondage.
+  _validate_backoff_value NAME_RECLAIM_POLL_SECS "$NAME_RECLAIM_POLL_SECS" "#15278"
+  _validate_backoff_value NAME_RECLAIM_WARN_SECS "$NAME_RECLAIM_WARN_SECS" "#15278"
   [ "$BACKOFF_BASE" -le "$BACKOFF_CAP" ] \
     || die "COURSIA_RUNNER_* : BACKOFF_BASE=$BACKOFF_BASE > BACKOFF_CAP=$BACKOFF_CAP -- le plafond doit dominer la base (#15166)."
 }
@@ -348,10 +358,20 @@ cycle_backoff() {
       worked=1
     fi
   fi
+  # #15278 : un echec au journal doit NOMMER ou lire la cause. `rc=125` seul
+  # n'oriente vers rien -- le message docker (« Conflict. The container name
+  # ... is already in use », image perimee, daemon mort) part dans le log du
+  # slot par la redirection du `docker run`, jamais sur le stderr du
+  # superviseur. Le rappel n'est pose que sur rc != 0 : sur rc=0 le journal
+  # reste lisible sans lui.
+  local hint=""
+  if [ "$rc" -ne 0 ] && [ -n "$work_log" ]; then
+    hint=" -- voir $work_log"
+  fi
   if [ "$lifetime" -lt "$HEALTHY_CYCLE_SECS" ]; then
     if [ "$worked" -eq 1 ]; then
       SHORT_CYCLES=0
-      echo "$tag cycle court AVEC travail (rc=$rc, ${lifetime}s) -- travail reel, pas une boucle vide : pas de backoff (#15166)" >&2
+      echo "$tag cycle court AVEC travail (rc=$rc, ${lifetime}s) -- travail reel, pas une boucle vide : pas de backoff (#15166)$hint" >&2
       sleep 2
       return
     fi
@@ -372,14 +392,14 @@ cycle_backoff() {
       i=$(( i + 1 ))
     done
     [ "$i" -lt "$exp" ] && d="$BACKOFF_CAP"
-    echo "$tag cycle court (rc=$rc, ${lifetime}s, consecutifs=$SHORT_CYCLES) -- backoff ${d}s (#15095)" >&2
+    echo "$tag cycle court (rc=$rc, ${lifetime}s, consecutifs=$SHORT_CYCLES) -- backoff ${d}s (#15095)$hint" >&2
     sleep "$d"
   elif [ "$rc" -eq 0 ]; then
     SHORT_CYCLES=0
     echo "$tag conteneur termine sainement (rc=$rc, ${lifetime}s)"
     sleep 2
   else
-    echo "$tag cycle long mais rc=$rc (${lifetime}s) -- non qualifie sain, compteur de courts conserve a $SHORT_CYCLES (#15166)" >&2
+    echo "$tag cycle long mais rc=$rc (${lifetime}s) -- non qualifie sain, compteur de courts conserve a $SHORT_CYCLES (#15166)$hint" >&2
     sleep "$BACKOFF_MIN_SEC"
   fi
 }
@@ -608,6 +628,86 @@ rotate_log() {
   fi
 }
 
+# --- Reprise du nom de conteneur (#15278) -----------------------------------
+
+# Le nom d'un conteneur est un verrou GLOBAL au daemon, pas au client. Un
+# `systemctl restart` tue le CLIENT `docker run` mais PAS le conteneur, qui
+# garde son nom jusqu'a la fin de son job. La generation suivante relancait
+# alors sous un nom deja pris et bouclait en rc=125 -- mesure ai-01 2026-09-09
+# pendant le passage de 6 a 10 slots : 3 slots sur 10 bloques, ~4 minutes, et
+# le seul message utile (« Conflict. The container name ... is already in
+# use ») vivait dans $STATE_DIR/<nom>.log, que le journal ne nommait pas.
+#
+# Ce que ce garde fait, et ce qu'il ne fait pas :
+#   - il ATTEND la liberation du nom, en sondant : la reprise se fait dans la
+#     seconde qui suit la liberation (au plus un intervalle de sondage), au lieu
+#     d'attendre la prochaine marche du backoff -- `BACKOFF_BASE` ->
+#     `BACKOFF_CAP` a 300 s (cf le bloc BORNES). C'est ce « au-dela de la duree
+#     du job orphelin » que l'acceptance ferme ;
+#   - il ne retire un conteneur que si son etat est PROUVE non en cours
+#     (`created`, `exited`, `dead`), c'est-a-dire s'il n'execute aucun job.
+#     C'est la SEULE force admise : `docker rm -f` sur un conteneur en cours
+#     tuerait un job legitime, ce que l'acceptance interdit. Le discriminant
+#     n'est pas une precaution : un runner ephemere qui travaille est en etat
+#     `running` par definition. La liste est une ALLOWLIST, pas une liste
+#     d'exclusion -- un etat que ce script ne qualifie pas (`restarting`,
+#     `removing`, ou un etat qu'une version future de docker introduirait)
+#     retombe sur l'attente. C'est le seul cote ou se tromper tue un job ;
+#   - il n'abandonne pas et ne relance pas sous un nom de generation. Un second
+#     conteneur pour le meme slot doublerait la reservation CPU de ce slot,
+#     dans un fichier dont la clause de tete est « l'hote prime sur la CI ».
+#     Un job orphelin qui ne rend JAMAIS son nom est un probleme docker
+#     (conteneur bloque), pas un probleme de boucle : on le dit
+#     periodiquement, avec l'etat et le nom du journal, pour que l'operateur
+#     puisse agir -- et `stop` reste prioritaire sur l'attente.
+NAME_RECLAIM_POLL_SECS="${COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS:-5}"
+NAME_RECLAIM_WARN_SECS="${COURSIA_RUNNER_NAME_RECLAIM_WARN_SECS:-60}"
+
+# Etat docker du conteneur portant ce nom, VIDE s'il n'existe pas. `docker
+# inspect` et non `docker ps` : le second ne voit pas un conteneur arrete --
+# precisement le residu qu'on veut pouvoir retirer sans risque.
+container_state() {
+  docker inspect -f '{{.State.Status}}' "$1" 2>/dev/null || true
+}
+
+# Rend 0 quand le nom est libre. Bloque tant qu'un conteneur EN COURS le
+# detient (cf le bloc ci-dessus : c'est voulu, le seul plafond est la duree du
+# job orphelin lui-meme). Rend 1 si un arret a ete demande pendant l'attente.
+reclaim_container_name() {
+  local name="$1" state waited=0 next_warn="$NAME_RECLAIM_WARN_SECS"
+  while :; do
+    [ -f "$STOP_FILE" ] && return 1
+    state="$(container_state "$name")"
+    [ -z "$state" ] && return 0
+    case "$state" in
+      created|exited|dead)
+        # Etat PROUVE non en cours : aucun job dedans, le retrait ne peut
+        # tuer aucun travail. C'est la SEULE force que ce garde s'autorise,
+        # et elle est bornee par cette liste -- pas par une liste d'exclusion.
+        if docker rm -f "$name" >/dev/null 2>&1; then
+          echo "[$name] residu de conteneur en etat '$state' retire -- aucun job n'y tournait (#15278)" >&2
+        else
+          echo "[$name] residu en etat '$state' non retirable (docker rm -f a echoue) -- nouvelle tentative (#15278)" >&2
+          sleep "$NAME_RECLAIM_POLL_SECS"
+          waited=$(( waited + NAME_RECLAIM_POLL_SECS ))
+        fi
+        ;;
+      *)
+        # `running`, `paused`, et TOUT etat non qualifie (`restarting`,
+        # `removing`, etat inconnu d'une version future). Fail-closed : le nom
+        # est considere DETENU. Un etat qu'on n'a pas qualifie n'autorise pas
+        # une destruction -- c'est le seul cote ou l'erreur tue un job.
+        if [ "$waited" -ge "$next_warn" ]; then
+          echo "[$name] nom toujours detenu ($state) apres ${waited}s -- conteneur d'une generation precedente. Il n'est PAS retire (etat '$state' : un job peut y tourner) ; le slot reprendra des que le nom sera rendu. Journal : $STATE_DIR/$name.log (#15278)" >&2
+          next_warn=$(( next_warn + NAME_RECLAIM_WARN_SECS ))
+        fi
+        sleep "$NAME_RECLAIM_POLL_SECS"
+        waited=$(( waited + NAME_RECLAIM_POLL_SECS ))
+        ;;
+    esac
+  done
+}
+
 # --- Backoff exponentiel avec jitter ----------------------------------------
 
 # Rend le delai a attendre apres `n` echecs consecutifs : min * 2^(n-1),
@@ -695,6 +795,12 @@ slot_loop() {
       sleep "$wait_s"
       continue
     fi
+    # #15278 : reprendre le nom AVANT de mesurer le cycle -- l'attente due a un
+    # job orphelin n'est pas un cycle de conteneur et ne doit donc pas etre
+    # comptee dans `lifetime` (une attente de plusieurs minutes suivie d'un
+    # echec instantane se lirait sinon comme un cycle long, donc « pas un
+    # emballement », et masquerait l'echec reel). `continue` sur arret demande.
+    reclaim_container_name "$name" || continue
     # #15095 : la duree de vie du conteneur est mesuree depuis AVANT le run
     # (offset pris avant rotate_log, comme le log_off du signal de travail).
     local t0=$SECONDS
@@ -953,6 +1059,11 @@ waiter_loop() {
       sleep "$wait_s"
       continue
     fi
+    # #15278 : meme garde que slot_loop -- un waiter orphelin d'un restart
+    # detient son nom de la meme facon, et le conflit de nom n'est pas un
+    # echec de job : il ne doit ni tuer le conteneur en vol, ni nourrir le
+    # backoff. `continue` sur arret demande.
+    reclaim_container_name "$name" || continue
     local t0=$SECONDS
     rotate_log "$STATE_DIR/$name.log"
     local log_off
