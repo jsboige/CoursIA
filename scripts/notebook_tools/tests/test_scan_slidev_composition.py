@@ -295,7 +295,7 @@ FIXTURE = Path(__file__).resolve().parents[3] / "slides" / "_composition-control
 def test_positive_control_fixture_exists_and_counts():
     assert FIXTURE.exists(), f"fixture contrôle positif absente : {FIXTURE}"
     slides = split_slides_source(FIXTURE.read_text(encoding="utf-8"))
-    assert len(slides) == 2, "la fixture doit compter exactement 2 slides (baseline = 2)"
+    assert len(slides) == 3, "la fixture doit compter exactement 3 slides (baseline = 2, chevauchement = 3)"
 
 
 def test_positive_control_fixture_baseline_defect_deterministic():
@@ -310,6 +310,23 @@ def test_positive_control_fixture_baseline_defect_deterministic():
     # défaut déterministe : p en absolu AU-DELÀ du canvas par défaut (552 px)
     assert "top:600px" in baseline, "le défaut HORS_CANVAS délibéré (top:600px) doit rester sur la slide 2"
     assert "<p" in baseline, "le tag débordant doit rester un P (content_overflow ne compte que CONTENT_TAGS)"
+
+
+def test_positive_control_fixture_chevauchement_defect_deterministic():
+    # Contrôle négatif du correctif #15695 : deux P en absolu qui se
+    # recouvrent d'au moins 3 px (20 px vertical ici) doivent rester
+    # rapportés APRÈS la passe de confirmation par boîtes éléments.
+    src = FIXTURE.read_text(encoding="utf-8")
+    slides = split_slides_source(src)
+    ctrl = slides[2]["source"] if "source" in slides[2] else None
+    if ctrl is None:
+        lines = src.split("\n")
+        start = slides[2]["start_line"] - 1
+        end = slides[3]["start_line"] - 1 if len(slides) > 3 else len(lines)
+        ctrl = "\n".join(lines[start:end])
+    assert ctrl.count("<p") == 2, "la slide 3 doit porter exactement 2 P (la paire chevauchante)"
+    assert "top:300px" in ctrl and "top:310px" in ctrl, \
+        "les deux P délibérés (top:300px / top:310px => 20 px de recouvrement vertical) doivent rester sur la slide 3"
 
 
 def test_positive_control_fixture_canvas_default():

@@ -319,11 +319,26 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                     const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
                     const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
                     if (overlapX > 1 && overlapY > 1) {
+                        // FP v2 (#15695) — confirmation par boîtes éléments.
+                        // Range.getClientRects() absorbe padding + bordure
+                        // des inline à boîte propre (<code>, <sup>, <kbd>,
+                        // badge…) : l'union des rects d'un <li> dépasse sa
+                        // line-box d'environ 1.2 px et effleure le rect du
+                        // voisin alors que l'écran les sépare. Les
+                        // getBoundingClientRect() des ÉLÉMENTS ne subissent
+                        // pas cette inflation : si les boîtes éléments sont
+                        // disjointes, le chevauchement n'existe pas au rendu.
+                        const ea = a.el.getBoundingClientRect();
+                        const eb = b.el.getBoundingClientRect();
+                        const eOverlapX = Math.min(ea.right, eb.right) - Math.max(ea.left, eb.left);
+                        const eOverlapY = Math.min(ea.bottom, eb.bottom) - Math.max(ea.top, eb.top);
+                        if (eOverlapX <= 0 || eOverlapY <= 0) continue;
                         chevauchements.push({
                             a: a.key, b: b.key,
                             a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
                             b_bbox: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)],
                             overlap: [Math.round(overlapX), Math.round(overlapY)],
+                            element_overlap: [Math.round(eOverlapX), Math.round(eOverlapY)],
                         });
                     }
                 }
@@ -627,7 +642,7 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
         for c in r.get("chevauchements", [])[:3]:
             out.append(
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
-                f"{c['a']} × {c['b']} overlap={c['overlap']}px"
+                f"{c['a']} × {c['b']} overlap={c['overlap']}px element_overlap={c.get('element_overlap')}px"
             )
         for rv in r.get("recouvrements", [])[:3]:
             out.append(
