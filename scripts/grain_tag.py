@@ -192,6 +192,19 @@ _GRAIN_FULL_RE = re.compile(
 # body class widens to the corresponding lowercase range (`à-öø-ÿ` + ſ) so the
 # maximal-munch `(?![A-Za-z0-9._À-ſ-])` keeps working with the new characters.
 # Tested in `test_lane_workspace_accented` + the existing #12145 / #12719 set.
+#
+# #15864 -- #12719 and #13830 INTERACT: `lane myia-po-2023:CoursIA. Énoncé
+# réécrit ...` parsed as the lane `myia-po-2023:CoursIA. Énoncé`. The `.` is
+# admitted by the token class (hostnames need it) and `É` is admitted as a
+# continuation initial (`À-ÖØ-Þ`), so the period is no longer TRAILING and
+# #12719's `rstrip(".")` cannot see it. Since a `[DELIVERED]` marker re-marks
+# the claim while its PR is OPEN (#12320), the declaring lane was blocked on
+# its OWN claim by a lane token that matches nothing -- the 4th variant of the
+# self-block class (#12145, #12719, #13830). A `.` followed by whitespace is
+# prose punctuation, never part of `<machine>:<workspace>`; a `.` INSIDE the
+# token (a hostname, `Foo.Bar`) is followed by a non-space and survives. The
+# negative lookbehind refuses the continuation, so the token ends at the
+# period and #12719's strip applies exactly as before.
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
     # #13830 V2 -- union of #13869 (full Latin-1 + Latin Extended-A `À-ſ`)
@@ -213,7 +226,7 @@ _LANE_RE = re.compile(
     # `test_lane_workspace_accented` + the existing #12145 / #12719 set
     # + the #13869 comparative table (LivresAgités / Cours×IA / Łódź).
     r"([A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]+"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
+    r"(?:(?<!\.)[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
 
@@ -246,6 +259,11 @@ _LANE_RE = re.compile(
 # #13830 -- the accent tolerance added to `_LANE_RE` applies here too:
 # the fallback lane token for marker comments that omit `lane` must accept the
 # same workspace names. Same widening of body class and continuation initial.
+#
+# #15864 -- the sentence-period guard above moves here too, for the same
+# reason the bare-date guard did: a marker that omits the literal `lane`
+# keyword can equally end its token with a period followed by prose
+# (`[DELIVERED] myia-po-2023:CoursIA. Énoncé ...`).
 _LANE_FALLBACK_RE = re.compile(
     # #13830 V2 -- twin of `_LANE_RE`: the workspace class widens from
     # `[A-Za-z][A-Za-z0-9._-]*` to `[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*`
@@ -257,7 +275,7 @@ _LANE_FALLBACK_RE = re.compile(
     # The twin MUST move with the primary or the founder's class of bug
     # (#12145) re-opens on the fallback only.
     r"\b(myia-[A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
+    r"(?:(?<!\.)[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME
@@ -536,6 +554,12 @@ def extract_lane(body: str | None, marker_line: str | None = None) -> str | None
     a lane that matches nothing. No cluster lane ends in a period, so the
     residue is stripped here; `lane_marker_residues` reports it so the organ
     can surface the malformed form instead of silently reinterpreting it.
+
+    #15864 -- and when prose FOLLOWS the period, the regex itself now stops
+    at it (see `_LANE_RE`): `lane myia-po-2023:CoursIA. Énoncé réécrit` yields
+    the same `myia-po-2023:CoursIA.` here, which this strip then cleans. The
+    two halves are complementary -- the lookbehind refuses the accented
+    continuation, this strip removes the period it stopped at.
     """
     if not body:
         return None
@@ -574,7 +598,10 @@ def lane_marker_residues(marker_line: str | None) -> list[str]:
         token, which the continuation guard refused and the declaring lane
         did not intend as part of the lane;
       * `"trailing-period:<token>"` -- the token ended in a sentence period
-        that `extract_lane` strips before comparing.
+        that `extract_lane` strips before comparing. Since #15864 this also
+        covers the period that PROSE follows (`lane X. Énoncé ...`): the
+        refused continuation leaves the period trailing, so the writer sees
+        why the rest of their sentence was not read as part of the lane.
     """
     if not marker_line:
         return []
