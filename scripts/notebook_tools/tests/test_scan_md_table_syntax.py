@@ -194,6 +194,156 @@ class TestMathPipeBlockExclusion:
         assert [x for x in f if x["pathology"] == "NO_SEP"] == []
 
 
+class TestNavAndMetadataStripExcluded:
+    """#15719: navigation / metadata strips are prose, never tables.
+
+    Both classes were reported fleet-wide as ORPHAN_TABLE_ROW (29 nav + 5
+    metadata findings on the 2026-09-12 scan). The epic contract says to kill
+    them at the scanner source with positive/negative tests, never by inventing
+    a header in the notebook that reported them.
+    """
+
+    def test_navigation_strip_excluded(self):
+        # The dominant fleet form: a bold ``Navigation`` label, then links.
+        assert _has_delimiter_pipe(
+            "**Navigation** : [Index](README.md) | [Suivant >> ML-2](ML-2.ipynb)"
+        ) is False
+        # Space before the colon is optional; a bare ``Index`` word may be a cell.
+        assert _has_delimiter_pipe(
+            "**Navigation**: Index | [Suivant: Tweety-2-Basic-Logics →](Tweety-2.ipynb)"
+        ) is False
+        # Three-link variant with a code span in the link text.
+        assert _has_delimiter_pipe(
+            "**Navigation** : [`<< SW-9 JSONLD`](SW-9.ipynb) | [Index](README.md)"
+            " | [SW-11 >>](SW-11.ipynb)"
+        ) is False
+
+    def test_bare_navigation_link_line_excluded(self):
+        # QC-Py-Cloud footer: two links and no bold label.
+        assert _has_delimiter_pipe(
+            "[< Retour au sommaire](../README.md)"
+            " | [Suivant : Risk Parity >](./QC-Py-Cloud-03-Risk-Parity.ipynb)"
+        ) is False
+        assert _has_delimiter_pipe(
+            "[RL DQN <](./QC-Py-Cloud-10-RL-DQN-Trading.ipynb)"
+            " | [Retour au sommaire](../README.md)"
+        ) is False
+
+    def test_metadata_strip_excluded(self):
+        # ``**Durée estimée** : ... | **Prérequis** : ...``.
+        assert _has_delimiter_pipe(
+            "**Duree estimee** : ~2h (GPU sweep 104 combos)"
+            " | **Prerequis** : PyTorch, panier"
+        ) is False
+        # Colon inside the bold (Claude-Code README form).
+        assert _has_delimiter_pipe(
+            "**Durée totale : 2h10** | [README des notebooks](notebooks/README.md)"
+        ) is False
+
+    def test_metadata_strip_with_an_unlisted_label_excluded(self):
+        # #15850 residual, measured on ``GameTheory/LEAN_INVENTORY.md``: seven
+        # ``**Compilation** : ... | **...**`` banners survived the label
+        # whitelist. The colon before the first pipe is the property; the label
+        # is not, so any bold label of the family is excluded.
+        assert _has_delimiter_pipe(
+            "**Compilation** : `lake build` — SUCCESS | **COMPLET : 0 sorry**"
+        ) is False
+        assert _has_delimiter_pipe(
+            "**Compilation** : `lake build` — SUCCESS | voir README"
+        ) is False
+        # And a label nobody has written yet.
+        assert _has_delimiter_pipe("**Build status** : green | **Tests** : 31/31") is False
+
+    def test_borderless_row_with_unlisted_label_still_detected(self):
+        # FALSIFIABILITY: generalising the label must NOT generalise away the
+        # colon requirement -- a borderless row opening on a bold word with no
+        # colon before the pipe is still a row.
+        assert _has_delimiter_pipe("**Compilation** | 0 sorry") is True
+        assert _has_delimiter_pipe("**Build status** | green") is True
+        # A real table row keeps its leading cell pipe, whatever its label.
+        assert _has_delimiter_pipe("| **Compilation** : x | y |") is True
+
+    def test_bordered_row_starting_with_nav_label_still_detected(self):
+        # FALSIFIABILITY: a real bordered row merely CONTAINING the label is a
+        # row -- the guard anchors the bold label at line start, and a GFM table
+        # row starts with its cell pipe.
+        assert _has_delimiter_pipe("| **Navigation** : x | y |") is True
+
+    def test_real_link_table_row_still_detected(self):
+        # FALSIFIABILITY: a genuine link table keeps its outer cell pipes, so it
+        # is not mistaken for a nav footer -- even with nav-looking link texts.
+        assert _has_delimiter_pipe("| [a](a.md) | [b](b.md) |") is True
+        assert _has_delimiter_pipe("| [Index](README.md) | [Back](b.md) |") is True
+
+    def test_borderless_row_starting_with_metadata_word_still_detected(self):
+        # FALSIFIABILITY: the metadata guard requires a colon BEFORE the first
+        # pipe; a borderless row whose first cell opens with such a word is a
+        # row and stays one.
+        assert _has_delimiter_pipe("**Durée** | 2h") is True
+        assert _has_delimiter_pipe("**Prérequis** | PyTorch") is True
+
+    def test_navigation_strip_after_table_not_orphan(self):
+        # End-to-end: the footer that follows every notebook's last table must
+        # not be read as an orphan continuation row.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "**Navigation** : [Index](README.md) | [Suivant >> X](x.ipynb)",
+        ]
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW"
+            for f in detect_md_table_syntax(lines)
+        )
+
+    def test_metadata_strip_after_table_not_orphan(self):
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "**Duree estimee** : ~2 min | **Prerequis** : pandas, numpy",
+        ]
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW"
+            for f in detect_md_table_syntax(lines)
+        )
+
+    def test_unlisted_metadata_label_after_table_not_orphan(self):
+        # The measured #15850 residual, end to end: the seven
+        # ``LEAN_INVENTORY.md`` banners are ORPHAN_TABLE_ROW findings that a
+        # whitelist could not reach.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "**Compilation** : `lake build` — SUCCESS | **COMPLET : 0 sorry**",
+        ]
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW"
+            for f in detect_md_table_syntax(lines)
+        )
+
+    def test_real_orphan_after_nav_strip_still_flagged(self):
+        # FALSIFIABILITY: skipping the nav strip must not blind the lookahead --
+        # a genuine orphan further down is still reported.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "**Navigation** : [Index](README.md) | [Suivant >> X](x.ipynb)",
+            "",
+            "| 3 | 4 |",
+        ]
+        assert any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" and f["line"] == 7
+            for f in detect_md_table_syntax(lines)
+        ), f"expected ORPHAN_TABLE_ROW at L7, got {detect_md_table_syntax(lines)}"
+
+
 # ---------------------------------------------------------------------------
 # detect_md_table_syntax -- the 4 pathologies (positive + clean)
 # ---------------------------------------------------------------------------
