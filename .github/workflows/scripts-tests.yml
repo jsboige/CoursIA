@@ -221,6 +221,15 @@ jobs:
           # them at collection time (famille 5 de #14615). The test guards with
           # importorskip, but wiring it into this run means running it for real.
           pip install rapidfuzz unidecode openpyxl
+          # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
+          # Not a speed nicety -- the sequential run is what makes this job
+          # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
+          # the `myia-po-2024-linux-docker-*` runner class concluded 3 of 40
+          # (37 cancelled, 18.3 min average) while `myia-ai-01-wsl-*` concluded
+          # 24 of 25 (9.9 min average). A slower runner class against a
+          # sequential suite sitting near the cap is a scheduling lottery, not
+          # a timeout that wants raising. See #14598 / #15574.
+          pip install pytest-xdist
 
       - name: Run tests
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
@@ -271,7 +280,29 @@ jobs:
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             GradeBookApp \
-            --tb=short -q
+            -n 4 --dist loadscope --tb=short -q
+        # `--dist loadscope` is load-bearing, not a default: it groups tests by
+        # module, so a module's tests never run concurrently with each other.
+        # test_audit_engine_named_not_invoked.py writes ~17 fixed /tmp/_test_*
+        # .ipynb names (l.121-129 and after) and is safe ONLY because loadscope
+        # keeps the whole module on one worker -- under plain `--dist load` it
+        # would collide with itself. Do not relax to `load` without first
+        # migrating that module to tmp_path.
+        #
+        # `--import-mode importlib` (pytest.ini addopts) is equally load-bearing
+        # here: three test basenames are duplicated across these 13 paths
+        # (test_check_dataset_registry, test_check_public_anchor,
+        # scan_slidev_composition), and without it pytest raises
+        # `import file mismatch` -- sequentially too, not just under xdist.
+        #
+        # Audited for inter-module parallel safety before enabling: no shared
+        # fixed-path writes outside the module above, no git mutation against
+        # the real tree (every `git init` is in tmp_path), no real sockets, no
+        # unrestored os.environ/os.chdir, no session-scoped fixtures, no
+        # conftest.py in any of the 13 paths. Residual: module-scope fixtures
+        # that seed the global PRNG without restoring it (e.g.
+        # test_kuhn_poker_cfr.py:64-75) make module ORDER non-reproducible --
+        # no test currently depends on it.
 
       - name: Audit tests collection floor (455)
         # Companion guard of the audit re-cabling (family 2 of #14615), same
