@@ -339,11 +339,13 @@ def validate_prev_targets(
     ==========  =====================================================
 
     Flagging ``OPEN`` punished the exact behaviour R1 of
-    `proactive-coordination.md` *mandates*: "1 PR entre 2 wakeups =
-    PLANCHER, jamais plafond -- une PR livree ne clot pas la session,
-    re-pioche IMMEDIATEMENT". A lane that opens its next PR before the
-    previous one merges is working as instructed, and this gate rejected
-    it for that. Measured on 2026-09-08 at 13:20Z, by replaying this
+    `proactive-coordination.md` mandated at the time of this measurement:
+    "1 PR entre 2 wakeups = PLANCHER, jamais plafond -- une PR livree ne
+    clot pas la session, re-pioche IMMEDIATEMENT" (R1 porte depuis #15793
+    un plancher pluriel ; la conclusion ci-dessous est inchangee). A lane
+    that opens its next PR before the previous one merges is working as
+    instructed, and this gate rejected it for that. Measured on
+    2026-09-08 at 13:20Z, by replaying this
     organ against the real bodies and commit messages: **five** open PRs
     blocked (#15156, #15190, #15207, #15209, #15210), citing **four**
     distinct predecessors (#15129, #15175, #15199, #15203) -- **all four
