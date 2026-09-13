@@ -2516,6 +2516,36 @@ def _lift_participle_after(head: str, end: int) -> bool:
     return word.lower() in ("leve", "levee", "lifted")
 
 
+# #16005 -- le francais place le mot de LEVEE avant le nom (« Levée du
+# blocage ») ou NARRE le blocage dans un titre (« Chronologie du blocage »).
+# La boucle mot-nu de `_block_emitted` (b) ne regardait qu'APRES l'occurrence
+# (`_lift_participle_after`) : la levée canonique elle-même, postée par la
+# lane sur sa PR, était lue comme une émission de hold (mesuré sur #15846 --
+# deux réserves BLOCK auto-infligées par les commentaires de diagnostic de la
+# lane, non levables par l'auteur sous #13083). Fenêtre pré-marqueur MIRROIR
+# de celle de `_is_cited` (30 chars) : un mot de levée/narration lié au nom
+# par une courte proposition nominale (« du », « de la », « de mon », « — »)
+# est une MENTION, pas une émission. Les déterminants vides (« BLOCAGE : ne
+# pas merger ») ne matchent pas : le pattern exige le mot de narration
+# lui-même dans les 24 chars qui precedent.
+_NARRATION_BEFORE_RE = re.compile(
+    r"\b(?:levee?|levement|je\s+leve|lifted?|retrait|annulation"
+    r"|chronologie|historique|etat|resume|recap(?:itulatif)?|bilan"
+    r"|contexte|suite)\b[^\n]{0,24}$",
+    re.IGNORECASE,
+)
+
+
+def _narrated_blockage_before(head: str, i: int) -> bool:
+    """La fenêtre qui PRECEDE l'occurrence la narré-t-elle ou ne la LÈVE-t-elle pas ?
+
+    « ## Levée du blocage — en forme canonique » : la levée vient AVANT le
+    nom. « ## Chronologie du blocage » : le nom est complément d'un titre de
+    narration. Dans les deux cas rien n'est posé (mesure #16005 sur #15846).
+    """
+    return bool(_NARRATION_BEFORE_RE.search(head[:i]))
+
+
 def _block_emitted(body: str) -> bool:
     """Le coordinateur POSE-t-il un blocage (verdict, jamais une citation) ?
 
@@ -2583,6 +2613,9 @@ def _block_emitted(body: str) -> bool:
                 pos = i + len(marker)
                 continue
             if _lift_participle_after(head, i + len(marker)):
+                pos = i + len(marker)
+                continue
+            if _narrated_blockage_before(head, i):
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):

@@ -2647,6 +2647,54 @@ def test_13083_narration_pas_un_blocage_en_section_ne_declenche_pas():
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
 
 
+def test_16005_levee_syntaxe_inverse_ne_pose_pas():
+    """#16005 : le francais place le mot de LEVEE avant le nom. « Levée du
+    blocage » est la levée canonique elle-même — mesuré sur #15846, la phrase
+    par laquelle la lane levait le blocage était lue comme en POSANT un
+    (l'instrument lisait sa propre grammaire de levée comme une émission)."""
+    assert mod.classify(
+        "jsboige",
+        "## Levée du blocage — en forme canonique, avec les deux sorties nommées"
+    ) is None
+    assert mod.classify("jsboige", "Levé du blocage") is None
+    assert mod.classify(
+        "jsboige",
+        "## Levée du `[BLOCK]` : le rouge retenu est un check-run gelé"
+    ) is None
+
+
+def test_16005_narration_en_titre_ne_pose_pas():
+    """#16005 : le nom « blocage » complément d'un titre de narration ne pose
+    rien — 2e faux positif mesuré sur #15846 (« Chronologie du blocage »,
+    commentaire de diagnostic de la lane devenu réserve BLOCK non levable par
+    l'auteur sous #13083)."""
+    assert mod.classify(
+        "jsboige", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "jsboige", "Historique du blocage posé hier, pour mémoire."
+    ) is None
+
+
+def test_16005_emissions_reelles_restent_detectees():
+    """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
+    narration liée au nom par une courte proposition — les émissions réelles
+    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01",
+        "BLOCAGE : cette PR ne merge pas tant que le run GPU n'est pas vert."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
+    ) == "BLOCK"
+
+
 def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
     """#13083 garde-fou : un verdict positif (APPROVE) qui nomme le BLOCAGE
     d'un autre cycle dans sa narration reste positif — la mention « leve par »
