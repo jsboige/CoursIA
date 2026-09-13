@@ -228,6 +228,65 @@ def test_child_failure_maps_to_exit_1():
         assert res["status"] == "child_failed"
 
 
+# ---------------------------------------------------------------------------
+# Confinement : `resume_process` compte les threads SUSPENDUS, pas les ouvrables
+# ---------------------------------------------------------------------------
+
+_WINDOWS_ONLY = pytest.mark.skipif(
+    os.name != "nt",
+    reason=(
+        "CREATE_SUSPENDED et le suspend count rendu par ResumeThread n'ont "
+        "pas d'equivalent POSIX : le test y mesurerait sa propre sonde "
+        "(reserve 2, arbitrage #15666)."
+    ),
+)
+
+
+@_WINDOWS_ONLY
+def test_resume_process_does_not_count_a_root_never_suspended():
+    """Controle negatif du compteur de reprise (#15900).
+
+    Un root lance SANS ``CREATE_SUSPENDED`` n'a aucun thread a reprendre : le
+    compteur doit rendre 0, sinon la garde fail-closed ``if n_resumed == 0:``
+    ne se declenche jamais et le run publie un confinement qui n'a pas eu
+    lieu. Le compteur precedent rendait ici le nombre de threads simplement
+    OUVRABLES (mesure : 3 sur un enfant ``python -c time.sleep``).
+    """
+    proc = subprocess.Popen(SLEEP_CMD)
+    try:
+        time.sleep(0.5)
+        assert le.resume_process(proc.pid) == 0, (
+            "un root jamais suspendu ne compte aucun thread repris")
+    finally:
+        proc.kill()
+        proc.wait(timeout=30)
+
+
+@_WINDOWS_ONLY
+def test_resume_process_counts_a_suspended_root_and_really_resumes_it():
+    """Controle positif : un root ``CREATE_SUSPENDED`` compte >= 1 ET repart.
+
+    La seconde moitie est ce qui distingue « le compteur a vu une vraie
+    suspension » de « le compteur compte encore n'importe quel thread » : le
+    root ne peut atteindre sa sortie que si la reprise a effectivement eu
+    lieu (un processus suspendu ne se termine pas tout seul).
+    """
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(0.3)"],
+        creationflags=le.CREATE_SUSPENDED,
+    )
+    try:
+        time.sleep(0.5)
+        assert le.resume_process(proc.pid) >= 1, (
+            "un root reellement suspendu doit etre compte")
+        assert proc.wait(timeout=30) == 0, (
+            "le root suspendu devait repartir apres reprise")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=30)
+
+
 @pytest.mark.skipif(
     os.name != "nt",
     reason=(
