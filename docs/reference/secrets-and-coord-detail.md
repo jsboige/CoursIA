@@ -128,7 +128,7 @@ La cause tombe dans l'un de TROIS cas (le scanner ne les distingue PAS — c'est
 
 
 
-**Seules normalisations manuelles tolerees (PAS un scrub d'output)** : (1) **`metadata.papermill.input/output_path`** — c'est de la **metadata notebook, PAS une sortie de cellule** ; la mettre au `basename` est OK (ideal : la produire propre a l'exec via input/output relatifs). (2) **Quantbooks QC** — le MCP qc-mcp ne permet toujours PAS de les executer, ils passent par le Research Assistant (Playwright / lean-cli), la manipulation manuelle des sorties y est la realite acceptee. **Pour tout le reste, execution reelle obligatoire.**
+**Seules normalisations manuelles tolerees (PAS un scrub d'output)** : (1) **`metadata.papermill.input/output_path`** — c'est de la **metadata notebook, PAS une sortie de cellule** ; la mettre au `basename` est OK (ideal : la produire propre a l'exec via input/output relatifs). (2) **Quantbooks QC** — le MCP qc-mcp ne permet toujours PAS de les executer, ils passent par le Research Assistant (Playwright / lean-cli), la manipulation manuelle des sorties y est la realite acceptee. (3) **`probeAddresses` banner strip** post-re-execution .NET Interactive — l'enumeration `System.Net.NetworkInformation.NetworkInterface` que le runner emet en banniere **leak les interfaces reseau de la machine** ; elle se retire par l'organe `scripts/notebook_tools/strip_probe_banner.py --apply <path>`, a passer **systematiquement apres toute re-exec .NET, avant commit** (cf L532 en memoire locale). Ce n'est pas un scrub de resultat : la banniere n'est pas une sortie du code de la cellule, c'est du bruit d'infrastructure injecte par le kernel. **Pour tout le reste, execution reelle obligatoire.**
 
 
 
@@ -412,4 +412,26 @@ les cles, avec prudence mais de facon determinee ») **et** pose ce mecanisme.
 - Incident 2026-06-02 (`feedback_no_secrets_roosync.md`, memory) : la vraie lecon = « utiliser `master.env`
   quand il couvre la cible », **pas** « jamais RooSync ».
 - Pipeline `master.env` : `secrets-centralized-management-3160.md` (memory).
+
+
+
+### 3.5 Mecanique de l'attachment — etat verifie c.647 (#10333)
+
+> Deporte de `.claude/rules/secrets-hygiene.md` (issue #15204, Levier B). La **prescription** reste dans la
+> rule (« preferer attachment + `destruct_after` ») ; ce qui suit est l'etat mesure de l'API, qui date de sa
+> verification et se relit avant de s'appuyer dessus.
+
+**Aller-retour fonctionnel** : `send` avec `attachments` → `attachments_list(message_id=X)` → `attachments_get(message_id, filename)`.
+
+C'est le troisieme appel qui **ferme la boucle** : aucun `uuid` n'est decouvrable via la liste, donc le couple
+`(message_id, filename)` est la voie nominale. `attachments_get(uuid=...)` reste valide par compatibilite.
+Le ciblage O(1) des refs passe par `MessageManager.updateMessageAttachments`, depuis la PR
+`jsboige/jsboige-mcp-servers#1039` (MERGED 2026-08-25).
+
+**`destruct_after` ne couvre PAS l'attachment.** Il s'applique au **message** (`MessageManager`, champ
+`expires_at`, L983/L1013) — verifie c.647, corps `roo-extensions#933` MERGED 2026-08-25. L'attachment vit dans
+`AttachmentManager`, qui herite d'un cleanup **par anciennete** (4 semaines par defaut), pas d'un TTL de
+message. Consequence a ne pas inverser : poser un `destruct_after: 30m` sur un message porteur de secret ne
+fait **pas** disparaitre la piece jointe en 30 minutes — c'est une reduction d'empreinte, pas une garantie
+d'effacement, et c'est bien pour cela que la rule la qualifie d'hygiene recommandee et **non bloquante**.
 
