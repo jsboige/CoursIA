@@ -180,7 +180,8 @@ jobs:
           # -> 720 cote branche, soit +23 +4 +1) :
           #   +23 : bancs copy_offset / variable_binding, oracles, probes,
           #         agregation multi-runs (#15481, ict/tests/test_slens.py
-          #         = 43e strate du package) ;
+          #         = 44e strate du package, apres la 43e de case 4 portee
+          #         par main) ;
           #   +4  : verrouillage des defauts corriges apres la premiere mesure
           #         (recodage des classes de valeur sur un vocabulaire non
           #         dense, verdict causal qui n'etiquete plus un effet absent
@@ -194,7 +195,7 @@ jobs:
           # 752 + 28 = 780 ferme l'arithmetique, et 780 EST la collection
           # mesuree sur l'arbre merge (py3.9.25 + numpy 1.26.4 + scipy 1.13.1
           # + matplotlib 3.9.4, SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (43 package)"
+          - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-floor: 780
