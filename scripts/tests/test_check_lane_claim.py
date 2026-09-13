@@ -900,6 +900,132 @@ def test_quasi_fenced_citation_not_flagged(capsys):
     assert '"composite_single_line_markers": 0' in captured.out
 
 
+# --- #15982: composed marker (`[CLAIMED-RELEASED]`) ---------------------------
+# The measured incident: po-2023 LIFTED its claim on #15835 by writing
+# `[CLAIMED-RELEASED]`. All three readers missed it -- `_MARKER_RE` wants the
+# keyword alone in brackets, `_MALFORMED_MARKER_RE` wants no brackets at all,
+# and the quasi classifier fell into the distance<=2 branch because
+# `_QUASI_MARKER_RE` captures group(1) with a class that CONTAINS the hyphen,
+# so the token was the whole 16-char string (near no keyword). The claim stayed
+# alive and PR #15846, from another lane, was blocked for 48 h. WARN-only here
+# too: the quasi marker is SIGNALLED, never enacted (doctrine #12624).
+
+INCIDENT_COMPOSE_RELEASE_LINE = (
+    "[CLAIMED-RELEASED] lane myia-po-2023:CoursIA -- grain DEEP/lean, prev: "
+    "DEEP/lean #15812 -- paths: MyIA.AI.Notebooks/GameTheory/social_choice_lean/"
+)
+
+INCIDENT_COMPOSE_UNDERSCORE_LINE = (
+    "[CLAIMED_RELEASED] lane myia-po-2023:CoursIA -- paths: "
+    "MyIA.AI.Notebooks/GameTheory/social_choice_lean/"
+)
+
+
+def test_quasi_compose_release_surfaces_with_canonical_close_form(capsys):
+    # The incident line: flagged as a COMPOSE quasi marker, and the WARN must
+    # recommend `[RELEASED]` -- recommending the token's HEAD (`[CLAIMED]`)
+    # would tell the author to RE-CLAIM the grain they just handed back.
+    p = payload(comment(INCIDENT_COMPOSE_RELEASE_LINE, "2026-09-13T08:20:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert "deux mots-cles joints" in captured.err
+    assert 'canonique "[RELEASED] lane' in captured.err
+    assert 'canonique "[CLAIMED] lane' not in captured.err
+
+
+def test_quasi_compose_underscore_variant_surfaces(capsys):
+    # `_QUASI_MARKER_RE` group(1) admits `_` as well as `-`; both compose forms
+    # must reach the same verdict (the separator is not the signal).
+    p = payload(comment(INCIDENT_COMPOSE_UNDERSCORE_LINE, "2026-09-13T08:21:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert 'canonique "[RELEASED] lane' in captured.err
+
+
+def test_quasi_compose_is_not_enacted_as_a_release(capsys):
+    # The damage, stated as an assertion: the quasi-release leaves the writer's
+    # claim ACTIVE. That is precisely why the WARN exists -- the signal is the
+    # only remedy, since enacting it would be #12624's forbidden auto-correct.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- paths: "
+                "MyIA.AI.Notebooks/GameTheory/social_choice_lean/",
+                "2026-09-13T08:00:00Z"),
+        comment(INCIDENT_COMPOSE_RELEASE_LINE, "2026-09-13T08:20:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"my_active_claim": true' in captured.out
+
+
+def test_quasi_compose_marker_kind_and_canonical_fields():
+    # Field-level pin: `nearest` stays the HEAD (it names the family, and the
+    # WARN prints it as "tete"), `canonical` carries the OPERATIVE keyword.
+    p = payload(comment(INCIDENT_COMPOSE_RELEASE_LINE, "2026-09-13T08:20:00Z"))
+    found = clc._find_suspected_typo_markers(p)
+    assert len(found) == 1
+    s = found[0]
+    assert s["token"] == "CLAIMED-RELEASED"   # verbatim, original case
+    assert s["kind"] == "compose"
+    assert s["nearest"] == "CLAIMED"
+    assert s["canonical"] == "RELEASED"
+
+
+def test_quasi_compose_negative_controls_stay_silent(capsys):
+    # NEGATIVE CONTROLS (acceptance #2). Each of these is a gesture the organ
+    # READS, or an almost-marker it must not invent: any WARN here is a false
+    # positive that teaches the fleet to ignore the lint.
+    #   - `[RELEASED]` / `[CLAIMED]`: canonical (word alone in brackets).
+    #   - `[CLAIMED-AMEND]`: an ENACTED composite -- `_MARKER_RE` lists it as a
+    #     first-class alternative, so the classifier must not call it compose
+    #     (the regression this guard is here to prevent).
+    for line in (
+        "[RELEASED] lane myia-po-2023:CoursIA -- paths: a/**",
+        "[CLAIMED] lane myia-po-2023:CoursIA -- paths: a/**",
+        "[CLAIMED-AMEND] lane myia-po-2023:CoursIA -- paths: a/**",
+    ):
+        p = payload(comment(line, "2026-09-13T08:20:00Z"))
+        # Checked as the MARKER'S OWN lane: a real [CLAIMED] from another lane
+        # would block (exit 2) and hide the lint assertion behind an unrelated
+        # red. The subject here is the quasi count, not the block verdict.
+        rc = clc._run_check(p, "myia-po-2023:CoursIA")
+        captured = capsys.readouterr()
+        assert rc == 0, line
+        assert '"suspected_typo_markers": 0' in captured.out, line
+        assert "quasi-marqueur" not in captured.err, line
+
+
+def test_quasi_compose_requires_claim_motif_and_brackets(capsys):
+    # Selectivity, same two gates as the other quasi kinds: no claim motif on
+    # the line (prose about the shape) and a fenced citation are both silent.
+    for body in (
+        "Le marqueur [CLAIMED-RELEASED] n'est lu par personne.",
+        "```\n" + INCIDENT_COMPOSE_RELEASE_LINE + "\n```\n(citation)",
+    ):
+        p = payload(comment(body, "2026-09-13T08:20:00Z"))
+        rc = clc._run_check(p, "myia-po-2026:CoursIA")
+        captured = capsys.readouterr()
+        assert rc == 0, body
+        assert '"suspected_typo_markers": 0' in captured.out, body
+
+
+def test_close_keyword_only_counts_enacting_keywords():
+    # `is_release_shaped` drives the BLOCKING gate's warning (#15982): it must
+    # fire for close vocabulary and stay quiet for a quasi-CLAIM, otherwise
+    # every quasi-claim would tell its author to release a grain they hold.
+    assert clc.is_release_shaped({"token": "CLAIMED-RELEASED", "nearest": "CLAIMED"})
+    assert clc.is_release_shaped({"token": "CLAIMED_RELEASED", "nearest": "CLAIMED"})
+    assert clc.is_release_shaped({"token": "CLAIMED-DELIVERED", "nearest": "CLAIMED"})
+    # A quasi-claim, a quasi-typo and an unreadable head are all NOT releases.
+    assert not clc.is_release_shaped({"token": "CLAIMED-AMENDED", "nearest": "CLAIMED"})
+    assert not clc.is_release_shaped({"token": "CLAGED", "nearest": "CLAIMED"})
+    assert not clc.is_release_shaped({"token": "", "nearest": ""})
+
+
 def test_template_prose_line_not_composite(capsys):
     # The claim template's own prose line ("Release with `[RELEASED]` when
     # your PR lands.") has NO line-anchored head marker -- it must never be
