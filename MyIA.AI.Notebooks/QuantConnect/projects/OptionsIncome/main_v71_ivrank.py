@@ -23,11 +23,17 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
       3. Force-close défensif si IV-rank > ivrank_panic.
       4. Conserve toutes les autres règles (delta 0.20, days_to_roll 10,
          profit_target 0.50, defensive_drop 0.03) pour comparabilité baseline.
-      5. Simplification par rapport à l'article : k-means 1D sur IV-rank seul
-         (3 clusters). Strike availability non implémenté — voir body PR.
+      5. Simplification par rapport à l'article : les seuils 0.66 et 0.85 sont
+         des constantes calées sur les centroïdes rapportés par l'article, et
+         non un clustering exécuté — aucun k-means dans ce fichier (l'article
+         clusterise, cette variante reprend ses bornes). Strike availability
+         non implémenté — voir body PR.
 
-    SOTA verdict : RECOVERABLE-LOCAL (vrai moteur QuantConnect + IV natif
-    via Greeks.IV sur chaîne minute, comme documenté dans le voisinage).
+    SOTA verdict : RECOVERABLE-MACHINE — le moteur réel est QuantConnect Cloud,
+    joignable via le MCP, voie canonique de cette famille (cf
+    .claude/rules/sota-not-workaround.md, entrée « QC -> QC-Cloud »). L'artefact
+    n'a pas encore été compilé ni backtesté : sa sortie réelle (Sharpe/CAGR/
+    MaxDD/PSR + coûts) est l'acceptance #15532, items 4-5, encore ouverte.
     """
 
     def initialize(self):
@@ -69,7 +75,7 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
         #   (low ≈ 0-0.33, medium ≈ 0.33-0.66, high ≈ 0.66-1).
         self.ivrank_window_days = 252
         self.ivrank_min = 0.0    # on autorise l'écriture dès IV-rank > 0 (low cluster)
-        self.ivrank_max = 0.66   # skip si IV-rank ∈ high cluster
+        self.ivrank_max = 0.66   # skip si IV-rank ∈ bande haute (bornes article)
         self.ivrank_panic = 0.85 # force-close défensif si IV-rank > panic
 
         # Fallback VIX si IV-rank warm-up incomplet (premiers <252 j)
