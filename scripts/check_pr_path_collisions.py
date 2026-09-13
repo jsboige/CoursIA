@@ -59,8 +59,8 @@ Terminal verdict: a merged side (#15578)
 ----------------------------------------
 The candidate pool was ``--state open`` exclusively, so a collision *vanished
 from the report at the exact moment it became irreversible*: when one side
-merged. The organ was loudest while the risk was theoretical, and mute once
-the substance was on ``main``.
+merged. The organ was loudest while the risk was theoretical, and mute once one
+side was on ``main``.
 
 Measured on the founding instance: at 2026-09-10T23:18Z the advisory posted a
 ``faible`` collision between #15513 and #15455 over five identical paths --
@@ -73,8 +73,13 @@ The pool therefore also carries PRs merged within a bounded window
 (``--merged-window-days`` -- an argument, never a buried constant):
 
 - a pair with ONE merged side is **terminal**. It is not graduated and not
-  tiered: the substance is already on ``main``, and the comment says exactly
-  that. Terminal *replaces the silence*, it does not inflate the open tiers;
+  tiered: one side is already on ``main``, and the comment says exactly that --
+  and nothing more. What the organ observes is a shared PATH; two PRs can
+  overlap on every path and still deliver disjoint substance (#15454/#15502
+  shared 1 of 1 path on both sides -- the gate's maximum -- and nothing else).
+  "The substance is consumed" would be a content comparison this organ never
+  performs, so the terminal comment does not make it. Terminal *replaces the
+  silence*, it does not inflate the open tiers;
 - a pair with BOTH sides merged carries no signal (both are already on
   ``main``: history, not a collision) and is excluded, like stacked pairs;
 - the tier of OPEN/OPEN pairs is untouched (#15578 acceptance 4). The lesson
@@ -172,12 +177,16 @@ MERGED_STATE = "merged"
 # ``--merged-window-days`` (the bound is an argument, not a buried constant).
 DEFAULT_MERGED_WINDOW_DAYS = 3
 
-# A merged side is TERMINAL only when the two deliveries actually overlap --
-# the "full double delivery" of #15578, never a coincidental shared
-# ``.gitignore``. The measure is the share of EACH side's signal paths that is
-# covered by the shared ones: BOTH sides must be substantially covered, which
-# is what separates "the same substance delivered twice" from "a long-lived PR
-# that merely neighbours a small merge".
+# A merged side is TERMINAL only when the two PRs share a substantial portion
+# of their PATHS -- never for a coincidental shared ``.gitignore``. The measure
+# is the share of EACH side's signal paths that is covered by the shared ones.
+#
+# This gate cuts NOISE. It does NOT establish that the two deliveries overlap in
+# substance, and the comment must never say that it does: #15454/#15502 shared
+# 1 of 1 path on both sides -- a perfect 1.00, this gate's maximum -- while
+# delivering entirely disjoint content (one coloured a mermaid block, the other
+# split a wall paragraph). Path overlap is not content overlap, so no threshold
+# on this quantity could have separated them.
 #
 # Calibrated on ONE live snapshot (2026-09-11, 64 open + 282 merged, 3-day
 # window; the pool drifts, so these are that snapshot's numbers): ungated, 96
@@ -187,6 +196,12 @@ DEFAULT_MERGED_WINDOW_DAYS = 3
 # #15513/#15455 duplicate scores 0.83 (5 shared, out of 5 and of 6).
 # Rejected alternative, measured: ``shared / min(sizes)`` keeps the same ~37 --
 # a 1-file merged PR sharing its only file scores 1.00 for trivial reasons.
+#
+# Note that the RETAINED measure admits that same trivial case: when BOTH sides
+# are single-file on the same path, min coverage is 1.00 and the pair passes.
+# #15454/#15502 is exactly that shape. The gate is right to let it through --
+# dropping it would re-open the muteness #15578 fixed -- which is why the fix
+# for that pair is the comment's WORDING, not the threshold.
 TERMINAL_MIN_OVERLAP_RATIO = 0.5
 
 # The synthetic positive control. NOT a live repo pair (those are volatile:
@@ -232,6 +247,22 @@ FOUNDING_TERMINAL_PAIR: tuple[int, int, tuple[str, ...], str] = (
     "scripts/ci/check_self_hosted_runner_policy.py",
 )
 
+# The founding instance of the OVERCLAIM (#15768), replayed at its state of
+# then, and the sharpest fixture this suite has: both PRs touch EXACTLY ONE
+# path -- the same one -- so the overlap ratio is a PERFECT 1.00, the gate's
+# maximum. And the two deliveries share no substance at all:
+#
+#   #15454  docs(probas,#14871)  split a 3336-char wall paragraph in README.md
+#   #15502  fix(probas,#15022)   explicit mermaid node text colour, same file
+#
+# The issues are DISJOINT, and the paths identical. No threshold on path
+# overlap could separate them, because path overlap is not content overlap --
+# which is why the fix is the verdict's WORDING, not the gate.
+# Paths read from `gh api .../pulls/<n>/files`; issues from the two titles.
+FOUNDING_OVERCLAIM_PAIR: tuple[int, int, str, int, int] = (
+    15454, 15502, "MyIA.AI.Notebooks/Probas/README.md", 14871, 15022,
+)
+
 # Generated artifacts with permanent structural overlap and zero signal
 # (#13615: a guard that reports everything reports nothing).
 EXCLUDED_EXACT_PATHS = frozenset({
@@ -263,8 +294,8 @@ class PathCollision:
     """An unordered pair of PRs sharing at least one signal file path.
 
     ``merged_side`` is set only for a terminal pair (#15578): it names the side
-    already on ``main``, so the comment can say which number is consumed
-    instead of guessing from the tier. ``overlap_ratio`` carries the measured
+    already on ``main``, so the comment names that number instead of guessing
+    it from the tier. ``overlap_ratio`` carries the measured
     ``min`` coverage that put the pair over ``TERMINAL_MIN_OVERLAP_RATIO``, so
     a reader can audit the gate's decision instead of trusting it.
     """
@@ -394,15 +425,21 @@ class ScanResult:
 
     @property
     def terminal_collisions(self) -> list[PathCollision]:
-        """Pairs whose substance is already on ``main`` (#15578)."""
+        """Pairs with ONE side already merged (#15578).
+
+        The verdict is the merged state plus a high PATH overlap -- not a
+        substance comparison, which this organ cannot make (#15454).
+        """
         return [c for c in self.collisions if c.tier == TIER_TERMINAL]
 
     def actionable_collisions(self) -> list[PathCollision]:
         """Pairs worth posting when the caller wants the noise cut.
 
         STRONG and TERMINAL, never the open tiers' weak family-README noise.
-        A terminal pair is by definition not that noise: the substance is
-        already merged, which is the strongest thing this organ can observe.
+        A terminal pair is not that noise either: one side is already on
+        ``main``, which is the strongest FACT this organ can observe -- a fact
+        about paths and PR state, never a proof that the two deliveries
+        overlap (#15454).
         """
         return [c for c in self.collisions if c.tier in (TIER_STRONG, TIER_TERMINAL)]
 
@@ -533,9 +570,10 @@ def strong_collisions(collisions: Iterable[PathCollision]) -> list[PathCollision
 def render_comment(number: int, title: str, own_collisions: list[PathCollision]) -> str:
     """Build the advisory comment body for PR ``number``.
 
-    Names each colliding PR by number, its tier, the shared paths, and (for
-    the strong tier) the common cited issues. Marker-framed so a re-run can
-    find, refresh, or retract it in place.
+    Names each colliding PR by number, its tier, the shared paths, and the
+    common cited issues whenever there are any -- on the terminal tier too,
+    where they are the one honest hint that the two deliveries might overlap.
+    Marker-framed so a re-run can find, refresh, or retract it in place.
 
     The open-pair rendering is byte-identical to the pre-#15578 one, so the
     widened pool does not churn a single existing comment: only a pair that
@@ -557,16 +595,22 @@ def render_comment(number: int, title: str, own_collisions: list[PathCollision])
     for c in sorted(own_collisions, key=lambda c: c.other(number)):
         other = c.other(number)
         if c.tier == TIER_TERMINAL:
-            consumed = c.merged_side if c.merged_side is not None else other
+            merged = c.merged_side if c.merged_side is not None else other
             ratio = (
-                f" (recouvrement {c.overlap_ratio:.0%})"
+                f", recouvrement de chemins {c.overlap_ratio:.0%}"
                 if c.overlap_ratio is not None else ""
             )
             line = (
                 f"- **terminal** -- **#{other}** partage : "
-                f"{', '.join(c.shared_paths)}{ratio} -- **#{consumed}** est "
-                "deja sur `main`, la substance est consommee."
+                f"{', '.join(c.shared_paths)}{ratio} -- **#{merged}** est "
+                "deja sur `main`."
             )
+            # The one honest hint that the two might overlap. Dropping it was
+            # the same mistake one level down: measured and stated, it is a
+            # reason to look; absent, the reader has only the tier.
+            if c.common_issues:
+                issues = ", ".join(f"#{i}" for i in c.common_issues)
+                line += f" (issues communes : {issues})"
         else:
             tier_fr = "fort" if c.tier == TIER_STRONG else "faible"
             line = (
@@ -580,9 +624,12 @@ def render_comment(number: int, title: str, own_collisions: list[PathCollision])
     if any(c.tier == TIER_TERMINAL for c in own_collisions):
         lines.append("")
         lines.append(
-            "Le verdict **terminal** (#15578) signifie que la substance est "
-            "deja sur `main` : le cote merge n'est plus une collision a "
-            "arbitrer, c'est du travail deja integre."
+            "Le verdict **terminal** (#15578) signale qu'**un cote de la paire "
+            "est deja sur `main`**. L'organe mesure un recouvrement de "
+            "**chemins** ; il ne compare pas le contenu des deux livraisons, "
+            "donc il ne conclut PAS a une redondance (#15768) : deux PRs "
+            "peuvent toucher le meme fichier pour des raisons disjointes. "
+            "L'arbitrage reste a la lane ou au coordinateur."
         )
     lines.append("")
     lines.append("<!-- PR-PATH-COLLISION:END -->")
@@ -1082,9 +1129,37 @@ def _self_test() -> int:
           and (900070, 900071) in low.merged_low_overlap_excluded)
 
     # ... and a terminal pair is NOT dropped by the --same-issue-only filter:
-    # the substance being already merged is the loudest thing this organ sees.
+    # one side being already merged is the loudest FACT this organ sees.
     check("terminal survives the actionable (same-issue-only) selector",
           [c.tier for c in founding.actionable_collisions()] == [TIER_TERMINAL])
+
+    # #15768 acceptance 1+3: the OVERCLAIM instance. A PERFECT path overlap
+    # (1 of 1 on both sides) over two DISJOINT issues must still land terminal
+    # -- and the rendered comment must not conclude that the substance is
+    # consumed. Reverting the wording turns this red: the pre-fix body said
+    # "la substance est consommee".
+    o_open, o_merged, o_path, o_open_issue, o_merged_issue = FOUNDING_OVERCLAIM_PAIR
+    overclaim = detect_path_collisions([
+        PrRow(number=o_open, title=f"docs(probas,#{o_open_issue}): segmenter",
+              paths=(o_path,)),
+        PrRow(number=o_merged,
+              title=f"fix(probas,#{o_merged_issue}): couleur mermaid",
+              paths=(o_path,), state=MERGED_STATE),
+    ])
+    oc = next((c for c in overclaim.collisions
+               if {c.a_number, c.b_number} == {o_open, o_merged}), None)
+    check(f"overclaim #{o_open}/#{o_merged}: perfect path overlap is terminal",
+          oc is not None
+          and oc.tier == TIER_TERMINAL
+          and oc.overlap_ratio == 1.0
+          and oc.common_issues == ())
+    body = render_comment(o_open, "docs(probas): segmenter",
+                          collisions_for_pr(o_open, overclaim.collisions))
+    check("overclaim: the terminal comment does NOT claim the substance is "
+          "consumed",
+          "substance est consommee" not in body
+          and "deja integre" not in body
+          and "deja sur" in body)
 
     # Negative: TWO merged sides are history, not a collision -> NOTHING.
     both_merged = detect_path_collisions([
@@ -1239,8 +1314,8 @@ def _cli(argv: list[str] | None = None) -> int:
 
     if args.same_issue_only and result.collisions:
         # STRONG and TERMINAL (#15578): a terminal pair is not the family-
-        # README noise this flag exists to cut, it is the loudest signal the
-        # organ has -- the substance is already on main.
+        # README noise this flag exists to cut, it is the loudest FACT the
+        # organ has -- one side is already on main.
         result.collisions = result.actionable_collisions()
         result.colliding_prs = sorted(
             {n for c in result.collisions for n in (c.a_number, c.b_number)}

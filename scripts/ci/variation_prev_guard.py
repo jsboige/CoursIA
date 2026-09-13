@@ -425,7 +425,10 @@ def check(
     Pure function so unit tests pin each branch without going through the
     CLI. ``commits`` is the list of commit message strings on the branch
     (the workflow fetches them via ``gh pr view --json commits``); each is
-    scanned independently so the verdict can name which commit offended.
+    scanned independently so the verdict can name which commit offended --
+    **for close-keywords only**. Les invariants ``prev:`` lisent le body
+    seul (#15309 4e axe : le message de commit n'est pas une surface
+    declarative, et le corriger exige une reecriture d'historique).
 
     ``current_pr`` is the number of the PR carrying the tag -- required to
     evaluate PREV-SELF (invariant 1). ``prev_targets`` is the JSON the
@@ -443,31 +446,25 @@ def check(
         for h in gt.find_prev_close_keywords(msg):
             hits_commits.append({"commit_index": i, **h})
 
-    # (b) invalid `prev:` PR reference (#13475 invariants 1-3).
+    # (b) invalid `prev:` PR reference (#13475 invariants 1-3) -- body ONLY.
+    # #15309 4e axe : un message de commit n'est pas une surface declarative
+    # -- variation-protocol.md §1 place la declaration dans le [CLAIMED] et
+    # le body de PR. Un `prev:` errone dans un commit ne se repare par aucun
+    # geste que le protocole autorise par defaut : il faut reecrire
+    # l'historique, que git-workflow.md presente comme le dernier recours.
+    # Un garde n'exige pas, pour etre satisfait, un geste que la regle
+    # voisine decourage. La surface commits garde son role pour les
+    # close-keywords ci-dessus : la, la surface EST le mecanisme (#10093).
     hits_prev_invalid: list[dict] = []
-    # PREV-SELF -- body + every commit. The current_pr is constant across
-    # all locations; a self-reference in a commit message is the same defect
-    # as one in the body, and we name the slot so the failure is debuggable.
+    # PREV-SELF -- body seul.
     hits_prev_invalid.extend(
         {"location": "body", "kind": "prev-self", "prev_pr": h["prev_pr"]}
         for h in find_prev_self_references(body, current_pr)
     )
-    for i, msg in enumerate(commits or []):
-        hits_prev_invalid.extend(
-            {"location": f"commits[{i}]", "kind": "prev-self",
-             "prev_pr": h["prev_pr"]}
-            for h in find_prev_self_references(msg, current_pr)
-        )
-    # PREV-ABANDONED + PREV-NOT-PR -- body + every commit. Each location
-    # gets its own target list because the body and each commit carry
-    # independent `prev:` clauses; aggregating them would mix concerns.
+    # PREV-ABANDONED + PREV-NOT-PR -- body seul.
     body_targets = find_prev_target_pr_numbers(body)
     hits_prev_invalid.extend(validate_prev_targets(
         body_targets, prev_targets, location="body"))
-    for i, msg in enumerate(commits or []):
-        commit_targets = find_prev_target_pr_numbers(msg)
-        hits_prev_invalid.extend(validate_prev_targets(
-            commit_targets, prev_targets, location=f"commits[{i}]"))
 
     if not hits_body and not hits_commits and not hits_prev_invalid:
         return {"guard_pass": True,

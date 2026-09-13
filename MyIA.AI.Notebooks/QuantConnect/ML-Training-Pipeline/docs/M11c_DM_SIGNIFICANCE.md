@@ -71,7 +71,7 @@ $\Pr(\hat S_a^* - \hat S_b^* - (\hat S_a - \hat S_b) \geq \hat S_a - \hat S_b)$
 | XRP-USD h=20 kelly_har_mu60 | 0.0731 | 0.0700 | concordant |
 | DOT-USD h=20 kelly_har_mu60 | 0.0849 | 0.0970 | concordant |
 
-All 5 |Δp| ≤ 0.02. The LW2008 closed-form and the stationary bootstrap converge
+All 5 \|Δp\| ≤ 0.02. The LW2008 closed-form and the stationary bootstrap converge
 to essentially the same p-value, so the LW2008 result is **NOT** an artefact of
 the asymptotic-normal assumption — it reflects genuine uncertainty given T and
 the cross-correlation between active and passive returns.
