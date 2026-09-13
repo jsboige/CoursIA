@@ -34,6 +34,8 @@ import tempfile
 import time
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import lean_exec as le  # noqa: E402
 
@@ -226,6 +228,15 @@ def test_child_failure_maps_to_exit_1():
         assert res["status"] == "child_failed"
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason=(
+        "propriete Windows : un orphelin garde le PID de son parent mort "
+        "comme PPID ; sous POSIX le noyau reparente a PID 1 et "
+        "descendants_of(parent_mort) est structurellement vide -- le test "
+        "mesurerait le noyau, pas find_orphans (reserve 2, arbitrage #15666)"
+    ),
+)
 def test_planted_orphan_is_detected():
     """Controle par faux negatif : un orphelin qui DOIT etre attrape l'est.
 
@@ -315,13 +326,14 @@ def _find_toolchain() -> str | None:
 
 def test_positive_control_real_lake():
     """Une compilation ciblee REELLE passe sous le budget et publie ses metriques."""
+    # Reserve 3 (arbitrage #15666) : un print+return rend « passed » sans
+    # rien controler -- pire que pas de controle. pytest.skip rend un « s »
+    # visible dans le rapport.
     if shutil.which("lake") is None:
-        print("SKIP: lake absent du PATH")
-        return
+        pytest.skip("lake absent du PATH")
     toolchain = _find_toolchain()
     if not toolchain:
-        print("SKIP: aucun lean-toolchain du depot n'est installe via elan")
-        return
+        pytest.skip("aucun lean-toolchain du depot n'est installe via elan")
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         proj = Path(td) / "control"

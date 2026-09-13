@@ -68,6 +68,16 @@ EXIT_ORPHANS = 126
 EXIT_INTERNAL = 127
 EXIT_INTERRUPTED = 130
 
+# winbase.h:416 -- CREATE_SUSPENDED n'est exporte ni par subprocess ni par
+# _winapi (mesure Hermes c.5649329240 sur Modules/_winapi.c v3.13.5 : les
+# cinq constantes CREATE_* exportees ne l'incluent pas, et le cycle
+# suspendu->assigne->repris n'est pas completable en Python pur via _winapi).
+# Valeur ABI Win32 stable depuis Windows NT : le litteral est la forme
+# robuste. JAMAIS de getattr(..., 0) sur ce drapeau -- une retombee silencieuse
+# lance la racine courante et fabrique un run vert non confine (reserve 1 de
+# l'arbitrage #15666, issuecomment-5649841267).
+CREATE_SUSPENDED = 0x00000004
+
 LEAN_PROC_NAMES = {"lean", "lean.exe", "lake", "lake.exe"}
 
 _STATE_SUBDIR_WIN = ("CoursIA", "lean_exec")
@@ -794,8 +804,7 @@ def run_command(
                 # AVANT de pouvoir exécuter la moindre instruction, aucun
                 # enfant ne peut naitre hors du job.
                 popen_kwargs["creationflags"] = (
-                    getattr(subprocess, "CREATE_NO_WINDOW", 0)
-                    | getattr(subprocess, "CREATE_SUSPENDED", 0)
+                    getattr(subprocess, "CREATE_NO_WINDOW", 0) | CREATE_SUSPENDED
                 )
             else:
                 popen_kwargs["start_new_session"] = True
@@ -820,9 +829,27 @@ def run_command(
                 n_resumed = resume_process(proc.pid)
                 result["threads_resumed"] = n_resumed
                 if n_resumed == 0:
-                    result["backend"] = (
-                        f"{result['backend']}-resume-failed"
+                    # Reserve 1 (arbitrage #15666) : un root cree suspendu et
+                    # non repris n'a PAS ete confine -- l'echec doit invalider
+                    # le run, pas decorer le backend d'un suffixe vert. Le root
+                    # est encore suspendu : on tue le job avant de rendre
+                    # l'echec (meme ordre que terminate_tree).
+                    confined = False
+                    if job is not None and job.handle:
+                        job.terminate()
+                        time.sleep(1.0)
+                    kill_pids(sorted(descendants_of(proc.pid), reverse=True))
+                    result.update(
+                        status="internal-error",
+                        exit_code=EXIT_INTERNAL,
+                        reason=(
+                            "resume_process resumed 0 threads: the root was "
+                            "spawned with CREATE_SUSPENDED and could not be "
+                            "resumed -- confinement is NOT delivered"
+                        ),
+                        backend=f"{result['backend']}-resume-failed",
                     )
+                    return _emit(result, as_json)
 
             _write_run_record(run_id, {
                 "pid": proc.pid,
