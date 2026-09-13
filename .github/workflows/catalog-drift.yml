@@ -109,5 +109,10 @@ jobs:
       # catalog-cron.yml (main) is the sole writer; the blocking guard
       # catalog-pr-guard.yml was removed (#11012) — this read-only detector and
       # the catalog-cron.yml regen PR are the sole organs now (see #2632, #2744).
+      # CONTROL #15998 -- etape d'echec forcee, branche jetable (PR de controle).
+      - name: "CONTROL #15998 -- forced failure"
+        run: |
+          echo "Echec force pour observer la classification du check par PR gate (#15998)."
+          exit 1
       - name: Done (non-blocking, read-only)
         run: echo "Catalog drift check complete (non-blocking, read-only)."

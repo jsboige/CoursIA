@@ -108,3 +108,5 @@ Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-1`) et 
 ---
 
 *Cet arc fait partie de la série [Probas](../README.md) du dépôt [CoursIA](https://github.com/jsboige/CoursIA). Documentation détaillée de chaque notebook dans les README des sous-séries.*
+
+<!-- #15998 control: forced catalog-drift trigger (throwaway PR, closed after observation) -->
