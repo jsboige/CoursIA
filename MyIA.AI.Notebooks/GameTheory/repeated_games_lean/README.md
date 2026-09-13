@@ -19,6 +19,18 @@
 
 > **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré). Les sources actives vivent dans [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
+> **Hommage — Richard E. Stearns (1936-2026), « semi-auteur ».** Les travaux que Richard E. Stearns
+> a menés à l'*Arms Control and Disarmament Agency* sur les **jeux répétés à information
+> incomplète** — la théorie des jeux appliquée au contrôle des armements — sont devenus un chapitre
+> du livre d'Aumann & Maschler, *Repeated Games with Incomplete Information* (MIT Press, 1995),
+> dont la page de titre porte *« with the collaboration of Richard E. Stearns »*. Il se qualifiait
+> lui-même de « semi-auteur » de ce livre couronné du prix Lanchester, et racontait volontiers
+> *« the story of how I almost won the Lanchester Prize »*. Stearns (1936-2026, prix Turing 1993
+> avec Juris Hartmanis pour le papier fondateur de la théorie de la complexité computationnelle)
+> s'est éteint le 29 août 2026 à Ann Arbor. Sa première publication portait sur le paradoxe
+> d'Arrow — voir [`SocialChoice/`](../SocialChoice/README.md). Hommage complet :
+> [#15949](https://github.com/jsboige/CoursIA/issues/15949) (volet 2/3).
+
 ## Théorème-phare
 
 **Grim trigger soutient la coopération ssi δ ≥ (T − R) / (T − P)** (one-shot deviation principle).
