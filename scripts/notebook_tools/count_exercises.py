@@ -359,7 +359,46 @@ STUB_PATTERNS = [
     # `display` form, such stubs were under-counted (e.g. GameTheory-5 cell Ex2,
     # `display("Exercice 2 a completer ...")` with no `// TODO`/`// Indice`).
     re.compile(r'(?:Console\.WriteLine|display)\(\$?["\']Exercice', re.IGNORECASE),
-    re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
+    # Generic ``<name> = None`` placeholder. Was previously ``result = None``
+    # ONLY (the original C.1 idiome), which under-counted 3 notebook audits:
+    # AEV (13b_Agent_Evaluation) ``resultat = None``, Claudish
+    # ``response_json = None``, OWUI uses ``return -1`` (covered by the next
+    # pattern). The assignment ALONE over-fired on demo cells that merely
+    # INITIALIZE a variable to None before computing (#15713, Hermes demand 1:
+    # Kokoro-01-5 cell 38 ``inflect_samples = None`` overwritten four lines
+    # later in a 109-line demo; an AI-Engine-WordPress cell whose ``croise =
+    # None`` is assigned a computed tuple under an ``if``) -- so this entry is
+    # NOT unconditional: ``_is_stub_code`` retains it only when
+    # ``_none_placeholder_passthrough`` confirms the placeholder shape (the
+    # name is never reassigned a computed value in its own scope).
+    re.compile(r"^\s*[A-Za-z_]\w*\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
+    # Sentinelle return: ``return -1  # valeur "a completer"``, ``return ...
+    # # placeholder``, etc. The numeric/string literal alone doesn't distinguish
+    # a computed ``return -1`` (rare in pedagogy) from a placeholder, so the
+    # marker is the **line-tail comment** carrying placeholder vocabulary
+    # (``a completer``, ``a remplir``, ``placeholder``, ``neutre``, ``stub``).
+    # Match the whole-line-tail ``return <lit>  # ... <vocab>`` shape -- a
+    # returned literal in mid-cell without a sentinel comment stays a derived
+    # return. (OWUI issue #15676 -- ``return -1  # valeur "a completer
+    # (placeholder neutre)"`` in cell 11.)
+    re.compile(
+        r"\breturn\s+-?\d+\s*#.*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+        re.IGNORECASE,
+    ),
+    # Pure-sentinelle string literals: ``return "a determiner"``,
+    # ``return "a trancher"``, ``return "a completer"``, ``return "unknown"``,
+    # ``return "a definir"``, ``return "TODO"``. The string ITSELF spells the
+    # placeholder -- no line-tail comment needed. OWUI issue #15676 -- cells
+    # 13 (``classer`` -> ``return "a determiner"``) and 15 (``verdict`` ->
+    # ``return "a trancher"``); AEV uses the variable form (``return resultat``
+    # with ``resultat = None``). Membership in a short whitelist is safer than
+    # a free regex: a real ``return "unknown"`` exists in some notebooks (a
+    # classifier output), and the cost of a missed exercise is much smaller
+    # than a false positive that over-counts a worked solution.
+    re.compile(
+        r'\breturn\s+["\'](?:a\s+(?:d[eé]terminer|trancher|compl[eé]ter|remplir|d[eé]finir)|unknown|TODO|à compléter)["\']',
+        re.IGNORECASE,
+    ),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),
     # "a completer" / "to complete" LINE-COMMENT stub markers. A scaffolded
@@ -412,6 +451,20 @@ EMPTY_RETURN_PATTERNS = [
 # a mixed cell (Search-11 cell 43 -- a complete `profit_function` plus a
 # truncated `# A COMPLETER` Problem skeleton), which must stay a stub.
 COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
+
+# Index of the generic ``<name> = None`` assignment pattern above (the #15688
+# widening of ``result = None``). The COMMENT markers above are stubs UNLESS
+# the body computes; this one is the opposite polarity -- the bare assignment
+# is NOT a stub signal unless ``_none_placeholder_passthrough`` confirms the
+# placeholder shape (the None-assigned name is never reassigned a computed
+# value later in its own scope). Without the gate the pattern over-fired on
+# demo cells that merely INITIALIZE a variable to None before computing:
+# Kokoro-01-5 cell 38 (``inflect_samples = None`` overwritten four lines
+# later in a 109-line Inflect-Nano demo, which then stole the forward pairing
+# of the `Exercice 3` header above it) and an AI-Engine-WordPress cell
+# (``croise = None`` assigned a computed tuple under an ``if``, 'exercice'
+# present only in a print) -- #15713, Hermes demand 1.
+NONE_PLACEHOLDER_PATTERN_IDX = frozenset({10})
 
 
 def _effective_code_lines(source: str) -> list[str]:
@@ -514,6 +567,64 @@ def _body_computes_result(source: str) -> bool:
     return False
 
 
+#: ``<name> = None`` assignment with the assigned name captured. See
+#: :data:`NONE_PLACEHOLDER_PATTERN_IDX` -- the pattern is gated on the SHAPE
+#: below, not on the bare assignment.
+_NONE_ASSIGN_NAME_RE = re.compile(
+    r"^[ \t]*([A-Za-z_]\w*)\s*=\s*None\b", re.MULTILINE | re.IGNORECASE
+)
+
+
+def _none_placeholder_passthrough(source: str) -> bool:
+    """True when a ``<name> = None`` assignment is the C.1 placeholder itself.
+
+    Gates the generic ``= None`` marker in ``_is_stub_code`` (#15713, Hermes
+    demand 1). The assignment is retained when the None-assigned name is never
+    OVERWRITTEN with a computed value later in its own scope -- a
+    same-or-deeper indentation, after the assignment line. The measured
+    placeholder idiomes all satisfy this: the in-function passthrough (AEV
+    ``resultat = None`` / ``return resultat``), the cell-level result holder
+    (PT_09 ``result_median = None`` + an 'Exercice ... à compléter' print, no
+    return at all) and the scaffold flag next to a partial return (12-TTS
+    ``result = None`` below ``return codes_selectionnes, ...``). A demo cell
+    that merely INITIALIZES a variable to None before a computing pipeline
+    reassigns it in scope and is a solution, not a stub: Kokoro-01-5 cell 38
+    (``inflect_samples = None`` overwritten four lines later inside the demo)
+    and the AI-Engine-WordPress crossed-delete cell (``croise = None`` then
+    ``croise = (statut_c, rep_c)`` under an ``if``). A reassignment at a
+    SHALLOWER indent is outside the assignment's scope -- driver code below
+    the exercise function (Claudish cell 16, ``resultats =
+    compare_tiers(...)`` at column 0) calls the stub and does not turn it into
+    a solution.
+    """
+    lines = source.split("\n")
+    for m in _NONE_ASSIGN_NAME_RE.finditer(source):
+        name = m.group(1)
+        line_no = source.count("\n", 0, m.start())
+        indent = len(lines[line_no]) - len(lines[line_no].lstrip(" \t"))
+        # NB: the `\s*` lives INSIDE the trailing lookahead -- between `=` and
+        # `(?!None\b)` a backtrackable `\s*` folds to zero width on ``x =
+        # None`` itself and the check would eat its own exception. The
+        # `(?:\w+,)*` prefix also catches tuple rebindings (``ok, croise =
+        # ...``).
+        reassign_re = re.compile(
+            rf"^[ \t]*(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(name)}"
+            rf"\s*[+\-*/%]?=(?!=)(?!\s*None\b)",
+            re.IGNORECASE,
+        )
+        reassigned = False
+        for j in range(line_no + 1, len(lines)):
+            if not reassign_re.match(lines[j]):
+                continue
+            j_indent = len(lines[j]) - len(lines[j].lstrip(" \t"))
+            if j_indent >= indent:
+                reassigned = True
+                break
+        if not reassigned:
+            return True
+    return False
+
+
 @dataclass
 class ExerciseHit:
     """A single detected exercise occurrence with evidence."""
@@ -586,6 +697,15 @@ def _is_stub_code(source: str) -> bool:
             # (pass / return None / result=None / empty-typed return / "Exercice
             # a completer" print / raise / assert) stay unconditional.
             if idx in COMMENT_STUB_PATTERN_IDX and _body_computes_result(source):
+                continue
+            # The generic ``<name> = None`` assignment is a stub marker only
+            # in its placeholder-passthrough shape (#15713): the bare
+            # assignment also matches demo cells that initialize a variable to
+            # None before computing.
+            if (
+                idx in NONE_PLACEHOLDER_PATTERN_IDX
+                and not _none_placeholder_passthrough(source)
+            ):
                 continue
             return True
     lines = [

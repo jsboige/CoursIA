@@ -1524,6 +1524,313 @@ class TestD01CompletedSolutionWithTodo:
             "A scaffolded C# skeleton with // TODO is a student stub"
         )
 
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Issue #15676 -- STUB_PATTERNS previously required ``result =
+            # None`` literally; ``resultat = None``, ``response_json = None``,
+            # ``data = None`` (any identifier) escaped the matcher, and
+            # ``return <name>`` of such a placeholder counted as a derived
+            # return by `_body_computes_result` (the variable IS assigned in
+            # the body). Now generalized to ``^\s*<name>\s*=\s*None\b`` for
+            # any identifier, so a 6-cell stub with these shapes is
+            # recognized as a stub without further reduction.
+            # AEV 13b_Agent_Evaluation cell 18 -- ``resultat = None`` form:
+            "# Exercice 1 : verificateur deterministe.\n"
+            "# TODO etudiant : complete verificateur\n"
+            "def verificateur(code, probleme):\n"
+            "    # Indice : passes == total.\n"
+            "    resultat = None  # TODO etudiant\n"
+            "    return resultat\n",
+            # Claudish cell 14 -- ``response_json = None``:
+            "# Exercice 1 : appel brut.\n"
+            "def call_claudish_raw(prompt: str, model: str = \"glm-5.2\"):\n"
+            "    response_json = None  # TODO etudiant\n"
+            "    return response_json\n",
+            # Generic data binding -- another common idiome:
+            "# Exercice 1 : charger le dataset.\n"
+            "def charger(path: str):\n"
+            "    data = None\n"
+            "    return data\n",
+        ],
+    )
+    def test_generic_none_variable_is_stub_issue_15676(self, source):
+        """Issue #15676: ``<name> = None`` (any identifier) is a stub.
+
+        Was previously limited to ``result = None`` literally; under that
+        shape, AEV (``resultat = None``), Claudish (``response_json = None``)
+        and any ``data = None`` / ``reponse = None`` placeholder escaped
+        detection, falsely reading as a derived-body solution. The pattern is
+        now identifier-agnostic.
+        """
+        assert _is_stub_code(source) is True, source
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Issue #15676 -- sentinel-return shapes whose value SPELLS the
+            # placeholder (``a determiner``, ``a trancher``, ``a completer``,
+            # ``unknown``, etc.). A worked ``return "unknown"`` IS possible
+            # in some classifiers, but the whitelist here is short and the
+            # cost of an exercise slightly under-counted is much smaller
+            # than the cost of falsely counting a worked classifier. See
+            # ``00-Parcours-QA-OWUI.ipynb`` cells 13 (`classer` returning
+            # ``"a determiner"``) and 15 (`verdict` returning
+            # ``"a trancher"``).
+            '# Exercice 1 : determiner la categorie.\n'
+            'def classer(status, retries=0, reason=""):\n'
+            '    # TODO etudiant : completer\n'
+            '    return "a determiner"\n',
+            '# Exercice 2 : verdict go/no-go.\n'
+            "def verdict(echecs_reels, skips, total):\n"
+            "    # TODO etudiant : completer\n"
+            '    return "a trancher"\n',
+            '# Exercice 3 : resultat inconnu.\n'
+            "def get_unknown():\n"
+            "    return \"unknown\"\n",
+        ],
+    )
+    def test_sentinel_string_return_is_stub_issue_15676(self, source):
+        """Issue #15676: ``return "<whitelisted-sentinel>"`` is a stub.
+
+        The string ITSELF spells the placeholder (``a determiner`` /
+        ``a trancher`` / ``unknown`` / ``a completer`` / ``a definir`` /
+        ``TODO``); no line-tail comment is required. A REAL classifier
+        returning ``"unknown"`` would currently over-flag -- accepted in
+        favour of not under-counting textbook placeholder cells (the whitelist
+        is unconditional; no counter-test can pass against it today).
+        """
+        assert _is_stub_code(source) is True, source
+
+    def test_sentinel_numeric_return_with_placeholder_comment_is_stub_issue_15676(
+        self,
+    ):
+        """Issue #15676: ``return -1  # ... a completer / placeholder / neutre``.
+
+        OWUI cell 11 (``tests_du_module`` returning ``return -1  # valeur
+        \"a completer\" (placeholder neutre)``) was under-counted because
+        ``return -1`` is not part of the empty-typed literals and the
+        line-tail comment vocabulary matches the new sentinelle comment.
+        """
+        source = (
+            "# Exercice 1 : compter les tests d'un module.\n"
+            "def tests_du_module(code):\n"
+            "    # TODO etudiant : completer\n"
+            '    return -1  # valeur "a completer" (placeholder neutre)\n'
+        )
+        assert _is_stub_code(source) is True, source
+
+    def test_issue_15676_three_notebooks_count_3_3(self, tmp_path):
+        """Reproduce the audit H02 GenAI scenario at #15676.
+
+        Three notebooks whose three idiomes (variable form / sentinelle
+        string / sentinelle numeric + comment) used to render 0/3 each now
+        render 3/3.
+        """
+        # Notebook 1: ``resultat = None`` variable form (AEV analog).
+        nb1 = _write_nb(
+            tmp_path / "aev_like.ipynb",
+            [
+                _md("# Audit GenAI 13b\n"),
+                _code(
+                    "# Exercice 1 : verifier.\n"
+                    "def verificateur(code, probleme):\n"
+                    "    # Indice : passes == total.\n"
+                    "    resultat = None  # TODO etudiant\n"
+                    "    return resultat\n"
+                ),
+                _code(
+                    "# Exercice 2 : ablater.\n"
+                    "def ablater(outils, nom):\n"
+                    "    resultat = None  # TODO etudiant\n"
+                    "    return resultat\n"
+                ),
+                _code(
+                    "# Exercice 3 : renversement.\n"
+                    "def renversement(v_ab, v_ba):\n"
+                    "    resultat = None  # TODO etudiant\n"
+                    "    return resultat\n"
+                ),
+            ],
+        )
+        # Notebook 2: sentinelle string return (OWUI analog).
+        nb2 = _write_nb(
+            tmp_path / "owui_like.ipynb",
+            [
+                _md("# Parcours QA-OWUI\n"),
+                _md("## Exercice 1 — Compter les tests d'un module\n"),
+                _code(
+                    "def tests_du_module(code):\n"
+                    "    # TODO etudiant\n"
+                    '    return -1  # valeur "a completer" (placeholder neutre)\n'
+                ),
+                _md("## Exercice 2 — Qualifier un resultat de test\n"),
+                _code(
+                    "def classer(status, retries=0, reason=\"\"):\n"
+                    "    # TODO etudiant\n"
+                    '    return "a determiner"\n'
+                ),
+                _md("## Exercice 3 — Trancher : go / no-go\n"),
+                _code(
+                    "def verdict(echecs_reels, skips, total):\n"
+                    "    # TODO etudiant\n"
+                    '    return "a trancher"\n'
+                ),
+            ],
+        )
+        # Notebook 3: ``response_json = None`` form (Claudish analog) +
+        # sentinelle string + numeric. Three distinct idiomes in one NB
+        # to cover the union.
+        nb3 = _write_nb(
+            tmp_path / "claudish_like.ipynb",
+            [
+                _md("# 01-claude-code-via-claudish\n"),
+                _md("## 6. Exercice 1 : appel direct\n"),
+                _code(
+                    "def call_claudish_raw(prompt: str, model: str = \"glm-5.2\"):\n"
+                    "    response_json = None  # TODO etudiant\n"
+                    "    return response_json\n"
+                ),
+                _md("## 7. Exercice 2 : comparer 3 tiers\n"),
+                _code(
+                    "def compare_tiers(question: str, max_tokens: int = 128):\n"
+                    "    resultat = None  # TODO etudiant\n"
+                    "    return resultat\n"
+                ),
+                _md("## 8. Exercice 3 : classifier HTTP\n"),
+                _code(
+                    "def classify_http_error(status_code: int) -> str:\n"
+                    "    # TODO etudiant\n"
+                    '    return "a determiner"\n'
+                ),
+            ],
+        )
+        for nb in (nb1, nb2, nb3):
+            cnt = count_exercises_in_notebook(nb)
+            assert cnt.count == 3, (
+                f"{nb.name}: expected 3 exercises, got {cnt.count}"
+            )
+
+
+class TestGenericNoneAssignGate15713:
+    """#15713 (follow-up #15688, Hermes demand 1): the generic ``<name> = None``
+    marker is retained only for the placeholder-passthrough shape -- the
+    None-assigned name flows UNCHANGED to a bare ``return <name>`` and is
+    never reassigned a computed value."""
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Kokoro-01-5 cell 38 (distilled, Hermes demand 2a): the 109-line
+            # Inflect-Nano demo INITIALIZES ``inflect_samples = None`` then
+            # overwrites it inside a computing pipeline; no bare
+            # ``return inflect_samples`` exists.
+            "inflect_loaded = False\n"
+            "inflect_samples = None\n"
+            "inflect_sample_rate = 24000\n"
+            "try:\n"
+            "    snap_dir = snapshot_download(repo_id='owensong/Inflect-Nano-v1')\n"
+            "    inflect_samples = vmodel(mel).squeeze().detach().cpu().numpy()\n"
+            "    inflect_samples = np.clip(inflect_samples, -1.0, 1.0)\n"
+            "    print('INFLECT-NANO ok', len(inflect_samples))\n"
+            "except Exception as exc:\n"
+            "    print('modele non disponible :', exc)\n",
+            # AI-Engine-WordPress crossed-delete cell (distilled): the None
+            # init is overwritten with a computed tuple under an ``if``;
+            # 'exercice' appears only inside a print.
+            "croise = None\n"
+            "if ADMIN_MDP:\n"
+            "    ok = login_wordpress(session_autre, 'consent.admin', ADMIN_MDP)\n"
+            "    statut_c, rep_c = api_files(session_autre, nonce, 'delete')\n"
+            "    croise = (statut_c, rep_c)\n"
+            "    print('delete croise :', statut_c)\n"
+            "else:\n"
+            "    print('(absent : test croise non execute -- voir exercice 2)')\n",
+            # Guard-variable idiome in a working cell: ``best = None`` is a
+            # loop sentinel, OVERWRITTEN by the computing loop below -- a
+            # solution, not a placeholder.
+            "best = None\n"
+            "for score in scores:\n"
+            "    if best is None or score > best:\n"
+            "        best = score\n"
+            "print('meilleur :', best)\n",
+        ],
+    )
+    def test_demo_none_initialization_is_not_stub_issue_15713(self, source):
+        assert _is_stub_code(source) is False, source
+
+    def test_none_assign_reassigned_then_returned_is_not_stub_issue_15713(self):
+        """A function whose None default is OVERWRITTEN with a computed value
+        before ``return`` is a real solution, not a placeholder."""
+        source = (
+            "def synthese(donnees):\n"
+            "    resultat = None\n"
+            "    if donnees:\n"
+            "        resultat = sum(donnees) / len(donnees)\n"
+            "    return resultat\n"
+        )
+        assert _is_stub_code(source) is False, source
+
+    def test_passthrough_none_assign_stays_stub_issue_15713(self):
+        """The gate must not swallow the #15676 idioms it exists to protect:
+        AEV/Claudish ``<name> = None`` + bare ``return <name>`` passthrough."""
+        source = (
+            "def verificateur(code, probleme):\n"
+            "    # Indice : passes == total.\n"
+            "    resultat = None  # TODO etudiant\n"
+            "    return resultat\n"
+        )
+        assert _is_stub_code(source) is True, source
+
+    def test_header_does_not_pair_to_none_init_demo_issue_15713(self, tmp_path):
+        """Kokoro-01-5 layout (Hermes demand 2b): the ``Exercice 3`` header is
+        followed FIRST by the Inflect-Nano demo cell, which merely initializes
+        ``inflect_samples = None``. The demo must not steal the pairing: the
+        header finds no stub in its window and is dropped, and the real
+        Exercice 3 stub (after the demo, outside the window) is counted by the
+        code-cell pass -- the notebook keeps exactly its 3 exercises, not 4."""
+        nb = _write_nb(
+            tmp_path / "kokoro_like.ipynb",
+            [
+                _md("# Kokoro TTS local\n"),
+                _md("## Exercice 1 : premier rendu\n"),
+                _code(
+                    "# Exercice 1 : premier rendu\n"
+                    "rendu = None  # TODO etudiant\n"
+                    "return rendu\n"
+                ),
+                _md("## Exercice 2 : voix multiples\n"),
+                _code(
+                    "# Exercice 2 : voix multiples\n"
+                    "comparaison = None  # TODO etudiant\n"
+                    "return comparaison\n"
+                ),
+                _md("## Exercice 3 : dialogue multi-voix\n"),
+                _code(
+                    "# Demonstration Inflect-Nano-v1 : TTS ultra-leger\n"
+                    "print('INFLECT-NANO-V1 - TTS ULTRA-LEGER')\n"
+                    "inflect_loaded = False\n"
+                    "inflect_samples = None\n"
+                    "try:\n"
+                    "    inflect_samples = vmodel(mel).numpy()\n"
+                    "    inflect_samples = np.clip(inflect_samples, -1.0, 1.0)\n"
+                    "except Exception as exc:\n"
+                    "    print('modele absent :', exc)\n"
+                ),
+                _md("Duree estimee : 15-20 minutes. Objectif : alterner les voix.\n"),
+                _code(
+                    "# Exercice 3 : dialogue multi-voix\n"
+                    "dialogue = None  # TODO etudiant\n"
+                    "return dialogue\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            f"expected 3 exercises (the demo must not steal the Exercice 3 "
+            f"pairing), got {result.count}"
+        )
+
 
 class TestD01UnpairedHeaders:
     def test_headers_with_no_code_cell_are_declared_instances(self, tmp_path):
