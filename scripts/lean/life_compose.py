@@ -72,9 +72,14 @@ from life_components import (  # noqa: E402
     measure_motif,
 )
 
-# Seuil de non-interaction de Conway : deux groupes de cellules à distance
-# de Chebysyshev >= 2 ne se voient pas. Gonfler chaque enveloppe de 1
-# matérialise exactement cette frontière.
+# Frontière d'influence directe de Conway : à distance de Chebyshev < 2, deux
+# groupes de cellules sont dans le voisinage 3x3 l'un de l'autre (rejet du
+# modèle) ; à distance exactement 2, seules des naissances croisées sont
+# possibles et tout dépend du contenu — la bande passe l'élagage et le replay
+# de certification tranche ; à distance >= 3, jamais d'interaction (mesuré,
+# test_chebyshev_3_est_sur_sans_interaction). Gonfler chaque enveloppe de 1
+# fait entrer toutes les paires à distance <= 2 dans le contrôle exact, qui
+# rejette alors à < 2.
 GROW = 1
 
 DEFAULT_NODE_BUDGET = 200_000
@@ -792,9 +797,11 @@ class Searcher:
                     ra = swept_rect(catalog, a, 0, t_end)
                     rb = swept_rect(catalog, b, 0, t_end)
                     if ra and rb and _rects_overlap(_grown(ra), _grown(rb)):
-                        # emprises proches : contrôle exact, instant par instant
-                        # (deux blocs séparés d'une colonne sont à Chebyshev 2 :
-                        # non-interaction réelle que les rectangles se touchent)
+                        # emprises proches (Chebyshev <= 2) : contrôle exact,
+                        # instant par instant. Rejet à < 2 (influence directe) ;
+                        # la bande à exactement 2 (naissances croisées possibles
+                        # seulement) coexiste et sera tranchée par le replay de
+                        # certification.
                         for t in range(max(t_start(a), t_start(b)), t_end + 1):
                             if _min_chebyshev(
                                 cells_at(catalog, a, t), cells_at(catalog, b, t)
