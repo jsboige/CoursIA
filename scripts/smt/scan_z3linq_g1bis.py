@@ -15,16 +15,19 @@ Fork pinné   : MyIntelligenceAgency/Z3.Linq @ e09dae6 (cf body issue #16053)
                ; le submodule CoursIA pointe sur 20984bfd (post-fix DateTime #14445)
                ; G1-bis mesure contre e09dae6 strictement, l'ecart note.
 
-Trois verdicts possibles :
+Trois verdicts possibles (capacites) + un verdict de perimetre :
   REDONDANT       -- la capacite existe deja dans le fork e09dae6.
   DIVERGENT       -- la capacite existe avec une semantique differente
                       (amont a evolue au-dela, ou notre bug latent).
   NOUVEAU-POUR-NOUS -- l'amont livre une capacite qu'on n'a pas.
+  HORS-SCOPE      -- la PR ne touche pas de capacite applicative (packaging,
+                      doc XML, infra) ; ne releve pas de la posture de fork.
 
 Usage :
     python scripts/smt/scan_z3linq_g1bis.py --out JSON
 
-Voir docs/smt/reports/2026-09-14-z3linq-G1-bis/README.md pour le rapport G1-bis.
+Rapport G1-bis depose au dashboard RooSync workspace CoursIA-2
+(harness-hygiene.md : rapports = dashboard, jamais dans l'arbre).
 """
 import argparse
 import json
@@ -58,14 +61,19 @@ VERDICTS = {
         "sub_issue_action": "Aucune. Le bump de la dep est une action tierce ; notre port s'applique quand on bumpe.",
     },
     94: {
-        "verdict": "REDONDANT",
+        "verdict": "HORS-SCOPE",
         "fork_paths": ["solutions/Directory.Build.props", "solutions/Z3.Linq/*.csproj"],
         "note": (
-            "PR #94 = generation et validation de la doc XML (161 +/- 25). "
-            "Notre fork n'a pas la doc XML generee ; mais c'est du packaging projet, "
-            "pas une capacite de la lib. Capacite absente = sans interet pour nos usages."
+            "PR #94 = generation et validation de la doc XML (+165 / -25 sur 13 fichiers, "
+            "mesure API 2026-09-13). Les fichiers touches sont Directory.Build.props, les "
+            "*.csproj, et des fichiers d'attributs (TheoremGlobalRewriterAttribute, "
+            "TheoremVariableTypeMappingAttribute, etc.) : aucun fichier de capacite "
+            "applicatif (Theorem.cs/ExpressionVisitor.cs ne sont touches que pour des "
+            "commentaires XML doc, pas du code). C'est du packaging projet, pas une "
+            "capacite de la lib. Capacite absente = HORS-SCOPE, distinct du REDONDANT "
+            "(qui suppose une capacite deja portee)."
         ),
-        "sub_issue_action": "Aucune. Capacite packaging, hors scope fonctionnel.",
+        "sub_issue_action": "Aucune. Packaging projet, hors scope fonctionnel ; ne releve pas de la posture de fork de l'EPIC #14169.",
     },
     # -- Bloc marshalling-sortes --
     73: {
@@ -325,6 +333,7 @@ def main() -> int:
         "REDONDANT": sum(1 for r in rows if r["verdict"] == "REDONDANT"),
         "DIVERGENT": sum(1 for r in rows if r["verdict"] == "DIVERGENT"),
         "NOUVEAU-POUR-NOUS": sum(1 for r in rows if r["verdict"] == "NOUVEAU-POUR-NOUS"),
+        "HORS-SCOPE": sum(1 for r in rows if r["verdict"] == "HORS-SCOPE"),
     }
 
     out = {
