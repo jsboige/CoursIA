@@ -138,13 +138,17 @@ jobs:
           # (#15479 tranche 2, tests/test_causal_hooks.py -- importorskip
           # FONCTION-niveau : comptes a la collecte meme sans torch, skips a
           # l'execution seulement, convention test_jlens_traces.py).
-          # Floor 1071 -> 1107 (cette PR) : +36 de DRIFT MAIN, aucun apport de
-          # la branche -- origin/main@4793dc31cd1f collecte 1107 sous py3.9.25
-          # sans torch, la branche collecte 1107 (mesure firsthand po-2027).
-          - suite-name: "tests/ (56)"
+          # Floor 1071 -> 1107 : +36 de DRIFT MAIN, aucun apport de la branche
+          # qui a mesure ce rattrapage -- origin/main@4793dc31cd1f collectait
+          # 1107 sous py3.9.25 sans torch (mesure firsthand po-2027).
+          # Floor 1107 -> 1148 (cette PR) : +41 items du banc fini de composition
+          # (tests/test_regards.py). Mesure locale avec torch : 1111 -> 1152 ;
+          # les 4 items de test_sae_traces_layout.py, conditionnes par torch,
+          # restent hors de l'env CI.
+          - suite-name: "tests/ (57)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-floor: 1107
+            test-floor: 1148
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 686 items collectes = 670 (mesure 2x sur
           # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests
