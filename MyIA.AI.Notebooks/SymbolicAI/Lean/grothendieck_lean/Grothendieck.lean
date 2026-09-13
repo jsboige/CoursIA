@@ -44,6 +44,7 @@ import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
 import Grothendieck.Limits
+import Grothendieck.LocalSurjectivitySpectrum
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
@@ -69,12 +70,18 @@ import Grothendieck.Sheafification
 import Grothendieck.SheafTopologySpectrum
 import Grothendieck.SheafTopologySpectrum_en
 import Grothendieck.SieveGenerate
+import Grothendieck.Spaces
+import Grothendieck.SpacesMathlib
+import Grothendieck.SpacesSubcanonical
 import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
 import Grothendieck.StalkGluing
+import Grothendieck.StalkPoints
+import Grothendieck.StalkSeparated
+import Grothendieck.Stalks
 import Grothendieck.Subcanonical
 import Grothendieck.TopologyDictionary
 import Grothendieck.TopologyDictionary_en
