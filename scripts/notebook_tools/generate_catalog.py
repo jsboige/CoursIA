@@ -94,7 +94,29 @@ def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
     return "15min"
 
 
-GIT_LOG_TIMEOUT_SECONDS = 30
+# Plafond mesure, pas devine. Sur le pool `[self-hosted, coursia-ephemeral,
+# coursia-linux]` qui publie le catalogue (checkout `fetch-depth: 0`), sept runs
+# du 2026-09-13 rendent ce step entre 10 s et 64 s. Les trois runs sous 25 s
+# impriment `Preserved curated fields ... for 1 entries` (sain) ; les trois a
+# 40 s et plus impriment `... for 1094 entries` (degrade) -- ils ont brule
+# 30 s dans le delai, obtenu {} en silence, et publie un catalogue ou
+# `scientific_review` vaut UNREVIEWED partout. C'est #14831.
+#
+# `git log` ayant ete TUE a 30 s, ce qu'il lui fallait reellement n'a jamais ete
+# observe : le plafond est donc releve genereusement plutot qu'ajuste au plus
+# juste. L'echec bruyant ci-dessous reste la vraie garantie -- si meme ce plafond
+# se revelait insuffisant, la generation s'arrete en le disant au lieu de
+# publier un catalogue faux en concluant `success`.
+GIT_LOG_TIMEOUT_SECONDS = 180
+
+# Restreindre l'historique aux notebooks : c'est le seul sous-arbre que le
+# parser ci-dessous retient, et 40 % de la sortie de `git log` n'en releve pas.
+# Equivalence verifiee en passant les deux sorties par ce meme parser
+# (1335 notebooks dates de part et d'autre, aucune cle et aucun champ divergents,
+# 1,0 Mo -> 0,6 Mo). Allegement sur -- gain de temps NON demontre : en local les
+# deux formes mesurent 0,45 s contre 0,48 s, soit rien. Le remede de #14831 est
+# le plafond ci-dessus, pas cette ligne.
+GIT_LOG_PATHSPEC = "MyIA.AI.Notebooks"
 
 
 class GitMetadataUnavailable(RuntimeError):
@@ -128,7 +150,10 @@ def build_git_metadata() -> dict[str, dict]:
     started = time.monotonic()
     try:
         result = subprocess.run(
-            ["git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s"],
+            [
+                "git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s",
+                "--", GIT_LOG_PATHSPEC,
+            ],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             cwd=str(REPO_ROOT), timeout=GIT_LOG_TIMEOUT_SECONDS,
         )
@@ -154,7 +179,7 @@ def build_git_metadata() -> dict[str, dict]:
     current_date = ""
     current_email = ""
     current_subject = ""
-    prefix = "MyIA.AI.Notebooks/"
+    prefix = f"{GIT_LOG_PATHSPEC}/"
 
     for line in result.stdout.split("\n"):
         if line.startswith("COMMIT:"):
