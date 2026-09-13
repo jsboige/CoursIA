@@ -28,7 +28,7 @@ python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre
 
 **P0 — Reparer SON PROPRE rouge.** La commande rend en **sortie 0** un grain de reparation quand cette lane porte des PRs **bloquees et ouvertes depuis plus de 24 h** : la premiere devient `grain`, la liste complete reste dans `backlog`. **C'est la tache du cycle**, avant tout grain neuf. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
 
-- Une PR reparee **et mergee compte comme le grain livre du cycle** (plancher R1 tenu) : ce n'est pas un a-cote, c'est du travail deja ecrit qu'on porte a son terme.
+- Une PR reparee **et mergee compte comme un grain du cycle** — jamais comme le plancher R1, qui exige un DEEP de CONTENU (un REPAIR est au mieux MED) : ce n'est pas un a-cote, c'est du travail deja ecrit qu'on porte a son terme.
 - Rouge **non reparable par cette lane** (garde casse sur main, dependance d'une autre PR) : l'**ecrire en commentaire sur la PR**, puis `--ignore-red`. L'echappatoire se justifie par ecrit, elle ne se prend pas en silence.
 - Seule preemption : une mission coordinateur **URGENT** (le coordinateur voit le plateau entier).
 
