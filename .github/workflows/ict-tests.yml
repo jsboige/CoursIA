@@ -182,11 +182,13 @@ jobs:
           # abaisse le cliquet au lieu de le monter -- et le garde
           # directionnel ne le verrait pas (collected > floor n'emet qu'un
           # ::warning non bloquant).
-          # Floor 752 -> 763 (cette PR) : +11 items lens_gates #15660, mesures
-          # sur l'arbre REBASE sur origin/main COURANT. 752 + 11 = 763 ferme
-          # l'arithmetique (47 fichiers test_*.py cote branche, 46 cote main ;
-          # py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4,
-          # SANS torch -- la forme de l'env CI).
+          # 752 + 11 = 763 ferme l'arithmetique : base 752 = 728 (cumul
+          # commun) + 16 items bench_factorise #15657 + 8 items sae_dictionary
+          # #15665 ; +11 items endpoints multi-lentilles #15479 tranche 4
+          # (ict/tests/test_lens_endpoints.py, 44e strate package, 47
+          # fichiers test_*.py cote branche vs 46 cote origin/main).
+          # env CI : py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib
+          # 3.9.4, SANS torch (la forme de l'env CI self-hebergee).
           - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
