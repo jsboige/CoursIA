@@ -1711,6 +1711,35 @@ def test_own_job_id_is_none_when_the_name_is_absent():
     ) is None
 
 
+def test_own_job_id_paginates_past_the_first_hundred_jobs():
+    """#15749: the jobs listing caps at per_page=100 and own_job_id did NOT
+    page through. A run carrying more than 100 jobs leaves OUR job off page
+    1, the lookup degrades to None, and the verdict motif silently goes
+    unpublished again -- the exact repair #15693 made, disarmed. fetch_checks
+    paginates correctly in this same file; own_job_id now reuses the motif."""
+    from urllib.parse import parse_qs, urlparse
+
+    target = {"id": 777, "name": pr_gate.DEFAULT_SELF_NAME, "run_attempt": "3"}
+    filler = [{"id": i, "name": f"matrix {i}", "run_attempt": "3"}
+              for i in range(100)]
+    fetched = []
+
+    def paged(path):
+        q = parse_qs(urlparse(path).query)
+        page = int(q.get("page", ["1"])[0])
+        assert q.get("per_page") == ["100"], path
+        fetched.append(page)
+        if page == 1:
+            return {"jobs": list(filler), "total_count": 101}
+        assert page == 2, f"unexpected page {page}"
+        return {"jobs": [target], "total_count": 101}
+
+    got = pr_gate.own_job_id("o/r", "99", pr_gate.DEFAULT_SELF_NAME, "3",
+                             fetch=paged)
+    assert got == 777
+    assert fetched == [1, 2], fetched
+
+
 def test_check_run_output_is_patched_with_the_verdict(monkeypatch):
     """Acceptance 1 on the surface it names: the REQUIRED check carries the
     motive, as the exact verdict string (log == summary). PATCH, not POST --
@@ -1882,3 +1911,214 @@ def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):
     assert "2026-09-07T13:55:00Z" in seen["output[summary]"]
     assert "Ne pas re-pusher" in seen["output[summary]"]
     assert body in summary.read_text(encoding="utf-8"), "step summary: le meme corps"
+
+
+# --- #15905 : un mur atteint n'est pas une "non-conclusion" ------------------
+#
+# GitHub rend un depassement de `timeout-minutes` en `conclusion: cancelled`,
+# donc la conclusion seule ne distingue pas un job qui a tape son propre mur
+# d'un job tue par une famine de runners. Le discriminant est le COUPLE
+# (duree observee, limite declaree) -- et les deux doivent etre LUS, jamais
+# supposes. Le cas fondateur : `Scripts Tests (CPU)` declare 20 min, mesure
+# six fois entre 20m21s et 20m25s.
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
+
+def _timed(name, minutes, seconds, conclusion="cancelled", rid=1):
+    """Un check-run TERMINE portant ses deux horodatages.
+
+    `run()` (le helper historique) ne pose que `started_at` : c'est ce qui rend
+    toutes les assertions anterieures insensibles a ce correctif, et c'est
+    aussi la raison d'etre de ce helper-ci.
+    """
+    start = datetime(2026, 9, 12, 14, 1, 1, tzinfo=timezone.utc)
+    end = start + timedelta(minutes=minutes, seconds=seconds)
+    return {
+        "name": name,
+        "status": "completed",
+        "conclusion": conclusion,
+        "started_at": start.isoformat().replace("+00:00", "Z"),
+        "completed_at": end.isoformat().replace("+00:00", "Z"),
+        "id": rid,
+    }
+
+
+def _decide_with_walls(checks, walls):
+    pending, bad, _ok, _adv = pr_gate.classify(checks, pr_gate.DEFAULT_SELF_NAME)
+    return pr_gate.verdict(pending, bad, settled=True, declared_timeouts=walls)
+
+
+def test_declared_wall_is_read_from_the_real_workflows():
+    """Le cas fondateur, lu sur le depot et non sur une fixture."""
+    walls = pr_gate.derive_declared_timeouts()
+    assert walls.get("Scripts Tests (CPU)") == 20
+
+
+def test_declared_timeouts_tolerate_an_unreadable_state(tmp_path):
+    """Meme contrat de robustesse que `derive_advisory_jobs` : illisible ->
+    vide, jamais une arme braquee sur toutes les PRs."""
+    assert pr_gate.derive_declared_timeouts(str(tmp_path / "absent")) == {}
+
+
+def test_ambiguous_limit_is_dropped_not_guessed(tmp_path):
+    """Deux workflows declarent le meme nom de job avec des murs DIFFERENTS :
+    le gate ne doit pas nommer une limite qu'il ne peut pas attribuer."""
+    for fname, minutes in (("a.yml", 10), ("b.yml", 30)):
+        (tmp_path / fname).write_text(
+            f"name: {fname}\njobs:\n  j:\n    name: Same Job\n"
+            f"    timeout-minutes: {minutes}\n    runs-on: ubuntu-latest\n"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+    assert "Same Job" not in pr_gate.derive_declared_timeouts(str(tmp_path))
+
+
+def test_repeated_identical_limit_keeps_the_name(tmp_path):
+    """Le nom se repete (`sweep`, `guard`, `ci` le font dans ce depot) : c'est
+    la REPETITION qui est benigne, pas la divergence de valeur."""
+    for fname in ("a.yml", "b.yml"):
+        (tmp_path / fname).write_text(
+            f"name: {fname}\njobs:\n  j:\n    name: Same Job\n"
+            "    timeout-minutes: 15\n    runs-on: ubuntu-latest\n"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+    assert pr_gate.derive_declared_timeouts(str(tmp_path)) == {"Same Job": 15}
+
+
+def test_wall_hit_is_a_timeout_not_a_non_conclusion():
+    """Le fait mesure : 20m21s contre un mur declare a 20m."""
+    code, msg = _decide_with_walls([_timed("Scripts Tests (CPU)", 20, 21)],
+                                   {"Scripts Tests (CPU)": 20})
+    assert code == 1, "fail-closed inchange : un mur atteint bloque toujours"
+    assert "hit their declared timeout-minutes" in msg
+    assert "20m21s" in msg, "la duree OBSERVEE est nommee"
+    assert "declared timeout-minutes: 20" in msg, "la limite declaree aussi"
+    assert "never concluded" not in msg, "c'est l'erreur de #15905"
+    assert "this is not a code failure" not in msg
+
+
+def test_cancelled_under_the_wall_reports_the_duration_without_claiming_a_timeout():
+    """Une annulation SOUS le mur n'est pas un timeout : le gate rapporte ce
+    qu'il a lu et n'attribue aucune cause."""
+    code, msg = _decide_with_walls([_timed("Scripts Tests (CPU)", 1, 2)],
+                                   {"Scripts Tests (CPU)": 20})
+    assert code == 1
+    assert "never concluded" in msg
+    assert "1m02s" in msg
+    assert "hit their declared timeout-minutes" not in msg
+    assert "this is not a code failure" not in msg
+
+
+def test_unreadable_duration_is_not_invented():
+    """La limite est connue mais la duree ne l'est pas : aucun timeout n'est
+    revendique, et aucune duree n'est fabriquee dans l'annotation."""
+    checks = [run("ICT tests/ (55)", "cancelled", rid=1)]
+    pending, bad, _ok, _adv = pr_gate.classify(checks, pr_gate.DEFAULT_SELF_NAME)
+    assert bad == ["ICT tests/ (55) (cancelled)"]
+    code, msg = pr_gate.verdict(pending, bad, settled=True,
+                                declared_timeouts={"ICT tests/ (55)": 1})
+    assert code == 1
+    assert "never concluded" in msg
+    assert "hit their declared timeout-minutes" not in msg
+
+
+def test_unknown_limit_keeps_the_entry_in_the_unknown_clause():
+    """Le nom n'est pas resolu par les workflows : le gate ne devine pas."""
+    code, msg = _decide_with_walls([_timed("Unlisted Job", 99, 0)], {})
+    assert code == 1
+    assert "never concluded" in msg
+    assert "hit their declared timeout-minutes" not in msg
+    assert "1h39m" in msg, "la duree lue reste rapportee"
+
+
+def test_three_clauses_coexist_in_order():
+    """Un rouge, un mur atteint et une annulation inexpliquee dans un meme
+    verdict : chacun sous sa clause, le rouge en tete."""
+    checks = [
+        _timed("Lean CI", 0, 30, conclusion="failure", rid=1),
+        _timed("Scripts Tests (CPU)", 20, 21, rid=2),
+        _timed("ICT tests/ (55)", 1, 2, rid=3),
+    ]
+    code, msg = _decide_with_walls(checks, {"Scripts Tests (CPU)": 20})
+    assert code == 1
+    assert "failing checks: Lean CI (failure)" in msg
+    index_fail = msg.index("failing checks")
+    index_wall = msg.index("hit their declared timeout-minutes")
+    index_never = msg.index("never concluded")
+    assert index_fail < index_wall < index_never
+
+
+def test_duration_formatting_shapes():
+    assert pr_gate._format_duration(1221) == "20m21s"
+    assert pr_gate._format_duration(3720) == "1h02m"
+    assert pr_gate._format_duration(0) == "0m00s"
+    assert pr_gate._format_duration(-5) == "0m00s"
+
+
+def test_duration_round_trips_through_the_annotation():
+    """Le porteur est l'annotation : `_parse_bad_entry` doit relire ce que
+    `_format_duration` a ecrit."""
+    name, conclusion, seconds = pr_gate._parse_bad_entry(
+        "Scripts Tests (CPU) (cancelled, 20m21s)"
+    )
+    assert (name, conclusion, seconds) == ("Scripts Tests (CPU)", "cancelled", 1221)
+    assert pr_gate._parse_bad_entry("Scripts Tests (CPU) (cancelled)") == (
+        "Scripts Tests (CPU)", "cancelled", None
+    )
+    assert pr_gate._parse_bad_entry("Lean CI (failure)") is None
+
+
+def _fake_check_api(completed_at="2026-09-12T14:21:22Z"):
+    """Un `_gh_api` stand-in : un check-run annule + un statut legacy."""
+    def fake(path):
+        if "/check-runs" in path:
+            return {"total_count": 1, "check_runs": [{
+                "name": "Scripts Tests (CPU)",
+                "status": "completed",
+                "conclusion": "cancelled",
+                "started_at": "2026-09-12T14:01:01Z",
+                "completed_at": completed_at,
+                "id": 7,
+            }]}
+        return {"statuses": [{
+            "context": "legacy/check",
+            "state": "failure",
+            "created_at": "2026-09-12T14:00:00Z",
+            "updated_at": "2026-09-12T14:00:30Z",
+            "id": 8,
+        }]}
+    return fake
+
+
+def test_fetch_checks_carries_completed_at_into_the_projection(monkeypatch):
+    """#15905, le defaut qui rendait le correctif INERTE.
+
+    L'API renvoie `completed_at` ; la projection de `fetch_checks` le jetait.
+    Aucune duree n'arrivait donc a `classify` et la clause timeout etait
+    inatteignable EN PRODUCTION -- alors que les fixtures synthetiques, qui
+    posent le champ a la main, passaient au vert. Mesure sur
+    #15778/#15836/#15877 : la sortie reelle portait
+    `Scripts Tests (CPU) (cancelled)` sans duree avant ce fix.
+    """
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_check_api())
+    checks = {c["name"]: c for c in pr_gate.fetch_checks("o/r", "deadbeef")}
+    assert checks["Scripts Tests (CPU)"]["completed_at"] == "2026-09-12T14:21:22Z"
+    # Les statuts legacy exposent `updated_at`, pas `completed_at` : meme duree,
+    # autre nom de champ.
+    assert checks["legacy/check"]["completed_at"] == "2026-09-12T14:00:30Z"
+
+
+def test_timeout_clause_is_reachable_from_a_fetched_check(monkeypatch):
+    """Le correctif ne vaut que si le chemin REEL l'atteint : fetch ->
+    classify -> verdict, sur la forme exacte que l'API renvoie."""
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_check_api())
+    checks = pr_gate.fetch_checks("o/r", "deadbeef")
+    pending, bad, _ok, _adv = pr_gate.classify(checks, pr_gate.DEFAULT_SELF_NAME)
+    assert "Scripts Tests (CPU) (cancelled, 20m21s)" in bad
+    code, msg = pr_gate.verdict(
+        pending, bad, settled=True, declared_timeouts={"Scripts Tests (CPU)": 20}
+    )
+    assert code == 1
+    assert "hit their declared timeout-minutes" in msg
+    assert "never concluded" not in msg
