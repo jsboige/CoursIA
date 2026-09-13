@@ -245,12 +245,12 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
       `ref` : révision examinée.
       `denominator` : nombre de notebooks scannés.
       `baseline` : attendu ; si None, déduit automatiquement du décompte de
-        la même révision que `denominator` (le test fail #15523 a fixé
-        HEAD à l'origine, mais cela cassait toute PR qui ajoute un
-        notebook : baseline > denominator, delta=-1 systématique, gate
-        rouge sans défaut substance). Une baseline figée (entier
-        explicite) reste possible pour les tests historiques : passer
-        l'entier directement à build_inventory.
+        entries (classification --base ; Tell c.15814-L1 ★ NEW). Tell c.15523
+        avait fixé HEAD à l'origine, ce qui cassait toute PR ajoutant un
+        notebook (baseline > denominator, delta=-1 systématique, gate rouge
+        sans défaut substance). Une baseline figée (entier explicite) reste
+        possible pour les tests historiques : passer l'entier directement à
+        build_inventory.
       `by_classification` : comptage par classification.
       `entries` : liste de dicts, un par notebook.
 
@@ -263,16 +263,14 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
     de scope).
     """
     paths = notebooks_at(ref)
-    # Tell c.15814-L1 ★ NEW : baseline par défaut = même ref que denominator.
+    # Tell c.15814-L1 ★ NEW : baseline auto = entries (classification --base).
     # Tell c.15523 (l'origine) choisissait HEAD : c'est vrai sur main (où la
     # PR n'a pas encore bougé) mais faux sur la branche PR qui ajoute un
     # notebook (baseline = HEAD branche > denominator = origin/main sans le
-    # notebook) — gate rouge mécanique. Aligner les deux sur `ref` rend la
-    # comparaison self-consistent et fait son job : détecter un écart de
-    # classification (conforme / exception / ambigu / rename_proposed) entre
-    # deux lectures de la même révision, pas un changement de scope.
-    if baseline is None:
-        baseline = len(paths)
+    # notebook) — gate rouge mécanique. Aligner baseline sur entries (et non
+    # paths) rend la comparaison self-consistent ET blindée contre un futur
+    # commit accidentel d'artefact `_output/` (paths augmenterait, denominator
+    # non, et le test rougirait sans défaut substance) — dette future colmatée.
     by_class: dict[str, int] = {
         _CLASSIF_CONFORME: 0,
         _CLASSIF_RENAME: 0,
@@ -307,6 +305,8 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
             "zero_padded": zero_padded,
             "classification": classification,
         })
+    if baseline is None:
+        baseline = len(entries)
     return {
         "ref": ref,
         "denominator": len(entries),
@@ -416,8 +416,8 @@ def main():
     ap.add_argument("--base", default="origin/main",
                     help="revision de base (defaut: origin/main)")
     ap.add_argument("--baseline", type=int, default=None,
-                    help="denominateur nominal (defaut: auto=HEAD, soit la "
-                         "mesure du commit courant — Tell c.15523)")
+                    help="denominateur nominal (defaut: auto=ref, aligne sur "
+                         "entries (classification --base), Tell c.15814-L1 ★ NEW)")
     ap.add_argument("--json", action="store_true",
                     help="sortie JSON machine (defaut: humain)")
     ap.add_argument("--self-test", action="store_true",
