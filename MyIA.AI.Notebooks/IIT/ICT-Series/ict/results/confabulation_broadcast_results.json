@@ -1,0 +1,51 @@
+{
+  "case": "case3_confabulation_broadcast",
+  "prediction": "R_confab = propa(q̂_faux)/propa(q̂_vrai) ∈ [0.80, 1.00] ET propa(q̂_faux) − propa(aléatoire) ≥ ε_stable (5/5 graines)",
+  "substrate": "Qwen3.5-2B-Base, couche 12/24, SAE Qwen-Scope W32K-L0_50 (top-k=50) — même substrat que case 5 #15547 et case 4 #15879 ; le pré-enregistrement nommait SAETrajectoires strate 5 (Qwen2.5-3B), case 5 a posé le substrat réel exécutable et déclaré l'instrument canonique pour les cases 3 et 4",
+  "execution": {
+    "date": "2026-09-13",
+    "lane": "myia-po-2024:CoursIA",
+    "extraction": "GPU réelle locale (RTX 3070, venv ft03-gpu), scripts/extract_sae_traces.py INCHANGÉ, 10 NPZ : traces/case3calib_s{0,1,7,42,99}_*.npz (bras target_vrai + control_alea) puis traces/case3_s{0,1,7,42,99}_*.npz (bras confab_faux)",
+    "seeds": [0, 1, 7, 42, 99],
+    "anti_harking": "les bras de calibration (vrai + aléatoire) ont été extraits et mesurés AVANT le score du bras faux — le dénominateur de R_confab ET ε_stable sont tous deux gelés avant la mesure principale (garde mécanique : ict.confabulation_broadcast.score refuse l'ordre inverse)"
+  },
+  "calibration": {
+    "propa_vrai_by_seed": {"0": 1.0, "1": 0.9333, "7": 0.8, "42": 0.8, "99": 0.8},
+    "propa_alea_by_seed": {"0": 1.0, "1": 0.9333, "7": 0.8667, "42": 0.8667, "99": 0.8},
+    "gap_by_seed": {"0": 0.0, "1": 0.0, "7": -0.0667, "42": -0.0667, "99": 0.0},
+    "graines_exploitables": 0,
+    "epsilon_stable_by_seed": {},
+    "epsilon_stable_median": null,
+    "formula": "ε_stable = 0.5 × (propa(q̂_vrai) − propa(aléatoire)) — calibration RÉSIDUELLE gelée AVANT le bras faux",
+    "module_refusal": "ValueError: calibration invalide : 0 graines exploitables (<3) — l'instrument ne permet pas de fixer ε_stable, verdict INCONCLUSIF par construction",
+    "notes": [
+      "graine 0: gap = +0.0000 ≤ 0 — calibration dégénérée : la graine ne peut pas témoigner d'une consécration (comptée non-passante au critère 5/5, jamais imputée)",
+      "graine 1: gap = +0.0000 ≤ 0 — idem",
+      "graine 7: gap = −0.0667 ≤ 0 (propa(aléatoire) STRICTEMENT supérieur à propa(vrai)) — idem",
+      "graine 42: gap = −0.0667 ≤ 0 — idem",
+      "graine 99: gap = +0.0000 ≤ 0 — idem"
+    ]
+  },
+  "verdict": "INCONCLUSIF",
+  "verdict_detail": "PAR CONSTRUCTION — la calibration résiduelle est dégénérée (0/5 graines exploitables, gap propa(vrai)−propa(aléatoire) ≤ 0 partout) : l'ignition vraie ne propage PAS mieux qu'un stimulus aléatoire, ε_stable n'est pas fixable, la branche Agrégé [0.80, 1.00] de la table scellée n'est PAS ÉVALUABLE. L'alternative (forcer ε_stable := 0) serait une confirmation vacue : elle certifierait le broadcast, pas la consécration de l'erreur — c'est exactement ce que le garde scellé du module refuse.",
+  "kill_details": [
+    "calibration dégénérée 0/5 graines — ε_stable non fixable, verdict INCONCLUSIF par construction",
+    "aucune donnée n'a été imputée ni re-mesurée après consultation du bras faux (ordre anti-HARKing respecté)"
+  ],
+  "diagnostic_posthoc_non_scellé": {
+    "avertissement": "bloc descriptif calculé APRÈS le refus de la calibration, hors protocole scellé — ne porte aucun verdict",
+    "propa_faux_by_seed": {"0": 1.0, "1": 0.9333, "7": 0.8, "42": 0.8, "99": 0.8667},
+    "r_confab_by_seed": {"0": 1.0, "1": 1.0, "7": 1.0, "42": 1.0, "99": 1.0833},
+    "r_median": 1.0,
+    "lecture_ratio": "propa(faux) = propa(vrai) seed-par-seed (égalité exacte 4/5, +1/15 sur la graine 99) — R_confab médian 1.000, même valeur que R_self (case 4, #15879)",
+    "jaccard_top64": {
+      "vrai_faux_par_graine": [0.882, 0.91, 0.882, 0.882, 0.855],
+      "vrai_alea_par_graine": [0.471, 0.471, 0.542, 0.407, 0.407],
+      "faux_alea_par_graine": [0.455, 0.455, 0.506, 0.422, 0.376],
+      "moyennes": {"vrai_faux": 0.883, "vrai_alea": 0.46, "faux_alea": 0.443},
+      "lecture": "les SIGNATURES sont sensibles au contenu (J(vrai,faux)=0.883 ≫ J(vrai,aléa)=0.460 : la carafe et le tramway séparent bien) mais le TAUX propa sature (~0.80–1.00) pour chaque bras : consommateurs et signature top-64 dérivent des MÊMES prompts, chaque bras s'auto-propage dans le nuage de features contextuelles — la signature discrimine, le taux de propagation ne discrimine pas"
+    },
+    "cause_instrumentale": "même plafond que case 4 (R_self 1.000, Jaccard self/autrui 0.61) et case 5 (#15547) : l'opérateur propa sur top-64 de l'activation moyenne sature en régime broadcast quasi-uniforme",
+    "comparabilite_cross_case": "R_attn (case 5) INCONCLUSIF · R_self (case 4) 1.000 INCONCLUSIF · R_confab (case 3) 1.000 INCONCLUSIF — plafond instrumental commun aux trois cases W-diffusion/self, pas une convergence de contenu"
+  }
+}

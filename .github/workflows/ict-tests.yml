@@ -183,15 +183,18 @@ jobs:
           # abaisse le cliquet au lieu de le monter -- et le garde
           # directionnel ne le verrait pas (collected > floor n'emet qu'un
           # ::warning non bloquant).
-          # Floor 752 -> 763 (cette PR) : +11 items lens_gates #15660, mesures
-          # sur l'arbre REBASE sur origin/main COURANT. 752 + 11 = 763 ferme
-          # l'arithmetique (47 fichiers test_*.py cote branche, 46 cote main ;
-          # py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4,
-          # SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (44 package)"
+          # Floor 752 -> 763 : +11 items lens_gates #15660, mesures sur
+          # l'arbre REBASE sur origin/main -- porte par MAIN ensuite.
+          # Floor 763 -> 787 (cette PR) : +24 items case 3 confabulation
+          # broadcast #8182 (ict/tests/test_confabulation_broadcast.py) --
+          # main COURANT 763 + 24 = 787, re-mesure sur l'arbre REBASE
+          # (la warning du coordinateur sur l'atterrissage en second des
+          # deux cas 752+24 s'applique : le compte se fait contre le main
+          # resultant, pas la base d'ecriture).
+          - suite-name: "ict/tests/ (45 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 763
+            test-floor: 787
 
     steps:
       - uses: actions/checkout@v4
