@@ -31,7 +31,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 2. Contexte et enjeux (3 min)
 - **Slide 3: État des lieux**
   - **Contenu réel:**
-
     - "76% de nos processus internes reposent encore sur des systèmes hérités"
     - "Temps moyen de traitement d'une commande: 48h vs 4h pour nos concurrents directs"
     - "Satisfaction client en baisse de 12% sur les canaux digitaux depuis 2023"
@@ -39,25 +38,24 @@ Présentation destinée au comité de direction pour présenter la stratégie de
     ```
     Maturité digitale (0-100)
     ^
-    \|                                   ○ Concurrent A
-    80\|                             ○
-    \|                         ○
-    \|                     ○
-    60\|                 ○               □ Concurrent B
-    \|             ○               □
-    \|         ○           □
-    40\|     ○       □
-    \|   ○   □                       ◊ Notre entreprise
-    \| ○ □       ◊   ◊   ◊
-    20\| □   ◊   ◊
-    \|◊
+    |                                   ○ Concurrent A
+    80|                             ○
+    |                         ○
+    |                     ○
+    60|                 ○               □ Concurrent B
+    |             ○               □
+    |         ○           □
+    40|     ○       □
+    |   ○   □                       ◊ Notre entreprise
+    | ○ □       ◊   ◊   ◊
+    20| □   ◊   ◊
+    |◊
     +---+---+---+---+---+---+---+---►
        2020 2021 2022 2023 2024 2025  Année
     ```
 
 - **Slide 4: Pourquoi maintenant?**
   - **Contenu réel:**
-
     - "Le marché: 68% des clients privilégient désormais les interactions digitales"
     - "La concurrence: 3 nouveaux acteurs digitaux ont capté 15% de parts de marché en 18 mois"
     - "L'opportunité: Réduction potentielle de 35% des coûts opérationnels"
@@ -66,7 +64,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 3. Vision et objectifs (3 min)
 - **Slide 5: Notre vision digitale**
   - **Contenu réel:**
-
     - "Devenir l'entreprise la plus réactive et personnalisée de notre secteur d'ici 2027"
     - "Créer une expérience omnicanale fluide où chaque interaction client est valorisée"
     - "Autonomiser nos équipes grâce à des outils digitaux intuitifs et performants"
@@ -77,7 +74,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 6: Objectifs mesurables**
   - **Contenu réel:**
-
     | Objectif | Situation actuelle | Cible fin 2025 | Cible fin 2026 |
     |----------|-------------------|----------------|----------------|
     | Temps de traitement des commandes | 48h | 12h | 4h |
@@ -88,7 +84,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 4. La feuille de route (5 min)
 - **Slide 7: Vue d'ensemble**
   - **Contenu réel:**
-
     ```
     ┌─────────────┐       ┌─────────────┐       ┌─────────────┐
     │ PHASE 1     │       │ PHASE 2     │       │ PHASE 3     │
@@ -109,7 +104,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 8: Phase 1 - Fondations (Q1-Q2 2025)**
   - **Contenu réel:**
-
     - **Initiatives clés:**
       1. Déploiement de la plateforme de données unifiée
       2. Formation de 120 collaborateurs aux méthodes agiles
@@ -120,7 +114,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 9: Phase 2 - Déploiement (Q3 2025)**
   - **Contenu réel:**
-
     - **Initiatives clés:**
       1. Lancement application mobile clients v1.0
       2. Refonte complète du site web avec espace client personnalisé
@@ -131,7 +124,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 10: Phase 3 - Optimisation (Q4 2025)**
   - **Contenu réel:**
-
     - **Initiatives clés:**
       1. Déploiement des modèles IA prédictifs pour anticipation besoins clients
       2. Tableau de bord analytique pour équipes commerciales
@@ -143,7 +135,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 5. Impact et bénéfices (3 min)
 - **Slide 11: Impact sur l'entreprise**
   - **Contenu réel:**
-
     - **ROI projeté:** 320% sur 3 ans
     - **Économies opérationnelles:** 2,4M€/an dès 2026
     - **Augmentation du chiffre d'affaires:** +18% projeté pour 2026
@@ -151,17 +142,17 @@ Présentation destinée au comité de direction pour présenter la stratégie de
     ```
     Millions €
     ^
-    \|                           ┌───┐
-    25\|                          │   │
-    \|                          │   │
-    20\|                    ┌───┤   │
-    \|                    │   │   │
-    15\|          ┌───┐   │   │   │
-    \|          │   │   │   │   │
-    10\|    ┌───┤   │   │   │   │
-    \|    │   │   │   │   │   │
-    5\|    │   │   │   │   │   │
-    \|    │   │   │   │   │   │
+    |                           ┌───┐
+    25|                          │   │
+    |                          │   │
+    20|                    ┌───┤   │
+    |                    │   │   │
+    15|          ┌───┐   │   │   │
+    |          │   │   │   │   │
+    10|    ┌───┤   │   │   │   │
+    |    │   │   │   │   │   │
+    5|    │   │   │   │   │   │
+    |    │   │   │   │   │   │
     +----+---+---+---+---+---+---►
          2024  2025  2026  2027   Année
          
@@ -172,7 +163,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 12: Avantages compétitifs**
   - **Contenu réel:**
-
     - **Positionnement:** Passage de "suiveur" à "challenger" dans la matrice de maturité digitale sectorielle
     - **Nouvelles opportunités:** Accès au segment des 25-34 ans (valeur estimée: 8,5M€/an)
     - **Expérience client:** NPS projeté de +35 (vs moyenne sectorielle de +22)
@@ -184,7 +174,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 6. Ressources et gouvernance (2 min)
 - **Slide 13: Budget et ressources**
   - **Contenu réel:**
-
     | Catégorie | Budget 2025 | % du total |
     |-----------|-------------|------------|
     | Développement logiciel | 1,450,000€ | 54% |
@@ -192,7 +181,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
     | Formation et change management | 380,000€ | 14% |
     | Conseil et expertise externe | 350,000€ | 13% |
     | **Total** | **2,700,000€** | **100%** |
-
   - **Ressources humaines:**
     - Équipe dédiée: 14 ETP
     - Contributeurs partiels: 22 collaborateurs (20% de leur temps)
@@ -200,7 +188,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 14: Structure de gouvernance**
   - **Contenu réel:**
-
     - **Comité de pilotage:**
       - Réunion bimensuelle
       - Composition: DG, DSI, Dir. Marketing, Dir. Opérations, Dir. Transformation
@@ -214,7 +201,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 7. Conclusion et prochaines étapes (2 min)
 - **Slide 15: Récapitulatif**
   - **Contenu réel:**
-
     - "Une transformation nécessaire face à l'évolution du marché"
     - "Un plan structuré en 3 phases avec des résultats mesurables"
     - "Un ROI de 320% sur 3 ans avec des bénéfices tangibles dès 2025"
@@ -222,7 +208,6 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 16: Prochaines étapes**
   - **Contenu réel:**
-
     - **Actions immédiates (30 jours):**
       1. Validation du budget global: 2,7M€
       2. Recrutement du chef de projet technique
