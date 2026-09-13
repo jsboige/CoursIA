@@ -44,7 +44,13 @@ concurrency:
 
 jobs:
   catalog-drift:
-    name: "Notebook catalog drift (read-only)"
+    # Le marqueur `advisory` dans le NOM du job EST le contrat (#15998) : pr_gate.py
+    # classe par nom (`ADVISORY_MARKER`, regle 6) et ne lit PAS fast_lane_registry.py.
+    # Sans ce mot, la promesse "non-bloquant" de l'en-tete restait sans effet sur le
+    # gate : un echec d'infrastructure (runner, pip, generate_catalog) comptait comme
+    # un check requis et bloquait toute PR notebook/README -- observe sur #15996.
+    # Ne pas retirer le mot sans relire scripts/pr_gate.py (rule 6) et #15998.
+    name: "Notebook catalog drift (read-only, advisory)"
     # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
     # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
     # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la

@@ -906,6 +906,44 @@ def test_green_advisory_counts_as_a_normal_pass():
     assert ok == ["Large blob advisory (>= 10 MiB)"]
 
 
+def test_catalog_drift_job_name_carries_the_advisory_marker():
+    """#15998 -- the catalog-drift job declared itself NON-BLOCKING twice in its
+    own header (and in catalog-pr-hygiene / ci-aggregator docs), but
+    `pr_gate.py` classifies advisory by NAME (rule 6, ADVISORY_MARKER) and never
+    reads `fast_lane_registry.py`. Named "Notebook catalog drift (read-only)",
+    the job carried no marker, so any infrastructure failure (runner, pip
+    install, `generate_catalog` exit 2 on missing git metadata, cf #14831) was
+    counted as a REQUIRED check and reddened every notebook/README PR --
+    observed firsthand on #15996: "PR gate: FAIL -- failing checks: Notebook
+    catalog drift (read-only) (failure)" while every other check passed.
+
+    The repair is the marker in the job name, not a registry entry: the
+    registry is consumed by the fast lane (which would then also RUN the
+    catalog generation on every PR), whereas `is_advisory` reads the emitted
+    check-run name. Asserted over whatever the job is called today -- so a
+    future rename that keeps the marker passes, and one that drops it fails.
+    """
+    if pr_gate.yaml is None:  # pragma: no cover - PyYAML is a CI dependency
+        pytest.skip("PyYAML unavailable: cannot read the workflow")
+    wf_path = Path(pr_gate.DEFAULT_WORKFLOWS_DIR) / "catalog-drift.yml"
+    data = pr_gate.yaml.safe_load(wf_path.read_text(encoding="utf-8"))
+    job_names = pr_gate._workflow_job_names(data)
+    assert job_names, "catalog-drift.yml must declare at least one job"
+    for name in job_names:
+        assert pr_gate.is_advisory(name), (
+            "the catalog-drift job name must carry the `advisory` marker "
+            "(#15998): pr_gate.py reads the check-run name, not the header "
+            "comment, so dropping the marker silently re-arms a hard gate "
+            "against every PR touching a notebook or a series README"
+        )
+    # The defect the marker fixes must stay measurable: with the workflow name
+    # as it stands, the historical spelling is still classified BLOCKING. If
+    # this ever flips, the workflow name has absorbed the marker and the
+    # job-name invariant above stopped being the load-bearing surface.
+    wf_name = data.get("name") or ""
+    assert not pr_gate.is_advisory("Notebook catalog drift (read-only)", wf_name)
+
+
 def test_non_advisory_failure_still_blocks():
     """Guard against the fix becoming a blanket amnesty."""
     checks = [
