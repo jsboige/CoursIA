@@ -162,6 +162,16 @@ class CarverThirteen(QCAlgorithm):
         }
         self._last_bulk_shape = None  # (rows, n_unique_symbols) or None
         self._first_rebalance_logged = False
+        # 15992 defect 2 instrumentation: the order path discriminates
+        # "set_holdings called and a contract was named" (mapped_resolved)
+        # from "no contract currently mapped, nothing tradeable"
+        # (unmapped_skipped). Measured before this fix: set_holdings was
+        # called 2759/2759 post-warmup calls at $2M and materialised ZERO
+        # orders, because the target was the CONTINUOUS canonical symbol.
+        self._order_path = {
+            "mapped_resolved": 0,
+            "unmapped_skipped": 0,
+        }
 
         # Window: 2016-01-01 -> 2026-12-31 per issue #15549 acceptance. The
         # v3.1 baseline ran 2015-2024; we re-anchor the window to 2016-2026
@@ -365,6 +375,31 @@ class CarverThirteen(QCAlgorithm):
         """
         return _breadth_multiplier_pure(forecasts)
 
+    def _mapped_contract(self, continuous):
+        """Tradeable front contract for a continuous future, else None.
+
+        #15992 defect 2. `add_future(ticker)` yields the CANONICAL continuous
+        `symbol` (sentinel expiry 1899-12-30), which is what `_rebalance`
+        used as the `set_holdings` target. Measured on the dedicated
+        project 36488678 with the bulk-index defect already fixed (run
+        `0b4b9d52`, $2M): `set_holdings` is emitted on every post-warmup
+        call (`with_orders=2759/2759`) and materialises **zero** orders,
+        while `calculate_order_quantity` on the same call returns 1 (NQ).
+        A continuous symbol is not a tradeable contract -- the order must
+        name the MAPPED contract.
+
+        Returns None when no contract is currently mapped. Never falls
+        back to the continuous symbol: that fallback IS the defect.
+        """
+        try:
+            security = self.securities[continuous]
+        except Exception:
+            return None
+        mapped = getattr(security, "Mapped", None)
+        if mapped is None or mapped == continuous:
+            return None
+        return mapped
+
     # ----- main daily entrypoint ------------------------------------------
 
     def _rebalance(self):
@@ -502,6 +537,15 @@ class CarverThirteen(QCAlgorithm):
         # all |target_weight| below 0.01 (Carver dead-band).
         set_holdings_issued_this_call = False
         for ticker, sym in self.symbols.items():
+            # 15992 defect 2: the order must name the MAPPED contract. The
+            # portfolio lookup stays on the continuous symbol (it carries
+            # the net exposure of that future's contracts and survives a
+            # roll); only the order target changes.
+            order_sym = self._mapped_contract(sym)
+            if order_sym is None:
+                self._order_path["unmapped_skipped"] += 1
+                continue
+            self._order_path["mapped_resolved"] += 1
             forecast = self.forecasts.get(ticker, 0.0)
             target_weight = 0.0
             if forecast != 0.0:
@@ -533,14 +577,14 @@ class CarverThirteen(QCAlgorithm):
             if target_weight == 0.0 or sign_change:
                 # Either we want flat or the side flipped — liquidate first.
                 if self.portfolio[sym].invested:
-                    self.liquidate(sym)
+                    self.liquidate(order_sym)
                 if target_weight != 0.0:
-                    self.set_holdings(sym, target_weight)
+                    self.set_holdings(order_sym, target_weight)
                     set_holdings_issued_this_call = True
             else:
                 # Same-side re-target: idempotent set_holdings on the new
                 # absolute weight; no fabricated round-trip.
-                self.set_holdings(sym, target_weight)
+                self.set_holdings(order_sym, target_weight)
                 set_holdings_issued_this_call = True
 
         # REPAIR-9 c.1117: tally at the bottom of _rebalance so the
@@ -579,5 +623,7 @@ class CarverThirteen(QCAlgorithm):
             f"early_returns={er['warming_up']}+{er['bulk_empty']}+"
             f"{er['no_raw_forecasts']}+{er['abs_sum_zero']} "
             f"(warming_up/bulk_empty/no_forecasts/abs_sum_zero), "
-            f"bulk_shape={bulk_str}"
+            f"bulk_shape={bulk_str}, "
+            f"ORDER-PATH: mapped_resolved={self._order_path['mapped_resolved']} "
+            f"unmapped_skipped={self._order_path['unmapped_skipped']}"
         )
