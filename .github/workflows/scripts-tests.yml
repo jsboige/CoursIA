@@ -71,7 +71,7 @@ on:
       # check-runs. Keep one ordinary CI surface that executes the scanner for
       # every workflow change, including workflow-only PRs from forks.
       - '.github/workflows/**'
-      # #15058 ADK contracts: the 16 runtime-contract tests that #13572 makes
+      # #15058 ADK contracts: the 18 runtime-contract tests that #13572 makes
       # its measuring organ (Track2-GoogleADK/utils/test_adk_runtime_contracts.py,
       # C1-C7 on the REAL ADK runtime, scripted LLM, offline) never ran in any
       # CI job -- the reading #13572 prescribes was unavailable. The
@@ -347,7 +347,7 @@ jobs:
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
 
   adk-contracts:
-    name: ADK runtime contracts (16)
+    name: ADK runtime contracts (18)
     # #15058: #13572 makes Track2-GoogleADK/utils/test_adk_runtime_contracts.py
     # (C1-C7, REAL ADK 2.8 runtime with a scripted LLM -- offline, no key, no
     # network) its measuring organ, but no CI job ran it: portage was
@@ -382,7 +382,7 @@ jobs:
         run: |
           pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --tb=short -q
 
-      - name: Contracts collection floor (16)
+      - name: Contracts collection floor (18)
         # Same two-signal semantics as the audit (455) / secrets (148) /
         # GradeBook (15) floors above: 0 collected = collection crash (import
         # error -- the exact failure mode a naive wiring of these tests into
@@ -390,7 +390,7 @@ jobs:
         # was deleted, which is a coverage regression, never housekeeping.
         if: always()
         env:
-          ADK_CONTRACTS_FLOOR: 16
+          ADK_CONTRACTS_FLOOR: 18
         run: |
           N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
