@@ -362,6 +362,14 @@ def parse_args() -> argparse.Namespace:
                         "l'exploration assumee et documentee.")
     p.add_argument("--overwrite", action="store_true",
                    help="autorise l'ecrasement d'une trace existante (refuse par defaut)")
+    p.add_argument("--prompts-json", default=None,
+                   help="jeux de prompts alternatifs {'set_name': [textes]} en JSON. "
+                        "Defaut : PROMPT_SETS interne (ICT-21). Sert aux extractions "
+                        "case-specific (ex case 5 #8182) sans dupliquer le pipeline GPU.")
+    p.add_argument("--prefix", default="ict21_sae",
+                   help="prefix du nom de trace (defaut ict21_sae). Un grain dedie "
+                        "passe le sien (ex case5_attention) : le nom reste discriminant "
+                        "par echelle/couche, cf trace_filename.")
     return p.parse_args()
 
 
@@ -620,7 +628,7 @@ def main() -> None:
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / trace_filename(
             args.variant, layer, model=args.model, default_model=DEFAULT_MODEL,
-            n_layers=n_layers, n_clamp=len(clamp_ids))
+            n_layers=n_layers, n_clamp=len(clamp_ids), prefix=args.prefix)
         if out_path.exists() and not args.overwrite:
             sys.exit(f"ERREUR: {out_path} existe deja. Deux runs d'echelles "
                      "differentes ne doivent jamais partager un nom : verifier "
@@ -652,9 +660,23 @@ def main() -> None:
     handle = layers[layer].register_forward_hook(capture)
 
     sets = PROMPT_SETS
+    if args.prompts_json:
+        with open(args.prompts_json, encoding="utf-8") as f:
+            custom = json.load(f)
+        if (not isinstance(custom, dict) or not custom or not all(
+                isinstance(v, list) and v and all(isinstance(t, str) and t for t in v)
+                for v in custom.values())):
+            sys.exit("ERREUR: --prompts-json doit etre un dict non vide "
+                     "{set_name: [textes non vides]}.")
+        sets = custom
+        print(f"[prompts] {len(sets)} jeux charges depuis {args.prompts_json} "
+              f"({sum(len(v) for v in sets.values())} prompts)")
     if args.stage == "smoke":
-        sets = {"code_python": PROMPT_SETS["code_python"][:1],
-                "prose_fr": PROMPT_SETS["prose_fr"][:1]}
+        if args.prompts_json:
+            sets = {k: v[:1] for k, v in list(sets.items())[:2]}
+        else:
+            sets = {"code_python": PROMPT_SETS["code_python"][:1],
+                    "prose_fr": PROMPT_SETS["prose_fr"][:1]}
 
     arrays: dict[str, np.ndarray] = {}
     l0_all, tok_total = [], 0

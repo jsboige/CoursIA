@@ -221,6 +221,8 @@ layout: default
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
+*Notebooks : [Tweety-2-Basic-Logics](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur).*
+
 ---
 layout: section
 ---
@@ -526,6 +528,8 @@ layout: default
 
 <img src="./images/img_016.png" style="position:absolute; top:50px; right:20px; width:320px;" alt="Algorithme DPLL" />
 
+*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb) (SAT et SMT par API) · [Tweety-3-QBF-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb) (quantification booleenne).*
+
 ---
 layout: default
 ---
@@ -545,6 +549,8 @@ layout: default
 - Verification hardware
 - Verification de protocoles
 - Model checking
+
+*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-14-BitVectors-Overflow.ipynb) (arithmetique machine, verification de code).*
 
 ---
 layout: default
@@ -566,6 +572,8 @@ layout: default
 
 
 <img src="./images/img_017.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Exploration locale pour SAT" />
+
+*Notebooks : [14_Optimize_MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) (relachement vers MaxSAT) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MaxSAT et incoherence).*
 
 ---
 layout: default
@@ -1133,6 +1141,11 @@ layout: default
 
 # Unification
 
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
 ## Definition
 
 - Substitution: ensemble de paires variable/terme
@@ -1152,6 +1165,8 @@ layout: default
 
 - Comparer recursivement les termes
 - Remplacer les variables par des termes plus spécifiques
+
+*Notebooks : [SL-5-InverseResolution](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (unification remontee a l'envers) · [SL-4-InductiveLogicProgramming](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (apprendre des regles).*
 
 ---
 layout: default
@@ -1206,6 +1221,11 @@ layout: default
 
 # Resolution en FOL
 
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
 ## Conversion en forme normale conjonctive (CNF)
 
 1. Eliminer => et <=>
@@ -1222,11 +1242,48 @@ layout: default
 - Substitution: &#123;x/Jean&#125;
 - Resolvante: (Q(Jean) OU R(y))
 
+*Notebooks : [Tweety-2c-FOL-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2c-FOL-Csharp.ipynb) (FOL avec EProver) · [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) (quantificateurs et preuves).*
+
+---
+layout: default
+---
+
+# Resolution inverse et apprentissage inductif
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## De la preuve a l'hypothese
+
+- La resolution **derive** des consequences a partir de clauses donnees
+- **Resolution inverse** : remonter la regle pour proposer la clause manquante qui, ajoutee a la base, rend la consequence derivable
+- La machine propose l'hypothese, la logique la **valide** — c'est un renversement du sens de l'inference
+
+## Apprentissage inductif (ILP)
+
+- Entrees : exemples positifs, exemples negatifs, connaissance de fond
+- Sortie : un programme logique qui couvre les positifs et exclut les negatifs
+- Cadre theorique : apprentissage dans la limite, biais inductif declare
+
+## Pourquoi cela compte en 2026
+
+- Un LLM propose des regles plausibles mais **non garanties** ; l'ILP en etablit la coherence avec les exemples
+- La regle apprise reste un enonce de la base : elle est verifiable, pas seulement plausible
+
+*Notebooks : [SL-5-InverseResolution](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (resolution remontee) · [SL-4-InductiveLogicProgramming](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (ILP) · [SL-1-LogicalLearning](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb).*
+
 ---
 layout: default
 ---
 
 # Logiques d'ordre superieur
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
 
 ## FOL vs HOL
 
@@ -1247,6 +1304,8 @@ layout: default
 - **Tweety** : framework Java pour logiques argumentatives
 - **E-prover** : demonstrateur automatique pour FOL
 - **Lean** : assistant de preuve interactif, très actif en mathematiques
+
+*Notebooks : [Tweety-2c-FOL-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2c-FOL-Csharp.ipynb) (EProver pilote depuis Python) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur en Lean 4).*
 
 ---
 layout: default
@@ -1286,6 +1345,8 @@ layout: default
 - Argumentation (raisonnement modal, mondes possibles)
 - Argumentum
 
+*Notebooks : [Tweety-3-ModalLogic-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb) (modale, SPASS-XDB) · [Tweety-3-Conditional-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb) (logiques conditionnelles).*
+
 ---
 layout: default
 ---
@@ -1321,6 +1382,8 @@ layout: default
   - Coherence des ensembles et forces contextuels des arguments
 - **Argumentum**
 
+*Notebooks : [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) (Dung, semantiques, CF2) · [Tweety-6-Structured-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb).*
+
 ---
 layout: default
 ---
@@ -1346,6 +1409,8 @@ layout: default
 
 
 <img src="./images/img_023.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Argument mining structure" />
+
+*Notebooks : [Argument_Analysis_Ontology_AIF](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb) (reconstruction depuis le texte).*
 
 ---
 layout: default
@@ -1382,6 +1447,38 @@ layout: default
 - **Solveurs** : Z3, Yices, Open SMT, MathSAT
 - **Optimiseurs / solveurs** : MSF, OR-Tools
 - **Exemple** : Linq To Z3
+
+*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb) · [Z3-Python-01b-Style-Declaratif-Linq](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) (le style declaratif Linq To Z3) · [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) (optimiseurs).*
+
+---
+layout: default
+---
+
+# Expliquer l'incoherence : MUS, MCS et noyaux d'insatisfiabilite
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Le probleme du « UNSAT »
+
+- Un solveur SAT/SMT repond **insatisfaisable** — il ne dit pas **quelle partie** de la base est en cause
+- Sur une base de connaissances reelle, savoir *que* c'est incoherent ne suffit pas : il faut savoir *pourquoi*
+
+## Deux objets minimaux, duaux l'un de l'autre
+
+- **MUS** (Minimal Unsatisfiable Subset) : sous-ensemble incoherent dont tout retrait rend coherent
+- **MCS** (Minimal Correction Subset) : sous-ensemble dont le retrait rend la base coherente
+- **Dualite** : les MUS sont les transversaux minimaux des MCS — expliquer et reparer sont deux faces du meme calcul
+
+## Ou cela sert
+
+- Diagnostiquer une base de regles contradictoire (ingenierie des connaissances)
+- Debloquer une configuration industrielle : le solveur dit UNSAT, quelle contrainte relacher ?
+- Revision des croyances : quelle croyance retirer pour rester coherent (postulats AGM)
+
+*Notebooks : [Z3-Python-13-UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) (noyaux d'insatisfiabilite) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
 
 ---
 layout: default
@@ -1474,6 +1571,11 @@ layout: default
 
 # Applications
 
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
 ## Agents fondes sur la connaissance
 
 - Representation explicite des connaissances
@@ -1493,6 +1595,8 @@ layout: default
 
 - Representation des actions et des etats
 - Raisonnement sur les plans
+
+*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (RDF, SPARQL) · [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) (planification).*
 
 ---
 layout: section
@@ -1517,6 +1621,8 @@ layout: default
 - Planification plus expressive
 - Exploration de l'espace de plan en plus de l'espace d'etats
 - Sous-objectifs independants reduisent la complexite
+
+*Notebooks : [Planners-1-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb) · [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb).*
 
 ---
 layout: default
@@ -1582,6 +1688,8 @@ Action(Fly(p, from, to),
   EFFECT: NON At(p, from) ET At(p, to))
 ```
 
+*Notebooks : [Planners-2-PDDL-Basics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) (le domaine logistique) · [Planners-6-Domains](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb).*
+
 ---
 layout: default
 ---
@@ -1643,6 +1751,8 @@ layout: default
 
 <img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
 
+*Notebooks : [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb) · [Planners-4-Fast-Downward](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb) (planificateur progressif et regressif).*
+
 ---
 layout: default
 ---
@@ -1665,6 +1775,8 @@ layout: default
 ## Landmarks
 
 - Faits qui doivent etre vrais a un moment donne
+
+*Notebooks : [Planners-5-Heuristics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb) (heuristiques de planification) · [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) (relaxation et landmarks).*
 
 ---
 layout: default
@@ -1746,6 +1858,8 @@ layout: default
 - Plan a "k" actions
 - Variables: Action unique pour chaque étape, Fluent
 - Contraintes: decrivent les effets + etat initial et but
+
+*Notebooks : [Planners-7-OR-Tools](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
 
 ---
 layout: default
@@ -1858,6 +1972,10 @@ layout: default
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+/* img_036 est absolute a right:58px width:200px (bord gauche x=722) : l'ancre
+   notebook, dernier paragraphe en flux, est bornee a 640px pour ne pas passer
+   SOUS l'image (glyphes repeints, cf issue 15351). */
+.slidev-layout > p:last-of-type { max-width: 640px; }
 </style>
 
 ## Conditions réelles plus difficiles
@@ -1877,6 +1995,8 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Opérateurs abstraits -> vers les Buts intermediaires
 - Primitives de bas niveau: Executable
 - Opérateurs non primitifs: Buts, actions abstraites
+
+*Notebooks : [Planners-9-HTN](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb) (decomposition hierarchique) · [Planners-10-LLM-Planning](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) (LLM et decomposition).*
 
 ---
 layout: default
@@ -1958,6 +2078,16 @@ layout: default
 
 # Web sémantique
 
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+/* l'ancre notebook est le dernier paragraphe en flux ; le bloc d'images est
+   absolute a right:30px width:320px (bord gauche x=630), donc l'ancre est
+   bornee a 570px pour ne pas passer SOUS la pile d'images (glyphes repeints,
+   cf issue 15351). */
+.slidev-layout > p:last-of-type { max-width: 570px; }
+</style>
+
 <div class="img-stack absolute" style="top: 60px; right: 30px; width: 320px;">
 
 <img src="./images/img_039.png" alt="Pile du Web sémantique : URI, XML, RDF, RDFS, OWL, SPARQL, Inference" style="margin-bottom: 8px;" />
@@ -1992,6 +2122,8 @@ layout: default
 
 <img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
 
+*Notebooks : [SW-2b-Python-RDFBasics](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-Python-GraphRAG](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb) (du graphe au RAG).*
+
 ---
 layout: default
 ---
@@ -2019,6 +2151,37 @@ layout: default
 
 
 <img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systèmes de raisonnement diagrammes" />
+
+---
+layout: default
+---
+
+# Logiques de description et OWL : la logique industrialisee
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## TBox et ABox
+
+- **TBox** (terminologie) : les concepts et leurs relations — `Main ⊑ Membre`, `Membre ⊑ PartieDuCorps`
+- **ABox** (assertions) : les individus — `Main(mainDroite)`
+- **Subsomption** : `C ⊑ D` est **calculee** par un raisonneur, pas decidee a la main — c'est la classification automatique d'une ontologie
+
+## Pourquoi DL plutot que la FOL brute
+
+- Fragment **decidable** de la FOL : on echange de l'expressivite contre la garantie que le raisonneur termine
+- Profils OWL (EL, QL, RL) : compromis calculables a l'echelle du web
+- Correspondance avec la logique modale : les roles sont des relations d'accessibilite entre individus
+
+## Raisonner sur une ontologie
+
+- **HermiT**, **Pellet** : coherence, subsomption, realisation d'individus
+- Incoherence = un concept dont aucune instance ne peut exister
+- De l'ontologie au graphe de connaissances, puis au RAG : la chaine complete est outillee
+
+*Notebooks : [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) (raisonneurs OWL) · [SW-14-Python-Coup-Ontologique](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (logics.dl, HermiT/Pellet).*
 
 ---
 layout: default
@@ -2053,11 +2216,18 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Hypotheses = explications raisonnables
 - Explications minimales (Ockham)
 
+*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb) (JTMS : justification et revision) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (postulats AGM).*
+
 ---
 layout: default
 ---
 
 # Smart Contracts
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
 
 
 ## Cryptographie
@@ -2082,6 +2252,8 @@ layout: default
 
 
 <img src="./images/img_045.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Smart Contracts diagramme" />
+
+*Notebooks : [SC-14-Formal-Verification](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb) (verification formelle) · [SC-15-Zero-Knowledge-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs.ipynb) (preuves non interactives) · [SC-16-Homomorphic-Encryption](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption.ipynb) · [SC-17-E2E-Verifiable-Voting](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb) (vote verifiable, cf Helios).*
 
 ---
 layout: default
