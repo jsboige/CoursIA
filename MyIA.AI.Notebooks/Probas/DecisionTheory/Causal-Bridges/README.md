@@ -13,6 +13,7 @@
 | [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
 | [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
 | [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
+| [DoWhy-4 — Le confondeur non observé](DoWhy-4-Sensibilite-Confounder-Cache.ipynb) | ~50 min | Sensibilité, pas certitude : « quelle force devrait avoir un confondeur caché pour annuler cet effet ? » — robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy` avec benchmark McGowan-Greevy, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé (`direct-simulation`) |
 | [DoWhy-5 — L'instrument faible](DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `Quasi-Experimental.ipynb` |
 | [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 
@@ -58,3 +59,9 @@ Exercices de DoWhy-5 (variable instrumentale via `dowhy`) :
 1. **L'exclusion respectée vs VIOLEE** — générer un DGP `effet_direct_z = 0.5`, vérifier que `dowhy` identifie l'estimand `iv`, et constater l'écart entre `tau dowhy` et `TAU_VRAI = 2.0` ; verdict local NON_IDENTIFIABLE en mode terrain.
 2. **Le F-stat comme garde-fou** — faire varier la taille d'échantillon `n ∈ {500, 1000, 2000, 5000}` sur instrument faible, observer comment le F-stat monte avec `n` (sans faire passer l'identification, qui reste structurelle).
 3. **Verdict NON_IDENTIFIABLE sur DAG incomplet** — démontrer que `dowhy` identifie un estimand `iv` même quand l'exclusion est structurellement violée ; le verdict NON_IDENTIFIABLE doit venir du praticien, pas de `dowhy`.
+
+Exercices de DoWhy-4 (sensibilité au confondeur non observé) :
+
+1. **Le rapport de forces** — renforcer le cache (`coef_u_*=1.8`) : la robustness value MONTE avec l'association observée (ça survit encore) ; affaiblir le signal (`tau=0.2, bruit_y=3.0`) : le RV passe sous le R² réel de U et le verdict bascule en ANNULABLE — c'est l'effet faible qu'on annule, pas le cache fort.
+2. **L'E-value de l'IC et la taille d'échantillon** — à `n=10000` l'IC se resserre, sa borne s'éloigne de 1 et l'E-value de l'IC monte vers celui de l'estimé ; l'estimé ponctuel (biais constant de U) bouge à peine.
+3. **Γ\* d'un effet plus faible** — reprendre le monde binaire à `b_x=0.2`, ré-apparier et recalculer Γ* : plus proche de 1 ; Γ\* mesure la solidité statistique face au pire des mondes, pas la vérité de l'effet.
