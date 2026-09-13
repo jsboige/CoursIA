@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 69
-breakdown: DecisionTheory=26, Infer=21, PyMC=19, Applications=2, root=1
-maturity: BETA=68, ALPHA=1
+pedagogical_count: 71
+breakdown: DecisionTheory=28, Infer=21, PyMC=19, Applications=2, root=1
+maturity: BETA=70, ALPHA=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 38 Python + 3 Lean 4 = 69 ✓` au 10/09/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.

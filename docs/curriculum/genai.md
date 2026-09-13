@@ -20,10 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 201 |
+| Notebooks | 202 |
 | PRODUCTION | 0 |
-| BETA | 180 |
-| ALPHA | 21 |
+| BETA | 182 |
+| ALPHA | 20 |
 
 ## GenAI/00-GenAI-Environment (6 notebooks)
 
@@ -36,7 +36,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | [00-5: ComfyUI Local - Test Rapide](../../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb) | BETA | Non |
 | 6 | [Deploiement Docker Local des Services GenAI](../../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-6-Local-Docker-Deployment.ipynb) | BETA | Non |
 
-## GenAI/Audio (31 notebooks)
+## GenAI/Audio (32 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -63,14 +63,15 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 21 | [P5 — Compilation Audio pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-12-Compilation-Audio.ipynb) | BETA | Oui |
 | 22 | [Audiobook Agentique avec FishAudio S2-Pro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | BETA | Non |
 | 23 | [Voice Leading Rendu GenAI — donner un spectre aux…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) | BETA | Non |
-| 24 | [Pipeline de Transcription et Sous-titrage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) | BETA | Non |
-| 25 | [Workflow de Composition Musicale](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb) | BETA | Non |
-| 26 | [Synchronisation Audio-Video (Passerelle)](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) | BETA | Non |
-| 27 | [Live Coding Musical pilote par LLM](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | BETA | Non |
-| 28 | [Pipeline Audiobook Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb) | BETA | Non |
-| 29 | [Benchmark TTS : Comparaison des Modèles Vocaux pour…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb) | BETA | Non |
-| 30 | [Lecture Analytique pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb) | BETA | Oui |
-| 31 | [Voice Casting : Attribution de voix TTS par personnage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-9-Voice-Casting.ipynb) | BETA | Non |
+| 24 | [Comprehension Musicale avec MERT2 : Embeddings et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb) | BETA | Non |
+| 25 | [Pipeline de Transcription et Sous-titrage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) | BETA | Non |
+| 26 | [Workflow de Composition Musicale](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb) | BETA | Non |
+| 27 | [Synchronisation Audio-Video (Passerelle)](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) | BETA | Non |
+| 28 | [Live Coding Musical pilote par LLM](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | BETA | Non |
+| 29 | [Pipeline Audiobook Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb) | BETA | Non |
+| 30 | [Benchmark TTS : Comparaison des Modèles Vocaux pour…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb) | BETA | Non |
+| 31 | [Lecture Analytique pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb) | BETA | Oui |
+| 32 | [Voice Casting : Attribution de voix TTS par personnage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-9-Voice-Casting.ipynb) | BETA | Non |
 
 ## GenAI/CaseStudies (5 notebooks)
 
@@ -134,7 +135,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | [Aspire 3 : Observabilite .NET moderne — Serilog,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/03-Aspire-Observabilite.ipynb) | BETA | Non |
 | 4 | [Aspire : un agent streaming en C# — Channels,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/04-Aspire-Streaming-Agent.ipynb) | BETA | Non |
 | 5 | [Aspire : des tests d'intégration modernes —…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/05-Aspire-Tests-Integration.ipynb) | BETA | Oui |
-| 6 | [Aspire : garde-fous du code d'agent — l'analyseur…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/06-Aspire-GardeFous-Roslyn.ipynb) | ALPHA | Oui |
+| 6 | [Aspire : garde-fous du code d'agent — l'analyseur…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/06-Aspire-GardeFous-Roslyn.ipynb) | BETA | Oui |
 | 7 | [Aspire : le routeur MultiConnector — vetting en ligne,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb) | BETA | Non |
 | 8 | [Aspire : l'asynchrone aux frontieres natives -…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb) | BETA | Oui |
 | 9 | [Aspire : le harness Copilot SDK — CopilotClient,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/09-Aspire-Harness-CopilotSdk.ipynb) | BETA | Oui |
