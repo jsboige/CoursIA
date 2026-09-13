@@ -30,6 +30,7 @@ du comportement historique :
     maquiller en vert).
 """
 
+import ast
 import json
 import os
 import re
@@ -45,6 +46,7 @@ REPO_ROOT = os.path.abspath(
 WORKFLOW = os.path.join(
     REPO_ROOT, ".github", "workflows", "pr-gate-stale-sweep.yml"
 )
+PR_GATE = os.path.join(REPO_ROOT, "scripts", "pr_gate.py")
 
 
 def _extract_selector() -> str:
@@ -435,3 +437,108 @@ def test_workflow_pins_tier_sort_and_per_tier_caps():
     # Le cap d'un tier ne doit pas arreter la boucle : les immatures ranges
     # derriere doivent rester servis (continue, pas break).
     assert "break" not in re.sub(r"#.*", "", run.split("MAX_MATURE=12")[1].split("done <")[0])
+
+
+# --- #15976 : exemption advisory -------------------------------------------
+# Le selecteur doit porter la MEME exemption que `pr_gate.py` (rule 6). Un
+# selecteur de REPARATION plus strict que la gate qu'il repare retire du champ
+# exactement les PRs qu'il existe pour reprendre : mesure fondatrice sur
+# #15757, exclue par `scan_md_hierarchy drift (advisory)` = failure alors que
+# la gate la jugeait reparable.
+
+ADVISORY_RED = (
+    "scan_md_hierarchy drift (advisory)", "completed", "failure",
+    "2026-01-01T10:05:00Z",
+)
+
+
+def _func_ast(source, fname):
+    """AST d'une fonction module-level, DOCSTRING RETIREE -- le texte doc n'est
+    pas un contrat, la logique l'est."""
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == fname:
+            first = node.body[0] if node.body else None
+            if (isinstance(first, ast.Expr)
+                    and isinstance(first.value, ast.Constant)
+                    and isinstance(first.value.value, str)):
+                node.body = node.body[1:]
+            return ast.dump(node)
+    raise AssertionError(f"fonction {fname} introuvable")
+
+
+def _const_ast(source, name):
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == name:
+                    return ast.dump(node.value)
+    raise AssertionError(f"constante {name} introuvable")
+
+
+def test_inline_is_advisory_matches_pr_gate_source():
+    """#15976 -- VERROU ANTI-DRIFT : les deux `is_advisory` sont UNE logique.
+
+    Le selecteur ne peut pas IMPORTER `pr_gate.py` : ce sweep tourne sans
+    checkout (design mesure : ~40 s de runner par passage, toutes les 20 min,
+    sur un depot dont le probleme EST la penurie de runners), et un import du
+    module du check REQUIS ferait mourir la selection -- donc l'organe advisory
+    s'eteindrait en silence -- sur toute panne d'import de la gate.
+
+    L'exemption est donc une COPIE. Une copie non verrouillee est exactement la
+    "seconde liste de noms a maintenir en parallele" que #15976 refuse : deux
+    predicats qui decident "ce rouge compte-t-il ?" finissent par diverger.
+
+    Ce test ferme la divergence : il compare l'AST de la fonction LIVREE dans
+    le heredoc a celui de `pr_gate.is_advisory`, docstring retiree. Retoucher
+    l'une sans l'autre rougit ici.
+    """
+    with open(PR_GATE, encoding="utf-8") as f:
+        gate_src = f.read()
+    assert _func_ast(SELECTOR, "is_advisory") == _func_ast(gate_src, "is_advisory")
+    assert (_const_ast(SELECTOR, "ADVISORY_MARKER")
+            == _const_ast(gate_src, "ADVISORY_MARKER"))
+
+
+def test_advisory_red_is_not_a_blocker(tmp_path):
+    """#15976, CONTROLE POSITIF -- calque sur la mesure fondatrice.
+
+    #15757 portait un `PR gate` rouge ET un `scan_md_hierarchy drift
+    (advisory)` = failure : le sweep ecartait la PR pour l'advisory, alors que
+    `pr_gate.py` ne compte pas ce check comme un rouge (rule 6) et la jugeait
+    reparable. Une PR dont l'unique autre rouge est advisory reste candidate.
+
+    Falsification : ROUGE sur le selecteur d'avant le correctif (stdout vide,
+    la PR etait exclue).
+    """
+    out = _run_selector(tmp_path, [_pr(201, [GATE_FAIL, ADVISORY_RED])])
+    assert out.strip() == "201 deadbeef false 0"
+
+
+def test_blocking_red_still_excludes_beside_advisory(tmp_path):
+    """#15976, CONTROLE NEGATIF -- exige par l'acceptance.
+
+    Le correctif ne doit pas ouvrir le sweep a ce qu'il doit ecarter : un rouge
+    BLOQUANT exclut toujours, meme accompagne d'un advisory tolere. Sans ce
+    test, le correctif serait indistinguable d'un filtre debranche.
+    """
+    blocking = ("Papermill ratchet", "completed", "failure",
+                "2026-01-01T10:06:00Z")
+    out = _run_selector(tmp_path, [_pr(202, [GATE_FAIL, ADVISORY_RED, blocking])])
+    assert out.strip() == ""
+
+
+def test_advisory_tolerance_and_exclusion_are_both_named(tmp_path):
+    """Acceptance 4 + anti-blanchiment silencieux (#11808).
+
+    Ce qui est TOLERE est nomme (sinon le blanchiment serait indistinguable
+    d'un filtre debranche), et l'exclusion continue de nommer le check
+    BLOQUANT qui l'a causee.
+    """
+    out = _run_selector_both(tmp_path, [_pr(203, [GATE_FAIL, ADVISORY_RED, OTHER_RED])])
+    assert out.stdout.strip() == ""
+    assert "advisory red tolerated" in out.stderr
+    assert "scan_md_hierarchy drift (advisory)" in out.stderr
+    assert "Hermes review" in out.stderr
+    assert "203" in out.stderr
