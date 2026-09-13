@@ -89,6 +89,13 @@ stratégie n° 13 de Robert Carver (*Advanced Futures Trading Strategies*, Harri
 2026-01-02). Cette variante coexiste avec `main.py` v3.1 sans le modifier — v3.1
 reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 
+**QC Cloud n'exécute que `main.py`** : ce fichier étant le point d'entrée unique, un
+portage posé à côté sous un autre nom n'est **jamais** exécuté par la plateforme.
+Mesurer la jambe Carver #13 impose donc un **projet QC séparé** portant le portage en
+`main.py` — ce qui a été fait (`FuturesTrend-Carver13`, 36488678) précisément pour ne
+pas écraser le point d'entrée de la baseline, c'est-à-dire l'un des deux bras de la
+comparaison. Voir « Résultat mesuré de la comparaison » ci-dessous.
+
 | Composant | v3.1 (ETF, baseline) | Carver #13 (c.1109) |
 |-----------|----------------------|---------------------|
 | Univers | 6 ETF (SPY/GLD/EFA/VNQ/DBC/XLE) | 19 futures continus (ES/NQ/YM/ZN/ZB/ZF/6E/6B/6J/CL/NG/RB/GC/SI/HG/ZC/ZW/ZS/SB) |
@@ -99,6 +106,58 @@ reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 | Cap forecasts | n/a | +/-20 par forecast |
 | Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé, retarget du **delta** (pas d'aller-retour fabriqué, c.1109) |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
+| **Backtest mesuré (2026-09-13)** | **Sharpe 0,07 / CAGR 4,170 % / MaxDD 15,500 % / PSR 0,007 % / 463 ordres / 2913 séances** | **0 ordre — Sharpe 0 / CAGR 0 % / MaxDD 0 % / PSR 0 % / $0,00 / 2763 séances** |
+
+### Résultat mesuré de la comparaison (2026-09-13, acceptance #15549)
+
+Les deux bras ont été mesurés dans QC Cloud. La baseline est relue **firsthand**
+(backtest `b869c19d1320401e3c3a84ae7037abc4`, projet 28657834) et non reprise de la
+prose. La jambe Carver #13 a été **exécutée pour la première fois** : projet QC dédié
+`FuturesTrend-Carver13` (36488678, créé pour ne pas écraser le point d'entrée de la
+baseline), compile `BuildSuccess` 0 erreur, backtest
+`b7b7217ee540757f3d78167ab9eeea2e`.
+
+| Métrique | Baseline ETF v3.1 (2015-2024) | Carver #13 (2016-2026) |
+|---|---|---|
+| Sharpe | 0,07 | **0** |
+| CAGR | 4,170 % | **0 %** |
+| Max drawdown | 15,500 % | **0 %** |
+| PSR | 0,007 % | **0 %** |
+| Net profit | +60,618 % ($61 146,46) | **$0,00** |
+| Ordres | 463 | **0** |
+| Séances négociables | 2913 | 2763 |
+
+**Verdict : `INCONCLUSIVE` — et le motif n'est pas une faiblesse d'edge.** La jambe
+Carver #13 n'émet **aucun ordre** sur 2763 séances : elle ne perd pas contre la
+baseline, elle ne trade pas du tout. Un bras à 0 ordre ne peut ni battre ni perdre.
+C'est une **non-fonctionnalité**, pas une mesure d'edge : la conclusion scientifique
+`BEATS` / `NO BEATS` est **indécidable en l'état**, et l'accepter comme « Carver sous-
+performe » serait exactement l'erreur que l'acceptance interdit.
+
+**Ce résultat reproduit une observation antérieure** (préflight adjoint po-2025 :
+« 0 orders + Sharpe 0 / 2762 dates ») — il la corrobore désormais par une exécution
+indépendante et datée, avec le backtestId à l'appui.
+
+**Caveat de fenêtre, non effacé** : la baseline est mesurée sur 2015-2024 et la jambe
+Carver sur 2016-2026 (dates fixées en dur dans chaque `initialize()`). Les deux
+colonnes ne sont donc pas alignées à la séance près ; l'écart est porté ici plutôt
+que suppose neutre. Il est **secondaire** devant le fait mesuré (0 ordre), qui rend
+la comparaison sans objet.
+
+**Ce qui reste ouvert** : la cause du 0 ordre. Un instrument d'instrumentation
+existe déjà dans le code (`_rebalance_early_returns`, REPAIR-9 c.1117 : `warming_up`,
+`bulk_empty`, `no_raw_forecasts`, `abs_sum_zero`, `completed_no_order`,
+`completed_with_orders`) et est journalisé en fin d'algorithme — mais le wrapper
+`qc-mcp-lite` ne rend **pas** les runtime logs (`self.log`), donc la branche réellement
+empruntée n'est pas lisible par ce canal. Diagnostic suivant : rejouer avec
+`self.error(...)` sur le compteur (surfacé dans le champ `error`), ou lire l'onglet
+Logs de l'UI QC.
+
+**Correction d'une affirmation fausse de ce dépôt.** Le `config.json` et cette section
+présentaient le portage comme reconnu par QC Cloud « sans modifier la baseline » :
+c'est **faux**, QC n'exécute que `main.py`. Mesurer la jambe Carver impose soit un
+projet dédié (ce qui a été fait), soit d'écraser `main.py` — donc de détruire le point
+d'entrée de la baseline, c'est-à-dire l'un des deux bras de la comparaison.
 
 ### Note Tell c.1069 strict — Carry désactivé sur cette implémentation (c.1107)
 
@@ -211,23 +270,28 @@ quand la cible est proche de la position actuelle.
   jambe existante quand le signe est conservé).
 - Les coûts backtestés deviennent comparables à un rebalancement réel.
 
-### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2`)
+### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2` ; mis à jour 2026-09-13, lane `myia-po-2026:CoursIA`)
 
 - Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 465
 
   lignes, EOL LF, 0 secret literal).
-- **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
+- **Backtest exécuté le 2026-09-13** (supersède l'état « Aucun backtest exécuté » de
 
-  QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
-  0 hit). La jambe QC Cloud (compile/backtests) sera déléguée à une lane CoursIA-2
-  équipée, sur cette branche, **sans transmission de secret** (Tell secrets-hygiene
-  règle 1 : jamais de clair sur dashboard/PR/commit, `os.getenv("KEY","<literal>")`
-  interdit).
-- **Verdict futur** : `BEATS` / `NO BEATS` / `INCONCLUSIVE` selon Sharpe/CAGR/MaxDD/
+  la lane po-2027, dont le verdict `RECOVERABLE-MACHINE` — credentials QC absents,
+  vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` = 0 hit — est désormais
+  **résolu** : la jambe QC Cloud a été portée par la lane `myia-po-2026:CoursIA`,
+  **sans transmission de secret**, sur un projet QC dédié). Résultat : compile
+  `BuildSuccess` 0 erreur, backtest `b7b7217ee540757f3d78167ab9eeea2e` `Completed`,
+  2763 séances négociables, **0 ordre**. Détail et comparaison au bras baseline :
+  section « Résultat mesuré de la comparaison » ci-dessus.
+- **Verdict rendu** : `INCONCLUSIVE` — **non pas** parce que Carver #13 perdrait
 
-  PSR/exposition/coûts/ordres sur fenêtre >= 2016-2026, **sans présumer** du
-  Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023 (fenêtre
-  favorable non-représentative).
+  contre la baseline, mais parce que la jambe n'émet **aucun ordre** (0 ordre /
+  2763 séances) : un bras qui ne trade pas ne peut ni battre ni perdre. La
+  comparaison scientifique reste **indécidable** tant que la cause du 0 ordre n'est
+  pas dissipée. Le Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023
+  n'a **pas** été présumé : il n'entre pas dans ce verdict (fenêtre favorable
+  non-représentative, et la jambe mesurée ici est muette de toute façon).
 - **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
 
   (`msg-20260911T040615-4c08xy`) avant lancement des runs QC Cloud — (a) carry
