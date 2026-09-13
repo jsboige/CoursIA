@@ -73,19 +73,33 @@ def _extract_selector() -> str:
 SELECTOR = _extract_selector()
 
 
-def _run_selector(tmp_path, rows):
+def _run_selector(tmp_path, rows, wfnames=None):
     """Exec le selecteur livré sur des lignes de fixtures, capture stdout."""
-    return _run_selector_both(tmp_path, rows).stdout
+    return _run_selector_both(tmp_path, rows, wfnames=wfnames).stdout
 
 
-def _run_selector_both(tmp_path, rows):
+def _run_selector_both(tmp_path, rows, wfnames=None):
     """Comme _run_selector mais rend le process complet (stdout + stderr) --
-    les diagnostics d'exclusion (#11808) vont sur stderr."""
+    les diagnostics d'exclusion (#11808) vont sur stderr.
+
+    ``wfnames`` alimente la carte id -> NOM de workflow (2e signal de
+    ``is_advisory``). Le seam est TOUJOURS pose : sans cela le selecteur
+    lirait le ``/tmp/wfnames.json`` de la machine -- present sur un runner,
+    absent ailleurs -- et le meme test rendrait deux verdicts.
+    """
     fixture = tmp_path / "runs.jsonl"
     fixture.write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
     )
     env = dict(os.environ, SWEEP_RUNS_FILE=str(fixture))
+    if wfnames is None:
+        # Chemin inexistant : le selecteur retombe sur une carte vide, comme
+        # quand l'appel ``actions/workflows`` echoue.
+        env["SWEEP_WFNAMES_FILE"] = str(tmp_path / "wfnames-absent.json")
+    else:
+        wf = tmp_path / "wfnames.json"
+        wf.write_text(json.dumps(wfnames), encoding="utf-8")
+        env["SWEEP_WFNAMES_FILE"] = str(wf)
     out = subprocess.run(
         ["python", "-c", SELECTOR],
         capture_output=True, text=True, encoding="utf-8", env=env, cwd=tmp_path,
@@ -542,3 +556,73 @@ def test_advisory_tolerance_and_exclusion_are_both_named(tmp_path):
     assert "scan_md_hierarchy drift (advisory)" in out.stderr
     assert "Hermes review" in out.stderr
     assert "203" in out.stderr
+
+
+# --- #15976, 2e signal : le workflow PARENT --------------------------------
+# `is_advisory` porte deux signaux ; le verrou AST garde leur FIDELITE, pas la
+# COMPLETUDE de leur branchement. Les trois tests ci-dessous gardent le
+# branchement : le 2e argument doit etre reellement alimente (sinon la copie
+# verbatim est un remede documente qui ne tient pas sa promesse -- la maxime
+# que ce fichier porte lui-meme), la carte presente ne doit pas tolerer a
+# tort, et une resolution en echec ne doit jamais elargir.
+
+# Nom de check SANS le marqueur : seul son workflow parent se declare advisory.
+# Convention minoritaire (la courante porte le marqueur dans le nom du job),
+# mais la gate la juge non-bloquante -- mesure faite le 2026-09-13 sur
+# `pr_gate.py:653` (`is_advisory(name, workflow_label)`), ou l'appelant passe
+# bien le 2e argument. Le selecteur, lui, ne le passait pas : strictement plus
+# strict que la gate qu'il repare, soit le defaut de #15976 deplace d'un axe.
+ADVISORY_BY_WORKFLOW_ONLY = (
+    "scan_md_hierarchy drift", "completed", "failure",
+    "2026-01-01T10:05:00Z", 555,
+)
+ADVISORY_WORKFLOW_ID = 999
+ADVISORY_WORKFLOW_NAME = "Scan MD Hierarchy (advisory)"
+
+
+def test_advisory_by_workflow_name_is_not_a_blocker(tmp_path):
+    """#15976 -- le 2e signal est BRANCHE, pas seulement declare.
+
+    Falsification : ROUGE avant le branchement (le check n'ayant pas le
+    marqueur dans son nom, la PR etait exclue du balayage).
+    """
+    out = _run_selector(
+        tmp_path,
+        [_pr(301, [GATE_FAIL, ADVISORY_BY_WORKFLOW_ONLY],
+             workflows={555: ADVISORY_WORKFLOW_ID})],
+        wfnames={str(ADVISORY_WORKFLOW_ID): ADVISORY_WORKFLOW_NAME},
+    )
+    assert out.strip() == "301 deadbeef false 0"
+
+
+def test_non_advisory_workflow_name_still_blocks(tmp_path):
+    """Controle negatif du branchement : la carte PRESENTE ne suffit pas.
+
+    Sans ce test, "la carte est la" pourrait tolerer n'importe quoi. Le
+    marqueur est cherche DANS le nom resolu : un workflow parent qui ne se
+    declare pas advisory laisse son rouge bloquant.
+    """
+    out = _run_selector(
+        tmp_path,
+        [_pr(302, [GATE_FAIL, ADVISORY_BY_WORKFLOW_ONLY],
+             workflows={555: ADVISORY_WORKFLOW_ID})],
+        wfnames={str(ADVISORY_WORKFLOW_ID): "Scan MD Hierarchy"},
+    )
+    assert out.strip() == ""
+
+
+def test_workflow_name_resolution_failure_never_widens(tmp_path):
+    """Resolution en echec -> comportement d'AVANT, jamais plus permissif.
+
+    L'appel `actions/workflows` peut echouer : la carte est vide, le 2e
+    argument retombe sur "", la PR est exclue -- plus etroit, jamais tolera a
+    tort. C'est la seule direction sure : un correctif qui elargirait sur une
+    panne de resolution serait un blanchiment par indisponibilite.
+    """
+    out = _run_selector(
+        tmp_path,
+        [_pr(303, [GATE_FAIL, ADVISORY_BY_WORKFLOW_ONLY],
+             workflows={555: ADVISORY_WORKFLOW_ID})],
+        wfnames={},
+    )
+    assert out.strip() == ""
