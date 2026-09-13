@@ -30,6 +30,8 @@ Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé trai
 
 Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
 
+Updated: 2026-09-13 — M16 HAR asymétrique revalidé sur sept actifs avec débiaisage symétrique train-only (#15861) : **NO BEATS cluster** — 2/21 BEATS, 1/21 NO BEATS, 18/21 INCONCLUSIVE ; BTC seul actif majoritaire, 1/7, sign-test unilatéral BEATS p=0,9921875
+
 Updated: 2026-09-02 — M5 HMM regime-switching HAR, première entrée + revalidation hors biais (Epic #1454) : ETH h=1 **BEATS confirmé** (+8,7 % hors biais, 4/4 seeds, 4,1σ) ; BTC h=1 s'effondre de +7,0 % à +1,3 % (~82 % de l'edge était le biais de HAR) ; 4/6 NO BEATS
 
 Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC revalidé contre HAR débiaisé train-only (Epic #1454, lane myia-po-2026, c.951) : h=1 BEATS 4/4 confirmé (var_ratio 0,778 — gain de précision, pas un offset) ; h=5/h=10 INCONCLUSIVE 0/4 (var_ratio > 1) ; vs M12 4/4 BEATS aux trois horizons ; verdict BTC inchangé, base non-artéfactée par le biais HAR
@@ -128,6 +130,18 @@ horizons longs (+23,6 %/+36,7 % → +3,4 %/+5,1 %), mais le signal ne disparaît
 - **Run** : `python scripts/har_asymmetric.py --coins BTC-USD --horizons 1 5 10 --seeds 0 7 42 99 --n-splits 5 --skip-remote --debias --calibration-size 60 --out-json scripts/results/m16_har_asymmetric_btc_debiased.json`
 - **Notebook** : `m3_har_asymmetric_semivariance.ipynb`, 8/8 cellules code exécutées, recalcul indépendant depuis les séries persistées
 - **Coûts** : non applicables au verdict de forecast pur ; aucun claim Sharpe/P&L
+
+## M16 HAR asymétrique — revalidation débiaisée sept actifs (2026-09-13) — issue #15861
+
+Extension du protocole BTC aux sept actifs BTC, ETH, SOL, LTC, XRP, ADA et DOT, avec horizons {1,5,10}, cinq folds expanding, calibration train-only identique de 60 observations sur les deux modèles et DM `loss_fn="mse"`. Les quatre seeds {0,7,42,99} sont des contrôles OLS bit-identiques : **une unité effective** par actif×horizon, jamais quatre preuves indépendantes.
+
+- **Verdict configurations** : 2/21 `BEATS` (BTC h=5/h=10), 1/21 `NO BEATS` (XRP h=1), 18/21 `INCONCLUSIVE`.
+- **Verdict principal** : BTC seul actif majoritaire `BEATS`, soit 1/7 ; test binomial exact `alternative="greater"`, `p=0,9921875` ; **NO BEATS cluster**.
+- **Agrégation secondaire** : 21 configurations, descriptive uniquement car les horizons d'un actif sont dépendants.
+- **Fenêtres** : BTC 2018-05-15→2024-08-08 (2 278 jours RV), ETH 2019-10-21→2023-12-14 (1 495), cinq actifs yfinance 2024-09-13→2026-09-12 (724 chacun).
+- **Limite h≥2** : fermeture récursive fixe partageant la RV future prévue à 50/50 entre RV+ et RV− ; convention historique non apprise.
+- **Artefact** : `scripts/results/m16_har_asymmetric_debiased_7asset.json` — 84 lignes seed, 21 agrégats, 5+5 folds, biais signés et séries OOS alignées.
+- **Résultat historique** : conservé intact ; son `p≈0,063` utilisait implicitement la queue opposée, tandis que la revendication `BEATS` exige la queue `greater` ci-dessus.
 
 ## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
 

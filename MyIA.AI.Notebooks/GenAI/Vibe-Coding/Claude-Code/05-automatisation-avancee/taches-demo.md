@@ -278,7 +278,7 @@ Vous voulez étendre Claude Code avec des capacités de recherche web et d'accè
    {
      "mcpServers": {
        "searxng": {
-         "url": "https://search.myia.io/",
+         "url": "http://localhost:8181/",
          "transport": "http",
          "description": "Recherche web distribuée"
        },
