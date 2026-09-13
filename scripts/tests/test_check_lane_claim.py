@@ -6257,3 +6257,31 @@ def test_14187_truncated_flag_sur_repo_volumineux(capsys, monkeypatch):
     assert out["blocked"] is False
     assert out["free_paths_size"] == 25
     assert out["free_paths_truncated"] is True
+
+
+def test_reconciliation_release_closes_the_subject_lane_not_the_cited_one_15918():
+    # #15918 -- the founder shape of a collision reconciliation: the closing
+    # lane names ITSELF bare ("Claim de myia-po-2026:CoursIA retiré") while
+    # crediting the winning lane in keyworded form ("(lane myia-po-2023:CoursIA,
+    # ouverte 00:19Z)") -- that is the claim format itself. The keyworded
+    # primary used to attribute the close to the CITED lane, so the subject
+    # claim stayed active and blocked the winner's PR (measured on #15798:
+    # po-2026's 04:50:09Z release left the claim open against #15878).
+    events = clc._sort_events(payload(
+        comment(
+            "[CLAIMED] myia-po-2026:CoursIA -- paths: MyIA.AI.Notebooks/IIT/ICT-Series/**",
+            "2026-09-13T04:25:31Z",
+        ),
+        comment(
+            "[RELEASED] Claim de myia-po-2026:CoursIA retiré — réconcilié : la PR #15878 "
+            "(lane myia-po-2023:CoursIA, ouverte 00:19Z) couvre le grain en surensemble.",
+            "2026-09-13T04:50:09Z",
+        ),
+    ))
+    active, _unattributed = clc.compute_active_claims(events)
+    assert "myia-po-2026:CoursIA" not in active, (
+        "the reconciliation release must close the SUBJECT lane"
+    )
+    assert "myia-po-2023:CoursIA" not in active, (
+        "the cited lane never had a claim here -- the misattributed close must not open one"
+    )

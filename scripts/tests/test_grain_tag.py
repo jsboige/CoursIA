@@ -1122,3 +1122,32 @@ def test_lane_ascii_control_unchanged():
     assert g == "myia-po-2026:CoursIA"
 
 
+
+
+_REAL_RECONCILIATION_15918 = (
+    "[RELEASED] Claim de myia-po-2026:CoursIA retiré — réconcilié : la PR #15878 "
+    "(lane myia-po-2023:CoursIA, ouverte 00:19Z) couvre le grain en surensemble."
+)
+
+
+def test_lane_bare_subject_beats_keyworded_citation_15918():
+    # #15918: a reconciliation close names its OWN lane bare ("Claim de
+    # myia-po-2026:CoursIA retiré") while the parenthetical crediting the
+    # winning lane carries the `lane` keyword -- the claim format itself.
+    # The keyworded primary used to attribute the close to the CITED lane.
+    line = _REAL_RECONCILIATION_15918
+    assert (
+        gt.extract_lane(line, marker_line=line) == "myia-po-2026:CoursIA"
+    ), "the bare subject token before the keyworded citation must win"
+
+
+def test_lane_keyworded_marker_keeps_priority_on_tie_15918():
+    # Position tie (the bare token IS the keyworded one): primary unchanged.
+    line = "[RELEASED] lane myia-po-2026:CoursIA — la lane myia-po-2023:CoursIA reprend"
+    assert gt.extract_lane(line, marker_line=line) == "myia-po-2026:CoursIA"
+
+
+def test_lane_keyword_only_in_body_still_primary_without_marker_line_15918():
+    # Legacy callers (no marker_line): the whole-body keyworded primary is
+    # untouched -- the proximity rule is scoped to the marker's own line.
+    assert gt.extract_lane(_REAL_RECONCILIATION_15918) == "myia-po-2023:CoursIA"
