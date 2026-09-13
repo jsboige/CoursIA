@@ -68,6 +68,7 @@ Templates in `templates/` are starting points for your projects. Each level corr
 - Understand the QC Algorithm Framework
 
 **Alpha Framework Modules** :
+
 | Module | Role | Class |
 |--------|------|-------|
 | **AlphaModel** | Generate signals (Insights) | `MomentumAlphaModel` |
