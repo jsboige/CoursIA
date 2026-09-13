@@ -8,10 +8,12 @@ name: PR gate stale-verdict sweep
 # (csharp)". Since #13510 a starved gate cancels its own run instead (leg
 # CANCELLED, exit still 1), so those legs now arrive here through the
 # `cancelled` half of the RED set below -- the founding FAILURE case below is
-# history, kept for the record. pr-gate-rerun.yml exists to re-aggregate
-# afterwards, but it is
-# driven by `workflow_run` and therefore can only listen to workflows that are
-# ADDRESSABLE BY NAME in this repository:
+# history, kept for the record. At the time, pr-gate-rerun.yml re-aggregated
+# afterwards, but it was
+# driven by `workflow_run` and could therefore only listen to workflows that
+# were ADDRESSABLE BY NAME in this repository -- an event path RETIRED by
+# #11860; that file is now a manual `workflow_dispatch` harness, and THIS
+# sweep is its schedule-mutualized replacement:
 #
 #   workflows: ["Variation Tag Guard", "Lane Claim Guard",
 #               "Notebook Execution Required", "Translation Drift Check",
@@ -53,9 +55,8 @@ name: PR gate stale-verdict sweep
 # fold concealed 52 of them, the majority of the blocked pool. The filter now
 # treats ANY red `PR gate` leg as a candidate.
 #
-# Why this sweep exists at all, given pr-gate-rerun.yml (#11546) now re-runs
-# on `workflow_run`: CodeQL runs in `default setup`, which is dynamic and does
-# not appear in the workflow list --
+# Why this sweep exists at all: CodeQL runs in `default setup`, which is dynamic
+# and does not appear in the workflow list --
 #   GET /repos/jsboige/CoursIA/actions/workflows?per_page=100
 #     -> total_count: 103, of which CodeQL: 0
 # -- so it cannot be named as a `workflow_run` trigger, and the event-driven
@@ -559,14 +560,16 @@ jobs:
             #
             # `gh run rerun` overwrites the run's check-run IN PLACE, in the same
             # suite -- the only mechanism that actually clears the red leg. Same
-            # remedy as pr-gate-rerun.yml (#11546); this sweep is its complement,
-            # because CodeQL runs in `default setup` and is NOT addressable as a
-            # `workflow_run` trigger, so the event-driven path cannot fire when
-            # CodeQL is the last check to settle -- the common case under
-            # saturation, since it is also the slowest.
+            # remedy as the retired pr-gate-rerun.yml (#11546) used; since #11860
+            # this sweep is its schedule-mutualized REPLACEMENT, because CodeQL
+            # runs in `default setup` and is NOT addressable as a `workflow_run`
+            # trigger, so an event-driven rescuer cannot fire when CodeQL is the
+            # last check to settle -- the common case under saturation, since it
+            # is also the slowest.
             #
-            # No loop risk: "PR gate" is not among pr-gate-rerun.yml's trigger
-            # workflows, so a re-run cannot re-trigger the rescuer.
+            # No loop risk: this sweep has no `workflow_run` trigger of its own
+            # (`schedule` / manual `workflow_dispatch` only), so a re-run cannot
+            # re-trigger it.
             RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
                     --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null)
             RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)
