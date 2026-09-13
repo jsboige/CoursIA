@@ -22,9 +22,9 @@ Beck-Fiala and Komlós Bounds Beyond Banaszczyk* (arXiv:2508.03961, 2025).
 | ID | Énoncé | Nature | Statut | Livré |
 |----|--------|--------|--------|-------|
 | P0 | `Discrepancy.Basic` : `IsColoring`, `discrepancy`, `degree`, `maxDegree` + 3 lemmes (`discrepancy_empty`, `discrepancy_singleton_empty`, `degree_le_card`) | fondations | **PROUVÉ** (P0) | ce PR |
-| P0 | `BeckFialaConjecture` (`O(√k)`) | conjecture ouverte | **Prop nommée** (P0) | ce PR |
+| P0 | `BeckFialaConjecture` (`O(√k)`) | **résolution annoncée** — preprint arXiv:2609.11189 (10/09/2026), non revu | **Prop nommée** (P0) | ce PR |
 | P0 | `BeckFialaClassic` (`disc ≤ 2k − 1`) | théorème classique — la « noix » | **Prop nommée** (P0) ; cible P1 | ce PR |
-| P0 | `KomlosConjecture` (`O(1)`, colonnes unitaires) | conjecture ouverte | **Prop nommée** (P0) | ce PR |
+| P0 | `KomlosConjecture` (`O(1)`, colonnes unitaires) | **résolution annoncée** — preprint arXiv:2609.11189 (10/09/2026), non revu | **Prop nommée** (P0) | ce PR |
 | P0 | `BansalJiangLargeDegree` (BF vrai dès `k ≥ log² n`) | théorème papier 2025 | **Prop nommée** (P0) ; P3 | ce PR |
 | P0 | `KomlosBansalJiangWeak` (colonnes unitaires, `C·log² n`) | forme affaiblie concrète du papier | **Prop nommée** (P0) ; P3 | ce PR |
 | b1 | Double comptage dimensionnel `card_dangerous_lt_card_floating` (lignes à `>k` flottants ⇒ \|D\| < \|X\|) + direction de noyau `exists_dangerous_kernel_vec` (Q^X → Q^D non injective) | brique P1 | **PROUVÉ** (b1) | branche `lean/b1-discrepancy-kernel` (gated P0 #12839) |
@@ -46,7 +46,21 @@ Beck-Fiala and Komlós Bounds Beyond Banaszczyk* (arXiv:2508.03961, 2025).
 | p1a | Moments de la somme de Rademacher colorée : `expect_rademacherSum_eq_zero` (`E[Z] = 0`), `expect_rademacherSum_sq` (`E[Z²] = ∑ (c i)²`), corollaire coloration (`E[Z²] = n`) + briques `sampleExpect_coord_mul_coord` (factorisation 2-coordonnées, extension kernel), `prod_two_special`, `fairCoin`/`boolSign` | brique P2 | **PROUVÉ** (p1a, 08-25) | uniformité en `c` établie ; p1b = 4ᵉ moment + Paley–Zygmund |
 | p3 (union bound) | `colorOf` (encodage booléen → coloration ; `Fin n → ℤ` n'est PAS un Fintype, les colorations sont dénombrées comme IMAGE des `2^n` booléens), `indicator_bUnion_le_sum` (indicatrice d'union ≤ somme d'indicatrices, `Finset.induction_on`), `familyExpect_sum_finset` (linéarité Finset), `familyProb_union_le` (union bound en probabilité via `sampleExpect_mono`), `card_colorings_le` (≤ 2^n par `Finset.card_image_le`), `exists_of_familyProb_pos` (probabilité > 0 ⇒ témoin), et le théorème d'application `exists_family_beats_all_colorings` : pour n ≥ 1 il existe une famille de 12n tirages battant TOUTES les colorations (ℙ[échec] ≤ 2^n·(11/12)^(12n) < 1, numérie par induction `(2·(11/12)^12)^t < 1`) | brique P2 | **PROUVÉ** (p3, 08-26) | le second passage probabiliste (existentiel) est complet ; reste p4 contrôle de degré (`hoeffding_upper_tail`) + assemblage final ErdosSpencerLB |
 | p4 (contrôle du degré + assemblage) | `rademacherSum_eq_two_sub` (identité Z = 2·(somme des coords vraies) − somme totale, pont alea signé ↔ sommes d'ensembles), `blockOf`/`drawSet`/`pairFamily` (bloc de t = k/12 points via `Fin.castLEEmb`, tirage → coordonnées vraies, FAMILLE APPARIÉE (drawSet, bloc \\ drawSet)), `blockOf_sum`/`drawSet_sum`/`drawSet_subset`, `drawSet_mem`/`compDraw_mem`, `degree_pairFamily_le` (degré ≤ m par injection vers `Finset.range m` : chaque paire est disjointe donc un point apparaît au plus une fois par tirage), et le THÉORÈME FINAL `erdos_spencer_lb_explicit` : ∀ n k ≥ 1, k ≤ n → ∃ F, maxDegree F ≤ k ∧ ∀ C coloration, Nat.sqrt k ≤ 14 * discrepancy F C — petit k < 12 singletons, gros k = 12 tirages par bloc de k/12 points, triangulaire |Z| ≤ |x| + |x−s| ≤ 2·disc, k ≤ 23t ≤ 184·disc² | brique P2 | **PROUVÉ** (p4, 08-26, axiomes [propext, Classical.choice, Quot.sound]) | **P2 EST ASSEMBLÉ** à constante explicite √k/14 ; la forme optimiste √k/2 (`ErdosSpencerLB`) reste une `Prop` OUVERTE (obstruction structurelle : Paley–Zygmund force m ≥ 12t tirages, degré force m ≤ k — documenté dans le statut du module) |
-| P3 | Banaszczyk 1998 / formes fortes du papier 2025 | aspiration | **NON ENGAGÉ** — exige SDP + dualité, indépendance spectrale affine, brownien discret guidé, concentration matricielle : **aucun de cet étage n'existe dans Mathlib** (vérifié 2026-08-24). Documenté, jamais promis. | — |
+| P3 | Banaszczyk 1998 / formes fortes des papiers 2025 **et 2026** | aspiration | **NON ENGAGÉ** — exige SDP + dualité, indépendance spectrale affine, brownien discret guidé, concentration matricielle : **aucun de cet étage n'existe dans Mathlib** (vérifié 2026-08-24). **Réaudité 2026-09-13** contre le Mathlib pinné (`520045ab`, v4.32.1) : le contournement proposé par arXiv:2609.11189 ne supprime pas l'obstruction, il la **déplace** — sa route exige la *variation totale directionnelle* d'une densité sur convexe ouvert et la *transformée de Banaszczyk* préservée sous translation, deux notions **absentes du même Mathlib** (`Banaszczyk` : 0 occurrence ; `totalVariation` n'existe que pour les mesures signées ; la théorie BV de Mathlib concerne la dérivabilité a.e. des fonctions de `ℝ`). Ce que ce papier rapproche, ce sont les *socles* : gaussiennes (`Probability/Distributions/Gaussian/*`) et `ConvexBody` (`Analysis/Convex/Body.lean`) sont présents ; le **pont** manque. Documenté, jamais promis. | — |
+
+### Statut épistémique — mise à jour 2026-09-13
+
+Le preprint **arXiv:2609.11189** (*Vector Balancing via Directional Total Variation*, Guo–Fang–Lu, soumis le 10/09/2026) annonce une borne universelle de **`3√(2π) ≈ 7,52`** pour le problème de signature de Komlós, et **`3√(2πt)`** pour Beck–Fiala au degré `t` — soit la dépendance en `√t` prédite par la conjecture. Cela **retire aux deux énoncés leur statut de conjecture ouverte**.
+
+Trois réserves, qui sont la raison pour laquelle la colonne « Statut » ci-dessus continue de dire `Prop nommée` et non « résolue » :
+
+1. le preprint a moins d'une semaine et **n'est pas revu par les pairs** ;
+2. la preuve annoncée est **existentielle** (aucune implémentation revendiquée, constante non optimale) ;
+3. les énoncés de ce lake ne sont **pas verbatim** ceux du papier — `ℚ` contre `ℝ`, `Nat.sqrt` (plancher entier) contre `√` réelle, borne stricte contre non stricte. Écrire « résolue » laisserait croire que *l'énoncé du lake* est déchargé : il ne l'est pas, aucune preuve formelle n'est engagée ici.
+
+**Attention à la constante** : `3√(2π) = √(18π) ≈ 7,5199`. La forme `√(32π) ≈ 10,0265`, qui circule, **n'est pas** celle du papier — c'est exactement 4/3 de celle-ci.
+
+Fait notable, cité verbatim depuis l'abstract : *« The proof was discovered by the Odin Automatic AI Research Agent. »*
 
 ## Découpage de la noix (P1) — grignotage multi-cycles
 

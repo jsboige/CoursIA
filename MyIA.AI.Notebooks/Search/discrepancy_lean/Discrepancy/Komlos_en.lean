@@ -44,7 +44,14 @@ every matrix `A` with `n` **unit** columns (`∑ i, A i j ^ 2 = 1`) admits a
 absolute value.
 
 Banaszczyk's theorem (1998) gives `O(√(log n))`; the conjecture requires
-`O(1)`. Open. -/
+`O(1)`. In 2026, the preprint arXiv:2609.11189 (Guo–Fang–Lu, 10/09/2026)
+announces a resolution: the signed sum has `ℓ∞` norm **less than**
+`3√(2π) ≈ 7.52`, independently of dimension and of the number of columns.
+
+That preprint is **not yet peer-reviewed**. The statement above remains a named
+`Prop` — no formal proof is engaged. Note it is stated over `ℚ` with `C : ℚ`,
+whereas the paper's bound is **real**: any future alignment must explicitly
+choose a rational witness (`8` works). -/
 def KomlosConjecture : Prop :=
   ∃ C : ℚ, ∀ (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℚ),
     (∀ j : Fin n, ∑ i, A i j * A i j = 1) →
