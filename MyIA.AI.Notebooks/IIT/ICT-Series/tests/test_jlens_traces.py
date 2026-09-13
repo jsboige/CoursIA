@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ict import jlens_traces as jt
 from ict import sae_traces as st
 from ict import workspace
+from ict.trace_contract import TraceContractError
 
 D_JLENS = 2000          # dimension du J-space (nom de champ ``d_sae`` herite du schema commun)
 K_TOPK = 50             # top-k des directions J gardees par token (troncature rang-k)
@@ -97,11 +98,16 @@ def test_load_traces_roundtrip(jlens_npz):
 
 
 def test_load_traces_accepts_missing_lens(tmp_path):
-    """Retro-compatibilite : un extracteur qui n'ecrit pas ``lens`` est accepte."""
+    """Contrat v1 (#15476 acceptance #1) : un manifeste nu (sans
+    ``instrument`` ni ``lens`` legacy ni champ inférable) est REFUSE — c'est
+    la protection anti-melange. Avant le contrat, la rétro-compat chargeait
+    le manifeste tel quel ; l'acceptance #1 a assume cette régression pour
+    fermer la porte au melange silencieux.
+    """
     path = tmp_path / "no_lens.npz"
     _write_npz(path, None)
-    tr = jt.load_traces(path)
-    assert "lens" not in tr["meta"]            # chargee telle quelle
+    with pytest.raises(TraceContractError, match="Migration requise"):
+        jt.load_traces(path)
 
 
 def test_load_traces_rejects_sae_trace(tmp_path):
@@ -113,12 +119,12 @@ def test_load_traces_rejects_sae_trace(tmp_path):
 
 
 def test_cross_loader_separation(jlens_npz):
-    """La trace J-Lens passe le loader J-Lens ; le loader SAE l'accepte aussi
-    (il ne valide pas le champ lens) -- mais l'inverse (trace SAE via loader
-    J-Lens) est bloque, couvert par test_load_traces_rejects_sae_trace."""
-    tr_jlens = jt.load_traces(jlens_npz)
-    tr_sae_loader = st.load_traces(jlens_npz)   # le loader SAE ne filtre pas
-    assert tr_jlens["meta"] == tr_sae_loader["meta"]
+    """Contrat v1 (#15476 acceptance #1) : une trace J-Lens (instrument='jlens')
+    est REFUSEE par le chargeur SAE — c'est le mecanisme central anti-melange.
+    L'inverse (trace SAE via J-Lens loader) reste couvert par
+    test_load_traces_rejects_sae_trace."""
+    with pytest.raises(TraceContractError, match="attendu='sae'"):
+        st.load_traces(jlens_npz)
 
 
 # --------------------------------------------------------------------------- #

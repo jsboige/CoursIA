@@ -13,9 +13,10 @@ Three distinct causes were measured firsthand on 2026-08-14 (issue #10928):
   - #10898 : the head commit's SUBJECT contained the literal ``[skip ci]`` --
     GitHub skipped every ``pull_request`` workflow (only CodeQL ran). Fixed by a
     re-push whose message does not carry the token.
-  - #10558 : PR opened by the bot (``app/github-actions``). A push made with
-    ``GITHUB_TOKEN`` does not create a new workflow run (GitHub anti-recursion)
-    -- structural, by design, but nowhere written.
+  - #10558 : PR opened by the bot (``github-actions[bot]`` in REST,
+    ``app/github-actions`` in GraphQL -- both recognised since #15758). A push
+    made with ``GITHUB_TOKEN`` does not create a new workflow run (GitHub
+    anti-recursion) -- structural, by design, but nowhere written.
   - #10902 : unknown cause; the PR was ``DIRTY`` and its rebase re-triggered CI.
 
 This tool is an ADVISORY organ, never blocking (it cannot block: the missing
@@ -50,16 +51,20 @@ import argparse
 import json
 import subprocess
 import sys
-from typing import Iterable
 
 LABEL_DEFAULT = "pr-gate-missing"
 LABEL_BOT_DEFAULT = "pr-gate-missing-bot"
 LABEL_COLOR = "b60205"  # red -- "invisible required-context blocker, needs a push"
 LABEL_BOT_COLOR = "d93f0b"  # orange -- "structural bot case (GITHUB_TOKEN anti-recursion)"
-LABEL_DESC = ("PR gate absent du rollup: contexte requis jamais rapporte -- "
-              "PR verrouillee malgre des checks verts (#10928)")
-LABEL_BOT_DESC = ("PR du bot sans PR gate: structural (push GITHUB_TOKEN ne cree "
-                  "pas de workflow run) -- merge admin ou push humain (#10928)")
+# GitHub rejette toute description de label de plus de 100 caracteres, et
+# `ensure_label` avalait ce refus (mesure #15621 : 108 c ici, 121 c et 145 c
+# plus bas -- les trois labels etaient absents du depot tandis que le sweep
+# lisait `mode=apply`). La limite est epinglee par
+# `test_label_descriptions_within_github_limit` : elles derivent facilement.
+LABEL_DESC = ("PR gate absent du rollup: contexte requis jamais rapporte, "
+              "PR bloquee, checks verts (#10928)")
+LABEL_BOT_DESC = ("PR du bot sans PR gate: un push GITHUB_TOKEN ne cree pas "
+                  "de workflow run -- merge admin (#10928)")
 
 # Issue #14477 (cause 5, mesuree 2026-09-03 sur #14220) : une PR en conflit
 # avec main ne recoit AUCUN run `pull_request` -- GitHub ne calcule pas de
@@ -68,15 +73,38 @@ LABEL_BOT_DESC = ("PR du bot sans PR gate: structural (push GITHUB_TOKEN ne cree
 # aucun run). Label distinct : le remede n'est pas un push, c'est un conflit.
 LABEL_CONFLICT_DEFAULT = "pr-gate-conflict"
 LABEL_CONFLICT_COLOR = "fdd0a2"  # saumon -- "PR dirty, remede = resoudre le conflit"
-LABEL_CONFLICT_DESC = ("PR gate absent car la PR est en conflit avec main "
-                       "(mergeable_state=dirty) -- aucun run pull_request tant "
-                       "que le conflit n'est pas resolu (#14477)")
+LABEL_CONFLICT_DESC = ("PR gate absent: PR en conflit avec main, aucun run "
+                       "pull_request tant que le conflit dure (#14477)")
 
 # The exact check-run name posted by pr_gate.py --self-name "PR gate" and
 # required by main's branch protection. Renaming here silently detaches the
 # detector (same invariant as pr-gate.yml: keep the string stable).
 GATE_NAME = "PR gate"
-BOT_LOGIN = "app/github-actions"
+
+# Le bot du depot n'a pas UNE orthographe : elle depend de l'API qui le rend.
+# Mesure #15758 (2026-09-12, sur #15678) : REST -- la source du collecteur,
+# `/pulls` puis `.user.login` -- ecrit `github-actions[bot]` ; GraphQL (`gh pr
+# view --json author`) ecrit `app/github-actions` ; le champ brut
+# `author.login` ecrit `github-actions`. La constante unique d'origine portait
+# l'orthographe GraphQL pendant que le collecteur lisait en REST, donc
+# l'egalite etait fausse pour TOUTE PR du bot : `bot_missing` et la cause
+# `bot` etaient structurellement inatteignables. Les trois orthographes
+# mesurees sont ici, comme dans les autres organes qui lisent un auteur
+# (`ci/guard_comment_upsert.py` GUARD_BOT_LOGINS, `pick_idle_grain.py`
+# AUTOMATION_AUTHORS, `review_coverage.py`).
+BOT_LOGINS = frozenset({"app/github-actions", "github-actions[bot]",
+                        "github-actions"})
+
+
+def is_bot_author(login: object) -> bool:
+    """L'auteur est-il le bot du depot, quelle que soit l'orthographe rendue ?
+
+    Point de comparaison UNIQUE : les deux sites (`classify`, verdict
+    `bot_missing`, et `prescribe`, cause `bot`) l'appellent, donc une
+    quatrieme orthographe ne peut pas n'en corriger qu'un seul.
+    """
+    return (login or "") in BOT_LOGINS
+
 
 # Marker framing the advisory comment, so re-runs can find and update it.
 COMMENT_MARKER_START = "<!-- PR-GATE-MISSING:START -->"
@@ -143,7 +171,9 @@ REMEDIATION_UNKNOWN = (
 )
 
 REMEDIATION_BOT = (
-    "PR ouverte par le bot (`app/github-actions`) sans `PR gate` dans son "
+    "PR ouverte par le bot du depot (son login est nomme dans la ligne "
+    "« Cause mesuree » ci-dessous ; il s'ecrit `github-actions[bot]` en REST et "
+    "`app/github-actions` en GraphQL) sans `PR gate` dans son "
     "rollup : cas **structurel** (issue #10928). Un push fait avec "
     "`GITHUB_TOKEN` ne cree pas de nouveau workflow run (regle anti-recursion "
     "GitHub), donc le contexte requis ne sera jamais rapporte par un push du "
@@ -193,8 +223,10 @@ def classify(pr: dict) -> tuple[str, str]:
         return ("draft", f"#{number} draft PR, non mergeable")
     if GATE_NAME in rollup_names(pr):
         return ("has_gate", f"#{number} PR gate present (conclusion: {len(rollup_names(pr))} checks)")
-    if pr.get("author_login") == BOT_LOGIN:
-        return ("bot_missing", f"#{number} bot PR, no PR gate (structural)")
+    if is_bot_author(pr.get("author_login")):
+        return ("bot_missing",
+                f"#{number} bot PR, no PR gate (structural; auteur "
+                f"{pr.get('author_login')})")
     return ("missing", f"#{number} PR gate absent du rollup")
 
 
@@ -221,7 +253,8 @@ def prescribe(pr: dict) -> tuple[str, str]:
         retarget  -> un ``base_ref_changed`` postérieur au dernier run
                      ``pull_request`` : remede = commit vide a arbre identique
         skip_ci   -> token ``[skip ci]`` dans le sujet de tete (cause #10898)
-        bot       -> PR ``app/github-actions`` (cause #10558)
+        bot       -> auteur = bot du depot, quelle que soit l'orthographe
+                     rendue (cause #10558 ; multi-orthographe #15758)
         unknown   -> aucune des quatre : nommer les mesures, ne rien prescrire
 
     Returns:
@@ -237,8 +270,10 @@ def prescribe(pr: dict) -> tuple[str, str]:
                 f"base_ref_changed={changed}, dernier run PR gate={last or 'aucun'}")
     if "[skip ci]" in head_subject(pr):
         return ("skip_ci", f"sujet de tete porte le token [skip ci] : {head_subject(pr)[:72]!r}")
-    if pr.get("author_login") == BOT_LOGIN:
-        return ("bot", "auteur app/github-actions -- push GITHUB_TOKEN sans run")
+    if is_bot_author(pr.get("author_login")):
+        return ("bot",
+                f"auteur {pr.get('author_login')} (bot du depot) -- "
+                "push GITHUB_TOKEN sans run")
     return ("unknown",
             f"mergeable_state={ms}, pas de base_ref_changed, sujet sans [skip ci], "
             f"auteur {pr.get('author_login')}")
@@ -346,7 +381,8 @@ def list_open_prs(repo: str) -> list[dict]:
     pulls = _gh_rows([
         "api", f"repos/{repo}/pulls?state=open&per_page=100", "--paginate",
         "--jq", '.[] | {number, draft: .draft, base: .base.ref, '
-                'author: .user.login, sha: .head.sha}',
+                'author: .user.login, labels: [.labels[] | {name}], '
+                'sha: .head.sha}',
     ])
     out: list[dict] = []
     for p in pulls:
@@ -357,14 +393,36 @@ def list_open_prs(repo: str) -> list[dict]:
                 "--jq", "[.check_runs[].name]",
             ]) or []
             rollup = [{"name": n} for n in names]
-        out.append({
-            "number": p["number"],
-            "base_ref_name": p.get("base"),
-            "is_draft": bool(p.get("draft")),
-            "author_login": p.get("author") or "",
-            "statusCheckRollup": rollup,
-        })
+        out.append(classify_input(p["number"], p.get("base"), p.get("draft"),
+                                  p.get("author"), rollup, p.get("labels")))
     return out
+
+
+def classify_input(number: int, base: str | None, draft: object,
+                   author: str | None, rollup: list[dict],
+                   labels: list | None = None) -> dict:
+    """La SEULE forme d'entree de ``classify()`` -- produite ici, pas ailleurs.
+
+    Le collecteur et le consommateur ont diverge (#15621) : ``list_open_prs``
+    s'est mis a emettre des cles plates a la migration REST (#14488) pendant que
+    ``main`` continuait de relire des cles GraphQL (``baseRefName``,
+    ``isDraft``, ``author``). Chaque ``.get()`` rendait son defaut, donc
+    ``excluded_base``, ``draft`` et ``bot_missing`` etaient inatteignables --
+    mesure en production : ``excluded_base: 0``, ``draft: 0`` sur 60 PRs
+    ouvertes, dont 5 stackees et 2 drafts, classees ``missing`` a la place.
+
+    Une seule fabrique, utilisee par le collecteur ET epinglee par les tests :
+    un re-mappage ulterieur dans ``main`` fait rougir la suite au lieu de
+    desactiver silencieusement trois verdicts.
+    """
+    return {
+        "number": number,
+        "base_ref_name": base,
+        "is_draft": bool(draft),
+        "author_login": author or "",
+        "statusCheckRollup": rollup or [],
+        "labels": labels or [],
+    }
 
 
 def enrich_candidate(repo: str, number: int) -> dict:
@@ -413,14 +471,35 @@ def enrich_candidate(repo: str, number: int) -> dict:
     }
 
 
+def _gh_write(args: list[str], what: str) -> bool:
+    """Run one gh WRITE, reporting a refusal instead of swallowing it.
+
+    Mesure #15621 : `ensure_label` passait a `gh label create` une description de
+    108 c (les deux autres faisaient 121 c et 145 c), au-dessus de la limite
+    GitHub de 100. Le label n'etait jamais cree, `mode=apply` continuait de lire
+    vert, et chaque `--add-label` en aval echouait pour la meme raison. Avec
+    `check=False` + `capture_output=True`, ces refus ne laissaient AUCUNE trace :
+    le log du sweep annoncait sept PRs signalees sans qu'aucun de ses trois
+    labels n'existe.
+
+    L'organe est advisory et ne doit pas faire tomber le sweep : il SIGNALE, il
+    ne leve pas. Retourne True quand l'ecriture a ete acceptee.
+    """
+    proc = subprocess.run(["gh", *args], capture_output=True, text=True,
+                          check=False, encoding="utf-8")
+    if proc.returncode == 0:
+        return True
+    detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+    print(f"[pr-gate-missing] WARNING {what} refused (gh exit {proc.returncode}): "
+          f"{detail[0] if detail else 'no output'}", file=sys.stderr)
+    return False
+
+
 def ensure_label(repo: str, name: str, color: str, desc: str, dry_run: bool) -> None:
     if dry_run:
         return
-    subprocess.run(
-        ["gh", "label", "create", name, "--repo", repo,
-         "--color", color, "--description", desc, "--force"],
-        capture_output=True, text=True, check=False, encoding="utf-8",
-    )
+    _gh_write(["label", "create", name, "--repo", repo, "--color", color,
+               "--description", desc, "--force"], f"label create {name!r}")
 
 
 def has_label(pr: dict, name: str) -> bool:
@@ -430,19 +509,15 @@ def has_label(pr: dict, name: str) -> bool:
 def apply_label(repo: str, number: int, name: str, dry_run: bool) -> None:
     if dry_run:
         return
-    subprocess.run(
-        ["gh", "pr", "edit", str(number), "--repo", repo, "--add-label", name],
-        capture_output=True, text=True, check=False, encoding="utf-8",
-    )
+    _gh_write(["pr", "edit", str(number), "--repo", repo, "--add-label", name],
+              f"add-label {name!r} on #{number}")
 
 
 def remove_label(repo: str, number: int, name: str, dry_run: bool) -> None:
     if dry_run:
         return
-    subprocess.run(
-        ["gh", "pr", "edit", str(number), "--repo", repo, "--remove-label", name],
-        capture_output=True, text=True, check=False, encoding="utf-8",
-    )
+    _gh_write(["pr", "edit", str(number), "--repo", repo, "--remove-label", name],
+              f"remove-label {name!r} on #{number}")
 
 
 def existing_comment(repo: str, number: int) -> int | None:
@@ -489,10 +564,23 @@ def _remediate_for(repo: str, number: int, extra: dict, verdict: str,
 def post_comment(repo: str, number: int, body: str, dry_run: bool) -> None:
     if dry_run:
         return
-    subprocess.run(
-        ["gh", "pr", "comment", str(number), "--repo", repo, "--body", body],
-        capture_output=True, text=True, check=False, encoding="utf-8",
-    )
+    _gh_write(["pr", "comment", str(number), "--repo", repo, "--body", body],
+              f"comment on #{number}")
+
+
+def retract_comment(repo: str, comment_id: int, body: str, dry_run: bool) -> None:
+    """Rewrite one PR-gate-missing comment in place (PATCH, idempotent).
+
+    Hermes #15621 (c.16h54, point 3) : le commentaire marque laisse par un faux
+    positif de classification affirmait des proprietes non mesurees (« auteur :
+    (pas une PR bot) », « investigation manuelle ») -- le laisser tel quel
+    fabrique du travail de coordination pour une cause triviale et design.
+    """
+    if dry_run:
+        return
+    _gh_write(["api", f"repos/{repo}/issues/comments/{comment_id}",
+               "-X", "PATCH", "-f", f"body={body}"],
+              f"retract comment {comment_id}")
 
 
 def labeled_prs(repo: str, label: str) -> dict[int, bool]:
@@ -548,14 +636,10 @@ def main(argv: list[str] | None = None) -> int:
 
     for pr in prs:
         number = pr["number"]
-        enriched = {
-            "number": number,
-            "base_ref_name": pr.get("baseRefName"),
-            "is_draft": pr.get("isDraft", False),
-            "author_login": (pr.get("author") or {}).get("login", ""),
-            "statusCheckRollup": pr.get("statusCheckRollup") or [],
-            "labels": (pr.get("labels") or []),
-        }
+        # Le collecteur livre DEJA la forme d'entree de classify() (#15621 :
+        # ce bloc la reconstruisait avec des cles GraphQL que list_open_prs
+        # n'emet pas, desactivant excluded_base / draft / bot_missing).
+        enriched = pr
         verdict, why = classify(enriched)
         counts[verdict] = counts.get(verdict, 0) + 1
 
@@ -575,10 +659,13 @@ def main(argv: list[str] | None = None) -> int:
             if number in labeled_conflict:
                 remove_label(repo, number, args.label_conflict, args.dry_run)
                 print(f"  #{number:<6} has_gate   {why}  (conflict label retracted)")
-        elif verdict == "draft":
-            pass  # quiet -- the common non-defect case
-        else:  # excluded_base
-            pass  # quiet -- PRs targeting a feature branch never see PR gate
+        elif verdict in ("draft", "excluded_base"):
+            # Hermes #15621 (c.16h54, point 3) : la retombee de label n'existait
+            # que sur `has_gate` -- une PR signee « missing » par l'ancien
+            # collapse de forme puis correctement reclassee gardait son label et
+            # son commentaire FAUX a vie. Retrait symetrique, idempotent.
+            _retract_reclassified(repo, number, verdict, why, args,
+                                  labeled, labeled_bot, labeled_conflict)
 
     print(f"[pr-gate-missing] done: {counts} causes={causes}")
     return 0
@@ -595,6 +682,46 @@ def _comment_body(remediation: str, cause_line: str = "") -> str:
         parts += ["", cause_line]
     parts.append(COMMENT_MARKER_END)
     return "\n".join(parts)
+
+
+def _retraction_body(verdict: str, why: str) -> str:
+    # SANS marqueurs, volontairement : une PR qui redevient `missing` (retarget
+    # vers main, sortie du draft) doit obtenir une remediation FRAICHE --
+    # `existing_comment` ne doit plus trouver ce commentaire retracte, sinon
+    # il resterait muet sur un vrai defaut futur.
+    return "\n".join([
+        "## Retracte -- cette PR n'est pas un cas « PR gate absent »",
+        "",
+        f"Classe `{verdict}` : {why}.",
+        "Le signalement precedent etait un artefact du defaut de forme #15621",
+        "(classification figee sur `missing`). Aucune action requise.",
+    ])
+
+
+def _retract_reclassified(repo: str, number: int, verdict: str, why: str,
+                          args: object, labeled: dict, labeled_bot: dict,
+                          labeled_conflict: dict) -> None:
+    """Idempotent retraction of a misclassification's artifacts.
+
+    Symetrique au `has_gate` ci-dessus, mais la reecriture du commentaire est
+    en plus : pour `has_gate` le commentaire reste en historique (le retrait du
+    label EST le signal de resolution), alors qu'ici le commentaire laisse par
+    le faux positif affirmait des proprietes non mesurees. Le check des
+    commentaires est INCONDITIONNEL (pas seulement si un label est present) :
+    pendant l'episode 404 des labels (mesure #15621, defaut 2), les
+    commentaires ont ete postes alors qu'aucun label n'a jamais ete cree.
+    """
+    for present, label in ((number in labeled, args.label),
+                           (number in labeled_bot, args.label_bot),
+                           (number in labeled_conflict, args.label_conflict)):
+        if present:
+            remove_label(repo, number, label, args.dry_run)
+            print(f"  #{number:<6} {verdict:<8} {why}  (label {label} retracted)")
+    comment_id = existing_comment(repo, number)
+    if comment_id is not None:
+        retract_comment(repo, comment_id, _retraction_body(verdict, why),
+                        args.dry_run)
+        print(f"  #{number:<6} {verdict:<8} {why}  (comment retracted)")
 
 
 if __name__ == "__main__":

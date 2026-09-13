@@ -15,7 +15,7 @@ name: Adjacency stale-verdict sweep
 #
 # Ce que fait ce sweep (simuler, jamais outrepasser) :
 #   1. Énumérer les PR ouvertes non-fork (REST) et ne garder que celles dont
-#      le check "Always-on guards -- 12 organes, 1 checkout" est ROUGE.
+#      le check "Always-on guards -- 13 organes, 1 checkout" est ROUGE.
 #   2. Lancer refresh_stale_adjacency.py dessus : il re-simule le garde contre
 #      la séquence de merges COURANTE (le même calcul que la CI).
 #   3. Si la simulation PASSE alors que la CI échoue, le script appose le
@@ -33,7 +33,7 @@ name: Adjacency stale-verdict sweep
 # d'appelant) est loggé ::warning:: et ne rougit pas la CI.
 #
 # Couplage au nom de check, déclaré : le script lit le nom exact
-# "Always-on guards -- 12 organes, 1 checkout" via `gh pr checks` ; le
+# "Always-on guards -- 13 organes, 1 checkout" via `gh pr checks` ; le
 # pré-filtre ci-dessous matche tout nom commençant par "Always-on guards"
 # pour qu'un changement de compte d'organes (12 -> 13) ne débranche PAS le
 # sweep en silence. Si AUCUNE PR ouverte ne porte de jambe "Always-on
@@ -130,7 +130,7 @@ jobs:
           set -uo pipefail
 
           # Plafond d'éditions de body par sweep : chaque edit re-déclenche le
-          # workflow always-on-guards complet (~12 organes) pour CETTE PR. Sous
+          # workflow always-on-guards complet (~13 organes) pour CETTE PR. Sous
           # péremption massive (cas fondateur : 7 PRs) le sweep suivant draine
           # le reste -- jamais une cascade sous congestion (#12728).
           MAX_REFRESH=8

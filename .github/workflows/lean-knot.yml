@@ -127,11 +127,32 @@ jobs:
   # les steps ; le checkout vit ICI car une action locale ne se résout
   # qu'une fois le dépôt materialisé dans le workspace.
   # Retour arrière = remettre `uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main`
-  # avec ses `with:` + retirer runs-on/if/steps du job.
+  # + retirer runs-on/if/steps du job, ET retirer `build-jobs:` du bloc `with:`
+  # -- dans le job `ci` COMME dans le job `proof-integrity`, les deux le portent.
+  # `build-jobs` est un input de la COMPOSITE ACTION seulement :
+  # le reusable n'en declare que quatre (`project-path`, `display-name`,
+  # `sorry-baseline`, `sorry-filter-mode`). Le laisser en place rend le fichier
+  # de workflow INVALIDE -- il n'est alors plus charge du tout, et le gate
+  # disparait en silence au lieu de tomber en erreur visible.
+  # Aucune restauration de toolchain n'est requise de ce cote : le reusable
+  # installe elan lui-meme (step `Install elan`, .github/workflows/lean-build.yml)
+  # puis `lake exe cache get`. Le toolchain pre-cuit est ce que le pool
+  # coursia-lean apporte EN PLUS, pas ce qui manque a la voie hebergee.
   ci:
     name: "Lean CI (knot_lean)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
+    #
+    # L'enlisement d'origine (knot_lean proof-integrity, run 103451688746) a
+    # retenu la moitie du pool coursia-lean 3 h 17 sans jamais conclure. La
+    # borne convertit l'enlisement en check ROUGE, visible du merge-gate.
+    #
+    # 300 et pas 60 : maximum LEGITIME mesure du job `ci` = 215 min (succes),
+    # 3 succes au-dessus de 60 min sur 23, mediane 7 min (30 runs, 2026-09-12).
+    # Le maximum legitime et la pathologie vivent dans la meme plage : aucun
+    # seuil de temps de mur ne les separe. NE PAS RESSERRER.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lean-build
@@ -174,6 +195,18 @@ jobs:
     needs: ci
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
+    #
+    # C'est CE job qui s'est enlise 3 h 17 dans l'incident d'origine. La borne
+    # convertit l'enlisement en check ROUGE, sur lequel le merge-gate peut agir.
+    #
+    # 300 et pas 60 : maximum LEGITIME mesure de `proof-integrity` = 177 min,
+    # conclusion `success` (job 102677021168, branche
+    # feature/2874-conway-trivial-alexander, step `lean-axiom` 22:58:13Z ->
+    # 01:53:13Z = 2 h 55). Un `timeout-minutes: 60` l'aurait TUE -- exactement
+    # le faux positif que ce fichier cherche a eviter. Mediane 8 min sur
+    # 20 succes : la queue vient du cache Mathlib froid. NE PAS RESSERRER.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lean-axiom
@@ -217,6 +250,10 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
+    # Bound at 30 minutes (See #15698): this is a lightweight Python scan,
+    # not a Lean build -- a wedge here is much cheaper than on `ci`/`proof-
+    # integrity`, but still must not pin a runner forever.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
