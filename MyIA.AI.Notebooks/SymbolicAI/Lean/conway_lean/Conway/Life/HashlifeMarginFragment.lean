@@ -829,6 +829,115 @@ theorem hashlife_correct_margin_of_period (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_period _ (canonical_sortDedup _) hT0 hper hdiv t)
 
+/-! ## Tranche 8a/8b — chaîne relâchée pour périodes arbitraires
+
+Miroir exact des trois maillons dyadiques ci-dessus, consommant
+`jumpCapturedF_of_period_mod` : la divisibilité `T ∣ 2^level` y est remplacée
+partout par la contrepartie spatiale « toute phase de l'orbite tient dans le
+cadre de reconstruction de la phase de départ » — l'énoncé absolu
+`[o, o + 2^level)²` où `o` est l'offset du cadre `gridToMacroCellWithOffset` —
+qui se transporte au cadrage origine de la cellule par `evolve_shift` +
+`mem_shift`. La phase de départ est automatiquement dans son propre cadre
+(c'est celui construit sur sa boîte) ; l'hypothèse ne porte que sur les
+`T - 1` autres phases. Ouvre la classe aux périodes non dyadiques (phare
+`T = 3`, etc.) dès que le témoin vérifie le containment. -/
+
+/-- **Tranche 8b — capture de la reconstruction, périodes arbitraires.**
+    Variante de `jumpCapturedF_reconstruction_of_period` : la prémisse de
+    divisibilité est remplacée par le containment des phases dans le cadre de
+    reconstruction de `g` (coordonnées absolues). Le transport au cadrage
+    origine de la cellule passe par `toGrid_shift_grid` + `evolve_shift`. -/
+theorem jumpCapturedF_reconstruction_of_period_mod (g : Grid) (hg : Canonical g)
+    {T : Nat} (hT0 : 0 < T) (hper : evolve T g = g)
+    (hwin : ∀ i, i < T → ∀ p ∈ evolve i g,
+      (gridToMacroCellWithOffset g).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset g).1.1
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+      (gridToMacroCellWithOffset g).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset g).1.2
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+        = shift (0 - (gridToMacroCellWithOffset g).1.1,
+            0 - (gridToMacroCellWithOffset g).1.2)
+            ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+      toGrid_shift_grid _ 0 0 _ _
+    have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+        = g := toGrid_gridToMacroCellWithOffset_eq g hg
+    have hwin' : ∀ i, i < T → ∀ p ∈
+        evolve i ((gridToMacroCellWithOffset g).2.toGrid (0, 0)),
+      (0 : Int) ≤ p.1 ∧ p.1 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+        (0 : Int) ≤ p.2 ∧ p.2 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) := by
+      intro i hi p hp
+      rw [hshift, ← evolve_shift, mem_shift, hrt] at hp
+      obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin i hi _ hp
+      dsimp only at hb1 hb2 hb3 hb4
+      omega
+    exact jumpCapturedF_of_period_mod _ hwf hlvl hT0
+      (periodic_fix_toGrid_zero g hg hper) hwin'
+
+/-- **Tranche 8b — hcap de la classe périodique, périodes arbitraires.**
+    Variante de `hcap_of_period` : chaque phase porte son cadre propre, et la
+    prémisse demande que les `T` phases vivent dans le cadre de reconstruction
+    de chacune — pour un oscillateur réel dont les phases se chevauchent, c'est
+    le même voisinage borné décrit `T` fois. -/
+theorem hcap_of_period_mod (g : Grid) (hg : Canonical g) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T g = g)
+    (hwin : ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_mod_period g hper t]
+  have hr : t % T < T := Nat.mod_lt _ hT0
+  have hcan : Canonical (evolve (t % T) g) := by
+    rcases Nat.eq_zero_or_pos (t % T) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  have hfix : evolve T (evolve (t % T) g) = evolve (t % T) g :=
+    evolve_phase_fix g hper _
+  exact jumpCapturedF_reconstruction_of_period_mod _ hcan hT0 hfix (hwin _ hr)
+
+/-- **Tranche 8b — L3 clos pour la classe périodique générale : correction
+    Hashlife des oscillateurs de période arbitraire.** Corollaire d'assemblage
+    miroir de `hashlife_correct_margin_of_period` : sous containment des phases
+    (plus de divisibilité), l'égalité globale s'applique à tout horizon `2^k`
+    sous `centralCorrect`. -/
+theorem hashlife_correct_margin_of_period_mod (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hwin : ∀ r, r < T → ∀ i, i < T →
+      ∀ p ∈ evolve i (evolve r (c.toGrid (0, 0))),
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_period_mod _ (canonical_sortDedup _) hT0 hper hwin t)
+
+
 /-! ## Invariance par translation de la reconstruction (tranche 3, étape 7, brique 1)
 
 Le scoping étape 7 identifie la brique manquante pour la classe des **vaisseaux**
