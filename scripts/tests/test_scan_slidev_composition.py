@@ -126,6 +126,59 @@ class TestGithubAnnotationsNonRegression:
         assert "::warning" in hc and "IMG" in hc
 
 
+class TestConfirmationElement15695:
+    """#15695 : seconde lecture -- une paire qui passe le seuil Range doit
+    AUSSI avoir des boites element qui se chevauchent ; les effleurings
+    eteints sont comptes (notice), pas taus."""
+
+    def test_paire_rapportee_porte_les_deux_mesures(self):
+        """Acceptance : la paire rapportee porte overlap (Range) ET
+        element_overlap (boites element) cote a cote."""
+        r = {
+            "slide": 6, "text_head": "vraie collision",
+            "hors_canvas": [], "chevauchements": [{
+                "a": "P.x", "b": "P.y", "a_bbox": [1, 2, 3, 4],
+                "b_bbox": [2, 3, 5, 6], "overlap": [12, 8],
+                "element_overlap": [11.5, 7.25],
+            }],
+            "chevauchements_eteints": 0,
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        chev = next(l for l in lines if "[CHEVAUCHEMENT]" in l)
+        assert "overlap=[12, 8]px" in chev
+        assert "element_overlap=[11.5, 7.25]px" in chev
+
+    def test_effleurement_eteint_emet_une_notice_comptee(self):
+        """Un graze Range eteint par la porte element n'est PAS un silence :
+        notice avec compte et reference -- sinon un correctif muet serait
+        indiscernable d'un organe mort."""
+        r = {
+            "slide": 16, "text_head": "graze code padding",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": 1,
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        fant = next(l for l in lines if "CHEVAUCHEMENT-FANTOME" in l)
+        assert "::notice" in fant
+        assert "1 effleurement" in fant
+        assert "#15695" in fant
+        assert not any("[CHEVAUCHEMENT]" in l for l in lines), (
+            "eteint = pas de warning CHEVAUCHEMENT"
+        )
+
+    def test_slide_propre_sans_eteints_n_emet_rien(self):
+        r = {
+            "slide": 2, "text_head": "propre",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": 0,
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        assert not any("CHEVAUCHEMENT" in l for l in lines)
+
+
 class TestBornesAdvisory:
     def test_borne_documentee_dans_docstring(self):
         """Le signal est ADVISORY : le docstring du module (charge par

@@ -271,6 +271,10 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
             // (RECOUVREMENT ci-après), qui mesure le contenu rendu et
             // l'ordre de peinture au lieu de la boîte élément naïve.
             const chevauchements = [];
+            // #15695 : paires qui franchissent le seuil Range (> 1 px) mais
+            // sont éteintes par la porte de confirmation élément — comptées
+            // pour que le résumé distingue « rien détecté » de « organe muet ».
+            let chevauchementsEteints = 0;
             const textEls = Array.from(
                 root.querySelectorAll('h1, h2, h3, h4, p, li, blockquote, td, th')
             );
@@ -319,12 +323,45 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                     const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
                     const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
                     if (overlapX > 1 && overlapY > 1) {
-                        chevauchements.push({
-                            a: a.key, b: b.key,
-                            a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
-                            b_bbox: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)],
-                            overlap: [Math.round(overlapX), Math.round(overlapY)],
-                        });
+                        // Passe de confirmation (#15695) : le rect du Range
+                        // absorbe le padding+bordure des enfants inline à
+                        // boîte propre (<code>, <sup>, <kbd>…) et déborde la
+                        // line-box d'environ 1.2 px — un effleurement de
+                        // Range n'est pas un chevauchement rendu. Témoin
+                        // fondateur : rects Range recouverts de 1.23 px
+                        // pendant que les boîtes élément sont séparées de
+                        // +1.57 px (trois mesures indépendantes VISUAL-OK).
+                        // Les getBoundingClientRect() des éléments disent la
+                        // vérité du rendu : s'ils ne se chevauchent pas, la
+                        // paire n'existe pas à l'écran. Limite assumée : un
+                        // enfant hors flux qui déborderait seul de la boîte
+                        // de son élément voit son vrai recouvrement éteint
+                        // par cette porte — le contrôle négatif (deux blocs
+                        // absolus qui se recouvrent) n'y passe pas : leurs
+                        // boîtes élément se chevauchent aussi.
+                        const ra = a.el.getBoundingClientRect();
+                        const rb = b.el.getBoundingClientRect();
+                        const elOverlapX = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+                        const elOverlapY = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+                        if (elOverlapX > 0 && elOverlapY > 0) {
+                            chevauchements.push({
+                                a: a.key, b: b.key,
+                                a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
+                                b_bbox: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)],
+                                overlap: [Math.round(overlapX), Math.round(overlapY)],
+                                // #15695 : les deux instruments côte à côte —
+                                // le graze Range qui a franchi le seuil et la
+                                // mesure élément qui confirme (ou, dans le
+                                // résumé, l'absence de paire = boîtes
+                                // élément disjointes).
+                                element_overlap: [
+                                    Math.round(elOverlapX * 100) / 100,
+                                    Math.round(elOverlapY * 100) / 100,
+                                ],
+                            });
+                        } else {
+                            chevauchementsEteints++;
+                        }
                     }
                 }
             }
@@ -523,7 +560,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                 };
             }
 
-            return { horsCanvas, chevauchements, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
+            return { horsCanvas, chevauchements, chevauchementsEteints, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
         }""",
         [canvas_w, canvas_h],
     )
@@ -539,6 +576,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
         "hors_canvas": hors,
         "container_only": bool(hors) and not any(h.get("tag") in CONTENT_TAGS for h in hors),
         "chevauchements": raw.get("chevauchements", []),
+        "chevauchements_eteints": raw.get("chevauchementsEteints", 0),
         "recouvrements": raw.get("recouvrements", []),
         "occupation": raw.get("occupation"),
     }
@@ -647,7 +685,14 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
         for c in r.get("chevauchements", [])[:3]:
             out.append(
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
-                f"{c['a']} × {c['b']} overlap={c['overlap']}px"
+                f"{c['a']} × {c['b']} overlap={c['overlap']}px "
+                f"element_overlap={c.get('element_overlap')}px"
+            )
+        if r.get("chevauchements_eteints"):
+            out.append(
+                f"::notice file={rel},line={line}::[CHEVAUCHEMENT-FANTOME] slide {r['slide']} ({head}) — "
+                f"{r['chevauchements_eteints']} effleurement(s) Range éteint(s) par la "
+                f"confirmation élément (#15695) : boîtes élément disjointes, rien à l'écran"
             )
         for rv in r.get("recouvrements", [])[:3]:
             out.append(
@@ -744,6 +789,7 @@ def main():
     n_total = len(results)
     n_hors = sum(1 for r in results if content_overflow(r))
     n_chev = sum(1 for r in results if r.get("chevauchements"))
+    n_eteints = sum(r.get("chevauchements_eteints") or 0 for r in results)
     n_rec = sum(1 for r in results if r.get("recouvrements"))
     n_occ = sum(1 for r in results if occupation_flagged(r, canvas_h))
 
@@ -775,6 +821,7 @@ def main():
         "n_slides": n_total,
         "n_hors_canvas": n_hors,
         "n_chevauchements": n_chev,
+        "n_chevauchements_eteints": n_eteints,
         "n_recouvrements": n_rec,
         "n_occupation_flagged": n_occ,
         "recouvrement_borne": (
