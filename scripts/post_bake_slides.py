@@ -63,6 +63,15 @@ contract, decided on #15703:
   - `%20` normalization is bounded to the absolute-path context: prose
     `Program%20Files` survives the bake untouched.
 
+Tell #15747 ★ NEW : `%20` is the URL encoding of a SPACE, not a path
+separator. The canonical form decodes it to a space on both sides of the
+build-root comparison, and the emitted in-root tail keeps its original
+encoding (`mon%20image.png` in -> `mon%20image.png` out, resolving to the
+spaced filename on disk; the pre-#15747 `%20 -> /` decode rewrote it to
+`mon/image.png`, a silent 404). A build root containing a literal space
+(the `Jean Dupont` class) now bakes successfully instead of failing
+closed. Prose `%20` still survives untouched (#15703 acceptance 4).
+
 This module:
   - rewrites the build-root prefix of every absolute Windows path
     (`C:/...`, `C:\\...`, `%20`-encoded) baked into the output;
@@ -110,20 +119,35 @@ def _is_target(fn: str) -> bool:
 
 
 def _canonical(path: str) -> str:
-    """Canonical emission form: URL-encoded `%20` separators and native
-    backslashes to `/`, case PRESERVED (the rewritten rest of an in-root
-    path keeps its original case)."""
-    return path.replace("%20", "/").replace("\\", "/")
+    """Canonical comparison form: URL-encoded `%20` decoded to a SPACE
+    (it is the encoding of one, never a path separator, #15747) and
+    native backslashes to `/`, case PRESERVED."""
+    return path.replace("%20", " ").replace("\\", "/")
+
+
+def _original_prefix_end(token_str: str, canon_len: int) -> int:
+    """Index in `token_str` where its canonical form reaches `canon_len`
+    characters. `%20` compresses 3 chars to 1 when canonicalized, so the
+    root boundary cannot be sliced off the canonical string: walk the
+    original instead, so the emitted tail keeps its original encoding
+    (#15747 -- a `%20` coming in goes out as `%20`)."""
+    clen = 0
+    i = 0
+    n = len(token_str)
+    while i < n and clen < canon_len:
+        i += 3 if token_str.startswith("%20", i) else 1
+        clen += 1
+    return i
 
 
 def _norm(path: str) -> str:
     """Normalize a path for build-root comparison: the canonical form
     case-folded (Windows paths are case-insensitive). Applied to BOTH
     the build root and each candidate token, so the prefix comparison is
-    encoding- and case-agnostic. A build root containing a literal space
-    can never match a baked token (tokens are whitespace-bounded, and
-    `%20` canonicalizes to `/`), so such roots fail closed -- consistent
-    with the reject-don't-rewrite posture of #15703."""
+    encoding- and case-agnostic. `%20` in a token decodes to a space, so
+    a build root containing a literal space (the `Jean Dupont` class)
+    matches its `%20`-encoded baked tokens and the bake SUCCEEDS
+    (#15747 -- previously such roots failed closed)."""
     return _canonical(path).lower()
 
 
@@ -133,10 +157,12 @@ def _rewrite(content: bytes, build_root: str) -> bytes:
 
     `build_root` is the absolute path of the build output directory (the
     form `os.path.abspath(ROOT)` produces on the bake machine). The
-    comparison is case-insensitive with `%20` and backslash separators
-    normalized to `/` on both sides, so `<root>/assets/app.js` becomes
-    `./assets/app.js` byte-exactly, and a token equal to the root itself
-    becomes `.`.
+    comparison is case-insensitive with `%20` decoded to a space and
+    backslash separators normalized to `/` on both sides, so
+    `<root>/assets/app.js` becomes `./assets/app.js` byte-exactly, a
+    token equal to the root itself becomes `.`, and the emitted tail
+    keeps its ORIGINAL encoding (`%20` in, `%20` out -- the reference
+    stays valid for the on-disk spaced filename, #15747).
 
     Raises `OutOfRootPathError` naming the path when `content` carries an
     absolute path that is NOT under `build_root` -- the caller fails the
@@ -149,11 +175,13 @@ def _rewrite(content: bytes, build_root: str) -> bytes:
         token_str = token.decode("utf-8", "replace")
         token_n = _norm(token_str)
         if token_n == root_n or token_n.startswith(root_n + "/"):
-            # In-root: slice the CASE-PRESERVING canonical form -- the
-            # match guarantees its first len(root_n) chars lowercase to
-            # the root, so the offset is exact and the rest keeps its
-            # original case (only %20/backslash are canonicalized).
-            rest = _canonical(token_str)[len(root_n):]
+            # In-root: slice the ORIGINAL token at the root boundary --
+            # `_original_prefix_end` tracks the 3:1 `%20` compression so
+            # the offset is exact -- then canonicalize only the
+            # separators of the tail. Case and `%20` encoding of the
+            # rest are preserved verbatim (#15747).
+            cut = _original_prefix_end(token_str, len(root_n))
+            rest = token_str[cut:].replace("\\", "/")
             return b"." + rest.encode("utf-8", "replace")
         raise OutOfRootPathError(
             "absolute path outside the build root: " + token_str
