@@ -230,6 +230,57 @@ def test_extract_skips_read_only_compound():
         "permissions read-only inchangées")
 
 
+def test_extract_skips_scope_word_inside_a_longer_word():
+    r"""A strong scope word must be a WHOLE word -- at the extraction site too.
+
+    `_has_strong_scope` has carried that guard for a while: #11800 added the
+    `\b` boundary so "inchanges" stops supplying 'change', and #12718 added
+    the `(?<![-\w])scope(?![-\w])` lookbehind so "out-of-scope" stops
+    supplying 'scope'. Two of its three call sites went through it;
+    `_extract_line_candidates` kept a plain substring scan, so the guard was
+    built, tested, and then bypassed on the path that feeds the report.
+
+    Both lines below are measured, taken verbatim from PRs whose real
+    perimeter is a single file and whose bodies assert nothing false about
+    it -- the misfire turned the required `Always-on guards` red on two lanes
+    at once:
+
+    * #15833 l.45 -- 'scope' inside "loadscope", marker "uniquement".
+    * #15846 l.44 -- 'change' inside "changer", marker "seulement".
+
+    Same failure family as the "read-only" compound above (#11654) and "pas
+    seulement" (#12547): the marker is present, its force is not.
+    """
+    loadscope = (
+        "1. **`--dist loadscope`, jamais `load`.** `loadscope` groupe par "
+        "module, donc les tests d'un module ne tournent jamais concurremment "
+        "entre eux : il est sur **uniquement** grace a ce groupement."
+    )
+    changer = (
+        "Le workflow de `main` est `c631a7a9` : `schedule` + `dispatch` "
+        "seulement, aucune jambe PR. Cette ligne ne peut pas changer le "
+        "comportement de build."
+    )
+    assert extract_perimeter_assertions(loadscope) == []
+    assert extract_perimeter_assertions(changer) == []
+    assert not _has_strong_scope(loadscope.lower())
+    assert not _has_strong_scope(changer.lower())
+
+
+def test_whole_word_scope_still_extracts_real_declarations():
+    """Positive control for the guard above: it must not silence the real
+    thing. Each line carries a STANDALONE scope word and stays a perimeter
+    assertion -- first among them the founding #11227 sentence, which is what
+    this organ exists to catch."""
+    for line in (
+        "**Perimetre** : 2 fichiers twins uniquement, aucune autre modification.",
+        "Cette PR touche uniquement ces fichiers, aucune autre modification.",
+        "Scope: only the workflow file, nothing else.",
+        "lake 70 fichiers uniquement, scope = perimetre PR",
+    ):
+        assert extract_perimeter_assertions(line), line
+
+
 def test_only_standalone_still_flags():
     """The control positive side: a standalone "only" with a scope word stays
     a live exclusivity assertion -- the fix must not kill the English arm."""

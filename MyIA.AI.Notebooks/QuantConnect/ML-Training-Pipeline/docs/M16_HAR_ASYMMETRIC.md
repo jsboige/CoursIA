@@ -1,6 +1,6 @@
 # M16 HAR-RV Asymmetric Semivariance — Andersen-Bollerslev-Diebold-Patton (2007)
 
-**Statut cluster historique : NO BEATS** (Cycle 33, 2026-05-13) — 1/7 coins seulement. **Re-test BTC débiaisé (2026-09-02) : 2/3 BEATS, 1/3 INCONCLUSIVE** ; le claim brut 3/3 ne survit pas intégralement.
+**Statut cluster : NO BEATS.** Le résultat historique (Cycle 33, 2026-05-13) comptait 3/21 configurations `BEATS`, concentrées sur BTC. La revalidation symétriquement débiaisée sur sept actifs (2026-09-13, #15861) ramène ce total à **2/21 `BEATS`, 1/21 `NO BEATS` et 18/21 `INCONCLUSIVE`** ; seul BTC obtient une majorité d'horizons `BEATS`, soit 1/7 actif (`p=0,9921875`, sign-test unilatéral de la revendication `BEATS`).
 
 ## Verdict (G.2 metrics honnêtes — 7-coin full sweep)
 
@@ -152,6 +152,54 @@ python scripts/har_asymmetric.py \
 ```
 
 Ce run évalue un **forecast pur**, pas une stratégie : coûts de transaction, Sharpe et drawdown restent hors du verdict. Aucun actif FAANG/Mag7 n'entre dans l'entraînement.
+
+## Revalidation débiaisée sur sept actifs (2026-09-13, issue #15861)
+
+La revalidation étend le protocole BTC ci-dessus à BTC, ETH, SOL, LTC, XRP, ADA et DOT. Pour chaque actif et chaque horizon {1, 5, 10}, HAR asymétrique et HAR classique utilisent les mêmes cinq folds expanding, la même calibration train-only de 60 observations et les mêmes cibles OOS alignées. Le test de Diebold-Mariano porte sur la perte MSE. Le contrat du sweep refuse un actif, un seed ou un fold manquant avant la sérialisation.
+
+| Actif | h | MSE asym. | MSE HAR | Edge | Biais asym. | Biais HAR | DM p | Verdict |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| ADA | 1 | 0,708993 | 0,678189 | −4,54 % | −0,044734 | −0,025279 | 0,199800 | INCONCLUSIVE |
+| ADA | 5 | 0,552031 | 0,423669 | −30,30 % | −0,083267 | −0,044827 | 0,200275 | INCONCLUSIVE |
+| ADA | 10 | 0,920272 | 0,426035 | −116,01 % | −0,147788 | −0,065223 | 0,105862 | INCONCLUSIVE |
+| BTC | 1 | 0,848154 | 0,843774 | −0,52 % | −0,005109 | −0,003880 | 0,244862 | INCONCLUSIVE |
+| BTC | 5 | 0,403593 | 0,417886 | +3,42 % | −0,003967 | −0,001552 | 0,011363 | **BEATS** |
+| BTC | 10 | 0,369614 | 0,389457 | +5,10 % | −0,004194 | −0,002419 | 0,005123 | **BEATS** |
+| DOT | 1 | 0,594364 | 0,702488 | +15,39 % | +0,002578 | −0,065183 | 0,163248 | INCONCLUSIVE |
+| DOT | 5 | 0,253488 | 0,652723 | +61,16 % | +0,012426 | −0,108589 | 0,095785 | INCONCLUSIVE |
+| DOT | 10 | 0,208036 | 1,323196 | +84,28 % | +0,025163 | −0,187496 | 0,089234 | INCONCLUSIVE |
+| ETH | 1 | 0,690839 | 0,677424 | −1,98 % | −0,003448 | −0,004163 | 0,105237 | INCONCLUSIVE |
+| ETH | 5 | 0,363914 | 0,364586 | +0,18 % | −0,008262 | −0,010715 | 0,885097 | INCONCLUSIVE |
+| ETH | 10 | 0,359595 | 0,362743 | +0,87 % | −0,014510 | −0,017445 | 0,563252 | INCONCLUSIVE |
+| LTC | 1 | 0,682849 | 0,633905 | −7,72 % | −0,027945 | −0,005468 | 0,165485 | INCONCLUSIVE |
+| LTC | 5 | 0,495585 | 0,394535 | −25,61 % | −0,030000 | +0,005439 | 0,218836 | INCONCLUSIVE |
+| LTC | 10 | 0,532047 | 0,386236 | −37,75 % | −0,018663 | +0,025762 | 0,215662 | INCONCLUSIVE |
+| SOL | 1 | 0,657847 | 0,712876 | +7,72 % | +0,000779 | −0,002499 | 0,158437 | INCONCLUSIVE |
+| SOL | 5 | 0,368885 | 0,439440 | +16,06 % | +0,018581 | +0,017627 | 0,063622 | INCONCLUSIVE |
+| SOL | 10 | 0,354091 | 0,445464 | +20,51 % | +0,032481 | +0,037639 | 0,059891 | INCONCLUSIVE |
+| XRP | 1 | 0,856002 | 0,822535 | −4,07 % | +0,023021 | +0,019157 | 0,000754 | **NO BEATS** |
+| XRP | 5 | 0,475104 | 0,466975 | −1,74 % | +0,036858 | +0,029419 | 0,373710 | INCONCLUSIVE |
+| XRP | 10 | 0,427628 | 0,427818 | +0,04 % | +0,046711 | +0,040214 | 0,980419 | INCONCLUSIVE |
+
+**Verdict par configuration : 2/21 `BEATS`, 1/21 `NO BEATS`, 18/21 `INCONCLUSIVE`.** BTC est le seul actif dont une majorité stricte des horizons est `BEATS` (h=5 et h=10). Les six autres actifs ne satisfont pas cette règle de réduction ; XRP h=1 est la seule configuration significativement moins précise que HAR classique.
+
+### Unités statistiques et verdict cluster
+
+Les quatre seeds {0, 7, 42, 99} produisent des sorties OLS bit-identiques. Ils constituent quatre contrôles de reproductibilité, mais **une seule unité effective par actif×horizon** (`n_seeds_effective=1`) : les compter comme quatre preuves serait une pseudo-réplication. Le niveau 21 configurations est donc publié à titre descriptif seulement, car les trois horizons d'un même actif sont dépendants.
+
+Le test principal réduit d'abord les trois horizons à un verdict par actif, puis applique un test binomial exact avec `p0=0,5` et `alternative="greater"` à la revendication « une majorité d'actifs est `BEATS` ». Résultat : **1/7 actif `BEATS`, p=0,9921875, verdict cluster `NO BEATS`**. Le `p≈0,063` indiqué dans la section historique correspondait implicitement à la queue opposée (probabilité d'observer au plus un succès) ; il ne teste pas la revendication `BEATS`. La présente revalidation explicite la direction sans réécrire le résultat historique.
+
+### Fenêtres de données et limites
+
+| Actif | Fenêtre RV | Jours RV | Source horaire |
+|---|---|---:|---|
+| BTC | 2018-05-15 → 2024-08-08 | 2 278 | Bitstamp local |
+| ETH | 2019-10-21 → 2023-12-14 | 1 495 | Binance local |
+| SOL, LTC, XRP, ADA, DOT | 2024-09-13 → 2026-09-12 | 724 chacun | yfinance |
+
+Ces fenêtres hétérogènes interdisent d'interpréter les écarts entre actifs comme un panel temporel homogène. Pour `h ≥ 2`, la récursion partage chaque RV future prévue à 50/50 entre RV+ et RV−. Cette fermeture est une convention fixe, non un paramètre appris ; elle est conservée pour la comparabilité avec M16 historique, mais limite l'interprétation des résultats h=5 et h=10.
+
+L'artefact `scripts/results/m16_har_asymmetric_debiased_7asset.json` contient 84 lignes de contrôle, 21 agrégats actif×horizon, les cinq folds des deux modèles, les biais signés, les prédictions et cibles OOS alignées, le manifeste des sources et le verdict cluster. Le notebook historique reste inchangé : cette revalidation est produite par le script, sans édition manuelle de sortie de cellule.
 
 ## References
 

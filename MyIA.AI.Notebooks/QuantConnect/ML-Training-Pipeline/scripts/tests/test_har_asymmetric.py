@@ -12,6 +12,9 @@ from har_asymmetric import (
     _eval_one_coin,
     _fit_asymmetric_with_train_calibration,
     aggregate_verdicts,
+    cluster_verdict,
+    validate_requested_panel,
+    validate_sweep_contract,
     walk_forward_asymmetric_har,
 )
 
@@ -51,6 +54,8 @@ def test_walk_forward_predictions_align_and_are_finite(asymmetric_rv):
     assert np.isfinite(forecasts).all()
     assert np.isfinite(targets).all()
     assert np.isfinite(out["aggregate_mse_logrv"])
+    assert len(out["fold_results"]) == 4
+    assert all(fold["n_test"] > 0 for fold in out["fold_results"])
 
 
 def test_ols_predictions_are_exactly_seed_stable(asymmetric_rv):
@@ -164,4 +169,166 @@ def test_aggregate_rejects_significant_but_unstable_edge():
     aggregate = aggregate_verdicts(rows)[0]
 
     assert aggregate["edge_sigma"] < 2.0
+    assert aggregate["n_seeds_effective"] == 4
+    assert aggregate["seed_replication"] == "non-identical"
     assert aggregate["verdict"] == "INCONCLUSIVE"
+
+
+def test_cluster_verdict_collapses_deterministic_seed_controls():
+    rows = []
+    for coin_idx in range(7):
+        coin = f"COIN-{coin_idx}"
+        for horizon in (1, 5, 10):
+            rows.extend({
+                **_verdict_row(seed, 0.8, 1.0, 0.01),
+                "coin": coin,
+                "horizon": horizon,
+            } for seed in (0, 7, 42, 99))
+
+    aggregated = aggregate_verdicts(rows)
+    result = cluster_verdict(aggregated)
+
+    assert len(rows) == 84
+    assert result["config_level"]["n_effective"] == 21
+    assert result["primary_coin_level"]["n_effective"] == 7
+    assert result["primary_coin_level"]["n_beats"] == 7
+    assert result["primary_coin_level"]["alternative"] == "greater"
+    assert result["primary_coin_level"]["p_value"] == pytest.approx(0.0078125)
+    assert result["verdict"] == "BEATS"
+
+
+def test_cluster_verdict_does_not_claim_beats_for_five_of_seven_coins():
+    aggregated = []
+    for coin_idx in range(7):
+        for horizon in (1, 5, 10):
+            aggregated.append({
+                "coin": f"COIN-{coin_idx}",
+                "horizon": horizon,
+                "verdict": "BEATS" if coin_idx < 5 else "INCONCLUSIVE",
+                "seed_stable": True,
+                "n_seeds_effective": 1,
+            })
+
+    result = cluster_verdict(aggregated)
+
+    assert result["primary_coin_level"]["n_beats"] == 5
+    assert result["primary_coin_level"]["p_value"] == pytest.approx(0.2265625)
+    assert result["verdict"] == "INCONCLUSIVE"
+
+
+def test_cluster_verdict_rejects_non_deterministic_seed_units():
+    aggregated = [{
+        "coin": "BTC-USD",
+        "horizon": horizon,
+        "verdict": "BEATS",
+        "seed_stable": False,
+        "n_seeds_effective": 4,
+    } for horizon in (1, 5, 10)]
+
+    with pytest.raises(ValueError, match="deterministic seed controls"):
+        cluster_verdict(aggregated)
+
+
+def test_validate_requested_panel_names_every_missing_asset():
+    requested = ["BTC-USD", "ETH-USD", "SOL-USD", "DOT-USD"]
+    panel = {"BTC-USD": pd.Series(dtype=float), "ETH-USD": pd.Series(dtype=float)}
+    failures = {
+        "SOL-USD": "TimeoutError: timed out",
+        "DOT-USD": "ValueError: no prices",
+    }
+
+    with pytest.raises(ValueError) as exc_info:
+        validate_requested_panel(panel, requested, failures, skip_remote=False)
+
+    message = str(exc_info.value)
+    assert "SOL-USD (TimeoutError: timed out)" in message
+    assert "DOT-USD (ValueError: no prices)" in message
+
+
+def test_validate_requested_panel_rejects_remote_assets_with_skip_remote():
+    requested = ["BTC-USD", "SOL-USD", "DOT-USD"]
+
+    with pytest.raises(ValueError, match="SOL-USD, DOT-USD"):
+        validate_requested_panel({}, requested, {}, skip_remote=True)
+
+
+def test_first_fold_calibration_does_not_see_later_observations(asymmetric_rv):
+    rv_neg, rv_pos, rv = asymmetric_rv
+    baseline = walk_forward_asymmetric_har(
+        rv_neg,
+        rv_pos,
+        rv,
+        horizon=1,
+        n_splits=4,
+        calibrate_bias=True,
+        calibration_size=40,
+    )
+    first_test_start = len(rv) // 5
+    mutated_rv = rv.copy()
+    mutated_rv.iloc[first_test_start:] *= 3.0
+    mutated_neg = rv_neg.copy()
+    mutated_pos = rv_pos.copy()
+    mutated_neg.iloc[first_test_start:] *= 3.0
+    mutated_pos.iloc[first_test_start:] *= 3.0
+    perturbed = walk_forward_asymmetric_har(
+        mutated_neg,
+        mutated_pos,
+        mutated_rv,
+        horizon=1,
+        n_splits=4,
+        calibrate_bias=True,
+        calibration_size=40,
+    )
+
+    assert perturbed["initial_calibration_bias_by_fold"][0] == pytest.approx(
+        baseline["initial_calibration_bias_by_fold"][0], abs=0.0,
+    )
+    assert perturbed["aggregate_mse_logrv"] != pytest.approx(
+        baseline["aggregate_mse_logrv"],
+    )
+
+
+def _complete_sweep_fixture() -> tuple[list[dict], list[dict]]:
+    rows = []
+    aggregated = []
+    for coin in ("BTC-USD", "ETH-USD"):
+        for horizon in (1, 5):
+            aggregated.append({"coin": coin, "horizon": horizon})
+            for seed in (0, 7):
+                rows.append({
+                    "coin": coin,
+                    "horizon": horizon,
+                    "seed": seed,
+                    "n_folds": 5,
+                    "asym_fold_results": [{}] * 5,
+                    "classic_fold_results": [{}] * 5,
+                })
+    return rows, aggregated
+
+
+def test_validate_sweep_contract_accepts_complete_fold_evidence():
+    rows, aggregated = _complete_sweep_fixture()
+
+    validate_sweep_contract(
+        rows,
+        aggregated,
+        ["BTC-USD", "ETH-USD"],
+        [1, 5],
+        [0, 7],
+        5,
+    )
+
+
+def test_validate_sweep_contract_rejects_missing_baseline_fold():
+    rows, aggregated = _complete_sweep_fixture()
+    rows[0]["classic_fold_results"] = rows[0]["classic_fold_results"][:-1]
+
+    with pytest.raises(ValueError, match="both model and baseline"):
+        validate_sweep_contract(
+            rows,
+            aggregated,
+            ["BTC-USD", "ETH-USD"],
+            [1, 5],
+            [0, 7],
+            5,
+        )

@@ -2,6 +2,9 @@
 
 > **Statut.** Document de cadrage narratif, grade **C-documentaire** (cadrage, pas de dispatch expérimental). Consolide un **sixième fil de lecture** de la série ICT, à côté des cinq déjà documentés : invariants / dissociations / obstructions ([synthese-invariants-dissociations-obstructions.md](synthese-invariants-dissociations-obstructions.md)) + problème de la représentation interne ([genealogy-representation-interne.md](genealogy-representation-interne.md)) + dissolution des scalaires ([dissolution-scalaires.md](dissolution-scalaires.md)). Le **sixième fil** est celui de la **boussole** — un mythe fondateur qui fixe la direction de la strate 7, sans la transformer en hypothèse scientifique déguisée. La strate 7 a besoin d'une boussole, pas d'un cahier des charges.
 > **Objet.** Documenter (a) l'**objet-boussole** : deux cascades d'investissement performatif *qui ne racontent pas la même chose*, (b) la **question scientifique** que cette boussole pose sans la résoudre : *existe-t-il des auto-références qui ne sont pas des curiosités logiques, mais des structures organisatrices de systèmes complexes ?*, (c) les **trois verbes comme variables libres** (la marge de manœuvre elle-même), (d) les **garde-fous** (regard math sobre, *caveat crackpot* auto-enregistré, contenu sensible tardif), et (e) la **décline concrète** vers du falsifiable (mechanism design schmidhuberesque, possiblement renforcé par Sandholm).
+
+
+
 > **Discipline.** Cadrage grade C. Aucune nouvelle dépendance expérimentale n'est créée. La strate 7 (chantier N3) a déjà reçu sa jambe D2 ([#7746](https://github.com/jsboige/CoursIA/issues/7746), MERGED) : 5 bancs d'essai contrôlés ICT-26 → ICT-30. Ce document **fixe la boussole** en amont de la jambe D3, dans l'esprit du cadrage D1 [#7745](https://github.com/jsboige/CoursIA/issues/7745) — *« laisser la mer monter, banc par banc »*. Aucun claim n'est ajouté ; le test-bed, lui, est déjà construit. Issue-source : [#7747](https://github.com/jsboige/CoursIA/issues/7747). See [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella). *Part of* [#7395](https://github.com/jsboige/CoursIA/issues/7395) (méta-proxy ICT).
 >
 > **Avertissement méthodologique.** La strate 7 est la plus spéculative et la plus belle à la fois : elle a besoin d'une **boussole**, pas d'une hypothèse scientifique déguisée. Ce cadrage assume cette beauté (auto-référence performative, *strange loops*, formes internes récurrentes) et **ne la délivre pas comme résultat**. Cf. `synthese-invariants-dissociations-obstructions.md` §« Ce que ce document n'est pas » — on ne confond pas une boussole avec un compas étalonné.
@@ -146,6 +149,9 @@ Le passage « nommé sans démonstration » au rang « construit » ou « mesur�
 - **Cadrage D1** : [#7745](https://github.com/jsboige/CoursIA/issues/7745) — *« laisser la mer monter, banc par banc »* — le cadrage narratif N3 qui précède D2 et D3.
 - **Cartographie tresse (B4 non-recollement)** : [#7738](https://github.com/jsboige/CoursIA/issues/7738) — 5e livraison (PR #9551 MERGED 2026-08-06) qui pose le non-recollement comme **donnée**, pas bug.
 - **Dissolution des scalaires (5e fil)** : [dissolution-scalaires.md](dissolution-scalaires.md) — dissolution successive de Φ / F / K, registre de proxys.
+
+
+
 - **Problème de la représentation interne (4e fil)** : [genealogy-representation-interne.md](genealogy-representation-interne.md) — généalogie successive de `p̂` (ICT-10 → ICT-17).
 - **Synthèse 3-régimes (1er-3e fils)** : [synthese-invariants-dissociations-obstructions.md](synthese-invariants-dissociations-obstructions.md) — grille transversale invariants / dissociations / obstructions.
 - **Matrice inversée (chantier 3/3)** : [dissociations-matrix.md](dissociations-matrix.md) — la matrice qui enregistre les dissociations observées *et* génère les expériences manquantes ([#9533](https://github.com/jsboige/CoursIA/issues/9533)).
