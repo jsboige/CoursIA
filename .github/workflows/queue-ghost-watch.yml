@@ -64,6 +64,60 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Ensure labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          LABELS = [
+              {
+                  "name": "queue-ghost-watch",
+                  "color": "fbca04",
+                  "description": "Drift alert: nouveau zombie ou file live detecte par gh_queue_health.py --watch (#14367).",
+              },
+              {
+                  "name": "queue-ghost-watch-broken",
+                  "color": "b60205",
+                  "description": "Instrument casse (rc=2 = BROKEN) signale par gh_queue_health.py --watch (#14367).",
+              },
+          ]
+          repo = "jsboige/CoursIA"
+          failures = []
+          for label in LABELS:
+              name = label["name"]
+              proc = subprocess.run(
+                  ["gh", "api", f"repos/{repo}/labels/{name}"],
+                  check=False,
+                  capture_output=True,
+              )
+              if proc.returncode == 0:
+                  print(f"[ensure-labels] present: {name}")
+                  continue
+              print(f"[ensure-labels] missing, creating: {name}")
+              create = subprocess.run(
+                  [
+                      "gh", "api",
+                      f"repos/{repo}/labels",
+                      "-f", f"name={name}",
+                      "-f", f"color={label['color']}",
+                      "-f", f"description={label['description']}",
+                  ],
+                  check=False,
+                  capture_output=True,
+              )
+              if create.returncode != 0:
+                  failures.append((name, create.stderr.decode("utf-8", "replace")))
+          if failures:
+              for name, err in failures:
+                  print(f"[ensure-labels] FAILED to create {name}: {err}", file=sys.stderr)
+              sys.exit(1)
+          print("[ensure-labels] ok: all labels present or created")
+          PY
+
       - name: Run watcher
         id: watch
         env:
@@ -78,7 +132,7 @@ jobs:
           exit ${rc}
 
       - name: Surface DRIFT as an issue
-        if: steps.watch.outputs.exit_code == '1'
+        if: always() && steps.watch.outputs.exit_code == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run }}
@@ -156,3 +210,50 @@ jobs:
           proc = subprocess.run(cmd, check=False)
           sys.exit(proc.returncode)
           PY
+
+      - name: Surface BROKEN as an issue
+        if: always() && steps.watch.outputs.exit_code == '2'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          stderr_path="/tmp/queue-ghost-watch.stderr"
+          if [ -f "${stderr_path}" ]; then
+            stderr_content="$(cat ${stderr_path})"
+          else
+            stderr_content="(stderr non captured — instrument casse avant ecriture)"
+          fi
+          payload_path="/tmp/queue-ghost-watch.json"
+          if [ -f "${payload_path}" ]; then
+            payload_snippet="$(head -40 ${payload_path})"
+          else
+            payload_snippet="(payload non produit — instrument casse avant ecriture)"
+          fi
+          gh issue create \
+            --repo jsboige/CoursIA \
+            --title "queue-ghost-watch BROKEN: instrument casse (rc=2)" \
+            --body "$(cat <<BODY
+          ## Queue ghost watch BROKEN (#14367)
+
+          Le watcher a rendu exit 2 = instrument casse (verdict BROKEN dans watch_verdict()).
+          Une issue dediee est ouverte pour diagnostic ; ce n'est PAS une derive (DRIFT = rc 1).
+
+          ### stderr
+
+          \`\`\`
+          ${stderr_content}
+          \`\`\`
+
+          ### payload (tronque aux 40 premieres lignes)
+
+          \`\`\`json
+          ${payload_snippet}
+          \`\`\`
+
+          See #14367 for the workaround history and the watch_verdict() split rationale.
+
+          cc myia-ai-01 : BROKEN signifie que l'instrument lui-meme est casse (par exemple
+          script introuvable, dependance manquante, quota API), PAS que la file est en
+          derive. Une investigation du runner est requise.
+          BODY
+          )" \
+            --label "queue-ghost-watch-broken,ci"
