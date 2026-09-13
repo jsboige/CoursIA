@@ -133,28 +133,23 @@ def test_admission_cap_machine_wide_two_worktrees():
             )
             for w in (w1, w2)
         ]
-        # Hermes (po-2026, 2026-09-13, reproduit sur un 3e siege) : le sleep
-        # n'est pas une synchronisation — il court contre le demarrage d'un
-        # interprete Python (0,87-1,10 s mesures avant l'enregistrement de w2,
-        # soit ~2x le budget de 0,5 s). Quand w2 perd la course, le 3e
-        # demandeur est LEGITIMEMENT admis (le cap n'est jamais viole) et
-        # c'est l'assertion d'ordre d'arrivee qui tombe. On synchronise sur
-        # l'etat observable : deux enregistrements runs/*.json (seuls les
-        # runs ADMIS s'y ecrivent) AVANT d'introduire le 3e demandeur.
-        registered = state / "runs"
+        # Synchronisation sur l'etat OBSERVABLE, pas sur une duree : le 3e
+        # demandeur ne doit partir qu'une fois les DEUX premiers enregistres.
+        # L'enregistrement est ecrit sous le verrou d'admission, juste apres
+        # le spawn+resume (lean_exec.py:854), donc sa presence prouve que le
+        # run occupe deja sa part du cap. Un delai fixe courait apres la
+        # machine : mesure #15940, sleep(0.5) laissait w2 non enregistre et
+        # le 3e demandeur se faisait admettre a sa place -> {w1, w3}.
+        def _registered() -> int:
+            return len(list((state / "runs").glob("*.json")))
+
         deadline = time.monotonic() + 30.0
-        while len(list(registered.glob("*.json"))) < 2:
-            if time.monotonic() > deadline:
-                for p in procs:
-                    p.kill()
-                for p in procs:
-                    p.wait(timeout=10)
-                raise AssertionError(
-                    "les deux premiers demandeurs ne se sont pas "
-                    "enregistres sous 30 s : le cap machine-wide n'est "
-                    "pas testable dans cet etat"
-                )
+        while _registered() < 2 and time.monotonic() < deadline:
             time.sleep(0.05)
+        assert _registered() >= 2, (
+            "les deux premiers runs devaient s'enregistrer sous 30 s, "
+            f"vu {_registered()}")
+
         third = _run(state, ["run", "--json", "--", *SLEEP_CMD],
                      cwd=w3, **cap)
         for p in procs:

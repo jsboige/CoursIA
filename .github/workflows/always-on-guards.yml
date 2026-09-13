@@ -8,7 +8,7 @@ name: Always-on guards
 # dont le travail reel additionne ~178 s de runner. Chacun paiait son propre
 # `actions/checkout` + `setup-python` et surtout OCCUPAIT UN SLOT -- c'est
 # le slot, pas la minute-CPU, qui est la ressource rare a 14 runners
-# heberges. Ce workflow paie un checkout et enchaine les treize organes.
+# heberges. Ce workflow paie un checkout et enchaine les quatorze organes.
 #
 # Sources absorbees (les fichiers RESTENT, dormants -- declencheurs
 # pull_request retires, jobs conserves verbatim pour la tracabilite et les
@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 13 organes, 1 checkout"
+    name: "Always-on guards -- 14 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -1204,6 +1204,66 @@ jobs:
           fi
           exit 0
 
+      # #15890 :: results artifact weight -- BLOQUANT sur les artefacts
+      # NOUVEAUX. 7,43 Mo de JSON de resultats sont entres sur main
+      # (m16_har_asymmetric_debiased_7asset.json), 40x le plus gros
+      # precedent, dans un depot public forke par ~95 projets etudiants.
+      # Barre ancre a 512 000 o (2,6x le plus gros legitime) ; les fichiers
+      # AJOUTES au-dela bloquent, les grandfathered modifies advisory-only,
+      # une panne git (verdict unknown) ne rougit jamais (#14849).
+      # L'organe a besoin du base ref pour le diff -- meme fetch que le
+      # fast-lane, jamais de paths: ici (canary, cf en-tete).
+      - name: 'Results artifact weight (block on new > 512 Ko, #15890)'
+        id: results_weight
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          git fetch origin "${{ github.base_ref }}" -q
+          python3 scripts/ci/check_results_artifact_weight.py \
+            --base "origin/${{ github.base_ref }}" \
+            > /tmp/results_weight.json 2>/tmp/results_weight.err && RC=0 || RC=$?
+
+          if [ -s /tmp/results_weight.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/results_weight.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/results_weight.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Aucun artefact de resultats nouveau au-dela de la barre -- job passes."
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; v=json.load(open('/tmp/results_weight.json')); print(' ; '.join(b['reason'] for b in v.get('blocked',[])) or 'unknown')" 2>/dev/null || echo "unknown")
+          echo "::error::Artefact de resultats surdimensionne : $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- results-artifact-weight-15890 -->
+          **Artefact de resultats au-dela de la barre de 512 Ko -- bloquant (#15890).**
+
+          ${REASON}
+
+          Pour passer ce gate :
+          - commiter l'agrege falsifiable (biais signes, p-values DM par configuration, preuves de folds) dans \`scripts/results/\`, et
+          - deposer les series completes hors depot (GDrive, comme la bibliotheque), en citant le chemin dans le body de la PR.
+
+          Politique complete : \`.claude/rules/results-artifact-policy.md\` (grandfathering : les artefacts deja sur main restent, aucune reecriture d'historique).
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
       # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
       # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
@@ -1232,6 +1292,7 @@ jobs:
           check fastlane     "${{ steps.fastlane.outcome }}"
           check identity     "${{ steps.identity.outcome }}"
           check hot_subset   "${{ steps.hot_subset.outcome }}"
+          check results_weight "${{ steps.results_weight.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1

@@ -99,6 +99,39 @@ on:
     # post-routing (expected: queue collapses from ~6000-8000 s to near zero;
     # cancellations from 19/30 to ~0).
     - cron: '7 * * * *'
+  # Heartbeat independent of the `schedule` event class -- the SAME remedy
+  # #15332 gave the observer (pr-gate-sweep-health-advisory.yml), which this
+  # file never received. The asymmetry was backwards: the heartbeat went to the
+  # organ that only SPEAKS, not to the organ that REPAIRS.
+  #
+  # Measured 2026-09-12T08:19Z by scripts/ci/check_scheduler_liveness.py, the
+  # organ #15332 built for exactly this question -- served cadence vs declared:
+  #
+  #   LATE  pr-gate-stale-sweep.yml            declare   60 min | servi  280 min (4.7x)
+  #   DEAD  pr-gate-sweep-health-advisory.yml  declare   30 min | servi  217 min (7.2x)
+  #   LATE  linux-runner-starvation-advisory.yml declare 30 min | servi  168 min (5.6x)
+  #   OK    stale-guard-red-sweep.yml          declare 1440 min | servi 1440 min
+  #   OK    epic-neglect-sweep.yml             declare 1440 min | servi 1440 min
+  #   OK    grain-orphans-sweep.yml            declare 1440 min | servi 1440 min
+  #
+  # Every sub-hourly cron on this repository is served 4.7-7.2x late; every
+  # daily cron is served exactly. Declaring a sub-hourly cadence here therefore
+  # buys nothing -- GitHub does not deliver it. Against a 120 min DWELL floor,
+  # a 280 min re-aggregation means a PR whose ONLY red is the floor waits the
+  # floor plus up to another ~4.7 h, with no signal that anything is wrong.
+  # That latency is a structural contributor to the merge queue, not an
+  # incident: 71 of 76 open PRs measured the same morning waited on no lane
+  # gesture at all.
+  #
+  # Safe to add now, and it would NOT have been in #12728: that incident was
+  # self-cancellation under a ~2 h runner queue at a 20 min cadence. The queue
+  # collapsed once the job was routed to the dedicated coursia-linux pool --
+  # measured on the last five runs: queue 0 s, 2 s, 3 s, 267 s, 620 s for
+  # 230-293 s of execution. `concurrency.cancel-in-progress: false` below
+  # coalesces a burst of merges into one pending sweep; it never kills a
+  # running one.
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dry_run:

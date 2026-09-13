@@ -45,6 +45,25 @@ Les Hooks sont des actions automatiques déclenchées par des événements.
 
 ### Étape 1 : Configurer un serveur MCP (15 min)
 
+#### Lancer l'instance SearXNG (Docker, une seule fois)
+
+Le conteneur `searxng/searxng:latest` désactive le format JSON par défaut (requis
+par le MCP) et exige une `secret_key` dès qu'on monte son propre `settings.yml` :
+
+```bash
+mkdir -p searxng
+cat > searxng/settings.yml << 'EOF'
+use_default_settings: true
+server:
+  secret_key: "remplacez-par-une-chaine-aleatoire-longue"
+search:
+  formats:
+    - html
+    - json
+EOF
+docker run -d --name searxng -p 8181:8080 -v "$(pwd)/searxng:/etc/searxng" searxng/searxng:latest
+```
+
 #### Configuration locale (.mcp.json)
 
 ```bash
@@ -52,7 +71,7 @@ cat > .mcp.json << 'EOF'
 {
   "mcpServers": {
     "searxng": {
-      "url": "https://search.myia.io/",
+      "url": "http://localhost:8181/",
       "transport": "http",
       "description": "Moteur de recherche web distribué"
     }
@@ -83,7 +102,7 @@ cat > .mcp.json << 'EOF'
 {
   "mcpServers": {
     "searxng": {
-      "url": "https://search.myia.io/",
+      "url": "http://localhost:8181/",
       "transport": "http"
     },
     "github": {
@@ -254,7 +273,7 @@ Créez une configuration MCP + Hooks complète pour votre projet.
 {
   "mcpServers": {
     "searxng": {
-      "url": "https://search.myia.io/",
+      "url": "http://localhost:8181/",
       "transport": "http"
     },
     "github": {
@@ -329,8 +348,8 @@ Configuration fonctionnelle testée.
 # Vérifier la configuration
 claude mcp list
 
-# Tester manuellement (HTTP)
-curl https://search.myia.io/
+# Tester manuellement (HTTP) — l'instance locale doit repondre 200
+curl 'http://localhost:8181/search?q=test&format=json'
 
 # Vérifier les logs
 claude --debug
