@@ -458,8 +458,8 @@ def test_base_inherited_red_is_not_the_lanes(monkeypatch):
     for st, rid in ((st1, 111), (st2, 222)):
         st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
             "nodes"][1]["databaseId"] = rid
-    monkeypatch.setattr(pig, "fetch_check_organs",
-                        lambda rid: ["perimeter"])
+    monkeypatch.setattr(pig, "fetch_check_annotation",
+                        lambda rid: (["perimeter"], None))
     _patch_backlog(monkeypatch, [
         _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
         _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
@@ -526,8 +526,8 @@ def _agg_red(run_id, name=AGG, required=True):
 
 
 def _patch_organs(monkeypatch, organs_by_run):
-    monkeypatch.setattr(pig, "fetch_check_organs",
-                        lambda rid: organs_by_run.get(rid, []))
+    monkeypatch.setattr(pig, "fetch_check_annotation",
+                        lambda rid: (organs_by_run.get(rid, []), None))
 
 
 def test_same_organ_two_lanes_same_push_login_is_imputed(monkeypatch):
@@ -2256,3 +2256,153 @@ def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     notes = pig.recent_delivery(picks)
     assert 14373 in notes
     assert picks[0]["klass"] == "delivered"
+
+
+# --- #15910 : le DWELL du merge-gate n'est pas un rouge reparable ------------
+#
+# 4e surface de #15726 (apres #15748, #15763, #15769) : un `PR gate` FAILURE
+# par DWELL est un MINUTEUR -- plancher 120 min, aucun constituant en echec,
+# seul l'ecoulement du temps le leve. Mesure fondatrice (2026-09-13, lane
+# po-2024) : #15888/#15895/#15902, toutes vertes hors gate, toutes en DWELL,
+# ont fait basculer le P0 « reparer ses propres PRs » par le seul seuil
+# `count` -- la lane brulait son cycle a chercher un defaut qui n'etait pas.
+#
+# Le verdict DWELL vit dans l'ANNOTATION du check-run, jamais dans sa
+# conclusion ni son nom. Chaque test ci-dessous protege une face :
+#  - la dispense (DWELL seul -> ni red ni count, echeance citee) ;
+#  - le fail-closed (constituant reel -> toujours reparable ; annotation
+#    illisible ou sans verdict -> jamais de dispense) ;
+#  - la non-regression du rapport (plus de « organe non lisible » pour un
+#    DWELL : l'annotation est lisible, son verdict EST « minuteur »).
+
+DWELL_DEADLINE = "2026-09-13T21:12:02Z"
+DWELL_ANNOTATION = ([], DWELL_DEADLINE)   # (organes, echeance)
+PLAIN_ANNOTATION = (["pr_gate"], None)    # banniere d'organes, pas de DWELL
+
+
+def _gate_dwell_state(*, gate_run_id=424242, extra_checks=()):
+    """Etat GraphQL : `PR gate` FAILURE requis PORTANT un databaseId.
+
+    Les fixtures `_state` standard n'en portent pas (aucune lecture
+    d'annotation possible -> fail-closed, le rouge reste reparable) ; le
+    DWELL, lui, exige un run lisible pour etre DETECTE -- c'est le sujet.
+    """
+    contexts = [{"name": "PR gate", "conclusion": "FAILURE", "isRequired": True,
+                 "completedAt": "2026-09-13T19:21:33Z", "databaseId": gate_run_id}]
+    contexts += [{"name": n, "conclusion": c, "isRequired": r,
+                  "completedAt": "2026-09-13T19:21:33Z"}
+                 for n, c, r in extra_checks]
+    return {"number": 1, "mergeable": "MERGEABLE",
+            "reviews": {"nodes": []},
+            "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+                "contexts": {"nodes": contexts}}}}]}}
+
+
+def _patch_annotation(monkeypatch, verdicts):
+    monkeypatch.setattr(pig, "fetch_check_annotation",
+                        lambda rid: verdicts.get(rid, ([], None)))
+
+
+def test_dwell_gate_is_not_a_repairable_red():
+    """La dispense : un verdict DWELL lu dans l'annotation ne fait pas une cause.
+
+    Falsification : ROUGE sur le picker d'avant -- sans `dwell_by_name`, ce
+    meme etat rend « check requis en echec : PR gate » (le test
+    `test_failing_required_check_is_a_red...` le pinnne deja).
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True)])
+    assert pig.blocking_causes(state) == [
+        "check requis en echec : PR gate"]
+    assert pig.blocking_causes(
+        state, dwell_by_name={"PR gate": DWELL_DEADLINE}) == []
+
+
+def test_dwell_does_not_dispense_a_real_red():
+    """Fail-closed : un constituant reel reste reparable a cote du DWELL.
+
+    Le DWELL ne dispense que de LUI-MEME. Une PR dont le gate est en DWELL
+    mais dont `Scripts Tests (CPU)` est rouge a un vrai defaut : on ne
+    dispense jamais d'une reparation reelle.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", True)])
+    causes = pig.blocking_causes(state, dwell_by_name={"PR gate": DWELL_DEADLINE})
+    assert "check requis en echec : PR gate" not in causes
+    assert "check requis en echec : Scripts Tests (CPU)" in causes
+
+
+def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
+    """La reproduction de l'issue : 3 PRs en DWELL ne declenchent plus le P0.
+
+    #15888/#15895/#15902, toutes vertes hors gate, toutes en DWELL : sur le
+    picker d'avant, `triggers == ["count"]` et le cycle basculait sur une
+    reparation inexistante. Desormais : ni `red`, ni declencheur, et les trois
+    echeances sont rendues pour que l'attente soit lisible.
+    """
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _gate_dwell_state(gate_run_id=424242 + n) for n in (1, 2, 3)})
+    _patch_annotation(monkeypatch, {424242 + n: DWELL_ANNOTATION for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["triggers"] == []
+    assert [d["number"] for d in out["dwell"]] == [1, 2, 3]
+    for item in out["dwell"]:
+        assert item["echeances"]["PR gate"] == DWELL_DEADLINE
+
+
+def test_unreadable_annotation_is_not_dwell(monkeypatch):
+    """Fail-closed au niveau de la lecture : pas de verdict lu, pas de dispense.
+
+    Un databaseId present mais une annotation sans DWELL (banniere d'organes
+    ou illisible) doit laisser le rouge reparable -- une dispense de
+    reparation ne s'acquiert jamais par une panne de mesure. C'est le
+    pendant AVEC lecture du test « une pile de rouges fraiches refuse le
+    tirage » (qui, lui, n'a pas d'id du tout).
+    """
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _gate_dwell_state(gate_run_id=424242 + n) for n in (1, 2, 3)})
+    _patch_annotation(monkeypatch, {})   # toutes les lectures -> ([], None)
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert "count" in out["triggers"]
+    assert out["dwell"] == []
+
+
+def test_organs_banner_annotation_still_blocks(monkeypatch):
+    """La baniere d'organes n'est pas un DWELL : rouge de substance conservé.
+
+    Un agregateur rouge PARCE QU'un organe est tombe porte la banniere
+    « Organes bloquants en echec : ... », pas un verdict DWELL. La lecture
+    rend les organes -> cle de cause resolue -> rouge reparable, exactement
+    comme avant : la dispense ne s'etend pas aux vrais rouges d'organe.
+    """
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _gate_dwell_state(gate_run_id=424242 + n) for n in (1, 2, 3)})
+    _patch_annotation(monkeypatch, {424242 + n: PLAIN_ANNOTATION for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert "count" in out["triggers"]
+    assert out["dwell"] == []
+
+
+def test_dwell_gate_is_not_reported_illiterate(monkeypatch):
+    """Plus de « organe non lisible » pour un DWELL : l'annotation EST lisible.
+
+    Son verdict est « minuteur, rien a reparer ». Sur le picker d'avant, le
+    DWELL (pas de banniere -> organes []) allait grossir `unresolved_out` et
+    etre imprime « pas pu trancher, le rouge RESTE a la lane » -- litteralement
+    vrai, semantiquement faux : l'absence de banniere EST le signal.
+    """
+    _patch_annotation(monkeypatch, {111: DWELL_ANNOTATION,
+                                    222: DWELL_ANNOTATION})
+    states = {1: _gate_dwell_state(gate_run_id=111),
+              2: _gate_dwell_state(gate_run_id=222)}
+    lanes = {1: "lane-a", 2: "lane-b"}
+    unresolved: list = []
+    inherited = pig.impute_base_reds(states, lanes,
+                                     unresolved_out=unresolved)
+    assert inherited == {}       # un DWELL ne corrobore aucune cause de base
+    assert unresolved == []      # et n'est pas un agregateur illisible
