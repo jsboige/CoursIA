@@ -39,8 +39,7 @@ Ce module explore les techniques avancées : clonage vocal, génération musical
 ### Dépendances
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-audio.txt
-pip install -r requirements-music.txt  # Pour MusicGen, MIDI
+pip install -r requirements-audio.txt  # MusicGen (audiocraft), Demucs inclus
 ```
 
 ## Progression recommandée

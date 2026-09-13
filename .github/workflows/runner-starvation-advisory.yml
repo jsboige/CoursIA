@@ -1,0 +1,78 @@
+name: Runner starvation advisory (waiter+linux+lean)
+
+# Sonde d'extinction multi-labels (issue #14846, grain c.1063 myia-po-2027).
+# Le 2026-09-05 entre 20:26Z et 00:52Z, le pool `coursia-waiter` est tombe
+# sans rougir nulle part : 28 runners enregistres, 0 en ligne, 4h20 de gel
+# de tous les merges (le `PR gate` est le seul check requis par la protection
+# de `main`, sa jambe same-repo tourne sur ce label -- `pr-gate.yml:107`).
+# L'organe `scripts/ci/check_runner_starvation.py` mesurait deja le predicat
+# EXTINCTION (zero runner online sur le label), mais le seul workflow qui
+# l'appelait (`linux-runner-starvation-advisory.yml`) ne couvrait que
+# `coursia-linux`. Cette sonde etend la couverture aux 3 labels requis par
+# `pr-gate.yml` (waiter) + workflows bloquants (linux, lean).
+#
+# Pourquoi une matrice et pas 3 workflows dedies : un seul cron centralise
+# l'observabilite, les 3 sondes partagent la fenetre STARVATION et le secret
+# RUNNERS_READ_PAT, et la matrice GitHub Actions parallellise les 3 mesures
+# sans collision de rate-limit. Schedule dediee (cron offset 19,49 pour
+# coursia-linux + 23,53 pour les 2 autres -- l'offset disjoint evite de
+# charger le meme runner sur 2 vagues consecutives).
+#
+# Acceptance #14846 A1 verifiee par construction :
+#   - predicat EXTINCTION : si 0 runner online sur un label -> ::error::
+#   - predicat STARVATION : si jobs queued > seuil SANS aucun in_progress ->
+#     ::error:: (symptome distinct de l'extinction -- file profonde qui ne
+#     draine pas)
+#   - WARN floor configurable par label (waiter = 1, linux = 2, lean = 1)
+#
+# Acceptance A2 (persistance systemd) deja livree par PR #14981 (waiter) +
+# PR #15401 (lean). Acceptance A3 (verification systemctl is-enabled po-2024)
+# -> DM coord, hors scope worker.
+#
+# ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
+# pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
+# porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
+
+on:
+  schedule:
+    - cron: '23,53 * * * *'  # waiter + lean (offset distinct du cron linux 19,49)
+  workflow_dispatch:
+
+permissions:
+  contents: read   # checkout du script
+  actions: read    # lecture des runs/jobs (predicat STARVATION)
+
+concurrency:
+  group: runner-starvation-advisory
+  cancel-in-progress: false
+
+jobs:
+  starve:
+    name: Runner starvation advisory (${{ matrix.label }})
+    # Route vers la jambe Linux auto-hebergee : un observateur qui tourne sur
+    # le label qu'il observe mourrait avec lui. Meme raisonnement que
+    # linux-runner-starvation-advisory.yml l.44-46.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: coursia-waiter
+            warn_floor: 1
+            starve_minutes: "15"
+          - label: coursia-lean
+            warn_floor: 1
+            starve_minutes: "15"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Measure starvation on ${{ matrix.label }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          LABEL: ${{ matrix.label }}
+          STARVE_MINUTES: ${{ matrix.starve_minutes }}
+          WARN_FLOOR: ${{ matrix.warn_floor }}
+          WINDOW_MAX_MINUTES: "360"
+        run: python scripts/ci/check_runner_starvation.py --label "$LABEL" --warn-floor "$WARN_FLOOR" --starve-minutes "$STARVE_MINUTES" --window-max-minutes "$WINDOW_MAX_MINUTES"
