@@ -188,7 +188,6 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 
 Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 
-
 ## Vision par ordinateur (04-Vision)
 
 [`03-DeepLearning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
@@ -410,6 +409,7 @@ Cette série vous a fait traverser un **changement de posture** en data science 
 
 - **Les fondations, volontairement manuelles** — NumPy (vectorisation) et Pandas (DataFrame, groupby, nettoyage) d'abord pratiqués à la main. Cette base n'est pas un préalable accessoire : c'est le référent qui rend *jugeable* le travail de l'agent. On ne peut évaluer ce qu'un agent produit sur un DataFrame que si l'on sait soi-même le manipuler — d'où la règle des 80/20 (CrowdFlower, 2016) qui ouvre le Lab 4 : la préparation reste le cœur du métier, l'agent l'accélère sans l'effacer.
 - **Le track LangChain — l'agent unique outillé (Days 1-3)** — on assemble les quatre composants d'un agent (LLM + outils + prompt + orchestrateur), puis on l'applique à des tâches documentaires (parsing d'appel d'offre, scoring de CV) et d'analyse (wrangling, classification, agent DataFrame). Deux paradigmes canoniques structurent cette track : **LCEL** (composition par tube `prompt | llm`) pour les chaînes, et **ReAct** (boucle Pensée→Action→Observation) couplée au **tool-calling** pour le premier agent ; le `create_pandas_dataframe_agent` concrétise **CodeAct** (l'agent écrit et exécute lui-même son Python). L'enjeu n'est pas la magie du LLM mais la *qualité du prompt* et du *schéma de sortie* (JSON structuré).
+
 - **Le track Google ADK — les systèmes multi-agents (Days 4-7)** — on monte en abstraction : du single-agent on passe à des *systèmes* (boucles planner-coder-verifier), puis aux architectures SOTA (DS-STAR pour la data science, MLE-STAR pour l'ingénierie ML), jusqu'à concourir sur Kaggle (MLE-bench) et déployer en production (BigQuery, Vertex AI, BQML). La question bascule : ce n'est plus « comment coder cette analyse ? » mais « comment concevoir un *système d'agents* qui l'exécute, la valide et la raffine ? ».
 - **La finesse** — la série ne vend pas l'agent autonome comme une solution universelle. Chaque lab pose la question du *cadre* : quels outils exposer, comment valider la sortie, quand l'agent accélère réellement *vs* quand il hallucine ou dérive. Le survey sur l'hallucination (Lab 17) et la méthodologie d'ablation (Lab 14) ancrent cette lucidité.
 

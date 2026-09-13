@@ -139,10 +139,13 @@ jobs:
           # (sys.path.insert module-level ignore sous importlib).
           # Floor 670 -> 692 : +22 items coeur numpy du moteur causal
           # (#15479 tranche 1, ict/tests/test_causal_engine.py).
-          - suite-name: "ict/tests/ (42 package)"
+          # Floor 708 -> 728 : +20 items case 4 self-model minimal
+          # #8182 (PR case 4, ict/tests/test_self_model_minimal.py --
+          # 43e strate package, collection locale mesuree 728).
+          - suite-name: "ict/tests/ (43 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 708
+            test-floor: 728
 
     steps:
       - uses: actions/checkout@v4
