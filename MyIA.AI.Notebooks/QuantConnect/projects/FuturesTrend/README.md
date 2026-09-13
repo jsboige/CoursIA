@@ -89,12 +89,24 @@ stratégie n° 13 de Robert Carver (*Advanced Futures Trading Strategies*, Harri
 2026-01-02). Cette variante coexiste avec `main.py` v3.1 sans le modifier — v3.1
 reste la **baseline ETF** à laquelle Carver #13 sera comparé.
 
-**QC Cloud n'exécute que `main.py`** : ce fichier étant le point d'entrée unique, un
-portage posé à côté sous un autre nom n'est **jamais** exécuté par la plateforme.
-Mesurer la jambe Carver #13 impose donc un **projet QC séparé** portant le portage en
-`main.py` — ce qui a été fait (`FuturesTrend-Carver13`, 36488678) précisément pour ne
-pas écraser le point d'entrée de la baseline, c'est-à-dire l'un des deux bras de la
-comparaison. Voir « Résultat mesuré de la comparaison » ci-dessous.
+**QC Cloud n'exécute que `main.py`** — comportement documenté de la plateforme
+(documentation QuantConnect, section *Project Structure*,
+<https://www.quantconnect.com/docs/v2>), et **constaté firsthand** ce cycle : le
+projet dédié 36488678, dont `main.py` porte le code Carver, a produit un run sur la
+fenêtre Carver (2763 séances, 2016-2026) tandis que `breadth_multiplier.py`, présent
+dans le même projet, n'en était pas le point d'entrée. Un portage posé à côté sous un
+autre nom n'est donc **jamais** exécuté. Mesurer la jambe Carver #13 impose un
+**projet QC séparé** portant le portage en `main.py` — ce qui a été fait
+(`FuturesTrend-Carver13`, 36488678) précisément pour ne pas écraser le point d'entrée
+de la baseline, c'est-à-dire l'un des deux bras de la comparaison.
+
+**Précision sur une observation antérieure de ce dossier** : l'énumération « 17
+backtests, aucun Carver » dans le projet 28657834 n'est **pas** une preuve de cette
+règle — vérifié ce cycle, `main_carver13.py` n'a **jamais été uploadé** dans ce projet
+(fichiers présents : `main.py`, `research.ipynb`, `quantbook.ipynb`), donc l'absence
+de run Carver y est triviale et ne dit rien des points d'entrée. La règle repose sur
+la doc plateforme et le constat positif ci-dessus, pas sur cette énumération. Voir
+« Résultat mesuré de la comparaison » ci-dessous.
 
 | Composant | v3.1 (ETF, baseline) | Carver #13 (c.1109) |
 |-----------|----------------------|---------------------|
@@ -106,7 +118,7 @@ comparaison. Voir « Résultat mesuré de la comparaison » ci-dessous.
 | Cap forecasts | n/a | +/-20 par forecast |
 | Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé, retarget du **delta** (pas d'aller-retour fabriqué, c.1109) |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
-| **Backtest mesuré (2026-09-13)** | **Sharpe 0,07 / CAGR 4,170 % / MaxDD 15,500 % / PSR 0,007 % / 463 ordres / 2913 séances** | **0 ordre — Sharpe 0 / CAGR 0 % / MaxDD 0 % / PSR 0 % / $0,00 / 2763 séances** |
+| **Backtest mesuré (2026-09-13)** | **Sharpe 0,07 / CAGR 4,170 % / MaxDD 15,500 % / PSR 0,007 % / 463 ordres / 2913 séances** | **0 ordre — Sharpe/CAGR/MaxDD/PSR n/a (indéfinis : aucune série de rendements) / $0,00 / 2763 séances** |
 
 ### Résultat mesuré de la comparaison (2026-09-13, acceptance #15549)
 
@@ -117,15 +129,38 @@ prose. La jambe Carver #13 a été **exécutée pour la première fois** : proje
 baseline), compile `BuildSuccess` 0 erreur, backtest
 `b7b7217ee540757f3d78167ab9eeea2e`.
 
+**Provenance exacte du bras baseline, champ par champ** (payload `read_backtest`
+relecture du 2026-09-13 ; run « FuturesTrend v3.1 real metrics 2015-2024 », créé
+2026-08-05) : `sharpeRatio: "0.07"`, `compoundingAnnualReturn: "4.170%"`,
+`drawdown: "15.500%"`, `totalNetProfit: "60.618%"`,
+`probabilisticSharpeRatio: "0.007%"`, `netProfitAbsolute: "$61,146.46"`,
+`tradeableDates: 2913`, `totalOrders: 463`. Fenêtre du code (`main.py`) :
+2015-01-01 → 2024-12-31, capital initial $100 000.
+
+**Non-réconciliation arithmétique de ce payload, portée sans masquage** :
+$61 146,46 / $100 000 = **+61,146 %**, alors que le même run rapporte
+`totalNetProfit: "60.618%"` ; et 1,0417^10 = 1,504 → **+50,4 %** sur la fenêtre de
+10,0 ans, incompatible avec +60,618 %. La base du champ pourcent de QC n'est pas
+documentée dans le payload. Les valeurs de ce README sont une **transcription exacte
+du payload, champ par champ** — pas des valeurs recalculées — afin que tout lecteur
+puisse refaire l'arithmétique et trancher lui-même.
+
 | Métrique | Baseline ETF v3.1 (2015-2024) | Carver #13 (2016-2026) |
 |---|---|---|
-| Sharpe | 0,07 | **0** |
-| CAGR | 4,170 % | **0 %** |
-| Max drawdown | 15,500 % | **0 %** |
-| PSR | 0,007 % | **0 %** |
+| Sharpe | 0,07 | **n/a** |
+| CAGR | 4,170 % | **n/a** |
+| Max drawdown | 15,500 % | **n/a** |
+| PSR | 0,007 % | **n/a** |
 | Net profit | +60,618 % ($61 146,46) | **$0,00** |
 | Ordres | 463 | **0** |
 | Séances négociables | 2913 | 2763 |
+
+**Sur les `n/a` de la colonne Carver** : pour un run à 0 ordre, Sharpe / CAGR / MaxDD /
+PSR sont **indéfinis** — il n'existe aucune série de rendements, et le « 0 » affiché
+par le payload QC est une valeur par défaut, pas une mesure. Les zéros réellement
+mesurés sont : **0 ordre**, **$0,00** de profit, **2763 séances** négociables, compile
+0 erreur. Écrire « Sharpe 0 » dans les mêmes cases numériques que la baseline
+inviterait précisément la lecture « Carver sous-performe » que le verdict interdit.
 
 **Verdict : `INCONCLUSIVE` — et le motif n'est pas une faiblesse d'edge.** La jambe
 Carver #13 n'émet **aucun ordre** sur 2763 séances : elle ne perd pas contre la
@@ -155,9 +190,12 @@ Logs de l'UI QC.
 
 **Correction d'une affirmation fausse de ce dépôt.** Le `config.json` et cette section
 présentaient le portage comme reconnu par QC Cloud « sans modifier la baseline » :
-c'est **faux**, QC n'exécute que `main.py`. Mesurer la jambe Carver impose soit un
+c'est **faux** — QC n'exécute que `main.py` (doc plateforme + constat firsthand sur
+36488678, détail en tête de section). Mesurer la jambe Carver impose soit un
 projet dédié (ce qui a été fait), soit d'écraser `main.py` — donc de détruire le point
-d'entrée de la baseline, c'est-à-dire l'un des deux bras de la comparaison.
+d'entrée de la baseline, c'est-à-dire l'un des deux bras de la comparaison. Le
+précédent inversé était faux avec la même force d'affirmation et sans source nommée ;
+cette correction cite les siennes.
 
 ### Note Tell c.1069 strict — Carry désactivé sur cette implémentation (c.1107)
 
