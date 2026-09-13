@@ -537,10 +537,10 @@ class CarverThirteen(QCAlgorithm):
         # all |target_weight| below 0.01 (Carver dead-band).
         set_holdings_issued_this_call = False
         for ticker, sym in self.symbols.items():
-            # 15992 defect 2: the order must name the MAPPED contract. The
-            # portfolio lookup stays on the continuous symbol (it carries
-            # the net exposure of that future's contracts and survives a
-            # roll); only the order target changes.
+            # 15992 defect 2: the order must name the MAPPED contract, and
+            # the holding lookup below must name the SAME symbol. The
+            # position lives on the contract, not on the continuous
+            # canonical (see the measured note on the gate).
             order_sym = self._mapped_contract(sym)
             if order_sym is None:
                 self._order_path["unmapped_skipped"] += 1
@@ -565,18 +565,25 @@ class CarverThirteen(QCAlgorithm):
             # - otherwise `set_holdings` is idempotent on the target
             #   weight (the broker adjusts to the new absolute target, no
             #   synthetic commission on the existing leg).
-            current_holding = self.portfolio[sym].quantity
-            current_weight = (
-                self.portfolio[sym].holdings_value / self.portfolio.total_portfolio_value
-                if self.portfolio.total_portfolio_value > 0
-                else 0.0
-            )
+            # 15992 defect 2: the holding lookup must name the SAME symbol as
+            # the order. Measured (probe 2, project 36488678, run
+            # 3e555d8608): after a fill of 100 NQ on the mapped contract,
+            # the CONTINUOUS entry still reports quantity=0.0 /
+            # invested=False -- `portfolio[canonical]` does NOT aggregate
+            # the future's contracts, it returns an empty holding. A gate
+            # read on the continuous symbol therefore never fires:
+            # `liquidate` is never reached and the position is never
+            # closed, and the re-target branch never sees a sign change.
+            # (The unused `current_weight` this replaces was computed from
+            # the same entry and read nowhere.)
+            holding = self.portfolio[order_sym]
+            current_holding = holding.quantity
             sign_change = (current_holding > 0 and target_weight < 0) or (
                 current_holding < 0 and target_weight > 0
             )
             if target_weight == 0.0 or sign_change:
                 # Either we want flat or the side flipped — liquidate first.
-                if self.portfolio[sym].invested:
+                if holding.invested:
                     self.liquidate(order_sym)
                 if target_weight != 0.0:
                     self.set_holdings(order_sym, target_weight)
