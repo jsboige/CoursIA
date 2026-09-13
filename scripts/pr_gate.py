@@ -1842,18 +1842,42 @@ def _crash_fallback_publish(exc: BaseException) -> None:
 
 
 def _entry(argv: "Iterable[str] | None" = None) -> int:
-    """Mute-failure guard (#15825 criterion 1): impossible by construction.
+    """Mute-failure guard (#15825 criterion 1).
 
     Any conclusion that is not ``success`` must carry a non-empty
     ``output.title`` -- including the crash path. main()'s GateError paths
     already fall through to the single emission tail; this wrapper closes
-    the remaining hole (a non-GateError exception) by publishing a fallback
-    title, printing the same ``[pr-gate] FAIL`` + ``::error::`` motif, and
-    exiting nonzero. Verdict semantics unchanged: an unreadable state is a
-    failure, never a pass (rule 1).
+    the remaining holes: a non-GateError exception, and argparse's
+    ``SystemExit`` (code 2, raised before anything is parsed). The guard
+    therefore no longer depends on the CLI site passing literals to
+    ``type=`` arguments forever -- a ``--flag ${{ inputs.x }}`` added six
+    months from now fails loudly WITH a title instead of reopening #15825
+    in silence. Exit code 0 (``--help``) propagates untouched; any other
+    exit code publishes the fallback and returns the same code. Verdict
+    semantics unchanged: an unreadable state is a failure, never a pass
+    (rule 1).
     """
     try:
         return main(argv)
+    except SystemExit as exc:
+        # SystemExit derives from BaseException, not Exception: the handler
+        # below never sees argparse's exit. argparse prints its own usage
+        # diagnostic to stderr, so no traceback duplication here.
+        code = (
+            exc.code if isinstance(exc.code, int)
+            else (0 if exc.code is None else 1)
+        )
+        if code == 0:
+            raise
+        _crash_fallback_publish(exc)
+        print(f"[pr-gate] FAIL -- exit {code} before verdict: {exc!r}", flush=True)
+        print(
+            f"::error::[pr-gate] premature exit {code}: "
+            f"{_workflow_command_escape(repr(exc))}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return code
     except Exception as exc:
         # `repr(exc)` alone loses the causal frame -- the check-run title has
         # to stay one line, but the log is where the crash is diagnosable.

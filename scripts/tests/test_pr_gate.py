@@ -298,6 +298,47 @@ def test_crash_fallback_preserves_the_traceback(monkeypatch, capsys):
     assert "cause racine a diagnostiquer" in captured.err
 
 
+def test_argparse_failure_publishes_title_and_propagates_exit_code(
+    monkeypatch, capsys
+):
+    """Un echec d'argparse leve SystemExit(2) AVANT tout parsing : comme
+    SystemExit derive de BaseException, le `except Exception` de `_entry`
+    ne le voyait pas -- la gate sortait en code 2 sans jamais publier de
+    titre, exactement #15825 par une autre porte (reserve ai-01 : un
+    `--flag ${{ inputs.x }}` ajoute demain au workflow suffit a rouvrir
+    le defaut en silence)."""
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(code=code, title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef",
+                           "--timeout-min", "abc"]) == 2
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "SystemExit" in seen["title"]
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- exit 2 before verdict" in out.out
+    assert "invalid float value" in out.err  # le diagnostic argparse reste le sien
+
+
+def test_argparse_help_exit_zero_propagates_without_publishing(monkeypatch):
+    """`--help` sort en SystemExit(0) : un exit NUL n'est pas un echec, il se
+    propage intact et ne publie RIEN -- le branchement sur `.code` ne doit
+    pas avaler --help (ni le transformer en rouge de gate)."""
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("--help n'est pas un echec, rien a publier")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    with pytest.raises(SystemExit) as caught:
+        pr_gate._entry(["--help"])
+    assert caught.value.code == 0
+
+
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
     pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])
