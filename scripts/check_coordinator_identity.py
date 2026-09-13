@@ -143,6 +143,13 @@ def build_report(expect: str) -> dict:
     machine = measure_machine()
     root = measure_repo_root()
     if root is None:
+        # `uniqueness_measured` est une constante de FORME du rapport, pas une
+        # propriete du chemin nominal. Un consommateur qui PARSE le JSON — le
+        # mode le plus probable pour un wrapper de cadence — doit trouver le
+        # garde-fou sur `exit 2` aussi, exactement comme `_PORTEE_LINE` survit
+        # au rendu humain de l'echec. Sans cette cle ici, l'affirmation « l'organe
+        # l'ecrit dans chacun de ses verdicts » est fausse sur ce chemin : le
+        # garde-fou survivait en prose, pas en champ.
         return {
             "ok": False,
             "verified": False,
@@ -152,6 +159,7 @@ def build_report(expect: str) -> dict:
             "lane": None,
             "role": None,
             "expect": expect,
+            "uniqueness_measured": False,
         }
 
     workspace = root.name

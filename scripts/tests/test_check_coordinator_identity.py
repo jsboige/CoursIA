@@ -69,10 +69,25 @@ def test_coursia_2_on_ai01_is_a_worker_not_the_adjoint(monkeypatch):
 
 
 def test_uniqueness_is_never_claimed(monkeypatch):
-    """Scope of the instrument is written into every verdict (never assumed)."""
+    """Scope is written into EVERY verdict -- the measurement-failure path included.
+
+    This docstring already said "every verdict" while the body asserted only the
+    nominal path, and the early return on `root is None` shipped a dict *without*
+    the key: a JSON consumer on exit 2 found no guard field at all, while the
+    human render kept its PORTEE line. The guard survived in prose, not in field.
+
+    A claim of omnipresence is validated by the path most likely to drop it, so
+    both paths are asserted here -- in field AND in prose.
+    """
     r = _report(monkeypatch, "myia-ai-01", "D:/CoursIA", "coordinator")
     assert r["uniqueness_measured"] is False
     assert "unicite" in cci.render(r).lower()
+
+    monkeypatch.setattr(cci, "measure_repo_root", lambda start=None: None)
+    err = cci.build_report("coordinator")
+    assert err["error"] is not None  # on est bien sur le chemin d'echec
+    assert err["uniqueness_measured"] is False
+    assert "unicite" in cci.render(err).lower()
 
 
 def test_outside_a_git_repo_fails_loudly(monkeypatch):
