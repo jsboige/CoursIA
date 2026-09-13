@@ -19,7 +19,7 @@ TIER (test objectif, detail dans .claude/rules/variation-protocol.md) :
 GENRE : lean . qc . training . genai . notebook-python . notebook-dotnet . notebook-lean . slides
         . research-code . docs . guard . refactor . ledger . readme . test . tooling
         CONTENU (satisfait le plancher G-VAR-1) = les 9 premiers ; META = les 7 derniers.
-Gates durs : plancher du cycle = DEEP ou MED (G-VAR-1) ; budget LIGHT = max(1, grains_du_jour//3) par lane, agrege (G-VAR-2) ; pas 2x le meme genre LIGHT consecutif (G-VAR-3).
+Gates durs : plancher du cycle = DEEP dans un genre de CONTENU (G-VAR-1, durci #15793) ; budget LIGHT = max(1, grains_du_jour//3) par lane, agrege (G-VAR-2) ; pas 2x le meme genre LIGHT consecutif (G-VAR-3).
 -->
 
 ## Summary
