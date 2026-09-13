@@ -390,6 +390,64 @@ def mask_code_spans(text: str) -> str:
     return CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
 
 
+def _blank_keeping_shape(line: str) -> str:
+    r"""Same length, same line endings, everything else erased."""
+    return "".join(c if c in "\r\n" else " " for c in line)
+
+
+def mask_fenced_blocks(text: str) -> str:
+    r"""Blank out FENCED BLOCKS ONLY, keeping inline code spans visible.
+
+    `mask_code_spans` masks the union of both surfaces, which is what a
+    ``finditer`` sweep over a whole body needs. The TAG-LINE search needs the
+    narrow half instead, and for an asymmetric reason (#15932):
+
+    - a fence is NEVER a declaration. GitHub renders it as code; nobody reads
+      a tag line inside a reproduction block as the author's own tag;
+    - an inline-backticked tag line IS still a declaration -- it is the
+      BLIND-SPOT CONTROL `_declared_prev_pr` exists for, and `parse_prev`
+      strips the backticks. Masking it here would hand every lane a trivial
+      bypass: wrap the tag line in backticks and every `prev:` invariant goes
+      silent.
+
+    So the two masks are NOT interchangeable in this position, and the narrow
+    one is what `_first_grain_line` consumes.
+
+    The scan is line-based, not a regex, so a fence that is never closed masks
+    to the END of the text -- which is exactly what GitHub renders, and so
+    what a human reviewer sees. Both fence characters are honoured (``` and
+    ~~~), with a run of any length; a 4-space indented block is deliberately
+    NOT masked (`check_lane_claim` measured that indentation also belongs to
+    nested lists, where a marker is legitimate).
+
+    Length is preserved character for character, line endings included, so
+    the line at index N of the masked text is the line at index N of the
+    original: the caller can search masked and still return the ORIGINAL
+    line verbatim. Same contract as `check_lane_claim._mask_fenced_blocks`.
+    """
+    out: list[str] = []
+    fence: str | None = None
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if fence is None:
+            opener = None
+            for ch in ("`", "~"):
+                if stripped.startswith(ch * 3):
+                    opener = ch * (len(stripped) - len(stripped.lstrip(ch)))
+                    break
+            if opener is None:
+                out.append(line)
+            else:
+                fence = opener
+                out.append(_blank_keeping_shape(line))
+        else:
+            out.append(_blank_keeping_shape(line))
+            tail = stripped.rstrip()
+            if tail.startswith(fence) and not tail.strip(fence[0]):
+                fence = None
+    return "".join(out)
+
+
 # Matches `<closing-keyword> #N` in free prose (#10101). The keyword set is
 # exactly `CLOSING_KEYWORDS` (the 9 GitHub auto-close words); the `#N` tail is
 # what GitHub parses as an auto-close instruction when the text lands in a
