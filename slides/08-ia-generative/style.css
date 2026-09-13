@@ -134,3 +134,55 @@
 .genai-ethics li:nth-child(1) { width: 55%; min-height: 175px; }
 .genai-ethics li:nth-child(n+2) { width: 100%; margin-bottom: 18px; }
 .genai-ethics .ethics-figure { left: 615px; top: 90px; width: 300px; height: 165px; }
+
+/* =====================================================================
+   Passe 2 — hiérarchie concept / mécanisme / limite
+   Trois niveaux = trois traitements (bordure + couleur + indentation).
+   Le corps garde la MÊME taille de texte sur les trois niveaux : la
+   hiérarchie vient de la bordure et du retrait, pas d'un rapetissement
+   progressif. La position du schéma Mermaid est propre à CHAQUE relation,
+   et la référence notebook vit sur une bande réservée, distincte du schéma.
+   ===================================================================== */
+.genai-level { font-size: 0.92em; line-height: 1.28; margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; width: 56%; }
+.genai-level strong { display: block; font-size: 0.72em; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 3px; font-weight: 700; }
+/* Hiérarchie par bordure et indentation : concept le plus marqué (bord pleine),
+   mécanisme en retrait (bord moyenne), limite en pointillés (plus grand retrait). */
+.genai-concept   { background: #eef2fa; border-left: 6px solid #2b5ca8; }
+.genai-concept   strong { color: #2b5ca8; }
+.genai-mechanism { background: #f2f6ef; border-left: 4px solid #3f7d3a; padding-left: 1.6em; }
+.genai-mechanism strong { color: #3f7d3a; }
+.genai-limit     { background: #fbf1ea; border-left: 3px dashed #c0671f; padding-left: 2.6em; }
+.genai-limit     strong { color: #c0671f; }
+
+/* Références : dans le flux sous les niveaux pour GRPO ; zones réservées
+   sous les schémas pour la recherche hybride, RLVR et l'évaluation. */
+:is(.genai-hybrideretrieve, .genai-grpo, .genai-rlvr, .genai-aneval) .notebook-reference { font-size: 0.8em; opacity: 0.92; }
+
+/* Mermaid : centrer l'hôte dans la zone réservée. Le SVG vit dans un
+   shadow DOM : ces dimensions ne bornent pas son dessin. Vérifier le SVG
+   rendu ; l'espacement des rangs GRPO est réglé dans le diagramme source. */
+.slidev-layout.genai-illustrated .genai-visual .mermaid { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+
+/* A — recherche hybride : les deux jambes convergent ; texte quasi pleine
+       largeur, schéma large en BAS, référence dans une bande sous le schéma. */
+.slidev-layout.genai-hybrideretrieve .genai-level { width: 100%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
+.genai-hybrideretrieve .notebook-reference { position: absolute; left: 40px; bottom: 12px; margin: 0; }
+.genai-hybrideretrieve .genai-visual.genai-hybrideretrieve-viz { left: 48px; right: auto; bottom: 48px; top: auto; width: 90%; height: 145px; }
+
+/* B — GRPO : chaîne séquentielle verticale ; schéma à DROITE en colonne LARGE
+       (lisible), texte à gauche, référence au fil du texte. */
+.slidev-layout.genai-grpo .genai-level { width: 61%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
+.genai-grpo .notebook-reference { margin-top: 4px; }
+.genai-grpo .genai-visual.genai-grpo-viz { left: 650px; right: auto; top: 105px; width: 285px; height: 400px; }
+
+/* C — RLVR / reward hacking : chaîne linéaire + branche surveillance ; texte
+       pleine largeur, schéma en BAS, référence dans une bande sous le schéma. */
+.slidev-layout.genai-rlvr .genai-level { margin-left: 0; width: 100%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
+.genai-rlvr .notebook-reference { position: absolute; left: 40px; bottom: 12px; margin: 0; width: 900px; }
+.genai-rlvr .genai-visual.genai-rlvr-viz { left: 48px; right: auto; top: auto; bottom: 48px; width: 90%; height: 145px; }
+
+/* D — évaluation trajectoires : schéma quasi carré à DROITE ; référence sur
+       bande réservée SOUS le schéma, texte pleine hauteur à gauche. */
+.slidev-layout.genai-aneval .genai-level { width: 49%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
+.genai-aneval .notebook-reference { position: absolute; left: 512px; bottom: 16px; margin: 0; width: 420px; }
+.genai-aneval .genai-visual.genai-aneval-viz { left: auto; right: 48px; top: 104px; width: 420px; height: 350px; }
