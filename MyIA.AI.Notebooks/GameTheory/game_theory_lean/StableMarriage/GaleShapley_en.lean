@@ -88,6 +88,11 @@ deferred-acceptance step machine (`gsRunSteps prof (gsProposalBound n)`) is run
 to termination, and `gsFinalMatching` / `gsNoBlockingPairs` (ported and adapted
 from `mmaaz-git/stable-marriage-lean`, ~1000 lines of supporting lemmas) discharge
 stability. This declaration is complete: no placeholder tactic and no axiom are used.
+
+Discovery path (prover traces): this goal was first diagnosed
+`INTRACTABLE_UNTIL_GS_IMPL` — attempts stalled reproducibly (138 s here,
+83 s on man-optimality), and the diagnosis named the single unblocking
+condition: the full GS algorithm port, delivered by #997.
 -/
 theorem gale_shapley_stable (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by

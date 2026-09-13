@@ -905,7 +905,7 @@ claude mcp add --scope user --transport http myserver https://...
     },
     "searxng": {
       "type": "http",
-      "url": "https://search.myia.io/"
+      "url": "http://localhost:8181/"
     }
   }
 }
@@ -949,7 +949,7 @@ export MAX_MCP_OUTPUT_TOKENS=50000
   "mcpServers": {
     "search": {
       "type": "http",
-      "url": "https://search.myia.io/"
+      "url": "http://localhost:8181/"
     },
     "github": {
       "type": "http",
