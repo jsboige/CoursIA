@@ -130,15 +130,151 @@ noncomputable def discountedPayoff (g : PrisonersDilemma) (δ : ℝ)
     (a : ℕ → PDAction × PDAction) : ℝ :=
   ∑' n : ℕ, δ^n * stagePayoff g (a n).1 (a n).2
 
-/-- The DISCOUNTED Folk theorem (Fudenberg–Maskin 1986, simplified for 2x2):
+/-- Refutation witness (#15655): the PD `T = 3, R = 2, P = 1, S = 0` — the
+positional reading of `(3, 2, 1, 0)` in field order `(T, R, P, S)`. The four
+`PrisonersDilemma` axioms hold by `norm_num` (no numerical data cited
+downstream: everything is carried by the structure). This game carries the
+feasible strictly-IR target `u = (2, 2)` (the cooperative vertex `(R, R)`),
+which refutes the unnormalized statement of the discounted Folk theorem —
+see `folk_theorem_discounted_unnormalized_refuted`. -/
+def folkCounterexample : PrisonersDilemma where
+  T := 3
+  R := 2
+  P := 1
+  S := 0
+  hTR := by norm_num
+  hRP := by norm_num
+  hPS := by norm_num
+  hPD := by norm_num
+
+/-- The Folk-theorem hypotheses ARE satisfied by the witness: for
+`folkCounterexample` (T3, R2, P1, S0), the target `u = (2, 2)` is
+individually rational, feasible (the cooperative vertex `(R, R)`: weights
+`pCC = 1`, others zero) and strictly individually rational (`2 > P`). The
+refutation below thus hits the statement itself, not a hypothesis artefact. -/
+theorem folkCounterexample_hypotheses :
+    IndividuallyRational folkCounterexample 2 2 ∧
+      Feasible folkCounterexample 2 2 ∧
+      (2 > folkCounterexample.P ∧ 2 > folkCounterexample.P) := by
+  refine ⟨⟨?_, ?_⟩, ⟨1, 0, 0, 0, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_⟩⟩ <;>
+    norm_num [folkCounterexample]
+
+/-- Symmetrized stage-payoff sum on the witness game: any pair of moves earns
+at least `2` in total. The four possible cases give `R + R = 4` (cooperation),
+`S + T = 3` and `T + S = 3` (exploitation), `P + P = 2` (mutual defection) —
+the minimum is the defection level. -/
+lemma stage_sum_ge_two (x y : PDAction) :
+    2 ≤ stagePayoff folkCounterexample x y + stagePayoff folkCounterexample y x := by
+  cases x <;> cases y <;> simp only [stagePayoff, folkCounterexample] <;> norm_num
+
+/-- **Refutation of the UNNORMALIZED statement** (#15655). The old conclusion
+of the discounted Folk theorem — `discountedPayoff g d a = u_row ∧ … = u_col`
+on the RAW series — is FALSE, for any threshold `δ_star < 1`: on the witness
+game `folkCounterexample` (T3, R2, P1, S0) with the feasible strictly-IR
+target `u = (2, 2)`, no trajectory can realize the pair `(2, 2)` once
+`d > 1/2`.
+
+    Argument (by contradiction): every stage profile earns at least `2` in
+    total (`stage_sum_ge_two`), so the sum of the two series equals
+    `Σ' dⁿ · (p_row + p_col) ≥ 2 · Σ' dⁿ = 2 / (1 - d)`. If both discounted
+    payoffs were `2` each, the sum would be `4` — yet `2 / (1 - d) > 4`
+    whenever `d > 1/2`. For any `δ_star < 1` pick `d = max δ_star (3/4)`
+    (which satisfies `δ_star ≤ d < 1` and `d > 1/2`) and the contradiction
+    fires.
+
+    Technical detail: each series is summable because its sum is `2 ≠ 0`
+    (`tsum_eq_zero_of_not_summable`), enabling `Summable.tsum_add` then the
+    `Summable.tsum_le_tsum` comparison with the geometric series (doubled as
+    `dⁿ + dⁿ` to stay within the basic infinite-sum lemmas). The repaired
+    statement `folk_theorem_discounted` normalizes both equations by
+    `1 - d`: the target is the discounted MEAN payoff, whose sum is
+    `u_row + u_col`, compatible with the lower bound `2`. -/
+theorem folk_theorem_discounted_unnormalized_refuted :
+    ¬ ∃ (δ_star : ℝ), δ_star < 1 ∧
+      ∀ (d : ℝ), d ≥ δ_star → d < 1 →
+        ∃ (a : ℕ → PDAction × PDAction),
+          discountedPayoff folkCounterexample d a = 2 ∧
+          discountedPayoff folkCounterexample d (fun n => ((a n).2, (a n).1)) = 2 := by
+  rintro ⟨δ_star, hδs, hall⟩
+  have hdl : max δ_star (3 / 4) < 1 := max_lt_iff.mpr ⟨hδs, by norm_num⟩
+  obtain ⟨a, ha1, ha2⟩ := hall (max δ_star (3 / 4)) (le_max_left _ _) hdl
+  set d := max δ_star (3 / 4)
+  have hd0 : (1 / 2 : ℝ) < d := lt_of_lt_of_le (by norm_num) (le_max_right _ _)
+  have hdnn : 0 ≤ d := by linarith
+  have hs1 : Summable fun n : ℕ =>
+      d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2 := by
+    by_contra hns
+    simp only [discountedPayoff] at ha1
+    rw [tsum_eq_zero_of_not_summable hns] at ha1
+    norm_num at ha1
+  have hs2 : Summable fun n : ℕ =>
+      d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 := by
+    by_contra hns
+    simp only [discountedPayoff] at ha2
+    rw [tsum_eq_zero_of_not_summable hns] at ha2
+    norm_num at ha2
+  have h4 : discountedPayoff folkCounterexample d a
+      + discountedPayoff folkCounterexample d (fun n => ((a n).2, (a n).1)) = 4 := by
+    rw [ha1, ha2]; norm_num
+  have hgeo : Summable fun n : ℕ => d ^ n := summable_geometric_of_lt_one hdnn hdl
+  have hlb : ∀ n : ℕ, d ^ n + d ^ n
+      ≤ d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+        + d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 := by
+    intro n
+    have hp : 2 ≤ stagePayoff folkCounterexample (a n).1 (a n).2
+        + stagePayoff folkCounterexample (a n).2 (a n).1 :=
+      stage_sum_ge_two (a n).1 (a n).2
+    have hdn : 0 ≤ d ^ n := pow_nonneg (by linarith) n
+    calc d ^ n + d ^ n = d ^ n * 2 := by ring
+      _ ≤ d ^ n * (stagePayoff folkCounterexample (a n).1 (a n).2
+          + stagePayoff folkCounterexample (a n).2 (a n).1) :=
+        mul_le_mul_of_nonneg_left hp hdn
+      _ = d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+          + d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 := by ring
+  have hbound : 2 / (1 - d) ≤ discountedPayoff folkCounterexample d a
+      + discountedPayoff folkCounterexample d (fun n => ((a n).2, (a n).1)) := by
+    have hgeo' : ∑' n : ℕ, (d ^ n + d ^ n) = 2 / (1 - d) := by
+      rw [Summable.tsum_add hgeo hgeo, tsum_geometric_of_lt_one hdnn hdl]; ring
+    rw [← hgeo']
+    simp only [discountedPayoff]
+    calc ∑' n : ℕ, (d ^ n + d ^ n)
+        ≤ ∑' n : ℕ, (d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+          + d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1) :=
+        Summable.tsum_le_tsum hlb (hgeo.add hgeo) (hs1.add hs2)
+      _ = ∑' n : ℕ, d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+          + ∑' n : ℕ, d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 :=
+        Summable.tsum_add hs1 hs2
+  rw [h4] at hbound
+  have h1pos : 0 < 1 - d := by linarith
+  rw [div_le_iff₀ h1pos] at hbound
+  ring_nf at hbound
+  have h4d : (2 : ℝ) < 4 * d := by
+    have hmul := mul_lt_mul_of_pos_left hd0 (show (0 : ℝ) < 4 by norm_num)
+    norm_num at hmul
+    exact hmul
+  linarith
+
+/-- The DISCOUNTED Folk theorem (Fudenberg–Maskin 1986, simplified for 2x2),
+
+    NORMALIZED form (#15655):
 
       For every strictly individually rational feasible payoff
       `u = (u_row, u_col)`, there exists δ* < 1 such that for all δ ∈ [δ*, 1) the
-      vector `u` is realized as the discounted payoff of a trajectory of
-      joint actions.
+      vector `u` is realized as the discounted MEAN payoff of a trajectory of
+      joint actions — each equation carries the `1 - d` factor:
+      `(1 - d) · Σ' dⁿ · payoff = u`.
 
-    The conclusion is a **real equation** (`discountedPayoff … = u_row ∧
-    … = u_col`), not `True`: the `sorry` thus carries the genuine debt
+    The normalization is not cosmetic: the RAW statement
+    (`discountedPayoff … = u` without the factor) is formally refuted by
+    `folk_theorem_discounted_unnormalized_refuted` above — on the witness
+    game (T3, R2, P1, S0) with the feasible strictly-IR target (2, 2), the
+    sum of the two series is bounded below by `2 / (1 - d) > 4` whenever
+    `d > 1/2`, so no trajectory can realize the raw pair near 1. The MEAN
+    payoff escapes the refutation: its sum is `u_row + u_col`, within the
+    range allowed by the lower bound.
+
+    The conclusion is a **real equation** (`(1 - d) * discountedPayoff … =
+    u_row ∧ … = u_col`), not `True`: the `sorry` thus carries the genuine debt
     (existence of a trajectory realizing the target vector — the
     Fudenberg–Maskin construction alternating target action / punishment
     phase, using convexity of the feasible-payoff polytope). Do NOT close on
@@ -157,12 +293,21 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
       ∃ (δ_star : ℝ), δ_star < 1 ∧
         ∀ (d : ℝ), d ≥ δ_star → d < 1 →
           ∃ (a : ℕ → PDAction × PDAction),
-            discountedPayoff g d a = u_row ∧
-            discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
+            (1 - d) * discountedPayoff g d a = u_row ∧
+            (1 - d) * discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
+  -- Normalized statement (2026-09-13, #15655): the `1 - d` factor sits on
+  -- BOTH equations — this is the discounted MEAN payoff, the standard
+  -- Fudenberg–Maskin conclusion. The old unnormalized conclusion was FALSE:
+  -- formally refuted by `folk_theorem_discounted_unnormalized_refuted`
+  -- (witness T3/R2/P1/S0, u = (2, 2): every stage earns at least 2 in total,
+  -- so the sum of the two series is ≥ 2 / (1 - d) > 4 = u_row + u_col once
+  -- d > 1/2 — no trajectory realizes the raw pair near 1).
+  --
   -- STRETCH (Fudenberg–Maskin 1986): existence of a joint-action trajectory
-  -- realizing the target payoff vector (u_row, u_col) as a discounted payoff,
-  -- for all δ close enough to 1. Requires convexity of the feasible-payoff
-  -- polytope and an extreme-point argument; a multi-page proof, not one tactic.
+  -- realizing the target payoff vector (u_row, u_col) as a discounted mean
+  -- payoff, for all δ close enough to 1. Requires convexity of the
+  -- feasible-payoff polytope and an extreme-point argument; a multi-page
+  -- proof, not one tactic.
   --
   -- Statement edge repaired (2026-08-15): the old quantifier "∀ d ≥ δ*"
   -- (no d < 1 bound) made the theorem FALSE — at d ≥ 1 the series

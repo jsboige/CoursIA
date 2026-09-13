@@ -1915,10 +1915,10 @@ Famille `MyIA.AI.Notebooks/GenAI/Texte/` = **20 notebooks** `1_OpenAI_Intro`..`2
 | Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 20 .ipynb |
 | Kernelspec `python3` | **20** | Lecture directe metadata `kernelspec.name` |
 | Imports OpenAI SDK (`openai`/`OpenAI`) | **20/20 nb** | Regex scan — preuve d'usage massif framework OpenAI |
-| Notebooks local LLM (Ollama/llama) | **9/20** | Regex `ollama|localhost:11434|LOCAL_LLM|llama` — RECOVERABLE-MACHINE |
-| Notebooks Semantic Kernel | **6/20** | Regex `semantic_kernel|SemanticKernel` |
-| Notebooks Pydantic | **11/20** | Regex `pydantic|Pydantic` (structured outputs) |
-| Notebooks Anthropic SDK | **5/20** | Regex `anthropic|Anthropic` |
+| Notebooks local LLM (Ollama/llama) | **9/20** | Regex `ollama\|localhost:11434\|LOCAL_LLM\|llama` — RECOVERABLE-MACHINE |
+| Notebooks Semantic Kernel | **6/20** | Regex `semantic_kernel\|SemanticKernel` |
+| Notebooks Pydantic | **11/20** | Regex `pydantic\|Pydantic` (structured outputs) |
+| Notebooks Anthropic SDK | **5/20** | Regex `anthropic\|Anthropic` |
 | Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE` sur les 20 .ipynb = 0 hit |
 | CJK parasites (4 ranges Unicode) | **0** | 4 ranges scannés via python3 = 0 parasite |
 | Secrets inline (literal API key / credentialed URL) | **0** | Script python3 — 36 `os.getenv(VAR, default)` mais defaults = model names (`gpt-5-mini`) + public URLs (`openrouter.ai/api/v1`), **0 secret réel** (rule 2 conforme) |
@@ -2057,7 +2057,7 @@ Part of #3801
 | Lakefiles audités | 24 | `find -L MyIA.AI.Notebooks -name 'lakefile.lean' -o -name 'lakefile.toml' \| wc -l` (= 24) |
 | Fichiers `.lean` in scope | 282 | somme par lake (`excluding .lake/`) |
 | Lignes totales | 59 710 | somme `wc -l` par fichier `.lean` |
-| Sorry tactiques (sub-agent strict) | 21 | `grep -nE '^[[:space:]]*(sorry($|[[:space:]])\|exact[ ]+sorry\|apply[ ]+sorry\|refine[ ]+sorry\|use[ ]+sorry)'` |
+| Sorry tactiques (sub-agent strict) | 21 | `grep -nE '^[[:space:]]*(sorry($\|[[:space:]])\|exact[ ]+sorry\|apply[ ]+sorry\|refine[ ]+sorry\|use[ ]+sorry)'` |
 | Sorry comment-form (worker less-strict) | 40 | `grep -n '^[[:space:]]*sorry'` (= commentaire `-- sorry:` filtrable) — c.424 disambiguation worker |
 | Mentions docstring "sorry-free" | 17 | `grep -in 'sorry' \| grep -i 'free\|Sans sorry\|no sorry\|this sorry'` |
 | Axiom declarations | **1** | `grep -nE '^[[:space:]]*axiom[s]?[ ]'` = `SocialChoice.lean:135 axiom arrow_impossibility` (L378 vérif PetersTour.lean:210 et FreeWillTheorem.lean:50 = commentaires uniquement) |

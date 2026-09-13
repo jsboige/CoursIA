@@ -150,9 +150,18 @@ def test_prev_self_reference_blocks():
                for h in v["hits"]["prev_invalid"])
 
 
-def test_prev_self_in_commit_message_blocks():
-    # The #10093 precedent says commit messages are in scope (squash-merge
-    # publishes them). A PREV-SELF in a commit must be flagged the same way.
+def test_prev_self_in_commit_message_does_not_block():
+    # INVERSE depuis #15309 (4e axe, arbitrage ai-01 2026-09-12T03:36Z) : les
+    # invariants `prev:` s'evaluent sur le BODY SEUL, la surface declarative
+    # du §1 de variation-protocol.md. Le precedent #10093 (squash-merge
+    # publie les messages de commit) reste valable pour les CLOSE-KEYWORDS --
+    # la, la surface est le mecanisme -- mais pas pour `prev:` : corriger un
+    # `prev:` de commit exige une reecriture d'historique, le geste que
+    # git-workflow.md presente comme dernier recours. Un garde n'exige pas,
+    # pour etre satisfait, un geste que la regle voisine decourage.
+    # Ce test etait l'assertion inverse (commits[1] prev-self bloquant)
+    # avant #15309 ; il epingle desormais la non-remontee de la surface
+    # commits, et le maintien du blocage cote body.
     commits = [
         "feat: normal commit",
         "Grain: MED/refactor -- prev: MED/refactor #13473",
@@ -166,7 +175,7 @@ def test_prev_self_in_commit_message_blocks():
     assert v["guard_pass"] is False
     kinds_by_loc = {(h["location"], h["kind"]) for h in v["hits"]["prev_invalid"]}
     assert ("body", "prev-self") in kinds_by_loc
-    assert ("commits[1]", "prev-self") in kinds_by_loc
+    assert not any(loc.startswith("commits[") for loc, _ in kinds_by_loc)
 
 
 def test_prev_self_abstains_when_current_pr_unknown():
@@ -851,26 +860,66 @@ def test_multiline_backticked_citation_in_commit_passes_full_guard():
     assert v["guard_pass"] is True
     assert v["hits"]["prev_invalid"] == []
 
-    # TEETH CONTROL: the SAME wrapped clause WITHOUT backticks is a bare
-    # `prev:` declaration in a commit -- it must still block (the regex
-    # matches across the soft line break via ``\\s*``). This is what makes
-    # the two tests above fail on the pre-#14700 regex (`` `[^`\\n]*` ``):
-    # back then the L5 half ``#14592`` escaped the mask and this exact
-    # block fired. If the mask ever regresses, the pair above goes red
-    # while this one stays red-but-expected -- remove it and the suite
-    # loses its proof that the pass was earned.
-    commit_bare_wrapped = (
-        "fix(guard): stray declaration\n"
+    # TEETH CONTROL, deplace sur la surface BODY par #15309 (4e axe,
+    # arbitrage ai-01 2026-09-12T03:36Z) : la meme clause nue SANS
+    # backticks, dans le BODY cette fois, doit toujours bloquer -- la
+    # surface ou les invariants `prev:` s'evaluent desormais. Avant
+    # #15309, ce controle etait joue sur ``commits[0]`` ; la prescription
+    # a retire la surface commits des invariants prev: (corriger un
+    # message de commit exige une reecriture d'historique), donc la
+    # preuve que le vert est MERITE par le masque se joue maintenant
+    # cote body : si le masque regressait (regex `` `[^`\\n]*` `` de
+    # pre-#14700), le ``#14592`` fuiterait du code span et ce bloc
+    # rougirait.
+    body_with_bare_wrapped = (
+        "Grain: LIGHT/refactor -- lane myia-po-2026:CoursIA "
+        "-- prev: LIGHT/refactor #13826\n"
         "\n"
         "1. text with prev: MED/training\n"
         "#14592 outside any backticks.\n"
     )
-    v = vpg.check(CLEAN_PREV_BODY, [commit_bare_wrapped],
+    v = vpg.check(body_with_bare_wrapped, [],
                   current_pr=14703, prev_targets=targets)
     assert v["guard_pass"] is False
     assert any(h["kind"] == "prev-abandoned" and h["prev_pr"] == 14592
-               and h["location"] == "commits[0]"
+               and h["location"] == "body"
                for h in v["hits"]["prev_invalid"])
+
+
+def test_stale_commit_prev_cannot_veto_a_valid_body_15303():
+    # #15309 4e axe -- le controle positif d'ai-01, rejoue : au head
+    # ``1c2f8b7af9`` de #15303, ``--body-file`` seul rend guard_pass=True
+    # (prev: DEEP/lean #15082, PR MERGED) et l'ajout de ``--commits-file``
+    # rendait guard_pass=False sur ``commits[0]``, qui porte une
+    # declaration ANTERIEURE pointant #15288 (une ISSUE). La correction
+    # dans la surface declarative (le body) doit SUFFIRE : un message de
+    # commit n'est pas une surface declarative, et la lane ne peut pas
+    # l'editer sans reecrire l'historique.
+    targets = {
+        "15082": {"kind": "pr", "state": "MERGED", "merged": True},
+        "15288": {"kind": "issue"},
+    }
+    body = ("Grain: DEEP/lean -- lane myia-po-2024:CoursIA-2 "
+            "-- prev: DEEP/lean #15082")
+    stale_commit = (
+        "feat(lean): premiere tranche\n"
+        "\n"
+        "Grain: CONTENU/lean -- lane myia-po-2024:CoursIA-2 "
+        "-- prev: MED/lean #15288\n"
+    )
+    v = vpg.check(body, [stale_commit], current_pr=15303,
+                  prev_targets=targets)
+    assert v["guard_pass"] is True
+    assert v["hits"]["prev_invalid"] == []
+    # Controle negatif de la prescription : la meme declaration dans le
+    # BODY rougit toujours -- c'est exactement ce que #13475 voulait
+    # attraper, et le retrait de la surface commits ne l'atteint pas.
+    v2 = vpg.check(body.replace("#15082", "#15288"), [],
+                   current_pr=15303, prev_targets=targets)
+    assert v2["guard_pass"] is False
+    assert any(h["kind"] == "prev-not-pr" and h["prev_pr"] == 15288
+               and h["location"] == "body"
+               for h in v2["hits"]["prev_invalid"])
 
 
 # --- #14550, second defect: a silent fail-open is an unearned attestation ----
