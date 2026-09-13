@@ -133,7 +133,23 @@ def test_admission_cap_machine_wide_two_worktrees():
             )
             for w in (w1, w2)
         ]
-        time.sleep(0.5)  # laisse les deux premiers s'enregistrer
+        # Synchronisation sur l'etat OBSERVABLE, pas sur une duree : le 3e
+        # demandeur ne doit partir qu'une fois les DEUX premiers enregistres.
+        # L'enregistrement est ecrit sous le verrou d'admission, juste apres
+        # le spawn+resume (lean_exec.py:854), donc sa presence prouve que le
+        # run occupe deja sa part du cap. Un delai fixe courait apres la
+        # machine : mesure #15940, sleep(0.5) laissait w2 non enregistre et
+        # le 3e demandeur se faisait admettre a sa place -> {w1, w3}.
+        def _registered() -> int:
+            return len(list((state / "runs").glob("*.json")))
+
+        deadline = time.monotonic() + 30.0
+        while _registered() < 2 and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert _registered() >= 2, (
+            "les deux premiers runs devaient s'enregistrer sous 30 s, "
+            f"vu {_registered()}")
+
         third = _run(state, ["run", "--json", "--", *SLEEP_CMD],
                      cwd=w3, **cap)
         for p in procs:
