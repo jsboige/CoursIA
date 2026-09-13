@@ -21,7 +21,7 @@ Le tirage de cycle a rendu #13962 ; ma lane y portait un claim du **2026-09-05**
 | Métrique | V1 (#14296, worktree **frais**) | V2 (ce rapport, worktree **principal**) |
 |---|---:|---:|
 | Projets Lake portant `mathlib` (manifest scanné) | 24 | **28** |
-| Groupes par manifest-identity | 6 | 9 |
+| Groupes par manifest-identity | 6 | **8** (2 mutualisables + 6 isolés) |
 | Groupes MUTUALISABLES (≥2 membres) | 1 (19 lacs) | **2 (13 + 9 lacs)** |
 | Lacs **`JUNCTIONED`** | **0** | **22** |
 | Checkouts physiques vus par le Scan | 0 | 0 |
@@ -69,13 +69,22 @@ Les 11 autres (8 du groupe `v4.32.1` + 3 isolés) sont **cohérents** avec leur 
 
 Ce n'est pas un défaut de l'outil : `Invoke-Apply` (l.233) écarte d'emblée les membres `IsJunction` d'un nouveau traitement de groupe (`$members = @($g.Group | Where-Object { -not $_.IsJunction })`), donc un lac jonctionné **reste** sur la cible de son premier Apply même si son manifest a bougé. Le drift n'a pas de détecteur dédié.
 
+**Périmètre de la datation — 22 jonctions = 18 + 4.** L'`Apply` du 2026-08-30 a enregistré **19** membres (`share-state.json`) ; la mesure vivante compte **22** jonctions. L'écart se réconcilie exactement, et il **borne la portée** du paragraphe qui précède :
+
+- **18** des 22 jonctions viennent de cet `Apply` : ce sont les 19 membres **moins `conway_lean`**, dont la jonction a été retirée à un moment non daté (§6).
+- **4** jonctions ont été **posées hors de cet `Apply`** : `discrepancy_lean`, `mimo_lean`, `social_choice_lean_peters` (les 3 groupes isolés `v4.32.1`) et `percolation_lean` (membre du bloc des 9). Aucune n'apparaît dans `share-state.json`.
+
+Conséquence : les **11 lacs en dérive sont tous parmi les 18** issus de l'`Apply`. La chaîne #15033 les couvre donc **tous**, et la lecture « la dérive vient de la migration 4.33.0, pas d'un défaut de l'outil » n'est pas une hypothèse mais une conséquence du périmètre. Les 4 jonctions hors-`Apply` sont, elles, **cohérentes** avec leur cible (`v4.32.1` / `520045ab`) : leur origine est antérieure et sans lien avec la dérive — `Invoke-Apply` (l.233) ne les aurait de toute façon jamais repointées.
+
 **Origine datée de la dérive** : la PR **#15033** (`feat(lean,#14773): bump calibration_lean vers Lean/Mathlib 4.33.0`, lane `myia-po-2024:CoursIA-2`, mergée 2026-09-09) a fait passer `calibration_lean` — l'un des 11 lacs ci-dessus — de `v4.32.1`/`520045ab` à `v4.33.0`/`db584cd6`. Elle a mis à jour `lean-toolchain` et `lake-manifest.json` sans toucher à `.lake/packages/mathlib`, qui est gitignore et n'apparaît donc dans aucun diff. C'est exactement le geste qui fabrique la ligne 5 du tableau ; les 10 autres lacs ont suivi le même chemin lors de la migration 4.33.0.
 
 ## 3. Cause du store vide
 
 `Invoke-Apply` **déplace** le checkout physique du donneur dans le store : `Move-Item $donor.MathlibDir -Destination $cacheMathlib` (l.254). Le donneur enregistré est `argumentation_lean` et il **n'a pas** de `.bak-2611` — cohérent avec la branche donneur (déplacé, jamais sauvegardé). Le store correspondant est aujourd'hui **vide**.
 
-Autrement dit : le contenu a été **déplacé dans le store le 2026-08-30, puis a disparu**. Ce que la mesure établit : le store est vide (points 3/5/6). Ce qu'elle n'établit **pas** : *qui* l'a vidé. Aucun script du dépôt ne purge ce chemin (`grep` borné `scripts/` + `.github/` : seules occurrences = l'outil lui-même et `check_mathlib_cache.py`) — la cause est **hors dépôt** ou antérieure à l'historique consultable. `.mathlib-cache/` est gitignore (`.gitignore:932`), donc l'état n'apparaît dans **aucun** artefact versionné ni en CI. Le disque `C:` est sous pression (127,9 Go libres sur ~930 Go), ce qui rend une purge de récupération d'espace l'hypothèse principale — **hypothèse, non mesurée**.
+Autrement dit : le contenu a été **déplacé dans le store le 2026-08-30, puis a disparu**. Ce que la mesure établit : le store est vide (points 3/5/6). Ce qu'elle n'établit **pas** : *qui* l'a vidé. Aucun script du dépôt ne purge ce chemin (`grep` borné `scripts/` + `.github/` : seules occurrences = l'outil lui-même et `check_mathlib_cache.py`) — la cause est **hors dépôt** ou antérieure à l'historique consultable.
+
+**Piste `Remove-DirRobust` — inventoriée puis fermée.** Ce `grep` portait sur le **chemin du store**, il ne pouvait donc pas voir le seul organe du dépôt qui supprime des répertoires **Mathlib**. Inventaire de ses **appelants** (fait le 2026-09-13) : `Remove-DirRobust` a **un unique appelant** — `setup_shared_mathlib.ps1:311`, dans la branche `-RemoveBackups` de l'`Apply`, qui retire les `.bak-2611` des membres et **jamais le store**. Son commentaire (l.194-195) documente une purge de `mathlib.bak-2611` sur `calibration_lean` le **2026-06-11** : c'est un geste **manuel d'opérateur**, visant un **backup**, et **antérieur de 2,5 mois** à l'`Apply` du 2026-08-30. Le dépôt ne contient donc **aucun mécanisme automatique** capable de vider le store : la piste est **fermée**, et la cause reste hors dépôt. `.mathlib-cache/` est gitignore (`.gitignore:932`), donc l'état n'apparaît dans **aucun** artefact versionné ni en CI. Le disque `C:` est sous pression (127,9 Go libres sur ~930 Go), ce qui rend une purge de récupération d'espace l'hypothèse principale — **hypothèse, non mesurée**.
 
 ## 4. Angle mort de l'instrument (et proposition)
 
@@ -103,7 +112,7 @@ La correction est portée dans la même PR.
 ## 6. Deux angles morts de découverte, notés au passage
 
 - `GameTheory/cooperative_games_lean` et `GameTheory/social_choice_lean` portent un `.lake/packages/mathlib` **réel** (~9 000 fichiers chacun) mais **absent des 28 projets** du Scan : leurs `lake-manifest.json` ne sont pas suivis par git (`git ls-files --error-unmatch` → *did not match any file(s) known to git*), or `Get-LeanProjects` découvre par `git ls-files` (l.97). Le Scan ne les voit donc pas — c'est un trou de découverte, pas une absence.
-- Constaté sans être expliqué : `conway_lean` figure parmi les 19 membres de `share-state.json` mais son `.lake/packages/mathlib` **n'existe plus** (le Scan le classe « pas de checkout local »). Une jonction a donc été retirée à un moment non daté.
+- Constaté sans être expliqué : `conway_lean` figure parmi les 19 membres de `share-state.json` mais son `.lake/packages/mathlib` **n'existe plus** (le Scan le classe « pas de checkout local »). Une jonction a donc été retirée à un moment non daté. C'est **le seul membre de l'`Apply` dans ce cas**, et c'est lui qui explique l'écart 19 → 18 du §2 (22 jonctions = 18 de l'`Apply` + 4 posées ailleurs).
 
 ## 7. Hors scope
 
@@ -122,9 +131,10 @@ La correction est portée dans la même PR.
 
 ## Vérifications
 
-- **Mode Scan exécuté** depuis le worktree **principal** `C:\dev\CoursIA` ; sortie reprise verbatim ci-dessous.
+- **Mode Scan exécuté** depuis le worktree **principal** `C:\dev\CoursIA` ; sortie reprise verbatim ci-dessous (blocs `[isole]` abrégés à leur seul membre, comme indiqué sous le bloc).
+- **Ré-ancrage post-revue (2026-09-13)** : la revue `[NanoClaw]` (myia-ai-01, 08:18Z) a relevé deux compteurs que la sortie citée **ne reproduisait pas** — « 9 groupes » et « 20 lacs » (§Vérifications), ainsi que la ligne « 6 → 9 » du §Résumé. Re-mesurés sur une **nouvelle exécution** du Scan : **8** groupes (2 + 6) et **25** lacs partageant leur paire `(toolchain, rev)`. Les deux nombres publiés étaient des **reports de prose non ré-ancrés sur l'artefact** — le défaut même que ce rapport reproche au V1. Corrigés ci-dessus ; aucune conclusion n'en dépendait (le verdict V1-inversé tient sur les 22 jonctions et le store vide, tous deux recomptés).
 - **Organe dédié exécuté** : `check_mathlib_cache.py` → `mathlib ok: 0 | froid: 22 | caches physiques distincts: 1` (exit 0, advisory).
-- **Discrimination manifest-identity** : 9 groupes alors que 20 lacs partagent `toolchain + mathlib rev` — `discrepancy_lean`, `mimo_lean`, `social_choice_lean_peters` partagent `v4.32.1 + 520045ab` avec le groupe 9 et restent **isolés** (deps transitives différentes). Clé de groupe `"$toolchain|$($pairs -join ';')"` (`setup_shared_mathlib.ps1:119-123`).
+- **Discrimination manifest-identity** : **8** groupes (2 `[MUTUALISABLE]` + 6 `[isole]`) alors que **25** lacs partagent leur paire `toolchain + mathlib rev`. Ces 25 se répartissent en **5 blocs** : 13 sous `v4.33.0 + db584cd6` (1 bloc) et 12 sous `v4.32.1 + 520045ab` (**1 bloc de 9 + 3 blocs d'1**). C'est cet éclatement qui porte la démonstration : `discrepancy_lean`, `mimo_lean`, `social_choice_lean_peters` partagent `v4.32.1 + 520045ab` avec le **bloc des 9** et restent néanmoins **isolés** — leurs deps transitives diffèrent. Clé de groupe `"$toolchain|$($pairs -join ';')"` (`setup_shared_mathlib.ps1:119-123`), plus stricte que la paire `(toolchain, rev)`. Les 3 lacs restants (`v4.25.0`, `v4.31.0-rc2`, `v4.33.1`) ont une paire unique et forment 3 blocs d'1. **Total : 13 + 12 + 3 = 28.**
 - **Aucune écriture** : `git status` du worktree propre ; aucun `Apply`, aucun `Rollback`, aucun `lake build`.
 - **Chiffres de fichiers** (9 064 / 8 833 / 9 114) : comptés par deux méthodes indépendantes donnant le même résultat (`Get-ChildItem -Recurse` et `Directory.EnumerateFiles` long-path). Les tailles **en Go** ne sont pas revendiquées : elles ne sont pas mesurables de façon fiable au-delà de 260 caractères de chemin sur cette machine — limitation que le script documente lui-même (`Remove-DirRobust`, l.194-195).
 
