@@ -263,7 +263,7 @@ Validez toujours les entrées avant de les transmettre aux services externes.
 ```javascript
 // Validation des entrées
 function validateIssueData(issueData) {
-  if (!issueData.title || issueData.title.length < 3) {
+  if (!issueData.title \| issueData.title.length < 3) {
     throw new Error("Le titre de l'issue doit contenir au moins 3 caractères");
   }
   
@@ -669,7 +669,7 @@ const performanceMetrics = {
   },
   
   incrementCount(counter) {
-    this.counts[counter] = (this.counts[counter] || 0) + 1;
+    this.counts[counter] = (this.counts[counter] \| 0) + 1;
     
     // Enregistrement de la métrique
     this.recordMetric(`count.${counter}`, this.counts[counter]);
@@ -789,11 +789,11 @@ async function retryWithExponentialBackoff(operation, maxRetries = 3, initialDel
       return await operation();
     } catch (error) {
       // Vérification si l'erreur est retentable
-      const isRetryable = error.isRetryable || 
-                          error.statusCode >= 500 || 
+      const isRetryable = error.isRetryable \| 
+                          error.statusCode >= 500 \| 
                           error.statusCode === 429;
       
-      if (!isRetryable || retries >= maxRetries) {
+      if (!isRetryable \| retries >= maxRetries) {
         throw error;
       }
       
@@ -835,9 +835,9 @@ class CircuitBreaker {
     this.failureCount = 0;
     this.lastFailureTime = null;
     this.options = {
-      failureThreshold: options.failureThreshold || 5,
-      resetTimeout: options.resetTimeout || 30000, // 30 secondes
-      halfOpenSuccessThreshold: options.halfOpenSuccessThreshold || 2
+      failureThreshold: options.failureThreshold \| 5,
+      resetTimeout: options.resetTimeout \| 30000, // 30 secondes
+      halfOpenSuccessThreshold: options.halfOpenSuccessThreshold \| 2
     };
     this.successCount = 0;
   }
