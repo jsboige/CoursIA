@@ -28,7 +28,7 @@ Au niveau configuration (descriptif uniquement, n=21 — les horizons d'un même
 
 **Lecture nuancée vis-à-vis du Cycle 31.** Sous calibration symétrique et agrégation par actif, le BEATS du Cycle 31 (p=7.9e-7, 64/84, calibration asymétrique de la seule baseline et pseudo-réplication par 4 seeds d'un OLS déterministe) **n'est pas confirmé**. Ce résultat ne le réfute pas définitivement : protocoles et fenêtres diffèrent, et cinq actifs du cluster n'ont ici que ~724 jours de données. L'hypothèse selon laquelle l'asymétrie de calibration du Cycle 31 portait une part de son avantage mesuré, et celle selon laquelle la calibration du biais est instable sur fenêtres ~724 jours, sont des **interprétations** cohérentes avec les biais signés ci-dessus — pas des démonstrations. Ce verdict rejoint celui de M16 (HAR asymétrique, même contrat cluster : NO BEATS, p = 0,9921875).
 
-**Artefacts.** `scripts/results/m12_har_rv_j/results.json` (97 061 octets, agrégé falsifiable : biais signés, p-values DM, preuves de folds par unité, manifeste données) et `scripts/results/m12_har_rv_j/m12_har_rv_j_results.csv` (43 026 octets). Sweep réel : 21/21 unités, 0 échec, 220 s. Notebook consommateur réexécuté : `m12_har_rv_j_research.ipynb` (5 cellules code, sorties réelles).
+**Artefacts.** `scripts/results/m12_har_rv_j/results.json` (93 727 octets dans le blob Git, agrégé falsifiable : biais signés, p-values DM, preuves de folds par unité, manifeste données) et `scripts/results/m12_har_rv_j/m12_har_rv_j_results.csv` (43 026 octets). Sweep réel : 21/21 unités, 0 échec, 220 s. Notebook consommateur réexécuté : `m12_har_rv_j_research.ipynb` (5 cellules code, sorties réelles).
 
 ## Verdict (Cycle 31, 2026-05-13 — historique, protocole asymétrique)
 
