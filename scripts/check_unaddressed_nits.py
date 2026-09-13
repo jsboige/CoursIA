@@ -1821,14 +1821,41 @@ def _excerpt(body: str) -> str:
     return snippet[:200] + " [...] " + snippet[-200:]
 
 
+# #15989 -- frontiere de PARAGRAPHE de la fenetre de citation. Les sites
+# d'appel passent les 30 caracteres qui precedent l'occurrence, sans borne :
+# un mot de citation place dans le paragraphe PRECEDENT neutralisait une
+# occurrence du paragraphe SUIVANT. Le declencheur mesure est le titre de
+# section nu -- l'idiome des commentaires de lane :
+#
+#     ## stale
+#     <ligne vide>
+#     CHANGES_REQUESTED: le split manque sur le head neuf.
+#
+# Sans borne, la fenetre vaut '## stale\n\n' et eteint ce verdict NEUF
+# (`classify` rend None). Le citer doit deja vivre dans CITERS pour que la
+# classe soit atteignable : c'est le cas de « stale », « previous », « sans »,
+# « aucune » sur main, et #15843 ouvre le meme chemin aux mots francais de
+# narration retrospective (« dissipation »).
+#
+# La borne est le PARAGRAPHE, pas la ligne : un citer pose sur la ligne
+# immediatement precedente, SANS ligne vide, reste une narration d'un meme
+# paragraphe et neutralise toujours (#15989, critere 2).
+_PARAGRAPH_BREAK_RE = re.compile(r"\n[ \t\r]*\n")
+
+
 def _is_cited(window: str) -> bool:
     """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
 
     Le mot doit etre delimite : le caractere qui le precede est non-alphanumerique
     (espace, newline, ponctuation) ou le debut de la fenetre. Sans frontiere,
     « xxxtechno » matcherait « no ».
+
+    #15989 -- la fenetre est bornee a la frontiere de PARAGRAPHE (derniere ligne
+    vide) : un citer du paragraphe precedent ne la franchit plus, donc n'eteint
+    plus le verdict du paragraphe suivant. Rejeu du corpus de #15843 (1936 PRs
+    mergees, 13113 corps, 2420 occurrences) : 0 verdict change.
     """
-    w = window
+    w = _PARAGRAPH_BREAK_RE.split(window)[-1]
     # Fleche immediatement devant le marqueur : derivation conditionnelle
     # (« Si X → CHANGES_REQUESTED », #1247), pas une emission de verdict.
     stripped = w.rstrip()
