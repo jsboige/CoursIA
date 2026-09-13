@@ -133,7 +133,28 @@ def test_admission_cap_machine_wide_two_worktrees():
             )
             for w in (w1, w2)
         ]
-        time.sleep(0.5)  # laisse les deux premiers s'enregistrer
+        # Hermes (po-2026, 2026-09-13, reproduit sur un 3e siege) : le sleep
+        # n'est pas une synchronisation — il court contre le demarrage d'un
+        # interprete Python (0,87-1,10 s mesures avant l'enregistrement de w2,
+        # soit ~2x le budget de 0,5 s). Quand w2 perd la course, le 3e
+        # demandeur est LEGITIMEMENT admis (le cap n'est jamais viole) et
+        # c'est l'assertion d'ordre d'arrivee qui tombe. On synchronise sur
+        # l'etat observable : deux enregistrements runs/*.json (seuls les
+        # runs ADMIS s'y ecrivent) AVANT d'introduire le 3e demandeur.
+        registered = state / "runs"
+        deadline = time.monotonic() + 30.0
+        while len(list(registered.glob("*.json"))) < 2:
+            if time.monotonic() > deadline:
+                for p in procs:
+                    p.kill()
+                for p in procs:
+                    p.wait(timeout=10)
+                raise AssertionError(
+                    "les deux premiers demandeurs ne se sont pas "
+                    "enregistres sous 30 s : le cap machine-wide n'est "
+                    "pas testable dans cet etat"
+                )
+            time.sleep(0.05)
         third = _run(state, ["run", "--json", "--", *SLEEP_CMD],
                      cwd=w3, **cap)
         for p in procs:
@@ -285,6 +306,59 @@ def test_resume_process_counts_a_suspended_root_and_really_resumes_it():
         if proc.poll() is None:
             proc.kill()
             proc.wait(timeout=30)
+
+
+@pytest.mark.parametrize("prev,expected", [
+    (0, False),           # suspend count precedent 0 : thread seulement OUVRABLE
+    (1, True),            # precedent 1 : le thread etait reellement suspendu
+    (2, True),            # suspendu deux fois : toujours un vrai suspendu
+    (0xFFFFFFFF, False),  # (DWORD)-1 : echec de ResumeThread
+    (-1, False),          # le defaut c_int SIGNE : le compteur inerte d'avant #15900
+])
+def test_resume_prev_count_discriminates(prev, expected):
+    """Pin portable du discriminant #15900 (reserve Hermes 2026-09-13 : aucun
+    siege CI n'execute les tests ``_WINDOWS_ONLY`` -- la non-regression ne
+    doit pas tenir sur la seule mesure d'auteur). La discrimination des
+    valeurs rendues par ResumeThread est la cause racine : avec le restype
+    par defaut (signe), l'echec arrive en -1 et le compteur ne distingue
+    plus un suspendu d'un echec d'appel."""
+    assert le._prev_marks_suspended(prev) is expected
+
+
+def test_unresumed_root_aborts_killing_the_job_before_the_verdict(monkeypatch):
+    """Pin portable de la garde fail-closed (meme reserve) : pour
+    ``n_resumed == 0``, le statut vaut internal-error/EXIT_INTERNAL, le
+    backend porte le suffixe ``-resume-failed``, ET l'effet de bord de nettoyage
+    a lieu AVANT le rendu -- terminate_job d'abord, kill_pids ensuite. C'est
+    l'assertion discriminante « le refus precede l'effet de bord ». Sans
+    processus : la garde est extraite et pilotee avec des doublons."""
+    order = []
+
+    class FakeJob:
+        ok = True
+        handle = 1
+
+        def terminate(self):
+            order.append("terminate-job")
+
+    def fake_kill(pids):
+        order.append(("kill-pids", list(pids)))
+
+    monkeypatch.setattr(le, "kill_pids", fake_kill)
+    monkeypatch.setattr(le, "descendants_of", lambda pid: {pid + 1, pid + 2})
+    monkeypatch.setattr(le.time, "sleep", lambda _s: None)
+
+    result = {"backend": "windows-job"}
+    le._abort_unresumed_root(result, FakeJob(), root_pid=100)
+
+    assert result["status"] == "internal-error"
+    assert result["exit_code"] == le.EXIT_INTERNAL
+    assert result["backend"] == "windows-job-resume-failed"
+    assert "resumed 0 threads" in result["reason"]
+    assert order == [
+        "terminate-job",
+        ("kill-pids", [102, 101]),  # tri desc : les enfants profonds d'abord
+    ], "le job doit mourir avant le kill des descendants, avant le rendu"
 
 
 @pytest.mark.skipif(
