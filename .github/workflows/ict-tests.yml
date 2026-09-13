@@ -44,6 +44,7 @@ on:
       - '.github/workflows/ict-tests.yml'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
       - '.github/workflows/ict-tests.yml'

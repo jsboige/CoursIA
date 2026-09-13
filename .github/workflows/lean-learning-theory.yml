@@ -34,6 +34,7 @@ on:
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean'

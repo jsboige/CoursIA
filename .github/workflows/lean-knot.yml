@@ -92,6 +92,7 @@ on:
       - 'scripts/lean/check_target_coverage.py'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'

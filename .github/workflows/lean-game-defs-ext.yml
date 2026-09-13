@@ -17,6 +17,7 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'

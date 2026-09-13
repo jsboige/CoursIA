@@ -23,6 +23,7 @@ name: Notebook LaTeX Control Chars
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_latex_control_chars.py'

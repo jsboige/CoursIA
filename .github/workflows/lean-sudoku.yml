@@ -20,6 +20,7 @@ on:
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean'
