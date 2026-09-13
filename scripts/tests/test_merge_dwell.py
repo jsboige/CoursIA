@@ -168,3 +168,26 @@ def test_check_bout_en_bout_accepte_une_tete_agee():
     ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
     assert ok is True
     assert "dwell ecoule" in msg
+
+
+def test_le_verdict_ne_dit_jamais_d_attendre():
+    """#15726 : le message d'un plancher non ecoule ne doit pas fabriquer de l'attente.
+
+    Ce test asserte des ABSENCES, et c'est voulu : la regression qu'il attrape
+    n'est pas un calcul faux, c'est une PHRASE qui revient. Le verdict etait
+    juste (`False`) tout en disant « aucun geste manuel n'est requis » -- une
+    instruction d'attente, machine-emise sur chaque gate rouge, adossee a un
+    balayage annonce horaire dont la cadence mesuree est de 2 h 33 a 5 h 18
+    (#15197). Un organe qui dit au worker de ne rien faire est le frein que le
+    mandat user du 2026-09-12 demande de retirer.
+    """
+    _, _, msg = merge_dwell.evaluate(
+        datetime(2026, 9, 7, 11, 55, tzinfo=timezone.utc), NOW, 120.0, waived=False
+    )
+    assert "aucun geste" not in msg
+    assert "geste manuel n'est requis" not in msg
+    # Le mot « horaire » seul re-annonce la cadence fausse que #15197 mesure.
+    assert "balayage horaire" not in msg
+    # Et ce qui doit y etre : la lane continue, et peut rejouer elle-meme.
+    assert "NE PAS ATTENDRE" in msg
+    assert "rerun" in msg
