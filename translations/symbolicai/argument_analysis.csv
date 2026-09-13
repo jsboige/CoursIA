@@ -3393,7 +3393,7 @@ pip install ipywidgets requests jupyter-ui-poll  # Pour mode interactif
 
 **Dépendances système**:
 - **JDK 11+** (pour Tweety via JPype): `JAVA_HOME` doit être configuré
-- **Bibliothèque Tweety**: JARs dans `libs/` (téléchargement automatique via `Tweety-01-Setup-Python.ipynb`)
+- **Bibliothèque Tweety**: JARs dans `libs/` (téléchargement automatique via `Tweety-1-Setup.ipynb`)
 
 **Fichiers requis**:
 
@@ -9647,7 +9647,7 @@ Les trois audiences produisent **trois extensions grounded différentes** sur le
 
 **Lecture** : sur ce cycle, le grounded contient toujours **deux** arguments sur trois — mais l'argument *exclu* change avec l'audience ($b$, puis $c$, puis $a$). Le mécanisme : l'argument dont la valeur est **la plus préférée** voit l'attaque dirigée contre lui échouer (son attaquant est moins préféré), donc il survit ; et comme sa propre attaque *vers le suivant* réussit, il élimine ce suivant. Le troisième argument survit alors par défense (le survivant principal défait l'attaquant du troisième). En résumé : **mettre une valeur en tête d'audience condamne l'argument que cette valeur attaque dans le cycle**.
 
-C'est le résultat central de Bench-Capon : **la conclusion d'un débat n'est pas déterminée par le graphe d'arguments seul, mais par le graphe ET les valeurs de l'audience**. Trois auditoires de valeurs différentes, confrontés aux *mêmes* arguments, excluent légitimement des arguments différents. Cela relie l'argumentation à la théorie du choix social : si plusieurs individus ont des audiences différentes, **agréger leurs préférences** (cf. [Tweety-9](../Tweety/Tweety-09-Preferences-Python.ipynb), [GameTheory SocialChoice](../../GameTheory/)) devient la question centrale pour décider collectivement.",,,,,,,,9c3b519fc2a3fc84,,,,,,,,
+C'est le résultat central de Bench-Capon : **la conclusion d'un débat n'est pas déterminée par le graphe d'arguments seul, mais par le graphe ET les valeurs de l'audience**. Trois auditoires de valeurs différentes, confrontés aux *mêmes* arguments, excluent légitimement des arguments différents. Cela relie l'argumentation à la théorie du choix social : si plusieurs individus ont des audiences différentes, **agréger leurs préférences** (cf. [Tweety-9](../Tweety/Tweety-9-Preferences.ipynb), [GameTheory SocialChoice](../../GameTheory/)) devient la question centrale pour décider collectivement.",,,,,,,,9c3b519fc2a3fc84,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,0506af63,markdown,fr,e112eda91b5858f2,"## Sweep d'audiences : combien de conclusions distinctes ?
 
 Sur un VAF à $|V|$ valeurs, il y a $|V|!$ audiences possibles (tous les ordres totaux). Une question naturelle : parmi toutes ces audiences, **combien d'extensions grounded distinctes** obtient-on ? Si la réponse est 1, les valeurs sont décoratives (elles ne changent rien). Si la réponse est grande, le débat est *sensible* à l'audience — ce qui est précisément la situation où l'argumentation basée sur les valeurs apporte quelque chose que Dung pur ne peut pas exprimer.
@@ -9779,7 +9779,7 @@ Le cadre de Dung (1995) dit *qui attaque qui*. Le cadre de Bench-Capon (2003) aj
 
 ### Prochaines étapes
 
-- **Agrégation d'audiences → choix social** : si chaque individu a sa propre audience, comment décider collectivement ? C'est le pont vers [Tweety-9 (préférences)](../Tweety/Tweety-09-Preferences-Python.ipynb) et [GameTheory / SocialChoice](../../GameTheory/) (théorèmes d'impossibilité d'Arrow, votations). La question « existe-t-il une agrégation d'audiences qui préserve la rationalité ? » est un analogue direct du paradoxe de Condorcet.
+- **Agrégation d'audiences → choix social** : si chaque individu a sa propre audience, comment décider collectivement ? C'est le pont vers [Tweety-9 (préférences)](../Tweety/Tweety-9-Preferences.ipynb) et [GameTheory / SocialChoice](../../GameTheory/) (théorèmes d'impossibilité d'Arrow, votations). La question « existe-t-il une agrégation d'audiences qui préserve la rationalité ? » est un analogue direct du paradoxe de Condorcet.
 - **Argumentation graduée** : plutôt qu'un ordre total sur les valeurs, [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) attribue une *force numérique* à chaque argument — une autre façon de départager ce que Dung laisse indécidé.
 - **Bipolarité** : les VAF gèrent les préférences, mais restent *attack-only*. Les cadres bipolaires (Cayrol & Lagasquie-Schiex, 2005) ajoutent une relation de **support** — un prolongement naturel au-delà de ce notebook.
 
