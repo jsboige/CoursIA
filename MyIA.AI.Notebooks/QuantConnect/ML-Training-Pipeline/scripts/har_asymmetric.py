@@ -45,6 +45,18 @@ from realized_variance import (
 )
 
 
+CLUSTER_ASSETS = (
+    "BTC-USD",
+    "ETH-USD",
+    "SOL-USD",
+    "LTC-USD",
+    "XRP-USD",
+    "ADA-USD",
+    "DOT-USD",
+)
+REMOTE_ASSETS = frozenset(CLUSTER_ASSETS[2:])
+
+
 def daily_semivariance_positive(
     intraday_log_returns: pd.Series,
     min_obs_per_day: int = 6,
@@ -145,7 +157,12 @@ class AsymmetricHARModel:
         rv_history: pd.Series,
         horizon: int,
     ) -> float:
-        """Iterated h-step forecast on log-RV scale."""
+        """Iterated h-step forecast on log-RV scale.
+
+        For h >= 2, forecast RV is split equally between future RV+ and RV-
+        to close the recursion. This is a fixed convention, not a fitted
+        parameter; retaining it preserves comparability with historical M16.
+        """
         if horizon < 1:
             raise ValueError("horizon must be >= 1")
         if self.coef_ is None:
@@ -261,6 +278,7 @@ def walk_forward_asymmetric_har(
     truths: list[float] = []
     pred_dates: list[pd.Timestamp] = []
     initial_calibration_bias_by_fold: list[float] = []
+    fold_results: list[dict] = []
 
     for fold_idx, (train_end, test_start, test_end) in enumerate(splits):
         rv_train = rv.iloc[:train_end]
@@ -282,6 +300,8 @@ def walk_forward_asymmetric_har(
             bias = 0.0
         initial_calibration_bias_by_fold.append(bias)
 
+        fold_preds: list[float] = []
+        fold_truths: list[float] = []
         for i in range(test_start, test_end - horizon):
             target_window = log_rv.iloc[i:i + horizon].mean()
 
@@ -294,6 +314,8 @@ def walk_forward_asymmetric_har(
                 - bias
             )
 
+            fold_preds.append(log_pred)
+            fold_truths.append(float(target_window))
             preds.append(log_pred)
             truths.append(float(target_window))
             pred_dates.append(rv.index[i])
@@ -313,6 +335,24 @@ def walk_forward_asymmetric_har(
                     )
                     bias = 0.0
 
+        fold_preds_arr = np.asarray(fold_preds)
+        fold_truths_arr = np.asarray(fold_truths)
+        fold_results.append({
+            "fold": fold_idx,
+            "n_test": len(fold_preds_arr),
+            "mse_logrv": float(np.mean(
+                (fold_preds_arr - fold_truths_arr) ** 2
+            )),
+            "mean_resid": float(np.mean(
+                fold_preds_arr - fold_truths_arr
+            )),
+        })
+
+    if len(fold_results) != n_splits:
+        raise ValueError(
+            f"expected {n_splits} evaluated folds, got {len(fold_results)}"
+        )
+
     preds_arr = np.asarray(preds)
     truths_arr = np.asarray(truths)
     aggregate_mse = float(np.mean((preds_arr - truths_arr) ** 2)) if len(preds_arr) else float("nan")
@@ -329,6 +369,7 @@ def walk_forward_asymmetric_har(
         "calibrate_bias": calibrate_bias,
         "calibration_size": calibration_size,
         "initial_calibration_bias_by_fold": initial_calibration_bias_by_fold,
+        "fold_results": fold_results,
         "forecasts": forecasts,
         "targets": targets,
     }
@@ -337,27 +378,57 @@ def walk_forward_asymmetric_har(
 def _load_panel(
     skip_remote: bool,
     extra_coins: list[str] | None = None,
-) -> dict[str, pd.Series]:
-    """Load 7-coin hourly log returns panel."""
+) -> tuple[dict[str, pd.Series], dict[str, str]]:
+    """Load the hourly-return panel and retain per-asset failures."""
     out: dict[str, pd.Series] = {}
-    print("[load] BTC Bitstamp 1h ...")
-    btc = load_bitstamp_btc()
-    out["BTC-USD"] = hourly_log_returns(btc)
-    print(f"  BTC: {len(out['BTC-USD'])} obs")
-    print("[load] ETH Binance 1h ...")
-    eth = load_binance_eth()
-    out["ETH-USD"] = hourly_log_returns(eth)
-    print(f"  ETH: {len(out['ETH-USD'])} obs")
+    failures: dict[str, str] = {}
+    local_loaders = {
+        "BTC-USD": ("BTC Bitstamp", load_bitstamp_btc),
+        "ETH-USD": ("ETH Binance", load_binance_eth),
+    }
+    for ticker, (label, loader) in local_loaders.items():
+        try:
+            print(f"[load] {label} 1h ...")
+            out[ticker] = hourly_log_returns(loader())
+            print(f"  {ticker}: {len(out[ticker])} obs")
+        except Exception as exc:
+            failures[ticker] = f"{exc.__class__.__name__}: {exc}"
+            print(f"[WARN] {ticker} skipped ({failures[ticker]})")
+
     if not skip_remote:
-        for ticker in ["SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"] + (extra_coins or []):
+        remote_tickers = list(CLUSTER_ASSETS[2:]) + (extra_coins or [])
+        for ticker in remote_tickers:
             try:
                 print(f"[load] {ticker} yfinance 1h ...")
                 ds = load_yf_intraday(ticker)
                 out[ticker] = hourly_log_returns(ds)
                 print(f"  {ticker}: {len(out[ticker])} obs")
             except Exception as exc:
-                print(f"[WARN] {ticker} skipped ({exc.__class__.__name__}: {exc})")
-    return out
+                failures[ticker] = f"{exc.__class__.__name__}: {exc}"
+                print(f"[WARN] {ticker} skipped ({failures[ticker]})")
+    return out, failures
+
+
+def validate_requested_panel(
+    panel: dict[str, pd.Series],
+    requested: list[str],
+    failures: dict[str, str],
+    skip_remote: bool,
+) -> None:
+    """Reject incomplete requested panels with asset-specific diagnostics."""
+    skipped_remote = [coin for coin in requested if coin in REMOTE_ASSETS]
+    if skip_remote and skipped_remote:
+        raise ValueError(
+            "--skip-remote is incompatible with requested remote assets: "
+            + ", ".join(skipped_remote)
+        )
+
+    missing = [coin for coin in requested if coin not in panel]
+    if missing:
+        details = ", ".join(
+            f"{coin} ({failures.get(coin, 'not loaded')})" for coin in missing
+        )
+        raise ValueError(f"requested coins unavailable: {details}")
 
 
 def _eval_one_coin(
@@ -496,7 +567,12 @@ def _eval_one_coin(
                 "horizon": h,
                 "seed": seed,
                 "n_rv_days": int(len(rv)),
+                "window_start": rv.index.min().strftime("%Y-%m-%d"),
+                "window_end": rv.index.max().strftime("%Y-%m-%d"),
                 "n_predictions": int(len(pred_target)),
+                "n_folds": len(asym_out["fold_results"]),
+                "asym_fold_results": asym_out["fold_results"],
+                "classic_fold_results": classic_out["fold_results"],
                 "debias": debias,
                 "calibration_size": calibration_size,
                 "asym_mse_logrv": float(asym_mse),
@@ -544,6 +620,14 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         classic_mses = [r["classic_mse_logrv"] for r in seeds_rows]
         verdicts = [r.get("dm_verdict", "UNKNOWN") for r in seeds_rows]
         p_values = [r.get("dm_pvalue", 1.0) for r in seeds_rows]
+        asym_biases = [
+            r["asym_bias_oos"] for r in seeds_rows if "asym_bias_oos" in r
+        ]
+        classic_biases = [
+            r["classic_bias_oos"]
+            for r in seeds_rows
+            if "classic_bias_oos" in r
+        ]
 
         mean_asym = float(np.nanmean(asym_mses))
         mean_classic = float(np.nanmean(classic_mses))
@@ -580,9 +664,20 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "coin": coin,
             "horizon": h,
             "n_seeds": n_seeds,
+            "n_seeds_requested": n_seeds,
+            "n_seeds_effective": 1 if seed_stable else n_seeds,
+            "seed_replication": (
+                "deterministic-ols" if seed_stable else "non-identical"
+            ),
             "mean_asym_mse": mean_asym,
             "std_asym_mse": std_asym,
             "mean_classic_mse": mean_classic,
+            "mean_asym_bias_oos": (
+                float(np.nanmean(asym_biases)) if asym_biases else None
+            ),
+            "mean_classic_bias_oos": (
+                float(np.nanmean(classic_biases)) if classic_biases else None
+            ),
             "mean_reduction_pct": mean_reduction,
             "mean_mse_edge": mean_edge,
             "std_mse_edge": std_edge,
@@ -597,6 +692,130 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         })
 
     return results
+
+
+def cluster_verdict(
+    aggregated: list[dict],
+    alpha: float = 0.05,
+) -> dict:
+    """Compute a coin-level sign test without duplicating OLS seed controls."""
+    from collections import defaultdict
+    from scipy.stats import binomtest
+
+    if not aggregated:
+        raise ValueError("cluster verdict needs at least one configuration")
+    non_deterministic = [
+        f"{row['coin']}/h={row['horizon']}"
+        for row in aggregated
+        if not row.get("seed_stable", False)
+        or row.get("n_seeds_effective") != 1
+    ]
+    if non_deterministic:
+        raise ValueError(
+            "cluster verdict requires deterministic seed controls: "
+            + ", ".join(non_deterministic)
+        )
+
+    by_coin: dict[str, list[dict]] = defaultdict(list)
+    for row in aggregated:
+        by_coin[row["coin"]].append(row)
+
+    coin_verdicts = []
+    for coin, rows in sorted(by_coin.items()):
+        n_beats = sum(row["verdict"] == "BEATS" for row in rows)
+        n_no_beats = sum(row["verdict"] == "NO BEATS" for row in rows)
+        if n_beats > len(rows) / 2:
+            verdict = "BEATS"
+        elif n_no_beats > 0:
+            verdict = "NO BEATS"
+        else:
+            verdict = "INCONCLUSIVE"
+        coin_verdicts.append({
+            "coin": coin,
+            "n_horizons": len(rows),
+            "n_beats": n_beats,
+            "n_no_beats": n_no_beats,
+            "verdict": verdict,
+        })
+
+    n_coins = len(coin_verdicts)
+    n_coin_beats = sum(row["verdict"] == "BEATS" for row in coin_verdicts)
+    p_value = float(binomtest(
+        n_coin_beats,
+        n_coins,
+        p=0.5,
+        alternative="greater",
+    ).pvalue)
+    if p_value < alpha:
+        verdict = "BEATS"
+    elif n_coin_beats > n_coins / 2:
+        verdict = "INCONCLUSIVE"
+    else:
+        verdict = "NO BEATS"
+
+    return {
+        "verdict": verdict,
+        "alpha": alpha,
+        "primary_coin_level": {
+            "n_effective": n_coins,
+            "n_beats": n_coin_beats,
+            "p_null": 0.5,
+            "alternative": "greater",
+            "p_value": p_value,
+            "horizon_collapse": "BEATS when strict majority of horizons BEATS",
+            "coin_verdicts": coin_verdicts,
+        },
+        "config_level": {
+            "n_effective": len(aggregated),
+            "n_beats": sum(row["verdict"] == "BEATS" for row in aggregated),
+            "role": "descriptive_only",
+            "dependence_caveat": "horizons within each coin are dependent",
+        },
+        "seed_role": (
+            "deterministic OLS controls; one effective observation per "
+            "coin and horizon"
+        ),
+    }
+
+
+def validate_sweep_contract(
+    rows: list[dict],
+    aggregated: list[dict],
+    requested: list[str],
+    horizons: list[int],
+    seeds: list[int],
+    n_splits: int,
+) -> None:
+    """Fail closed when a requested sweep is incomplete."""
+    expected_configs = {(coin, horizon) for coin in requested for horizon in horizons}
+    actual_configs = {(row["coin"], row["horizon"]) for row in aggregated}
+    if actual_configs != expected_configs:
+        missing = sorted(expected_configs - actual_configs)
+        raise ValueError(f"incomplete sweep configurations: {missing}")
+
+    expected_seeds = set(seeds)
+    for coin, horizon in sorted(expected_configs):
+        config_rows = [
+            row for row in rows
+            if row.get("coin") == coin and row.get("horizon") == horizon
+        ]
+        actual_seeds = {row.get("seed") for row in config_rows}
+        if actual_seeds != expected_seeds:
+            raise ValueError(
+                f"{coin}/h={horizon} seeds {sorted(actual_seeds)} != "
+                f"{sorted(expected_seeds)}"
+            )
+        fold_counts_are_complete = all(
+            row.get("n_folds") == n_splits
+            and len(row.get("asym_fold_results", [])) == n_splits
+            and len(row.get("classic_fold_results", [])) == n_splits
+            for row in config_rows
+        )
+        if not fold_counts_are_complete:
+            raise ValueError(
+                f"{coin}/h={horizon} did not produce {n_splits} folds "
+                "for both model and baseline"
+            )
 
 
 def main() -> None:
@@ -614,13 +833,18 @@ def main() -> None:
     args = parser.parse_args()
 
     t0 = time.time()
-    panel = _load_panel(args.skip_remote, extra_coins=args.extra_coins)
-    if args.coins:
-        requested = set(args.coins)
-        missing = sorted(requested.difference(panel))
-        if missing:
-            raise ValueError(f"requested coins unavailable: {missing}")
-        panel = {coin: returns for coin, returns in panel.items() if coin in requested}
+    panel, load_failures = _load_panel(
+        args.skip_remote,
+        extra_coins=args.extra_coins,
+    )
+    requested = list(args.coins) if args.coins else list(panel)
+    validate_requested_panel(
+        panel,
+        requested,
+        load_failures,
+        skip_remote=args.skip_remote,
+    )
+    panel = {coin: panel[coin] for coin in requested}
 
     all_rows: list[dict] = []
     for coin, rets in panel.items():
@@ -637,6 +861,15 @@ def main() -> None:
         all_rows.extend(rows)
 
     agg = aggregate_verdicts(all_rows)
+    validate_sweep_contract(
+        all_rows,
+        agg,
+        requested,
+        args.horizons,
+        args.seeds,
+        args.n_splits,
+    )
+    cluster = cluster_verdict(agg)
 
     print("\n=== M3 HAR Asymmetric Semivariance: Per-(coin, horizon) Verdicts ===")
     agg_df = pd.DataFrame(agg)
@@ -648,13 +881,38 @@ def main() -> None:
     n_inc = sum(1 for r in agg if r["verdict"] == "INCONCLUSIVE")
     print(f"\nSummary: {n_beats} BEATS / {n_no} NO BEATS / {n_inc} INCONCLUSIVE "
           f"(out of {len(agg)} configs)")
+    primary = cluster["primary_coin_level"]
+    print(
+        "Cluster sign-test: "
+        f"{primary['n_beats']}/{primary['n_effective']} coins BEATS, "
+        f"one-sided p={primary['p_value']:.6f} -> {cluster['verdict']}"
+    )
 
     out_path = Path(args.out_json)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps({
         "rows": all_rows,
         "aggregated": agg,
+        "cluster": cluster,
         "elapsed_s": time.time() - t0,
+        "data_manifest": {
+            "requested": requested,
+            "loaded": list(panel),
+            "missing": [],
+            "load_failures": load_failures,
+        },
+        "calibration": {
+            "mode": "train-tail",
+            "applied_symmetrically": True,
+            "size": args.calibration_size,
+        },
+        "caveats": [{
+            "id": "h_ge_2_semivariance_split",
+            "text": (
+                "Iterated forecasts split future RV equally into RV+ and RV-; "
+                "this fixed closure convention is not fitted."
+            ),
+        }],
         "config": {
             "coins": list(panel),
             "horizons": args.horizons,
