@@ -115,10 +115,21 @@ def parse_engine_table_from_cell_14(notebook_path: Path) -> dict:
     import nbformat
 
     nb = nbformat.read(str(notebook_path), as_version=4)
-    # Cellule 14 = matrice 5x5, c'est la cellule qui imprime la table
-    cell = nb["cells"][14]
+    # Localiser la cellule moteur par son id (e22d0b5a) au lieu d'un index
+    # figé -- l'insertion d'une cellule markdown (ex. ajout Aumann/Nash en
+    # PR #15862, c.1130) peut décaler l'index.
+    ENGINE_CELL_ID = "e22d0b5a"
+    cell = None
+    for c in nb["cells"]:
+        if c.get("id") == ENGINE_CELL_ID:
+            cell = c
+            break
+    if cell is None:
+        raise ValueError(
+            f"cellule moteur id={ENGINE_CELL_ID} introuvable dans le notebook"
+        )
     if cell.get("cell_type") != "code":
-        raise ValueError(f"cellule 14 inattendue: type={cell.get('cell_type')}")
+        raise ValueError(f"cellule moteur id={ENGINE_CELL_ID} inattendue: type={cell.get('cell_type')}")
 
     outputs = cell.get("outputs", [])
     text = ""
