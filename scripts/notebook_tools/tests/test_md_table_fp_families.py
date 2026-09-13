@@ -12,8 +12,11 @@ reports **13 findings** -- every one of them a false positive by construction.
 Those 13 findings fall into four families. Three are still open. The two
 families reducible to local fragments carry minimal reproductions marked
 ``xfail(strict=True)``, so the suite fails loudly the day either is repaired.
-The whole-file JS family is instead recorded as ``skip`` pending the named
-arbitrage; it is inventory evidence, not an executable repair signal.
+The whole-file JS family keeps its ``skip`` -- its expected value IS that open
+arbitrage -- but it is not left without a signal either: its current finding
+count on the cited document is pinned neutrally by
+``test_whole_file_case_finding_count_is_unchanged``, which flips when the count
+moves without asserting who is right.
 
 Family A (a ``$...$`` math span bridged across a cell delimiter, e.g. the
 ``($/1M tokens)`` header) was repaired by #15975 and is covered by that PR's
@@ -61,7 +64,10 @@ def _pathologies(lines, **kw):
         "a fence, is read as markdown and grouped into a 'table' -> NO_SEP + "
         "NO_BLANK_BEFORE/AFTER. Writing a test requires first deciding what an "
         "unpaired delimiter MEANS (document defect or scanner defect); the "
-        "expected value IS that decision, so it cannot precede it. Evidence: "
+        "expected value IS that decision, so it cannot precede it. Its current "
+        "count on the file is pinned neutrally by "
+        "test_whole_file_case_finding_count_is_unchanged, which asserts the "
+        "count without asserting who is right. Evidence: "
         "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/05-projets-avances/"
         "integration-outils/bonnes-pratiques.md, restored in fe04e1f37."
     )
@@ -80,6 +86,40 @@ def test_js_logical_or_in_code_block_is_not_a_table():
         "```",
     ]
     assert _pathologies(lines) == []
+
+
+# Neutral characterization -- pins the CURRENT finding count on the cited file.
+# It deliberately does not claim the findings are false positives: family B is
+# the one family whose expected value IS the open arbitrage, so no xfail can be
+# written for it. What can be pinned without deciding anything is the count.
+# A scanner repair, a document edit and a re-mutation of the kind this case
+# file documents all move it, and each one forces a look.
+
+WHOLE_FILE_CASE = (
+    Path(__file__).resolve().parents[3]
+    / "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/05-projets-avances"
+    / "integration-outils/bonnes-pratiques.md"
+)
+
+WHOLE_FILE_CASE_FINDINGS = (
+    3,
+    ("NO_BLANK_AFTER", "NO_BLANK_BEFORE", "NO_SEP"),
+)
+
+
+def test_whole_file_case_finding_count_is_unchanged():
+    if not WHOLE_FILE_CASE.exists():
+        pytest.skip("Hors env repo (MyIA.AI.Notebooks absent)")
+    lines = WHOLE_FILE_CASE.read_text(encoding="utf-8").splitlines()
+    findings = detect_md_table_syntax(lines)
+    got = (len(findings), tuple(sorted(item["pathology"] for item in findings)))
+    assert got == WHOLE_FILE_CASE_FINDINGS, (
+        "The whole-file case moved: pinned %r, measured %r. Family B has no "
+        "xfail by design, so this pin is the signal that forces a look. "
+        "Re-measure, then decide -- scanner repair (CommonMark run-length fence "
+        "pairing), document edit, or a re-mutation of the kind this case file "
+        "documents." % (WHOLE_FILE_CASE_FINDINGS, got)
+    )
 
 
 # ---------------------------------------------------------------------------
