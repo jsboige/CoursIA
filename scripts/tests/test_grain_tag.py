@@ -1102,6 +1102,62 @@ def test_lane_workspace_rejects_multiplication_sign():
     assert g == "myia-x:Cours", "× (U+00D7) must not be admitted as a letter"
 
 
+# --- #15864: prose period + accented continuation = phantom lane -----------
+#
+# Founder marker of issue #15674 (4th variant of the self-blocking class:
+# #12145 x #12719 x #13830). The workspace class eats the sentence period
+# (`CoursIA.`), the #13830 accented-continuation then admits `Énoncé`, and
+# the read token `myia-po-2023:CoursIA. Énoncé` blocked the declaring lane
+# on its OWN [DELIVERED] re-marker. The `(?<!\.)` lookbehind at the head of
+# the continuation clause makes the period a sentence boundary: the capture
+# stops at `...CoursIA.` and the #12719 rstrip lands the bare lane.
+
+_FOUNDER_MARKER_15864 = (
+    "[DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit en deux "
+    "gestes (chercher inchangé + recenser), le piège top-10 nommé dans "
+    "l'énoncé. Exéc complète 12.2s, validate 17 cells PASS."
+)
+
+
+def test_lane_prose_period_then_accented_word_not_swallowed():
+    # Acceptance #15864-1: the real #15674 marker parses to the BARE lane.
+    assert gt.extract_lane(_FOUNDER_MARKER_15864, marker_line=_FOUNDER_MARKER_15864) == "myia-po-2023:CoursIA"
+
+
+def test_lane_prose_period_fallback_twin_moves():
+    # Acceptance #15864-2: the fallback regex (marker line WITHOUT the literal
+    # `lane` keyword) renders the same verdict -- the twin MUST move (#12145).
+    no_keyword = _FOUNDER_MARKER_15864.replace("lane ", "", 1)
+    assert gt.extract_lane("no lane keyword here", marker_line=no_keyword) == "myia-po-2023:CoursIA"
+
+
+def test_lane_prose_period_parse_grain_tag_no_divergence():
+    # Acceptance #15864-3: parse_grain_tag (direct _LANE_RE read) and
+    # extract_lane agree on the same body.
+    body = "Grain: MED/notebook — lane myia-po-2023:CoursIA. Énoncé réécrit."
+    assert gt.parse_grain_tag(body)["lane"] == gt.extract_lane(body) == "myia-po-2023:CoursIA"
+
+
+def test_lane_prose_period_after_multiword_continuation():
+    # The sentence boundary also holds AFTER a continuation word: the period
+    # at the end of `Code.` refuses the next word, the rstrip cleans the tail.
+    assert gt.extract_lane("[CLAIMED] lane myia-po-2025:Microsoft VS Code. Suite de prose") == "myia-po-2025:Microsoft VS Code"
+
+
+def test_lane_internal_dot_does_not_make_a_boundary():
+    # A `.` INSIDE the token (hostname, `Foo.Bar`) is followed by a non-blank
+    # and survives: the continuation after `A.B` is still admitted.
+    assert gt.extract_lane("[CLAIMED] lane myia-po-2023:A.B Suite -- paths") == "myia-po-2023:A.B Suite"
+    assert gt.extract_lane("[CLAIMED] lane myia.host.example:Baz -- paths") == "myia.host.example:Baz"
+
+
+def test_lane_marker_residues_witness_the_prose_period():
+    # The witness keeps declaring the malformed form instead of silently
+    # reinterpreting it (acceptance: `trailing-period:` on the founder line).
+    no_keyword = _FOUNDER_MARKER_15864.replace("lane ", "", 1)
+    assert gt.lane_marker_residues(no_keyword) == ["trailing-period:myia-po-2023:CoursIA."]
+
+
 def test_lane_workspace_rejects_division_sign():
     # U+00F7 (÷) is NOT a letter; the union class skips it (U+00F7 sits in
     # the gap between ö and ø of `à-öø-ÿ`, before `Ā-ſ`). The token

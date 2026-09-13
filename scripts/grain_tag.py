@@ -192,6 +192,27 @@ _GRAIN_FULL_RE = re.compile(
 # body class widens to the corresponding lowercase range (`à-öø-ÿ` + ſ) so the
 # maximal-munch `(?![A-Za-z0-9._À-ſ-])` keeps working with the new characters.
 # Tested in `test_lane_workspace_accented` + the existing #12145 / #12719 set.
+# #15864 -- a PROSE PERIOD followed by an accented continuation word is the
+# fourth variant of the self-blocking class (#12145 space-workspace, #12719
+# bare date, #13830 accents, now #12719 x #13830). The founder marker of
+# issue #15674:
+#
+#     [DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit ...
+#
+# The workspace class admits `.` (hostnames need it, #12719), so it eats
+# `CoursIA.`; the continuation then legitimately admits `Énoncé` (#13830
+# accented uppercase) and the read token becomes `myia-po-2023:CoursIA.
+# Énoncé` -- a lane that exists nowhere, which check_lane_claim used to
+# block the declaring lane on (its OWN [DELIVERED] re-marker, #12320).
+#
+# Rule: a `.` followed by whitespace is PROSE PUNCTUATION, never part of a
+# `<machine>:<workspace>` token; a `.` INSIDE a token (hostname, `Foo.Bar`)
+# is followed by a non-blank and survives. Implemented by a `(?<!\.)`
+# lookbehind at the head of the continuation clause: after a token-ending
+# period every continuation iteration is refused, the capture stops at
+# `...CoursIA.` and the existing #12719 `rstrip(".")` in extract_lane /
+# parse_grain_tag lands the bare lane. `lane_marker_residues` keeps
+# declaring the malformed form (`trailing-period:`).
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
     # #13830 V2 -- union of #13869 (full Latin-1 + Latin Extended-A `À-ſ`)
@@ -213,7 +234,7 @@ _LANE_RE = re.compile(
     # `test_lane_workspace_accented` + the existing #12145 / #12719 set
     # + the #13869 comparative table (LivresAgités / Cours×IA / Łódź).
     r"([A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]+"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
+    r"(?:(?<!\.)[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
 
@@ -257,7 +278,7 @@ _LANE_FALLBACK_RE = re.compile(
     # The twin MUST move with the primary or the founder's class of bug
     # (#12145) re-opens on the fallback only.
     r"\b(myia-[A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
+    r"(?:(?<!\.)[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME

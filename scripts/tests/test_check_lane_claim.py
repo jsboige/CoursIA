@@ -409,6 +409,38 @@ def test_check_no_paths_claim_in_prose_returns_exit_2_not_scoped(capsys):
     assert "myia-po-2025:CoursIA-2" in captured.out
 
 
+def test_prose_period_delivered_remarker_does_not_block_owning_lane(capsys):
+    """#15864 -- full-flow regression: the phantom-lane self-block.
+
+    The founder payload of issue #15674: a canonical [CLAIMED] plus the lane's
+    own [DELIVERED] whose prose after the lane token starts with an accented
+    uppercase word (`CoursIA. Énoncé ...`). Pre-fix, the [DELIVERED] re-marker
+    parsed as the phantom lane `myia-po-2023:CoursIA. Énoncé` -- a DIFFERENT
+    key -- and `lane_claim_required` blocked PR #15733 on its own delivery
+    (gate verdict FAIL, 8 reruns). Post-fix the re-marker parses to the
+    declaring lane and the check is CLEAR for it (exit 0), still blocking for
+    any OTHER lane.
+    """
+    claimed = (
+        "[CLAIMED] lane myia-po-2023:CoursIA — 2026-09-12T09:0xZ — paths: "
+        "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb"
+    )
+    delivered = (
+        "[DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit en "
+        "deux gestes (chercher inchangé + recenser), le piège top-10 nommé "
+        "dans l'énoncé. Exéc complète 12.2s, validate 17 cells PASS."
+    )
+    p = payload(
+        comment(claimed, "2026-09-12T09:17:24Z", author="myia-po-2023"),
+        comment(delivered, "2026-09-12T20:41:00Z", author="myia-po-2023"),
+        number=15674,
+    )
+    # Acceptance #15864-4: CLEAR (exit 0) for the declaring lane.
+    assert clc._run_check(p, "myia-po-2023:CoursIA") == 0
+    captured = capsys.readouterr()
+    assert "myia-po-2023:CoursIA. Énoncé" not in captured.out + captured.err
+
+
 def test_parse_unattributed_marker():
     # Marker present but no `lane` keyword -> lane None (surfaced, not guessed).
     ev = clc.parse_claim_event(comment(
