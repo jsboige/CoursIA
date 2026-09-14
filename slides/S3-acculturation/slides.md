@@ -103,6 +103,10 @@ layout: section
 - Linguistique
 
 <img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
+<div class="absolute top-[395px] right-[20px] w-[460px] text-xs text-slate-500 italic text-center">
+  Modèle biologique (neurone de McCulloch & Pitts, 1943) — source d'inspiration directe pour le perceptron de Rosenblatt (1958).
+</div>
 ---
 
 # Développement (1/2)
@@ -121,11 +125,15 @@ layout: section
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
-<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
+<img src="./images/img_006.png" class="absolute top-[80px] right-[20px] w-[340px] max-w-full object-contain" alt="Repères historiques" />
 
-<div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
+<div class="absolute top-[220px] right-[20px] w-[340px] flex gap-4 items-center justify-center">
+  <img src="./images/img_007.jpg" class="h-12 max-w-[45%] object-contain" alt="Logo DARPA" />
+  <img src="./images/img_008.jpg" class="h-10 max-w-[55%] object-contain" alt="Logo ImageNet" />
+</div>
+
+<div class="absolute top-[290px] right-[20px] w-[340px] text-xs text-slate-500 italic text-center">
+  Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
 </div>
 
 ---
@@ -429,7 +437,7 @@ layout: section
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-<img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
+<img src="./images/img_020.png" class="absolute top-[60px] right-[20px] w-[420px] max-h-[200px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
 
 
 **Exemple: Énigme**
@@ -438,8 +446,8 @@ layout: section
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="absolute top-[110px] right-[20px] w-[280px] max-h-[200px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
-<img src="./images/img_024.png" class="absolute top-[300px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+<img src="./images/img_023.png" class="absolute top-[280px] right-[20px] w-[280px] max-h-[140px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
+<img src="./images/img_024.png" class="absolute top-[430px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
 
 
 

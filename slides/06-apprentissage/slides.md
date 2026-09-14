@@ -194,6 +194,8 @@ layout: dense
 
 <!-- Frontiere de decision : arbre = decoupage orthogonal, foret = ensemble lisse -->
 
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb">2.4-Arbres-Forets-Ensembles.ipynb</a>.</p>
+
 
 ---
 
@@ -482,6 +484,8 @@ layout: two-cols
 </div>
 
 
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb">2.13-Analyse-Erreurs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb">2.9-Grokking-Generalisation.ipynb</a> (double-descente).</p>
+
 ::right::
 
 
@@ -514,6 +518,8 @@ layout: two-cols
   - Théorème central limite: n → ∞  distribution χ2
 </div>
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb">2.5-Biais-Variance-CV-ROC.ipynb</a>.</p>
 
 ::right::
 
@@ -550,6 +556,8 @@ layout: two-cols
 
 </div>
 
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb">2.10-Optimisation-Hyperparametres.ipynb</a>.</p>
+
 
 ::right::
 
@@ -583,6 +591,8 @@ layout: two-cols
 <img src="./images/img_016.png" alt="img_016.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_017.png" alt="img_017.png" style="display:block; margin:10px auto; max-width:100%;">
 
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb">2.11-Regularisation-Sparse-LASSO.ipynb</a> (pénalisation de la complexité).</p>
+
 
 ---
 
@@ -592,6 +602,25 @@ layout: two-cols
 <img src="./images/img_018.png" alt="img_018.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_019.png" alt="img_019.png" style="display:block; margin:10px auto; max-width:100%;">
 
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb">2.8-Theorie-PAC.ipynb</a>.</p>
+
+
+---
+
+# PAC learning en Lean : la théorie, prouvée formellement
+
+- Les bornes de généralisation de ce cours ne sont pas des intuitions : elles se **démontrent**
+- Le dépôt porte un **lac Lean 4 dédié** à la théorie de l'apprentissage, avec paires FR/EN
+- La descente de gradient elle-même s'y formalise comme un **flot de gradient**
+
+<div class="dense-list">
+
+- Bornes PAC, apprentissage agnostique : `PacLearning.lean`
+- Convergence du perceptron (théorème de Novikoff) : `Perceptron.lean`
+- Flot de gradient et analyse convexe : `GradientFlow.lean`
+</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb">2.8b-Theorie-PAC-Lean.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb">2.8c-Borne-Temoin-Concentration.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb">2.8d-Lean-Novikoff-Convergence.ipynb</a>.</p>
 
 ---
 layout: dense
@@ -663,6 +692,8 @@ layout: section
 <img src="./images/img_022.png" alt="Seuil abrupt, sigmoide, et surface logistique en deux dimensions" style="display:block; margin:10px auto; max-width:100%;" width="900">
 
 <!-- Regression : lineaire = droite, polynomiale = courbe, risque de surapprentissage -->
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb">2.3-Regression-lineaire-logistique.ipynb</a>.</p>
 
 
 ---
@@ -763,6 +794,8 @@ layout: two-cols
 - Permet d'entrainer des réseaux multi-couches (invention cle du deep learning)
 
 <img src="./images/img_031.png" alt="Pseudocode BACK-PROP-LEARNING (AIMA)" style="display:block; margin:10px auto; max-width:100%;" width="326">
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb">2.2-Descente-de-gradient.ipynb</a>.</p>
 
 
 ---
@@ -1987,6 +2020,8 @@ layout: section
 - Agglomeratif
 - Spectral
 
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb">2.6-Clustering-KMeans-PCA.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb">ML-8-Clustering-Python.ipynb</a> (C#/ML.NET).</p>
+
 
 ---
 layout: section
@@ -2003,6 +2038,8 @@ layout: section
 
 <img src="./images/img_100.png" alt="img_100.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_101.png" alt="img_101.png" style="display:block; margin:10px auto; max-width:100%;">
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb">rl_1_intro_cartpole.ipynb</a>.</p>
 
 
 ---
@@ -2059,6 +2096,8 @@ layout: dense
 
 <img src="./images/img_105.png" alt="img_105.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_106.png" alt="img_106.png" style="display:block; margin:10px auto; max-width:100%;">
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb">rl_5_mdp_dp_qlearning.ipynb</a> (MDP, ADP, TD, Q-learning).</p>
 
 
 ---
@@ -2205,6 +2244,8 @@ layout: dense
 - Finit par converger
 </div>
 
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb">rl_6_dqn_policy_gradient.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_3_experience_replay_her.ipynb">rl_3_experience_replay_her.ipynb</a> (replay).</p>
+
 ---
 
 # Deep Q learning — exploration et avancées
@@ -2231,6 +2272,8 @@ layout: dense
 <img src="./images/img_133.png" alt="img_133.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_134.png" alt="img_134.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_135.png" alt="img_135.png" style="display:block; margin:10px auto; max-width:100%;">
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb">rl_13_curiosity_exploration.ipynb</a> (exploration et curiosité).</p>
 
 
 ---
@@ -2270,6 +2313,8 @@ layout: dense
 <img src="./images/img_138.png" alt="img_138.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_139.png" alt="img_139.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_140.png" alt="img_140.png" style="display:block; margin:10px auto; max-width:100%;">
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb">rl_4_multi_armed_bandits.ipynb</a> (bandits et regret).</p>
 
 
 ---
@@ -2344,6 +2389,8 @@ layout: dense
 
 <!-- RLHF : connexion directe entre RL classique (reward) et alignement des LLMs -->
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_1_ppo_lm_rlhf.ipynb">rlpt_1_ppo_lm_rlhf.ipynb</a> (RLHF sur LLM, from scratch).</p>
 ---
 
 
@@ -2361,6 +2408,8 @@ layout: dense
 - Contrainte KL pour ne pas trop s'éloigner du modèle SFT
 
 <!-- Pipeline SFT → RM → PPO : fondement d'InstructGPT (2022), ChatGPT, Claude 1 -->
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO.ipynb">FT-04-RLHF-DPO.ipynb</a> (pipeline complet SFT → RM).</p>
 
 
 ---
@@ -2382,6 +2431,8 @@ layout: dense
 
 <!-- Bradley-Terry : modèle probabiliste de préférence, base de l'InstructGPT reward model -->
 
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_3_reward_hacking.ipynb">rlpt_3_reward_hacking.ipynb</a> (limites du reward model).</p>
+
 
 ---
 
@@ -2402,6 +2453,8 @@ layout: dense
 
 <!-- PPO + KL penalty : équilibre entre optimisation des préférences et préservation des capacités du LLM -->
 </div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb">rl_6c_ppo_from_scratch.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_4_dpo_vs_ppo.ipynb">rlpt_4_dpo_vs_ppo.ipynb</a>.</p>
 ---
 
 
@@ -2421,6 +2474,17 @@ layout: dense
 
 <!-- Constitutional AI (Bai et al., 2022) : alignement scalable, base de Claude 1 et Claude 2 -->
 
+
+---
+
+# Post-training : GRPO et récompenses vérifiables
+
+- Les LLM de raisonnement (DeepSeek-R1, Qwen) poursuivent l'alignement au-delà du PPO
+- **GRPO** (Group Relative Policy Optimization) : la récompense se compare au **groupe** de réponses générées — plus besoin d'un modèle de valeur séparé
+- **RLVR** (verifiable rewards) : récompenses objectives — tests unitaires, résultats mathématiques exacts — au lieu d'un reward model appris
+- Le corpus PostTraining déroule le pipeline complet : SFT, DPO, GRPO from scratch, runs multi-seed, comparatifs d'évaluation
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb">PT_04_grpo_deepseek_r1.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb">PT_05_rlvr_verifiable_rewards.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_2_grpo_minimal.ipynb">rlpt_2_grpo_minimal.ipynb</a>.</p>
 
 ---
 layout: section
@@ -2463,10 +2527,13 @@ layout: section
 
 # Pour aller plus loin : Notebooks
 
+> **Cours ML appliqué** : `ML/DataScienceWithAgents/02-ML-Cours/` - workflow, arbres, biais-variance, régularisation, PAC
+> **Théorie formelle (Lean)** : `ML/learning_theory_lean/` - PAC, perceptron, flot de gradient
 > **ML.NET** (C#) : `ML/ML.Net/` - Classification, regression, clustering
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
 > **Algorithmes génétiques** : `Sudoku/Sudoku-02-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
+> **Post-training LLM** : `GenAI/PostTraining/` - SFT, DPO, GRPO, RLVR
 > **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 
 <!-- Notebooks disponibles dans MyIA.AI.Notebooks/ -->

@@ -13,8 +13,60 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `smoke_test_epita_is.py` | Smoke tests du parcours EPITA-IS (notebooks + preuves) |
 | `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
 | `count_code_sorry.py` | Compte les `sorry` **hors commentaires** (la vraie dette) et liste les theoremes vacuous (`: True`) — ce que `grep -c sorry` surestime de ~11x (voir ci-dessous) |
+| `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), postcondition zero-orphelin (voir ci-dessous, #15666) |
 
 Tests unitaires dans `tests/`.
+
+---
+
+## `lean_exec.py` — organe d'execution confine (T1 de #15666)
+
+Incident du 2026-09-12 : ~30 `lean.exe` a ~95 % CPU ont etouffe une machine
+worker (DriveFS, puis Claudish, puis reboot). Le lease par arbre
+`agent_tests/prover/tree_lock.py` ne voit structurellement pas les autres
+worktrees ; il **reste** (exclusivite d'un acteur prover par arbre) et devient le
+second etage sous l'admission machine-wide.
+
+T1 livre exactement trois choses :
+
+1. **Cap machine-wide** de la population `lean`/`lake` — etat partage hors de tout
+   worktree (`%LOCALAPPDATA%\CoursIA\lean_exec\` / `$XDG_STATE_HOME/coursia/lean_exec/`),
+   admission sous verrou fichier (la fenetre count->spawn est fermee), fail-closed
+   si la population n'est pas mesurable.
+2. **Confinement de l'arbre** : Job Object Windows cree avec `kill-on-close`,
+   plafond memoire, cap CPU et priorite reduite ; la racine est lancee
+   `CREATE_SUSPENDED`, assignee au job, puis reprise — aucun enfant ne peut
+   naitre hors du job. Le handle vit pendant tout le run : un crash du
+   superviseur tue l'arbre par le noyau. Cote POSIX/WSL : `setsid` + kill du
+   groupe (scope systemd quand disponible).
+3. **Postcondition zero-orphelin** verifiee apres chaque run, apres une fenetre
+   de grace : des survivants donnent un **echec visible** (exit `126` + liste des
+   pids), jamais un « propre » silencieux.
+
+Le parallelisme est toujours borne : `LEAN_NUM_THREADS` est pose pour les enfants
+et `-Kjobs=N` est insere dans un `lake build` nu (jamais le defaut qui prend la
+machine).
+
+```bash
+python scripts/lean/lean_exec.py status            # population, cap, runs vivants
+python scripts/lean/lean_exec.py run --timeout 600 -- lake env lean Fichier.lean
+python scripts/lean/lean_exec.py run --json --budget 2 -- lake build
+```
+
+Codes de sortie stables : `0` succes, `1` echec de la commande enfant (code reel
+dans le JSON), `124` timeout, `125` admission refusee (cap atteint / telemetrie
+indisponible), `126` cleanup incomplet (orphelins), `127` erreur interne,
+`130` interruption. Chaque run publie ses metriques en JSON
+(`<state>/last_run.json` : pid, backend, duree, population avant, orphelins).
+
+Configuration : `LEAN_EXEC_CAP` (defaut `min(8, max(2, nproc/2))`),
+`LEAN_EXEC_BUDGET` (defaut 2), `LEAN_EXEC_JOBS` (defaut `nproc/4`),
+`LEAN_EXEC_MEM_FRAC` (0.80), `LEAN_EXEC_CPU_PCT` (90), `LEAN_EXEC_STATE_DIR`
+(isolation tests), `LEAN_EXEC_WSL=off` (desactive la sonde WSL).
+
+**Hors T1** (autres tranches de l'EPIC) : admission fine / budget mesure (T2),
+politique de backend et coherence de cache (T3), garde CI + migration des 35
+appels directs (T4), procedure operateur et validation de charge bornee (T5).
 
 ---
 
@@ -325,3 +377,58 @@ mais reçoit des paths POSIX-style en entrée (`REPO_ROOT=/c/...`). Bug mesuré 
 
 Voir aussi : `lean-wdac-olean-wholesale-copy.md`, `lean-knot-build-windows-cache.md`,
 `lean-rc1-convergence-method.md` dans `~/.claude/projects/c--dev-CoursIA-2/memory/`.
+
+## `life_components.py` — le schéma symbolique au-dessus du moteur cellulaire (tranche 1+2 de #15635)
+
+Le moteur cellulaire (`life_synthesize.py`, `life_synthesize_sat.py`) cherche un
+motif en énumérant des cellules. Il ignore ce que la communauté Life sait déjà
+des briques connues. Ce module ajoute la couche **symbolique** : un format
+versionné pour décrire des *motifs/composants* et des *réactions*, validé par
+**replay** dans le moteur du dépôt plutôt que par confiance dans les
+métadonnées déclarées.
+
+```
+python scripts/lean/life_components.py --fixture scripts/lean/life_components_fixture.json
+python -m pytest scripts/lean/tests/test_life_components.py -q
+```
+
+Le validateur sort `0` si période, translation, population, boîte, enveloppe,
+catégorie, symétries, phases, produit, stabilisation, clearance et nature
+correspondent au replay ; `1` sinon, en nommant le champ fautif. Deux règles de
+fond : une symétrie n'est admissible que si elle **préserve le vecteur de
+translation** (sinon les quatre orientations d'un glider se confondraient), et
+une réaction dont le produit déclaré ne correspond pas à l'évolution jointe de
+ses réactifs est refusée.
+
+Document complet (périmètre, ce qui est mesuré vs déclaré, provenance des faits,
+limites assumées) : [`docs/lean/life-components-schema.md`](../../docs/lean/life-components-schema.md).
+
+## `life_compose.py` — le générateur de contraintes compositionnelles (tranches 3+4 de #15635)
+
+Au-dessus du catalogue symbolique (tranche 1+2), ce module **compose** : étant
+donné un objectif borné (comptages finaux minimaux, événements requis, budgets
+de composants/gliders/événements, horizon, surface), il énumère les placements
+d'événements du catalogue qui satisfont conjointement les contraintes
+spatiales (fenêtres disjointes), temporelles (congruence de phase à
+l'arrivée), d'interface (ports compatibles) et de clearance, puis **certifie**
+chaque témoin par replay indépendant dans le moteur du dépôt. Les quatre
+familles d'élagage (R1 dédup d'états, R2 compatibilité de ports, R3 fenêtres
+spatiales, R4 congruence de phase) sont instrumentées par des compteurs et
+ablatables — la certification, elle, n'est jamais ablatable.
+
+```
+python scripts/lean/life_compose.py --objective two_blocks_catalyse_free
+python scripts/lean/life_compose.py --objective two_blocks --full-report --json
+python -m pytest scripts/lean/tests/test_life_compose.py -q
+```
+
+Trois verdicts distincts : `FOUND` (témoin rejoué exactement par le moteur
+indépendant), `IMPOSSIBLE_BOUNDED` (épuisement explicite de l'espace borné),
+`TIMEOUT` (plafond de nœuds atteint avant épuisement). Deux leçons mesurées en
+tranche 3 sont figées par des tests de non-régression : la non-interaction
+universelle est Chebyshev >= 3 (à distance 2, des naissances croisées
+apparaissent selon le contenu), et un placement réactif déclaré doit être
+atteignable par dérive pure le long du port du réactif mobile.
+
+Détail complet (modèle propositionnel, familles de contraintes, ablations,
+démonstrateur, comparaison baseline) : [`docs/lean/life-components-schema.md`](../../docs/lean/life-components-schema.md).

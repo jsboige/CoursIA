@@ -62,13 +62,16 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # Constantes du contrat v1
 # --------------------------------------------------------------------------- #
-CONTRACT_VERSION: str = "v1.0.0"
+CONTRACT_VERSION: str = "v1.1.0"
 
-# Instruments reconnus par le contrat v1.
-# L'enum est figee : ajouter un instrument = passer en v1.1.0 (avec un test
-# d'instrument inconnu qui echoue proprement) pour eviter la proliferation
-# silencieuse de forks mal nommes.
-INSTRUMENTS: tuple[str, ...] = ("sae", "jlens")
+# Instruments reconnus par le contrat.
+# L'enum est figee : ajouter un instrument = bump mineur de version (avec un
+# test d'instrument inconnu qui echoue proprement) pour eviter la proliferation
+# silencieuse de forks mal nommes. v1.1.0 (issue #15536) ajoute ``jlens_trackp``
+# : le loader Track P (persona 4B, #5681) rejoignait le contrat -- ses fixtures
+# legacy ``lens='jacobian'`` etaient refusees par l'enforce ``'sae'`` des
+# reexports de :mod:`ict.sae_traces` (13 fails pre-existants, audit c.1050).
+INSTRUMENTS: tuple[str, ...] = ("sae", "jlens", "jlens_trackp")
 
 # Champs d'alignement entre deux traces que l'on souhaite comparer.
 # Tout couple (trace_a, trace_b) sur lequel on opere (soustraction de
@@ -241,6 +244,13 @@ def validate_manifest(meta: dict, *, strict: bool = False,
         elif legacy in ("jacobian", "jlens") and (
                 expected is None or expected == "jlens"):
             inst = "jlens"
+        elif legacy in ("jacobian", "jlens") and expected == "jlens_trackp":
+            # #15536 : le loader Track P herite des fixtures legacy
+            # lens='jacobian'/'jlens' du pipeline J-Lens (persona 4B, #5681).
+            # La discrimination S/P reste au garde 'track' du loader trackP :
+            # un manifeste jlens de track S y est refuse par ce garde, pas
+            # par le contrat.
+            inst = "jlens_trackp"
         if inst is None:
             # Inference pour traces historiques sans discriminant (acceptance
             # #4 retro-compat). On regarde les champs specifiques a chaque
@@ -352,7 +362,7 @@ def enforce_instrument(meta: dict, expected: str) -> None:
     meta : dict
         Manifeste valide par :func:`validate_manifest`.
     expected : str
-        L'instrument attendu (``"sae"`` ou ``"jlens"``).
+        L'instrument attendu (``"sae"``, ``"jlens"`` ou ``"jlens_trackp"``).
 
     Raises
     ------
@@ -374,6 +384,10 @@ def enforce_instrument(meta: dict, expected: str) -> None:
             return
         if legacy in ("jacobian", "jlens") and expected == "jlens":
             return
+        if legacy in ("jacobian", "jlens") and expected == "jlens_trackp":
+            # #15536 : fixtures legacy Track P (persona 4B, #5681) -- le
+            # garde 'track' du loader trackP a deja tranche S vs P.
+            return
         raise TraceContractError(
             f"manifeste sans 'instrument' (legacy meta['lens']={legacy!r}) "
             f"et attendu={expected!r}. Migration requise : poser "
@@ -385,7 +399,8 @@ def enforce_instrument(meta: dict, expected: str) -> None:
             f"Deux lectures possibles : (a) utiliser le chargeur adapte "
             f"a l'instrument declare (ict.sae_traces.load_traces pour "
             f"instrument='sae', ict.jlens_traces.load_traces pour "
-            f"instrument='jlens'), ou (b) regenerer la trace avec le bon "
+            f"instrument='jlens', ict.jlens_trackP_traces.load_traces pour "
+            f"instrument='jlens_trackp'), ou (b) regenerer la trace avec le bon "
             f"meta['instrument']={expected!r}. Le contrat v1 refuse le "
             f"melange silencieux SAE <-> J-Lens (acceptance #1).")
 

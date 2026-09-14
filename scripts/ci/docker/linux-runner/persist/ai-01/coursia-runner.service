@@ -34,6 +34,17 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
+# LE 8 CI-DESSOUS N'EST PAS CE QUI TOURNE, et le lire comme tel est le piege
+# que ce commentaire existe pour fermer. La machine vivante porte un drop-in,
+# `coursia-runner.service.d/10-sizing.conf` (tracke a cote depuis #15091), qui
+# remet ExecStart a 4 slots et pose COURSIA_RUNNER_MEMORY=1536m.
+#
+# Sans ce drop-in, cette ligne demande 8 slots et supervise.sh l.82 retombe sur
+# son defaut `${COURSIA_RUNNER_MEMORY:-4g}` : 8 x 4096 = 32768 Mo contre un
+# budget de slice de 12288 Mo. Le garde de budget refuse, Restart=always
+# reboucle, le pool ne monte jamais -- la panne des quatre redemarrages manuels.
+# Ce fichier est marque « a deployer » dans persist/README.md : le deployer
+# SEUL reproduit la panne. Les deux fichiers partent ensemble, ou aucun.
 ExecStart=/usr/local/bin/coursia-runner-start.sh 8
 # ExecStop PASSE PAR LE WRAPPER (#15091). La version precedente appelait
 # supervise.sh directement, donc sans COURSIA_RUNNER_STATE_DIR : le sentinel

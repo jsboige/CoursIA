@@ -49,7 +49,7 @@
 | 14 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/README.md` L63-107 + table L113-122 | Multi-profil (Dev Solidity, crypto, alt-chains, sécurité) | 8h + 3h + 4h + 7h + 22h complet | Phase 1-7 + 4 alternatifs + table « Quel parcours choisir » | **RELOCATE** — table « Quel parcours choisir » modèle canonique, à reprendre dans la doc racine |
 | 15 | `MyIA.AI.Notebooks/Search/README.md` L51 + `Part1-Foundations/README.md` + `Part4-Metaheuristics/README.md` L152 | Apprenant algorithmique de recherche | Variable (cf Phases) | « Parcours d'apprentissage » racine + phases par partie | **INTEGRATE** — structure socle pour `aima-walk.md` (AIMA chapters 3-4) |
 | 16 | `MyIA.AI.Notebooks/IIT/README.md` L36-59 | Apprenant Integrated Information Theory | Non chiffré | « Parcours recommandés » (3 parcours) | **ARCHIVE** — embryon ténu, hors-scope Phase 2 |
-| 17 | `MyIA.AI.Notebooks/QuantConnect/Python/README.md` L140-184 | Quant Python (LEAN → ML → multi-actifs → RL) | Phase 1-4 (~25h) | « Phase N : titre » tabulaire | **RELOCATE** — modèle tabulaire, à reprendre dans `docs/curriculum/trading.md` (refonte du catalogue trading) |
+| 17 | `MyIA.AI.Notebooks/QuantConnect/Python/README.md` L140-184 | Quant Python (LEAN → ML → multi-actifs → RL) | Phase 1-4 (~25h) | « Phase N : titre » tabulaire | **RELOCATE** — modèle tabulaire, à reprendre dans `docs/curriculum/trading-narratif.md` (pilote 4, #15821) |
 | 18 | `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/README.md` L269 | Cours public QC partner | Variable | « Parcours d'Apprentissage Recommandé » | **ARCHIVE** — lié au partenariat, hors périmètre |
 | 19 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/README.md` L49-70 + `Track2-GoogleADK/README.md` L213-231 | Data scientist → multi-agents | 1j à 7j selon parcours | 4 parcours tabulaires (analyste / ingénieur / complet / rapide) | **RELOCATE** — modèle profil/durée pour `genai-rush.md` (pilote accéléré GenAI) |
 | 20 | `MyIA.AI.Notebooks/GenAI/README.md` L41 | Apprenant GenAI multimodal | Non chiffré | « Parcours recommandés » (liste plutôt narrative) | **INTEGRATE** — narratif racine à refactorer |
@@ -130,7 +130,7 @@ serve de référence à l'EPIC #13844.
 - **Pilot 1 — `docs/curriculum/genai-rush.md`** : GenAI/Image + Audio + Video + Texte + SemanticKernel + FineTuning + RL (le « ~8-10 h, 3-4 mois »).
 - **Pilot 2 — `docs/curriculum/symbolic-formalization.md`** : GameTheory + Tweety + Lean + Planners + SmartContracts + SemanticWeb (le « ~20 h, ~6 mois »).
 - **Pilot 3 — `docs/curriculum/aima-walk.md`** : AIMA chapters 1-26 mappés aux notebooks (le « ~30 h, ~9 mois »).
-- **Pilot 4 — `docs/curriculum/trading.md`** : QuantConnect/Python refonte + partner-course + C# (cf. EPIC #10805 #10806).
+- **Pilot 4 — `docs/curriculum/trading-narratif.md`** : QuantConnect/Python refonte + partner-course + C# (cf. EPIC #10805 #10806). Cible renommée depuis `trading.md` (#15821, arbitrage ai-01 option 1) : `trading` est un id du dict `PARCOURS` de `generate_parcours.py`, la page est régénérée chaque jour par `catalog-cron.yml` — le nom du pilote ne doit être **aucun des cinq ids** (`ia-classique`, `ia-symbolique`, `genai`, `trading`, `recherche`).
 - **Pilot 5 — `docs/curriculum/research.md`** : IIT + ML + cross-series + cas d'usage livresagites.
 
 cf. **EPIC #13844** pour le plan en 4 phases et les critères d'acceptation globaux.

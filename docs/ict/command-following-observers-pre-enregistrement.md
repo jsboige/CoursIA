@@ -47,8 +47,8 @@ Les seuils ci-dessous sont verrouillés avant implémentation.
 | ID | Prédiction | Critère sur 5 graines | Lecture si échec |
 |---|---|---|---|
 | **P1 — positif informatif** | Sous calibration Cruse et `p=0,20`, un positif EEG doit relever substantiellement la probabilité de capacité. | médiane du `PPV` médian ≥ **0,55** et quantile 5 % du PPV ≥ **0,25**, dans ≥4/5 graines | Les données de contrôle sont trop faibles pour soutenir un positif informatif à cette prévalence. |
-| **P2 — négatif non conclusif** | Sous calibration Cruse et `p=0,20`, un négatif doit laisser une masse postérieure non triviale sur `C`. | médiane de `P(C | -)` ≥ **0,04**, dans 5/5 graines | Le banc aurait artificiellement transformé une sensibilité imparfaite en exclusion. |
-| **P3 — observateurs non interchangeables** | Dans la sous-population comportementalement nulle, fusion OR et EEG seul sont identiques. | différence absolue PPV et `P(C|- )` < **1e-12** pour chaque tirage agrégé | Le modèle fabrique de l'information à partir d'un canal constant. |
+| **P2 — négatif non conclusif** | Sous calibration Cruse et `p=0,20`, un négatif doit laisser une masse postérieure non triviale sur `C`. | médiane de `P(C \| -)` ≥ **0,04**, dans 5/5 graines | Le banc aurait artificiellement transformé une sensibilité imparfaite en exclusion. |
+| **P3 — observateurs non interchangeables** | Dans la sous-population comportementalement nulle, fusion OR et EEG seul sont identiques. | différence absolue PPV et `P(C\|- )` < **1e-12** pour chaque tirage agrégé | Le modèle fabrique de l'information à partir d'un canal constant. |
 | **P4 — null adversarial** | Relâcher la spécificité doit faire chuter la force du positif. | à `p=0,20`, ratio des médianes `PPV_auto / PPV_calibré` ≤ **0,60**, dans ≥4/5 graines | Le banc est insensible au contre-claim automatique et surinterprète le signal. |
 | **P5 — dépendance à la prévalence** | Un positif n'a pas une signification universelle : son PPV doit augmenter avec `p`. | médianes strictement croissantes pour `p={0,05,0,10,0,20,0,40}`, dans 5/5 graines | Le calcul prédictif ignore le taux de base. |
 

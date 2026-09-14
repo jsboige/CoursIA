@@ -37,17 +37,19 @@ Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'ke
 
 **Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La taxonomie des 5 verdicts est **inchangee** : seul l'etablissement d'`INTRINSIC` se durcit.
 
-**Origine** (#10459) : 3 verdicts `INTRINSIC` OpenSpiel convergents, aucun n'ayant examine l'axe PythonNet ; l'axe est desormais **prouve** par 5 PRs mergees. Deuxieme omission apres `IKVM`. Recit, verbatim user et mesures : [detail §2](../../docs/reference/sota-verdicts-detail.md).
+**Origine** (#10459) — 3 verdicts `INTRINSIC` convergents ayant tous saute l'axe PythonNet, deuxieme omission d'axe apres `IKVM`, axe depuis **prouve** par 5 PRs mergees : [detail §2](../../docs/reference/sota-verdicts-detail.md).
 
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
-Le workaround le plus insidieux = **scrubber / hand-editer la SORTIE de cellule committee** (redacter chemin machine / prefixe de cle / render casse dans `outputs`) au lieu de re-executer = **falsifier la preuve d'execution = malhonnete, BANNI**. On **repare la cause** (env/cwd, outil manquant, source qui imprime) et on **RE-EXECUTE** — jamais maquiller. Seules exceptions : quantbooks QC (non-executables via MCP) + `metadata.papermill.input/output_path` au `basename`. Une PR qui hand-edite une sortie hors ces deux cas = `CHANGES_REQUESTED` (`APPROVED` = complaisance). Regle complete (triage cause A/B/C + incidents) : [secrets-hygiene.md](secrets-hygiene.md) regle 6 + [[feedback-no-cell-output-scrubbing]].
+Le workaround le plus insidieux = **scrubber / hand-editer la SORTIE de cellule committee** au lieu de re-executer = **falsifier la preuve d'execution = malhonnete, BANNI**. On **repare la cause** et on **RE-EXECUTE** — jamais maquiller. Une PR qui hand-edite une sortie hors les tolerances admises = `CHANGES_REQUESTED` (`APPROVED` = complaisance).
+
+Autorite : [secrets-hygiene.md](secrets-hygiene.md) **regle 6**, auto-chargee elle aussi — triage A/B/C, liste exacte des **trois** tolerances, incidents. Ne pas la re-resumer ici : deux enonces concurrents du meme interdit divergent au premier amendement.
 
 ## Prong B — Probleme non-trivial qui met le moteur en valeur
 
 Un notebook qui demontre un **moteur / solveur / modele** (search, CSP, SMT/Z3, planners, metaheuristiques, tactiques Lean, ML, GenAI) DOIT poser un probleme assez riche pour **exercer et faire valoir la capacite distinctive du moteur** — pas un **cas degenere** ou le moteur SOTA equivaut a une baseline triviale.
 
-Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS, l'heuristique ne sert a rien) -> remplacer par un terrain **pondere** ou l'heuristique discrimine (commit `8905f8845`, planners-3). Memes pieges : un Z3 sur une contrainte qu'un `if` resout, un planner sur un plan lineaire sans parallelisme, un metaheuristique sur une fonction convexe a optimum unique.
+Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS, l'heuristique ne sert a rien) -> remplacer par un terrain **pondere** ou l'heuristique discrimine. Memes pieges : un Z3 sur une contrainte qu'un `if` resout, un planner sur un plan lineaire sans parallelisme, un metaheuristique sur une fonction convexe a optimum unique. Instance fondatrice et correctif : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 Action : **complexifier le probleme existant** OU **ajouter un probleme additionnel plus riche**, de sorte que la capacite annoncee soit **visible dans la sortie**. **Modulo un temps de traitement raisonnable** : viser un probleme **discriminant mais borne**, pas un benchmark de plusieurs minutes dans un notebook pedagogique.
 
@@ -55,7 +57,7 @@ Action : **complexifier le probleme existant** OU **ajouter un probleme addition
 
 Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact sur le graphe candidat). Un pitch non mesure = violation G.9 en attente d'etre livree.
 
-Anti-exemple mesure (Mycielski : greedy ET DSATUR trouvent χ, le folklore ne reproduit PAS — le vrai cas discriminant est Erdos-Renyi dense) + faux signal de grep MiniZinc (`solve minimize` dans la chaine de modele, pas `.minimize(`) : [sota-verdicts-detail.md §3](../../docs/reference/sota-verdicts-detail.md).
+Anti-exemple mesure (le folklore « greedy rate Mycielski » ne reproduit pas) et faux signal de grep MiniZinc : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 ## Comportement des bots reviewers (signaler + enforce)
 
@@ -70,10 +72,10 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 
 ## Registre axe-2 — ou deposer une entree, quand sera-t-il fini
 
-**Une entree va dans le ledger, jamais dans un commentaire d'issue** — sept entrees postees sur l'EPIC
-#3801 apres sa fermeture sont perdues pour toute requete `--state open` et tout grep du depot.
-Le ledger est [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (section
-`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` par PR).
+**Une entree va dans le ledger, jamais dans un commentaire d'issue.** Le ledger est
+[`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (section
+`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` par PR) ; le precedent qui fonde
+l'interdit est en [detail §4](../../docs/reference/sota-verdicts-detail.md).
 
 **Critere de fin de l'axe-2** (3 conditions mesurables), **pieges de denombrement** (grain par famille,
 deux tableaux « Cumul entries » perimes a fusionner) et commandes de mesure : [sota-verdicts-detail.md
@@ -85,5 +87,5 @@ deux tableaux « Cumul entries » perimes a fusionner) et commandes de mesure : 
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
 - [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille (30 entrees au 2026-09-03)
-- **EPIC #3801** (CLOSE le 2026-07-09) — provenance doctrinale du mandat user 2026-06-21. **Ne rien y deposer** : sept entrees y ont ete postees apres sa fermeture, ou aucune requete `--state open` ne les voit.
+- **EPIC #3801** (CLOSE) — provenance doctrinale du mandat ; **ne rien y deposer** (cf §Registre axe-2).
 - **#10459** — omission d'axe PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))

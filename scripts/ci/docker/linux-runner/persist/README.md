@@ -22,20 +22,25 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
 | `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | reference |
 | `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference |
-| `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (une version ad-hoc de 283 octets, sans documentation, occupe la place) |
-| `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **a deployer** (le fichier n'existe pas encore) |
-| `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) |
+| `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** -- 7235 octets, documente, et il etait **en avance sur le depot** : c'est le depot qui a ete synchronise depuis le vivant, pas l'inverse (cf. correction 6) |
+| `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08) |
+| `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
+| `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
 
-## Les trois corrections dues sur #15091 / #15094
+## Les six corrections dues sur #15091 / #15094
 
-Ces trois points ont ete etablis firsthand sur ai-01 le 2026-09-07 (lecture des
-fichiers vivants via `wsl.exe -d Ubuntu -u root --`). Ils corrigent des choses que
+Les trois premiers ont ete etablis firsthand sur ai-01 le 2026-09-07, les
+trois suivants le 2026-09-08 (lecture des fichiers vivants via
+`wsl.exe -d Ubuntu -u root --`). Ils corrigent des choses que
 j'avais annoncees ou laissees entendre, et qui etaient fausses.
+
+Les corrections **4, 5 et 6** ont ete ajoutees apres coup et se lisent en fin
+de fichier, **apres** la section « Voir aussi ».
 
 ### 1. La PR #15094 patche une copie qui ne tourne pas sur ai-01
 
@@ -167,19 +172,55 @@ separement.
 Ordre obligatoire -- les bornes d'abord, le parc ensuite. Redemarrer avant de les
 poser ferait repartir la file sous le regime non borne qui a gele la machine.
 
+**Regle de lecture de ce bloc : ce qui LIT est vivant, ce qui ECRIT est
+commente.** Les `diff` et les `cat` peuvent se copier-coller tels quels -- ce
+sont des mesures. Toutes les lignes qui modifient la machine sont commentees a
+dessein, et le restent tant que le dimensionnement CPU n'est pas tranche.
+
+**Pourquoi elles sont commentees -- mesure du 2026-09-08 sur ai-01, pas une
+hypothese.** Sous le budget en vigueur (`COURSIA_RUNNER_CPU_BUDGET=8`) et avec
+les quatre waiters residents (`4 x 1 = 4` vCPU), la famille `start` telle que ce
+drop-in la dimensionne demande `4 x 3 = 12` vCPU : `4 + 12 = 16 > 8`, et
+`assert_cpu_budget` **refuse le demarrage**. C'est l'etat de la machine a
+l'instant ou ces lignes sont ecrites -- `coursia-runner.service` en `failed`,
+et la file d'attente sans aucun runner capable de la servir. Deployer ce bloc
+tel quel sur un hote neuf y reproduirait le meme verrou. L'arbitrage de
+dimensionnement appartient a la lane qui porte le parc ; il n'est pas rendu ici.
+
 ```sh
 # 1. Le budget agrege, au daemon et au kernel.
-install -m 0644 persist/daemon.json          /etc/docker/daemon.json
-install -m 0644 persist/coursia-ci.slice     /etc/systemd/system/coursia-ci.slice
+#    Les DEUX fichiers sont deja vivants (mesure du 2026-09-08). Diffe AVANT
+#    d'installer : la copie vivante de la slice a ete, une journee durant, plus
+#    riche que celle du depot -- un install a l'aveugle aurait retire
+#    MemoryHigh / MemoryMax / MemorySwapMax de la machine (cf. correction 6).
+diff /etc/docker/daemon.json              persist/daemon.json
+diff /etc/systemd/system/coursia-ci.slice persist/coursia-ci.slice
 
-# 2. L'unite corrigee et son wrapper.
-install -m 0644 persist/ai-01/coursia-runner.service   /etc/systemd/system/coursia-runner.service
-install -m 0755 persist/ai-01/coursia-runner-start.sh  /usr/local/bin/coursia-runner-start.sh
+# N'installer QUE si le diff est compris et va dans le bon sens :
+# install -m 0644 persist/daemon.json          /etc/docker/daemon.json
+# install -m 0644 persist/coursia-ci.slice     /etc/systemd/system/coursia-ci.slice
+
+# 2. L'unite corrigee, son wrapper, ET son drop-in -- les trois ensemble.
+#    Le drop-in est ce qui porte le dimensionnement : installer l'unite sans lui
+#    laisse la famille sur les defauts de supervise.sh (cpus=3, memory=4g), qui
+#    ne sont PAS ce que ce depot decrit. La commande omettait le drop-in tandis
+#    que la prose disait le contraire ; sur un hote neuf, l'ecart etait muet.
+# install -m 0644 persist/ai-01/coursia-runner.service   /etc/systemd/system/coursia-runner.service
+# install -m 0755 persist/ai-01/coursia-runner-start.sh  /usr/local/bin/coursia-runner-start.sh
+# mkdir -p /etc/systemd/system/coursia-runner.service.d
+# install -m 0644 persist/ai-01/coursia-runner.service.d/10-sizing.conf \
+#                 /etc/systemd/system/coursia-runner.service.d/10-sizing.conf
 
 # 3. Recharger, puis appliquer.
-systemctl daemon-reload
-systemctl restart docker.service          # docker-ce : 0 conteneur, redemarrage sans effet sur le parc
-systemctl start coursia-ci.slice
+# systemctl daemon-reload
+#
+#    Le redemarrage de docker n'est PLUS neutre : docker-ce porte les quatre
+#    waiters (mesure du 2026-09-08). `daemon.json` declare `live-restore: true`,
+#    qui est fait pour qu'ils survivent -- mais cette survie n'a pas ete
+#    verifiee firsthand ici. Tant qu'elle ne l'est pas, cette ligne coupe le
+#    seul etage du parc qui fonctionne encore.
+# systemctl restart docker.service
+# systemctl start coursia-ci.slice
 
 # 4. Verifier que la borne est REELLE avant de rallumer quoi que ce soit.
 cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/io.max
@@ -193,9 +234,22 @@ que systemd imbrique automatiquement une slice sous le prefixe de son nom. Cherc
 slice absente.
 
 Le `restart docker.service` ne vise que **docker-ce** (`unix:///var/run/docker-ce.sock`,
-pid 253, `Name=MyIA-AI-01`), qui portait **0 conteneur** a la mesure. Le socket par
-defaut est celui du proxy Docker Desktop (pid 10179), qui portait les 48 conteneurs
-du parc : il n'est pas touche.
+`Name=MyIA-AI-01`). Le socket par defaut est celui du proxy Docker Desktop, qui
+porte le reste du parc : il n'est pas touche.
+
+**Ce paragraphe disait autre chose, et c'etait faux au moment de le lire.** Il
+affirmait que docker-ce portait **0 conteneur**, donc que le redemarrage etait
+sans effet. C'etait vrai le 2026-09-07 ; ca ne l'est plus. Mesure du 2026-09-08 :
+docker-ce porte **quatre** conteneurs, `myia-ai-01-linux-waiter-{1..4}`, et rien
+d'autre. Le redemarrage n'est donc plus neutre. `daemon.json` declare
+`live-restore: true`, qui est fait exactement pour que les conteneurs survivent
+a l'arret du daemon -- mais cette survie n'a **pas** ete verifiee firsthand ici,
+et l'annoncer comme acquise referait la faute que cette correction repare.
+Mesurer d'abord :
+
+```sh
+DOCKER_HOST=unix:///var/run/docker-ce.sock docker ps
+```
 
 `supervise.sh status` est le controle qui compte : il enumere les familles actives,
 lit la slice, et **refuse** de rendre un vert si le budget est exige et absent
@@ -259,3 +313,218 @@ mais non rebuild sur l'un ou l'autre est refuse au demarrage du pool.
 - **#14385** -- volumes `_work` par slot -- les waiters n'en montent pas, le test 17 le garde
 - **#14801** -- fraicheur de l'image, verifiee par empreinte de l'entrypoint
 - **#15105** -- integrite et maintenance du cache `_work` persistant
+
+### 4. La copie 8-slots est marquee « a deployer » -- et la deployer seule rallume la panne
+
+Etabli firsthand sur ai-01 le 2026-09-08 (`wsl.exe -d Ubuntu`).
+
+`ai-01/coursia-runner.service` declare `ExecStart=... 8` et **aucun**
+`COURSIA_RUNNER_MEMORY`. Or `supervise.sh` l.82 lit
+`MEMORY="${COURSIA_RUNNER_MEMORY:-4g}"`. Huit slots sans cap, c'est donc
+**8 x 4096 = 32768 Mo** nominal demandes contre un budget de slice de
+**12288 Mo** : le garde de budget refuse, `Restart=always` reboucle toutes les
+30 s, et le pool ne monte jamais.
+
+Ce que la machine execute reellement n'est pas ce fichier seul, mais ce fichier
+**plus un drop-in** qui le corrige :
+
+| | slots | cap par slot | nominal | budget |
+|---|---:|---:|---:|---:|
+| `coursia-runner.service` seul | 8 | *(defaut 4g)* | 32768 Mo | 12288 Mo -- **refuse** |
+| avec `10-sizing.conf` | 4 | 1536 Mo | 6144 Mo | 12288 Mo -- passe |
+
+Le drop-in etait **untracked** jusqu'a #15091 : il vivait sur la machine et
+nulle part ailleurs. La table ci-dessus marquait la copie 8-slots « a
+deployer » sans mentionner qu'un deuxieme fichier etait indispensable a cote --
+un deploiement fidele a la consigne reproduisait donc la panne a l'identique.
+
+C'est la panne qui a impose quatre redemarrages manuels de la machine dans la
+meme journee, chacun par une intervention sur site. Les deux fichiers partent
+desormais ensemble, ou aucun.
+
+Mesure du fichier vivant au moment de la copie : 762 octets, unite `active`,
+`NRestarts=0`, `ExecMainStatus=0`. La strophe operante du fichier tracke est
+**byte-identique** au fichier vivant ; seul un en-tete de provenance a ete
+ajoute au-dessus, conformement a la convention des autres copies de ce
+repertoire.
+
+### 5. Le drop-in borne la memoire et laisse le CPU au defaut -- meme defaut, autre axe
+
+Etabli firsthand sur ai-01 le 2026-09-08 a 14:49Z, **apres** la redaction de la
+correction 4 -- et il la contredit en partie. La correction 4 dit que le
+drop-in « tient la machine debout ». Mesure du moment :
+
+```
+$ systemctl show coursia-runner -p ActiveState -p NRestarts -p Result
+ActiveState=failed
+NRestarts=4
+Result=exit-code
+```
+
+Le drop-in etait charge (`DropInPaths=/etc/systemd/system/coursia-runner.service.d/10-sizing.conf`),
+`COURSIA_RUNNER_MEMORY=1536m` bien en vigueur, et le service en echec depuis
+14:23:40Z. Le journal donne la cause, quatre fois de suite, puis
+`Start request repeated too quickly` :
+
+```
+ERREUR: budget CPU inter-familles depasse : 16.00 vCPU demandes pour un plafond de 8.
+  deja actif : waiters n=4 cpus=1 -> 4.00
+  demande    : start n=4 cpus=3 -> 12.00
+```
+
+Ce n'est pas la memoire. C'est **le meme defaut que la correction 4, sur l'axe
+que la correction 4 ne regarde pas** :
+
+| axe | ce que le drop-in pose | ce que `supervise.sh` applique | resultat |
+|---|---|---|---|
+| memoire | `COURSIA_RUNNER_MEMORY=1536m` | la valeur posee | 4 x 1536 = 6144 Mo / 12288 -- passe |
+| **CPU** | **rien** | **`CPUS="${COURSIA_RUNNER_CPUS:-3}"` (l.81), le defaut** | **4 x 3 = 12, +4 waiters = 16 / 8 -- refuse** |
+
+Le budget CPU vaut 8 (`COURSIA_RUNNER_CPU_BUDGET:-8`, l.101 du wrapper
+`coursia-runner-start.sh`) : une clause d'egard pour l'hote, qui reserve 8 des
+32 vCPU de la machine a la CI. Elle est **anterieure** a ce travail -- ligne
+identique sur `origin/main`, ni introduite ni modifiee par #15188.
+
+**Pourquoi la correction 4 a pu mesurer `active NRestarts=0` le matin et ce
+tableau `failed NRestarts=4` l'apres-midi.** J'ai d'abord attribue l'ecart a un
+ordre de demarrage entre familles. C'etait une hypothese, et le journal la
+refute. Chronologie mesuree (`journalctl -u coursia-runner --since`, heures
+locales CEST = UTC+2) :
+
+| heure | evenement |
+|---|---|
+| 08:33:52, 08:34:43, 09:29:41 | `demarrage de 4 slot(s) ; caps : cpus=3 memory=1536m` -- **succes**, et **aucune** ligne de budget CPU |
+| **09:47:21** | **mtime de `/usr/local/bin/coursia-runner-start.sh`** -- le wrapper portant `COURSIA_RUNNER_CPU_BUDGET:-8` est ecrit sur la machine |
+| 16:11:53 | premier `ERREUR: budget CPU inter-familles depasse : 16.00 / 8` |
+| 16:24:11 | `Start request repeated too quickly` -> `failed` |
+
+L'ordre de boot est d'ailleurs refute une seconde fois, par arithmetique seule :
+la famille `start` demande **4 x 3 = 12 vCPU a elle seule**, contre un plafond de
+8. Elle echoue meme en partant **la premiere, avec zero waiter actif**. Aucun
+ordre de demarrage ne la fait passer -- c'est ce qui rend l'hypothese non pas
+seulement non prouvee, mais fausse. (Le journal du 2026-09-08 a 16:11:53 montre
+la sequence complete : les waiters obtiennent leurs 4 vCPU, la famille `start`
+demande les 12 restants, total 16, refus.)
+
+Le mecanisme n'est donc pas l'ordre de boot, c'est **l'armement d'un garde
+au-dessus d'une sur-souscription pre-existante**. `assert_cpu_budget()` sort
+immediatement quand le budget vaut 0 (l.422, `[ "${CPU_BUDGET:-0}" = "0" ] &&
+return 0`) et n'imprime alors **rien**. Avant 09:47 le garde n'existait pas sur
+la machine : les 16 vCPU etaient **declares et acceptes** sans un mot. La ligne
+de succes du garde (l.444, `budget CPU inter-familles : N / M vCPU`) est
+**absente de tout le journal disponible** (depuis le 2026-09-02) -- la famille
+`start` n'a jamais franchi ce garde une seule fois.
+
+**Ce que « sans un mot » ne veut PAS dire -- et je l'avais d'abord ecrit trop
+fort.** Declaration n'est pas consommation, et il y a **deux** bornes, pas une :
+la table « Les trois bornes » ci-dessus le dit deja de `COURSIA_RUNNER_CPU_BUDGET`
+-- « c'est un refus de demarrage, pas un plafond kernel ». Le plafond kernel,
+lui, c'est `coursia-ci.slice` (`CPUQuota=800%`, soit `cpu.max 800000 100000`),
+et il etait **arme et actif tout du long** : mesure du 2026-09-08, la slice
+existe, ses controleurs sont poses, et le pid d'un waiter s'y trouve bien. La
+machine porte par ailleurs `nproc = 32` : **8 est le budget consenti a la CI,
+pas la taille du processeur**.
+
+Autrement dit, la famille aurait **demande** 16 vCPU et le noyau lui en aurait
+**servi 8**, avec throttling. Retirer le garde a supprime le **refus lisible**,
+pas le plafond. La sur-souscription reste un vrai defaut -- elle etrangle en
+silence au lieu de refuser franchement -- mais elle n'a jamais laissee la CI
+consommer 16 vCPU, et l'ecrire ainsi surevaluait la gravite.
+
+Deux consequences qu'il faut ecrire clairement :
+
+1. **La sur-souscription CPU est anterieure a la panne et elle est de moi.**
+   4 slots x 3 vCPU + 4 waiters = **16 vCPU declares** depuis le matin (le
+   noyau en servait 8 : cf. l'encadre ci-dessus). Ce n'est pas le garde qui a
+   casse le parc, c'est le garde qui a rendu visible ce que le drop-in
+   demandait deja.
+2. **Le garde lui-meme vient de #15103**, la PR precedente de ce meme chantier
+   (`COURSIA_RUNNER_CPU_BUDGET` n'apparait dans le depot qu'au commit
+   `93c05cf10`). Les deux moities du defaut sont donc dans mon propre travail :
+   une PR a pose la sur-souscription, la suivante a arme le declencheur
+   au-dessus, et aucune des deux n'a confronte les deux chiffres.
+
+**Ce que ce README ne tranche pas.** Budget 8 moins 4 de waiters laisse 4 vCPU.
+Trois configurations passent le garde (`>` strict, donc 8 est admis) :
+
+| slots | `COURSIA_RUNNER_CPUS` | famille `start` | total avec waiters |
+|---:|---:|---:|---:|
+| 4 | 1 | 4 | 8 -- passe |
+| 2 | 2 | 4 | 8 -- passe |
+| 1 | 3 *(defaut)* | 3 | 7 -- passe |
+
+Le choix demande une mesure, pas une extrapolation : un job reel a ete mesure a
+**129 % CPU**, donc `cpus=1` l'etranglerait -- exactement la « perte » que le
+mandat user demande d'eviter. Et les extrapolations de ce parc ont deja eu tort
+une fois : le cap de 1536 Mo, juge « ~10x le pic mesure », a fait OOM un rendu
+Quarto. Le dimensionnement CPU est donc laisse **ouvert et nomme**, pas devine
+ici.
+
+**Portee de cette correction** : elle ne change aucun dimensionnement et ne
+touche pas au fichier vivant. Elle retire une affirmation fausse -- « le
+drop-in tient la machine debout » -- et la remplace par ce qui est mesure : le
+drop-in ferme la porte memoire, la porte CPU est restee ouverte, et le pool est
+tombe par la.
+
+### 6. Le depot allait ecraser la borne memoire de la machine
+
+C'est la correction la plus grave de la liste, et elle ne porte pas sur une PR
+anterieure : elle porte sur **ce fichier-ci**, tel qu'il etait redige il y a une
+heure.
+
+Les deux premieres lignes de la table de correspondance disaient que
+`coursia-ci.slice` et `daemon.json` restaient **a deployer** -- la slice vivante
+y etait decrite comme « une version ad-hoc de 283 octets, sans documentation »,
+et `daemon.json` comme un fichier qui « n'existe pas encore ». Mesure firsthand
+du 2026-09-08 :
+
+| Fichier vivant | Octets | Etat reel |
+|---|---:|---|
+| `/etc/docker/daemon.json` | 155 | present, **byte-identique** a `persist/daemon.json` |
+| `/etc/systemd/system/coursia-ci.slice` | 7235 | present, documente, **plus riche** que la copie du depot |
+
+La copie du depot faisait **4057 octets** et ne portait qu'un
+`MemoryAccounting=yes` -- l'axe memoire declare, mais aucune borne. La copie
+vivante porte la borne elle-meme :
+
+```
+MemoryAccounting=yes
+MemoryHigh=12G
+MemoryMax=16G
+MemorySwapMax=16G
+```
+
+**Ce que l'erreur aurait produit.** L'etape 1 du bloc de deploiement ci-dessus
+disait `install -m 0644 persist/coursia-ci.slice /etc/systemd/system/coursia-ci.slice`,
+sans condition. Executee telle quelle, elle aurait remplace la copie vivante par
+celle du depot, donc **retire les trois directives memoire** de la machine. Un
+document ecrit pour poser des bornes aurait ete l'instrument qui les enleve --
+et la panne qu'il documente est precisement une panne memoire.
+
+**Ce qui a ete fait.** `persist/coursia-ci.slice` a ete synchronise **depuis le
+vivant** : le depot en etait un sous-ensemble strict (`git diff --numstat` rend
+`56 0` -- cinquante-six lignes ajoutees, zero retiree). L'etape 1 du bloc de
+deploiement est passee d'un `install` inconditionnel a un `diff` prealable, et
+toutes ses lignes mutantes sont desormais commentees. Restent **deux ecarts
+assumes**, tous deux dans des commentaires, tous deux cote depot :
+
+1. **une ligne neutralisee** parce qu'elle nommait une personne privee ; le fait
+   technique qu'elle portait -- quatre redemarrages manuels sur site dans la
+   meme journee -- est conserve ;
+2. **une qualification ajoutee** au bloc « POURQUOI 12 / 16 ET PAS PLUS ». La
+   copie vivante presente les ~81 Go d'ecart hote (flotte CI armee vs desarmee)
+   comme « l'empreinte de cette slice ». C'est un avant/apres a deux cellules,
+   sans controle sur les ~48 autres conteneurs ni sur la workstation : il rend
+   un **majorant observe**, pas une empreinte causale mesuree. La copie du depot
+   le dit ; la copie vivante, elle, ne l'a pas encore -- l'ecrire ici est la
+   seule chose que cette PR peut faire sans toucher la machine.
+
+Ces deux ecarts vont dans le sens depot -> vivant : c'est au prochain `install`
+delibere de les propager, jamais a un `install` a l'aveugle.
+
+**La lecon.** « Le depot est la reference » est une **convention**, pas une
+mesure. Ce fichier s'ouvre en appelant ses fichiers des *copies de reference* de
+fichiers vivants, ce qui laisse entendre que la copie fait autorite. Elle ne la
+fait pas : la derive va dans les deux sens, et c'est le fichier vivant qui tient
+la machine debout pendant que la copie dort dans le depot. Avant tout `install`
+vers un chemin vivant, la regle est donc : **`diff` d'abord, et lire le diff**.

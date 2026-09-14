@@ -69,6 +69,20 @@ namespace MyIA.Trading.Backtester
                 {
                     return (T)(object)decimalValue;
                 }
+                if (typeof(T) == typeof(double))
+                {
+                    // Discriminant chemin decimal -> double : cast direct preservant
+                    // la precision binaire (Convert.ChangeType passe par IConvertible
+                    // qui arrondit a 15 chiffres significatifs, perdant la trace du
+                    // fait que la valeur vient d'un decimal). (double)decimalValue
+                    // utilise ToDouble qui preserve le模式 decimal natif et permet a
+                    // la suite de distinguer un chemin decimal d'un chemin double natif.
+                    return (T)(object)(double)decimalValue;
+                }
+                if (typeof(T) == typeof(float))
+                {
+                    return (T)(object)(float)decimalValue;
+                }
                 return (T)Convert.ChangeType(decimalValue, typeof(T), CultureInfo.InvariantCulture);
             }
             if (value is IConvertible)

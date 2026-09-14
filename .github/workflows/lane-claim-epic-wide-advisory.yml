@@ -1,0 +1,76 @@
+name: Lane Claim Epic-Wide Advisory
+
+# Piste 1 of #12156: an `[CLAIMED]` without a `paths:` clause is epic-wide BY
+# DESIGN on a unitary issue, but on an UMBRELLA it excludes every other lane
+# from the whole EPIC -- the opposite of what an umbrella exists for ("pioche
+# ou cree un SOUS-grain dedans, ne claim pas l'EPIC entier"). Measured
+# 2026-09-11 by this organ against origin/main: 1 of 41 open EPIC issues
+# locked epic-wide (#15062 -- a scoped-looking claim whose every glob is
+# dead, lifted per #10958). An earlier manual count of 3 had used
+# `blocking_lanes`, the wrong predicate. Piste 2 (the `epic_wide_on_umbrella`
+# JSON field) shipped in #12299; piste 3's premise (no staleness organ) is
+# outdated since #12751. This sweep is the missing signal loop.
+#
+# ADVISORY, never blocking:
+#   - The job ALWAYS exits 0. The actionable payload is the `epic-wide-claim`
+#     LABEL + one marker-anchored comment per lock episode, NEVER the green
+#     conclusion (same contract as candidate-delivered-advisory.yml).
+#   - It does NOT close, re-assign or edit claims. It reminds the scoped form.
+#   - A HUMAN retraction of the label is a verdict and STICKS (#14307): the
+#     organ reads label events and will not re-pose over an `unlabeled` by a
+#     non-bot actor. A human re-posing the label hands control back.
+#   - The predicate is NOT a text heuristic (the failure mode that retired
+#     `lane-claim-conflict`, #10395): the organ reuses the SAME reducer,
+#     umbrella classifier, dead-glob witness walk and effectively-epic-wide
+#     predicate as `check_lane_claim.py`, and a parity unit-test replays
+#     payloads through both so the two can never disagree.
+#
+# Weekly: the population moves at claim cadence (days), and each sweep walks
+# every open EPIC issue (~41 `gh` calls). Daily would burn 7x the quota for
+# no fresher signal.
+
+on:
+  schedule:
+    # Weekly, Mondays, off-:00 minute (anti-stampede). 04:43 UTC.
+    - cron: '43 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log only, apply no labels'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: lane-claim-epic-wide-advisory
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Label umbrellas locked epic-wide by an unscoped claim (advisory)"
+    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
+    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
+    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
+    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run sweep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          python scripts/lane_claim_epic_wide.py $DRY --sleep 1.0

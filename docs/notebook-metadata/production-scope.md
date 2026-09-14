@@ -80,15 +80,14 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
-
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/03_Structured_Outputs.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/06_PDF_Web_Search.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/07_Code_Interpreter.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/08_Reasoning_Models.ipynb`
 
 ### ECE IA Finance Ing4 + Partner Algo Trading QuantConnect (35)
 
@@ -218,7 +217,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
@@ -231,8 +230,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
-
-- [ ] `MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb`
@@ -317,10 +315,10 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Sendov-Complex-Analysis.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-PFR-Entropy-Method.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-MIMO-Detection-Flips.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Analysis-I-Tao-Workflow.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-PFR-Entropy-Method.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb`

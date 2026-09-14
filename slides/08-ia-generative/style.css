@@ -110,6 +110,18 @@
 .genai-ecosystem-hosting li:nth-child(2) { width: 50%; min-height: 180px; }
 .genai-ecosystem-hosting .groq-figure { left: 615px; top: 100px; width: 320px; height: 150px; }
 .genai-ecosystem-hosting .vllm-figure { left: 615px; top: 305px; width: 320px; height: 150px; }
+/* c.1092 REPAIR footer-hors-clip (#15463 CHANGES_REQUESTED ai-01 21:38Z) :
+   footer reference positionné absolute pour sortir du flux et garantir son placement
+   dans le canvas (980x552 logique). z-index 3 passe au-dessus des visuels.
+   Spécifique a .genai-ecosystem-hosting (1 slide affectée), zero collatéral. */
+.genai-ecosystem-hosting p.notebook-reference {
+  position: absolute;
+  bottom: 18px;
+  left: 48px;
+  z-index: 3;
+  margin: 0;
+  font-size: 0.85em;
+}
 
 /* Écosystème outils : ComfyUI face bullet 1 "Image", ST/Dify face bullet 2. */
 .genai-ecosystem-tools li:nth-child(1) { width: 50%; min-height: 160px; }

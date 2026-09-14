@@ -1,0 +1,1093 @@
+{
+  "schema_version": "1.0.0",
+  "rule": "B3/S23",
+  "note": "Fixture cure de la tranche 1+2 de #15635. Les champs numeriques (periode, translation, population, boite, enveloppe, stabilisation, region occupee) sont DERIVES du moteur Life du depot puis re-derives et compares a chaque validation ; les champs de provenance sont cures a la main.",
+  "motifs": [
+    {
+      "id": "block",
+      "kind": "still_life",
+      "period": 1,
+      "translation": [
+        0,
+        0
+      ],
+      "population": 4,
+      "box": [
+        2,
+        2
+      ],
+      "envelope": [
+        2,
+        2
+      ],
+      "rule": "B3/S23",
+      "symmetries": [
+        "T",
+        "R90",
+        "R180",
+        "R270",
+        "Mx",
+        "My",
+        "D1",
+        "D2"
+      ],
+      "provenance": {
+        "source": "nomenclature LifeWiki (conwaylife.com/wiki/Block)",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "still life 2x2 ; le plus petit objet stable non vide"
+      },
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "rle": null,
+      "phases": {
+        "0": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "direction": null,
+      "speed": null
+    },
+    {
+      "id": "blinker",
+      "kind": "oscillator",
+      "period": 2,
+      "translation": [
+        0,
+        0
+      ],
+      "population": 3,
+      "box": [
+        3,
+        1
+      ],
+      "envelope": [
+        3,
+        3
+      ],
+      "rule": "B3/S23",
+      "symmetries": [
+        "T",
+        "R90",
+        "R180",
+        "R270",
+        "Mx",
+        "My",
+        "D1",
+        "D2"
+      ],
+      "provenance": {
+        "source": "nomenclature LifeWiki (conwaylife.com/wiki/Blinker)",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "oscillateur de periode 2 ; la plus petite forme oscillante"
+      },
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "rle": null,
+      "phases": {
+        "0": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            0
+          ]
+        ],
+        "1": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ]
+        ]
+      },
+      "direction": null,
+      "speed": null
+    },
+    {
+      "id": "toad",
+      "kind": "oscillator",
+      "period": 2,
+      "translation": [
+        0,
+        0
+      ],
+      "population": 6,
+      "box": [
+        4,
+        2
+      ],
+      "envelope": [
+        4,
+        4
+      ],
+      "rule": "B3/S23",
+      "symmetries": [
+        "T",
+        "R90",
+        "R180",
+        "R270",
+        "Mx",
+        "My",
+        "D1",
+        "D2"
+      ],
+      "provenance": {
+        "source": "nomenclature LifeWiki (conwaylife.com/wiki/Toad)",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "oscillateur de periode 2 a 6 cellules (controle de periode identique, forme differente)"
+      },
+      "cells": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "rle": null,
+      "phases": {
+        "0": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            3,
+            0
+          ]
+        ],
+        "1": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            3,
+            2
+          ]
+        ]
+      },
+      "direction": null,
+      "speed": null
+    },
+    {
+      "id": "glider",
+      "kind": "spaceship",
+      "period": 4,
+      "translation": [
+        1,
+        -1
+      ],
+      "population": 5,
+      "box": [
+        3,
+        3
+      ],
+      "envelope": [
+        3,
+        3
+      ],
+      "rule": "B3/S23",
+      "symmetries": [
+        "T",
+        "D2"
+      ],
+      "provenance": {
+        "source": "redécouvert par scripts/lean/life_synthesize.py (Loi II, EPIC #12205)",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "glider canonique du depot, retrouve par enumeration bornee puis certifie en Lean"
+      },
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "rle": null,
+      "phases": {
+        "0": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ]
+        ],
+        "1": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "2": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "3": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            1
+          ]
+        ]
+      },
+      "direction": [
+        1,
+        -1
+      ],
+      "speed": 0.3535533905932738
+    },
+    {
+      "id": "glider_mirror",
+      "kind": "spaceship",
+      "period": 4,
+      "translation": [
+        -1,
+        -1
+      ],
+      "population": 5,
+      "box": [
+        3,
+        3
+      ],
+      "envelope": [
+        3,
+        3
+      ],
+      "rule": "B3/S23",
+      "symmetries": [
+        "T",
+        "D1"
+      ],
+      "provenance": {
+        "source": "reflexion en x du glider du depot",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "glider de direction opposee : meme forme a une reflexion pres, translation differente"
+      },
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "rle": null,
+      "phases": {
+        "0": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            0
+          ]
+        ],
+        "1": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "2": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            1
+          ]
+        ],
+        "3": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            2
+          ]
+        ]
+      },
+      "direction": [
+        -1,
+        -1
+      ],
+      "speed": 0.3535533905932738
+    },
+    {
+      "id": "lwss",
+      "kind": "spaceship",
+      "period": 4,
+      "translation": [
+        -2,
+        0
+      ],
+      "population": 9,
+      "box": [
+        5,
+        4
+      ],
+      "envelope": [
+        5,
+        4
+      ],
+      "rule": "B3/S23",
+      "symmetries": [
+        "T",
+        "My"
+      ],
+      "provenance": {
+        "source": "nomenclature LifeWiki (conwaylife.com/wiki/Lightweight_spaceship)",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "vaisseau leger, periode 4, deplacement de 2 cellules par cycle"
+      },
+      "cells": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "rle": null,
+      "phases": {
+        "0": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            4,
+            0
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "1": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            3,
+            2
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "2": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            3,
+            0
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            4,
+            3
+          ]
+        ],
+        "3": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            0
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            3,
+            2
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            4,
+            2
+          ]
+        ]
+      },
+      "direction": [
+        -2,
+        0
+      ],
+      "speed": 0.5
+    }
+  ],
+  "reactions": [
+    {
+      "id": "glider_pair_annihilation",
+      "reactants": [
+        {
+          "motif_id": "glider",
+          "offset": [
+            0,
+            0
+          ],
+          "phase": 0
+        },
+        {
+          "motif_id": "glider_mirror",
+          "offset": [
+            6,
+            2
+          ],
+          "phase": 0
+        }
+      ],
+      "products": [],
+      "product_cells": null,
+      "ports": [
+        {
+          "name": "in0",
+          "offset": [
+            0,
+            0
+          ],
+          "direction": [
+            1,
+            -1
+          ],
+          "phase": 0
+        },
+        {
+          "name": "in1",
+          "offset": [
+            6,
+            2
+          ],
+          "direction": [
+            -1,
+            -1
+          ],
+          "phase": 0
+        }
+      ],
+      "temporal_offset": 0,
+      "stabilization_time": 12,
+      "occupied_region": [
+        0,
+        -2,
+        9,
+        7
+      ],
+      "clearance": [
+        [
+          0,
+          -7,
+          2,
+          2
+        ]
+      ],
+      "nature": "consumable",
+      "spatial_transform": null,
+      "preconditions": [
+        "cellules des reactifs placees telles que declarees"
+      ],
+      "effects": [
+        "empty"
+      ],
+      "provenance": {
+        "source": "mesure firsthand par le moteur Life du depot",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "stabilise a t=12 ; region occupee mesuree"
+      }
+    },
+    {
+      "id": "glider_pair_two_blocks",
+      "reactants": [
+        {
+          "motif_id": "glider",
+          "offset": [
+            0,
+            0
+          ],
+          "phase": 0
+        },
+        {
+          "motif_id": "glider_mirror",
+          "offset": [
+            4,
+            0
+          ],
+          "phase": 0
+        }
+      ],
+      "products": [
+        {
+          "motif_id": "block",
+          "offset": [
+            1,
+            -1
+          ],
+          "phase": 0
+        },
+        {
+          "motif_id": "block",
+          "offset": [
+            4,
+            -1
+          ],
+          "phase": 0
+        }
+      ],
+      "product_cells": null,
+      "ports": [
+        {
+          "name": "in0",
+          "offset": [
+            0,
+            0
+          ],
+          "direction": [
+            1,
+            -1
+          ],
+          "phase": 0
+        },
+        {
+          "name": "in1",
+          "offset": [
+            4,
+            0
+          ],
+          "direction": [
+            -1,
+            -1
+          ],
+          "phase": 0
+        }
+      ],
+      "temporal_offset": 0,
+      "stabilization_time": 5,
+      "occupied_region": [
+        0,
+        -1,
+        7,
+        4
+      ],
+      "clearance": [
+        [
+          0,
+          -6,
+          2,
+          2
+        ]
+      ],
+      "nature": "consumable",
+      "spatial_transform": null,
+      "preconditions": [
+        "cellules des reactifs placees telles que declarees"
+      ],
+      "effects": [
+        "two_blocks"
+      ],
+      "provenance": {
+        "source": "mesure firsthand par le moteur Life du depot",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-11",
+        "note": "stabilise a t=5 ; region occupee mesuree"
+      }
+    },
+    {
+      "id": "block_catalyses_glider",
+      "reactants": [
+        {
+          "motif_id": "glider",
+          "offset": [
+            0,
+            0
+          ],
+          "phase": 3
+        },
+        {
+          "motif_id": "block",
+          "offset": [
+            4,
+            2
+          ],
+          "phase": 0
+        }
+      ],
+      "products": [
+        {
+          "motif_id": "block",
+          "offset": [
+            2,
+            3
+          ],
+          "phase": 0
+        }
+      ],
+      "product_cells": null,
+      "ports": [
+        {
+          "name": "in0",
+          "offset": [
+            0,
+            0
+          ],
+          "direction": [
+            1,
+            -1
+          ],
+          "phase": 3
+        },
+        {
+          "name": "in1",
+          "offset": [
+            4,
+            2
+          ],
+          "direction": [
+            -1,
+            0
+          ],
+          "phase": 0
+        }
+      ],
+      "temporal_offset": 0,
+      "stabilization_time": 8,
+      "occupied_region": [
+        0,
+        -1,
+        6,
+        6
+      ],
+      "clearance": [
+        [
+          -3,
+          -1,
+          3,
+          6
+        ]
+      ],
+      "nature": "catalytic",
+      "spatial_transform": null,
+      "preconditions": [
+        "reactif glider atteignant son placement declare par derivee pure le long de (1,-1)"
+      ],
+      "effects": [
+        "catalytic"
+      ],
+      "provenance": {
+        "source": "mesure firsthand par le moteur Life du depot",
+        "license": "domaine public (objet mathematique du jeu de la vie)",
+        "retrieved": "2026-09-12",
+        "note": "re-mesuree tranche 3 : depart au dernier etat pur de l approche naturelle (glider phase 3, block (4,2)) ; le placement tranche 1-2 (phase 0, block (3,0)) demarrait au milieu de l interaction, inatteignable par derivee pure"
+      }
+    }
+  ]
+}

@@ -574,6 +574,37 @@ pour le fallback Playwright + execution **via QC Cloud** (`mcp__qc-mcp-lite__*`)
 `fix_catalog_drift.py` : regeneration du catalogue (`COURSE_CATALOG.generated.json`,
 marqueurs `<!-- CATALOG-STATUS:START -->...:END -->`).
 
+**Regle d'exclusion du scan** (#15606) : le generateur n'indexe PAS tout
+l'arbre — l'ecart arbre/catalogue est structurel et deliberé. Le scan itere
+les repertoires de serie sous `MyIA.AI.Notebooks/` puis ecarte chaque notebook
+sous le PREMIER motif applicable, dans cet ordre de précédence :
+
+1. `git_non_tracke` — fichier non suivi par git (quand `--git-tracked-only`,
+   le mode du cron) ;
+2. `suffixe_executed` — stem finissant par `_executed` ;
+3. `segment_exclu:<segment>` — un segment du chemin est dans `EXCLUDE_ALWAYS`
+   (`.ipynb_checkpoints`, `obj`, `bin`, `__pycache__`, `.git`) ;
+4. `pedagogical:<motif>` — le chemin relatif a la serie CONTIENT un substring
+   de `EXCLUDE_PEDAGOGICAL` (`research`, `archive`, `_archive`, `_archives`,
+   `_output`, `output`, `partner-course`, `examples`) ;
+5. `serie_exclue:<nom>` — serie entiere dans `EXCLUDE_ALWAYS` ou cachée (dot).
+6. `racine_non_parcourue` — un `.ipynb` pose directement a la racine de
+   `MyIA.AI.Notebooks/` n'est jamais visite (le scan itere les series, pas
+   les fichiers racine ; `GradeBook.ipynb` est l'instance vivante) ;
+7. `json_illisible` — notebook que `analyze_notebook` ne peut pas parser.
+
+Le generateur EMET ce compte a chaque run (`excluded N <motif>` par ligne,
+visible dans les logs de `catalog-cron.yml`) : la reconciliation
+`arbre = indexes + exclus par motif` se fait par construction, sans document
+humain a maintenir. Toute alarme « catalogue incomplet » doit d'abord
+confronter ce compte — un notebook absent du catalogue ET d'aucun motif est
+seulement alors un vrai oubli. Mesure de reference (2026-09-11, origin/main,
+attribution deterministic par tri des motifs) : 1254 ipynb trackes =
+1136 indexes + 117 `pedagogical:*` (98 research, 8 _archive, 6 examples,
+3 partner-course, 2 output) + 1 racine_non_parcourue. Le catalogue commis
+(1130) est en retard de 6 sur ce compte (notebooks du jour non encore
+ingeres par le cron de 16:00 — rattrapes au tick suivant).
+
 **Regle HARD catalog-pr-hygiene R1** : JAMAIS regenerer le catalogue sur
 une branche feature (propriete de l'automatisation). Qui regenere alors :
 
