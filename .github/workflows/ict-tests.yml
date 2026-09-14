@@ -12,12 +12,12 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 763 items.
+#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 775 items.
 #     57 != 1148 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1148/763), le label garde les strates (57/44).
-#     Les strates 57 (tests/, +1 test_regards) et 44 (ict/tests/, +1
-#     test_lens_gates) sont celles de cette branche ; le "55/42" des lignes
+#     floor garde la collection (1148/775), le label garde les strates (57/45).
+#     Les strates 57 (tests/, +1 test_regards) et 45 (ict/tests/, +1
+#     test_intervention_battery) sont celles de cette branche ; le "55/42" des lignes
 #     ci-dessus est la prose d'origine heritee -- le label du matrix fait foi.
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
@@ -182,15 +182,18 @@ jobs:
           # abaisse le cliquet au lieu de le monter -- et le garde
           # directionnel ne le verrait pas (collected > floor n'emet qu'un
           # ::warning non bloquant).
-          # Floor 752 -> 763 (cette PR) : +11 items lens_gates #15660, mesures
-          # sur l'arbre REBASE sur origin/main COURANT. 752 + 11 = 763 ferme
-          # l'arithmetique (47 fichiers test_*.py cote branche, 46 cote main ;
-          # py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4,
-          # SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (44 package)"
+          # Floor 763 -> 775 (rebase du 2026-09-14, cette PR batterie
+          # d'intervention #15480/#15799) : +12 items test_intervention_battery,
+          # mesures sur l'arbre REBASE sur origin/main@1ce6d47b (main porte des
+          # lors les tranches 1/2a/2b : bench_factorise/sae_dictionary/lens_gates,
+          # livrees par #15657/#15665/#15660 -- d'ou les floors 1148/763 de la
+          # base). Deux collectes consecutives identiques : 775 (48 fichiers
+          # test_*.py cote branche, 47 cote main ; py3.9.25 + numpy 1.26.4 +
+          # scipy 1.13.1 + matplotlib 3.9.4, SANS torch -- la forme de l'env CI).
+          - suite-name: "ict/tests/ (45 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 763
+            test-floor: 775
 
     steps:
       - uses: actions/checkout@v4
