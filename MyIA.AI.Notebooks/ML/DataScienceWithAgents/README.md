@@ -92,6 +92,7 @@ DataScienceWithAgents/
 │   ├── 2.5c-Equite-Sous-Groupes.ipynb
 │   ├── 2.6-Clustering-KMeans-PCA.ipynb
 │   ├── 2.7-Modeles-Non-Parametriques.ipynb
+│   ├── 2.7b-SMO-From-Scratch.ipynb
 │   ├── 2.8-Theorie-PAC.ipynb
 │   ├── 2.8b-Theorie-PAC-Lean.ipynb
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
@@ -118,7 +119,11 @@ DataScienceWithAgents/
 ├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning
 │   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
 │   ├── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│   ├── 4.2b-Lean-GradientFlow-Vanishing.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
+│
+├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
+│   └── WS-00a-Ondelettes-1D-from-scratch.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -141,7 +146,7 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt-et-un notebooks (workflow, descente de gradient, régression linéaire/logistique complétée par le pont génératif Naive Bayes et la régression en grande dimension PCR/PLS/Ridge, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC et ses trois compagnons formel/concentration/Perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — optimisation d'hyperparamètres, régularisation sparse LASSO/ElasticNet, classes déséquilibrées, et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt-deux notebooks (workflow, descente de gradient, régression linéaire/logistique complétée par le pont génératif Naive Bayes et la régression en grande dimension PCR/PLS/Ridge, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN puis l'accrétion 2.7b qui ouvre le solveur (SMO de Platt) et chiffre son écart à l'optimum par le gap de dualité, théorie PAC/dimension VC et ses trois compagnons formel/concentration/Perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — optimisation d'hyperparamètres, régularisation sparse LASSO/ElasticNet, classes déséquilibrées, et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -157,6 +162,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.5c-Equite-Sous-Groupes](02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | équité par sous-groupe : parité démographique, equalized odds, post-traitement par seuils (Hardt) | **L'accuracy globale ne suffit pas** : 96,4 % global coexiste avec des écarts de groupe [0,92–1,00] |
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
 | [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
+| [2.7b-SMO-From-Scratch](02-ML-Cours/2.7b-SMO-From-Scratch.ipynb) | *Accrétion de 2.7* — SMO (Platt) écrit à la main : sous-problème 2D (dont la branche dégénérée `η ≤ 0`), cascade de working set, KKT et gap de dualité | **Le solveur écrit à la main retrouve sklearn** : même biais à 4·10⁻⁴ près, gap de dualité ≈ 3·10⁻³, pire violation KKT ponctuelle ≈ 10⁻³ |
 | [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
 | [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
 | [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
@@ -199,6 +205,16 @@ Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 | [4.3-TransferLearning-ResNet](04-Vision/4.3-TransferLearning-ResNet.ipynb) | ResNet18 pré-entraîné ImageNet, tête greffée (5 130 params entraînables sur 11,18 M), gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes, 3 graines appariées + test de permutation des signes) | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : gelé ~89 % ; fine-tuné +6,2 pts appariés, mais seulement à taux différencié décroissant (à taux constants, l'optimiseur finit sous le gelé) |
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
+
+## Ondelettes et scattering (04b-Wavelet-Scattering)
+
+Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle.
+
+| Notebook | Sujet | Concept-phare |
+|----------|-------|---------------|
+| [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+
+Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 

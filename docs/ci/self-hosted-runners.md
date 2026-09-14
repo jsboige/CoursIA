@@ -321,6 +321,41 @@ Mesure au déploiement (2026-09-07T00:39Z) : **`online=12`**, 12 conteneurs `Up`
 
 **Recette de réplication** (un autre worker) : installer docker-ce dans la distro + drop-in socket → poser le wrapper et l'unité (`persist/coursia-runner-start.sh`, `persist/coursia-runner.service`, en adaptant `NAME_PREFIX` et N) → `systemctl enable --now coursia-runner` → créer la tâche logon qui appelle `persist/launch-runner.sh` (elle appelle le holder local) → valider par le protocole de mesure ci-dessus (tuer la distro, déclencher la tâche, **attendre 3+ min sans aucun appel wsl**, puis lister). L'installation d'un mécanisme permanent d'enregistrement reste un geste explicite (coordinateur ou user), jamais silencieux.
 
+### Cache d'archives d'actions — le rouge « Set up job » n'était pas un défaut du dépôt (#14853)
+
+Un job qui meurt sur `Set up job` **avant le moindre checkout** porte un rouge requis que rien dans le dépôt n'explique — et qu'aucune PR ne peut réparer. La cause est en amont du dépôt : codeload sert les archives d'actions à un débit qui oscille (mesure #14853 du 2026-09-06 : **1 936 à 39 530 o/s**). Sous ~16 Ko/s, l'archive de `actions/setup-python` (**1 569 541 octets**, mesurés) demande plus de 100 s, le runner abandonne ses trois tentatives, et le job échoue sur `Set up job`.
+
+Ces archives sont par construction **identiques à chaque run**. Le runner sait les lire depuis un répertoire de cache : l'image les embarque donc une fois, au build, au lieu de les re-télécharger à chaque job.
+
+**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (celui du `RUNNER_VERSION`) et sur `main` :
+
+```
+$ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
+```
+
+Deux pièges font échouer un cache écrit « au feeling » :
+
+- le `/` de `owner/repo` devient `_`, et le nom s'arrête au **dépôt** : `github/codeql-action/init@v4` et `.../analyze@v4` sont deux entrées `uses:` mais **une seule** archive, sous `github_codeql-action/` ;
+- la clé est le **SHA résolu**, jamais le tag : `actions/setup-python@v5` ne se cache pas sous `v5.tar.gz`.
+
+`scripts/ci/docker/linux-runner/seed_action_cache.py` résout donc tag → SHA **au build**, avec le même mécanisme que le runner (`git ls-remote`, deref `^{}` des tags annotés), pour que la clé écrite au build soit exactement celle que le runner cherchera au run. Il échoue si une seule action manque : un cache partiel serait un fix qui a l'air fait et ne l'est pas (`--allow-partial` existe pour l'assumer explicitement).
+
+**Preuve mesurée** (build local du 2026-09-13, `docker run --rm --entrypoint sh` sur l'image construite) : 11 dépôts, 13 actions, toutes en `runner:runner`, et notamment
+
+```
+/opt/actions-cache/actions_setup-python/a26af69be951a213d495a4c3e4e4022e16d87065.tar.gz   1 569 541 o
+```
+
+— soit **le SHA même** présent dans le log d'échec de #14853, à la taille qu'il y mesurait : la clé écrite au build est bien celle que le runner recompute au run. L'image lean (`Dockerfile.lean`, `FROM coursia-linux-runner`) hérite du répertoire et des deux `ENV` par héritage de couche — aucun doublon.
+
+**A4 de #14853 nomme une variable qui n'existe pas.** `ACTIONS_RUNNER_HTTP_TIMEOUT` n'est déclarée nulle part (`Constants.cs` du runner au pin `v2.337.0` ne porte que `ACTION_ARCHIVE_CACHE` et `SYMLINK_CACHED_ACTIONS`). Le levier réel est **`GITHUB_ACTIONS_RUNNER_HTTP_TIMEOUT`** (`Runner.Sdk/Util/VssUtil.cs`, deux sites), exprimé en **secondes**, clampé à **[100, 1200]**, valeur par défaut 100 — c'est cette valeur-là qu'il faut battre. Posé à 420 s, il sert de filet pour les actions **hors** cache : 1,5 Mo passe encore à ~3,7 Ko/s.
+
+**Le garde** — `scripts/tests/test_action_cache_seed_guard.py` — rejoue la mesure sur `.github/workflows/*.yml` et compare l'ensemble obtenu à la liste `ACTIONS` du script. Sans lui, le trou est silencieux : un workflow ajoute `uses: actions/foo@v1`, personne ne touche la liste, et ce job continue de télécharger à la volée. Le scanner se valide par ses **faux négatifs** autant que par ses hits — deux pièges sont épinglés par un test chacun : la **négation du mot** (`# uses: actions/checkout@v4` commenté n'est pas une action) et les **deux formes YAML d'une étape** (`uses:` aligné sous un `name:` — 224 occurrences dans le corpus — et la forme en ligne de liste `- uses:` — 133 occurrences) : un motif qui n'en couvre qu'une laisse toute action écrite dans l'autre hors du cache sans que rien ne rougisse.
+
+**Ce que cette tranche ne fait pas** : `ACTIONS_RUNNER_SYMLINK_CACHED_ACTIONS` (forme « dossier déployé » du même cache) n'est **pas** activée — elle exige d'extraire chaque archive selon une disposition stricte, et le runner retombe silencieusement sur le téléchargement en cas d'écart. C'est un second levier, pas A1 ; l'archive est la forme que A1 demande.
+
+**Résiduel honnête** : A2/A3 (contrôles positif et négatif sur un **log de job** réel) ne sont pas satisfaits par cette tranche. Ils exigent une image **reconstruite et redéployée**, puis un job réel : la preuve qu'on peut apporter sans déploiement s'arrête au contenu de l'image, et c'est ce qui est mesuré ci-dessus.
+
 ## Tranches suivantes, activation partielle
 
 La préparation complète reste découpée :
