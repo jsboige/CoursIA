@@ -40,16 +40,21 @@ organes deja en place rejouent precisement ce cas de figure, sans qu'aucun ne
 soit a ecrire :
 
   * `pr-gate-rerun.yml` -- `workflow_run` sur la fin d'un garde ;
-  * `pr-gate-stale-sweep.yml` -- balayage horaire (`cron: '7 * * * *'`) qui
+  * `pr-gate-stale-sweep.yml` -- balayage qui repasse a chaque poussee sur
+    `main` et au minimum une fois par heure (`cron: '7 * * * *'`) ; il
     selectionne exactement « une jambe `PR gate` rouge alors que tout le reste
     est vert », c'est-a-dire l'etat qu'une PR en attente de plancher presente,
     et **re-lance le run d'origine** (un POST d'un check-run homonyme atterrit
     dans une suite etrangere et GitHub ANDe les deux -- mesure #11519).
 
 Consequence a assumer et a dire : le plancher est un PLANCHER, pas une
-horloge. Une PR devient mergeable au premier balayage horaire suivant
-l'ecoulement des 2 h -- donc entre 2 h 00 et 3 h 00 apres son dernier commit,
-pas a 2 h 00 pile.
+horloge. Une PR devient mergeable au premier balayage suivant l'ecoulement
+des 2 h. Ce balayage est surtout porte par les pousses sur main -- 58 des 60
+derniers declenchements au 2026-09-14, mediane de levee ~8 min apres le
+plancher ; le cron horaire n'est que le plancher de cadence, pire cas mesure
+~1 h 40 dans un creux sans poussee (#16092). L'horodatage publie dans le
+message est donc le PLANCHER, pas l'heure de levee : « leve au premier
+balayage suivant 13:55 » se lit « apres 13:55 », pas « a 13:55 ».
 
 La date lue est celle du COMMITTER, pas de l'auteur
 ---------------------------------------------------
@@ -149,7 +154,8 @@ def evaluate(
     return False, remaining, (
         "tete du {}, {:.0f} min -- plancher {:.0f} min, reste {:.0f} min, "
         "leve au premier balayage suivant {}. "
-        "Le balayage horaire (pr-gate-stale-sweep.yml, cron '7 * * * *') "
+        "Le balayage (pr-gate-stale-sweep.yml) repasse a chaque poussee sur "
+        "main et au minimum une fois par heure (cron '7 * * * *') ; il "
         "re-agrege cette jambe des que le plancher est ecoule ; aucun geste "
         "manuel n'est requis. Urgence (main rouge) : poser le label `{}` sur "
         "la PR.".format(stamp, age_min, dwell_min, remaining, lift, WAIVER_LABEL)

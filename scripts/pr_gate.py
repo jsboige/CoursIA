@@ -1429,7 +1429,8 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
             "",
             "Plancher mecanique -- rien a reparer dans la PR. Ne pas "
             "re-pusher (un re-push remet le plancher a zero depuis la "
-            "nouvelle tete) ; le balayage horaire leve seul.",
+            "nouvelle tete) ; le balayage leve seul (poussees sur main, "
+            "minimum horaire).",
         ]
     if advisory:
         lines += ["", "Advisory (not blocking):"]
@@ -1577,8 +1578,8 @@ def main(argv: Iterable[str] | None = None) -> int:
             "merge (mandat user 2026-09-07 : 120). 0 = desactive. Evalue "
             "APRES que les constituants ont conclu verts, hors de la boucle "
             "d'attente : aucun runner n'est tenu a dormir. Le rouge se leve "
-            "seul au balayage horaire de pr-gate-stale-sweep.yml. Voir "
-            "scripts/ci/merge_dwell.py."
+            "seul au balayage de pr-gate-stale-sweep.yml (poussees sur "
+            "main, minimum horaire). Voir scripts/ci/merge_dwell.py."
         ),
     )
     parser.add_argument(
