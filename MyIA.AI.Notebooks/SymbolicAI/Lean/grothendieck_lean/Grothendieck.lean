@@ -70,11 +70,11 @@ import Grothendieck.Sheafification
 import Grothendieck.SheafTopologySpectrum
 import Grothendieck.SheafTopologySpectrum_en
 import Grothendieck.SieveGenerate
+import Grothendieck.SieveLattice
+import Grothendieck.SieveOps
 import Grothendieck.Spaces
 import Grothendieck.SpacesMathlib
 import Grothendieck.SpacesSubcanonical
-import Grothendieck.SieveLattice
-import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
