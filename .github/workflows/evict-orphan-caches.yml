@@ -1,0 +1,82 @@
+name: Evict orphan Actions caches
+
+# Sweep weekly des caches `codeql-overlay-base-database-…` dont le SHA
+# n'est plus ancetre de main, OU dont le last_accessed est anterieur a
+# 7 jours. Cf. issue #16088 -- le SHA-keying structurel de CodeQL default
+# setup rend cross-run hit impossible ; l'eviction periodique libere le
+# quota pour les caches reutilisables (lean, setup-python, etc.).
+#
+# Le script (scripts/ci/evict_orphan_caches.py) est dry-run par defaut ;
+# ce workflow passe --apply apres le dry-run (mode JSON parse) pour
+# confirmer qu'il y a effectivement du evictable avant DELETE. Le garde
+# est dans le script : si 0 evictable, exit 1 et on n'applique rien.
+#
+# Concurrence : si une analyse CodeQL est en cours au moment du sweep,
+# la cle de cache peut etre creee juste apres notre check et survive
+# jusqu'au prochain sweep -- aucun risque de supprimer un cache vivant,
+# le pattern SHA + runid + version-1 garantit qu'on n'attrape qu'un
+# etat committe et termine.
+#
+# Defaut : tous les lundis 03:00 UTC (apres la nuit europeenne, avant
+# l'activite US). Ajustable via workflow_dispatch.
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      max_age_hours:
+        description: "Evict caches whose last_accessed_at is older than this many hours."
+        required: false
+        default: "168"
+        type: string
+
+permissions:
+  contents: read
+  actions: write   # requis pour DELETE /repos/:o/:r/actions/caches/:id
+
+concurrency:
+  group: evict-orphan-caches
+  cancel-in-progress: false
+
+jobs:
+  evict:
+    name: Evict orphan CodeQL caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # git merge-base --is-ancestor a besoin du graphe
+
+      - name: Dry-run first (log to Actions UI, no delete)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/ci/evict_orphan_caches.py \
+            --max-age-hours "${{ inputs.max_age_hours || '168' }}" \
+            --json > /tmp/evict_dry.json
+          echo "DRY-RUN SUMMARY:"
+          cat /tmp/evict_dry.json
+
+      - name: Apply (DELETE) the listed evictable caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/ci/evict_orphan_caches.py \
+            --max-age-hours "${{ inputs.max_age_hours || '168' }}" \
+            --apply \
+            --json | tee /tmp/evict_apply.json
+          EVICTABLE=$(python -c "import json,sys; d=json.load(open('/tmp/evict_apply.json')); print(d['evictable'])")
+          if [ "$EVICTABLE" = "0" ]; then
+            echo "Aucun cache evictable : sweep termine sans DELETE."
+            exit 0
+          fi
+          echo "Supprime $EVICTABLE caches orphelins."
+
+      - name: Tests invariants (regex + classification)
+        run: |
+          python -m unittest tests.test_evict_orphan_caches -v
