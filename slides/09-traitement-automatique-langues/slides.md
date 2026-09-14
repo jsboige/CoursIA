@@ -120,6 +120,11 @@ mieux c'est). Un modèle triviale (uniforme) donne une perplexité ≈ taille du
 
 **Modèle bigramme** : P("the cat") = P("the") × P("cat" | "the").
 
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_05_img_403ca3e2.png" alt="Bande de formules de probabilité de n-gramme : P(c_i | c_{i−2:i−1})" style="width:100%; height:110px; object-fit:contain;">
+<img src="./images/slide_05_img_fd28e615.png" alt="Équations de décodage : recherche du n-gramme qui maximise P(c_i | c_{i−2:i−1})" style="width:100%; height:110px; object-fit:contain;">
+</div>
+
 ---
 
 # 6-7. Calculs et modèles mots
@@ -136,6 +141,11 @@ séquences absentes.
 **Exemples random** :
 - Unigramme : « logical are as are confusion a may right tries agent goal the was ... »
 - Bigramme : mieux, mais toujours agrammatical
+
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_06_img_30934f19.png" alt="Formule de la perplexité d'un modèle de langue pour la séquence c_{1:N}" style="width:100%; height:100px; object-fit:contain;">
+<img src="./images/slide_06_img_33419806.png" alt="Formule du lissage par interpolation linéaire des modèles unigramme, bigramme et trigramme (poids lambda)" style="width:100%; height:100px; object-fit:contain;">
+</div>
 
 ---
 layout: section
@@ -166,6 +176,8 @@ $$P(\text{spam} | \text{message}) \propto P(\text{message} | \text{spam}) P(\tex
 **Bag-of-words** : unigrammes avec comptage d'occurrences, longueur ~100 000,
 **pas d'ordre** conservé.
 
+<img src="./images/slide_08_img_052698a9.png" alt="Formule de décision bayésienne naïve : c = argmax_c P(message | c) · P(c)" style="display:block; margin:4px auto 0; max-height:150px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # 9-11. Recherche d'information (IR)
@@ -187,6 +199,15 @@ $$P(\text{spam} | \text{message}) \propto P(\text{message} | \text{spam}) P(\tex
 - **TF-IDF** : pondération classique par fréquence inverse documentaire
 - **PageRank** (Google, 1997) : surfer aléatoire + vote par in-links, récursif jusqu'à convergence
 
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_09_img_05183bd8.png" alt="Bande de 130 × 27 px, aucun texte lu par OCR à la résolution fournie" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_09_img_306ecf77.png" alt="Formule de la pondération IDF d'un terme de requête en recherche d'information" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_09_img_52bce069.png" alt="Bande de 486 × 90 px, aucun texte lu par OCR à la résolution fournie" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_09_img_650df41f.png" alt="Formule de la fonction de classement BM25" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_11_img_7c03b7e6.png" alt="Formules de précision et de rappel d'un moteur de recherche" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_11_img_a8595e2d.png" alt="Figure de 326 × 276 px, aucun texte lu par OCR à la résolution fournie" style="width:100%; height:70px; object-fit:contain;">
+</div>
+
 ---
 
 # 12-13. Extraction d'information (IE)
@@ -203,6 +224,14 @@ $$P(\text{spam} | \text{message}) \propto P(\text{message} | \text{spam}) P(\tex
 
 **Pattern Hearst** : « NP such as NP (, NP)* ((and|or) NP)? » extrait des
 hyperonymes (sous-catégories) depuis le web.
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_12_img_3b62caa7.png" alt="Chaîne de catégories grammaticales annotées (nom propre, article, adjectif) extraite d'un texte" style="width:100%; height:78px; object-fit:contain;">
+<img src="./images/slide_12_img_6330909f.png" alt="Formule d'un modèle de Markov caché (transitions et émissions) pour l'étiquetage de séquences" style="width:100%; height:78px; object-fit:contain;">
+<img src="./images/slide_12_img_63ac30a8.png" alt="Formule de la probabilité jointe d'une séquence d'étiquettes conditionnée par les observations" style="width:100%; height:78px; object-fit:contain;">
+</div>
+<img src="./images/slide_12_img_077838bf.png" alt="Table de motifs à préfixe, cible et suffixe (Prefix, Target, Postfix) remplissant les champs d'une annonce de séminaire (orateur, date, lieu)" style="display:block; margin:4px auto 0; max-height:78px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/slide_13_img_e0b7882c.png" alt="Table des motifs Hearst d'extraction d'hyperonymes (type, modèle, exemple, fréquence), de 38 % pour le motif verbal à 1 %" style="display:block; margin:4px auto 0; max-height:78px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -256,6 +285,8 @@ layout: default
 | **Hors contexte** (CFG) | Automate à pile | Syntaxe de la plupart des langages de programmation |
 | Régulier | DFA | Patterns, regex |
 
+<img src="./images/slide_17_img_ac26386a.png" alt="Bande de 351 × 73 px dont seul le mot Grammatica est lu par OCR" style="display:block; margin:4px auto 0; max-height:140px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # 18. Grammaires probabilistes
@@ -278,6 +309,13 @@ VP → V     [0.6]
 **Lexique** : listes de mots autorisés par catégorie (noms, verbes, adjectifs,
 mots fonctionnels). Classes ouvertes (mots ajoutés au fil du temps).
 
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_18_img_262ef8b0.png" alt="Bande de règles PCFG pondérées (VP vers verbe et syntagme nominal)" style="width:100%; height:60px; object-fit:contain;">
+<img src="./images/slide_18_img_7fb42adf.png" alt="Table des règles PCFG du monde du Wumpus et de leurs probabilités (NP VP 0,90 ; S Conj S 0,10 ; …)" style="width:100%; height:60px; object-fit:contain;">
+<img src="./images/slide_18_img_806f7e0f.png" alt="Tableau des probabilités syntaxiques et lexicales du Wumpus (NP vers VP, Article, Nom, Verbe)" style="width:100%; height:60px; object-fit:contain;">
+<img src="./images/slide_18_img_9b5e1bf2.png" alt="Lexique probabiliste du monde du Wumpus : catégories (Nom, Verbe, Adjectif, Pronom, Article) et probabilités de chaque mot" style="width:100%; height:60px; object-fit:contain;">
+</div>
+
 ---
 
 # 19. Analyse syntaxique — Parsing
@@ -297,6 +335,8 @@ vs.
 
 **Solution** : stocker les résultats intermédiaires → **Chart parsing**, **CYK**.
 
+<img src="./images/slide_19_img_fe5c88d1.png" alt="Pseudo-code de l'algorithme CYK d'analyse syntaxique probabiliste" style="display:block; margin:4px auto 0; max-height:130px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # 20-21. Apprentissage des PCFG
@@ -313,6 +353,14 @@ $$\hat{P}(\alpha \to \beta) = \frac{\text{count}(\alpha \to \beta)}{\text{count}
 - Lissage des règles peu fréquentes
 - **Grammaires augmentées** : lexicalisation, sous-catégorisation, head-to-head
 - **Definite Clause Grammar** (DCG) → logique du premier ordre (Prolog)
+
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_21_img_02221c4a.png" alt="Bande de 484 × 49 px, texte illisible à la résolution fournie" style="width:100%; height:66px; object-fit:contain;">
+<img src="./images/slide_21_img_505c3599.png" alt="Règle de réécriture avec contrainte d'accord : NP(n) vers Article(a) Adjs(j) Noun(n), Compatible(i, n)" style="width:100%; height:66px; object-fit:contain;">
+<img src="./images/slide_21_img_a1c48329.png" alt="Table de subdivision des catégories syntaxiques (syntagmes nominaux et verbaux, pronoms, noms) en sous-catégories" style="width:100%; height:66px; object-fit:contain;">
+<img src="./images/slide_21_img_c8fd66ea.png" alt="Règles lexicalisées et leurs probabilités de réécriture (VP, NP, Article, Nom)" style="width:100%; height:66px; object-fit:contain;">
+<img src="./images/slide_21_img_e92de5f3.png" alt="Règles de grammaire augmentée par traits de tête : S(head), NP(Sbj, pn, h), VP(pn, head), et leurs instances lexicales" style="width:100%; height:66px; object-fit:contain;">
+</div>
 
 ---
 layout: section
@@ -339,6 +387,13 @@ de ses parties.
 
 **Entraînement** : à partir d'exemples annotés (parallélisme syntaxe-sémantique).
 
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_22_img_0a59a88d.png" alt="Arbre syntaxique annoté d'une interprétation sémantique : S(pred(obj)), NP(obj), VP(pred), Loves(x, y)" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_22_img_5bfa3171.png" alt="Bande de 537 × 51 px, texte illisible à la résolution fournie" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_22_img_752cd77a.png" alt="Grammaire d'attachement sémantique des expressions arithmétiques : Exp, Operator, Nombre, Chiffre" style="width:100%; height:70px; object-fit:contain;">
+<img src="./images/slide_22_img_a95ab5ff.png" alt="Arbre sémantique d'une expression arithmétique, décomposé en Exp, Number et Digit" style="width:100%; height:70px; object-fit:contain;">
+</div>
+
 ---
 
 # 23. Complications
@@ -355,6 +410,11 @@ de ses parties.
 
 > « Who did the agent tell you to give the gold to? » → trace `_`licenciée par `who`
 
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_23_img_4bff67f5.png" alt="Bande de 476 × 49 px, texte illisible à la résolution fournie" style="width:100%; height:80px; object-fit:contain;">
+<img src="./images/slide_23_img_e60ebcf7.png" alt="Formule de forme quasi-logique : il existe i tel que Loves(John, Mary) et During(Now, Extent(Ei))" style="width:100%; height:80px; object-fit:contain;">
+</div>
+
 ---
 
 # 24. Fouille d'arguments
@@ -370,6 +430,8 @@ de ses parties.
 - Outils d'annotation : **OVA+**
 
 **Applications** : détection de sophismes, journalisme automatisé, aide à la décision.
+
+<img src="./images/slide_24_img_765dfaa8.png" alt="Graphe d'argumentation AIF sur la question « Should we invade Syria? » : supports et conflits entre affirmations" style="display:block; margin:4px auto 0; max-height:120px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 layout: section
@@ -398,6 +460,13 @@ layout: section
 - Juste des **exemples de traduction**
 - Maximise P(f) × P(e|f) (modèle cible × modèle de traduction)
 
+<img src="./images/slide_25_img_fd120b4e.png" alt="Niveaux de transfert en traduction (interlingua, sémantique, syntaxe, mots) illustrés par John loves Mary devenant Jean aime Marie" style="display:block; margin:4px auto 0; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_26_img_06684b0d.png" alt="Bande de 259 × 47 px, texte illisible à la résolution fournie" style="width:100%; height:64px; object-fit:contain;">
+<img src="./images/slide_26_img_8ad251a0.png" alt="Exemple de traduction alignée français-anglais (There is a smelly wumpus / Il y a un wumpus malodorant) avec les probabilités du modèle" style="width:100%; height:64px; object-fit:contain;">
+<img src="./images/slide_26_img_f78922be.png" alt="Formule du modèle de traduction statistique : f* = argmax P(f|e) = argmax P(e|f) · P(f)" style="width:100%; height:64px; object-fit:contain;">
+</div>
+
 ---
 
 # 27. Reconnaissance de la parole
@@ -418,6 +487,13 @@ layout: section
 
 **Modèle acoustique** : P(sound₁:ₜ | word₁:ₜ). **Modèle de langue** :
 P(word₁:ₜ) — vu en section I.
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_27_img_00db902b.png" alt="Signal acoustique analogique, échantillonné et quantifié, puis découpé en trames décrites par des traits" style="width:100%; height:58px; object-fit:contain;">
+<img src="./images/slide_27_img_0cc1bbb9.png" alt="Modèle de Markov caché d'un phone : états Onset, Mid et End avec probabilités de transition et de sortie" style="width:100%; height:58px; object-fit:contain;">
+<img src="./images/slide_27_img_59f517a6.png" alt="Formule de décodage de la parole : argmax P(mots | son) = argmax P(son | mots) · P(mots)" style="width:100%; height:58px; object-fit:contain;">
+<img src="./images/slide_27_img_68ee27c5.png" alt="Modèles de mots avec variation dialectale et coarticulation (transitions entre phones)" style="width:100%; height:58px; object-fit:contain;">
+</div>
 
 ---
 layout: section
@@ -448,6 +524,13 @@ LLM modernes.
 > post-2018 (BERT, GPT, T5, etc.), voir `GenAI/Texte/10*` et `GenAI/Texte/13*`
 > du dépôt.
 
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_28_img_2aa4b968.png" alt="Modèle sémantique convolutif latent (CLSM) : couche de n-grammes, couche de trigrammes de lettres, convolution, max-pooling et matrice sémantique" style="width:100%; height:56px; object-fit:contain;">
+<img src="./images/slide_28_img_461e72ef.png" alt="Exemples de documents retournés par le modèle CLSM (requête et titre du document le mieux classé)" style="width:100%; height:56px; object-fit:contain;">
+<img src="./images/slide_28_img_4b6f2b7a.png" alt="Traduction neuronale avec attention : encodeur et décodeur alignant les mots source et cible (hallo geht wie dir es / hello how are you)" style="width:100%; height:56px; object-fit:contain;">
+<img src="./images/slide_28_img_6219fefe.png" alt="Schéma many to many des architectures de traduction neuronale (117 × 199 px)" style="width:100%; height:56px; object-fit:contain;">
+</div>
+
 ---
 
 # 29. Agents conversationnels
@@ -466,6 +549,11 @@ LLM modernes.
 
 **Voir** : `GenAI/Plateformes-Conversationnelles/*` pour les notebooks modernes
 (open-webUI, Qwen, etc.).
+
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/slide_29_img_0094ef69.png" alt="Architecture Microsoft Bot Framework : code du bot, Bot Connector Service, canaux (Web Chat, Skype, Slack, Telegram) et Cognitive Services" style="width:100%; height:74px; object-fit:contain;">
+<img src="./images/slide_29_img_95c7e198.png" alt="Interface d'étiquetage d'intentions et d'entités : énoncé de réservation, intention Book Holiday(1), entité Colleague" style="width:100%; height:74px; object-fit:contain;">
+</div>
 
 ---
 layout: default
