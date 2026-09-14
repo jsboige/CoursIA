@@ -3272,16 +3272,26 @@ _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 
 
 def _cited_shas(body: str) -> set[str]:
-    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre.
+    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
+    MOINS un chiffre.
 
     Un token 100% numerique de 7+ chiffres (une date 20260830, un run-id)
     est hex-compatible mais n'est quasi jamais un SHA -- l'exiger lettree
     evite de partir resoudre une date cote serveur pour rien.
+
+    #16103 defaut 1 : un token 100% LETTRES de a-f est la meme classe de
+    bruit en francais -- « effacee », « effacees », « deface » satisfont
+    le motif hexa et se font lire comme des empreintes (levee d'ai-01 du
+    2026-09-14T02:45:56Z sur #16022 rendue « cite effacee ... absent des
+    commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
+    improbable ((6/16)^7 ~ 1e-3 au format court) ;
+    l'exiger chiffre supprime la classe entiere.
     """
     out: set[str] = set()
     for m in _SHA_CITED.finditer((body or "").lower()):
         tok = m.group(0)
-        if any(ch in "abcdef" for ch in tok):
+        if (any(ch in "abcdef" for ch in tok)
+                and any(ch.isdigit() for ch in tok)):
             out.add(tok)
     return out
 
@@ -4717,7 +4727,23 @@ def analyse_pr(pr: int) -> dict:
                    dismissed_improperly=improper_dismissals(pr))
 
 
+def _ensure_utf8_stdout() -> None:
+    """#16103 defaut 3 : le verdict ne doit jamais dependre de la page de
+    code de la console. Sous cp1252 (Windows), l'impression d'un commentaire
+    a relire portant un caractere hors page (`→` levait UnicodeEncodeError
+    dans _print_unevaluated) crashait APRES le verdict -- rc=1 faux rouge
+    pour tout consommateur scripte alors que l'analyse disait OK.
+    Idempotent ; silencieux sous un stdout non reconfigurable (buffers
+    de test).
+    """
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
+
+
 def gate(pr: int, as_json: bool) -> int:
+    _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
@@ -4752,6 +4778,7 @@ def gate(pr: int, as_json: bool) -> int:
 
 
 def audit(limit: int, search: str | None = None) -> int:
+    _ensure_utf8_stdout()
     cmd = ["pr", "list", "--repo", REPO, "--state", "merged",
            "--limit", str(limit), "--json", LIST_FIELDS]
     if search:
