@@ -72,12 +72,12 @@ import Grothendieck.SheafTopologySpectrum_en
 import Grothendieck.SieveGenerate
 import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
-import Grothendieck.Spaces
-import Grothendieck.SpacesMathlib
-import Grothendieck.SpacesSubcanonical
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
+import Grothendieck.Spaces
+import Grothendieck.SpacesMathlib
+import Grothendieck.SpacesSubcanonical
 import Grothendieck.StalkCharacterization
 import Grothendieck.StalkCharacterization_en
 import Grothendieck.StalkGluing
