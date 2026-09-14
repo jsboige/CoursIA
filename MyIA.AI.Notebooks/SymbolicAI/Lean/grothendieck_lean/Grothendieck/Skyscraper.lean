@@ -92,17 +92,24 @@ un objet terminal. C'est la notion que les deux isomorphismes de Mathlib
 permettent de calculer pour le gratte-ciel. -/
 def support (F : Presheaf C X) : Set X := {y | IsEmpty (IsTerminal (F.stalk y))}
 
-/-- Sur le support : si `y` est dans l'adhérence de `{p₀}`, la tige du
-gratte-ciel en `y` est `A`. Application directe de
-`skyscraperPresheafStalkOfSpecializes` sous son hypothèse exacte, traduite en
-adhérence. -/
+/-- Dans l'adhérence de `{p₀}` : si `y ∈ closure {p₀}`, la tige du gratte-ciel en
+`y` est `A`. Application directe de `skyscraperPresheafStalkOfSpecializes` sous
+son hypothèse exacte, traduite en adhérence.
+
+Cet énoncé ne suppose **pas** `IsEmpty (IsTerminal A)` : il porte sur l'adhérence,
+pas sur le support. Les deux notions ne coïncident que sous cette hypothèse
+(cf. `support_skyscraper`), c'est pourquoi la docstring ne dit pas « sur le
+support ». -/
 noncomputable def stalkIsoOfMemClosure (A : C) {y : X}
     (h : y ∈ closure ({p₀} : Set X)) : (skyscraper p₀ A).stalk y ≅ A :=
   skyscraperPresheafStalkOfSpecializes p₀ A (specializes_iff_mem_closure.mpr h)
 
-/-- Hors du support : si `y` n'est pas dans l'adhérence de `{p₀}`, la tige du
-gratte-ciel en `y` est un objet terminal. Application directe de
-`skyscraperPresheafStalkOfNotSpecializes`. -/
+/-- Hors de l'adhérence de `{p₀}` : si `y ∉ closure {p₀}`, la tige du gratte-ciel
+en `y` est un objet terminal. Application directe de
+`skyscraperPresheafStalkOfNotSpecializes`.
+
+Comme son symétrique, cet énoncé ne suppose pas `IsEmpty (IsTerminal A)` : sans
+elle, « hors de l'adhérence » n'est **pas** « hors du support ». -/
 noncomputable def stalkIsoOfNotMemClosure (A : C) {y : X}
     (h : y ∉ closure ({p₀} : Set X)) : (skyscraper p₀ A).stalk y ≅ terminal C :=
   skyscraperPresheafStalkOfNotSpecializes p₀ A
@@ -143,15 +150,22 @@ theorem support_skyscraper_of_closed (A : C) (hA : IsEmpty (IsTerminal A))
     support (skyscraper p₀ A) = {p₀} := by
   rw [support_skyscraper p₀ A hA, hcl.closure_eq]
 
-/-- **Dichotomie des tiges.** En tout point, la tige du gratte-ciel est soit
-`A` (sur le support), soit terminale (hors du support), et le point est
-localisé dans l'adhérence ou hors d'elle selon le cas. C'est la forme
-« en tout point » de ce que `support_skyscraper` énonce « en moyenne » sur
-l'ensemble des points. -/
-theorem stalk_dichotomy (A : C) (y : X) :
-    (y ∈ closure ({p₀} : Set X) ∧ Nonempty ((skyscraper p₀ A).stalk y ≅ A)) ∨
-      (y ∉ closure ({p₀} : Set X) ∧
+/-- **Dichotomie des tiges.** Sous `IsEmpty (IsTerminal A)` — l'hypothèse qui
+identifie le support à l'adhérence de `{p₀}` (cf. `support_skyscraper`) — la tige
+du gratte-ciel est en tout point `y` soit `A`, soit terminale, et le point est
+localisé dans le **support** ou hors de lui selon le cas. C'est la forme « en
+tout point » de ce que `support_skyscraper` énonce sur l'ensemble des points : le
+support n'y est pas seulement décrit, il est décidé point par point.
+
+L'hypothèse `hA` est indispensable à cet énoncé, et pas seulement à sa preuve :
+sans elle, `y ∈ closure {p₀}` ne dit rien du support, comme le montre le
+contre-exemple de `support_skyscraper` (valeur terminale : toutes les tiges
+terminales, support vide, adhérence non vide). -/
+theorem stalk_dichotomy (A : C) (hA : IsEmpty (IsTerminal A)) (y : X) :
+    (y ∈ support (skyscraper p₀ A) ∧ Nonempty ((skyscraper p₀ A).stalk y ≅ A)) ∨
+      (y ∉ support (skyscraper p₀ A) ∧
         Nonempty ((skyscraper p₀ A).stalk y ≅ terminal C)) := by
+  rw [support_skyscraper p₀ A hA]
   by_cases h : y ∈ closure ({p₀} : Set X)
   · exact Or.inl ⟨h, ⟨stalkIsoOfMemClosure p₀ A h⟩⟩
   · exact Or.inr ⟨h, ⟨stalkIsoOfNotMemClosure p₀ A h⟩⟩

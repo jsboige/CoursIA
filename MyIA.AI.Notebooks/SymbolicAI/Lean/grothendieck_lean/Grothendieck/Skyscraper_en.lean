@@ -92,17 +92,26 @@ terminal object. This is the notion that Mathlib's two isomorphisms allow one to
 compute for the skyscraper. -/
 def support (F : Presheaf C X) : Set X := {y | IsEmpty (IsTerminal (F.stalk y))}
 
-/-- On the support: if `y` lies in the closure of `{p₀}`, the stalk of the
+/-- Inside the closure of `{p₀}`: if `y ∈ closure {p₀}`, the stalk of the
 skyscraper at `y` is `A`. Direct application of
 `skyscraperPresheafStalkOfSpecializes` under its exact hypothesis, translated
-into closure. -/
+into closure.
+
+This statement does **not** assume `IsEmpty (IsTerminal A)`: it bears on the
+closure, not on the support. The two notions coincide only under that
+hypothesis (cf. `support_skyscraper`), which is why the docstring does not say
+"on the support". -/
 noncomputable def stalkIsoOfMemClosure (A : C) {y : X}
     (h : y ∈ closure ({p₀} : Set X)) : (skyscraper p₀ A).stalk y ≅ A :=
   skyscraperPresheafStalkOfSpecializes p₀ A (specializes_iff_mem_closure.mpr h)
 
-/-- Off the support: if `y` does not lie in the closure of `{p₀}`, the stalk of
-the skyscraper at `y` is a terminal object. Direct application of
-`skyscraperPresheafStalkOfNotSpecializes`. -/
+/-- Outside the closure of `{p₀}`: if `y ∉ closure {p₀}`, the stalk of the
+skyscraper at `y` is a terminal object. Direct application of
+`skyscraperPresheafStalkOfNotSpecializes`.
+
+Like its counterpart, this statement does not assume
+`IsEmpty (IsTerminal A)`: without it, "outside the closure" is **not** "off the
+support". -/
 noncomputable def stalkIsoOfNotMemClosure (A : C) {y : X}
     (h : y ∉ closure ({p₀} : Set X)) : (skyscraper p₀ A).stalk y ≅ terminal C :=
   skyscraperPresheafStalkOfNotSpecializes p₀ A
@@ -143,15 +152,23 @@ theorem support_skyscraper_of_closed (A : C) (hA : IsEmpty (IsTerminal A))
     support (skyscraper p₀ A) = {p₀} := by
   rw [support_skyscraper p₀ A hA, hcl.closure_eq]
 
-/-- **Dichotomy of stalks.** At every point, the stalk of the skyscraper is
-either `A` (on the support) or terminal (off the support), and the point is
-located inside the closure or outside it accordingly. This is the "at every
-point" form of what `support_skyscraper` states "on average" over the set of
-points. -/
-theorem stalk_dichotomy (A : C) (y : X) :
-    (y ∈ closure ({p₀} : Set X) ∧ Nonempty ((skyscraper p₀ A).stalk y ≅ A)) ∨
-      (y ∉ closure ({p₀} : Set X) ∧
+/-- **Dichotomy of stalks.** Under `IsEmpty (IsTerminal A)` — the hypothesis
+that identifies the support with the closure of `{p₀}` (cf.
+`support_skyscraper`) — the stalk of the skyscraper at every point `y` is either
+`A` or terminal, and the point is located in the **support** or outside it
+accordingly. This is the "at every point" form of what `support_skyscraper`
+states over the set of points: the support is not merely described there, it is
+decided point by point.
+
+The hypothesis `hA` is indispensable to this statement, and not only to its
+proof: without it, `y ∈ closure {p₀}` says nothing about the support, as the
+counterexample of `support_skyscraper` shows (terminal value: all stalks
+terminal, empty support, non-empty closure). -/
+theorem stalk_dichotomy (A : C) (hA : IsEmpty (IsTerminal A)) (y : X) :
+    (y ∈ support (skyscraper p₀ A) ∧ Nonempty ((skyscraper p₀ A).stalk y ≅ A)) ∨
+      (y ∉ support (skyscraper p₀ A) ∧
         Nonempty ((skyscraper p₀ A).stalk y ≅ terminal C)) := by
+  rw [support_skyscraper p₀ A hA]
   by_cases h : y ∈ closure ({p₀} : Set X)
   · exact Or.inl ⟨h, ⟨stalkIsoOfMemClosure p₀ A h⟩⟩
   · exact Or.inr ⟨h, ⟨stalkIsoOfNotMemClosure p₀ A h⟩⟩
