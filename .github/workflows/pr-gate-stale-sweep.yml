@@ -148,10 +148,32 @@ permissions:
   issues: write        # ... and remediation comments via `gh pr comment`
 
 concurrency:
-  # One sweep at a time, and never cancel a running one: a sweep that is killed
-  # mid-loop leaves the PRs it had not reached still blocked, which is the
-  # exact failure mode this file exists to remove.
-  group: pr-gate-stale-sweep
+  # One sweep PER EVENT CLASS at a time, and never cancel a running one: a
+  # sweep that is killed mid-loop leaves the PRs it had not reached still
+  # blocked, which is the exact failure mode this file exists to remove.
+  #
+  # Split by event class (#15197, measured 2026-09-14 over the last 300 runs:
+  # 160 push / 81 schedule / 59 workflow_dispatch): a single shared group
+  # holds exactly ONE pending slot, and any newer arrival in the group
+  # supersedes it. For push runs that supersession is the designed
+  # burst-coalescing (73/160 cancelled = one sweep per merge burst, kept).
+  # For the other two legs it is pure loss:
+  #   - workflow_dispatch is a deliberate, latency-critical sweep (the
+  #     per-PR unblock path of #15197's remedy (i)); 2 of its 59 runs lost
+  #     their slot to later arrivals in the window -- a merge burst (or a
+  #     double dispatch) must never eat the one leg a human asked for.
+  #   - schedule runs are scarce before they even reach this group: GitHub
+  #     creates ~30% of the hourly tics (100 runs over ~334 tics,
+  #     2026-08-31 -> 2026-09-14, the angle scripts/ci/
+  #     pr_gate_stale_sweep_tir.py measures), and 95 of those 100 created
+  #     runs completed -- the loss channel YAML controls is this slot.
+  # Classes that do not share a group cannot supersede each other.
+  #
+  # Cost accepted: up to three concurrent sweeps (one per class), 230-293 s
+  # each on the dedicated pool; overlapping sweeps can duplicate remediation
+  # comments on the same PR, capped by MAX_POSTS per sweep and bounded by the
+  # collision window (schedule ticks once an hour, dispatch is rare).
+  group: pr-gate-stale-sweep-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
