@@ -26,35 +26,41 @@ name: Lean Knot CI
 # (-- line + nested /- -/ block) then count word-bounded `\bsorry\b`. This mirrors
 # the prover harness `count_real_sorries` (FX-6 #1453) — counts exactly
 # compiled-tactic sorries, immune to docstring edits.
-# Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
-#   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
-#   - Invariant.lean:           3 (tricolorable_invariant residual fox/col tactics
-#                                  DISCHARGED by #11211 [sorry 5->3] — the all-distinct
-#                                  kink mode is VACUOUS: the R1 kink C = ⟨a,b,c,c⟩ has
-#                                  e3 = e4 = c, the Path B over-strand continuity
-#                                  c2 = c4 forces col₂(b) = col₂(c) = c3, contradicting
-#                                  the Fox all-distinct requirement c2 ≠ c3 — hence
-#                                  `exact absurd _hCarc _hdist.2.1` closes both residuals;
-#                                  trefoil_not_unknot DISCHARGED by #8766 [5->4];
-#                                  tricolorable_forward_r1 wrapper front added by #9966
-#                                  [4->5] — characterized ∀c∈d₂.crossings wall,
-#                                  2/3 sub-cases PROVEN (newKink c.987, unchanged c.988),
-#                                  ai-01 multi-cycle acceptance; the Fox linearity bridge
-#                                  + num are PROVEN — see Invariant.lean docstring for
-#                                  the resolved/open split)
+# Real-mode breakdown (firsthand counted 2026-09-12 at head 852813291 with the exact
+# CI instrument `scripts/lean/count_code_sorry.py --json --lake
+# MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean`, champ `distinct_code_sorry`):
+#   - Conway.lean:              6 (4 tactic sorry de bornes + 2 def stubs
+#                                  `IsSmoothlySlice := sorry` l.1147 et
+#                                  `IsTopologicallySlice := sorry` l.1155 — ces
+#                                  deux derniers sont des *def stubs* dont le
+#                                  `sorry` fait partie du corps de la
+#                                  définition (`Prop := sorry`), pas des sorries
+#                                  tactic ; `count_code_sorry.py` les ignore
+#                                  par construction — d'où l'écart −2 vs le
+#                                  bloc per-file antérieur qui les comptait à
+#                                  tort comme sorries tactic)
+#   - Invariant.lean:           0 (post-#15082 `Knot.unknottingNumber` DISCHARGÉ
+#                                  via `Nat.sInf` de `{n | k.UnknottableIn n}` —
+#                                  témoin `unknot_unknottingNumber = 0` prouvé ;
+#                                  cf README §Phase 5 / #14992. Les 3 sorries
+#                                  résiduels `tricolorable_invariant` étaient
+#                                  déjà DISCHARGÉS par #11211/#11227 [5->3]
+#                                  + #8766 [3->2] + fox/col [2->0] avant #15082.
+#                                  Mesure firsthand 2026-09-12 : `grep -nE
+#                                  "^\s*sorry\b" Knots/Invariant.lean` rend 0 ligne)
 #   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 11 (aligné avec `LEAN_INVENTORY.md` post-#13312,
-# mesure 2026-08-28 `count_code_sorry.py` champ `distinct_code_sorry` ; lowered
-# from 14 par la mesure instrument post-#11227 — le décompte « 14 » dans les
-# commentaires/README comptait 2 sorry dans `Invariant.lean` qui n'en portent
-# qu'1 une fois stripé des commentaires, et sur-comptait Conway ; historique :
-# 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
-# (#11211/#11227 fox/col) → **11** (mesure 2026-08-28, `count_code_sorry.py`).
-# Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 11² » et avec `knot_lean/README.md` table des sorries — cf. #13312).
+# Total real tactic sorry = 10 (aligné avec `LEAN_INVENTORY.md` ligne 27
+# « `knot_lean | 10² » post-#15082, mesure 2026-09-11 ; cohérent avec
+# `knot_lean/README.md` ligne 13 « **10 réels** ». La baseline CI
+# `sorry-baseline: "10"` est inchangée — seule la **distribution per-file**
+# est corrigée. Historique : 16 (après #8766) → 17 (#9966 wall fronted) → 16
+# (wall DISCHARGED) → 14 (#11211/#11227 fox/col) → 11 (mesure 2026-08-28
+# `count_code_sorry.py`) → **10** (post-#15082, mesure 2026-09-12). La
+# trajectoire à venir : 10 → 9 par #15440 (`conway_trivial_alexander`) puis
+# 9 → 8 par #15460 (`KT_trivial_alexander` MERGED)).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
