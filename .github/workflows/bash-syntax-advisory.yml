@@ -30,6 +30,7 @@ on:
       - '.github/workflows/bash-syntax-advisory.yml'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - '**/*.sh'
       - '.github/workflows/bash-syntax-advisory.yml'

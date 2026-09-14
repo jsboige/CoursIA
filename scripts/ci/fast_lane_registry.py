@@ -1181,3 +1181,75 @@ TRANCHE10: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 11 (c.1092) -- SOURCE-volume COLLAPSE (#15901).
+#
+# Garde NATIF : comme TRANCHE9, il n'absorbe aucun workflow d'origine -- il
+# ferme une classe de defaut. Sa tranche est propre pour la meme raison : le
+# ranger dans TRANCHE2 (a cote de son frere `check_output_collapse.py`)
+# rendrait l'en-tete de TRANCHE2 faux, puisqu'il n'existe pas de workflow
+# `notebook-source-collapse-ratchet.yml` a absorber.
+#
+# Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
+# GameTheory-06e-Open-Source-Game-Theory.ipynb a perdu 3116 caracteres de
+# source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
+# disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
+# des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
+# SUBSTANCE de la source : la perte etait invisible par CONSTRUCTION (une
+# table supprimee et un `assert` reduit ne produisent aucune sortie).
+#
+# CONTRAINTE DE CALIBRATION -- c'est elle qui interdit de copier le frere :
+# la contraction reelle vaut un facteur 1.59, donc une regle
+# << ordre de grandeur >> (MAGNITUDE_FACTOR=10 cote sortie) resterait
+# SILENCIEUSE sur l'incident meme qui a motive l'organe. Le discriminant est
+# donc un seuil ABSOLU (perte >= 1000 caracteres sur une base >= 500) ET un
+# ratio modeste (>= 25 %). Les deux causes legitimes mecaniquement
+# detectables exemptent le signal : contenu deplace vers une AUTRE cellule du
+# MEME notebook, et purge de texte de diagnostic (warnings CS####).
+#
+# ADVISORY jusqu'a calibration plus poussee sur l'historique (point 3 de
+# l'issue) : la mesure de FP sur le corpus n'est pas encore faite.
+#
+# SECOND MECANISME, meme famille, ajoute par #16110 : la source survit en
+# VOLUME et perd sa STRUCTURE (tous les `\n` retires a l'ecriture, la cellule
+# se replie en un seul commentaire). Le discriminant de volume y est aveugle
+# par construction -- le cas fondateur #16097 (Lean-18 cellule 40cb37d5)
+# GROSSIT (1132 -> 1728 caracteres) et le gate s'arrete avant tout plancher --
+# et `notebook-cell-source-parses` aussi, puisqu'une cellule entierement
+# commentee se parse proprement. Le discriminant est le NOMBRE D'INSTRUCTIONS :
+# `emptied` (> 0 -> 0) et `orphan-output` (sortie non vide sur une cellule a
+# 0 instruction, sans magic IPython). Calibration : 0 finding structurel sur
+# les 11 970 cellules des 953 notebooks Python de `main`, et 0 sur 18
+# notebooks changes par 12 PR mergees. Le critere 1 de l'issue (compte des
+# items sans `\n` final) est REFUTE par mesure et n'est PAS implemente : ce
+# compte mesure la granularite de serialisation (source caractere par
+# caractere sur `21_LoRA_FineTuning.ipynb`, 802 items non termines, cellule
+# saine), pas une corruption.
+# ---------------------------------------------------------------------------
+TRANCHE11: list[Guard] = [
+    Guard(
+        name="Source-collapse ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_source_collapse.py",
+            "scripts/notebook_tools/tests/test_check_source_collapse.py",
+            ".claude/rules/pr-review-discipline.md",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_source_collapse.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_source_collapse.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]

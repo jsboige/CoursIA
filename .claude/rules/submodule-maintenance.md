@@ -6,6 +6,8 @@ S'applique au **coordinateur ai-01** et à toute lane qui touche un sous-module.
 
 La conséquence pratique : un sous-module n'est pas une dépendance qu'on subit, c'est un dépôt **du cluster** dont le backlog est **notre** backlog. Une PR qui dort six semaines chez `MyIntelligenceAgency` est exactement aussi grave qu'une PR qui dort sur `jsboige/CoursIA`.
 
+**État vérifié, mesures datées et incidents** : [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — table de statut de gate par sous-module, précondition de jeton, faux positifs mesurés.
+
 ## Règle HARD 1 — le périmètre est de cinq dépôts, pas trois
 
 | Chemin dans CoursIA | Remote | Entretien |
@@ -16,11 +18,9 @@ La conséquence pratique : un sous-module n'est pas une dépendance qu'on subit,
 | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | `ArgumentumGames/Argumentum` | **agent permanent dédié** — ai-01 ne fait que le bump de pointeur |
 | `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | `MyIntelligenceAgency/semantic-fleet` (`branch = stable-from-v0343`) | coordination ai-01 |
 
-**`Automata` est le cinquième, et il est facile à oublier** : il n'apparaît dans aucun dispatch historique. La liste faisant foi est `.gitmodules`, jamais un souvenir — c'est en la lisant qu'on découvre aussi que `MetaGeneticSharp` vit sous `jsboige/`, **pas** sous `MyIntelligenceAgency/` (un `gh pr list --repo MyIntelligenceAgency/MetaGeneticSharp` rend `Could not resolve to a Repository`, ce qui se lit à tort comme « rien à faire »).
+**La liste faisant foi est `.gitmodules`, jamais un souvenir** — `Automata` est le cinquième et s'oublie, et `MetaGeneticSharp` vit sous `jsboige/`, **pas** sous `MyIntelligenceAgency/`.
 
-**Le périmètre déclaré est désormais le périmètre maintenu.** `.gitmodules` ne contient plus que ces cinq forks : les trois `foundry-lib/lib/*` (`forge-std`, `openzeppelin-contracts`, `account-abstraction`) en ont été retirés (#14518). C'étaient des upstreams tiers, pas des forks — on ne les faisait pas vivre et on ne le pouvait pas. Ils s'installent via `forge install --no-git`, pinnés sur `foundry-lib/foundry.lock`, et vivent sous `.gitignore` — régénérables comme `node_modules`.
-
-**Le critère tient en une phrase** : un sous-module est un dépôt **qu'on fait vivre**. Une dépendance de build qu'on subit se clone, elle ne se déclare pas — quantité de composants clonent leurs dépendances sans que le dépôt parent s'en encombre.
+**Le critère tient en une phrase** : un sous-module est un dépôt **qu'on fait vivre**. Une dépendance de build qu'on subit se clone (`forge install --no-git`), elle ne se déclare pas. Retrait des trois `foundry-lib/lib/*` (#14518) et faux négatif `Could not resolve to a Repository` : [detail §1](../../docs/reference/submodule-maintenance-detail.md#1-périmètre--pourquoi-la-liste-se-lit-dans-gitmodules).
 
 ## Règle HARD 2 — la dérive de gitlink se mesure, elle ne s'intuitionne pas
 
@@ -39,42 +39,27 @@ for P in $(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk 
 done
 ```
 
-La référence de comparaison est la **branche déclarée** quand `.gitmodules` porte un `branch =` (`refs/heads/` explicite, pour ne jamais résoudre un tag homonyme), `HEAD` sinon — `HEAD` résout la branche par défaut et déclare « DERIVE » un gitlink qui est exactement sur sa branche déclarée (#14872 : faux positif permanent sur `semantic-fleet`). Et un `ls-remote` muet (ref injoignable, 403 d'org, réseau) s'affiche `INJOIGNABLE`, jamais comme une égalité — la même leçon que celle du `403` de la mesure de gate ci-dessous.
+**La référence de comparaison est la branche déclarée** : `refs/heads/<branch>` quand `.gitmodules` porte un `branch =` (explicite, pour ne jamais résoudre un tag homonyme), `HEAD` sinon. Comparer un sous-module épinglé à `HEAD` distant **fabrique une dérive** qui n'existe pas — faux positif permanent mesuré sur `semantic-fleet` (#14872), [detail §2](../../docs/reference/submodule-maintenance-detail.md#2-faux-positif-permanent-head-vs-branche-déclarée-14872). Et un `ls-remote` muet s'affiche `INJOIGNABLE`, **jamais** comme une égalité.
 
 **Ordre obligatoire** (déjà porté par le `CLAUDE.md` global) : commiter **dedans** d'abord, pousser, **puis** bumper le pointeur parent. Jamais l'inverse.
 
-**Un `branch =` dans `.gitmodules` n'est pas la branche par défaut du dépôt distant.** `semantic-fleet` déclare `branch = stable-from-v0343`, et sa branche par défaut est `main` : **deux** références, pas trois. Mesure du 2026-09-07 :
-
-| Référence | SHA |
-|---|---|
-| gitlink sur `origin/main` | `9df360374e1c` |
-| tip de la branche déclarée `stable-from-v0343` | `9df360374e1c` — **identique** |
-| `HEAD` distant (branche par défaut `main`) | `168fd5d8bef5` |
-
-Le gitlink est **exactement sur sa branche déclarée**. C'est l'état *nominal* d'un sous-module épinglé, pas une dérive à réconcilier — et c'est précisément ce que le paragraphe ci-dessus établit depuis #14872 en nommant le faux positif permanent. La phrase que ces lignes remplacent disait l'inverse (« son gitlink pointe ailleurs », « trois références divergentes ») : elle envoyait le lecteur chercher une troisième divergence qui n'existe pas, et lui faisait lire comme un retard ce qui est le fonctionnement attendu.
-
-Ce qui reste vrai, et qui est le seul point à retenir : **`HEAD` distant n'est pas la référence de comparaison** quand un `branch =` est déclaré. Comparer le gitlink à `HEAD` fabrique une dérive. Comparer à `refs/heads/<branch déclarée>` mesure la vraie.
-
 ## Règle HARD 3 — l'absence de gate est le défaut, pas les PRs qui dorment
 
-Avant de traiter un backlog de sous-module comme de la négligence, **vérifier qu'un gate existe et se déclenche** :
-
-- `MetaGeneticSharp` porte un workflow `dotnet-ci` depuis c.990 (PR #53 mergée 2026-09-08T09:06:40Z sur `jsboige/MetaGeneticSharp`). État détaillé dans le tableau R3 ci-dessous : **run main `dbcd40473e0fad04505b362276e8d3acf6982926` en FAILURE Windows** (run `34208179870` ubuntu SUCCESS / windows FAILURE 2026-09-08T09:08:40Z — NUnit Adapter 4.6.0.0 "Test Run Successful" 180/180 mais exit code 1 sur le step test postérieur). **Substitution R3 reste OUI tant qu'aucun run main complet vert**.
-- `semantic-fleet` en a plusieurs, mais aucun ne s'est déclenché sur les PRs concernées — bases de *stack* hors des branches sur lesquelles ils sont câblés.
-
-Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est **un** défaut structurel, et le corriger vaut mieux que relancer les auteurs. Le manque de CI se traite en **issue de suivi nommée**, pas en reproche de lane.
+Avant de traiter un backlog de sous-module comme de la négligence, **vérifier qu'un gate existe et se déclenche**. Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est **un** défaut structurel, et le corriger vaut mieux que relancer les auteurs. Le manque de CI se traite en **issue de suivi nommée**, pas en reproche de lane.
 
 **Substitution admise tant que le gate manque** : deux vérifications **firsthand indépendantes** (fresh-clone, build + suite de tests complète, sur **deux lanes distinctes**), avec leurs comptes de tests et leurs SHA **cités dans le body de la PR de bump**. Une seule vérification, ou une vérification par l'auteur seul, ne remplace pas un gate.
 
-**Statut de gate par sous-module (mise à jour c.14463 / c.14566)** : l'organe externe à la R3 est la **liste des submod avec un workflow fonctionnel** — la substitution R3 s'applique par défaut, sauf si la liste ci-dessous dit « gate acquis ». Une PR de bump qui omet les deux vérifications et qui ne cite pas un submod à « gate acquis » **manque à R3** ; un submod listé à « gate acquis » qui perd son workflow (drift, suppression) **redevient** soumis à la substitution. Le passage d'un submod d'un état à l'autre est lui-même un **geste tracké** : PR dédiée sur le dépôt submod (câblage ou re-câblage), référence dans le tableau ci-dessous, et revue coord pour valider la bascule. **Cinq états** (cf. tableau) : `Absent`, `Câblé jamais déclenché sur pile`, `Câblé déclenché vert récent`, `Drift / perte de gate`, `Câblé déclenché rouge récent`.
+**Cinq états de gate** — la substitution R3 s'applique **par défaut**, et ne cesse qu'à l'état 3 :
 
-**Cinq états de gate** (mesurés firsthand par la commande de la colonne « vérifié le ») :
+| # | État | Substitution R3 |
+|---|---|---|
+| 1 | **Absent** — aucun workflow, aucun run | active |
+| 2 | **Câblé, jamais déclenché sur la pile en cours** — le trigger ne couvre pas les PRs visées | active ; c'est le **déclencheur** qui doit être qualifié, pas seulement le câblage |
+| 3 | **Câblé, déclenché, vert récent** sur la branche par défaut | **cesse** — A2 est acquis |
+| 4 | **Drift / perte de gate** — un état 3 qui perd son workflow | redevient active |
+| 5 | **Câblé, déclenché, rouge récent** — le gate existe et tire, mais hors-main ou en régression | active jusqu'au retour au vert |
 
-1. **Absent** (`Automata`) — aucun workflow, aucun run. Substitution R3 active par défaut. (`MetaGeneticSharp` n'est plus dans cet état depuis c.990 — voir tableau R3.)
-2. **Câblé, jamais déclenché sur pile en cours** (`Z3.Linq`) — workflows existent et sont actifs, mais le déclenchement ne couvre pas les PRs/processus visés (base de stack hors-trigger). Substitution R3 **active**, et le **déclencheur** doit être qualifié pour cesser (pas seulement le câblage).
-3. **Câblé, déclenché, vert récent** (cas général à viser) — un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer.
-4. **Drift / perte de gate** — un submod listé en (3) qui perd son workflow (suppression, mise hors-service) **redevient** soumis à la substitution. Bascule trackée.
-5. **Câblé, déclenché, rouge récent** (`semantic-fleet` au 2026-09-04) — run vert manquant, substitution R3 active jusqu'à un retour au vert. **Bascule différente** du (3) car le gate existe et déclenche, juste sur une branche hors-main / avec une régression.
+Le passage d'un état à l'autre est un **geste tracké** : PR dédiée sur le dépôt submod (câblage ou re-câblage), mise à jour de la table d'état dans le detail, et revue coord pour valider la bascule.
 
 **Commande de mesure** (à passer à chaque cycle `/coordinate` et à chaque PR de bump) :
 
@@ -88,17 +73,9 @@ for R in MyIntelligenceAgency/Z3.Linq MyIntelligenceAgency/Automata \
 done
 ```
 
-**Précondition de jeton (mesurée le 2026-09-05)** : l'org `MyIntelligenceAgency` refuse les fine-grained PATs de plus de 366 jours. Sous un tel jeton la boucle rend `403` sur ses **trois** repos et 3/5 lignes deviennent infetchables. Elle passe sous `jsboige` **et** sous `myia-ai-01` depuis ai-01, et `403` sous le PAT de po-2026 : la précondition n'est donc pas un compte particulier, c'est **un jeton que l'org accepte** -- l'épingler par commande (`GH_TOKEN=$(gh auth token --user <compte>)`), jamais par `gh auth switch` (état global au process `gh`, cf. R5). **Un `403` est une question, pas une absence mesurée** : ne jamais en conclure « 0 workflow » -- c'est exactement la ligne fausse que ce tableau existe pour empêcher.
+**Un `403` est une question, pas une absence mesurée** — ne jamais en conclure « 0 workflow ». L'org `MyIntelligenceAgency` refuse les PAT fine-grained de plus de 366 jours : épingler le jeton **par commande** (`GH_TOKEN=$(gh auth token --user <compte>)`), jamais par `gh auth switch` (état global au process `gh`, cf. R5). [detail §3](../../docs/reference/submodule-maintenance-detail.md#3-précondition-de-jeton-pour-la-mesure-de-gate-mesurée-le-2026-09-05).
 
-| Submodule | Workflow CI | Run vert récent | Substitution R3 | Vérifié le (PR) |
-|---|---|---|---|---|
-| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Câblé, déclenché, rouge récent** (1 workflow `dotnet-ci`, 8 runs totaux ; run #7 ubuntu+windows SUCCESS sur PR avant merge ; **run `34208179870` post-merge sur `main` SHA `dbcd40473e0fad04505b362276e8d3acf6982926` ubuntu SUCCESS 2026-09-08T09:07:35Z, windows FAILURE 2026-09-08T09:08:40Z** — aucun message d'erreur explicite, NUnit Adapter 4.6.0.0 "Test Run Successful" 180/180 mais exit code 1 sur le step test postérieur ; investigate flaky-windows à part, démontre-le par un second run vert sur le même SHA, pas un run vert sur un autre SHA) | non-vert (job Windows) | **OUI** (jusqu'à un run main complet vert postérieur au merge #53 — la règle R3.5 reste valable tant que A2 est partiel : bump cite SHA upstream + 2 vérifications firsthand, cf body ci-dessous) | c.1003 (#15190, post-DM ai-01 2026-09-08T15:21Z — état corrigé post-CHANGES_REQUESTED) |
-| `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | **Câblé, jamais déclenché sur pile** (3 workflows actifs, 5 runs totaux, dernier build vert 2026-09-04) | n/a sur pile | OUI | #14566 (#14558, c.14463) |
-| `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | **Câblé, déclenché, vert récent** (5 workflows / 5 actifs, 4479 runs totaux, `Build` success 2026-09-07T04:08:13Z sur `master` SHA `bab289c05bb6` ; master HEAD courant `f5acc7bedd05`, build re-déclenché 2026-09-07T09:21:11Z) | vert | NON | #15007 (c.956, 2026-09-07) |
-| `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | **Câblé, déclenché, rouge récent** (18 workflows, 17 actifs, 553 runs totaux, dernier `Python Integration Tests` failure 2026-09-07T01:29:00Z sur `main`) | non-vert | OUI (jusqu'à un run vert) | #15007 (c.956, 2026-09-07) |
-
-**Application concrète** : une PR de bump sur `MetaGeneticSharp` qui se contente de citer un SHA upstream **manque R3** tant que A2 n'est pas acquis (#14408). Une PR de bump qui cite un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer à `MetaGeneticSharp` (les bumps suivants peuvent omettre les deux vérifications). Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml` sur `jsboige/MetaGeneticSharp`), suivi d'une **mise à jour du tableau ci-dessus** dans une PR sur CoursIA-2.
+**Statut courant par sous-module** : [table du detail §4](../../docs/reference/submodule-maintenance-detail.md#4-table-de-statut-de-gate-par-sous-module). Elle se **relit** avant chaque PR de bump — elle date de sa mesure, pas de sa lecture, et elle ne se mémorise pas.
 
 ## Règle HARD 4 — sur un stack, la forme du merge de la base n'est pas neutre
 
@@ -122,6 +99,7 @@ Une lane sans grain peut être servie par un sous-module : son backlog fait part
 
 ## Voir aussi
 
+- [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — **détail** : table de statut de gate, mesures datées, incidents
 - `~/.claude/CLAUDE.md` §Git — commiter dedans, push, puis bump le parent
 - [coordinator-discipline.md](coordinator-discipline.md) — R1 (merge actif), R4 (jamais sanctionner l'idle), R5 (steer qui atteint)
 - [proactive-coordination.md](proactive-coordination.md) — R5, le pool n'est pas borné à un dépôt
