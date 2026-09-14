@@ -66,14 +66,22 @@ ctp = _load_module()
 
 
 @pytest.fixture
-def registry_backup():
-    """Sauvegarde + restauration du REPERTOIRE de registre autour de chaque test.
+def registry_copy(tmp_path):
+    """Copie PRIVEE du registre, passee au script via `--registry`.
 
-    Meme si les tests qui reussissent sont read-only (--update n'ecrit
-    que si selecteur OK), cette fixture protege contre les regressions
-    silencieuses : si un futur patch casse la garde et que --update
-    sans selecteur se met a reecrire, le test est restaure apres
-    execution (rollback propre).
+    Cette fixture sauvegardait puis restaurait le repertoire partage
+    `twin_pairs.d/` : `copytree` -> `rmtree(REGISTRY_DIR)` -> `move`. Le
+    rollback etait correct en execution sequentielle et invisible ; sous
+    `-n 4` (#14598), la fenetre pendant laquelle le registre n'existe pas
+    casse tout module concurrent qui le lit -- `test_twin_registry_integrity.py`
+    rougit en `FileNotFoundError`. `--dist loadscope` n'y peut rien : il
+    epingle un module a un worker, et la collision est ENTRE modules.
+
+    Le test n'a jamais eu besoin de toucher le registre partage :
+    `check_twin_parity.py` accepte `--registry <dir>`, et son chemin d'ecriture
+    `--update` en derive tout (`_pair_file`, `_write_audit_file`). On travaille
+    donc sur une copie sous `tmp_path` : isolee par worker, jetee par pytest,
+    et le registre du depot reste intact meme si `--update` deraille.
 
     Echoue -- ne skippe pas -- si le registre est introuvable : c'est
     exactement la panne #8586 que ces gardes doivent attraper.
@@ -84,24 +92,24 @@ def registry_backup():
             "Si le registre a demenage, ce module doit suivre : un skip ici "
             "rendrait la suite verte sans rien garder (regression #8586)."
         )
-    backup = REGISTRY_DIR.with_name(REGISTRY_DIR.name + ".bak.c909")
-    if backup.exists():
-        shutil.rmtree(backup)
-    shutil.copytree(REGISTRY_DIR, backup)
-    try:
-        yield backup
-    finally:
-        shutil.rmtree(REGISTRY_DIR)
-        shutil.move(str(backup), str(REGISTRY_DIR))
+    copy = tmp_path / REGISTRY_DIR.name
+    shutil.copytree(REGISTRY_DIR, copy)
+    return copy
 
 
-def _run_update(*extra_args: str) -> subprocess.CompletedProcess:
+def _run_update(registry: Path, *extra_args: str) -> subprocess.CompletedProcess:
     """Execute le script en sous-processus (subprocess.run) pour capturer
     l'exit code reel et le stderr -- c'est l'integration-test de la garde
     argparse, pas un mock.
+
+    `--registry` pointe la copie privee du test (cf `registry_copy`) : le
+    registre partage du depot n'est ni lu ni ecrit par ce module. `cwd=REPO_ROOT`
+    laisse `--repo-root` se detecter via `git rev-parse --show-toplevel`, pour
+    que les SHAs compares restent ceux des vrais notebooks du depot.
     """
     return subprocess.run(
-        [sys.executable, str(SCRIPT), "--update", *extra_args],
+        [sys.executable, str(SCRIPT), "--update", "--registry", str(registry),
+         *extra_args],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -110,14 +118,14 @@ def _run_update(*extra_args: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_update_without_selector_refuses(registry_backup):
+def test_update_without_selector_refuses(registry_copy):
     """`--update` seul DOIT etre refuse par argparse (cf #8508).
 
     Avant c.909 : exit 0, registre re-ecrit silencieusement (corruption).
     Apres c.909 : exit != 0, stderr contient une mention de l'issue #8508
     ou des lecons L963/L974.
     """
-    result = _run_update()
+    result = _run_update(registry_copy)
     assert result.returncode != 0, (
         f"--update sans selecteur aurait du etre refuse (exit != 0). "
         f"stdout={result.stdout!r} stderr={result.stderr!r}"
@@ -131,7 +139,7 @@ def test_update_without_selector_refuses(registry_backup):
     ), f"Message de garde absent. stderr={result.stderr!r} stdout={result.stdout!r}"
 
 
-def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
+def test_update_with_pair_selector_succeeds_on_existing_pair(registry_copy):
     """`--update --pair <existing>` rebaseline exactement 1 paire.
 
     Verifie qu'apres l'operation, **seule la cible** est affectee :
@@ -146,7 +154,7 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     """
     import subprocess as _sp
 
-    all_pairs_before = ctp.load_registry(REGISTRY_DIR)
+    all_pairs_before = ctp.load_registry(registry_copy)
     assert isinstance(all_pairs_before, list) and all_pairs_before, "registre vide"
     # Choisir une cible connue (Search-1 StateSpace existe dans le registre actuel).
     target_entry = next(
@@ -194,7 +202,7 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     # DERNIER fichier d'audit -- sinon `_shas_match` (content d'abord) verrait
     # « rien n'a change » et --update refuserait en no-op.
     slug = ctp._slug(target_name)
-    audit_dir = ctp._audit_dir(REGISTRY_DIR, slug)
+    audit_dir = ctp._audit_dir(registry_copy, slug)
     _audit_files = sorted(audit_dir.glob("*.yaml"))
     assert _audit_files, f"aucun audit file-per-audit pour {target_name!r} : {audit_dir}"
     last_audit_file = _audit_files[-1]
@@ -203,7 +211,7 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
         _audit_d[_k] = _BOGUS_SHA
     last_audit_file.write_text(ctp._dump_audit_yaml(_audit_d), encoding="utf-8")
 
-    result = _run_update("--pair", target_name)
+    result = _run_update(registry_copy, "--pair", target_name)
     assert result.returncode == 0, (
         f"--update --pair {target_name!r} aurait du reussir. "
         f"stdout={result.stdout!r} stderr={result.stderr!r}"
@@ -212,7 +220,7 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
         f"Le script aurait du annoncer 1 paire mise a jour. stdout={result.stdout!r}"
     )
 
-    after = ctp.load_registry(REGISTRY_DIR)
+    after = ctp.load_registry(registry_copy)
 
     # 1) La cible a les SHAs courants (= ce que `git rev-parse HEAD:<path>` retourne).
     # Depuis #9399, la cible drift est MIGREE vers la forme append-only `audits:` ;
@@ -254,13 +262,13 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     )
 
 
-def test_update_with_pair_selector_refuses_on_unknown_pair(registry_backup):
+def test_update_with_pair_selector_refuses_on_unknown_pair(registry_copy):
     """`--update --pair <unknown>` retourne une erreur explicite.
 
     Important : on doit obtenir un message qui liste des noms connus
     pour que l'agent puisse corriger son selecteur.
     """
-    result = _run_update("--pair", "ThisPairDoesNotExist-9999")
+    result = _run_update(registry_copy, "--pair", "ThisPairDoesNotExist-9999")
     assert result.returncode != 0, (
         f"--pair <unknown> aurait du echouer. "
         f"stdout={result.stdout!r} stderr={result.stderr!r}"
@@ -272,14 +280,14 @@ def test_update_with_pair_selector_refuses_on_unknown_pair(registry_backup):
     )
 
 
-def test_update_with_pair_and_family_is_mutually_exclusive(registry_backup):
+def test_update_with_pair_and_family_is_mutually_exclusive(registry_copy):
     """`--pair` et `--family` ne peuvent pas cohabiter avec `--update`.
 
     L'intersection des deux filtres peut etre vide par accident ;
     argparse.error les rejette en amont (plus clair que de retourner
     silencieusement 0 paires mises a jour).
     """
-    result = _run_update("--pair", "AnyPair", "--family", "AnyFamily")
+    result = _run_update(registry_copy, "--pair", "AnyPair", "--family", "AnyFamily")
     assert result.returncode != 0, (
         f"--pair + --family simultanes aurait du etre rejete. "
         f"stdout={result.stdout!r} stderr={result.stderr!r}"

@@ -1,7 +1,7 @@
 - name: App-16 Crossword CSP
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + AddElement/inter constraints, dataclass) + numpy + matplotlib (11 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (System.Linq/Text, 0 NuGet) PRESERVEE (12 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur grids 15x15 -- exact SOLUTION_OPTIMAL, backtracking from-scratch timeout sur les grands grilles -- discrimination mesuree. Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."

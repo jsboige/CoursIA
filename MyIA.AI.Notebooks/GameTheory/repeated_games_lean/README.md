@@ -19,6 +19,14 @@
 
 > **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré). Les sources actives vivent dans [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
+## Hommage — Stearns et les jeux répétés à information incomplète
+
+Richard E. Stearns (1936–2026) — co-lauréat du prix Turing 1993 pour la fondation de la théorie de la complexité ([Hartmanis & Stearns, 1965](https://doi.org/10.1090/S0002-9947-1965-0170805-7)) — a travaillé à l'*Arms Control and Disarmament Agency* sur les **jeux répétés à information incomplète** : comment des adversaires apprennent l'un de l'autre au fil des répétitions lorsque l'information est asymétrique. Ce travail est devenu un chapitre du livre de référence d'Aumann & Maschler, *Repeated Games with Incomplete Information* (MIT Press, 1995), dont la page de titre porte *« with the collaboration of Richard E. Stearns »*. Il se qualifiait de *« semi-author »* et appelait cet épisode *« the story of how I almost won the Lanchester Prize »*.
+
+Le pont entre jeux répétés et **contrôle des armements** — la théorie des jeux comme outil de paix — relie ce lake au destin scientifique de son contributeur. L'autre résonance inattendue : le tout premier article de Stearns (1959, *The American Mathematical Monthly*) portait sur le **paradoxe d'Arrow** — voir [`SocialChoice/01-Arrow-Impossibility-Theorem.ipynb`](../SocialChoice/01-Arrow-Impossibility-Theorem.ipynb). Hommage complet (hiérarchie de Hartmanis–Stearns, série `Complexity/`) : issue [#15949](https://github.com/jsboige/CoursIA/issues/15949).
+
+*Sources : [CACM, In Memoriam Richard E. Stearns](https://cacm.acm.org/news/in-memoriam-richard-e-stearns-1936-2026/) (Spafford & Garfinkel, 03/09/2026) ; [transcript du prix Turing ACM](https://amturing.acm.org/pdf/StearnsTuringTranscript.pdf).*
+
 ## Théorème-phare
 
 **Grim trigger soutient la coopération ssi δ ≥ (T − R) / (T − P)** (one-shot deviation principle).

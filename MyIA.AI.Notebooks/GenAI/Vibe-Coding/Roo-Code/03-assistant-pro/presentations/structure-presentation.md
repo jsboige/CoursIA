@@ -74,6 +74,7 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 
 - **Slide 6: Objectifs mesurables**
   - **Contenu réel:**
+
     | Objectif | Situation actuelle | Cible fin 2025 | Cible fin 2026 |
     |----------|-------------------|----------------|----------------|
     | Temps de traitement des commandes | 48h | 12h | 4h |
@@ -174,6 +175,7 @@ Présentation destinée au comité de direction pour présenter la stratégie de
 ### 6. Ressources et gouvernance (2 min)
 - **Slide 13: Budget et ressources**
   - **Contenu réel:**
+
     | Catégorie | Budget 2025 | % du total |
     |-----------|-------------|------------|
     | Développement logiciel | 1,450,000€ | 54% |
@@ -181,6 +183,7 @@ Présentation destinée au comité de direction pour présenter la stratégie de
     | Formation et change management | 380,000€ | 14% |
     | Conseil et expertise externe | 350,000€ | 13% |
     | **Total** | **2,700,000€** | **100%** |
+
   - **Ressources humaines:**
     - Équipe dédiée: 14 ETP
     - Contributeurs partiels: 22 collaborateurs (20% de leur temps)
