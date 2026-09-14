@@ -53,7 +53,7 @@ Python `U[state, action]`) : l'ambiguïté d'axes ne peut pas surgir.
 | Quantité | Tolérance absolue | Justification mesurée |
 |---|---|---|
 | Utilités (EUR) | 20 000 | Infer.NET (EP exact sur Bernoulli conjugué) rend les valeurs exactes ; PyMC (200k draws, seed 42) écarte de 204 EUR sur EVSI — la tolérance couvre >10× ce bruit |
-| Probabilités | 0,01 | Écart maximal observé : 0,0013 sur P(pétrole|négatif) |
+| Probabilités | 0,01 | Écart maximal observé : 0,0013 sur P(pétrole\|négatif) |
 
 ## Utilisation
 
