@@ -4,7 +4,7 @@
 
 **Série-pont** de la constellation causale du dépôt. La causalité est traitée à **quatre endroits**, chacun avec son moteur et son angle ; ce répertoire n'ajoute pas un cinquième moteur, il fournit l'**armature formelle unifiée** — l'échelle de Pearl, les trois règles du do-calculus et les méthodes quasi-expérimentales — et la fait tourner sur l'**outil de référence** [`dowhy`](https://www.pywhy.org/dowhy/) (installé et exécuté réellement, règle F / SOTA-OK, **pas** de réimplémentation jouet), avant de renvoyer à chaque série pour l'instanciation par son moteur.
 
-**Stack** : Python 3 (kernel `coursia-ml-training`), [`dowhy`](https://www.pywhy.org/dowhy/) pour l'identification / estimation / réfutation d'estimandes causaux. Aucun kernel .NET ni GPU requis.
+**Stack** : Python 3 (kernel `coursia-ml-training`), [`dowhy`](https://www.pywhy.org/dowhy/) pour l'identification / estimation / réfutation d'estimandes causaux, [`causal-learn`](https://causal-learn.readthedocs.io/) pour la découverte de structure (PC, GES, LiNGAM — DoWhy-3). Aucun kernel .NET ni GPU requis.
 
 ## Contenu
 
@@ -13,6 +13,7 @@
 | [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
 | [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
 | [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
+| [DoWhy-3 — Le graphe qu'on n'a pas](DoWhy-3-Decouverte-de-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; LiNGAM tranche sous non-gaussianité mais rend un DAG faux-silencieux sinon ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands dowhy) |
 | [DoWhy-5 — L'instrument faible](DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `Quasi-Experimental.ipynb` |
 | [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 
@@ -58,3 +59,9 @@ Exercices de DoWhy-5 (variable instrumentale via `dowhy`) :
 1. **L'exclusion respectée vs VIOLEE** — générer un DGP `effet_direct_z = 0.5`, vérifier que `dowhy` identifie l'estimand `iv`, et constater l'écart entre `tau dowhy` et `TAU_VRAI = 2.0` ; verdict local NON_IDENTIFIABLE en mode terrain.
 2. **Le F-stat comme garde-fou** — faire varier la taille d'échantillon `n ∈ {500, 1000, 2000, 5000}` sur instrument faible, observer comment le F-stat monte avec `n` (sans faire passer l'identification, qui reste structurelle).
 3. **Verdict NON_IDENTIFIABLE sur DAG incomplet** — démontrer que `dowhy` identifie un estimand `iv` même quand l'exclusion est structurellement violée ; le verdict NON_IDENTIFIABLE doit venir du praticien, pas de `dowhy`.
+
+Exercices de DoWhy-3 (découverte de structure) :
+
+1. **L'ambiguïté ne se résout pas avec des données** — pour `n ∈ {500, 2000, 10000}`, constater que le CPDAG de PC garde `C–X` et `X–M` ambiguës : la classe de Markov est une borne structurelle, pas un problème de taille d'échantillon.
+2. **`alpha` de PC, le compromis mesuré** — pour `alpha ∈ {0.2, 0.05, 0.01}` sur 5 seeds : arêtes parasites à `0.2`, v-structure perdue environ 1 seed sur 4 à `0.05` (mesuré sur ce monde), propre à `0.01` au prix de la puissance sur signaux faibles — il n'y a pas d'alpha gratuit.
+3. **Diagnostiquer l'échec silencieux de LiNGAM** — sur 5 seeds gaussiens : DAG complet, faux et instable inter-seeds ; l'instabilité est le seul signal que l'hypothèse de non-gaussianité ne tient pas, la librairie reste muette.

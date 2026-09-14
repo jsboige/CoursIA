@@ -350,3 +350,33 @@ ses réactifs est refusée.
 
 Document complet (périmètre, ce qui est mesuré vs déclaré, provenance des faits,
 limites assumées) : [`docs/lean/life-components-schema.md`](../../docs/lean/life-components-schema.md).
+
+## `life_compose.py` — le générateur de contraintes compositionnelles (tranches 3+4 de #15635)
+
+Au-dessus du catalogue symbolique (tranche 1+2), ce module **compose** : étant
+donné un objectif borné (comptages finaux minimaux, événements requis, budgets
+de composants/gliders/événements, horizon, surface), il énumère les placements
+d'événements du catalogue qui satisfont conjointement les contraintes
+spatiales (fenêtres disjointes), temporelles (congruence de phase à
+l'arrivée), d'interface (ports compatibles) et de clearance, puis **certifie**
+chaque témoin par replay indépendant dans le moteur du dépôt. Les quatre
+familles d'élagage (R1 dédup d'états, R2 compatibilité de ports, R3 fenêtres
+spatiales, R4 congruence de phase) sont instrumentées par des compteurs et
+ablatables — la certification, elle, n'est jamais ablatable.
+
+```
+python scripts/lean/life_compose.py --objective two_blocks_catalyse_free
+python scripts/lean/life_compose.py --objective two_blocks --full-report --json
+python -m pytest scripts/lean/tests/test_life_compose.py -q
+```
+
+Trois verdicts distincts : `FOUND` (témoin rejoué exactement par le moteur
+indépendant), `IMPOSSIBLE_BOUNDED` (épuisement explicite de l'espace borné),
+`TIMEOUT` (plafond de nœuds atteint avant épuisement). Deux leçons mesurées en
+tranche 3 sont figées par des tests de non-régression : la non-interaction
+universelle est Chebyshev >= 3 (à distance 2, des naissances croisées
+apparaissent selon le contenu), et un placement réactif déclaré doit être
+atteignable par dérive pure le long du port du réactif mobile.
+
+Détail complet (modèle propositionnel, familles de contraintes, ablations,
+démonstrateur, comparaison baseline) : [`docs/lean/life-components-schema.md`](../../docs/lean/life-components-schema.md).

@@ -1473,6 +1473,417 @@ echo "Test 32 : hostname donne -> les trois prefixes de famille derives (#15152)
 )
 echo ""
 
+# --- Test 33 : nom detenu par un conteneur EN COURS -- on attend, on ne tue
+# pas (#15278). Le verrou de nom est GLOBAL au daemon : un restart tue le
+# client `docker run` mais PAS le conteneur, qui garde son nom jusqu'a la fin
+# de son job. Le garde doit attendre la liberation -- jamais retirer un
+# conteneur en cours (ce serait tuer un job legitime) -- et le dire, en
+# nommant le journal ou lire la cause.
+echo "Test 33 : nom detenu par un conteneur EN COURS -- attente, AUCUN retrait, avertissement nommant le journal (#15278)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin33" "$TEST_DIR/state-33"
+  cat > "$TEST_DIR/bin33/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "inspect" ]; then
+  # Le job orphelin rend le nom au sondage STUB_ORPHAN_POLLS+1.
+  N="\$(cat "\$STUB_INSPECT_COUNT" 2>/dev/null || echo 0)"
+  N=\$(( N + 1 ))
+  echo "\$N" > "\$STUB_INSPECT_COUNT"
+  if [ "\$N" -le "\${STUB_ORPHAN_POLLS:-3}" ]; then echo "running"; fi
+  exit 0
+fi
+if [ "\$1" = "rm" ]; then echo "\$*" >> "\$STUB_RM_LOG"; exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  touch "\$STUB_STOP_FILE"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin33/docker"
+  cat > "$TEST_DIR/bin33/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin33/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin33/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin33/ps"
+  rm -f "$TEST_DIR/state-33/stop" "$TEST_DIR/state-33/pids" \
+        "$TEST_DIR/run33.count" "$TEST_DIR/inspect33.count"
+  : > "$TEST_DIR/sleep33.log"; : > "$TEST_DIR/rm33.log"
+  (
+    export PATH="$TEST_DIR/bin33:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-33"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-33"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS=5
+    export COURSIA_RUNNER_NAME_RECLAIM_WARN_SECS=10
+    export STUB_STOP_FILE="$TEST_DIR/state-33/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run33.count"
+    export STUB_INSPECT_COUNT="$TEST_DIR/inspect33.count"
+    export STUB_RM_LOG="$TEST_DIR/rm33.log"
+    export SLEEP_LOG="$TEST_DIR/sleep33.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err33.log"
+  )
+  # Le conteneur en cours NE DOIT JAMAIS etre retire : c'est l'acceptance
+  # « la solution retenue ne peut pas tuer un conteneur executant un job
+  # legitime ». Un `docker rm` sur le nom, meme une fois, la viole.
+  if [ ! -s "$TEST_DIR/rm33.log" ]; then
+    ok "aucun docker rm sur le nom detenu par un conteneur en cours (le job legitime survit)"
+  else
+    ko "retrait interdit d'un conteneur EN COURS : $(cat "$TEST_DIR/rm33.log")"
+  fi
+  polls="$(head -3 "$TEST_DIR/sleep33.log" | paste -sd,)"
+  if [ "$polls" = "5,5,5" ]; then
+    ok "3 sondages de 5 s pendant que le nom est detenu (attente, pas de relance en conflit)"
+  else
+    ko "attendu 3 sondages de 5 s, obtenu [$polls]"
+  fi
+  if grep -q "nom toujours detenu (running)" "$TEST_DIR/err33.log" \
+     && grep -q "state-33/test-prefix-33-1.log" "$TEST_DIR/err33.log"; then
+    ok "l'attente est journalisee, nomme l'etat et NOMME le journal du slot (diagnostic possible)"
+  else
+    ko "avertissement de reprise absent ou sans chemin de journal : $(head -3 "$TEST_DIR/err33.log")"
+  fi
+  runs="$(cat "$TEST_DIR/run33.count" 2>/dev/null || echo 0)"
+  inspects="$(cat "$TEST_DIR/inspect33.count" 2>/dev/null || echo 0)"
+  if [ "$runs" = "1" ] && [ "$inspects" = "4" ]; then
+    ok "le slot reprend des que le nom est rendu (1 run apres 4 sondages, pas de cycle perdu)"
+  else
+    ko "reprise attendue apres liberation : runs=$runs inspects=$inspects"
+  fi
+)
+echo ""
+
+# --- Test 34 : nom detenu par un residu NON en cours -- retire, sans risque
+# (#15278). Un conteneur `exited`/`created`/`dead` n'execute AUCUN job : le
+# retirer ne peut tuer aucun travail. C'est la seule force que le garde
+# s'autorise, et elle est bornee par ce discriminant d'etat.
+echo "Test 34 : nom detenu par un residu NON en cours -- retire, aucun job en vol (#15278)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin34" "$TEST_DIR/state-34"
+  cat > "$TEST_DIR/bin34/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "inspect" ]; then
+  # Le residu existe tant que docker rm ne l'a pas enleve.
+  if [ -f "\$STUB_RESIDUE" ]; then echo "exited"; fi
+  exit 0
+fi
+if [ "\$1" = "rm" ]; then
+  echo "\$*" >> "\$STUB_RM_LOG"
+  rm -f "\$STUB_RESIDUE"
+  exit 0
+fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  touch "\$STUB_STOP_FILE"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin34/docker"
+  cat > "$TEST_DIR/bin34/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin34/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin34/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin34/ps"
+  rm -f "$TEST_DIR/state-34/stop" "$TEST_DIR/state-34/pids" "$TEST_DIR/run34.count"
+  : > "$TEST_DIR/residue34"; : > "$TEST_DIR/rm34.log"; : > "$TEST_DIR/sleep34.log"
+  (
+    export PATH="$TEST_DIR/bin34:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-34"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-34"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export STUB_STOP_FILE="$TEST_DIR/state-34/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run34.count"
+    export STUB_RESIDUE="$TEST_DIR/residue34"
+    export STUB_RM_LOG="$TEST_DIR/rm34.log"
+    export SLEEP_LOG="$TEST_DIR/sleep34.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err34.log"
+  )
+  if [ "$(wc -l < "$TEST_DIR/rm34.log")" = "1" ] \
+     && grep -q "rm -f test-prefix-34-1" "$TEST_DIR/rm34.log"; then
+    ok "le residu non en cours est retire exactement une fois, par son nom"
+  else
+    ko "retrait du residu attendu une fois sur test-prefix-34-1, obtenu [$(paste -sd';' "$TEST_DIR/rm34.log")]"
+  fi
+  if grep -q "residu de conteneur en etat 'exited' retire" "$TEST_DIR/err34.log"; then
+    ok "le retrait est journalise avec l'etat qui l'autorise"
+  else
+    ko "ligne de retrait du residu absente : $(head -3 "$TEST_DIR/err34.log")"
+  fi
+  # Controle negatif : aucun avertissement de job en cours ne doit apparaitre --
+  # le garde a distingue le residu du job vivant, il n'a pas simplement attendu.
+  if ! grep -q "nom toujours detenu" "$TEST_DIR/err34.log" \
+     && [ "$(cat "$TEST_DIR/run34.count" 2>/dev/null || echo 0)" = "1" ]; then
+    ok "aucune attente declenchee (discriminant d'etat, pas un sursis) et le slot a repris"
+  else
+    ko "attente indue ou reprise manquante : err=$(head -2 "$TEST_DIR/err34.log") runs=$(cat "$TEST_DIR/run34.count" 2>/dev/null || echo 0)"
+  fi
+)
+echo ""
+
+# --- Test 35 : un rc != 0 NOMME le journal ou lire la cause (#15278) --------
+# Defaut 2 de l'issue : le journal systemd ne portait que « rc=125 », alors que
+# le message docker (« Conflict. The container name ... is already in use »,
+# image perimee, daemon) part dans $STATE_DIR/<nom>.log par la redirection du
+# `docker run`. Sans ce rappel, l'operateur n'est oriente vers rien.
+echo "Test 35 : un cycle rc != 0 nomme le journal du slot dans le message d'echec (#15278)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin35" "$TEST_DIR/state-35"
+  cat > "$TEST_DIR/bin35/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  touch "\$STUB_STOP_FILE"
+  exit "\${STUB_DOCKER_RC:-1}"
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin35/docker"
+  cat > "$TEST_DIR/bin35/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin35/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin35/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin35/ps"
+  rm -f "$TEST_DIR/state-35/stop" "$TEST_DIR/state-35/pids" "$TEST_DIR/run35.count"
+  : > "$TEST_DIR/sleep35.log"
+  (
+    export PATH="$TEST_DIR/bin35:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-35"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-35"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export STUB_STOP_FILE="$TEST_DIR/state-35/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run35.count"
+    export STUB_DOCKER_RC=1
+    export SLEEP_LOG="$TEST_DIR/sleep35.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err35.log"
+  )
+  if grep -q "cycle court (rc=1" "$TEST_DIR/err35.log" \
+     && grep -q -- "-- voir $TEST_DIR/state-35/test-prefix-35-1.log" "$TEST_DIR/err35.log"; then
+    ok "le message de cycle court rc=1 nomme $TEST_DIR/state-35/test-prefix-35-1.log"
+  else
+    ko "journal non nomme sur rc=1 : $(head -3 "$TEST_DIR/err35.log")"
+  fi
+)
+echo ""
+
+# --- Test 36 : controle negatif du precedent -- rc=0 ne nomme RIEN (#15278)
+# Le rappel est pose sur rc != 0 seulement. Sans ce controle, un `-- voir`
+# ajoute inconditionnellement passerait le test 35 tout en alourdissant chaque
+# cycle sain du journal.
+echo "Test 36 : controle negatif -- un cycle rc=0 ne porte PAS le rappel de journal (#15278)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin36" "$TEST_DIR/state-36"
+  cat > "$TEST_DIR/bin36/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  touch "\$STUB_STOP_FILE"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin36/docker"
+  cat > "$TEST_DIR/bin36/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin36/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin36/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin36/ps"
+  rm -f "$TEST_DIR/state-36/stop" "$TEST_DIR/state-36/pids" "$TEST_DIR/run36.count"
+  : > "$TEST_DIR/sleep36.log"
+  (
+    export PATH="$TEST_DIR/bin36:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-36"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-36"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export STUB_STOP_FILE="$TEST_DIR/state-36/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run36.count"
+    export SLEEP_LOG="$TEST_DIR/sleep36.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err36.log"
+  )
+  if grep -q "cycle court (rc=0" "$TEST_DIR/err36.log" \
+     && ! grep -q -- "-- voir " "$TEST_DIR/err36.log"; then
+    ok "cycle rc=0 journalise sans rappel de journal (le rappel reste reserve aux echecs)"
+  else
+    ko "rappel indu sur rc=0, ou ligne rc=0 absente : $(head -3 "$TEST_DIR/err36.log")"
+  fi
+)
+echo ""
+# --- Test 37 : etat NON QUALIFIE -- fail-closed, jamais retire (#15278) -----
+# Le retrait est borne par une LISTE d'etats prouves non en cours
+# (created/exited/dead), pas par une liste d'exclusion. Un etat que ce script
+# ne qualifie pas (`restarting`, ou un etat qu'une version future de docker
+# introduirait) ne doit donc PAS autoriser une destruction : c'est le seul
+# cote ou l'erreur tue un job legitime.
+echo "Test 37 : etat non qualifie (restarting) -- nom considere detenu, jamais retire (#15278)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin37" "$TEST_DIR/state-37"
+  cat > "$TEST_DIR/bin37/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "inspect" ]; then
+  # 'restarting' n'est ni en cours ni prouve mort : le garde doit attendre.
+  # Le conteneur rend le nom au sondage STUB_ORPHAN_POLLS+1.
+  N="\$(cat "\$STUB_INSPECT_COUNT" 2>/dev/null || echo 0)"
+  N=\$(( N + 1 ))
+  echo "\$N" > "\$STUB_INSPECT_COUNT"
+  if [ "\$N" -le "\${STUB_ORPHAN_POLLS:-2}" ]; then echo "restarting"; fi
+  exit 0
+fi
+if [ "\$1" = "rm" ]; then echo "\$*" >> "\$STUB_RM_LOG"; exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
+  RUNS=\$(( RUNS + 1 ))
+  echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  touch "\$STUB_STOP_FILE"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin37/docker"
+  cat > "$TEST_DIR/bin37/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin37/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin37/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin37/ps"
+  rm -f "$TEST_DIR/state-37/stop" "$TEST_DIR/state-37/pids" \
+        "$TEST_DIR/run37.count" "$TEST_DIR/inspect37.count"
+  : > "$TEST_DIR/rm37.log"; : > "$TEST_DIR/sleep37.log"
+  (
+    export PATH="$TEST_DIR/bin37:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-37"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-37"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS=5
+    export COURSIA_RUNNER_NAME_RECLAIM_WARN_SECS=10
+    # 3 sondages tenus : c'est ce qui fait atteindre le seuil d'avertissement
+    # (waited=10 au 3e) avant que le nom ne soit rendu au 4e. A 2 sondages la
+    # boucle sort a waited=5 et l'avertissement ne peut pas tomber -- c'est un
+    # fait de cadence, pas un defaut du garde.
+    export STUB_ORPHAN_POLLS=3
+    export STUB_STOP_FILE="$TEST_DIR/state-37/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run37.count"
+    export STUB_INSPECT_COUNT="$TEST_DIR/inspect37.count"
+    export STUB_RM_LOG="$TEST_DIR/rm37.log"
+    export SLEEP_LOG="$TEST_DIR/sleep37.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err37.log"
+  )
+  if [ ! -s "$TEST_DIR/rm37.log" ]; then
+    ok "aucun retrait sur un etat non qualifie (fail-closed : l'inconnu ne detruit rien)"
+  else
+    ko "retrait interdit sur etat non qualifie : $(cat "$TEST_DIR/rm37.log")"
+  fi
+  if grep -q "nom toujours detenu (restarting)" "$TEST_DIR/err37.log" \
+     && [ "$(cat "$TEST_DIR/run37.count" 2>/dev/null || echo 0)" = "1" ]; then
+    ok "l'etat non qualifie est traite comme 'detenu', puis le slot reprend a la liberation"
+  else
+    ko "attente sur etat non qualifie attendue : err=$(head -2 "$TEST_DIR/err37.log") runs=$(cat "$TEST_DIR/run37.count" 2>/dev/null || echo 0)"
+  fi
+)
+echo ""
+
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au

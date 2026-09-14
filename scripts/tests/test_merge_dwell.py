@@ -60,6 +60,19 @@ def test_message_de_refus_nomme_le_geste_de_levee():
     assert merge_dwell.WAIVER_LABEL in msg
 
 
+def test_message_de_refus_porte_lheure_de_levee_absolue():
+    """#15693 : l'heure de tete ET l'heure de LEVEE. « 101 min » oblige la
+    lane a refaire le calcul et l'incite a agir ; un re-push reactionnaire
+    remet le plancher a zero depuis la nouvelle tete. Tete 11:55 + plancher
+    120 min -> leve au premier balayage suivant 13:55."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW.replace(hour=11, minute=55), NOW, 120.0
+    )
+    assert ok is False
+    assert "tete du 2026-09-07T11:55:00Z" in msg
+    assert "2026-09-07T13:55:00Z" in msg, "l'heure de levee, pas seulement les minutes"
+
+
 # --- 2. le futur n'est pas « tres vieux » -----------------------------------
 
 def test_tete_dans_le_futur_refusee():

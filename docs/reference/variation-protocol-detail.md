@@ -16,6 +16,23 @@ Mesuré sur les **55 PR taguées** mergées depuis la ratification du 2026-07-21
 
 La raison est bonne, pas paresseuse : un `prev: MED/lean` nu est re-dérivable de mémoire, donc contestable ; un `prev: MED/lean #8954` pointe vers une PR dont on peut relire le diff. La spec a été alignée sur la pratique (2026-07-30) plutôt que d'imposer du churn.
 
+### 2.1 Le `prev:` déclaré n'est PAS la clé d'adjacence — l'organe lit la séquence mergée (#15589)
+
+Jusqu'au 2026-09-11, la règle disait : « **le genre est la clé d'adjacence** ». C'était faux, et faux **depuis #12095**. Le mécanisme réel, lu dans le code de [`scripts/ci/variation_adjacency_guard.py`](../../scripts/ci/variation_adjacency_guard.py) :
+
+| | source du prédécesseur | champ rendu |
+|---|---|---|
+| **cas normal** | la **séquence mergée** de la lane (option `--merged-prs-file`) | `prev_genre`, `prev_pr`, `prev_source: "merged-sequence"` |
+| **repli** (premier grain, ou échec de fetch — jamais un crash) | le `prev:` **déclaré** | `prev_source: "declared"` |
+
+Le `prev:` déclaré garde une valeur **documentaire** (il dit ce que l'auteur croyait) et il est exposé dans un champ **séparé**, `declared_prev_genre`, précisément pour que le gate ne s'y fie pas. La raison est mesurée : **le `prev:` est figé à l'ouverture de la PR**, donc une lane qui merge des grains pendant que sa PR est ouverte rend le champ périmé. #11963 a mesuré `prev: MED/guard #11841` — exact à la rédaction, suivi de **quatre** grains mergés ; le vrai prédécesseur était `notebook-python`. L'adjacence est une propriété de **ce que la lane a réellement mergé**, pas de ce qu'elle a déclaré.
+
+**Ce que ça coûte quand on lit la règle à la lettre.** Le 2026-09-11, au merge-gate, le coordinateur a dérivé l'adjacence à la main depuis les `prev:` déclarés et posé **deux HOLD motivés G-VAR-3** sur #15551 (`prev: LIGHT/readme #15550`) et #15552 (`prev: LIGHT/readme #15551`) — une chaîne de trois `LIGHT/readme` déclarés, qualifiée d'« inexemptable par construction ». L'organe, interrogé ensuite, rend l'inverse sur les deux : `adjacent: false`, `prev_genre: "guard"`, `prev_pr: 15569`, `prev_source: "merged-sequence"`. Le prédécesseur réel était #15569 (`MED/guard`), mergé à 11:34:51Z, qui s'interpose dans la séquence et **rompt** l'adjacence. Deux rétractations ont dû être postées (`issuecomment-5633877872`, `issuecomment-5633878069`). Le défaut n'est donc pas réservé aux workers : il a fait écrire un motif faux au coordinateur, dans le geste même que la règle existe pour outiller.
+
+**Conséquence opérationnelle, à ne pas inverser** : un `prev:` qui pointe une PR **encore ouverte n'est pas un défaut**, et ne doit pas être signalé. La piste « vérifier que le `prev:` référence une PR mergée » a été **implémentée, mesurée, puis retirée** le 2026-09-08 : invariant `PREV-ABANDONED`, [`validate_prev_targets`](../../scripts/ci/variation_prev_guard.py) — le gate ne rougit désormais que sur une PR **fermée sans merge** (lignée abandonnée), jamais sur une PR en vol. Mesure : **cinq** PRs ouvertes bloquées (#15156, #15190, #15207, #15209, #15210) citant **quatre** prédécesseurs distincts (#15129, #15175, #15199, #15203) — **les quatre OPEN, pas un seul abandonné**. Flaguer `OPEN` punissait exactement le comportement que **R1** de [`proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) *impose* (« 1 PR entre 2 wakeups = PLANCHER, jamais plafond »). Seule la relecture trompeuse est un défaut — et elle est traitée par la prose ci-dessus, pas par un gate.
+
+**Hors périmètre** : le vocabulaire de genre fail-OPEN de `canonicalize_genre` est un autre défaut, suivi par **#13475**.
+
 ## 3. Forme canonique vs substance — le guard est agnostique à la ponctuation
 
 Le guard [`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guard.yml) matche par mot-clé (`Grain:`, `lane`) en casse insensible, après `tr -d '*\`'` pour neutraliser la décoration markdown. Il ne voit **ni** le séparateur (`—` / `·` / virgule) **ni** la casse des libellés (`Lane:` et les backticks passent).

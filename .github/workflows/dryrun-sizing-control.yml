@@ -1,0 +1,106 @@
+name: Dry-run sizing control (ai-01 reference copies)
+
+# Acceptance A de #15228 (les trois reserves NanoClaw du 2026-09-08 sur #15214).
+#
+# La suite de controle du dry-run de dimensionnement existe, elle est serieuse
+# -- 674 lignes, ~70 assertions, et son sujet est le MODE DE DEFAILLANCE (la
+# premiere version du script rendait « passe » quand le budget etait illisible)
+# -- mais elle n'etait appelee par AUCUN workflow. Un test que personne ne lance
+# est un test qui cessera de passer sans que personne ne l'apprenne : il ne
+# reste de lui que la confiance qu'il a value. Le cablage est presque gratuit,
+# la suite s'injecte deja par variables d'environnement et ne demande aucun
+# service.
+#
+# Aucune machine reelle n'est touchee par la suite : pas de systemd (un faux
+# `systemctl` est fabrique sous un TMPDIR efface a la sortie), pas de `/etc`,
+# pas de redemarrage, pas de docker. D'ou un runner GitHub-hosted : le job ne
+# reclame ni slot auto-heberge (ressource rare, cf la famine de #12817) ni
+# secret, et n'entre donc pas dans `SELF_HOSTED_WORKFLOW_ALLOWLIST`.
+#
+# DEUX ECHECS DISTINCTS, jamais confondus (doctrine #8819 « non mesure n'est
+# pas verifie ») :
+#
+#   rc=1  une assertion est tombee          -> la configuration REGRESSE
+#   rc=2  le harnais a ABANDONNE            -> la suite n'a RIEN mesure
+#
+# Le second n'est pas un succes deguise : il est rouge lui aussi, avec un
+# message qui dit qu'on ne sait rien -- surtout pas que tout va bien. C'est
+# exactement le piege que ce harnais a ete ecrit pour fermer (un budget
+# illisible rendait « passe »), et le cabler en confondant les deux le
+# rouvrirait au niveau du workflow.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - 'scripts/ci/docker/linux-runner/persist/ai-01/**'
+      # Self-cover (#8822) : un workflow filtre par chemins doit lister son
+      # propre fichier en premier. Sans cela, la PR qui retire le dernier
+      # chemin filtre ne le re-declenche plus -- le job ne peut alors plus ni
+      # re-mesurer ni retirer ce qu'il a pose, et son verdict survit a sa cause.
+      - '.github/workflows/dryrun-sizing-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dryrun-sizing-control-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dryrun-sizing-control:
+    name: "Dry-run sizing control (ai-01 reference copies)"
+    # GitHub-hosted, et non auto-heberge : la suite est du bash pur, sans
+    # secret ni acces machine, et dure quelques minutes. Un `runs-on`
+    # auto-heberge exigerait une entree dans SELF_HOSTED_WORKFLOW_ALLOWLIST et
+    # une garde anti-fork pour un job qui n'en a pas besoin.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Syntaxe des deux scripts
+        run: |
+          set -euo pipefail
+          bash -n scripts/ci/docker/linux-runner/persist/ai-01/dryrun-sizing-control.sh
+          bash -n scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh
+          echo "Les deux scripts parsent."
+
+      - name: Suite de controle (fixtures, aucune machine reelle)
+        run: |
+          # `set -e` est volontairement ABSENT : il faut lire le code de retour
+          # de la suite pour distinguer une assertion cassee d'un abandon du
+          # harnais. `pipefail` n'a pas d'objet ici (aucun pipe).
+          set -uo pipefail
+
+          SUITE=scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh
+
+          # TMPDIR POSIX explicite. La suite sonde elle-meme que ses faux
+          # gagnent sur PATH et ABANDONNE (rc=2) sinon -- avec un TMPDIR en
+          # forme Windows, `command -v systemctl` resout le VRAI binaire et la
+          # suite appellerait le vrai `chown`. On ne devine pas la forme de
+          # TMPDIR (un proxy) : la suite mesure l'effet, et on lui donne le
+          # repertoire canonique.
+          TMPDIR=/tmp bash "$SUITE"
+          rc=$?
+
+          case "$rc" in
+            0)
+              echo "::notice::Suite verte -- les refus attendus et les succes attendus sont tous tenus."
+              ;;
+            1)
+              echo "::error::ASSERTION CASSEE. Le dry-run de dimensionnement ne tient plus son contrat : voir le detail 'KO' ci-dessus. La suite A mesure, et elle a trouve une regression."
+              exit 1
+              ;;
+            2)
+              echo "::error::ABANDON DU HARNAIS. L'isolation a echoue (faux binaires non prioritaires sur PATH, ou script sous test introuvable) : la suite n'a RIEN mesure. Ni conformite ni non-conformite ne sont etablies -- ne pas lire ce rouge comme une regression de la configuration."
+              exit 1
+              ;;
+            *)
+              echo "::error::Code de retour inattendu ($rc) -- verdict indetermine, ne pas conclure."
+              exit 1
+              ;;
+          esac

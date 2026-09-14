@@ -213,8 +213,8 @@ claude mcp add --transport http nom https://url
 ### Serveurs Populaires
 
 ```bash
-# Recherche Web (SearXNG)
-claude mcp add --transport http searxng https://search.myia.io/
+# Recherche Web (SearXNG) — instance locale requise (cf. INSTALLATION-CLAUDE-CODE.md)
+claude mcp add --transport http searxng http://localhost:8181/
 
 # Playwright (automatisation navigateur)
 claude mcp add --transport stdio playwright -- \

@@ -67,13 +67,11 @@ layout: default
 | n-grammes, modèles de langue | `GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb` |
 | Markov caché (HMM), Viterbi | `Probas/Infer/Infer-*` |
 | Automates finis, transducteurs (morphologie) | `SymbolicAI/SMT/Automata/`, `SymbolicAI/SMT/Z3-API/`, `Sudoku/` |
-| CRF / structured prediction | **GAP** — pas de notebook dédié (voir `Probas/Infer/Infer-*` pour HMM/Viterbi amont) |
+| CRF / structured prediction | **GAP** — pas de notebook dédié |
 | Parsing CFG/PCFG, CYK | **GAP** — pas de CYK ni de notebook PCFG dédié |
 | Sémantique compositionnelle | `SymbolicAI/SemanticWeb` |
-| Word embeddings, RNN, LSTM, seq2seq, Transformers | `GenAI/Texte/10*` |
+| Word embeddings → Transformers | `GenAI/Texte/10*` |
 | Agents conversationnels, LUIS, Dialogflow | `GenAI/Plateformes-Conversationnelles` |
-
-<br><br>
 
 > Aucun des 8 arcs n'est perdu silencieusement : chacun renvoie vers un **owner
 > réel** ou est marqué **GAP** quand aucun notebook exécutable n'existe. Les
