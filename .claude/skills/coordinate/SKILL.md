@@ -65,6 +65,7 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle).
 3. **Bloqueurs user** : re-poke explicite dans vscode a CHAQUE fin de session tant que l'action user n'est pas faite ([user-blocker-signaling](../../rules/user-blocker-signaling.md)).
 4. MAJ `coordinator-durable-state.md` si l'etat durable a change (PR#/SHA ephemeres → dashboard, pas la memoire).
+5. **Une seule investigation par cycle, et en fin de session.** Toute question ouverte qui n'est **pas** un bloqueur de merge se note et attend le cycle suivant : mesurer un organe, verifier une provenance, instruire un doute de securite sont des gestes utiles et couteux, qui n'ont leur place qu'apres les dispatchs, les relances et la passe de merge. Une investigation qui deborde sur le cycle suivant est une investigation de trop -- elle a mange le temps des lanes. Si l'objet est reellement urgent, il devient un **grain dispatche**, pas une enquete du coordinateur.
 
 ## Regles importantes
 
