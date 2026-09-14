@@ -930,3 +930,71 @@ class TestGetChangedNotebooksPerimeter:
         monkeypatch.setattr(vpn, "REPO_ROOT", repo)
         names = sorted(p.name for p in vpn.get_changed_notebooks("main"))
         assert names == ["on_branch.ipynb", "uncommitted.ipynb"]
+
+
+# ---------------------------------------------------------------------------
+# CLI seam: a green exit must mean "nothing to validate", never "I failed to
+# validate what you asked me to". `base` is an OPTIONAL positional declared
+# before `paths`, so `validate_pr_notebooks.py a.ipynb b.ipynb` binds
+# base=a.ipynb and validates only b.ipynb — N requested, N-1 checked, exit 0.
+# ---------------------------------------------------------------------------
+
+class TestCliRefusesToFakeAGreenRun:
+    def test_four_paths_without_base_do_not_report_three_of_three(
+        self, tmp_path, capsys
+    ):
+        """Founding case: 4 paths pasted with no base → "3/3 passed", exit 0."""
+        import validate_pr_notebooks as vpn
+        nbs = [
+            _write_nb(tmp_path / f"nb{i}.ipynb", [_code("x = 1")])
+            for i in range(1, 5)
+        ]
+        with pytest.raises(SystemExit) as exc:
+            vpn.main([str(p) for p in nbs])
+        assert exc.value.code == 2
+        err = capsys.readouterr().err
+        assert "3 of 4" in err, err
+        assert "not a git ref" in err
+
+    def test_ambiguous_call_names_the_fix(self, tmp_path, capsys):
+        import validate_pr_notebooks as vpn
+        nb = _write_nb(tmp_path / "a.ipynb", [_code("x = 1")])
+        with pytest.raises(SystemExit):
+            vpn.main([str(nb)])
+        err = capsys.readouterr().err
+        assert "validate_pr_notebooks.py origin/main" in err, err
+
+    def test_base_then_paths_still_validates_every_file(self, tmp_path):
+        import validate_pr_notebooks as vpn
+        nbs = [
+            _write_nb(tmp_path / f"nb{i}.ipynb", [_code("x = 1")])
+            for i in range(1, 5)
+        ]
+        assert vpn.main(["origin/main", *[str(p) for p in nbs]]) == 0
+
+    def test_dropped_requested_path_is_an_error_not_green(self, tmp_path, capsys):
+        """A typo'd path in an explicit list must not shrink the run silently."""
+        import validate_pr_notebooks as vpn
+        good = _write_nb(tmp_path / "good.ipynb", [_code("x = 1")])
+        missing = tmp_path / "typo.ipynb"
+        assert vpn.main(["origin/main", str(good), str(missing)]) == 2
+        assert "dropped" in capsys.readouterr().err
+
+    def test_unresolvable_base_is_not_green(self, capsys):
+        import validate_pr_notebooks as vpn
+        assert vpn.main(["no-such-ref-xyz"]) == 2
+        assert "does not resolve" in capsys.readouterr().err
+
+    def test_non_notebook_positional_is_not_green(self, capsys):
+        import validate_pr_notebooks as vpn
+        assert vpn.main(["README.md"]) == 2
+        assert "does not resolve" in capsys.readouterr().err
+
+    def test_nothing_changed_is_still_exit_0(self, monkeypatch, capsys):
+        """The legitimate empty result keeps its green exit — the guard must
+        not turn 'nothing to do' into an error."""
+        import validate_pr_notebooks as vpn
+        monkeypatch.setattr(vpn, "_ref_exists", lambda ref: True)
+        monkeypatch.setattr(vpn, "get_changed_notebooks", lambda *a, **k: [])
+        assert vpn.main(["origin/main"]) == 0
+        assert "No notebooks changed" in capsys.readouterr().out
