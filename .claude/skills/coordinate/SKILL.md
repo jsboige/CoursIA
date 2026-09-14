@@ -15,7 +15,19 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 - `--dispatch` : forcer une passe de dispatch explicite vers les lanes idle
 - `--focus <topic>` : concentrer le cycle sur un sujet (texte libre : lean, genai, qc, renum, ...)
 
+## Budget de cycle (HARD — mandat user 2026-09-14)
+
+1. **Un cycle tient en 1 h a 1 h 30 de travail entre deux crons de 4 h**, puis la session se rendort. Verbatim user : « Ca donne entre 1h et 1h30 max de travail entre 2 crons, c'est deja beaucoup je pense, et il ne faudrait pas depasser ca. Sinon c'est un defaut de delegation. »
+2. **Decoupe interne des phases — EN ATTENTE DE MESURE.** Le user a recuse une decoupe chiffree posee au jugement : « sur les durees suggerees c'est au doigt mouille, hein, le mieux serait d'etudier ce qui a bien marche debut juillet quand on produisait beaucoup sans pour autant trop lesiner sur la qualite ». La mesure du regime de debut juillet (fenetre 2026-07-01 → 07-14) est deleguee a la lane `myia-ai-01:claudish` (DM `msg-20260914T195758-l93rsb`). **A REMPLACER par la decoupe mesuree — ne pas poser de chiffre au jugement.** Tant que cette mesure n'est pas rendue, aucune duree de phase n'est normative : les trois phases gardent leur ORDRE (grounding → dispatch → travail reel) sans budget chiffre.
+3. **Mesurer le temps activement**, pas au ressenti : `date -u` en entree et en sortie de chaque phase ; le total du cycle est annonce dans le rapport de fin.
+4. **Un depassement se traite en DELEGUANT**, jamais en rognant le grounding ou le dispatch.
+5. **Tout ce qui est delegable EST delegue**, sans arbitrage au cas par cas. Attendre le cron suivant pour recuperer un resultat est gratuit — verbatim : « tu peux tout a fait attendre un cron pour economiser tes tokens, on n'est pas a 4h pres sauf crise a gerer ».
+6. **Le contenu appartient au coordinateur adjoint** (`myia-po-2025:CoursIA-2`) : notebooks, series, pedagogie. ai-01 ne garde que les PRs de **CI et de harnais**. Entrer dans le corps d'une PR de contenu est par defaut une faute de budget.
+7. **Les taches lourdes** (tests, builds lake, trainings, papermill) se lancent en arriere-plan **AU DEBUT de la phase de travail reel**, pour travailler en foreground pendant leur execution.
+
 ## Process
+
+Les phases ci-dessous s'executent sous le budget defini par la section `## Budget de cycle` ci-dessus : 1 h a 1 h 30 de travail au total, tout depassement etant un defaut de delegation.
 
 ### Phase 1 - Contexte memoire
 
