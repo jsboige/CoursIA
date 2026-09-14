@@ -11,9 +11,9 @@ accompagne de metadonnees anti-look-ahead : la disponibilite du score est
 ``max(acceptance_timestamp, prochaine seance US)``, jamais la periode
 comptable du filing.
 
-Aucune performance ni equivalence exacte avec Brain n'est claimsee. Le module
-est concu pour etre branche ulterieurement comme custom data dans un backtest
-QC (grain de suivi hors scope de cette tranche).
+Aucune equivalence exacte avec Brain n'est claimsee. EDGAR-2 etend ce module
+avec une serie historique et un rendu Cloud-only consomme par ``main_edgar.py``;
+les performances mesurees et leurs limites sont consignees dans le README.
 
 Conventions :
     - Python 3.10+, PEP 8 (snake_case).
@@ -62,6 +62,7 @@ DEFAULT_USER_AGENT = "CoursIA Filing-Language-Stability research@example.com"
 #: Duree minimale entre deux requetes sortantes. SEC tolere ~10 req/s ; on
 #: reste un ordre de grandeur en dessous par courtoisie.
 MIN_REQUEST_INTERVAL_SECONDS = 0.4
+_LAST_REQUEST_AT: list[float] = []
 
 #: Chemin du cache HTTP local (gitignored). Les cles sont des SHA-1 d'URL.
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent / "cache"
@@ -213,8 +214,9 @@ def _http_get(
     if path.exists():
         return path.read_bytes()
 
-    if last_request_at is not None and last_request_at:
-        elapsed = time.monotonic() - last_request_at[0]
+    clock = last_request_at if last_request_at is not None else _LAST_REQUEST_AT
+    if clock:
+        elapsed = time.monotonic() - clock[0]
         if elapsed < min_interval:
             time.sleep(min_interval - elapsed)
 
@@ -234,8 +236,11 @@ def _http_get(
             backoff *= 2
 
     path.write_bytes(payload)
-    if last_request_at is not None:
-        last_request_at[0] = time.monotonic()
+    now = time.monotonic()
+    if clock:
+        clock[0] = now
+    else:
+        clock.append(now)
     return payload
 
 
@@ -244,6 +249,7 @@ def _http_get(
 # ---------------------------------------------------------------------------
 
 _SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+_SUBMISSIONS_ARCHIVE_URL = "https://data.sec.gov/submissions/{name}"
 _ARCHIVES_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/{doc}"
 
 # Regex Item 1A. Le pattern matche ``Item 1A`` (ou avec points espaces)
@@ -274,32 +280,18 @@ _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"[^\S\n]+")
 
 
-def list_recent_10k(
-    cik: int, n: int = 2, *, cache_dir: Path = DEFAULT_CACHE_DIR
-) -> list[FilingRecord]:
-    """Renvoie les ``n`` 10-K les plus recents pour un emetteur.
-
-    Trie par date de depot DESC ; ne garde que les 10-K ; parse le JSON
-    submissions. Les ``acceptance_timestamp`` sont lus dans le bloc filing
-    (EDGAR publie ``acceptanceDateTime`` au format ISO 8601). Si ce champ
-    est absent pour un filing -- cas rare -- on fallback sur la fin de
-    journee de la ``filingDate`` ; c'est une borne conservative qui
-    preserve l'invariant "dispo apres acceptation".
-    """
-    if n < 1:
-        return []
-    url = _SUBMISSIONS_URL.format(cik=cik)
-    payload = _http_get(url, cache_dir=cache_dir)
-    data = json.loads(payload)
-    recent = data["filings"]["recent"]
+def _filing_records(payload: dict, cik: int) -> list[FilingRecord]:
+    """Parse le bloc columnar ``recent`` d'un payload submissions EDGAR."""
     rows: list[FilingRecord] = []
+    forms = payload.get("form", [])
+    acceptances = payload.get("acceptanceDateTime", [None] * len(forms))
     for form, acc, doc, filed, period, accept in zip(
-        recent["form"],
-        recent["accessionNumber"],
-        recent["primaryDocument"],
-        recent["filingDate"],
-        recent["reportDate"],
-        recent.get("acceptanceDateTime", [None] * len(recent["form"])),
+        forms,
+        payload.get("accessionNumber", []),
+        payload.get("primaryDocument", []),
+        payload.get("filingDate", []),
+        payload.get("reportDate", []),
+        acceptances,
     ):
         if form != "10-K":
             continue
@@ -315,12 +307,73 @@ def list_recent_10k(
                 acceptance_timestamp=_parse_acceptance(accept, filed),
             )
         )
-        if len(rows) == n:
-            break
-    # Tri defensif (l'ordre EDGAR est DESC par filingDate mais on ne
-    # fait pas confiance en cas de quirk).
-    rows.sort(key=lambda r: r.filing_date, reverse=True)
     return rows
+
+
+def list_10k_history(
+    cik: int,
+    *,
+    since: date | None = None,
+    until: date | None = None,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+) -> list[FilingRecord]:
+    """Renvoie l'historique 10-K complet necessaire a une fenetre donnee.
+
+    Le JSON principal ``submissions/CIK....json`` ne contient qu'une fenetre
+    recente. Les blocs plus anciens sont enumeres dans ``filings.files`` : ils
+    sont donc telecharges aussi, au lieu de confondre "recent" avec
+    "historique". Les bornes portent sur la date de depot et la sortie est
+    triee DESC, dedoublonnee par accession.
+
+    Un filing anterieur a ``since`` est conserve comme ancre si c'est le plus
+    recent avant la borne : il permet de calculer la premiere paire dont le
+    filing N tombe dans la fenetre sans tronquer N-1.
+    """
+    data = json.loads(
+        _http_get(_SUBMISSIONS_URL.format(cik=cik), cache_dir=cache_dir)
+    )
+    rows = _filing_records(data["filings"]["recent"], cik)
+    for file_meta in data["filings"].get("files", []):
+        name = file_meta.get("name", "")
+        if not name:
+            continue
+        archive = json.loads(
+            _http_get(
+                _SUBMISSIONS_ARCHIVE_URL.format(name=name), cache_dir=cache_dir
+            )
+        )
+        rows.extend(_filing_records(archive, cik))
+
+    unique = {row.accession: row for row in rows}
+    ordered = sorted(unique.values(), key=lambda row: row.filing_date, reverse=True)
+    if until is not None:
+        ordered = [row for row in ordered if row.filing_date <= until]
+    if since is None:
+        return ordered
+
+    in_window = [row for row in ordered if row.filing_date >= since]
+    anchors = [row for row in ordered if row.filing_date < since]
+    if anchors:
+        in_window.append(anchors[0])
+    return in_window
+
+
+def list_recent_10k(
+    cik: int, n: int = 2, *, cache_dir: Path = DEFAULT_CACHE_DIR
+) -> list[FilingRecord]:
+    """Renvoie les ``n`` 10-K les plus recents pour un emetteur.
+
+    Les ``acceptance_timestamp`` sont lus dans EDGAR ; si ce champ est absent,
+    la fin de ``filingDate`` fournit une borne conservative. Cette fonction
+    garde le contrat EDGAR-1 sans telecharger les blocs submissions archives.
+    """
+    if n < 1:
+        return []
+    payload = _http_get(_SUBMISSIONS_URL.format(cik=cik), cache_dir=cache_dir)
+    data = json.loads(payload)
+    rows = _filing_records(data["filings"]["recent"], cik)
+    rows.sort(key=lambda row: row.filing_date, reverse=True)
+    return rows[:n]
 
 
 def _parse_acceptance(raw: str | None, fallback_filed: str) -> datetime:
@@ -419,6 +472,95 @@ def tfidf_cosine(a: str, b: str) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _failed_pair(ticker: str, cik: int) -> FilingPair:
+    """Construit le sentinel historique d'EDGAR-1 lorsqu'une paire manque."""
+    empty = FilingRecord(
+        cik=cik,
+        accession="",
+        primary_document="",
+        filing_date=date(1970, 1, 1),
+        period_of_report=date(1970, 1, 1),
+        acceptance_timestamp=datetime(1970, 1, 1, 0, 0, 0),
+    )
+    return FilingPair(
+        ticker=ticker,
+        newer=empty,
+        older=empty,
+        extraction_newer="failed",
+        extraction_older="failed",
+        similarity=None,
+        status="failed",
+    )
+
+
+def _build_pair_from_records(
+    ticker: str,
+    newer: FilingRecord,
+    older: FilingRecord,
+    *,
+    cache_dir: Path,
+    sections: dict[str, tuple[str | None, str]] | None = None,
+) -> FilingPair:
+    """Calcule une paire adjacente, avec cache des sections deja extraites."""
+    section_cache = sections if sections is not None else {}
+    for filing in (newer, older):
+        if filing.accession not in section_cache:
+            text = fetch_10k_text(filing, cache_dir=cache_dir)
+            section_cache[filing.accession] = extract_item_1a(text)
+
+    section_newer, mode_newer = section_cache[newer.accession]
+    section_older, mode_older = section_cache[older.accession]
+    similarity = None
+    status = "failed"
+    if mode_newer == "item_1a" and mode_older == "item_1a":
+        similarity = tfidf_cosine(section_newer, section_older)
+        status = "item_1a"
+    return FilingPair(
+        ticker=ticker,
+        newer=newer,
+        older=older,
+        extraction_newer=mode_newer,
+        extraction_older=mode_older,
+        similarity=similarity,
+        status=status,
+    )
+
+
+def build_history(
+    ticker: str,
+    cik: int,
+    *,
+    since: date | None = None,
+    until: date | None = None,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+) -> list[FilingPair]:
+    """Construit toutes les paires 10-K adjacentes d'une fenetre historique.
+
+    La borne ``since`` s'applique au filing N ; ``list_10k_history`` conserve
+    automatiquement un filing N-1 anterieur comme ancre. Chaque document est
+    telecharge et extrait une seule fois, meme s'il appartient a deux paires.
+    Les paires echouees restent dans la serie avec ``similarity=None`` : le
+    backtest peut les exclure sans confondre echec et similarite nulle.
+    """
+    filings = list_10k_history(
+        cik, since=since, until=until, cache_dir=cache_dir
+    )
+    sections: dict[str, tuple[str | None, str]] = {}
+    pairs = [
+        _build_pair_from_records(
+            ticker,
+            filings[index],
+            filings[index + 1],
+            cache_dir=cache_dir,
+            sections=sections,
+        )
+        for index in range(len(filings) - 1)
+    ]
+    if since is not None:
+        pairs = [pair for pair in pairs if pair.newer.filing_date >= since]
+    return pairs
+
+
 def build_pair(
     ticker: str,
     cik: int,
@@ -427,59 +569,14 @@ def build_pair(
 ) -> FilingPair:
     """Construit la paire (N, N-1) la plus recente pour un ticker.
 
-    Si le nombre de 10-K est inferieur a 2, le statut est ``"failed"``
-    avec similarite ``None``. Si l'extraction de l'un des deux Item 1A
-    echoue, le statut reste ``"failed"`` -- pas de ``full_fallback``
-    (acceptance #4), et la similarite reste ``None``.
+    Ce contrat EDGAR-1 reste volontairement borne aux submissions recentes.
+    ``build_history`` est le producteur pluriannuel du backtest EDGAR-2.
     """
     rows = list_recent_10k(cik, n=2, cache_dir=cache_dir)
     if len(rows) < 2:
-        empty = FilingRecord(
-            cik=cik,
-            accession="",
-            primary_document="",
-            filing_date=date(1970, 1, 1),
-            period_of_report=date(1970, 1, 1),
-            acceptance_timestamp=datetime(1970, 1, 1, 0, 0, 0),
-        )
-        return FilingPair(
-            ticker=ticker,
-            newer=empty,
-            older=empty,
-            extraction_newer="failed",
-            extraction_older="failed",
-            similarity=None,
-            status="failed",
-        )
-
-    newer, older = rows[0], rows[1]
-
-    text_newer = fetch_10k_text(newer, cache_dir=cache_dir)
-    section_newer, mode_newer = extract_item_1a(text_newer)
-
-    text_older = fetch_10k_text(older, cache_dir=cache_dir)
-    section_older, mode_older = extract_item_1a(text_older)
-
-    if mode_newer == "item_1a" and mode_older == "item_1a":
-        sim = tfidf_cosine(section_newer, section_older)
-        return FilingPair(
-            ticker=ticker,
-            newer=newer,
-            older=older,
-            extraction_newer=mode_newer,
-            extraction_older=mode_older,
-            similarity=sim,
-            status="item_1a",
-        )
-
-    return FilingPair(
-        ticker=ticker,
-        newer=newer,
-        older=older,
-        extraction_newer=mode_newer,
-        extraction_older=mode_older,
-        similarity=None,
-        status="failed",
+        return _failed_pair(ticker, cik)
+    return _build_pair_from_records(
+        ticker, rows[0], rows[1], cache_dir=cache_dir
     )
 
 
@@ -542,6 +639,33 @@ def write_csv(pairs: Iterable[FilingPair], path: Path | str) -> int:
     return written
 
 
+def write_cloud_module(pairs: Iterable[FilingPair], path: Path | str) -> int:
+    """Rend les observations valides dans un module Python QC Cloud.
+
+    QC refuse les fichiers ``.csv`` dans les projets mais accepte ``.py``.
+    Cette representation derivee reste destinee a ``runs/`` (gitignore) et au
+    projet Cloud uniquement. Elle ne contient ni texte SEC ni observation en
+    echec, et son tri rend deux materialisations byte-identiques.
+    """
+    rows = sorted(
+        (
+            _format_dt(pair.available_at),
+            pair.ticker,
+            round(float(pair.similarity), 12),
+        )
+        for pair in pairs
+        if pair.similarity is not None
+    )
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# Generated from public SEC filings; Cloud-only, not committed.\n"
+        f"EDGAR_SIGNALS = {rows!r}\n",
+        encoding="utf-8",
+    )
+    return len(rows)
+
+
 # ---------------------------------------------------------------------------
 # Helper de rapport (acceptance #7)
 # ---------------------------------------------------------------------------
@@ -575,13 +699,16 @@ __all__ = [
     "MAX_TEXT_CHARS",
     "MIN_ITEM_1A_CHARS",
     "MIN_REQUEST_INTERVAL_SECONDS",
+    "build_history",
     "build_pair",
     "extract_item_1a",
     "extract_item_1a_failure_reason",
     "fetch_10k_text",
+    "list_10k_history",
     "list_recent_10k",
     "summarize",
     "tfidf_cosine",
+    "write_cloud_module",
     "write_csv",
     "EXTRACTION_FAILURE_NO_MATCH",
     "EXTRACTION_FAILURE_TOO_SHORT",

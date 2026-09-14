@@ -13,6 +13,17 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 
 **À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01 et 03 ne nécessitent que Python (numpy, matplotlib). Les notebooks 02 (Lean) et 04 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
 
+> **Hommage — Richard E. Stearns (1936-2026).** Le tout premier article publié par Richard E.
+> Stearns — alors étudiant à Carleton College — portait sur le **paradoxe d'Arrow** (*The American
+> Mathematical Monthly*, 1959). Stearns est devenu co-fondateur de la théorie de la complexité
+> computationnelle (prix Turing 1993, avec Juris Hartmanis, pour leur papier fondateur de 1965) ;
+> il s'est éteint le 29 août 2026 à Ann Arbor (Michigan), à 90 ans. La série SocialChoice garde de
+> ce lien une continuité rare : l'impossibilité d'agrégation parfaite (Arrow) et la complexité
+> computationnelle comme mesure de la difficulté sont les deux faces d'une même question. Détails
+> et résonances dans l'hommage [#15949](https://github.com/jsboige/CoursIA/issues/15949) ; un
+> encart hommage figure également dans
+> [SC-01](01-Arrow-Impossibility-Theorem.ipynb).
+
 ## Notebooks
 
 | # | Notebook | Titre | Durée | Status |

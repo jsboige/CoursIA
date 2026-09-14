@@ -217,7 +217,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
@@ -315,10 +315,10 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Sendov-Complex-Analysis.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-PFR-Entropy-Method.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-MIMO-Detection-Flips.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Analysis-I-Tao-Workflow.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-PFR-Entropy-Method.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb`
