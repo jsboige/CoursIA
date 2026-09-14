@@ -57,9 +57,11 @@ from typing import Any
 # or imported from elsewhere (e.g. from scripts/tests/).
 try:
     from grain_tag import parse_grain_tag
+    from variation_light_cap import genre_counts_light
 except ImportError:  # pragma: no cover - path bootstrap for non-script invocation
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from grain_tag import parse_grain_tag
+    from variation_light_cap import genre_counts_light
 
 # --- grain parsing (shared vocabulary) ---------------------------------------
 # The `Grain:` tag is read by the CANONICAL form-tolerant reader
@@ -70,10 +72,26 @@ except ImportError:  # pragma: no cover - path bootstrap for non-script invocati
 # universe and biasing the monoculture analysis that motivated
 # variation-protocol.md. `parse_grain` below delegates to the canonical reader.
 
-# Subset of genres that are LIGHT per G-VAR-2 (#10031, #10285):
-# guard / ledger / docs / readme / test / refs.
-# Anything else is MED or DEEP, including notebook-python, notebook-dotnet.
-LIGHT_GENRES = {"guard", "ledger", "docs", "readme", "test", "refs"}
+# --- LIGHT accounting (delegated, single source of truth) --------------------
+# The LIGHT predicate is `variation_light_cap.genre_counts_light(genre, tier)`
+# -- the CI organ's own predicate. This module used to carry its own
+# `LIGHT_GENRES` set and a BARE membership test, and the copy diverged on 9 of
+# 27 (word, tier) cells (#16168):
+#
+#   * `refs` -- a member the canonical set does not have, so the census counted
+#     it LIGHT at EVERY tier while the organ counted it light at none;
+#   * `documentation` / `prose` -- aliases the canonical predicate normalises to
+#     `docs` (#13475) and the bare test did not, so the census UNDER-counted;
+#   * any off-list word at LIGHT tier -- the canonical predicate is fail-CLOSED
+#     (an unresolvable genre counts light), the bare test was fail-OPEN.
+#
+# All three move `drift_candidate`, i.e. the set of PRs the census accuses of
+# genre laundering -- so a divergence here does not mis-render a report, it
+# biases the very analysis that motivates variation-protocol.md.
+#
+# NOT fixed by extending the copy: #13475 forbids "one more alias per word
+# met" -- that loop is what produced the defect. The fix is the delegation
+# above, the same one this module already applies to `grain_tag` (#9485).
 
 # Heuristic: indicators that the diff is enrichment/framing (i.e. could be
 # declared MED or DEEP but is marked notebook-python/-dotnet to escape the
@@ -102,7 +120,7 @@ class PRRow:
     interpretation_cue: bool  # body smells like framing/enrichissement
     n_files: int
     n_ipynb: int
-    light_genre: bool  # declared genre is in LIGHT_GENRES
+    light_genre: bool  # declared genre counts LIGHT (canonical predicate, #16168)
     drift_candidate: bool  # only_notebook AND zero_code_modif AND NOT light_genre AND interpretation_cue
 
 
@@ -207,7 +225,7 @@ def build_row(pr: dict[str, Any]) -> PRRow:
     tier, genre = parse_grain(pr.get("body", ""))
     only_nb = only_notebook(paths)
     zcm = zero_code_modif(pr)
-    light = genre in LIGHT_GENRES if genre else False
+    light = genre_counts_light(genre, tier)
     cue = has_interpretation_cue(pr.get("body", ""))
     return PRRow(
         pr=pr["number"],

@@ -188,6 +188,145 @@ def test_zero_code_modif_patch_markdown_only():
     assert zero_code_modif(pr) is True
 
 
+# --- LIGHT accounting: the census MUST agree with the CI organ (#16168) ------
+#
+# `variation_light_cap.genre_counts_light(genre, tier)` is the CI organ's
+# predicate; this census is its OFFLINE twin. Until #16168 the census carried
+# its own `LIGHT_GENRES` + a BARE membership test, and the copy diverged from
+# the organ on 9 of 27 (word, tier) cells.
+#
+# The expectations below are FROZEN LITERALS, not a value computed from either
+# module. That is deliberate: once the census delegates to the organ, comparing
+# the two predicates to each other would be vacuously true. Measuring both
+# against a third thing (this table) means a drift on EITHER side reddens, and
+# the message says which side moved.
+
+TIERS = ("LIGHT", "MED", "DEEP")
+
+# Canonical LIGHT genres + the aliases the canonical predicate normalises to
+# `docs` (#13475). LIGHT at every tier.
+ALWAYS_LIGHT = ("docs", "readme", "guard", "ledger", "test",
+                "documentation", "prose")
+
+# Words that resolve NOWHERE in the closed enumeration: the canonical predicate
+# is fail-CLOSED (#13475) so they count at LIGHT tier, and the tier-aware
+# branch (#13585) spares MED/DEEP -- a mis-chosen genre word must not
+# requalify declared deep work as a throwaway grain.
+FAIL_CLOSED_AT_LIGHT_TIER_ONLY = ("refs", "zzz-inexistant")
+
+# CONTENT genres: never LIGHT, at any tier.
+CONTENT_NEVER_LIGHT = ("notebook-python", "notebook-dotnet", "notebook-lean",
+                       "research-code", "training", "lean", "qc", "genai",
+                       "slides", "refactor", "tooling")
+
+
+def _light_contract() -> dict:
+    expected = {}
+    for word in ALWAYS_LIGHT:
+        for tier in TIERS:
+            expected[(word, tier)] = True
+    for word in FAIL_CLOSED_AT_LIGHT_TIER_ONLY:
+        expected[(word, "LIGHT")] = True
+        expected[(word, "MED")] = False
+        expected[(word, "DEEP")] = False
+    for word in CONTENT_NEVER_LIGHT:
+        for tier in TIERS:
+            expected[(word, tier)] = False
+    return expected
+
+
+LIGHT_CONTRACT = _light_contract()
+
+
+def _census_sees_light(word: str, tier: str) -> bool:
+    """What the census records in `light_genre` for a declared `tier/word`."""
+    row = vgr.build_row({
+        "number": 1,
+        "mergedAt": "2026-09-14T00:00:00Z",
+        "title": "t",
+        "body": f"Grain: {tier}/{word} -- lane myia-po-2023:CoursIA",
+        "files": [],
+    })
+    return row.light_genre
+
+
+def test_organ_predicate_matches_the_frozen_contract():
+    """The CI organ's predicate, measured against the literals above.
+
+    This is the reference the census must match. If it moves, the contract --
+    not the census -- is what needs re-reading.
+    """
+    import variation_light_cap as vlc
+
+    for (word, tier), expected in sorted(LIGHT_CONTRACT.items()):
+        got = vlc.genre_counts_light(word, tier)
+        assert got is expected, (
+            f"l'organe canonique classe {word!r} au tier {tier} en "
+            f"light={got}, le contrat gele dit {expected} -- c'est l'ORGANE "
+            f"qui a bouge, pas le recenser")
+
+
+def test_census_agrees_with_the_organ_on_every_cell():
+    """The pin: census `light_genre` == organ predicate, on all 27 cells.
+
+    On the pre-#16168 version this reddens on exactly 9 cells (`refs` at
+    MED/DEEP; `documentation` and `prose` at all three tiers;
+    `zzz-inexistant` at LIGHT) -- i.e. it is not a no-op.
+    """
+    import variation_light_cap as vlc
+
+    divergences = []
+    for (word, tier), expected in sorted(LIGHT_CONTRACT.items()):
+        census = _census_sees_light(word, tier)
+        organ = vlc.genre_counts_light(word, tier)
+        if census != organ or census is not expected:
+            divergences.append(
+                f"{word!r}@{tier}: recenser={census} organe={organ} "
+                f"contrat={expected}")
+    assert not divergences, (
+        "le recenser et l'organe canonique ne classent plus le LIGHT pareil "
+        "(le champ light_genre alimente drift_candidate, donc la divergence "
+        "deplace l'ensemble des candidats au drift) :\n  "
+        + "\n  ".join(divergences))
+
+
+def test_controle_negatif_les_genres_de_contenu_ne_glissent_pas_en_light():
+    """Controle negatif exige par l'acceptance (#16168, cf #13475).
+
+    Un elargissement de l'ensemble LIGHT se paie par un genre de CONTENU
+    compte comme jetable -- c'est la direction qui relache le plafond. Les
+    trois genres nommes doivent rester hors LIGHT sur LES DEUX predicats.
+    """
+    import variation_light_cap as vlc
+
+    for word in ("notebook-python", "research-code", "training"):
+        for tier in TIERS:
+            assert vlc.genre_counts_light(word, tier) is False, (
+                f"{word!r}@{tier} compte LIGHT chez l'organe : un genre de "
+                f"contenu consomme le budget LIGHT")
+            assert _census_sees_light(word, tier) is False, (
+                f"{word!r}@{tier} compte LIGHT chez le recenser : le census "
+                f"sous-declare la substance")
+
+
+def test_le_recenser_ne_porte_pas_de_copie_divergente_de_light_genres():
+    """La cause, pas seulement le symptome (#9485 applique au LIGHT).
+
+    Le defaut etait une SECONDE definition de l'ensemble. Une re-exportation
+    honnete (`LIGHT_GENRES = variation_light_cap.LIGHT_GENRES`) est acceptable
+    -- les deux objets sont alors identiques ; une copie divergente ne l'est
+    pas, et c'est elle que ce test refuse.
+    """
+    import variation_light_cap as vlc
+
+    if not hasattr(vgr, "LIGHT_GENRES"):
+        return
+    assert set(vgr.LIGHT_GENRES) == set(vlc.LIGHT_GENRES), (
+        f"le recenser porte une definition divergente de LIGHT_GENRES : "
+        f"{sorted(set(vgr.LIGHT_GENRES) ^ set(vlc.LIGHT_GENRES))} -- "
+        f"deleguer a l'organe, jamais recopier")
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
