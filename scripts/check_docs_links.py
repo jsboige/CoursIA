@@ -2,8 +2,8 @@
 """Check for broken relative markdown links and orphan docs across the repository.
 
 Scans CLAUDE.md, index.md, PARCOURS.md, docs/, .claude/rules/, .claude/agents/,
-.claude/skills/, and all README.md files for relative links and verifies targets
-exist.
+.claude/skills/, every ``slides/<deck>/slides.md`` deck, and all README.md files
+for relative links and verifies targets exist.
 
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
@@ -14,6 +14,16 @@ Usage:
     python scripts/check_docs_links.py --check --base origin/main
     python scripts/check_docs_links.py --quiet                # Minimal output (for CI)
     python scripts/check_docs_links.py --orphans              # Also report orphan docs
+    python scripts/check_docs_links.py --expect-broken 1      # Positive control (see below)
+
+Positive control
+----------------
+``--expect-broken N`` arms an in-band control: the scan must find AT LEAST ``N``
+broken links, otherwise it exits 2. Without it, "no broken link" is
+indistinguishable from a dead detection path (model:
+``scripts/notebook_tools/scan_slidev_composition.py``, ``controle_positif_*``).
+Point it at a tree where a link was deliberately broken, and a healthy organ
+renders rc=1 (a real finding), while a dead one renders rc=2 (control unmet).
 
 ``--check`` accepts two independent excuses for a broken link. The frozen
 ``baseline_docs_links.json`` covers paths with no comparison revision (manual
@@ -53,6 +63,20 @@ SCAN_SCOPES = [
     ".claude/agents/",
     ".claude/skills/",
 ]
+
+# Deck scope (#15867). `slides/<deck>/slides.md` was watched by NO organ: the
+# #15023 content tranche wrote 17 dead relative links on `03-logique` (PR
+# #15865) and this organ still reported "0 broken". Same failure mode as the
+# root entry points above -- `index.md` rotted because nothing watched it.
+#
+# Decks are NOT added to SCAN_SCOPES on purpose: that list rglobs `*.md`, which
+# under `slides/` would drag in 119 non-deck markdown files (`analysis/`,
+# `extracted/`, the `.marp.md` siblings) holding 734 broken links of 1367 --
+# measured on `origin/main` 2026-09-13. Those are working artifacts, not the
+# delivered deck; merging them here would redden every PR. Only the deck file
+# the course actually ships is in scope.
+DECK_DIR = "slides"
+DECK_FILENAME = "slides.md"
 
 # Directories to skip when scanning and resolving.
 #
@@ -159,6 +183,38 @@ def _is_valid_target(target: str) -> bool:
     return True
 
 
+class DeckScopeEmpty(RuntimeError):
+    """`slides/` exists yet holds no deck file: the scope would be silently empty.
+
+    A scope that matches nothing renders "0 broken links" -- indistinguishable
+    from a detection path that never ran. Refusing loudly is the whole point
+    (#15867).
+    """
+
+
+def find_deck_files() -> list[Path]:
+    """Every `slides/<deck>/slides.md` under the deck directory, in path order.
+
+    Resolving the ``_archive/`` question the same way ``SKIP_DIRS`` does: an
+    archived deck is NOT skipped (this organ deliberately validates `_archive/`
+    READMEs -- see the SKIP_DIRS note). Returns [] only when `slides/` itself is
+    absent, which is the case in the tmp-tree tests; an existing but empty deck
+    scope raises instead.
+    """
+    slides = REPO_ROOT / DECK_DIR
+    if not slides.is_dir():
+        return []
+    decks = sorted(
+        p for p in slides.rglob(DECK_FILENAME) if not _should_skip(p)
+    )
+    if not decks:
+        raise DeckScopeEmpty(
+            f"{DECK_DIR}/ exists but no {DECK_DIR}/**/{DECK_FILENAME} was found -- "
+            f"refusing to report a clean scan from an empty scope (#15867)."
+        )
+    return decks
+
+
 def find_scan_files() -> list[Path]:
     """Collect all files to scan for links."""
     files = []
@@ -176,6 +232,11 @@ def find_scan_files() -> list[Path]:
         if not _should_skip(readme):
             if readme not in files:
                 files.append(readme)
+
+    # Add the slide decks (deck-only scope, see DECK_DIR).
+    for deck in find_deck_files():
+        if deck not in files:
+            files.append(deck)
 
     return files
 
@@ -523,10 +584,33 @@ def main():
                         help="Also report orphan docs")
     parser.add_argument("--quiet", action="store_true",
                         help="Minimal output")
+    parser.add_argument("--expect-broken", metavar="N", type=int, default=None,
+                        help="Positive control: require at least N broken links, "
+                             "else exit 2. Without it, 'no broken link' is "
+                             "indistinguishable from a dead detection path.")
     args = parser.parse_args()
 
     try:
         result = run_scan(report_orphans=args.orphans)
+
+        # The positive control is evaluated BEFORE any mode branch, so it is
+        # never silently ignored by --check/--baseline.
+        if args.expect_broken is None:
+            # Advisory, and only in the bare diagnostic scan: `--check` is the
+            # gate mode, whose contract is a single summary line on success
+            # (docs-link-check.yml), and a line printed on every green PR would
+            # be trained away within a week.
+            if not args.quiet and not args.check and not args.baseline:
+                print("WARNING: scan without an armed positive control -- "
+                      "'no broken link' is indistinguishable from a dead "
+                      "detection path (pass --expect-broken 1 to tell them apart).",
+                      file=sys.stderr)
+        elif len(result.broken) < args.expect_broken:
+            print(f"POSITIVE CONTROL FAILED: {len(result.broken)} broken link(s) "
+                  f"found, at least {args.expect_broken} expected -- the "
+                  f"instrument does not detect what it should.",
+                  file=sys.stderr)
+            sys.exit(2)
 
         if args.baseline:
             write_baseline(result)

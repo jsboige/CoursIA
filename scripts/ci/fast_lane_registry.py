@@ -433,7 +433,19 @@ TRANCHE1: list[Guard] = [
         source="docs-link-check.yml",
         paths=[
             "CLAUDE.md", "index.md", "PARCOURS.md",
-            ".claude/rules/**", "docs/**", "**/README.md",
+            # `.claude/agents/**` and `.claude/skills/**` were scanned by the
+            # organ since #7422 but watched by no gate path: editing a sub-agent
+            # or skill definition never ran check-links (#15867, found by the
+            # `test_every_declared_scope_is_reachable_from_the_gate` parity test
+            # that pins this list against SCAN_SCOPES).
+            ".claude/rules/**", ".claude/agents/**", ".claude/skills/**",
+            "docs/**", "**/README.md",
+            # Decks (#15867): the organ scans `slides/**/slides.md`, so the gate
+            # must fire when a deck changes -- otherwise a deck-only PR like
+            # #15865 (17 dead links) never runs it. Mirror of DECK_DIR in
+            # `scripts/check_docs_links.py`; pinned by
+            # `test_deck_scope_is_wired_into_the_fast_lane`.
+            "slides/**",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",
@@ -1165,6 +1177,62 @@ TRANCHE10: list[Guard] = [
             "--pr-diff", "{base_ref}", "HEAD", "--json",
         ],
         blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 11 (c.1092) -- SOURCE-volume COLLAPSE (#15901).
+#
+# Garde NATIF : comme TRANCHE9, il n'absorbe aucun workflow d'origine -- il
+# ferme une classe de defaut. Sa tranche est propre pour la meme raison : le
+# ranger dans TRANCHE2 (a cote de son frere `check_output_collapse.py`)
+# rendrait l'en-tete de TRANCHE2 faux, puisqu'il n'existe pas de workflow
+# `notebook-source-collapse-ratchet.yml` a absorber.
+#
+# Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
+# GameTheory-06e-Open-Source-Game-Theory.ipynb a perdu 3116 caracteres de
+# source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
+# disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
+# des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
+# SUBSTANCE de la source : la perte etait invisible par CONSTRUCTION (une
+# table supprimee et un `assert` reduit ne produisent aucune sortie).
+#
+# CONTRAINTE DE CALIBRATION -- c'est elle qui interdit de copier le frere :
+# la contraction reelle vaut un facteur 1.59, donc une regle
+# << ordre de grandeur >> (MAGNITUDE_FACTOR=10 cote sortie) resterait
+# SILENCIEUSE sur l'incident meme qui a motive l'organe. Le discriminant est
+# donc un seuil ABSOLU (perte >= 1000 caracteres sur une base >= 500) ET un
+# ratio modeste (>= 25 %). Les deux causes legitimes mecaniquement
+# detectables exemptent le signal : contenu deplace vers une AUTRE cellule du
+# MEME notebook, et purge de texte de diagnostic (warnings CS####).
+#
+# ADVISORY jusqu'a calibration plus poussee sur l'historique (point 3 de
+# l'issue) : la mesure de FP sur le corpus n'est pas encore faite.
+# ---------------------------------------------------------------------------
+TRANCHE11: list[Guard] = [
+    Guard(
+        name="Source-collapse ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_source_collapse.py",
+            "scripts/notebook_tools/tests/test_check_source_collapse.py",
+            ".claude/rules/pr-review-discipline.md",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_source_collapse.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_source_collapse.py",
+            "{base_ref}",
+        ],
+        blocking=False,
         needs_base=True,
         absorbed=True,
     ),

@@ -35,6 +35,15 @@ Usage
 -----
     python scripts/notebook_tools/check_link_label_agreement.py [--json] [--fail]
     python scripts/notebook_tools/check_link_label_agreement.py --self-test
+
+Portee
+------
+Notebooks, READMEs de serie, `docs/`, et les decks `slides/**/slides.md`
+(#15867). Un deck cite ses notebooks par leur basename ; un renommage qui met a
+jour le href en laissant le libelle derriere produit exactement le defaut
+#13645. Le predicat n'a pas eu besoin d'etre assoupli pour la forme « basename
+sans extension » : il compare un identifiant de famille extrait des DEUX cotes,
+donc l'extension et la glose hors crochets ne le concernent pas.
 """
 
 from __future__ import annotations
@@ -49,6 +58,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 SCAN_GLOBS = ("MyIA.AI.Notebooks/**/*.ipynb", "MyIA.AI.Notebooks/**/README.md", "docs/**/*.md")
 EXCLUDE_PARTS = {".ipynb_checkpoints", "_archive", "_archives", ".lake", "node_modules", ".git"}
+
+# Decks (#15867). A deck cites its notebooks as `[Basename](../../MyIA.AI.Notebooks/...)`
+# -- the label IS the basename, so a rename that updates the href and leaves the
+# label behind is exactly the #13645 defect this organ exists for. Deck-only
+# scope: `slides/**/*.md` would pull in the `analysis/` trees and the `.marp.md`
+# siblings sourced from a different pipeline (see `scripts/check_docs_links.py`
+# DECK_DIR for the measured cost of the wider scope).
+DECK_DIR = "slides"
+DECK_GLOB = "slides/**/slides.md"
 
 # [texte](cible) -- cible non-http, non-ancre
 LINK_RE = re.compile(r"\[([^\]\n]{1,200})\]\(([^)\s]+?\.ipynb)(?:#[^)\s]*)?\)", re.I)
@@ -138,7 +156,7 @@ def main() -> int:
 
     findings, scanned = [], 0
     seen = set()
-    for glob in SCAN_GLOBS:
+    for glob in SCAN_GLOBS + (DECK_GLOB,):
         for p in REPO_ROOT.glob(glob):
             if not p.is_file() or p in seen or EXCLUDE_PARTS & set(p.parts):
                 continue
@@ -153,6 +171,16 @@ def main() -> int:
                     findings += check_text(p.read_text(encoding="utf-8"), rel)
                 except Exception:
                     pass
+
+    # Anti-silent-scan (#15867): `slides/` present but matching no deck would
+    # render "0 desaccord" indistinguishable from a scope that scanned nothing.
+    if (REPO_ROOT / DECK_DIR).is_dir() and not any(
+        (REPO_ROOT / DECK_DIR).rglob("slides.md")
+    ):
+        print(f"ERREUR : {DECK_DIR}/ existe mais aucun {DECK_DIR}/**/slides.md "
+              f"trouve -- refus de rendre un scan propre depuis une portee vide "
+              f"(#15867).", file=sys.stderr)
+        return 2
 
     if args.json:
         print(json.dumps({"scanned": scanned, "findings": findings}, indent=2, ensure_ascii=False))
