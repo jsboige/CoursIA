@@ -3338,6 +3338,9 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
     #15556 : le MEME appel porte deja l'arbre du commit (`commit.tree.sha`)
     -- le capter ici evite un second aller-retour par SHA au moment de
     distinguer push muet (arbre identique) et push de contenu.
+    #15973 : il porte AUSSI les blobs par chemin du commit (`files[].sha`)
+    -- la moitie deja-payee de l'identite par chemin qui distingue un rebase
+    preserve d'un rembobinage destructeur.
     """
     oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
     oids.discard("")
@@ -3355,8 +3358,13 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
             continue  # non resoluble -> analyse restera en mode avertissement
         head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
         tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+        files = [
+            (f.get("filename") or "", f.get("sha") or "",
+             f.get("status") or "", f.get("previous_filename") or "")
+            for f in (commit.get("files") or [])
+        ]
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree}
+            state[sha] = {"message": head or "", "tree": tree, "files": files}
     return state
 
 
@@ -3391,18 +3399,56 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
 # au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
 #
-# #16103 defaut 2 (2026-09-14, POSTDATE ce ruling) : le rebase-amend au
-# geste ordinaire (`gh pr update-branch` compris) retombait TOUJOURS dans
-# le refus conservateur -- levee valide voidee alors que les fichiers de
-# la PR etaient byte-pour-byte identiques, seule la base avait avance.
-# L'echappatoire est REINTRODUITE en forme exacte et fail-closed :
-# comparaison des blobs des CHEMINS de la PR (pas de l'arbre entier) via
-# les listings recursifs d'arbres -- +1 appel par SHA absent et +1 pour
-# la tete, loin des 3/SHA redoutes ; tout doute (arbre introuvable,
-# listing tronque, chemin absent, fichiers de PR inconnus) retombe sur
-# le refus. Le motif d'impression « fichiers de la PR inchangés »,
-# vestige inatteignable depuis le retrait, redevient atteignable --
-# c'est lui que #16103 croyait deja vivant.
+# #15973 -- le rebase ne retombe PLUS sur le refus quand son contenu est
+# prouve preserve : `tree(rembobine) == tree(tete)` est structurellement
+# incapable de voir un rebase sur une base avancee (l'arbre d'un commit
+# porte aussi les fichiers de sa base, il change NECESSAIREMENT meme si le
+# travail de la PR n'a pas bouge d'un octet -- mesure #15902 : levees
+# refusees sur un blob de notebook byte-identique). L'identite qui survit
+# au rebase est celle des BLOBS PAR CHEMIN : `files[].sha` du commit
+# rembobine est deja dans l'appel `commits/{sha}` existant (cout nul,
+# moitie de la donnee), et la carte chemin->blob de la tete se prend en UN
+# appel `git/trees/{arbre}?recursive=1`. La note « 3 appels par SHA contre
+# 1 » ci-dessus reste vraie pour une comparaison par chemin DEUX-A-DEUX ;
+# elle ne s'applique plus a cette voie. Degradation seulement : le refus
+# demeure la reponse par defaut, et toute donnee manquante (pas de files[],
+# carte vide, arbre tronque, statut non reconnu) y retombe.
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """#15973 : chaque chemin touche par le commit rembobine doit se
+    retrouver dans la tete, byte pour byte -- modification presente au meme
+    blob, deletion toujours absente, rename installe au nouveau chemin et
+    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
+    reconnu : un organe de merge-gate ne devient jamais permissif sur un
+    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    """
+    if not rewound_files or not head_blobs:
+        return False
+    # L'API commits plafonne `files` a 300 entrees sans drapeau de
+    # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
+    # -- une identite demi-prouvee est un fail-open, pas une preuve.
+    if len(rewound_files) >= 300:
+        return False
+    for filename, blob, status, previous in rewound_files:
+        if not filename or not blob:
+            return False
+        if status == "removed":
+            if filename in head_blobs:
+                return False
+            continue
+        if status == "renamed":
+            if not previous or previous in head_blobs:
+                return False
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        if status in ("added", "modified", "changed", "copied"):
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        return False  # statut inconnu : refus conservateur
+    return True
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3418,63 +3464,21 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
-def _tree_blob_map(tree_sha: str) -> dict[str, str] | None:
-    """Carte chemin -> blob du listing recursif d'un arbre (#16103 defaut 2).
-
-    None = DOUTE (appel echoue OU listing tronque par l'API) : l'appelant
-    retombe sur le refus conservateur, jamais sur une identite non prouvee.
-    """
-    if not tree_sha:
-        return None
-    try:
-        payload = gh_json(["api",
-                           f"repos/{REPO}/git/trees/{tree_sha}?recursive=1"])
-    except subprocess.CalledProcessError:
-        return None
-    if payload.get("truncated"):
-        return None
-    return {e["path"]: e["sha"] for e in payload.get("tree") or []
-            if e.get("type") == "blob" and e.get("path") and e.get("sha")}
-
-
-def _pr_files_unchanged(pr_files, cited_blobs, head_blobs) -> bool:
-    """#16103 defaut 2 : les fichiers de la PR sont-ils byte-identiques ?
-
-    Vrai UNIQUEMENT si chaque chemin liste par la PR porte le meme blob au
-    commit rembobine et a la tete -- preuve exacte (egalite d'OID de blob),
-    pas heuristique. Faux sur tout doute (cartes absentes, chemin absent
-    d'une carte) : le refus conservateur reste la voie par defaut d'un
-    organe de merge-gate (#15566).
-    """
-    if not pr_files or not cited_blobs or not head_blobs:
-        return False
-    for f in pr_files:
-        path = f.get("path") if isinstance(f, dict) else None
-        if not path:
-            return False
-        if cited_blobs.get(path) is None or head_blobs.get(path) is None:
-            return False
-        if cited_blobs[path] != head_blobs[path]:
-            return False
-    return True
-
-
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
     Assemble les vues que `analyse` consulte : messages (rattachement
-    #13639), arbres des commits rembobines plus arbre de la tete
-    (#15556) -- un appel reseau par SHA, plus un pour la tete. #16103
-    defaut 2 : cartes chemin->blob des arbres cites et de la tete,
-    UNIQUEMENT quand la vue porte les fichiers de la PR (gate et
-    analyse_pr ; l'audit retro ne les demande pas et ne peut donc jamais
-    emprunter cette voie -- fail-closed).
+    #13639), arbres des commits rembobines plus arbre de la tete (#15556),
+    et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
+    la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
                                     if v.get("message")}
     data["_absent_sha_trees"] = {s: v["tree"] for s, v in state.items()
                                  if v.get("tree")}
+    data["_absent_sha_files"] = {s: v["files"] for s, v in state.items()
+                                 if v.get("files")}
     head_oid = _pr_head_oid(data)
     head_tree = ""
     if head_oid:
@@ -3485,13 +3489,26 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
-    if state and data.get("files"):
-        data["_head_blobs"] = _tree_blob_map(head_tree)
-        data["_absent_sha_blobs"] = {
-            s: _tree_blob_map(v.get("tree") or "") for s, v in state.items()}
-    else:
-        data["_head_blobs"] = None
-        data["_absent_sha_blobs"] = {}
+    head_blobs: dict[str, str] = {}
+    if head_tree and data["_absent_sha_files"]:
+        # #15973 : la carte chemin->blob de la tete, en UN appel (l'arbre
+        # recursif) -- pas un appel par chemin. Inerte quand aucun SHA
+        # absent n'a ete resolu : le gate courant ne paie rien de plus.
+        # Truncated = carte partielle = non-verifiable : on rend vide et
+        # l'analyse retombe sur le refus conservateur, jamais sur une
+        # identite demi-prouvee.
+        try:
+            tree_obj = gh_json(
+                ["api", f"repos/{REPO}/git/trees/{head_tree}?recursive=1"])
+            if not tree_obj.get("truncated"):
+                head_blobs = {
+                    e["path"]: e["sha"]
+                    for e in (tree_obj.get("tree") or [])
+                    if e.get("type") == "blob" and e.get("path") and e.get("sha")
+                }
+        except subprocess.CalledProcessError:
+            head_blobs = {}
+    data["_head_blobs"] = head_blobs
 
 
 def can_lift(comment: dict) -> bool:
@@ -4172,7 +4189,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         pr_refs.discard("")
         resolved = pr_data.get("_absent_sha_messages") or {}
         rewound_trees = pr_data.get("_absent_sha_trees") or {}
+        rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
+        head_blobs = pr_data.get("_head_blobs") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
@@ -4197,18 +4216,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                         if artifact is None:
                             artifact = (sha, "same_tree")
                         continue
-                    # #16103 defaut 2 : arbre DIFFERENT (rebase ordinaire)
-                    # mais fichiers de la PR byte-identiques -> ARTEFACT,
-                    # pas reserve. Fail-closed : sans preuve d'identite
-                    # (cartes absentes, chemin manquant, fichiers de PR
-                    # inconnus), le refus conservateur est conserve.
-                    cited_blobs = (pr_data.get("_absent_sha_blobs")
-                                   or {}).get(sha)
-                    if _pr_files_unchanged(pr_data.get("files"),
-                                           cited_blobs,
-                                           pr_data.get("_head_blobs")):
+                    # #15973 -- un rebase sur une base avancee change l'arbre
+                    # par construction : avant de refuser, verifier l'identite
+                    # par chemin (blobs du commit rembobine, deja captures par
+                    # l'appel commits/{sha}, contre la carte chemin->blob de
+                    # la tete). Fail-closed : sans donnees ou sans identite,
+                    # le refus #15556 reste la reponse.
+                    sha_files = rewound_files_map.get(sha) or []
+                    if _rebase_preserved_by_path(sha_files, head_blobs):
                         if artifact is None:
-                            artifact = (sha, "pr_files_unchanged")
+                            artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
                     if tree and head_tree:
@@ -4587,7 +4604,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
 
 
 FIELDS = ("number,title,body,mergedAt,author,comments,reviews,commits,url,"
-          "state,headRefOid,files")
+          "state,headRefOid")
 
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
@@ -4640,9 +4657,12 @@ def _print_sha_notes(result: dict) -> None:
     demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
     """
     for a in result.get("rewind_artifacts") or []:
-        why = ("arbre identique à la tête"
-               if a["reason"] == "same_tree"
-               else "fichiers de la PR inchangés")
+        if a["reason"] == "same_tree":
+            why = "arbre identique à la tête"
+        elif a["reason"] == "rebase_preserved":
+            why = "rebase sur base avancée, blobs identiques par chemin"
+        else:
+            why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")

@@ -73,6 +73,49 @@ RUN echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum -c - \
     && install -m 0755 /tmp/gh_${GH_VERSION}_linux_amd64/bin/gh /usr/local/bin/gh \
     && rm -rf /tmp/gh.tar.gz /tmp/gh_${GH_VERSION}_linux_amd64
 
+# Cache d'archives d'actions (#14853, A1).
+#
+# Codeload sert les archives d'actions a un debit qui oscille (mesure du
+# 2026-09-06 : 1 936 a 39 530 o/s). Sous ~16 Ko/s, l'archive de
+# actions/setup-python (1 569 541 octets mesures) demande plus de 100 s, le
+# runner abandonne trois fois, et le job meurt sur `Set up job` -- AVANT le
+# moindre checkout, donc avant toute ligne du depot. Toutes les PRs ouvertes
+# portent alors un rouge requis que rien dans le depot n'explique.
+#
+# Ces archives sont, par construction, identiques a chaque run : le runner sait
+# les lire depuis un repertoire de cache (ActionManager.cs,
+# PrepareRepositoryAsync, verifie au pin v2.337.0 -- celui de RUNNER_VERSION) :
+#   $ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
+# On les embarque donc une fois, au build, plutot que de les re-telecharger a
+# chaque job. La resolution tag->SHA se fait ICI avec le meme mecanisme que le
+# runner (git ls-remote + deref ^{} des tags annotes), pour que la cle ecrite
+# au build soit exactement celle que le runner cherchera au run : mesure de
+# controle, actions/setup-python@v5 resout a26af69be951a..., le SHA meme present
+# dans le log d'echec de #14853.
+#
+# Le script echoue si une seule action manque : un cache partiel serait un fix
+# qui a l'air fait et ne l'est pas (--allow-partial existe pour l'assumer).
+# La liste des actions se mesure, elle ne se devine pas ; le garde
+# scripts/tests/test_action_cache_seed_guard.py la compare aux workflows.
+#
+# L'image lean (Dockerfile.lean) fait `FROM coursia-linux-runner` : elle herite
+# du repertoire et des deux ENV ci-dessous, sans duplication.
+COPY seed_action_cache.py /opt/seed/seed_action_cache.py
+RUN python3 /opt/seed/seed_action_cache.py --cache-dir /opt/actions-cache \
+    && chown -R runner:runner /opt/actions-cache \
+    && rm -rf /opt/seed
+
+ENV ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE=/opt/actions-cache
+
+# A4 de #14853 nomme `ACTIONS_RUNNER_HTTP_TIMEOUT` : cette variable N'EXISTE PAS
+# (Constants.cs du runner ne declare que ACTION_ARCHIVE_CACHE et
+# SYMLINK_CACHED_ACTIONS -- verifie au pin v2.337.0). Le levier reel est
+# GITHUB_ACTIONS_RUNNER_HTTP_TIMEOUT (Runner.Sdk/Util/VssUtil.cs, deux sites),
+# en SECONDES, clampe a [100, 1200] ; la valeur par defaut qu'il faut battre est
+# 100. Filet pour les actions HORS cache : a 420 s, 1,5 Mo passe jusqu'a
+# ~3,7 Ko/s au lieu d'echouer.
+ENV GITHUB_ACTIONS_RUNNER_HTTP_TIMEOUT=420
+
 USER runner
 WORKDIR /opt/runner
 

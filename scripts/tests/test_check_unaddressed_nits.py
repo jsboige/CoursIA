@@ -3546,6 +3546,7 @@ def test_13639_sha_distant_du_marqueur_est_contexte():
 
 TREE_A = "t" + "a" * 39   # arbre du commit rembobine ET de la tete
 TREE_B = "t" + "b" * 39   # arbre d'un vrai commit de contenu
+TREE_C = "t" + "c" * 39   # second arbre de contenu (melange artefact/refus)
 
 
 def test_15556_push_muet_arbre_identique_conserve_la_levee():
@@ -3572,11 +3573,11 @@ def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
     permissif : c'est exactement le cas que B.0 existe pour attraper
     (« un push muet est indiscernable d'un push qui repond »).
 
-    #15566 : ce chemin est aussi celui d'un REBASE -- un rebase fait
-    differer l'arbre, donc il retombe ici, sur le refus conservateur.
-    L'echappatoire qui pretendait l'absoudre a ete retiree (mesuree
-    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`) : c'est ce
-    test qui pinne le comportement retenu."""
+    #15566 : l'echappatoire « rebase sans conflit » a ete retiree (mesuree
+    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`). #15973 :
+    un rebase PROUVE preserve par identite de chemin ne retombe plus ici
+    (section dediee ci-dessous) ; ce test pinne le SANS-DONNEES de chemin
+    -- ni files[] ni carte de blobs -- qui reste le refus conservateur."""
     res = run([USER_NIT, lift_citant_sha()],
               commits=[{"oid": NIT_OID, "committedDate": at(19)}],
               _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
@@ -3629,6 +3630,212 @@ def test_15556_headrefoid_prefere_au_dernier_oid():
     assert mod._pr_head_oid(data) == "f" * 40
     assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
     assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
+
+
+# --- #15973 : un rebase sur une base avancee n'est pas un rembobinage ------
+#
+# Mesure fondatrice (#15902) : la levee citait 53a7998effd1, absent de
+# commits[] parce que la branche avait ete REBASEE -- son jumeau rebasé
+# 093fb5a03849 y etait, avec le MEME blob de notebook (f066e47bb89c,
+# 86404 o). Les arbres differaient (la base avait bouge), donc le predicat
+# #15556 `tree(rembobine) == tree(tete)` refusait la levee et demandait de
+# reposer une reserve que clusterManager-Myia avait deja re-reviewee LGTM.
+
+BLOB_NB = "f066e47bb89c0000000000000000000000000000"
+BLOB_NB2 = "e120000000000000000000000000000000000000"
+
+
+def test_15973_rebase_preserve_par_identite_de_chemin():
+    """Instance fondatrice : arbres differents (base avancee) mais chaque
+    chemin touche par le commit rembobine vit au meme blob dans la tete --
+    le contenu cite par la levee est byte-identique, la levee est conservée
+    et signalee comme artefact non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [
+                      ("MyIA/Nb.ipynb", BLOB_NB, "modified", ""),
+                      ("scripts/fix.py", "a" * 40, "added", ""),
+                  ]},
+              _head_blobs={"MyIA/Nb.ipynb": BLOB_NB,
+                           "scripts/fix.py": "a" * 40,
+                           "README.md": "b" * 40})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "rebase_preserved")]
+
+
+def test_15973_blob_different_dans_la_tete_reste_refuse():
+    """Le vrai rembobinage destructeur : le chemin existe dans la tete mais
+    au meme moment le CONTENU a change -- l'identite par chemin echoue, le
+    refus #15556 s'applique (c'est le cas que B.0 existe pour attraper)."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("MyIA/Nb.ipynb", BLOB_NB, "modified", "")]},
+              _head_blobs={"MyIA/Nb.ipynb": BLOB_NB2})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15973_chemin_disparu_de_la_tete_reste_refuse():
+    """Le fichier du commit rembobine n'existe plus dans la tete : le
+    contenu cite n'y est pas, quel que soit le reste. Refus conservateur."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("MyIA/Nb.ipynb", BLOB_NB, "modified", "")]},
+              _head_blobs={"README.md": "b" * 40})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_15973_deletion_preservee_est_une_identite():
+    """Un commit rembobine qui SUPPRIMAIT un fichier est preserve par le
+    rebase si le chemin est toujours absent de la tete -- la deletion fait
+    partie du contenu cite par la levee."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("old/legacy.py", "c" * 40, "removed", "")]},
+              _head_blobs={"README.md": "b" * 40})
+    assert res["blocked"] is False
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "rebase_preserved")]
+
+
+def test_15973_deletion_ressuscitee_reste_refuse():
+    """Le commit rembobine supprimait le chemin, la tete le porte encore :
+    le contenu n'est pas preserve, refus."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("old/legacy.py", "c" * 40, "removed", "")]},
+              _head_blobs={"old/legacy.py": "c" * 40})
+    assert res["blocked"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15973_rename_exige_l_ancien_chemin_disparu():
+    """Rename preserve : blob au NOUVEAU chemin, ANCIEN parti. Si l'ancien
+    survit, la tete a change au-dela du rebase -- refus."""
+    preserved = run([USER_NIT, lift_citant_sha()],
+                    commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                    _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                    _absent_sha_trees={"2d6e4c3642": TREE_B},
+                    _head_tree=TREE_A,
+                    _absent_sha_files={
+                        "2d6e4c3642": [("new/mod.py", BLOB_NB, "renamed",
+                                        "old/mod.py")]},
+                    _head_blobs={"new/mod.py": BLOB_NB})
+    assert preserved["blocked"] is False
+    assert preserved["rewind_artifacts"][0]["reason"] == "rebase_preserved"
+
+    resurrected = run([USER_NIT, lift_citant_sha()],
+                      commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                      _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                      _absent_sha_trees={"2d6e4c3642": TREE_B},
+                      _head_tree=TREE_A,
+                      _absent_sha_files={
+                          "2d6e4c3642": [("new/mod.py", BLOB_NB, "renamed",
+                                          "old/mod.py")]},
+                      _head_blobs={"new/mod.py": BLOB_NB,
+                                   "old/mod.py": BLOB_NB})
+    assert resurrected["blocked"] is True
+
+
+def test_15973_sans_carte_de_blobs_refus_conservateur():
+    """Fail-closed : l'appel git/trees a echoue (carte vide) ou files[] est
+    absent de la resolution -- aucune identite demi-prouvee ne degrade le
+    refus. C'est la contrainte de merge-gate posee par l'issue."""
+    no_blobs = run([USER_NIT, lift_citant_sha()],
+                   commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                   _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                   _absent_sha_trees={"2d6e4c3642": TREE_B},
+                   _head_tree=TREE_A,
+                   _absent_sha_files={
+                       "2d6e4c3642": [("MyIA/Nb.ipynb", BLOB_NB,
+                                       "modified", "")]},
+                   _head_blobs={})
+    assert no_blobs["blocked"] is True
+    assert no_blobs["rewind_artifacts"] == []
+
+    no_files = run([USER_NIT, lift_citant_sha()],
+                   commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                   _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                   _absent_sha_trees={"2d6e4c3642": TREE_B},
+                   _head_tree=TREE_A,
+                   _head_blobs={"MyIA/Nb.ipynb": BLOB_NB})
+    assert no_files["blocked"] is True
+
+
+def test_15973_statut_inconnu_et_troncature_restent_refuses():
+    """Un statut hors du vocabulaire reconnu, ou un files[] au plafond des
+    300 entrees de l'API (troncature SANS drapeau -- la verification ne
+    porterait qu'un sous-ensemble), ne prouvent rien : refus."""
+    unknown = run([USER_NIT, lift_citant_sha()],
+                  commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                  _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                  _absent_sha_trees={"2d6e4c3642": TREE_B},
+                  _head_tree=TREE_A,
+                  _absent_sha_files={
+                      "2d6e4c3642": [("x.py", BLOB_NB, "type-inconnu", "")]},
+                  _head_blobs={"x.py": BLOB_NB})
+    assert unknown["blocked"] is True
+
+    truncated = run([USER_NIT, lift_citant_sha()],
+                    commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                    _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                    _absent_sha_trees={"2d6e4c3642": TREE_B},
+                    _head_tree=TREE_A,
+                    _absent_sha_files={
+                        "2d6e4c3642": [
+                            (f"f{i:03d}.py", BLOB_NB, "modified", "")
+                            for i in range(300)]},
+                    _head_blobs={
+                        f"f{i:03d}.py": BLOB_NB for i in range(300)})
+    assert truncated["blocked"] is True
+
+
+def test_15973_artefact_rebase_ne_masque_pas_un_vrai_refus():
+    """Meme regle que #15556 : une levee citant un SHA rebase-preserve ET
+    un SHA au contenu reellement perdu est refusee -- l'artefact ne sauve
+    pas une preuve morte."""
+    body = ("Les 2 nits sont adresses dans les commits 111aaaa111 et "
+            "222bbbb222.")
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, reply],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"111aaaa111": "fix(x,#0): typo",
+                                    "222bbbb222": "fix(y,#0): autre"},
+              _absent_sha_trees={"111aaaa111": TREE_B, "222bbbb222": TREE_C},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "111aaaa111": [("x.py", BLOB_NB, "modified", "")],
+                  "222bbbb222": [("y.py", BLOB_NB2, "modified", "")]},
+              _head_blobs={"x.py": BLOB_NB, "y.py": "d" * 40})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["222bbbb222"]
+    assert res["rewind_artifacts"] == []
 
 
 def test_13641_ref_par_prefixe_ne_compte_pas():
