@@ -39,6 +39,7 @@ on:
       - '.github/workflows/dotnet-Shared.Tests.yml'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Shared/**'
       - 'MyIA.AI.Shared.Tests/**'

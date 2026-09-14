@@ -574,7 +574,7 @@ class: genai-illustrated genai-ecosystem-hosting
 - **Cloud géré :** Hugging Face Inference, Groq, RunPod, Vast.ai, AWS / Azure / GCP.
 - **Local :** Oobabooga, Ollama, vLLM. Quantification AWQ, GGUF, EXL2/3 pour faire tenir un modèle sur un GPU limité.
 - **Containerisation :** Docker et Docker Compose encapsulent les services (modèles, API, monitoring).
-- **Hybride :** *(non couvert par les notebooks de la série — voir `extracted/content.md` l.370-373).*
+- **Hybride :** Tailscale (réseau mesh WireGuard) relie les machines du cluster à un réseau privé unique — GPU de poche + nœuds distants joignables comme s'ils étaient locaux.
 
 </v-clicks>
 

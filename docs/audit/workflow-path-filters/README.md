@@ -21,9 +21,20 @@ ponctuelle en organe périodique.
 
 | Fichier | Rôle |
 |---|---|
-| `scripts/notebook_tools/audit_workflow_path_filters.py` | Script d'audit (CLI) |
+| `scripts/notebook_tools/audit_workflow_path_filters.py` | Script d'audit (CLI) — **instrument unique** depuis #15962 |
 | `scripts/tests/test_audit_workflow_path_filters.py` | Pytest fixtures + asserts |
 | `.github/workflows/workflow-path-filter-audit.yml` | CI advisory schedule + dispatch |
+
+> **Consolidation #15962** : l'ancien instrument jumeau
+> `scripts/audit_workflow_paths_filters.py` (recensement #10600/#12773, dit
+> « autoritaire ») a été fusionné ICI puis supprimé. Preuves de préservation :
+> `has_pr_target_filter_excluding_main` (L100-124 de l'ancien) porté en
+> `_pr_target_filter_excludes_main` ; table `EXEMPT_DOCUMENTED` (L57-76)
+> portée — les 5 entrées couvertes par la whitelist `required` du présent
+> instrument, `notebook-plan-loss-gate.yml` (#14391/#14429) portée dans
+> `EXEMPT_DOCUMENTED`. Le recensement fan-out/label-posing one-shot de
+> l'ancien n'est PAS porté : il a servi à la mesure #10600/#12773 (livrée,
+> eligible=0) et n'a pas vocation à tourner en cron.
 
 ## Sortie
 
@@ -37,11 +48,18 @@ ponctuelle en organe périodique.
 |---|---|
 | `filtered` | Workflow avec `pull_request.paths` ou `paths-ignore` non-vide |
 | `required` | Workflow unfiltered dans `REQUIRED_UNFILTERED_WORKFLOWS` whitelist (gates/advisories) |
-| `optional` | Workflow unfiltered hors whitelist (à investiguer) |
+| `exempt_documented` | Workflow unfiltered exempté par décision écrite (`EXEMPT_DOCUMENTED`, ref citée) |
+| `target_filtered` | Sans `paths` mais cible != main (`branches-ignore: [main]` ou allowlist sans main, #15165) |
+| `optional` | Sans filtre effectif, ni required, ni exemption — **eligible** (le seul deficit qui compte) |
 | `no_pr_trigger` | Workflow sans `pull_request` trigger (schedule, push, etc.) |
 
 La whitelist `REQUIRED_UNFILTERED_WORKFLOWS` est OPT-IN : ajouter un nom uniquement
-après audit (cf. issue #10600 et discussion lane-claim-protocol).
+après audit (cf. issue #10600 et discussion lane-claim-protocol). Le ratchet
+anti-régression (`--check-regression`) ne signale que la classe `optional` :
+un `required`, une exemption documentée ou un filtre-par-la-base n'est jamais
+une régression. Un audit antérieur au schéma consolidé (sans clé `workflows`,
+ex-#15417) fait échouer la comparaison avec un message explicite — un ratchet
+qui compare n'importe quoi ne ratchet rien.
 
 ## Usage
 
@@ -76,4 +94,6 @@ npx pytest scripts/tests/test_audit_workflow_path_filters.py -v
 
 - Issue **#10600** — la mesure d'origine + conclusion G.1
 - Issue **#10644** — support Linux/macOS (cross-OS workflows)
+- Issue **#12773** — vocabulaire eligible=0, filtres-par-la-base (#15165)
+- Issue **#15962** — consolidation des deux instruments + ratchet schedule
 - `.claude/rules/cell-interpretation-ordering.md` — règle sémantique analogue pour les cellules d'interprétation notebook
