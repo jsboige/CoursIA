@@ -52,12 +52,28 @@ concurrency:
 jobs:
   sweep:
     name: Date-window sweep
-    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
-    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # HOSTED, PAS LE POOL (#16141, 2026-09-14). Ce job est le cas que la
+    # doctrine #14283 tranche 5 a explicitement EXCLU du pool : il a besoin de
+    # root/apt pour installer `libfaketime`, et le conteneur du pool tourne en
+    # uid 1001 sous `--security-opt=no-new-privileges`, sans sudo ni dpkg
+    # (docs/ci/self-hosted-runners.md ; issuecomment-5516335275 ;
+    # quarto-pages-deploy.yml l.134). Motif identique a celui qui exclut
+    # slides-composition-advisory (`playwright --with-deps` exige root).
+    #
+    # Ce n'est pas une precaution : route ici le 2026-09-02 (#14283 tranche 4),
+    # ce workflow n'a JAMAIS rendu un run vert. 12 runs, 12 `failure`, du
+    # 2026-09-03 au 2026-09-14, tous `event=schedule` ; l'organe n'a donc
+    # jamais balaye quoi que ce soit. Cause mesuree sur le log du run
+    # 34826882416 : `sudo: command not found` -> exit 127 a l'etape
+    # d'installation, les deux etapes de balayage jamais atteintes.
+    #
+    # C'est le retour arriere que ce commentaire documentait deja. Rollback s'il
+    # faut revenir au pool : `runs-on: [self-hosted, coursia-ephemeral,
+    # coursia-linux]` + reintegration dans SELF_HOSTED_WORKFLOW_ALLOWLIST.
+    #
+    # `schedule` + `workflow_dispatch` uniquement -- il ne tourne que sur la
+    # branche par defaut, donc aucun code de fork ne peut l'atteindre.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
@@ -73,6 +89,34 @@ jobs:
           python -m pip install --quiet pytest
           sudo apt-get update
           sudo apt-get install --yes libfaketime
+
+      # Le `127` de #16141 etait muet : `Process completed with exit code 127`
+      # ne nommait ni l'outil manquant ni le runner, et il a fallu descendre au
+      # log du job pour lire `sudo: command not found`. Ce preflight nomme les
+      # deux AVANT de balayer, et ecrit le diagnostic dans le resume du job --
+      # un prochain echec d'environnement doit se lire tout seul.
+      - name: Preflight -- les outils du balayage sont-ils la ?
+        run: |
+          missing=""
+          for tool in faketime python; do
+            command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+          done
+          if [ -n "$missing" ]; then
+            msg="Date-window sweep -- outil(s) absent(s) sur ce runner :${missing}."
+            msg="$msg Le balayage n'a PAS tourne (runner : $(uname -srm))."
+            {
+              echo "### Date-window sweep -- environnement incomplet"
+              echo
+              echo "- outils absents : \`${missing# }\`"
+              echo "- runner : \`$(uname -srm)\`"
+              echo "- consequence : les deux horizons (+8d, +31d) n'ont pas ete"
+              echo "  balayes, donc ce run ne dit RIEN de la classe date-bomb."
+              echo "  Un rouge ici n'est pas un verdict sur les fixtures."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::$msg"
+            exit 1
+          fi
+          echo "outils du balayage presents ; runner : $(uname -srm)"
 
       # The date-windowed surface. Each file is a single target so collection
       # stays hermetic (no sibling deps). 189 tests green on main under both

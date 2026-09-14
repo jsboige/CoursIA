@@ -189,7 +189,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   meme profil que candidate-delivered-advisory). Rollback = revert de
     #   la PR (l'entree disparait de l'allowlist).
     "lane-claim-epic-wide-advisory.yml",
-    "leaky-fixture-sweep.yml",
+    # leaky-fixture-sweep.yml : RETIREE le 2026-09-14 (#16141). Elle etait
+    #   entree ici avec la tranche 4 (#14283) comme ses sœurs `schedule`-only,
+    #   mais son profil n'est PAS celui des autres : elle installe
+    #   `libfaketime` par `sudo apt-get`, donc elle exige root/apt que le pool
+    #   ne fournit pas (uid 1001, no-new-privileges, sans sudo ni dpkg).
+    #   C'est la meme exclusion que slides-composition-advisory
+    #   (`playwright --with-deps` exige root) et pr-gate.yml. Cout mesure de
+    #   l'erreur : 12 runs, 12 `failure`, du 2026-09-03 au 2026-09-14, zero
+    #   balayage effectif. Le job est repasse sur `ubuntu-latest`.
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
     "mermaid-fill-color-advisory.yml",
