@@ -3246,16 +3246,26 @@ _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 
 
 def _cited_shas(body: str) -> set[str]:
-    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre.
+    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
+    MOINS un chiffre.
 
     Un token 100% numerique de 7+ chiffres (une date 20260830, un run-id)
     est hex-compatible mais n'est quasi jamais un SHA -- l'exiger lettree
     evite de partir resoudre une date cote serveur pour rien.
+
+    #16103 defaut 1 : un token 100% LETTRES de a-f est la meme classe de
+    bruit en francais -- « effacee », « effacees », « deface » satisfont
+    le motif hexa et se font lire comme des empreintes (levee d'ai-01 du
+    2026-09-14T02:45:56Z sur #16022 rendue « cite effacee ... absent des
+    commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
+    astronomiquement improbable ((6/16)^7 ~ 1e-4 au format court) ;
+    l'exiger chiffre supprime la classe entiere.
     """
     out: set[str] = set()
     for m in _SHA_CITED.finditer((body or "").lower()):
         tok = m.group(0)
-        if any(ch in "abcdef" for ch in tok):
+        if (any(ch in "abcdef" for ch in tok)
+                and any(ch.isdigit() for ch in tok)):
             out.add(tok)
     return out
 
@@ -3380,6 +3390,19 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
 # surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
 # au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
+#
+# #16103 defaut 2 (2026-09-14, POSTDATE ce ruling) : le rebase-amend au
+# geste ordinaire (`gh pr update-branch` compris) retombait TOUJOURS dans
+# le refus conservateur -- levee valide voidee alors que les fichiers de
+# la PR etaient byte-pour-byte identiques, seule la base avait avance.
+# L'echappatoire est REINTRODUITE en forme exacte et fail-closed :
+# comparaison des blobs des CHEMINS de la PR (pas de l'arbre entier) via
+# les listings recursifs d'arbres -- +1 appel par SHA absent et +1 pour
+# la tete, loin des 3/SHA redoutes ; tout doute (arbre introuvable,
+# listing tronque, chemin absent, fichiers de PR inconnus) retombe sur
+# le refus. Le motif d'impression « fichiers de la PR inchangés »,
+# vestige inatteignable depuis le retrait, redevient atteignable --
+# c'est lui que #16103 croyait deja vivant.
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3395,12 +3418,57 @@ def _pr_head_oid(data: dict) -> str:
     return ""
 
 
+def _tree_blob_map(tree_sha: str) -> dict[str, str] | None:
+    """Carte chemin -> blob du listing recursif d'un arbre (#16103 defaut 2).
+
+    None = DOUTE (appel echoue OU listing tronque par l'API) : l'appelant
+    retombe sur le refus conservateur, jamais sur une identite non prouvee.
+    """
+    if not tree_sha:
+        return None
+    try:
+        payload = gh_json(["api",
+                           f"repos/{REPO}/git/trees/{tree_sha}?recursive=1"])
+    except subprocess.CalledProcessError:
+        return None
+    if payload.get("truncated"):
+        return None
+    return {e["path"]: e["sha"] for e in payload.get("tree") or []
+            if e.get("type") == "blob" and e.get("path") and e.get("sha")}
+
+
+def _pr_files_unchanged(pr_files, cited_blobs, head_blobs) -> bool:
+    """#16103 defaut 2 : les fichiers de la PR sont-ils byte-identiques ?
+
+    Vrai UNIQUEMENT si chaque chemin liste par la PR porte le meme blob au
+    commit rembobine et a la tete -- preuve exacte (egalite d'OID de blob),
+    pas heuristique. Faux sur tout doute (cartes absentes, chemin absent
+    d'une carte) : le refus conservateur reste la voie par defaut d'un
+    organe de merge-gate (#15566).
+    """
+    if not pr_files or not cited_blobs or not head_blobs:
+        return False
+    for f in pr_files:
+        path = f.get("path") if isinstance(f, dict) else None
+        if not path:
+            return False
+        if cited_blobs.get(path) is None or head_blobs.get(path) is None:
+            return False
+        if cited_blobs[path] != head_blobs[path]:
+            return False
+    return True
+
+
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
-    Assemble les deux vues que `analyse` consulte : messages (rattachement
-    #13639) et arbres des commits rembobines plus arbre de la tete
-    (#15556) -- un appel reseau par SHA, plus un pour la tete.
+    Assemble les vues que `analyse` consulte : messages (rattachement
+    #13639), arbres des commits rembobines plus arbre de la tete
+    (#15556) -- un appel reseau par SHA, plus un pour la tete. #16103
+    defaut 2 : cartes chemin->blob des arbres cites et de la tete,
+    UNIQUEMENT quand la vue porte les fichiers de la PR (gate et
+    analyse_pr ; l'audit retro ne les demande pas et ne peut donc jamais
+    emprunter cette voie -- fail-closed).
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
@@ -3417,6 +3485,13 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
+    if state and data.get("files"):
+        data["_head_blobs"] = _tree_blob_map(head_tree)
+        data["_absent_sha_blobs"] = {
+            s: _tree_blob_map(v.get("tree") or "") for s, v in state.items()}
+    else:
+        data["_head_blobs"] = None
+        data["_absent_sha_blobs"] = {}
 
 
 def can_lift(comment: dict) -> bool:
@@ -4122,6 +4197,19 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                         if artifact is None:
                             artifact = (sha, "same_tree")
                         continue
+                    # #16103 defaut 2 : arbre DIFFERENT (rebase ordinaire)
+                    # mais fichiers de la PR byte-identiques -> ARTEFACT,
+                    # pas reserve. Fail-closed : sans preuve d'identite
+                    # (cartes absentes, chemin manquant, fichiers de PR
+                    # inconnus), le refus conservateur est conserve.
+                    cited_blobs = (pr_data.get("_absent_sha_blobs")
+                                   or {}).get(sha)
+                    if _pr_files_unchanged(pr_data.get("files"),
+                                           cited_blobs,
+                                           pr_data.get("_head_blobs")):
+                        if artifact is None:
+                            artifact = (sha, "pr_files_unchanged")
+                        continue
                     refused = sha
                     if tree and head_tree:
                         refused_known_change = True
@@ -4499,7 +4587,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
 
 
 FIELDS = ("number,title,body,mergedAt,author,comments,reviews,commits,url,"
-          "state,headRefOid")
+          "state,headRefOid,files")
 
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
@@ -4593,7 +4681,23 @@ def analyse_pr(pr: int) -> dict:
                    dismissed_improperly=improper_dismissals(pr))
 
 
+def _ensure_utf8_stdout() -> None:
+    """#16103 defaut 3 : le verdict ne doit jamais dependre de la page de
+    code de la console. Sous cp1252 (Windows), l'impression d'un commentaire
+    a relire portant un caractere hors page (`→` levait UnicodeEncodeError
+    dans _print_unevaluated) crashait APRES le verdict -- rc=1 faux rouge
+    pour tout consommateur scripte alors que l'analyse disait OK.
+    Idempotent ; silencieux sous un stdout non reconfigurable (buffers
+    de test).
+    """
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
+
+
 def gate(pr: int, as_json: bool) -> int:
+    _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
@@ -4628,6 +4732,7 @@ def gate(pr: int, as_json: bool) -> int:
 
 
 def audit(limit: int, search: str | None = None) -> int:
+    _ensure_utf8_stdout()
     cmd = ["pr", "list", "--repo", REPO, "--state", "merged",
            "--limit", str(limit), "--json", LIST_FIELDS]
     if search:
