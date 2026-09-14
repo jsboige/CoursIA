@@ -33,6 +33,18 @@ name: ICT-Series Tests
 # collecte DEPASSE le floor (drift ascendant = floor a remonter dans la PR qui
 # l'introduit). Quand la collection change, ajuster matrix.test-floor dans la
 # meme PR.
+# RATTRAPAGE firsthand po-2023 (2026-09-14, origin/main PUR c14deb41ad en
+# worktree detache, venv D:/Dev/venvs/ict-py39 : python 3.9.25 + numpy 1.26.4
+# SANS torch, la forme de l'env CI) : ict/tests/ collecte 794 pour un floor
+# de 774 -- drift ascendant de +20 porte par #16153 (case 13 combination
+# problem, ict/tests/test_combination_subjects.py, 20 items verifies par
+# collecte isolee du fichier), mergee SANS remonter le floor. #15627
+# (tranche 4 endpoints) a de son cote suivi son propre +11 correctement
+# (763 + 11 = 774) mais contre une base SOUS-DECLAREE : le drift +20
+# existait deja au moment de sa mesure (main collectait 783, mesure
+# firsthand le 2026-09-14 matin sur 8e96961377). Decomposition fermee :
+# 763 (lens_gates #15660) + 20 (#16153, non suivi) + 11 (#15627, suivi)
+# = 794 = la collection mesuree. tests/ = 1148, verifie inchange.
 # RE-MESURE firsthand po-2027 (2026-09-13, arbre REBASE sur origin/main COURANT,
 # python 3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 SANS torch --
 # la forme de l'env CI) :
@@ -207,10 +219,17 @@ jobs:
           # 47 fichiers test_*.py cote branche vs 46 cote origin/main).
           # env CI : py3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib
           # 3.9.4, SANS torch (la forme de l'env CI self-hebergee).
+          # RATTRAPAGE 774 -> 794 : +20 items #16153 (case 13,
+          # test_combination_subjects.py, collecte isolee = 20) mergee sans
+          # suivre le floor ; le garde n'emet qu'un ::warning non bloquant,
+          # une suppression future jusqu'a 774 serait restee verte. Mesure
+          # firsthand sur origin/main pur c14deb41ad (worktree detache,
+          # py3.9.25 + numpy 1.26.4 SANS torch) : 794 collectes, 49 fichiers
+          # test_*.py. tests/ = 1148 verifie inchange.
           - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 774
+            test-floor: 794
 
     steps:
       - uses: actions/checkout@v4
