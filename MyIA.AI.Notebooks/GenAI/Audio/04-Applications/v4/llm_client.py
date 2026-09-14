@@ -185,7 +185,11 @@ def call_structured(
                 "model": _MODEL,
                 "messages": messages,
                 "response_format": response_format,
-                "max_completion_tokens": 32768,
+                # 16384 is within the output cap of every model this client
+                # can target (gpt-4o-mini default AND the .env-configured
+                # model); 32768 was rejected against the default (32768 >
+                # 16384). Valid for both, so no env knob.
+                "max_completion_tokens": 16384,
             }
             resp = requests.post(
                 f"{_API_BASE}/chat/completions",

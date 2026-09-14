@@ -191,7 +191,7 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 
 **Coordinateur** : un seul agent dans ce rôle. Il review et merge les PRs, dispatche le travail via DM + dashboard, lit les deux dashboards workspace co-égaux (jamais un seul), et garde la cohérence cross-machine. Il ne commite jamais dans une branche feature et ne ferme jamais une issue qui ne lui appartient pas.
 
-**Workers** : N agents, chacun portant typiquement une *lane* (machine × workspace). Un worker pioche dans le pool d'issues ouvertes (cross-lane, pas siloté par famille), livre une PR, et poste un rapport court sur son dashboard. Il peut aussi déléguer des side-tracks à des sous-agents spécialisés (exécution notebook, audit, prover Lean) en arrière-plan pendant qu'il tient une track principale. Chaque cycle vise **au moins une PR** ; le plancher est une substance DEEP ou MED, jamais un scan-générable.
+**Workers** : N agents, chacun portant typiquement une *lane* (machine × workspace). Un worker pioche dans le pool d'issues ouvertes (cross-lane, pas siloté par famille), livre une PR, et poste un rapport court sur son dashboard. Il peut aussi déléguer des side-tracks à des sous-agents spécialisés (exécution notebook, audit, prover Lean) en arrière-plan pendant qu'il tient une track principale. Chaque cycle vise **plusieurs grains, dont au moins un DEEP de contenu** ; le plancher est une substance, jamais un scan-générable.
 
 **Gouvernance** : les règles de coordination (dispatch DM-first, jamais d'idle sanctionné, deep-queue par lane, fallback perenne quand la queue s'épuise) vivent dans `.claude/rules/coordinator-discipline.md` et `.claude/rules/proactive-coordination.md`. Elles sont **auto-chargées** au début de chaque session — c'est ce qui fait que le comportement du cluster est stable même quand un worker change.
 
@@ -200,6 +200,7 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 ### Références croisées
 
 - Pour aller plus loin sur ce qui précède (anatomie d'un cycle worker `/continue`, garde-fous auto-chargés, situation dans le parcours pédagogique) : [CLUSTER-ORCHESTRATION.md](docs/CLUSTER-ORCHESTRATION.md)
+- Pour le passage de la topologie anonymisée à la galerie nominative fonctionnelle et la liste des séries-workspaces accessibles depuis la flotte : [CLUSTER-ORCHESTRATION.md § Séries-workspaces et page collective](docs/CLUSTER-ORCHESTRATION.md#séries-workspaces-et-page-collective)
 - Architecture des MCPs (processus, cycle de vie, redémarrage Python) : [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md)
 - Spécialisations infrastructure (machines, GPUs, dispatch par mission) : [docs/reference/cluster-agents.md](../../../docs/reference/cluster-agents.md)
 - Mémoire sémantique (Qdrant, embeddings, indexation, notebook Hands-On) : [RAG et Mémoire Sémantique](../RAG-et-Memoire-Semantique/)

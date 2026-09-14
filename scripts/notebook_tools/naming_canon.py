@@ -27,7 +27,12 @@ hors de cette tranche — les revendiquer ici sans les implementer ferait passer
 module partiel pour le canon entier. Le point 3 est depuis livre par
 `check_kernel_suffix_canon.py`, qui lit `KERNEL_LANG_SUFFIXES` ci-dessous : le
 canon fournit la LISTE des suffixes de noyau, le garde juge leur casse. Un
-module ne peut pas juger la casse d'un nom qu'il vient de normaliser.
+module ne peut pas juger la casse d'un nom qu'il vient de normaliser. Le point 4
+est livre par `check_slot_reservation.py`, qui lit `index_key` et `strip_lang`
+ci-dessous : le canon dit QUELLE position un nom occupe, le preflight dit si
+quelqu'un d'autre l'occupe deja (arbre, revision, PRs ouvertes, table publiee).
+Un module de lecture ne peut pas savoir ce qui est en vol. Le point 5
+(configuration du zero-pad par serie) reste ouvert.
 
 REGLE DE NON-REGRESSION — extraction a comportement constant
 ------------------------------------------------------------

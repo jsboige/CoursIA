@@ -319,11 +319,26 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                     const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
                     const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
                     if (overlapX > 1 && overlapY > 1) {
+                        // FP v2 (#15695) — confirmation par boîtes éléments.
+                        // Range.getClientRects() absorbe padding + bordure
+                        // des inline à boîte propre (<code>, <sup>, <kbd>,
+                        // badge…) : l'union des rects d'un <li> dépasse sa
+                        // line-box d'environ 1.2 px et effleure le rect du
+                        // voisin alors que l'écran les sépare. Les
+                        // getBoundingClientRect() des ÉLÉMENTS ne subissent
+                        // pas cette inflation : si les boîtes éléments sont
+                        // disjointes, le chevauchement n'existe pas au rendu.
+                        const ea = a.el.getBoundingClientRect();
+                        const eb = b.el.getBoundingClientRect();
+                        const eOverlapX = Math.min(ea.right, eb.right) - Math.max(ea.left, eb.left);
+                        const eOverlapY = Math.min(ea.bottom, eb.bottom) - Math.max(ea.top, eb.top);
+                        if (eOverlapX <= 0 || eOverlapY <= 0) continue;
                         chevauchements.push({
                             a: a.key, b: b.key,
                             a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
                             b_bbox: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)],
                             overlap: [Math.round(overlapX), Math.round(overlapY)],
+                            element_overlap: [Math.round(eOverlapX), Math.round(eOverlapY)],
                         });
                     }
                 }
@@ -547,6 +562,18 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
 CONTENT_TAGS = {
     "P", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "TD", "TH", "BLOCKQUOTE",
     "PRE", "CODE", "IMG", "SVG", "CANVAS", "VIDEO", "IFRAME", "SPAN",
+    # Inline text tags. A link/emphasis cut at the canvas edge IS visible
+    # when its text extends past the visible region -- issue #15664 founded
+    # this gap with deck 05-theorie-des-jeux slide 10 where `EM > A > A > A`
+    # (the per-notebook anchor line) overflowed by 1 px and was reported as
+    # `container_only: true`. These inherit the bbox of their parent block in
+    # normal flow, so adding them does NOT inflate `n_elem` for slides
+    # already counted via their parent P/LI/EM — the counter-test in
+    # `tests/test_scan_slidev_composition.py` covers the regression risk.
+    # `ABBR` is included because the deck-rendering layer uses it for
+    # underlined glossary hits; without it, an inline abbreviation edge
+    # cut would slip through.
+    "A", "EM", "STRONG", "B", "I", "ABBR",
 }
 
 
@@ -554,7 +581,15 @@ def content_overflow(r: dict) -> bool:
     """Un débordement est un défaut VISUEL seulement s'il coupe du contenu
     (texte, image, code). Un conteneur seul qui déborde (le classique
     `div.slidev-layout` à [0,0,980,587]) est une boîte CSS dont le dépassement
-    n'est pas nécessairement visible — la slide n'est pas comptée."""
+    n'est pas nécessairement visible — la slide n'est pas comptée.
+
+    Les balises inline ``A``/``EM``/``STRONG``/``B``/``I``/``ABBR`` héritent
+    en général de la bbox de leur bloc parent (P/LI/H*), donc l'ajouter ne
+    change pas le verdict par slide — sauf quand le débordement touche
+    l'inline lui-même (slide 10 @ #14888/#15661 deck 05-théorie-des-jeux :
+    ``EM > A > A > A`` ancre multi-notebooks coupée à +1 px, rendue
+    ``container_only: true`` alors que la coupure est techniquement réelle).
+    """
     return any(h.get("tag") in CONTENT_TAGS for h in r.get("hors_canvas", []))
 
 
@@ -627,7 +662,7 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
         for c in r.get("chevauchements", [])[:3]:
             out.append(
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
-                f"{c['a']} × {c['b']} overlap={c['overlap']}px"
+                f"{c['a']} × {c['b']} overlap={c['overlap']}px element_overlap={c.get('element_overlap')}px"
             )
         for rv in r.get("recouvrements", [])[:3]:
             out.append(

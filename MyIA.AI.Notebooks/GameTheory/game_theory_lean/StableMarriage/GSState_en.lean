@@ -95,6 +95,13 @@ lemma gsMenPref_trans (m : Fin n) : IsTrans (Fin n) (gsMenPrefLE prof m) :=
       | inl hbc => subst hbc; exact Or.inr hab
       | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
 
+/-- Best-ranked candidate among those `m` has not proposed to yet, chosen
+    via `Finset.exists_maximal` under the custom order `gsMenPrefLE`.
+    Subtlety (recorded in the prover traces, `agent_tests/prover/`):
+    `Finset.exists_maximal` only yields **conditional** maximality
+    (`∀ y ∈ s, x ≤ y → y ≤ x`), not `∀ y ∈ s, y ≤ x` — bridging to absolute
+    maximality goes through trichotomy on the underlying `Nat` preference,
+    see `gsChooseMax_maximal`. -/
 noncomputable def gsChooseMax (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) : Fin n :=
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
@@ -151,8 +158,11 @@ lemma gsChooseMax_mem (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
   obtain ⟨hmem, -⟩ := Classical.choose_spec (Finset.exists_maximal h)
   exact hmem
 
-/-- Aucune candidate non-proposée n'est préférée à la candidate maximale choisie.
-    Directly from maximality: ∀ y ∈ candidates, y ≤ choose. -/
+/-- No unproposed candidate is preferred over the chosen maximal candidate.
+    Closure by **trichotomy** (`Nat.lt_trichotomy`) on the underlying `Nat`
+    preference: this is exactly the closure hint (`closure_hint`) recorded
+    for this goal in the prover traces (`partial_progress` of
+    `stable_marriage`), materialised here. -/
 lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) (w : Fin n)
     (hw : w ∈ gsCandidates prof σ m) :

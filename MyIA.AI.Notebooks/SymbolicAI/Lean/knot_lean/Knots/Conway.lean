@@ -538,7 +538,8 @@ choix de la colonne frappée : l'affirmation normative de la docstring
 d'`alexanderEntry` devient ici un théorème. `arcPartition_sameClass_overStrand`
 fournit la moitié combinatoire (la paire de dessus partage une classe) ;
 la vérification que `arcPartition` satisfait les hypothèses d'unicité
-(`countP` = 1 par étiquette) reste à établir — tranche suivante de See #14962.
+(`countP` = 1 par étiquette) est établie dans la section suivante
+(`arcPartition_countP_label`).
 -/
 
 /-- Somme d'une carte indicatrice : le `w` est compté une fois par classe
@@ -585,6 +586,263 @@ theorem alexanderEntry_sum_zero (P : List (List Nat)) (c : PDCrossing)
   rw [hmap, sum_map_three, sum_map_indicator, h1, sum_map_indicator, h3, sum_map_indicator, h24]
   push_cast
   ring
+
+/-! #### `arcPartition` est une partition : l'unicité `countP` = 1
+
+La section précédente reposait sur des hypothèses d'unicité (`countP` = 1).
+Cette section les établit pour la vraie `arcPartition` : les classes sont deux
+à deux disjointes (un invariant que `mergePair` préserve), sans doublon, et
+couvrent toute la plage `1..numEdges`. Il en découle que chaque ligne de la
+matrice d'Alexander somme à zéro sans hypothèse additionnelle — le résiduel
+nommé sur See #14962 est levé. -/
+
+/-- Deux classes distinctes de `P` sont disjointes. -/
+def ClassesDisjoint (P : List (List Nat)) : Prop :=
+  ∀ C ∈ P, ∀ D ∈ P, C ≠ D → ∀ z, z ∈ C → z ∉ D
+
+/-- Les singletons initiaux sont deux à deux disjoints. -/
+lemma classesDisjoint_singles {n : Nat} :
+    ClassesDisjoint ((List.range n).map (fun i => [i + 1])) := by
+  intro C hC D hD hne z hzC hzD
+  rw [List.mem_map] at hC hD
+  obtain ⟨i, hi, rfl⟩ := hC
+  obtain ⟨j, hj, rfl⟩ := hD
+  simp only [List.mem_singleton] at hzC hzD
+  exact hne (by congr 1; omega)
+
+/-- Le filtre `keep` (classes ne portant ni `x` ni `y`) ne rencontre jamais le
+bloc fusionné : un `z` d'une classe intacte n'appartient à aucune classe touchée. -/
+lemma not_mem_merged_of_keep {P : List (List Nat)} {C : List Nat} {x y z : Nat}
+    (hP : ClassesDisjoint P)
+    (hC : C ∈ P) (hkeep : (C.contains x || C.contains y) ≠ true) :
+    z ∈ C → z ∉ (P.filter (fun D => D.contains x || D.contains y)).flatten.eraseDups := by
+  intro hz hmem
+  rw [List.mem_eraseDups, List.mem_flatten] at hmem
+  obtain ⟨D, hD, hzD⟩ := hmem
+  rw [List.mem_filter] at hD
+  obtain ⟨hDP, hDhit⟩ := hD
+  have hne : C ≠ D := by
+    intro heq; subst heq; exact hkeep hDhit
+  exact hP C hC D hDP hne z hz hzD
+
+/-- `mergePair` préserve la disjonction des classes. -/
+lemma classesDisjoint_mergePair {P : List (List Nat)} {x y : Nat}
+    (hP : ClassesDisjoint P) : ClassesDisjoint (mergePair P x y) := by
+  intro C hC D hD hne z hzC hzD
+  rw [mergePair_eq, List.mem_append] at hC hD
+  rcases hC with hC | hC <;> rcases hD with hD | hD
+  · rw [List.mem_filter] at hC hD
+    exact hP C hC.1 D hD.1 hne z hzC hzD
+  · rw [List.mem_filter] at hC
+    rw [List.mem_singleton] at hD
+    subst hD
+    refine not_mem_merged_of_keep hP hC.1 ?_ hzC hzD
+    cases hA : C.contains x <;> cases hB : C.contains y <;> simp_all
+  · rw [List.mem_filter] at hD
+    rw [List.mem_singleton] at hC
+    subst hC
+    refine not_mem_merged_of_keep hP hD.1 ?_ hzD hzC
+    cases hA : D.contains x <;> cases hB : D.contains y <;> simp_all
+  · rw [List.mem_singleton] at hC hD
+    exact hne (hC.trans hD.symm)
+
+/-- La disjonction des classes survit au repli complet. -/
+lemma classesDisjoint_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (h : ClassesDisjoint P) : ClassesDisjoint (pairs.foldl mergeStep P) := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (classesDisjoint_mergePair h)
+
+/-- Les singletons initiaux sont deux à deux distincts. -/
+lemma pairwise_singles {n : Nat} :
+    ((List.range n).map (fun i => [i + 1])).Pairwise (fun C D => C ≠ D) :=
+  List.Pairwise.map (fun i => [i + 1])
+    (fun a b h heq => by
+      injection heq with h1
+      exact h (by omega))
+    List.nodup_range
+
+/-- Une étiquette couverte reste dans le bloc fusionné. -/
+lemma mem_merged_of_covered {P : List (List Nat)} {x y : Nat} (hx : Covered P x) :
+    x ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
+  obtain ⟨C, hCP, hx'⟩ := hx
+  refine List.mem_eraseDups.mpr (List.mem_flatten.mpr ⟨C, ?_, hx'⟩)
+  refine List.mem_filter.mpr ⟨hCP, ?_⟩
+  rw [Bool.or_eq_true]
+  exact Or.inl (List.contains_iff_mem.mpr hx')
+
+/-- `mergePair` préserve l'absence de doublon : le bloc fusionné, qui porte `x`,
+ne peut pas être une classe intacte, qui ne porte pas `x`. -/
+lemma pairwise_mergePair {P : List (List Nat)} {x y : Nat}
+    (hnd : P.Pairwise (fun C D => C ≠ D)) (hx : Covered P x) :
+    (mergePair P x y).Pairwise (fun C D => C ≠ D) := by
+  rw [mergePair_eq, List.pairwise_append]
+  have hkeep : (P.filter (fun C => !C.contains x && !C.contains y)).Pairwise
+      (fun C D => C ≠ D) := List.Pairwise.filter _ hnd
+  refine ⟨hkeep, List.pairwise_singleton _ _, ?_⟩
+  intro C hC D hDm
+  rw [List.mem_filter] at hC
+  obtain ⟨hCP, hcond⟩ := hC
+  have hfx : C.contains x = false := by
+    cases hA : C.contains x <;> cases hB : C.contains y <;> simp_all
+  rw [List.mem_singleton] at hDm
+  intro heq
+  subst heq
+  subst hDm
+  have h1 : ((P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups).contains x = true :=
+    List.contains_iff_mem.mpr (mem_merged_of_covered hx)
+  rw [h1] at hfx
+  exact Bool.noConfusion hfx
+
+/-- Les deux invariants de partition traversent le repli complet. -/
+lemma foldl_partition_inv {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D))
+    (hcov : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
+    ClassesDisjoint (pairs.foldl mergeStep P) ∧
+      (pairs.foldl mergeStep P).Pairwise (fun C D => C ≠ D) := by
+  induction pairs generalizing P with
+  | nil => exact ⟨hd, hnd⟩
+  | cons p ps ih =>
+      rw [List.foldl_cons]
+      refine ih (classesDisjoint_mergePair hd)
+        (pairwise_mergePair hnd (hcov p (List.mem_cons_self ..)).1) ?_
+      intro q hq
+      have hc := hcov q (List.mem_cons_of_mem _ hq)
+      exact ⟨covered_mergePair hc.1, covered_mergePair hc.2⟩
+
+/-- La couverture d'une étiquette survit au repli complet. -/
+lemma covered_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {z : Nat}
+    (h : Covered P z) : Covered (pairs.foldl mergeStep P) z := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (covered_mergePair h)
+
+/-- Une liste deux-à-deux distincte dont tous les éléments valent `a` est de
+longueur au plus un. -/
+lemma pairwise_all_eq_length_le_one {α : Type} {l : List α} {a : α}
+    (hnd : l.Pairwise (fun x y => x ≠ y)) (hall : ∀ x ∈ l, x = a) : l.length ≤ 1 := by
+  cases l with
+  | nil => simp
+  | cons b t =>
+      cases t with
+      | nil => simp
+      | cons c t' =>
+          exfalso
+          have hbc : b = c := (hall b (by simp)).trans (hall c (by simp)).symm
+          cases hnd with
+          | cons hhead _ => exact absurd hbc (hhead c (by simp))
+
+/-- Pont `countP`/`filter`, autonome. -/
+lemma countP_length_filter {α : Type} {p : α → Bool} (l : List α) :
+    l.countP p = (l.filter p).length := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+      by_cases h : p a = true
+      · simp [h, ih]
+      · simp [h, ih]
+
+/-- **Unicité sous-strand** : dans une partition sans doublon, une étiquette
+couverte appartient à exactement une classe. -/
+lemma countP_contains_eq_one {P : List (List Nat)} {z : Nat}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hcov : Covered P z) :
+    P.countP (fun C => C.contains z) = 1 := by
+  obtain ⟨C₀, hC₀P, hz₀⟩ := hcov
+  have hfC₀ : C₀ ∈ P.filter (fun C => C.contains z) :=
+    List.mem_filter.mpr ⟨hC₀P, List.contains_iff_mem.mpr hz₀⟩
+  have hall : ∀ D ∈ P.filter (fun C => C.contains z), D = C₀ := by
+    intro D hD
+    rw [List.mem_filter] at hD
+    obtain ⟨hDP, hzD⟩ := hD
+    rw [List.contains_iff_mem] at hzD
+    by_contra hne
+    exact hd C₀ hC₀P D hDP (Ne.symm hne) z hz₀ hzD
+  have hndf : (P.filter (fun C => C.contains z)).Pairwise (fun C D => C ≠ D) :=
+    List.Pairwise.filter _ hnd
+  have hge : 0 < (P.filter (fun C => C.contains z)).length := List.length_pos_of_mem hfC₀
+  have hle : (P.filter (fun C => C.contains z)).length ≤ 1 :=
+    pairwise_all_eq_length_le_one hndf hall
+  rw [countP_length_filter]
+  omega
+
+/-- **Unicité over-strand** : si `x` et `y` partagent une classe d'une partition
+sans doublon, exactement une classe porte `x` ou `y`. -/
+lemma countP_over_eq_one {P : List (List Nat)} {x y : Nat}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hsc : SameClass P x y) :
+    P.countP (fun C => C.contains x || C.contains y) = 1 := by
+  obtain ⟨C₀, hC₀P, hx₀, hy₀⟩ := hsc
+  have hfC₀ : C₀ ∈ P.filter (fun C => C.contains x || C.contains y) := by
+    refine List.mem_filter.mpr ⟨hC₀P, ?_⟩
+    rw [Bool.or_eq_true]
+    exact Or.inl (List.contains_iff_mem.mpr hx₀)
+  have hall : ∀ D ∈ P.filter (fun C => C.contains x || C.contains y), D = C₀ := by
+    intro D hD
+    rw [List.mem_filter] at hD
+    obtain ⟨hDP, horD⟩ := hD
+    rw [Bool.or_eq_true] at horD
+    rcases horD with hxD | hyD
+    · rw [List.contains_iff_mem] at hxD
+      by_contra hne
+      exact hd C₀ hC₀P D hDP (Ne.symm hne) x hx₀ hxD
+    · rw [List.contains_iff_mem] at hyD
+      by_contra hne
+      exact hd C₀ hC₀P D hDP (Ne.symm hne) y hy₀ hyD
+  have hndf : (P.filter (fun C => C.contains x || C.contains y)).Pairwise
+      (fun C D => C ≠ D) := List.Pairwise.filter _ hnd
+  have hge : 0 < (P.filter (fun C => C.contains x || C.contains y)).length :=
+    List.length_pos_of_mem hfC₀
+  have hle : (P.filter (fun C => C.contains x || C.contains y)).length ≤ 1 :=
+    pairwise_all_eq_length_le_one hndf hall
+  rw [countP_length_filter]
+  omega
+
+/-- Chaque paire du repli est couverte par les singletons initiaux. -/
+lemma crossings_covered_singles {d : KnotDiagram} (h : EdgesInRange d) :
+    ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.2 := by
+  intro q hq
+  rw [List.mem_map] at hq
+  obtain ⟨c', hc', rfl⟩ := hq
+  obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
+  exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
+
+/-- Toute étiquette de la plage `1..numEdges` est couverte par la partition. -/
+lemma arcPartition_covered {d : KnotDiagram} {z : Nat}
+    (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
+    Covered (arcPartition d) z := by
+  rw [arcPartition_eq]
+  exact covered_foldl (covered_singles hz1 hz2)
+
+/-- **`arcPartition` est une partition** : classes disjointes, sans doublon. -/
+theorem arcPartition_classes (d : KnotDiagram) (h : EdgesInRange d) :
+    ClassesDisjoint (arcPartition d) ∧
+      (arcPartition d).Pairwise (fun C D => C ≠ D) := by
+  rw [arcPartition_eq]
+  exact foldl_partition_inv classesDisjoint_singles pairwise_singles
+    (crossings_covered_singles h)
+
+/-- **L'hypothèse `h1`/`h3` est un théorème** : chaque étiquette de la plage
+est portée par exactement une classe de `arcPartition`. -/
+theorem arcPartition_countP_label (d : KnotDiagram) (h : EdgesInRange d) {z : Nat}
+    (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
+    (arcPartition d).countP (fun C => C.contains z) = 1 := by
+  obtain ⟨hd, hnd⟩ := arcPartition_classes d h
+  exact countP_contains_eq_one hd hnd (arcPartition_covered hz1 hz2)
+
+/-- **Somme de ligne inconditionnelle** : pour tout diagramme à étiquettes en
+plage, chaque ligne de la matrice d'Alexander somme à zéro — la boucle entre
+le fait de Fox et la somme nulle se referme, sans hypothèse d'unicité restée
+à la main du lecteur. -/
+theorem alexanderRow_sum_zero (d : KnotDiagram) (h : EdgesInRange d)
+    {c : PDCrossing} (hc : c ∈ d.crossings) :
+    ((arcPartition d).map (alexanderEntry c)).sum = 0 := by
+  obtain ⟨h1lo, h1hi, _, _, h3lo, h3hi, _, _⟩ := h c hc
+  exact alexanderEntry_sum_zero (arcPartition d) c
+    (arcPartition_countP_label d h h1lo h1hi)
+    (arcPartition_countP_label d h h3lo h3hi)
+    (countP_over_eq_one (arcPartition_classes d h).1 (arcPartition_classes d h).2
+      (arcPartition_sameClass_overStrand d h hc))
 
 /-- Type des valeurs du polynôme d'Alexander : ℤ[t]. -/
 abbrev AlexanderPoly := Polynomial ℤ
