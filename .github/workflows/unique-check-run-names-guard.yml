@@ -33,6 +33,7 @@ name: Unique Check-Run Names Guard
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - '.github/workflows/**'
       - 'scripts/ci/check_unique_check_run_names.py'

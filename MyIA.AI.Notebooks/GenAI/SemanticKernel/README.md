@@ -136,7 +136,7 @@ Créer un fichier `.env` dans le répertoire :
 
 ```bash
 OPENAI_API_KEY=sk-...
-OPENAI_CHAT_MODEL_ID=gpt-4o-mini
+OPENAI_CHAT_MODEL_ID=gpt-5-mini
 
 # Optionnel : Qdrant pour notebook 05
 QDRANT_URL=https://qdrant.myia.io
