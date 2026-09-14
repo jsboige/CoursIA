@@ -6,10 +6,13 @@ classify_maturity.
 """
 
 import json
+import subprocess
 import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -2037,6 +2040,111 @@ class TestScanExclusions:
 
         entries = gc.scan_all_notebooks()
         assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
+
+
+# --- build_git_metadata : l'echec est bruyant, jamais un dict vide (#14831) ---
+
+
+class TestBuildGitMetadataLoud:
+    """Un `git log` en echec doit lever, pas rendre {}.
+
+    Le dict vide etait indiscernable de « aucun notebook n'a d'historique » :
+    chaque `last_validator` devenait falsy, `classify_scientific_review`
+    retombait sur UNREVIEWED, puis `_merge_curated_fields` restaurait
+    `last_validation`/`last_validator` depuis origin/main -- les deux champs
+    qui auraient trahi la panne -- pendant que `scientific_review`, absent de
+    CURATED_GIT_FIELDS, passait degrade jusqu'au catalogue publie. Le run se
+    concluait `success`. Ces tests verifient que chacune des trois sorties
+    d'echec nomme sa cause, et que le chemin nominal continue de rendre ses
+    entrees.
+    """
+
+    def test_returncode_non_nul_leve_en_nommant_rc_et_stderr(self):
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=128, stdout="",
+                stderr="fatal: detected dubious ownership in repository",
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        msg = str(exc.value)
+        assert "rc=128" in msg
+        assert "dubious ownership" in msg
+
+    def test_stderr_vide_reste_lisible(self):
+        """Un rc non nul sans stderr ne doit pas rendre un message tronque :
+        c'est le cas ou l'operateur n'a que le rc pour diagnostiquer."""
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=129, stdout="", stderr="",
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        msg = str(exc.value)
+        assert "rc=129" in msg
+        assert "(vide)" in msg
+
+    def test_timeout_leve_en_nommant_le_delai(self):
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(
+                cmd="git log", timeout=gc.GIT_LOG_TIMEOUT_SECONDS,
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        assert str(gc.GIT_LOG_TIMEOUT_SECONDS) in str(exc.value)
+
+    def test_git_absent_leve(self):
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.side_effect = FileNotFoundError(
+                2, "No such file or directory", "git",
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        assert "git" in str(exc.value)
+
+    def test_controle_positif_le_chemin_nominal_rend_ses_entrees(self):
+        """Contre-controle : un detecteur se valide par ses faux negatifs.
+
+        Verifie du meme coup que le commit le plus recent gagne (git log est
+        antichronologique) et que le filtre de prefixe tient.
+        """
+        import generate_catalog as gc
+
+        stdout = "\n".join([
+            "COMMIT:2026-09-13 10:00:00 +0200|dev@example.org|feat: nb (#123) et (#124)",
+            "",
+            "MyIA.AI.Notebooks/Serie/n.ipynb",
+            "scripts/hors_perimetre.py",
+            "COMMIT:2026-09-01 08:00:00 +0200|autre@example.org|ancien (#99)",
+            "",
+            "MyIA.AI.Notebooks/Serie/n.ipynb",
+            "MyIA.AI.Notebooks/Serie/m.ipynb",
+        ])
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=0, stdout=stdout, stderr="",
+            )
+            meta = gc.build_git_metadata()
+
+        assert set(meta) == {"Serie/n.ipynb", "Serie/m.ipynb"}
+        # Le commit le plus recent gagne sur n.ipynb (premier vu = garde).
+        assert meta["Serie/n.ipynb"]["last_validation"] == "2026-09-13"
+        assert meta["Serie/n.ipynb"]["last_validator"] == "dev@example.org"
+        assert meta["Serie/n.ipynb"]["issues_prs"] == ["#123", "#124"]
+        assert meta["Serie/m.ipynb"]["last_validation"] == "2026-09-01"
 
 
 if __name__ == "__main__":

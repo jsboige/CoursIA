@@ -8,10 +8,12 @@ name: PR gate stale-verdict sweep
 # (csharp)". Since #13510 a starved gate cancels its own run instead (leg
 # CANCELLED, exit still 1), so those legs now arrive here through the
 # `cancelled` half of the RED set below -- the founding FAILURE case below is
-# history, kept for the record. pr-gate-rerun.yml exists to re-aggregate
-# afterwards, but it is
-# driven by `workflow_run` and therefore can only listen to workflows that are
-# ADDRESSABLE BY NAME in this repository:
+# history, kept for the record. At the time, pr-gate-rerun.yml re-aggregated
+# afterwards, but it was
+# driven by `workflow_run` and could therefore only listen to workflows that
+# were ADDRESSABLE BY NAME in this repository -- an event path RETIRED by
+# #11860; that file is now a manual `workflow_dispatch` harness, and THIS
+# sweep is its schedule-mutualized replacement:
 #
 #   workflows: ["Variation Tag Guard", "Lane Claim Guard",
 #               "Notebook Execution Required", "Translation Drift Check",
@@ -53,9 +55,8 @@ name: PR gate stale-verdict sweep
 # fold concealed 52 of them, the majority of the blocked pool. The filter now
 # treats ANY red `PR gate` leg as a candidate.
 #
-# Why this sweep exists at all, given pr-gate-rerun.yml (#11546) now re-runs
-# on `workflow_run`: CodeQL runs in `default setup`, which is dynamic and does
-# not appear in the workflow list --
+# Why this sweep exists at all: CodeQL runs in `default setup`, which is dynamic
+# and does not appear in the workflow list --
 #   GET /repos/jsboige/CoursIA/actions/workflows?per_page=100
 #     -> total_count: 103, of which CodeQL: 0
 # -- so it cannot be named as a `workflow_run` trigger, and the event-driven
@@ -433,16 +434,23 @@ jobs:
               #
               # L'intention d'acceptance 5 -- ne pas blanchir une vraie
               # interruption -- tient toujours, parce que le sweep ne merge
-              # rien : il RELANCE le gate, qui re-lit l'etat live et conclura
-              # FAIL si un constituant est reellement rouge. Le verdict reste
-              # rendu par le gate, jamais par le sweep. Cout d'un faux positif
-              # d'eligibilite : une minute de runner. Cout du faux negatif
-              # actuel : une PR BLOCKED pour toujours, puisque le gate
-              # `cancelled` ne peut pas devenir SUCCESS tout seul.
+              # rien : il relaie ce qui re-rendera le verdict, et le gate
+              # re-lit l'etat live et conclura FAIL si un constituant est
+              # reellement rouge. Le verdict reste rendu par le gate, jamais
+              # par le sweep. Cout d'un faux positif d'eligibilite : une
+              # minute de runner. Cout du faux negatif actuel : une PR
+              # BLOCKED pour toujours, puisque le gate `cancelled` ne peut
+              # pas devenir SUCCESS tout seul.
               #
               # Exemption d'une SEULE conclusion, jamais une liste blanche de
               # bloquants : `startup_failure`, `stale` et toute conclusion
               # future inconnue continuent d'exclure.
+              #
+              # Divergence DELIBEREMENT maintenue d'avec CONCLUSION_BAD
+              # (pr_gate.py, ou `cancelled` faut) : le gate JUGE les
+              # conclusions -- un `cancelled` requis n'est pas un verdict ;
+              # le sweep REPARE les causes -- il relaie le constituant
+              # annule (#15775), pas l'agregateur qui le re-lirait identique.
               OTHERS_NOT_BLOCKING = GREEN | {"cancelled"}
               red_others = [(k, c) for k, c in others
                             if (c.get("conclusion") or "")
@@ -452,6 +460,27 @@ jobs:
                       f"{k[1]}[run {k[0]}]={c.get('conclusion')}"
                       for k, c in red_others])
                   continue
+
+              # #15775 -- quand l'eligibilite ne tient qu'a l'exemption
+              # `cancelled`, la cause reparable est le CONSTITUANT annule,
+              # pas l'agregateur : relancer le gate re-lit un constituant
+              # qui n'a pas bouge et re-rend le meme FAIL (mesure du
+              # 2026-09-12 sur #15452 et #15748 : six re-lancements de gate
+              # sans effet, deux re-lancements de constituant conclusifs).
+              # La ligne emet alors les run ids des constituants annules en
+              # 5e champ ; l'action relaie ces runs, et la PASSE SUIVANTE
+              # de ce sweep relaie le gate sur un constituant re-render (le
+              # re-agregateur event-driven pr-gate-rerun.yml est retire
+              # depuis #11860 : c'est bien ce sweep qui scelle). Une jambe
+              # annulee sans details_url resolvable n'emet rien -- repli
+              # conservateur sur le gate, jamais plus permissif.
+              rerun_ids = []
+              for _k, c in others:
+                  if (c.get("conclusion") or "") != "cancelled":
+                      continue
+                  m = re.search(r"/runs/(\d+)/", c.get("details_url") or "")
+                  if m:
+                      rerun_ids.append(m.group(1))
 
               # Tier: 0 = mature (verdict older than the dwell floor -> the
               # re-run converts to a merge), 1 = immature (the re-run can only
@@ -472,8 +501,13 @@ jobs:
                   rank = 0 if verdict_age_s >= DWELL_FLOOR_S else 1
               except ValueError:
                   rank = 1
+              # 5e champ conditionnel (#15775) : run ids des constituants
+              # `cancelled` a relancer, separes par des virgules. Absent
+              # quand il n'y en a pas (ou aucun resolvable) : la ligne reste
+              # au format historique 4 champs, l'action relaie le gate.
+              tail = f" {','.join(rerun_ids)}" if rerun_ids else ""
               print(f'{p["number"]} {p["sha"]} '
-                    f'{str(p.get("fork", False)).lower()} {rank}')
+                    f'{str(p.get("fork", False)).lower()} {rank}{tail}')
           PY
 
           # OLDEST FIRST, and the cap is the whole reason it matters.
@@ -515,7 +549,7 @@ jobs:
 
           m=0
           i=0
-          while read -r NUM SHA FORK RANK; do
+          while read -r NUM SHA FORK RANK TARGET; do
             [ -z "${NUM:-}" ] && continue
             # Capped rows of one tier must not stop the loop: the sort puts
             # mature first, so `continue` walks on into the immature block.
@@ -523,6 +557,30 @@ jobs:
               continue
             fi
             if [ "${RANK:-1}" != "0" ] && [ "$i" -ge "$MAX_IMMATURE" ]; then
+              continue
+            fi
+            # #15775 -- 5e champ porteur de run ids de constituants
+            # `cancelled` : la cause du rouge est le CONSTITUANT, on relaie
+            # SES runs et PAS le gate. Relancer le gate relirait un
+            # constituant inchangé et re-renderait le même FAIL (mesuré
+            # 2026-09-12 : six re-lancements de gate sans effet sur
+            # #15452/#15748) ; la PASSE SUIVANTE de ce sweep relaie le gate
+            # sur le constituant re-render et scelle le verdict -- le
+            # re-agregateur event-driven est retire depuis #11860, aucun
+            # `workflow_run` actif n'ecoute ces runs, et ce sweep est
+            # schedule-only : la relance ne peut pas se re-declencher.
+            TARGET="${TARGET:--}"
+            if [ "$TARGET" != "-" ]; then
+              for RID in $(printf '%s' "$TARGET" | tr ',' ' '); do
+                if [ "${DRY_RUN:-false}" = "true" ]; then
+                  echo "[stale-sweep] (dry-run) would re-run constituent run $RID for #$NUM ($SHA)"
+                else
+                  echo "[stale-sweep] re-running constituent run $RID for #$NUM ($SHA) -- next pass re-lays the gate"
+                  gh run rerun "$RID" --repo "$REPO" \
+                    || echo "[stale-sweep] constituent re-run refused for #$NUM (non-fatal)"
+                fi
+              done
+              if [ "${RANK:-1}" = "0" ]; then m=$((m + 1)); else i=$((i + 1)); fi
               continue
             fi
             # Re-run the ORIGINAL run rather than POSTing a fresh verdict.
@@ -535,14 +593,16 @@ jobs:
             #
             # `gh run rerun` overwrites the run's check-run IN PLACE, in the same
             # suite -- the only mechanism that actually clears the red leg. Same
-            # remedy as pr-gate-rerun.yml (#11546); this sweep is its complement,
-            # because CodeQL runs in `default setup` and is NOT addressable as a
-            # `workflow_run` trigger, so the event-driven path cannot fire when
-            # CodeQL is the last check to settle -- the common case under
-            # saturation, since it is also the slowest.
+            # remedy as the retired pr-gate-rerun.yml (#11546) used; since #11860
+            # this sweep is its schedule-mutualized REPLACEMENT, because CodeQL
+            # runs in `default setup` and is NOT addressable as a `workflow_run`
+            # trigger, so an event-driven rescuer cannot fire when CodeQL is the
+            # last check to settle -- the common case under saturation, since it
+            # is also the slowest.
             #
-            # No loop risk: "PR gate" is not among pr-gate-rerun.yml's trigger
-            # workflows, so a re-run cannot re-trigger the rescuer.
+            # No loop risk: this sweep has no `workflow_run` trigger of its own
+            # (`schedule` / manual `workflow_dispatch` only), so a re-run cannot
+            # re-trigger it.
             RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
                     --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null)
             RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)

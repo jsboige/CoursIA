@@ -24,7 +24,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 10² | 15 | 4 | PEDA/REF | #2874, #3003, #14821 |
+| `knot_lean` | v4.32.1 | 10² | 15 | 3 | PEDA/REF | #2874, #3003, #14821 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
@@ -47,8 +47,11 @@ reste en cible prover. Régression de compte documentée et HONNÊTE — pas un 
 le 2026-09-11** : **10 distincts** (`count_code_sorry.py --json`, champ `distinct_code_sorry`),
 soit `0 (Basic) + 2 (Reidemeister) + 0 (Invariant, post-#15082) + 6 (Conway) + 2 (Lidman)
 + 0 (Mathlib) = 10`. La baseline CI `lean-knot.yml` porte la même valeur (`sorry-baseline: "10"`).
-La majorité des 10 restants sont des **définitions non définies** (`IsSmoothlySlice`,
-`IsTopologicallySlice := sorry`, etc.) et des preuves de transfert classique ouvertes.
+Mesure du
+2026-09-14 : **2** des 10 restants sont des **définitions non définies**
+(`IsSmoothlySlice`, `IsTopologicallySlice := sorry`, Conway), les **8** autres des
+sorries de théorèmes (4 bornes Conway, 2 `reidemeister_theorem`, 2 Lidman) —
+`Invariant.lean` est sorry-free, marquee `tricolorable_invariant` prouvé (#11958).
 Le pont GF(3) Path B (`triColorFoxCondition_iff_sum_mod_three`) est **prouvé** (#3003,
 sorry net-zéro vs `main`) et `trefoil_not_unknot` **prouvé** (#8766). Niveau recherche, pas un
 gap pédagogique.
@@ -120,7 +123,9 @@ théorème de Conway.
   évolution 3 (2026-07-15) → 12 (2026-08-27) → **11** (2026-08-28, mesure
   canonique post-#11211/#11227). Majorité = `:= sorry` sur définitions non
   définies.
-- **Notebook câblé** : 4 notebooks (vs 2 déclarés — 2 notebooks EN-siblings comptés).
+- **Notebook câblé** : 3 notebooks (`Lean-17a/17b/17c`, mesuré 2026-09-14 :
+  `grep -rl knot_lean --include=*.ipynb` → 17a/17b/17c câblés, `Lean-24`/`Lean-26`
+  ne citent le lake qu'en prose ; aucun notebook EN-sibling n'existe).
 - **Suivi** : #2874 (mandate-C trio MERGED #3997/#3999/#4003), #3003 (Path B GF(3) SHIPPED).
 - **i18n** : 7/7 modules EN-siblings (100 %, livré #6429/#6440 par po-2025).
 
@@ -185,7 +190,7 @@ pour l'identification `23T5 = M23` que la couche proof-assistant ne reproduit pa
   tactique, 0 `native_decide`, 0 `axiom` déclaré. `Sporadic.card_M23` et
   `Sporadic.simple_M23` prouvés par chaîne de stabilisateurs à certificats
   (Schreier–Sims matérialisé).
-- **Notebook câblé** : 1 notebook (Lean-23-Galois-Probleme-Inverse-M23).
+- **Notebook câblé** : 1 notebook (Lean-22-Galois-Probleme-Inverse-M23).
 - **Suivi** : préprint #2608.08538 (cf. `galois_lean/README.md`).
 - **i18n** : EN-sibling à venir (EPIC #4980).
 - **Caveat build** : `lakefile.toml` utilise la forme **bare** + agrégateur racine (la

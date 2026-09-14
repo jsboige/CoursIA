@@ -53,12 +53,89 @@ table) -- is described by the issue as "plus precis sur ce cas, mais
 heuristique -- je ne le propose pas en premier". It is deliberately NOT
 implemented here: heuristic, and it needs its own arbitration.
 
+A THIRD mechanism, same family, is the SOURCE-side counterpart taken by the
+other end (issue #16110): the source SURVIVES in volume and loses its
+STRUCTURE. Founding case, measured firsthand on PR #16097 (head
+``1209b5357``, cell ``40cb37d5`` of ``Lean-18-Sendov-Complex-Analysis.ipynb``,
+base ``origin/main``): every newline of the cell was stripped at write time,
+so the 44 source items joined into ONE line whose first character is ``#`` --
+the whole code becomes a comment. The cell kept its 312-character stream
+output. Measured, base -> head:
+
+                     items   chars   ast.parse(source).body
+    origin/main        44     1132            10
+    1209b5357          12     1728             0
+
+Two instruments were blind BY CONSTRUCTION, and neither is a defect in them:
+
+  - VOLUME cannot fire: the head is LONGER (1728 > 1132), because the same
+    write that stripped the newlines also APPENDED a 639-character recovery
+    note. The magnitude gate (``h_chars >= b_chars``) stops before any floor
+    is even compared -- verified: ``analyze()`` reports zero findings there.
+  - SYNTAX cannot fire: a cell folded entirely into a comment PARSES
+    perfectly. This is why the BLOCKING ``notebook-cell-source-parses``
+    guard (#13326) stayed green on a cell whose code is gone -- syntax
+    validity is the wrong instrument, and the issue says so itself.
+
+The discriminant is therefore the STATEMENT COUNT, and the two criteria kept
+are the ones that survive measurement (see "criterion 1" below):
+
+  EMPTIED       a matched cell whose source parsed to > 0 statements on the
+                base and parses to 0 on the head. Content-based, so it does
+                not care HOW the newlines disappeared.
+  ORPHAN OUTPUT the head cell carries non-empty ``outputs`` while its source
+                yields 0 statements -- a result no statement can have
+                produced. Base-free by design: it needs neither the baseline
+                nor a diff, only the cell (the issue's third criterion).
+
+Criterion 1 of the issue ("the number of source items without a trailing
+newline, last excluded, INCREASES") is REFUTED BY MEASUREMENT and is NOT
+implemented. That count is a property of the SERIALIZATION GRANULARITY, not
+of correctness: ``GenAI/Texte/21_LoRA_FineTuning.ipynb`` cell ``69b296cb``
+on ``main`` is serialized CHARACTER BY CHARACTER (``['#', ' ', 'P', ...]``,
+820 items), reports 802 unterminated items, and is perfectly healthy --
+``ast.parse`` yields 10 statements and its output is real. Repo-wide
+histogram over the 11 970 code cells of the 953 Python notebooks of ``main``:
+``{0: 11970, 1: 1, 802: 1}``. A detector whose firing depends on which tool
+serialized the cell would flag legitimate re-serializations, so the signal is
+dropped rather than shipped with a threshold -- and the fold cases it was
+meant to catch are already covered twice: a fold whose first line is CODE
+loses its syntax and is caught by the BLOCKING sibling above; a fold whose
+first line is a comment is caught here by EMPTIED.
+
+Two measured traps shape the ORPHAN OUTPUT predicate, both found by sweeping
+``main`` before writing it:
+
+  - MAGICS. The first sweep, without a magic guard, flagged 6 cells -- all of
+    them ``# comment`` + ``!python ...`` / ``%pip install ...``. Those outputs
+    HAVE a producer (the magic), and ``ast`` sees none because
+    ``_strip_ipython_magics`` removes the line. The predicate therefore
+    requires NO magic in the cell (same logical-line rule as the stripper).
+    With that guard, the sweep over ``main`` returns ZERO cells, i.e. the
+    criterion has no pre-existing instance to be conservative about.
+  - PAST. A finding that only a PR can CREATE never settles the past: the
+    predicate needs a cell that asserts an output with no producer, and
+    ``main`` holds none. It is therefore deliberately NOT scoped to cells the
+    PR edited -- where the claim is intra-cell, the baseline adds nothing.
+
+The MAGNITUDE exemptions (moved content, diagnostic purge) arbitrate the
+comparative signals -- they mean "no collapse happened here", which is a
+statement about the base-to-head relation. They deliberately do NOT arbitrate
+ORPHAN OUTPUT, whose claim is intra-cell and true whatever happened to the
+code: content moved to another cell still leaves a stale output above an
+emptied cell. On the founding case both exemption fractions measure 0.00, so
+they would have suppressed nothing.
+
 Cells are matched BASE -> HEAD by nbformat cell ``id`` when both sides carry
 one, falling back to positional index (same contract as the output-side
 siblings). A cell DELETED by the PR has no head counterpart and produces no
 finding (deleting code cells is legitimate, and the surviving cells already
 report the loss); a notebook ADDED by the branch has no baseline and is never
-judged.
+judged -- the structural criteria honour that boundary too, since a wholly new
+notebook is read as new content while an added CELL among existing ones is
+what slips through unnoticed. An added CELL inside a JUDGED notebook has no
+baseline either, so EMPTIED cannot speak about it -- but ORPHAN OUTPUT can,
+since it consults only the head cell.
 
 Placement: ADVISORY (``blocking=False`` in the fast lane). The verdict is
 published under a neutral conclusion -- it never gates. The judgment stays
@@ -79,6 +156,7 @@ reasons) is emitted for calibration.
 """
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -94,6 +172,16 @@ from check_output_failure_text import (
     resolve_base,
 )
 from check_output_flood import _cell_key
+
+# The structural criteria share the magic semantics of the BLOCKING sibling
+# (#13326) instead of re-deriving them: `_scan_line` is the state machine that
+# decides what a magic line is (logical-line start only), and reusing it is
+# what keeps the two organs from disagreeing about the same cell.
+from check_cell_source_parses import (
+    _is_python_kernel,
+    _scan_line,
+    _strip_ipython_magics,
+)
 
 # A base source below this many chars is noise (a stub, a two-line cell):
 # never judged. The founding case's guilty cell sits at 8425 chars.
@@ -144,6 +232,17 @@ SELF_TEST_NOTEBOOK = (
     "MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb")
 SELF_TEST_CELL = "c989_independent_v2"
 
+# Structural founding case (#16110), replayed the same way. The head is the
+# live head of PR #16097, which is still OPEN: once that branch is squashed
+# away the commit becomes unreachable and the replay degrades to the SKIP the
+# sibling already prints -- the synthetic controls below are what stays
+# durable, this one is the real-world witness.
+SELF_TEST_16110_BASE = "7cc2fb2d203f"  # merge-base(main, #16097)
+SELF_TEST_16110_HEAD = "1209b5357"
+SELF_TEST_16110_NOTEBOOK = (
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Sendov-Complex-Analysis.ipynb")
+SELF_TEST_16110_CELL = "40cb37d5"
+
 
 def _normalize(text):
     """Lowercase, accents stripped: motif matching is accent-blind."""
@@ -173,6 +272,48 @@ def _code_cells(nb):
 def _removed_lines(base_text, head_text):
     """Multiset of lines the diff removed from one cell (duplicates count)."""
     return Counter(base_text.splitlines()) - Counter(head_text.splitlines())
+
+
+def _has_ipython_magic(src):
+    """True iff the source carries a `!`/`%` line at a LOGICAL line start.
+
+    Mirrors `_strip_ipython_magics` exactly (same state machine, same rule:
+    a magic can only open a logical line, never continue one), because this
+    predicate exists to know whether stripping REMOVED executable content --
+    and a stripper that dropped a line is the only witness of that.
+    """
+    depth, in_triple = 0, None
+    for line in src.splitlines():
+        if depth == 0 and in_triple is None:
+            stripped = line.lstrip()
+            if stripped.startswith("!") or stripped.startswith("%"):
+                return True
+        depth, in_triple = _scan_line(line, depth, in_triple)
+    return False
+
+
+def _python_statements(src):
+    """Statement count of a cell's Python, or None when not measurable.
+
+    None means "no verdict possible", never "zero statements" -- the
+    distinction is the whole predicate:
+
+      - the magic-stripped source holds nothing (a magic-only cell, an empty
+        cell): there is no Python to count, so nothing is claimed;
+      - the source does not parse: the BLOCKING ``notebook-cell-source-parses``
+        guard (#13326) owns that case, and a heuristic count here would only
+        duplicate it worse.
+
+    A fully commented cell -- the founding case -- parses fine and yields 0,
+    which is exactly the reading that no other instrument produces.
+    """
+    stripped = _strip_ipython_magics(src)
+    if not stripped.strip():
+        return None
+    try:
+        return len(ast.parse(stripped).body)
+    except (SyntaxError, ValueError):
+        return None
 
 
 def _diagnostic_fraction(removed):
@@ -207,6 +348,22 @@ def _moved_fraction(removed, other_head_text):
     return moved / total
 
 
+def _format_delta(finding):
+    """Signed character delta of one finding, or `no baseline` when there is
+    none.
+
+    Signed on purpose: a STRUCTURE finding can GROW -- the founding case gains
+    596 characters, because the same write that stripped the newlines also
+    appended a recovery note -- and printing that as a negative loss would
+    hide exactly why the volume signal stayed silent.
+    """
+    if finding.get("loss") is None:
+        return "no baseline"
+    pct = ("n/a" if finding.get("ratio") is None
+           else str(int(finding["ratio"] * 100)) + "%")
+    return "%+d chars, %s" % (finding["loss"], pct)
+
+
 def analyze(base_nb, head_nb):
     """Pure per-notebook source-collapse analysis on two parsed notebooks.
 
@@ -220,40 +377,83 @@ def analyze(base_nb, head_nb):
     h_total = sum(_cell_chars(c) for c in h_cells.values())
 
     findings = []
+    python = _is_python_kernel(head_nb.get("metadata") or {})
     for key, h_cell in h_cells.items():
         b_cell = b_cells.get(key)
-        if b_cell is None:
-            continue  # cell added by the branch: no baseline, no judgement
-        b_chars, h_chars = _cell_chars(b_cell), _cell_chars(h_cell)
-        if b_chars < BASE_FLOOR or h_chars >= b_chars:
-            continue
-        loss = b_chars - h_chars
-        if loss < LOSS_FLOOR or (loss / b_chars) < LOSS_FRACTION:
+        b_chars = _cell_chars(b_cell) if b_cell is not None else 0
+        h_chars = _cell_chars(h_cell)
+        h_src = _cell_source(h_cell)
+
+        # VOLUME signal (#15901): a substantial base cell that contracted past
+        # both floors. Blind to a fold, which is why #16110 exists.
+        volume = None
+        if b_cell is not None and b_chars >= BASE_FLOOR and h_chars < b_chars:
+            loss = b_chars - h_chars
+            if loss >= LOSS_FLOOR and (loss / b_chars) >= LOSS_FRACTION:
+                volume = loss
+
+        # STRUCTURE signals (#16110), Python kernels only: what is counted is
+        # the statement, and only Python has one. A .NET cell lands on None
+        # (no parse), which is already a no-verdict.
+        b_body = h_body = None
+        structural = []
+        if python and not added:
+            h_body = _python_statements(h_src)
+            if b_cell is not None:
+                b_body = _python_statements(_cell_source(b_cell))
+            # A magic line is executable content whose output the cell MAY
+            # have produced: `_python_statements` cannot see it (the stripper
+            # removed it), so the cell is not orphan. Measured necessity --
+            # without this guard the sweep flags 6 healthy cells of `main`,
+            # all `# comment` + `!python ...`.
+            no_magic = not _has_ipython_magic(h_src)
+            if (h_cell.get("outputs") or []) and h_body == 0 and no_magic:
+                structural.append("orphan-output")
+            if b_body is not None and b_body > 0 and h_body == 0 and no_magic:
+                structural.append("emptied")
+
+        signals = (["magnitude"] if volume is not None else []) + structural
+        if not signals:
             continue
 
-        b_src, h_src = _cell_source(b_cell), _cell_source(h_cell)
-        removed = _removed_lines(b_src, h_src)
+        b_src = _cell_source(b_cell) if b_cell is not None else ""
+        removed = (_removed_lines(b_src, h_src) if b_cell is not None
+                   else Counter())
         other_head = "".join(_cell_source(c) for k, c in h_cells.items()
                              if k != key)
         diag_frac = _diagnostic_fraction(removed)
         moved_frac = _moved_fraction(removed, other_head)
+        exempt = None
+        if diag_frac >= DIAGNOSTIC_LINE_FRACTION:
+            exempt = "exempt-diagnostic"
+        elif moved_frac >= MOVED_FRACTION:
+            exempt = "exempt-moved"
+
+        # An exemption says "no collapse happened here", i.e. it speaks about
+        # the base->head RELATION: it therefore arbitrates only the
+        # comparative signals. `orphan-output` claims something about the head
+        # CELL alone (an asserted result no statement can produce) and is true
+        # whatever happened to the code, so it is never suppressed.
+        if exempt:
+            signals = [s for s in signals if s == "orphan-output"]
 
         finding = {
             "cell": key, "base": b_chars, "head": h_chars,
-            "loss": loss, "ratio": round(loss / b_chars, 3),
+            "loss": b_chars - h_chars if b_cell is not None else None,
+            "ratio": (round((b_chars - h_chars) / b_chars, 3)
+                      if b_cell is not None and b_chars else None),
             "diagnostic_fraction": round(diag_frac, 2),
             "moved_fraction": round(moved_frac, 2),
+            "signals": signals,
+            "base_body": b_body, "head_body": h_body,
         }
-        if diag_frac >= DIAGNOSTIC_LINE_FRACTION:
-            finding["kind"] = "exempt-diagnostic"
-        elif moved_frac >= MOVED_FRACTION:
-            finding["kind"] = "exempt-moved"
-        else:
-            finding["kind"] = "magnitude"
+        finding["kind"] = exempt if not signals else (
+            "structure" if any(s in ("emptied", "orphan-output")
+                               for s in signals) else "magnitude")
         findings.append(finding)
 
     regressed = (not added) and any(
-        f["kind"] == "magnitude" for f in findings)
+        not f["kind"].startswith("exempt-") for f in findings)
     return {
         "added": added,
         "base_total": b_total,
@@ -289,9 +489,21 @@ def self_test(cwd=None):
     failures = []
 
     def _nb(cells):
-        """Build a synthetic notebook from [(id, source_text)]."""
-        return {"cells": [
-            {"cell_type": "code", "id": k, "source": s} for k, s in cells]}
+        """Build a synthetic notebook from [(id, source[, outputs])].
+
+        The metadata names a Python kernel: the structural criteria are
+        Python-only (the statement is a Python notion), so a fixture without
+        a kernel would silently exercise the volume half alone.
+        """
+        out = []
+        for item in cells:
+            cell = {"cell_type": "code", "id": item[0], "source": item[1]}
+            if len(item) > 2:
+                cell["outputs"] = item[2]
+            out.append(cell)
+        return {"cells": out,
+                "metadata": {"kernelspec": {"name": "python3",
+                                            "language": "python"}}}
 
     def _analyze(base_cells, head_cells, added=False):
         return analyze(None if added else _nb(base_cells), _nb(head_cells))
@@ -360,6 +572,75 @@ def self_test(cwd=None):
     if not (r["cells"] and r["cells"][0]["kind"] == "magnitude"):
         failures.append("purge swallowing real code exempted (should flag)")
 
+    # 12. STRUCTURE fires where volume cannot: the head is LONGER than the
+    #     base (the fold is followed by a note), so the magnitude gate stops
+    #     before any floor -- exactly the #16110 incident. EMPTIED and
+    #     ORPHAN-OUTPUT both fire on the same cell.
+    out_stream = [{"output_type": "stream", "name": "stdout",
+                   "text": "@Sendov.sendov : axioms [propext, ...]"}]
+    folded = "# " + big.replace("\n", "")
+    r = _analyze([("a", big)], [("a", folded, out_stream)])
+    kinds = [f["kind"] for f in r["cells"]]
+    if kinds != ["structure"]:
+        failures.append("folded cell not flagged as structure (%r)" % kinds)
+    else:
+        sig = r["cells"][0]["signals"]
+        if "emptied" not in sig or "orphan-output" not in sig:
+            failures.append("folded cell signals incomplete (%r)" % sig)
+        if r["cells"][0]["loss"] <= 0:
+            failures.append("fixture must GROW to mirror the incident")
+    if not r["regressed"]:
+        failures.append("structural finding did not regress")
+
+    # 13. a magic line IS a producer: `# comment` + `!python ...` keeps its
+    #     output legitimately, and `ast` sees 0 statements because the
+    #     stripper removed the line. Measured necessity: without this guard
+    #     the sweep of `main` flags 6 healthy cells, all of this shape. (The
+    #     cell also SHRINKS, so the volume signal fires and may fire -- this
+    #     control pins the STRUCTURAL half alone.)
+    r = _analyze([("a", big)],
+                 [("a", "# Telecharger\n!python x.py --symbols SPY",
+                   out_stream)])
+    if any(f["kind"] == "structure" or "orphan-output" in f["signals"]
+           or "emptied" in f["signals"] for f in r["cells"]):
+        failures.append("magic cell reached a structural signal (%r)"
+                        % [f["signals"] for f in r["cells"]])
+    # 14. same, untouched: a magic-only cell carries no structure claim
+    magic = "# Installer\n%pip install -q rdflib"
+    if _analyze([("a", magic)], [("a", magic, out_stream)])["cells"]:
+        failures.append("unchanged magic cell flagged")
+
+    # 15. criterion 1 of #16110 REFUTED: an unterminated-item count is a
+    #     serialization granularity, not a defect. A cell whose source is
+    #     split CHARACTER BY CHARACTER (as `21_LoRA_FineTuning.ipynb` cell
+    #     `69b296cb` is on `main`) reports one unterminated item per
+    #     character, parses to a full module, and must stay silent.
+    perchar = list(big)
+    unterminated = sum(1 for x in perchar[:-1] if not x.endswith("\n"))
+    if unterminated < 800:
+        failures.append("per-char fixture too small to be a witness")
+    if _analyze([("a", perchar)], [("a", perchar)])["cells"]:
+        failures.append("per-char serialization flagged (%d unterminated)"
+                        % unterminated)
+
+    # 16. the moved exemption does NOT silence ORPHAN-OUTPUT: the block
+    #     reappears in cell "b", so EMPTIED is exempted, but cell "a" still
+    #     asserts a result no statement of its own can produce.
+    r = _analyze(
+        [("a", moved_block), ("b", "court = 1")],
+        [("a", "# " + moved_block.replace("\n", ""), out_stream),
+         ("b", moved_block)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "structure"):
+        failures.append("orphan output silenced by the moved exemption")
+    elif r["cells"][0]["signals"] != ["orphan-output"]:
+        failures.append("emptied survived the moved exemption (%r)"
+                        % r["cells"][0]["signals"])
+
+    # 17. an added notebook is still never judged, structural criteria
+    #     included: the boundary is the notebook, not the signal.
+    if _analyze([], [("a", "# rien\n", out_stream)], added=True)["cells"]:
+        failures.append("added notebook judged by the structural pass")
+
     # Replay the founding case (#15901 / #15862): the organ MUST fire on the
     # cell that motivated it.
     from check_output_failure_text import git
@@ -384,12 +665,48 @@ def self_test(cwd=None):
             failures.append("founding case: cell " + SELF_TEST_CELL
                             + " exempted as " + hits[0]["kind"])
 
+    # Replay the STRUCTURAL founding case (#16110): the volume gate must stay
+    # silent on it AND the structural pass must fire -- a replay that only
+    # checked the latter would not show that the two mechanisms are disjoint.
+    from check_output_failure_text import git as _git
+    if (_git("cat-file", "-e", SELF_TEST_16110_HEAD, cwd=cwd) is None
+            or _git("cat-file", "-e", SELF_TEST_16110_BASE, cwd=cwd) is None):
+        print("SKIP replay #16110: founding commits not in this clone")
+    else:
+        srows = compare(SELF_TEST_16110_BASE, SELF_TEST_16110_HEAD,
+                        [SELF_TEST_16110_NOTEBOOK], cwd=cwd)
+        s0 = srows[0] if srows else {}
+        shits = [f for f in s0.get("cells", [])
+                 if f["cell"] == SELF_TEST_16110_CELL]
+        print("replay #16110 " + SELF_TEST_16110_HEAD[:12]
+              + ": findings " + str([(f["cell"], f["kind"], f["signals"],
+                                      f["base_body"], f["head_body"],
+                                      f["loss"]) for f in s0.get("cells", [])]))
+        if not shits:
+            failures.append("#16110: cell " + SELF_TEST_16110_CELL
+                            + " not flagged")
+        else:
+            f0 = shits[0]
+            if f0["kind"] != "structure":
+                failures.append("#16110: kind " + str(f0["kind"])
+                                + " (expected structure)")
+            if f0["base_body"] != 10 or f0["head_body"] != 0:
+                failures.append("#16110: statements %r -> %r (expected 10 -> 0)"
+                                % (f0["base_body"], f0["head_body"]))
+            if "emptied" not in f0["signals"]:
+                failures.append("#16110: emptied missing from signals")
+            if "orphan-output" not in f0["signals"]:
+                failures.append("#16110: orphan-output missing from signals")
+            if f0["loss"] >= 0:
+                failures.append("#16110: expected GROWTH (negative loss),"
+                                " measured %r" % f0["loss"])
+
     for f in failures:
         print("SELF-TEST FAIL: " + f)
     if failures:
         return 1
     print("SELF-TEST OK: witnesses fired, benign churn silent, exemptions "
-          "hold, founding case fires")
+          "hold, both founding cases fire (volume #15901, structure #16110)")
     return 0
 
 
@@ -431,8 +748,8 @@ def main(argv=None):
                     print("  EXEMPT (" + f["kind"][7:] + ") "
                           + r["notebook"] + " cell " + str(f["cell"]) + " "
                           + str(f["base"]) + " -> " + str(f["head"])
-                          + " (-" + str(f["loss"]) + ", "
-                          + str(int(f["ratio"] * 100)) + "%)")
+                          + " " + _format_delta(f)
+                          + " signals=" + ",".join(f["signals"]))
         for r in bad:
             print("\nFLAGGED (advisory) " + r["notebook"] + "  total "
                   + str(r["base_total"]) + " -> " + str(r["head_total"]))
@@ -440,10 +757,15 @@ def main(argv=None):
                 if f["kind"] == "magnitude":
                     print("  MAGNITUDE: cell " + str(f["cell"]) + " "
                           + str(f["base"]) + " -> " + str(f["head"])
-                          + " (-" + str(f["loss"]) + ", "
-                          + str(int(f["ratio"] * 100)) + "%)")
+                          + " " + _format_delta(f))
+                elif f["kind"] == "structure":
+                    print("  STRUCTURE: cell " + str(f["cell"]) + " signals "
+                          + ",".join(f["signals"]) + " -- statements "
+                          + str(f["base_body"]) + " -> " + str(f["head_body"])
+                          + ", " + str(f["base"]) + " -> " + str(f["head"])
+                          + " chars (" + _format_delta(f) + ")")
         if bad:
-            print("\nAdvisory, not a gate: a cell lost at least "
+            print("\nAdvisory, not a gate. MAGNITUDE: a cell lost at least "
                   + str(LOSS_FLOOR) + " characters and "
                   + str(int(LOSS_FRACTION * 100)) + "% of its source. If the"
                   " material moved to another cell or was a diagnostic purge"
@@ -451,6 +773,14 @@ def main(argv=None):
                   " the removal in the PR body or restore it. Removing a"
                   " declarative reference table or a verifier is exactly what"
                   " the output-side ratchets cannot see (#15901).")
+            print("STRUCTURE (#16110) is the other end of the same family: the"
+                  " source survives in volume and loses its shape. EMPTIED ="
+                  " the cell had statements and has none; ORPHAN-OUTPUT = it"
+                  " carries a result no statement can have produced (a cell"
+                  " folded into a comment parses clean, so the BLOCKING"
+                  " notebook-cell-source-parses guard cannot see it). Either"
+                  " way the committed output is no longer backed by code:"
+                  " restore the source or drop the output.")
     return 1 if bad else 0
 
 
