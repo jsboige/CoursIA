@@ -394,17 +394,35 @@ class CarverThirteen(QCAlgorithm):
         # in steady state).
         if self._last_bulk_shape is None:
             try:
-                lvl0 = bulk.index.get_level_values(0)
-                n_unique = int(lvl0.unique().size) if hasattr(lvl0, "unique") else 0
+                # 15992: count unique values at the SYMBOL level by name.
+                # For continuous futures the bulk frame index is
+                # (expiry, symbol, time) and level 0 (expiry) is the
+                # constant 1899-12-30 no-expiry sentinel on every row,
+                # which used to read as "1 symbol".
+                sym_level = "symbol" if "symbol" in bulk.index.names else 0
+                n_unique = int(
+                    bulk.index.get_level_values(sym_level).unique().size
+                )
             except Exception:
                 n_unique = 0
             self._last_bulk_shape = (int(bulk.shape[0]), n_unique)
 
         raw_forecasts = {}
+        # 15992: membership test and slice must address the SYMBOL level by
+        # name. A positional test/slice on level 0 addresses the EXPIRY
+        # level of the continuous-futures bulk frame, where every row
+        # carries 1899-12-30 -- the measured cause of 0 orders across the
+        # whole window (all 19 instruments skipped, no_raw_forecasts on
+        # every post-warmup call).
+        sym_level = "symbol" if "symbol" in bulk.index.names else 0
+        present_syms = set(bulk.index.get_level_values(sym_level))
         for ticker, sym in self.symbols.items():
-            if sym not in bulk.index.get_level_values(0):
+            if sym not in present_syms:
                 continue
-            hist = bulk.loc[sym]
+            if sym_level == "symbol":
+                hist = bulk.xs(sym, level="symbol")
+            else:
+                hist = bulk.loc[sym]
             closes = hist["close"].values if "close" in hist.columns else np.array([])
             # REPAIR-9 c.1117 guard tightening: require max_slow + 2 bars
             # before even attempting the slowest EWMAC(64, 256). The
