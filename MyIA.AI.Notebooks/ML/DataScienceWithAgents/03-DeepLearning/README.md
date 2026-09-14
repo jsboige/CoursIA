@@ -2,7 +2,7 @@
 
 [← DataScienceWithAgents (série parente)](../README.md) | [02-ML-Cours (prérequis)](../02-ML-Cours/README.md)
 
-**Kernel** : Python 3 (`coursia-ml-training` pour 3.7) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (3.7, 3.9a) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exception 3.9a : entraînement ResNet-20 sur GPU, ~8 min)
+**Kernel** : Python 3 (`coursia-ml-training` pour 3.7 et 3.9d) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (3.7, 3.9a, 3.9d) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exceptions 3.9a : entraînement ResNet-20 sur GPU, ~8 min ; 3.9d : distillation complète sur GPU, ~2 h)
 
 ## Pourquoi cette série
 
@@ -35,6 +35,7 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 | [3.7-Distillation-Maitre-Eleve](3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : un maître entraîné distille son savoir (dark knowledge) vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict — gain par exemple net (DM p < 0.001, CE 0.63 → 0.58) mais edge 0.6σ/1.4σ sous 5 folds × 4 graines | maître 0.8906 / distillé 0.8145 vs baseline 0.8029 ; ECE 0.0458 vs 0.0684 ; ratio params 8.9× ; 5 folds × 4 graines (20 paires), entrainement deterministe |
 | [3.8-Representations-Contrastives](3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne sur vues continues : augmentations contrôlées du sac-de-mots (mask/swap/identité), encodeur MLP et loss InfoNCE écrits from scratch sans autograd, pont explicite vers le skip-gram (cooccurrence discrète vs vue continue) | **Apprendre des représentations sans étiquettes** : deux vues d'une même phrase attirent leurs embeddings, les autres phrases les repoussent | sonde linéaire 0,432 (chance 1/7 = 0,143 ; aléatoire gelé 0,161 ; skip-gram BoW 0,154 ; supervisé from scratch 0,368) ; contre-témoin de collapse mesuré (verdict NON) ; ablations température × augmentations × graines avec écart-type inter-graines ; 3 exercices |
 | [3.9a-Compression-Quantization-INT8](3.9a-Compression-Quantization-INT8.ipynb) | La quantification INT8 construite à la main (mapping affine, fake-quant per-tensor/per-channel, activations dynamiques par hooks, calibrations statiques min/max et KL — port fidèle TensorRT) sur ResNet-20/CIFAR-10 entraîné dans le notebook, puis la falaise INT4 | **Le déjeuner gratuit et sa limite** : INT8 égale le FP32 à ±0,001 près pour 4× moins de mémoire ; la discrimination vit dans l'erreur de poids et la falaise INT4 | FP32 0,9019 ; w8 per-tensor 0,9024 / per-channel 0,9020 (erreur s3.1.conv1 : 1,05e-2 vs 7,72e-3) ; dynamique w-channel 0,9018 ; statique min/max 0,9017 ; statique KL 0,9012 (seuils 60-100 % du range, masse coupée ≤ 0,005 %) ; INT4 0,8778 (−2,4 pts, erreur ×18) ; 270 906 poids : 1,08 Mo → 0,27 Mo (4,0×) |
+| [3.9d-Compression-Distillation-from-scratch](3.9d-Compression-Distillation-from-scratch.ipynb) | La distillation de Hinton écrite à la main (loss `(1−α)·CE + α·T²·KL` sur softmax tempérées, hint FitNets en MSE relative) : un maître ResNet-20 (272 474 paramètres) enseigne à un élève ResNet-8 (78 042, ratio 3,5×) sur CIFAR-10, même recette SGD/cosine/crop+flip, 3 graines + balayage T ∈ {1, 2, 4, 8} | **Le rattrapage partiel mesuré en σ** : à budget égal, l'élève distillé gagne +2,05 pts (+12,6 σ sur 3 graines) — le pendant « entraînement » de la compression, là où le 3.9a montre son pendant « déploiement » | maître 0,9012 ; scratch 0,8437 ± 0,0015 ; KD T=4 α=0,7 0,8642 ± 0,0006 (+12,6 σ, écart-type ÷ 2,5) ; + hint FitNets 0,8654 ± 0,0022 (~0,5 σ vs KD seul — verdict honnête) ; balayage T 0,8512 / 0,8624 / 0,8647 / 0,8595 (sommet mesuré T=4) ; dark knowledge : masse non-cible 0,086 → 0,609 entre T=1 et T=4 ; 3 exercices |
 
 
 ## Feuille de route
@@ -59,8 +60,8 @@ puis consommé via l'API officielle.
 
 ```bash
 pip install numpy matplotlib
-# notebooks 3.7 et 3.9a (torch + torchvision, kernel coursia-ml-training pour 3.7) :
+# notebooks 3.7, 3.9a et 3.9d (torch + torchvision, kernel coursia-ml-training pour 3.7 et 3.9d) :
 pip install torch torchvision
 ```
 
-Tous les notebooks tournent sur CPU en moins de dix minutes — exception [3.9a](3.9a-Compression-Quantization-INT8.ipynb) : l'entraînement complet de ResNet-20 sur CIFAR-10 (~8 min sur RTX 3090) exige un GPU ; sur CPU le notebook bascule sur une recette réduite de 6 époques.
+Tous les notebooks tournent sur CPU en moins de dix minutes — exceptions [3.9a](3.9a-Compression-Quantization-INT8.ipynb) : l'entraînement complet de ResNet-20 sur CIFAR-10 (~8 min sur RTX 3090) exige un GPU ; sur CPU le notebook bascule sur une recette réduite de 6 époques. Et [3.9d](3.9d-Compression-Distillation-from-scratch.ipynb) : la distillation complète (maître + 9 entraînements d'élève + balayage T, ~2 h sur RTX 3080 Ti Laptop) exige un GPU ; sur CPU, recette réduite (6 époques, 1 graine).
