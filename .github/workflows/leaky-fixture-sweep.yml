@@ -44,6 +44,15 @@ on:
 
 permissions:
   contents: read
+  # Acceptance 5 de #16141 : ce check doit porter un `output.summary` NON VIDE
+  # quand il rougit. Mesure : `$GITHUB_STEP_SUMMARY` n'atteint PAS ce champ --
+  # verifie sur trois workflows de ce depot, dont celui-ci (check-run
+  # 104019752768, ou le preflight avait pourtant ecrit le resume : `output.
+  # summary` reste `null`). Le resume d'etape se rend sur la page du run, pas
+  # dans l'API du check. La seule voie qui atteint le champ est un PATCH du
+  # check-run par le job lui-meme, et ce PATCH exige un token d'application --
+  # le `GITHUB_TOKEN` du job en est un.
+  checks: write
 
 concurrency:
   group: leaky-fixture-sweep
@@ -150,7 +159,10 @@ jobs:
       # horizons (valide 2026-09-02, po-2024) ». Cette validation ne peut pas
       # avoir porte sur CETTE ligne de commande, qui meurt avant `pytest` --
       # elle a eu lieu sur une invocation correcte, et la transcription a perdu
-      # le `-f`. Le chiffre de 189 est donc a re-mesurer, pas a croire.
+      # le `-f`. Mesure du 2026-09-14 (dispatch 34857793912, premier run vert
+      # de l'histoire de ce fichier) : **223** tests collectes et passes, sur
+      # les deux horizons. Le chiffre de 189 etait donc perime, et il est
+      # remplace ici par celui qui a ete mesure.
       #
       # La ligne `horloge decalee` mesure que le decalage atteint un
       # sous-processus PYTHON, pas seulement le binaire `date`. Sans elle, un
@@ -184,3 +196,46 @@ jobs:
             scripts/audit/tests/test_nit_lift_authorship.py \
             scripts/quantconnect/tests/test_audit_projects.py \
             --tb=short -q
+
+      # Acceptance 5 de #16141, seconde moitie : le check doit porter un
+      # `output.summary` NON VIDE quand il rougit. La recette est celle de
+      # `scripts/pr_gate.py` (publish_check_run_output, l.1053) -- reprise, pas
+      # reinventee : elle resout le check-run de CE job (un job EST un
+      # check-run, son `id` est le numero que sert l'API Checks) et le PATCH en
+      # place. Publication en degradation, jamais un basculement de verdict : un
+      # token refuse ou un reseau muet rend `False` + un WARN, l'exit code reste
+      # la source de verite.
+      - name: Publier le motif sur le check-run (acceptance 5)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from pr_gate import publish_check_run_output
+
+          message = (
+              "Date-window sweep -- ce run n'a pas conclu. Le motif detaille est "
+              "dans le resume du job et le log de l'etape fautive.\n"
+              "\n"
+              "Deux cas a distinguer AVANT de lire ce rouge comme un verdict :\n"
+              "- le preflight n'a pas dit « outils du balayage presents » : "
+              "l'environnement etait incomplet, les deux horizons ont ete "
+              "SAUTES, et ce run ne dit rien de la classe date-bomb ;\n"
+              "- les balayages ont tourne et une fixture a echoue : c'est un "
+              "vrai signal date-window."
+          )
+
+          published = publish_check_run_output(
+              os.environ["GITHUB_REPOSITORY"],
+              os.environ["GITHUB_RUN_ID"],
+              "Date-window sweep",
+              1,
+              message,
+              run_attempt=os.environ.get("GITHUB_RUN_ATTEMPT"),
+          )
+          print(f"check-run output published: {published}")
+          PY
