@@ -161,6 +161,184 @@ def test_posted_check_run_message_is_not_escaped(monkeypatch):
     )
 
 
+# --- #15825 -- toute conclusion non-success porte un titre non vide -----------
+#
+# Mesure 2026-09-12 : 9 echecs `PR gate` sur 43 rendent output.title = null.
+# Deux classes : (a) le snapshot de script fige par le rerun d'un event
+# payload stale -- le head de #15440 est derriere main de 175 commits, ses
+# 8 tentatives rejouent l'ancien script depourvu de publication (classe
+# irreparable cote gate, d'ou le repli lecteur, critere 2 de l'issue) ;
+# (b) le crash non rattrape dans le script ACTUEL : une exception hors
+# GateError sous main() court-circuitait la queue d'emission. Ces tests
+# epinglent (b) : le contrat est « toute conclusion non-success porte un
+# titre non vide » (critere 3).
+
+
+def test_crashed_gate_publishes_nonempty_title(monkeypatch, capsys):
+    """Critere 1 : un crash sous main() publie quand meme un titre."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("pollution du rollup par un dict inattendu")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(repo=repo, run_id=run_id, job_name=job_name, code=code,
+                    title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "internal error" in seen["title"]
+    assert "ValueError" in seen["title"]
+    assert seen["job_name"] == pr_gate.DEFAULT_SELF_NAME
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+    assert "::error::" in out.err
+
+
+def test_crashed_gate_without_publish_context_still_fails_one(
+    monkeypatch, capsys
+):
+    """Hors Actions (ni GITHUB_REPOSITORY ni GITHUB_RUN_ID) : la publication
+    n'est pas possible, mais l'exit code 1 et le motif FAIL restent -- un
+    contexte de publication absent ne doit jamais transformer un crash en
+    silence (ou pire, en 0)."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom local")
+
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("ne doit pas publier sans contexte Actions")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+
+
+def test_crash_fallback_publish_failure_does_not_mask_the_crash(
+    monkeypatch, capsys
+):
+    """La publication de repli ne doit JAMAIS masquer le crash d'origine :
+    si le PATCH plante aussi, le motif FAIL interne reste emis et l'exit
+    reste 1."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("crash d'origine")
+
+    def exploding_publish(*_a, **_k):
+        raise RuntimeError("PATCH explose aussi")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", exploding_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+    assert "crash fallback not published" in out.out
+
+
+def test_crash_fallback_propagates_the_current_run_attempt(
+    monkeypatch, capsys
+):
+    """Le repli de crash doit viser le check-run de la tentative COURANTE.
+
+    Mesure de l'adjudant (head `1c7f57119a`) : sur un `run_attempt=2` qui
+    porte encore les jobs des tentatives 1 et 2, la voie normale filtre par
+    `GITHUB_RUN_ATTEMPT` mais le repli ne le transmettait pas -- il resolvait
+    alors le titre de crash sur le check-run SUPERSEDE de la tentative 1, et
+    la tentative courante gardait `output.title = null` : le defaut meme que
+    #15825 elimine, sur le chemin qui doit justement le couvrir.
+    """
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom au run_attempt 2")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message,
+                     advisory=(), run_attempt=None, **_k):
+        seen["run_attempt"] = run_attempt
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["run_attempt"] == "2", (
+        "sans la tentative courante, le repli PATCH le check-run supersede et "
+        "le defaut #15825 survit sur le run_attempt > 1"
+    )
+    capsys.readouterr()
+
+
+def test_crash_fallback_preserves_the_traceback(monkeypatch, capsys):
+    """Le titre du check-run tient sur une ligne, donc le repli ne garde que
+    `repr(exc)` ; la trame causale doit rester lisible dans le log."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("cause racine a diagnostiquer")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    captured = capsys.readouterr()
+    assert "Traceback (most recent call last)" in captured.err
+    assert "cause racine a diagnostiquer" in captured.err
+
+
+def test_argparse_failure_publishes_title_and_propagates_exit_code(
+    monkeypatch, capsys
+):
+    """Un echec d'argparse leve SystemExit(2) AVANT tout parsing : comme
+    SystemExit derive de BaseException, le `except Exception` de `_entry`
+    ne le voyait pas -- la gate sortait en code 2 sans jamais publier de
+    titre, exactement #15825 par une autre porte (reserve ai-01 : un
+    `--flag ${{ inputs.x }}` ajoute demain au workflow suffit a rouvrir
+    le defaut en silence)."""
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(code=code, title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef",
+                           "--timeout-min", "abc"]) == 2
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "SystemExit" in seen["title"]
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- exit 2 before verdict" in out.out
+    assert "invalid float value" in out.err  # le diagnostic argparse reste le sien
+
+
+def test_argparse_help_exit_zero_propagates_without_publishing(monkeypatch):
+    """`--help` sort en SystemExit(0) : un exit NUL n'est pas un echec, il se
+    propage intact et ne publie RIEN -- le branchement sur `.code` ne doit
+    pas avaler --help (ni le transformer en rouge de gate)."""
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("--help n'est pas un echec, rien a publier")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    with pytest.raises(SystemExit) as caught:
+        pr_gate._entry(["--help"])
+    assert caught.value.code == 0
+
+
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
     pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])
