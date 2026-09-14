@@ -74,8 +74,10 @@ separate from the discovery path, and both are readable here.
 - `Lean-16f-Conway-Free-Will-Theorem.ipynb`: the Conway-Kochen free will
   theorem, which exploits the same frontier between classical and quantum
   correlations.
-- `Lean-13b-CHSH-Tsirelson-Native.ipynb`: the native notebook of this slice,
-  which executes the statements of this module under the `lean4-wsl` kernel.
+- `Lean-13b-CHSH-Tsirelson-Native.ipynb`: the native notebook **planned** for this
+  slice (Epic #13106), which will execute the statements of this module under the
+  `lean4-wsl` kernel. It is not delivered yet: this reference is prospective, not
+  an existing file.
 -/
 
 import Conway.CHSH_en
@@ -141,10 +143,15 @@ For every real ordered star-algebra `R` and every quadruple
 `(A₀, A₁, B₀, B₁)` forming an `IsCHSHTuple`, the CHSH score is bounded by
 `2√2 • 1`.
 
-The hypotheses are exactly those of
-`Mathlib.Algebra.Star.CHSH.tsirelson_inequality`, reproduced here with neither
-widening nor restriction: `[Ring R] [PartialOrder R] [StarRing R]
-[StarOrderedRing R] [Algebra ℝ R] [IsOrderedModule ℝ R] [StarModule ℝ R]`.
+The hypotheses restate those of
+`Mathlib.Algebra.Star.CHSH.tsirelson_inequality`: `[Ring R] [PartialOrder R]
+[StarRing R] [StarOrderedRing R] [Algebra ℝ R] [IsOrderedModule ℝ R]
+[StarModule ℝ R]`. The direction "no hypothesis removed" is pinned by
+elaboration: strengthening the upstream signature would make the `have` below
+fail. The direction "no hypothesis added" is guarded by no instrument — an
+upstream weakening would leave this theorem compiling with a now-superfluous
+hypothesis, and the list above would become false in silence. That is why it is
+stated as a restatement, not as a guaranteed equality.
 The proof applies the Mathlib theorem, then transports the scalar rewriting
 established in this module. -/
 theorem tsirelson_bound {R : Type*} [Ring R] [PartialOrder R] [StarRing R]

@@ -74,8 +74,10 @@ séparée du chemin de découverte, et les deux sont lisibles ici.
 - `Lean-16f-Conway-Free-Will-Theorem.ipynb` : le théorème du libre arbitre de
   Conway et Kochen, qui exploite la même frontière entre corrélations
   classiques et quantiques.
-- `Lean-13b-CHSH-Tsirelson-Native.ipynb` : le notebook natif de cette tranche,
-  qui exécute les énoncés de ce module sous le kernel `lean4-wsl`.
+- `Lean-13b-CHSH-Tsirelson-Native.ipynb` : le notebook natif **prévu** pour cette
+  tranche (Epic #13106), qui exécutera les énoncés de ce module sous le kernel
+  `lean4-wsl`. Il n'est pas encore livré : ce renvoi est prospectif, pas un
+  fichier existant.
 -/
 
 import Conway.CHSH
@@ -142,10 +144,15 @@ Pour toute algèbre étoilée ordonnée réelle `R` et tout quadruple
 `(A₀, A₁, B₀, B₁)` formant un `IsCHSHTuple`, le score CHSH est majoré par
 `2√2 • 1`.
 
-Les hypothèses sont exactement celles de
-`Mathlib.Algebra.Star.CHSH.tsirelson_inequality`, reproduites ici sans
-élargissement ni restriction : `[Ring R] [PartialOrder R] [StarRing R]
-[StarOrderedRing R] [Algebra ℝ R] [IsOrderedModule ℝ R] [StarModule ℝ R]`.
+Les hypothèses reprennent celles de
+`Mathlib.Algebra.Star.CHSH.tsirelson_inequality` : `[Ring R] [PartialOrder R]
+[StarRing R] [StarOrderedRing R] [Algebra ℝ R] [IsOrderedModule ℝ R]
+[StarModule ℝ R]`. Le sens « aucune hypothèse retirée » est épinglé par
+l'élaboration : durcir la signature amont ferait échouer le `have` ci-dessous.
+Le sens « aucune hypothèse ajoutée » n'est gardé par aucun instrument — un
+affaiblissement amont laisserait ce théorème compiler avec une hypothèse devenue
+superflue, et la liste ci-dessus deviendrait fausse en silence. C'est la raison
+pour laquelle elle est énoncée comme une reprise, non comme une égalité garantie.
 La preuve applique le théorème de Mathlib, puis transporte la réécriture
 scalaire établie dans ce module. -/
 theorem tsirelson_bound {R : Type*} [Ring R] [PartialOrder R] [StarRing R]
