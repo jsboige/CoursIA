@@ -12,10 +12,10 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 763 items.
+#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 774 items.
 #     57 != 1148 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1148/763), le label garde les strates (57/44).
+#     floor garde la collection (1148/774), le label garde les strates (57/44).
 #     Les strates 57 (tests/, +1 test_regards) et 44 (ict/tests/, +1
 #     test_lens_gates) sont celles de cette branche ; le "55/42" des lignes
 #     ci-dessus est la prose d'origine heritee -- le label du matrix fait foi.
@@ -50,6 +50,38 @@ name: ICT-Series Tests
 # par d'autres PRs ICT ; le garde de main emettra son ::warning jusqu'a son
 # propre rattrapage, hors perimetre de cette PR. Le 811 ci-dessous compte
 # contre le main COURANT, pas contre le 763 perime.
+# DRAINAGE QUEUE 2026-09-14 soir : re-merge de origin/main (44f6c0fd48) ; le floor
+# passe de 811 a 822 (+11 : tranche 4 endpoints #15627, portee par main depuis la
+# mesure du matin qui comptait contre 783). Les deux blocs de provenance ci-dessus
+# restent exacts pour leurs arbres respectifs.
+# RE-MESURE firsthand po-2027 (2026-09-13, arbre REBASE sur origin/main COURANT,
+# python 3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 SANS torch --
+# la forme de l'env CI) :
+#   tests/     = 1148 items  (origin/main collecte 1148 : 1107 + 41 test_regards
+#                             portes par main -- aucun apport de cette PR)
+#   ict/tests/ = 763 items   (origin/main : 752 ; cette branche : +11 lens_gates)
+# 752 + 11 = 763 ferme l'arithmetique. Un floor mesure contre un origin/main
+# PERIME est faux quelle que soit la qualite de la mesure locale : c'est la
+# TROISIEME re-mesure de ce commit (739 -> 752-base -> 763), chacune causee
+# par un floor de main qui a bouge sous elle (#8182 case 4 +20 items, puis
+# #15665 +8 items sae_dictionary). La mesure du 2026-09-12 portait sur un main
+# LOCAL PERIME ; celle du 13/09 matin sur un origin/main pre-#15665.
+# RE-MESURE firsthand po-2023 (2026-09-14, tete de cette PR 6fe8c0caf4, venv
+# D:/Dev/venvs/ict-py39 : python 3.9.23 + pyphi 1.2.0 + numpy 1.26.4) -- les
+# DEUX jambes mesurees a la meme seance, l'une sur la branche, l'autre sur
+# origin/main dans un worktree detache :
+#   tests/     = 1148 items (branche) -- identique a main : cette branche n'y
+#                             ajoute aucun fichier de test.
+#   ict/tests/ =  774 items (branche) vs 763 sur origin/main mesure DIRECTEMENT
+#                             au meme moment. 763 + 11 items
+#                             test_lens_endpoints.py = 774 ferme l'arithmetique.
+# Le "752 + 11 = 763" du bloc po-2027 ci-dessus etait mesure contre un
+# origin/main PRE-#15660 : #15660 (lens_gates) est MERGED depuis le
+# 2026-09-13T23:58:58Z et a porte main de 752 a 763. Sous-declarer est
+# silencieux -- le garde directionnel n'emet qu'un ::warning non bloquant --
+# donc une base perimee laisse le cliquet ne plus proteger les 11 nouveaux
+# tests : une suppression future jusqu'a 763 resterait verte.
+# Fichiers test_*.py dans ict/tests/ : 46 sur origin/main, 47 sur cette branche.
 # Le venv local AVEC torch collecte 1111 en tests/ : les 4 items d'ecart sont
 # tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
@@ -194,7 +226,7 @@ jobs:
           - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 811
+            test-floor: 822
 
     steps:
       - uses: actions/checkout@v4
