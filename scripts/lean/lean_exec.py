@@ -45,13 +45,18 @@ T2 (cette tranche) raffine l'admission :
    pleine ou delai depasse = refus explicite, jamais de croissance
    silencieuse. ``status`` expose la file et les leases.
 3. **Budget au minimum des budgets** : le parallelisme accorde est
-   ``min(jobs_cpu, jobs_ram, jobs_commit)`` ou ``jobs_cpu = coeurs logiques -
+   ``min(jobs_cpu, jobs_ram[, jobs_commit])`` ou ``jobs_cpu = coeurs logiques -
    coeurs reserves - population lean/lake active``, ``jobs_ram =
    MemAvailable // Mo par job``, ``jobs_commit = (CommitLimit - Committed_AS)
    // Mo de commit par job`` (Windows : ``GlobalMemoryStatusEx``), et une
    porte disque (espace libre minimal sur le cwd du run et le state dir).
-   Toute source de telemetrie manquante = refus fail-closed nommant la
-   source (spec #15666 §2) — jamais de lancement optimiste.
+   La source commit n'est **contraignante que sous overcommit strict**
+   (Linux ``vm.overcommit_memory=2`` ou Windows) : en mode heuristique (0) ou
+   always (1), ``Committed_AS`` depasse couramment ``CommitLimit`` sans que le
+   noyau refuse la moindre allocation — la valeur y est informative mais ne
+   vetoye pas l'admission. Toute source de telemetrie manquante = refus
+   fail-closed nommant la source (spec #15666 §2) — jamais de lancement
+   optimiste.
 
 Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
@@ -352,6 +357,15 @@ def _proc_meminfo_mb() -> dict[str, int] | None:
     return out
 
 
+def _overcommit_mode() -> int | None:
+    """/proc/sys/vm/overcommit_memory : 0 heuristique, 1 always, 2 strict.
+    None = illisible (le commit reste alors contraignant, fail-closed)."""
+    try:
+        return int(Path("/proc/sys/vm/overcommit_memory").read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
 def measure_resources() -> dict:
     """CPU / RAM / commit / disque, chacune avec son drapeau de mesurabilite.
     Un container sans CommitLimit dans /proc/meminfo rend commit ok=False :
@@ -368,6 +382,7 @@ def measure_resources() -> dict:
         res["commit"] = {
             "ok": stat is not None,
             "avail_mb": (stat or {}).get("avail_commit_mb"),
+            "binding": True,
         }
     else:
         mi = _proc_meminfo_mb()
@@ -379,9 +394,14 @@ def measure_resources() -> dict:
             res["ram"] = {"ok": avail is not None, "avail_mb": avail}
             limit, committed = mi.get("CommitLimit"), mi.get("Committed_AS")
             ok = limit is not None and committed is not None
+            # Sous overcommit non strict, CommitLimit - Committed_AS < 0 est
+            # l'etat NORMAL d'une machine saine (le noyau alloue au-dela) :
+            # la valeur reste mesuree et publiee, mais ne refuse pas le run.
+            strict = _overcommit_mode() == 2
             res["commit"] = {
                 "ok": ok,
                 "avail_mb": (limit - committed) if ok else None,
+                "binding": ok and strict,
             }
     try:
         state_dir().mkdir(parents=True, exist_ok=True)
@@ -409,7 +429,10 @@ def compute_granted(
     jobs_commit = int(resources["commit"].get("avail_mb") or 0) // max(
         1, cfg["commit_per_job_mb"])
     free_gb = float(resources["disk"].get("free_gb") or 0.0)
-    cands = {"cpu": jobs_cpu, "ram": jobs_ram, "commit": jobs_commit}
+    commit_binding = bool(resources["commit"].get("binding", True))
+    cands = {"cpu": jobs_cpu, "ram": jobs_ram}
+    if commit_binding:
+        cands["commit"] = jobs_commit
     granted = min([requested, *cands.values()])
     binding = min(cands, key=cands.get) if granted < requested else None
     detail = {
@@ -417,6 +440,7 @@ def compute_granted(
         "cpu": jobs_cpu,
         "ram": jobs_ram,
         "commit": jobs_commit,
+        "commit_binding": commit_binding,
         "population": population,
         "reserve_cores": cfg["reserve_cores"],
         "mem_per_job_mb": cfg["mem_per_job_mb"],

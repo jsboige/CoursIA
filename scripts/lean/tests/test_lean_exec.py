@@ -456,6 +456,62 @@ def test_compute_granted_min_of_sources():
                 os.environ[k] = v
 
 
+def test_commit_nonbinding_under_heuristic_overcommit():
+    """Regression CI (#16098, run 34799567581) : sur un runner Linux en
+    overcommit heuristique (vm.overcommit_memory 0 ou 1), CommitLimit -
+    Committed_AS est NEGATIF a l'etat sain — le noyau alloue au-dela sans
+    refuser. La valeur reste mesuree et publiee, mais seule cpu/ram serre
+    l'admission : un headroom commit negatif non contraignant ne doit pas
+    vetoyer tout run (11 tests rouges sur les runners, 0 en local)."""
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+        os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+        os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+        os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+        plenty = _plenty_resources()
+        heuristic = {
+            **plenty,
+            "commit": {"ok": True, "avail_mb": -6144, "binding": False},
+        }
+        granted, detail = le.compute_granted(4, heuristic, 0)
+        assert granted == 4 and detail["binding"] is None, (granted, detail)
+        assert detail["commit"] == -2, detail
+        assert detail["commit_binding"] is False, detail
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+def test_commit_binding_under_strict_overcommit():
+    """Symetrique du precedent : sous overcommit strict (vm.overcommit_memory=2,
+    ou Windows via GlobalMemoryStatusEx), le meme headroom negatif REFUSE —
+    la contrainte commit est alors reelle et doit rester serrante."""
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+        os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+        os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+        os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+        plenty = _plenty_resources()
+        strict = {
+            **plenty,
+            "commit": {"ok": True, "avail_mb": -6144, "binding": True},
+        }
+        granted, detail = le.compute_granted(4, strict, 0)
+        assert granted == 0 and detail["binding"] == "commit", (granted, detail)
+        assert detail["commit_binding"] is True, detail
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
 def test_fail_closed_missing_telemetry_source():
     """Fail-closed par source : une telemetrie manquante refuse le run en
     NOMMANT la source (spec #15666 §2), jamais de lancement optimiste.
