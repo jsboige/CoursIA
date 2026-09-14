@@ -54,7 +54,8 @@ T2 (cette tranche) raffine l'admission :
    (Linux ``vm.overcommit_memory=2`` ou Windows) : en mode heuristique (0) ou
    always (1), ``Committed_AS`` depasse couramment ``CommitLimit`` sans que le
    noyau refuse la moindre allocation — la valeur y est informative mais ne
-   vetoye pas l'admission. Toute source de telemetrie manquante = refus
+   vetoye pas l'admission ; **mode d'overcommit illisible = contraignant**
+   (fail-closed, review #16098). Toute source de telemetrie manquante = refus
    fail-closed nommant la source (spec #15666 §2) — jamais de lancement
    optimiste.
 
@@ -366,6 +367,20 @@ def _overcommit_mode() -> int | None:
         return None
 
 
+def _commit_binding(mode: int | None) -> bool:
+    """Le budget commit est-il contraignant ? Trois etats distincts, pas deux
+    (review #16098) : sous strict (2), CommitLimit est applique par le noyau —
+    contraignant ; sous heuristique (0) ou always (1), un headroom negatif est
+    l'etat sain documente — advisory ; **illisible (None) = contraignant**,
+    fail-closed : l'organe serre precisement quand il ne peut pas savoir si
+    la contrainte est reelle (conteneurs restreints masquant /proc/sys).
+    Le fix CI (`== 2`) mettait None dans la branche advisory — l'inverse de
+    la promesse de la docstring ci-dessus."""
+    if mode is None:
+        return True
+    return mode == 2
+
+
 def measure_resources() -> dict:
     """CPU / RAM / commit / disque, chacune avec son drapeau de mesurabilite.
     Un container sans CommitLimit dans /proc/meminfo rend commit ok=False :
@@ -397,7 +412,8 @@ def measure_resources() -> dict:
             # Sous overcommit non strict, CommitLimit - Committed_AS < 0 est
             # l'etat NORMAL d'une machine saine (le noyau alloue au-dela) :
             # la valeur reste mesuree et publiee, mais ne refuse pas le run.
-            strict = _overcommit_mode() == 2
+            # Mode illisible (None) : contraignant, fail-closed (review #16098).
+            strict = _commit_binding(_overcommit_mode())
             res["commit"] = {
                 "ok": ok,
                 "avail_mb": (limit - committed) if ok else None,

@@ -512,10 +512,80 @@ def test_commit_binding_under_strict_overcommit():
                 os.environ[k] = v
 
 
+def test_commit_binding_truth_table():
+    """Review #16098 (CONCERNS Hermes) : le fix CI (`strict = mode == 2`)
+    mettait le mode ILLISIBLE (None) dans la branche advisory — l'inverse du
+    fail-closed promis par la docstring de ``_overcommit_mode``. Trois etats
+    distincts, pas deux : None = contraignant (l'organe serre quand il ne
+    peut pas savoir), 0 et 1 = advisory (headroom negatif sain documente),
+    2 = contraignant. NB : ``!= 1`` (suggestion litterale de la review)
+    rendrait le mode 0 contraignant et recasserait les runners sains en
+    heuristique — la table ci-dessous est le contrat."""
+    assert le._commit_binding(None) is True, "illisible -> fail-closed"
+    assert le._commit_binding(0) is False, "heuristique -> advisory"
+    assert le._commit_binding(1) is False, "always -> advisory"
+    assert le._commit_binding(2) is True, "strict -> contraignant"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="branche /proc/meminfo = POSIX")
+def test_measure_resources_commit_binding_through_real_path():
+    """Le chemin INTEGRAL ``measure_resources`` -> ``_overcommit_mode``, sans
+    flag ``binding`` injecte — l'angle mort pointe par la review #16098 : les
+    tests T2 existants injectaient le drapeau directement, le chemin de
+    decision n'etait jamais exerce. Headroom commit NEGATIF sur les quatre
+    modes : seul None et 2 serrent l'admission."""
+    saved_mode = le._overcommit_mode
+    saved_mi = le._proc_meminfo_mb
+    saved_state = os.environ.get("LEAN_EXEC_STATE_DIR")
+    saved = {k: os.environ.get(k) for k in _T2_KNOBS}
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            os.environ["LEAN_EXEC_STATE_DIR"] = str(Path(td) / "s")
+            os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
+            os.environ["LEAN_EXEC_MEM_PER_JOB_MB"] = "2048"
+            os.environ["LEAN_EXEC_COMMIT_PER_JOB_MB"] = "3072"
+            os.environ["LEAN_EXEC_MIN_FREE_GB"] = "2"
+            le._proc_meminfo_mb = lambda: {
+                "MemAvailable": 32768,
+                "CommitLimit": 6144, "Committed_AS": 9216,  # -3072 Mo
+            }
+
+            le._overcommit_mode = lambda: None
+            res = le.measure_resources()
+            assert res["commit"]["binding"] is True, res["commit"]
+            assert res["commit"]["avail_mb"] == -3072, res["commit"]
+            granted, detail = le.compute_granted(4, res, 0)
+            assert granted == 0 and detail["binding"] == "commit", (
+                granted, detail)
+
+            le._overcommit_mode = lambda: 2
+            res = le.measure_resources()
+            assert res["commit"]["binding"] is True, res["commit"]
+
+            for mode in (0, 1):
+                le._overcommit_mode = lambda m=mode: m
+                res = le.measure_resources()
+                assert res["commit"]["binding"] is False, (mode, res["commit"])
+                granted, detail = le.compute_granted(4, res, 0)
+                assert granted == 4 and detail["binding"] is None, (
+                    mode, granted, detail)
+    finally:
+        le._overcommit_mode = saved_mode
+        le._proc_meminfo_mb = saved_mi
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        if saved_state is None:
+            os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+        else:
+            os.environ["LEAN_EXEC_STATE_DIR"] = saved_state
+
+
 def test_fail_closed_missing_telemetry_source():
     """Fail-closed par source : une telemetrie manquante refuse le run en
     NOMMANT la source (spec #15666 §2), jamais de lancement optimiste.
-
     Pression SIMULEE (telemetrie patchee), pas une vraie saturation —
     exigence explicite du cahier des charges §6."""
     saved_state = os.environ.get("LEAN_EXEC_STATE_DIR")
