@@ -9,6 +9,7 @@ Validates all acceptance criteria from issue #2453:
 """
 
 import json
+import subprocess
 import textwrap
 from pathlib import Path
 
@@ -18,21 +19,27 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import check_docs_links
 from check_docs_links import (
     BASELINE_PATH,
     LinkRef,
     ScanResult,
     check_link,
     check_regression,
+    find_deck_files,
     find_orphan_docs,
     find_scan_files,
     format_report,
     load_baseline,
+    preexisting_broken,
     run_scan,
+    scan_content,
     scan_file,
     write_baseline,
     _is_valid_target,
+    _link_exists_in_tree,
     _should_skip,
+    _tree_dirs,
     REPO_ROOT,
 )
 
@@ -407,6 +414,149 @@ class TestRegressionDetection:
         assert len(new_broken) == 0
 
 
+class TestPreexistingExcuse:
+    """--check accepts links already broken at the comparison revision (#15766)."""
+
+    def test_preexisting_link_is_not_a_regression(self):
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/gone.md", line=3, text="gone"),
+        ])
+        new_broken = check_regression(
+            result, {}, preexisting={("README.md", "docs/gone.md")})
+        assert new_broken == []
+
+    def test_unrelated_preexisting_does_not_mask_a_new_link(self):
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/gone.md", line=3, text="gone"),
+            LinkRef(source="CLAUDE.md", target="docs/fresh.md", line=9, text="fresh"),
+        ])
+        new_broken = check_regression(
+            result, {}, preexisting={("README.md", "docs/gone.md")})
+        assert [r.target for r in new_broken] == ["docs/fresh.md"]
+
+    def test_baseline_and_preexisting_both_excuse(self):
+        baseline = {"broken_links": [
+            {"source": "README.md", "target": "docs/old.md", "line": 1, "text": "old"},
+        ]}
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/old.md", line=1, text="old"),
+            LinkRef(source="PARCOURS.md", target="docs/gone.md", line=2, text="gone"),
+        ])
+        new_broken = check_regression(
+            result, baseline, preexisting={("PARCOURS.md", "docs/gone.md")})
+        assert new_broken == []
+
+    def test_no_preexisting_keeps_legacy_semantics(self):
+        """Omitting the comparison revision behaves exactly as before."""
+        result = ScanResult(broken=[
+            LinkRef(source="README.md", target="docs/gone.md", line=3, text="gone"),
+        ])
+        assert len(check_regression(result, {})) == 1
+
+
+class TestLinkExistsInTree:
+    """The git-tree existence oracle mirrors check_link on a file listing."""
+
+    FILES = {"docs/a.md", "docs/sub/b.md", "README.md"}
+
+    def test_existing_file(self):
+        assert _link_exists_in_tree("./a.md", "docs/a.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+    def test_missing_file(self):
+        assert not _link_exists_in_tree("./nope.md", "docs/a.md", self.FILES,
+                                        _tree_dirs(self.FILES), None)
+
+    def test_parent_traversal_inside_repo(self):
+        assert _link_exists_in_tree("../README.md", "docs/a.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+    def test_directory_target(self):
+        assert _link_exists_in_tree("./sub/", "docs/a.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+    def test_escaping_the_repo_is_broken(self):
+        assert not _link_exists_in_tree("../../outside.md", "docs/a.md", self.FILES,
+                                        _tree_dirs(self.FILES), None)
+
+    def test_html_needs_listed_notebook(self):
+        files = self.FILES | {"docs/nb.ipynb"}
+        dirs = _tree_dirs(files)
+        assert not _link_exists_in_tree("./nb.html", "docs/a.md", files, dirs, "")
+        assert _link_exists_in_tree("./nb.html", "docs/a.md", files, dirs,
+                                    '"docs/nb.ipynb"')
+
+    def test_submodule_path_is_valid(self, monkeypatch):
+        monkeypatch.setattr(check_docs_links, "SUBMODULE_PATHS", {"vendor/lib"})
+        assert _link_exists_in_tree("vendor/lib/x.py", "README.md", self.FILES,
+                                    _tree_dirs(self.FILES), None)
+
+
+class TestPreexistingBrokenAgainstRealGit:
+    """End-to-end: only links already broken at the base revision are excused."""
+
+    @staticmethod
+    def _git(root: Path, *args: str) -> None:
+        subprocess.run(
+            ["git", "-c", "user.email=t@example.com", "-c", "user.name=t", *args],
+            cwd=root, check=True, capture_output=True,
+        )
+
+    def _fixture(self, tmp_path: Path, monkeypatch) -> Path:
+        root = tmp_path / "repo"
+        (root / "docs").mkdir(parents=True)
+        self._git(root, "init", "-q")
+        # Base revision: one link whose target is already missing, one that works.
+        (root / "docs" / "present.md").write_text("# present\n", encoding="utf-8")
+        (root / "docs" / "a.md").write_text(
+            "[gone](./missing.md)\n[ok](./present.md)\n", encoding="utf-8")
+        self._git(root, "add", "-A")
+        self._git(root, "commit", "-q", "-m", "base")
+        # Head revision: unchanged a.md, plus a new file carrying a new broken link.
+        (root / "docs" / "b.md").write_text("[newgone](../nope.md)\n", encoding="utf-8")
+        self._git(root, "add", "-A")
+        self._git(root, "commit", "-q", "-m", "head")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", root)
+        return root
+
+    def test_only_already_broken_links_are_excused(self, tmp_path, monkeypatch):
+        self._fixture(tmp_path, monkeypatch)
+        refs = [
+            LinkRef(source="docs/a.md", target="./missing.md", line=1, text="gone"),
+            LinkRef(source="docs/a.md", target="./present.md", line=2, text="ok"),
+            LinkRef(source="docs/b.md", target="../nope.md", line=1, text="newgone"),
+        ]
+        excused = preexisting_broken(refs, "HEAD~1")
+
+        assert excused == {("docs/a.md", "./missing.md")}
+        # The link whose target existed at base is a real regression now, and the
+        # file added by this branch has nothing to excuse it.
+        remaining = check_regression(ScanResult(broken=refs), {}, excused)
+        assert sorted(r.target for r in remaining) == ["../nope.md", "./present.md"]
+
+    def test_unreadable_revision_returns_none(self, tmp_path, monkeypatch):
+        self._fixture(tmp_path, monkeypatch)
+        refs = [LinkRef(source="docs/a.md", target="./missing.md", line=1, text="x")]
+        assert preexisting_broken(refs, "no-such-rev-15766") is None
+
+    def test_no_broken_refs_short_circuits(self, tmp_path, monkeypatch):
+        """Nothing broken at HEAD means no revision needs to be read at all."""
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        assert preexisting_broken([], "no-such-rev-15766") == set()
+
+    def test_scan_content_matches_scan_file(self, tmp_path, monkeypatch):
+        """The extracted scanner keeps the on-disk behaviour byte for byte."""
+        f = tmp_path / "x.md"
+        body = "# t\n\n[ok](./y.md)\n\n```\n[skip](./z.md)\n```\n"
+        f.write_text(body, encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        from_file = scan_file(f)
+        from_content = scan_content(body, "x.md")
+        assert [(r.source, r.target, r.line) for r in from_file] == \
+               [(r.source, r.target, r.line) for r in from_content]
+        assert [r.target for r in from_content] == ["./y.md"]
+
+
 class TestSelfCheck:
     """Acceptance: the script itself does not break anything."""
 
@@ -514,6 +664,222 @@ class TestFormatReport:
         report = format_report(result)
         assert "Scanned 0 files, 0 links" in report
         assert "No broken links found" in report
+
+
+# ---------------------------------------------------------------------------
+# Deck scope (#15867)
+# ---------------------------------------------------------------------------
+
+
+class TestDeckScope:
+    """`slides/<deck>/slides.md` is scanned, and an empty scope fails loudly."""
+
+    def test_decks_are_scanned_on_the_repo(self):
+        """Acceptance 1: decks are part of the scanned file set."""
+        rel_paths = {
+            str(f.relative_to(REPO_ROOT)).replace("\\", "/")
+            for f in find_scan_files()
+        }
+        decks = {p for p in rel_paths if p.endswith("/slides.md")}
+        assert decks, "no deck file reached the scan"
+        assert all(p.startswith("slides/") for p in decks)
+
+    def test_deck_scope_is_not_the_whole_slides_tree(self):
+        """The deck scope must stay deck-only.
+
+        Measured on origin/main 2026-09-13: `slides/**/*.md` is 119 files and
+        734 broken links of 1367 (`analysis/`, `extracted/`, `*.marp.md`) --
+        widening the scope there would redden every PR.
+
+        Asserted on `find_deck_files()` itself: the pre-existing repo-wide
+        README sweep legitimately brings in `slides/**/README.md`, which is not
+        this scope's doing.
+        """
+        decks = find_deck_files()
+        assert decks
+        assert all(d.name == "slides.md" for d in decks)
+        assert not [
+            d for d in decks
+            if "/analysis/" in d.as_posix()
+            or "/extracted/" in d.as_posix()
+            or d.name.endswith(".marp.md")
+        ], f"non-deck markdown leaked into the deck scope: {decks}"
+
+    def test_existing_but_empty_deck_scope_raises(self, tmp_path, monkeypatch):
+        """Trap 1: `slides/` present yet holding no deck must not scan silently."""
+        (tmp_path / "slides" / "01-vide").mkdir(parents=True)
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        with pytest.raises(check_docs_links.DeckScopeEmpty):
+            find_deck_files()
+
+    def test_absent_deck_dir_is_not_an_error(self, tmp_path, monkeypatch):
+        """A tree without `slides/` (as in most fixtures) simply has no deck."""
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        assert find_deck_files() == []
+
+    def test_deck_linked_outside_slides_resolves(self, tmp_path, monkeypatch):
+        """Trap 2: a deck link may leave `slides/` and target a notebook.
+
+        `..` must be normalised before testing existence, or every deck link
+        reads as broken (or as valid).
+        """
+        repo = tmp_path
+        nb = repo / "MyIA.AI.Notebooks" / "GameTheory"
+        nb.mkdir(parents=True)
+        (nb / "GameTheory-02-NormalForm.ipynb").write_text("{}", encoding="utf-8")
+        deck_dir = repo / "slides" / "05-theorie-des-jeux"
+        deck_dir.mkdir(parents=True)
+        deck = deck_dir / "slides.md"
+        deck.write_text(
+            "*Notebooks : [GameTheory-02-NormalForm]"
+            "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb).*\n"
+            "[mort](../../MyIA.AI.Notebooks/GameTheory/GameTheory-99-Absent.ipynb)\n",
+            encoding="utf-8",
+        )
+        refs = scan_file(deck)
+        assert [r.target for r in refs] == [
+            "../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb",
+            "../../MyIA.AI.Notebooks/GameTheory/GameTheory-99-Absent.ipynb",
+        ]
+        assert check_link(refs[0].target, deck, root=repo) is True
+        assert check_link(refs[1].target, deck, root=repo) is False
+
+    def test_real_deck_links_are_all_valid(self):
+        """Acceptance 3: the 108 deck links on main stay all valid.
+
+        No false positive is introduced on the existing corpus; this is the
+        count the issue measured (#15867).
+        """
+        deck_broken = [
+            ref for ref in run_scan().broken
+            if ref.source.startswith("slides/")
+        ]
+        assert deck_broken == [], (
+            "the deck scope introduced false positives on the existing corpus: "
+            f"{[(r.source, r.line, r.target) for r in deck_broken]}"
+        )
+
+
+class TestPositiveControl:
+    """`--expect-broken N` -- the control that tells "clean" from "blind"."""
+
+    def _broken_tree(self, tmp_path, monkeypatch):
+        (tmp_path / "slides" / "03-logique").mkdir(parents=True)
+        (tmp_path / "slides" / "03-logique" / "slides.md").write_text(
+            "[cassee](../../MyIA.AI.Notebooks/absent.ipynb)\n", encoding="utf-8"
+        )
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        monkeypatch.setattr("check_docs_links.BASELINE_PATH",
+                            tmp_path / "baseline.json")
+
+    def test_control_is_met_on_a_deliberately_broken_tree(self, tmp_path, monkeypatch):
+        """Acceptance 2: a dead link written on a deck is detected."""
+        self._broken_tree(tmp_path, monkeypatch)
+        result = run_scan()
+        assert [r.target for r in result.broken] == [
+            "../../MyIA.AI.Notebooks/absent.ipynb"
+        ]
+
+    def test_met_control_does_not_exit_2(self, tmp_path, monkeypatch):
+        """Armed + broken == a genuine finding (rc=1), not a control failure."""
+        self._broken_tree(tmp_path, monkeypatch)
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "1"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 1
+
+    def test_same_tree_fails_the_control_under_a_higher_threshold(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Discrimination, on ONE tree: the threshold, not the tree, decides.
+
+        Raising the expectation above what the organ can see must flip rc=1
+        (finding) into rc=2 (control unmet) -- which is what makes a dead
+        detection path detectable instead of green.
+        """
+        self._broken_tree(tmp_path, monkeypatch)
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "2"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "POSITIVE CONTROL FAILED" in capsys.readouterr().err
+
+    def test_clean_scan_under_an_armed_control_exits_2(self, monkeypatch, capsys):
+        """A genuinely clean tree under an armed control is a FAILURE, not a pass.
+
+        `run_scan` is stubbed: the claim under test is the control's verdict on
+        a zero-broken result, not path resolution.
+        """
+        monkeypatch.setattr("check_docs_links.run_scan", lambda report_orphans=False: ScanResult())
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "1"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "POSITIVE CONTROL FAILED" in capsys.readouterr().err
+
+    def test_gate_mode_does_not_print_the_advisory(self, monkeypatch, capsys):
+        """`--check` success stays a single summary line: no advisory noise.
+
+        The gate runs on every PR; an advisory printed on every green run is
+        trained away within a week, so it is confined to the bare scan.
+        """
+        monkeypatch.setattr("check_docs_links.run_scan",
+                            lambda report_orphans=False: ScanResult())
+        monkeypatch.setattr("check_docs_links.load_baseline",
+                            lambda *a, **k: {"broken_links": []})
+        monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--check"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 0
+        assert "WARNING" not in capsys.readouterr().err
+
+
+class TestDeckScopeWiring:
+    """Adding the scope to the organ is worthless if the gate never runs it."""
+
+    def test_deck_scope_is_wired_into_the_fast_lane(self):
+        """The `check-links` gate must fire when a deck changes.
+
+        `docs-link-check.yml` is `workflow_dispatch`-only since #12567: for PRs
+        the organ is rendered by the fast lane, which decides from `paths`. A
+        scope added to the organ alone leaves deck-only PRs unchecked -- the
+        #15865 case.
+        """
+        sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+        try:
+            import fast_lane_registry
+        finally:
+            sys.path.pop(0)
+        guard = next(
+            g for g in fast_lane_registry.TRANCHE1 if g.name == "check-links"
+        )
+        assert "slides/**" in guard.paths, (
+            "the check-links gate does not watch slides/ -- a deck-only PR "
+            "would never run the organ (#15867)"
+        )
+
+    def test_every_declared_scope_is_reachable_from_the_gate(self):
+        """Parity: each scanned scope must have a matching gate trigger."""
+        sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+        try:
+            import fast_lane_registry
+        finally:
+            sys.path.pop(0)
+        guard = next(
+            g for g in fast_lane_registry.TRANCHE1 if g.name == "check-links"
+        )
+        for scope in check_docs_links.SCAN_SCOPES:
+            if scope.endswith("/"):
+                assert any(p.startswith(scope) for p in guard.paths), (
+                    f"scope {scope!r} is scanned but no gate path covers it"
+                )
+            else:
+                assert scope in guard.paths, (
+                    f"scope {scope!r} is scanned but the gate never watches it"
+                )
+        assert any(
+            p.startswith(f"{check_docs_links.DECK_DIR}/") for p in guard.paths
+        ), "the deck scope is scanned but the gate never watches it"
 
 
 if __name__ == "__main__":

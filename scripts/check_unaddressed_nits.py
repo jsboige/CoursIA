@@ -159,6 +159,44 @@ _PERSONA_MARKERS_RE = re.compile(
     # le backtick reste EXCLU : `` `[Hermes]` `` est une citation (#13030).
     r"(?m)(?:^|[\s*])\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
 )
+# #14850 — prefixe de lane tierce : voie distincte d'un autre agent du cluster
+# qui pousse sous le meme login partage `jsboige`. Le format canonique est
+# `[machine-po-YYYY:CoursIA-2]` (Tell c.677-L4 body PR HORS worktree +
+# convention owner:workspace du `[CLAIMED]` lane). Le complement facultatif
+# ` (...)` peut suivre. La voie NUЕ par meme login (commentaire ordinaire
+# SANS prefixe) n'a aucune signature distincte et reste indiscernable d'une
+# auto-reponse de l'auteur de la reserve -- c'est exactement le defaut de
+# discrimination que #14850 nomme.
+_CROSS_LANE_LIFT_RE = re.compile(
+    # #14850 — la lane est en-tete de paragraphe (apres decoration `* ` ou
+    # `# ` admise). Caracteres autorises : lettres, chiffres, tirets, points,
+    # underscores, deux-points (format `owner:workspace`). Refuse les crochets
+    # ULTERIEURS (` > [lane]`) par l'ancre `^` + decoration de debut de ligne.
+    r"(?m)^[#>*+\-\s]*\[\s*[A-Za-z][\w.\-]*:\s*[A-Za-z][\w.\-]*(?:\s+[^\]]+)?\]"
+)
+# #14850 — prefixe de ROLE GENERIQUE : `[ai-01]`, `[po-2026]`, etc. Le format
+# est `[identifiant]` (un seul token, sans `:` ni whitespace), pose en tete
+# de paragraphe apres decoration `* ` ou `# `. Distinct des personas
+# (Hermes/NanoClaw, L156) et des lanes (owner:workspace, L170) : un prefixe
+# role comme `[ai-01]` est l'identite de l'agent qui pousse sous un login
+# partage (typiquement `jsboige` ou `clusterManager-Myia`). Le scope d'un
+# tel lift est SA voix, pas la voie nue -- sans le reconnaitre, le filet
+# accepte une levee `[ai-01] Je leve ma propre reserve` par `jsboige` comme
+# levant une reserve user voix nue de `jsboige` (incident fondateur #14795,
+# 21:11:29Z).
+#
+# Les TAGS DE PROTOCOLE (`[DONE]`, `[INFO]`, `[WARN]`, `[ASK]`, `[REPLY]`,
+# `[ACK]`, `[TASK]`, `[BLOCKED]`, `[CLAIMED]`, `[DISPATCH→inbox]`,
+# `[ESCALATION]`, ...) ne sont PAS des prefixes de role : ils qualifient
+# le TYPE du commentaire, pas l'emetteur. Un `[DONE] les 2 nits sont
+# adresses, commit abc123.` reste voie nue de l'auteur -- le tag est
+# un attribut de workflow, pas une identite d'agent.
+_ROLE_PREFIX_RE = re.compile(
+    r"(?m)^[#>*+\-\s]*\[\s*(?!Hermes\b|NanoClaw\b|Hermes self-bot\b|OVERRIDE\b"
+    r"|DONE\b|INFO\b|WARN\b|ERROR\b|ASK\b|REPLY\b|ACK\b|TASK\b|BLOCKED\b"
+    r"|CLAIMED\b|ESCALATION\b|PROPOSAL\b|GRAIN\b)"
+    r"[A-Za-z][\w.\-]*\s*\]"
+)
 # #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
 # prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
 # des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
@@ -335,6 +373,16 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
+# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
+# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
+# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
+# ne sont PAS des marqueurs de severite et ne le deviendront pas —
+# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
+# introduit un nouveau glyphe de severite doit le proposer ici avec une
+# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
+# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
+# mais le verdict litteral en narration de dissipation avec attribution
+# tell — cf `_MENTION_VERDICT_TELL` (Position K).
 # `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
 # symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
 # ciblent l'ASCII formel et ignorent les glyphes ; la Position J
@@ -996,6 +1044,49 @@ _MENTION_VERDICT_REPORTED = re.compile(
 )
 
 
+# #15951 — Position K : attribution par reference tell du cluster. Instance
+# fondatrice (PR #15762 c.1102, po-2024:CoursIA-2, 2026-09-12T16:26Z) :
+# « dissipation CHANGES_REQUESTED c.589 leve N-1/N ET cross-base c.1063-L1 »
+# — le commentaire de DISSIPATION lui-meme etait classe BOT-CONCERN. Le
+# verdict nomme est suivi de la reference tell de SA SOURCE (« c.589 »),
+# l'idiome de citation interne du cluster (ledger Tell). L'issue #15951
+# attribuait le defaut au glyphe de nouveaute « ★ » : mesure faite, le
+# glyphe n'est PAS dans SEVERITY_GLYPHS (cf contrat en tete de ce bloc) et
+# le declencheur reel est le litteral CHANGES_REQUESTED en narration de
+# dissipation PASSEE avec attribution de source. Les positions A-H
+# echouaient toutes sur cette forme : la Position C+/D+ exige le verbe de
+# levee IMMEDIATEMENT apres le verdict (la ref tell s'intercale) et ne
+# connait que commit/#N/PR#N/pull/N comme refs pointables (pas c.NNN).
+#
+# Discrimination vs emission formelle :
+# (1) Adjacence IMMEDIATE verdict -> ref tell (`\s+c\.\d+`, forme etendue
+#     `c.NNN-LN`) : une emission ecrit le verdict nu puis son contenu
+#     (« CHANGES_REQUESTED: edge case »), jamais « VERDICT c.NNN » — la
+#     ref tell suit le verdict uniquement pour DESIGNER la source du
+#     verdict rapporte. Meme doctrine que la Position D hors parentheses
+#     (#12944) : une ref pointable designe l'evenement passe rapporte,
+#     une emission ne pointe pas.
+# (2) Verdict case-sensitive `[A-Z][A-Z_]{3,}` (memes bornes que A-H) :
+#     pas de capture d'un mot naturel de la prose dans la fenetre.
+# (3) Garde dure commune (Position E/H) : si la suite de la phrase (200
+#     chars, meme phrase) declare un blocage vivant, la position ne
+#     s'applique PAS — le verdict reste emis.
+#
+# Mesure discriminatoire :
+#   TP (doit matcher, rendre le verdict mort) :
+#     - "dissipation CHANGES_REQUESTED c.589 leve N-1/N" (c.1102 #15762)
+#     - "le REQUEST_CHANGES c.1102 est leve sur head a2bdc9789a42."
+#   FN (ne doit PAS matcher, doit rester BOT-CONCERN) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu, emission)
+#     - "CHANGES_REQUESTED c.589 reste bloquante." (garde dure (3))
+#     - "CHANGES_REQUESTED cycle c.1102" (ref non adjacente — reste vif)
+_MENTION_VERDICT_TELL = re.compile(
+    r"(?<![\w/])(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"\s+c\.\d+(?:-L\d+)?"
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
+)
+
+
 # #14199 (cf grain) — Position I : `avant merge` en position de mention (FP).
 # Le marqueur `avant merge` est dans CONCERN_MARKERS comme signal d'un nit
 # redige a la main, MAIS trois formes mesurees 2026-09-02 le portent en
@@ -1366,7 +1457,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     """
     # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
     # negation — leur discrimination par contexte est suffisante).
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED, _MENTION_VERDICT_TELL):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     # Phase 1b : Position I — neutralise `avant [le/la/l'] merge` en position
@@ -1551,6 +1642,32 @@ CITERS = (
     # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
     "per",
     "precedent",
+    # #15837 — NARRATION RETROSPECTIVE FRANCAISE. Le depot est bilingue a
+    # l'ecriture : les listes ci-dessus ne reconnaissaient la narration qu'en
+    # anglais ("previous", "stale", "earlier"), alors que les lanes redigent en
+    # francais. « dissipation CHANGES_REQUESTED c.589 leve » (#15762) bloquait
+    # donc le merge d'un commentaire qui declare l'inverse d'une reserve.
+    #
+    # MESURE (point 1 de l'issue) : 2000 PRs mergees, tous les corps de
+    # commentaire et de review, toutes occurrences de marqueur. Un candidat
+    # n'entre ici que si AUCUNE occurrence neutralisee ne portait de reserve
+    # reelle — l'asymetrie est totale : un mot de trop ici rend une reserve
+    # invisible (#10761), la ou un mot manquant ne coute qu'un tri.
+    #   - "dissipation" : 7/7 narrations (« dissipation CHANGES_REQUESTED
+    #     c.589 leve », « ### dissipation CHANGES_REQUESTED c.1105 »).
+    #
+    # Pourquoi "dissipation" et pas "levee" (mesure pourtant 3/3 narration :
+    # « La reserve est levee avant merge », « demande re-review ... pour
+    # levee CHANGES_REQUESTED »). C'est une question de NATURE GRAMMATICALE,
+    # pas de taux : un NOM ne peut ici que signifier « dissipation DU
+    # verdict » (il est le dernier mot devant lui). Un PARTICIPE, lui, peut
+    # qualifier un AUTRE nom — « les reserves precedentes sont levees. » puis
+    # « CHANGES_REQUESTED: le split manque » sur une reserve NEUVE. Le
+    # controle negatif de #15837 le fait refuser : meme fenetre, meme liste,
+    # et une reserve vivante rendue invisible (#10761). Residu assume : la
+    # narration « reserve levee avant merge » reste flagee (2 occurrences
+    # mesurees) — un faux positif a trier, pas une reserve manquee.
+    "dissipation",
 )
 
 
@@ -1783,14 +1900,41 @@ def _excerpt(body: str) -> str:
     return snippet[:200] + " [...] " + snippet[-200:]
 
 
+# #15989 -- frontiere de PARAGRAPHE de la fenetre de citation. Les sites
+# d'appel passent les 30 caracteres qui precedent l'occurrence, sans borne :
+# un mot de citation place dans le paragraphe PRECEDENT neutralisait une
+# occurrence du paragraphe SUIVANT. Le declencheur mesure est le titre de
+# section nu -- l'idiome des commentaires de lane :
+#
+#     ## stale
+#     <ligne vide>
+#     CHANGES_REQUESTED: le split manque sur le head neuf.
+#
+# Sans borne, la fenetre vaut '## stale\n\n' et eteint ce verdict NEUF
+# (`classify` rend None). Le citer doit deja vivre dans CITERS pour que la
+# classe soit atteignable : c'est le cas de « stale », « previous », « sans »,
+# « aucune » sur main, et #15843 ouvre le meme chemin aux mots francais de
+# narration retrospective (« dissipation »).
+#
+# La borne est le PARAGRAPHE, pas la ligne : un citer pose sur la ligne
+# immediatement precedente, SANS ligne vide, reste une narration d'un meme
+# paragraphe et neutralise toujours (#15989, critere 2).
+_PARAGRAPH_BREAK_RE = re.compile(r"\n[ \t\r]*\n")
+
+
 def _is_cited(window: str) -> bool:
     """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
 
     Le mot doit etre delimite : le caractere qui le precede est non-alphanumerique
     (espace, newline, ponctuation) ou le debut de la fenetre. Sans frontiere,
     « xxxtechno » matcherait « no ».
+
+    #15989 -- la fenetre est bornee a la frontiere de PARAGRAPHE (derniere ligne
+    vide) : un citer du paragraphe precedent ne la franchit plus, donc n'eteint
+    plus le verdict du paragraphe suivant. Rejeu du corpus de #15843 (1936 PRs
+    mergees, 13113 corps, 2420 occurrences) : 0 verdict change.
     """
-    w = window
+    w = _PARAGRAPH_BREAK_RE.split(window)[-1]
     # Fleche immediatement devant le marqueur : derivation conditionnelle
     # (« Si X → CHANGES_REQUESTED », #1247), pas une emission de verdict.
     stripped = w.rstrip()
@@ -2593,6 +2737,90 @@ _COORDINATOR_INJUNCTION_RE = re.compile(
 _COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
     r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
 )
+# #15772 -- la negation LOCALE d'une injonction structurelle ne couvre pas le
+# cas ou plusieurs occurrences du radical vivent dans le meme body, et ou
+# seule l'une est prefixede d'une negation. Avant : le predicat etait GLOBAL
+# (`_COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised)`) -- un seul
+# `pas de hold` dans le body suffisait a neutraliser TOUTES les injonctions,
+# y compris une 2e occurrence non-negatee (cas fondateur : commentaire
+# `11:27:40Z` de #15748 -- « NE PAS ATTENDRE -- enchainer un autre grain ;
+# c'est la candidate qui attend, pas la lane » -- le 2e `attend` est
+# descriptif, sans negation, et fabrique un faux positif BOT-CONCERN).
+#
+# Le correctif est **par occurrence** : pour chaque match de
+# `_COORDINATOR_INJUNCTION_RE`, regarder si la fenetre gauche bornee (meme
+# proposition) contient une negation eligible. Si TOUS les matches sont
+# neutralises, pas d'injonction. Sinon, l'injonction tient.
+#
+# Jeu de negations retenu (cf acceptance #15772 point 4 -- justifie par ses
+# FAUX NEGATIFS, pas par ses hits, l.lecon du motif « code-only » qui
+# sous-comptait en silence, `anti-regression.md`) :
+#   - `ne pas`        : negation classique deux-mots, capture le fondateur
+#   - `n' ... pas`    : elision « n'est pas », « n'a pas » -- la negation
+#                       peut etre separee du verbe par un auxiliaire
+#   - `sans`          : « sans attendre », « sans merger »
+#   - `jamais`        : « jamais d'attente », « jamais de hold »
+#   - `pas de`        : « pas de hold », « pas d'attente » (forme deja couverte
+#                       par l'ancienne liste, preservee par defaut)
+#   - `inutile de`    : « inutile d'attendre » (verdict d'inutilite = anti-injonction)
+#   - `aucune raison de` / `aucun besoin de` : verdict de non-necessite
+#   - `non`           : « non bloquant », « non attente » -- glyphe, pas prose
+#
+# Faux negatifs connus et ACCEPTES (acceptance #15772 point 4) : la liste
+# est JUSTIFIEE par les formes qu'elle rate -- et chaque ratee est documentee
+# ici pour qu'une PR de suivi puisse l'elargir sans nouvelle investigation.
+#   - `n'<mot>` sans `pas` (elision sans auxiliaire, rare en francais courant)
+#   - `ni ... ni ...` (rare, et la seconde negation est deja couverte)
+#   - `point d'attente`, `aucunement`, `nullement` (formes savantes rares)
+# Negations qui s'appliquent au MOT-VERBE dans la proposition (le verbe
+# d'injonction peut etre a la frontiere droite de la proposition,
+# c.-a-d. JUSTE devant le match INJ). Ces negations sont cherchees dans
+# la fenetre gauche de chaque match INJ (cf `_is_injunction_match_negated`).
+_INJUNCTION_NEGATION_LEFT_RE = re.compile(
+    r"(?i)(?:"
+    r"\bne\s+pas\b|"
+    r"\bn['’]\s*(?:est|aie|ai|avais|avons|avez|aura|aurai|fut|fut|fusse)\s+pas\b|"
+    r"\bsans\b|"
+    r"\bjamais\b|"
+    r"\bpas\s+de\b|"
+    r"\binutile\s+de\b|"
+    r"\binutiles?\s+d['’]\b|"
+    r"\baucune?\s+raison\s+de\b|"
+    r"\b(?:aucun|aucune)\s+besoin\s+de\b"
+    r")",
+)
+# Negations COLLEES au token d'injonction lui-meme : « aucun hold »,
+# « aucune attente », « non bloquant ». Ces negations sont par construction
+# deja collees au mot qu'elles neguent -- le predicat par-occurrence les
+# cherche sur la portion `match + mot gauche immediat` (4 chars avant le
+# match INJ, pour tolerer une apostrophe comme dans « aucun·e attente »).
+# On ne peut pas les chercher dans la fenetre gauche classique parce
+# que le match INJ couvre le token (`hold`, `attente`, etc.), et chercher
+# `aucun hold` dans la fenetre gauche RATERAIT le cas fondateur de #13598
+# (`« Il n'y a aucun hold sur cette PR. »` -- la fenetre gauche de `hold`
+# est `« Il n'y a aucun »`, qui ne contient pas `hold`).
+_INJUNCTION_NEGATION_PREFIXED_RE = re.compile(
+    r"(?i)\b(?:"
+    r"(?:aucun|aucune|aucuns|aucunes)\s+(?:hold|wait|bloque|attend|attente|attendre|stop|arr[êe]t)\b|"
+    r"non\s+(?:bloquant|attend|attente|attendre|hold|wait|stop|merge|merger|fusionner)\b"
+    r")",
+)
+# Fenetre gauche en chars : une negation de la liste vit dans la meme
+# PROPOSITION que l'injonction qu'elle neutralise. Une proposition va du
+# dernier separateur fort (`.`, `!`, `?`, `:`, `\n`, debut de body) au
+# separateur suivant. 256 chars couvrent largement les phrases courtes
+# du registre coordinateur, avec une marge de securite raisonnable.
+# Au-dela, on est dans une proposition distincte, et la negation n'y
+# neutralise plus l'injonction locale.
+#
+# Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+# minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+# candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+# `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+# d'ouverture et le `, pas la lane`), et la negation doit neutraliser
+# l'injonction descriptive. Une fenetre courte (48 chars) ratait ce cas
+# parce que la negation etait a plus de 48 chars du 2e `attend`.
+_INJUNCTION_NEGATION_WINDOW_CHARS = 256
 # #13912 -- le mot `hold` en MENTION NOMINALE d'un hold tenu par un tiers n'est
 # pas une EMISSION. La voie #13598 n'attrape ce cas qu'a demi : le lookahead
 # `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))` ecarte les NOMS DE
@@ -2660,6 +2888,87 @@ def _hold_match_is_emission(body: str) -> bool:
     return False
 
 
+# Separateurs de proposition : on utilise UNIQUEMENT les separateurs FORTS
+# (`.`, `!`, `?`, double `\n`). Les separateurs faibles (`:`, `;`, simple `\n`)
+# ne coupent pas une phrase logique -- le fondateur verbatim de #15748 inclut
+# un `\n` au milieu d'une meme proposition (« c'est la\ncandidate qui attend »)
+# que traiter comme un saut de proposition ferait passer a cote du fix.
+# Les separateurs faibles (`:`, `;`) sont des liasons intra-phrase.
+_PROPOSITION_SEPARATORS_RE = re.compile(r"[.!?]|\n\n")
+
+
+def _proposition_start(normalised: str, pos: int) -> int:
+    """#15772 : index du debut de la proposition qui contient `pos`.
+
+    Une proposition va du dernier separateur fort (`.`, `!`, `?`, `:`, `\\n`,
+    debut de body) au separateur suivant. Renvoie 0 si aucun separateur
+    precedent n'existe dans la fenetre `_INJUNCTION_NEGATION_WINDOW_CHARS`.
+    """
+    window_start = max(0, pos - _INJUNCTION_NEGATION_WINDOW_CHARS)
+    head = normalised[window_start:pos]
+    seps = list(_PROPOSITION_SEPARATORS_RE.finditer(head))
+    if not seps:
+        return window_start
+    last_sep_end = seps[-1].end()
+    return window_start + last_sep_end
+
+
+def _is_injunction_match_negated(normalised: str, span: tuple[int, int]) -> bool:
+    """#15772 : l'occurrence d'injonction a `span` est-elle neutralisee par
+    une negation LOCALE dans la MEME PROPOSITION ?
+
+    Discriminant : la negation doit etre dans la meme proposition que
+    l'injonction (entre le dernier separateur fort et l'injonction). Une
+    negation dans une proposition PRECEDENTE (separee par `.` / `!` / `?` /
+    `:` / `\\n`) ne neutralise PAS l'injonction de la proposition courante.
+
+    Cas fondateur (commentaire 11:27:40Z de #15748) : « cette jambe est un
+    minuteur. NE PAS ATTENDRE -- enchainer un autre grain ; c'est la
+    candidate qui attend, pas la lane. » -- `NE PAS ATTENDRE` et le 2e
+    `attend` (descriptif) sont dans la MEME PROPOSITION (entre le `.`
+    d'ouverture et le `, pas la lane`), et la negation neutralise les
+    deux occurrences d'injonction de la phrase.
+
+    Anti-regression : « NE PAS ATTENDRE que la CI verdisse. Plus tard,
+    HOLD cette PR attend le grain. » -- `NE PAS ATTENDRE` vit dans la
+    proposition 1, le HOLD reel + `attend` dans la proposition 2 ; les
+    separateurs (`.` puis `\\n\\n`) coupent la portee de la negation.
+    """
+    start = span[0]
+    prop_start = _proposition_start(normalised, start)
+    proposition = normalised[prop_start:start]
+    # 1. Negations LOCALE-LEFT (chercher dans la fenetre gauche de la proposition)
+    if _INJUNCTION_NEGATION_LEFT_RE.search(proposition):
+        return True
+    # 2. Negations COLLEES au token d'injonction (chercher `match + 4 chars
+    # gauche` -- le prefixe `aucun`/`aucune` peut etre 4 chars avant le match
+    # INJ). Si le token INJ est precede de `aucun ` ou `aucune ` ou `non `
+    # dans cette fenetre courte, l'occurrence est neutralisee.
+    short_left_window = max(0, start - 12)
+    short_window = normalised[short_left_window:start + 20]
+    if _INJUNCTION_NEGATION_PREFIXED_RE.search(short_window):
+        return True
+    return False
+
+
+def _all_injunctions_negated(normalised: str) -> bool:
+    """#15772 : TOUTES les occurrences d'injonction structurelle sont-elles
+    neutralisees par une negation locale ?
+
+    Renvoie True si le body ne porte aucune injonction (defaut), OU si
+    chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE` est
+    neutralisee par une negation LOCALE (cf `_is_injunction_match_negated`).
+
+    Substitue l'ancien predicat GLOBAL `_COORDINATOR_INJUNCTION_NEGATED_RE.
+    search(normalised)`, qui ratait le cas fondateur de #15772 (body avec
+    une negation + une occurrence descriptive non-negatee).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return True
+    return all(_is_injunction_match_negated(normalised, m.span()) for m in matches)
+
+
 def _coordinator_emission_informal(body: str) -> bool:
     """#13598 : le coordinateur EMET-il un hold en francais courant ?
 
@@ -2668,7 +2977,7 @@ def _coordinator_emission_informal(body: str) -> bool:
     un ARBITRAGE (OVERRIDE pose). Cible : 1 auteur (LIFT_OVERRIDE_LOGINS).
     """
     normalised = _unaccent(body)
-    if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+    if _all_injunctions_negated(normalised):
         return False
     # #13912 -- sur le mot `hold`, demasquer les MENTIONS NOMINALES d'un hold
     # tiers (cf review ai-01 sur #13706 : « moteur sous hold user (#10038) »).
@@ -3045,6 +3354,9 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
     #15556 : le MEME appel porte deja l'arbre du commit (`commit.tree.sha`)
     -- le capter ici evite un second aller-retour par SHA au moment de
     distinguer push muet (arbre identique) et push de contenu.
+    #15973 : il porte AUSSI les blobs par chemin du commit (`files[].sha`)
+    -- la moitie deja-payee de l'identite par chemin qui distingue un rebase
+    preserve d'un rembobinage destructeur.
     """
     oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
     oids.discard("")
@@ -3062,8 +3374,13 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
             continue  # non resoluble -> analyse restera en mode avertissement
         head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
         tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+        files = [
+            (f.get("filename") or "", f.get("sha") or "",
+             f.get("status") or "", f.get("previous_filename") or "")
+            for f in (commit.get("files") or [])
+        ]
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree}
+            state[sha] = {"message": head or "", "tree": tree, "files": files}
     return state
 
 
@@ -3097,6 +3414,57 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
 # surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
 # au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
+#
+# #15973 -- le rebase ne retombe PLUS sur le refus quand son contenu est
+# prouve preserve : `tree(rembobine) == tree(tete)` est structurellement
+# incapable de voir un rebase sur une base avancee (l'arbre d'un commit
+# porte aussi les fichiers de sa base, il change NECESSAIREMENT meme si le
+# travail de la PR n'a pas bouge d'un octet -- mesure #15902 : levees
+# refusees sur un blob de notebook byte-identique). L'identite qui survit
+# au rebase est celle des BLOBS PAR CHEMIN : `files[].sha` du commit
+# rembobine est deja dans l'appel `commits/{sha}` existant (cout nul,
+# moitie de la donnee), et la carte chemin->blob de la tete se prend en UN
+# appel `git/trees/{arbre}?recursive=1`. La note « 3 appels par SHA contre
+# 1 » ci-dessus reste vraie pour une comparaison par chemin DEUX-A-DEUX ;
+# elle ne s'applique plus a cette voie. Degradation seulement : le refus
+# demeure la reponse par defaut, et toute donnee manquante (pas de files[],
+# carte vide, arbre tronque, statut non reconnu) y retombe.
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """#15973 : chaque chemin touche par le commit rembobine doit se
+    retrouver dans la tete, byte pour byte -- modification presente au meme
+    blob, deletion toujours absente, rename installe au nouveau chemin et
+    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
+    reconnu : un organe de merge-gate ne devient jamais permissif sur un
+    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    """
+    if not rewound_files or not head_blobs:
+        return False
+    # L'API commits plafonne `files` a 300 entrees sans drapeau de
+    # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
+    # -- une identite demi-prouvee est un fail-open, pas une preuve.
+    if len(rewound_files) >= 300:
+        return False
+    for filename, blob, status, previous in rewound_files:
+        if not filename or not blob:
+            return False
+        if status == "removed":
+            if filename in head_blobs:
+                return False
+            continue
+        if status == "renamed":
+            if not previous or previous in head_blobs:
+                return False
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        if status in ("added", "modified", "changed", "copied"):
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        return False  # statut inconnu : refus conservateur
+    return True
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3115,15 +3483,18 @@ def _pr_head_oid(data: dict) -> str:
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
-    Assemble les deux vues que `analyse` consulte : messages (rattachement
-    #13639) et arbres des commits rembobines plus arbre de la tete
-    (#15556) -- un appel reseau par SHA, plus un pour la tete.
+    Assemble les vues que `analyse` consulte : messages (rattachement
+    #13639), arbres des commits rembobines plus arbre de la tete (#15556),
+    et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
+    la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
                                     if v.get("message")}
     data["_absent_sha_trees"] = {s: v["tree"] for s, v in state.items()
                                  if v.get("tree")}
+    data["_absent_sha_files"] = {s: v["files"] for s, v in state.items()
+                                 if v.get("files")}
     head_oid = _pr_head_oid(data)
     head_tree = ""
     if head_oid:
@@ -3134,6 +3505,26 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
+    head_blobs: dict[str, str] = {}
+    if head_tree and data["_absent_sha_files"]:
+        # #15973 : la carte chemin->blob de la tete, en UN appel (l'arbre
+        # recursif) -- pas un appel par chemin. Inerte quand aucun SHA
+        # absent n'a ete resolu : le gate courant ne paie rien de plus.
+        # Truncated = carte partielle = non-verifiable : on rend vide et
+        # l'analyse retombe sur le refus conservateur, jamais sur une
+        # identite demi-prouvee.
+        try:
+            tree_obj = gh_json(
+                ["api", f"repos/{REPO}/git/trees/{head_tree}?recursive=1"])
+            if not tree_obj.get("truncated"):
+                head_blobs = {
+                    e["path"]: e["sha"]
+                    for e in (tree_obj.get("tree") or [])
+                    if e.get("type") == "blob" and e.get("path") and e.get("sha")
+                }
+        except subprocess.CalledProcessError:
+            head_blobs = {}
+    data["_head_blobs"] = head_blobs
 
 
 def can_lift(comment: dict) -> bool:
@@ -3540,31 +3931,159 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "", nit_body: str = "") -> bool:
         if lift_author == nit_author:
-            # #14947 -- meme login n'est pas meme voix. `jsboige` est A LA FOIS
-            # le compte du user et l'identite de poussee des personas (#13316).
-            # Une levee marquee `[Hermes]` / `[NanoClaw]` signe la revue de la
-            # persona sur SON propre travail ; elle ne repond pas a une remarque
-            # ecrite en voix nue par le user sous le meme login. B.0 : « se lever
-            # soi-meme une reserve d'autrui n'est pas y repondre, c'est la
-            # declarer repondue ».
+            # #14947 ET #14850 -- meme login n'est pas meme voix. `jsboige`
+            # est A LA FOIS le compte du user, l'identite de poussee partagee
+            # des personas (#13316), ET le login sous lequel les lanes
+            # cross-poussent. Le discriminateur de B.0 -- « une levee
+            # emise sous un prefixe de role ne doit pas eteindre une reserve
+            # user » (acceptance 1 de #14850) -- impose que la levee soit
+            # SCOPEE A L'EMETTEUR (acceptance 2) : un LGTM `[Hermes]` leve
+            # les reserves `[Hermes]`, pas les reserves user voix nue ;
+            # un commentaire `[myia-po-2024:CoursIA-2]` leve les reserves de
+            # CETTE lane, pas les reserves user voix nue.
             #
-            # Le discriminant n'est pas neuf : #13609 tient deja le marqueur de
-            # persona pour une identite CROSS-login (la persona leve sa propre
-            # reserve sous l'autre login). Il vaut a fortiori SAME-login, ou la
-            # borne d'auteur #11145 ne discrimine plus rien.
+            # Le discriminant par ROLE du lift determine a quelles reserves
+            # il peut s'appliquer. Sans discriminant de role, la levee est
+            # voix nue -- elle ne leve que les reserves VOIX NUE de meme
+            # auteur (le self-lift nominatif de B.0).
             #
-            # Incident fondateur #14937 : nit user 19:20:05Z (« Concern: le
-            # notebook ne devrait-il pas etre une accretion... »), review
-            # `[Hermes]` a 19:26:40Z terminee par un « RAS » nu -- six minutes
-            # plus tard, sur un tout autre objet (re-execution des cellules).
-            # Le RAS eteignait le nit : rc=0, PR mergeable, remarque user perdue.
-            # La levee etant PAR PR et non par reserve, un acquit de routine de
-            # la persona suffisait a solder la voix du user.
-            if (_PERSONA_MARKERS_RE.search(_strip_quoted(lift_body or ""))
-                    and not _PERSONA_MARKERS_RE.search(
-                        _strip_quoted(nit_body or ""))):
-                return False
-            return True
+            # Incident fondateur #14937 (persona leve sa propre voix) :
+            # nit user 19:20:05Z (« Concern: ... »), review `[Hermes]` a
+            # 19:26:40Z terminee par un « RAS » -- le RAS eteignait le nit
+            # user voix nue. Defaut fondateur de la voie PERSONA levee en
+            # voix nue.
+            #
+            # Incident fondateur #14850 (voie nue par meme login eteint
+            # reserve user, mesure sur #14795 head `2510e3a4`) : la review
+            # Hermes de 18:29:00Z terminee par « Verdict : LGTM » eteignait
+            # la reserve user voix nue posee a 18:09:49Z. PR #14949 a cru
+            # fermer ce cas en verifiant que le lift porte `[Hermes]` mais
+            # que le nit ne le porte pas -- mais le filet ne discriminait
+            # pas le SCOPE complet : un LGTM `[Hermes]` etait compte
+            # comme lift PR-wide. Le present fix ferme la discrimination
+            # par ROLE du lift :
+            #
+            #   * Lift voix nue par `jsboige` ne leve que les reserves
+            #     voix nue du MEME auteur. Sur le cas fondateur #14850,
+            #     le LGTM `[Hermes]` 18:29:00Z de `jsboige` ne leve PAS
+            #     la reserve `Concern:` voix nue 18:09:49Z de `jsboige` :
+            #     les roles sont distincts (Hermes vs user).
+            #
+            #   * Lift `[Hermes]` / `[NanoClaw]` par `jsboige` ne leve que
+            #     les reserves `[Hermes]` / `[NanoClaw]` (par SCOPE EMETTEUR).
+            #     Si la reserve est voix nue (`Concern:`), elle est HORS
+            #     scope persona -- le LGTM persona ne l'eteint pas.
+            #
+            #   * Lift `[machine:workspace]` (cross-lane) par `jsboige`
+            #     ne leve que les reserves `[machine:workspace]` (meme
+            #     lane). Si la reserve est voix nue user, elle est HORS
+            #     scope de la lane tierce -- cf. mesure #14850 sur le
+            #     commentaire 18:28:07Z `[myia-po-2024:CoursIA-2]` qui
+            #     etait compte comme levee alors qu'il eteignait la
+            #     reserve user voix nue.
+            #
+            #   * Lift `[OVERRIDE] lane <machine>` par coordinateur leve
+            #     tout (autorite coordinateur, Tell c.11639). La voie
+            #     override reste ouverte comme echappatoire nommee.
+            stripped_lift = _strip_quoted(lift_body or "")
+            stripped_nit = _strip_quoted(nit_body or "")
+            # Voie 0 -- override coordinateur (Tell c.11639). Meme login
+            # ou pas, l'arbitre tiers nomme par `[OVERRIDE] lane <machine>`
+            # leve. Fail-CLOSED sur la pose en tete (#13030). Premier
+            # discriminant verifie pour ne pas etre bloque par les voies
+            # 1-3 : un override par coordinateur sur sa propre reserve
+            # voix nue doit lever (autorite coordinateur).
+            if OVERRIDE_LANE.search(stripped_lift):
+                return True
+            # Voie 1 -- lift PERSONA scope aux reserves PERSONA.
+            # Si la reserve est voix nue (pas de marqueur persona), elle
+            # est HORS scope persona -- bloque. Si elle porte persona,
+            # elle est dans le scope persona -- leve. Discriminant
+            # symetrique de #14947 (persona leve sa propre voix) ETENDU
+            # au scope par role de #14850 : la persona peut lever SA
+            # reserve posee en persona, mais pas la reserve user voix nue
+            # posee sous meme login partage.
+            lift_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_lift))
+            nit_has_persona = bool(_PERSONA_MARKERS_RE.search(stripped_nit))
+            if lift_has_persona and nit_has_persona:
+                return True
+            if lift_has_persona and not nit_has_persona:
+                return False  # #14850 scope : lift persona ne leve pas user
+            # Voie 2 -- lift CROSS-LANE scope aux reserves CROSS-LANE.
+            # Un commentaire preface d'une lane tierce `[owner:workspace]`
+            # ne leve que les reserves de CETTE lane. Si la reserve est
+            # voix nue user ou persona, elle est HORS scope de la lane
+            # tierce -- bloque. Accepte le prefixe en debut de ligne
+            # (Tell c.677-L4 body PR HORS worktree), refuse la citation
+            # ulterieure (` > [lane]`) par l'ancre `^`.
+            lift_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_lift))
+            nit_has_lane = bool(_CROSS_LANE_LIFT_RE.search(stripped_nit))
+            if lift_has_lane and nit_has_lane:
+                return True
+            if lift_has_lane and not nit_has_lane:
+                return False  # #14850 scope : lift lane tierce ne leve pas user
+            # Voie 3 -- self-lift voix nue par l'auteur de SA reserve voix nue.
+            # L'auteur leve SA PROPRE reserve voix nue par une phrase de
+            # levee NOMINATIVE (`EXPLICIT_LIFT_MARKERS` : « Je leve »,
+            # « Levee de », « Lève la »). C'est la voie legitime que B.0
+            # preserve (« ce qui leve une remarque est une phrase ») et
+            # que la borne d'auteur #11145 preservait. Sans phrase
+            # nominative, c'est une declaration de verdict globale qui
+            # n'eteint pas la reserve voix nue specifique -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes vs user.
+            #
+            # Anti-regression couverte : la self-levee explicite
+            # (« Levée de ma reserve : cellule 12 corrigee »,
+            # test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve) et
+            # le self-lift par meme persona (`clusterManager-Myia` levant
+            # SA reserve `[Hermes]` par un « RAS sur le fond »,
+            # test_ras_francais_leve_dans_une_reponse) doivent rester
+            # valides. Les deux sont portes par `EXPLICIT_LIFT_MARKERS`
+            # ou un LIFT_MARKER faible DANS LE CONTEXTE d'une reserve
+            # deja persona-membre (couvert par voie 1 ci-dessus).
+            #
+            # #14850 -- defense en profondeur : un prefixe de ROLE generique
+            # (`[ai-01]`, `[po-2026]`, etc.) dans le lift, meme accompagne
+            # d'un LIFT_MARKER, ne leve PAS une reserve voix nue du meme
+            # login partage. Le lift `[ai-01] Je leve ma propre reserve`
+            # par `jsboige` n'a pas voix sur la reserve user voix nue de
+            # `jsboige` (incident fondateur #14795 21:11:29Z). Le reserve
+            # voix nue exige une levee voix nue -- la discrimination de voie
+            # par ROLE tient par symetrie : persona, lane, override ET
+            # role-prefix sont HORS scope de la voie nue.
+            #
+            # Note -- un LIFT_MARKER (broad, pas seulement EXPLICIT) suffit
+            # ici : le test de discrimination est sur le PREFIXE du lift,
+            # pas sur la force du marqueur. Une levee voie nue par l'auteur
+            # de la reserve voie nue peut employer « sont adresses »,
+            # « RAS », « LGTM » -- c'est l'ancien comportement preserve
+            # (#12319). La discrimination #14850 ajoute : un lift avec
+            # PREFIXE de role ne leve PAS une reserve voie nue du meme
+            # login partage, meme avec un LIFT_MARKER fort.
+            #
+            # Anti-regression couverte : `test_auteur_du_nit_leve_son_nit`
+            # (clusterManager-Myia leve SA reserve `[Hermes]` par un
+            # « reserve levee » voix nue). Le discriminant est sur le
+            # PREFIXE du LIFT, pas sur celui de la reserve -- une reserve
+            # `[Hermes]` n'est pas une reserve « user voix nue » au sens
+            # strict, mais elle est levee par la voie nue de l'auteur de
+            # la persona (clusterManager-Myia, voie nue, LIFT_MARKER).
+            # Voie 3 leve donc si le lift est voie nue (pas de prefixe
+            # distinct), independamment du scope du nit (la garde
+            # persona-vs-user est deja portee par voie 1).
+            stripped_lift_role = stripped_lift
+            lift_has_role = bool(_ROLE_PREFIX_RE.search(stripped_lift_role))
+            if (lift_has_persona is False
+                    and lift_has_lane is False
+                    and lift_has_role is False
+                    and has_live_lift(lift_body or "")):
+                return True
+            # Voie nue par meme login, sans discriminant de ROLE ni
+            # phrase de levee EXPLICITE : voie NUE par l'auteur de la
+            # reserve, sans signature distincte. C'est l'auto-reponse
+            # de l'auteur de la reserve sur sa propre remarque -- le cas
+            # fondateur #14850 LGTM voix nue de Hermes sur reserve user.
+            return False
         # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
         # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
         # propre reserve sous l'autre login, c'est sa levee. Le marqueur
@@ -3686,7 +4205,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         pr_refs.discard("")
         resolved = pr_data.get("_absent_sha_messages") or {}
         rewound_trees = pr_data.get("_absent_sha_trees") or {}
+        rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
+        head_blobs = pr_data.get("_head_blobs") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
@@ -3710,6 +4231,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     if tree and head_tree and tree == head_tree:
                         if artifact is None:
                             artifact = (sha, "same_tree")
+                        continue
+                    # #15973 -- un rebase sur une base avancee change l'arbre
+                    # par construction : avant de refuser, verifier l'identite
+                    # par chemin (blobs du commit rembobine, deja captures par
+                    # l'appel commits/{sha}, contre la carte chemin->blob de
+                    # la tete). Fail-closed : sans donnees ou sans identite,
+                    # le refus #15556 reste la reponse.
+                    sha_files = rewound_files_map.get(sha) or []
+                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                        if artifact is None:
+                            artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
                     if tree and head_tree:
@@ -4141,9 +4673,12 @@ def _print_sha_notes(result: dict) -> None:
     demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
     """
     for a in result.get("rewind_artifacts") or []:
-        why = ("arbre identique à la tête"
-               if a["reason"] == "same_tree"
-               else "fichiers de la PR inchangés")
+        if a["reason"] == "same_tree":
+            why = "arbre identique à la tête"
+        elif a["reason"] == "rebase_preserved":
+            why = "rebase sur base avancée, blobs identiques par chemin"
+        else:
+            why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
