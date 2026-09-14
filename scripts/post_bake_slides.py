@@ -96,13 +96,39 @@ class OutOfRootPathError(Exception):
     by `_rewrite_tree`, the file that carries it)."""
 
 
-# An absolute Windows path token: drive letter + separator + body. The
-# body stops at the FIRST delimiter byte among `"` (string boundary),
-# `'`, whitespace, `<`, `>`, `)` -- it must never run across markup: the
-# c.1051 class `[^"'\\]*` consumed `</p>\n<script src=` and silently
-# deleted it (#15703 residu 1). A prose path is bounded at its first
-# space; the error names it in that bounded form.
-ABSPATH_RE = re.compile(rb"[A-Za-z]:[/\\][^\"'\s<>)]*")
+# An absolute path token -- Windows drive-letter OR POSIX root-prefix --
+# followed by a body. The body stops at the FIRST delimiter byte among
+# `"` (string boundary), `'`, whitespace, `<`, `>`, `)` -- it must never
+# run across markup: the c.1051 class `[^"'\\]*` consumed
+# `</p>\n<script src=` and silently deleted it (#15703 residu 1). A prose
+# path is bounded at its first space; the error names it in that bounded
+# form.
+#
+# POSIX form: the leading `/` MUST be preceded by a lookbehind-bounded
+# byte -- whitespace, `"`, `'`, `=`, `(`, `{`, `[`, or start-of-string.
+# This rules out HTML markup that starts with `/` for unrelated reasons
+# (e.g. `</p>`, `<a href="/x">`, `<img src="./local.png">`) while
+# catching paths cited in real JS/HTML/CSS contexts:
+#   `import x from "/tmp/.../app.js"`  (after `"`)
+#   `<script src="/usr/lib/x.js">`     (after `"`)
+#   `from "/abs/path"`                 (after `"`)
+# The drive-letter arm is unchanged from the Windows-only version.
+# The POSIX lookbehind uses a character class `(?<=[\s"'=({\[])` (single
+# fixed-width 1-char lookbehind, valid in `re` bytes mode) joined with
+# an explicit `^` (start-of-string) alternative via a non-capturing
+# group `(?:^|(?<=...))`. Earlier 8-way `|` alternatives on the
+# lookbehind were REJECTED at parse/match time (Python `re` requires
+# uniform fixed-width assertion branches even when each is 1-char --
+# the empty `^` alternative has width 0, breaking the uniformity).
+# The single-class form keeps width uniform and matches.
+ABSPATH_RE = re.compile(
+    rb"(?:"
+    rb"[A-Za-z]:[/\\][^\"'\s<>)]*"                          # Windows
+    rb"|"
+    rb"(?:^|(?<=[\s\"\'=({\[]))/"                            # POSIX: BOF or lookbehind
+    rb"[^\"'\s<>)]*"
+    rb")"
+)
 
 
 def _is_target(fn: str) -> bool:
@@ -171,8 +197,13 @@ def _scan_dist(root: str):
 
 
 def _count_hits(content: bytes) -> int:
-    """Count absolute-path hits in `content` for the per-file log line."""
-    return len(re.findall(rb"[A-Za-z]:[/\\]", content))
+    """Count absolute-path hits in `content` for the per-file log line.
+    Counts both Windows drive-letter paths and POSIX root-prefix paths
+    (see ABSPATH_RE) -- the log counter must mirror what the rewrite
+    touched."""
+    windows_hits = len(re.findall(rb"[A-Za-z]:[/\\]", content))
+    posix_hits = len(re.findall(rb"(?:^|(?<=[\s\"\'=({\[]))/[^\"'\s<>)]*", content))
+    return windows_hits + posix_hits
 
 
 def _rewrite_tree(root: str, build_root: str) -> tuple[int, int]:
