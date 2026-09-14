@@ -9,7 +9,11 @@ name: Evict orphan Actions caches
 # Le script (scripts/ci/evict_orphan_caches.py) est dry-run par defaut ;
 # ce workflow passe --apply apres le dry-run (mode JSON parse) pour
 # confirmer qu'il y a effectivement du evictable avant DELETE. Le garde
-# est dans le script : si 0 evictable, exit 1 et on n'applique rien.
+# est dans le workflow (et non dans le script) : la sortie JSON est
+# pipée dans `tee`, l'exit code du script est masque par le pipe, et
+# c'est l'instruction `if [ "$EVICTABLE" = "0" ]` qui empeche la boucle
+# DELETE. Donc "0 evictable -> on n'applique rien" est garanti par le
+# test explicite du JSON, pas par le rc=1 du script.
 #
 # Concurrence : si une analyse CodeQL est en cours au moment du sweep,
 # la cle de cache peut etre creee juste apres notre check et survive

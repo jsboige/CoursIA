@@ -128,11 +128,21 @@ class TestClassifyCache(unittest.TestCase):
     def test_orphan_sha_is_evicted_even_if_recent(self):
         now = _dt.datetime.now(_dt.timezone.utc)
         cache = self._cache(self.KEY_ORPHAN, _iso(now), _iso(now))
-        # _is_ancestor est appele ; sur ce depot, SHA = 0000...0001 n'est PAS
-        # un ancetre de origin/main (le SHA n'existe meme pas comme commit).
-        rec = eoc._classify_cache(
-            cache, max_age_hours=24, remote="origin", main_branch="main"
-        )
+        # KEY_ORPHAN = "...0000...0001" n'existe PAS comme commit : un
+        # appel reel a git merge-base retournerait rc=128 (None) -- ce qui
+        # est maintenant REFUSE (fail-CLOSED, c.1149 NanoClaw CONCERNS
+        # PR #16099 nit 1). Pour tester le verdict "pas ancetre = EVICT",
+        # on patche _is_ancestor pour qu'il rende False explicitement
+        # (la distinction "pas ancetre" vs "impossible de determiner" est
+        # testee separement dans test_ancestor_check_unknown_refuses).
+        original = eoc._is_ancestor
+        eoc._is_ancestor = lambda sha, remote, branch: False  # noqa: E731
+        try:
+            rec = eoc._classify_cache(
+                cache, max_age_hours=24, remote="origin", main_branch="main"
+            )
+        finally:
+            eoc._is_ancestor = original
         self.assertEqual(rec["verdict"], "EVICT")
         self.assertIn("sha_not_ancestor_of_main", rec["reason"])
 
@@ -158,14 +168,42 @@ class TestClassifyCache(unittest.TestCase):
 
     def test_both_reasons_can_combine(self):
         # Cache non-ancetre ET ancien : les deux raisons apparaissent.
+        # KEY_ORPHAN n'existe pas comme commit -- on patche _is_ancestor
+        # pour rendre False (cf. test_orphan_sha_is_evicted_even_if_recent
+        # pour la justification complete du pattern de mock).
         old = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=48)
         cache = self._cache(self.KEY_ORPHAN, _iso(old), _iso(old))
-        rec = eoc._classify_cache(
-            cache, max_age_hours=24, remote="origin", main_branch="main"
-        )
+        original = eoc._is_ancestor
+        eoc._is_ancestor = lambda sha, remote, branch: False  # noqa: E731
+        try:
+            rec = eoc._classify_cache(
+                cache, max_age_hours=24, remote="origin", main_branch="main"
+            )
+        finally:
+            eoc._is_ancestor = original
         self.assertEqual(rec["verdict"], "EVICT")
         self.assertIn("sha_not_ancestor_of_main", rec["reason"])
         self.assertIn("last_accessed_older_than_24h", rec["reason"])
+
+    def test_ancestor_check_unknown_refuses(self):
+        # REPAIR 2026-09-14 c.1149 NanoClaw CONCERNS PR #16099 nit 1 :
+        # _is_ancestor peut renvoyer None (git absent, rc>=2, ref
+        # missing) -- un check indecidable doit REFUSE (fail-CLOSED),
+        # pas EVICT. La direction d'echec d'un outil dont le metier
+        # est de supprimer ne peut pas etre fail-OPEN.
+        cache = self._cache(self.KEY_ANCESTOR, _iso(_dt.datetime.now(_dt.timezone.utc)), _iso(_dt.datetime.now(_dt.timezone.utc)))
+        # Patch _is_ancestor to simulate an undecidable check (e.g.
+        # git missing on PATH, or ref absent on remote).
+        original = eoc._is_ancestor
+        eoc._is_ancestor = lambda sha, remote, branch: None  # noqa: E731
+        try:
+            rec = eoc._classify_cache(
+                cache, max_age_hours=24, remote="origin", main_branch="main"
+            )
+        finally:
+            eoc._is_ancestor = original
+        self.assertEqual(rec["verdict"], "REFUSE")
+        self.assertEqual(rec["reason"], "ancestor_check_failed")
 
 
 class TestParseIso(unittest.TestCase):

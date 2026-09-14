@@ -45,6 +45,9 @@ fenetre de retention choisie.
 
   $ python scripts/ci/evict_orphan_caches.py --max-age-hours 12
   # agressif : tout cache non accede dans les 12 dernieres heures est candidat
+  # Note : le sweep deploye par .github/workflows/evict-orphan-caches.yml
+  # utilise 168 h (7 j) ; le defaut CLI (24 h) est 7x plus agressif.
+  # Pour reproduire le comportement du sweep, passez --max-age-hours 168.
 
 Criteres d'eviction (cf. issue #16088 acceptance) :
 
@@ -111,7 +114,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import urllib.error
 import urllib.request
@@ -229,19 +232,41 @@ def _delete_cache(repo: str, cache_id: int, token: str | None) -> int:
         return e.code
 
 
-def _is_ancestor(sha: str, remote: str, branch: str) -> bool:
-    """Return True if <sha> is an ancestor of <remote>/<branch>."""
+def _is_ancestor(sha: str, remote: str, branch: str) -> Optional[bool]:
+    """Return True if <sha> is an ancestor of <remote>/<branch>, False otherwise.
+
+    Returns None if the check could not be performed (git absent, ref
+    missing, depot casse). Callers MUST treat None as "unknown -- do
+    not evict", because the cost of an unknown answer is asymmetric:
+    evicting a live cache costs a perf re-creation, while keeping a
+    cache that the next sweep will re-classify correctly is free.
+
+    The previous fail-OPEN behaviour (NanoClaw 2026-09-14 review on
+    PR #16099) treated "not ancestor" (rc=1) and "impossible to
+    determine" (rc>=2, FileNotFoundError) identically -- both fell
+    through to ``return False``, so any cache was evicted on a
+    checkout with a degraded git history. The split here is the
+    direction-of-failure fix that the script's job (delete) demands:
+    fail-CLOSED when the check cannot answer.
+    """
     try:
-        subprocess.run(
+        result = subprocess.run(
             ["git", "merge-base", "--is-ancestor", sha, f"{remote}/{branch}"],
             cwd=str(REPO_ROOT),
-            check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except FileNotFoundError:
+        # git absent or not on PATH -- we cannot answer. Fail-closed.
+        return None
+    rc = result.returncode
+    if rc == 0:
+        return True
+    if rc == 1:
         return False
-    return True
+    # rc >= 2: ref absente, depot casse, ou autre erreur git.
+    # Fail-closed: the script cannot answer, do not evict.
+    return None
 
 
 def _parse_iso(s: str) -> datetime:
@@ -277,7 +302,14 @@ def _classify_cache(
     rec["lang"] = m.group("lang")
 
     reasons: list[str] = []
-    if not _is_ancestor(sha, remote, main_branch):
+    ancestor_status = _is_ancestor(sha, remote, main_branch)
+    if ancestor_status is None:
+        # Cannot determine -- fail-CLOSED. We refuse rather than evict
+        # because the script's job is to delete; an undecidable check
+        # must not be answered by "yes, delete".
+        rec.update({"verdict": "REFUSE", "reason": "ancestor_check_failed"})
+        return rec
+    if ancestor_status is False:
         reasons.append("sha_not_ancestor_of_main")
 
     last_accessed = _parse_iso(cache["last_accessed_at"])
