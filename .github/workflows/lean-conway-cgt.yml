@@ -21,6 +21,7 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
