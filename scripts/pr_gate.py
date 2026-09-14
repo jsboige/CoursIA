@@ -161,8 +161,9 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 try:  # Used only by the rule-8 delivery canary (derive_always_on_jobs).
     import yaml  # type: ignore
@@ -381,6 +382,98 @@ def _workflow_job_names(data: dict) -> list[str]:
     return names
 
 
+def derive_declared_timeouts(
+    workflows_dir: str = DEFAULT_WORKFLOWS_DIR,
+) -> dict[str, int]:
+    """Map a job name to its declared ``timeout-minutes``, when unambiguous.
+
+    #15905: the gate annotated a job that had hit its own wall as a "check
+    that never concluded". ``Scripts Tests (CPU)`` declares
+    ``timeout-minutes: 20`` and was measured six times at 20m21s-20m25s --
+    GitHub renders a ``timeout-minutes`` breach as ``conclusion: cancelled``,
+    so the conclusion alone cannot tell a wall hit from a runner famine. The
+    declared limit lives only in the workflow YAML, so it is read here, the
+    same way ``derive_advisory_jobs`` reads the advisory marker.
+
+    A job name is NOT unique across workflows (``sweep``, ``guard``, ``ci``,
+    ``build`` and ``target-coverage`` all repeat). A name resolving to several
+    DISTINCT limits is dropped rather than guessed: the gate must not name a
+    limit it cannot attribute to the check it is looking at. Names resolving
+    to one repeated value keep it -- the ambiguity is in the value, not in the
+    repetition.
+
+    Same robustness contract as ``derive_advisory_jobs``: an unreadable state
+    returns an empty mapping rather than weaponising the gate against every PR.
+    """
+    if yaml is None:
+        return {}
+    root = Path(workflows_dir)
+    if not root.is_dir():
+        return {}
+    seen: dict[str, set[int]] = {}
+    for yml in sorted(root.glob("*.yml")):
+        try:
+            data = yaml.safe_load(yml.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        for job_key, job in (data.get("jobs") or {}).items():
+            if not isinstance(job, dict):
+                continue
+            limit = job.get("timeout-minutes")
+            if not isinstance(limit, int) or isinstance(limit, bool):
+                continue
+            name = job.get("name") or job_key
+            if isinstance(name, str) and name:
+                seen.setdefault(name, set()).add(limit)
+    return {
+        name: next(iter(limits))
+        for name, limits in seen.items()
+        if len(limits) == 1
+    }
+
+
+def _parse_ts(value: object) -> datetime | None:
+    """Parse a check-run timestamp (ISO-8601, ``Z`` suffix), or None."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _check_duration(check: dict) -> float | None:
+    """Seconds between ``started_at`` and ``completed_at``, or None.
+
+    None when either stamp is missing or unparseable. The gate reports a
+    duration only when it can actually read one (#15905): a fabricated or
+    defaulted duration would be worse than none, because the whole point is to
+    let a reader compare it against the declared wall.
+    """
+    started = _parse_ts(check.get("started_at"))
+    finished = _parse_ts(check.get("completed_at"))
+    if started is None or finished is None:
+        return None
+    delta = (finished - started).total_seconds()
+    return delta if delta >= 0 else None
+
+
+def _format_duration(seconds: float) -> str:
+    """Human duration, e.g. ``20m21s`` / ``1h02m``.
+
+    Kept to the second: the margin #15905 is about is one to five minutes
+    against a 20-minute wall, which a coarse "20 minutes" would erase.
+    """
+    total = max(0, int(round(seconds)))
+    hours, rest = divmod(total, 3600)
+    minutes, secs = divmod(rest, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m"
+    return f"{minutes}m{secs:02d}s"
+
+
 def platform_delivered(checks: Sequence[dict], always_on_jobs: frozenset[str]) -> bool:
     """True when at least one always-on job is represented among observed checks.
 
@@ -583,7 +676,20 @@ def classify(
             # reds from checks that never concluded (same annotation style
             # as the advisory list below -- the bare name loses exactly the
             # information the published message needs).
-            bad.append(f"{name} ({conclusion})")
+            #
+            # #15905: an unconcluded check also carries its OBSERVED DURATION
+            # when the two stamps are readable -- that is what lets `verdict`
+            # tell "hit its declared wall" from "no verdict, cause unknown".
+            # Real reds keep the bare conclusion: their repair does not depend
+            # on how long they ran.
+            annotation = f"{name} ({conclusion})"
+            if conclusion in CONCLUSION_UNCONCLUDED:
+                observed = _check_duration(check)
+                if observed is not None:
+                    annotation = (
+                        f"{name} ({conclusion}, {_format_duration(observed)})"
+                    )
+            bad.append(annotation)
         else:
             # Unknown conclusion: bias to fail (rule 1). A conclusion GitHub
             # adds later must not silently become a pass.
@@ -608,8 +714,48 @@ def _report_advisory(advisory: Sequence[str]) -> None:
 # without re-reading the check set; anchored at end-of-string because the
 # annotation is always the LAST parenthesised group of the entry.
 _UNCONCLUDED_SUFFIX_RE = re.compile(
-    r" \((?:cancelled|timed_out|stale|startup_failure)\)$"
+    r" \((?:cancelled|timed_out|stale|startup_failure)"
+    r"(?:, (?:\d+m\d{2}s|\d+h\d{2}m))?\)$"
 )
+
+# Same annotation, with the optional duration CAPTURED (#15905). `verdict`
+# needs the observed duration to tell a wall hit from an unknown-cause
+# cancellation, and the annotation is the only carrier (`classify` returns
+# plain strings, by design -- see its docstring).
+_UNCONCLUDED_ENTRY_RE = re.compile(
+    r"^(?P<name>.+) \((?P<conclusion>cancelled|timed_out|stale|startup_failure)"
+    r"(?:, (?P<duration>\d+m\d{2}s|\d+h\d{2}m))?\)$"
+)
+
+
+def _parse_duration(text: str) -> int | None:
+    """Seconds from the human duration this module renders. None if malformed.
+
+    Round-trips ``_format_duration``. The `XhYYm` shape is minute-granular, so
+    a sub-minute remainder is lost for jobs past the hour -- irrelevant when
+    the comparison is against a wall declared in whole minutes.
+    """
+    match = re.fullmatch(r"(?:(\d+)h(\d{2})m|(\d+)m(\d{2})s)", text)
+    if match is None:
+        return None
+    if match.group(1) is not None:
+        return int(match.group(1)) * 3600 + int(match.group(2)) * 60
+    return int(match.group(3)) * 60 + int(match.group(4))
+
+
+def _parse_bad_entry(entry: str) -> tuple[str, str, int | None] | None:
+    """Split an unconcluded annotation into (name, conclusion, seconds).
+
+    None when the entry is not an unconcluded annotation at all (a bare name,
+    a real red, or an unknown conclusion) -- the caller treats those as the
+    real reds they are.
+    """
+    match = _UNCONCLUDED_ENTRY_RE.match(entry)
+    if match is None:
+        return None
+    raw_duration = match.group("duration")
+    seconds = _parse_duration(raw_duration) if raw_duration else None
+    return match.group("name"), match.group("conclusion"), seconds
 
 
 def _split_bad(bad: Sequence[str]) -> tuple[list[str], list[str]]:
@@ -630,7 +776,48 @@ def _split_bad(bad: Sequence[str]) -> tuple[list[str], list[str]]:
     return failed, unconcluded
 
 
-def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[int, str]:
+def _split_timed_out(
+    unconcluded: Sequence[str],
+    declared_timeouts: "Mapping[str, int] | None",
+) -> tuple[list[str], list[str]]:
+    """Split unconcluded entries into (hit-its-declared-wall, cause unknown).
+
+    #15905: GitHub renders a ``timeout-minutes`` breach as ``conclusion:
+    cancelled``, so the conclusion alone cannot tell a job that ran into its
+    own wall from one killed by a runner famine. The discriminator is the pair
+    (observed duration, declared limit), both of which must be READ -- when
+    either is unavailable the entry stays in the unknown bucket. The gate
+    reports what it read and never guesses a cause.
+
+    The wall-hit entries come back with the limit appended, so the published
+    message names both numbers: an annotation carrying only a duration leaves
+    the reader to guess which wall it hit.
+    """
+    if not declared_timeouts:
+        return [], list(unconcluded)
+    timed_out: list[str] = []
+    unknown: list[str] = []
+    for entry in unconcluded:
+        parsed = _parse_bad_entry(entry)
+        if parsed is None:
+            unknown.append(entry)
+            continue
+        name, _conclusion, seconds = parsed
+        limit = declared_timeouts.get(name)
+        if seconds is not None and limit is not None and seconds >= limit * 60:
+            timed_out.append(f"{entry[:-1]}, declared timeout-minutes: {limit})")
+        else:
+            unknown.append(entry)
+    return timed_out, unknown
+
+
+def verdict(
+    pending: Sequence[str],
+    bad: Sequence[str],
+    settled: bool,
+    *,
+    declared_timeouts: "Mapping[str, int] | None" = None,
+) -> tuple[int, str]:
     """Final decision. Returns (exit_code, human message).
 
     `settled` is False when the wait loop ran out of time. Unsettled is a
@@ -648,6 +835,17 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
     the CHILD run carrying the frozen check-run, never the aggregator gate --
     because that is what actually clears the wedge (#14967 measured it).
 
+    #15905: `declared_timeouts` (job name -> `timeout-minutes`, from
+    `derive_declared_timeouts`) splits the unconcluded clause in two. A job
+    whose observed duration reached its declared wall is reported as such --
+    with both numbers -- and no longer as a check that "never concluded", and
+    the phrase "this is not a code failure" is gone: a timeout *can* be code
+    that is too slow, and the gate cannot tell from a check-run. When the
+    mapping is absent or the limit is unknown the entry stays in the
+    unknown-cause clause, which now reports the duration and prescribes the
+    CHILD rerun without asserting anything about the code. The fail-closed
+    rule is untouched: every branch here still exits 1.
+
     Note (#11751): the wait loop now re-reads the check set one last time at
     the deadline; an empty `pending` AND empty `bad` at that point is treated
     as `settled=True` BEFORE this function is reached, so this `not settled`
@@ -657,20 +855,36 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
     not look like a benign display issue.
     """
     if bad:
-        # #15693: one FAIL prefix, two clauses with OPPOSITE repairs. A real
+        # #15693: one FAIL prefix, clauses with OPPOSITE repairs. A real
         # red names the check under "failing checks" (the historical phrase --
         # greppable, and what the log annotation has carried since #15472).
         # A check that never concluded is named separately with its repair
         # gesture: "failing checks: X" on a cancelled X told #15548's lane
         # its code was broken when the runner famine had eaten the verdict.
         failed, unconcluded = _split_bad(bad)
+        # #15905: a third clause. A job that ran into its declared
+        # `timeout-minutes` is NOT a check that "never concluded" -- it
+        # concluded by hitting its own wall (six measured at 20m21s-20m25s
+        # against a 20m wall). It gets its own clause, its own repair, and it
+        # reports the duration and the limit instead of asserting a cause the
+        # gate cannot establish from a check-run alone.
+        timed_out, unconcluded = _split_timed_out(unconcluded, declared_timeouts)
         parts = []
         if failed:
             parts.append("failing checks: " + ", ".join(failed))
+        if timed_out:
+            parts.append(
+                "checks that hit their declared timeout-minutes: "
+                + ", ".join(timed_out)
+                + " -- rerunning the gate re-reads the same frozen check-run:"
+                " rerun the CHILD run that owns the job (gh run rerun <id>),"
+                " never the gate (#15905)"
+            )
         if unconcluded:
             parts.append(
-                "checks that never concluded (rerun the run -- this is not "
-                "a code failure): " + ", ".join(unconcluded)
+                "checks that never concluded (rerun the CHILD run -- the cause"
+                " is not established from the check-run alone): "
+                + ", ".join(unconcluded)
             )
         return 1, "FAIL -- " + "; ".join(parts)
     if not settled:
@@ -799,18 +1013,39 @@ def own_job_id(
     `run_attempt` filters out the superseded attempts a re-run leaves in the
     same listing; without it the first name match could be a previous
     attempt's check-run, whose output nothing will ever read again.
+
+    The listing is paged through (per_page=100): our job may sit past the
+    first hundred (#15749). Exhausting the pages without a match still
+    yields None -- the degradation is unchanged, never a verdict flip.
     """
     api = fetch if fetch is not None else _gh_api
-    payload = api(f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100")
-    if not isinstance(payload, dict):
-        raise GateError(f"unexpected jobs payload for run {run_id}")
-    for job in payload.get("jobs") or []:
-        if not isinstance(job, dict):
-            continue
-        if run_attempt is not None and str(job.get("run_attempt")) != str(run_attempt):
-            continue
-        if job.get("name") == job_name:
-            return job.get("id")
+    # Paginate the jobs listing (per_page=100 cap) with the same motif as
+    # fetch_checks below: a run carrying more than 100 jobs would leave our
+    # job off page 1 and the verdict motif would silently go unpublished
+    # again (#15749). total_count is the authoritative stop condition; a
+    # partial page (< 100 jobs) is the defensive fallback that also keeps
+    # total_count-less payloads terminating.
+    page = 1
+    while True:
+        payload = api(
+            f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100&page={page}"
+        )
+        if not isinstance(payload, dict):
+            raise GateError(f"unexpected jobs payload for run {run_id}")
+        jobs = payload.get("jobs") or []
+        for job in jobs:
+            if not isinstance(job, dict):
+                continue
+            if run_attempt is not None and str(job.get("run_attempt")) != str(run_attempt):
+                continue
+            if job.get("name") == job_name:
+                return job.get("id")
+        if len(jobs) < 100:
+            break
+        total = payload.get("total_count")
+        if total is not None and page * 100 >= total:
+            break
+        page += 1
     return None
 
 
@@ -975,6 +1210,13 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                     "status": run.get("status"),
                     "conclusion": run.get("conclusion"),
                     "started_at": run.get("started_at"),
+                    # #15905: `completed_at` is carried so an unconcluded check
+                    # can report how long it actually ran. Without it the gate
+                    # cannot tell a wall hit from an unknown-cause cancellation,
+                    # and the timeout clause below is silently unreachable --
+                    # measured on #15778/#15836/#15877, where the API returns
+                    # the field but this projection dropped it.
+                    "completed_at": run.get("completed_at"),
                     "id": run.get("id"),
                 }
             )
@@ -999,6 +1241,9 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                         "error": "failure",
                     }.get(state, "" if state == "pending" else state),
                     "started_at": status.get("created_at"),
+                    # Legacy statuses expose `updated_at`, not `completed_at`
+                    # (#15905): same duration, different field name.
+                    "completed_at": status.get("updated_at"),
                     "id": status.get("id"),
                 }
             )
@@ -1015,6 +1260,7 @@ def wait_and_decide(
     settle_polls: int,
     always_on_jobs: "frozenset[str] | None" = None,
     advisory_jobs: "frozenset[str] | None" = None,
+    declared_timeouts: "Mapping[str, int] | None" = None,
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
@@ -1047,6 +1293,7 @@ def wait_and_decide(
     pending: list[str] = []
     bad: list[str] = []
     adv_jobs = advisory_jobs or frozenset()
+    timeouts = declared_timeouts or {}
 
     while True:
         checks = fetch(repo, sha)
@@ -1057,7 +1304,7 @@ def wait_and_decide(
         if bad:
             # Fail fast: a failure cannot be undone by waiting longer.
             _report_advisory(advisory)
-            return verdict(pending, bad, settled=True)
+            return verdict(pending, bad, settled=True, declared_timeouts=timeouts)
 
         if pending:
             quiet_streak = 0
@@ -1075,7 +1322,7 @@ def wait_and_decide(
                     return canary
                 _report_advisory(advisory)
                 print(f"[pr-gate] settled: {len(ok)} check(s) green", flush=True)
-                return verdict(pending, bad, settled=True)
+                return verdict(pending, bad, settled=True, declared_timeouts=timeouts)
 
         if now() >= deadline:
             # Issue #11751 -- phantom FAIL when the deadline fires BETWEEN the
@@ -1109,14 +1356,20 @@ def wait_and_decide(
                     "green (phantom-FAIL recovered, #11751)",
                     flush=True,
                 )
-                return verdict(final_pending, final_bad, settled=True)
+                return verdict(
+                    final_pending, final_bad, settled=True,
+                    declared_timeouts=timeouts,
+                )
             # Genuine still-pending (or a red we just observed): fail with a
             # message that names the constituents. Empty list here would mean
             # the rule-1 invariant broke -- say so explicitly instead of the
             # former `(none listed)` placeholder that read like a degradation.
             if final_bad:
                 _report_advisory(final_advisory)
-                return verdict(final_pending, final_bad, settled=True)
+                return verdict(
+                    final_pending, final_bad, settled=True,
+                    declared_timeouts=timeouts,
+                )
             if not final_pending:
                 # Defensive: settle_polls path did not fire (timeout) and the
                 # re-read is also empty -- this is unreachable under current
@@ -1133,7 +1386,10 @@ def wait_and_decide(
                     "FAIL -- timed out with empty wait set (gate bug, see #11751)"
                 )
             _report_advisory(final_advisory)
-            return verdict(final_pending, final_bad, settled=False)
+            return verdict(
+                final_pending, final_bad, settled=False,
+                declared_timeouts=timeouts,
+            )
 
         print(
             f"[pr-gate] waiting on {len(pending)} check(s): "
@@ -1375,6 +1631,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     # into ``bad`` on every PR -- the failure mode that left #12524 and #12783
     # blocked 44h/9h before the fix landed.
     advisory_jobs = derive_advisory_jobs(args.workflows_dir)
+    # #15905: the declared walls, so a job that hit its own `timeout-minutes`
+    # is reported as such instead of as a check that "never concluded".
+    declared_timeouts = derive_declared_timeouts(args.workflows_dir)
 
     detail: dict = {}
     try:
@@ -1387,6 +1646,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             args.settle_polls,
             always_on_jobs,
             advisory_jobs,
+            declared_timeouts,
             detail=detail,
         )
     except GateError as exc:

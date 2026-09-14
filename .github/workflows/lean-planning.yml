@@ -103,6 +103,10 @@ jobs:
     name: planning target-coverage
     runs-on: ubuntu-latest
     if: always()
+    # Bound at 30 minutes (See #15698): lightweight Python scan, not a Lean
+    # build -- a wedge here is much cheaper than on `ci`/`proof-integrity`,
+    # but still must not pin a runner forever.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

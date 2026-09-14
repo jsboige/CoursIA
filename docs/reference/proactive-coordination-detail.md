@@ -2,6 +2,25 @@
 
 Detail de [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md). Voir aussi [subagents-reference.md](subagents-reference.md), [scripts-reference.md](scripts-reference.md).
 
+## Plancher durci — « plusieurs grains dont un DEEP de CONTENU » (mandat user 2026-09-12, #15793)
+
+R1 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) et G-VAR-1 de [variation-protocol.md](../../.claude/rules/variation-protocol.md) portent un plancher **pluriel et durci** : **≥ 2 grains livrés entre 2 wakeups, dont ≥ 1 DEEP dans un genre de CONTENU**. Le MED et le META restent **bienvenus au-delà** du plancher — ils ne le tiennent plus.
+
+**Ce qui le motive — mesure du 2026-09-12T16:39Z**, attribution par le tag `Grain:` (jamais `--author` : l'identité de poussée `jsboige` est partagée, L721) :
+
+| Fenêtre | merges | DEEP | MED | LIGHT | CONTENU | META |
+|---|---:|---:|---:|---:|---:|---:|
+| 7 jours (depuis 09-05) | **583** (83,3/j) | 88 (**15 %**) | 400 | 88 | 314 | 260 |
+| 48 heures | **196** (98,0/j) | 35 (**18 %**) | 113 | 45 | **82** | **109** |
+
+Le volume n'est pas le défaut. Deux choses le sont : (1) la **dureté** — 15 % de DEEP sur 7 j, le plancher R1 d'alors (« ≥ 1 PR ») étant tenu par n'importe quoi, massivement par du MED ; (2) la **bascule CONTENU/META** — sur 7 j le CONTENU tient encore (314 contre 260), sur 48 h le META passe devant (109 contre 82) : la flotte construit l'atelier plus vite qu'elle n'y fabrique.
+
+Le contraste par lane rend le mécanisme lisible : la lane au plus gros volume sur 7 j (`myia-po-2023:CoursIA`, 108 merges) est la plus faible en substance (39 CONTENU, **8 DEEP**), tandis que `myia-po-2027:CoursIA-2` rend 32 CONTENU et 10 DEEP sur 41 merges. La lane la plus META de la flotte est celle du coordinateur (`myia-ai-01:CoursIA` : 38 merges sur 7 j pour **1 DEEP** et 7 CONTENU — 0 DEEP et 1 CONTENU sur 48 h).
+
+**Contre-poids anti-inflation, nommé et non inventé.** Exiger un DEEP crée une incitation à **sur-coter le tier**. Ce qui la couvre est déjà en place : le signal bot `TIER-INFLATION`, et le merge-gate qui **re-qualifie lui-même un tag mal dérivé** (§3 de [variation-protocol.md](../../.claude/rules/variation-protocol.md), ligne « Tag mal dérivé »). Le litmus DEEP reste objectif — *`main` contient-il désormais un résultat ou une capacité qui n'existait pas, dont la production a demandé du raisonnement de domaine ?* Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
+
+**Éditer `.claude/rules/**` exige un sign-off user** (CLAUDE.md §A) : la PR #15793 qui a porté ce durcissement ne se self-merge pas.
+
 ## Backlog pickup — sources autorisees (ordre de priorite decroissant)
 
 Wakeup vide : prendre la **premiere source non-vide**, **un seul item**, produire **1 PR concrete**.
