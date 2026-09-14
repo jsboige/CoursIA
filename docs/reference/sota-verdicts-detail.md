@@ -40,6 +40,12 @@ Plus la précédente SK-09 (documentée au ledger). La porte était fermée à t
 
 Un enrichissement Prong-B ne se déclare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — règle F — et comparer résultat-heuristique vs optimum exact sur le graphe candidat). Un pitch non mesuré est une violation G.9 en attente d'être livrée.
 
+### Cas canonique corrigé — BFS vs A* sur coût uniforme (planners-3)
+
+L'instance qui fonde la formulation Prong-B de la règle : un notebook `planners-3` démontrait **A\*** sur un graphe à **coût uniforme**, où A\* **dégénère exactement en BFS** — l'heuristique n'y discrimine rien, et la sortie ne montrait donc pas la capacité annoncée. Le correctif (commit `8905f8845`) remplace le terrain par un graphe **pondéré** où l'heuristique change l'ordre d'exploration, rendant la supériorité d'A\* **visible dans la sortie**.
+
+C'est le gabarit des pièges de la même famille : un Z3 sur une contrainte qu'un `if` résout, un planner sur un plan linéaire sans parallélisme, une métaheuristique sur une fonction convexe à optimum unique. Dans chacun, le moteur SOTA *tourne* — il n'est simplement mis en valeur par rien.
+
 ### Anti-exemple vérifié firsthand (c.598, ortools 9.15 + networkx 3.4.2)
 
 Le pitch : « les heuristiques gloutonnes ratent le nombre chromatique sur les graphes de Mycielski, donc CP-SAT est essentiel ».
