@@ -631,7 +631,7 @@ Sudoku/
 ├── index.qmd                              # Listing Quarto (sous-ensembles C# / Python)
 ├── requirements.txt                       # Dépendances Python (19 notebooks Python canoniques, dont 16 paires miroir C#/Python + 3 only-Python : NN 16 + LLM 17 + Statistical-Comparison 18b)
 ├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
-├── org.chocosolver.solver.dll             # DLL Choco précompilée (utilisée par nb-11 C# via IKVM)
+├── (DLL Choco précompilée : copie partagée dédupliquée, voir `../Search/Part2-CSP/org.chocosolver.solver.dll` — nb-11 C# la référence via chemin relatif, See #13742)
 ├── Sudoku-00-Environment-Csharp.ipynb      # Classes de base C#
 ├── Sudoku-01-Backtracking-Csharp.ipynb     # Backtracking C#
 ├── Sudoku-01-Backtracking-Python.ipynb     # Backtracking Python
@@ -756,10 +756,10 @@ Choco est un solveur Java, exposé différemment selon le langage.
 
 #### Côté C# (`Sudoku-11-Choco-Csharp.ipynb`) — via IKVM 8.15.0
 
-Le notebook C# charge Choco via **IKVM 8.15.0** (runtime Java-sur-.NET, package NuGet `IKVM 8.15.0`) et une DLL Choco précompilée (`org.chocosolver.solver.dll`, fournie dans le dossier `Sudoku/`) :
+Le notebook C# charge Choco via **IKVM 8.15.0** (runtime Java-sur-.NET, package NuGet `IKVM 8.15.0`) et une DLL Choco précompilée (`org.chocosolver.solver.dll`, **copie partagée** dédupliquée dans `Search/Part2-CSP/` — les deux copies étaient byte-identiques, See #13742) :
 
 - **Restauration IKVM** : la première exécution est lente (restauration NuGet d'IKVM 8.15.0 + assemblage du *home* IKVM, environ 1 à 2 minutes).
-- **DLL Choco** : `#r "org.chocosolver.solver.dll"` référence la build précompilée de choco-solver 4.10.17. Le chargement direct du JAR via `#r` n'est pas pris en charge par IKVM ; la DLL précompilée contourne.
+- **DLL Choco** : `#r "../Search/Part2-CSP/org.chocosolver.solver.dll"` référence la build précompilée de choco-solver 4.10.17 (copie unique du dépôt, partagée avec les notebooks CSP). Le chargement direct du JAR via `#r` n'est pas pris en charge par IKVM ; la DLL précompilée contourne.
 - **Vérification** : le notebook affiche `IKVM 8.15.0 prêt (tzdb=True) - Choco-solver chargé` puis résout un Sudoku de référence (`Solution trouvée en ~700 ms`).
 - **Alternative plus légère** : pour une mise en place plus simple, le notebook Python ([`Sudoku-11-Choco-Python`](Sudoku-11-Choco-Python.ipynb), JPype) ou les solveurs C# natifs [`Sudoku-10-ORTools-Csharp`](Sudoku-10-ORTools-Csharp.ipynb) (CP-SAT) et [`Sudoku-12-Z3-Csharp`](Sudoku-12-Z3-Csharp.ipynb) (SMT) ne nécessitent pas de runtime Java.
 

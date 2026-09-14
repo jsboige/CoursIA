@@ -110,9 +110,13 @@ Délègue l'analyse de sécurité à un agent spécialisé.
 **MCP (Model Context Protocol)** : Connexion à des services externes.
 
 ```bash
-claude mcp add searxng https://search.myia.io/
+claude mcp add --transport http searxng http://localhost:8181/
 claude mcp add github https://api.githubcopilot.com/mcp/
 ```
+
+> L'URL locale suppose une instance SearXNG lancée en Docker sur le port 8181
+> avec le format JSON activé — recette complète dans
+> `docs/INSTALLATION-CLAUDE-CODE.md` § « Serveur de Recherche Web ».
 
 **Hooks** : Actions automatiques sur des événements.
 
@@ -170,7 +174,7 @@ projet/
 {
   "mcpServers": {
     "searxng": {
-      "url": "https://search.myia.io/",
+      "url": "http://localhost:8181/",
       "transport": "http"
     },
     "github": {

@@ -1572,7 +1572,24 @@ def _extract_line_candidates(text: str) -> list[tuple[int, str]]:
                 continue
             candidates.append((idx, line))
             continue
-        if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
+        # #15833/#15846: the scope-word test goes through `_has_strong_scope`,
+        # NOT a plain substring scan. The whole-word guard already exists and is
+        # already used by the two other call sites (l.~1168, l.~1257); this one
+        # was never migrated, so it kept matching scope words INSIDE longer
+        # words. Two measured misfires, both on a line whose subject is not the
+        # PR perimeter at all:
+        #   #15833 l.45 "`--dist loadscope`, jamais `load` [...] il est sur
+        #     **uniquement** grace a ce groupement" -- 'scope' inside
+        #     "loadscope". #12718 added the `(?<![-\w])scope(?![-\w])`
+        #     lookbehind to `_has_strong_scope` for exactly this shape.
+        #   #15846 l.44 "cette ligne ne peut pas **changer** le comportement de
+        #     build" (marker "seulement" earlier on the line) -- 'change'
+        #     inside "changer". #11800 added the `\b` boundary to
+        #     `_has_strong_scope` for exactly this shape ("inchanges").
+        # Both guards were built, tested, and then bypassed here. Same failure
+        # family as the "read-only" (#11654) and "pas seulement" (#12547)
+        # misfires above: the marker is present, its force is not.
+        if _has_exclusivity(low) and _has_strong_scope(low):
             if _markers_all_quoted(line):
                 continue  # quoting an exclusivity claim, not making one
             candidates.append((idx, line))

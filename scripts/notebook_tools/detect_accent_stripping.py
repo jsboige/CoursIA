@@ -64,6 +64,13 @@ import sys
 import unicodedata
 from pathlib import Path
 
+# Sibling pattern (#12811, #13191, #14154, #15185, #15668) : reconfigurer
+# stdout en UTF-8 pour eviter le crash UnicodeEncodeError cp1252 sur les
+# caracteres hors-cp1252 (ex. ↔ → ← ⇔ ≡) presents
+# en prose FR pedagogique. Le hasattr couvre Python < 3.7 (pas de reconfigure).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # Marcheur + SKIP_DIRS canonique centralises dans notebook_walk (#8650).
 from notebook_walk import iter_notebooks  # noqa: E402
 
