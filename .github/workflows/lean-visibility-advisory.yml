@@ -20,7 +20,7 @@ name: Lean Visibility Advisory
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, edited, reopened]
     branches: [main]
     paths:
       - '**/*_lean/**/*.lean'
