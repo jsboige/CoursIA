@@ -1596,9 +1596,12 @@ class TestD01CompletedSolutionWithTodo:
         The string ITSELF spells the placeholder (``a determiner`` /
         ``a trancher`` / ``unknown`` / ``a completer`` / ``a definir`` /
         ``TODO``); no line-tail comment is required. A REAL classifier
-        returning ``"unknown"`` would currently over-flag -- accepted in
-        favour of not under-counting textbook placeholder cells (the whitelist
-        is unconditional; no counter-test can pass against it today).
+        returning ``"unknown"`` would over-flag -- an accepted trade-off in
+        favour of not under-counting textbook placeholder cells: the
+        whitelist is deliberately unconditional, so no counter-test is
+        possible against it by design, not for lack of one (wording
+        reconciled in #15688; the earlier "no counter-test can pass today"
+        implied one was pending).
         """
         assert _is_stub_code(source) is True, source
 
@@ -1779,6 +1782,79 @@ class TestGenericNoneAssignGate15713:
             "    # Indice : passes == total.\n"
             "    resultat = None  # TODO etudiant\n"
             "    return resultat\n"
+        )
+        assert _is_stub_code(source) is True, source
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Search-03-Informed c4 -- a complete ``class Node`` whose only
+            # ``= None`` hit is a CONTINUED SIGNATURE DEFAULT. STUB_PATTERNS
+            # [10] is multiline-anchored and ``\s`` folds the newline, so the
+            # bare pattern fired on the parameter line (#15688, measured at
+            # PR head).
+            'class Node:\n'
+            '    def __init__(\n'
+            '        self,\n'
+            '        grille=None,\n'
+            '        explored_order=None,\n'
+            '        heuristic_name=""):\n'
+            '        self.grille = grille\n'
+            '        self.explored = explored_order\n'
+            '        self.h = heuristic_name\n',
+            # App-26 c23 -- keyword default ``candidate_order=None`` on the
+            # second line of the ``def`` (second measured false positive of
+            # the same class, found by the #15688 corpus A/B).
+            "def greedy_cover(domains, strength, row_allowed=lambda _row: True,\n"
+            "                 candidate_order=None):\n"
+            "    suite = couvrir(domains, strength, row_allowed)\n"
+            "    return suite\n",
+        ],
+    )
+    def test_none_signature_default_is_not_stub_issue_15688(self, source):
+        """#15688: a ``= None`` INSIDE an open bracket is an argument default
+        (or a keyword argument in a call), not a hole left for the student --
+        the cell executes as-is."""
+        assert _is_stub_code(source) is False, source
+
+    def test_dead_none_in_complete_generator_is_not_stub_issue_15688(self):
+        """GameTheory-16b c3 (#15688, measured at PR head): ``best_M = None``
+        never reassigned, never returned, no other marker, in a complete
+        generator whose return is a computed tuple -- a dead initializer,
+        not an exercise. Note ``\\bbest_M\\b`` does not match inside
+        ``best_M_partial`` (the underscore is a word character)."""
+        source = (
+            "def generer_mecanisme(n):\n"
+            "    best_M = None\n"
+            "    best_M_partial = []\n"
+            "    for i in range(n):\n"
+            "        best_M_partial.append(construire(i))\n"
+            "    payment_table = tabuler(best_M_partial)\n"
+            "    best_J = max(j for j in range(n))\n"
+            "    return (best_M_partial[0], payment_table), best_J\n"
+        )
+        assert _is_stub_code(source) is False, source
+
+    def test_mixed_cell_todo_none_placeholder_stays_stub_issue_15688(self):
+        """12-TTS c29 / research_l1_tsmom c18 / App-22 c17 (#15688 A/B): a
+        COMPLETE sibling function in the same cell makes the cell-level
+        ``_body_computes_result`` True, but the ``result = None  # TODO
+        etudiant`` placeholder is a real exercise -- the composed
+        ``<name> = None`` gate must not consult the cell-level
+        body-computes signal (measured: gating on it un-counted three real
+        exercises)."""
+        source = (
+            "def similarite(a, b):\n"
+            "    mots_a = set(a.split())\n"
+            "    mots_b = set(b.split())\n"
+            "    return len(mots_a & mots_b) / max(1, len(mots_a | mots_b))\n"
+            "\n"
+            "\n"
+            "def selectionner(codes):\n"
+            "    codes_selectionnes = [c for c in codes if garde(c)]\n"
+            "    seuil = calcule(codes_selectionnes)\n"
+            "    result = None  # TODO etudiant\n"
+            "    return codes_selectionnes, seuil\n"
         )
         assert _is_stub_code(source) is True, source
 

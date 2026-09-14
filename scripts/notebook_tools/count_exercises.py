@@ -455,9 +455,10 @@ COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
 # Index of the generic ``<name> = None`` assignment pattern above (the #15688
 # widening of ``result = None``). The COMMENT markers above are stubs UNLESS
 # the body computes; this one is the opposite polarity -- the bare assignment
-# is NOT a stub signal unless ``_none_placeholder_passthrough`` confirms the
-# placeholder shape (the None-assigned name is never reassigned a computed
-# value later in its own scope). Without the gate the pattern over-fired on
+# is NOT a stub signal unless ``_none_assignment_is_stub`` confirms the
+# placeholder shape (#15688): not a signature default, never reassigned in
+# its own scope, and exposing a hole (the None-assigned name is returned, or
+# another stub marker co-occurs). Without the gate the pattern over-fired on
 # demo cells that merely INITIALIZE a variable to None before computing:
 # Kokoro-01-5 cell 38 (``inflect_samples = None`` overwritten four lines
 # later in a 109-line Inflect-Nano demo, which then stole the forward pairing
@@ -507,13 +508,23 @@ def _function_param_names(source: str) -> set[str]:
     return names
 
 
-def _return_is_derived(return_stmt: str, code_lines: list[str], params: set[str]) -> bool:
+def _return_is_derived(return_stmt: str, code_lines_before: list[str], params: set[str]) -> bool:
     """True when a ``return`` statement yields a computed value, not a stub shape.
 
-    A derived return is an internal variable assigned in the body, a call, a
-    subscript, an attribute, a binary expression, or a non-empty literal. None,
-    an empty-typed literal (``[]``/``{}``/``()``/``0``/``""``/``set()``), or a
-    pass-through of an unchanged parameter are the stub shapes.
+    A derived return is an internal variable assigned a **non-None** value in
+    the body **before** the return, a call, a subscript, an attribute, a binary
+    expression, or a non-empty literal. None, an empty-typed literal
+    (``[]``/``{}``/``()``/``0``/``""``/``set()``), a pass-through of an
+    unchanged parameter, and ``x = None`` returned as ``return x`` are the stub
+    shapes.
+
+    The placeholder shape is the C.1 stub idiome (AEV ``resultat = None`` /
+    ``return resultat``, Claudish ``response_json = None``): counting its own
+    ``= None`` assignment as "the body computes" made the comment-marker gate
+    swallow those stubs, which is why the generic ``= None`` pattern had to be
+    widened in the first place (#15688 reserve, ai-01 arbitrage 2026-09-13).
+    Only assignments *preceding* the return count -- a rebinding after the
+    return is dead code, not a computation of the returned value.
     """
     m = re.match(r"^return\b(.*)$", return_stmt.strip())
     if not m:
@@ -537,9 +548,15 @@ def _return_is_derived(return_stmt: str, code_lines: list[str], params: set[str]
         base = operand
         if base in params:
             return False  # unchanged parameter passthrough = placeholder stub
-        body = "\n".join(code_lines)
-        if re.search(rf"\b{re.escape(base)}\s*[+*/%]?=", body):
-            return True  # assigned in the body (loop-built local, etc.)
+        assign_re = re.compile(
+            rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*[+\-*/%]?=(?!=)"
+        )
+        none_only_re = re.compile(
+            rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*None\b"
+        )
+        for ln in code_lines_before:
+            if assign_re.match(ln) and not none_only_re.match(ln):
+                return True  # assigned a computed value before the return
         return False
     if re.search(r"[+\-*/%]|\b(?:and|or|in)\b|\bis\s+not\b", operand):
         return True  # binary expression
@@ -560,9 +577,9 @@ def _body_computes_result(source: str) -> bool:
     if len(code_lines) < 3:
         return False
     params = _function_param_names(source)
-    for ln in code_lines:
+    for pos, ln in enumerate(code_lines):
         if re.match(r"^return\b", ln.strip()):
-            if _return_is_derived(ln, code_lines, params):
+            if _return_is_derived(ln, code_lines[:pos], params):
                 return True
     return False
 
@@ -623,6 +640,79 @@ def _none_placeholder_passthrough(source: str) -> bool:
         if not reassigned:
             return True
     return False
+
+
+def _none_assignment_in_signature(source: str) -> bool:
+    """True when a ``<name> = None`` match is a function-signature default.
+
+    ``STUB_PATTERNS[10]`` is multiline-anchored and ``\\s`` matches the
+    newline, so a match can start on the line before its name -- the measured
+    false positive of #15688 (Search-03-Informed c4: a complete 102-line
+    ``class Node`` whose only marker hit is ``explored_order=None,
+    heuristic_name=""):``, a continued parameter list). A ``= None`` written
+    INSIDE an open bracket is an argument default (or a keyword argument in a
+    call), not a hole left for the student: the cell executes as-is.
+    """
+    depth = 0
+    for line in source.split("\n"):
+        if depth > 0 and _NONE_ASSIGN_NAME_RE.match(line):
+            return True
+        depth += line.count("(") + line.count("[") + line.count("{")
+        depth -= line.count(")") + line.count("]") + line.count("}")
+        if depth < 0:
+            depth = 0
+    return False
+
+
+def _none_placeholder_has_hole(source: str) -> bool:
+    """True when a ``<name> = None`` placeholder exposes a hole to fill.
+
+    Two shapes count (#15688): the None-assigned name is RETURNED (the AEV
+    ``resultat = None`` / ``return resultat`` idiom -- the student must
+    replace the None with the computed result), or another stub marker
+    co-occurs in the cell -- including the COMMENT markers (# TODO /
+    # Indice), because the placeholder idiome is typically ``result = None
+    # TODO etudiant`` (12-TTS c29, research_l1_tsmom c18, App-22 c17). A
+    ``best_M = None`` in a complete generator that never reads it back and
+    carries no other marker (GameTheory-16b c3) initializes a variable it
+    does not use: no hole, no exercise.
+    """
+    for m in _NONE_ASSIGN_NAME_RE.finditer(source):
+        name = m.group(1)
+        if re.search(rf"\breturn\b[^\n]*\b{re.escape(name)}\b", source):
+            return True
+    return any(
+        pat.search(source)
+        for idx, pat in enumerate(STUB_PATTERNS)
+        if idx not in NONE_PLACEHOLDER_PATTERN_IDX
+    )
+
+
+def _none_assignment_is_stub(source: str) -> bool:
+    """Composed gate for the generic ``<name> = None`` marker (#15688).
+
+    The assignment counts as a stub placeholder only when ALL THREE shapes
+    hold: not a signature default (``_none_assignment_in_signature``), the
+    None-assigned name is never reassigned in its scope
+    (``_none_placeholder_passthrough``), and the None actually exposes a
+    hole (name returned, or another stub marker --
+    ``_none_placeholder_has_hole``).
+
+    Deliberately NOT gated on ``_body_computes_result`` (measured, #15688
+    A/B): the three true positives this marker catches in mixed cells
+    (12-TTS c29, research_l1_tsmom c18, App-22 c17 -- a complete sibling
+    function plus a ``result = None  # TODO etudiant`` placeholder) all have
+    ``_body_computes_result`` True from the SIBLING's derived return, so a
+    body-computes conjunct would un-count three real exercises. The hole
+    conjunct closes the measured false positives instead: a signature
+    default (Search-03-Informed c4) has no hole, and a dead ``best_M =
+    None`` in a complete generator (GameTheory-16b c3) exposes none either.
+    """
+    return (
+        not _none_assignment_in_signature(source)
+        and _none_placeholder_passthrough(source)
+        and _none_placeholder_has_hole(source)
+    )
 
 
 @dataclass
@@ -699,12 +789,12 @@ def _is_stub_code(source: str) -> bool:
             if idx in COMMENT_STUB_PATTERN_IDX and _body_computes_result(source):
                 continue
             # The generic ``<name> = None`` assignment is a stub marker only
-            # in its placeholder-passthrough shape (#15713): the bare
-            # assignment also matches demo cells that initialize a variable to
-            # None before computing.
+            # in its placeholder shape (#15713 + #15688): the composed gate
+            # rejects signature defaults, demo initializers later reassigned,
+            # and dead ``= None`` in a complete body that exposes no hole.
             if (
                 idx in NONE_PLACEHOLDER_PATTERN_IDX
-                and not _none_placeholder_passthrough(source)
+                and not _none_assignment_is_stub(source)
             ):
                 continue
             return True
