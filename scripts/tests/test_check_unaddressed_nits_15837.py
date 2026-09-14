@@ -155,7 +155,15 @@ def test_15837_candidat_refuse_levee_devant_le_marqueur():
     assertion tombe), et la simulation sous `finally` rend le cout visible
     plutot que suppose : la reserve vivante devient invisible au niveau
     `has_live_marker`, celui ou le candidat agirait."""
-    body = ("Bonne nouvelle : la reserve est levee.\n\n"
+    # #15989 -- la ligne vide d'origine rendait ce controle INERTE. `_is_cited`
+    # borne desormais sa fenetre a la frontiere de PARAGRAPHE : aucun citer ne la
+    # franchit. Ni `levee` patche ni meme un citer NATIF (`dissipation`, verifie
+    # a la main) n'eteignait le marqueur -- la simulation mesurait 0 au lieu du
+    # cout qu'elle pretend rendre visible, et le test est devenu rouge sur main
+    # sans que rien de son sujet n'ait change. Le corps tient donc en UN
+    # paragraphe : ne PAS y restaurer de ligne vide, cela remettrait le test au
+    # vert en cessant de tester quoi que ce soit.
+    body = ("Bonne nouvelle : la reserve est levee. "
             "CHANGES_REQUESTED: nouveau point sur le head.")
     assert mod.has_live_marker(body, mod.CONCERN_MARKERS) is True
     original = mod.CITERS
