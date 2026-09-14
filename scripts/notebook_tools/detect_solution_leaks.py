@@ -188,6 +188,48 @@ def _header_level(line: str) -> int:
     return len(m.group(1)) if m else 0
 
 
+def get_parent_header_key(cells, idx) -> str:
+    """Return a key representing the closest enclosing parent header for cell at
+    ``idx``.
+
+    Scans backwards from ``idx`` to find the closest markdown header line
+    at a STRICTLY LOWER level (parent) than the header in the cell at ``idx``.
+    Returns a string key ``level:text`` where text is the header text stripped
+    of leading ``#`` and whitespace. If no parent header found, returns
+    ``"root"``.
+
+    This enables scoping duplicate exercise number detection to the parent
+    section: two ``### Exercice 1`` under different ``##`` parents are NOT
+    duplicates; two ``### Exercice 1`` under the same ``##`` parent ARE.
+    """
+    # First, get the level of the current cell's header (if any)
+    current_level = 0
+    if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+        src = ''.join(cells[idx].get('source', []))
+        matches = HEADER_LINE_RE.findall(src)
+        if matches:
+            current_level = _header_level(matches[-1])
+
+    # Scan backwards for the closest header at a STRICTLY lower level
+    for k in range(idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue
+        # Check headers from last to first (closest to farthest in this cell)
+        for header_line in reversed(header_lines):
+            level = _header_level(header_line)
+            if 0 < level < current_level:
+                # Found a parent header - extract text (remove leading # and whitespace)
+                text = re.sub(r'^#+\s*', '', header_line)
+                return f"{level}:{text}"
+    
+    return "root"
+
+
 def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
     """Return True if a markdown header at the same or higher level than the
     exercise header appears between ``exercise_idx`` and ``code_idx``.
@@ -807,7 +849,7 @@ def scan_notebook(path: str) -> list[dict]:
         return [{"path": path, "severity": "ERROR", "message": "Failed to parse notebook"}]
 
     cells = nb.get('cells', [])
-    exercise_numbers = {}
+    exercise_numbers = {}  # dict[parent_key][num] = cell_idx
 
     for i, cell in enumerate(cells):
         if cell.get('cell_type') != 'markdown':
@@ -828,18 +870,35 @@ def scan_notebook(path: str) -> list[dict]:
         has_soumis = bool(SOUMIS_PAR_RE.search(source))
 
         if num:
-            if num in exercise_numbers:
+            # Build the full exercise identifier for duplicate detection.
+            # If title starts with a letter (e.g., "b" in "Exercice 2b"), include
+            # it as part of the identifier to avoid treating "Exercice 2" and
+            # "Exercice 2b" as duplicates.
+            exercise_identifier = num
+            if title and title[0].isalpha():
+                # Include the first word of title (e.g., "b" from "b : ...")
+                first_word = title.split()[0].rstrip(':/—-')
+                exercise_identifier = f"{num}{first_word}"
+            
+            # Scope duplicate detection by parent header: two "Exercice N" under
+            # different parent sections are NOT duplicates; two "Exercice N" under
+            # the same parent ARE. Fixes FP where notebooks reset numbering in
+            # new sections (e.g., "### Exercices — Partie A" then "### Exercices — Partie B").
+            parent_key = get_parent_header_key(cells, i)
+            if parent_key not in exercise_numbers:
+                exercise_numbers[parent_key] = {}
+            if exercise_identifier in exercise_numbers[parent_key]:
                 findings.append({
                     "path": path,
                     "cell_index": i,
                     "cell_type": "markdown",
                     "severity": "MEDIUM",
-                    "exercise_num": num,
-                    "message": f"Duplicate Exercice {num} (first at cell {exercise_numbers[num]})",
+                    "exercise_num": exercise_identifier,
+                    "message": f"Duplicate Exercice {exercise_identifier} (first at cell {exercise_numbers[parent_key][exercise_identifier]})",
                     "preview": source[:100],
                 })
             else:
-                exercise_numbers[num] = i
+                exercise_numbers[parent_key][exercise_identifier] = i
 
         next_code_idx = None
         next_code_source = None
