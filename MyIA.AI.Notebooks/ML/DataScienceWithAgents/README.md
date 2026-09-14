@@ -92,6 +92,7 @@ DataScienceWithAgents/
 │   ├── 2.5c-Equite-Sous-Groupes.ipynb
 │   ├── 2.6-Clustering-KMeans-PCA.ipynb
 │   ├── 2.7-Modeles-Non-Parametriques.ipynb
+│   ├── 2.7b-SMO-From-Scratch.ipynb
 │   ├── 2.8-Theorie-PAC.ipynb
 │   ├── 2.8b-Theorie-PAC-Lean.ipynb
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
@@ -145,7 +146,7 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt-et-un notebooks (workflow, descente de gradient, régression linéaire/logistique complétée par le pont génératif Naive Bayes et la régression en grande dimension PCR/PLS/Ridge, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC et ses trois compagnons formel/concentration/Perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — optimisation d'hyperparamètres, régularisation sparse LASSO/ElasticNet, classes déséquilibrées, et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt-deux notebooks (workflow, descente de gradient, régression linéaire/logistique complétée par le pont génératif Naive Bayes et la régression en grande dimension PCR/PLS/Ridge, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN puis l'accrétion 2.7b qui ouvre le solveur (SMO de Platt) et chiffre son écart à l'optimum par le gap de dualité, théorie PAC/dimension VC et ses trois compagnons formel/concentration/Perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — optimisation d'hyperparamètres, régularisation sparse LASSO/ElasticNet, classes déséquilibrées, et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -161,6 +162,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.5c-Equite-Sous-Groupes](02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | équité par sous-groupe : parité démographique, equalized odds, post-traitement par seuils (Hardt) | **L'accuracy globale ne suffit pas** : 96,4 % global coexiste avec des écarts de groupe [0,92–1,00] |
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
 | [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
+| [2.7b-SMO-From-Scratch](02-ML-Cours/2.7b-SMO-From-Scratch.ipynb) | *Accrétion de 2.7* — SMO (Platt) écrit à la main : sous-problème 2D, heuristique de working set, KKT et gap de dualité | **Le solveur écrit à la main retrouve sklearn** : même biais à 4·10⁻⁴ près, gap de dualité ≈ 3·10⁻³ |
 | [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
 | [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
 | [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
