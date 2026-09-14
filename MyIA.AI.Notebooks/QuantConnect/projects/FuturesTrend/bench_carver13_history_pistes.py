@@ -422,6 +422,16 @@ def main():
             return fn(bulk, n_bars)
         return wrapped
 
+    # REPAIR 2026-09-14 c.1151 adjoint re-review round 3 (N1): C_alt is
+    # REPORTED AS FLOOR (not in the timed frontier). It models a future
+    # QC bridge that returns ndarray sorted (time, symbol); today the
+    # bridge returns a DataFrame, and `_make_flatten_layout` builds the
+    # ndarray layout from the DataFrame in a separate (untimed) step.
+    # C_alt is therefore a Python-side FLOOR (an under-approximation of
+    # the speedup if flatten=True were implemented end-to-end on the QC
+    # bridge). It is NOT comparable to A/B/C/D/D' because the cost of
+    # ndarray-source production is NOT measured here. The verdict is
+    # reported separately, never mixed into the WINNER/NEUTRAL ranking.
     paths = [
         ("A_baseline_bulk (current, #16003)", _maybe_wrap_with_construction(_path_baseline_bulk, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
         ("B_per_symbol (19 history calls)", _maybe_wrap_with_construction(_path_per_symbol, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
@@ -430,6 +440,14 @@ def main():
         ("D_reduce_n_bars (592->336)", _maybe_wrap_with_construction(_path_reduce_n_bars, N_BARS_REDUCED), bulk_reduced, N_BARS_REDUCED),
         ("D'_observe_only_n_bars_slim (592->276, vol_lookback dropped, observation-only)", _maybe_wrap_with_construction(_path_reduce_n_bars_slim, N_BARS_SLIM), bulk_slim, N_BARS_SLIM),
     ]
+
+    # Pistes that participate in the WINNER/NEUTRAL ranking against A.
+    # C_alt is REPORTED AS FLOOR, never as WINNER/NEUTRAL/LOSER.
+    # D' is observation-only and can never receive WINNER (vol_lookback
+    # dropped -- REPAIR 2026-09-14 c.1151 adjoint re-review round 3 N2).
+    RANKED_PATHS = {"A_baseline_bulk (current, #16003)", "B_per_symbol (19 history calls)", "C_flatten_array (DataFrame->array, REPAIR scope)", "D_reduce_n_bars (592->336)"}
+    FLOOR_PATHS = {"C_alt_no_df (true flatten=True layout, ndarray floor)"}
+    OBSERVATION_ONLY_PATHS = {"D'_observe_only_n_bars_slim (592->276, vol_lookback dropped, observation-only)"}
 
     results = {}
     for name, fn, bulk, n_bars in paths:
@@ -452,6 +470,8 @@ def main():
     baseline_median = baseline_stats["median_ms"]
     _say("")
     _say("Verdict (vs baseline A; WINNER requires ratio < 0.70 AND IQR disjoint):")
+    _say("  C_alt is FLOOR (separate scale, never WINNER).")
+    _say("  D' is OBSERVATION_ONLY (vol_lookback dropped; can never be WINNER).")
     verdicts = {}
     winner_details = {}
     for name, stats in results.items():
@@ -460,14 +480,25 @@ def main():
             continue
         ratio = stats["median_ms"] / baseline_median
         iqr_disjoint = _iqr_disjoint(baseline_stats, stats)
-        if ratio < 0.70 and iqr_disjoint:
-            verdict = "WINNER (<70% AND IQR disjoint)"
-        elif ratio < 0.70:
-            verdict = "NEUTRAL_MEDIAN_ONLY (ratio<0.70 but IQR overlaps baseline)"
-        elif ratio > 1.30:
-            verdict = "LOSER (>130% of baseline)"
+        # REPAIR c.1151 N2: D' is hard-coded OBSERVATION_ONLY -- cannot WINNER.
+        if name in OBSERVATION_ONLY_PATHS:
+            verdict = "OBSERVATION_ONLY (vol_lookback dropped, unsafe to ship; ratio reported for reference only)"
+        elif name in FLOOR_PATHS:
+            # C_alt is reported as FLOOR with its own ratio vs A. The
+            # FLOOR ratio is NOT used in the ranking -- it tells the
+            # reader "if a QC bridge implemented flatten=True end-to-end,
+            # the Python-side floor would be this much faster than A's
+            # current xs-slice path". It is not a winner/loser verdict.
+            verdict = f"FLOOR (array-only path, ratio={ratio:.2f} vs A; not in ranking)"
         else:
-            verdict = "NEUTRAL (within +/-30% of baseline)"
+            if ratio < 0.70 and iqr_disjoint:
+                verdict = "WINNER (<70% AND IQR disjoint)"
+            elif ratio < 0.70:
+                verdict = "NEUTRAL_MEDIAN_ONLY (ratio<0.70 but IQR overlaps baseline)"
+            elif ratio > 1.30:
+                verdict = "LOSER (>130% of baseline)"
+            else:
+                verdict = "NEUTRAL (within +/-30% of baseline)"
         verdicts[name] = verdict
         winner_details[name] = {"ratio": ratio, "iqr_disjoint": iqr_disjoint}
         _say(f"  {name:42s} ratio={ratio:.2f}  iqr_disjoint={iqr_disjoint}  {verdict}")

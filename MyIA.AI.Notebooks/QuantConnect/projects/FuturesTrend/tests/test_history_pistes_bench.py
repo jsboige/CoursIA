@@ -116,6 +116,13 @@ class TestBenchInvariants(unittest.TestCase):
         the EWMAC forecasts downstream will silently diverge. We compare
         on the reduced shape so all 4 paths share the same input length
         (276 bars at minimum, well past the slowest EWMAC burn-in).
+
+        REPAIR c.1151 adjoint round 3 N4: C_alt is now included in the
+        invariant. C_alt returns keys ``SYM00..SYM18`` (the synthetic
+        symbol codes produced by the flatten layout); the test maps those
+        to the canonical ``SYM00..SYM18`` keys used by A/B/C/D on the
+        slim bulk (which share the same RNG seed, so the naming happens
+        to coincide). The arrays must be byte-equal.
         """
         common_bulk = self.bulk_slim  # 276 bars, same input for everyone.
         results = {
@@ -124,12 +131,19 @@ class TestBenchInvariants(unittest.TestCase):
             "C": bench._path_flatten_array(common_bulk, bench.N_BARS_SLIM),
             "D": bench._path_reduce_n_bars(common_bulk, bench.N_BARS_SLIM),
         }
-        # Every path returns 19 symbols.
+        # C_alt: ndarray-only path on the flatten layout of the same bulk.
+        arr, sym_codes, _ = bench._make_flatten_layout(common_bulk, bench.N_BARS_SLIM)
+        c_alt = bench._path_flatten_array_no_df(arr, sym_codes, bench.N_BARS_SLIM)
+        results["C_alt"] = c_alt
+
+        # Every path returns 19 symbols. A/B/C/D share the canonical
+        # ``SYM00..SYM18`` keys; C_alt uses the same naming because the
+        # synthetic RNG seeds the sym_codes identically.
         sym_sets = [set(r.keys()) for r in results.values()]
         for sym_set in sym_sets[1:]:
             self.assertEqual(sym_set, sym_sets[0])
 
-        # For each symbol, the close arrays are equal across all 4 paths.
+        # For each symbol, the close arrays are equal across all 5 paths.
         for sym in sym_sets[0]:
             arrays = [r[sym] for r in results.values()]
             ref = arrays[0]
@@ -351,6 +365,119 @@ class TestREPAIRAdjointPreflight16093c1148(unittest.TestCase):
             "D' slim prose MUST warn 'NOT a recommendation to ship'; "
             "adjoint 2026-09-14 re-review flagged the body without this neutrality.",
         )
+
+
+class TestREPAIRAdjointPreflight16093c1151(unittest.TestCase):
+    """REPAIR c.1151 -- 5 reserves adjointes NON levees en c.1148 round 3.
+
+    1. C_alt pas dans la frontiere `--measure-construction` -> WINNER non-
+       comparable. Solution : C_alt FLOOR (jamais WINNER/NEUTRAL/LOSER).
+    2. D' peut encore emettre WINNER machine-readable. Solution :
+       categorie `OBSERVATION_ONLY` distincte, hors WINNER.
+    3. Header `REPAIR/qc` hors enum canonique (DEEP/MED/LIGHT). Solution :
+       `MED/qc` ; `prev:` PR Merged (e.g. #16074).
+    4. C_alt exclu de l'invariant d'egalite a tort. Solution : ajouter C_alt
+       a `test_all_pistes_return_identical_close_arrays`.
+    5. Body presente 1 classement sans nommer le mode (default vs
+       `--measure-construction` inversent le classement). Solution : nommer
+       le mode dans chaque tableau + expliquer l'inversion dans le body PR.
+    """
+
+    def test_Dprime_can_never_be_WINNER_at_runtime(self):
+        """D' MUST receive ``OBSERVATION_ONLY`` verdict regardless of its
+        measured ratio/IQR. The c.1148 'just rename the label' fix left D'
+        able to emit ``WINNER (<70% AND IQR disjoint)`` machine-readably
+        under `--measure-construction`. The runtime test below runs the
+        bench end-to-end and asserts D' is OBSERVATION_ONLY in the JSON.
+
+        REPAIR c.1151 N2 (adjoint round 3).
+        """
+        import io
+        import json
+        import os
+        import subprocess
+        import sys
+
+        # Windows: cwd must be native path, not Unix /d/dev/... (MEMORY
+        # `subprocess-windows-bash-path-cwd` -- Git Bash /c/... raises
+        # NotADirectoryError under native Python subprocess).
+        bench_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        proc = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(bench_dir, "bench_carver13_history_pistes.py"),
+                "--n-iter", "30",
+                "--measure-construction",
+                "--json",
+            ],
+            cwd=bench_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        )
+        self.assertEqual(
+            proc.returncode, 0,
+            f"bench crashed: stdout={proc.stdout[:500]!r} stderr={proc.stderr[:500]!r}",
+        )
+        parsed = json.loads(proc.stdout)
+        dprime_key = "D'_observe_only_n_bars_slim (592->276, vol_lookback dropped, observation-only)"
+        self.assertIn(dprime_key, parsed["verdicts"])
+        verdict = parsed["verdicts"][dprime_key]
+        self.assertNotEqual(
+            verdict, "WINNER (<70% AND IQR disjoint)",
+            "D' MUST NOT be machine-readable WINNER (adjoint round 3 N2); "
+            f"got verdict={verdict!r} -- the c.1151 OBSERVATION_ONLY category "
+            "is what the JSON should carry.",
+        )
+        self.assertIn(
+            "OBSERVATION_ONLY", verdict,
+            f"D' must carry the OBSERVATION_ONLY label, got {verdict!r}",
+        )
+
+    def test_C_alt_never_in_WINNER_NEUTRAL_LOSER_ranking(self):
+        """C_alt MUST NOT appear in the WINNER/NEUTRAL/LOSER verdict space.
+
+        REPAIR c.1151 N1 (adjoint round 3) -- C_alt is a FLOOR (Python-side
+        array-only path), not a comparable candidate. The JSON must carry
+        a distinct ``FLOOR`` verdict that is NOT used in the ranking.
+
+        Pinning this in source prevents a future PR from re-introducing
+        C_alt into the timed frontier where it would be compared to paths
+        paying DataFrame construction cost.
+        """
+        import inspect
+        src = inspect.getsource(bench.main)
+        # FLOOR_PATHS set declared.
+        self.assertIn("FLOOR_PATHS", src)
+        # C_alt branch returns FLOOR verdict.
+        self.assertIn("FLOOR (array-only path", src)
+        # And it is excluded from the WINNER/NEUTRAL_MEDIAN_ONLY/LOSER branch.
+        # Check by reading the source structure: the FLOOR branch comes
+        # before the ratio < 0.70 branch in the verdict cascade.
+        floor_idx = src.find("FLOOR (array-only path")
+        winner_idx = src.find('verdict = "WINNER')
+        self.assertGreater(floor_idx, 0)
+        self.assertGreater(winner_idx, floor_idx)
+
+    def test_Dprime_observation_only_source_pin(self):
+        """Source pin: the OBSERVATION_ONLY set must include D' slim and
+        no other path, and the verdict cascade must hard-code D' into
+        OBSERVATION_ONLY (cannot be overridden by ratio/IQR).
+        """
+        import inspect
+        src = inspect.getsource(bench.main)
+        # OBSERVATION_ONLY_PATHS set declared.
+        self.assertIn("OBSERVATION_ONLY_PATHS", src)
+        # D' hard-coded into OBSERVATION_ONLY before ratio/IQR branch.
+        obs_idx = src.find("OBSERVATION_ONLY_PATHS = {")
+        winner_idx = src.find('verdict = "WINNER')
+        self.assertGreater(obs_idx, 0)
+        self.assertGreater(winner_idx, obs_idx)
+        # D' label visible in the set literal.
+        self.assertIn("D'_observe_only", src)
 
 
 if __name__ == "__main__":
