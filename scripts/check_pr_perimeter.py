@@ -614,6 +614,8 @@ def check_assertion(
             pass
         elif _word_form_is_measurement_result(scan_target, block):
             pass
+        elif _word_form_is_anaphoric_reference(scan_target):
+            pass
         else:
             problems.append(
                 f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
@@ -909,6 +911,15 @@ REFERENCE_VERB_TAIL = re.compile(
     r"renvoient|renvoie|mentionnent|mentionne|link|links|reference|references)\b",
     re.IGNORECASE,
 )
+# #16085 cas B, population relayee en provenance : "N fichiers de `<sha>`"
+# attribue le compte a une REVISION PASSEE (backticked, 7-40 hex) -- le body
+# relaye la mesure d'un autre commit, il ne revendique pas son perimetre.
+# Founder #15983 (PR body, run 34758737057) : "8 fichiers de `fe04e1f37`"
+# confronte 8 vs 1 et a rougi une PR saine. Meme famille que PAST_REFERENCE
+# et REFERENCE_VERB_TAIL : mauvaise surface, pas mauvais compte. Controles
+# FN : suffixe < 7 hex ou non-hex n'est pas un sha, et la forme d'enumeration
+# de perimetre ("N fichiers : a.py, ...") ne porte jamais ce suffixe.
+_PROVENANCE_SHA_TAIL = re.compile(r"^\s*de\s+`[0-9a-f]{7,40}`")
 # Formes 2-4, two-word qualifier window: artifact kinds and enumeration tails
 # are often compound ("fichiers audio generes", "fichiers de tests", "fichier
 # test adapte") -- the closed list matches the first OR second word after the
@@ -1027,6 +1038,18 @@ def _count_has_incidental_qualifier(line: str, m: re.Match) -> bool:
     return False
 
 
+def _count_is_provenance_sha(line: str, m: re.Match) -> bool:
+    """#16085 cas B: the count relays a PROVENANCE -- "8 fichiers de
+    `fe04e1f37`" -- a measurement borrowed from another seat (an earlier
+    review's tally, pinned to the tree it measured by its commit sha).
+    Relayee, non re-mesuree: the guard's EQUALITY confrontation can never
+    validate a borrowed count against this PR's own diff, and blocking on
+    it reds a healthy body. The sha needs >= 7 hex chars -- "de `fe04e`"
+    or "de `main.yml`" do not fingerprint a commit and stay blocking."""
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
+    return bool(_PROVENANCE_SHA_TAIL.match(after))
+
+
 def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     """True when the specific COUNT match `m` on `line` is exempted by the
     per-count filters (zero, threshold citation, locative scan scope,
@@ -1064,6 +1087,8 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
         return True
     if REFERENCE_VERB_TAIL.match(after):
         return True
+    if _count_is_provenance_sha(line, m):
+        return True  # provenance relayee: "8 fichiers de `fe04e1f37`" (#16085)
     if (before.endswith("(") and after.lstrip().startswith(")")
             and PAREN_ANTECEDENT_NUM.search(before[:-1])):
         return True
@@ -1133,6 +1158,54 @@ _DISCRIMINATION_VERB = re.compile(
     r"s[ée]parer|comparer)\b",
     re.IGNORECASE,
 )
+
+
+# #16085 cas A, cardinal anaphorique delimite : "dans ces deux fichiers" ou
+# l'antecedent -- des fichiers NOMMES -- siege au paragraphe precedent. La
+# deixse anaphorique porte la reference (les modules dont on parle), pas le
+# perimetre du diff. Founder #16075 : "Les occurrences des mots sorry /
+# native_decide dans ces deux fichiers sont de la prose" sur une PR a 7
+# fichiers, phrase vraie, rouge bloquant. Distinct de #14384 (connecteur
+# additif en prose) : ici c'est la deixse qui porte la reference. Trois
+# gardes FN : demonstratif adjacent au cardinal, antecedent nomme REQUIS au
+# paragraphe precedent (forme anonyme -> fail-loud), et ligne sans mot de
+# scope fort ("Perimetre : dans ces deux fichiers" reste bloquant).
+_ANAPHORIC_DEM_CARD = re.compile(
+    r"\bces\s+(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+fichiers?\b"
+    r"|\bthese\s+(?:two|three|four|five|six|seven|eight|nine|ten)\s+files?\b",
+    re.IGNORECASE,
+)
+
+
+def _word_form_is_anaphoric_reference(text: str) -> bool:
+    """#16085: True when a word-form count is a demonstrative anaphor
+    ("ces deux fichiers" / "these two files") whose antecedent -- NAMED
+    files -- sits in the preceding paragraph. The phrase is about those
+    named modules, not the diff's perimeter.
+
+    FN safety mirrors _word_form_is_indef_non_pr_subject's default-fail-
+    loud: an anonymous antecedent ("ces deux fichiers" naming nothing)
+    keeps the rouge, and a line carrying a strong scope word stays
+    blocking. Hook: called from `check_assertion` on the `word_count`
+    branch only -- the digit branch ("ces 2 fichiers") is a distinct
+    shape, out of the issue's corpus, deliberately uncovered."""
+    low = text.lower()
+    m = _ANAPHORIC_DEM_CARD.search(low)
+    if m is None:
+        return False
+    line_start = text.rfind("\n", 0, m.start()) + 1
+    line_end = text.find("\n", m.end())
+    if line_end < 0:
+        line_end = len(text)
+    if _has_strong_scope(text[line_start:line_end].lower()):
+        return False
+    # Bounded lookback ONLY: the antecedent paragraph sits ABOVE the blank
+    # line (the corpus names its files one paragraph before the anaphor),
+    # so cutting at "\n\n" would amputate the window of the very thing it
+    # looks for -- the 500-char bound is the sole horizon.
+    window = text[:m.start()][-500:]
+    named = _NAMED_FILE_BODY.findall(window)
+    return any(a or b for a, b in named)
 
 
 def _word_form_is_measurement_object(text: str) -> bool:
@@ -1259,11 +1332,19 @@ def _count_is_incidental(line: str, ante_context: str = "") -> bool:
     if DIFFSTAT_NEIGHBORHOOD.search(line):
         # A qualifier-exempt count ("N fichiers neufs : file (330 lignes)")
         # overrides the diffstat guard -- the "lignes" is a per-file size and
-        # the qualifier marks a sub-claim, not the whole-PR perimeter. An
-        # antecedent-exemption (locative "sur 2 fichiers", measurement parent,
-        # snapshot) does NOT override: "+307 lignes / −0 sur 2 fichiers" names
-        # what the diffstat measured (#11935 FN control stays blocking).
-        if all(_count_has_incidental_qualifier(line, m) for m in matches):
+        # the qualifier marks a sub-claim, not the whole-PR perimeter. A
+        # provenance relay ("8 fichiers de `fe04e1f37`, ~793 lignes de
+        # contexte") overrides too (#16085 cas B): the lignes belong to the
+        # borrowed measurement's own context, not to this PR's diffstat. An
+        # antecedent-exemption (locative "sur 2 fichiers", measurement
+        # parent, snapshot) does NOT override: "+307 lignes / −0 sur
+        # 2 fichiers" names what the diffstat measured (#11935 FN control
+        # stays blocking).
+        if all(
+            _count_has_incidental_qualifier(line, m)
+            or _count_is_provenance_sha(line, m)
+            for m in matches
+        ):
             return True
         return False
     for m in matches:
