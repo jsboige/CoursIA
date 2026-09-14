@@ -118,7 +118,11 @@ DataScienceWithAgents/
 ├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning
 │   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
 │   ├── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│   ├── 4.2b-Lean-GradientFlow-Vanishing.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
+│
+├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
+│   └── WS-00a-Ondelettes-1D-from-scratch.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -199,6 +203,16 @@ Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 | [4.3-TransferLearning-ResNet](04-Vision/4.3-TransferLearning-ResNet.ipynb) | ResNet18 pré-entraîné ImageNet, tête greffée (5 130 params entraînables sur 11,18 M), gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes, 3 graines appariées + test de permutation des signes) | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : gelé ~89 % ; fine-tuné +6,2 pts appariés, mais seulement à taux différencié décroissant (à taux constants, l'optimiseur finit sous le gelé) |
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
+
+## Ondelettes et scattering (04b-Wavelet-Scattering)
+
+Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle.
+
+| Notebook | Sujet | Concept-phare |
+|----------|-------|---------------|
+| [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+
+Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 
