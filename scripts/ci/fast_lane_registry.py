@@ -1211,6 +1211,22 @@ TRANCHE10: list[Guard] = [
 #
 # ADVISORY jusqu'a calibration plus poussee sur l'historique (point 3 de
 # l'issue) : la mesure de FP sur le corpus n'est pas encore faite.
+#
+# SECOND MECANISME, meme famille, ajoute par #16110 : la source survit en
+# VOLUME et perd sa STRUCTURE (tous les `\n` retires a l'ecriture, la cellule
+# se replie en un seul commentaire). Le discriminant de volume y est aveugle
+# par construction -- le cas fondateur #16097 (Lean-18 cellule 40cb37d5)
+# GROSSIT (1132 -> 1728 caracteres) et le gate s'arrete avant tout plancher --
+# et `notebook-cell-source-parses` aussi, puisqu'une cellule entierement
+# commentee se parse proprement. Le discriminant est le NOMBRE D'INSTRUCTIONS :
+# `emptied` (> 0 -> 0) et `orphan-output` (sortie non vide sur une cellule a
+# 0 instruction, sans magic IPython). Calibration : 0 finding structurel sur
+# les 11 970 cellules des 953 notebooks Python de `main`, et 0 sur 18
+# notebooks changes par 12 PR mergees. Le critere 1 de l'issue (compte des
+# items sans `\n` final) est REFUTE par mesure et n'est PAS implemente : ce
+# compte mesure la granularite de serialisation (source caractere par
+# caractere sur `21_LoRA_FineTuning.ipynb`, 802 items non termines, cellule
+# saine), pas une corruption.
 # ---------------------------------------------------------------------------
 TRANCHE11: list[Guard] = [
     Guard(
