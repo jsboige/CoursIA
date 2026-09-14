@@ -32,6 +32,7 @@ name: Notebook outputs required (H.4 schema)
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'scripts/notebook_tools/check_notebook_outputs_required.py'
