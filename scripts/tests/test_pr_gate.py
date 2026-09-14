@@ -1991,7 +1991,7 @@ def _decide_with_walls(checks, walls):
 def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
-    assert walls.get("Scripts Tests (CPU)") == 20
+    assert walls.get("Scripts Tests (CPU)") == 30
 
 
 def test_declared_timeouts_tolerate_an_unreadable_state(tmp_path):
