@@ -1,4 +1,5 @@
-"""Organe canonique d'execution Lean — T1 : cap machine-wide + confinement kill-tree (See #15666).
+"""Organe canonique d'execution Lean — T1-T3 : cap machine-wide, confinement
+kill-tree, budget mesure, backend epingle par lake (See #15666).
 
 Incident du 12 septembre 2026 : ~30 processus ``lean.exe`` a ~95 % CPU ont etouffe
 une machine worker (DriveFS tombe, puis Claudish, puis reboot du cluster). Cause
@@ -59,6 +60,21 @@ T2 (cette tranche) raffine l'admission :
    fail-closed nommant la source (spec #15666 §2) — jamais de lancement
    optimiste.
 
+T3 (cette tranche) epingle le backend d'execution par lake :
+
+4. **Backend epingle par lake, premier-ecrivain proprietaire** : chaque racine
+   de lake est liee a UN backend (``wsl`` ou ``native``), enregistre dans
+   ``backends.json`` du state dir machine-wide des le premier run. Changer
+   d'epinglage exige ``--repin`` ET un cache reellement purge
+   (``.lake/build`` absent — l'organe ne purge JAMAIS lui-meme) : viser un
+   cache WSL chaud avec ``lake.exe`` Windows ne rend pas un resultat different,
+   il rend 1 a 2 heures de recompilation Mathlib (lean_server.py:86-89,
+   arbitrage #15666 decision 2). Le defaut d'un lake sans epingle est MESURE
+   et ecrit : ``DEFAULT_BACKEND_ORDER`` (WSL d'abord sur po-2026, froid
+   8,4 s vs 36,9 s, chaud 0,52 s vs 1,11 s, toolchain 4.33.1 identique des
+   deux cotes, caches historiques de la flotte construits sous WSL). Le sous-
+   commandement ``backends`` expose le registre et les sondes.
+
 Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
 publie ses metriques en JSON.
@@ -67,7 +83,8 @@ Codes de sortie stables :
   0    succes (commande terminee, nettoyage prouve)
   1    echec de la commande enfant (code reel dans le JSON)
   124  timeout (arbre tue, nettoyage prouve)
-  125  admission refusee (cap atteint / environnement non mesurable)
+  125  admission refusee (cap atteint / environnement non mesurable /
+       backend epingle en conflit avec la demande)
   126  cleanup incomplet : orphelins detectes apres termination
   127  erreur interne a l'organe
   130  interruption (SIGINT) : arbre tue, nettoyage prouve
@@ -75,7 +92,9 @@ Codes de sortie stables :
 Env de configuration : ``LEAN_EXEC_STATE_DIR`` (isolation tests), ``LEAN_EXEC_CAP``,
 ``LEAN_EXEC_BUDGET``, ``LEAN_EXEC_JOBS``, ``LEAN_EXEC_MEM_FRAC``, ``LEAN_EXEC_CPU_PCT``,
 ``LEAN_EXEC_RESERVE_CORES``, ``LEAN_EXEC_MEM_PER_JOB_MB``, ``LEAN_EXEC_COMMIT_PER_JOB_MB``,
-``LEAN_EXEC_MIN_FREE_GB``, ``LEAN_EXEC_QUEUE_MAX``, ``LEAN_EXEC_CALLER``.
+``LEAN_EXEC_MIN_FREE_GB``, ``LEAN_EXEC_QUEUE_MAX``, ``LEAN_EXEC_CALLER``,
+``LEAN_EXEC_WSL`` (desactive la sonde/le backend WSL si off/0/no),
+``LEAN_EXEC_FORCE_BACKENDS`` (surcharge les sondes, virgule-separe, tests).
 """
 
 from __future__ import annotations
@@ -86,6 +105,7 @@ import hashlib
 import json
 import os
 import platform
+import shlex
 import shutil
 import signal
 import subprocess
@@ -671,6 +691,274 @@ def queue_remove(path: Path | None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Backend epingle par lake — premier-ecrivain proprietaire (T3, arbitrage
+# #15666 decision 2). Le piege mesure : viser un cache WSL chaud avec
+# lake.exe Windows ne rend pas un resultat different, il rend 1-2 h de
+# recompilation Mathlib (lean_server.py:86-89).
+# ---------------------------------------------------------------------------
+
+BACKENDS = ("native", "wsl")
+
+# Defaut MESURE sur po-2026 (2026-09-14, la machine qui tient le toolchain —
+# arbitrage : "je ne tranche pas le defaut depuis une machine qui ne fait pas
+# tourner ces builds"). Les deux backends y sont installes au meme toolchain
+# (Lake 5.0.0 / Lean 4.33.1) ; projet minimal sans Mathlib :
+#   froid (spin toolchain + build) : natif 36,9 s  vs WSL 8,4 s
+#   chaud (no-op rebuild)          : natif  1,11 s vs WSL 0,52 s
+# et les caches chauds historiques de la flotte sont construits sous WSL.
+# Ce defaut ne s'applique qu'a un lake SANS epingle : tout lake connu garde
+# le backend qui l'a epingle, quel que soit cet ordre.
+DEFAULT_BACKEND_ORDER = ("wsl", "native")
+
+_wsl_backend_memo: tuple[bool, str] | None = None
+
+
+def backends_registry_path() -> Path:
+    return state_dir() / "backends.json"
+
+
+def load_backends() -> dict:
+    try:
+        data = json.loads(
+            backends_registry_path().read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_backends(registry: dict) -> None:
+    path = backends_registry_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(
+        json.dumps(registry, indent=2, sort_keys=True), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _lake_key(lake_root: Path) -> str:
+    """Cle stable d'un lake : chemin resolu normalise POSIX, casse-agnostique
+    (C:/Dev/x et c:/dev/x sont le meme lake pour l'epinglage)."""
+    return str(Path(lake_root).resolve()).replace("\\", "/").lower()
+
+
+def native_backend_available() -> tuple[bool, str]:
+    if os.name != "nt":
+        return bool(shutil.which("lake")), "which lake"
+    exe = shutil.which("lake") or shutil.which("lake.exe")
+    return bool(exe), f"which -> {exe}" if exe else "which lake: absent"
+
+
+def wsl_backend_available() -> tuple[bool, str]:
+    """Toolchain lake cote WSL, vu depuis Windows. Seul le PATH de login le
+    voit (~/.elan/bin ; mesure po-2026 2026-09-14 : `wsl -e lake` echoue,
+    `bash -lc 'command -v lake'` reussit) — la sonde passe donc par
+    bash -lc, bornee et memoisee par processus."""
+    global _wsl_backend_memo
+    if _wsl_backend_memo is not None:
+        return _wsl_backend_memo
+    if os.name != "nt":
+        _wsl_backend_memo = (False, "off (host posix)")
+        return _wsl_backend_memo
+    if os.environ.get("LEAN_EXEC_WSL", "").lower() in ("off", "0", "no"):
+        _wsl_backend_memo = (False, "off (LEAN_EXEC_WSL)")
+        return _wsl_backend_memo
+    if shutil.which("wsl.exe") is None:
+        _wsl_backend_memo = (False, "wsl.exe absent")
+        return _wsl_backend_memo
+    try:
+        out = subprocess.run(
+            ["wsl.exe", "--", "bash", "-lc", "command -v lake"],
+            capture_output=True, timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        found = out.returncode == 0 and bool(out.stdout.strip())
+        _wsl_backend_memo = (
+            found, "wsl bash -lc command -v lake"
+            + ("" if found else " : introuvable"))
+        return _wsl_backend_memo
+    except (OSError, subprocess.SubprocessError) as exc:
+        _wsl_backend_memo = (False, f"unavailable: {exc}")
+        return _wsl_backend_memo
+
+
+def _probe(backend: str) -> tuple[bool, str]:
+    if backend == "wsl":
+        return wsl_backend_available()
+    return native_backend_available()
+
+
+def forced_backends() -> list[str] | None:
+    """Surcharge de test : LEAN_EXEC_FORCE_BACKENDS='wsl,native' declare la
+    disponibilite SANS sonder (chaine vide = aucun backend disponible)."""
+    raw = os.environ.get("LEAN_EXEC_FORCE_BACKENDS")
+    if raw is None:
+        return None
+    return [b for b in raw.split(",") if b in BACKENDS]
+
+
+def preflight_backends(
+    requested: str, lake_root: Path | None, pinned: str | None,
+) -> list[str]:
+    """Backends disponibles, calcule HORS verrou d'admission (les sondes
+    payent jusqu'a 10 s ; le verrou lui-meme timeout a 10 s). Chemin rapide :
+    un lake deja epingle conforme a la demande ne sonde rien."""
+    forced = forced_backends()
+    if forced is not None:
+        return forced
+    if lake_root is None:
+        return ["native"]
+    if pinned and requested in ("auto", pinned):
+        return [pinned]
+    if requested in BACKENDS:
+        ok, src = _probe(requested)
+        return [requested] if ok else []
+    out: list[str] = []
+    for backend in DEFAULT_BACKEND_ORDER:
+        ok, _src = _probe(backend)
+        if ok:
+            out.append(backend)
+            break  # le defaut n'a besoin que du premier disponible
+    return out
+
+
+def _cache_present(lake_root: Path) -> bool:
+    return (Path(lake_root) / ".lake" / "build").exists()
+
+
+def resolve_backend(
+    lake_root: Path | None,
+    requested: str = "auto",
+    repin: bool = False,
+    available: list[str] | None = None,
+) -> tuple[str | None, str]:
+    """Tranche le backend d'un run. Rend (backend, detail) ; backend None =
+    refus et detail est la raison ACTIONNABLE. A appeler sous AdmissionLock
+    (ecriture du registre premier-ecrivain).
+
+    - pas de lake englobant -> native, rien a epingler ;
+    - pas d'epingle -> premier disponible de DEFAULT_BACKEND_ORDER, epingle
+      posee (premier-ecrivain proprietaire) ;
+    - epingle existante -> elle gagne, auto comme demande conforme ;
+    - demande differente de l'epingle -> refus sauf --repin ET cache purge
+      (.lake/build absent) : la bascule implicite coute 1-2 h de
+      recompilation Mathlib (lean_server.py:86-89) et l'organe ne purge
+      JAMAIS un cache lui-meme."""
+    if lake_root is None:
+        return "native", "no lake root (pas de lakefile englobant)"
+    available = (
+        available if available is not None
+        else preflight_backends(requested, lake_root, None)
+    )
+    key = _lake_key(lake_root)
+    registry = load_backends()
+    entry = registry.get(key) or {}
+    pinned = entry.get("backend")
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    if requested == "auto":
+        if pinned:
+            if pinned not in available:
+                return None, (
+                    f"backend epingle={pinned} mais indisponible : "
+                    f"{available} — purgez le cache (.lake/build) et "
+                    f"--repin, ou retablissez le toolchain"
+                )
+            return pinned, f"epingle={pinned}"
+        if not available:
+            return None, (
+                "aucun backend lake disponible (wsl, native) : sondez "
+                "`lean_exec backends` pour le detail"
+            )
+        backend = available[0]
+        registry[key] = {"backend": backend, "pinned_at": now,
+                         "origin": "default-policy"}
+        save_backends(registry)
+        return backend, f"default-policy -> {backend} (epingle posee)"
+
+    if pinned and pinned != requested:
+        if not repin:
+            return None, (
+                f"backend epingle={pinned}, demande={requested} : changer "
+                "exige --repin ET un cache purge (rm -rf .lake/build) — "
+                "bascule implicite = 1-2 h de recompilation Mathlib "
+                "(lean_server.py:86-89, #15666 decision 2)"
+            )
+        if requested not in available:
+            return None, (
+                f"--repin vers {requested} mais ce backend est indisponible : "
+                f"{available}"
+            )
+        if _cache_present(lake_root):
+            return None, (
+                f"--repin ({pinned} -> {requested}) refuse : le cache "
+                ".lake/build existe encore — purgez-le d'abord, l'organe ne "
+                "purge JAMAIS lui-meme"
+            )
+        registry[key] = {"backend": requested, "pinned_at": now,
+                         "origin": f"repin {pinned}->{requested} apres purge"}
+        save_backends(registry)
+        return requested, f"repin {pinned}->{requested} (cache purge verifie)"
+
+    if not pinned:
+        if requested not in available:
+            return None, (
+                f"backend {requested} demande mais indisponible : {available}"
+            )
+        registry[key] = {"backend": requested, "pinned_at": now,
+                         "origin": "explicit-first-writer"}
+        save_backends(registry)
+        return requested, "explicit-first-writer (epingle posee)"
+    return pinned, f"epingle={pinned} (conforme a la demande)"
+
+
+def wsl_path_of(win_path) -> str | None:
+    """Chemin WSL d'un chemin Windows (wslpath, sonde bornee 10 s).
+    Doit passer par ``bash -lc`` comme la sonde de toolchain : l'appel
+    direct ``wsl.exe wslpath C:\\\\...`` mange les backslashes dans l'argv
+    (wslpath voit ``C:Usersjsboi...``) alors que le shell les recollecte
+    (mesure po-2026 2026-09-14). Le chemin est passe en slashes POSIX
+    avant quotation : wslpath accepte les deux formes Windows."""
+    posix_form = str(win_path).replace("\\", "/")
+    try:
+        out = subprocess.run(
+            ["wsl.exe", "--", "bash", "-lc",
+             f"wslpath -a {shlex.quote(posix_form)}"],
+            capture_output=True, timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        if out.returncode == 0:
+            return out.stdout.decode("utf-8", errors="replace").strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+def backend_command(
+    cmd: list[str], backend: str, env: dict,
+) -> tuple[list[str], dict]:
+    """Traduit la commande pour son backend. WSL depuis Windows :
+    ``wsl --cd <wslpath> -- bash -lc '<cmd>'`` — le PATH de login seul voit
+    ~/.elan/bin (mesure po-2026) — et ``LEAN_NUM_THREADS`` passe par export
+    explicite dans le shell de login. Echec de traduction = OSError (le
+    demandeur refuse, pas de repli silencieux en natif qui viserait le cache
+    du mauvais backend)."""
+    if backend != "wsl" or os.name != "nt":
+        return cmd, env
+    wsl_cwd = wsl_path_of(Path.cwd())
+    if not wsl_cwd:
+        raise OSError(
+            "wslpath a echoue : chemin WSL du cwd introuvable "
+            "(backend wsl epingle, refus plutot que repli natif)"
+        )
+    joined = " ".join(shlex.quote(c) for c in cmd)
+    threads = env.get("LEAN_NUM_THREADS")
+    if threads:
+        joined = (
+            f"export LEAN_NUM_THREADS={shlex.quote(threads)}; {joined}")
+    return ["wsl.exe", "--cd", wsl_cwd, "--", "bash", "-lc", joined], env
+
+
+# ---------------------------------------------------------------------------
 # Verrou d'admission machine-wide (ferme la fenetre TOCTOU count->spawn)
 # ---------------------------------------------------------------------------
 
@@ -1137,6 +1425,8 @@ def run_command(
     as_json: bool = False,
     wait_s: float = 0.0,
     caller: str | None = None,
+    backend: str = "auto",
+    repin: bool = False,
 ) -> int:
     cfg = config()
     cap = cap_override if cap_override is not None else cfg["cap"]
@@ -1153,6 +1443,7 @@ def run_command(
         "budget": budget,
         "jobs": cfg["jobs"],
         "caller": caller,
+        "lean_backend": None,
         "queue_wait_s": 0.0,
         "orphans": [],
         "child_exit_code": None,
@@ -1164,6 +1455,14 @@ def run_command(
 
     lake_root = find_lake_root(Path.cwd())
     result["tree"] = str(lake_root) if lake_root else None
+
+    # Preflight HORS verrou : les sondes de backend (wsl bash -lc, 10 s)
+    # ne doivent jamais tenir l'AdmissionLock (timeout 10 s lui-meme). Un
+    # lake epingle conforme a la demande ne sonde rien du tout (fast-path).
+    entry = load_backends().get(
+        _lake_key(lake_root)) if lake_root else None
+    pinned_backend = entry.get("backend") if entry else None
+    available = preflight_backends(backend, lake_root, pinned_backend)
 
     proc = None
     job = None
@@ -1180,9 +1479,10 @@ def run_command(
     # --- Admission machine-wide sous verrou (ferme count->spawn TOCTOU) ---
     def _attempt() -> str:
         """Un passage d'admission complet sous verrou : sweep, telemetrie,
-        budget, cap, lease d'arbre, spawn confine, enregistrement. Rend
-        'ok', ou le kind du refus ('telemetry' | 'insufficient' | 'cap' |
-        'tree' | 'spawn' | 'internal') pose dans result['reason']."""
+        budget, cap, backend epingle, lease d'arbre, spawn confine,
+        enregistrement. Rend 'ok', ou le kind du refus ('telemetry' |
+        'insufficient' | 'cap' | 'backend' | 'tree' | 'spawn' | 'internal')
+        pose dans result['reason']."""
         nonlocal proc, job, confined, tree_lease, granted, budgets
         with AdmissionLock():
             sweep_stale_runs()
@@ -1250,6 +1550,19 @@ def run_command(
                     population_before={"native": native_pop},
                 )
                 return "cap"
+            lean_backend, backend_detail = resolve_backend(
+                lake_root, requested=backend, repin=repin,
+                available=available)
+            result["lean_backend"] = lean_backend
+            result["backend_detail"] = backend_detail
+            if lean_backend is None:
+                result.update(
+                    status="refused", exit_code=EXIT_REFUSED,
+                    reason=backend_detail,
+                    population_before={"native": native_pop},
+                )
+                return "backend"
+
             if lake_root is not None:
                 tree_lease, why = acquire_tree_lease(
                     lake_root, cmd, caller, budget)
@@ -1270,11 +1583,12 @@ def run_command(
             except ValueError:
                 threads = granted
             env["LEAN_NUM_THREADS"] = str(threads)
-            spawn_cmd = bound_command(cmd, granted)
+            spawn_cmd, spawn_env = backend_command(
+                bound_command(cmd, granted), lean_backend, env)
             result["cmd_effective"] = spawn_cmd
 
             job = None
-            popen_kwargs: dict = {"env": env}
+            popen_kwargs: dict = {"env": spawn_env}
             if os.name == "nt":
                 job = WindowsJob(cfg["mem_frac"], cfg["cpu_pct"])
                 # SUSPENDED -> assign -> resume : la racine est dans le job
@@ -1342,6 +1656,7 @@ def run_command(
                 "budget": budget,
                 "cap": cap,
                 "granted_jobs": granted,
+                "lean_backend": lean_backend,
                 "started_utc": time.strftime(
                     "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                 ),
@@ -1370,7 +1685,7 @@ def run_command(
                 result["queue_wait_s"] = round(time.time() - enqueued_at, 2)
             queue_file = None
             break
-        if kind in ("internal", "spawn"):
+        if kind in ("internal", "spawn", "backend"):
             return _emit(result, as_json)
         retryable = kind in ("cap", "tree")
         if wait_deadline is None or not retryable:
@@ -1559,6 +1874,7 @@ def status(as_json: bool = False) -> int:
         },
         "live_runs": live,
         "swept_stale": swept,
+        "pinned_lakes": len(load_backends()),
         "headroom": max(0, cfg["cap"] - native_pop),
         "queue": waiting,
         "tree_leases": tree_leases,
@@ -1577,6 +1893,7 @@ def status(as_json: bool = False) -> int:
             f"wsl={wsl_pop} ({wsl_src}) cap={cfg['cap']}"
         )
         print(f"live runs: {len(live)} (swept {len(swept)} stale)")
+        print(f"pinned lakes: {len(load_backends())} (backends.json)")
         print(
             f"queue: {len(waiting)} waiting "
             f"(max {cfg['queue_max']}, swept {len(tree_swept)} stale leases)"
@@ -1588,12 +1905,62 @@ def status(as_json: bool = False) -> int:
 
 
 # ---------------------------------------------------------------------------
+# backends : registre d'epinglage par lake + sondes (T3)
+# ---------------------------------------------------------------------------
+
+def backends_report(as_json: bool = False) -> int:
+    registry = load_backends()
+    forced = forced_backends()
+    if forced is not None:
+        probes = {b: (b in forced, "forced (LEAN_EXEC_FORCE_BACKENDS)")
+                  for b in BACKENDS}
+    else:
+        probes = {b: _probe(b) for b in BACKENDS}
+    payload = {
+        "registry_path": str(backends_registry_path()),
+        "pinned_lakes": len(registry),
+        "registry": registry,
+        "probes": {
+            b: {"available": ok, "source": src}
+            for b, (ok, src) in probes.items()
+        },
+        "default_backend_order": list(DEFAULT_BACKEND_ORDER),
+        "default_policy_note": (
+            "Defaut MESURE sur po-2026 (2026-09-14) : toolchain identique "
+            "Lake 5.0.0 / Lean 4.33.1 des deux cotes, projet minimal sans "
+            "Mathlib -- froid natif 36,9 s vs WSL 8,4 s, chaud natif 1,11 s "
+            "vs WSL 0,52 s ; caches historiques de la flotte construits "
+            "sous WSL. Le defaut ne s'applique qu'a un lake SANS epingle "
+            "(premier-ecrivain proprietaire, #15666 decision 2)."
+        ),
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"registry: {payload['registry_path']}")
+        print(f"pinned lakes: {len(registry)}")
+        for key in sorted(registry):
+            e = registry[key]
+            print(f"  {key}: {e.get('backend')} "
+                  f"(origin={e.get('origin')}, at={e.get('pinned_at')})")
+        for b in BACKENDS:
+            ok, src = probes[b]
+            print(f"probe {b}: {'OK' if ok else 'ABSENT'} ({src})")
+        print(f"default order (lakes sans epingle): "
+              f"{' -> '.join(DEFAULT_BACKEND_ORDER)}")
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Organe d'execution Lean confine (T1, See #15666)"
+        description=(
+            "Organe d'execution Lean confine : admission machine-wide (T1/T2), "
+            "backend epingle par lake premier-ecrivain (T3), See #15666"
+        )
     )
     sub = parser.add_subparsers(dest="action")
 
@@ -1609,6 +1976,15 @@ def main(argv: list[str] | None = None) -> int:
                             " 0 = refus immediat")
     p_run.add_argument("--caller", default=None,
                        help="Identite appelant/lane enregistree dans le lease")
+    p_run.add_argument("--backend", default="auto",
+                       choices=("auto", "native", "wsl"),
+                       help="Backend lake : auto = epingle du lake sinon "
+                            "defaut mesure ; changer d'epinglage exige "
+                            "--repin ET un cache purge")
+    p_run.add_argument("--repin", action="store_true",
+                       help="Re-epingler le lake vers --backend ; refuse si "
+                            ".lake/build existe encore (l'organe ne purge "
+                            "JAMAIS lui-meme)")
     p_run.add_argument("--json", action="store_true",
                        help="Resultat JSON sur stdout")
     p_run.add_argument("cmd", nargs=argparse.REMAINDER,
@@ -1617,10 +1993,16 @@ def main(argv: list[str] | None = None) -> int:
     p_status = sub.add_parser("status", help="Population, cap, runs vivants")
     p_status.add_argument("--json", action="store_true")
 
+    p_backends = sub.add_parser(
+        "backends", help="Registre d'epinglage par lake + sondes")
+    p_backends.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     try:
         if args.action == "status":
             return status(as_json=args.json)
+        if args.action == "backends":
+            return backends_report(as_json=args.json)
         if args.action == "run":
             cmd = args.cmd
             if cmd and cmd[0] == "--":
@@ -1631,6 +2013,7 @@ def main(argv: list[str] | None = None) -> int:
                 cmd, timeout_s=args.timeout, cap_override=args.cap,
                 budget_override=args.budget, as_json=args.json,
                 wait_s=args.wait, caller=args.caller,
+                backend=args.backend, repin=args.repin,
             )
     except Exception as exc:  # l'organe echoue visiblement, jamais en trace
         print(f"[lean_exec] internal error: {exc}", file=sys.stderr)

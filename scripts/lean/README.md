@@ -13,13 +13,13 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `smoke_test_epita_is.py` | Smoke tests du parcours EPITA-IS (notebooks + preuves) |
 | `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
 | `count_code_sorry.py` | Compte les `sorry` **hors commentaires** (la vraie dette) et liste les theoremes vacuous (`: True`) — ce que `grep -c sorry` surestime de ~11x (voir ci-dessous) |
-| `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), postcondition zero-orphelin (voir ci-dessous, #15666) |
+| `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), backend epingle par lake, postcondition zero-orphelin (voir ci-dessous, #15666) |
 
 Tests unitaires dans `tests/`.
 
 ---
 
-## `lean_exec.py` — organe d'execution confine (T1 de #15666)
+## `lean_exec.py` — organe d'execution confine (T1-T3 de #15666)
 
 Incident du 2026-09-12 : ~30 `lean.exe` a ~95 % CPU ont etouffe une machine
 worker (DriveFS, puis Claudish, puis reboot). Le lease par arbre
@@ -62,11 +62,51 @@ indisponible), `126` cleanup incomplet (orphelins), `127` erreur interne,
 Configuration : `LEAN_EXEC_CAP` (defaut `min(8, max(2, nproc/2))`),
 `LEAN_EXEC_BUDGET` (defaut 2), `LEAN_EXEC_JOBS` (defaut `nproc/4`),
 `LEAN_EXEC_MEM_FRAC` (0.80), `LEAN_EXEC_CPU_PCT` (90), `LEAN_EXEC_STATE_DIR`
-(isolation tests), `LEAN_EXEC_WSL=off` (desactive la sonde WSL).
+(isolation tests), `LEAN_EXEC_WSL=off` (desactive la sonde et le backend WSL),
+`LEAN_EXEC_FORCE_BACKENDS` (surcharge de test : liste virgule-separee, chaine
+vide = aucun backend disponible).
 
-**Hors T1** (autres tranches de l'EPIC) : admission fine / budget mesure (T2),
-politique de backend et coherence de cache (T3), garde CI + migration des 35
-appels directs (T4), procedure operateur et validation de charge bornee (T5).
+### Backend epingle par lake — premier-ecrivain proprietaire (T3 de #15666)
+
+Un projet lake peut etre construit par le toolchain **natif** (Windows) ou par
+celui de **WSL**. Les deux ne partagent ni binaire ni cache : viser un cache WSL
+chaud avec `lake.exe` Windows ne rend pas un resultat different, il rend **1 a 2
+heures de recompilation Mathlib** (`agent_tests/lean_server.py:86-89`).
+
+L'organe ferme ce piege en **epinglant** chaque racine de lake a UN backend, dans
+`backends.json` du state dir machine-wide, des le premier run
+(**premier-ecrivain proprietaire** : l'epingle posee fait autorite pour tous les
+appelants suivants). Changer d'epinglage exige un acte explicite
+(`--repin`) **et** un cache reellement purge : l'organe ne purge JAMAIS un
+`.lake/build` lui-meme, il refuse en nommant la purge a faire.
+
+Le defaut d'un lake **sans** epingle est **mesure**, pas suppose — sur po-2026
+(2026-09-14), toolchain identique des deux cotes (Lake 5.0.0 / Lean 4.33.1),
+projet minimal sans Mathlib :
+
+| Backend | Froid (spin toolchain + build) | Chaud (no-op rebuild) |
+|---------|-------------------------------|-----------------------|
+| natif (Windows) | 36,9 s | 1,11 s |
+| WSL | **8,4 s** | **0,52 s** |
+
+Les caches chauds historiques de la flotte sont construits sous WSL, d'ou
+`DEFAULT_BACKEND_ORDER = ("wsl", "native")`.
+
+```bash
+python scripts/lean/lean_exec.py backends --json   # registre + sondes + defaut
+python scripts/lean/lean_exec.py run --backend native -- lake build
+# Changer d'epinglage : purgez d'abord, l'organe verifie que .lake/build est absent.
+python scripts/lean/lean_exec.py run --backend native --repin -- lake build
+```
+
+Une demande de backend different de l'epingle **sans** `--repin` est un refus
+actionnable (exit `125`) qui nomme l'epingle, la demande et la procedure. Le
+preflight des sondes (WSL : `wsl.exe -- bash -lc 'command -v lake'`, timeout
+10 s, memoise) tourne **hors** du verrou d'admission, qui timeout lui-meme a
+10 s ; un lake deja epingle conforme ne sonde rien.
+
+**Hors T1/T3** (autres tranches de l'EPIC) : garde CI + migration des 35 appels
+directs (T4), procedure operateur et validation de charge bornee (T5).
 
 ---
 
