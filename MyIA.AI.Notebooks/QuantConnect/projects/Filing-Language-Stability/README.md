@@ -23,10 +23,68 @@ Portage fidèle de l'article « Filing language stability as a selection signal 
 - Action débloquante (user, one-time) : activer *Brain Language Metrics on Company Filings* dans l'organisation QuantConnect, puis relancer le backtest sur le projet 36331851.
 - Chiffres de l'article (source, non mesurés ici) : Sharpe **0.558** (janv. 2020 - juin 2026) vs SPY buy-and-hold **0.533** ; 9/25 combinaisons du sweep (36 %) battent le benchmark ; l'auteure attribue le résultat principalement à la **fenêtre de l'optimiseur** max-Sharpe plutôt qu'à la largeur du panier.
 
+## Variante libre EDGAR-2
+
+`main_edgar.py` remplace la dépendance Brain par une série historique dérivée des
+endpoints publics SEC. `edgar_signal.build_history` lit le bloc récent **et** les
+archives `submissions-*.json`, ordonne tous les 10-K, puis calcule chaque paire
+annuelle adjacente. Une paire entre dans LEAN à son `available_at`, calculé depuis
+le timestamp d'acceptation SEC le plus tardif : ni la période comptable ni la
+date seule ne servent d'horloge au backtest.
+
+Protocole borné :
+
+- panier fixe `AAPL, MSFT, KO, WMT, GE`, identique au smoke EDGAR-1 ;
+- Item 1A de 10-K uniquement, sans repli sur le rapport complet ;
+- OOS du 1er janvier 2022 au 31 décembre 2024 ;
+- `mode=signal` : top 2 des similarités disponibles, poids égaux ;
+- `mode=equal` : les mêmes actions dont l'extraction produit une série valide,
+  en poids égaux et sans classement (quatre titres sur ce run ; GE est exclu des
+  deux jambes après 9/9 échecs explicites d'extraction) ;
+- coûts explicites de 5 points de base par ordre sur le notionnel ;
+- SPY reste le second benchmark externe.
+
+Le CSV dérivé `edgar_signals.csv`, les textes SEC et le cache HTTP restent sous
+`runs/` / `cache/`, tous deux gitignorés. La matérialisation appelle
+`build_history(ticker, cik, since=date(2016, 1, 1), until=date(2024, 12, 31))`
+pour chacun des cinq couples ticker/CIK définis dans
+`tests/test_smoke_sec_real.py::BASKET`, trie les paires par
+`(available_at, ticker)`, puis appelle `write_csv` et `write_cloud_module`. Le
+module Python dérivé accepté par QC est chargé uniquement dans le projet Cloud
+36331851. Cette expérience
+ne reproduit donc pas l'univers de 100 titres de l'article : elle teste si la
+sélection linguistique ajoute quelque chose au **même panier** de cinq titres.
+
+### Résultat OOS Cloud (2022-01-01 → 2024-12-31)
+
+Les trois runs ont terminé (`progress=1`) sur 753 dates négociables, avec le
+même modèle de frais actions à 5 bps :
+
+| Jambe | Backtest Cloud | Ordres | Sharpe | CAGR | MaxDD |
+|---|---|---:|---:|---:|---:|
+| EDGAR top 2 | `b99f7afcff7ec09e2d522ab915a56da7` | 66 | 0,151 | 7,482 % | 31,4 % |
+| Panier éligible égal | `716eee17e4e77d50e999c8eadc0b6fb9` | 117 | 0,429 | 13,390 % | 18,4 % |
+| SPY | `e7f6ef5f242445b6f995e3cee14626a0` | 3 | 0,193 | 8,607 % | 24,5 % |
+
+**Verdict : NO BEATS.** La sélection EDGAR est dominée OOS par les deux
+contrôles : Sharpe inférieur de 0,278 au panier égal et de 0,042 à SPY, CAGR
+plus faible, drawdown plus profond. Aucun test de significativité additionnel
+ne peut transformer cette domination brute en `BEATS` ; le résultat ne doit pas
+être extrapolé au véritable univers de 100 titres de l'article.
+
+Limites point-in-time connues : `_next_us_session` ne modélise que les week-ends
+et les timestamps SEC sont conservés sans fuseau explicite. Dans ce backtest à
+résolution quotidienne, les observations ne sont consommées que lors d'un
+`OnData` postérieur, ce qui rend ces imprécisions conservatrices en pratique ;
+elles restent à formaliser avant tout passage intraday.
+
 ## Fichiers
 
-- `main.py` — Stratégie (univers liquidité 100 → similarité Brain top 25 → max-Sharpe 12 mois, mensuel)
-- `research.ipynb` — Vérificateur local indépendant : extraction réelle des Item 1A depuis SEC EDGAR, similarité TF-IDF cosinus, ranking du panier (EXEC_PROVED, 0 erreur)
+- `main.py` — stratégie Brain originale, laissée byte-identique
+- `main_edgar.py` — variante EDGAR libre, panier fixe, coûts 5 bps et baseline égale
+- `edgar_signal.py` — acquisition, extraction Item 1A et séries historiques point-in-time
+- `tests/test_edgar_backtest_cpu.py` — invariants archives, adjacence, anti-look-ahead et CSV
+- `research.ipynb` — vérificateur EDGAR-1, laissé byte-identique
 
 ## Références
 
