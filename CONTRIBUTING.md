@@ -177,6 +177,7 @@ Execution manuelle sur tout le depot : `python -m pre_commit run --all-files`.
 
 - **Pas d'erreur volontaire** : `raise NotImplementedError`, `assert False`, `1/0` sont interdits. Les cellules d'exercice utilisent `pass`, `print("Exercice a completer")`, ou `return None`
 - **Outputs inclus** : les notebooks sont committes avec leurs outputs d'execution (sauf donnees sensibles)
+- **Configuration documentée** : chaque nouvelle famille de notebooks inclut un `.env.example` sans secret qui décrit les variables requises
 - **Pas d'emojis** dans le code, les noms de variables ou les fichiers genere
 
 ## 📚 Ressources utiles
