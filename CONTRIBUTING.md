@@ -2,6 +2,43 @@
 
 Merci de votre intérêt pour contribuer au projet CoursIA ! Ce document fournit des lignes directrices pour contribuer efficacement à ce dépôt de ressources pédagogiques sur l'intelligence artificielle.
 
+## Deux façons de contribuer
+
+### 1. Signaler une erreur ou proposer une amélioration
+
+Vous pouvez [ouvrir une issue](https://github.com/jsboige/CoursIA/issues/new?template=content-feedback.yml) pour :
+
+- signaler une erreur, une coquille ou un lien obsolète ;
+- suggérer une clarification ou une amélioration pédagogique ;
+- proposer une source, un article, un outil ou un nouveau contenu à **distiller** dans un notebook.
+
+Une Pull Request associée est facultative, mais toujours bienvenue. Une issue bien située, accompagnée si possible d'une source vérifiable et du résultat attendu, constitue déjà une contribution utile. Il n'est pas nécessaire de connaître le harnais interne du dépôt avant de participer.
+
+### 2. Soumettre une correction d'exercice par Pull Request
+
+Vous pouvez aussi résoudre un exercice proposé dans un notebook et soumettre votre correction par Pull Request. Indiquez précisément le notebook et l'exercice concernés, puis fournissez une solution exécutable accompagnée d'une courte explication du raisonnement.
+
+Après validation :
+
+1. la correction devient un **exemple guidé** dans le notebook ;
+2. la contribution est créditée, avec le nom ou pseudonyme GitHub souhaité et un lien vers la Pull Request ;
+3. un nouvel exercice non résolu, portant sur le même objectif et d'une difficulté comparable, est ajouté afin de préserver la progression pédagogique.
+
+Les mainteneurs et leurs agents peuvent effectuer cette transformation lors de l'intégration. Vous n'avez donc pas à fabriquer vous-même l'exercice de remplacement ni à maîtriser toutes les conventions internes du dépôt.
+
+## Comment vos contributions sont traitées
+
+CoursIA est maintenu par une flotte d'agents IA coordonnée, sous supervision humaine. Le premier triage d'une issue ou d'une Pull Request, ainsi qu'une partie des réponses, peuvent donc être assurés par un agent.
+
+Dans les deux modes de contribution, les agents doivent :
+
+- répondre avec bienveillance et expliquer ce qu'ils ont vérifié ;
+- distinguer les faits établis des points encore incertains ;
+- aider à préciser ou tester la contribution plutôt que rejeter une demande imprécise ;
+- escalader vers un mainteneur humain ou un spécialiste lorsqu'une décision, une source ou un risque dépasse leur périmètre.
+
+La production agentique à grande échelle fait inévitablement apparaître des coquilles, des formulations perfectibles ou des régressions ponctuelles. Le même dispositif permet généralement de les détecter, de les suivre et de les corriger dans la durée. Merci de nous les signaler : la patience et la bienveillance mutuelles facilitent la réparation, sans jamais rendre une erreur acceptable ni définitive.
+
 ## 🌟 Types de contributions
 
 Vous pouvez contribuer de plusieurs façons :
