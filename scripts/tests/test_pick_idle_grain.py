@@ -294,6 +294,99 @@ def test_cancelled_is_not_a_failure():
     assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == []
 
 
+def test_aggregator_red_by_cancelled_constituents_is_not_repairable():
+    """#15763 -- controle POSITIF, reproduit #15657 et #15660 a la lettre.
+
+    Lecture GraphQL du 2026-09-12 sur leurs heads exacts (`751fa1bd54df` et
+    `4e1ab883e715`) : l'agregateur requis rend FAILURE parce qu'il ANDe deux
+    constituants `cancelled`. Avant ce fix, la lane recevait « check requis en
+    echec : PR gate » et RIEN d'autre -- les deux constituants coupes etant
+    hors de CHECK_FAILED, ils ne tombaient ni dans les causes ni meme dans la
+    clause diagnostique `advisory`. Pas une mis-attribution : une INVISIBILITE.
+
+    Un kill `timeout-minutes` et un `cancel-in-progress` rendent tous deux
+    `cancelled`, jamais `failure` : la couleur seule ne peut pas distinguer
+    « le code est faux » de « la machine a ete coupee ». Prescrire une
+    reparation dans le diff pour ce rouge-la, c'est la pedale de frein.
+    """
+    state = _state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("ICT tests/ (55)", "CANCELLED", False),
+        ("Scripts Tests (CPU)", "CANCELLED", False),
+    ])
+    causes = pig.blocking_causes(state)
+    assert len(causes) == 1, causes
+    cause = causes[0]
+    assert "NON REPARABLE" in cause
+    # les constituants sont NOMMES : c'est ce qui manquait entierement.
+    assert "ICT tests/ (55)" in cause
+    assert "Scripts Tests (CPU)" in cause
+    # et le geste qui le leve est donne, comme pour `file_saturation`.
+    assert "rerun" in cause and "--ignore-red" in cause
+    # controle de non-regression du message : la vieille phrase, qui envoyait
+    # chercher un defaut dans le diff, ne doit plus etre rendue.
+    assert "check requis en echec : PR gate" not in causes
+
+
+def test_one_genuine_failure_keeps_the_red_repairable():
+    """Controle NEGATIF -- le fail-closed va dans le bon sens.
+
+    Des qu'UN constituant porte un vrai rouge, la cause redevient
+    « check requis en echec » et la lane repare, meme si d'autres
+    constituants ont ete coupes a cote. On ne dispense jamais d'une
+    reparation reelle ; on cesse seulement d'en prescrire une qui n'existe
+    pas."""
+    state = _state(checks=[
+        ("PR gate", "FAILURE", True),
+        ("ICT tests/ (55)", "CANCELLED", False),
+        ("Scripts Tests (CPU)", "FAILURE", False),
+    ])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : PR gate" in causes
+    assert not any("NON REPARABLE" in c for c in causes)
+    # et le vrai rouge reste nomme comme diagnostic.
+    assert any("non bloquant" in c and "Scripts Tests (CPU)" in c for c in causes)
+
+
+def test_aggregator_red_without_any_constituent_stays_repairable():
+    """Un agregateur seul rouge, sans constituant coupe, n'est pas exempte.
+
+    Sans ce controle, la branche #15763 pourrait avaler n'importe quel
+    `PR gate` rouge -- y compris celui d'un DWELL ou d'une regle interne du
+    gate -- et rendre toute la classe non-reparable par accident."""
+    causes = pig.blocking_causes(_state(checks=[("PR gate", "FAILURE", True)]))
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_a_cut_constituent_does_not_exempt_a_non_aggregator_red():
+    """Un check requis ORDINAIRE rouge reste a reparer par la lane.
+
+    L'exemption est attachee a la laundering d'un agregateur, pas a la
+    presence d'un `cancelled` quelque part sur la PR."""
+    state = _state(checks=[
+        ("Scripts Tests (CPU)", "FAILURE", True),
+        ("ICT tests/ (55)", "CANCELLED", False),
+    ])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : Scripts Tests (CPU)" in causes
+    assert not any("NON REPARABLE" in c for c in causes)
+
+
+def test_cut_constituents_ignores_the_aggregator_itself():
+    """Un agregateur ne peut pas etre sa propre preuve de coupure.
+
+    Si `PR gate` comptait comme constituant coupe de lui-meme, un `PR gate`
+    `TIMED_OUT` s'auto-exempterait."""
+    contexts = [
+        {"name": "PR gate", "conclusion": "TIMED_OUT"},
+        {"name": "Always-on guards / lint", "conclusion": "CANCELLED"},
+        {"name": "ICT tests/ (55)", "conclusion": "SUCCESS"},
+    ]
+    cut, real_red = pig.cut_constituents(contexts)
+    assert cut == [], "ni l'agregateur nomme ni le prefixe agregateur"
+    assert real_red is False
+
+
 def test_conflicts_are_a_red():
     causes = pig.blocking_causes(_state(mergeable="CONFLICTING"))
     assert causes == ["conflits avec main -> rebaser"]
