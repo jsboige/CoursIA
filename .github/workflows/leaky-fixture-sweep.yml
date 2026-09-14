@@ -164,14 +164,30 @@ jobs:
       # les deux horizons. Le chiffre de 189 etait donc perime, et il est
       # remplace ici par celui qui a ete mesure.
       #
-      # La ligne `horloge decalee` mesure que le decalage atteint un
-      # sous-processus PYTHON, pas seulement le binaire `date`. Sans elle, un
-      # decalage qui ne s'appliquerait pas a `pytest` rendrait un FAUX VERT :
-      # un organe anti-date-bomb declarant « aucune bombe » sans avoir decale
-      # l'horloge.
+      # La ligne `horloge decalee` ASSERT que le decalage atteint un
+      # sous-processus PYTHON, pas seulement le binaire `date` -- et c'est la
+      # correction du finding A de la review NanoClaw du 2026-09-14 : dans la
+      # version precedente cette ligne etait un `print`, donc ne pouvait PAS
+      # echouer. Or le cas qu'elle documente est precisement celui ou le
+      # decalage ne suit pas dans l'enfant : elle s'imprimait, les deux pytest
+      # tournaient sur l'horloge reelle, et le run etait VERT -- le faux vert
+      # que la ligne pretendait empecher. Le garde qui ne peut pas rougir ne
+      # garde rien.
+      #
+      # La forme : la date lue dans un sous-processus Python sous faketime doit
+      # EGALER la date calculee hors decalage par `date -d`. Un ecart => exit 1
+      # => etape rouge, fail-closed. On compare la DATE et non l'instant
+      # (evite une tolerance d'une heure a la frontiere DST) ; le runner etant
+      # en TZ=UTC, les deux arithmetiques coincident.
       - name: Sweep clock-windowed surface at +8 days
         run: |
-          faketime -f '+8d' python -c "import datetime; print('horloge decalee (+8d) :', datetime.datetime.now().isoformat())"
+          expected="$(date -d '+8 days' +%F)"
+          shifted="$(faketime -f '+8d' python -c 'import datetime; print(datetime.date.today().isoformat())')"
+          if [ "$shifted" != "$expected" ]; then
+            echo "::error::le decalage n'a pas atteint le sous-processus Python : lu $shifted, attendu $expected. Les balayages suivants tourneraient sur l'horloge REELLE -- faux vert, on s'arrete."
+            exit 1
+          fi
+          echo "horloge decalee (+8d), lue dans un sous-processus Python : $shifted"
           faketime -f '+8d' python -m pytest \
             scripts/tests/test_pick_idle_grain.py \
             scripts/tests/test_pick_idle_grain_cache.py \
@@ -185,7 +201,13 @@ jobs:
 
       - name: Sweep clock-windowed surface at +31 days
         run: |
-          faketime -f '+31d' python -c "import datetime; print('horloge decalee (+31d) :', datetime.datetime.now().isoformat())"
+          expected="$(date -d '+31 days' +%F)"
+          shifted="$(faketime -f '+31d' python -c 'import datetime; print(datetime.date.today().isoformat())')"
+          if [ "$shifted" != "$expected" ]; then
+            echo "::error::le decalage n'a pas atteint le sous-processus Python : lu $shifted, attendu $expected. Les balayages suivants tourneraient sur l'horloge REELLE -- faux vert, on s'arrete."
+            exit 1
+          fi
+          echo "horloge decalee (+31d), lue dans un sous-processus Python : $shifted"
           faketime -f '+31d' python -m pytest \
             scripts/tests/test_pick_idle_grain.py \
             scripts/tests/test_pick_idle_grain_cache.py \
