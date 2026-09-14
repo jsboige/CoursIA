@@ -1,0 +1,75 @@
+# .rooignore — exclusions de l'index sémantique Roo (code-index watcher)
+#
+# POURQUOI CE FICHIER EXISTE, ET POURQUOI UN .gitignore NE SUFFISAIT PAS
+#
+# Le watcher d'indexation de Roo Code ne lit que le `.gitignore` de la RACINE
+# du workspace : les `.gitignore` imbriqués lui sont invisibles. Le dépôt en
+# porte au moins un qui protège un fichier de configuration réel —
+# `MyIA.AI.Notebooks/Config/.gitignore` (première ligne : `*.json`) — et Git
+# l'honore parfaitement : le fichier couvert n'est ni suivi ni présent dans
+# l'historique. Mais l'indexeur, lui, ne l'a jamais vu : il a ingéré le
+# contenu et l'a resservi en clair comme extrait de recherche.
+#
+# La conséquence est contre-intuitive et mérite d'être écrite : un fichier
+# PEUT être correctement gitignored, absent de tout commit, et néanmoins
+# exposé — parce que la surface d'exposition n'était pas Git. L'incident qui
+# a motivé ce fichier est index-side, pas Git-side. Aucune réécriture
+# d'historique ne l'aurait corrigé, et aucun scan de commits ne l'aurait
+# détecté.
+#
+# Ce fichier est donc l'organe manquant : il déclare à la RACINE ce que les
+# `.gitignore` imbriqués déclarent localement, pour le seul consommateur qui
+# ne sait pas les lire.
+#
+# PORTÉE — ce qu'il fait et ce qu'il ne fait pas
+#
+# Il empêche l'indexation FUTURE. Il ne purge PAS ce qui est déjà indexé :
+# les points déjà écrits dans les collections vectorielles doivent être
+# supprimés séparément. Un `.rooignore` posé sans cette purge ferme la porte
+# derrière le cambrioleur.
+#
+# Il ne remplace pas non plus la rotation d'une clé qui a été servie en
+# clair. Une valeur exposée reste exposée après son exclusion.
+#
+# TENUE À JOUR — le critère
+#
+# Toute famille de fichiers qui porte des secrets, des identifiants ou de la
+# configuration machine-locale entre ici, même si un `.gitignore` la couvre
+# déjà : la redondance est le mécanisme, pas un oubli de factorisation.
+
+# --- Configuration locale portant des clés d'API -----------------------------
+# Couvert côté Git par MyIA.AI.Notebooks/Config/.gitignore (`*.json`), que le
+# watcher ne lit pas. Le second motif rattrape les autres dossiers `Config/`.
+MyIA.AI.Notebooks/Config/settings.json
+**/Config/settings.json
+
+# --- Fichiers d'environnement ------------------------------------------------
+# `.env.*` couvre aussi les sauvegardes horodatées (`.env.bak-<ts>`), qui
+# portent le même contenu que l'original et se créent en dehors de toute revue.
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Les gabarits sont publics par construction : ils ne portent que des noms de
+# variables et servent de documentation. Les ré-inclure garde l'index utile.
+# Si le parseur n'honorait pas la négation, ces fichiers resteraient exclus —
+# une perte de confort, jamais une fuite : la dégradation est fail-closed.
+!**/.env.example
+!**/.env.sample
+!**/.env.template
+
+# --- Secrets centralisés -----------------------------------------------------
+# Source unique des secrets partagés (cf .claude/rules/secrets-hygiene.md).
+.secrets/
+.secrets/**
+
+# --- Identifiants et clés ----------------------------------------------------
+*.pem
+*.key
+*.pfx
+*.p12
+credentials.json
+client_secret*.json
+service-account*.json
+token.json
