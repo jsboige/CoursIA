@@ -1253,3 +1253,42 @@ TRANCHE11: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 12 -- garde natif anti-invocation-directe lake (#15666, T4).
+#
+# L'epic #15666 impose un organe canonique d'exécution Lean
+# (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
+# min-des-sources, backend epingle par lake) et exige pour sa tranche T4 :
+# « un garde CI qui refuse toute nouvelle invocation directe de
+# ``lake build``/``lake env lean`` dans du code d'orchestration hors
+# allowlist documentée ». Le défaut fondateur (2026-09-12 : ~30 processus
+# ``lean.exe`` à 95 % du CPU, DriveFS et Claudish étouffés) est réintroduit
+# par CHAQUE voie directe qui échappe au budget commun -- ce garde ferme la
+# porte d'entrée, l'allowlist documente la dette de migration (ratchet
+# descendant : une entrée devenue stérile est signalée, jamais ignorée).
+#
+# Détection AST (pas grep) : docstrings, sondes ``which``, tests
+# d'appartenance et prose d'erreur ne comptent pas. Calibration mesurée sur
+# le corpus : 6 fichiers en dette, 0 faux positif -- chaque classe de FP
+# rencontrée a son négatif dans test_check_lake_direct_invocation.py.
+# ---------------------------------------------------------------------------
+TRANCHE12: list[Guard] = [
+    Guard(
+        name="lake-direct-invocation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "scripts/lean/check_lake_direct_invocation.py",
+            "scripts/lean/lake_direct_allowlist.json",
+            "scripts/lean/tests/test_check_lake_direct_invocation.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_lake_direct_invocation.py",
+            "--all", "--check",
+        ],
+        blocking=True,
+    ),
+]
