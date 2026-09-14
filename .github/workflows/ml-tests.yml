@@ -34,15 +34,39 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Budget de 30 min, pas 15 (#15531, mesure 2026-09-11). Le runtime honnete
-    # de la suite est 5:42 (910 tests) ; le mur a 15 min n'etait pas le runtime,
-    # c'etait la contention intermittente du pool ephemeral -- meme commit
-    # 5ef6d259 a 342,50 s sur po-2024-linux-docker-4 et 342,71 s sur ai-01-wsl-7,
-    # contre 71 % de la suite en 14:52 sur po-2024-linux-docker-9/-10 (3-4x plus
-    # lent, variance intra-run : eval_rl_dt 120->533 s, moe_experts 15->521 s).
-    # 30 couvre le pire cas extrapole (~21 min) avec marge. La cure est la
-    # gouvernance du pool (#15574) ; ce budget est la mitigation, pas la cure.
-    timeout-minutes: 30
+    # Budget de 45 min, pas 30 (#16139, mesure 2026-09-14). Le 30 pose par
+    # #15531 sur une extrapolation (~21 min) a ete ATTEINT quatre fois : la
+    # premiere sur la branche de #15531 elle-meme (elle declarait deja 30), les
+    # trois autres apres son merge. Ce n'est pas un cas isole, et deux des
+    # quatre sont des `push` sur `main`, ou `cancel-in-progress` est FAUX --
+    # ni supplantation, ni annulation de file, donc un vrai mur. Le temps se
+    # consomme DANS l'etape `Run tests`, jamais
+    # dans l'acquisition du runner : job 103470257369, `Run tests` 01:00:53Z ->
+    # 01:30:38Z soit 29m45s puis tue (Set up job : 2 s) ; meme profil sur
+    # 103620315252 et 103219647242. Ce n'est pas une attente de slot deguisee :
+    # c'est la suite qui tourne encore a 30 min.
+    #
+    # Mesure — fenetre nommee et reproductible : workflow `ml-tests.yml`, 100
+    # derniers runs, 2026-09-01T16:18Z -> 2026-09-14T05:30Z, duree au niveau
+    # JOB (`started_at` -> `completed_at`, jamais `createdAt` -> `updatedAt`).
+    # 73 succes, mediane 5,6 min, **max(success) 13,9 min** (837 s, run
+    # 33885862193) ; 24 annulations, dont 4 collees a 1822-1827 s (le mur a 30)
+    # et 14 collees a 918-938 s (le mur a 15 d'avant #15531).
+    #
+    # Le chiffre est borne par le HAUT, et c'est ce qui choisit 45 plutot que
+    # 60. L'agregateur qui attend ce job est le job `gate` de `pr-gate.yml`,
+    # dont le mur est 52 min — ecrit pour ca (#14412 : « the gate that waits for
+    # Quarto carried the same stale ceiling as the job it waits on »). Un job a
+    # 60 min ferait self-canceller l'agregateur avant que la preuve n'arrive,
+    # soit exactement le defaut que ce commentaire documente. 45 est le plus
+    # grand multiple de 15 qui laisse 7 min de marge a l'agregateur ; le
+    # `--timeout-min` de `pr_gate.py` (defaut 90) n'est pas le mur contraignant.
+    #
+    # Ce que cette mesure ne dit PAS : un job tue n'a pas de duree d'achevement.
+    # 30,4 min est un PLANCHER de ce qu'il fallait, pas un optimum calibre ; 45
+    # couvre cette observation avec 1,5x et ne revendique rien de plus. La cure
+    # reste la gouvernance du pool (#15574) ; ce budget est la mitigation.
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
