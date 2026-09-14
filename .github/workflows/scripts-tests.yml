@@ -125,7 +125,18 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 20
+    # Plafond 20 -> 30 (#15853). Mesure du 2026-09-14 sur les 26 runs conclus
+    # depuis le merge de xdist (#15833, 2026-09-13T23:08:18Z) : les jambes qui
+    # vont au bout tiennent 17,5 min de mediane, mais montent a 19,8 min --
+    # une minute sous l'ancien plafond. Une marge d'une minute fait rougir un
+    # check REQUIS sur la variance du pool, jamais sur du fond.
+    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur pr_gate.py
+    # (--timeout-min 45) et le job pr-gate.yml (timeout-minutes: 52).
+    # NB -- ce relevement ne traite QU'UNE des 16 annulations mesurees sur la
+    # periode. Les 15 autres sont des supplantations de file (rafale de merges
+    # sur main, meme groupe de concurrence, job jamais demarre : le tableau
+    # "jobs" de ces runs y est vide). Cause distincte, mesuree sur #15853.
+    timeout-minutes: 30
 
     steps:
       # ------------------------------------------------------------------
