@@ -28,6 +28,7 @@ La thèse est volontairement classique : on ne peut évaluer ce qu'un agent gén
 | [2.5c-Equite-Sous-Groupes](2.5c-Equite-Sous-Groupes.ipynb) | Équité par sous-groupe : parité démographique, equalized odds, l'incompatibilité des trois métriques sous prévalences différentes (Chouldechova) et le post-traitement par seuils par groupe (Hardt) | **L'accuracy globale ne suffit pas** : 96,4 % global coexiste avec deux groupes à [0,977–0,995] et [0,922–0,957] | synthétique contrôlé (2 groupes, prévalences réglables) |
 | [2.6-Clustering-KMeans-PCA](2.6-Clustering-KMeans-PCA.ipynb) | Apprentissage non supervisé : KMeans + ACP | **Structure retrouvée sans étiquettes** (PCA 2D + reconstruction) | réel `load_digits` |
 | [2.7-Modeles-Non-Parametriques](2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | **Le kernel trick rendu visible** (linéaire vs RBF sur demi-lunes) | synthétique `make_moons` + réel `load_breast_cancer` |
+| [2.7b-SMO-From-Scratch](2.7b-SMO-From-Scratch.ipynb) | *Accrétion de 2.7* — SMO (Platt) écrit à la main : sous-problème 2D, heuristique de working set, KKT et gap de dualité | **Le solveur écrit à la main retrouve sklearn** : même biais à 4·10⁻⁴ près, gap de dualité ≈ 3·10⁻³ | synthétique `make_moons` |
 | [2.8-Theorie-PAC](2.8-Theorie-PAC.ipynb) | Théorie PAC : sample complexity et dimension VC | **La borne PAC prédit l'empirique** (m_min théorique vs courbe d'erreur) | synthétique `make_*` |
 | [2.8b-Theorie-PAC-Lean](2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne, **démontrée** plutôt que mesurée | **Ce que 2.8 constate, le lake le prouve** : Hoeffding, borne de l'union, ERM, complexité d'échantillon | aucun (arithmétique exacte) |
 | [2.8c-Borne-Temoin-Concentration](2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + compagnon numérique Python* — Novikoff, témoin extrémal et Hoeffding bilatérale sur des instances seedées | **Mesurer avant de certifier** : 2.8c rejoue les trois phénomènes en NumPy ; 2.8b et 2.8d portent les preuves Lean | synthétique seedé |
@@ -81,6 +82,10 @@ La série ne se contente pas d'ajuster des modèles : chaque chapitre **rend vis
 
 <p align="center"><a href="2.6-Clustering-KMeans-PCA.ipynb"><img src="assets/readme/ml26-pca.png" width="560" alt="Réduction de dimension (ACP) : structure des chiffres retrouvée sans étiquettes en 2 composantes."></a></p>
 
+**[2.7b — Le solveur écrit à la main retrouve la bibliothèque.](2.7b-SMO-From-Scratch.ipynb)** Sur les deux demi-lunes, on écrit SMO (l'algorithme de Platt) à la main, puis on superpose sa frontière de décision à celle de `sklearn.svm.SVC`. Les deux panneaux montrent la même frontière, les mêmes marges à −1 / 0 / +1 et les mêmes régimes de vecteurs supports (non-support, `0 < α < C` sur la marge, `α = C` en dessous). Le concept-phare est le contrôle : le biais appris à la main et celui de sklearn coïncident à 4·10⁻⁴, l'écart maximal de fonction de décision reste sous 5·10⁻³, et le **gap de dualité** chiffre l'écart à l'optimum à environ 3·10⁻³ — un solveur artisanal dont on peut prouver qu'il converge vers la même solution.
+
+<p align="center"><a href="2.7b-SMO-From-Scratch.ipynb"><img src="assets/readme/ml27b-smo-frontiere.png" width="620" alt="SMO écrit à la main vs sklearn SVC : frontières de décision superposées sur les deux demi-lunes, marges à −1/0/+1 et régimes de vecteurs supports ; biais appris b = −0.074 dans les deux panneaux."></a></p>
+
 Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## L'arc pédagogique
@@ -98,7 +103,9 @@ flowchart TD
       E["2.5 - Biais-variance, CV, ROC<br/>évaluer rigoureusement<br/>ROC + coût du seuil (FN vs FP)"]
       E2["2.5b - Calibration des probabilités<br/>discrimination vs calibration<br/>reliability diagram, ECE, Brier"]
       G["2.7 - SVM à noyau et k-NN<br/>modèles non paramétriques<br/>kernel trick (linéaire vs RBF)"]
+      M["2.7b - SMO from scratch (accrétion de 2.7)<br/>écrire le solveur à la main<br/>sous-problème 2D, KKT, gap de dualité"]
       A --> B --> C --> D --> E --> E2 --> G
+      G -. "sous le capot : le solveur écrit à la main" .-> M
     end
     subgraph UNSUP["Apprentissage non supervisé (2.6)"]
       F["2.6 - Clustering et ACP<br/>travailler sans étiquettes<br/>structure retrouvée (PCA 2D + reconstruction)"]
@@ -155,7 +162,7 @@ Cette série est le **référent manuel** des labs agentic qui suivent. Une fois
 
 ## Références transverses
 
-Les citations canoniques ancrées dans la série (cellule `## References` de chaque notebook) incluent : Mitchell 1997 (généralisation), Cauchy 1847 (descente de gradient), Nelder & Wedderburn 1972 (modèles linéaires généralisés), Cox 1958 (régression logistique), Breiman et al. 1984 (CART), Breiman 2001 (forêts aléatoires), Friedman 2001 (gradient boosting), Stone 1974 (validation croisée), Bradley 1997 (AUC), Brier 1950 (score de Brier), Niculescu-Mizil & Caruana 2005 (calibration par famille de modèles), Platt 1999 (Platt scaling), Zadrozny & Elkan 2002 (régression isotonique), Guo et al. 2017 (ECE, temperature scaling), MacQueen 1967 (k-means), Pearson 1901 (ACP), Cortes & Vapnik 1995 (réseaux de vecteurs supports), Cover & Hart 1967 (k plus proches voisins), Valiant 1984 (théorie PAC), Vapnik & Chervonenkis 1971 (dimension VC), Novikoff 1962 (convergence du perceptron), Bergstra et al. 2011 (TPE), Bergstra & Bengio 2012 (random search), Akiba et al. 2019 (Optuna), Hoerl & Kennard 1970 (ridge), Wold 1975 (NIPALS/PLS), de Jong 1993 (SIMPLS), Frank & Friedman 1993 (continuum ridge/PCR/PLS), Jolliffe 2002 (ACP), Hastie/Tibshirani/Friedman 2009 (*The Elements of Statistical Learning*) et Pedregosa et al. 2011 (scikit-learn).
+Les citations canoniques ancrées dans la série (cellule `## References` de chaque notebook) incluent : Mitchell 1997 (généralisation), Cauchy 1847 (descente de gradient), Nelder & Wedderburn 1972 (modèles linéaires généralisés), Cox 1958 (régression logistique), Breiman et al. 1984 (CART), Breiman 2001 (forêts aléatoires), Friedman 2001 (gradient boosting), Stone 1974 (validation croisée), Bradley 1997 (AUC), Brier 1950 (score de Brier), Niculescu-Mizil & Caruana 2005 (calibration par famille de modèles), Platt 1999 (Platt scaling), Zadrozny & Elkan 2002 (régression isotonique), Guo et al. 2017 (ECE, temperature scaling), MacQueen 1967 (k-means), Pearson 1901 (ACP), Cortes & Vapnik 1995 (réseaux de vecteurs supports), Platt 1998 (*Sequential Minimal Optimization — a fast algorithm for training support vector machines*), Fan, Chen & Lin 2005 (sélection du working set au second ordre), Chang & Lin 2011 (LIBSVM), Cover & Hart 1967 (k plus proches voisins), Valiant 1984 (théorie PAC), Vapnik & Chervonenkis 1971 (dimension VC), Novikoff 1962 (convergence du perceptron), Bergstra et al. 2011 (TPE), Bergstra & Bengio 2012 (random search), Akiba et al. 2019 (Optuna), Hoerl & Kennard 1970 (ridge), Wold 1975 (NIPALS/PLS), de Jong 1993 (SIMPLS), Frank & Friedman 1993 (continuum ridge/PCR/PLS), Jolliffe 2002 (ACP), Hastie/Tibshirani/Friedman 2009 (*The Elements of Statistical Learning*) et Pedregosa et al. 2011 (scikit-learn).
 
 ## Conclusion — ce que vous emportez
 
