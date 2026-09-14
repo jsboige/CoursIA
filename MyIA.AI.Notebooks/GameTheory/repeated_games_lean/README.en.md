@@ -18,6 +18,17 @@
 
 > **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (`Repeated Games` — Iterated prisoner's dilemma). The active sources live in [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
+> **Tribute — Richard E. Stearns (1936-2026), "semi-author".** The work Richard E. Stearns carried
+> out at the *Arms Control and Disarmament Agency* on **repeated games with incomplete
+> information** — game theory applied to arms control — became a chapter of the Aumann & Maschler
+> book, *Repeated Games with Incomplete Information* (MIT Press, 1995), whose title page reads
+> *"with the collaboration of Richard E. Stearns"*. He described himself as a "semi-author" of
+> that Lanchester Prize-winning book and liked to tell *"the story of how I almost won the
+> Lanchester Prize"*. Stearns (1936-2026, Turing Award 1993 with Juris Hartmanis for the founding
+> paper of computational complexity theory) passed away on 29 August 2026 in Ann Arbor. His first
+> publication was on Arrow's paradox — see [`SocialChoice/`](../SocialChoice/README.md). Full
+> tribute: [#15949](https://github.com/jsboige/CoursIA/issues/15949) (part 2/3).
+
 ## Headline theorem
 
 **Grim trigger sustains cooperation iff δ ≥ (T − R) / (T − P)** (one-shot deviation principle).

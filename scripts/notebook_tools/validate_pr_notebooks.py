@@ -459,7 +459,37 @@ def validate_notebook(nb_path: Path) -> dict:
     return result
 
 
-def main():
+def _looks_like_notebook_path(value: str) -> bool:
+    """True when a positional is plainly a notebook path rather than a git ref.
+
+    Guard for the `<base> <paths...>` CLI form. `base` is an OPTIONAL positional
+    declared BEFORE `paths`, so argparse binds the first token to `base`: an
+    invocation that passes only notebook paths silently treats the first one as
+    the base branch and validates the remaining N-1. Observed in the wild as
+    "3/3 for 4 files" — a green run that quietly skipped a fourth of its scope.
+    """
+    return value.endswith(".ipynb")
+
+
+def _ref_exists(ref: str) -> bool:
+    """True when `ref` resolves to a commit in REPO_ROOT.
+
+    Used to tell "no notebooks changed" (a legitimate empty result) apart from
+    "the base ref is unusable", which used to surface as the same green
+    "No notebooks changed in this PR." (exit 0).
+    """
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+            capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+            cwd=str(REPO_ROOT),
+        ).returncode == 0
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Validate notebooks changed in a PR (H.1/H.3/C.1)"
     )
@@ -469,15 +499,47 @@ def main():
     )
     parser.add_argument(
         "paths", nargs="*",
-        help="Specific paths to check (skips git diff)",
+        help="Specific notebooks to check, listed AFTER <base> (skips git diff)",
     )
     parser.add_argument(
         "--json", action="store_true",
         help="Output results as JSON",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    # Exit codes: 0 = nothing to validate (or all passed), 1 = a notebook
+    # failed validation, 2 = the request itself is unusable (refused rather
+    # than reported as a clean "no notebooks changed").
+    if _looks_like_notebook_path(args.base):
+        rest = " ".join(args.paths)
+        parser.error(
+            f"<base> looks like a notebook path, not a git ref: {args.base!r}. "
+            f"<base> comes FIRST and the notebooks follow it, so this call would "
+            f"have validated only {len(args.paths)} of {len(args.paths) + 1} "
+            f"requested file(s). Did you mean: validate_pr_notebooks.py "
+            f"origin/main {args.base}{' ' + rest if rest else ''}"
+        )
+
+    if not args.paths and not _ref_exists(args.base):
+        print(
+            f"ERROR: base ref {args.base!r} does not resolve to a commit in "
+            f"{REPO_ROOT} — cannot determine what changed. Refusing to report "
+            f"'no notebooks changed'.",
+            file=sys.stderr,
+        )
+        return 2
 
     notebooks = get_changed_notebooks(args.base, args.paths)
+    if args.paths and len(notebooks) < len(args.paths):
+        dropped = len(args.paths) - len(notebooks)
+        print(
+            f"ERROR: {dropped} of {len(args.paths)} requested path(s) were "
+            f"dropped (not an existing .ipynb) — the run would validate only "
+            f"{len(notebooks)}. Requested: {', '.join(args.paths)}",
+            file=sys.stderr,
+        )
+        return 2
+
     if not notebooks:
         if args.json:
             print(json.dumps({"notebooks": [], "passed": True}))

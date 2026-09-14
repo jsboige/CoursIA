@@ -24,7 +24,7 @@ name: Workflow Label-Paths Coverage Guard
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, edited, reopened]
     branches: [main]
     paths:
       - '.github/workflows/**'

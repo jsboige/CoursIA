@@ -140,17 +140,57 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import errno
 import hashlib
 import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 try:
     import yaml
 except ImportError:  # pragma: no cover
     yaml = None
+
+# --- pression de fork (#16111) ----------------------------------------------
+# Un `BlockingIOError` (EAGAIN, errno 11) au fork/clone n'est pas une erreur de
+# git : c'est le noyau qui refuse un processus de plus, table de processus
+# pleine. Sur la CI, les organes co-tenants tournent dans UN seul job
+# (`Always-on guards -- N organes, 1 checkout`), donc dans une seule table : le
+# premier fork d'un organe tardif tombe quand elle est deja saturee, et l'organe
+# meurt avant d'avoir lu quoi que ce soit. `EAGAIN` est *temporaire* par
+# definition -- echouer au premier refus transforme une contention transitoire
+# en rouge de base. On retente donc un nombre borne de fois, sans jamais
+# masquer une erreur d'une autre nature.
+_EAGAIN_ATTEMPTS = 3
+_EAGAIN_BACKOFF = (0.05, 0.15)  # avant les 2e et 3e tentatives
+
+
+def _is_fork_pressure(exc: OSError) -> bool:
+    """Vrai si l'OS a refuse de creer un processus (EAGAIN au fork/clone)."""
+    return exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
+
+
+def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.CompletedProcess:
+    """`subprocess.run` de git, avec repli borne sur la pression de fork.
+
+    Seul `EAGAIN` est retente ; toute autre `OSError` remonte inchangee, pour
+    qu'une panne reelle reste visible au lieu d'etre diluee en trois essais.
+    """
+    last_exc = None
+    for attempt in range(_EAGAIN_ATTEMPTS):
+        if attempt:
+            time.sleep(_EAGAIN_BACKOFF[attempt - 1])
+        options = {"encoding": "utf-8", "errors": "replace"} if text else {}
+        try:
+            return subprocess.run(args, cwd=cwd, capture_output=True, text=text, **options)
+        except OSError as exc:
+            if not _is_fork_pressure(exc):
+                raise
+            last_exc = exc
+    raise last_exc
 
 # Le registre vit desormais en un fichier par paire sous `twin_pairs.d/`
 # (#8542 Option C). Un fichier = une entree = plus rien a fusionner en serie
@@ -383,10 +423,7 @@ def scan_coverage(repo_root: Path, pairs: list) -> dict:
 
     Les `*_output.ipynb` (artefacts d'execution) sont exclus des deux cotes.
     """
-    r = subprocess.run(
-        ["git", "ls-files", "--", "*.ipynb"],
-        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
+    r = _run_git(["git", "ls-files", "--", "*.ipynb"], cwd=repo_root)
     if r.returncode != 0:
         raise SystemExit("Erreur : `git ls-files` a echoue (depot inaccessible ?).")
 
@@ -425,10 +462,7 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     Accepte un ref arbitraire (HEAD, origin/main, HEAD~1, <sha>, ...) -- permet de
     lire l'etat du depot a un instant donne sans modifier le working tree.
     """
-    r = subprocess.run(
-        ["git", "ls-tree", git_ref, "--", rel_path],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
-    )
+    r = _run_git(["git", "ls-tree", git_ref, "--", rel_path], cwd=str(repo_root))
     if r.returncode != 0 or not r.stdout.strip():
         return None
     # format : "<mode> <type> <blob_sha>\t<path>"
@@ -465,10 +499,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     """
     if not blob_sha or len(blob_sha) != 40:
         return False
-    r = subprocess.run(
-        ["git", "rev-list", "--objects", ref],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
-    )
+    r = _run_git(["git", "rev-list", "--objects", ref], cwd=str(repo_root))
     if r.returncode != 0:
         return False
     # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
@@ -509,10 +540,7 @@ def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     Utilise `git show <ref>:<path>` (mode stream), evite de checkout le working tree.
     Necessaire pour lire le registre YAML au base-ref sans polluer le workspace CI.
     """
-    r = subprocess.run(
-        ["git", "show", f"{git_ref}:{rel_path}"],
-        capture_output=True, cwd=str(repo_root),
-    )
+    r = _run_git(["git", "show", f"{git_ref}:{rel_path}"], cwd=str(repo_root), text=False)
     if r.returncode != 0:
         return None
     return r.stdout.decode("utf-8", errors="replace")
@@ -537,9 +565,9 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
         reg_rel = Path(reg_path.name).as_posix()
 
     # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
-    r_ls = subprocess.run(
+    r_ls = _run_git(
         ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
+        cwd=str(repo_root),
     )
     entries: list = []
     if r_ls.returncode == 0 and r_ls.stdout.strip():
@@ -624,10 +652,20 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 
 
 def _repo_root() -> Path:
-    r = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
+    """Racine du depot contenant le cwd -- **sans fork**.
+
+    `git rev-parse --show-toplevel` se reduit a une remontee de parents jusqu'a un
+    `.git` : faite en pur Python, elle ne coute aucun processus. C'est exactement
+    le fork qui mourait sous pression (#16111) : l'organe echouait ici, avant
+    d'avoir lu une seule paire, et un organe qui ne demarre pas ne rapporte rien.
+    Repli sur git si la remontee ne trouve rien (depot nu, `GIT_DIR` explicite) --
+    soit les cas ou l'ancien code forkait de toute facon.
+    """
+    cwd = Path.cwd()
+    for parent in (cwd, *cwd.parents):
+        if (parent / ".git").exists():
+            return parent
+    r = _run_git(["git", "rev-parse", "--show-toplevel"])
     if r.returncode != 0:
         raise SystemExit("Erreur : pas un depot git (impossible de trouver la racine).")
     return Path(r.stdout.strip())
@@ -1523,9 +1561,10 @@ def main(argv=None) -> int:
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
                    help=f"Chemin du registre YAML (defaut: {DEFAULT_REGISTRY.name})")
     p.add_argument("--repo-root", default=None,
-                   help="Racine du depot git (defaut: detectee via `git rev-parse "
-                        "--show-toplevel`). Utile pour les tests (mini-depot tmp_path) "
-                        "et le cron CI qui pointe sur le checkout explicite.")
+                   help="Racine du depot git (defaut: detectee en remontant les parents "
+                        "jusqu'a un `.git`, sans fork -- cf #16111). Utile pour les tests "
+                        "(mini-depot tmp_path) et le cron CI qui pointe sur le checkout "
+                        "explicite.")
     p.add_argument("--family", default=None,
                    help="Restreindre a une famille (ex. SMT/Z3-API)")
     p.add_argument("--check", action="store_true",
@@ -1656,9 +1695,9 @@ def main(argv=None) -> int:
             # deja connue (mais apres args.repo_root parse, qui peut etre override
             # dans les tests --repo-root sur tmp_path).
             for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
-                r = subprocess.run(
+                r = _run_git(
                     ["git", "rev-parse", "-q", "--verify", state_file],
-                    capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root_for_state),
+                    cwd=str(repo_root_for_state),
                 )
                 if r.returncode == 0:
                     p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "

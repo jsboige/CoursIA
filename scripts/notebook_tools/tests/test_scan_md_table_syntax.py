@@ -79,6 +79,21 @@ class TestColumnCount:
         assert _column_count("| OpenAI tts-1 | $15.00 | ~$0.75 |") == 3
         assert _column_count("| a | $1 | $2 | $3 |") == 4
 
+    def test_currency_unit_bridged_span_keeps_delimiter(self):
+        # A `$/1M tokens` UNIT differs from an amount: its `$` is preceded by
+        # `(` and the next `$` is followed by `/`, both non-alnum, so the
+        # KaTeX-faithful boundary DOES close the span -- across the cell
+        # delimiter. The neutralized match must keep that pipe, else the header
+        # counts one column short and every data row is flagged COL_MISMATCH
+        # (measured on g1-genai's pricing tables, 2026-09-13).
+        assert _column_count(
+            "| Modèle | Input ($/1M tokens) | Output ($/1M tokens) |"
+        ) == 3
+        assert _column_count(
+            "| Modèle | Input ($/1M tokens) | Output ($/1M tokens) | "
+            "Vitesse | Précision |"
+        ) == 5
+
     def test_multiple_backtick_spans(self):
         assert _column_count("| a | `b|c` | `d|e` |") == 3
 
@@ -499,6 +514,33 @@ class TestDetectMathSpanPipe:
             item for item in findings
             if item["pathology"] == "MATH_SPAN_PIPE"
         ] == []
+
+    def test_detail_recipe_cannot_produce_broken_latex(self):
+        """The `detail` IS the product here: the CLI prints it (main()), the
+        grain reads it, and it can rewrite a document on that reading alone --
+        without ever consulting the payload.
+
+        It advertised ``\\lvert``/``\\rvert`` with no spacing rule, and named
+        no operator for a conditional. Both grains that met this pathology
+        followed it literally and emitted a control word glued to the next
+        letter (absorbed, command undefined) where a ``\\mid`` was meant:
+        ``Planners-12-LOOP.ipynb`` (#15958), ``Search-01-StateSpace.ipynb``
+        (#15965). Those two defects are what this guards -- not the detector,
+        which has never read LaTeX.
+        """
+        lines = [
+            "| Objet | Definition | Mesure |",
+            "|---|---|---|",
+            "| $r$ | rapport $|F_B| / |A|$ | ratio |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        detail = [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ][0]["detail"]
+        assert "\\mid" in detail          # the conditional case is named
+        assert "espac" in detail          # the spacing rule is stated
 
     def test_currency_columns_not_flagged(self):
         lines = [
