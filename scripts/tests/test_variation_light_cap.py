@@ -552,6 +552,10 @@ def test_canonicalize_genre_aliases():
     assert vlc.canonicalize_genre("test-coverage") == "test"
     assert vlc.canonicalize_genre("data") == "ledger"
     assert vlc.canonicalize_genre("slidev") == "slides"
+    # #15897 -- les deux abregees etaient couvertes, pas la forme longue.
+    assert vlc.canonicalize_genre("infra") == "tooling"
+    assert vlc.canonicalize_genre("infra-docker") == "tooling"
+    assert vlc.canonicalize_genre("infrastructure") == "tooling"
     # No alias -> identity.
     assert vlc.canonicalize_genre("readme") == "readme"
     assert vlc.canonicalize_genre("DOCS") == "DOCS".lower()  # case-insensitive
@@ -563,6 +567,86 @@ def test_canonicalize_genre_aliases():
     # covers the observed ones, anything else is left alone to be flagged
     # by the broader genre-offlist guard).
     assert vlc.canonicalize_genre("lean-tooling") == "tooling"
+
+
+# --- #15897 : fermer la CLASSE des variantes, pas l'instance -----------------
+#
+# Lacune fondee : `infra` et `infra-docker` etaient dans la table,
+# `infrastructure` -- la forme longue, celle qu'un humain ecrit spontanement --
+# ne l'etait pas. Le garde hors-liste etant deliberement NON bloquant, le genre
+# a traverse le pipeline (#15839 a merge en portant `infrastructure`) puis s'est
+# propage par le champ `prev:` (#15842 : `prev: DEEP/infrastructure #15839`).
+#
+# Deux tests ferment la classe :
+#   1. `_VARIANT_FAMILIES` declare chaque famille d'ecritures d'une MEME tete ;
+#      tout membre doit canonicaliser vers la MEME cible, et tout membre non
+#      canonique doit etre une cle EXPLICITE de la table (donc pas resolu par
+#      accident).
+#   2. le test de prefixes force la DECLARATION : des qu'une cle de la table est
+#      un prefixe strict d'une autre, les deux doivent partager une famille
+#      declaree. Ajouter `infra-cloud` a cote de `infra` sans rejoindre la
+#      famille echoue -- c'est l'invariant qui manquait.
+#
+# Portee honnete : une famille ENTIEREMENT nouvelle (`foo` / `foobar`, ou `foo`
+# n'existe pas encore) ne se decouvre pas mecaniquement sans dictionnaire -- elle
+# se declare. Ces tests garantissent qu'une fois une famille ouverte, aucun
+# membre ne peut manquer ni diverger en silence.
+_VARIANT_FAMILIES = (
+    # `infra` abrege, `infrastructure` en toutes lettres, et le compose
+    # `infra-docker` qui porte la meme tete (le tail `docker` est opaque,
+    # cf #13585 : la forme reste table-driven).
+    ("infra", "infra-docker", "infrastructure"),
+    # `docs` est canonique (donc absent de la table d'alias) ; `documentation`
+    # est l'alias que le texte de la regle nomme lui-meme (#13475).
+    ("docs", "documentation"),
+)
+
+
+def _variant_family_of(member):
+    for family in _VARIANT_FAMILIES:
+        if member in family:
+            return family
+    return None
+
+
+def test_genre_alias_variant_families_share_one_target():
+    # Chaque famille = les ecritures d'une meme tete. Toutes doivent
+    # canonicaliser identiquement, sinon `MED/infrastructure` et `MED/infra` ne
+    # compteraient pas de la meme facon dans G-VAR-2/3 -- exactement la
+    # consequence mesuree sur #15839/#15842.
+    for family in _VARIANT_FAMILIES:
+        targets = {vlc.canonicalize_genre(m) for m in family}
+        assert len(targets) == 1, (family, targets)
+        assert None not in targets, family
+        for member in family:
+            if member in vlc.GENRES:
+                continue
+            assert member in vlc._GENRE_ALIASES, (
+                f"'{member}' n'est ni canonique ni dans _GENRE_ALIASES : "
+                f"la famille {family} resout par accident"
+            )
+
+
+def test_genre_alias_prefix_pairs_are_declared_as_one_family():
+    # Invariant mecanique : si une cle est un prefixe strict d'une autre, les
+    # deux sont des ecritures liees -> meme famille declaree. `infra` est le
+    # seul prefixe de la table (`infra-docker`, `infrastructure`) ; le jour ou
+    # une variante s'ajoute a cote sans sa forme longue, ou dans une autre
+    # famille, ce test echoue et force la decision explicite (#15897).
+    keys = set(vlc._GENRE_ALIASES)
+    for short in sorted(keys):
+        for long in sorted(keys):
+            if short == long or not long.startswith(short):
+                continue
+            family = _variant_family_of(short)
+            assert family is not None, (
+                f"'{short}' est un prefixe de '{long}' : declare la famille "
+                f"de variantes (cf #15897)"
+            )
+            assert _variant_family_of(long) is family, (
+                f"'{short}' et '{long}' partagent un prefixe : meme famille "
+                f"requise (cf #15897)"
+            )
 
 
 def test_light_genres_set_is_locked():
