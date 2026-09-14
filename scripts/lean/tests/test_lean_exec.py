@@ -868,6 +868,227 @@ def test_status_shows_queue_and_tree_leases():
 
 
 # ---------------------------------------------------------------------------
+# T3 : backend epingle par lake — premier-ecrivain proprietaire
+# ---------------------------------------------------------------------------
+
+def _registry(state: Path) -> dict:
+    path = state / "backends.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_backend_first_writer_pins_and_second_run_reuses():
+    """Premier run d'un lake sans epingle : le defaut de politique est pose
+    ET enregistre (premier-ecrivain proprietaire). Le second run REUTILISE
+    l'epingle sans la re-decider."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        first = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                     cwd=proj, timeout=90, **cap)
+        assert first.returncode == 0, first.stderr
+        out = json.loads(first.stdout[first.stdout.index("{"):])
+        assert out["lean_backend"] == "native", out
+        assert "default-policy" in out["backend_detail"], out["backend_detail"]
+        assert out["child_exit_code"] == 0
+        reg = _registry(state)
+        assert len(reg) == 1, reg
+        key = next(iter(reg))
+        assert le._lake_key(proj) == key, (key, le._lake_key(proj))
+        assert reg[key]["backend"] == "native"
+        assert reg[key]["origin"] == "default-policy"
+        assert _last(state)["lean_backend"] == "native"
+
+        second = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                      cwd=proj, timeout=90, **cap)
+        out2 = json.loads(second.stdout[second.stdout.index("{"):])
+        assert out2["lean_backend"] == "native"
+        assert out2["backend_detail"].startswith("epingle="), \
+            out2["backend_detail"]
+        # L'epingle ne se re-ecrit pas : meme horodatage qu'au premier run.
+        assert _registry(state)[key] == reg[key]
+
+
+def test_backend_mismatch_refused_without_repin():
+    """Le piege mesure (lean_server.py:86-89) : viser l'autre backend sans
+    --repin = refus ACTIONNABLE, jamais une bascule implicite."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native,wsl")
+        first = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                     cwd=proj, timeout=90, **cap)
+        assert first.returncode == 0
+        reg_before = _registry(state)
+
+        second = _run(state, ["run", "--json", "--backend", "wsl", "--",
+                              PY, "-c", "print('ok')"],
+                      cwd=proj, timeout=90, **cap)
+        assert second.returncode == le.EXIT_REFUSED, second.returncode
+        out = json.loads(second.stdout[second.stdout.index("{"):])
+        reason = out["reason"] or ""
+        assert "--repin" in reason, reason
+        assert ".lake/build" in reason, reason
+        assert "Mathlib" in reason or "recompilation" in reason, reason
+        # Fail-closed : le registre n'a pas bouge.
+        assert _registry(state) == reg_before
+
+
+def test_backend_repin_refused_while_cache_present():
+    """--repin avec .lake/build encore la = refus : l'organe ne purge
+    JAMAIS un cache lui-meme (la purge verifiee est la porte du repin)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native,wsl")
+        first = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                     cwd=proj, timeout=90, **cap)
+        assert first.returncode == 0
+        reg_before = _registry(state)
+        (proj / ".lake" / "build").mkdir(parents=True)
+
+        rc = _run(state, ["run", "--json", "--backend", "wsl", "--repin",
+                          "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90, **cap)
+        assert rc.returncode == le.EXIT_REFUSED, rc.returncode
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert "purge" in (out["reason"] or ""), out["reason"]
+        assert "JAMAIS" in out["reason"], out["reason"]
+        assert _registry(state) == reg_before
+
+
+def test_backend_repin_succeeds_after_purge():
+    """Cache purge + --repin = re-epinglage enregistre, puis execution sur
+    le nouveau backend. L'epingle initiale est posee directement dans le
+    registre (wsl) pour garder le test deterministe : seule la bascule
+    wsl->native passe par l'organe, et native s'execute sans traduction."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        with _state_env(state):
+            le.save_backends({le._lake_key(proj): {
+                "backend": "wsl", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        rc = _run(state, ["run", "--json", "--backend", "native", "--repin",
+                          "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90, **cap)
+        assert rc.returncode == 0, rc.stderr
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert out["lean_backend"] == "native"
+        assert "repin wsl->native" in out["backend_detail"], \
+            out["backend_detail"]
+        entry = _registry(state)[le._lake_key(proj)]
+        assert entry["backend"] == "native"
+        assert "apres purge" in entry["origin"], entry
+
+
+def test_backend_none_available_fail_closed():
+    """Aucun backend disponible (surcharge vide) = refus immediat, pas de
+    repli silencieux."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                  LEAN_EXEC_FORCE_BACKENDS="")
+        assert rc.returncode == le.EXIT_REFUSED, rc.returncode
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert "aucun backend" in (out["reason"] or ""), out["reason"]
+        assert _registry(state) == {}
+
+
+def test_backend_no_lake_root_runs_native_without_pin():
+    """Hors de tout lake : rien a epingler, backend natif, registre vide."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        plain = Path(td) / "plain"
+        plain.mkdir()
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=plain, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                  LEAN_EXEC_FORCE_BACKENDS="")
+        assert rc.returncode == 0, rc.stderr
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert out["lean_backend"] == "native"
+        assert "no lake root" in out["backend_detail"], out["backend_detail"]
+        assert _registry(state) == {}
+
+
+def test_wsl_path_mangling_and_translation_form():
+    """Forme pure de la traduction WSL : tout appel d'outil Linux passe par
+    bash -lc (l'argv direct de wsl.exe mange les backslashes, mesure
+    po-2026 2026-09-14), cwd traduit via --cd, threads exportes dans le
+    shell de login, arguments shlex-quotes."""
+    saved = le.wsl_path_of
+    try:
+        le.wsl_path_of = lambda p: "/mnt/c/dev/proj"
+        cmd, env = le.backend_command(
+            ["lake", "build", "--out", "a b.olean"],
+            "wsl", {"LEAN_NUM_THREADS": "3"})
+        assert cmd[:4] == ["wsl.exe", "--cd", "/mnt/c/dev/proj", "--"]
+        assert cmd[4:7] == ["bash", "-lc", cmd[6]]
+        shell = cmd[6]
+        assert shell.startswith("export LEAN_NUM_THREADS=3;"), shell
+        assert "'a b.olean'" in shell, shell  # espace = shlex.quote
+        assert shell.endswith("lake build --out 'a b.olean'"), shell
+        # Sans threads declares : pas d'export prepended.
+        cmd2, _ = le.backend_command(["lake", "build"], "wsl", {})
+        assert cmd2[6] == "lake build", cmd2[6]
+        # Backend natif ou hote POSIX : pas de traduction du tout.
+        cmd3, env3 = le.backend_command(
+            ["lake", "build"], "native", {"LEAN_NUM_THREADS": "3"})
+        assert cmd3 == ["lake", "build"] and env3["LEAN_NUM_THREADS"] == "3"
+    finally:
+        le.wsl_path_of = saved
+
+
+def test_lake_key_normalizes_case_and_separators():
+    r"""C:/Dev/X, c:\dev\x et c:/dev/x designent le MEME lake pour
+    l'epinglage (sinon deux jeux d'epingles par lake selon l'appelant)."""
+    assert le._lake_key(Path("C:/Dev/X")) == le._lake_key(Path("c:/dev/x"))
+    if os.name == "nt":
+        assert le._lake_key(Path(r"C:\Dev\X")) == le._lake_key(
+            Path("C:/Dev/X"))
+
+
+def test_backends_cli_report():
+    """Sous-commande backends : registre, sondes (surchargees en test) et
+    la note de politique mesuree, verifiables sans aucune sonde reelle."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        with _state_env(state):
+            le.save_backends({le._lake_key(proj): {
+                "backend": "wsl", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+        rc = _run(state, ["backends", "--json"], timeout=60,
+                  LEAN_EXEC_FORCE_BACKENDS="native,wsl")
+        assert rc.returncode == 0, rc.stderr
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["pinned_lakes"] == 1
+        assert le._lake_key(proj) in payload["registry"], payload["registry"]
+        assert payload["probes"]["native"]["available"] is True
+        assert "forced" in payload["probes"]["native"]["source"]
+        assert payload["default_backend_order"] == list(
+            le.DEFAULT_BACKEND_ORDER)
+        assert "MESURE" in payload["default_policy_note"]
+        # status expose aussi le compte d'epingles.
+        st = _run(state, ["status", "--json"], timeout=60)
+        stp = json.loads(st.stdout[st.stdout.index("{"):])
+        assert stp["pinned_lakes"] == 1, stp.get("pinned_lakes")
+
+
+# ---------------------------------------------------------------------------
 # Runner direct (convention des tests scripts/lean)
 # ---------------------------------------------------------------------------
 
