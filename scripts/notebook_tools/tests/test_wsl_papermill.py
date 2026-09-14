@@ -13,9 +13,11 @@ from wsl_papermill import (
     _declared_venv_from_kernel_json,
     _default_mode,
     _normalize_venv,
+    _papermill_cmd,
     _validate_output,
     _venv_from_interpreter,
     _venv_mismatch_message,
+    _wsl_lake_root,
     batch_execute,
     check_env,
     check_env_native,
@@ -163,6 +165,21 @@ class TestExecuteNotebookDispatch:
 
 
 class TestExecuteNotebookNative:
+    def test_explicit_cwd_reaches_papermill(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        nb.write_text(json.dumps({"cells": [], "nbformat": 4}), encoding="utf-8")
+        execution_dir = tmp_path / "lake"
+        execution_dir.mkdir()
+        result = MagicMock(returncode=0, stderr="")
+
+        with patch("subprocess.run", return_value=result) as run, \
+             patch("wsl_papermill._validate_output", return_value=0):
+            assert execute_notebook_native(
+                str(nb), in_place=True, cwd=str(execution_dir)) == 0
+
+        command = run.call_args.args[0]
+        assert command[command.index("--cwd") + 1] == str(execution_dir.resolve())
+
     def test_missing_notebook_returns_1(self):
         result = execute_notebook_native("/nonexistent/path.ipynb")
         assert result == 1
@@ -270,12 +287,86 @@ class TestVenvMismatchMessage:
         assert _venv_mismatch_message("k", "~/coursia-wsl", None, "/home/jesse") is None
 
 
+class TestPapermillCommand:
+    def test_default_venv_keeps_home_expansion(self):
+        assert _papermill_cmd("~/coursia-wsl").startswith(
+            'source "$HOME"/coursia-wsl/bin/activate')
+
+    def test_absolute_venv_is_shell_quoted(self):
+        assert "'/home/user/my venv'" in _papermill_cmd("/home/user/my venv")
+
+
+class TestWslLakeRoot:
+    def test_returns_detected_root(self):
+        with patch("wsl_papermill.run_wsl", return_value=(0, "/lake", "")) as run:
+            assert _wsl_lake_root("/lake/notebooks") == "/lake"
+        assert 'd=/lake/notebooks' in run.call_args.args[0]
+
+    def test_returns_none_when_no_lake_exists(self):
+        with patch("wsl_papermill.run_wsl", return_value=(1, "", "")):
+            assert _wsl_lake_root("/notebooks") is None
+
+
 class TestExecuteNotebookWslVenv:
     def _write_nb(self, tmp_path):
         nb = {"cells": [], "nbformat": 4}
         p = tmp_path / "t.ipynb"
         p.write_text(json.dumps(nb), encoding="utf-8")
         return p
+
+    def test_defaults_cwd_to_notebook_directory(self, tmp_path):
+        p = self._write_nb(tmp_path)
+        commands = []
+
+        def fake_run_wsl(cmd, timeout=300):
+            commands.append(cmd)
+            return 0, "", ""
+
+        expected = win_to_wsl_path(str(p.parent.resolve()))
+        with patch("wsl_papermill._find_kernel_json_wsl", return_value=None), \
+             patch("wsl_papermill._wsl_lake_root", return_value=expected), \
+             patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            assert execute_notebook_wsl(str(p), kernel="lean4-wsl") == 0
+
+        assert f"--cwd {expected}" in commands[0]
+        assert "--start-timeout 300" in commands[0]
+        assert commands[0].startswith(f"cd {expected} &&")
+
+    def test_explicit_cwd_selects_sibling_lake(self, tmp_path):
+        p = self._write_nb(tmp_path)
+        lake = tmp_path / "conway_lean"
+        lake.mkdir()
+        commands = []
+
+        def fake_run_wsl(cmd, timeout=300):
+            commands.append(cmd)
+            return 0, "", ""
+
+        expected = win_to_wsl_path(str(lake.resolve()))
+        with patch("wsl_papermill._find_kernel_json_wsl", return_value=None), \
+             patch("wsl_papermill._wsl_lake_root", return_value=expected), \
+             patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            assert execute_notebook_wsl(
+                str(p), kernel="lean4-wsl", cwd=str(lake)) == 0
+
+        assert f"--cwd {expected}" in commands[0]
+        assert "--start-timeout 300" in commands[0]
+        assert commands[0].startswith(f"cd {expected} &&")
+
+    def test_missing_cwd_fails_before_wsl_execution(self, tmp_path):
+        p = self._write_nb(tmp_path)
+        with patch("wsl_papermill.run_wsl") as run:
+            assert execute_notebook_wsl(
+                str(p), cwd=str(tmp_path / "missing")) == 1
+        run.assert_not_called()
+
+    def test_lean_kernel_without_lake_aborts_before_papermill(self, tmp_path, capsys):
+        p = self._write_nb(tmp_path)
+        with patch("wsl_papermill._wsl_lake_root", return_value=None), \
+             patch("wsl_papermill.run_wsl") as run:
+            assert execute_notebook_wsl(str(p), kernel="lean4-wsl") == 1
+        run.assert_not_called()
+        assert "Pass --cwd <lake-root>" in capsys.readouterr().out
 
     def test_warns_on_declared_mismatch(self, tmp_path, capsys):
         p = self._write_nb(tmp_path)

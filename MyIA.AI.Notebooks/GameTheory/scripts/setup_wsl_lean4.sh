@@ -110,6 +110,13 @@ fi
 # 7. Create the kernel wrapper script
 log_info "Creation du wrapper pour le kernel..."
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CANONICAL_WRAPPER="$SCRIPT_DIR/../../SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py"
+if [ ! -f "$CANONICAL_WRAPPER" ]; then
+    log_error "Source canonique du wrapper absente: $CANONICAL_WRAPPER"
+    exit 1
+fi
+
 cat > "$HOME/.lean4-kernel-wrapper.py" << 'WRAPPER_EOF'
 #!/usr/bin/env python3
 # Lean 4 Jupyter Kernel Wrapper for WSL
@@ -239,6 +246,11 @@ def main():
 if __name__ == "__main__":
     main()
 WRAPPER_EOF
+
+# The versioned wrapper is canonical. Replace the legacy embedded template with
+# the reviewed repository source so reinstalling cannot reintroduce stale logic.
+cp "$CANONICAL_WRAPPER" "$HOME/.lean4-kernel-wrapper.py"
+log_info "Wrapper canonique copie depuis le depot"
 
 chmod +x "$HOME/.lean4-kernel-wrapper.py"
 log_info "Wrapper cree: ~/.lean4-kernel-wrapper.py"
