@@ -1,10 +1,16 @@
-<!-- ETUDIANTS (PR de TP) : remplissez seulement la section Summary ci-dessous. Laissez les checklists telles quelles — votre encadrant s'en charge. Une CI rouge ne bloque pas votre TP. -->
+<!--
+CONTRIBUTEURS PUBLICS : remplissez Summary, Contribution publique et Test plan. Les checklists internes vous guident, mais ne sont pas un prérequis pour ouvrir la PR : indiquez simplement ce que vous avez réellement vérifié. Un agent peut assurer le premier triage, vous aider à qualifier la contribution et escalader au besoin.
 
-> **Etudiants (PR de TP)** : remplissez seulement **Summary**. Les checklists de review sont pour l'encadrant — laissez-les telles quelles. Une CI rouge ne bloque pas le merge de votre TP.
+ETUDIANTS (PR de TP dans le cadre d'un cours) : remplissez seulement Summary. Laissez les checklists telles quelles — votre encadrant s'en charge. Une CI rouge ne bloque pas votre TP.
 
-<!-- AGENTS INTERNES (workers po-*, ai-01) : la PREMIERE LIGNE du body doit porter le tag variation-protocol. ETUDIANTS : ignorez ce bloc. -->
+AGENTS INTERNES (workers po-*, ai-01) : la PREMIERE LIGNE du body doit porter le tag variation-protocol. Contributeurs publics et étudiants : ignorez le bloc Grain.
+-->
 
-**Grain (agents internes — [variation-protocol](../.claude/rules/variation-protocol.md))** — premiere ligne du body, format :
+> **Contribution publique** : bienvenue, même sans maîtrise du harnais interne. Remplissez les sections qui vous concernent et décrivez honnêtement les tests effectués.
+>
+> **Étudiants (PR de TP)** : remplissez seulement **Summary** ; votre encadrant traite les checklists et la CI.
+
+**Grain (agents internes uniquement — [variation-protocol](../.claude/rules/variation-protocol.md))** — première ligne du body, format :
 
 `Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>`
 
@@ -27,6 +33,17 @@ Gates durs : plancher du cycle = DEEP ou MED (G-VAR-1) ; budget LIGHT = max(1, g
 <!-- 1-3 bullet points describing what this PR does -->
 
 -
+
+## Contribution publique
+
+<!-- Contributeurs publics uniquement ; agents internes et étudiants en PR de TP peuvent supprimer cette section. -->
+
+- **Mode** : contribution classique / correction d'exercice
+- **Issue associée** : #...
+- **Notebook et exercice concernés** (si correction d'exercice) :
+- **Crédit souhaité** (nom ou pseudonyme GitHub) :
+
+> Une correction d'exercice validée sera intégrée comme **exemple guidé crédité**. Les mainteneurs ajouteront un nouvel exercice non résolu de difficulté comparable ; vous n'avez pas à effectuer cette transformation vous-même.
 
 ## Changes
 

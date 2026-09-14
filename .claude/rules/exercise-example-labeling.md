@@ -24,6 +24,19 @@ Un notebook pedagogique DOIT contenir des **Exemples** (resolus) ET des **Exerci
 
 Tout le reste est deja dans l'etat cible : ne pas toucher.
 
+## Correction volontaire soumise par un contributeur
+
+Une solution d'exercice soumise volontairement par Pull Request et validée suit un protocole d'intégration distinct d'une fuite accidentelle :
+
+1. la solution complète devient un **Exemple guidé** ; préserver son raisonnement, son code et ses sorties réelles ;
+2. ajouter dans la cellule markdown adjacente un crédit sobre : nom ou pseudonyme GitHub choisi par le contributeur + lien vers la Pull Request ;
+3. ajouter dans le même notebook un **nouvel exercice non résolu**, aligné sur le même objectif pédagogique et de difficulté comparable ;
+4. respecter les stubs C.1 et le minimum/placement de [three-exercises-per-notebook.md](three-exercises-per-notebook.md), puis ré-exécuter le notebook avec des sorties cohérentes.
+
+Le contributeur n'a pas à produire lui-même l'exercice de remplacement : les mainteneurs ou leurs agents peuvent effectuer cette transformation au merge.
+
+Ce protocole ne s'applique pas à une solution divulguée involontairement, à du code qui ne constitue pas une solution complète, ni à une PR scolaire avant son évaluation. Après l'évaluation et au moment de distiller une correction étudiante dans CoursIA, le même contrat s'applique : exemple guidé crédité + nouvel exercice.
+
 ## Interdits (= la source du chaos)
 
 - **find-replace aveugle** de titres "Exercice" <-> "Exemple" (= gaming du leak-scanner, incidents #1214 / #1336).
