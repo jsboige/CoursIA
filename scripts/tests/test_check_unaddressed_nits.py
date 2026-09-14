@@ -364,6 +364,69 @@ def test_needs_rebase_ne_flagge_pas():
     assert mod.classify("jsboige", body) is None
 
 
+# --- #15989 — la fenetre de citation s'arrete a la frontiere de PARAGRAPHE.
+# Le defaut (defaut positif) : les 30 caracteres qui precedent le marqueur
+# etaient pris sans borne, donc un citer du paragraphe PRECEDENT eteignait le
+# verdict du paragraphe SUIVANT. Idiome declencheur = le titre de section nu.
+# L'issue #15989 le mesure avec « ## dissipation » (mot que #15843 ouvre) ;
+# sur main la classe est deja atteignable avec les citers de CITERS.
+
+
+def test_titre_de_section_nu_n_eteint_pas_le_verdict_suivant():
+    """#15989, controle positif du defaut : « ## stale » seul dans son
+    paragraphe, puis un verdict NEUF. Le titre ne doit plus le neutraliser."""
+    body = "## stale\n\nCHANGES_REQUESTED: le split manque sur le head neuf."
+    assert mod._is_cited("## stale\n\n") is False
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("titre", ["## stale", "## previous", "## sans", "## aucune"])
+def test_titre_nu_quel_que_soit_le_citer(titre):
+    """La classe n'est pas specifique d'un mot : tout citer de CITERS en titre
+    nu ouvrait la meme extinction silencieuse."""
+    assert mod.classify(
+        "jsboige", f"{titre}\n\nCHANGES_REQUESTED: le split manque.") == "BOT-CONCERN"
+
+
+def test_titre_nu_sans_citer_reste_un_controle_muet():
+    """Controle negatif du controle positif : « ## dissolution » n'est pas un
+    citer, donc le verdict vit AVANT comme APRES. Sans ce temoin, le test
+    precedent passerait meme si la borne ne faisait rien."""
+    body = "## dissolution\n\nCHANGES_REQUESTED: le split manque sur le head neuf."
+    assert mod._is_cited("## dissolution\n\n") is False
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("corps", [
+    "previous CHANGES_REQUESTED: le split manque.",
+    "Aucun CHANGES_REQUESTED de ma part sur ce head.",
+    "stale CHANGES_REQUESTED reflects pre-fix state.",
+])
+def test_citer_sur_la_ligne_du_marqueur_neutralise_toujours(corps):
+    """#15989, critere 2 : le mecanisme est conserve — un citer sur la MEME
+    ligne que le marqueur reste une citation."""
+    assert mod.classify("jsboige", corps) is None
+
+
+@pytest.mark.parametrize("corps", [
+    "stale\nCHANGES_REQUESTED: reflects pre-fix state.",
+    "previous\nCHANGES_REQUESTED: le split manque.",
+])
+def test_citer_sur_la_ligne_precedente_sans_ligne_vide_neutralise_toujours(corps):
+    """#15989, critere 2 : la borne est le PARAGRAPHE, pas la ligne. Un citer
+    sur la ligne immediatement precedente, sans ligne vide entre les deux,
+    appartient au meme paragraphe et neutralise donc toujours."""
+    assert mod.classify("jsboige", corps) is None
+
+
+def test_frontiere_de_paragraphe_ne_touche_pas_une_emission_nue():
+    """Controle negatif : un verdict emis sans citer devant, et un verdict
+    emis juste apres un titre, flagguent tous les deux."""
+    assert mod.classify("jsboige", "CHANGES_REQUESTED: le split manque.") == "BOT-CONCERN"
+    assert mod.classify(
+        "jsboige", "## Notes\n\nREQUEST_CHANGES: il faut splitter.") == "BOT-CONCERN"
+
+
 def test_verdict_conditionnel_fleche_ne_flagge_pas():
     """FP #1247 (fenetre 05-15..05-21) : « Si Static validation rouge →
     CHANGES_REQUESTED + diagnostic » — verdict CONDITIONNEL futur. La fleche

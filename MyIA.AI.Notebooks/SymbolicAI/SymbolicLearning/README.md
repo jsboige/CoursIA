@@ -286,7 +286,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 |---------|---------|
 | Modèle PAC | `Distribution` (poids ℝ normalisés), `Hypothesis`, `trueError` — une distribution construite à la main (`Dcoin` sur `Fin 2`) |
 | Échantillon | `sampleWeight`, normalisation `sampleWeight_sum_one` (Fubini discrète) |
-| Borne classe finie | `erm_error_bound`, `uniform_concentration`, union bound, `pac_finite_class_bound` (Valiant : `m ≥ (1/ε)(ln |H| + ln(1/δ))`) |
+| Borne classe finie | `erm_error_bound`, `uniform_concentration`, union bound, `pac_finite_class_bound` (Valiant : `m ≥ (1/ε)(ln \|H\| + ln(1/δ))`) |
 | Agnostique | `sampleProb_mono`, `pac_agnostic_generalization` |
 | Concentration | Markov → Chernoff → Hoeffding (queues + concentration bilatérale), estimateur sans biais `sampleExpect_empError_eq_trueError` |
 | Perceptron | Trajectoire `perceptronWeights`, borne de Novikoff (`align_growth`, `norm_bound`, `novikoff_mistake_bound`), serrage (`witnessPts`, `novikoff_bound_is_sharp`) |
