@@ -112,6 +112,38 @@ def _synthesize_bulk_noop(bulk: pd.DataFrame) -> pd.DataFrame:
     return bulk
 
 
+def _make_flatten_layout(bulk: pd.DataFrame, n_bars: int):
+    """Build the layout a true ``self.history(..., flatten=True)`` would deliver.
+
+    Returns ``(arr, sym_codes, n_bars)`` for ``_path_flatten_array_no_df``:
+
+    - ``arr``: ``ndarray`` of shape ``(n_symbols * n_bars,)`` containing
+      the close values, sorted by ``(time, symbol)`` -- the layout
+      implied by the QC ``flatten=True`` docs (numpy structured array).
+    - ``sym_codes``: ``ndarray`` of the same length, each entry being
+      the integer index of the symbol on that row.
+    - ``n_bars``: echoed back for signature parity with the DataFrame
+      pistes.
+
+    This helper is the cost-equivalent of what the QC bridge would have
+    to produce client-side: a single ndarray + an aligned codes vector,
+    already sorted. The post-fetch Python transform measured by
+    ``_path_flatten_array_no_df`` is therefore the **Python-side floor**
+    of any ``flatten=True`` migration -- not a measurement of
+    ``flatten=True`` itself (po-2027 is RECOVERABLE-USER-HAND on QC API,
+    see MEMORY ``qc-cycle-gating-recoverable-user-hand.md``).
+    """
+    sym_list = list(bulk.index.get_level_values("symbol").unique())
+    sym_codes_full = pd.Categorical(
+        bulk.index.get_level_values("symbol"), categories=sym_list
+    ).codes
+    time_codes = pd.Categorical(bulk.index.get_level_values("time")).codes
+    order = np.lexsort((time_codes, sym_codes_full))
+    arr = bulk["close"].values[order].astype(np.float64, copy=False)
+    sym_codes = sym_codes_full[order].astype(np.int64, copy=False)
+    return arr, sym_codes, n_bars
+
+
 def _history_per_symbol(sym_list: List[str], n_bars: int, bulk_cache: pd.DataFrame) -> Dict[str, np.ndarray]:
     """Simulate 19 individual history() calls by slicing the bulk cache."""
     out = {}
@@ -154,28 +186,40 @@ def _path_per_symbol(bulk_cache: pd.DataFrame, n_bars: int) -> Dict[str, np.ndar
 
 
 def _path_flatten_array(bulk_cache: pd.DataFrame, n_bars: int) -> Dict[str, np.ndarray]:
-    """Piste C: bulk with flatten=True -> ndarray instead of DataFrame.
+    """Piste C: in-memory transformation of a pre-built bulk DataFrame.
 
-    The QC Python API self.history(..., flatten=True) returns an ndarray
-    of shape (n_symbols * n_bars, ...) with no pandas construction. We
-    simulate by extracting the close column directly into a stacked ndarray.
+    HONEST SCOPE (REPAIR 2026-09-14, c.1148 adjoint re-review): this path
+    measures the **transformation** of a bulk the QC bridge already
+    returned as a DataFrame. It does NOT model ``flatten=True`` because
+    a real ``flatten=True`` would not produce a DataFrame in the first
+    place -- there would be no ``Categorical`` / ``MultiIndex`` to
+    convert. The transformation measured here is what carver13.py:381
+    does today, swapping one pandas construction (xs-slice) for another
+    (``Categorical`` + ``lexsort`` + ``searchsorted``). A genuine
+    ``flatten=True`` WINNER would have to be measured by an entirely
+    separate bench on QC Cloud, which is out of scope here (po-2027
+    RECOVERABLE-USER-HAND on QC API, see MEMORY
+    qc-cycle-gating-recoverable-user-hand.md).
+
+    Bottom line: this bench discriminates A vs B vs C **as different
+    ways to slice the same DataFrame**, NOT as a comparison with a
+    real ``flatten=True`` return shape. The previous PR's "WINNER
+    flatten=True" framing was an over-attribution, flagged by the
+    adjoint preflight on 2026-09-14.
     """
     bulk = _synthesize_bulk_noop(bulk_cache)
     sym_list = list(bulk.index.get_level_values("symbol").unique())
     out = {}
-    # `flatten=True` semantics: numpy structured array sorted (time, symbol).
-    # We approximate by extracting per-symbol closes as a contiguous block.
+    # `flatten=True` semantics would skip this Categorical step entirely;
+    # what we actually do is xs-slice + Categorical + lexsort + copy.
     close_values = bulk["close"].values
     sym_codes = pd.Categorical(
         bulk.index.get_level_values("symbol"), categories=sym_list
     ).codes
     time_codes = pd.Categorical(bulk.index.get_level_values("time")).codes
-    # Per-symbol slice via sorted indices (avoids re-sorting the bulk frame).
     order = np.lexsort((time_codes, sym_codes))
     sorted_sym = sym_codes[order]
-    sorted_time = time_codes[order]
     sorted_close = close_values[order]
-    # Find each symbol's contiguous block and copy closes.
     boundaries = np.searchsorted(sorted_sym, np.arange(len(sym_list)))
     for i, sym in enumerate(sym_list):
         start = boundaries[i]
@@ -183,6 +227,42 @@ def _path_flatten_array(bulk_cache: pd.DataFrame, n_bars: int) -> Dict[str, np.n
         if end - start < 256 + 2:
             continue
         out[sym] = sorted_close[start:end].copy()
+    return out
+
+
+def _path_flatten_array_no_df(arr: np.ndarray, sym_codes: np.ndarray, n_bars: int) -> Dict[str, np.ndarray]:
+    """Piste C_alt: array-only path -- if the QC bridge returned ndarray.
+
+    Receives a pre-built ndarray ``arr`` of shape (n_symbols * n_bars,)
+    plus an aligned ``sym_codes`` integer array (each row's symbol
+    index) -- the QC ``flatten=True`` contract from the docs (numpy
+    structured array sorted (time, symbol)).
+
+    This is **NOT** a guarantee of what ``self.history(flatten=True)``
+    actually returns. It is a ``what-if'' measurement that quantifies
+    the lower bound: even with a perfectly contiguous ndarray and a
+    zero-cost sym→array split, how fast is the post-fetch transform?
+    The carver13 EWMAC forecasts downstream of this dict are bit-equal
+    to A/B/C (test_all_pistes_return_identical_close_arrays pins this),
+    so a future PR that moves to ``flatten=True`` would inherit this
+    measurement as its Python-side floor.
+
+    Difference vs ``_path_flatten_array``: skips the DataFrame->ndarray
+    extraction, the Categorical codes, and the lexsort. The bulk is
+    already in the layout the flatten contract would deliver.
+    """
+    out = {}
+    n_symbols = int(sym_codes.max()) + 1 if len(sym_codes) > 0 else 0
+    boundaries = np.searchsorted(sym_codes, np.arange(n_symbols))
+    for i in range(n_symbols):
+        start = boundaries[i]
+        end = boundaries[i + 1] if i + 1 < n_symbols else len(sym_codes)
+        if end - start < 256 + 2:
+            continue
+        # Direct ndarray slice; no copy because contiguous (per flatten
+        # contract) -- in the wild, a defensive copy may be needed, but
+        # this is the floor.
+        out[f"SYM{i:02d}"] = arr[start:end]
     return out
 
 
@@ -345,14 +425,21 @@ def main():
     paths = [
         ("A_baseline_bulk (current, #16003)", _maybe_wrap_with_construction(_path_baseline_bulk, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
         ("B_per_symbol (19 history calls)", _maybe_wrap_with_construction(_path_per_symbol, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
-        ("C_flatten_array (ndarray path)", _maybe_wrap_with_construction(_path_flatten_array, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
+        ("C_flatten_array (DataFrame->array, REPAIR scope)", _maybe_wrap_with_construction(_path_flatten_array, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
+        ("C_alt_no_df (true flatten=True layout, ndarray floor)", _path_flatten_array_no_df, _make_flatten_layout(bulk_baseline, N_BARS_BASELINE), N_BARS_BASELINE),
         ("D_reduce_n_bars (592->336)", _maybe_wrap_with_construction(_path_reduce_n_bars, N_BARS_REDUCED), bulk_reduced, N_BARS_REDUCED),
-        ("D'_reduce_n_bars_slim (592->276)", _maybe_wrap_with_construction(_path_reduce_n_bars_slim, N_BARS_SLIM), bulk_slim, N_BARS_SLIM),
+        ("D'_observe_only_n_bars_slim (592->276, vol_lookback dropped, observation-only)", _maybe_wrap_with_construction(_path_reduce_n_bars_slim, N_BARS_SLIM), bulk_slim, N_BARS_SLIM),
     ]
 
     results = {}
     for name, fn, bulk, n_bars in paths:
-        stats = _time_path(fn, bulk, n_bars, n_iter=args.n_iter)
+        # C_alt_no_df takes a (arr, sym_codes, n_bars) tuple -- unpack it
+        # so _time_path gets the right *args.
+        if name.startswith("C_alt_"):
+            arr, sym_codes, _ = bulk
+            stats = _time_path(fn, arr, sym_codes, n_bars, n_iter=args.n_iter)
+        else:
+            stats = _time_path(fn, bulk, n_bars, n_iter=args.n_iter)
         results[name] = stats
         _say(
             f"  {name:42s} median={stats['median_ms']:7.3f} ms  "
@@ -396,7 +483,24 @@ def main():
     _say("the POST-FETCH transformation of a pre-built bulk -- not bulk")
     _say("construction. To attribute a speedup to 'pandas construction', pass")
     _say("--measure-construction (and re-run).")
-    _say("Conclusion: the 4 pistes in #16076 are unlikely to deliver the")
+    _say("")
+    _say("Piste scope notes (REPAIR 2026-09-14, c.1148 adjoint re-review):")
+    _say("  - C_flatten_array: DataFrame->array transformation, NOT flatten=True.")
+    _say("    A true flatten=True would not produce a DataFrame in the first")
+    _say("    place; the Categorical/lexsort measured here is what carver13")
+    _say("    already does with xs-slices. The 'WINNER flatten=True' framing")
+    _say("    of v1 was an over-attribution.")
+    _say("  - C_alt_no_df: array-only floor. Quantifies the Python-side lower")
+    _say("    bound assuming the QC bridge delivered a sorted ndarray; the")
+    _say("    QC side itself remains unverified (po-2027 RECOVERABLE-USER-HAND).")
+    _say("  - D_reduce_n_bars: vol_lookback preserved; safe path.")
+    _say("  - D'_observe_only_n_bars_slim: vol_lookback dropped (Likely UNSAFE")
+    _say("    for vol_lookback=60 + 20 of EWMA burn-in). Listed for")
+    _say("    observation of per-row construction cost only. NOT a recommendation")
+    _say("    to ship: levers QC-side (reducing n_bars) are out of scope of this")
+    _say("    Python-side bench and require neutrality on forecasts/orders/")
+    _say("    backtest before adoption.")
+    _say("Conclusion: the 5 pistes in #16076 are unlikely to deliver the")
     _say("94% wall reduction the issue implies; the real lever is")
     _say("REDUCING THE NUMBER OF history() CALLS (caching the bulk across")
     _say("consecutive same-day rebalances, or skipping rebalances where")
@@ -422,6 +526,9 @@ def main():
                 "Times only Python-side processing; QC-side cost is not modelled."
                 " Local WINNER != 94% wall reduction. WINNER requires BOTH"
                 " ratio < 0.70 AND IQR (p25..p75) disjoint from baseline."
+                " C is in-memory DataFrame->array transform, NOT flatten=True."
+                " C_alt_no_df is the Python-side floor assuming flatten=True layout."
+                " D' slim drops vol_lookback (Likely UNSAFE) and is observation-only."
             ),
         }
         # Pure JSON on stdout, one document, terminated by a newline.

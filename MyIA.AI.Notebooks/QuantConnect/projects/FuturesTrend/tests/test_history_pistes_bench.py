@@ -300,5 +300,58 @@ class TestREPAIRAdjointPreflight16093(unittest.TestCase):
         self.assertIn("NEUTRAL_MEDIAN_ONLY", src)
 
 
+class TestREPAIRAdjointPreflight16093c1148(unittest.TestCase):
+    """REPAIR c.1148 -- 3 reserves adjointes NON levees en c.1147.
+
+    1. C chemin flatten=True : ajouter C_alt_no_df (array-only floor)
+       + borner honnetement C comme transformation in-memory.
+    2. D' unsafe : clarifier observation-only (vol_lookback dropped).
+    3. Grain header `ci` -> `qc` ; prev #16088 (issue) -> #16072 (PR Merged).
+    """
+
+    def test_C_alt_no_df_exists_and_returns_full_symbol_set(self):
+        """C_alt_no_df MUST exist and return 19 symbols from a pre-built
+        ndarray + sym_codes -- the array-only floor of any flatten=True
+        migration. This pins the c.1148 REPAIR's first reserve (the
+        missing true-array representation of C).
+        """
+        bulk = bench._make_synthetic_bulk(bench.N_BARS_BASELINE, seed=42)
+        arr, sym_codes, _ = bench._make_flatten_layout(bulk, bench.N_BARS_BASELINE)
+        result = bench._path_flatten_array_no_df(arr, sym_codes, bench.N_BARS_BASELINE)
+        # All 19 symbols (one per unique sym_codes value) get a slice.
+        n_unique = int(sym_codes.max()) + 1
+        self.assertEqual(len(result), n_unique)
+        for sym, closes in result.items():
+            self.assertIsInstance(closes, np.ndarray)
+            self.assertGreaterEqual(len(closes), bench.EWMAC_PAIRS[-1][1] + 2)
+
+    def test_Dprime_label_is_observe_only_not_winner(self):
+        """The D' slim path MUST be labeled observation-only (vol_lookback
+        dropped, Likely UNSAFE) -- NOT a recommendation to ship. The bench
+        label includes 'observe_only' and the prose names it as such.
+
+        This pins the c.1148 REPAIR's second reserve: the v1 PR body
+        recommended D' without neutrality on forecasts/orders/backtest.
+        """
+        import inspect
+        src = inspect.getsource(bench.main)
+        # Label is observation-only -- no 'WINNER' framing for D' slim.
+        self.assertIn("D'_observe_only", src)
+        # The prose MUST spell out 'observation-only' / 'Likely UNSAFE' so
+        # the body cannot quietly revert the recommendation.
+        self.assertIn("Likely UNSAFE", src)
+        self.assertIn("observation-only", src)
+        # The phrase is split across two _say() calls for stderr width;
+        # both halves must appear in source. A regex with DOTALL tolerates
+        # the wrap (including any source tokens and newlines in between).
+        import re
+        match = re.search(r"NOT a recommendation.{0,200}to ship", src, flags=re.DOTALL)
+        self.assertIsNotNone(
+            match,
+            "D' slim prose MUST warn 'NOT a recommendation to ship'; "
+            "adjoint 2026-09-14 re-review flagged the body without this neutrality.",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
