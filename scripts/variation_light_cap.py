@@ -564,6 +564,15 @@ _GENRE_ALIASES = {
     # equal the previous genre, so G-VAR-3 was unreachable by word choice).
     "scripts": "tooling",
     "infra": "tooling",
+    # #15897 -- la forme LONGUE de `infra`, celle qu'un humain ecrit
+    # spontanement. Les deux abregees (`infra`, `infra-docker`) etaient
+    # couvertes, pas celle-ci : un genre hors-table traversant le pipeline
+    # sans etre corrige (#15839 a merge en portant `infrastructure`, puis
+    # #15842 a propage la lacune par `prev: DEEP/infrastructure #15839`).
+    # La classe entiere est desormais tenue par
+    # `test_genre_alias_variant_families` (toute variante declaree doit
+    # canonicaliser vers la meme cible que ses soeurs).
+    "infrastructure": "tooling",
     "csp": "research-code",
     # #13475 -- the two words the RULE TEXT itself names (variation-protocol
     # §1 lists `documentation -> docs` among the normalising synonyms) and

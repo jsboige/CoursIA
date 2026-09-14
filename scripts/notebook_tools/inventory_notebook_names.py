@@ -245,25 +245,32 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
       `ref` : révision examinée.
       `denominator` : nombre de notebooks scannés.
       `baseline` : attendu ; si None, déduit automatiquement du décompte de
-        HEAD (= la baseline « vivante » que le test fail #15523 a fixée).
-        Une baseline figée (entier explicite) reste possible pour les tests
-        historiques : passer l'entier directement à build_inventory.
+        entries (classification --base ; Tell c.15814-L1 ★ NEW). Tell c.15523
+        avait fixé HEAD à l'origine, ce qui cassait toute PR ajoutant un
+        notebook (baseline > denominator, delta=-1 systématique, gate rouge
+        sans défaut substance). Une baseline figée (entier explicite) reste
+        possible pour les tests historiques : passer l'entier directement à
+        build_inventory.
       `by_classification` : comptage par classification.
       `entries` : liste de dicts, un par notebook.
 
     Tell c.1066 strict : dénombrement réel imprimé TOUJOURS, jamais
     confondu avec « 0 trouvé ». Tell c.745 ★★★ : aucune absorption
     silencieuse dans « non conforme » — exception / ambigu sont
-    comptés à part. Tell c.15523 : baseline auto = HEAD évite que le rouge
-    `denominator != baseline` se répète à chaque ajout de notebook sur
-    main sans rebase frais de la PR.
+    comptés à part. Tell c.15814-L1 ★ NEW : baseline auto = `ref` pour
+    que la comparaison baseline == denominator tienne sur la même
+    révision (le test cherche un écart de classification, pas un écart
+    de scope).
     """
     paths = notebooks_at(ref)
-    # Tell c.15523 : baseline par défaut = décompte de HEAD (le dépôt évolue,
-    # une baseline figée devient fausse à chaque ajout). L'argument `baseline`
-    # explicite reste supporté pour les tests historiques.
-    if baseline is None:
-        baseline = len(notebooks_at("HEAD"))
+    # Tell c.15814-L1 ★ NEW : baseline auto = entries (classification --base).
+    # Tell c.15523 (l'origine) choisissait HEAD : c'est vrai sur main (où la
+    # PR n'a pas encore bougé) mais faux sur la branche PR qui ajoute un
+    # notebook (baseline = HEAD branche > denominator = origin/main sans le
+    # notebook) — gate rouge mécanique. Aligner baseline sur entries (et non
+    # paths) rend la comparaison self-consistent ET blindée contre un futur
+    # commit accidentel d'artefact `_output/` (paths augmenterait, denominator
+    # non, et le test rougirait sans défaut substance) — dette future colmatée.
     by_class: dict[str, int] = {
         _CLASSIF_CONFORME: 0,
         _CLASSIF_RENAME: 0,
@@ -298,6 +305,8 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
             "zero_padded": zero_padded,
             "classification": classification,
         })
+    if baseline is None:
+        baseline = len(entries)
     return {
         "ref": ref,
         "denominator": len(entries),
@@ -407,8 +416,8 @@ def main():
     ap.add_argument("--base", default="origin/main",
                     help="revision de base (defaut: origin/main)")
     ap.add_argument("--baseline", type=int, default=None,
-                    help="denominateur nominal (defaut: auto=HEAD, soit la "
-                         "mesure du commit courant — Tell c.15523)")
+                    help="denominateur nominal (defaut: auto=ref, aligne sur "
+                         "entries (classification --base), Tell c.15814-L1 ★ NEW)")
     ap.add_argument("--json", action="store_true",
                     help="sortie JSON machine (defaut: humain)")
     ap.add_argument("--self-test", action="store_true",

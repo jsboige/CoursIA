@@ -83,17 +83,19 @@ Note : l'alignement des manifests (#2611 etape 2) peut elargir les groupes.
 
 ## Comparaison multi-machine
 
-| Mesure | ai-01 (#13962) | po-2023 (#15070) | po-2024 (#14296) | po-2026 (#14038) | po-2027 (c.1059) |
+| Mesure | ai-01 (#13962) | po-2023 (#15070) | po-2024 (re-mesuré ‡) | po-2026 (#14038) | po-2027 (c.1059) |
 |---|---:|---:|---:|---:|---:|
-| Checkouts Mathlib réels | **17** | **3** | 0 | 0 | **0** |
-| Jonctions actives | 0 | 0 | 0 | 0 | **0** |
-| Empreinte totale | ~110 Go | **1,28 Go** | 0 Go | 0 Go | **0 Go** |
-| Groupes mutualisables | 1 (15 lacs) | **2 (13 + 9 lacs)** | 1 (19 lacs) | 1 (19 lacs) | **2 (13 + 9 lacs)** |
-| Économie jonction-cluster | ~90 Go | **0,64 Go** | 0 Go | 0 Go | **0 GB** |
+| Checkouts Mathlib réels | **17** | **3** | 0 (Scan) / **2** hors découverte de l'outil | 0 | **0** |
+| Jonctions actives | 0 | 0 | **22** | 0 | **0** |
+| Empreinte totale | ~110 Go | **1,28 Go** | 0 Go — contenu **non atteignable** | 0 Go | **0 Go** |
+| Groupes mutualisables | 1 (15 lacs) | **2 (13 + 9 lacs)** | **2 (13 + 9 lacs)** | 1 (19 lacs) | **2 (13 + 9 lacs)** |
+| Économie jonction-cluster | ~90 Go | **0,64 Go** | 0 Go récupérable en l'état | 0 Go | **0 GB** |
 
-> **Provenance des colonnes (#15568)** — po-2023 vient de #15070 (Scan du 2026-09-07, PR fermée) et po-2024 de `docs/lean/cluster-junctions-c857.md` (#14296, c.857, Scan du 2026-09-02). Ces deux mesures ont été produites par leurs lanes avec le même instrument ; leurs chiffres sont repris **tels quels**, sans re-mesure (acceptance 3 de #15568). Elles partagent la borne de portée décrite plus haut : chacune est une mesure **de worktree**, pas de machine.
+> **‡ Correction po-2024 (2026-09-13, lane `myia-po-2024:CoursIA`)** — la colonne po-2024 de ce tableau reprenait `docs/lean/cluster-junctions-c857.md` (#14296) **sans re-mesure**, comme le prévoyait l'acceptance 3 de #15568. Cette mesure-là avait été prise depuis un **worktree frais** (`C:/dev/CoursIA-c857-13962`), donc structurellement aveugle à tout checkout réel : son « 0 » n'était pas une absence, c'était un artefact de portée. Rejouée depuis le worktree **principal** de po-2024, elle rend **22 jonctions NTFS vivantes** vers un store partagé **vide**, et 11 de ces 22 visent une rev Mathlib qui ne correspond plus à leur manifest (dérive de toolchain). Détail, instruments et preuves : [`docs/lean/junctions-scan-po-2024.md`](junctions-scan-po-2024.md). Les deux mesures restent des mesures **de worktree** ; la seconde est simplement prise dans le bon.
 
-Le réservoir identifié sur po-2027 (22 lacs mutualisables) **excède en nombre** celui de po-2026 (19), mais reste à **0 Go** faute de checkout donneur. Les **cinq** machines mesurées à ce jour — ai-01, po-2023, po-2024, po-2026, po-2027 — partagent le même profil : **le réservoir est large, l'amorçage est quasi nul**. La seule valeur non nulle du plateau est po-2023, dont les 3 checkouts physiques (1,28 Go cumulés) rendent **0,64 Go** récupérables ; sa lane a conclu que cette économie marginale ne justifiait pas un Apply.
+> **Provenance des colonnes (#15568)** — po-2023 vient de #15070 (Scan du 2026-09-07, PR fermée). Sa mesure a été produite par sa lane avec le même instrument et ses chiffres sont repris **tels quels**, sans re-mesure (acceptance 3 de #15568) ; elle partage la borne de portée décrite plus haut : c'est une mesure **de worktree**, pas de machine.
+
+Le réservoir identifié sur po-2027 (22 lacs mutualisables) **excède en nombre** celui de po-2026 (19), mais reste à **0 Go** faute de checkout donneur. Trois des **cinq** machines mesurées à ce jour — ai-01, po-2026, po-2027 — partagent le profil « réservoir large, amorçage quasi nul ». La seule valeur non nulle du plateau est po-2023, dont les 3 checkouts physiques (1,28 Go cumulés) rendent **0,64 Go** récupérables ; sa lane a conclu que cette économie marginale ne justifiait pas un Apply. **po-2024 fait exception** : c'est un cluster **appliqué** (22 jonctions posées le 2026-08-30) dont le store a été vidé depuis — un troisième état, distinct de « rien à faire » comme de « donneur insuffisant », et que le Scan ne distingue pas (cf. `junctions-scan-po-2024.md` §4).
 
 ## Cause
 
