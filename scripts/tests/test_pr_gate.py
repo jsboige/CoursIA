@@ -2006,10 +2006,17 @@ def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch
     title = seen["fields"]["output[title]"]
     assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
     assert "plancher 120 min" in title
-    # The lift the title announces is the head commit + 120 min -- readable
-    # without recomputing anything (acceptance 2), and re-armed from the
-    # newest commit after any push or update-branch (acceptance 4).
-    assert "leve au premier balayage suivant 2026-09-13T12:00:00Z" in title
+    # L'instant que le titre annonce (ecoulement du plancher) est tete + 120 min
+    # -- lisible sans rien recalculer (acceptance 2), re-arme depuis le commit
+    # le plus recent apres tout push ou update-branch (acceptance 4). #15726 :
+    # le titre DATE l'ecoulement, il ne promet plus le balayage -- l'ancienne
+    # formule « leve au premier balayage suivant » adossait la levee a un
+    # balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ; cette cadence vit
+    # dans le summary, pas dans une promesse du titre.
+    assert "ecoule a 2026-09-13T12:00:00Z" in title
+    # Garantie « rien a reparer » au niveau du TITRE aussi : la troncature
+    # [:255] peut l'y couper sans que rien ne l'annonce -- le test doit tomber.
+    assert "Rien a corriger dans le code" in title
     assert "Plancher mecanique -- rien a reparer" in seen["fields"]["output[summary]"]
 
 
