@@ -151,7 +151,7 @@ def test_check_sans_numero_de_pr_ne_gate_rien():
 def test_check_bout_en_bout_refuse_une_tete_jeune():
     def fetch(path):
         if path.startswith("repos/o/r/pulls/"):
-            return {"labels": []}
+            return {"labels": [], "base": {"sha": "ba5e0000"}}
         return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
 
     ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
@@ -162,9 +162,125 @@ def test_check_bout_en_bout_refuse_une_tete_jeune():
 def test_check_bout_en_bout_accepte_une_tete_agee():
     def fetch(path):
         if path.startswith("repos/o/r/pulls/"):
-            return {"labels": []}
+            return {"labels": [], "base": {"sha": "ba5e0000"}}
         return {"commit": {"committer": {"date": "2026-09-07T09:00:00Z"}}}
 
     ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
     assert ok is True
     assert "dwell ecoule" in msg
+
+
+# --- 5. #16149 -- le rafraichissement de base ne re-arme pas le plancher ----
+
+def _commit(sha, date, parents):
+    return {
+        "commit": {"committer": {"date": date}},
+        "parents": [{"sha": p} for p in parents],
+    }
+
+
+def test_16149_update_branch_ne_re_armed_pas_le_plancher():
+    """Critere d'acceptation de l'issue : commit d'auteur T-180 min, puis
+    fusion de rafraichissement de base T-1 min (second parent = la base
+    elle-meme) -- le plancher se mesure sur l'auteur, donc ecoule."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e"}}
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["auc0", "ba5e"])
+        if path == "repos/o/r/commits/auc0":
+            return _commit("auc0", "2026-09-07T09:00:00Z", ["r00t"])
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is True
+    assert "2026-09-07T09:00:00Z" in msg, (
+        "le plancher doit se mesurer sur le commit d'auteur, pas la fusion"
+    )
+
+
+def test_16149_second_parent_via_compare_behind():
+    """Le second parent ancetre DE LOIN de la base (pas d'egalite directe) :
+    l'appel compare rend "behind" et la fusion est franchie aussi."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e"}}
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["auc0", "0ld"])
+        if path == "repos/o/r/commits/auc0":
+            return _commit("auc0", "2026-09-07T08:00:00Z", ["r00t"])
+        if path == "repos/o/r/compare/ba5e...0ld":
+            return {"status": "behind", "behind_by": 3}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is True
+    assert "2026-09-07T08:00:00Z" in msg
+
+
+def test_16149_fusion_de_sous_branche_auteur_re_arme():
+    """Controle FN : une fusion dont le second parent n'est PAS un ancetre
+    de la base (l'auteur incorpore sa propre sous-branche) introduit du
+    contenu d'auteur -- le plancher se re-arme sur elle."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e"}}
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["auc0", "feat"])
+        if path == "repos/o/r/compare/ba5e...feat":
+            return {"status": "diverged"}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is False
+    assert msg.startswith("tete du 2026-09-07T11:59:00Z")
+
+
+def test_16149_filiation_illisible_reste_stricte():
+    """Controle FN : un compare muet ne vaut pas reconnaissance de
+    rafraichissement -- la fusion se mesure elle-meme (comportement
+    d'avant #16149, plus strict jamais plus lache)."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e"}}
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["auc0", "0ld"])
+        if path.startswith("repos/o/r/compare/"):
+            raise merge_dwell.DwellError("compare muet")
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is False
+
+
+def test_16149_deux_fusions_empilees_sont_toutes_deux_franchies():
+    """Deux update-branch successifs : la remontee franchit les deux et
+    mesure le commit d'auteur d'origine."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e"}}
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["m3rg2", "ba5e"])
+        if path == "repos/o/r/commits/m3rg2":
+            return _commit("m3rg2", "2026-09-07T10:59:00Z", ["auc0", "0ld"])
+        if path == "repos/o/r/commits/auc0":
+            return _commit("auc0", "2026-09-07T07:00:00Z", ["r00t"])
+        if path == "repos/o/r/compare/ba5e...0ld":
+            return {"status": "behind", "behind_by": 2}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is True
+    assert "2026-09-07T07:00:00Z" in msg
+
+
+def test_16149_payload_pr_sans_base_leve():
+    """Un payload PR sans base.sha est un etat illisible : DwellError (rule 1
+    -- on refuse, on ne mesure pas sur une supposition)."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": []}
+        raise AssertionError("chemin inattendu: " + path)
+
+    with pytest.raises(merge_dwell.DwellError):
+        merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)

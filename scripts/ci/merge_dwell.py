@@ -60,6 +60,25 @@ tete » : c'est la date de committer qui la porte. Une PR rebasee re-arme donc
 son plancher, ce qui est le comportement voulu -- la tete qui va etre mergee
 n'a jamais ete observee 2 h par la CI avant le rebase.
 
+#16149 -- le rafraichissement de base ne re-arme plus le plancher qu'il franchit
+--------------------------------------------------------------------------------
+
+`gh pr update-branch` est le seul remede a un rouge perime (un `gh run rerun`
+rejoue la base gelee d'origine), mais il cree un commit de fusion qui
+rafraichit la date de committer : le remede re-armait les 120 min qu'il sert
+a franchir -- une taxe de 2 h par reparation, sur un commit sans aucun
+contenu d'auteur (son delta appartient a `main`, deja gate par ses propres
+gardes). Le plancher se mesure desormais sur le DERNIER COMMIT QUI MODIFIE
+LE COTE PR : la chaine first-parent est remontee au-dela des fusions dont le
+SECOND parent est un ancetre de la base (la forme exacte d'un rafraichissement
+de base). Un rebase, lui, reecrit les commits d'auteur : single-parent, il
+reste mesure -- le comportement voulu ci-dessus. Une fusion dont le second
+parent n'est PAS sur la base (l'auteur incorpore sa propre sous-branche)
+introduit du contenu d'auteur : elle reste mesuree aussi. Une filiation
+illisible ne vaut pas reconnaissance de rafraichissement : la fusion se
+mesure alors elle-meme (comportement d'avant #16149 -- plus strict, jamais
+plus lache).
+
 Derogation
 ----------
 
@@ -177,16 +196,102 @@ def _gh_json(path: str) -> object:
         raise DwellError("reponse non-JSON de gh api {}".format(path)) from exc
 
 
-def head_committed_at(repo: str, sha: str, fetch=_gh_json) -> datetime:
-    """Date de COMMITTER de `sha`. Leve `DwellError` si elle est illisible."""
+def _commit_payload(repo: str, sha: str, fetch=_gh_json) -> dict:
     payload = fetch("repos/{}/commits/{}".format(repo, sha))
     if not isinstance(payload, dict):
         raise DwellError("payload commit inattendu pour {}".format(sha[:12]))
+    return payload
+
+
+def _committer_date(payload: dict, sha: str) -> datetime:
     committer = ((payload.get("commit") or {}).get("committer") or {})
     date = committer.get("date")
     if not date:
         raise DwellError("pas de commit.committer.date sur {}".format(sha[:12]))
     return parse_iso8601(date)
+
+
+def head_committed_at(repo: str, sha: str, fetch=_gh_json) -> datetime:
+    """Date de COMMITTER de `sha`. Leve `DwellError` si elle est illisible."""
+    return _committer_date(_commit_payload(repo, sha, fetch), sha)
+
+
+def _second_parent_is_base_ancestor(
+    repo: str, parent_sha: str, base_sha: str, fetch=_gh_json
+) -> bool:
+    """#16149 : le second parent du commit de fusion est-il un ancetre de la
+    base ? C'est la signature d'un rafraichissement de base (`gh pr
+    update-branch` comme `git merge main` manuel). L'egalite directe evite
+    l'appel compare ; sinon `compare/{base}...{parent}` rend "behind" quand
+    parent est un ancetre de base. Une lecture illisible ne vaut PAS
+    reconnaissance : False, la fusion se mesure alors elle-meme (comportement
+    d'avant #16149 -- plus strict, jamais plus lache)."""
+    if parent_sha == base_sha:
+        return True
+    try:
+        cmp = fetch(
+            "repos/{}/compare/{}...{}".format(repo, base_sha, parent_sha)
+        )
+    except DwellError:
+        return False
+    if not isinstance(cmp, dict):
+        return False
+    return cmp.get("status") in ("behind", "identical")
+
+
+#: Borne de la remontee first-parent : au-dela, l'etat est pathologique (une
+#: PR accumule rarement 50 rafraichissements de base non rebases) et on
+#: refuse plutot que de mesurer silencieusement un commit arbitraire.
+_MAX_WALK = 50
+
+
+def last_authoritative_committed_at(
+    repo: str, sha: str, base_sha: str, fetch=_gh_json
+) -> datetime:
+    """#16149 : date de COMMITTER du dernier commit qui modifie le cote PR.
+
+    Remonte la chaine first-parent au-dela des fusions de rafraichissement
+    de base : un commit a deux parents dont le SECOND est un ancetre de la
+    base n'introduit aucun contenu d'auteur (son delta appartient a la base,
+    deja gatee). Le rebase et la fusion d'une sous-branche propre restent
+    mesures -- voir la section #16149 du docstring de module."""
+    current = sha
+    for _ in range(_MAX_WALK):
+        payload = _commit_payload(repo, current, fetch)
+        parents = payload.get("parents") or []
+        if len(parents) == 2:
+            second = (parents[1] or {}).get("sha") or ""
+            if second and _second_parent_is_base_ancestor(
+                repo, second, base_sha, fetch
+            ):
+                first = (parents[0] or {}).get("sha")
+                if not first:
+                    raise DwellError(
+                        "fusion sans premier parent sur {}".format(current[:12])
+                    )
+                current = first
+                continue
+        return _committer_date(payload, current)
+    raise DwellError(
+        "chaine first-parent de plus de {} fusions de base depuis {} "
+        "-- etat pathologique, refus".format(_MAX_WALK, sha[:12])
+    )
+
+
+def _pr_payload(repo: str, pr_number: int, fetch=_gh_json) -> dict:
+    payload = fetch("repos/{}/pulls/{}".format(repo, pr_number))
+    if not isinstance(payload, dict):
+        raise DwellError("payload PR inattendu pour #{}".format(pr_number))
+    return payload
+
+
+def _labels_carry_waiver(payload: dict) -> bool:
+    names = {
+        (label or {}).get("name", "")
+        for label in (payload.get("labels") or [])
+        if isinstance(label, dict)
+    }
+    return WAIVER_LABEL in names
 
 
 def is_waived(repo: str, pr_number: int, fetch=_gh_json) -> bool:
@@ -196,15 +301,7 @@ def is_waived(repo: str, pr_number: int, fetch=_gh_json) -> bool:
     et le gate refuse (rule 1). Lire « pas de label » d'une API muette est
     exactement le zero propre que le harnais interdit de croire.
     """
-    payload = fetch("repos/{}/pulls/{}".format(repo, pr_number))
-    if not isinstance(payload, dict):
-        raise DwellError("payload PR inattendu pour #{}".format(pr_number))
-    names = {
-        (label or {}).get("name", "")
-        for label in (payload.get("labels") or [])
-        if isinstance(label, dict)
-    }
-    return WAIVER_LABEL in names
+    return _labels_carry_waiver(_pr_payload(repo, pr_number, fetch))
 
 
 def check(
@@ -225,8 +322,14 @@ def check(
     """
     if dwell_min <= 0 or pr_number is None:
         return True, "dwell non applicable (hors contexte de PR ou desactive)"
-    waived = is_waived(repo, pr_number, fetch=fetch)
-    committed = head_committed_at(repo, sha, fetch=fetch)
+    pr = _pr_payload(repo, pr_number, fetch=fetch)
+    waived = _labels_carry_waiver(pr)
+    base_sha = ((pr.get("base") or {}).get("sha") or "")
+    if not base_sha:
+        raise DwellError("pas de base.sha sur la PR #{}".format(pr_number))
+    committed = last_authoritative_committed_at(
+        repo, sha, base_sha, fetch=fetch
+    )
     ok, _remaining, message = evaluate(
         committed, now or datetime.now(timezone.utc), dwell_min, waived
     )
