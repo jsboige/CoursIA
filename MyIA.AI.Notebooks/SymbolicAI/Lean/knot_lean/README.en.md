@@ -3,7 +3,7 @@
 Scaffolding for the formalization of knot theory results in Lean 4, with
 strategic commented sorries (paper references + Mathlib prerequisites).
 
-Epic #2874 (Phase 5 in progress). Toolchain `v4.32.0`.
+Epic #2874 (Phase 5 in progress). Toolchain `v4.33.0` (migration #14773, cf #15829).
 
 ## Sorry-state (verified 2026-09-14 against `origin/main`, **10 real**)
 
@@ -361,7 +361,7 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 
 What this lake provides that its dependencies **do not**:
 
-- **Mathlib** (toolchain v4.32.1) ships **no knot theory module** — no `Knot`/`Braid`/`Link` entry at the top level of the `Mathlib/` tree (measured 2026-08-31). No PD-codes, no Reidemeister moves, no colorability invariants: all of that vocabulary is defined here, in `Knots/Basic.lean`.
+- **Mathlib** (toolchain v4.33.0, rev `db584cd6`) ships **no knot theory module** — no `Knot`/`Braid`/`Link` entry at the top level of the `Mathlib/` tree (re-measured 2026-09-14: 33 top-level entries, no match). No PD-codes, no Reidemeister moves, no colorability invariants: all of that vocabulary is defined here, in `Knots/Basic.lean`.
 - **[shua/leanknot](https://github.com/shua/leanknot)** covers bricks/walls, tangles, braids — not colorability invariants nor their transfer under moves.
 - **[Tangle-Isabelle](https://github.com/prathamesh-t/Tangle-Isabelle)** (Prathamesh 2015) is Isabelle/HOL, not Lean 4; cited as a design reference, not consumable in our toolchain.
 
