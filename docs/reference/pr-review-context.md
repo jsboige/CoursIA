@@ -91,6 +91,8 @@ Mesure d'intégration (#10232), série gagnante `e` vs son opposé `-e` contre b
 
 Le tableau montre les deux instruments et leur angle mort : `mse`/`mae` mesurent la précision (insensibles au signe), `linear` distingue le signe mais mesure le biais. La jambe DM de §C porte donc sur une perte de précision ; `linear` reste disponible comme contrôle de biais (détection de sous/sur-prévision). Pin de régression : `test_dm.py::test_linear_loss_distinguishes_opposite_series` (valide — signes opposés = déclaration de biais, pas de précision).
 
+**Instance fondatrice du rapport de biais par modèle — #10938.** Le point (7) de la règle (`mean(e)` signé ou biais OOS, modèle ET baseline, dans le body) est né d'un `har_bias_oos = −0.227` (#10938) non déclaré, découvert **après** qu'une lecture avait été construite sur l'edge qu'il portait : c'est précisément le contrôle que le rapport de biais par modèle aurait fait apparaître avant. Un edge porté par le biais (pas par la précision) se déclare comme tel.
+
 ### D.5 — #8479 MusicGen : l'alignement qui enshrine un nombre périssable
 
 Notebook MusicGen 02-3 : le RTF documenté `0.5-2x` a été « aligné » en `0.21-0.24x` **sur un run non-optimisé**, alors qu'une re-exécution Stop-&-Repair était **déjà due** sur ce notebook (cellule cassée).
@@ -111,8 +113,50 @@ D'où la clause « audit fichier ENTIER » : le format slim `+5/−5` du rollout
 
 Audit associé au même mandat : Tweety / GameTheory / Search = **stale-body sévère** ; SymbolicLearning / SemanticWeb / SmartContracts = ciblé ; Sudoku = trivial.
 
+### Émission du verdict — instance fondatrice et mesure (#14682)
+
+**#14658** : réserve qualifiée « le seul point bloquant pour un LGTM plein », posée en **prose française sans marqueur** → invisible à l'organe B.0 (`scripts/check_unaddressed_nits.py`, `CONCERN_MARKERS`), `rc=0`, merge passé.
+
+**Ne pas élargir `CONCERN_MARKERS`** — mesure #14682, scan de 80 PRs mergées : un filet à mots de prose (« bloquant », « à corriger », « est faux ») **sur-accuse d'un facteur 5** (4 détections sur 5 = de la prose qui *décrit* un blocage de job ou de garde, pas qui *pose* une réserve). Le contrat est côté **émission** : le reviewer pose `CHANGES_REQUESTED` / `[Hermes] COMMENT_WITH_CONCERNS` / 🟡 / 🔴, il ne rédige pas « il faudrait corriger » en prose libre.
+
+### B.1 — pourquoi pas `grep -c sorry` (mesure 2026-08-14)
+
+Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`).
+
+### D.6 — récurrences du ratchet `Output-failure`
+
+- #13517 : PR #13036 (LDA) — bannières `TOOL_FAILURE 0 → 21`, `MACHINE_PATH 0 → 14`, **approuvée par Hermes** alors que le garde rend `rc=1`.
+- #3473 (juin 2026) : famille ~15 filles de bannières d'échec passées sous la détection d'erreurs Python classique.
+- #11693 (18/08) et #11685 : remplacements de rendus SVG/figures par des bannières « program is not installed ».
+
 ## Incident fondateur B.0 — PR #10761 (récit déporté de CLAUDE.md, 2026-08-21)
 
 **Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook a été mergé en attribuant à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
 
 > **Cette attribution est corrigée depuis** — `e1ad7868a` (PR #11065, Epic #11044) : Lean-19 et Lean-20 portent désormais « preuve L. Mazur, digestion T. Tao ». Le récit ci-dessus reste le fondement de la règle — le merge fautif a bien eu lieu — mais l'état du dépôt n'est plus celui-là, et ce fichier est chargé par chaque agent à chaque session : y laisser un présent périmé, dans la règle même qui exige de vérifier ses affirmations, apprend l'inverse de ce qu'elle demande. **La classe de défaut, elle, reste vivante** (#11110 Lidman, #11127 Gill) : une citation se vérifie contre la source, et *après* avoir établi qu'une référence est fausse, il reste à lire **qui a signé** la vraie avant de conclure sur l'attribution — « l'article n'existe pas » et « l'attribution est fausse » sont deux propositions distinctes.
+
+## Levée B.0 — les instances qui fondent « un AUTEUR et une HEURE » (récits déportés de CLAUDE.md, 2026-09-13)
+
+`CLAUDE.md` §B.0 pose la prescription — *une levée porte un auteur et une heure ; sans les deux, ce n'est pas une levée* — et renvoie ici pour les faits qui l'ont fait écrire. Les deux instances ne se recouvrent pas : la première est un défaut d'**auteur**, la seconde un défaut d'**heure**.
+
+### Qui lève — #12798 : la réserve d'un tiers éteinte par l'auteur de la PR
+
+Une review `[Hermes] COMMENT_WITH_CONCERNS` a été portée comme levée par une **phrase de l'auteur de la PR lui-même**. Se lever soi-même une réserve posée par un tiers n'est pas y répondre : c'est la **déclarer** répondue — et `reviews[].state` ne distingue pas les deux cas.
+
+Ce que la réserve visait était réel : le livrable committé était un **stub rendant `Cle presente False`**, sous un body annonçant `SOTA-OK`. La phrase de levée n'a rien corrigé ni argumenté ; elle a seulement fermé le canal par lequel le défaut se voyait. D'où la clause : **l'auteur d'une PR ne lève pas la réserve d'un tiers**, quelle que soit la qualité de sa réponse. Ce qui la lève est le tiers lui-même, un thread inline résolu, ou une issue de suivi nommée avant le merge.
+
+### Quand lève — #12347 : la levée postée 32 s APRÈS le merge
+
+Chronologie mesurée, sur une seule journée :
+
+| Heure (UTC) | Événement |
+|---|---|
+| 17:03:20Z | `CHANGES_REQUESTED` posée |
+| 21:23:56Z | `gh pr merge` — la réserve est encore vivante |
+| **21:24:28Z** | levée postée — **32 s après le merge**, et annotée comme telle par son auteur |
+
+Aucune ignorance n'est en cause : l'auteur de la levée savait qu'il écrivait après le merge, et l'a écrit. Rien ne contraignait l'ordre — c'est précisément ce que la règle contraint désormais. **Un commentaire de merge est un compte-rendu, jamais une porte** : ce qui lève doit exister *avant* `gh pr merge`, sans quoi la levée documente le merge au lieu de l'autoriser.
+
+### Ce qu'un commit ne lève pas — #10761, le rebase muet
+
+Sur #10761 (récit complet ci-dessus), le « traitement » des deux nits du 2026-08-13T11:07 fut un **rebase à 19:41** qui n'adressait ni l'un ni l'autre. Un push muet est **indiscernable d'un push qui répond** : le diff ne dit pas quelle remarque il prétend traiter, et le compteur de commits postérieurs à une review ne mesure donc rien. Ce qui lève une remarque est **une phrase**, pas un SHA.

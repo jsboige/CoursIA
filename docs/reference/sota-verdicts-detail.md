@@ -40,6 +40,12 @@ Plus la précédente SK-09 (documentée au ledger). La porte était fermée à t
 
 Un enrichissement Prong-B ne se déclare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — règle F — et comparer résultat-heuristique vs optimum exact sur le graphe candidat). Un pitch non mesuré est une violation G.9 en attente d'être livrée.
 
+### Cas canonique corrigé — BFS vs A* sur coût uniforme (planners-3)
+
+L'instance qui fonde la formulation Prong-B de la règle : un notebook `planners-3` démontrait **A\*** sur un graphe à **coût uniforme**, où A\* **dégénère exactement en BFS** — l'heuristique n'y discrimine rien, et la sortie ne montrait donc pas la capacité annoncée. Le correctif (commit `8905f8845`) remplace le terrain par un graphe **pondéré** où l'heuristique change l'ordre d'exploration, rendant la supériorité d'A\* **visible dans la sortie**.
+
+C'est le gabarit des pièges de la même famille : un Z3 sur une contrainte qu'un `if` résout, un planner sur un plan linéaire sans parallélisme, une métaheuristique sur une fonction convexe à optimum unique. Dans chacun, le moteur SOTA *tourne* — il n'est simplement mis en valeur par rien.
+
 ### Anti-exemple vérifié firsthand (c.598, ortools 9.15 + networkx 3.4.2)
 
 Le pitch : « les heuristiques gloutonnes ratent le nombre chromatique sur les graphes de Mycielski, donc CP-SAT est essentiel ».
@@ -51,6 +57,38 @@ Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aléatoire de
 ### Faux signal technique — grep MiniZinc
 
 Un notebook MiniZinc couvre l'optimisation via la syntaxe `solve minimize obj;` (**chaîne dans le modèle**), pas via `.minimize(` Python. Un `grep '.minimize('` renvoie `opt=0` sur des notebooks qui traitent bel et bien l'optimisation. Pour MiniZinc, grepper `solve (min|max)imize` dans les chaînes de modèle.
+
+## 4. Registre axe-2 — critère de fin et pièges de dénombrement
+
+Une entrée de registre est une **section `## Entry #NNN — <Famille> (owner <lane>, c.NNN)`** dans
+[`docs/ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md), la « Convention d'entrée » se lit en
+tête du fichier, et l'entrée arrive **par PR** — jamais en commentaire d'issue : sept entrées ont été
+postées sur l'EPIC #3801 après sa fermeture (la dernière le 2026-08-07) ; aucune requête `--state open`
+ne les atteint et un `grep` d'auditeur sur le dépôt ne les voit pas.
+
+**Critère de fin de l'axe-2** — trois conditions, toutes vérifiables :
+
+1. **chaque famille de notebooks du dépôt porte une entrée** ;
+2. **chaque entrée porte un verdict agrégé** (un des 5) ;
+3. **chaque verdict != `SOTA-OK` est soldé** : soit une PR de fix **mergée** citée dans l'entrée, soit un
+   `INTRINSIC` établi par la checklist 6 axes (section 2).
+
+La condition 1 se **mesure**, elle ne se recopie pas :
+
+```bash
+grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md          # entrées au registre
+grep -oE '^## Entry #[0-9]+ — [^(]+' docs/ledgers/3801-sota-axe2.md   | sed 's/^## Entry #[0-9]* — //;s/ *$//' | sort -u          # familles couvertes
+```
+
+**Piège du grain** : le ledger indexe par **famille** (`Search`, `Tweety`), pas par répertoire — comparer
+son compte à un `find MyIA.AI.Notebooks -name '*.ipynb'` agrégé par répertoire donne deux nombres qui ne
+se soustraient pas.
+
+**Piège des « Cumul entries »** : il y en a **deux**, tous deux périmés (mesure du 2026-09-03) — `## Cumul
+entries` (l.485) s'arrête à l'entrée **8** (2026-07-10) et `### Cumul entries (registre axe-2 SOTA)`
+(l.854) à l'entrée **22** (2026-07-11), alors que le fichier porte **30** entrées. Le plus récent
+sous-compte d'un facteur ~1,4 ; le plus ancien, d'un facteur ~3,8. Rafraîchir et **fusionner les deux
+tableaux en un seul** est un grain à part (le fichier dépasse #14519).
 
 ## Voir aussi
 

@@ -86,6 +86,38 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # ------------------------------------------------------------------
+      # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
+      # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
+      # `fetch-depth: 0` ci-dessous declenche alors un `fetch --unshallow`
+      # dont l'echec est AVALE par actions/checkout -- mesure firsthand sur
+      # #15492 (run 34542167016, job 103087137418) : `error: Could not read
+      # 0102d652b3...` emis PENDANT le fetch, etape rendue verte malgre tout.
+      # Le depot reste alors ni shallow ni complet, et tout `git log --raw` /
+      # `git rev-list` ulterieur casse -- ce qui fait rougir un check REQUIS
+      # sur une panne d'infrastructure, jamais sur du fond. On repart d'un
+      # clone neuf des que l'etat est shallow ou le graphe troue.
+      # ------------------------------------------------------------------
+      - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
+        shell: bash
+        run: |
+          cd "$GITHUB_WORKSPACE" || exit 0
+          if [ ! -d .git ]; then
+            echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
+            exit 0
+          fi
+          if [ -f .git/shallow ]; then
+            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
+            rm -rf .git
+            exit 0
+          fi
+          if ! git rev-list --all --count >/dev/null 2>&1; then
+            echo "::notice::[heal] graphe d'objets incomplet -- purge du work dir"
+            rm -rf .git
+            exit 0
+          fi
+          echo "[heal] work dir complet -- reutilisation"
+
       # Checkout UNION des trois organes : fetch-depth 0 + blob:none (le
       # graphe complet est requis par l'organe stale-base -- rev-list BASE..main
       # et dates de commits, cf #11835 ; les blobs restent paresseux) ;
@@ -118,6 +150,14 @@ jobs:
       # ------------------------------------------------------------------
       - name: "Organe base-not-main : signaler une base != main (advisory)"
         if: github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'main'
+        # ADVISORY : ne doit JAMAIS faire rougir ce check REQUIS (contrat
+        # documente en tete de fichier -- patron #13384 : seul l'organe
+        # BLOQUANT `conj` rougit, via l'etape AGREGAT). Sans ce marqueur,
+        # une affectation `VAR=$(git ...)` en echec sous `bash -e` avortait
+        # l'etape et rougissait le job (#15387 : graphe d'objets incomplet
+        # sur un work dir self-hosted reutilise -> #15366, #15447, #15483,
+        # #15496 bloquees sur une panne d'infrastructure).
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/base_not_main.py --pr "${{ github.event.pull_request.number }}"
@@ -130,6 +170,14 @@ jobs:
       # ------------------------------------------------------------------
       - name: "Organe stale-base : avertissement base >14j (advisory)"
         if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        # ADVISORY : ne doit JAMAIS faire rougir ce check REQUIS (contrat
+        # documente en tete de fichier -- patron #13384 : seul l'organe
+        # BLOQUANT `conj` rougit, via l'etape AGREGAT). Sans ce marqueur,
+        # une affectation `VAR=$(git ...)` en echec sous `bash -e` avortait
+        # l'etape et rougissait le job (#15387 : graphe d'objets incomplet
+        # sur un work dir self-hosted reutilise -> #15366, #15447, #15483,
+        # #15496 bloquees sur une panne d'infrastructure).
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

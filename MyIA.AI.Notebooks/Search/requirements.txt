@@ -31,6 +31,7 @@ scipy>=1.10
 pandas>=2.0                  # DataFrames pour analyse et benchmarks
 scikit-learn>=1.3            # ML pour App-18 hyperparameter tuning
 optuna>=3.0                  # Optimisation bayesienne d'hyperparametres (App-18)
+rustuna>=0.1.0               # Portage Rust officiel d'Optuna (App-18c ; statut experimental, bug best_trial connu — cf notebook)
 
 # Linear Programming
 pulp>=2.8.0                 # Linear programming with CBC, HiGHS solvers

@@ -42,6 +42,24 @@ name: PR path-collision advisory
 # is absent from the required set and from the PR gate roster. Its own run,
 # however, goes red when writes are lost (#14236, --fail-on-write-loss) --
 # a muted organ has no other way to say that it is mute.
+#
+# Candidate pool widened to recently-MERGED PRs (#15578). The pool was
+# `--state open` only, so a collision vanished from the report at the exact
+# moment it became irreversible. Measured on the founding instance: at
+# 2026-09-10T23:18Z the advisory posted a `faible` collision between #15513
+# and #15455 over five identical paths; #15455 merged at 2026-09-11T08:37Z and
+# the pair left the pool, though the duplicate was by then consumed. A pair
+# with one merged side now carries the TERMINAL verdict (never a tier: the
+# substance is on `main`), all-merged pairs stay excluded, and open/open tiers
+# are untouched. Depth is `--merged-window-days` (default 3, 0 disables).
+#
+# The merged side must also OVERLAP substantially (>= TERMINAL_MIN_OVERLAP_RATIO
+# of BOTH sides' signal paths, 0.5): measured on the 2026-09-11 snapshot, an
+# ungated rule reached 37 of the 64 open PRs -- every other open PR, the
+# "reports everything reports nothing" collapse -- while the gate cuts it to 16
+# and still keeps the founding duplicate (5 shared out of 5 and of 6 = 0.83).
+# A sub-threshold pair is not silently dropped: it is counted and named under
+# `merged-side low-overlap excluded` in the run summary.
 
 on:
   # Off-round minutes: the top of the hour is when every cron in the account
@@ -56,7 +74,7 @@ on:
         type: boolean
         default: true
       same_issue_only:
-        description: 'Post only strong-tier collisions (common cited issue)'
+        description: 'Post only the actionable tiers: strong (common cited issue) or terminal (other side already merged)'
         required: false
         type: boolean
         default: false

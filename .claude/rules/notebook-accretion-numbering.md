@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Renumerotation et reclassement de notebooks — `renum()` / `reclass()`
 
 S'applique a **tout agent** qui envisage de renommer, renumeroter ou requalifier un notebook pedagogique, **et a tout reviewer** d'une PR `renum(...)` / `reclass(...)`. Source : convention d'accretion posee par le user, sign-off du 2026-09-04. Le geste avait ete re-derive a la main sur les **19** issues du corpus (seize tranchees, trois encore ouvertes) sans jamais etre ecrit ; c'est ce cout repete que cette regle ferme.
@@ -95,10 +99,17 @@ Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq on
 
 Deux residus supplementaires se traitent dans la meme tranche : les cles orphelines de `pedagogy_density_baseline.json` (#13815) et la liste de rendu Quarto (#13931).
 
-## 7. Ce que la regle ne couvre pas
+## 7. Twins C#/Python d'une meme serie — meme identifiant, suffixe de langage seul
+
+Deux notebooks jumeaux **d'une meme serie** (meme concept, deux implementations) portent le **meme identifiant** `Prefixe-num(lettre)` ; seul le suffixe de langage les distingue (`-Csharp`). La variante C# ni ne decremente ni ne decale l'accretion : elle partage le slot de son jumeau Python. Des fichiers qui s'echangent leurs corrections (campagnes de parite #12208, retroportage #15461) ne peuvent pas porter deux accretions differentes.
+
+Ratifie par #15486 (origine : review user de #15437). La convention etait deja dominante partout (GameTheory `02`-`17`, Search `02b`/`03b`-`03d`, SocialChoice) ; l'unique deviation mesuree — `GameTheory-02d-...-Csharp` — a ete corrigee par renommage avant merge (#15437, commit f74fd9864c : `02d` -> `02c`).
+
+Le volet **inter-series** (meme concept dans deux series *differentes* partageant un identifiant) reste le chantier **#12933**, hors de la presente regle.
+
+## 8. Ce que la regle ne couvre pas
 
 - **Le padding zero** (`Search-3` vs `GameTheory-03`, ordre lexicographique casse) — chantier propre, **#14545**.
-- **Le suffixe de langage** des twins C#/Python — **#12933**.
 - **La numerotation des en-tetes markdown *dans* un notebook** (`## 3.`) — [notebook-conventions.md](notebook-conventions.md).
 
 ## Voir aussi

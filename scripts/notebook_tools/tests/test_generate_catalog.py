@@ -6,9 +6,13 @@ classify_maturity.
 """
 
 import json
+import subprocess
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -1919,6 +1923,228 @@ class TestGenerateMarkdownReport:
             "#quarto-document-content table { display: block; overflow-x: auto; }"
             in report
         )
+
+
+# --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---
+
+def _write_nb(path: Path, cells=None) -> None:
+    """Write a minimal valid notebook at path (parents created)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells if cells is not None else [], "metadata": {}}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+
+class TestScanExclusions:
+    """L'écart arbre/catalogue doit se réconcilier par construction :
+    chaque notebook écarté est compté sous son motif exact, dans l'ordre
+    de précédence réel des règles du scan."""
+
+    def test_reconciliation_par_motif(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        # Une série saine : 1 gardé + 1 par motif d'exclusion.
+        _write_nb(root / "SerieA" / "keep.ipynb")
+        _write_nb(root / "SerieA" / "research" / "r.ipynb")
+        _write_nb(root / "SerieA" / "deep" / "_archive" / "a.ipynb")
+        _write_nb(root / "SerieA" / "old_executed.ipynb")
+        _write_nb(root / "SerieA" / ".ipynb_checkpoints" / "c.ipynb")
+        # Racine : jamais parcourue (le scan itère les séries).
+        _write_nb(root / "GradeBook-like.ipynb")
+        # Série entière exclue.
+        _write_nb(root / "obj" / "serie-exclue.ipynb")
+        # JSON illisible : analyze_notebook rend None.
+        bad = root / "SerieA" / "broken.ipynb"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_text("{not json", encoding="utf-8")
+
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(exclusions=exclusions)
+
+        assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
+        assert exclusions == Counter({
+            "pedagogical:research": 1,
+            "pedagogical:_archive": 1,
+            "suffixe_executed": 1,
+            "segment_exclu:.ipynb_checkpoints": 1,
+            "racine_non_parcourue": 1,
+            "serie_exclue:obj": 1,
+            "json_illisible": 1,
+        })
+
+    def test_precedence_premiere_regle_gagnante(self, tmp_path, monkeypatch):
+        """Un notebook cumulant plusieurs motifs (research/ + _executed)
+        est compté sous le PREMIER motif applicable — suffixe avant substring."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        _write_nb(root / "SerieA" / "research" / "both_executed.ipynb")
+
+        exclusions = Counter()
+        gc.scan_all_notebooks(exclusions=exclusions)
+        assert exclusions == Counter({"suffixe_executed": 1})
+
+    def test_git_non_tracke_seulement_avec_le_flag(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        _write_nb(root / "SerieA" / "a.ipynb")
+        _write_nb(root / "SerieA" / "b.ipynb")
+        # _git_tracked_files mocké : SEULEMENT a.ipynb est suivi.
+        monkeypatch.setattr(
+            gc, "_git_tracked_files",
+            lambda: {"MyIA.AI.Notebooks/SerieA/a.ipynb"},
+        )
+
+        # Sans le flag : rien de filtré, aucune exclusion.
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(exclusions=exclusions)
+        assert len(entries) == 2 and not exclusions
+
+        # Avec --git-tracked-only : b.ipynb compté sous son motif.
+        exclusions = Counter()
+        entries = gc.scan_all_notebooks(
+            git_tracked_only=True, exclusions=exclusions
+        )
+        assert [e["path"] for e in entries] == ["SerieA/a.ipynb"]
+        assert exclusions == Counter({"git_non_tracke": 1})
+
+    def test_motif_substring_deterministe(self, tmp_path, monkeypatch):
+        """Un chemin contenant plusieurs substrings de EXCLUDE_PEDAGOGICAL
+        est attribué au motif le plus spécifique (tri déterministe), pas a
+        l'ordre d'itération du set."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        # "_archive" contient aussi "archive" : "_archive" (trié avant) gagne.
+        _write_nb(root / "SerieA" / "x_archive_y" / "n.ipynb")
+
+        exclusions = Counter()
+        gc.scan_all_notebooks(exclusions=exclusions)
+        assert exclusions == Counter({"pedagogical:_archive": 1})
+
+    def test_sans_compteur_comportement_inchange(self, tmp_path, monkeypatch):
+        """Sans le paramètre exclusions, le scan rend exactement ce qu'avant
+        (signature additive : les appelants existants ne changent pas)."""
+        import generate_catalog as gc
+
+        root = tmp_path / "MyIA.AI.Notebooks"
+        monkeypatch.setattr(gc, "NOTEBOOKS_DIR", root)
+        _write_nb(root / "SerieA" / "keep.ipynb")
+        _write_nb(root / "SerieA" / "research" / "r.ipynb")
+
+        entries = gc.scan_all_notebooks()
+        assert [e["path"] for e in entries] == ["SerieA/keep.ipynb"]
+
+
+# --- build_git_metadata : l'echec est bruyant, jamais un dict vide (#14831) ---
+
+
+class TestBuildGitMetadataLoud:
+    """Un `git log` en echec doit lever, pas rendre {}.
+
+    Le dict vide etait indiscernable de « aucun notebook n'a d'historique » :
+    chaque `last_validator` devenait falsy, `classify_scientific_review`
+    retombait sur UNREVIEWED, puis `_merge_curated_fields` restaurait
+    `last_validation`/`last_validator` depuis origin/main -- les deux champs
+    qui auraient trahi la panne -- pendant que `scientific_review`, absent de
+    CURATED_GIT_FIELDS, passait degrade jusqu'au catalogue publie. Le run se
+    concluait `success`. Ces tests verifient que chacune des trois sorties
+    d'echec nomme sa cause, et que le chemin nominal continue de rendre ses
+    entrees.
+    """
+
+    def test_returncode_non_nul_leve_en_nommant_rc_et_stderr(self):
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=128, stdout="",
+                stderr="fatal: detected dubious ownership in repository",
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        msg = str(exc.value)
+        assert "rc=128" in msg
+        assert "dubious ownership" in msg
+
+    def test_stderr_vide_reste_lisible(self):
+        """Un rc non nul sans stderr ne doit pas rendre un message tronque :
+        c'est le cas ou l'operateur n'a que le rc pour diagnostiquer."""
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=129, stdout="", stderr="",
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        msg = str(exc.value)
+        assert "rc=129" in msg
+        assert "(vide)" in msg
+
+    def test_timeout_leve_en_nommant_le_delai(self):
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(
+                cmd="git log", timeout=gc.GIT_LOG_TIMEOUT_SECONDS,
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        assert str(gc.GIT_LOG_TIMEOUT_SECONDS) in str(exc.value)
+
+    def test_git_absent_leve(self):
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.side_effect = FileNotFoundError(
+                2, "No such file or directory", "git",
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+
+        assert "git" in str(exc.value)
+
+    def test_controle_positif_le_chemin_nominal_rend_ses_entrees(self):
+        """Contre-controle : un detecteur se valide par ses faux negatifs.
+
+        Verifie du meme coup que le commit le plus recent gagne (git log est
+        antichronologique) et que le filtre de prefixe tient.
+        """
+        import generate_catalog as gc
+
+        stdout = "\n".join([
+            "COMMIT:2026-09-13 10:00:00 +0200|dev@example.org|feat: nb (#123) et (#124)",
+            "",
+            "MyIA.AI.Notebooks/Serie/n.ipynb",
+            "scripts/hors_perimetre.py",
+            "COMMIT:2026-09-01 08:00:00 +0200|autre@example.org|ancien (#99)",
+            "",
+            "MyIA.AI.Notebooks/Serie/n.ipynb",
+            "MyIA.AI.Notebooks/Serie/m.ipynb",
+        ])
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=0, stdout=stdout, stderr="",
+            )
+            meta = gc.build_git_metadata()
+
+        assert set(meta) == {"Serie/n.ipynb", "Serie/m.ipynb"}
+        # Le commit le plus recent gagne sur n.ipynb (premier vu = garde).
+        assert meta["Serie/n.ipynb"]["last_validation"] == "2026-09-13"
+        assert meta["Serie/n.ipynb"]["last_validator"] == "dev@example.org"
+        assert meta["Serie/n.ipynb"]["issues_prs"] == ["#123", "#124"]
+        assert meta["Serie/m.ipynb"]["last_validation"] == "2026-09-01"
 
 
 if __name__ == "__main__":

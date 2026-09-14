@@ -25,18 +25,20 @@ JOB_NAME = "Re-aggregate stale PR gate verdicts"
 def _extract_instrument() -> str:
     with WORKFLOW.open(encoding="utf-8") as stream:
         document = yaml.safe_load(stream)
-    # L'instrument de timing est l'unique etape `if: always()` -- localisee
-    # par contenu, pas par index (une etape d'amorcage precede desormais le
-    # selecteur, #14267).
+    # L'instrument de timing est l'etape `if: always()` qui contient le
+    # marqueur `jobs?filter=latest&per_page=100`. Localisee par contenu,
+    # pas par index (une etape d'amorcage precede desormais le selecteur,
+    # #14267 ; d'autres steps `if: always()` peuvent etre ajoutees sans
+    # casser ce test, cf c.1065 #15560 qui a ajoute une step tir cadence).
     candidates = [
         s
         for s in document["jobs"]["sweep"]["steps"]
         if s.get("if") == "always()"
+        and "jobs?filter=latest&per_page=100" in s.get("run", "")
     ]
-    assert len(candidates) == 1, "expected exactly one if: always() step"
+    assert candidates, "timing instrument step not found in pr-gate-stale-sweep.yml"
     step = candidates[0]
     run = step["run"]
-    assert "jobs?filter=latest&per_page=100" in run
     assert "jobs?filter=all" not in run
     match = re.search(r"python - <<'PY'\n(.*?)\nPY\n?$", run, re.S)
     assert match, "timing heredoc missing from pr-gate-stale-sweep.yml"

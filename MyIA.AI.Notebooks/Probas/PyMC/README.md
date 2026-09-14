@@ -158,7 +158,8 @@ flowchart TD
     P4 --> P6
     P5 -.->|"diagnostics<br/>à tout moment"| P2
     P5 -.-> P4
-    classDef causal fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
+    classDef causal fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
     class P6 causal;
 ```
 

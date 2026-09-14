@@ -155,6 +155,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (mesure 2026-09-02) : ils ne peuvent pas affamer les gardes de PR.
     #   Exclus : markdown-table-guard / render-volume-delta-advisory (lourds),
     #   slides-composition-advisory (navigateurs hors image).
+    # #15347 (owner myia-po-2026:CoursIA) : cablage de l'organe G-VAR-3
+    #   refresh_stale_adjacency.py -- sur main + tests, aucun workflow ne
+    #   l'appelait (organe inerte, 24 h de blocage mesurees sur #15165).
+    #   Balayage cron horaire (schedule + workflow_dispatch) pur-Python +
+    #   gh bootstrap toolcache : simule le garde contre la sequence de merges
+    #   courante et appose le marqueur `<!-- refresh-adj -->` idempotent qui
+    #   re-declenche `pull_request: edited` -- jamais d'override (le garde
+    #   reste l'autorite, la simulation doit passer). Advisory by
+    #   construction : exit 0 toujours, rc=2 logge ::warning::, aucun secret,
+    #   GITHUB_TOKEN lecture seule + pull-requests: write (body edit).
+    #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
+    #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",
@@ -168,9 +182,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "exercises-advisory.yml",
     "grain-orphans-sweep.yml",
     "h1-hygiene-advisory.yml",
+    # #12156 piste 1 (owner myia-po-2024:CoursIA) : advisory epic-wide-sur-
+    #   umbrella. Balayage cron hebdomadaire (schedule + workflow_dispatch)
+    #   pur-Python, GH_TOKEN lecture seule + issues: write. Aucun trigger
+    #   pull_request -> aucune garde same-repo requise (tranche 4 #14283,
+    #   meme profil que candidate-delivered-advisory). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "lane-claim-epic-wide-advisory.yml",
     "leaky-fixture-sweep.yml",
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
+    "mermaid-fill-color-advisory.yml",
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
@@ -180,6 +202,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # Ne pas creer un troisieme organe").
     "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
+    # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
+    #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
+    #   du 2026-08-19. Meme profil que runner-starvation-advisory : advisory
+    #   schedule + workflow_dispatch UNIQUEMENT (doctrine #12817), runs-on
+    #   statique [self-hosted, coursia-ephemeral, coursia-linux], aucun
+    #   trigger pull_request. Pur-Python stdlib + gh binaire de l'image ;
+    #   permissions contents:read + issues:write + actions:read (ouvre
+    #   issue labellee `queue-ghost-watch` sur DRIFT). Aucun GITHUB_TOKEN
+    #   cote job pour les operations de decision -- uniquement pour ouvrir
+    #   l'issue (token du runner, scope contenu par les permissions).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "queue-ghost-watch.yml",
     "qc-research-monitor.yml",
     "repo-size-advisory.yml",
     "review-coverage-advisory.yml",
@@ -208,7 +242,37 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "fabricated-output-gate.yml",
     "fast-lane-shadow.yml",
     "lane-claim-guard.yml",
+    # linux-runner-version-pin-advisory.yml (#15201, owner
+    #   myia-po-2023:CoursIA) : organe cron schedule+workflow_dispatch
+    #   UNIQUEMENT (advisory par construction, doctrine #12817), runs-on
+    #   statique [self-hosted, coursia-ephemeral, coursia-linux], garde
+    #   same-repo au niveau job malgre l'absence de trigger pull_request.
+    #   Pur-Python stdlib + gh binaire de l'image ; le GITHUB_TOKEN du run
+    #   ne sert qu'a LIRE releases/latest (permissions: contents: read).
+    #   Cron 23,53 -- offset des sweeps 13,43 et du starvation 19,49.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
+    # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
+    #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
+    #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
+    #   coursia-linux reste couvert par le workflow dedie
+    #   linux-runner-starvation-advisory.yml -- la sonde n'oberve pas
+    #   linux. Meme profil : advisory cron schedule+workflow_dispatch
+    #   UNIQUEMENT (doctrine #12817), runs-on STATIQUE [self-hosted,
+    #   coursia-ephemeral, coursia-linux] -- l'observateur tourne sur la jambe
+    #   Linux containerisee, pas sur les labels qu'il observe (un observateur
+    #   qui tournerait sur le label garde mourrait avec lui). Pur-Python
+    #   stdlib + gh binaire de l'image ; RUNNERS_READ_PAT secret read-only
+    #   pose 2026-09-02T08:26Z (Administration:read, incapable de minter un
+    #   registration-token, par design). Cron 23,53 (offset disjoint du cron
+    #   linux 19,49 et des sweeps 13,43). trigger workflow_dispatch sans
+    #   input (matrice executee in extenso -- l'input `label` declare
+    #   precedemment a ete retire c.1065 car chaque job matriciel porte
+    #   matrix.label truthy et shadowait inputs.label). ZERO job self-hosted
+    #   sur pull_request : aucun risque d'atteindre un job de fork. Rollback
+    #   = revert de la PR (l'entree disparait de l'allowlist).
+    "runner-starvation-advisory.yml",
     "markdown-rendering-guard.yml",
     "markdown-table-guard.yml",
     "md-content-loss-gate.yml",
@@ -218,6 +282,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   ci-dessus : garde Python pur stdlib, garde same-repo au niveau job,
     #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
     "notebook-output-flood-ratchet.yml",
+    # jumeau output-collapse (#15327, owner myia-po-2023:CoursIA) : verdict
+    #   ADVISORY rendu par fast-lane TRANCHE2 (entree 5, check-run
+    #   `Output-collapse ratchet (base vs PR, advisory)`), shell
+    #   workflow_dispatch-ONLY pour re-run manuel -- meme profil que les deux
+    #   jumeaux ci-dessus. Detecteur check_output_collapse.py, stdlib-only,
+    #   garde same-repo au niveau job, aucun GITHUB_TOKEN cote job. L'organe a
+    #   recu l'approval design (Hermes 02:29Z) ; la review ai-01 03:33Z a
+    #   demande la voie 2 : allowlist canonique + test de politique rejoue
+    #   (test_current_repository_self_hosted_jobs_satisfy_isolation_policy,
+    #   scan du repo courant -- aucune autre liste a synchroniser).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "notebook-output-collapse-ratchet.yml",
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
@@ -326,6 +402,33 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   advisory.yml). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "translation-hot-drift-advisory.yml",
+    # #15405 (decision ai-01 2026-09-11, owner myia-ai-01:CoursIA) : garde
+    #   advisory pur-Python sur les paragraphes markdown depassant 2000
+    #   caracteres (detect_paragraph_length.py, stdlib-only). Declencheur
+    #   pull_request filtrant `**/*.md` + auto-couverture du workflow (#8822,
+    #   sans quoi le poseur de label ne peut plus retirer son propre label une
+    #   fois les chemins sortis du diff). Pose un label signe, jamais exit != 0.
+    #   `pull-requests: write` + GITHUB_TOKEN limites a l'API labels -- meme
+    #   profil que markdown-deaccent-advisory.yml / repeated-prose-advisory.yml,
+    #   deja admis a ce titre. Garde same-repo au niveau job (#13874) : les PRs
+    #   de fork se font skipper proprement par pr_gate. Runner = jambe Linux
+    #   containerisee (LINUX_RUNNER_LABELS). Rollback = revert de la PR
+    #   (l'entree disparait de l'allowlist).
+    "paragraph-length-advisory.yml",
+    # #14598 sous-grain (owner myia-po-2025:CoursIA, claim c. issue) : sonde
+    #   TEMPORAIRE de mesure non censuree de tests/ (55) -- le plafond
+    #   production 30 min d'ict-tests.yml censure a droite les runs coupes
+    #   (6/11 des 30 derniers). Workflow diagnostique separe : pull_request
+    #   self-cover (declenche seulement par son propre fichier) +
+    #   workflow_dispatch, concurrency FIXE sans cancel-in-progress (une
+    #   mesure ne doit pas etre interrompue), timeout 90 min, pytest
+    #   --durations=25, venv per-job #14571, garde same-repo universelle au
+    #   niveau job, runs-on STATIQUE. Pur test pytest, aucun secret, aucun
+    #   GITHUB_TOKEN cote job, aucun label pose. Retirer ce workflow ET cette
+    #   entree dans la PR qui re-calibre le plafond d'apres la mesure
+    #   (acceptance reprise #14598). Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
+    "ict-tests-profile.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

@@ -1,0 +1,82 @@
+name: Notebook Output Collapse Ratchet
+
+# #15327 / réserve user sur #15209 (2026-09-08) — une ré-exécution ne doit
+# pas laisser s'effondrer silencieusement le VOLUME de sortie des cellules
+# code. Miroir de notebook-output-flood-ratchet.yml, qui lui attrape
+# l'inflation.
+#
+# Cas fondateur : Lean-7b-Examples.ipynb (6b327a9bf -> 56d98429a), 11 -> 11
+# cellules code exécutées « avec succès », 0 erreur, execution_counts
+# réels — et 10637 -> 2985 caractères de sortie (-71,9 %). Les gardes
+# if api_ok: du notebook ont fait leur travail de dégradation gracieuse :
+# trois cellules ont imprimé « Execution sautee (API non configuree) » au
+# lieu de leur vraie sortie (2195 -> 147, 2568 -> 38, 2074 -> 42 chars).
+#
+# Contrainte de design (mesure ai-01 sur #15327, 2026-09-09) : la
+# contraction AGREGÉE seule est un signal à ~100 % de faux positifs (3/3
+# contractions > 50 % sur 14 jours étaient des PRs légitimes). L'organe
+# discrimine donc par la CAUSE : signature de dégradation gracieuse et
+# perte d'un ordre de grandeur PAR CELLULE, avec exemption des deux causes
+# légitimes mécaniquement détectables (contenu déplacé vers un notebook
+# créé dans le même diff ; purge de texte diagnostique CS####/warning).
+#
+# Placement ADVISORY (point 3 de l'issue) : le verdict est publié sous le
+# check-run `Output-collapse ratchet (base vs PR, advisory)` avec une
+# conclusion neutre — jamais bloquant tant que le seuil n'est pas calibré
+# davantage sur l'historique.
+
+# Livré directement dans la voie rapide (#12567) : le verdict par-PR est
+# rendu par `fast-lane-shadow.yml` via l'entrée TRANCHE2 de
+# `scripts/ci/fast_lane_registry.py`. Ce fichier ne garde que
+# `workflow_dispatch` (relance manuelle).
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to ratchet against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-output-collapse-ratchet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratchet:
+    name: Output-collapse ratchet (base vs PR, advisory)
+    # Même jambe que les siblings (#13378 tranche 5) : garde Python pur,
+    # sans secret. La garde same-repo ci-dessous saute les PRs de fork :
+    # aucun code de fork n'atteint le runner.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Le self-test passe FIRST et gate le garde : contrôles positifs et
+      # négatifs + replay du cas de référence (#15209, 3 findings signature).
+      - name: Detector self-test (positive + negative control)
+        run: python scripts/notebook_tools/check_output_collapse.py --self-test
+
+      - name: Output-collapse axis unit tests
+        run: python -m pytest scripts/notebook_tools/tests/test_check_output_collapse.py -q
+
+      # Refs reach the script via env, never inline in the run script
+      # (script-injection guard, same as the siblings).
+      - name: Ratchet check (advisory)
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/notebook_tools/check_output_collapse.py "$BASE"

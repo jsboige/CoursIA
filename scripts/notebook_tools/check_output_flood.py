@@ -174,12 +174,6 @@ def self_test(cwd=None):
     """
     failures = []
 
-    def _nb(cells):
-        return {"cells": [{"cell_type": "code", "id": kid,
-                           "outputs": [{"output_type": "stream", "text": "."}
-                                       for _ in range(n)]}
-                          for kid, n in cells]}
-
     def _nb(code_cells, added=False):
         """Build a synthetic notebook from [(id, outputs)]; None base = added."""
         return None if added else {

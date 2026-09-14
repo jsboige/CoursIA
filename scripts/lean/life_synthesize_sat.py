@@ -44,6 +44,15 @@ import time
 from pathlib import Path
 from typing import Iterable, Sequence
 
+
+class SolverTimeout(RuntimeError):
+    """Le solveur n'a pas tranche dans le budget imparti."""
+
+    def __init__(self, size: int, reason: str) -> None:
+        super().__init__(f"timeout a la taille {size}: {reason}")
+        self.size = size
+        self.reason = reason
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from life_synthesize import Cell, Grid, evolve, normalize, shift_v  # noqa: E402
@@ -140,13 +149,25 @@ def solve_exact_size(
     box_h: int,
     k: int,
     enumerate_all: bool,
+    timeout_ms: int | None = None,
 ) -> list[tuple[Cell, ...]]:
-    """Toutes les formes normalisees de taille exactement k (ou la premiere)."""
+    """Toutes les formes normalisees de taille exactement k (ou la premiere).
+
+    Un budget expire ne vaut jamais UNSAT : Z3 rend ``unknown`` et l'appelant
+    recoit un ``SolverTimeout`` portant la taille non tranchee.
+    """
     solver, seeds = build_solver(n, v, box_w, box_h)
+    if timeout_ms is not None:
+        solver.set(timeout=timeout_ms)
     solver.add(z3.Sum([z3.If(var, 1, 0) for var in seeds.values()]) == k)
 
     found: dict[tuple[Cell, ...], tuple[Cell, ...]] = {}
-    while solver.check() == z3.sat:
+    while True:
+        status = solver.check()
+        if status == z3.unknown:
+            raise SolverTimeout(k, solver.reason_unknown())
+        if status == z3.unsat:
+            break
         pattern = _model_pattern(solver.model(), seeds)
         if not verify_solution(pattern, n, v):
             raise AssertionError(
@@ -179,17 +200,48 @@ def search_minimal(
     box_h: int,
     max_cells: int,
     enumerate_all: bool = True,
+    timeout_ms: int | None = None,
 ) -> dict:
-    """Monte k jusqu'au premier satisfiable. Sinon : temoin d'impossibilite."""
+    """Monte k jusqu'au premier satisfiable, impossible ou hors budget."""
     started = time.perf_counter()
     refuted: list[int] = []
+    attempts: list[dict] = []
     for k in range(1, max_cells + 1):
-        shapes = solve_exact_size(n, v, box_w, box_h, k, enumerate_all)
+        attempt_started = time.perf_counter()
+        try:
+            shapes = solve_exact_size(
+                n, v, box_w, box_h, k, enumerate_all, timeout_ms
+            )
+        except SolverTimeout as exc:
+            attempts.append({
+                "k": k,
+                "status": "TIMEOUT",
+                "elapsed_s": round(time.perf_counter() - attempt_started, 3),
+            })
+            return {
+                "verdict": "TIMEOUT",
+                "min_cells": None,
+                "sizes_refuted": refuted,
+                "size_unresolved": exc.size,
+                "timeout_ms": timeout_ms,
+                "reason_unknown": exc.reason,
+                "attempts": attempts,
+                "count_normalized": 0,
+                "patterns": [],
+                "canonical_glider_present": False,
+                "elapsed_s": round(time.perf_counter() - started, 3),
+            }
+        attempts.append({
+            "k": k,
+            "status": "SAT" if shapes else "UNSAT",
+            "elapsed_s": round(time.perf_counter() - attempt_started, 3),
+        })
         if shapes:
             return {
                 "verdict": "FOUND",
                 "min_cells": k,
                 "sizes_refuted": refuted,
+                "attempts": attempts,
                 "count_normalized": len(shapes),
                 "patterns": [list(shape) for shape in shapes],
                 "canonical_glider_present": CANONICAL_GLIDER in set(shapes),
@@ -200,6 +252,7 @@ def search_minimal(
         "verdict": "IMPOSSIBLE",
         "min_cells": None,
         "sizes_refuted": refuted,
+        "attempts": attempts,
         "count_normalized": 0,
         "patterns": [],
         "canonical_glider_present": False,
@@ -277,6 +330,10 @@ def main(argv: Iterable[str] | None = None) -> int:
         "--first-only", action="store_true",
         help="s'arreter a la premiere forme au lieu de toutes les enumerer",
     )
+    parser.add_argument(
+        "--timeout-ms", type=int, default=None,
+        help="budget Z3 par taille k ; un depassement rend TIMEOUT, jamais IMPOSSIBLE",
+    )
     parser.add_argument("--json", action="store_true", help="sortie JSON")
     parser.add_argument(
         "--lean", metavar="NOM",
@@ -286,6 +343,9 @@ def main(argv: Iterable[str] | None = None) -> int:
         ),
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
+
+    if args.timeout_ms is not None and args.timeout_ms <= 0:
+        parser.error("--timeout-ms doit être strictement positif")
 
     if z3 is None:
         print(
@@ -300,14 +360,20 @@ def main(argv: Iterable[str] | None = None) -> int:
     v = (args.vx, args.vy)
 
     result = search_minimal(
-        args.n, v, box_w, box_h, max_cells, enumerate_all=not args.first_only
+        args.n,
+        v,
+        box_w,
+        box_h,
+        max_cells,
+        enumerate_all=not args.first_only,
+        timeout_ms=args.timeout_ms,
     )
     result["spec"] = f"evolve^{args.n} T = shift_{v} T"
     result["box"] = [box_w, box_h]
     result["max_cells"] = max_cells
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0
+        return 3 if result["verdict"] == "TIMEOUT" else 0
 
     print(f"Spec : {result['spec']}")
     print(f"Boite {box_w}x{box_h}, tailles explorees 1..{max_cells}")
@@ -319,6 +385,15 @@ def main(argv: Iterable[str] | None = None) -> int:
         )
         print(f"({result['elapsed_s']} s)")
         return 0
+    if result["verdict"] == "TIMEOUT":
+        print(
+            f"TIMEOUT — tailles refutees : {result['sizes_refuted']}; "
+            f"taille non tranchee : {result['size_unresolved']}; "
+            f"budget Z3 : {result['timeout_ms']} ms."
+        )
+        print(f"Raison Z3 : {result['reason_unknown']}")
+        print(f"({result['elapsed_s']} s)")
+        return 3
     print(
         f"FOUND — taille minimale {result['min_cells']} cellules "
         f"(tailles refutees : {result['sizes_refuted'] or 'aucune'})"

@@ -55,6 +55,40 @@ noise that gets ignored:
 Strong pairs are additionally labelled ``pr-overlap`` (label on both sides),
 giving the coordinator a filterable queue. Weak pairs get the comment only.
 
+Terminal verdict: a merged side (#15578)
+----------------------------------------
+The candidate pool was ``--state open`` exclusively, so a collision *vanished
+from the report at the exact moment it became irreversible*: when one side
+merged. The organ was loudest while the risk was theoretical, and mute once one
+side was on ``main``.
+
+Measured on the founding instance: at 2026-09-10T23:18Z the advisory posted a
+``faible`` collision between #15513 and #15455 over five identical paths --
+two independent implementations of the same paragraph-length detector. #15455
+merged at 2026-09-11T08:37Z, the pair left the pool, and the signal went
+silent although the duplicate was by then CONSUMED: the lane found it by
+itself and escalated without delivering.
+
+The pool therefore also carries PRs merged within a bounded window
+(``--merged-window-days`` -- an argument, never a buried constant):
+
+- a pair with ONE merged side is **terminal**. It is not graduated and not
+  tiered: one side is already on ``main``, and the comment says exactly that --
+  and nothing more. What the organ observes is a shared PATH; two PRs can
+  overlap on every path and still deliver disjoint substance (#15454/#15502
+  shared 1 of 1 path on both sides -- the gate's maximum -- and nothing else).
+  "The substance is consumed" would be a content comparison this organ never
+  performs, so the terminal comment does not make it. Terminal *replaces the
+  silence*, it does not inflate the open tiers;
+- a pair with BOTH sides merged carries no signal (both are already on
+  ``main``: history, not a collision) and is excluded, like stacked pairs;
+- the tier of OPEN/OPEN pairs is untouched (#15578 acceptance 4). The lesson
+  is not "everything is strong": it is that the state of the other side
+  dominates the path overlap.
+
+Only OPEN PRs are ever commented. An advisory written on a merged PR would be
+noise on a closed thread, and the actionable side is always the open one.
+
 Scope (from #13359)
 -------------------
 - Invent NO new claim lock. Do not touch `check_lane_claim.py` -- the claim
@@ -90,11 +124,15 @@ CLI flags
 ``--limit``       cap PRs fetched via ``gh pr list`` (default 500; the default
                   ``gh pr list`` limit is 30 -- a silent cap that hid entire
                   stacks this month). 500 covers the whole open pool here.
+``--merged-window-days``
+                  depth of the MERGED pool, in days (default 3; 0 disables).
+                  The bound is an argument, never a buried constant (#15578).
 ``--repo``        override repo (default: gh default / GITHUB_REPOSITORY).
 ``--dry-run``     log detections, post/retract/label nothing.
 ``--same-issue-only``
-                  post only STRONG-tier collisions (both PRs cite a common
-                  issue). Cuts the shared-README noise.
+                  post only the actionable tiers: STRONG (both PRs cite a
+                  common issue) and TERMINAL (the other side already merged).
+                  Cuts the shared-README noise.
 --json            always on stdout.
 --self-test       run the offline control suite; exit 2 if any control fails.
 """
@@ -103,7 +141,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 import re
 import subprocess
@@ -127,6 +165,44 @@ OVERLAP_LABEL = "pr-overlap"
 
 TIER_STRONG = "strong"
 TIER_WEAK = "weak"
+# A pair with a merged side is not a tier, it is a terminal state (#15578).
+TIER_TERMINAL = "terminal"
+
+# ``gh`` reports PR state as OPEN / MERGED / CLOSED; only "merged" is terminal.
+MERGED_STATE = "merged"
+
+# Default depth of the merged window. The useful window is the one in which a
+# still-open branch could have been opened before the merge and can still be
+# unaware of it -- a few days, not a quarter. Overridden by the CLI argument
+# ``--merged-window-days`` (the bound is an argument, not a buried constant).
+DEFAULT_MERGED_WINDOW_DAYS = 3
+
+# A merged side is TERMINAL only when the two PRs share a substantial portion
+# of their PATHS -- never for a coincidental shared ``.gitignore``. The measure
+# is the share of EACH side's signal paths that is covered by the shared ones.
+#
+# This gate cuts NOISE. It does NOT establish that the two deliveries overlap in
+# substance, and the comment must never say that it does: #15454/#15502 shared
+# 1 of 1 path on both sides -- a perfect 1.00, this gate's maximum -- while
+# delivering entirely disjoint content (one coloured a mermaid block, the other
+# split a wall paragraph). Path overlap is not content overlap, so no threshold
+# on this quantity could have separated them.
+#
+# Calibrated on ONE live snapshot (2026-09-11, 64 open + 282 merged, 3-day
+# window; the pool drifts, so these are that snapshot's numbers): ungated, 96
+# merged-side pairs reached 37 of the 64 open PRs -- every other open PR, i.e.
+# the "reports everything" collapse this module's docstring warns about. At 0.5
+# the same snapshot yields 23 pairs / 16 open PRs, and the founding
+# #15513/#15455 duplicate scores 0.83 (5 shared, out of 5 and of 6).
+# Rejected alternative, measured: ``shared / min(sizes)`` keeps the same ~37 --
+# a 1-file merged PR sharing its only file scores 1.00 for trivial reasons.
+#
+# Note that the RETAINED measure admits that same trivial case: when BOTH sides
+# are single-file on the same path, min coverage is 1.00 and the pair passes.
+# #15454/#15502 is exactly that shape. The gate is right to let it through --
+# dropping it would re-open the muteness #15578 fixed -- which is why the fix
+# for that pair is the comment's WORDING, not the threshold.
+TERMINAL_MIN_OVERLAP_RATIO = 0.5
 
 # The synthetic positive control. NOT a live repo pair (those are volatile:
 # they merge and vanish). It is seeded straight into the pure detector, so the
@@ -147,6 +223,44 @@ HISTORICAL_STRONG_PAIRS: tuple[tuple[int, int, str, int], ...] = (
     (12737, 13385,
      "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb",
      13313),
+)
+
+# The founding instance of #15578, replayed at its state of then: #15455 merged
+# at 2026-09-11T08:37Z while #15513 was still open, over the same five paths --
+# two independent implementations of the same paragraph-length detector. The
+# paths are READ FROM THE TWO PRS (``gh pr view --json files``), not invented.
+# Under the pre-#15578 pool (``--state open`` only) the pair is invisible, and
+# that invisibility IS the defect.
+FOUNDING_TERMINAL_PAIR: tuple[int, int, tuple[str, ...], str] = (
+    15513, 15455,
+    (
+        ".github/workflows/paragraph-length-advisory.yml",
+        "scripts/notebook_tools/README.md",
+        "scripts/notebook_tools/detect_paragraph_length.py",
+        "scripts/notebook_tools/tests/fixtures/paragraph_wall_md.md",
+        "scripts/notebook_tools/tests/test_detect_paragraph_length.py",
+    ),
+    # #15455's sixth path, unshared -- the real overlap is 5 of 5 and 5 of 6,
+    # i.e. 0.83, NOT a trivial 1.00. A fixture that scores a perfect ratio
+    # would prove the gate admits the founding case for a reason the live pool
+    # never offers.
+    "scripts/ci/check_self_hosted_runner_policy.py",
+)
+
+# The founding instance of the OVERCLAIM (#15768), replayed at its state of
+# then, and the sharpest fixture this suite has: both PRs touch EXACTLY ONE
+# path -- the same one -- so the overlap ratio is a PERFECT 1.00, the gate's
+# maximum. And the two deliveries share no substance at all:
+#
+#   #15454  docs(probas,#14871)  split a 3336-char wall paragraph in README.md
+#   #15502  fix(probas,#15022)   explicit mermaid node text colour, same file
+#
+# The issues are DISJOINT, and the paths identical. No threshold on path
+# overlap could separate them, because path overlap is not content overlap --
+# which is why the fix is the verdict's WORDING, not the gate.
+# Paths read from `gh api .../pulls/<n>/files`; issues from the two titles.
+FOUNDING_OVERCLAIM_PAIR: tuple[int, int, str, int, int] = (
+    15454, 15502, "MyIA.AI.Notebooks/Probas/README.md", 14871, 15022,
 )
 
 # Generated artifacts with permanent structural overlap and zero signal
@@ -177,12 +291,21 @@ def _is_signal_path(path: str) -> bool:
 
 @dataclass(frozen=True)
 class PathCollision:
-    """An unordered pair of open PRs sharing at least one signal file path."""
+    """An unordered pair of PRs sharing at least one signal file path.
+
+    ``merged_side`` is set only for a terminal pair (#15578): it names the side
+    already on ``main``, so the comment names that number instead of guessing
+    it from the tier. ``overlap_ratio`` carries the measured
+    ``min`` coverage that put the pair over ``TERMINAL_MIN_OVERLAP_RATIO``, so
+    a reader can audit the gate's decision instead of trusting it.
+    """
     a_number: int
     b_number: int
     shared_paths: tuple[str, ...]
     tier: str = TIER_WEAK
     common_issues: tuple[int, ...] = ()
+    merged_side: int | None = None
+    overlap_ratio: float | None = None
 
     def other(self, number: int) -> int:
         if number == self.a_number:
@@ -198,18 +321,31 @@ class PathCollision:
             "shared_paths": list(self.shared_paths),
             "tier": self.tier,
             "common_issues": list(self.common_issues),
+            "merged_side": self.merged_side,
+            "overlap_ratio": self.overlap_ratio,
         }
 
 
 @dataclass(frozen=True)
 class PrRow:
-    """Minimal open PR record the detector needs."""
+    """Minimal PR record the detector needs.
+
+    ``state`` defaults to ``"open"``: every pre-#15578 construction -- and
+    every fixture in the unit suite -- is an open PR, so widening the pool
+    cannot silently move an existing pair into the terminal verdict.
+    """
     number: int
     title: str
     paths: tuple[str, ...]
     body: str = ""
     base_ref: str = ""
     head_ref: str = ""
+    state: str = "open"
+    merged_at: str = ""
+
+    @property
+    def is_merged(self) -> bool:
+        return self.state.strip().lower() == MERGED_STATE
 
     @classmethod
     def from_gh_dict(cls, d: dict) -> "PrRow":
@@ -225,6 +361,8 @@ class PrRow:
             body=(d.get("body") or ""),
             base_ref=(d.get("baseRefName") or "").strip(),
             head_ref=(d.get("headRefName") or "").strip(),
+            state=(d.get("state") or "open").strip().lower(),
+            merged_at=(d.get("mergedAt") or "").strip(),
         )
 
     def cited_issues(self) -> set[int]:
@@ -232,6 +370,25 @@ class PrRow:
         ``Closes|Fixes|Resolves|See|refs|Part of #N`` from the body."""
         from_title = {int(n) for n in re.findall(r"#(\d+)", self.title or "")}
         return from_title | {int(n) for n in _CITES_RE.findall(self.body or "")}
+
+
+def terminal_overlap_ratio(
+    shared_paths: Iterable[str], a: PrRow, b: PrRow,
+) -> float:
+    """Share of EACH side's signal paths covered by the shared ones (min).
+
+    ``min`` over the two sides: a large PR overlapping a small one on a single
+    file scores low, because that is not a duplicate delivery. Returns 0.0 when
+    either side carries no signal path -- an empty denominator must never read
+    as a perfect overlap.
+    """
+    shared = set(shared_paths)
+    a_sig = {p for p in a.paths if _is_signal_path(p)}
+    b_sig = {p for p in b.paths if _is_signal_path(p)}
+    if not a_sig or not b_sig:
+        return 0.0
+    return min(len(shared & a_sig) / len(a_sig),
+               len(shared & b_sig) / len(b_sig))
 
 
 def is_stacked(a: PrRow, b: PrRow) -> bool:
@@ -250,10 +407,13 @@ def is_stacked(a: PrRow, b: PrRow) -> bool:
 class ScanResult:
     """Aggregate of one detection run."""
     total_prs_scanned: int = 0
+    merged_prs_scanned: int = 0
     distinct_paths: int = 0
     collisions: list[PathCollision] = field(default_factory=list)
     colliding_prs: list[int] = field(default_factory=list)
     stacked_pairs_excluded: list[tuple[int, int]] = field(default_factory=list)
+    merged_pairs_excluded: list[tuple[int, int]] = field(default_factory=list)
+    merged_low_overlap_excluded: list[tuple[int, int]] = field(default_factory=list)
 
     @property
     def n_collisions(self) -> int:
@@ -263,30 +423,70 @@ class ScanResult:
     def strong_collisions(self) -> list[PathCollision]:
         return [c for c in self.collisions if c.tier == TIER_STRONG]
 
+    @property
+    def terminal_collisions(self) -> list[PathCollision]:
+        """Pairs with ONE side already merged (#15578).
+
+        The verdict is the merged state plus a high PATH overlap -- not a
+        substance comparison, which this organ cannot make (#15454).
+        """
+        return [c for c in self.collisions if c.tier == TIER_TERMINAL]
+
+    def actionable_collisions(self) -> list[PathCollision]:
+        """Pairs worth posting when the caller wants the noise cut.
+
+        STRONG and TERMINAL, never the open tiers' weak family-README noise.
+        A terminal pair is not that noise either: one side is already on
+        ``main``, which is the strongest FACT this organ can observe -- a fact
+        about paths and PR state, never a proof that the two deliveries
+        overlap (#15454).
+        """
+        return [c for c in self.collisions if c.tier in (TIER_STRONG, TIER_TERMINAL)]
+
     def as_dict(self) -> dict:
         return {
             "total_prs_scanned": self.total_prs_scanned,
+            "merged_prs_scanned": self.merged_prs_scanned,
             "distinct_paths": self.distinct_paths,
             "n_collisions": self.n_collisions,
+            "n_strong": len(self.strong_collisions),
+            "n_weak": sum(1 for c in self.collisions if c.tier == TIER_WEAK),
+            "n_terminal": len(self.terminal_collisions),
             "collisions": [c.as_dict() for c in self.collisions],
             "colliding_prs": self.colliding_prs,
             "stacked_pairs_excluded": [list(p) for p in self.stacked_pairs_excluded],
+            "merged_pairs_excluded": [list(p) for p in self.merged_pairs_excluded],
+            "merged_low_overlap_excluded": [
+                list(p) for p in self.merged_low_overlap_excluded
+            ],
         }
 
 
 def detect_path_collisions(prs: Iterable[PrRow]) -> ScanResult:
-    """Group open PRs by signal file path; report every pair sharing >=1 path.
+    """Group the pool by signal file path; report every pair sharing >=1 path.
 
     ``prs`` is consumed once. The result is deterministic: collisions sorted by
     (lowest number, highest number), shared paths sorted by path string.
 
-    Excluded before pairing (#13615): generated-artifact paths (dropped from
-    every row -- they never carry signal), and stacked PR pairs (dropped from
-    the pair set -- their overlap is the stack itself).
+    Excluded before pairing:
+    - generated-artifact paths (#13615): dropped from every row -- they never
+      carry signal;
+    - stacked PR pairs (#13615): dropped from the pair set -- their overlap is
+      the stack itself;
+    - all-merged pairs (#15578): dropped from the pair set -- both sides are
+      already on ``main``, which is history, not a collision;
+    - merged-side pairs below ``TERMINAL_MIN_OVERLAP_RATIO`` (#15578): dropped,
+      and recorded in ``merged_low_overlap_excluded`` -- an incidental shared
+      ``.gitignore`` is not a double delivery.
+
+    A pair with EXACTLY ONE merged side and a substantial overlap is reported
+    with the terminal verdict and carries ``merged_side`` + ``overlap_ratio``;
+    the open/open tiering is untouched.
     """
     result = ScanResult()
     rows = list(prs)
     result.total_prs_scanned = len(rows)
+    result.merged_prs_scanned = sum(1 for r in rows if r.is_merged)
     row_by_number = {r.number: r for r in rows}
 
     path_to_numbers: dict[str, set[int]] = {}
@@ -316,15 +516,34 @@ def detect_path_collisions(prs: Iterable[PrRow]) -> ScanResult:
         if ra is not None and rb is not None and is_stacked(ra, rb):
             result.stacked_pairs_excluded.append((a, b))
             continue
+        merged_sides = [
+            r.number for r in (ra, rb) if r is not None and r.is_merged
+        ]
+        if len(merged_sides) == 2:
+            result.merged_pairs_excluded.append((a, b))
+            continue
         common: tuple[int, ...] = ()
         if ra is not None and rb is not None:
             common = tuple(sorted(ra.cited_issues() & rb.cited_issues()))
+        if merged_sides:
+            ratio = (
+                terminal_overlap_ratio(paths, ra, rb)
+                if ra is not None and rb is not None else 0.0
+            )
+            if ratio < TERMINAL_MIN_OVERLAP_RATIO:
+                result.merged_low_overlap_excluded.append((a, b))
+                continue
+            tier, merged_side = TIER_TERMINAL, merged_sides[0]
+        else:
+            tier, merged_side, ratio = (TIER_STRONG if common else TIER_WEAK), None, None
         collisions.append(PathCollision(
             a_number=a,
             b_number=b,
             shared_paths=tuple(sorted(paths)),
-            tier=TIER_STRONG if common else TIER_WEAK,
+            tier=tier,
             common_issues=common,
+            merged_side=merged_side,
+            overlap_ratio=ratio,
         ))
     result.collisions = collisions
     result.colliding_prs = sorted(
@@ -351,9 +570,15 @@ def strong_collisions(collisions: Iterable[PathCollision]) -> list[PathCollision
 def render_comment(number: int, title: str, own_collisions: list[PathCollision]) -> str:
     """Build the advisory comment body for PR ``number``.
 
-    Names each colliding PR by number, its tier, the shared paths, and (for
-    the strong tier) the common cited issues. Marker-framed so a re-run can
-    find, refresh, or retract it in place.
+    Names each colliding PR by number, its tier, the shared paths, and the
+    common cited issues whenever there are any -- on the terminal tier too,
+    where they are the one honest hint that the two deliveries might overlap.
+    Marker-framed so a re-run can find, refresh, or retract it in place.
+
+    The open-pair rendering is byte-identical to the pre-#15578 one, so the
+    widened pool does not churn a single existing comment: only a pair that
+    actually went terminal changes its body (and the closing note is appended
+    only when such a pair is present).
     """
     lines = [
         "<!-- PR-PATH-COLLISION:START -->",
@@ -369,12 +594,43 @@ def render_comment(number: int, title: str, own_collisions: list[PathCollision])
     ]
     for c in sorted(own_collisions, key=lambda c: c.other(number)):
         other = c.other(number)
-        tier_fr = "fort" if c.tier == TIER_STRONG else "faible"
-        line = f"- **{tier_fr}** -- **#{other}** partage : {', '.join(c.shared_paths)}"
+        if c.tier == TIER_TERMINAL:
+            merged = c.merged_side if c.merged_side is not None else other
+            ratio = (
+                f", recouvrement de chemins {c.overlap_ratio:.0%}"
+                if c.overlap_ratio is not None else ""
+            )
+            line = (
+                f"- **terminal** -- **#{other}** partage : "
+                f"{', '.join(c.shared_paths)}{ratio} -- **#{merged}** est "
+                "deja sur `main`."
+            )
+            # The one honest hint that the two might overlap. Dropping it was
+            # the same mistake one level down: measured and stated, it is a
+            # reason to look; absent, the reader has only the tier.
+            if c.common_issues:
+                issues = ", ".join(f"#{i}" for i in c.common_issues)
+                line += f" (issues communes : {issues})"
+        else:
+            tier_fr = "fort" if c.tier == TIER_STRONG else "faible"
+            line = (
+                f"- **{tier_fr}** -- **#{other}** partage : "
+                f"{', '.join(c.shared_paths)}"
+            )
         if c.common_issues:
             issues = ", ".join(f"#{i}" for i in c.common_issues)
             line += f" (issues communes : {issues})"
         lines.append(line)
+    if any(c.tier == TIER_TERMINAL for c in own_collisions):
+        lines.append("")
+        lines.append(
+            "Le verdict **terminal** (#15578) signale qu'**un cote de la paire "
+            "est deja sur `main`**. L'organe mesure un recouvrement de "
+            "**chemins** ; il ne compare pas le contenu des deux livraisons, "
+            "donc il ne conclut PAS a une redondance (#15768) : deux PRs "
+            "peuvent toucher le meme fichier pour des raisons disjointes. "
+            "L'arbitrage reste a la lane ou au coordinateur."
+        )
     lines.append("")
     lines.append("<!-- PR-PATH-COLLISION:END -->")
     return "\n".join(lines)
@@ -522,6 +778,40 @@ def list_open_prs(repo: str, limit: int) -> list[PrRow]:
         "--json", "number,title,body,baseRefName,headRefName,files",
     ]) or []
     return [PrRow.from_gh_dict(d) for d in raw]
+
+
+def list_recently_merged_prs(
+    repo: str, since_date: str, limit: int,
+) -> list[PrRow]:
+    """PRs merged on or after ``since_date`` (``YYYY-MM-DD``), with paths.
+
+    The window is bounded SERVER-side (``merged:>=``) because ``gh pr list``
+    orders by CREATION date: a purely client-side window over a truncated page
+    would systematically lose the long-lived branches -- exactly the ones that
+    collide most. The client-side re-filter is kept as a cheap invariant (the
+    search qualifier and the ``mergedAt`` field must agree; a divergence would
+    make the pool silently wrong) and it is what makes the function testable
+    without the network.
+
+    A failure is NOT swallowed here. The caller decides -- an advisory organ
+    that goes mute on a query quirk is the very defect #15578 reports.
+    """
+    raw = _gh_json([
+        "pr", "list", "--repo", repo, "--state", "merged",
+        "--search", f"merged:>={since_date}",
+        "--limit", str(limit),
+        "--json",
+        "number,title,body,baseRefName,headRefName,files,state,mergedAt",
+    ]) or []
+    rows: list[PrRow] = []
+    for d in raw:
+        row = PrRow.from_gh_dict(d)
+        if row.state != MERGED_STATE:
+            continue
+        if row.merged_at and row.merged_at[:10] < since_date:
+            continue
+        rows.append(row)
+    return rows
 
 
 def find_marker(repo: str, number: int) -> tuple[str, str] | None:
@@ -702,14 +992,25 @@ def label_strong_pairs(
             print(f"  label {OVERLAP_LABEL} -> #{number}", file=sys.stderr)
 
 
+def _fmt_pairs(pairs: list[tuple[int, int]], limit: int = 8) -> str:
+    """Render exclusion pairs, capped -- a 176-pair line drowns the summary."""
+    shown = ", ".join(f"#{a}/#{b}" for a, b in pairs[:limit])
+    if len(pairs) > limit:
+        return f"({len(pairs)}) {shown}, ..."
+    return shown
+
+
 def _format_human_summary(result: ScanResult) -> str:
     lines = []
+    n_weak = sum(1 for c in result.collisions if c.tier == TIER_WEAK)
     lines.append(
         f"scanned={result.total_prs_scanned} "
+        f"(merged={result.merged_prs_scanned}) "
         f"distinct_paths={result.distinct_paths} "
         f"collisions={result.n_collisions} "
         f"(strong={len(result.strong_collisions)} "
-        f"weak={result.n_collisions - len(result.strong_collisions)})"
+        f"weak={n_weak} "
+        f"terminal={len(result.terminal_collisions)})"
     )
     for c in result.collisions[:20]:
         lines.append(
@@ -721,8 +1022,20 @@ def _format_human_summary(result: ScanResult) -> str:
     if result.n_collisions > 20:
         lines.append(f"  ... and {result.n_collisions - 20} more (see JSON)")
     if result.stacked_pairs_excluded:
-        pairs = ", ".join(f"#{a}/#{b}" for a, b in result.stacked_pairs_excluded)
-        lines.append(f"  stacked excluded: {pairs}")
+        lines.append(
+            f"  stacked excluded: {_fmt_pairs(result.stacked_pairs_excluded)}"
+        )
+    if result.merged_pairs_excluded:
+        lines.append(
+            f"  both-merged excluded: "
+            f"{_fmt_pairs(result.merged_pairs_excluded)}"
+        )
+    if result.merged_low_overlap_excluded:
+        lines.append(
+            f"  merged-side low-overlap excluded "
+            f"(< {TERMINAL_MIN_OVERLAP_RATIO:.0%}): "
+            f"{_fmt_pairs(result.merged_low_overlap_excluded)}"
+        )
     return "\n".join(lines)
 
 
@@ -770,6 +1083,111 @@ def _self_test() -> int:
               and coll.tier == TIER_STRONG
               and issue in coll.common_issues
               and path in coll.shared_paths)
+
+    # Founding instance of #15578 (#15578 acceptance 3): one side merged ->
+    # TERMINAL and the merged side is NAMED. Reverting the fix reds this
+    # control -- an open-only pool does not even carry the merged row, so the
+    # pair disappears (measured: see the PR body's replay of the suite against
+    # the pre-fix script).
+    f_open, f_merged, f_paths, f_extra = FOUNDING_TERMINAL_PAIR
+    founding = detect_path_collisions([
+        PrRow(number=f_open, title="tooling(notebook): detecteur", paths=f_paths),
+        PrRow(number=f_merged, title="tooling(#15405): detecteur",
+              paths=f_paths + (f_extra,),
+              state=MERGED_STATE, merged_at="2026-09-11T08:37:34Z"),
+    ])
+    term = next((c for c in founding.collisions
+                 if {c.a_number, c.b_number} == {f_open, f_merged}), None)
+    check(f"founding #{f_open}/#{f_merged} flagged terminal, merged side named",
+          term is not None
+          and term.tier == TIER_TERMINAL
+          and term.merged_side == f_merged
+          and len(term.shared_paths) == len(f_paths))
+
+    # Calibration control: the gate must ADMIT the founding case, and it must
+    # do so at its REAL ratio (5 of 5 and 5 of 6 = 0.83), not a fixture-perfect
+    # 1.00. If someone raises TERMINAL_MIN_OVERLAP_RATIO past the measured
+    # duplicate, this reds -- which is the point.
+    check(f"founding pair clears the gate at its measured ratio "
+          f"(>= {TERMINAL_MIN_OVERLAP_RATIO:.0%})",
+          term is not None
+          and term.overlap_ratio is not None
+          and abs(term.overlap_ratio - 5 / 6) < 1e-9
+          and len(f_extra) > 0)
+
+    # Calibration negative: an incidental shared path is NOT a double
+    # delivery. A 12-file PR sharing one `.gitignore` with a 1-file merged PR
+    # is noise, and posting it is how the organ becomes unreadable.
+    low = detect_path_collisions([
+        PrRow(number=900070, title="feat: big",
+              paths=(".gitignore",) + tuple(f"big/{i}.py" for i in range(11))),
+        PrRow(number=900071, title="fix: small", paths=(".gitignore",),
+              state=MERGED_STATE),
+    ])
+    check("incidental low-overlap merged pair is excluded, not reported",
+          low.n_collisions == 0
+          and (900070, 900071) in low.merged_low_overlap_excluded)
+
+    # ... and a terminal pair is NOT dropped by the --same-issue-only filter:
+    # one side being already merged is the loudest FACT this organ sees.
+    check("terminal survives the actionable (same-issue-only) selector",
+          [c.tier for c in founding.actionable_collisions()] == [TIER_TERMINAL])
+
+    # #15768 acceptance 1+3: the OVERCLAIM instance. A PERFECT path overlap
+    # (1 of 1 on both sides) over two DISJOINT issues must still land terminal
+    # -- and the rendered comment must not conclude that the substance is
+    # consumed. Reverting the wording turns this red: the pre-fix body said
+    # "la substance est consommee".
+    o_open, o_merged, o_path, o_open_issue, o_merged_issue = FOUNDING_OVERCLAIM_PAIR
+    overclaim = detect_path_collisions([
+        PrRow(number=o_open, title=f"docs(probas,#{o_open_issue}): segmenter",
+              paths=(o_path,)),
+        PrRow(number=o_merged,
+              title=f"fix(probas,#{o_merged_issue}): couleur mermaid",
+              paths=(o_path,), state=MERGED_STATE),
+    ])
+    oc = next((c for c in overclaim.collisions
+               if {c.a_number, c.b_number} == {o_open, o_merged}), None)
+    check(f"overclaim #{o_open}/#{o_merged}: perfect path overlap is terminal",
+          oc is not None
+          and oc.tier == TIER_TERMINAL
+          and oc.overlap_ratio == 1.0
+          and oc.common_issues == ())
+    body = render_comment(o_open, "docs(probas): segmenter",
+                          collisions_for_pr(o_open, overclaim.collisions))
+    check("overclaim: the terminal comment does NOT claim the substance is "
+          "consumed",
+          "substance est consommee" not in body
+          and "deja integre" not in body
+          and "deja sur" in body)
+
+    # Negative: TWO merged sides are history, not a collision -> NOTHING.
+    both_merged = detect_path_collisions([
+        PrRow(number=900050, title="old a", paths=("gone/x.md",),
+              state=MERGED_STATE),
+        PrRow(number=900051, title="old b", paths=("gone/x.md",),
+              state=MERGED_STATE),
+    ])
+    check("both-merged pair produces no collision",
+          both_merged.n_collisions == 0
+          and (900050, 900051) in both_merged.merged_pairs_excluded)
+
+    # Acceptance 4: a merged row must not inflate (nor deflate) an unrelated
+    # OPEN/OPEN pair -- the open tiers keep their own behaviour.
+    mixed = detect_path_collisions([
+        PrRow(number=900060, title="fix(#500): a", paths=("open/y.md",)),
+        PrRow(number=900061, title="fix(#500): b", paths=("open/y.md",)),
+        PrRow(number=900062, title="merged z", paths=("gone/z.md",),
+              state=MERGED_STATE),
+    ])
+    check("open pair keeps its strong tier beside a merged row",
+          any(c.tier == TIER_STRONG
+              and {c.a_number, c.b_number} == {900060, 900061}
+              for c in mixed.collisions))
+
+    # Acceptance 4 (negative half): a merged row sharing NO path adds nothing.
+    check("merged row without a shared path is not reported",
+          mixed.n_collisions == 1)
 
     # Negative: stacked pair (base of one = head of the other) -> NOTHING.
     stacked = detect_path_collisions([
@@ -847,6 +1265,17 @@ def _cli(argv: list[str] | None = None) -> int:
             "(#14236), and a green run reads as `nothing to report`."
         ),
     )
+    ap.add_argument(
+        "--merged-window-days", type=int,
+        default=DEFAULT_MERGED_WINDOW_DAYS,
+        help=(
+            "depth of the MERGED pool, in days (default "
+            f"{DEFAULT_MERGED_WINDOW_DAYS}). A pair whose other side merged "
+            "inside the window is reported with the terminal verdict instead "
+            "of vanishing (#15578). 0 disables the merged pool entirely, "
+            "restoring the pre-#15578 behaviour."
+        ),
+    )
     ap.add_argument("--self-test", action="store_true",
                     help="run the offline control suite; exit 2 if any fails")
     args = ap.parse_args(argv)
@@ -856,15 +1285,38 @@ def _cli(argv: list[str] | None = None) -> int:
 
     repo = args.repo or _repo_default()
     try:
-        prs = list_open_prs(repo, args.limit)
+        open_prs = list_open_prs(repo, args.limit)
     except RuntimeError as e:
         print(str(e), file=sys.stderr)
         return 0  # advisory: a listing failure must not red the run
 
+    merged_prs: list[PrRow] = []
+    if args.merged_window_days > 0:
+        since = (
+            datetime.now(timezone.utc) - timedelta(days=args.merged_window_days)
+        ).strftime("%Y-%m-%d")
+        try:
+            merged_prs = list_recently_merged_prs(repo, since, args.limit)
+        except RuntimeError as e:
+            # Never silent. A lost merged pool returns the organ to the very
+            # muteness #15578 reports, and a green run would read as "nothing
+            # to report". The loss is logged here AND left visible in the JSON
+            # (merged_prs_scanned=0 over a window that cannot be empty).
+            print(
+                f"WARN: merged pool unavailable ({args.merged_window_days}d "
+                f"window, since {since}) -- falling back to open PRs only: {e}",
+                file=sys.stderr,
+            )
+
+    prs = open_prs + merged_prs
+    open_numbers = {p.number for p in open_prs}
     result = detect_path_collisions(prs)
 
     if args.same_issue_only and result.collisions:
-        result.collisions = strong_collisions(result.collisions)
+        # STRONG and TERMINAL (#15578): a terminal pair is not the family-
+        # README noise this flag exists to cut, it is the loudest FACT the
+        # organ has -- one side is already on main.
+        result.collisions = result.actionable_collisions()
         result.colliding_prs = sorted(
             {n for c in result.collisions for n in (c.a_number, c.b_number)}
         )
@@ -872,10 +1324,14 @@ def _cli(argv: list[str] | None = None) -> int:
     print(json.dumps(result.as_dict(), ensure_ascii=False, indent=2))
     print(_format_human_summary(result), file=sys.stderr)
 
-    # Plan over the UNION colliding ∪ marker-carriers (#13489): reads only.
-    title_by_number = {p.number: p.title for p in prs}
+    # Plan over the UNION (colliding ∩ open) ∪ marker-carriers (#13489).
+    # Merged PRs are excluded from the write set (#15578): an advisory on a
+    # closed thread is noise, and the actionable side of a terminal pair is
+    # always the open one. The marker scan stays on the OPEN pool for the same
+    # reason -- no API call is spent on a PR that can never be written to.
+    title_by_number = {p.number: p.title for p in open_prs}
     marker_by_number, scan_failed = scan_markers(
-        repo, [p.number for p in prs]
+        repo, [p.number for p in open_prs]
     )
     for number in sorted(scan_failed):
         print(
@@ -885,7 +1341,8 @@ def _cli(argv: list[str] | None = None) -> int:
         )
     plan = [
         a for a in plan_actions(
-            set(result.colliding_prs), result.collisions, title_by_number,
+            sorted(set(result.colliding_prs) & open_numbers),
+            result.collisions, title_by_number,
             marker_by_number,
             datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
         )

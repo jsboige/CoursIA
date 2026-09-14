@@ -103,13 +103,13 @@ layout: section
 - Linguistique
 
 <img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
+<div class="absolute top-[395px] right-[20px] w-[460px] text-xs text-slate-500 italic text-center">
+  Modèle biologique (neurone de McCulloch & Pitts, 1943) — source d'inspiration directe pour le perceptron de Rosenblatt (1958).
+</div>
 ---
 
 # Développement (1/2)
-
-<div class="grid grid-cols-[360px_1fr] gap-8 mt-4 items-start">
-
-<div class="flex flex-col gap-3">
 
 **Histoire succincte**
 
@@ -125,16 +125,15 @@ layout: section
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
+<img src="./images/img_006.png" class="absolute top-[80px] right-[20px] w-[340px] max-w-full object-contain" alt="Repères historiques" />
+
+<div class="absolute top-[220px] right-[20px] w-[340px] flex gap-4 items-center justify-center">
+  <img src="./images/img_007.jpg" class="h-12 max-w-[45%] object-contain" alt="Logo DARPA" />
+  <img src="./images/img_008.jpg" class="h-10 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
 
-<div class="flex flex-col gap-5 items-center pt-1">
-  <img src="./images/img_006.png" class="w-full max-h-[260px] object-contain" alt="Repères historiques" />
-  <div class="flex gap-10 items-center justify-center">
-    <img src="./images/img_007.jpg" class="h-14 object-contain" alt="Logo DARPA" />
-    <img src="./images/img_008.jpg" class="h-12 object-contain" alt="Logo ImageNet" />
-  </div>
-</div>
-
+<div class="absolute top-[290px] right-[20px] w-[340px] text-xs text-slate-500 italic text-center">
+  Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
 </div>
 
 ---
@@ -161,10 +160,6 @@ layout: section
 
 # Dans la vie de tous les jours
 
-<div class="grid grid-cols-[1fr_300px] gap-8 mt-4 items-center">
-
-<div class="flex flex-col gap-2 text-sm">
-
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
 - **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
@@ -175,13 +170,7 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
-</div>
-
-<div class="flex items-center justify-center">
-  <img src="./images/img_013.jpg" class="w-full max-h-[420px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
-</div>
-
-</div>
+<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
 
 
 ---
@@ -448,7 +437,7 @@ layout: section
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-<img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
+<img src="./images/img_020.png" class="absolute top-[60px] right-[20px] w-[420px] max-h-[200px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
 
 
 **Exemple: Énigme**
@@ -457,8 +446,8 @@ layout: section
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="absolute top-[110px] right-[20px] w-[280px] max-h-[200px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
-<img src="./images/img_024.png" class="absolute top-[300px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+<img src="./images/img_023.png" class="absolute top-[280px] right-[20px] w-[280px] max-h-[140px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
+<img src="./images/img_024.png" class="absolute top-[430px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
 
 
 
@@ -563,16 +552,13 @@ layout: default
 
 # Jeux
 
-<div class="grid grid-cols-[340px_1fr] gap-8 mt-3 items-start">
-
-<div class="flex flex-col gap-3">
-
-<div class="grid grid-cols-2 gap-0">
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
 <div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux vs Exploration</div>
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Arbre Minimax</div>
 </div>
 
-<div class="dense-list text-base">
+
+<div class="dense-list">
 
 - Arbre de jeu
 - Environnements
@@ -596,13 +582,7 @@ layout: default
 
 </div>
 
-</div>
-
-<div class="flex items-start justify-center pt-1">
-  <img src="./images/img_031.png" class="max-h-[420px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
-</div>
-
-</div>
+<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
 
 
 

@@ -28,7 +28,9 @@ import json
 import re
 import subprocess
 import sys
+import time
 import unicodedata
+from collections import Counter
 from pathlib import Path
 from urllib.parse import quote
 
@@ -92,6 +94,45 @@ def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
     return "15min"
 
 
+# Plafond mesure, pas devine. Sur le pool `[self-hosted, coursia-ephemeral,
+# coursia-linux]` qui publie le catalogue (checkout `fetch-depth: 0`), sept runs
+# du 2026-09-13 rendent ce step entre 10 s et 64 s. Les trois runs sous 25 s
+# impriment `Preserved curated fields ... for 1 entries` (sain) ; les trois a
+# 40 s et plus impriment `... for 1094 entries` (degrade) -- ils ont brule
+# 30 s dans le delai, obtenu {} en silence, et publie un catalogue ou
+# `scientific_review` vaut UNREVIEWED partout. C'est #14831.
+#
+# `git log` ayant ete TUE a 30 s, ce qu'il lui fallait reellement n'a jamais ete
+# observe : le plafond est donc releve genereusement plutot qu'ajuste au plus
+# juste. L'echec bruyant ci-dessous reste la vraie garantie -- si meme ce plafond
+# se revelait insuffisant, la generation s'arrete en le disant au lieu de
+# publier un catalogue faux en concluant `success`.
+GIT_LOG_TIMEOUT_SECONDS = 180
+
+# Restreindre l'historique aux notebooks : c'est le seul sous-arbre que le
+# parser ci-dessous retient, et 40 % de la sortie de `git log` n'en releve pas.
+# Equivalence verifiee en passant les deux sorties par ce meme parser
+# (1335 notebooks dates de part et d'autre, aucune cle et aucun champ divergents,
+# 1,0 Mo -> 0,6 Mo). Allegement sur -- gain de temps NON demontre : en local les
+# deux formes mesurent 0,45 s contre 0,48 s, soit rien. Le remede de #14831 est
+# le plafond ci-dessus, pas cette ligne.
+GIT_LOG_PATHSPEC = "MyIA.AI.Notebooks"
+
+
+class GitMetadataUnavailable(RuntimeError):
+    """Raised when ``git log`` could not produce notebook history.
+
+    Returning ``{}`` instead is indistinguishable from "no notebook has any
+    history". That silence is the defect of #14831: every ``last_validator``
+    reads falsy, ``classify_scientific_review`` can open no gate and falls
+    through to UNREVIEWED, and ``_merge_curated_fields`` then restores
+    ``last_validation``/``last_validator`` from ``origin/main`` -- the two
+    fields that would have exposed the failure -- while ``scientific_review``,
+    absent from ``CURATED_GIT_FIELDS``, passes through untouched. The run
+    concludes ``success`` and publishes a catalog that is green and wrong.
+    """
+
+
 def build_git_metadata() -> dict[str, dict]:
     """Build last-commit metadata for all notebooks via git log.
 
@@ -99,22 +140,46 @@ def build_git_metadata() -> dict[str, dict]:
         last_validation: ISO date of last commit touching the file
         last_validator: email of last committer
         issues_prs: list of '#NNN' references from commit messages
+
+    Raises:
+        GitMetadataUnavailable: git timed out, is missing, or exited non-zero.
+            Whether that aborts the run or degrades it is the caller's
+            decision (``--allow-degraded-git``) -- never this function's, and
+            never silent.
     """
+    started = time.monotonic()
     try:
         result = subprocess.run(
-            ["git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=30,
+            [
+                "git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s",
+                "--", GIT_LOG_PATHSPEC,
+            ],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=str(REPO_ROOT), timeout=GIT_LOG_TIMEOUT_SECONDS,
         )
-        if result.returncode != 0:
-            return {}
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return {}
+    except subprocess.TimeoutExpired as exc:
+        raise GitMetadataUnavailable(
+            f"'git log' a depasse le delai de {GIT_LOG_TIMEOUT_SECONDS}s "
+            f"(cwd={REPO_ROOT})"
+        ) from exc
+    except FileNotFoundError as exc:
+        raise GitMetadataUnavailable(
+            f"executable 'git' introuvable (cwd={REPO_ROOT})"
+        ) from exc
+
+    elapsed = time.monotonic() - started
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip().replace("\n", " | ")[:500]
+        raise GitMetadataUnavailable(
+            f"'git log' a rendu rc={result.returncode} en {elapsed:.1f}s "
+            f"(cwd={REPO_ROOT}) -- stderr: {stderr or '(vide)'}"
+        )
 
     metadata: dict[str, dict] = {}
     current_date = ""
     current_email = ""
     current_subject = ""
-    prefix = "MyIA.AI.Notebooks/"
+    prefix = f"{GIT_LOG_PATHSPEC}/"
 
     for line in result.stdout.split("\n"):
         if line.startswith("COMMIT:"):
@@ -138,6 +203,10 @@ def build_git_metadata() -> dict[str, dict]:
                     "issues_prs": [f"#{n}" for n in issues[:5]],
                 }
 
+    # Emitted on every run so a healthy pass is legible too: a low
+    # "Preserved curated fields" count only means something next to the number
+    # of notebooks git actually dated here.
+    print(f"Git metadata: {len(metadata)} notebooks dates en {elapsed:.1f}s")
     return metadata
 
 
@@ -1233,37 +1302,77 @@ def scan_all_notebooks(
     series_filter: str | None = None,
     git_meta: dict | None = None,
     git_tracked_only: bool = False,
+    exclusions: Counter[str] | None = None,
 ) -> list[dict]:
-    """Scan all notebooks and return catalog entries."""
+    """Scan all notebooks and return catalog entries.
+
+    Quand ``exclusions`` est fourni (un ``collections.Counter``), chaque
+    notebook écarté du catalogue y est compté sous son motif exact, dans
+    l'ordre de précédence réel des règles du scan — pour que l'écart
+    arbre/catalogue se réconcilie par construction et qu'aucune alarme
+    « catalogue incomplet » ne puisse confondre une exclusion voulue avec
+    un notebook oublié (#15606 point 2). La règle est documentée dans
+    scripts/notebook_tools/README.md (section Catalogue).
+    """
     tracked = _git_tracked_files() if git_tracked_only else None
     entries = []
     dirs = sorted(NOTEBOOKS_DIR.iterdir()) if not series_filter else [
         NOTEBOOKS_DIR / series_filter
     ]
 
+    def _count(motif: str, nb_path: Path) -> None:
+        if exclusions is not None:
+            exclusions[motif] += 1
+
     for series_dir in dirs:
         if not series_dir.is_dir():
             continue
         if series_dir.name in EXCLUDE_ALWAYS or series_dir.name.startswith("."):
+            for nb_path in sorted(series_dir.rglob("*.ipynb")):
+                if tracked and str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/") not in tracked:
+                    continue
+                _count(f"serie_exclue:{series_dir.name}", nb_path)
             continue
 
         for nb_path in sorted(series_dir.rglob("*.ipynb")):
-            rel = str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/")
-            if tracked and rel not in tracked:
+            if tracked and str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/") not in tracked:
+                _count("git_non_tracke", nb_path)
                 continue
             if pedagogical and nb_path.stem.endswith("_executed"):
+                _count("suffixe_executed", nb_path)
                 continue
             parts = nb_path.relative_to(series_dir).parts
-            if any(part in EXCLUDE_ALWAYS for part in parts):
+            always_part = next(
+                (part for part in parts if part in EXCLUDE_ALWAYS), None
+            )
+            if always_part is not None:
+                _count(f"segment_exclu:{always_part}", nb_path)
                 continue
             if pedagogical and any(
                 exc in str(nb_path.relative_to(series_dir))
                 for exc in EXCLUDE_PEDAGOGICAL
             ):
+                motif = next(
+                    exc for exc in sorted(EXCLUDE_PEDAGOGICAL)
+                    if exc in str(nb_path.relative_to(series_dir))
+                )
+                _count(f"pedagogical:{motif}", nb_path)
                 continue
             entry = analyze_notebook(nb_path, pedagogical, git_meta=git_meta)
             if entry:
                 entries.append(entry)
+            else:
+                _count("json_illisible", nb_path)
+
+    # Le scan itère les RÉPERTOIRES de série : un .ipynb posé directement à la
+    # racine de MyIA.AI.Notebooks/ n'est jamais visité (#15606 — GradeBook.ipynb
+    # est l'instance vivante). Compté sous son propre motif pour que la
+    # réconciliation arbre/catalogue ne laisse aucun écart inexpliqué.
+    if exclusions is not None and not series_filter:
+        for nb_path in sorted(NOTEBOOKS_DIR.glob("*.ipynb")):
+            if tracked and str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/") not in tracked:
+                continue
+            exclusions["racine_non_parcourue"] += 1
 
     return entries
 
@@ -1519,10 +1628,41 @@ def main():
         "--git-tracked-only", action="store_true",
         help="Only include notebooks tracked by git (for CI consistency)",
     )
+    parser.add_argument(
+        "--allow-degraded-git", action="store_true",
+        help=(
+            "Generate even when 'git log' fails, leaving git metadata empty. "
+            "Without it a git failure aborts, rather than publishing a catalog "
+            "whose scientific_review silently reads UNREVIEWED (#14831)."
+        ),
+    )
     args = parser.parse_args()
 
+    scan_exclusions: Counter[str] = Counter()
     pedagogical = not args.all
-    git_meta = build_git_metadata()
+    try:
+        git_meta = build_git_metadata()
+    except GitMetadataUnavailable as exc:
+        print(f"ERREUR: metadonnees git indisponibles -- {exc}", file=sys.stderr)
+        print(
+            "  Sans elles, chaque notebook perd last_validation/last_validator, "
+            "scientific_review retombe a UNREVIEWED, et _merge_curated_fields "
+            "restaure justement les deux champs qui auraient revele la panne "
+            "(#14831). Le catalogue produit serait vert et faux.",
+            file=sys.stderr,
+        )
+        if not args.allow_degraded_git:
+            print(
+                "  Abandon sans ecrire de catalogue. Utiliser --allow-degraded-git "
+                "pour generer malgre tout (hors depot git, par exemple).",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        print(
+            "  --allow-degraded-git: poursuite avec des metadonnees git vides.",
+            file=sys.stderr,
+        )
+        git_meta = {}
     forensic_meta = build_forensic_metadata()
     head_sha = get_head_sha()
     # Merge forensic metadata into git_meta (forensic wins on overlap for forensic-only keys)
@@ -1538,7 +1678,19 @@ def main():
     entries = scan_all_notebooks(
         pedagogical=pedagogical, series_filter=args.series,
         git_meta=git_meta, git_tracked_only=args.git_tracked_only,
+        exclusions=scan_exclusions,
     )
+
+    # Compte des exclusions par motif (#15606 point 2) : la règle d'exclusion
+    # du scan est ÉMISE à chaque run pour que l'écart arbre/catalogue se
+    # réconcilie sans document humain — la réponse ne se périme pas.
+    total_excl = sum(scan_exclusions.values())
+    print(
+        f"Scan: {len(entries)} notebooks indexes, "
+        f"{total_excl} exclus par la regle (cf scripts/notebook_tools/README.md, Catalogue)"
+    )
+    for motif, n in sorted(scan_exclusions.items(), key=lambda kv: (-kv[1], kv[0])):
+        print(f"  excluded {n:>4}  {motif}")
 
     # Preserve curated git fields from origin/main for entries not
     # touched on the current branch (prevents stale-branch blanching)

@@ -671,10 +671,11 @@ def test_tranche2_guards_are_absorbed_and_declare_their_warn_rc():
     d'etre plus strict que ce qu'il remplace. Le ratchet, lui, porte un
     pre-contrôle self-test."""
     from fast_lane_registry import TRANCHE2
-    assert len(TRANCHE2) == 5, (
+    assert len(TRANCHE2) == 6, (
         "la tranche 2 documente trois formes moteur portees par cinq "
-        "gardes (deux ratchets autonomes bloquants : failure-text + "
-        "output-flood ; deux gardes d'iteration figure/texte ; le ratchet "
+        "gardes (deux ratchets autonomes bloquants -- failure-text, "
+        "output-flood -- puis le ratchet autonome advisory output-collapse "
+        "#15327 ; deux gardes d'iteration figure/texte ; le ratchet "
         "autonome advisory translation hot-drift #15322) ; si le nombre "
         "change, le commentaire du registre et ce test suivent")
     for guard in TRANCHE2:

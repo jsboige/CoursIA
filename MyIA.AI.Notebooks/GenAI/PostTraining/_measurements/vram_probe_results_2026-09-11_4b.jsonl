@@ -1,0 +1,1 @@
+{"model": "Qwen/Qwen3-4B", "torch": "2.13.0+cu126", "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU", "vram_total_gb": 8.0, "status": "FIT", "load_s": 91.1, "train_s": 61.4, "sec_per_step": 20.5, "max_vram_allocated_gb": 4.096, "max_vram_reserved_gb": 5.0, "steps_done": 3, "error": null}

@@ -1,0 +1,19 @@
+{
+  "_role": "Configuration d'adoption du garde check_kernel_suffix_canon.py (#15489 defaut 3). L'adoption est EXPLICITE et par serie : le garde est en portee delta (il ne juge que les notebooks ajoutes), donc declarer une serie adoptee n'invalide aucun de ses fichiers herites — cela dit seulement qu'a partir d'ici, un nouveau fichier de cette serie porte la casse canonique.",
+  "_canon": "Casse canonique pour les suffixes de noyau : -CSharp (famille csharp) et -Python (famille python). Nommee par #15489 lui-meme. -Lean n'est PAS un suffixe de noyau dans ce depot (il marque le contenu ; le pendant Lean porte -Native) et aucune famille fsharp n'existe — cf la docstring du garde.",
+  "_how_to_extend": "Ajouter une entree dans 'adopted' avec un 'path_glob' (suffixe '/**' = dossier et descendance) et une 'note' citant la MESURE qui justifie l'adoption. Ne jamais elargir un glob sans re-mesurer : une serie qui n'a pas tranche ne doit pas rougir.",
+  "_no_wide_glob_please": "Ne PAS remplacer les globs ci-dessous par 'MyIA.AI.Notebooks/**'. Contre-exemple mesure : GenAI/CaseStudies/Fort-Boyard et GenAI/SemanticKernel portent 'fort-boyard-python.ipynb' / 'fort-boyard-csharp.ipynb', c'est-a-dire des suffixes de langue EN MINUSCULES, comme convention de nommage assumee de ces notebooks. L'adoption repo-wide les rougirait a tort. Les 114 '-Csharp' herites (GameTheory, Sudoku, Tweety, Search/Part1-2, SymbolicLearning, SMT/Z3-API, Planners) sont eux aussi hors perimetre : aucune de ces series n'a tranche.",
+  "adopted": [
+    {
+      "path_glob": "MyIA.AI.Notebooks/Search/Applications/**",
+      "note": "Serie convergée sur -CSharp : mesure de l'arbre 15 '-CSharp' contre 5 '-Csharp' parmi ses notebooks suffixes d'une langue. 13 des 15 canoniques portent une accretion b/c, c'est-a-dire sont les side-tracks les plus recemment ajoutes (App-1b, -2b, -3b, -4b, -7b, -9b, -10b, -11b, -13b, -15b, -18b, -20b, -14c) alors que les 5 herites (App-6, App-8, App-16, App-19, App-17b) sont majoritairement des notebooks primaires. La convention a donc ete adoptee par les ajouts, ce qui est exactement la portee du garde.",
+      "measured": "2026-09-11, arbre origin/main d14b1ac098"
+    },
+    {
+      "path_glob": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/**",
+      "note": "Serie convergee sur -CSharp : 1 '-CSharp' (SW-13-Reasoners-CSharp.ipynb) contre 0 '-Csharp'. Echantillon mince (n=1) — assume : la seule forme presente est la canonique, il n'y a donc aucune divergence a preserver.",
+      "measured": "2026-09-11, arbre origin/main d14b1ac098"
+    }
+  ],
+  "exceptions": []
+}

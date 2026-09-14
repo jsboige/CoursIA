@@ -1,3 +1,7 @@
+---
+paths: "{**/README*.md,docs/**/*.md,MyIA.AI.Notebooks/**/*.md}"
+---
+
 # README / docs : français d'abord, anglais préservé en `.en.md`
 
 S'applique à **tous les agents** produisant ou éditant de la documentation markdown (README, `docs/**`, prose pédagogique de série/sous-série). Source : mandat user 2026-06-21 (« c'est dommage de continuer à créer du contenu anglais qui aura vocation à être traduit en français »). Consolide CLAUDE.md §E (doc primaire = français) + l'Epic traduction **#1650 Phase 0.5**.

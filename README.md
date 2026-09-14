@@ -57,7 +57,8 @@ flowchart LR
     GameTheory --> RL
     SymbolicAI(["SymbolicAI<br/>logique, planners, SMT, Lean"]) --> CaseStudies(["CaseStudies<br/>systèmes hybrides"])
 
-    classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
     class Search,Sudoku,ML,RL,Probas,GameTheory,SymbolicAI,CaseStudies,GenAI,QuantConnect track;
 ```
 
@@ -79,8 +80,9 @@ flowchart LR
     A4 -.-> AP
     A5 -.-> AP
 
-    classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px;
-    classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
+    classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3,color:#333;
     class A1,A2,A3,A4,A5 stage;
     class AP learn;
 ```
@@ -634,12 +636,12 @@ Les dépendances principales par série (vérifiées contre les `requirements.tx
 
 ## Contribution
 
-1. Fork le dépôt
-2. Créer une branche (`git checkout -b feature/nouveau-notebook`)
-3. Commit (`git commit -m 'Add: notebook sur les Transformers'`)
-4. Push et ouvrir une Pull Request
+Vous pouvez contribuer de deux façons :
 
-Conventions : PEP 8 pour Python, conventions standard pour C#, pas d'emojis dans le code, documentation en français. Chaque famille de notebooks doit inclure un `.env.example` documentant les variables requises.
+- [signaler une erreur ou proposer une amélioration](https://github.com/jsboige/CoursIA/issues/new?template=content-feedback.yml), sans Pull Request obligatoire ;
+- ouvrir une Pull Request, y compris pour proposer une correction d'exercice qui sera transformée en exemple guidé crédité avec un nouvel exercice non résolu.
+
+Le [guide de contribution](CONTRIBUTING.md) détaille le processus, les validations et l'accompagnement proposé par les mainteneurs et leurs agents.
 
 ## Licence
 

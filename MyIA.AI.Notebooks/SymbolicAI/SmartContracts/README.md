@@ -300,7 +300,7 @@ SmartContracts/
 
 | Outil | Type | Usage principal | Installation |
 |-------|------|----------------|--------------|
-| **Foundry (forge)** | Framework dev | Compilation, tests, déploiement Solidity | `curl -L https://foundry.paradigm.xyz | bash` |
+| **Foundry (forge)** | Framework dev | Compilation, tests, déploiement Solidity | `curl -L https://foundry.paradigm.xyz \| bash` |
 | **anvil** | Node Ethereum local | Blockchain locale pour dev | Inclus dans Foundry |
 | **cast** | CLI Ethereum | Lect/écriture sur chaînes | Inclus dans Foundry |
 | **web3.py** | Bibliothèque Python | Interaction avec EVM | `pip install web3` |

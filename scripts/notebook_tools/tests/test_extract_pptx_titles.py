@@ -33,6 +33,15 @@ class TestSlideMarker:
         """Regex anchors to ^ so mid-line comment not matched."""
         assert SLIDE_MARKER.match("text <!-- Slide number: 1 -->") is None
 
+    # --- ported from the deleted legacy scripts/tests/test_extract_titles.py
+    # (#14730 consolidation): zero is a valid capture for the slide number. ---
+
+    def test_zero_number(self):
+        r"""Slide number 0 still matches (the capture is \d+, not [1-9]\d*)."""
+        m = SLIDE_MARKER.match("<!-- Slide number: 0 -->")
+        assert m is not None
+        assert m.group(1) == "0"
+
 
 # --- extract (captures stdout, uses tmp_path) ---
 

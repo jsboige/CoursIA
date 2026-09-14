@@ -51,7 +51,10 @@ def synthetic_npz(tmp_path):
             arrays[f"{set_name}__{i}__topk_vals"] = vals
             arrays[f"{set_name}__{i}__tokens"] = np.array(
                 [f"tok{t}" for t in range(T)], dtype=str)
-    meta = {"d_sae": D_SAE, "k": K, "layer": 16, "variant": "synthetic"}
+    # Contrat de trace v1 (#15476) : l'extracteur GPU neuf pose
+    # ``instrument`` comme discriminant. La fixture synthetique suit.
+    meta = {"d_sae": D_SAE, "k": K, "layer": 16, "variant": "synthetic",
+            "instrument": "sae", "contract_version": "v1.0.0"}
     arrays["__meta__"] = np.array(json.dumps(meta))
     path = tmp_path / "synthetic.npz"
     np.savez_compressed(path, **arrays)

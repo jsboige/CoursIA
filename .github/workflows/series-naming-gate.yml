@@ -1,29 +1,46 @@
 name: series-naming-gate
 
-# Garde de convention zero-pad de la serie GameTheory (#11840, #12586).
+# Garde de convention zero-pad des series ayant ADOPTE la numerotation a deux
+# chiffres (#11840, #12586, #15489).
 #
 # La tranche 1 (#12241) a zero-pade 30 notebooks ; six side-tracks au chiffre
 # unique sont arrives sur main ENTRE sa review et son merge -- un invariant
 # verifie a l'instant t n'est pas une propriete du livrable. Ce garde rend la
-# tranche 3 impossible : il rougit des qu'un GameTheory-<chiffre unique>
+# tranche 3 impossible : il rougit des qu'un `<Serie>-<chiffre unique>`
 # apparait, cote PR comme cote push.
 #
-# Portee : la serie GameTheory SEULEMENT (la seule zero-padee a ce jour, scope
-# fige par #12586). Ne pas l'etendre a une autre serie sans avoir mesure si
-# elle a une convention arretee -- une regle imposee a une serie qui n'a pas
-# tranche fabrique du rouge sans defaut.
+# PORTEE = LISTE EXPLICITE (#15489, defaut 5). Le job lance le garde SANS
+# argument : le garde lit alors `scripts/notebook_tools/zero_pad_series.json`
+# et scanne chaque serie declaree. La liste vit la, pas ici -- les `paths:`
+# ci-dessous n'en sont qu'un MIROIR, et un test de parite
+# (`scripts/tests/test_check_series_zero_pad.py`) rougit si le miroir et le
+# registre divergent.
+#
+# Ne jamais ajouter une serie aux `paths:` sans l'avoir declaree au registre :
+# le critere d'admission est mesure (la serie prouve son padding ET ne porte
+# aucune violation sur son arbre entier). Une regle imposee a une serie qui
+# n'a pas tranche fabrique du rouge sans defaut -- 20 familles sont dans ce
+# cas, et le registre les nomme pour qu'on ne les ajoute pas par megarde.
 
 # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 1) : le
-# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
-# `zero-pad guard (GameTheory serie)`, meme nom que ce job). Ce fichier
-# garde `push` (couverture post-merge) et `workflow_dispatch`. Les `paths:`
-# d'origine vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE1).
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run de meme nom que
+# ce job). Ce fichier garde `push` (couverture post-merge) et
+# `workflow_dispatch`. Les `paths:` d'origine vivent dans
+# `scripts/ci/fast_lane_registry.py` (TRANCHE1).
 
 on:
   push:
     branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/**'
+      - 'MyIA.AI.Notebooks/GenAI/FineTuning/**'
+      - 'MyIA.AI.Notebooks/IIT/**'
+      - 'MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**'
+      - 'MyIA.AI.Notebooks/Probas/PyMC/**'
+      - 'MyIA.AI.Notebooks/Search/Part1-Foundations/**'
+      - 'MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**'
+      - 'MyIA.AI.Notebooks/Sudoku/**'
+      - 'scripts/notebook_tools/zero_pad_series.json'
       - 'scripts/notebook_tools/check_series_zero_pad.py'
   workflow_dispatch:
 
@@ -43,7 +60,7 @@ concurrency:
 
 jobs:
   zero-pad-scan:
-    name: "zero-pad guard (GameTheory serie)"
+    name: "zero-pad guard (series declarees)"
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
@@ -59,12 +76,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: "Fail si un GameTheory-<chiffre unique> apparait"
+      - name: "Fail si un <Serie>-<chiffre unique> apparait dans une serie declaree"
         run: |
           if ! python scripts/notebook_tools/check_series_zero_pad.py; then
             echo ""
-            echo "::error::Un fichier GameTheory-<chiffre unique> est apparu dans la serie."
+            echo "::error::Un fichier <Serie>-<chiffre unique> est apparu dans une serie declaree zero-padee."
             echo "Convention #11840 : numero a DEUX chiffres (GameTheory-03a, -08d, -26 valides ; -3a, -8d non)."
             echo "Renommer (git mv) vers la forme zero-padee, puis mettre a jour README + navlinks -- cf #12241 (tranche 1) et #12586 (tranche 2)."
+            echo "Si la serie vient d'adopter le padding, l'inscrire dans scripts/notebook_tools/zero_pad_series.json (critere d'admission : cf _criterion)."
             exit 1
           fi

@@ -8,15 +8,19 @@ maturity: BETA=61, DRAFT=36, ALPHA=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
->
+
 > - **`Python/` (parcours QC-Py-*)** : 54/54 = **Python** (mono-langage, QuantConnect Cloud + kernel local Jupyter) — *kernel Python majoritaire, aucun piège sémantique C#*. **Drift constaté c.744** (audit `git ls-files Python/`) : 55 .ipynb sur disque vs 53 déclarés hub → écart +2, attribué aux notebooks Cloud ajoutés 2026-05/06 (PCA-StatArb, TemporalCNN, ValueFactor-ZScore, OptionWheel). CATALOG-STATUS leaf ajouté en c.744. **Réconciliation §E c.S** (audit entier, `_output` exclus) : 54 exacts sur disque = 30 linéaires (QC-Py-01..28 + 12b + 23b) + 24 compléments ; le résiduel +1 du c.744 était `QC-Py-12b-Backtest-Validity`, jamais compté nulle part (corrigé dans les tables et décomptes ci-dessous).
+
 > - **`ML-Training-Pipeline/`** : 14/14 = **Python** (PyTorch / Stable-Baselines3 / Walk-Forward). **Drift constaté c.744** : 14 .ipynb sur disque vs 2 déclarés hub → écart +12, la sous-série a crû depuis la création du breakdown hub (ajouts RL/DL ladder). CATALOG-STATUS leaf ajouté en c.744.
+
 > - **`kelly_lean/`** : 7/7 = **Lean 4** (preuve formelle Kelly HMM-regime fee-aware) — *mono-paradigme Lean* : prouve les invariants algébriques du critère de Kelly pour le sizing position-aware des régimes HMM, complémentaire aux notebooks Python ML. **Note c.744** : « 7/7 » dans cette note désigne les **fichiers `.lean` du lake** (7 sources : `Kelly.lean` + lemmes), périmètre différent du marqueur hub (`kelly_lean=1` = 1 notebook Jupyter de référence). CATALOG-STATUS leaf (1 .ipynb) ajouté en c.744.
+
 > - **`research/`** : 17 .ipynb (standalone research, yfinance/sklearn, hors QC Cloud) — **non-référencé dans le breakdown hub** (4 sous-séries agrégées : Python/projects/ML-Training-Pipeline/kelly_lean). CATALOG-STATUS leaf ajouté en c.744. Ne pas confondre avec [`Python/research/`](Python/research/README.md) : 2 notebooks **companions** appariés aux notebooks de cours QC-Py-19/QC-Py-22 (catégorie (b) du README Python), détaillés dans leur [README feuille](Python/research/README.md).
+
 > - **`partner-course-quant-trading/`** : 7 .ipynb (cours partenaire sponsorisé QuantConnect Trading Firm) — **non-référencé dans le breakdown hub**. CATALOG-STATUS leaf ajouté en c.744.
->
+
 > Le hub QuantConnect a donc une **particularité intra-hub : parcours Python pur + sous-série Lean 4 isolée** (variante de la doctrine L392 « hub mixité kernel intra-sous-série » appliquée à un cas où Python domine largement, avec Lean isolé dans une sous-série distincte). La phrase L260 « périmètres différents, pas par erreur » documente précisément cette asymétrie.
->
+
 > **Régénération du marqueur** : ce bloc est régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (03:37 UTC daily sur `main`, commit `[skip ci]` par `github-actions[bot]`). Toute divergence ponctuelle entre les counts agrégés et la réalité disk est documentée dans `docs/qc/qc-strategies-status.md` (autoritatif pour `projects/`) ou dans la note ci-dessus (autoritative pour les kernels intra-sous-série). **Résiduel c.744** : le breakdown agrégé `Python=53, projects=49, ML-Training-Pipeline=2, kelly_lean=1` du marqueur est **drift** vs le filesystem (cf points ci-dessus + sous-séries `research`/`partner-course` absentes de l'agrégat). **Le marqueur hub reste byte-identique** (catalog-pr-hygiene R1 : régénération par catalog-cron uniquement, hors scope PR feuille) ; le **fix canonique** = mise à jour du générateur de breakdown côté `catalog-cron.yml` pour inclure les sous-séries `research`/`partner-course-quant-trading` + recalculer les counts kernels réels. **Sub-grains séparés** : un futur cycle pourra auditer `catalog-cron.yml` + script de comptage pour aligner l'agrégat sur le filesystem ; ce PR n'altère **que** les leafs + la prose hub, sans toucher au marqueur agrégé (R1 strict).
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)
@@ -50,7 +54,7 @@ Le matériel QuantConnect se répartit en **5 zones** — un visiteur y navigue 
 
 | Zone | Contenu | Entrée |
 |------|---------|--------|
-| **`Python/`** | 54 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
+| **`Python/`** | 55 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
 | **`projects/`** | 112 entrées brutes (101 stratégies déployables `main.py` + 11 autres : 5 recherches, 2 stubs, 2 templates, 2 BROKEN pédagogiques), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
 | **`research/`** | Recherche autonome standalone (données locales, pas de QC Cloud requis) | [README research](research/README.md) |
 | **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire | [README cours partenaire](partner-course-quant-trading/README.md) |
@@ -119,9 +123,10 @@ flowchart LR
     PC --> RM["Risk Management<br/>quels filtres ?"]
     RM --> E["Execution<br/>quels ordres ?"]
     RM -. "ajustement temps reel" .-> U
-    style A fill:#e1f5ff
-    style PC fill:#e8f5e9
-    style RM fill:#fff3e0
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style A fill:#e1f5ff,color:#004085
+    style PC fill:#e8f5e9,color:#1b5e20
+    style RM fill:#fff3e0,color:#bf360c
 ```
 
 Le flux de données traverse cinq modules Découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, le **Risk Management** filtre/ajuste ces cibles en continu, et l'**Execution** route les ordres. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
@@ -247,7 +252,7 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **30 notebooks Python** (QC-Py-01 à QC-Py-28 + les 12b et 23b, ~34 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus **17 notebooks de recherche** standalone (`research_*.ipynb`, détaillés dans [research/README.md](research/README.md)).
+**Total cours linéaire** : **30 notebooks Python** (QC-Py-01 à QC-Py-28 + les 12b et 23b, ~34 heures de contenu) + **25 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, foundation models QC-Py-23c, dataset workflow), plus **17 notebooks de recherche** standalone (`research_*.ipynb`, détaillés dans [research/README.md](research/README.md)).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
@@ -494,11 +499,12 @@ flowchart TD
     FEES --> VERD{"Sharpe net<br/>survit aux frais ?"}
     VERD -->|"oui"| KEEP["Strategie robuste"]
     VERD -->|"non"| DROP["Edge evapore"]
-    style PSR fill:#fff3e0
-    style VERD fill:#fff3e0
-    style KEEP fill:#e8f5e9
-    style ART fill:#ffebee
-    style DROP fill:#ffebee
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style PSR fill:#fff3e0,color:#bf360c
+    style VERD fill:#fff3e0,color:#bf360c
+    style KEEP fill:#e8f5e9,color:#1b5e20
+    style ART fill:#ffebee,color:#721c24
+    style DROP fill:#ffebee,color:#721c24
 ```
 
 Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est presque toujours un artefact. La validation ci-dessus — walk-forward, OOS strict aligné, multi-seed, PSR > 50%, puis test des frais réels — est ce qui sépare une stratégie robuste d'une illusion statistique. Les stratégies du tableau Top 5 ci-dessous sont celles qui ont survécu à ce pipeline.
@@ -554,8 +560,9 @@ flowchart LR
     QC -. "fréquence risquée f" .-> KELLY
     KELLY -. "théorème-prouve f*" .-> ML
     ML --> BACKTEST
-    style KELLY fill:#e8f5e9
-    style BACKTEST fill:#e1f5ff
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style KELLY fill:#e8f5e9,color:#1b5e20
+    style BACKTEST fill:#e1f5ff,color:#004085
 ```
 
 Le pipeline complet relie donc trois familles du dépôt : la **théorie** (Lean prouve `kelly_optimal` + `kelly_unique`), la **pratique** (ML-Training-Pipeline dimensionne Kelly HMM-regime, fee-aware, multi-asset, cap-relaxed — voir `ML-Training-Pipeline/docs/M11*`), et la **validation empirique** (backtests QC Cloud walk-forward + multi-seed, comparatif dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md)). Sans la couche Lean, la pratique risquerait de s'appuyer sur une formule réputée « standard » mais jamais démontrée. Avec elle, la justification du fractionnement du capital est formellement garantie — pas seulement empiriquement ajustée.

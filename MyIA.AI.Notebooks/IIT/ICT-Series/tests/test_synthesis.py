@@ -221,7 +221,8 @@ def _write_synthetic_sae_npz(path):
             arrays[f"{set_name}__{i}__tokens"] = np.array(
                 [f"tok{t}" for t in range(_SAE_T)], dtype=str)
     arrays["__meta__"] = np.array(json.dumps(
-        {"d_sae": _SAE_D, "k": _SAE_K, "layer": 16, "variant": "synthetic"}))
+        {"instrument": "sae", "d_sae": _SAE_D, "k": _SAE_K, "layer": 16,
+         "variant": "synthetic"}))
     np.savez_compressed(path, **arrays)
     return path
 

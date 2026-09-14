@@ -13,7 +13,17 @@ maturity: BETA=68, ALPHA=1
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy, percolation de liens sur tore fini). Elle totalise **69 notebooks** — **28 en C#/.NET Interactive**, **38 en Python**, **3 en Lean 4** (voir le marqueur `CATALOG-STATUS` ci-dessus pour le décompte autoritatif). Le corpus bayésien ([`Infer/`](Infer/README.md)) compte **21 notebooks** — socle numéroté 1-20 (le numéro 6 n'existe pas : le debugging vit en accretion `Infer-2b`), accretion de premier modèle `Infer-1b`, et `Infer-20` *Quotients et fibres* en kernel Python — couvrant fondements (distributions, graphes de facteurs), modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) et géométrie catégorique (quotients, fibres, recollement). L'arc décision Infer.NET en extrait **8 notebooks C#** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) : utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-10). Le versant PyMC porte ces modèles en Python avec l'échantillonnage NUTS : **19 notebooks corpus** ([`PyMC/`](PyMC/README.md), en parité 1:1 avec Infer — fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et **12 miroirs de l'arc décision** ([`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md), renumérotés 1-12, dont la **jambe actuarielle** 8-12). L'arc décision est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](decision_theory_lean/)) et ses **2 notebooks à kernel Lean** (DecInfer-02, utilité espérée vNM ; DecInfer-09, indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib. La percolation ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-Lean`](Applications/Percolation/Percolation-Lean.ipynb) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-Supercritique`](Applications/Percolation/Percolation-Supercritique.ipynb) (trois régimes mesurés). Enfin, un **pont causal** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md), 4 notebooks Python, kernels `python3` et `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus. Sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/), le pont identifie l'estimande (backdoor, front-door, variable instrumentale), l'estime puis le réfute ; il monte au troisième échelon de Pearl (contrefactuel individuel) et couvre les méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD).
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy, percolation de liens sur tore fini). Elle totalise **69 notebooks** — **28 en C#/.NET Interactive**, **38 en Python**, **3 en Lean 4** (voir le marqueur `CATALOG-STATUS` ci-dessus pour le décompte autoritatif).
+
+Le corpus bayésien ([`Infer/`](Infer/README.md)) compte **21 notebooks** : socle numéroté 1-20 (le numéro 6 n'existe pas — le debugging vit en accretion `Infer-2b`), accretion de premier modèle `Infer-1b`, et `Infer-20` *Quotients et fibres* en kernel Python. Il couvre les fondements (distributions, graphes de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) et la géométrie catégorique (quotients, fibres, recollement).
+
+L'**arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) en extrait **8 notebooks C#** (utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-10). Il est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](decision_theory_lean/)) et ses **2 notebooks à kernel Lean** (DecInfer-02 utilité espérée vNM, DecInfer-09 indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib.
+
+Le versant **PyMC** porte ces modèles en Python avec l'échantillonnage NUTS : **19 notebooks corpus** ([`PyMC/`](PyMC/README.md), en parité 1:1 avec Infer — fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et **12 miroirs de l'arc décision** ([`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md), renumérotés 1-12, dont la **jambe actuarielle** 8-12).
+
+La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-Lean`](Applications/Percolation/Percolation-Lean.ipynb) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-Supercritique`](Applications/Percolation/Percolation-Supercritique.ipynb) (trois régimes mesurés).
+
+Enfin, un **pont causal** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md), 4 notebooks Python, kernels `python3` et `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus. Sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/), le pont identifie l'estimande (backdoor, front-door, variable instrumentale), l'estime puis le réfute ; il monte au troisième échelon de Pearl (contrefactuel individuel) et couvre les méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD).
 
 ## Pourquoi cette série
 
@@ -47,7 +57,8 @@ flowchart LR
     P1 --> U1["Incertitude<br/>non quantifiée"]
     P2 --> U2["Incertitude<br/>native<br/>(intervalles de crédibilité)"]
     U2 --> DEC["Décision basée sur<br/>E[U] (utilité espérée)"]
-    classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
     class P2,U2,DEC dist;
 ```
 
@@ -176,9 +187,10 @@ flowchart TD
     PYMC --> PIVOT2{"Besoin de message passing<br/>déterministe (VMP/EP) ou .NET ?"}
     PIVOT1 -->|"oui"| PYMC
     PIVOT2 -->|"oui"| INFER
-    classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px;
-    classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px;
-    classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
+    classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085;
+    classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class INFER infer;
     class PYMC pymc;
     class IN101 entry;
@@ -649,12 +661,13 @@ flowchart LR
     %% NB_EP (Infer.NET EP / VMP) = inférence bayésienne approximative ;
     %% la passerelle Dung ↔ argumentation_lean est couverte par le tableau §E ci-dessus (ligne SymbolicAI ↔ Probas),
     %% pas par un lien direct depuis ce nœud de simulation.
-    style LK_DT fill:#e8f5e9,stroke:#2e7d32
-    style LK_CO fill:#e8f5e9,stroke:#2e7d32
-    style LK_PAC fill:#e8f5e9,stroke:#2e7d32
-    style LK_GIT fill:#e8f5e9,stroke:#2e7d32
-    style LK_KELLY fill:#e8f5e9,stroke:#2e7d32
-    style LK_SC fill:#e8f5e9,stroke:#2e7d32
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style LK_DT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_CO fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_PAC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_GIT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_KELLY fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style LK_SC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 ```
 
 La double culture Probas tient en deux gestes complémentaires. D'un côté, **simuler** : PyMC fait tourner NUTS/HMC sur des modèles hiérarchiques, Infer.NET propage des messages EP/VMP sur des graphes factoriels, et les notebooks PAC entraînent des hypothèses parERM. De l'autre, **prouver** : `decision_theory_lean` (VNM et Coherence certifiés, `0 sorry`) certifie que les axiomes de rationalité impliquent l'existence d'une utilité espérée, et la chaîne PAC iter-2 démontre `pac_agnostic_generalization` de bout en bout sans `sorry`. Les deux faces du même raisonnement bayésien et décisionnel — l'une touche l'intuition numérique, l'autre ancre la garantie formelle.

@@ -398,6 +398,18 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+# Signatures par lesquelles git nomme LUI-MEME un graphe d'objets incomplet
+# (#15387). Le pool self-hosted reutilise son work dir : un job a profondeur
+# par defaut y laisse un clone shallow, le job suivant en `fetch-depth: 0`
+# tente un `fetch --unshallow`, et l'echec de ce fetch est avale par
+# actions/checkout (mesure #15492, run 34542167016). Volontairement ETROIT :
+# toute AUTRE sortie non nulle du walk reste un `RuntimeError`.
+_GRAPH_INCOMPLETE_SIGNATURES = (
+    "Could not read ",
+    "Failed to traverse parents of commit ",
+)
+
+
 def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
     """Map ``(path_blobs, blob_paths)`` pour tous les fichiers, ancetres de HEAD.
 
@@ -447,6 +459,23 @@ def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
     if proc.returncode != 0:
         proc = _walk()
     if proc.returncode != 0:
+        # Un `RuntimeError` EST un echec de test ordinaire : le rollup ne le
+        # distingue pas d'un verdict de fond, si bien qu'une panne de runner
+        # faisait rougir un check REQUIS sur toute la flotte (#15492, #15513,
+        # #15517, #15523). Quand git NOMME lui-meme le graphe troue, on rend
+        # un SKIP -- c'est le « verdict d'infrastructure distinct » que #15387
+        # demandait, et que lever une exception ne pouvait pas produire. Le
+        # garde ne s'affaiblit pas : il cesse seulement de parler de FOND
+        # quand il n'a pas pu mesurer, et toute autre sortie non nulle leve.
+        stderr = proc.stderr.strip()
+        if any(sig in stderr for sig in _GRAPH_INCOMPLETE_SIGNATURES):
+            pytest.skip(
+                "HISTORY_WALK_INCOMPLETE (#15387) : graphe d'objets incomplet "
+                "sur le runner (work dir reutilise, unshallow avorte) -- panne "
+                "d'infrastructure, PAS un verdict de fond. La couverture de "
+                "test_audit_shas_exist_in_file_history est perdue pour ce run "
+                "seulement. stderr=" + stderr[:300]
+            )
         raise RuntimeError(
             "HISTORY_WALK_INCOMPLETE (#15387) : git log -m --raw a terminé "
             f"avec le code {proc.returncode} ; l'historique parcouru est "
@@ -714,6 +743,57 @@ def test_walk_en_echec_avorte_avec_verdict_infrastructure(monkeypatch):
     with pytest.raises(RuntimeError, match="HISTORY_WALK_INCOMPLETE"):
         _build_blob_history(Path("."))
     assert len(calls) == 2, "1 essai + 1 retry avant l'abort"
+
+
+@pytest.mark.parametrize(
+    "stderr_git",
+    [
+        # Les deux moities de la signature mesuree sur #15492 (run 34542167016).
+        "error: Could not read 0102d652b3e7e328f7e9d710e99e0098745bc4cd",
+        "fatal: Failed to traverse parents of commit bb02b3d1cf2e09a4e438260601e38b8e105f50f3",
+    ],
+)
+def test_graphe_incomplet_rend_un_skip_pas_un_echec_de_fond(monkeypatch, stderr_git):
+    """git NOMME le graphe troue -> SKIP (verdict d'infrastructure #15387).
+
+    Un `RuntimeError` ici est indiscernable d'un verdict de fond dans le
+    rollup : c'est ce qui bloquait #15492/#15513/#15517/#15523 sur une panne
+    de runner. Le retry reste du, le skip ne vient qu'apres.
+    """
+    import subprocess
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 128,
+            stdout=_fake_raw_line("f" * 40, "e" * 40, "A/X.ipynb") + "\n",
+            stderr=stderr_git,
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(pytest.skip.Exception, match="HISTORY_WALK_INCOMPLETE"):
+        _build_blob_history(Path("."))
+    assert len(calls) == 2, "1 essai + 1 retry avant le verdict d'infrastructure"
+
+
+def test_signature_inconnue_leve_toujours(monkeypatch):
+    """Le skip est ETROIT : une sortie non nulle non nommee reste un echec.
+
+    Contre-controle du test ci-dessus -- sans lui, elargir accidentellement
+    ``_GRAPH_INCOMPLETE_SIGNATURES`` transformerait le garde en no-op muet.
+    """
+    import subprocess
+
+    def fake_run(cmd, **kw):
+        return subprocess.CompletedProcess(
+            cmd, 1, stdout="", stderr="fatal: not a git repository",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="HISTORY_WALK_INCOMPLETE"):
+        _build_blob_history(Path("."))
 
 
 def test_walk_transitoire_retraye_puis_parse(monkeypatch):

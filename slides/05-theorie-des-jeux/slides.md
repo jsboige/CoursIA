@@ -201,7 +201,7 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-24-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
+*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-20-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
 
 ---
 layout: dense
@@ -253,6 +253,14 @@ layout: dense
   - Autres: jouer equilibres de Nash = 1 equilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 
+*Notebook : [GameTheory-10-ForwardInduction-SPE](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb) (equilibres de sous-jeu, induction sur plusieurs manches).*
+
+---
+layout: dense
+---
+
+# Menaces credibles -- punition et engagement
+
 ## Stratégies de punition
 
 - Ex: Prisonnier puis Argent gratuit -> equilibre faible (0,0) = menace de punition
@@ -265,6 +273,14 @@ layout: dense
 - Ex: bruler le pont derriere soi -> Rend la menace credible
 
 <img src="./images/img_017.png" alt="Se lier les mains : bruler le pont rend la menace credible" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
+
+*Notebooks : [GameTheory-09b-Commitment-Stackelberg](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg.ipynb) (se lier les mains, menace credible) · [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (strategies de punition).*
+
+---
+layout: dense
+---
+
+# Jeux a étapes -- induction arriere et repetition
 
 ## Problemes de l'induction arriere
 
@@ -286,7 +302,7 @@ layout: dense
 <img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (folk theorem, punition) · [GameTheory-06-EvolutionTrust](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb) (evolution de la confiance) · [GameTheory-09b-Commitment-Stackelberg](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg.ipynb) (se lier les mains).*
+*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb) (evolution de la confiance).*
 
 ---
 layout: dense
@@ -304,6 +320,21 @@ layout: dense
 
 - Folk theorem a escompte : l'unique `sorry` STRETCH du corpus (issue #4880)
   - Le 0-sorry n'y est exige que sur le theoreme-phare
+
+---
+layout: dense
+---
+
+# Jeux combinatoires -- Grundy et les nimbers
+
+## Sprague-Grundy
+
+- Classe : information parfaite, sans hasard, somme nulle, fini (Nim)
+  - Théorème de Sprague-Grundy : chaque position vaut un nimber, la somme disjointe vaut le XOR
+  - Position perdante (P-position) ssi Grundy = 0 -- l'induction arrière devient un calcul
+- Compagnons formels du corpus : port Lean « from scratch », puis lake natif dédié
+
+*Notebooks : [GameTheory-08-CombinatorialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Native](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Native.ipynb) (lake `conway_cgt_lean`).*
 
 ---
 layout: dense
@@ -330,6 +361,14 @@ layout: dense
 
 <img src="./images/img_025.png" alt="Equilibre de lame de couteau : instabilite autour de x=0" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
+*Notebook : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
+
+---
+layout: dense
+---
+
+# Formes stratégiques avancees -- causalite et cycles
+
 ## Modèles causaux
 
 - Proprietes causales des inputs -> Statiques comparees
@@ -351,7 +390,7 @@ layout: dense
 <img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (topologie complete, cf slide suivante) · [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) (deformation, RPS) · [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb).*
+*Notebooks : [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) (deformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb) (somme nulle, EU = 0).*
 
 ---
 layout: dense
@@ -396,7 +435,14 @@ layout: default
 
 <img src="./images/img_030.png" alt="Duel : equilibre a meme distance" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
-## Loi de Hotelling et l'electeur median
+*Notebook : [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence d'un equilibre hors matrice finie).*
+
+---
+layout: default
+---
+
+# Loi de Hotelling et l'electeur median
+
 
 - 2 vendeurs de glace sur la plage, choix de l'emplacement
   - Equilibre = les deux au milieu
@@ -435,6 +481,14 @@ layout: dense
 
 <img src="./images/img_032.png" alt="Formalisation Bayesienne : joueurs, etats, types et croyances" style="display:block; margin:4px auto; max-height:30px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebook : [GameTheory-11-BayesianGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb) (types, croyances, formalisation).*
+
+---
+layout: dense
+---
+
+# Jeux Bayesiens -- equilibres et dilemme du Sheriff
+
 ## Equilibres de Nash Bayesien
 
 - Objectif = maximisation de la recompense esperee
@@ -472,7 +526,15 @@ layout: dense
 
 - Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
 
-## Jeux de signalisation
+*Notebook : [GameTheory-17b-Asymmetric-Information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb) — croyances consistantes et rationalite sequentielle.*
+
+---
+layout: dense
+---
+
+# Jeux de signalisation -- pooling, separating, semi-separation
+
+## Trois categories de PBE
 
 - Emetteur S (connait son type) -> message m, Recepteur R -> action a
 - 3 catégories de PBE:
@@ -490,7 +552,23 @@ layout: dense
 
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17b-Asymmetric-Information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb).*
+*Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb) (screening formalise).*
+
+---
+layout: dense
+---
+
+# Information imparfaite -- le regret contraposé (CFR)
+
+## Poker et apprentissage auto-centré
+
+- Théorème de Kuhn : à rappel parfait, stratégies comportementales = mixtes
+  - L'information set porte la croyance qui pilote la meilleure réponse
+- CFR (Counterfactual Regret Minimization) : minimiser le regret contraposé
+  - Convergence vers l'équilibre de Nash -- la famille qui a révolutionné la résolution du poker
+  - Safe subgame solving : recoller une sous-partie sans supposer les croyances (le mauvais recollement produit un témoin adversarial)
+
+*Notebooks : [GameTheory-13-ImperfectInfo-CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb) · [GameTheory-13c-Safe-Subgame-Solving-Csharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR.ipynb).*
 
 ---
 layout: section
@@ -646,7 +724,14 @@ layout: dense
 
 <img src="./images/img_040.png" alt="Theoremes de l'electeur median : resultats de vote" style="display:block; margin:4px auto; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
-## Si pas de vainqueur de Condorcet
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, electeur median).*
+
+---
+layout: dense
+---
+
+# En l'absence de vainqueur de Condorcet
+
 
 - Méthode **Minimax**: celui qui fait le mieux au pire
   - Mais très stratégique (ex: anarchistes)
@@ -683,7 +768,14 @@ layout: dense
 <img src="./images/img_044.png" alt="Scrutin au jugement majoritaire : mediane des scores" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-## Scrutins stochastiques
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Borda, assentiment, jugement majoritaire).*
+
+---
+layout: dense
+---
+
+# Scrutins stochastiques
+
 
 - **Scrutin Stochocratique**: option preferee puis tirage au sort
   - Theoreme d'Hylland: seule méthode avec unanimite non stratégique
@@ -716,6 +808,14 @@ layout: default
 
 <img src="./images/img_048.png" alt="Negociation a offres alternees : fenetre d'accord et partage a l'equilibre" style="display:block; margin:10px auto; max-height:200px; width:auto; max-width:100%; object-fit:contain;">
 
+*Notebooks : [GameTheory-04d-Marchandage-Asymetrique](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique.ipynb) (offres alternees, discompte) · [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (ultimatum).*
+
+---
+layout: dense
+---
+
+# Negociation -- protocoles et concession
+
 ## Domaines orientes tâches
 
 - Offres (T1, T2) de repartitions de tâches parmi T
@@ -726,7 +826,7 @@ layout: default
 - Mesure de l'aversion au risque de conflit
 - Le risque plus faible concede, sinon tirage au sort
 
-*Notebooks : [GameTheory-04d-Marchandage-Asymetrique](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique.ipynb) (offres alternees) · [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (ultimatum). Zeuthen : pas de notebook dedie.*
+*Zeuthen et la concession monotone : pas de notebook dedie dans la serie — la mesure d'aversion au risque reste traitee en cours.*
 
 ---
 layout: default
@@ -809,6 +909,14 @@ layout: dense
 - Possibilite de dialogue -> maximisation commune
 - Division en partie cooperative et partie competitive (valeur co-co)
 
+*Notebook : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (point de selle, Stackelberg differentiel).*
+
+---
+layout: dense
+---
+
+# Equilibres differentiels -- boucle ouverte et Markoviens
+
 ## Equilibres en boucle ouverte
 
 - u* est un equilibre de Nash ssi aucun joueur ne peut ameliorer seul
@@ -855,6 +963,55 @@ layout: default
 - Details mathematiques dans les references du cours
 
 *Notebooks : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
+
+---
+layout: dense
+---
+
+# Apprentissage multi-agents -- self-play, NFSP, PSRO
+
+## Quand l'equilibre s'apprend au lieu de se calculer
+
+- Self-play : l'agent devient son propre adversaire -- la population des strategies passees tient lieu d'opposant
+  - Fictitious Play : meilleure reponse a la frequence empirique des coups adverses
+  - NFSP : un reseau apprend la meilleure reponse, un autre la politique moyenne -- l'equilibre emerge de leur melange
+  - PSRO (Policy-Space Response Oracles) : population de meilleures reponses imbriquees, l'echelle ou FP s'essouffle
+- La serie se decline en jumeau C# pour les TP .NET
+
+*Notebooks : [GameTheory-17-MultiAgent-RL](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb) (self-play, FP, NFSP, PSRO) · [GameTheory-17-MultiAgent-RL-Csharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb) (jumeau C#).*
+
+---
+layout: dense
+---
+
+# Rationalite bornee -- agents-programmes a budget
+
+## Le cout du raisonnement entre dans le modele
+
+- Agent-programme : code public + budget de raisonnement fini (Barasz et al. 2014, Critch 2016)
+  - Interprete total : budget nul = action immediate, budget epuise = arret -- la terminaison est structurelle, pas esperee
+  - Simuler l'adversaire coute des steps : chaque borne `MAX_DEPTH` / `STEP_BUDGET` deplace l'equilibre atteignable
+- Equilibre de programmes par simulation : deux adversaires au comportement identique sont traites pareil -- l'inspection syntaxique, elle, se trompe
+- Compagnon formel : module `ProgramGames.Bounded` du lake `game_theory_lean` -- code public, budget, interprete `act`
+- Oracles reflexifs (Fallenstein, Taylor, Christiano 2015) : decider sur sa propre decision sans paradoxe
+
+*Notebooks : [GameTheory-06e-Open-Source-Game-Theory](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb) · [GameTheory-06f-Bounded-Agents-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb) · [GameTheory-06f-Bounded-Proofs-Reasoning-Costs](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb) (preuves bornees) · [GameTheory-06g-Bounded-Agents-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Bounded-Agents-Lean.ipynb) · [GameTheory-06g-Simulation-Based-Program-Equilibria](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb) · [GameTheory-04e-Reflective-Oracles](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles.ipynb).*
+
+---
+layout: dense
+---
+
+# Jeux ouverts et lentilles -- composer les jeux
+
+## La theorie des jeux compositionnelle
+
+- Open game : un jeu a frontieres -- entrees, sorties, couts, strategies locales
+  - Lentille (get/set) : le regard qui lit l'etat global et reecrit localement -- composer les jeux, c'est composer les lentilles
+  - Propriete de Hedges : la meilleure reponse de la composition est la composition des meilleures reponses -- quand elle tient
+- Casser la composition : deux surfaces d'attaque ou la meilleure reponse composee cesse d'etre l'equilibre du jeu compose
+- Abstraction a dette mesurable (Kroer & Sandholm) : resoudre le jeu abstrait puis retransporter la strategie -- avec une borne sur ce que le detour coute au pire cas
+
+*Notebooks : [GameTheory-18-Open-Games-et-Lentilles](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles.ipynb) (lentilles, Hedges) · [GameTheory-18b-Casser-la-Composition](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition.ipynb) (attaques) · [GameTheory-19-Abstraction-a-Dette](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette.ipynb) (bornes d'abstraction).*
 
 ---
 layout: section

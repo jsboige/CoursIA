@@ -22,6 +22,7 @@ livrable :
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from math import comb
@@ -31,9 +32,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import life_synthesize_sat as sat_module
 from life_synthesize import evolve, normalize, synthesize
 from life_synthesize_sat import (
     CANONICAL_GLIDER,
+    SolverTimeout,
     emit_lean,
     render,
     search_minimal,
@@ -151,6 +154,86 @@ class TestMinimaliteEstUneRefutation:
         """
         assert comb(25, 9) == 2_042_975
         assert sum(comb(25, k) for k in range(1, 10)) > 3_800_000
+
+
+class TestBudgetDeCalcul:
+    def test_cli_refuse_un_budget_nul(self):
+        with pytest.raises(SystemExit) as exc:
+            sat_module.main(["--timeout-ms", "0"])
+        assert exc.value.code == 2
+
+    def test_cli_timeout_retourne_le_code_trois(self, monkeypatch, capsys):
+        monkeypatch.setattr(
+            sat_module,
+            "search_minimal",
+            lambda *args, **kwargs: {
+                "verdict": "TIMEOUT",
+                "min_cells": None,
+                "sizes_refuted": [1, 2],
+                "size_unresolved": 3,
+                "timeout_ms": 10,
+                "reason_unknown": "timeout",
+                "attempts": [],
+                "count_normalized": 0,
+                "patterns": [],
+                "canonical_glider_present": False,
+                "elapsed_s": 0.01,
+            },
+        )
+
+        assert sat_module.main(["--timeout-ms", "10", "--json"]) == 3
+        assert json.loads(capsys.readouterr().out)["verdict"] == "TIMEOUT"
+
+    def test_timeout_ne_devient_jamais_impossible(self, monkeypatch):
+        """Une taille non tranchee arrete la preuve d'impossibilite."""
+
+        def expire(*args, **kwargs):
+            raise SolverTimeout(args[4], "timeout")
+
+        monkeypatch.setattr(sat_module, "solve_exact_size", expire)
+        result = search_minimal(
+            n=4,
+            v=(2, 0),
+            box_w=5,
+            box_h=5,
+            max_cells=9,
+            timeout_ms=10,
+        )
+
+        assert result["verdict"] == "TIMEOUT"
+        assert result["sizes_refuted"] == []
+        assert result["size_unresolved"] == 1
+        assert result["timeout_ms"] == 10
+        assert result["reason_unknown"] == "timeout"
+        assert result["attempts"] == [
+            {"k": 1, "status": "TIMEOUT", "elapsed_s": pytest.approx(0, abs=0.1)}
+        ]
+
+    def test_timeout_preserve_les_tailles_deja_refutees(self, monkeypatch):
+        """Le certificat partiel nomme exactement sa frontiere connue."""
+        calls = []
+
+        def two_unsat_then_timeout(*args, **kwargs):
+            size = args[4]
+            calls.append(size)
+            if size == 3:
+                raise SolverTimeout(size, "timeout")
+            return []
+
+        monkeypatch.setattr(sat_module, "solve_exact_size", two_unsat_then_timeout)
+        result = search_minimal(
+            n=4,
+            v=(2, 0),
+            box_w=5,
+            box_h=5,
+            max_cells=9,
+            timeout_ms=10,
+        )
+
+        assert calls == [1, 2, 3]
+        assert result["verdict"] == "TIMEOUT"
+        assert result["sizes_refuted"] == [1, 2]
+        assert result["size_unresolved"] == 3
 
 
 class TestTemoinDImpossibilite:

@@ -1,3 +1,7 @@
+---
+paths: "{COURSE_CATALOG.generated.*,**/README*.md,.github/workflows/catalog-*.yml,.github/workflows/translation-sync.yml,scripts/**/catalog*}"
+---
+
 # Catalogue & hygiène PR — le catalogue appartient à l'automatisation
 
 S'applique à **tous les agents du cluster CoursIA** (workers `po-*` + coordinateur `ai-01`) qui ouvrent des PR. Source : mandat user 2026-06-06 (« régler définitivement le pb du catalogue et faire faire aux agents workers le travail t'économisant le tien »). Codifie la leçon `stale-catalog-silent-revert` (incidents #2376 / #2383 / #2385). **Détecté par CI** : `catalog-drift.yml` (check `Notebook catalog drift (read-only)`, non-bloquant) signale toute PR touchant le catalogue ; la régénération est portée par `catalog-cron.yml` (PR permanente). Le garde bloquant `catalog-pr-guard.yml` a été retiré (#11012) : entité fantôme, 0 run `pull_request` sur ~925 runs `push` en échec. See #2632.

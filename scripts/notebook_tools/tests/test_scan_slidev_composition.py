@@ -124,6 +124,69 @@ def test_content_overflow_ignores_container_only_boxes():
     assert content_overflow({"hors_canvas": []}) is False
 
 
+def test_content_overflow_counts_inline_anchors_issue_15664():
+    """Issue #15664 -- A / EM / STRONG / B / I / ABBR cut at the canvas edge.
+
+    Deck 05-théorie-des-jeux slide 10 (case fondateur, #14888 / #15661) :
+    le bloc ``EM > A > A > A`` ("*Notebook : [GameTheory-01] .. [Probas] ..
+    [Lean] ..*") déborde de 1 px sous canvas (bbox ``[36, 538, 791, 553]``)
+    alors que le DIV conteneur ``slidev-layout`` est la seule chose
+    réputée déborder à première vue. Avant le fix, le compte rendait
+    ``container_only: True`` -- la coupure de l'ancre était invisible.
+    Après le fix : chaque inline coupé compte comme contenu.
+    """
+    # Ancre seule qui déborde (cas fondateur 1 px) = défaut
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+        {"tag": "EM", "cls": "", "bbox": [36, 538, 791, 553]},
+    ]}) is True
+    # A seul qui déborde (ancre multi-notebooks)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+        {"tag": "A", "cls": "", "bbox": [94, 538, 241, 553]},
+    ]}) is True
+    # STRONG (terme mis en avant) coupé
+    assert content_overflow({"hors_canvas": [
+        {"tag": "STRONG", "cls": "", "bbox": [48, 565, 480, 600]},
+    ]}) is True
+    # B / I (rares en markdown mais rendus en HTML par certains thèmes)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "B", "cls": "", "bbox": [10, 580, 800, 620]},
+    ]}) is True
+    assert content_overflow({"hors_canvas": [
+        {"tag": "I", "cls": "", "bbox": [10, 580, 800, 620]},
+    ]}) is True
+    # ABBR (souligné pour les renvois de glossaire)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "ABBR", "cls": "", "bbox": [48, 580, 200, 600]},
+    ]}) is True
+
+
+def test_container_only_still_true_when_only_divs_overflow():
+    """Counter-test #15664 acceptance #2 : un slide dont SEUL le conteneur DIV
+    déborde reste `container_only` après l'ajout de A/EM/STRONG. C'est ce qui
+    ferme la régression du faux négatif : étendre CONTENT_TAGS doit continuer
+    à ignorer les boîtes CSS pures, sans quoi on sur-compte.
+
+    Reproduit la slide 5 S3-acculturation fondateur : DIV seul qui déborde
+    en bas (slidev-layout étiré pour un effet de pleine-page), pas un défaut
+    visuel réel, doit rester invisible.
+    """
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+    ]}) is False
+    # Combinaison DIV + P qui déborde : reste défaut (P déjà contenu avant)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout", "bbox": [0, 0, 980, 587]},
+        {"tag": "P", "cls": "", "bbox": [48, 560, 932, 600]},
+    ]}) is True
+    # Combinaison DIV + IMG : IMG est contenu (avant ET après le fix)
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout", "bbox": [0, 0, 980, 587]},
+        {"tag": "IMG", "cls": "", "bbox": [327, 0, 653, 700]},
+    ]}) is True
+
+
 def test_occupation_F1_unilateral_band_flagged():
     """F1 — bande unilatérale marquée (gap >= 55 %) : le cas fondateur #13223.
 
@@ -267,7 +330,7 @@ def test_controle_positif_warning_when_baseline_omitted():
             "canvas_w": 980, "canvas_h": 552,
             "BORNE": "ADVISORY",
             "ctrl_positif_ok": None, "ctrl_positif_msg": None,
-            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_occ": 0,
+            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_rec": 0, "n_occ": 0,
         }
         exec(block, ns)
         return ns["report"]
@@ -280,3 +343,56 @@ def test_controle_positif_warning_when_baseline_omitted():
     rpt2 = _build(7)
     assert rpt2["controle_positif_armed"] is True
     assert rpt2["controle_positif_warning"] is None
+
+
+# ---- Fixture du contrôle positif CI (#15545) -------------------------------
+# La fixture slides/_composition-control/slides.md est le contrat entre le
+# workflow slides-composition-advisory.yml (--baseline-slide 2) et le
+# scanner : si quelqu'un réordonne ses slides ou édite le défaut délibéré,
+# le contrôle CI casse de façon opaque (baseline absente / non signalée).
+# Ce test verrouille les invariants AVANT que la CI ne les lise.
+
+FIXTURE = Path(__file__).resolve().parents[3] / "slides" / "_composition-control" / "slides.md"
+
+
+def test_positive_control_fixture_exists_and_counts():
+    assert FIXTURE.exists(), f"fixture contrôle positif absente : {FIXTURE}"
+    slides = split_slides_source(FIXTURE.read_text(encoding="utf-8"))
+    assert len(slides) == 3, "la fixture doit compter exactement 3 slides (baseline = 2, chevauchement = 3)"
+
+
+def test_positive_control_fixture_baseline_defect_deterministic():
+    src = FIXTURE.read_text(encoding="utf-8")
+    slides = split_slides_source(src)
+    baseline = slides[1]["source"] if "source" in slides[1] else None
+    # fallback : le texte de la slide 2 par lignes
+    if baseline is None:
+        lines = src.split("\n")
+        start, end = slides[1]["start_line"] - 1, (slides[1 + 1]["start_line"] - 1) if len(slides) > 2 else len(lines)
+        baseline = "\n".join(lines[start:end])
+    # défaut déterministe : p en absolu AU-DELÀ du canvas par défaut (552 px)
+    assert "top:600px" in baseline, "le défaut HORS_CANVAS délibéré (top:600px) doit rester sur la slide 2"
+    assert "<p" in baseline, "le tag débordant doit rester un P (content_overflow ne compte que CONTENT_TAGS)"
+
+
+def test_positive_control_fixture_chevauchement_defect_deterministic():
+    # Contrôle négatif du correctif #15695 : deux P en absolu qui se
+    # recouvrent d'au moins 3 px (20 px vertical ici) doivent rester
+    # rapportés APRÈS la passe de confirmation par boîtes éléments.
+    src = FIXTURE.read_text(encoding="utf-8")
+    slides = split_slides_source(src)
+    ctrl = slides[2]["source"] if "source" in slides[2] else None
+    if ctrl is None:
+        lines = src.split("\n")
+        start = slides[2]["start_line"] - 1
+        end = slides[3]["start_line"] - 1 if len(slides) > 3 else len(lines)
+        ctrl = "\n".join(lines[start:end])
+    assert ctrl.count("<p") == 2, "la slide 3 doit porter exactement 2 P (la paire chevauchante)"
+    assert "top:300px" in ctrl and "top:310px" in ctrl, \
+        "les deux P délibérés (top:300px / top:310px => 20 px de recouvrement vertical) doivent rester sur la slide 3"
+
+
+def test_positive_control_fixture_canvas_default():
+    # le contrôle CI suppose le canvas par défaut 980×552 : top:600px déborde
+    # de 48 px. Un canvasHeight headmatter > 600 casserait la garantie.
+    assert parse_headmatter_canvas(FIXTURE) == (980, 552)

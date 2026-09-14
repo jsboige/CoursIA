@@ -101,9 +101,10 @@ flowchart TD
     VERD --> CKPT["Checkpoint<br/>model.pt + metadata.json"]
     VERD -.-> NO["NO BEATS<br/>(documente honnetement)"]
     CKPT --> REG["REGISTRY.md"]
-    style VERD fill:#fff3e0
-    style CKPT fill:#e8f5e9
-    style NO fill:#ffebee
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style VERD fill:#fff3e0,color:#bf360c
+    style CKPT fill:#e8f5e9,color:#1b5e20
+    style NO fill:#ffebee,color:#721c24
 ```
 
 Ci-dessous, l'arborescence des scripts qui implémente ce pipeline.
@@ -516,10 +517,11 @@ flowchart LR
     TH --> TR2["Trading differe"]
     TR1 --> RES1["L4 DT : 24/26 panel @10bps<br/>(OOT temporel réel 04/09 : NO-BEATS)"]
     TR2 --> RES2["PatchTST : 0/26 seeds BEATS<br/>Signal noye dans le bruit"]
-    style P1 fill:#e8f5e9
-    style P2 fill:#ffebee
-    style RES1 fill:#c8e6c9
-    style RES2 fill:#ffcdd2
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
+    style P1 fill:#e8f5e9,color:#1b5e20
+    style P2 fill:#ffebee,color:#721c24
+    style RES1 fill:#c8e6c9,color:#1b5e20
+    style RES2 fill:#ffcdd2,color:#721c24
 ```
 
 L'écart de performance n'est pas un hasard : un classifieur d'action capture la **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. D'où le verdict consolidé — un seul BEATS (DT action-based, **panel @10bps** ; non confirmé hors-échantillon en temps, OOT réel 04/09 NO-BEATS), tout le reste NO BEATS (rendement/forecast).

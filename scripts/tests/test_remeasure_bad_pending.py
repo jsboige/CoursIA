@@ -113,7 +113,7 @@ def test_pr_avec_bad_comptee_correctement():
     latest = pr_gate.dedupe_latest(runs)
     pending, bad, ok, advisory = pr_gate.classify(latest, self_name="PR gate")
     assert len(bad) == 1
-    assert "Always-on guards" in bad
+    assert "Always-on guards" in bad[0]
 
 
 def test_advisory_exclu_du_bad():

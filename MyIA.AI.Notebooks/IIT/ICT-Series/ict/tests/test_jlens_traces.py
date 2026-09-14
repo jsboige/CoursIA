@@ -119,20 +119,25 @@ def _make_trace_npz(
 
 def _fake_load_factory(npz_obj: _InMemoryNpz):
     """Retourne un patch compatible avec le binding local
-    ``ict.jlens_traces._sae_load_traces``.
+    ``ict.jlens_traces._sae_load_npz_unchecked``.
 
-    Le module ``jlens_traces`` importe
-    ``from .sae_traces import load_traces as _sae_load_traces`` (binding
-    local). Le monkeypatch doit viser ``ict.jlens_traces._sae_load_traces``
-    (le module qui APPELLE), pas ``ict.sae_traces.load_traces`` (la
-    source) -- un monkeypatch sur la source ne prend pas effet sur le
-    binding local (import copy).
+    Le chargeur :func:`ict.jlens_traces.load_traces` post-c.1050 n'utilise
+    plus le delegating loader :func:`ict.sae_traces.load_traces` (qui
+    enforce ``instrument='sae'`` et refuserait systematiquement une trace
+    J-Lens legacy ``lens='jacobian'``) ; il appelle directement le binding
+    local ``_sae_load_npz_unchecked`` (= :func:`ict.sae_traces._load_npz_unchecked`
+    importe via ``from .sae_traces import _load_npz_unchecked as _sae_load_npz_unchecked``)
+    pour le parsing structurel + la garde BOS-inf, SANS enforce. Le
+    monkeypatch doit viser ``ict.jlens_traces._sae_load_npz_unchecked`` (le
+    binding importe dans jlens_traces), PAS la source
+    ``ict.sae_traces._load_npz_unchecked`` (un monkeypatch sur la source
+    ne prend pas effet sur le binding copie dans jlens_traces).
     """
 
-    def fake_load_traces(path):  # noqa: ARG001
-        return {"meta": json.loads(npz_obj["__meta__"]), "prompts": _parse_prompts(npz_obj)}
+    def fake_load_npz_unchecked(path):  # noqa: ARG001
+        return json.loads(npz_obj["__meta__"]), _parse_prompts(npz_obj)
 
-    return fake_load_traces
+    return fake_load_npz_unchecked
 
 
 def _parse_prompts(npz_obj: _InMemoryNpz) -> dict[tuple[str, int], dict]:
@@ -230,7 +235,7 @@ def test_load_traces_accepts_jacobian_lens(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(jl, "_sae_load_traces", _fake_load_factory(npz))
+    monkeypatch.setattr(jl, "_sae_load_npz_unchecked", _fake_load_factory(npz))
 
     out = jl.load_traces("ignored_path.npz")
     assert out["meta"]["lens"] == "jacobian"
@@ -238,20 +243,25 @@ def test_load_traces_accepts_jacobian_lens(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
-#  Gate 4 : load_traces accepte trace SANS meta['lens'] (retro-compat)        #
+#  Gate 4 : chargeur J-Lens REFUSE manifeste nu (acceptance #1 #15476)       #
 # --------------------------------------------------------------------------- #
 
 
-def test_load_traces_accepts_missing_lens_field(monkeypatch):
-    """Retro-compatibilite avec un extracteur qui n'ecrit pas encore
-    ``meta['lens']`` (cf. docstring L110-113 de jlens_traces).
+def test_load_traces_refuses_minimal_manifest(monkeypatch):
+    """Le contrat v1 (#15476 acceptance #1) REFUSE un manifeste nu (sans
+    ``instrument`` ni ``lens`` legacy ni champ inférable) -- c'est la
+    protection anti-melange. L'ancien contrat (avant #15476) acceptait
+    ces traces en retro-compatibilite avec un extracteur qui n'ecrivait
+    pas encore le marqueur ``meta['lens']`` ; acceptance #1 a assume
+    cette regression pour fermer la porte au melange silencieux.
 
-    Le garde-fou NE DOIT PAS casser l'execution si le champ est absent
-    -- il reserve le refus uniquement aux cas ``meta['lens'] == 'sae'``
-    (mauvais pipeline). L'absence = ``accept`` par defaut.
+    Le refus est porte par :func:`ict.trace_contract.TraceContractError`
+    avec un diagnostic actionnable (``Migration requise``).
     """
+    from ict.trace_contract import TraceContractError
+
     npz = _make_trace_npz(
-        meta={"d_sae": 4, "k": 2, "layer": 16},  # pas de 'lens'
+        meta={"d_sae": 4, "k": 2, "layer": 16},  # pas de 'lens', pas d'instrument
         prompts={
             ("setA", 0): {
                 "topk_ids": [[0, 1]],
@@ -260,11 +270,10 @@ def test_load_traces_accepts_missing_lens_field(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(jl, "_sae_load_traces", _fake_load_factory(npz))
+    monkeypatch.setattr(jl, "_sae_load_npz_unchecked", _fake_load_factory(npz))
 
-    out = jl.load_traces("legacy_trace.npz")
-    assert "lens" not in out["meta"]  # preserve le meta original
-    assert ("setA", 0) in out["prompts"]
+    with pytest.raises(TraceContractError, match="Migration requise"):
+        jl.load_traces("legacy_trace.npz")
 
 
 # --------------------------------------------------------------------------- #
@@ -279,9 +288,13 @@ def test_load_traces_refuses_sae_lens_with_value_error(monkeypatch):
     trace -- la laisser passer dans le notebook J-Lens casserait la
     co-localisation cross-methode de #5681 Track S.
 
-    Le test verifie que ``ValueError`` est leve, et que le message
-    mentionne la destination correcte (``ict.sae_traces``).
+    Le contrat v1 (#15476 acceptance #1) leve :class:`TraceContractError`
+    (qui herite de ``ValueError`` pour la compatibilite avec le pattern
+    ``except ValueError`` historique) ; le diagnostic mentionne
+    l'attendu (``'jlens'``) et le legacy observe (``'sae'``).
     """
+    from ict.trace_contract import TraceContractError
+
     npz = _make_trace_npz(
         meta={"lens": "sae", "d_sae": 4, "k": 2, "layer": 16, "variant": "Qwen-Scope"},
         prompts={
@@ -292,14 +305,14 @@ def test_load_traces_refuses_sae_lens_with_value_error(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(jl, "_sae_load_traces", _fake_load_factory(npz))
+    monkeypatch.setattr(jl, "_sae_load_npz_unchecked", _fake_load_factory(npz))
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(TraceContractError) as excinfo:
         jl.load_traces("sae_trace_mislabeled.npz")
     msg = str(excinfo.value)
     assert "sae" in msg.lower(), f"message doit mentionner 'sae' : recu {msg!r}"
-    assert "sae_traces" in msg, (
-        f"message doit rediriger vers ict.sae_traces.load_traces : recu {msg!r}"
+    assert "jlens" in msg.lower(), (
+        f"message doit mentionner l'attendu 'jlens' : recu {msg!r}"
     )
 
 
@@ -329,7 +342,7 @@ def test_load_traces_returns_schema_compatible_with_reexports(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(jl, "_sae_load_traces", _fake_load_factory(npz))
+    monkeypatch.setattr(jl, "_sae_load_npz_unchecked", _fake_load_factory(npz))
 
     out = jl.load_traces("trace.npz")
     entry = out["prompts"][("setA", 0)]
@@ -404,7 +417,7 @@ def test_e2e_minimal_jacobian_trace_roundtrip(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(jl, "_sae_load_traces", _fake_load_factory(npz))
+    monkeypatch.setattr(jl, "_sae_load_npz_unchecked", _fake_load_factory(npz))
 
     # Charge la trace via le module J-Lens (doit accepter "jacobian").
     out = jl.load_traces("e2e_trace.npz")

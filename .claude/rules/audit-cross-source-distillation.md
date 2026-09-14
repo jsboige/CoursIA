@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*
+---
+
 # Audit cross-source distillation — méthode + sortie dashboard/issue (jamais un rapport commité)
 
 S'applique à **tout agent** auditant une **distillation** : l'écart entre une **source canonique** (MBML, papier SOTA, manuel de référence type Shoham/Leyton-Brown) et son **portage** dans un notebook (Infer.NET, PyMC, Lean, QC…).

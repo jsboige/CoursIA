@@ -1,3 +1,7 @@
+---
+paths: "{**/*.py,**/*.ipynb}"
+---
+
 # CodeQL `# codeql[rule-id]` — suppressions inertes sur default setup
 
 Source : issue **#12100** (CodeQL: les commentaires `# codeql[rule-id]` sont INERTES sur ce dépot, 2 commits déjà perdus dessus). Constat vérifié firsthand via check-run CodeQL `96714903857` (ee8823b55, terminé 2026-08-21T08:29:38Z) : les alertes restent ouvertes après déplacement des commentaires. Cause = pas un probleme de placement, mais une **mécanique du dépot** : CodeQL y tourne en **default setup** (géré par GitHub, hors du repo), donc il n'existe **aucun** point d'insertion pour `AlertSuppression.ql` ni pour `dismiss-alerts` au niveau du repo.
