@@ -38,12 +38,35 @@ concurrency:
 jobs:
   starve:
     name: Linux runner starvation advisory
-    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
-    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
-    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
-    # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # ubuntu-latest -- et non plus la jambe auto-hebergee (#16134, 2026-09-14).
+    #
+    # La tranche 5 de #13378 avait re-route ce job vers
+    # `[self-hosted, coursia-ephemeral, coursia-linux]` au motif que « le garde
+    # est du Python pur, sans secret ». C'est un motif de commodite, et il a
+    # rendu FAUX le principe pose huit lignes plus haut : `coursia-linux` n'est
+    # pas independant de `coursia-waiter` ni de `coursia-lean`, ce sont trois
+    # jambes du MEME parc, invalidees ensemble par la meme reconstruction
+    # d'image. L'observateur ne mourait donc plus avec son propre label -- il
+    # mourait avec le parc, ce qui est le cas qu'il existe pour mesurer.
+    #
+    # Mesure du 2026-09-14 : parc mort ~1 h 15 apres un reboot de maintenance
+    # (0 runner en ligne sur 45 slots). `runner-starvation-advisory` n'a pu
+    # s'executer a 07:12Z que parce qu'une jambe etait deja revenue ; sur le
+    # creneau precedent, 01:44Z -> 07:11Z, AUCUN run n'a ete produit pour un
+    # cron declare `23,53 * * * *` -- les creneaux sans runner ne sont pas des
+    # runs en echec, ce sont des runs qui n'existent pas.
+    #
+    # L'organe est sans dependance a l'hote : `check_runner_starvation.py` ne
+    # lit aucun chemin local, aucun socket, aucun `systemctl` -- tout passe par
+    # l'API GitHub. Il n'a jamais eu besoin du parc. Depot public : les minutes
+    # GitHub-hosted sont gratuites, l'argument de cout ne s'applique pas.
+    #
+    # La garde same-repo qui vivait ici a ete retiree avec le routage : ce
+    # workflow n'a que `schedule` et `workflow_dispatch`, donc
+    # `github.event.pull_request` y est toujours nul et la condition etait
+    # vacuously vraie. Elle etait le vestige du raisonnement qui a justifie
+    # l'auto-hebergement, et la laisser invitait a le re-deriver.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

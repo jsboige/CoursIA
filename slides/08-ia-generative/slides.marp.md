@@ -317,6 +317,7 @@ Intelligence Artificielle -- VIII
 - **Local** : Oobabooga, Ollama, vLLM
   - Quantification : GGUF, EXL2/3, AWQ
   - Containerisation Docker/Kubernetes
+- **Hybride** : Tailscale (mesh WireGuard) — GPU de poche + nœuds distants joignables comme en local
 - **Image** : Stable Diffusion, Flux, Qwen Image Edit, CivitAI
   - Apps : Forge, ComfyUI
 - **Conversationnel** : Open-WebUI, SillyTavern
