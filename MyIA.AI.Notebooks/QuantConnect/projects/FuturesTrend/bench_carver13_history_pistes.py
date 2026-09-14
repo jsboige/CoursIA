@@ -48,6 +48,7 @@
 # on the Python side; its absence is the previous failure mode.
 
 import argparse
+import sys
 import time
 from statistics import median, quantiles
 from typing import Callable, Dict, List
@@ -227,19 +228,61 @@ def _path_reduce_n_bars_slim(bulk_cache_slim: pd.DataFrame, _n_bars_unused: int)
 
 
 def _time_path(path_fn: Callable, *args, n_iter: int) -> Dict[str, float]:
-    """Run a path n_iter times, return timing stats (median + 5/95 percentiles)."""
+    """Run a path n_iter times, return timing stats.
+
+    Reports median + IQR (p25/p75) + 5/95 percentiles. IQR is what the
+    verdict WINNER criterion uses ("non-overlapping IQRs"); reporting
+    it without computing it is the exact fabrication the 2026-09-14
+    REPAIR (#16093, adjoint preflight) called out.
+
+    ``path_fn`` may be 0-arg (built with --measure-construction, which
+    re-builds the bulk internally) or N-arg (the usual pre-built bulk
+    + n_bars). We introspect the signature once and adapt.
+    """
+    import inspect as _inspect
+
+    try:
+        n_params = len(_inspect.signature(path_fn).parameters)
+    except (TypeError, ValueError):
+        n_params = len(args)
+    is_zero_arg = n_params == 0
+
     samples = []
     for _ in range(n_iter):
         t0 = time.perf_counter()
-        path_fn(*args)
+        if is_zero_arg:
+            path_fn()
+        else:
+            path_fn(*args)
         samples.append(time.perf_counter() - t0)
     samples.sort()
+    n = len(samples)
+    # quantiles(..., n=4) gives quartiles [p25, p50, p75]; under Python 3.8+
+    # the IQR endpoint convention is the inclusive one -- what reviewers
+    # expect from "interquartile range".
+    quartiles = quantiles(samples, n=4, method="inclusive") if n >= 4 else [
+        samples[0], samples[n // 2], samples[-1]
+    ]
     return {
         "median_ms": median(samples) * 1000.0,
-        "p05_ms": samples[max(0, int(0.05 * len(samples)))] * 1000.0,
-        "p95_ms": samples[min(len(samples) - 1, int(0.95 * len(samples)))] * 1000.0,
+        "p25_ms": quartiles[0] * 1000.0,
+        "p75_ms": quartiles[2] * 1000.0,
+        "iqr_ms": (quartiles[2] - quartiles[0]) * 1000.0,
+        "p05_ms": samples[max(0, int(0.05 * n))] * 1000.0,
+        "p95_ms": samples[min(n - 1, int(0.95 * n))] * 1000.0,
         "n_iter": n_iter,
     }
+
+
+def _iqr_disjoint(baseline: Dict[str, float], candidate: Dict[str, float]) -> bool:
+    """True iff the candidate IQR sits entirely below the baseline IQR.
+
+    Used by the WINNER verdict (in addition to the ratio < 0.70 guard)
+    so that a noisy single-trial speedup cannot masquerade as an
+    improvement. With n_iter >= 30 the IQR spans ~50% of samples, so
+    disjoint IQRs are a sterner test than the median ratio.
+    """
+    return candidate["p75_ms"] < baseline["p25_ms"]
 
 
 def main():
@@ -253,72 +296,119 @@ def main():
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Emit JSON instead of human-readable verdict.",
+        help="Emit JSON only on stdout (stderr keeps human-readable progress).",
+    )
+    parser.add_argument(
+        "--measure-construction",
+        action="store_true",
+        help="Include the synthetic-bulk construction cost in the timed "
+        "frontier. Default OFF: the bench times the post-fetch path on a "
+        "pre-built bulk (the production path receives a fully built bulk "
+        "from the QC bridge, never constructs it client-side).",
     )
     args = parser.parse_args()
 
-    print(f"Building synthetic bulk frames (n_iter={args.n_iter})")
+    # Convention: --json -> stdout = pure JSON document, stderr = human
+    # chatter. Before the REPAIR (adjoint preflight 2026-09-14), all
+    # output went to stdout and `json.loads(stdout)` failed on line 1.
+    def _say(msg: str) -> None:
+        if args.json:
+            print(msg, file=sys.stderr)
+        else:
+            print(msg)
+
+    _say(f"Building synthetic bulk frames (n_iter={args.n_iter})")
     bulk_baseline = _make_synthetic_bulk(N_BARS_BASELINE)
     bulk_reduced = _make_synthetic_bulk(N_BARS_REDUCED)
     bulk_slim = _make_synthetic_bulk(N_BARS_SLIM)
-    print(
-        f"  baseline={bulk_baseline.shape}, reduced={bulk_reduced.shape}, slim={bulk_slim.shape}"
+    _say(
+        f"  baseline={bulk_baseline.shape}, reduced={bulk_reduced.shape}, "
+        f"slim={bulk_slim.shape}"
     )
+    if args.measure_construction:
+        _say("  --measure-construction ON: bulk build included in timed frontier.")
+
+    # paths[i] = (label, callable, *args). The callable is what _time_path
+    # will run n_iter times. With --measure-construction, the callable is
+    # wrapped so the bulk build is part of the measurement -- this is what
+    # lets the verdict attribute (or refuse to attribute) the speedup to
+    # pandas construction.
+    def _maybe_wrap_with_construction(fn, n_bars):
+        if not args.measure_construction:
+            return fn
+        def wrapped():
+            # Re-build every call to attribute cost to construction as well.
+            bulk = _make_synthetic_bulk(n_bars, seed=42)
+            return fn(bulk, n_bars)
+        return wrapped
 
     paths = [
-        ("A_baseline_bulk (current, #16003)", _path_baseline_bulk, bulk_baseline, N_BARS_BASELINE),
-        ("B_per_symbol (19 history calls)", _path_per_symbol, bulk_baseline, N_BARS_BASELINE),
-        ("C_flatten_array (ndarray path)", _path_flatten_array, bulk_baseline, N_BARS_BASELINE),
-        ("D_reduce_n_bars (592->336)", _path_reduce_n_bars, bulk_reduced, N_BARS_REDUCED),
-        ("D'_reduce_n_bars_slim (592->276)", _path_reduce_n_bars_slim, bulk_slim, N_BARS_SLIM),
+        ("A_baseline_bulk (current, #16003)", _maybe_wrap_with_construction(_path_baseline_bulk, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
+        ("B_per_symbol (19 history calls)", _maybe_wrap_with_construction(_path_per_symbol, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
+        ("C_flatten_array (ndarray path)", _maybe_wrap_with_construction(_path_flatten_array, N_BARS_BASELINE), bulk_baseline, N_BARS_BASELINE),
+        ("D_reduce_n_bars (592->336)", _maybe_wrap_with_construction(_path_reduce_n_bars, N_BARS_REDUCED), bulk_reduced, N_BARS_REDUCED),
+        ("D'_reduce_n_bars_slim (592->276)", _maybe_wrap_with_construction(_path_reduce_n_bars_slim, N_BARS_SLIM), bulk_slim, N_BARS_SLIM),
     ]
 
     results = {}
     for name, fn, bulk, n_bars in paths:
         stats = _time_path(fn, bulk, n_bars, n_iter=args.n_iter)
         results[name] = stats
-        print(
+        _say(
             f"  {name:42s} median={stats['median_ms']:7.3f} ms  "
-            f"p05={stats['p05_ms']:7.3f}  p95={stats['p95_ms']:7.3f}"
+            f"iqr={stats['iqr_ms']:6.3f}  p25={stats['p25_ms']:6.3f}  "
+            f"p75={stats['p75_ms']:6.3f}  p05={stats['p05_ms']:6.3f}  "
+            f"p95={stats['p95_ms']:6.3f}"
         )
 
-    baseline_median = results["A_baseline_bulk (current, #16003)"]["median_ms"]
-    print()
-    print("Verdict (vs baseline A):")
+    baseline_stats = results["A_baseline_bulk (current, #16003)"]
+    baseline_median = baseline_stats["median_ms"]
+    _say("")
+    _say("Verdict (vs baseline A; WINNER requires ratio < 0.70 AND IQR disjoint):")
     verdicts = {}
+    winner_details = {}
     for name, stats in results.items():
         if name.startswith("A_"):
             verdicts[name] = "BASELINE"
             continue
         ratio = stats["median_ms"] / baseline_median
-        if ratio < 0.70:
-            verdict = "WINNER (<70% of baseline)"
+        iqr_disjoint = _iqr_disjoint(baseline_stats, stats)
+        if ratio < 0.70 and iqr_disjoint:
+            verdict = "WINNER (<70% AND IQR disjoint)"
+        elif ratio < 0.70:
+            verdict = "NEUTRAL_MEDIAN_ONLY (ratio<0.70 but IQR overlaps baseline)"
         elif ratio > 1.30:
             verdict = "LOSER (>130% of baseline)"
         else:
             verdict = "NEUTRAL (within +/-30% of baseline)"
         verdicts[name] = verdict
-        print(f"  {name:42s} ratio={ratio:.2f}  {verdict}")
+        winner_details[name] = {"ratio": ratio, "iqr_disjoint": iqr_disjoint}
+        _say(f"  {name:42s} ratio={ratio:.2f}  iqr_disjoint={iqr_disjoint}  {verdict}")
 
-    print()
-    print("Anti-fabrication note: this bench times only the Python-side path.")
-    print("The 236 ms/call reported by #16076 is dominated by the QC bridge")
-    print("(Lean-side MCP/IPC), which is NOT modelled here. A WINNER on this")
-    print("bench saves at most ~25 s of the 694 s wall (the 'everything else'")
-    print("bucket on #16076 instrumentation), and only if the QC-side cost")
-    print("scales with Python processing time, which is unverified.")
-    print("Conclusion: the 4 pistes in #16076 are unlikely to deliver the")
-    print("94% wall reduction the issue implies; the real lever is")
-    print("REDUCING THE NUMBER OF history() CALLS (caching the bulk across")
-    print("consecutive same-day rebalances, or skipping rebalances where")
-    print("nothing changes), not micro-optimising the slice path. See the")
-    print("generated JSON for full numbers and the JSON keys used by CI.")
+    _say("")
+    _say("Anti-fabrication note: this bench times only the Python-side path.")
+    _say("The 236 ms/call reported by #16076 is dominated by the QC bridge")
+    _say("(Lean-side MCP/IPC), which is NOT modelled here. A WINNER on this")
+    _say("bench saves at most ~25 s of the 694 s wall (the 'everything else'")
+    _say("bucket on #16076 instrumentation), and only if the QC-side cost")
+    _say("scales with Python processing time, which is unverified.")
+    _say("Scope: with --measure-construction OFF (default), the bench measures")
+    _say("the POST-FETCH transformation of a pre-built bulk -- not bulk")
+    _say("construction. To attribute a speedup to 'pandas construction', pass")
+    _say("--measure-construction (and re-run).")
+    _say("Conclusion: the 4 pistes in #16076 are unlikely to deliver the")
+    _say("94% wall reduction the issue implies; the real lever is")
+    _say("REDUCING THE NUMBER OF history() CALLS (caching the bulk across")
+    _say("consecutive same-day rebalances, or skipping rebalances where")
+    _say("nothing changes), not micro-optimising the slice path. See the")
+    _say("generated JSON for full numbers and the JSON keys used by CI.")
 
     if args.json:
-        import json
+        import json as _json
         out = {
             "n_iter": args.n_iter,
             "n_symbols": N_SYMBOLS,
+            "measure_construction": args.measure_construction,
             "shapes": {
                 "baseline": list(bulk_baseline.shape),
                 "reduced": list(bulk_reduced.shape),
@@ -326,15 +416,38 @@ def main():
             },
             "paths": results,
             "verdicts": verdicts,
+            "winner_details": winner_details,
             "baseline_median_ms": baseline_median,
             "scope_note": (
                 "Times only Python-side processing; QC-side cost is not modelled."
-                " Local WINNER != 94% wall reduction."
+                " Local WINNER != 94% wall reduction. WINNER requires BOTH"
+                " ratio < 0.70 AND IQR (p25..p75) disjoint from baseline."
             ),
         }
-        print()
-        print(json.dumps(out, indent=2))
+        # Pure JSON on stdout, one document, terminated by a newline.
+        sys.stdout.write(_json.dumps(out, indent=2))
+        sys.stdout.write("\n")
+
+
+def main_with_args(argv: List[str]) -> int:
+    """Testable entrypoint: same as ``main()`` but accepts an argv list.
+
+    Splitting stdout/stderr means a subprocess test can assert
+    ``json.loads(stdout)`` succeeds AND that progress chatter lives on
+    stderr. See tests/test_history_pistes_bench.py:TestREPAIRAdjointPreflight16093.
+    """
+    old_argv = sys.argv
+    try:
+        sys.argv = ["bench_carver13_history_pistes"] + list(argv)
+        main()
+    except SystemExit as e:
+        # argparse calls sys.exit(2) on bad args; tests treat that as
+        # an expected error code. The happy path returns None (0).
+        return e.code if isinstance(e.code, int) else 1
+    finally:
+        sys.argv = old_argv
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main_with_args(sys.argv[1:]))

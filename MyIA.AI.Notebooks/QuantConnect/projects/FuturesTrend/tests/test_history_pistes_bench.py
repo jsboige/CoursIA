@@ -185,5 +185,120 @@ class TestAntiFabricationNotes(unittest.TestCase):
         self.assertIn("Anti-fabrication", source)
 
 
+class TestREPAIRAdjointPreflight16093(unittest.TestCase):
+    """The 3 écarts identified by the adjoint preflight on PR #16093.
+
+    REPAIR 2026-09-14 : three substance gaps caught in review:
+
+    1. `--json` emitted human-readable prose on stdout BEFORE the JSON
+       document, so ``json.loads(stdout)`` failed at line 1.
+    2. The synthetic DataFrame was built OUTSIDE the timed frontier, so
+       the verdict "construction pandas domine" attributed the speedup
+       to a step that was not measured.
+    3. The source comment promised "non-overlapping IQRs" as the WINNER
+       criterion, but the implementation never computed an IQR.
+
+    Each test below pins one fix. If a future maintainer reverts any
+    of the three, the corresponding test fails -- which is exactly the
+    "push + bump floor = silent fabrication" failure mode this REPAIR
+    exists to prevent.
+    """
+
+    def test_json_output_is_parseable(self):
+        """`--json` MUST emit a single JSON document on stdout parseable
+        by ``json.loads``. Human-readable progress moves to stderr.
+        """
+        import io
+        import json
+        from contextlib import redirect_stdout, redirect_stderr
+
+        # n_iter=2 to keep the test fast; smoke test only.
+        stdout_buf = io.StringIO()
+        stderr_buf = io.StringIO()
+        with redirect_stdout(stdout_buf), redirect_stderr(stderr_buf):
+            try:
+                bench.main_with_args(["--json", "--n-iter", "2"])
+            except SystemExit as e:
+                # argparse may call sys.exit(2) on bad args; the success
+                # path doesn't. Either is fine for the smoke test.
+                self.assertIn(e.code, (None, 0, 2))
+        stdout_text = stdout_buf.getvalue().strip()
+        # Pure JSON: the very first non-whitespace char is '{'.
+        self.assertTrue(
+            stdout_text.startswith("{"),
+            f"stdout must start with '{{' for --json; got first 80 chars: "
+            f"{stdout_text[:80]!r}",
+        )
+        # Parseable.
+        parsed = json.loads(stdout_text)
+        self.assertIn("paths", parsed)
+        self.assertIn("verdicts", parsed)
+        self.assertIn("scope_note", parsed)
+        # The scope note MUST spell out the WINNER requirement so a future
+        # maintainer cannot relax it silently.
+        self.assertIn("IQR", parsed["scope_note"])
+
+    def test_stats_include_iqr(self):
+        """`_time_path` MUST return p25, p75, and iqr_ms so the WINNER
+        verdict can require disjoint IQRs.
+        """
+        bulk = bench._make_synthetic_bulk(bench.N_BARS_SLIM, seed=42)
+        stats = bench._time_path(bench._path_baseline_bulk, bulk,
+                                  bench.N_BARS_SLIM, n_iter=40)
+        for key in ("median_ms", "p25_ms", "p75_ms", "iqr_ms", "p05_ms", "p95_ms"):
+            self.assertIn(key, stats, f"missing stat key: {key}")
+        # IQR = p75 - p25 by definition.
+        self.assertAlmostEqual(stats["iqr_ms"], stats["p75_ms"] - stats["p25_ms"], places=6)
+        # Quartile ordering: p25 <= median <= p75.
+        self.assertLessEqual(stats["p25_ms"], stats["median_ms"])
+        self.assertLessEqual(stats["median_ms"], stats["p75_ms"])
+
+    def test_iqr_disjoint_helper(self):
+        """`_iqr_disjoint(baseline, candidate)` returns True iff the
+        candidate IQR sits entirely below the baseline IQR.
+        """
+        base = {"p25_ms": 10.0, "p75_ms": 20.0}
+        # Candidate entirely below baseline.
+        self.assertTrue(bench._iqr_disjoint(base, {"p25_ms": 1.0, "p75_ms": 5.0}))
+        # Candidate overlapping (p25 < base.p75).
+        self.assertFalse(bench._iqr_disjoint(base, {"p25_ms": 15.0, "p75_ms": 25.0}))
+        # Candidate exactly touching the baseline's lower edge.
+        self.assertFalse(bench._iqr_disjoint(base, {"p25_ms": 20.0, "p75_ms": 30.0}))
+
+    def test_measure_construction_option_exists(self):
+        """`--measure-construction` MUST exist and be wired into the timed
+        frontier, so the verdict can attribute (or refuse to attribute)
+        a speedup to pandas construction.
+
+        Without this knob, the verdict "le gain vient de la construction
+        pandas" is unsubstantiated (REPAIR gap #2).
+        """
+        import argparse
+        # Pin via getsource: the option must be declared in main().
+        import inspect
+        src = inspect.getsource(bench.main)
+        self.assertIn("--measure-construction", src)
+        self.assertIn("measure_construction", src)
+        # And the timing wrapper must consume it.
+        self.assertIn("_maybe_wrap_with_construction", src)
+
+    def test_verdict_requires_iqr_disjoint(self):
+        """The WINNER verdict MUST require BOTH ratio<0.70 AND IQR
+        disjoint from baseline. Pin both conditions in source.
+        """
+        import inspect
+
+        src = inspect.getsource(bench.main)
+        # WINNER branch references both gates.
+        self.assertIn("ratio < 0.70 and iqr_disjoint", src)
+        # The label must communicate the AND, so a future reader doesn't
+        # think the IQR is optional.
+        self.assertIn("WINNER", src)
+        self.assertIn("IQR disjoint", src)
+        # And the NEUTRAL_MEDIAN_ONLY label exists for the case where
+        # ratio<0.70 but IQR overlaps -- the speedup is NOT robust.
+        self.assertIn("NEUTRAL_MEDIAN_ONLY", src)
+
+
 if __name__ == "__main__":
     unittest.main()
