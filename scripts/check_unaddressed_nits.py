@@ -3258,7 +3258,7 @@ def _cited_shas(body: str) -> set[str]:
     le motif hexa et se font lire comme des empreintes (levee d'ai-01 du
     2026-09-14T02:45:56Z sur #16022 rendue « cite effacee ... absent des
     commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
-    astronomiquement improbable ((6/16)^7 ~ 1e-4 au format court) ;
+    improbable ((6/16)^7 ~ 1e-3 au format court) ;
     l'exiger chiffre supprime la classe entiere.
     """
     out: set[str] = set()
