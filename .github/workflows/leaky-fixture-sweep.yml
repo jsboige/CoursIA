@@ -131,14 +131,36 @@ jobs:
           echo "outils du balayage presents ; runner : $(uname -srm)"
 
       # The date-windowed surface. Each file is a single target so collection
-      # stays hermetic (no sibling deps). 189 tests green on main under both
-      # horizons (validated 2026-09-02, po-2024).
-      # Native FAKETIME offset format (+8d, +31d): passed through the wrapper
-      # verbatim. Matches the validated evidence (2026-09-02: both horizons
-      # green, 189 tests).
+      # stays hermetic (no sibling deps).
+      #
+      # `-f` EST OBLIGATOIRE, et c'est le troisieme defaut de ce job (#16141).
+      # Sans lui, `faketime` remet son argument a `/bin/date -d`, qui n'entend
+      # pas les offsets relatifs. Mesure du dispatch 34857525712 -- la premiere
+      # fois que cette etape a pu s'executer depuis la creation du fichier :
+      #
+      #     date: invalid date '+8d'
+      #     Error: Timestamp to fake not recognized, please re-try with a different timestamp.
+      #
+      # Les offsets relatifs (`[+/-]123[m/h/d/y]`) appartiennent au format
+      # AVANCE, que `-f` active (man 1 faketime, « ADVANCED TIMESTAMP FORMAT »).
+      # La forme sans `-f` date de la creation du fichier (commit c59dac98ef) :
+      # elle n'a jamais rien balaye.
+      #
+      # A relire aussi : ce bloc revendiquait « 189 tests verts sous les deux
+      # horizons (valide 2026-09-02, po-2024) ». Cette validation ne peut pas
+      # avoir porte sur CETTE ligne de commande, qui meurt avant `pytest` --
+      # elle a eu lieu sur une invocation correcte, et la transcription a perdu
+      # le `-f`. Le chiffre de 189 est donc a re-mesurer, pas a croire.
+      #
+      # La ligne `horloge decalee` mesure que le decalage atteint un
+      # sous-processus PYTHON, pas seulement le binaire `date`. Sans elle, un
+      # decalage qui ne s'appliquerait pas a `pytest` rendrait un FAUX VERT :
+      # un organe anti-date-bomb declarant « aucune bombe » sans avoir decale
+      # l'horloge.
       - name: Sweep clock-windowed surface at +8 days
         run: |
-          faketime '+8d' python -m pytest \
+          faketime -f '+8d' python -c "import datetime; print('horloge decalee (+8d) :', datetime.datetime.now().isoformat())"
+          faketime -f '+8d' python -m pytest \
             scripts/tests/test_pick_idle_grain.py \
             scripts/tests/test_pick_idle_grain_cache.py \
             scripts/tests/test_pick_nanoclaw_concerns.py \
@@ -151,7 +173,8 @@ jobs:
 
       - name: Sweep clock-windowed surface at +31 days
         run: |
-          faketime '+31d' python -m pytest \
+          faketime -f '+31d' python -c "import datetime; print('horloge decalee (+31d) :', datetime.datetime.now().isoformat())"
+          faketime -f '+31d' python -m pytest \
             scripts/tests/test_pick_idle_grain.py \
             scripts/tests/test_pick_idle_grain_cache.py \
             scripts/tests/test_pick_nanoclaw_concerns.py \
