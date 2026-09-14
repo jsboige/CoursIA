@@ -28,8 +28,39 @@ name: Markdown table syntax advisory
 # Tranche 2 #12817: the per-PR fork guard died with the pull_request trigger
 # (false under schedule -> job SKIPPED, organ extinguished). The nocturne
 # scans the last-24h window of main; labels are PR-only and noop'd at night.
+#
+# #16207 -- the PR-time trigger is BACK, without the cost that killed it.
+# #12817 tranche 1 removed pull_request because each run cloned the full
+# 2.22 Go working tree (stratification user 2026-08-23: "les jobs lourds
+# devraient être payés une fois par fournée"). The founding incident that
+# reopened the question: #16177 -- a CODE_SPAN_PIPE in the intro table
+# merged with NO signal; the first pair of eyes on it was a post-merge
+# human comment. The re-introduction keeps the stratification honest:
+#   - `paths` fires ONLY for the file trees this guard scans (*.ipynb /
+#     *.md / *README*), plus its own wiring and the two scripts it runs;
+#   - the checkout materializes the scan toolbox ONLY (blob:none partial
+#     clone), then the changed files' blobs on demand via
+#     `git sparse-checkout add --no-cone` -- never the full working tree.
+# Marginal cost per PR: one metadata clone + the changed files' blobs + a
+# pure-Python scan, on the self-hosted ephemeral leg. The nocturne is
+# unchanged (it also scans only the last-24h window's changed files).
+# Rejected alternative (arbitrage consigné): re-housing the scan as a leg
+# of always-on-guards.yml (mutualized checkout) -- rejected for blast
+# radius: coupling an advisory labeler into the critical-path gate organs
+# changes their failure surface for a signal that must stay advisory.
 
 on:
+  pull_request:
+    # #16207 : le signal PR-time. Filtre paths = les seuls arbres que la
+    # garde scanne (elle ne scanne jamais le reste -- voir "Per-PR scope"
+    # ci-dessus) + son propre câblage + les deux scripts qu'elle exécute.
+    paths:
+      - '**/*.ipynb'
+      - '**/*.md'
+      - '**/*README*'
+      - '.github/workflows/markdown-table-guard.yml'
+      - 'scripts/notebook_tools/scan_md_table_syntax.py'
+      - 'scripts/notebook_tools/md_table_sweep_comment.py'
   schedule:
     # Nocturnal sweep -- post-merge main verification.
     # Tranche 1 #12817 : sortir les advisory lourds de pull_request
@@ -65,11 +96,20 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
-      - name: Checkout PR
+      - name: Checkout PR (metadata + scan toolbox, never the full tree)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           filter: blob:none
+          # #16207 : le cout qui a tue le trigger etait l'arbre de travail
+          # complet (2.22 Go). Ici on ne materialise QUE la boite a outils du
+          # scan ; les blobs des fichiers modifies arrivent plus bas, a la
+          # demande, via `git sparse-checkout add --no-cone` sur changed.txt.
+          # fetch-depth: 0 reste requis : le diff 3-points BASE...HEAD lit le
+          # merge-base, et le nocturne resout la fenetre 24 h par rev-list.
+          sparse-checkout: |
+            /scripts/notebook_tools/
+          sparse-checkout-cone-mode: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -136,6 +176,13 @@ jobs:
 
           # Advisory: the job ALWAYS exits 0. The actionable signal is the
           # LABEL decided from the JSON total below.
+          # #16207 : materialiser les cibles du scan -- et elles seules. Le
+          # checkout d'entree est sparse (boite a outils uniquement) ; le diff
+          # --name-only ci-dessus n'a lu que les arbres (blob:none suffit) ;
+          # les blobs des fichiers modifies arrivent ici via le promissor du
+          # clone partiel. add (pas set) : le pattern outils pose par
+          # actions/checkout doit survivre a l'ajout.
+          git sparse-checkout add --no-cone $(cat changed.txt)
           python scripts/notebook_tools/scan_md_table_syntax.py $(cat changed.txt) --json > payload.json || true
           cat payload.json
 
