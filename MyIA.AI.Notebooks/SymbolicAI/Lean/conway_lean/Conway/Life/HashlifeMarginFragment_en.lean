@@ -166,6 +166,53 @@ theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
   -- open P4/P5 heart — documented sorry (acceptance B).
   sorry
 
+/-! ## Sorry-free corridors around the framework statement (#13483)
+
+`p5_large_n_jumpN_iff_unconditional` (JumpCapture) establishes — machine-checked — that
+the tautological-margin-hypothesis version of the jump arm is equivalent to the
+unconditional statement: the `sorry` above is not mechanical debt but the documented open
+heart. The three lemmas below pin down the exact residual frontier: (1)
+`centralCorrect_of_wf_level` shows that `h_central` is a theorem for every well-formed
+aligned cell (P4 is closed, carrying no anti-leak content); (2) the small-horizon corridor
+closes `k ≤ 1` unconditionally; (3) the small-frame corridor closes the regime where the
+re-framing of the rendered grid exceeds `k`. The residual is precisely the concentrated
+regime `k ≥ 2` with re-framing level `≤ k` — the only one where the jump arm of
+`evolveHashlifeFastAux` fires. -/
+
+/-- **P4 closed ⟹ `centralCorrect` is a theorem (near-vacuous hypothesis).** For every
+    well-formed cell of level exactly `k + 2`, `hashlifeResult_central_correct` (strong
+    induction, sorry-free) yields `centralCorrect c k`: the framework statement's
+    hypothesis `h_central` carries no anti-leak content — it is the agreement on the
+    window, orthogonal to the confinement `jumpCaptured`. -/
+theorem centralCorrect_of_wf_level (c : MacroCell) (k : Nat) (hwf : c.wf = true)
+    (hk : c.level = k + 2) : centralCorrect c k :=
+  hashlifeResult_central_correct c k hwf hk
+
+/-- **Small-horizon corridor (`k ≤ 1`).** The global equality is then unconditional:
+    `2^k ≤ 2`, the n-aware spec coincides with the fixed-frame
+    (`hashlife_correctN_le_two`), and its hypothesis `BoxAssezGrandN` is tautological.
+    No substantive hypothesis on `c`. -/
+theorem hashlife_correct_margin_le_one (c : MacroCell) (k : Nat) (hk : k ≤ 1) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) := by
+  apply hashlife_correctN_le_two (2^k) (c.toGrid (0, 0)) _ (boxAssezGrandN_trivial _ _)
+  cases k with
+  | zero => norm_num
+  | succ m =>
+    cases m with
+    | zero => norm_num
+    | succ m' => exact absurd hk (by omega)
+
+/-- **Small-frame corridor.** If the fixed re-framing level of the rendered grid strictly
+    exceeds `k`, then `2^k < jumpSize lvl`: the jump guard of `evolveHashlifeFastAux`
+    does not fire and `p5_small_n_fallback` (P5.1, definitional) closes the equality
+    unconditionally. Covers every spread-support cell (re-framing above the horizon). -/
+theorem hashlife_correct_margin_small_frame (c : MacroCell) (k : Nat)
+    (hlvl : k < (gridToMacroCellWithOffset (c.toGrid (0, 0))).2.level) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) := by
+  have hpow : (2:ℕ) ^ k < 2 ^ (gridToMacroCellWithOffset (c.toGrid (0, 0))).2.level :=
+    (Nat.pow_lt_pow_right (by norm_num)).mp hlvl
+  exact p5_small_n_fallback (2^k) (c.toGrid (0, 0)) hpow
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
