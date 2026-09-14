@@ -83,7 +83,7 @@ def update_file_demos(filepath, is_notebook=False):
                 # Look for DEMOS definition
                 if 'DEMOS = [' in source and '"name":' in source:
                     # Find the start and end of DEMOS
-                    match = re.search(r'(DEMOS\s*=\s*\[[^\]]*(?:\{[^}]*\}[^\]]*)*\])', source, re.DOTALL)
+                    match = re.search(r'(DEMOS\s*=\s*\[(?:[^\[\]]*\{[^}]*\})*[^\[\]]*\])', source, re.DOTALL)
                     if match:
                         old_demos = match.group(1)
                         new_source = source.replace(old_demos, NEW_DEMOS_STR)
@@ -103,7 +103,7 @@ def update_file_demos(filepath, is_notebook=False):
             content = f.read()
 
         # Find and replace DEMOS block
-        match = re.search(r'(DEMOS\s*=\s*\[[^\]]*(?:\{[^}]*\}[^\]]*)*\])', content, re.DOTALL)
+        match = re.search(r'(DEMOS\s*=\s*\[(?:[^\[\]]*\{[^}]*\})*[^\[\]]*\])', content, re.DOTALL)
         if match:
             old_demos = match.group(1)
             new_content = content.replace(old_demos, NEW_DEMOS_STR)

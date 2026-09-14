@@ -507,40 +507,6 @@ DEMOS = [
         "strategy": "rw [Nat.add_assoc, Nat.add_comm b c, ...] OU omega",
         "trap": "Un seul rewrite ne suffit pas, strategie multi-etapes"
     }
-],
-        "complexity": "Triviale - une tactique suffit",
-        "strategy": "rfl"
-    },
-    {
-        "name": "DEMO_2_SUCCESSOR",
-        "theorem": "theorem succ_ne_zero (n : Nat) : Nat.succ n != 0",
-        "description": "Propriete structurelle - SearchAgent trouve Nat.succ_ne_zero",
-        "expected_iterations": "1-2",
-        "expected_lemmas": 1,
-        "expected_agents": ["SearchAgent", "TacticAgent"],
-        "complexity": "Simple - recherche de lemme",
-        "strategy": "exact Nat.succ_ne_zero n OU decide"
-    },
-    {
-        "name": "DEMO_3_LIST_INDUCTION",
-        "theorem": "theorem length_append (xs ys : List Nat) : (xs ++ ys).length = xs.length + ys.length",
-        "description": "Induction sur liste - necessite raisonnement structurel",
-        "expected_iterations": "2-4",
-        "expected_lemmas": 2,
-        "expected_agents": ["SearchAgent", "TacticAgent", "VerifierAgent"],
-        "complexity": "Intermediaire - induction + simplification",
-        "strategy": "induction xs <;> simp [*]"
-    },
-    {
-        "name": "DEMO_4_ALGEBRAIC",
-        "theorem": "theorem mul_add_distrib (a b c : Nat) : a * (b + c) = a * b + a * c",
-        "description": "Distributivite - peut necessiter induction OU lemme direct",
-        "expected_iterations": "3-6",
-        "expected_lemmas": 3,
-        "expected_agents": ["SearchAgent", "TacticAgent", "VerifierAgent", "CriticAgent"],
-        "complexity": "Avancee - multiple strategies possibles",
-        "strategy": "exact Nat.mul_add OU induction a avec ring"
-    }
 ]
 
 all_results = []
