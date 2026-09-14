@@ -76,7 +76,7 @@ Exception : si un dossier `_archive/` ne contient que des **données** (pas de s
 | `MyIA.AI.Notebooks/Search/_archive/` | ✅ | partiel (1 fichier) |
 | `MyIA.AI.Notebooks/SymbolicAI/_archive/` | ✅ | partiel (1 fichier) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/` | ❌ | tranche 4 |
-| `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ❌ | tranche 4 |
+| `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ✅ | ✅ (1 notebook — registre README, disposition par section) |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ❌ | tranche 4 |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ❌ | tranche 4 |
 | `scripts/_archive/` | ✅ | ✅ : `one_shots_post_463/`, `recycle_csp/` et `one_shot_fixes/` conformes |

@@ -106,6 +106,21 @@ Une flotte sans discipline produit du travail à grande échelle… et des régr
 
 Cette discipline est aussi importante que les outils : c'est elle qui distingue une flotte qui produit du travail vérifiable d'un essaim qui génère du faux-semblant à grande échelle.
 
+## Séries-workspaces et page collective
+
+L'orchestration ci-dessus explique le **rôle fonctionnel** d'un agent dans la flotte. Mais chaque agent vit aussi dans une **workspace concrète** — GenAI, QuantConnect, Lean, etc. — où il a accumulé des séries de notebooks, de preuves formelles ou de stratégies. Cette section renvoie vers ces corpus sans les dupliquer : chaque workspace reste responsable de son propre espace de connaissances.
+
+Les principales séries-workspaces pédagogiques accessibles depuis le dépôt :
+
+- **Vibe-Coding** ([Claude-Code](../Claude-Code/README.md), [Roo-Code](../Roo-Code/README.md), [Claw-Systems](../Claw-Systems/README.md), [Claudish](../Claudish/README.md)) — les front-ends agents de codage.
+- **GenAI par sujet** ([Texte](../../Texte/) — notebooks, [Audio](../../Audio/README.md), [Image](../../Image/README.md), [Video](../../Video/README.md), [SemanticKernel](../../SemanticKernel/README.md)) — les ateliers GenAI domaine par domaine.
+- **SymbolicAI** ([Lean](../../SymbolicAI/Lean/README.md), [Tweety](../../SymbolicAI/Tweety/README.md), [Planners](../../SymbolicAI/Planners/README.md), [Argument_Analysis](../../SymbolicAI/Argument_Analysis/README.md)) — formalisation, argumentation et planification.
+- **QuantConnect** ([QC](../../QuantConnect/README.md)) — trading algorithmique.
+- **ML** ([ML](../../ML/README.md)) — Machine Learning .NET et Python, RL, Data Science with Agents.
+- **GameTheory / Probas / Search / IIT** — explorations thématiques transverses ([GameTheory](../../GameTheory/README.md), [Probas](../../Probas/README.md), [Search](../../Search/README.md), [IIT](../../IIT/README.md)).
+
+> **Topologie anonymisée vs galerie nominative.** La schématique coordinateur/workers présentée plus haut reste volontairement anonyme : aucun hostname réel, aucun compte nominatif. Une **page collective** parallèle, en cours d'élaboration via [EPIC #14525](https://github.com/jsboige/CoursIA/issues/14525) (fille [#14529](https://github.com/jsboige/CoursIA/issues/14529)), rassemblera à terme un court paragraphe par identité fonctionnelle `machine:workspace` déjà publique, en renvoyant vers le corpus partagé de la workspace. Les deux représentations coexistent : l'une sert la pédagogie, l'autre le récit du harnais réel. Aucun transcript, message privé ou archive ne sera publié — seule une prose rédigée par l'agent concerné apparaîtra, après stabilisation du roster et validation utilisateur.
+
 ## Aller plus loin (doc pérenne)
 
 Cette section est une **introduction pédagogique**. Pour le détail technique, ces documents sont la source autoritaire :

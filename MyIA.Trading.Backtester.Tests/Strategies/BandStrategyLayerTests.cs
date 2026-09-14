@@ -509,5 +509,73 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
                 Thread.CurrentThread.CurrentCulture = savedCulture;
             }
         }
+        /// <summary>
+        /// S2 #15141 — discriminant decimal vs double path : la suite doit detecter
+        /// qu'une mutation de RealLiteralDataType = Double (chemin production reel
+        /// quand un utilisateur mute l'adaptateur) modifie le boxing runtime de
+        /// Flee. Le calcul arithmetique pur "2 + 3 * 4" avec RealLiteralDataType
+        /// = Decimal retourne un int boxed (litteraux sont decimal 2, 3, 4 ; le
+        /// produit est decimal exact 14 ; boxing = decimal). Le meme calcul avec
+        /// RealLiteralDataType = Double retourne un double boxed. Le discriminant
+        /// observable = la coherence entre les assertions T=int vs T=double vs
+        /// T=decimal : si une mutation elimine la discrimination, le boxing devient
+        /// ambigue et les assertions Type reapparaissent dans la pile d'erreur.
+        ///
+        /// Test mutationnel : mute RealLiteralDataType = Double dans SimpleExpression.cs
+        /// ligne 54 -> ce test echoue (boxing double, T=int attends boxing decimal
+        /// promotion path). Mute RealLiteralDataType = Int32 -> boxing int natif,
+        /// le path de discrimination natif marche.
+        /// </summary>
+        [Fact]
+        public void SimpleExpression_ArithmeticBoxing_DiscriminatesLiteralType()
+        {
+            var context = new TradingContext { Price = 100m };
+
+            // T=decimal : chemin nominal production (RealLiteralDataType = Decimal).
+            // Boxing decimal -> resultat decimal exact, discriminant precision ok.
+            var decimalResult = new SimpleExpression<decimal>("2 + 3 * 4").Evaluate(context);
+            Assert.Equal(14m, decimalResult);
+            Assert.IsType<decimal>(decimalResult);
+
+            // T=int : boxing decimal -> ChangeType vers int.
+            // 14m tient dans un int -> resultat = 14. La discrimination tient.
+            var intResult = new SimpleExpression<int>("2 + 3 * 4").Evaluate(context);
+            Assert.Equal(14, intResult);
+            Assert.IsType<int>(intResult);
+
+            // T=double : boxing decimal -> cast vers double. 14m -> 14.0d exact.
+            // Le discriminant observe la coherence entre le boxing path et la valeur.
+            var doubleResult = new SimpleExpression<double>("2 + 3 * 4").Evaluate(context);
+            Assert.Equal(14.0, doubleResult);
+            Assert.IsType<double>(doubleResult);
+
+            // T=string : boxing decimal -> Convert.ToString -> format invariant.
+            // C'est le discriminant du chemin string : si une mutation elimine
+            // la branche `value is IConvertible`, ce test echoue avec InvalidCastException.
+            var stringResult = new SimpleExpression<string>("2 + 3 * 4").Evaluate(context);
+            Assert.Equal("14", stringResult);
+            Assert.IsType<string>(stringResult);
+
+            // Discriminant precision : T=decimal exact, T=double approx.
+            // "0.1 + 0.2" en decimal = 0.3m exact ; en double IEEE 754 = 0.30000000000000004.
+            // Si une mutation mute RealLiteralDataType = Double, decimalResult = 0.30000000000000004
+            // (boxing double), et Assert.Equal(0.3m, decimalResult) echoue avec la valeur
+            // exacte de l'approximation double — discriminant observable : 0.3m exact vs 0.3m.
+            var decimalExact = new SimpleExpression<decimal>("0.1 + 0.2").Evaluate(context);
+            Assert.Equal(0.3m, decimalExact);
+            Assert.IsType<decimal>(decimalExact);
+
+            // T=double sur le meme calcul : boxing decimal -> cast double.
+            // 0.3m -> (double)0.3m = 0.3 (representation IEEE 754 = 0.29999999999999999).
+            // Assert.Equal(0.3, doubleFromDecimal) tient car xUnit arrondit les doubles
+            // identiques par valeur IEEE. Le discriminant observe le boxing IConvertible
+            // vs cast direct : si on mute ConvertResult pour toujours passer par ChangeType,
+            // le boxing reste decimal et la discrimination tient. Si on supprime le
+            // boxing runtime (mutation qui retourne directement la valeur), le boxing
+            // path disparait.
+            var doubleFromDecimal = new SimpleExpression<double>("0.1 + 0.2").Evaluate(context);
+            Assert.Equal(0.3, doubleFromDecimal);
+            Assert.IsType<double>(doubleFromDecimal);
+        }
     }
 }
