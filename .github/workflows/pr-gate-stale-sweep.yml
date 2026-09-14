@@ -99,10 +99,27 @@ on:
     # post-routing (expected: queue collapses from ~6000-8000 s to near zero;
     # cancellations from 19/30 to ~0).
     - cron: '7 * * * *'
+  #
+  # #15770 -- role of each trigger, measured 2026-09-14T00:20Z over a 24 h
+  # window (100 runs). This hourly declaration is a best-effort BACKSTOP for
+  # quiet hours, not the cadence: GitHub served it 5 times in 24 h (gaps
+  # 178-341 min), consistent with every sub-hourly cron on this repository.
+  # The NOMINAL path is the `push` heartbeat below -- 89 of the 100 fires,
+  # 54 successful sweeps, median gap 11 min between successes (max 145 min,
+  # 4 gaps over an hour: the quiet-hours residual this backstop and the
+  # coordinator's manual dispatch exist to absorb). The queue wait that
+  # motivated #15770's re-routing piste is gone on the same window --
+  # run-created -> job-started 25-136 s on the last four successes -- so no
+  # re-route is warranted today: `coursia-waiter` stays forbidden (deadlock:
+  # the waiters are held by the aggregators this sweep must unblock),
+  # GitHub-hosted stays out (mandat: consume the containerized runs; #12728
+  # measured a 1.6-2.2 h hosted queue here), and a dedicated pool is the
+  # material lever #15770 leaves to arbitration.
   # Heartbeat independent of the `schedule` event class -- the SAME remedy
   # #15332 gave the observer (pr-gate-sweep-health-advisory.yml), which this
   # file never received. The asymmetry was backwards: the heartbeat went to the
-  # organ that only SPEAKS, not to the organ that REPAIRS.
+  # organ that only SPEAKS, not to the organ that REPAIRS. Measured nominal
+  # path since #15770: see the block above the `push` key.
   #
   # Measured 2026-09-12T08:19Z by scripts/ci/check_scheduler_liveness.py, the
   # organ #15332 built for exactly this question -- served cadence vs declared:
