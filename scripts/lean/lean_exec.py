@@ -28,6 +28,37 @@ l'admission machine-wide, pour l'exclusivite d'un acteur prover par arbre) ; cet
 organe reprend sa logique de detection de peremption (pid_alive + host) plutot
 que de la doubler.
 
+T2 (cette tranche) raffine l'admission :
+
+1. **Lease par arbre, second etage** : tout run dont le cwd est dans un lake
+   (walk-up ``lakefile.*``, reprise de tree_lock.py:77-85) prend un lease
+   ``trees/<sha1>.json`` dans le state dir machine-wide — visible de tous les
+   worktrees, contrairement a ``.prover.lock`` enterre dans l'arbre. Semantique
+   reprise de tree_lock.py:97-161 : creation ``O_CREAT | O_EXCL`` atomique,
+   peremption uniquement si holder du MEME host au pid mort, un holder d'un
+   host etranger n'est JAMAIS auto-casse (pids non comparables entre
+   namespaces, tree_lock.py:138), et la liberation ne retire le fichier QUE si
+   le holder est nous (tree_lock.py:164-173).
+2. **File bornee observable** : ``--wait S`` met le demandeur en file dans
+   ``queue/`` (longueur plafonnee par ``LEAN_EXEC_QUEUE_MAX``, peremption des
+   entrants morts) quand le refus est d'occupation (cap ou arbre) ; file
+   pleine ou delai depasse = refus explicite, jamais de croissance
+   silencieuse. ``status`` expose la file et les leases.
+3. **Budget au minimum des budgets** : le parallelisme accorde est
+   ``min(jobs_cpu, jobs_ram[, jobs_commit])`` ou ``jobs_cpu = coeurs logiques -
+   coeurs reserves - population lean/lake active``, ``jobs_ram =
+   MemAvailable // Mo par job``, ``jobs_commit = (CommitLimit - Committed_AS)
+   // Mo de commit par job`` (Windows : ``GlobalMemoryStatusEx``), et une
+   porte disque (espace libre minimal sur le cwd du run et le state dir).
+   La source commit n'est **contraignante que sous overcommit strict**
+   (Linux ``vm.overcommit_memory=2`` ou Windows) : en mode heuristique (0) ou
+   always (1), ``Committed_AS`` depasse couramment ``CommitLimit`` sans que le
+   noyau refuse la moindre allocation — la valeur y est informative mais ne
+   vetoye pas l'admission ; **mode d'overcommit illisible = contraignant**
+   (fail-closed, review #16098). Toute source de telemetrie manquante = refus
+   fail-closed nommant la source (spec #15666 §2) — jamais de lancement
+   optimiste.
+
 Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
 publie ses metriques en JSON.
@@ -42,13 +73,16 @@ Codes de sortie stables :
   130  interruption (SIGINT) : arbre tue, nettoyage prouve
 
 Env de configuration : ``LEAN_EXEC_STATE_DIR`` (isolation tests), ``LEAN_EXEC_CAP``,
-``LEAN_EXEC_BUDGET``, ``LEAN_EXEC_JOBS``, ``LEAN_EXEC_MEM_FRAC``, ``LEAN_EXEC_CPU_PCT``.
+``LEAN_EXEC_BUDGET``, ``LEAN_EXEC_JOBS``, ``LEAN_EXEC_MEM_FRAC``, ``LEAN_EXEC_CPU_PCT``,
+``LEAN_EXEC_RESERVE_CORES``, ``LEAN_EXEC_MEM_PER_JOB_MB``, ``LEAN_EXEC_COMMIT_PER_JOB_MB``,
+``LEAN_EXEC_MIN_FREE_GB``, ``LEAN_EXEC_QUEUE_MAX``, ``LEAN_EXEC_CALLER``.
 """
 
 from __future__ import annotations
 
 import argparse
 import ctypes
+import hashlib
 import json
 import os
 import platform
@@ -112,6 +146,14 @@ def state_dir() -> Path:
 
 def runs_dir() -> Path:
     return state_dir() / "runs"
+
+
+def queue_dir() -> Path:
+    return state_dir() / "queue"
+
+
+def trees_dir() -> Path:
+    return state_dir() / "trees"
 
 
 # ---------------------------------------------------------------------------
@@ -274,6 +316,358 @@ def live_registered_budgets() -> tuple[int, list[dict]]:
         total += max(1, int(run.get("budget") or 1))
         live.append(run)
     return total, live
+
+
+# ---------------------------------------------------------------------------
+# Telemetrie des ressources (T2, spec #15666 §2) — chaque source rend
+# {ok: bool, ...} ; ok=False => fail-closed, le refus NOMME la source.
+# ---------------------------------------------------------------------------
+
+def _memory_status_nt() -> dict | None:
+    """GlobalMemoryStatusEx -> avail physique + commit, ou None si l'appel
+    echoue (telemetrie manquante, pas de valeur inventee)."""
+    try:
+        stat = _MEMORYSTATUSEX()
+        stat.dwLength = ctypes.sizeof(stat)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+            return None
+        return {
+            "avail_phys_mb": int(stat.ullAvailPhys // (1024 * 1024)),
+            "avail_commit_mb": int(stat.ullAvailPageFile // (1024 * 1024)),
+        }
+    except Exception:
+        return None
+
+
+def _proc_meminfo_mb() -> dict[str, int] | None:
+    """Parse /proc/meminfo en Mo (clés originales conservées). None si
+    illisible (telemetrie manquante)."""
+    try:
+        text = Path("/proc/meminfo").read_text(encoding="ascii")
+    except (OSError, ValueError):
+        return None
+    out: dict[str, int] = {}
+    for line in text.splitlines():
+        key, sep, val = line.partition(":")
+        if not sep:
+            continue
+        try:
+            out[key.strip()] = int(val.strip().split()[0]) // 1024  # kB -> MB
+        except (ValueError, IndexError):
+            continue
+    return out
+
+
+def _overcommit_mode() -> int | None:
+    """/proc/sys/vm/overcommit_memory : 0 heuristique, 1 always, 2 strict.
+    None = illisible (le commit reste alors contraignant, fail-closed)."""
+    try:
+        return int(Path("/proc/sys/vm/overcommit_memory").read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _commit_binding(mode: int | None) -> bool:
+    """Le budget commit est-il contraignant ? Trois etats distincts, pas deux
+    (review #16098) : sous strict (2), CommitLimit est applique par le noyau —
+    contraignant ; sous heuristique (0) ou always (1), un headroom negatif est
+    l'etat sain documente — advisory ; **illisible (None) = contraignant**,
+    fail-closed : l'organe serre precisement quand il ne peut pas savoir si
+    la contrainte est reelle (conteneurs restreints masquant /proc/sys).
+    Le fix CI (`== 2`) mettait None dans la branche advisory — l'inverse de
+    la promesse de la docstring ci-dessus."""
+    if mode is None:
+        return True
+    return mode == 2
+
+
+def measure_resources() -> dict:
+    """CPU / RAM / commit / disque, chacune avec son drapeau de mesurabilite.
+    Un container sans CommitLimit dans /proc/meminfo rend commit ok=False :
+    c'est le comportement voulu (fail-closed), pas un bug a masquer."""
+    res: dict = {}
+    cores = os.cpu_count()
+    res["cpu"] = {"ok": bool(cores and cores > 0), "logical_cores": cores or 0}
+    if os.name == "nt":
+        stat = _memory_status_nt()
+        res["ram"] = {
+            "ok": stat is not None,
+            "avail_mb": (stat or {}).get("avail_phys_mb"),
+        }
+        res["commit"] = {
+            "ok": stat is not None,
+            "avail_mb": (stat or {}).get("avail_commit_mb"),
+            "binding": True,
+        }
+    else:
+        mi = _proc_meminfo_mb()
+        if mi is None:
+            res["ram"] = {"ok": False}
+            res["commit"] = {"ok": False}
+        else:
+            avail = mi.get("MemAvailable")
+            res["ram"] = {"ok": avail is not None, "avail_mb": avail}
+            limit, committed = mi.get("CommitLimit"), mi.get("Committed_AS")
+            ok = limit is not None and committed is not None
+            # Sous overcommit non strict, CommitLimit - Committed_AS < 0 est
+            # l'etat NORMAL d'une machine saine (le noyau alloue au-dela) :
+            # la valeur reste mesuree et publiee, mais ne refuse pas le run.
+            # Mode illisible (None) : contraignant, fail-closed (review #16098).
+            strict = _commit_binding(_overcommit_mode())
+            res["commit"] = {
+                "ok": ok,
+                "avail_mb": (limit - committed) if ok else None,
+                "binding": ok and strict,
+            }
+    try:
+        state_dir().mkdir(parents=True, exist_ok=True)
+        free_bytes = min(
+            shutil.disk_usage(Path.cwd()).free,
+            shutil.disk_usage(state_dir()).free,
+        )
+        res["disk"] = {"ok": True, "free_gb": round(free_bytes / (1024 ** 3), 2)}
+    except OSError:
+        res["disk"] = {"ok": False}
+    return res
+
+
+def compute_granted(
+    requested: int, resources: dict, population: int
+) -> tuple[int, dict]:
+    """Parallelisme accorde = MINIMUM des budgets CPU/RAM/commit, plus une
+    porte disque (spec #15666 §2). Retourne (granted, detail) ; granted 0 =
+    refus, detail['binding'] nomme la contrainte serrante."""
+    cfg = config()
+    cores = int(resources["cpu"].get("logical_cores") or 0)
+    jobs_cpu = cores - cfg["reserve_cores"] - population
+    jobs_ram = int(resources["ram"].get("avail_mb") or 0) // max(
+        1, cfg["mem_per_job_mb"])
+    jobs_commit = int(resources["commit"].get("avail_mb") or 0) // max(
+        1, cfg["commit_per_job_mb"])
+    free_gb = float(resources["disk"].get("free_gb") or 0.0)
+    commit_binding = bool(resources["commit"].get("binding", True))
+    cands = {"cpu": jobs_cpu, "ram": jobs_ram}
+    if commit_binding:
+        cands["commit"] = jobs_commit
+    granted = min([requested, *cands.values()])
+    binding = min(cands, key=cands.get) if granted < requested else None
+    detail = {
+        "requested": requested,
+        "cpu": jobs_cpu,
+        "ram": jobs_ram,
+        "commit": jobs_commit,
+        "commit_binding": commit_binding,
+        "population": population,
+        "reserve_cores": cfg["reserve_cores"],
+        "mem_per_job_mb": cfg["mem_per_job_mb"],
+        "commit_per_job_mb": cfg["commit_per_job_mb"],
+        "disk_free_gb": free_gb,
+        "min_free_gb": cfg["min_free_gb"],
+        "binding": binding,
+    }
+    if free_gb < cfg["min_free_gb"]:
+        detail["binding"] = "disk"
+        return 0, detail
+    return max(0, granted), detail
+
+
+# ---------------------------------------------------------------------------
+# Lease par arbre — second etage sous l'admission machine-wide (T2).
+# Semantique reprise de tree_lock.py : O_EXCL atomique, peremption
+# meme-host pid mort uniquement, holder etranger jamais casse, release
+# seulement si le holder est nous.
+# ---------------------------------------------------------------------------
+
+def find_lake_root(start: Path) -> Path | None:
+    """Remonte au lakefile.* englobant (reprise tree_lock.py:77-85)."""
+    p = Path(start).resolve()
+    if p.is_file() or not p.exists():
+        p = p.parent
+    for candidate in (p, *p.parents):
+        if any(
+            (candidate / name).exists()
+            for name in ("lakefile.lean", "lakefile.toml")
+        ):
+            return candidate
+    return None
+
+
+def tree_lease_path(root: Path) -> Path:
+    key = hashlib.sha1(str(root).encode("utf-8", "replace")).hexdigest()[:16]
+    return trees_dir() / f"{key}.json"
+
+
+def acquire_tree_lease(
+    root: Path, cmd: list[str], caller: str, budget: int
+) -> tuple[Path | None, str]:
+    """Prend le lease d'un arbre, visible machine-wide. A appeler SOUS le
+    verrou d'admission (atomicite cap+arbre). Reprise de tree_lock.py:97-161 :
+    deux passes max, break d'un stale meme-host puis re-course O_EXCL ; un
+    holder vivant ou d'un host etranger = refus actionnable, jamais un break
+    silencieux."""
+    path = tree_lease_path(root)
+    payload = json.dumps(
+        {
+            "pid": os.getpid(),
+            "host": host_id(),
+            "tree": str(root),
+            "cmd": cmd,
+            "caller": caller,
+            "budget": budget,
+            "started_utc": time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+            ),
+            "started_epoch": time.time(),
+        },
+        indent=2,
+    )
+    for _ in range(2):
+        trees_dir().mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            holder = read_run(path)
+            h_pid = int(holder.get("pid") or -1)
+            h_host = holder.get("host", "<unreadable>")
+            h_age = time.time() - float(
+                holder.get("started_epoch") or time.time()
+            )
+            desc = (
+                f"holder pid={h_pid} host={h_host} "
+                f"caller={holder.get('caller')} age={h_age:.0f}s "
+                f"cmd={holder.get('cmd')}"
+            )
+            if h_host == host_id() and not pid_alive(h_pid):
+                why = "stale (holder pid dead)"
+                try:
+                    path.unlink()
+                except OSError as exc:
+                    return None, f"cannot break stale lease ({exc}): {desc}"
+                print(
+                    f"[lean_exec] TREE_LEASE_BROKEN reason={why} {desc}",
+                    file=sys.stderr, flush=True,
+                )
+                continue
+            return None, (
+                f"REFUSED {desc} — un autre run tient cet arbre "
+                f"(UN SEUL acteur par arbre, cf .prover.lock #6790)"
+            )
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(payload)
+        return path, "acquired"
+    return None, "REFUSED could not acquire tree lease after breaking stale one"
+
+
+def release_tree_lease(path: Path | None) -> None:
+    """Ne retire le lease QUE si son holder est nous (tree_lock.py:164-173)."""
+    if path is None:
+        return
+    try:
+        holder = read_run(Path(path))
+        if int(holder.get("pid") or -1) == os.getpid():
+            Path(path).unlink()
+    except OSError:
+        pass
+
+
+def sweep_stale_tree_leases() -> list[str]:
+    """Perime les leases dont le holder est mort sur CE host. Un lease d'un
+    host etranger n'est JAMAIS auto-retire (tree_lock.py:138)."""
+    swept = []
+    try:
+        paths = list(trees_dir().glob("*.json"))
+    except OSError:
+        return swept
+    for path in paths:
+        lease = read_run(path)
+        if lease.get("host") == host_id() and not pid_alive(
+            int(lease.get("pid") or -1)
+        ):
+            try:
+                path.unlink()
+                swept.append(path.stem)
+            except OSError:
+                pass
+    return swept
+
+
+# ---------------------------------------------------------------------------
+# File bornee observable (T2) — refus d'occupation temporisable via --wait
+# ---------------------------------------------------------------------------
+
+def queue_entries() -> list[tuple[Path, dict]]:
+    out: list[tuple[Path, dict]] = []
+    try:
+        paths = list(queue_dir().glob("*.json"))
+    except OSError:
+        return out
+    for path in paths:
+        entry = read_run(path)
+        if entry:
+            out.append((path, entry))
+    return out
+
+
+def _tree_lease_entries() -> list[tuple[Path, dict]]:
+    out: list[tuple[Path, dict]] = []
+    try:
+        paths = list(trees_dir().glob("*.json"))
+    except OSError:
+        return out
+    for path in paths:
+        entry = read_run(path)
+        if entry:
+            out.append((path, entry))
+    return out
+
+
+def queue_enter(
+    run_id: str, cmd: list[str], caller: str, max_entries: int
+) -> tuple[Path | None, str]:
+    """Entre en file si elle n'est pas pleine. Les entrants morts du meme
+    host ne comptent pas (memes regles de peremption que les runs/). A
+    appeler SOUS le verrou d'admission."""
+    queue_dir().mkdir(parents=True, exist_ok=True)
+    occupied = 0
+    for path, entry in queue_entries():
+        if entry.get("host") == host_id() and not pid_alive(
+            int(entry.get("pid") or -1)
+        ):
+            try:
+                path.unlink()
+            except OSError:
+                pass
+            continue
+        occupied += 1
+    if occupied >= max_entries:
+        return None, f"{occupied} waiters >= queue_max {max_entries}"
+    path = queue_dir() / f"{run_id}.json"
+    path.write_text(
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "host": host_id(),
+                "cmd": cmd,
+                "caller": caller,
+                "since_utc": time.strftime(
+                    "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                ),
+                "since_epoch": time.time(),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return path, "enqueued"
+
+
+def queue_remove(path: Path | None) -> None:
+    if path is None:
+        return
+    try:
+        path.unlink()
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -673,6 +1067,12 @@ def config() -> dict:
         "jobs": int(os.environ.get("LEAN_EXEC_JOBS", max(1, cpu // 4))),
         "mem_frac": float(os.environ.get("LEAN_EXEC_MEM_FRAC", 0.80)),
         "cpu_pct": int(os.environ.get("LEAN_EXEC_CPU_PCT", 90)),
+        "reserve_cores": int(os.environ.get("LEAN_EXEC_RESERVE_CORES", 2)),
+        "mem_per_job_mb": int(os.environ.get("LEAN_EXEC_MEM_PER_JOB_MB", 2048)),
+        "commit_per_job_mb": int(
+            os.environ.get("LEAN_EXEC_COMMIT_PER_JOB_MB", 3072)),
+        "min_free_gb": float(os.environ.get("LEAN_EXEC_MIN_FREE_GB", 2.0)),
+        "queue_max": int(os.environ.get("LEAN_EXEC_QUEUE_MAX", 4)),
     }
 
 
@@ -735,10 +1135,13 @@ def run_command(
     cap_override: int | None = None,
     budget_override: int | None = None,
     as_json: bool = False,
+    wait_s: float = 0.0,
+    caller: str | None = None,
 ) -> int:
     cfg = config()
     cap = cap_override if cap_override is not None else cfg["cap"]
     budget = budget_override if budget_override is not None else cfg["budget"]
+    caller = caller or os.environ.get("LEAN_EXEC_CALLER") or "unknown"
     run_id = uuid.uuid4().hex[:12]
     started = time.time()
 
@@ -749,6 +1152,8 @@ def run_command(
         "cap": cap,
         "budget": budget,
         "jobs": cfg["jobs"],
+        "caller": caller,
+        "queue_wait_s": 0.0,
         "orphans": [],
         "child_exit_code": None,
         "budget_violation": None,
@@ -757,10 +1162,34 @@ def run_command(
         "population_before": None,
     }
 
+    lake_root = find_lake_root(Path.cwd())
+    result["tree"] = str(lake_root) if lake_root else None
+
+    proc = None
+    job = None
+    confined = True
+    tree_lease: Path | None = None
+    granted = cfg["jobs"]
+    budgets: dict = {}
+    queue_file: Path | None = None
+    enqueued_at: float | None = None
+    wait_deadline = (
+        time.monotonic() + wait_s if wait_s and wait_s > 0 else None
+    )
+
     # --- Admission machine-wide sous verrou (ferme count->spawn TOCTOU) ---
-    try:
+    def _attempt() -> str:
+        """Un passage d'admission complet sous verrou : sweep, telemetrie,
+        budget, cap, lease d'arbre, spawn confine, enregistrement. Rend
+        'ok', ou le kind du refus ('telemetry' | 'insufficient' | 'cap' |
+        'tree' | 'spawn' | 'internal') pose dans result['reason']."""
+        nonlocal proc, job, confined, tree_lease, granted, budgets
         with AdmissionLock():
-            swept = sweep_stale_runs()
+            sweep_stale_runs()
+            # NB : pas de sweep des tree leases ici — acquire_tree_lease
+            # casse lui-meme le stale avec le signal visible
+            # TREE_LEASE_BROKEN (semantique tree_lock.py:148-150) ; un sweep
+            # premature avalerait ce signal.
             native_pop, native_src = scan_native_population()
             if native_pop < 0:
                 # Fail-closed : impossible de compter = impossible de plafonner.
@@ -768,7 +1197,38 @@ def run_command(
                     status="refused", exit_code=EXIT_REFUSED,
                     reason=f"population unmeasurable ({native_src})",
                 )
-                return _emit(result, as_json)
+                return "telemetry"
+            resources = measure_resources()
+            missing = sorted(
+                k for k, v in resources.items() if not v.get("ok")
+            )
+            if missing:
+                result.update(
+                    status="refused", exit_code=EXIT_REFUSED,
+                    reason=(
+                        f"telemetry unavailable: {', '.join(missing)} "
+                        f"(fail-closed, spec #15666 §2)"
+                    ),
+                    population_before={"native": native_pop},
+                )
+                return "telemetry"
+            granted, budgets = compute_granted(
+                cfg["jobs"], resources, native_pop)
+            result["granted_jobs"] = granted
+            result["budgets"] = budgets
+            if granted < 1:
+                result.update(
+                    status="refused", exit_code=EXIT_REFUSED,
+                    reason=(
+                        f"insufficient budget (binding="
+                        f"{budgets.get('binding')}): "
+                        f"cpu={budgets['cpu']} ram={budgets['ram']} "
+                        f"commit={budgets['commit']} "
+                        f"disk_free={budgets['disk_free_gb']}GB"
+                    ),
+                    population_before={"native": native_pop},
+                )
+                return "insufficient"
             registered, _live = live_registered_budgets()
             if native_pop + budget > cap:
                 result.update(
@@ -779,7 +1239,7 @@ def run_command(
                     ),
                     population_before={"native": native_pop},
                 )
-                return _emit(result, as_json)
+                return "cap"
             if registered + budget > cap:
                 result.update(
                     status="refused", exit_code=EXIT_REFUSED,
@@ -789,11 +1249,28 @@ def run_command(
                     ),
                     population_before={"native": native_pop},
                 )
-                return _emit(result, as_json)
+                return "cap"
+            if lake_root is not None:
+                tree_lease, why = acquire_tree_lease(
+                    lake_root, cmd, caller, budget)
+                if tree_lease is None:
+                    result.update(
+                        status="refused", exit_code=EXIT_REFUSED,
+                        reason=f"tree lease: {why}",
+                        population_before={"native": native_pop},
+                    )
+                    return "tree"
 
             env = os.environ.copy()
-            env.setdefault("LEAN_NUM_THREADS", str(cfg["jobs"]))
-            spawn_cmd = bound_command(cmd, cfg["jobs"])
+            # Jamais plus de threads declares que le budget accorde ; la
+            # demande explicite de l'appelant reste respectee en dessous.
+            declared = env.get("LEAN_NUM_THREADS")
+            try:
+                threads = min(int(declared), granted) if declared else granted
+            except ValueError:
+                threads = granted
+            env["LEAN_NUM_THREADS"] = str(threads)
+            spawn_cmd = bound_command(cmd, granted)
             result["cmd_effective"] = spawn_cmd
 
             job = None
@@ -814,11 +1291,13 @@ def run_command(
             except OSError as exc:
                 if job:
                     job.close()
+                release_tree_lease(tree_lease)
+                tree_lease = None
                 result.update(
                     status="refused", exit_code=EXIT_REFUSED,
                     reason=f"spawn failed: {exc}",
                 )
-                return _emit(result, as_json)
+                return "spawn"
 
             confined = True
             if job is not None:
@@ -839,6 +1318,8 @@ def run_command(
                         job.terminate()
                         time.sleep(1.0)
                     kill_pids(sorted(descendants_of(proc.pid), reverse=True))
+                    release_tree_lease(tree_lease)
+                    tree_lease = None
                     result.update(
                         status="internal-error",
                         exit_code=EXIT_INTERNAL,
@@ -849,15 +1330,18 @@ def run_command(
                         ),
                         backend=f"{result['backend']}-resume-failed",
                     )
-                    return _emit(result, as_json)
+                    return "internal"
 
             _write_run_record(run_id, {
                 "pid": proc.pid,
                 "host": host_id(),
                 "cmd": cmd,
                 "cwd": os.getcwd(),
+                "tree": str(lake_root) if lake_root else None,
+                "caller": caller,
                 "budget": budget,
                 "cap": cap,
+                "granted_jobs": granted,
                 "started_utc": time.strftime(
                     "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                 ),
@@ -868,11 +1352,60 @@ def run_command(
                 "native": native_pop,
                 "wsl": scan_wsl_population()[0],
             }
-    except TimeoutError as exc:
-        result.update(
-            status="refused", exit_code=EXIT_REFUSED, reason=str(exc)
-        )
-        return _emit(result, as_json)
+            return "ok"
+
+    while True:
+        try:
+            kind = _attempt()
+        except TimeoutError as exc:
+            queue_remove(queue_file)
+            queue_file = None
+            result.update(
+                status="refused", exit_code=EXIT_REFUSED, reason=str(exc)
+            )
+            return _emit(result, as_json)
+        if kind == "ok":
+            queue_remove(queue_file)
+            if enqueued_at is not None:
+                result["queue_wait_s"] = round(time.time() - enqueued_at, 2)
+            queue_file = None
+            break
+        if kind in ("internal", "spawn"):
+            return _emit(result, as_json)
+        retryable = kind in ("cap", "tree")
+        if wait_deadline is None or not retryable:
+            queue_remove(queue_file)
+            queue_file = None
+            return _emit(result, as_json)
+        if queue_file is None:
+            try:
+                with AdmissionLock():
+                    queue_file, qreason = queue_enter(
+                        run_id, cmd, caller, cfg["queue_max"])
+            except TimeoutError as exc:
+                result.update(
+                    status="refused", exit_code=EXIT_REFUSED, reason=str(exc)
+                )
+                return _emit(result, as_json)
+            if queue_file is None:
+                result.update(
+                    status="refused", exit_code=EXIT_REFUSED,
+                    reason=f"queue full: {qreason}",
+                )
+                return _emit(result, as_json)
+            enqueued_at = time.time()
+        if time.monotonic() >= wait_deadline:
+            queue_remove(queue_file)
+            queue_file = None
+            result.update(
+                status="refused", exit_code=EXIT_REFUSED,
+                reason=(
+                    f"wait timeout: {wait_s:.0f}s elapsed without admission "
+                    f"({kind})"
+                ),
+            )
+            return _emit(result, as_json)
+        time.sleep(0.5)
 
     # --- Supervision : timeout / interruption / violation de budget ---
     def terminate_tree() -> list[int]:
@@ -950,6 +1483,7 @@ def run_command(
 
     if job is not None:
         job.close()  # kill-on-close : dernier filet, meme sur chemin lent
+    release_tree_lease(tree_lease)
     _remove_run_record(run_id)
 
     result.update({
@@ -1006,9 +1540,16 @@ def _proc_name(pid: int, _table: dict[int, int]) -> str:
 def status(as_json: bool = False) -> int:
     cfg = config()
     swept = sweep_stale_runs()
+    tree_swept = sweep_stale_tree_leases()
     native_pop, native_src = scan_native_population()
     wsl_pop, wsl_src = scan_wsl_population()
     _registered, live = live_registered_budgets()
+    waiting = [entry for _path, entry in queue_entries()]
+    resources = measure_resources()
+    granted, budgets = (0, {})
+    if all(v.get("ok") for v in resources.values()):
+        granted, budgets = compute_granted(cfg["jobs"], resources, native_pop)
+    tree_leases = [entry for _p, entry in _tree_lease_entries()]
     payload = {
         "state_dir": str(state_dir()),
         "config": cfg,
@@ -1019,6 +1560,13 @@ def status(as_json: bool = False) -> int:
         "live_runs": live,
         "swept_stale": swept,
         "headroom": max(0, cfg["cap"] - native_pop),
+        "queue": waiting,
+        "tree_leases": tree_leases,
+        "resources": resources,
+        "granted_now": {
+            "jobs": granted, "budgets": budgets,
+            "telemetry_ok": all(v.get("ok") for v in resources.values()),
+        },
     }
     if as_json:
         print(json.dumps(payload, indent=2))
@@ -1029,6 +1577,13 @@ def status(as_json: bool = False) -> int:
             f"wsl={wsl_pop} ({wsl_src}) cap={cfg['cap']}"
         )
         print(f"live runs: {len(live)} (swept {len(swept)} stale)")
+        print(
+            f"queue: {len(waiting)} waiting "
+            f"(max {cfg['queue_max']}, swept {len(tree_swept)} stale leases)"
+        )
+        print(f"tree leases: {len(tree_leases)} held")
+        print(f"resources: {json.dumps(resources)}")
+        print(f"granted now: {granted} job(s)")
     return EXIT_OK
 
 
@@ -1049,6 +1604,11 @@ def main(argv: list[str] | None = None) -> int:
                        help="Cap machine-wide pour CE run uniquement")
     p_run.add_argument("--budget", type=int, default=None,
                        help="Budget lean/lake max de ce run")
+    p_run.add_argument("--wait", type=float, default=0.0,
+                       help="Attente bornee (s) en file si cap/arbre occupes ;"
+                            " 0 = refus immediat")
+    p_run.add_argument("--caller", default=None,
+                       help="Identite appelant/lane enregistree dans le lease")
     p_run.add_argument("--json", action="store_true",
                        help="Resultat JSON sur stdout")
     p_run.add_argument("cmd", nargs=argparse.REMAINDER,
@@ -1070,6 +1630,7 @@ def main(argv: list[str] | None = None) -> int:
             return run_command(
                 cmd, timeout_s=args.timeout, cap_override=args.cap,
                 budget_override=args.budget, as_json=args.json,
+                wait_s=args.wait, caller=args.caller,
             )
     except Exception as exc:  # l'organe echoue visiblement, jamais en trace
         print(f"[lean_exec] internal error: {exc}", file=sys.stderr)
