@@ -5,6 +5,7 @@ Uses synthetic notebook dicts and tmp_path for filesystem isolation.
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -24,6 +25,7 @@ from detect_solution_leaks import (
     code_cell_first_comment_labels_example,
     commented_template_stub,
     discover_notebooks,
+    display_path,
     is_stub_code,
     scan_notebook,
 )
@@ -1073,4 +1075,69 @@ class TestMultiHeaderAttributionFix:
 # ---------------------------------------------------------------------------
 # End of new tests
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# display_path — cross-volume rendering of a finding (#16113)
+# ---------------------------------------------------------------------------
+
+class TestDisplayPath:
+    def test_relativizes_within_the_same_volume(self):
+        assert display_path("/repo/nb/a.ipynb", "/repo") == os.path.join("nb", "a.ipynb")
+
+    def test_falls_back_to_absolute_on_cross_volume(self, monkeypatch):
+        # `--scan` accepts any path, so a notebook on another Windows volume is a
+        # supported input. os.path.relpath raises ValueError there; without the
+        # fallback main() prints the "Results: N HIGH" line and then dies while
+        # formatting the detail, so the operator never learns WHICH finding --
+        # and rc=1 reads as a failed scan although the scan succeeded.
+        # The ValueError is forced rather than produced by real drives: the
+        # behaviour is ntpath-only, so a real cross-volume path would not raise
+        # on the Linux CI runner.
+        def boom(*args, **kwargs):
+            raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+        monkeypatch.setattr(os.path, "relpath", boom)
+        assert display_path("D:/scratch/nb.ipynb", "C:/repo") == "D:/scratch/nb.ipynb"
+
+    def test_fallback_keeps_a_usable_path(self, monkeypatch):
+        def boom(*args, **kwargs):
+            raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+        monkeypatch.setattr(os.path, "relpath", boom)
+        # The finding must stay attributable: the fallback is the absolute path,
+        # never an empty string or a bare basename.
+        out = display_path("D:/scratch/sub/nb.ipynb", "C:/repo")
+        assert out.endswith("nb.ipynb")
+        assert "sub" in out
+
+
+# ---------------------------------------------------------------------------
+# Fix prescription — canonical path first, relabel conditioned (#16113)
+# ---------------------------------------------------------------------------
+
+class TestLeakFixPrescription:
+    def test_fix_names_the_structural_path_first(self, tmp_path):
+        # The prescription used to open with "Relabel header to 'Exemple guide'",
+        # which exercise-example-labeling.md forbids: classification is by
+        # CONTENT, and a resolved exercise is an exercise whatever its title.
+        nb = _write_nb(tmp_path / "leak.ipynb", [
+            _md("## Exercice 1 : Tri"),
+            _code(_SOLUTION_BODY),
+        ])
+        highs = [f for f in scan_notebook(str(nb)) if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        fix = highs[0]["fix"]
+        assert "stub code cell" in fix
+        assert fix.index("stub") < fix.index("Relabel")
+
+    def test_fix_conditions_the_relabel_on_content(self, tmp_path):
+        nb = _write_nb(tmp_path / "leak2.ipynb", [
+            _md("## Exercice 1 : Tri"),
+            _code(_SOLUTION_BODY),
+        ])
+        highs = [f for f in scan_notebook(str(nb)) if f.get("severity") == "HIGH"]
+        fix = highs[0]["fix"]
+        assert "ONLY if" in fix
+        assert "exercise-example-labeling.md" in fix
 
