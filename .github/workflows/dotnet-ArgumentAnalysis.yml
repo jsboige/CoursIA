@@ -35,6 +35,7 @@ on:
       - 'MyIA.CoursIA.sln'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'

@@ -519,13 +519,17 @@ def extract_lane(body: str | None, marker_line: str | None = None) -> str | None
     `_LANE_RE` so the two contexts never drift on what a lane token is.
 
     `#10395 Variante 1` fallback: when `marker_line` is supplied (the line of
-    the bracketed marker, stripped by the caller), and the primary `lane <x>`
-    regex misses on the whole body, the function searches ONLY that line for
-    a `<machine>:<workspace>` token matching `_LANE_FALLBACK_RE`. The marker
-    line scope is what keeps URLs / time stamps / code tokens that contain
-    colons from false-positiving -- the marker line is the human-stated intent
-    of the claim, not arbitrary prose. Without `marker_line`, behaviour is
-    unchanged (legacy callers like `parse_grain_tag` are unaffected).
+    the bracketed marker, stripped by the caller) and the primary `lane <x>`
+    regex has nothing to say FIRST on that line, the function searches ONLY
+    that line for a `<machine>:<workspace>` token matching
+    `_LANE_FALLBACK_RE`. The marker line scope is what keeps URLs / time
+    stamps / code tokens that contain colons from false-positiving -- the
+    marker line is the human-stated intent of the claim, not arbitrary prose.
+    `#15918` refines the precedence: a bare token that starts strictly before
+    the keyworded match's token ON THE MARKER LINE wins (the reconciliation
+    close names its own lane bare while citing the other lane in keyworded
+    form). Without `marker_line`, behaviour is unchanged (legacy callers like
+    `parse_grain_tag` are unaffected).
 
     Returns the `machine:workspace` string, or None when no lane token is
     found.
@@ -541,15 +545,24 @@ def extract_lane(body: str | None, marker_line: str | None = None) -> str | None
         return None
     flat = _strip_title_hashes(body.translate(_NOISE))
     m = _LANE_RE.search(flat)
-    if m:
-        return m.group(1).rstrip(".")
-    # Fallback for claim comments that omit the literal `lane` keyword (#10395
-    # Variante 1). Restricted to the marker line by the caller -- see docstring.
+    # #15918 -- marker-line proximity beats a keyworded citation further down
+    # the line. A reconciliation close names its OWN lane bare ("Claim de
+    # myia-po-2026:CoursIA retire") while the parenthetical that credits the
+    # winning lane carries the keyword ("(lane myia-po-2023:CoursIA, ouverte
+    # 00:19Z)") because that is the claim format itself. The keyworded primary
+    # then attributes the close to the CITED lane and the subject's claim stays
+    # open (measured on #15798). On the marker's own line, a bare token that
+    # starts strictly BEFORE the keyworded match's token is therefore the
+    # writer's subject. Position ties (the bare token IS the keyworded one)
+    # keep the primary -- unchanged behaviour for every well-formed marker.
     if marker_line is not None:
         flat_line = _strip_title_hashes(marker_line.translate(_NOISE))
-        m2 = _LANE_FALLBACK_RE.search(flat_line)
-        if m2:
-            return m2.group(1).rstrip(".")
+        m_bare = _LANE_FALLBACK_RE.search(flat_line)
+        m_kw = _LANE_RE.search(flat_line)
+        if m_bare is not None and (m_kw is None or m_bare.start() < m_kw.start(1)):
+            return m_bare.group(1).rstrip(".")
+    if m:
+        return m.group(1).rstrip(".")
     return None
 
 
