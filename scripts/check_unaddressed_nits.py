@@ -373,6 +373,16 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
+# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
+# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
+# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
+# ne sont PAS des marqueurs de severite et ne le deviendront pas —
+# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
+# introduit un nouveau glyphe de severite doit le proposer ici avec une
+# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
+# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
+# mais le verdict litteral en narration de dissipation avec attribution
+# tell — cf `_MENTION_VERDICT_TELL` (Position K).
 # `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
 # symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
 # ciblent l'ASCII formel et ignorent les glyphes ; la Position J
@@ -1034,6 +1044,49 @@ _MENTION_VERDICT_REPORTED = re.compile(
 )
 
 
+# #15951 — Position K : attribution par reference tell du cluster. Instance
+# fondatrice (PR #15762 c.1102, po-2024:CoursIA-2, 2026-09-12T16:26Z) :
+# « dissipation CHANGES_REQUESTED c.589 leve N-1/N ET cross-base c.1063-L1 »
+# — le commentaire de DISSIPATION lui-meme etait classe BOT-CONCERN. Le
+# verdict nomme est suivi de la reference tell de SA SOURCE (« c.589 »),
+# l'idiome de citation interne du cluster (ledger Tell). L'issue #15951
+# attribuait le defaut au glyphe de nouveaute « ★ » : mesure faite, le
+# glyphe n'est PAS dans SEVERITY_GLYPHS (cf contrat en tete de ce bloc) et
+# le declencheur reel est le litteral CHANGES_REQUESTED en narration de
+# dissipation PASSEE avec attribution de source. Les positions A-H
+# echouaient toutes sur cette forme : la Position C+/D+ exige le verbe de
+# levee IMMEDIATEMENT apres le verdict (la ref tell s'intercale) et ne
+# connait que commit/#N/PR#N/pull/N comme refs pointables (pas c.NNN).
+#
+# Discrimination vs emission formelle :
+# (1) Adjacence IMMEDIATE verdict -> ref tell (`\s+c\.\d+`, forme etendue
+#     `c.NNN-LN`) : une emission ecrit le verdict nu puis son contenu
+#     (« CHANGES_REQUESTED: edge case »), jamais « VERDICT c.NNN » — la
+#     ref tell suit le verdict uniquement pour DESIGNER la source du
+#     verdict rapporte. Meme doctrine que la Position D hors parentheses
+#     (#12944) : une ref pointable designe l'evenement passe rapporte,
+#     une emission ne pointe pas.
+# (2) Verdict case-sensitive `[A-Z][A-Z_]{3,}` (memes bornes que A-H) :
+#     pas de capture d'un mot naturel de la prose dans la fenetre.
+# (3) Garde dure commune (Position E/H) : si la suite de la phrase (200
+#     chars, meme phrase) declare un blocage vivant, la position ne
+#     s'applique PAS — le verdict reste emis.
+#
+# Mesure discriminatoire :
+#   TP (doit matcher, rendre le verdict mort) :
+#     - "dissipation CHANGES_REQUESTED c.589 leve N-1/N" (c.1102 #15762)
+#     - "le REQUEST_CHANGES c.1102 est leve sur head a2bdc9789a42."
+#   FN (ne doit PAS matcher, doit rester BOT-CONCERN) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu, emission)
+#     - "CHANGES_REQUESTED c.589 reste bloquante." (garde dure (3))
+#     - "CHANGES_REQUESTED cycle c.1102" (ref non adjacente — reste vif)
+_MENTION_VERDICT_TELL = re.compile(
+    r"(?<![\w/])(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"\s+c\.\d+(?:-L\d+)?"
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
+)
+
+
 # #14199 (cf grain) — Position I : `avant merge` en position de mention (FP).
 # Le marqueur `avant merge` est dans CONCERN_MARKERS comme signal d'un nit
 # redige a la main, MAIS trois formes mesurees 2026-09-02 le portent en
@@ -1404,7 +1457,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     """
     # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
     # negation — leur discrimination par contexte est suffisante).
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED, _MENTION_VERDICT_TELL):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     # Phase 1b : Position I — neutralise `avant [le/la/l'] merge` en position
