@@ -65,7 +65,16 @@ on:
 
 permissions:
   contents: read
-  checks: read
+  # `write`, not `read`, for #15693: the verdict is PATCHed onto this job's
+  # OWN check-run `output` so the required check carries its motive. The step
+  # summary does not reach that surface (measured: it renders on the run page
+  # while `output.summary` stays null -- see `write_step_summary` in
+  # scripts/pr_gate.py), and POSTing a twin check-run bearing this required
+  # name is inert (GitHub ANDs same-named legs in different suites, #11519).
+  # The PATCH requires a GitHub App token; the job's own GITHUB_TOKEN is one.
+  # Fork PRs get a read-only token: there the PATCH degrades to a warning and
+  # the verdict is unaffected.
+  checks: write
   statuses: read
   # #13510: on starvation (deadline, nothing red, constituents still
   # pending) the script cancels ITS OWN run so the leg concludes CANCELLED

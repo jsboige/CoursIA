@@ -74,7 +74,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 #: Plancher par defaut, en minutes. 120 = le mandat user du 2026-09-07.
 DEFAULT_DWELL_MIN = 120.0
@@ -139,12 +139,20 @@ def evaluate(
             "dwell ecoule: tete du {}, {:.0f} min "
             "(plancher {:.0f} min)".format(stamp, age_min, dwell_min)
         )
+    # #15693 : l'heure de LEVEE absolue, pas seulement les minutes restantes.
+    # « 101 min » oblige la lane a refaire le calcul et l'incite a agir ; un
+    # re-push reactionnaire remet le plancher a zero depuis la nouvelle tete
+    # (le defaut multiplie le temps d'attente au lieu de le mesurer).
+    lift = (committed_at + timedelta(minutes=dwell_min)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
     return False, remaining, (
-        "tete du {}, {:.0f} min -- plancher {:.0f} min, reste {:.0f} min. "
+        "tete du {}, {:.0f} min -- plancher {:.0f} min, reste {:.0f} min, "
+        "leve au premier balayage suivant {}. "
         "Le balayage horaire (pr-gate-stale-sweep.yml, cron '7 * * * *') "
         "re-agrege cette jambe des que le plancher est ecoule ; aucun geste "
         "manuel n'est requis. Urgence (main rouge) : poser le label `{}` sur "
-        "la PR.".format(stamp, age_min, dwell_min, remaining, WAIVER_LABEL)
+        "la PR.".format(stamp, age_min, dwell_min, remaining, lift, WAIVER_LABEL)
     )
 
 

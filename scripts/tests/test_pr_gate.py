@@ -19,11 +19,30 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pr_gate  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_publication_env(monkeypatch):
+    """Keep unit-test runs of main() from publishing into the pytest job's own
+    surfaces.
+
+    Actions sets GITHUB_STEP_SUMMARY and GITHUB_RUN_ID for EVERY step, so
+    without this the #15693 publication would append "PR gate: FAIL" sections
+    to the test workflow's own summary page -- and, worse, the check-run
+    PATCH would call the real Jobs API on the pytest job's own run. Tests
+    that exercise either surface set the variables explicitly.
+    """
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ATTEMPT", raising=False)
 
 
 # --- helpers -----------------------------------------------------------------
@@ -142,6 +161,184 @@ def test_posted_check_run_message_is_not_escaped(monkeypatch):
     )
 
 
+# --- #15825 -- toute conclusion non-success porte un titre non vide -----------
+#
+# Mesure 2026-09-12 : 9 echecs `PR gate` sur 43 rendent output.title = null.
+# Deux classes : (a) le snapshot de script fige par le rerun d'un event
+# payload stale -- le head de #15440 est derriere main de 175 commits, ses
+# 8 tentatives rejouent l'ancien script depourvu de publication (classe
+# irreparable cote gate, d'ou le repli lecteur, critere 2 de l'issue) ;
+# (b) le crash non rattrape dans le script ACTUEL : une exception hors
+# GateError sous main() court-circuitait la queue d'emission. Ces tests
+# epinglent (b) : le contrat est « toute conclusion non-success porte un
+# titre non vide » (critere 3).
+
+
+def test_crashed_gate_publishes_nonempty_title(monkeypatch, capsys):
+    """Critere 1 : un crash sous main() publie quand meme un titre."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("pollution du rollup par un dict inattendu")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(repo=repo, run_id=run_id, job_name=job_name, code=code,
+                    title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "internal error" in seen["title"]
+    assert "ValueError" in seen["title"]
+    assert seen["job_name"] == pr_gate.DEFAULT_SELF_NAME
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+    assert "::error::" in out.err
+
+
+def test_crashed_gate_without_publish_context_still_fails_one(
+    monkeypatch, capsys
+):
+    """Hors Actions (ni GITHUB_REPOSITORY ni GITHUB_RUN_ID) : la publication
+    n'est pas possible, mais l'exit code 1 et le motif FAIL restent -- un
+    contexte de publication absent ne doit jamais transformer un crash en
+    silence (ou pire, en 0)."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom local")
+
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("ne doit pas publier sans contexte Actions")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+
+
+def test_crash_fallback_publish_failure_does_not_mask_the_crash(
+    monkeypatch, capsys
+):
+    """La publication de repli ne doit JAMAIS masquer le crash d'origine :
+    si le PATCH plante aussi, le motif FAIL interne reste emis et l'exit
+    reste 1."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("crash d'origine")
+
+    def exploding_publish(*_a, **_k):
+        raise RuntimeError("PATCH explose aussi")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", exploding_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+    assert "crash fallback not published" in out.out
+
+
+def test_crash_fallback_propagates_the_current_run_attempt(
+    monkeypatch, capsys
+):
+    """Le repli de crash doit viser le check-run de la tentative COURANTE.
+
+    Mesure de l'adjudant (head `1c7f57119a`) : sur un `run_attempt=2` qui
+    porte encore les jobs des tentatives 1 et 2, la voie normale filtre par
+    `GITHUB_RUN_ATTEMPT` mais le repli ne le transmettait pas -- il resolvait
+    alors le titre de crash sur le check-run SUPERSEDE de la tentative 1, et
+    la tentative courante gardait `output.title = null` : le defaut meme que
+    #15825 elimine, sur le chemin qui doit justement le couvrir.
+    """
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom au run_attempt 2")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message,
+                     advisory=(), run_attempt=None, **_k):
+        seen["run_attempt"] = run_attempt
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["run_attempt"] == "2", (
+        "sans la tentative courante, le repli PATCH le check-run supersede et "
+        "le defaut #15825 survit sur le run_attempt > 1"
+    )
+    capsys.readouterr()
+
+
+def test_crash_fallback_preserves_the_traceback(monkeypatch, capsys):
+    """Le titre du check-run tient sur une ligne, donc le repli ne garde que
+    `repr(exc)` ; la trame causale doit rester lisible dans le log."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("cause racine a diagnostiquer")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    captured = capsys.readouterr()
+    assert "Traceback (most recent call last)" in captured.err
+    assert "cause racine a diagnostiquer" in captured.err
+
+
+def test_argparse_failure_publishes_title_and_propagates_exit_code(
+    monkeypatch, capsys
+):
+    """Un echec d'argparse leve SystemExit(2) AVANT tout parsing : comme
+    SystemExit derive de BaseException, le `except Exception` de `_entry`
+    ne le voyait pas -- la gate sortait en code 2 sans jamais publier de
+    titre, exactement #15825 par une autre porte (reserve ai-01 : un
+    `--flag ${{ inputs.x }}` ajoute demain au workflow suffit a rouvrir
+    le defaut en silence)."""
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(code=code, title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef",
+                           "--timeout-min", "abc"]) == 2
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "SystemExit" in seen["title"]
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- exit 2 before verdict" in out.out
+    assert "invalid float value" in out.err  # le diagnostic argparse reste le sien
+
+
+def test_argparse_help_exit_zero_propagates_without_publishing(monkeypatch):
+    """`--help` sort en SystemExit(0) : un exit NUL n'est pas un echec, il se
+    propage intact et ne publie RIEN -- le branchement sur `.code` ne doit
+    pas avaler --help (ni le transformer en rouge de gate)."""
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("--help n'est pas un echec, rien a publier")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    with pytest.raises(SystemExit) as caught:
+        pr_gate._entry(["--help"])
+    assert caught.value.code == 0
+
+
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
     pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])
@@ -174,10 +371,12 @@ def test_frozen_check_with_terminal_conclusion_settles_14976():
 
 def test_frozen_check_with_failure_conclusion_is_bad_14976():
     """The frozen shape with a red conclusion must fail fast, not STARVE: a
-    wedged record carrying `failure` is a real red the operator must see."""
+    wedged record carrying `failure` is a real red the operator must see.
+    #15693: the bad entry carries its conclusion so the verdict can tell a
+    real red from a check that never concluded."""
     checks = [run("Detect notebook changes", "failure", status="in_progress")]
     pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
-    assert bad == ["Detect notebook changes"] and pending == []
+    assert bad == ["Detect notebook changes (failure)"] and pending == []
 
 
 def test_pending_labels_carry_the_observed_couple_14976():
@@ -258,7 +457,7 @@ def test_self_exclusion_is_not_a_loose_prefix():
     """"PR gateway" is a different check and must still be judged."""
     checks = [run("PR gateway", "failure")]
     _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
-    assert bad == ["PR gateway"]
+    assert bad == ["PR gateway (failure)"]
 
 
 # --- decision table ----------------------------------------------------------
@@ -893,7 +1092,7 @@ def test_non_advisory_failure_still_blocks():
         run("Exercises >= 3 advisory (label, non-blocking)", "failure"),
     ]
     _pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate")
-    assert bad == ["Lean CI (grothendieck_lean)"]
+    assert bad == ["Lean CI (grothendieck_lean) (failure)"]
     assert len(advisory) == 1
     assert pr_gate.verdict([], bad, settled=True)[0] == 1
 
@@ -1443,3 +1642,701 @@ def test_dwell_disabled_by_default(monkeypatch):
     code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--pr", "7"])
     assert code == 0
     assert fake.calls == []
+
+
+# --- #15693 -- publish the verdict motif (three states + step summary) --------
+#
+# Measured 2026-09-12 on 5/5 red PRs: the required check reported FAILURE
+# with `output.summary: null` while the cause lived only in the job log --
+# every red gate became an investigation (#15548 burned cycles on an infra
+# famine while the real blocker was already repaired 18 min earlier).
+#
+# The issue's stated remedy -- "$GITHUB_STEP_SUMMARY feeds the AUTO
+# check-run's output.summary" -- is FALSE, and the tests below pin what was
+# measured instead: the step summary renders on the run page but the
+# check-run summary stays null (1098 `github-actions` check-runs over 40
+# main commits, all null; this file's own red gate renders the summary while
+# its `output.summary` returns null). The check-run surface is therefore
+# PATCHed in place -- the only write that reaches a required leg, since a
+# POSTed twin lands in a foreign suite and GitHub ANDs the two (#11519).
+#
+# The FAIL message splits into states with OPPOSITE repairs: real reds vs
+# checks that never concluded. The fail-closed rules stay untouched.
+
+
+def test_bad_entries_carry_their_conclusion():
+    """The conclusion travels with the name -- `verdict` must be able to
+    tell a cancelled check (nothing measured, rerun) from a failed one
+    (code work) without re-reading the check set."""
+    checks = [run("ICT tests/ (55)", "cancelled", rid=1),
+              run("Lean CI", "failure", rid=2)]
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
+    assert bad == ["ICT tests/ (55) (cancelled)", "Lean CI (failure)"]
+
+
+def test_unconcluded_check_is_not_called_failing():
+    """#15693 refinement state 2: `failing checks: X` on a cancelled X
+    asserts something false about the code (#15548 -- the runner famine ate
+    the verdict, the lane investigated its own code). The gate still FAILS
+    (rule 1/3, fail-closed untouched); only the repair gesture changes."""
+    code, msg = decide([run("ICT tests/ (55)", "cancelled")])
+    assert code == 1, "rule 1: unconcluded still blocks"
+    assert "failing checks" not in msg, msg
+    assert "never concluded" in msg
+    assert "rerun" in msg
+    assert "ICT tests/ (55) (cancelled)" in msg
+
+
+def test_real_failure_keeps_the_historical_failing_checks_phrase():
+    """State 3: a genuine red keeps the exact `failing checks: ` phrase the
+    log annotation has carried since #15472 (greppable surface)."""
+    code, msg = decide([run("Lean CI", "failure")])
+    assert code == 1
+    assert msg == "FAIL -- failing checks: Lean CI (failure)"
+
+
+def test_mixed_bad_renders_both_clauses():
+    """A red and a cancelled check in one verdict: each lands under its own
+    clause with its own repair."""
+    checks = [run("Lean CI", "failure", rid=1),
+              run("ICT tests/ (55)", "cancelled", rid=2)]
+    code, msg = decide(checks)
+    assert code == 1
+    assert "failing checks: Lean CI (failure)" in msg
+    assert "checks that never concluded" in msg
+    assert "ICT tests/ (55) (cancelled)" in msg
+    # order: the real red comes first (it is the one with code work).
+    assert msg.index("failing checks") < msg.index("never concluded")
+
+
+def test_step_summary_written_from_the_emission_tail(tmp_path, monkeypatch):
+    """Acceptance 1: the summary carries the exact verdict string -- the
+    same text as the log, not a paraphrase."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    assert code == 1
+    text = summary.read_text(encoding="utf-8")
+    assert "## PR gate: FAIL" in text
+    assert "FAIL -- failing checks: Lean CI (failure)" in text
+
+
+def test_step_summary_is_a_noop_without_the_env(tmp_path, monkeypatch):
+    """Local runs have no GITHUB_STEP_SUMMARY: publication degrades to a
+    no-op, never a crash, and the verdict stays in the exit code."""
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    assert code == 1
+    assert not (tmp_path / "summary.md").exists()
+
+
+def test_step_summary_carries_the_advisory_section(tmp_path, monkeypatch):
+    """Acceptance 3: advisory checks are listed as NOT blocking. #15548's
+    cost: a cancelled advisory (ICT) read as the blocker while the real
+    red went unread. The advisory list must reach the summary through the
+    real wait_and_decide, not a paraphrase."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    checks = [
+        run("Always-on guards", "failure", rid=1),
+        run("CJK residue advisory (label, non-blocking)", "cancelled", rid=2),
+    ]
+
+    # `fetch` is a default argument of wait_and_decide (bound at def time),
+    # so a module-attribute monkeypatch would not reach it -- wrap and inject.
+    real_wait = pr_gate.wait_and_decide
+
+    def wait_with_fixed_fetch(*a, **kw):
+        kw["fetch"] = lambda *_f: checks
+        return real_wait(*a, **kw)
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", wait_with_fixed_fetch)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    assert code == 1
+    text = summary.read_text(encoding="utf-8")
+    assert "FAIL -- failing checks: Always-on guards (failure)" in text
+    assert "Advisory (not blocking):" in text
+    assert "CJK residue advisory (label, non-blocking) (cancelled)" in text
+
+
+def test_wait_and_decide_fills_detail_with_the_last_advisory():
+    """The detail dict carries the LAST classification's advisory list (the
+    deadline re-read overwrites an earlier poll's), keeping the 2-tuple
+    return intact for every existing caller."""
+    checks = [
+        run("Always-on guards", "failure", rid=1),
+        run("CJK residue advisory (label, non-blocking)", "failure", rid=2),
+    ]
+    detail: dict = {}
+    code, _msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=1, poll_sec=0, settle_polls=2,
+        sleep=lambda _s: None, fetch=lambda _r, _s: checks, now=lambda: 0.0,
+        detail=detail,
+    )
+    assert code == 1
+    assert detail["advisory"] == [
+        "CJK residue advisory (label, non-blocking) (failure)"
+    ]
+
+
+def test_step_summary_dwell_guides_against_repush(tmp_path, monkeypatch):
+    """Acceptance 2: a DWELL red is a mechanical floor. The summary carries
+    the head timestamp AND the lift time, plus the do-not-repush guidance --
+    a reaction push resets the 120-min floor from the new head (the defect
+    multiplied the wait instead of measuring it)."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    dwell_msg = (
+        "tete du 2026-09-07T11:55:00Z, 5 min -- plancher 120 min, reste "
+        "115 min, leve au premier balayage suivant 2026-09-07T13:55:00Z. "
+        "Le balayage horaire re-agrege cette jambe."
+    )
+    fake = _FakeDwell(verdict=(False, dwell_msg))
+    monkeypatch.setattr(pr_gate, "_merge_dwell", fake, raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_k: (0, "PASS"))
+
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
+    )
+    assert code == 1
+    text = summary.read_text(encoding="utf-8")
+    assert "DWELL -- tete du 2026-09-07T11:55:00Z" in text
+    assert "2026-09-07T13:55:00Z" in text, "the LIFT time, not just minutes"
+    assert "Ne pas re-pusher" in text
+
+
+def test_step_summary_fork_short_circuit(tmp_path, monkeypatch):
+    """The fork PASS publishes too (#10072) -- a student PR's check-run
+    should not be the only one whose summary stays null."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("fork must not poll")),
+    )
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--is-fork"])
+    assert code == 0
+    text = summary.read_text(encoding="utf-8")
+    assert "## PR gate: PASS" in text
+    assert "fork PR short-circuit" in text
+
+
+def test_step_summary_and_posted_check_run_coexist(tmp_path, monkeypatch):
+    """Acceptance 5: on the sweep path (--post-check-run) the explicit
+    Checks-API POST keeps its own output fields verbatim AND the step
+    summary is written -- the two publication surfaces do not replace each
+    other."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    posted = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_post",
+        lambda path, fields: posted.update({"fields": fields}) or {},
+    )
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
+    )
+    assert code == 1
+    assert posted["fields"]["output[summary]"] == (
+        "FAIL -- failing checks: Lean CI (failure)"
+    )
+    assert "FAIL -- failing checks: Lean CI (failure)" in summary.read_text(
+        encoding="utf-8"
+    )
+
+
+# --- #15693 -- the check-run surface: PATCH our own check-run ----------------
+#
+# Why these tests exist at all: the step summary above does NOT reach the
+# check-run, so without the PATCH the required leg still reports "Process
+# completed with exit code 1" with a null summary. The PATCH is the only
+# write that reaches it, and it is a fragile call (App-only auth, a job-id
+# lookup, a fork token that cannot write) -- so each failure mode is pinned
+# as a degradation that leaves the verdict alone.
+
+
+def _jobs_two_attempts(name=None):
+    name = name or pr_gate.DEFAULT_SELF_NAME
+    return {"jobs": [
+        {"id": 1111, "name": name, "run_attempt": "1"},
+        {"id": 4242, "name": name, "run_attempt": "2"},
+    ]}
+
+
+def test_own_job_id_picks_the_current_attempt():
+    """A re-run leaves the superseded attempt in the same listing. Matching
+    it would publish the verdict into a check-run nothing reads again."""
+    got = pr_gate.own_job_id("o/r", "99", pr_gate.DEFAULT_SELF_NAME, "2",
+                             fetch=lambda _p: _jobs_two_attempts())
+    assert got == 4242
+
+
+def test_own_job_id_is_none_when_the_name_is_absent():
+    assert pr_gate.own_job_id(
+        "o/r", "99", pr_gate.DEFAULT_SELF_NAME, "2",
+        fetch=lambda _p: _jobs_two_attempts(name="un autre job"),
+    ) is None
+
+
+def test_own_job_id_paginates_past_the_first_hundred_jobs():
+    """#15749: the jobs listing caps at per_page=100 and own_job_id did NOT
+    page through. A run carrying more than 100 jobs leaves OUR job off page
+    1, the lookup degrades to None, and the verdict motif silently goes
+    unpublished again -- the exact repair #15693 made, disarmed. fetch_checks
+    paginates correctly in this same file; own_job_id now reuses the motif."""
+    from urllib.parse import parse_qs, urlparse
+
+    target = {"id": 777, "name": pr_gate.DEFAULT_SELF_NAME, "run_attempt": "3"}
+    filler = [{"id": i, "name": f"matrix {i}", "run_attempt": "3"}
+              for i in range(100)]
+    fetched = []
+
+    def paged(path):
+        q = parse_qs(urlparse(path).query)
+        page = int(q.get("page", ["1"])[0])
+        assert q.get("per_page") == ["100"], path
+        fetched.append(page)
+        if page == 1:
+            return {"jobs": list(filler), "total_count": 101}
+        assert page == 2, f"unexpected page {page}"
+        return {"jobs": [target], "total_count": 101}
+
+    got = pr_gate.own_job_id("o/r", "99", pr_gate.DEFAULT_SELF_NAME, "3",
+                             fetch=paged)
+    assert got == 777
+    assert fetched == [1, 2], fetched
+
+
+def test_check_run_output_is_patched_with_the_verdict(monkeypatch):
+    """Acceptance 1 on the surface it names: the REQUIRED check carries the
+    motive, as the exact verdict string (log == summary). PATCH, not POST --
+    a POSTed twin bearing this required name lands in a foreign suite and is
+    ANDed with the original by GitHub (#11519)."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path, "fields": fields}) or {},
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1,
+        "FAIL -- failing checks: Lean CI (failure)",
+        ["ICT tests/ (55) (cancelled)"],
+        "2",
+    )
+    assert ok is True
+    assert seen["path"] == "repos/o/r/check-runs/4242", "in place, own suite"
+    assert seen["fields"]["output[summary]"] == (
+        "FAIL -- failing checks: Lean CI (failure)\n"
+        "\n"
+        "Advisory (not blocking):\n"
+        "- ICT tests/ (55) (cancelled)"
+    )
+    assert seen["fields"]["output[title]"].startswith(
+        "PR gate: FAIL -- failing checks"
+    )
+
+
+def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch):
+    """#15859 acceptance 1, 2 and 4 at the decision surface.
+
+    A DWELL red's check-run TITLE names the floor and its ABSOLUTE lift
+    time. The message is built by the real merge_dwell.evaluate() (as
+    main() wires it at the dwell block), not a fixture string, so the pin
+    covers the whole chain: evaluate -> "DWELL -- " prefix -> first line
+    -> title. The lift asserted in the title IS head + dwell minutes --
+    the unit-level form of the update-branch positive control: whatever
+    the last commit is (a fresh push, or the merge commit an update-branch
+    creates), the title announces the floor re-armed from THAT commit.
+    """
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path, "fields": fields}) or {},
+    )
+    committed = datetime(2026, 9, 13, 10, 0, 0, tzinfo=timezone.utc)
+    _ok, _remaining, dwell_msg = pr_gate._merge_dwell.evaluate(
+        committed, committed + timedelta(minutes=45), 120.0
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1,
+        "DWELL -- {}".format(dwell_msg),
+    )
+    assert ok is True
+    title = seen["fields"]["output[title]"]
+    assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
+    assert "plancher 120 min" in title
+    # The lift the title announces is the head commit + 120 min -- readable
+    # without recomputing anything (acceptance 2), and re-armed from the
+    # newest commit after any push or update-branch (acceptance 4).
+    assert "leve au premier balayage suivant 2026-09-13T12:00:00Z" in title
+    assert "Plancher mecanique -- rien a reparer" in seen["fields"]["output[summary]"]
+
+
+def test_check_run_output_is_reached_from_the_emission_tail(monkeypatch):
+    """The wiring: main() publishes on the check-run surface when Actions
+    gives it a run id -- not only when a test calls the helper."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path}) or {},
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    assert code == 1
+    assert seen["path"] == "repos/o/r/check-runs/4242"
+
+
+def test_check_run_output_is_a_noop_without_a_run_id(monkeypatch):
+    """Local runs (no GITHUB_RUN_ID) must not touch the network -- the same
+    no-op contract the step summary has without GITHUB_STEP_SUMMARY."""
+    def boom(_path):
+        raise AssertionError("aucun appel reseau attendu hors Actions")
+
+    monkeypatch.setattr(pr_gate, "_gh_api", boom)
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("pas de PATCH")),
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+
+
+def test_check_run_output_patch_failure_never_flips_the_verdict(capsys, monkeypatch):
+    """A refused PATCH (fork token is read-only, API hiccup, App auth) is a
+    degraded rendering: the verdict stays FAIL and the run keeps its exit
+    code. Publication must never be load-bearing on the verdict."""
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+
+    def refuse(_path, _fields):
+        raise pr_gate.GateError("You must authenticate via a GitHub App.")
+
+    monkeypatch.setattr(pr_gate, "_gh_api_patch", refuse)
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 0, "PASS", (), "2"
+    )
+    assert ok is False
+    assert "WARN -- check-run output not published" in capsys.readouterr().out
+
+
+def test_check_run_output_unresolved_job_id_is_a_warning(capsys, monkeypatch):
+    """A run whose job list is unreadable (or names a different job) must
+    not raise: the caller has already computed the verdict."""
+    monkeypatch.setattr(
+        pr_gate, "_gh_api", lambda _p: _jobs_two_attempts(name="un autre job")
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1, "FAIL", (), "2"
+    )
+    assert ok is False
+    assert "no job named" in capsys.readouterr().out
+
+
+def test_no_check_run_output_flag_disables_the_patch(monkeypatch):
+    """Escape hatch: a leg can keep the run-page summary and stay silent on
+    the check-run surface."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("pas de PATCH")),
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--no-check-run-output"]
+    )
+    assert code == 1
+
+
+def test_post_check_run_mode_keeps_its_own_contract(monkeypatch):
+    """The operator harness (`--post-check-run`) POSTs onto the PR head; its
+    own auto check-run sits on the default branch and is not the PR's gate
+    leg, so it must not be PATCHed."""
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("pas de PATCH")),
+    )
+    monkeypatch.setattr(
+        pr_gate, "wait_and_decide",
+        lambda *_a, **_k: (1, "FAIL -- failing checks: Lean CI (failure)"),
+    )
+    monkeypatch.setattr(pr_gate, "_gh_api_post", lambda *_a, **_k: {})
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
+    )
+    assert code == 1
+
+
+def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):
+    """One builder, two surfaces: acceptance 1 asks the summary to name the
+    cause "the same as the log", and the only durable way to keep that true
+    is a shared body -- so a DWELL verdict's guidance lands on both."""
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update(fields) or {},
+    )
+    dwell_msg = (
+        "tete du 2026-09-07T11:55:00Z, 5 min -- plancher 120 min, reste "
+        "115 min, leve au premier balayage suivant 2026-09-07T13:55:00Z."
+    )
+    monkeypatch.setattr(
+        pr_gate, "_merge_dwell", _FakeDwell(verdict=(False, dwell_msg)),
+        raising=False,
+    )
+    monkeypatch.setattr(pr_gate, "wait_and_decide", lambda *_a, **_k: (0, "PASS"))
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--pr", "7", "--dwell-min", "120"]
+    )
+    assert code == 1
+    body = pr_gate.verdict_body("DWELL -- " + dwell_msg)
+    assert seen["output[summary]"] == body, "check-run: le corps partage"
+    assert "2026-09-07T13:55:00Z" in seen["output[summary]"]
+    assert "Ne pas re-pusher" in seen["output[summary]"]
+    assert body in summary.read_text(encoding="utf-8"), "step summary: le meme corps"
+
+
+# --- #15905 : un mur atteint n'est pas une "non-conclusion" ------------------
+#
+# GitHub rend un depassement de `timeout-minutes` en `conclusion: cancelled`,
+# donc la conclusion seule ne distingue pas un job qui a tape son propre mur
+# d'un job tue par une famine de runners. Le discriminant est le COUPLE
+# (duree observee, limite declaree) -- et les deux doivent etre LUS, jamais
+# supposes. Le cas fondateur : `Scripts Tests (CPU)` declare 20 min, mesure
+# six fois entre 20m21s et 20m25s.
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
+
+def _timed(name, minutes, seconds, conclusion="cancelled", rid=1):
+    """Un check-run TERMINE portant ses deux horodatages.
+
+    `run()` (le helper historique) ne pose que `started_at` : c'est ce qui rend
+    toutes les assertions anterieures insensibles a ce correctif, et c'est
+    aussi la raison d'etre de ce helper-ci.
+    """
+    start = datetime(2026, 9, 12, 14, 1, 1, tzinfo=timezone.utc)
+    end = start + timedelta(minutes=minutes, seconds=seconds)
+    return {
+        "name": name,
+        "status": "completed",
+        "conclusion": conclusion,
+        "started_at": start.isoformat().replace("+00:00", "Z"),
+        "completed_at": end.isoformat().replace("+00:00", "Z"),
+        "id": rid,
+    }
+
+
+def _decide_with_walls(checks, walls):
+    pending, bad, _ok, _adv = pr_gate.classify(checks, pr_gate.DEFAULT_SELF_NAME)
+    return pr_gate.verdict(pending, bad, settled=True, declared_timeouts=walls)
+
+
+def test_declared_wall_is_read_from_the_real_workflows():
+    """Le cas fondateur, lu sur le depot et non sur une fixture."""
+    walls = pr_gate.derive_declared_timeouts()
+    assert walls.get("Scripts Tests (CPU)") == 20
+
+
+def test_declared_timeouts_tolerate_an_unreadable_state(tmp_path):
+    """Meme contrat de robustesse que `derive_advisory_jobs` : illisible ->
+    vide, jamais une arme braquee sur toutes les PRs."""
+    assert pr_gate.derive_declared_timeouts(str(tmp_path / "absent")) == {}
+
+
+def test_ambiguous_limit_is_dropped_not_guessed(tmp_path):
+    """Deux workflows declarent le meme nom de job avec des murs DIFFERENTS :
+    le gate ne doit pas nommer une limite qu'il ne peut pas attribuer."""
+    for fname, minutes in (("a.yml", 10), ("b.yml", 30)):
+        (tmp_path / fname).write_text(
+            f"name: {fname}\njobs:\n  j:\n    name: Same Job\n"
+            f"    timeout-minutes: {minutes}\n    runs-on: ubuntu-latest\n"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+    assert "Same Job" not in pr_gate.derive_declared_timeouts(str(tmp_path))
+
+
+def test_repeated_identical_limit_keeps_the_name(tmp_path):
+    """Le nom se repete (`sweep`, `guard`, `ci` le font dans ce depot) : c'est
+    la REPETITION qui est benigne, pas la divergence de valeur."""
+    for fname in ("a.yml", "b.yml"):
+        (tmp_path / fname).write_text(
+            f"name: {fname}\njobs:\n  j:\n    name: Same Job\n"
+            "    timeout-minutes: 15\n    runs-on: ubuntu-latest\n"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+    assert pr_gate.derive_declared_timeouts(str(tmp_path)) == {"Same Job": 15}
+
+
+def test_wall_hit_is_a_timeout_not_a_non_conclusion():
+    """Le fait mesure : 20m21s contre un mur declare a 20m."""
+    code, msg = _decide_with_walls([_timed("Scripts Tests (CPU)", 20, 21)],
+                                   {"Scripts Tests (CPU)": 20})
+    assert code == 1, "fail-closed inchange : un mur atteint bloque toujours"
+    assert "hit their declared timeout-minutes" in msg
+    assert "20m21s" in msg, "la duree OBSERVEE est nommee"
+    assert "declared timeout-minutes: 20" in msg, "la limite declaree aussi"
+    assert "never concluded" not in msg, "c'est l'erreur de #15905"
+    assert "this is not a code failure" not in msg
+
+
+def test_cancelled_under_the_wall_reports_the_duration_without_claiming_a_timeout():
+    """Une annulation SOUS le mur n'est pas un timeout : le gate rapporte ce
+    qu'il a lu et n'attribue aucune cause."""
+    code, msg = _decide_with_walls([_timed("Scripts Tests (CPU)", 1, 2)],
+                                   {"Scripts Tests (CPU)": 20})
+    assert code == 1
+    assert "never concluded" in msg
+    assert "1m02s" in msg
+    assert "hit their declared timeout-minutes" not in msg
+    assert "this is not a code failure" not in msg
+
+
+def test_unreadable_duration_is_not_invented():
+    """La limite est connue mais la duree ne l'est pas : aucun timeout n'est
+    revendique, et aucune duree n'est fabriquee dans l'annotation."""
+    checks = [run("ICT tests/ (55)", "cancelled", rid=1)]
+    pending, bad, _ok, _adv = pr_gate.classify(checks, pr_gate.DEFAULT_SELF_NAME)
+    assert bad == ["ICT tests/ (55) (cancelled)"]
+    code, msg = pr_gate.verdict(pending, bad, settled=True,
+                                declared_timeouts={"ICT tests/ (55)": 1})
+    assert code == 1
+    assert "never concluded" in msg
+    assert "hit their declared timeout-minutes" not in msg
+
+
+def test_unknown_limit_keeps_the_entry_in_the_unknown_clause():
+    """Le nom n'est pas resolu par les workflows : le gate ne devine pas."""
+    code, msg = _decide_with_walls([_timed("Unlisted Job", 99, 0)], {})
+    assert code == 1
+    assert "never concluded" in msg
+    assert "hit their declared timeout-minutes" not in msg
+    assert "1h39m" in msg, "la duree lue reste rapportee"
+
+
+def test_three_clauses_coexist_in_order():
+    """Un rouge, un mur atteint et une annulation inexpliquee dans un meme
+    verdict : chacun sous sa clause, le rouge en tete."""
+    checks = [
+        _timed("Lean CI", 0, 30, conclusion="failure", rid=1),
+        _timed("Scripts Tests (CPU)", 20, 21, rid=2),
+        _timed("ICT tests/ (55)", 1, 2, rid=3),
+    ]
+    code, msg = _decide_with_walls(checks, {"Scripts Tests (CPU)": 20})
+    assert code == 1
+    assert "failing checks: Lean CI (failure)" in msg
+    index_fail = msg.index("failing checks")
+    index_wall = msg.index("hit their declared timeout-minutes")
+    index_never = msg.index("never concluded")
+    assert index_fail < index_wall < index_never
+
+
+def test_duration_formatting_shapes():
+    assert pr_gate._format_duration(1221) == "20m21s"
+    assert pr_gate._format_duration(3720) == "1h02m"
+    assert pr_gate._format_duration(0) == "0m00s"
+    assert pr_gate._format_duration(-5) == "0m00s"
+
+
+def test_duration_round_trips_through_the_annotation():
+    """Le porteur est l'annotation : `_parse_bad_entry` doit relire ce que
+    `_format_duration` a ecrit."""
+    name, conclusion, seconds = pr_gate._parse_bad_entry(
+        "Scripts Tests (CPU) (cancelled, 20m21s)"
+    )
+    assert (name, conclusion, seconds) == ("Scripts Tests (CPU)", "cancelled", 1221)
+    assert pr_gate._parse_bad_entry("Scripts Tests (CPU) (cancelled)") == (
+        "Scripts Tests (CPU)", "cancelled", None
+    )
+    assert pr_gate._parse_bad_entry("Lean CI (failure)") is None
+
+
+def _fake_check_api(completed_at="2026-09-12T14:21:22Z"):
+    """Un `_gh_api` stand-in : un check-run annule + un statut legacy."""
+    def fake(path):
+        if "/check-runs" in path:
+            return {"total_count": 1, "check_runs": [{
+                "name": "Scripts Tests (CPU)",
+                "status": "completed",
+                "conclusion": "cancelled",
+                "started_at": "2026-09-12T14:01:01Z",
+                "completed_at": completed_at,
+                "id": 7,
+            }]}
+        return {"statuses": [{
+            "context": "legacy/check",
+            "state": "failure",
+            "created_at": "2026-09-12T14:00:00Z",
+            "updated_at": "2026-09-12T14:00:30Z",
+            "id": 8,
+        }]}
+    return fake
+
+
+def test_fetch_checks_carries_completed_at_into_the_projection(monkeypatch):
+    """#15905, le defaut qui rendait le correctif INERTE.
+
+    L'API renvoie `completed_at` ; la projection de `fetch_checks` le jetait.
+    Aucune duree n'arrivait donc a `classify` et la clause timeout etait
+    inatteignable EN PRODUCTION -- alors que les fixtures synthetiques, qui
+    posent le champ a la main, passaient au vert. Mesure sur
+    #15778/#15836/#15877 : la sortie reelle portait
+    `Scripts Tests (CPU) (cancelled)` sans duree avant ce fix.
+    """
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_check_api())
+    checks = {c["name"]: c for c in pr_gate.fetch_checks("o/r", "deadbeef")}
+    assert checks["Scripts Tests (CPU)"]["completed_at"] == "2026-09-12T14:21:22Z"
+    # Les statuts legacy exposent `updated_at`, pas `completed_at` : meme duree,
+    # autre nom de champ.
+    assert checks["legacy/check"]["completed_at"] == "2026-09-12T14:00:30Z"
+
+
+def test_timeout_clause_is_reachable_from_a_fetched_check(monkeypatch):
+    """Le correctif ne vaut que si le chemin REEL l'atteint : fetch ->
+    classify -> verdict, sur la forme exacte que l'API renvoie."""
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_check_api())
+    checks = pr_gate.fetch_checks("o/r", "deadbeef")
+    pending, bad, _ok, _adv = pr_gate.classify(checks, pr_gate.DEFAULT_SELF_NAME)
+    assert "Scripts Tests (CPU) (cancelled, 20m21s)" in bad
+    code, msg = pr_gate.verdict(
+        pending, bad, settled=True, declared_timeouts={"Scripts Tests (CPU)": 20}
+    )
+    assert code == 1
+    assert "hit their declared timeout-minutes" in msg
+    assert "never concluded" not in msg

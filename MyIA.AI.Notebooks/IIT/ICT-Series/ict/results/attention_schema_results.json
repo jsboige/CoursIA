@@ -1,0 +1,72 @@
+{
+ "case": "case5_attention_schema",
+ "prediction": "R_attn = propa(q̂(attention))/propa(q̂(objet)) ∈ [0.50, 2.00] ET discrimination ≥ ε_attn",
+ "calibration": {
+  "r_neutre_by_seed": {
+   "0": 1.0,
+   "1": 1.0,
+   "7": 1.0,
+   "42": 0.9230769230769231,
+   "99": 1.0
+  },
+  "sigma_attn": 0.03440104580768905,
+  "propa_obj_median_scale": 0.8666666666666667,
+  "epsilon_attn": 0.01490711984999859,
+  "formula": "ε_attn = 0.5 × σ_attn × propa(q̂(objet))_médian",
+  "notes": []
+ },
+ "main": {
+  "r_attn_by_seed": {
+   "0": 1.0,
+   "1": 1.0,
+   "7": 1.0,
+   "42": 1.0833333333333333,
+   "99": 1.0
+  },
+  "propa_by_seed": {
+   "0": {
+    "attn_self": 1.0,
+    "obj_chaise": 1.0
+   },
+   "1": {
+    "attn_self": 0.9333333333333333,
+    "obj_chaise": 0.9333333333333333
+   },
+   "7": {
+    "attn_self": 0.8666666666666667,
+    "obj_chaise": 0.8666666666666667
+   },
+   "42": {
+    "attn_self": 0.8666666666666667,
+    "obj_chaise": 0.8
+   },
+   "99": {
+    "attn_self": 0.8,
+    "obj_chaise": 0.8
+   }
+  },
+  "r_median": 1.0,
+  "ci95_bootstrap_n200": [
+   1.0,
+   1.0833333333333333
+  ],
+  "discrimination_median": 0.0
+ },
+ "verdict": "INCONCLUSIF",
+ "kill_details": [
+  "discrimination médiane 0.0000 < ε_attn 0.0149",
+  "R_attn ∈ [0.85, 1.15] sur 5/5 graines (indistinguable du ratio neutre)"
+ ],
+ "diagnostics_post_hoc": {
+  "note": "NON scellé par le pré-enregistrement — diagnostics ajoutés APRÈS le verdict pour documenter la cause instrumentale de l'INCONCLUSIF.",
+  "jaccard_top64_attn_self_vs_obj_chaise": {
+   "0": 0.734,
+   "1": 0.781,
+   "7": 0.797,
+   "42": 0.703,
+   "99": 0.656
+  },
+  "jaccard_top64_moyen": 0.734,
+  "lecture": "Les signatures top-64 (activation moyenne) des bras attention/objet partagent ~73 % de leurs features : la signature dominante est constituée de features omniprésentes (ponctuation/format), pas de features discriminantes de cible. propa ≈ 0.80-1.00 partout = broadcast quasi-uniforme. La distinction attention/objet, si elle existe à ce substrat (Qwen3.5-2B-Base, couche 12/24, W32K-L0_50), est sous le plancher de cet opérateur — d'où INCONCLUSIF, pas FALSIFIED (aucune répression ni artefact de blocage observé)."
+ }
+}
