@@ -35,7 +35,15 @@ def run(run_id, created, repo="jsboige/CoursIA", name="Build", conclusion="succe
     }
 
 
-def job(job_id, created, started, completed, conclusion="success"):
+def job(
+    job_id,
+    created,
+    started,
+    completed,
+    conclusion="success",
+    runner_name=None,
+    labels=None,
+):
     return {
         "id": job_id,
         "name": f"job-{job_id}",
@@ -44,8 +52,8 @@ def job(job_id, created, started, completed, conclusion="success"):
         "created_at": mod.iso_z(created) if created else None,
         "started_at": mod.iso_z(started) if started else None,
         "completed_at": mod.iso_z(completed) if completed else None,
-        "runner_name": "GitHub Actions 1" if started else None,
-        "labels": ["ubuntu-latest"],
+        "runner_name": runner_name or ("GitHub Actions 1" if started else None),
+        "labels": ["ubuntu-latest"] if labels is None else labels,
     }
 
 
@@ -191,16 +199,72 @@ def test_workflow_breakdown_keeps_run_conclusions():
     assert by_name["Build"]["run_conclusions"] == {"cancelled": 1}
 
 
-def test_workflow_breakdown_keeps_run_conclusions():
-    rows = [
-        with_jobs(run(1, dt(0, 1), name="PR gate", conclusion="success"), []),
-        with_jobs(run(2, dt(0, 2), name="PR gate", conclusion="failure"), []),
-        with_jobs(run(3, dt(0, 3), name="Build", conclusion="cancelled"), []),
+def test_label_and_runner_breakdowns_include_percentiles_and_denominators():
+    jobs = [
+        job(
+            1, dt(), dt(0, 1), dt(0, 3), runner_name="runner-b",
+            labels=["self-hosted", "coursia-linux"],
+        ),
+        job(
+            2, dt(), dt(0, 2), dt(0, 6), runner_name="runner-a",
+            labels=["self-hosted", "coursia-linux"],
+        ),
+        job(
+            3, dt(), dt(0, 3), dt(0, 9), runner_name="runner-b",
+            labels=["self-hosted", "coursia-linux"],
+        ),
+        job(
+            4, dt(), dt(0, 4), dt(0, 12), runner_name="runner-a",
+            labels=["self-hosted", "coursia-linux"],
+        ),
+        job(
+            5, dt(), dt(0, 5), dt(0, 15), runner_name="runner-b",
+            labels=["self-hosted", "coursia-linux"],
+        ),
     ]
-    result = mod.analyze(snapshot(rows))
-    by_name = {row["workflow"]: row for row in result["by_workflow"]}
-    assert by_name["PR gate"]["run_conclusions"] == {"failure": 1, "success": 1}
-    assert by_name["Build"]["run_conclusions"] == {"cancelled": 1}
+    result = mod.analyze(snapshot([with_jobs(run(1, dt()), jobs)]))
+
+    assert [row["label"] for row in result["by_label"]] == [
+        "coursia-linux", "self-hosted",
+    ]
+    label = result["by_label"][0]
+    assert label["jobs"] == 5
+    assert label["timed_jobs"] == 5
+    assert label["timing_coverage"] == 1.0
+    assert label["queue_wait_minutes"] == {"p50": 3.0, "p90": 4.6, "max": 5.0}
+    assert label["runtime_minutes"] == {"p50": 6.0, "p90": 9.2, "max": 10.0}
+
+    assert [row["runner_name"] for row in result["by_runner"]] == [
+        "runner-a", "runner-b",
+    ]
+    runner_a = result["by_runner"][0]
+    assert runner_a["queue_wait_minutes"] == {"p50": 3.0, "p90": 3.8, "max": 4.0}
+    assert runner_a["runtime_minutes"] == {"p50": 6.0, "p90": 7.6, "max": 8.0}
+
+
+def test_group_breakdowns_expose_incomplete_skew_and_missing_identity():
+    incomplete = job(1, dt(), None, None, labels=[])
+    skew = job(
+        2, dt(), dt(0, 2), dt(0, 1), runner_name="runner-z",
+        labels=["self-hosted"],
+    )
+    result = mod.analyze(snapshot([with_jobs(run(1, dt()), [incomplete, skew])]))
+
+    labels = {row["label"]: row for row in result["by_label"]}
+    assert labels["<unlabelled>"]["incomplete_or_untimed_jobs"] == 1
+    assert labels["<unlabelled>"]["queue_wait_minutes"]["p50"] is None
+    assert labels["self-hosted"]["timestamp_skew_jobs"] == 1
+    assert labels["self-hosted"]["timed_jobs"] == 0
+
+    runners = {row["runner_name"]: row for row in result["by_runner"]}
+    assert runners["<unassigned>"]["incomplete_or_untimed_jobs"] == 1
+    assert runners["runner-z"]["timestamp_skew_jobs"] == 1
+
+
+def test_non_string_job_label_is_broken():
+    invalid = job(1, dt(), dt(), dt(0, 1), labels=["self-hosted", 3])
+    with pytest.raises(mod.MeasurementError, match="labels must be a list of strings"):
+        mod.analyze(snapshot([with_jobs(run(1, dt()), [invalid])]))
 
 
 def test_provenance_has_same_repo_fork_and_unknown():

@@ -33,7 +33,9 @@ Pour chaque job disposant de timestamps cohérents :
 - **minutes-runner par heure murale** = somme du travail des jobs / durée de la fenêtre ;
 - **équivalents runners moyens** = somme du travail / durée de la fenêtre, les deux exprimées en minutes.
 
-`run_started_at` n'est pas utilisé pour l'attente : l'API peut le rendre égal au `created_at` du run alors que ses jobs attendent encore. Un job annulé après avoir démarré a consommé un runner et compte dans le travail. Un job `skipped` ou encore en file ne devient jamais une durée zéro : il apparaît dans `incomplete_or_untimed_jobs` et réduit `timing_coverage`. GitHub peut aussi inverser deux timestamps adjacents d'exactement une seconde à cause de leur précision : ces jobs sont exclus du calcul et comptés dans `timestamp_skew_jobs`; une inversion supérieure à une seconde casse la mesure (`exit 2`).
+L'analyse publie aussi les distributions d'attente et de travail (`p50`, `p90`, `max`) dans `by_label` et `by_runner`. Un job qui porte plusieurs labels contribue une fois à chacun d'eux ; les groupes sont triés lexicalement pour rendre les replays déterministes. Les identités absentes restent visibles sous `<unlabelled>` et `<unassigned>` au lieu d'être supprimées. Chaque groupe expose `jobs`, `timed_jobs`, `incomplete_or_untimed_jobs`, `timestamp_skew_jobs` et `timing_coverage` : un percentile sans job temporisable vaut `null`, jamais zéro.
+
+`run_started_at` n'est pas utilisé pour l'attente : l'API peut le rendre égal au `created_at` du run alors que ses jobs attendent encore. Un job annulé après avoir démarré a consommé un runner et compte dans le travail. Un job `skipped` ou encore en file ne devient jamais une durée zéro : il apparaît dans `incomplete_or_untimed_jobs` et réduit `timing_coverage`. GitHub peut aussi inverser des timestamps adjacents à cause de leur précision : ces jobs sont exclus du calcul et comptés dans `timestamp_skew_jobs`, sans transformer l'anomalie en durée négative ou nulle.
 
 La provenance est classée en trois catégories :
 
@@ -45,7 +47,7 @@ Un résultat avec `unknown > 0` ne prouve pas « 100 % same-repo ».
 
 ## Exhaustivité et zéros
 
-L'API Actions plafonne certaines recherches filtrées à 1 000 runs. L'instrument bissecte automatiquement la fenêtre temporelle dès que `total_count >= 1000`, déduplique les runs aux frontières, puis pagine tous les jobs de chaque run. Il refuse la mesure (`exit 2`) si une sous-fenêtre d'une seconde reste plafonnée, si une page disparaît avant le dénominateur annoncé ou si des timestamps donnent une durée négative.
+L'API Actions plafonne certaines recherches filtrées à 1 000 runs. L'instrument bissecte automatiquement la fenêtre temporelle dès que `total_count >= 1000`, déduplique les runs aux frontières, puis pagine tous les jobs de chaque run. Il refuse la mesure (`exit 2`) si une sous-fenêtre d'une seconde reste plafonnée ou si une page disparaît avant le dénominateur annoncé. Un job dont les timestamps donnent une durée négative est exclu des distributions et compté dans `timestamp_skew_jobs`.
 
 Une fenêtre réellement vide est valide et imprime explicitement `runs: 0`, `jobs: 0` et `timing_coverage: null`. Elle est donc distincte d'un instrument cassé. Ne jamais citer un zéro sans son dénominateur et son code retour.
 
@@ -58,10 +60,11 @@ Avant toute bascule, relever au minimum :
 3. la couverture temporelle ;
 4. les minutes-runner/heure ;
 5. le détail par workflow et par conclusion ;
-6. les comptes `same_repo`, `fork` et `unknown` ;
-7. les rafales `runs_created_per_minute`.
+6. les p50/p90/max d'attente et de travail par label et par runner, avec leurs dénominateurs ;
+7. les comptes `same_repo`, `fork` et `unknown` ;
+8. les rafales `runs_created_per_minute`.
 
-Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger.
+Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger. Les distributions par label et runner localisent une saturation observée ; elles ne révèlent pas à elles seules combien de runners partagent un hôte physique, son plafond de concurrence, ni la politique de capacité à retenir. Ces décisions exigent une mesure de topologie distincte.
 
 ## Topologie retenue
 
@@ -317,6 +320,41 @@ Mesure au déploiement (2026-09-07T00:39Z) : **`online=12`**, 12 conteneurs `Up`
 - **S4U exige l'élévation** : `Register-ScheduledTask -LogonType S4U` est refusé sans admin (« Accès refusé », même `RunLevel Limited`). La tâche boot `CoursIA-LinuxRunners-Boot` (S4U + `AtStartup`, script prêt) attend **un clic UAC** du user — le pont logon couvre le cas nominal en attendant. Limite connue du pont `InteractiveToken` : le holder meurt à la fermeture de session ; la tâche S4U boot la relance avant le logon.
 
 **Recette de réplication** (un autre worker) : installer docker-ce dans la distro + drop-in socket → poser le wrapper et l'unité (`persist/coursia-runner-start.sh`, `persist/coursia-runner.service`, en adaptant `NAME_PREFIX` et N) → `systemctl enable --now coursia-runner` → créer la tâche logon qui appelle `persist/launch-runner.sh` (elle appelle le holder local) → valider par le protocole de mesure ci-dessus (tuer la distro, déclencher la tâche, **attendre 3+ min sans aucun appel wsl**, puis lister). L'installation d'un mécanisme permanent d'enregistrement reste un geste explicite (coordinateur ou user), jamais silencieux.
+
+### Cache d'archives d'actions — le rouge « Set up job » n'était pas un défaut du dépôt (#14853)
+
+Un job qui meurt sur `Set up job` **avant le moindre checkout** porte un rouge requis que rien dans le dépôt n'explique — et qu'aucune PR ne peut réparer. La cause est en amont du dépôt : codeload sert les archives d'actions à un débit qui oscille (mesure #14853 du 2026-09-06 : **1 936 à 39 530 o/s**). Sous ~16 Ko/s, l'archive de `actions/setup-python` (**1 569 541 octets**, mesurés) demande plus de 100 s, le runner abandonne ses trois tentatives, et le job échoue sur `Set up job`.
+
+Ces archives sont par construction **identiques à chaque run**. Le runner sait les lire depuis un répertoire de cache : l'image les embarque donc une fois, au build, au lieu de les re-télécharger à chaque job.
+
+**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (celui du `RUNNER_VERSION`) et sur `main` :
+
+```
+$ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
+```
+
+Deux pièges font échouer un cache écrit « au feeling » :
+
+- le `/` de `owner/repo` devient `_`, et le nom s'arrête au **dépôt** : `github/codeql-action/init@v4` et `.../analyze@v4` sont deux entrées `uses:` mais **une seule** archive, sous `github_codeql-action/` ;
+- la clé est le **SHA résolu**, jamais le tag : `actions/setup-python@v5` ne se cache pas sous `v5.tar.gz`.
+
+`scripts/ci/docker/linux-runner/seed_action_cache.py` résout donc tag → SHA **au build**, avec le même mécanisme que le runner (`git ls-remote`, deref `^{}` des tags annotés), pour que la clé écrite au build soit exactement celle que le runner cherchera au run. Il échoue si une seule action manque : un cache partiel serait un fix qui a l'air fait et ne l'est pas (`--allow-partial` existe pour l'assumer explicitement).
+
+**Preuve mesurée** (build local du 2026-09-13, `docker run --rm --entrypoint sh` sur l'image construite) : 11 dépôts, 13 actions, toutes en `runner:runner`, et notamment
+
+```
+/opt/actions-cache/actions_setup-python/a26af69be951a213d495a4c3e4e4022e16d87065.tar.gz   1 569 541 o
+```
+
+— soit **le SHA même** présent dans le log d'échec de #14853, à la taille qu'il y mesurait : la clé écrite au build est bien celle que le runner recompute au run. L'image lean (`Dockerfile.lean`, `FROM coursia-linux-runner`) hérite du répertoire et des deux `ENV` par héritage de couche — aucun doublon.
+
+**A4 de #14853 nomme une variable qui n'existe pas.** `ACTIONS_RUNNER_HTTP_TIMEOUT` n'est déclarée nulle part (`Constants.cs` du runner au pin `v2.337.0` ne porte que `ACTION_ARCHIVE_CACHE` et `SYMLINK_CACHED_ACTIONS`). Le levier réel est **`GITHUB_ACTIONS_RUNNER_HTTP_TIMEOUT`** (`Runner.Sdk/Util/VssUtil.cs`, deux sites), exprimé en **secondes**, clampé à **[100, 1200]**, valeur par défaut 100 — c'est cette valeur-là qu'il faut battre. Posé à 420 s, il sert de filet pour les actions **hors** cache : 1,5 Mo passe encore à ~3,7 Ko/s.
+
+**Le garde** — `scripts/tests/test_action_cache_seed_guard.py` — rejoue la mesure sur `.github/workflows/*.yml` et compare l'ensemble obtenu à la liste `ACTIONS` du script. Sans lui, le trou est silencieux : un workflow ajoute `uses: actions/foo@v1`, personne ne touche la liste, et ce job continue de télécharger à la volée. Le scanner se valide par ses **faux négatifs** autant que par ses hits — deux pièges sont épinglés par un test chacun : la **négation du mot** (`# uses: actions/checkout@v4` commenté n'est pas une action) et les **deux formes YAML d'une étape** (`uses:` aligné sous un `name:` — 224 occurrences dans le corpus — et la forme en ligne de liste `- uses:` — 133 occurrences) : un motif qui n'en couvre qu'une laisse toute action écrite dans l'autre hors du cache sans que rien ne rougisse.
+
+**Ce que cette tranche ne fait pas** : `ACTIONS_RUNNER_SYMLINK_CACHED_ACTIONS` (forme « dossier déployé » du même cache) n'est **pas** activée — elle exige d'extraire chaque archive selon une disposition stricte, et le runner retombe silencieusement sur le téléchargement en cas d'écart. C'est un second levier, pas A1 ; l'archive est la forme que A1 demande.
+
+**Résiduel honnête** : A2/A3 (contrôles positif et négatif sur un **log de job** réel) ne sont pas satisfaits par cette tranche. Ils exigent une image **reconstruite et redéployée**, puis un job réel : la preuve qu'on peut apporter sans déploiement s'arrête au contenu de l'image, et c'est ce qui est mesuré ci-dessus.
 
 ## Tranches suivantes, activation partielle
 

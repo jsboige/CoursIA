@@ -47,8 +47,11 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
 
   4. MOTIFS STRUCTURANTS PERDUS : signale explicitement la disparition de
      `**Navigation**`, `**Objectif(s)**`, `**Prerequis**`, `### Enonce`, et
-     des liens de navigation `[...](*.ipynb)` -- des elements dont la perte
-     est un signal fort independamment du seuil de caracteres.
+     des liens de navigation `[...](*.ipynb)` ou `[...](README.md)` -- des
+     elements dont la perte est un signal fort independamment du seuil de
+     caracteres. Le `README.md` de serie est un index de navigation au meme
+     titre qu'un notebook (cf. la note de ``NAV_LINK_RE`` : compter les cibles
+     `*.ipynb` seules fait passer une RE-CIBLE legitime pour une perte).
 
   5. NE BLOQUE PAS LA REFORMULATION LEGITIME : le detecteur SIGNALE, la PR
      justifie en review (design #4). Sortie exploitable : fichier / cellule /
@@ -243,15 +246,25 @@ MOTIF_TRANSLATION_ALIASES = {
 # Motifs structurants dont la disparition est un signal fort (design #3 #8655).
 # Notes : "Navigation" / "Objectif(s)" / "Prerequis" sont matches aussi bien en
 # titre (`## Navigation`) qu'en callout (`> **Navigation :**`) car la regex
-# cible le mot-cle hors-marqueurs. Les liens de navigation vers un notebook
-# sont comptes collectivement (perte = N liens disparus).
+# cible le mot-cle hors-marqueurs. Les liens de navigation sont comptes
+# collectivement (perte = N liens disparus).
+#
+# La cible comptee inclut le `README.md` de serie (`[Index](README.md)`,
+# `[Index](../README.md)`) au meme titre qu'un notebook. Compter les seules
+# cibles `*.ipynb` rendait une RE-CIBLE legitime indiscernable d'une PERTE :
+# un lien de navigation dont la cible passe d'un notebook au `README.md` de
+# serie -- la convention majoritaire, et celle du sommaire haut du meme
+# fichier -- faisait chuter le compte de 4 a 3 et etait rapporte comme
+# `LOST_NAV_LINKS`. Le lien n'a pas disparu, sa cible a change. Un lien
+# reellement supprime decremente toujours le compte (la somme des deux cibles
+# reste la mesure du nombre de liens de navigation presents).
+NAV_LINK_RE = re.compile(r"\[[^\]]+\]\([^)]*(?:\.ipynb|README\.md)\)")
 MOTIF_PATTERNS = [
     (re.compile(r"\bNavigation\b", re.I), "Navigation"),
     (re.compile(r"\bObjectifs?\b", re.I), "Objectif(s)"),
     (re.compile(r"\bPr[eé]requis\b", re.I), "Prerequis"),
     (re.compile(r"^#{1,6}\s*Enonc[eé]", re.I | re.M), "Enonce"),
 ]
-NAV_LINK_RE = re.compile(r"\[[^\]]+\]\([^)]+\.ipynb\)")
 
 # Bloc frontmatter YAML `---\n...\n---` en TETE de cellule markdown (#8904/#8919).
 # Quand un notebook migre son cost de ce bloc vers nb['metadata']['cost'], le bloc

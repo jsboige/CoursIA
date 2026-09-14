@@ -513,3 +513,106 @@ def test_13560_meme_reserve_citee_ne_bloque_pas():
             "sur le module A tient, et je rappelle la formule qui la "
             "portait : « mais le point 2 reste ouvert ».")
     assert _blocking(body) == []
+
+
+# --- #15951 : attribution par reference tell (Position K) -------------------
+# Instance fondatrice : c.1102 de #15762 (2026-09-12T16:26Z, auteur jsboige,
+# lane myia-po-2024:CoursIA-2). Le commentaire de DISSIPATION etait classe
+# BOT-CONCERN par le gate : « dissipation CHANGES_REQUESTED c.589 leve
+# N-1/N ». Le verdict nomme est suivi de la reference tell de SA SOURCE
+# (c.589) — l'idiome de citation interne du cluster. Les positions A-H
+# echouaient : C+/D+ exigent le verbe de levee IMMEDIATEMENT apres le verdict
+# (la ref tell s'intercale) et ne connaissent pas c.NNN comme ref pointable.
+#
+# Diagnostic CORRIGE vs l'issue #15951 : elle attribuait le defaut au glyphe
+# de nouveaute « ★ ». Mesure faite, le glyphe n'est PAS dans SEVERITY_GLYPHS
+# et le corps a glyphe seul ne porte AUCUN CONCERN_MARKER vivant (test
+# ci-dessous) — le declencheur reel est le litteral CHANGES_REQUESTED en
+# narration de dissipation PASSEE avec attribution de source.
+FIXTURE_15762_C1102_BODY = (
+    "Dissipation Tell c.589 + c.1079-L1 ★ NEW fondateur + c.1060-L1 "
+    "★ NEW fondateur (c.1102 sur head `a2bdc9789a42`, 2026-09-12 "
+    "~16:30Z)\n"
+    "\n"
+    "**#15762** head actuel `a2bdc9789a42` (UNKNOWN → CLEAN c.1102). "
+    "Branch `fix/<sujet>`. Statut `mergeable: true` + `mergeStateStatus: "
+    "CLEAN` ✓ ripe merge ai-01 Tell c.R1.\n"
+    "\n"
+    "**Reviews actives** : aucune. PR dans son état final.\n"
+    "\n"
+    "**Tell c.1079-L1 ★ NEW fondateur** : dissipation CHANGES_REQUESTED "
+    "c.589 levé N-1/N ET cross-base c.1063-L1 = ripe merge. PR dans son état "
+    "final — tous checks SUCCESS ✓, 0 CHANGES_REQUESTED.\n"
+    "\n"
+    "**Tell c.1060-L1 ★ NEW fondateur** : dissipation cumule multi-"
+    "reviews + multi-merges main.\n"
+    "\n"
+    "**Tell c.1059 ★ NEW fondateur** : dissipation nominative ≠ "
+    "amend.\n"
+    "\n"
+    "**Action attendue ai-01 Tell c.R1** : ripe merge séquentiel Tell c.R1.\n"
+    "\n"
+    "— lane myia-po-2024:CoursIA-2, cycle c.1102 (431ᵉ) ~16:30Z"
+)
+
+
+def test_15951_dissipation_avec_ref_tell_ne_bloque_plus():
+    """Position K : verdict suivi IMMEDIATEMENT de sa ref tell (c.NNN) =
+    attribution de l'evenement passe rapporte, pas une emission."""
+    body = ("**Tell c.1079-L1** : dissipation CHANGES_REQUESTED c.589 levé "
+            "N-1/N ET cross-base c.1063-L1 = ripe merge.")
+    for author in ("jsboige", "myia-po-2024", "hermes-bot"):
+        assert mod.classify(author, body) is None, author
+
+
+def test_15951_emission_formelle_tell_adjaente_reste_vivante():
+    """Controles positifs apparies (meme marqueur, seule la forme change) :
+    sans ref tell adjacente, ou avec garde de blocage vivant, le verdict
+    reste emis. Sans ces jumeaux le strip serait un depouillement aveugle."""
+    emissions = [
+        # verdict nu puis son contenu : la ref tell ne suit jamais immediatement
+        "CHANGES_REQUESTED: edge case non couvert.",
+        # garde dure Position K : blocage declare vivant dans la phrase
+        "CHANGES_REQUESTED c.589 reste bloquante.",
+        "CHANGES_REQUESTED c.589 reste vive tant que le fix nest pas pousse.",
+        "Verdict : CHANGES_REQUESTED sur ce commit.",
+        "CHANGES_REQUESTED c.1102, block on pour moi.",
+        # ref presente mais NON adjacente au verdict : pas une attribution
+        "CHANGES_REQUESTED cycle c.1102 sur la lane.",
+    ]
+    for body in emissions:
+        assert mod.classify("hermes-bot", body) is not None, body
+
+
+def test_15951_fixture_c1102_verbatim_ne_bloque_plus():
+    """Corps VERBATIM du commentaire fondateur : plus aucun CONCERN_MARKER
+    vivant apres strip (la 2e occurrence « 0 CHANGES_REQUESTED. » etait deja
+    couverte par les positions existantes — compte en fin de phrase)."""
+    for author in ("jsboige", "hermes-bot"):
+        assert mod.classify(author, FIXTURE_15762_C1102_BODY) is None, author
+
+
+def test_15951_glyphe_nouveaute_seul_nest_pas_un_declencheur():
+    """Preuve du diagnostic corrige (acceptance 1 de l'issue) : un corps a
+    glyphe de nouveaute seul ne porte AUCUN marqueur vivant — le « ★ »
+    n'est pas dans SEVERITY_GLYPHS et ne l'a jamais ete. Le FP de #15762
+    c.1102 ne venait PAS du glyphe mais du litteral CHANGES_REQUESTED en
+    narration avec attribution tell (couvert par les tests precedents)."""
+    body = ("Tell c.1079-L1 ★ NEW fondateur + c.1060-L1 ★ NEW "
+            "fondateur — lecture de statut, aucune demande.")
+    assert mod.has_live_marker(body, mod.CONCERN_MARKERS) is False
+    for author in ("jsboige", "hermes-bot"):
+        assert mod.classify(author, body) is None, author
+
+
+def test_15951_strip_conserve_les_offsets():
+    """Le remplacement Position K est iso-longueur (verdict -> espaces) :
+    les fenetres `_is_cited` des occurrences survivantes restent calibrees
+    sur leur position reelle — invariant des positions A-J."""
+    body = ("Avant. dissipation CHANGES_REQUESTED c.589 leve N-1/N. "
+            "Apres : CHANGES_REQUESTED: edge case non couvert.")
+    stripped = mod._strip_mentioned_verdicts(body)
+    assert len(stripped) == len(body)
+    # la 1re occurrence est neutralisee, la 2e (emission) survit
+    assert mod.has_live_marker(stripped, mod.CONCERN_MARKERS)
+    assert stripped.index("edge case non couvert") == body.index("edge case non couvert")
