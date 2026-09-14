@@ -1,16 +1,18 @@
 date: '2026-09-14'
 by: myia-po-2027:CoursIA
-python_sha: b4a0696f87955f611f297c93e5ff0b664b5409c9
+python_sha: ea2d2e22f212a6ed34036d147750e2fea530bba6
 csharp_sha: 1803da69cf84ab95cd7d081e5335a639fcce3f06
-content_python_sha: 22b661861dfb74a17f46be70ac3410b4b3dc62813d7e7c3b1e64a04cba2bdc8e
+content_python_sha: fa899e4fe5aab8ad6160a2dd0b9a3d79a8e50daa2adc73012165bd8044d0d01d
 content_csharp_sha: 598788e84d04115388d3dd05470e2383e57633ca2cee3dcebf3b58badf42fabf
 reason: >-
-  Cote Python SEUL converti (10 sep). SW-3b-Python-GraphOperations (30 cellules md) : md 2, 5, 8,
-  12, 14, 17, 21, 22 (1 chacun), md 30/30, derniere (2). Le jumeau C# (SW-3-CSharp-GraphOperations)
-  ne porte AUCUN separateur standalone convertible, verifie par --check sur l'arbre de la PR. Re-
-  attestation de parite -- hr_separator vague 2 (#15611, lane myia-po-2027:CoursIA), markdown-only,
-  passage devant la regle famille #14209 trace au claim et au body PR. Converti par
-  scripts/notebook_tools/fix_hr_separator.py dans son allowlist (hors frontmatter, bloc cloture,
-  setext). Diff = 1 ligne de source JSON par separateur ; cellules code, outputs, execution_count et
-  metadata byte-identiques. Aucun strip outille posterieur : le blob atteste ici est celui du HEAD
-  de la PR.
+  Re-attestation post-absorption de main (update-branch apres merge de #16035) : le cote Python
+  seul a bouge (SW-3b-Python-GraphOperations enrichi par la conversion hr_separator vague 2 de la
+  lane po-2026 et la mienne, fusionnees), le cote C# (SW-3-CSharp-GraphOperations) est
+  byte-identique (csharp_sha et content_csharp_sha inchanges vs l'attestation precedente). Conversion
+  hr_separator d'origine : cote Python seul, 10 separateurs, md 2, 5, 8, 12, 14, 17, 21, 22 (1
+  chacun), md 30/30, derniere (2) ; le jumeau C# ne porte AUCUN separateur standalone convertible,
+  verifie par --check sur l'arbre de la PR. hr_separator vague 2 (#15611, lane
+  myia-po-2027:CoursIA), markdown-only, regle famille #14209 tracee au claim et au body PR.
+  Converti par scripts/notebook_tools/fix_hr_separator.py dans son allowlist. Diff = 1 ligne de
+  source JSON par separateur ; cellules code, outputs, execution_count et metadata byte-identiques.
+  Aucun strip outille posterieur : le blob atteste ici est celui du HEAD de la PR apres merge.
