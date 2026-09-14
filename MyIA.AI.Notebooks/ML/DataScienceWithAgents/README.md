@@ -122,7 +122,8 @@ DataScienceWithAgents/
 │   └── 4.3-TransferLearning-ResNet.ipynb
 │
 ├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
-│   └── WS-00a-Ondelettes-1D-from-scratch.ipynb
+│   ├── WS-00a-Ondelettes-1D-from-scratch.ipynb
+│   └── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -206,11 +207,12 @@ Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
 ## Ondelettes et scattering (04b-Wavelet-Scattering)
 
-Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle.
+Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle — avant son extension 2D séparable aux bandes orientées et à la compression d'image.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
 | [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+| [WS-00b-Ondelettes-2D-from-scratch](04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
 
 Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
 
