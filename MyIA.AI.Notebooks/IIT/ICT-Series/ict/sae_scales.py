@@ -1,8 +1,10 @@
 """Registre GPU-free de la collection SAE officielle Qwen-Scope (#8236).
 
 La collection publique comprend sept backbones Qwen3/Qwen3.5, chacun publie
-avec deux variantes de sparsité (L0_50 et L0_100). Ce module matérialise ce
-contrat sans accès réseau, transpose une profondeur relative via
+avec deux variantes de sparsité (L0_50 et L0_100). Le recensement API consigné
+dans l'issue #8236 les 26 juillet et 5 août 2026 atteste des SAE résiduelles à
+toutes les couches de chaque backbone. Ce module matérialise ce contrat sans
+accès réseau, transpose une profondeur relative via
 :func:`ict.sae_traces.resolve_capture_layer`, puis mesure la couverture des
 traces de fidélité committées à partir de leurs métadonnées embarquées.
 
