@@ -271,6 +271,11 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
             // (RECOUVREMENT ci-après), qui mesure le contenu rendu et
             // l'ordre de peinture au lieu de la boîte élément naïve.
             const chevauchements = [];
+            // #16188 : paires éteintes par la confirmation élément ci-dessous.
+            // Un correctif muet serait indiscernable d'un organe mort : la
+            // notice [CHEVAUCHEMENT-FANTOME] rapporte ce compte (#12719
+            // acceptance 4 -- dire ce qu'on a refusé de rapporter).
+            let chevauchementsEteints = 0;
             const textEls = Array.from(
                 root.querySelectorAll('h1, h2, h3, h4, p, li, blockquote, td, th')
             );
@@ -332,7 +337,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                         const eb = b.el.getBoundingClientRect();
                         const eOverlapX = Math.min(ea.right, eb.right) - Math.max(ea.left, eb.left);
                         const eOverlapY = Math.min(ea.bottom, eb.bottom) - Math.max(ea.top, eb.top);
-                        if (eOverlapX <= 0 || eOverlapY <= 0) continue;
+                        if (eOverlapX <= 0 || eOverlapY <= 0) { chevauchementsEteints++; continue; }
                         chevauchements.push({
                             a: a.key, b: b.key,
                             a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
@@ -538,7 +543,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                 };
             }
 
-            return { horsCanvas, chevauchements, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
+            return { horsCanvas, chevauchements, chevauchementsEteints, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
         }""",
         [canvas_w, canvas_h],
     )
@@ -554,6 +559,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
         "hors_canvas": hors,
         "container_only": bool(hors) and not any(h.get("tag") in CONTENT_TAGS for h in hors),
         "chevauchements": raw.get("chevauchements", []),
+        "chevauchements_eteints": raw.get("chevauchementsEteints", 0),
         "recouvrements": raw.get("recouvrements", []),
         "occupation": raw.get("occupation"),
     }
@@ -664,6 +670,15 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
                 f"{c['a']} × {c['b']} overlap={c['overlap']}px element_overlap={c.get('element_overlap')}px"
             )
+        # #16188 : la porte de confirmation élément (#15695) est un témoin,
+        # pas un silence -- chaque effleurement Range qu'elle éteint est
+        # compté et rapporté en notice. Non bloquant par construction.
+        if r.get("chevauchements_eteints"):
+            out.append(
+                f"::notice file={rel},line={line}::[CHEVAUCHEMENT-FANTOME] slide {r['slide']} ({head}) — "
+                f"{r['chevauchements_eteints']} effleurement(s) Range éteint(s) par la "
+                f"confirmation élément (#15695) : boîtes élément disjointes, rien à l'écran"
+            )
         for rv in r.get("recouvrements", [])[:3]:
             out.append(
                 f"::warning file={rel},line={line}::[RECOUVREMENT-TEXTE-IMAGE] slide {r['slide']} — "
@@ -759,6 +774,7 @@ def main():
     n_total = len(results)
     n_hors = sum(1 for r in results if content_overflow(r))
     n_chev = sum(1 for r in results if r.get("chevauchements"))
+    n_eteints = sum(r.get("chevauchements_eteints") or 0 for r in results)
     n_rec = sum(1 for r in results if r.get("recouvrements"))
     n_occ = sum(1 for r in results if occupation_flagged(r, canvas_h))
 
@@ -790,6 +806,7 @@ def main():
         "n_slides": n_total,
         "n_hors_canvas": n_hors,
         "n_chevauchements": n_chev,
+        "n_chevauchements_eteints": n_eteints,
         "n_recouvrements": n_rec,
         "n_occupation_flagged": n_occ,
         "recouvrement_borne": (

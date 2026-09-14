@@ -126,6 +126,54 @@ class TestGithubAnnotationsNonRegression:
         assert "::warning" in hc and "IMG" in hc
 
 
+class TestTemoinsChevauchementsFantomes16188:
+    """#16188 : les effleurements Range eteints par la porte de confirmation
+    element (#15695) sont comptes et rapportes en notice -- un correctif muet
+    serait indiscernable d'un organe mort."""
+
+    def test_paire_rapportee_porte_les_deux_mesures(self):
+        r = {
+            "slide": 6, "text_head": "vraie collision",
+            "hors_canvas": [], "chevauchements": [{
+                "a": "P.x", "b": "P.y", "a_bbox": [1, 2, 3, 4],
+                "b_bbox": [2, 3, 5, 6], "overlap": [12, 8],
+                "element_overlap": [11.5, 7.25],
+            }],
+            "chevauchements_eteints": 0,
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        chev = next(l for l in lines if "[CHEVAUCHEMENT]" in l)
+        assert "overlap=[12, 8]px" in chev
+        assert "element_overlap=[11.5, 7.25]px" in chev
+
+    def test_effleurement_eteint_emet_une_notice_comptee(self):
+        r = {
+            "slide": 16, "text_head": "graze code padding",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": 1,
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        fant = next(l for l in lines if "CHEVAUCHEMENT-FANTOME" in l)
+        assert "::notice" in fant
+        assert "1 effleurement" in fant
+        assert "#15695" in fant
+        assert not any("[CHEVAUCHEMENT]" in l for l in lines), (
+            "eteint = pas de warning CHEVAUCHEMENT"
+        )
+
+    def test_slide_propre_sans_eteints_n_emet_rien(self):
+        r = {
+            "slide": 2, "text_head": "propre",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": 0,
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        assert not any("CHEVAUCHEMENT" in l for l in lines)
+
+
 class TestBornesAdvisory:
     def test_borne_documentee_dans_docstring(self):
         """Le signal est ADVISORY : le docstring du module (charge par

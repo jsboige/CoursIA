@@ -330,7 +330,7 @@ def test_controle_positif_warning_when_baseline_omitted():
             "canvas_w": 980, "canvas_h": 552,
             "BORNE": "ADVISORY",
             "ctrl_positif_ok": None, "ctrl_positif_msg": None,
-            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_rec": 0, "n_occ": 0,
+            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_eteints": 0, "n_rec": 0, "n_occ": 0,
         }
         exec(block, ns)
         return ns["report"]
