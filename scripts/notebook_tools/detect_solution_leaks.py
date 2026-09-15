@@ -48,7 +48,7 @@ STUB_PATTERNS = [
 ]
 
 EXERCISE_HEADER_RE = re.compile(
-    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*(?:\.\d+)*)\s*[:.]?\s*(.*)',
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d+(?:[a-z])?(?:\.\d+(?:[a-z])?)*)?\s*[:.]?\s*(.*)',
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -188,29 +188,48 @@ def _header_level(line: str) -> int:
     return len(m.group(1)) if m else 0
 
 
-def get_parent_header_key(cells, idx) -> str:
-    """Return a key representing the closest enclosing parent header for cell at
+def get_parent_header_key(cells, idx, current_level=0) -> str:
+    """Return a key representing the hierarchical ancestry enclosing cell at
     ``idx``.
 
-    Scans backwards from ``idx`` to find the closest markdown header line
-    at a STRICTLY LOWER level (parent) than the header in the cell at ``idx``.
-    Returns a string key ``level:text`` where text is the header text stripped
-    of leading ``#`` and whitespace. If no parent header found, returns
-    ``"root"``.
+    Walks backwards from ``idx`` and collects ALL ancestor headers, ordered
+    from outermost (lowest level number, e.g. ``#``) to innermost (highest
+    level number below ``current_level``). The key is the joined path
+    ``"<l1>:<t1>|<l2>:<t2>|..."``, with each segment ``"<level>:<text>"``.
+    Returns ``"root"`` if no ancestor header is found.
 
-    This enables scoping duplicate exercise number detection to the parent
-    section: two ``### Exercice 1`` under different ``##`` parents are NOT
-    duplicates; two ``### Exercice 1`` under the same ``##`` parent ARE.
+    ``current_level`` is the level of the EXERCISE header that owns this
+    cell (e.g. 3 for ``### Exercice 1``). Pass it from the caller: deriving
+    it from the last arbitrary header in the cell conflates distinct parents
+    when the cell holds multiple markdown headers. If omitted, the function
+    falls back to the last header of the cell (legacy behaviour, retained
+    for callers that do not yet pass the level).
+
+    Identity = full hierarchical path. Two ancestors that happen to share the
+    same immediate heading text but live under different grand-ancestors are
+    distinct. So ``# Partie A > ## Exercices > ### Exercice 1`` and
+    ``# Partie B > ## Exercices > ### Exercice 1`` return DIFFERENT keys and
+    are no longer flagged as duplicates.
     """
-    # First, get the level of the current cell's header (if any)
-    current_level = 0
-    if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
-        src = ''.join(cells[idx].get('source', []))
-        matches = HEADER_LINE_RE.findall(src)
-        if matches:
-            current_level = _header_level(matches[-1])
+    # 1. Resolve the exercise header level from the cell only if the caller
+    #    did not pass it (legacy fallback).
+    if current_level == 0:
+        if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+            src = ''.join(cells[idx].get('source', []))
+            matches = HEADER_LINE_RE.findall(src)
+            if matches:
+                current_level = _header_level(matches[-1])
 
-    # Scan backwards for the closest header at a STRICTLY lower level
+    # 2. Walk backwards, accumulating ancestors whose level is STRICTLY lower
+    #    than the exercise header. The first header we encounter at a given
+    #    level is the innermost ancestor of that level (closest to the
+    #    exercise). We then OVERWRITE it if a closer cell at the same level
+    #    appears later in the scan (but no closer header at strictly lower
+    #    level exists, so the previous strictly-lower header is the canonical
+    #    ancestor for its level).
+    ancestors = []  # list of (level, text) ordered innermost first
+    seen_levels = set()
+    found_any = False
     for k in range(idx - 1, -1, -1):
         cell = cells[k]
         if cell.get('cell_type') != 'markdown':
@@ -219,15 +238,31 @@ def get_parent_header_key(cells, idx) -> str:
         header_lines = HEADER_LINE_RE.findall(src)
         if not header_lines:
             continue
-        # Check headers from last to first (closest to farthest in this cell)
+        # Walk headers in this cell from closest (last) to farthest (first).
         for header_line in reversed(header_lines):
             level = _header_level(header_line)
-            if 0 < level < current_level:
-                # Found a parent header - extract text (remove leading # and whitespace)
-                text = re.sub(r'^#+\s*', '', header_line)
-                return f"{level}:{text}"
-    
-    return "root"
+            if level <= 0 or level >= current_level:
+                continue  # siblings/cousins of the exercise, not ancestors
+            if level in seen_levels:
+                continue  # already have the canonical ancestor for this level
+            text = re.sub(r'^#+\s*', '', header_line)
+            ancestors.append((level, text))
+            seen_levels.add(level)
+            found_any = True
+        # Optimization: stop scanning once we have level=1 (root) — cannot
+        # have anything outside it.
+        if 1 in seen_levels:
+            break
+
+    if not found_any:
+        return "root"
+
+    # Order outermost-first (level 1, 2, ...). The last-encountered ancestor
+    # at each level is the closest one; we walked backwards, so within a
+    # level the LAST insertion is the closest. Sort by level to make the
+    # path deterministic regardless of insertion order across levels.
+    ancestors_sorted = sorted(ancestors, key=lambda lt: lt[0])
+    return "|".join(f"{lvl}:{txt}" for lvl, txt in ancestors_sorted)
 
 
 def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
@@ -870,21 +905,24 @@ def scan_notebook(path: str) -> list[dict]:
         has_soumis = bool(SOUMIS_PAR_RE.search(source))
 
         if num:
-            # Build the full exercise identifier for duplicate detection.
-            # If title starts with a letter (e.g., "b" in "Exercice 2b"), include
-            # it as part of the identifier to avoid treating "Exercice 2" and
-            # "Exercice 2b" as duplicates.
+            # Build the exercise identifier for duplicate detection. The regex
+            # now captures an optional ASCII letter suffix glued to the digit
+            # directly (e.g. "Exercice 2b" -> num="2b", "Exercice 8.1a" ->
+            # num="8.1a"). No title-driven heuristic needed: title prose like
+            # "Exercice 1 : First" yields num="1" and the colon-separated
+            # title is ignored for identifier purposes. Recall tests
+            # test_duplicate_exercise_number and
+            # test_identical_subnumber_still_duplicate pass when the suffix
+            # comes from the grammar only.
             exercise_identifier = num
-            if title and title[0].isalpha():
-                # Include the first word of title (e.g., "b" from "b : ...")
-                first_word = title.split()[0].rstrip(':/—-')
-                exercise_identifier = f"{num}{first_word}"
             
             # Scope duplicate detection by parent header: two "Exercice N" under
             # different parent sections are NOT duplicates; two "Exercice N" under
             # the same parent ARE. Fixes FP where notebooks reset numbering in
             # new sections (e.g., "### Exercices — Partie A" then "### Exercices — Partie B").
-            parent_key = get_parent_header_key(cells, i)
+            parent_key = get_parent_header_key(
+                cells, i, current_level=_header_level(m.group(0)),
+            )
             if parent_key not in exercise_numbers:
                 exercise_numbers[parent_key] = {}
             if exercise_identifier in exercise_numbers[parent_key]:
