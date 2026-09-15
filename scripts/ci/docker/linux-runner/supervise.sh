@@ -298,6 +298,24 @@ BACKOFF_MAX_SEC="${COURSIA_RUNNER_BACKOFF_MAX_SEC:-300}"
 # jitter la disperse.
 BACKOFF_JITTER_PCT="${COURSIA_RUNNER_BACKOFF_JITTER_PCT:-25}"
 
+# #15154 : code HTTP et stderr du dernier fetch_token, lus par les boucles
+# pour discriminer 4xx-terminal (compte sans droit admin) de 5xx/reseau
+# (transitoire, retry legitime). Les boucles retentaient a l'identique sur
+# les deux branches -- un 403 sur droit manquant bouclait indefiniment.
+#
+# Passage par FICHIER (pas par variable bash) : fetch_token est toujours
+# invoque via `token="$(fetch_token)"`, donc DANS un subshell. Toute
+# affectation directe a une variable du scope parent y est silencieusement
+# perdue (la portee du subshell est isolee, les `export` aussi -- c'est
+# juste une fonction bash appelee par commande). Un fichier ecrit dans
+# STATE_DIR traverse le subshell sans encombre. Voie alternative evaluee
+# et rejetee : `eval "$(fetch_token)"` -- elle execute du code en arriere
+# plan et complique le chemin de lecture. Le fichier reste la voie
+# observable : `cat $FETCH_TOKEN_STATE_FILE` rend l'etat, comme un sentinel.
+FETCH_TOKEN_STATE_FILE="$STATE_DIR/.fetch_token_state"
+mkdir -p "$STATE_DIR"
+: > "$FETCH_TOKEN_STATE_FILE"
+
 # Seuil de packs du cache _work persistant (#15105). Au-dela, l'entrypoint du
 # conteneur repack le clone (gc.auto=0 pose par actions/checkout : rien
 # d'autre ne consolide jamais -- slot 1 : 264 packs, compte croissant a
@@ -1205,6 +1223,27 @@ fetch_token() {
   # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
   # compte sans droit admin) doit atteindre l'operateur. Le message de la
   # boucle resume le symptome ; il ne remplace pas la cause.
+  #
+  # #15154 : on capture le code HTTP distingue par stderr pour discriminer
+  # `gh: ... (HTTP 403)` (terminal : le compte n'a pas le droit admin,
+  # retenter ne resout rien) de `gh: ... (HTTP 5xx)` ou absence de reponse
+  # (transitoire : API momentanement indisponible, retry legitime). Avant
+  # ce changement, une cause structurelle (compte sans droit) bouclait
+  # indefiniment en se faisant passer pour une panne transitoire.
+  #
+  # IMPORTANT : le resultat est depose dans $FETCH_TOKEN_STATE_FILE (chemin
+  # absolu ecrit dans l'entete), PAS dans une variable bash. Un appel
+  # `token="$(fetch_token)"` execute la fonction dans un subshell -- les
+  # asignations de variables y sont locales et perdues au retour. Le fichier
+  # survit au subshell. Format : "HTTP=<code>\nERR=<stderr tronque>".
+  local err="" http_code="" state_tmp=""
+  err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
+  if [ -n "$err" ]; then
+    http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
+    printf 'HTTP=%s\nERR=%s\n' "${http_code:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+    return 1
+  fi
+  printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
   gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token
 }
 
@@ -1231,7 +1270,36 @@ slot_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      echo "[slot $slot] token indisponible (droit admin gh ?) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      # #15154 : 4xx (sauf 408 timeout) = terminal apres N essais -- un compte
+      # sans droit admin ne se gagne pas par la perseverance. 5xx / 0 = transitoire,
+      # retry legitime. La discrimination se fait sur le code HTTP que fetch_token
+      # a depose dans $FETCH_TOKEN_STATE_FILE (le fichier survit au subshell
+      # d'invocation `$(fetch_token)` -- une variable bash n'aurait pas traverse).
+      local http="" terminal=0
+      if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
+        http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+      fi
+      : "${http:=0}"
+      case "$http" in
+        4??) [ "$http" != "408" ] && terminal=1 ;;
+      esac
+      if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
+        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
+        # erreur. Le sentinel STOP_FILE est observe par leur test de boucle
+        # (`while [ ! -f "$STOP_FILE" ]`), donc ils sortent en arret gracieux
+        # au prochain tour. Le superviseur parent finit sur `wait` quand
+        # tous les enfants sont morts -- sans cette coordination, il
+        # attendrait indefiniment les slots sains. Le sentinel est un
+        # mecanisme deja porte par cmd_stop, on le REUTILISE ici.
+        touch "$STOP_FILE" 2>/dev/null || true
+        die "superviseur arrete -- cause structurelle, voir message precedent"
+      fi
+      if [ "$terminal" -eq 1 ]; then
+        echo "[slot $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+      else
+        echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      fi
       sleep "$wait_s"
       continue
     fi
@@ -1371,6 +1439,9 @@ utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
     echo "$!" >> "$STATE_DIR/pids"
   done
   echo "slots lances. Arret gracieux : $0 stop"
+  # #15154 : un slot qui meurt par ABANDON pose le sentinel STOP_FILE --
+  # les autres slots en tiennent compte et sortent en arret gracieux a leur
+  # prochain tour de boucle. `wait` rend quand tous les enfants sont morts.
   wait
 }
 
@@ -1668,7 +1739,27 @@ waiter_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      echo "[waiter $slot] token indisponible (droit admin gh ?) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop).
+      local http="" terminal=0
+      if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
+        http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+      fi
+      : "${http:=0}"
+      case "$http" in
+        4??) [ "$http" != "408" ] && terminal=1 ;;
+      esac
+      if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
+        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
+        # les slots et waiters sur la meme cause structurelle.
+        touch "$STOP_FILE" 2>/dev/null || true
+        die "superviseur waiter arrete -- cause structurelle, voir message precedent"
+      fi
+      if [ "$terminal" -eq 1 ]; then
+        echo "[waiter $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+      else
+        echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      fi
       sleep "$wait_s"
       continue
     fi

@@ -93,7 +93,7 @@ La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch
 
 | Série | Premier notebook | Commande rapide |
 |-------|-----------------|-----------------|
-| **Tweety** | `Tweety/Tweety-1-Setup.ipynb` | Ouvrir dans Jupyter, exécuter toutes les cellules |
+| **Tweety** | `Tweety/Tweety-01-Setup-Python.ipynb` | Ouvrir dans Jupyter, exécuter toutes les cellules |
 | **Lean** | `Lean/Lean-1-Setup.ipynb` | `wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"` |
 | **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
@@ -130,8 +130,8 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
 | **Fondations** |   |   |   |   |
-| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
-| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : prédicats, quantificateurs | 2 | Java/JPype |
+| 1 | [Tweety-1-Setup](Tweety/Tweety-01-Setup-Python.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
+| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-02-Basic-Logics-Python.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : prédicats, quantificateurs | 2 | Java/JPype |
 | 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | Description Logic, Logique Modale (SPASS), QBF, Conditionnelle | 2 | Java/JPype, SPASS |
 | **Revision de Croyances** |   |   |   |   |
 | 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incohérence | 2 | Java/JPype |
@@ -139,12 +139,12 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, sémantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety/Tweety-5b-Lean-Argumentation.ipynb) | Companion natif (kernel Lean) : preuve formelle 0-sorry de l'argumentation de Dung (grounded = point fixe Knaster–Tarski) dans le lake `argumentation_lean` | 3 | Lean 4 / WSL |
 | 5d | [Tweety-5d-Stable-Synthesis-Lean](Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | Synthèse certifiée d'extensions stables : Z3 → Lean (Loi II) | 4 | Java/JPype, Z3 |
-| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
+| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |   |   |   |   |
-| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de préférence, théorie du vote (Borda, Copeland) | 1 | Java/JPype |
+| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-08-Agent-Dialogues-Python.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-09-Preferences-Python.ipynb) | Ordres de préférence, théorie du vote (Borda, Copeland) | 1 | Java/JPype |
 | **Raisonnement avancé** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety/Tweety-10-MLN.ipynb) | Markov Logic Networks : FOL pondérée, inférence probabiliste sur formules | 3 | Java/JPype |
 | 11 | [Tweety-11-Causal](Tweety/Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus (Pearl), interventions, contrefactuels | 3 | Java/JPype |
@@ -508,7 +508,7 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 ```
 SymbolicAI/
 ├── Tweety/                    # Serie TweetyProject (34 notebooks : 14 Python/JPype + 18 C#/IKVM — EPICs #4667 + #4956 — + 1 Lean Tweety-5b + 1 _probes)
-│   ├── Tweety-1-Setup.ipynb ... Tweety-12-Grounded-Via-TweetyProject.ipynb
+│   ├── Tweety-01-Setup-Python.ipynb ... Tweety-12-Grounded-Via-TweetyProject.ipynb
 │   ├── Tweety-*-Csharp.ipynb  # Modules .NET mergés via IKVM 8.14/8.15
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
@@ -618,7 +618,7 @@ dotnet interactive jupyter install
 
 **Status exécution : 10/10 SUCCESS** (snapshot 15/08/2026 sur le périmètre Python d'alors ; la série compte désormais 14 notebooks Python — cf. marqueur `CATALOG-STATUS`)
 
-Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
+Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 
 1. **JDK 17 portable** : Auto-télécharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation système requise, pas de UAC.
 2. **JARs TweetyProject** : Auto-télécharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
@@ -813,7 +813,7 @@ L'IA symbolique repose sur la **manipulation explicite de symboles et de règles
 
 ### Comment installer l'environnement Tweety ?
 
-Ouvrez le notebook `Tweety-1-Setup.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python Tweety/scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+Ouvrez le notebook `Tweety-01-Setup-Python.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python Tweety/scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
 
 ### Par quelle sous-série commencer si je n'ai pas de JDK installe ?
 
