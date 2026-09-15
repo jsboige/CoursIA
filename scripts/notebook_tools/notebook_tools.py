@@ -2209,7 +2209,8 @@ def cmd_figures_extract(args):
             nb_path, args.cell, args.output_index, out_path, args.alt,
             description_visuelle=args.description_visuelle,
             max_dim=args.max_dim, max_bytes=args.max_bytes,
-            serie_root=serie_root)
+            serie_root=serie_root,
+            write_manifest=not args.no_manifest)
     except (ValueError, FileNotFoundError) as exc:
         print_error(str(exc))
         return 1
@@ -2378,6 +2379,11 @@ def main():
                       help='Weight cap in bytes (default: 200 KB, EPIC #5654 HARD)')
     p_fe.add_argument('--serie-root',
                       help='Serie root for relative path in MANIFEST (default: absolute)')
+    p_fe.add_argument('--no-manifest', action='store_true',
+                      help='Write the PNG but leave MANIFEST.md untouched. '
+                           'For series with a CURATED MANIFEST (measured fields '
+                           '+ dated audit blocks): the default append replaces '
+                           'the same-named block and would drop them (#16275).')
 
     args = parser.parse_args()
 
