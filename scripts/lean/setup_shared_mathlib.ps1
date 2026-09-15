@@ -22,6 +22,7 @@
 .PARAMETER Mode
     Scan     : inventaire des projets, groupes mutualisables, economies estimees. Aucune modification.
     Apply    : cree le cache partage + junctions pour les groupes eligibles. Reversible (backups .bak-2611 + share-state.json).
+    Verify   : compare distinct_code_sorry avant/apres sur les lacs jonctionnes (via count_code_sorry.py --json). Echoue si regression.
     Rollback : restaure les checkouts physiques depuis les backups (lit share-state.json).
 
 .PARAMETER Group
@@ -55,14 +56,16 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Scan', 'Apply', 'Rollback')]
+    [ValidateSet('Scan', 'Apply', 'Verify', 'Rollback')]
     [string]$Mode,
 
     [string]$Group = '',
 
     [switch]$Build,
 
-    [switch]$RemoveBackups
+    [switch]$RemoveBackups,
+
+    [switch]$RecordBaseline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -75,6 +78,33 @@ $BackupSuffix = '.bak-2611'
 
 if ($RemoveBackups -and -not $Build) {
     throw "-RemoveBackups requiert -Build : on ne supprime un backup qu'apres un build verifie SUCCESS."
+}
+
+if ($RecordBaseline -and $Mode -ne 'Apply') {
+    throw "-RecordBaseline requiert -Mode Apply : la baseline est posee juste avant la premiere jonction."
+}
+
+# Record baseline : echantillonne distinct_code_sorry AVANT toute jonction pour Verify ulterieur.
+if ($RecordBaseline) {
+    Write-Host "RecordBaseline : echantillonnage distinct_code_sorry avant Apply..."
+    $currentJson = & python scripts/lean/count_code_sorry.py --json 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "count_code_sorry.py a echoue (exit $LASTEXITCODE) -- baseline non posable. Annule."
+    }
+    $current = $currentJson | ConvertFrom-Json
+    $baselinePath = Join-Path $CacheRoot 'verify-baseline.json'
+    New-Item -ItemType Directory -Force -Path $CacheRoot | Out-Null
+    [ordered]@{
+        capturedAt = (Get-Date -Format 'o')
+        capturedFrom = "Apply -Group '$Group' -RecordBaseline (machine=$($env:COMPUTERNAME))"
+        lakes = @($current.lakes | ForEach-Object {
+            [ordered]@{
+                lake = $_.lake
+                distinct_code_sorry = [int]$_.distinct_code_sorry
+            }
+        })
+    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $baselinePath -Encoding utf8NoBOM
+    Write-Host "Baseline posee : $baselinePath ($((($current.lakes | Measure-Object).Count)) lacs)"
 }
 
 function Get-DirSizeGB([string]$Path) {
@@ -339,6 +369,83 @@ function Invoke-Apply {
     }
 }
 
+# --- Verify : anti-regression distinct_code_sorry ---
+
+function Invoke-Verify {
+    $projects = Get-LeanProjects
+    if (-not $projects) { Write-Host "Aucun projet Lake avec mathlib trouve."; return }
+
+    # Filter to junctioned lakes only -- Verify porte sur l'operation effective, pas l'inventaire.
+    $junctioned = @($projects | Where-Object IsJunction)
+    if (-not $junctioned) {
+        Write-Host "Aucun projet jonctionne (.mathlib-cache/) -- Verify presuppose un Apply anterieur. Rien a verifier."
+        return
+    }
+
+    $baselinePath = Join-Path $CacheRoot 'verify-baseline.json'
+    if (-not (Test-Path -LiteralPath $baselinePath)) {
+        Write-Host "Pas de baseline ($baselinePath). Execute un Apply avec -RecordBaseline d'abord, OU pose manuellement le baseline."
+        return
+    }
+    $baseline = Get-Content -LiteralPath $baselinePath -Raw | ConvertFrom-Json
+    $baselineMap = @{}
+    foreach ($l in $baseline.lakes) {
+        $baselineMap[$l.lake] = [int]$l.distinct_code_sorry
+    }
+
+    # Refresh measurement from current state (instrument canonique : count_code_sorry.py --json).
+    $currentJson = & python scripts/lean/count_code_sorry.py --json 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "count_code_sorry.py a echoue (exit $LASTEXITCODE) -- baseline non comparable. Annule."
+    }
+    $current = $currentJson | ConvertFrom-Json
+    $currentMap = @{}
+    foreach ($l in $current.lakes) {
+        $currentMap[$l.lake] = [int]$l.distinct_code_sorry
+    }
+
+    Write-Host "=== Verify : anti-regression distinct_code_sorry (jonctionnes) ==="
+    $baselineMtime = (Get-Item -LiteralPath $baselinePath).LastWriteTime.ToString('o')
+    Write-Host "Baseline : $baselinePath  ($baselineMtime)"
+    Write-Host "Lacs jonctionnes sur cette machine : $($junctioned.Count)"
+    Write-Host ''
+
+    $deltas = @()
+    $regressions = @()
+    foreach ($m in $junctioned) {
+        $base = $baselineMap[$m.RelPath]
+        $cur  = $currentMap[$m.RelPath]
+        if ($null -eq $base) {
+            Write-Host ("  {0,-70} {1} -> {2}  (lac absent de la baseline, skip)" -f $m.RelPath, '?', ($cur ?? '?'))
+            continue
+        }
+        if ($null -eq $cur) {
+            Write-Host ("  {0,-70} {1} -> {2}  (lac absent de l'inventaire courant, skip)" -f $m.RelPath, $base, '?')
+            continue
+        }
+        $delta = $cur - $base
+        $marker = if ($delta -gt 0) { ' REGRESSION' } elseif ($delta -lt 0) { ' (amelioration)' } else { '' }
+        Write-Host ("  {0,-70} {1} -> {2}  delta={3:+#;-#;0}{4}" -f $m.RelPath, $base, $cur, $delta, $marker)
+        if ($delta -gt 0) { $regressions += [pscustomobject]@{ lake = $m.RelPath; base = $base; cur = $cur; delta = $delta } }
+        $deltas += [pscustomobject]@{ lake = $m.RelPath; base = $base; cur = $cur; delta = $delta }
+    }
+
+    Write-Host ''
+    if ($regressions.Count -gt 0) {
+        Write-Host "=== Verify ECHEC : $($regressions.Count) regression(s) detectee(s) ===" -ForegroundColor Red
+        foreach ($r in $regressions) {
+            Write-Host ("  REGRESSION {0} : {1} -> {2} (+{3} distinct_code_sorry)" -f $r.lake, $r.base, $r.cur, $r.delta) -ForegroundColor Red
+        }
+        throw "Regression distinct_code_sorry sur $($regressions.Count) lac(s) -- Rollback recommande (mode Rollback -Group <rev8>)."
+    }
+
+    # Total sanity (flotte entiere, pas seulement jonctionnes) -- un delta global peut signaler un changement exterieur.
+    $baselineTotal = ($baselineMap.Values | Measure-Object -Sum).Sum
+    $currentTotal  = ($currentMap.Values | Measure-Object -Sum).Sum
+    Write-Host "Total flotte : $baselineTotal -> $currentTotal (delta global $(([int]$currentTotal - [int]$baselineTotal)))"
+    Write-Host "=== Verify OK : aucune regression sur les lacs jonctionnes ==="
+}
+
 # --- Rollback ---
 
 function Invoke-Rollback {
@@ -396,5 +503,6 @@ function Invoke-Rollback {
 switch ($Mode) {
     'Scan'     { Invoke-Scan }
     'Apply'    { Invoke-Apply }
+    'Verify'   { Invoke-Verify }
     'Rollback' { Invoke-Rollback }
 }
