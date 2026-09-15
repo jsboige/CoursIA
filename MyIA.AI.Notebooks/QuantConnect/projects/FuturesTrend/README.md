@@ -211,23 +211,27 @@ quand la cible est proche de la position actuelle.
   jambe existante quand le signe est conservé).
 - Les coûts backtestés deviennent comparables à un rebalancement réel.
 
-### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2`)
+### Statut courant (mise à jour verdict 2026-09-15, lane `myia-po-2023:CoursIA`)
 
-- Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 465
-
-  lignes, EOL LF, 0 secret literal).
-- **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
-
-  QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
-  0 hit). La jambe QC Cloud (compile/backtests) sera déléguée à une lane CoursIA-2
-  équipée, sur cette branche, **sans transmission de secret** (Tell secrets-hygiene
-  règle 1 : jamais de clair sur dashboard/PR/commit, `os.getenv("KEY","<literal>")`
-  interdit).
-- **Verdict futur** : `BEATS` / `NO BEATS` / `INCONCLUSIVE` selon Sharpe/CAGR/MaxDD/
-
-  PSR/exposition/coûts/ordres sur fenêtre >= 2016-2026, **sans présumer** du
-  Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023 (fenêtre
-  favorable non-représentative).
+- Le code **compile et tourne sur QC Cloud** (projet dédié `36488678`
+  `FuturesTrend-Carver13`) : le verdict SOTA est `SOTA-OK` — les backtests
+  réels ont remplacé la compilation statique (historique : `RECOVERABLE-MACHINE`
+  c.1111, credentials QC alors absents sur po-2027). Le chemin d'ordre a été
+  réparé par la PR #16051 (#15992 : 0 ordre → 1447 ordres / 2763 séances).
+- **Verdict posé (acceptance #15549) : `NO BEATS` sur la fenêtre exigée
+  2016-2026.** Mesures same-day du 2026-09-15 (dataset identique, projet
+  36488678) : code de référence pré-cache `da92396c` — Sharpe **−0.168**,
+  1447 ordres ; candidat fenêtres glissantes #16298 `d461d6af` — Sharpe
+  **−0.231**, CAGR −27.1 %, MaxDD 98.2 %, 1433 ordres (l'écart −14 ordres
+  est la divergence calendrier feed/bulk documentée dans #16298, sans effet
+  sur le verdict : les DEUX runs perdent). Le Sharpe 0.944 vs 0.749 de
+  l'article #15989 (2020-2023, fenêtre favorable courte) n'est **pas
+  confirmé** sur la décade 2016-2026 — exactement la précaution que la
+  section précédente posait. La sous-fenêtre 2020-2023 seule n'a pas été
+  re-mesurée séparément : non mesuré, non affirmé. Remarque d'univers : un
+  instrument (SB) ne résout jamais de contrat mappé (18/19 effectifs,
+  #16064/#16072) — il ne trade pas, le verdict porte bien sur les 18
+  instruments actifs.
 - **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
 
   (`msg-20260911T040615-4c08xy`) avant lancement des runs QC Cloud — (a) carry
