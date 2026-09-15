@@ -27,35 +27,21 @@ measure" with "measured 0".
 """
 
 import argparse
-import errno
 import json
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_exec_sequence import code_exec_counts, sequence_verdict
+from fork_retry import run_with_fork_retry
 
 # Same exclusions as notebook-execution-required.yml's detect step plus the
 # checkpoints rule of the tier-1 scanner: archived, papermill-output and
 # research copies are not deliverable notebooks.
 EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
                    "/research/")
-
-# EAGAIN au spawn (contention de processus, p.ex. pytest-xdist -n 4 sur le
-# runner) est transitoire : le `except OSError: return None` historique
-# transformait ce pic de charge en "changed notebooks : 0" -> faux vert CI
-# (flake diagnostique sur #16125, tentative 3). On retente borne avant de
-# rendre l'echec.
-_EAGAIN_ERRNOS = (errno.EAGAIN, getattr(errno, "EWOULDBLOCK", errno.EAGAIN))
-_EAGAIN_ATTEMPTS = 3
-_EAGAIN_BACKOFF = (0.05, 0.15)  # avant les 2e et 3e tentatives
-
-
-def _est_eagain(exc):
-    return isinstance(exc, OSError) and exc.errno in _EAGAIN_ERRNOS
 
 
 class InstrumentUnavailable(RuntimeError):
@@ -78,18 +64,14 @@ class InstrumentUnavailable(RuntimeError):
 def git(*args, cwd=None):
     """Run a git command, returning stdout (utf-8), None on git-level
     failure (returncode != 0), or raising InstrumentUnavailable when the
-    spawn itself failed after bounded EAGAIN retries."""
-    for tentative in range(_EAGAIN_ATTEMPTS):
-        try:
-            out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                                 encoding="utf-8", errors="replace",
-                                 check=False)
-            return out.stdout if out.returncode == 0 else None
-        except OSError as exc:
-            if not _est_eagain(exc) or tentative == _EAGAIN_ATTEMPTS - 1:
-                raise InstrumentUnavailable(exc) from exc
-            time.sleep(_EAGAIN_BACKOFF[tentative])
-    return None
+    spawn itself failed after bounded fork retries (#16217 primitive)."""
+    try:
+        out = run_with_fork_retry(
+            ["git", *args], cwd=cwd, capture_output=True,
+            encoding="utf-8", errors="replace", check=False)
+    except OSError as exc:
+        raise InstrumentUnavailable(exc) from exc
+    return out.stdout if out.returncode == 0 else None
 
 
 def resolve_base(base, cwd=None):

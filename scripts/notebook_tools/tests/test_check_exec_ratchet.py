@@ -249,59 +249,39 @@ class TestTransientSpawnRetry:
     """EAGAIN au spawn = contention de processus transitoire (pytest-xdist
     -n 4 sur le runner). Le `except OSError: return None` historique
     transformait ce pic en "changed notebooks : 0" -> faux vert CI (flake
-    #16125) : le wrapper doit retenter borne, pas rendre None au premier
-    echec de spawn."""
+    #16125).
 
-    def _patch_run(self, monkeypatch, etat, resultat_ok):
-        import errno as _errno
+    Depuis #16164 + #16217 la reprise bornee est mutualisee dans
+    fork_retry.run_with_fork_retry (couverture propre dans
+    test_fork_retry.py). Ce qui reste specifique au ratchet : la traduction
+    de l'OSError remontee en InstrumentUnavailable, et l'absence de retry
+    sur une OSError non transitoire."""
 
-        def faux_run(*args, **kwargs):
-            etat["appels"] += 1
-            if etat["appels"] <= etat["echecs"]:
-                raise BlockingIOError(_errno.EAGAIN,
-                                      "Resource temporarily unavailable")
-            return resultat_ok
-
-        monkeypatch.setattr(ratchet.time, "sleep",
-                            lambda s: etat["dors"].append(s))
-        monkeypatch.setattr(ratchet.subprocess, "run", faux_run)
-
-    def test_eagain_retente_puis_passe(self, monkeypatch):
-        etat = {"appels": 0, "echecs": 2, "dors": []}
-        ok = subprocess.CompletedProcess(args=(), returncode=0, stdout="ok\n")
-        self._patch_run(monkeypatch, etat, ok)
-        assert ratchet.git("status") == "ok\n"
-        assert etat["appels"] == 3
-        assert etat["dors"] == list(ratchet._EAGAIN_BACKOFF)
-
-    def test_autre_oserror_leve_instrument_indisponible(self, monkeypatch):
-        # #16164 : un spawn rate qui n'est pas EAGAIN (git absent, EACCES)
-        # n'est pas une reponse -- l'instrument n'a pas tourne.
-        etat = {"appels": 0, "echecs": 1, "dors": []}
-        import errno as _errno
-
-        def faux_run(*args, **kwargs):
-            etat["appels"] += 1
-            raise OSError(_errno.ENOENT, "git introuvable")
-
-        monkeypatch.setattr(ratchet.time, "sleep",
-                            lambda s: etat["dors"].append(s))
-        monkeypatch.setattr(ratchet.subprocess, "run", faux_run)
-        with pytest.raises(ratchet.InstrumentUnavailable):
-            ratchet.git("status")
-        assert etat["appels"] == 1
-        assert etat["dors"] == []
+    def _fork_vers_erreur(self, monkeypatch, exc):
+        import fork_retry
+        monkeypatch.setattr(fork_retry.subprocess, "run",
+                            lambda *a, **kw: (_ for _ in ()).throw(exc))
 
     def test_eagain_epuise_leve_instrument_indisponible(self, monkeypatch):
-        # #16164 : a l'epuisement des retries, l'echec de spawn monte au
-        # CLI (exit 2) au lieu du faux vert « changed notebooks : 0 ».
-        etat = {"appels": 0, "echecs": 99, "dors": []}
-        ok = subprocess.CompletedProcess(args=(), returncode=0, stdout="ok\n")
-        self._patch_run(monkeypatch, etat, ok)
+        # A l'epuisement des retries, l'echec de spawn monte au CLI (exit 2)
+        # au lieu du faux vert « changed notebooks : 0 ».
+        import fork_retry
+        monkeypatch.setattr(fork_retry.time, "sleep", lambda s: None)
+        self._fork_vers_erreur(
+            monkeypatch,
+            BlockingIOError(errno.EAGAIN, "Resource temporarily unavailable"))
         with pytest.raises(ratchet.InstrumentUnavailable):
             ratchet.git("status")
-        assert etat["appels"] == ratchet._EAGAIN_ATTEMPTS
-        assert etat["dors"] == list(ratchet._EAGAIN_BACKOFF)
+
+    def test_autre_oserror_leve_instrument_indisponible_sans_retry(
+            self, monkeypatch):
+        # git absent / EACCES n'est pas une reponse : un seul appel, pas de
+        # retry (le filtre etroit est couvert par test_fork_retry.py ; ici on
+        # epingle que le ratchet le respecte).
+        self._fork_vers_erreur(
+            monkeypatch, OSError(errno.ENOENT, "git introuvable"))
+        with pytest.raises(ratchet.InstrumentUnavailable):
+            ratchet.git("status")
 
 
 class TestInstrumentIndisponible:
