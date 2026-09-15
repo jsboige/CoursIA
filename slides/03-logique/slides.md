@@ -221,7 +221,7 @@ layout: default
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
-*Notebooks : [Tweety-2-Basic-Logics](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur).*
+*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur).*
 
 ---
 layout: section
@@ -1242,7 +1242,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Substitution: &#123;x/Jean&#125;
 - Resolvante: (Q(Jean) OU R(y))
 
-*Notebooks : [Tweety-2c-FOL-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (FOL avec EProver) · [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) (quantificateurs et preuves).*
+*Notebooks : [Tweety-02c-FOL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (FOL avec EProver) · [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) (quantificateurs et preuves).*
 
 ---
 layout: default
@@ -1305,7 +1305,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - **E-prover** : demonstrateur automatique pour FOL
 - **Lean** : assistant de preuve interactif, très actif en mathematiques
 
-*Notebooks : [Tweety-2c-FOL-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (EProver pilote depuis Python) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur en Lean 4).*
+*Notebooks : [Tweety-02c-FOL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (EProver pilote depuis Python) · [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) (ordre superieur en Lean 4).*
 
 ---
 layout: default
@@ -1382,7 +1382,7 @@ layout: default
   - Coherence des ensembles et forces contextuels des arguments
 - **Argumentum**
 
-*Notebooks : [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) (Dung, semantiques, CF2) · [Tweety-6-Structured-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb).*
+*Notebooks : [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb).*
 
 ---
 layout: default
