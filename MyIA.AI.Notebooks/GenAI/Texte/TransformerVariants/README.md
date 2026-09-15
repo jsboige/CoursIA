@@ -10,7 +10,7 @@ Le Transformer canonique (attention multi-tête, PE additif) reste couvert par l
 |---|---|---|
 | `TV-00a-RoPE-from-scratch.ipynb` | livre | RoPE : rotation par paires de dimensions, invariance de position relative mesuree, contraste avec le PE additif (distance, logit, tache d'inversion entraînée) |
 | `TV-00b` — variantes d'attention | a venir | MHA vs MQA vs GQA (reduction du KV-cache) et SWA (fenetre glissante) |
-| `TV-00c` — mixture of experts | a venir | routage top-k, facteur de capacite, perte d'equilibrage |
+| `TV-00c` — mixture of experts | livre ailleurs | routage top-k, facteur de capacite, perte d'equilibrage — livre comme [3.4c-MoE-from-scratch](../../ML/DataScienceWithAgents/03-DeepLearning/3.4c-MoE-from-scratch.ipynb) dans la serie 03-DeepLearning (accretion du 3.4, #16151 §5.2) |
 | Bloc B — SOTA | a venir | les memes mesures sur un modele industriel charge via `transformers` |
 
 ## Conventions
