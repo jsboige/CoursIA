@@ -100,6 +100,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+| 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | Companion **natif** du lake `conway_lean` : la borne de Tsirelson exécutée in-kernel — `#check` de la signature exacte (7 classes de types + `IsCHSHTuple`, conclusion `≤ (2 * √2) • 1`), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, frontière classique mesurée (score `2` atteint, mélange équilibré → `0`), contrôle positif de kernel contre le REPL muet (#11874) et 3 exercices - Epic #13106 | 30 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | Companion **natif** (kernel Lean) : les 7 déclarations du lake `finiteness_lean` (`Regex`, `nullable`, `deriv`, `derivWord`, `accepts`, `aStar`, `abWord`) re-déclarées fidèlement (kernel sans oleans), vérifiées et exécutées in-kernel, finitude observée sur une regex à union (6 préfixes → 4 dérivées distinctes) | 20 min |
 
@@ -195,6 +196,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
+| 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
 | 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 15 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
@@ -395,6 +397,7 @@ Lean/
 ├── Lean-16i-Translateur-Life.ipynb                 # Python kernel - synthèse d'un translateur minuscule (SAT borné, Loi II, Chantier 2 #12205)
 ├── Lean-16j-Conway-Hashlife-Correctness-Native.ipynb # Lean4 (WSL) kernel - compagnon Hashlife correctness (cône, MacroCell, 4 murs, marge, batterie adverse, Epic #11703)
 ├── Lean-13-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
+├── Lean-13b-CHSH-Tsirelson-Native.ipynb # Lean4 (WSL, conway-build) kernel - borne de Tsirelson : signature, axiomes, frontière classique (Epic #13106)
 ├── Lean-14-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
 ├── Lean-16f-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
