@@ -1,6 +1,6 @@
 # Continue - Cycle worker
 
-Reprendre le travail sur cette lane : lire les directives coordinateur, choisir la prochaine tache, livrer une PR, reporter. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de close d'issue d'autrui. **`gh auth switch` est autorise et necessaire** (trousseau gh partage entre workspaces — mandat user 2026-08-31) : la ligne rouge est le merge/close d'autrui, pas le switch lui-meme.
+Reprendre le travail sur cette lane : lire les directives coordinateur, puis enchainer les reparations et grains substantiels tant que la session est active. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de close d'issue d'autrui. **`gh auth switch` est autorise et necessaire** (trousseau gh partage entre workspaces — mandat user 2026-08-31) : la ligne rouge est le merge/close d'autrui, pas le switch lui-meme.
 
 ## Workflow
 
@@ -36,7 +36,7 @@ python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre
 
 **P2 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee, deep-queue de la lane si posee sur le dashboard.
 
-**P3 — Le tirage** (sortie 0) : les candidats rendus par la commande ci-dessus. Le pool est **tout l'ouvert, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Pour eviter plusieurs rerolls couteux, demander davantage de candidats (`--grains`, `--umbrellas`, `--delivered`) et exprimer les faits deja etablis avec `--exclude-issue`, les filtres de labels/age/inactivite ou `--urns`. Le cache borne est automatique ; `--cache refresh` force les trois mesures partageables, `--cache off` diagnostique sans disque, `--cache-status` explique `hit/miss/stale`. Poser `[CLAIMED] <#N> — <machine:workspace> <ts>` AVANT d'editer, livrer. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (>=1 PR/wakeup = PLANCHER, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
+**P3 — Le tirage** (sortie 0) : les candidats rendus forment une **file sequentielle**, pas un menu limite a un seul choix. Le pool est **tout l'ouvert, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Prendre les candidats compatibles dans l'ordre, poser le claim avant chaque edition, livrer, puis passer au suivant sans attendre review, CI, DWELL ou merge du precedent. Les filtres de labels/age/inactivite orientent la premiere passe ; s'ils la vident, le picker les relache automatiquement tout en conservant exclusions explicites, urnes autorisees, claims et signaux de livraison. Une poignee locale epuisee n'est jamais une fin de session. Le cache borne est automatique ; `--cache refresh` force les mesures partageables, `--cache off` diagnostique sans disque, `--cache-status` explique `hit/miss/stale`. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (plancher multi-grain, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
 
 ### Phase 3 : Travailler et livrer
 
@@ -44,11 +44,12 @@ python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre
 - Notebooks : C.1 (pas d'erreur volontaire), C.2 (commit AVEC outputs, re-exec des cellules modifiees), H.3 (pre-commit) — cf [notebook-conventions.md](../rules/notebook-conventions.md).
 - Vrai outil SOTA, jamais workaround degrade ([sota-not-workaround.md](../rules/sota-not-workaround.md)) ; env casse = reparer, pas contourner (regle F).
 - Skills/sous-agents specialises quand ils existent : [docs/reference/subagents-reference.md](../../docs/reference/subagents-reference.md).
+- Avant d'impliquer reviewer, adjoint ou coordinateur, reproduire tout rouge propre a la PR, corriger sa cause et relancer les tests/gates pertinents. Un reviewer valide un livrable deja teste ; il ne sert jamais de premier test-runner. Un rouge confirme sur `main` est signale comme base-inherited avec preuve puis la lane poursuit sa file.
 
 ### Phase 4 : Avant de terminer (obligatoire)
 
 1. **Commit + PR AVANT le rapport** — jamais de [DONE] sur un travail non commite.
-2. `[DONE]` lane-specific sur le dashboard workspace (resume : livrable, PR#, residuel). Une PR livree ne clot pas la session : re-piocher si la fenetre le permet.
+2. `[DONE]` lane-specific sur le dashboard workspace (resume : livrables, PRs, residuel). Une PR livree ne clot jamais la session : poursuivre la file puis re-piocher jusqu'a la fin effective de la session.
 3. Bloqueur necessitant une action user : tag `[ASK USER]` separe du [DONE], repete a CHAQUE fin de session ([user-blocker-signaling](../rules/user-blocker-signaling.md)).
 4. Repondre au DM coordinateur si une mission a ete traitee.
 5. MAJ `MEMORY.md` si lecon durable (les PR#/SHA ephemeres vont au dashboard, pas en memoire).
