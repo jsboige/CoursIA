@@ -507,6 +507,38 @@ def test_check_clear_when_only_my_lane(capsys):
     assert "CLEAR" in out
 
 
+def test_delivered_marker_sentence_period_is_not_a_phantom_lane(capsys):
+    """#15864 -- a lane's own `[DELIVERED]` marker must not become a SECOND lane.
+
+    Reproduced from issue #15674 (2026-09-12). The DELIVERED body ends with
+    French prose right after the lane -- `lane myia-po-2023:CoursIA. Énoncé
+    réécrit ...` -- and the sentence period plus the accented capital word were
+    swallowed into the lane token (`myia-po-2023:CoursIA. Énoncé`, a lane that
+    matches nothing). The guard then blocked the declaring lane on its OWN
+    claim, and the refusal named a lane that does not exist. Measured
+    end-to-end on the guard's own entry point: pre-fix this returns a non-zero
+    verdict, post-fix CLEAR.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA — 2026-09-12T09:0xZ — paths: "
+            "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+            "2026-09-12T09:13:07Z",
+        ),
+        comment(
+            "[DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit en "
+            "deux gestes (chercher inchangé + recenser via "
+            "`client2.count(count_filter=...)`), le piège top-10 nommé dans "
+            "l'énoncé. Exéc complète 12.2s, validate 17 cells PASS.",
+            "2026-09-12T09:17:24Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    out = capsys.readouterr().out
+    assert "myia-po-2023:CoursIA. Énoncé" not in out
+    assert rc == 0
+
+
 def test_check_no_paths_returns_exit_2_and_not_scoped(capsys):
     # #12322 -- when the caller does NOT pass `--paths` AND has no scoped
     # active claim of their own, the call cannot prove disjointness from any
