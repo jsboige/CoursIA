@@ -142,11 +142,11 @@ Pour les praticiens intéressés par les applications multi-agents :
 | # | Notebook                                  | Thème                                                          | Durée   | Stack  |
 |---|-------------------------------------------|----------------------------------------------------------------|---------|--------|
 | **Fondations** |   |   |   |   |
-| 1  | [Tweety-1-Setup](Tweety-1-Setup.ipynb)    | Configuration JVM, JARs, outils externes                       | 20 min  | Python |
-| 2  | [Tweety-2-Basic-Logics](Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle et FOL                          | 45 min  | Python |
-| 2a | [Tweety-2-Basic-Logics-Csharp](Tweety-2-Basic-Logics-Csharp.ipynb) | Logique propositionnelle .NET (IKVM, port pilot #4792) | 30 min | C# PROD |
-| 2b | [Tweety-2b-Semantics-Csharp](Tweety-2b-Semantics-Csharp.ipynb) | Sémantique propositionnelle .NET (mondes possibles)  | 30 min  | C# BETA |
-| 2c | [Tweety-2c-FOL-Csharp](Tweety-2c-FOL-Csharp.ipynb) | FOL porté .NET (IKVM)                                    | 30 min  | C# BETA |
+| 1  | [Tweety-1-Setup](Tweety-01-Setup-Python.ipynb)    | Configuration JVM, JARs, outils externes                       | 20 min  | Python |
+| 2  | [Tweety-2-Basic-Logics](Tweety-02-Basic-Logics-Python.ipynb) | Logique Propositionnelle et FOL                          | 45 min  | Python |
+| 2a | [Tweety-2-Basic-Logics-Csharp](Tweety-02-Basic-Logics-CSharp.ipynb) | Logique propositionnelle .NET (IKVM, port pilot #4792) | 30 min | C# PROD |
+| 2b | [Tweety-2b-Semantics-Csharp](Tweety-02b-Semantics-CSharp.ipynb) | Sémantique propositionnelle .NET (mondes possibles)  | 30 min  | C# BETA |
+| 2c | [Tweety-2c-FOL-Csharp](Tweety-02c-FOL-CSharp.ipynb) | FOL porté .NET (IKVM)                                    | 30 min  | C# BETA |
 | 3  | [Tweety-3-Advanced-Logics](Tweety-3-Advanced-Logics.ipynb) | DL, Modale, QBF, Conditionnelle                      | 40 min  | Python |
 | 3c-DL | [Tweety-3-Advanced-Logics-Csharp](Tweety-3-Advanced-Logics-Csharp.ipynb) | DL/ML/QBF/CL .NET (DRAFT - conflits DLL)         | 30 min  | C# DRAFT |
 | 3c-CL | [Tweety-3-Conditional-Logics-Csharp](Tweety-3-Conditional-Logics-Csharp.ipynb) | Logique conditionnelle .NET (IKVM)              | 25 min  | C# PROD |
@@ -163,17 +163,17 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 5c | [Tweety-5-Abstract-Argumentation-Csharp](Tweety-5-Abstract-Argumentation-Csharp.ipynb) | Twin C# Dung AF **from-scratch** (BCL .NET uniquement, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire de cadres, 3 exercices. Complémentarité from-scratch ↔ Python/IKVM (marathon #4956, §3801) | 50 min | C# BETA |
 | 5d | [Tweety-5d-Stable-Synthesis-Lean](Tweety-5d-Stable-Synthesis-Lean.ipynb) | Synthèse certifiée d'extensions stables (Loi II #12205, variante `-c`, #13597) : spécification → **Z3** (générateur ≠ vérificateur) → témoin `{1, 2, 5}` → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis` + sibling `_en`, i18n #4980) ; cas UNSAT du 3-cycle certifié (`afB_no_stable`) — dissociation enregistrée à la borne n = 3 | 40 min | Python+Lean BETA |
 | 5e | [Tweety-5e-Propositional-Lab-Lean](Tweety-5e-Propositional-Lab-Lean.ipynb) | Companion transversal (tranche A de l'EPIC [#15066](https://github.com/jsboige/CoursIA/issues/15066)) : trois formules-témoins (`SYL` valide, `ORB` satisfiable non valide, `CONTR` insatisfiable) traversent **trois lectures** — Tweety via JPype (verdicts et contre-modèles **calculés**), recomptage Python indépendant des 8 mondes du fragment `{a, b, c}`, certification du kernel Lean natif sur **Foundation (FFL)** au commit épinglé ; la même chaîne de formule est sérialisée pour les deux moteurs (SOTA, aucune réimplémentation jouet) | 40 min | Python+Lean BETA |
-| 6  | [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
-| 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-6-Structured-Argumentation-Csharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
-| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-7a-Extended-Frameworks-Csharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety reelle via IKVM (DLL shade 7a versionnee a la racine, rebuildable dotnet-build/rebuild-7a.sh ; See #4956) | 55 min | C# PROD |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
-| 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
+| 6  | [Tweety-6-Structured-Argumentation](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
+| 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-06-Structured-Argumentation-CSharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
+| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-07a-Extended-Frameworks-CSharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety reelle via IKVM (DLL shade 7a versionnee a la racine, rebuildable dotnet-build/rebuild-7a.sh ; See #4956) | 55 min | C# PROD |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
+| 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-07b-Ranking-Probabilistic-CSharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
 | **Applications** |   |   |   |   |
-| 8  | [Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries            | 35 min  | Python |
-| 8c | [Tweety-8-Agent-Dialogues-Csharp](Tweety-8-Agent-Dialogues-Csharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) | 35 min | C# PROD |
-| 9  | [Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | Préférences, Théorie du vote                          | 30 min  | Python |
-| 9c | [Tweety-9-Preferences-Csharp](Tweety-9-Preferences-Csharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268)            | 30 min  | C# PROD |
+| 8  | [Tweety-8-Agent-Dialogues](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, Dialogues argumentatifs, Loteries            | 35 min  | Python |
+| 8c | [Tweety-8-Agent-Dialogues-Csharp](Tweety-08-Agent-Dialogues-CSharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) | 35 min | C# PROD |
+| 9  | [Tweety-9-Preferences](Tweety-09-Preferences-Python.ipynb) | Préférences, Théorie du vote                          | 30 min  | Python |
+| 9c | [Tweety-9-Preferences-Csharp](Tweety-09-Preferences-CSharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268)            | 30 min  | C# PROD |
 | **Synthèse** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb)       | Markov Logic Networks (FOL pondérée)                      | 50 min  | Python |
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209)                | 30 min  | C# PROD |
@@ -322,7 +322,7 @@ flowchart LR
 pip install jpype1 requests tqdm clingo z3-solver python-sat
 
 # 2. Ouvrir le notebook de setup (auto-télécharge JDK + JARs)
-jupyter notebook Tweety-1-Setup.ipynb
+jupyter notebook Tweety-01-Setup-Python.ipynb
 
 # 3. Exécuter toutes les cellules, puis passer à Tweety-2
 ```
@@ -380,7 +380,7 @@ pip install jpype1 requests tqdm clingo z3-solver python-sat
 
 ```bash
 # Lancer le notebook de setup
-jupyter notebook Tweety-1-Setup.ipynb
+jupyter notebook Tweety-01-Setup-Python.ipynb
 # Exécuter toutes les cellules — il télécharge JDK, JARs, outils externes
 
 # Ou utiliser le script de validation
@@ -394,11 +394,11 @@ JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes :
 
 ```
 Tweety/
-├── Tweety-1-Setup.ipynb                           # Configuration JVM/JPype
-├── Tweety-2-Basic-Logics.ipynb                    # PL + FOL
-├── Tweety-2-Basic-Logics-Csharp.ipynb             # Logique propositionnelle .NET (IKVM, PROD)
-├── Tweety-2b-Semantics-Csharp.ipynb               # Sémantique propositionnelle .NET (IKVM, BETA)
-├── Tweety-2c-FOL-Csharp.ipynb                     # FOL .NET (IKVM, BETA)
+├── Tweety-01-Setup-Python.ipynb                           # Configuration JVM/JPype
+├── Tweety-02-Basic-Logics-Python.ipynb                    # PL + FOL
+├── Tweety-02-Basic-Logics-CSharp.ipynb             # Logique propositionnelle .NET (IKVM, PROD)
+├── Tweety-02b-Semantics-CSharp.ipynb               # Sémantique propositionnelle .NET (IKVM, BETA)
+├── Tweety-02c-FOL-CSharp.ipynb                     # FOL .NET (IKVM, BETA)
 ├── Tweety-3-Advanced-Logics.ipynb                 # DL, ML, QBF, CL
 ├── Tweety-3-Advanced-Logics-Csharp.ipynb          # DL/ML/QBF/CL .NET (DRAFT — conflits DLL)
 ├── Tweety-3-Conditional-Logics-Csharp.ipynb       # Logique conditionnelle .NET (IKVM, PROD)
@@ -413,16 +413,16 @@ Tweety/
 ├── Tweety-5b-Lean-Argumentation.ipynb             # Companion kernel Lean 4
 ├── Tweety-5d-Stable-Synthesis-Lean.ipynb          # Synthèse certifiée Z3→Lean (Loi II #12205)
 ├── Tweety-5e-Propositional-Lab-Lean.ipynb         # Laboratoire propositionnel Tweety/Lean (tranche A #15066)
-├── Tweety-6-Structured-Argumentation.ipynb        # ASPIC+, DeLP, ABA, ASP
-├── Tweety-6-Structured-Argumentation-Csharp.ipynb # Twin C# ASPIC+ from-scratch (BCL, PROD)
-├── Tweety-7a-Extended-Frameworks.ipynb            # ADF, Bipolar, WAF, SAF
-├── Tweety-7a-Extended-Frameworks-Csharp.ipynb     # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, PROD)
-├── Tweety-7b-Ranking-Probabilistic.ipynb          # Ranking Semantics
-├── Tweety-7b-Ranking-Probabilistic-Csharp.ipynb   # Ranking/Probabiliste .NET (IKVM, PROD)
-├── Tweety-8-Agent-Dialogues.ipynb                 # Agents, dialogues, loteries
-├── Tweety-8-Agent-Dialogues-Csharp.ipynb          # Twin C# dialogues from-scratch (BCL, PROD)
-├── Tweety-9-Preferences.ipynb                     # Préférences, vote
-├── Tweety-9-Preferences-Csharp.ipynb              # Préférences .NET (IKVM, PROD)
+├── Tweety-06-Structured-Argumentation-Python.ipynb        # ASPIC+, DeLP, ABA, ASP
+├── Tweety-06-Structured-Argumentation-CSharp.ipynb # Twin C# ASPIC+ from-scratch (BCL, PROD)
+├── Tweety-07a-Extended-Frameworks-Python.ipynb            # ADF, Bipolar, WAF, SAF
+├── Tweety-07a-Extended-Frameworks-CSharp.ipynb     # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, PROD)
+├── Tweety-07b-Ranking-Probabilistic-Python.ipynb          # Ranking Semantics
+├── Tweety-07b-Ranking-Probabilistic-CSharp.ipynb   # Ranking/Probabiliste .NET (IKVM, PROD)
+├── Tweety-08-Agent-Dialogues-Python.ipynb                 # Agents, dialogues, loteries
+├── Tweety-08-Agent-Dialogues-CSharp.ipynb          # Twin C# dialogues from-scratch (BCL, PROD)
+├── Tweety-09-Preferences-Python.ipynb                     # Préférences, vote
+├── Tweety-09-Preferences-CSharp.ipynb              # Préférences .NET (IKVM, PROD)
 ├── Tweety-10-MLN.ipynb                            # Markov Logic Networks
 ├── Tweety-10-MLN-Csharp.ipynb                     # MLN .NET (IKVM, PROD)
 ├── Tweety-11-Causal.ipynb                         # do-calculus Pearl
@@ -448,7 +448,7 @@ Tweety/
 └── README.md                                      # Ce fichier
 ```
 
-> **Note** : les dossiers `libs/`, `jdk-17-portable/`, `ext_tools/` et `resources/` sont des répertoires d'exécution (non suivis par Git, téléchargés automatiquement par `Tweety-1-Setup.ipynb` ou `scripts/download_tweety_tools.py`). L'ancien dossier `templates student/` n'existe plus dans cette partition. `scripts/` contient 5 scripts `.py` au premier niveau (`download_tweety_tools.py`, `verify_all_tweety.py`, `validate_syntax.py`, `sat_calibration.py`, `sat_comparison_demo.py`), 4 tests `test_*.py` et un `README.md`, plus un sous-dossier `_archive/` (qui contient `reorganize_tweety.py`, déplacé depuis le premier niveau — plus de doublon). Le dossier `_output/` n'est pas présent dans cette partition (les traces Papermill ne sont pas conservées). Audit §E whole-file gate 2026-07-15, re-audit 2026-08-15.
+> **Note** : les dossiers `libs/`, `jdk-17-portable/`, `ext_tools/` et `resources/` sont des répertoires d'exécution (non suivis par Git, téléchargés automatiquement par `Tweety-01-Setup-Python.ipynb` ou `scripts/download_tweety_tools.py`). L'ancien dossier `templates student/` n'existe plus dans cette partition. `scripts/` contient 5 scripts `.py` au premier niveau (`download_tweety_tools.py`, `verify_all_tweety.py`, `validate_syntax.py`, `sat_calibration.py`, `sat_comparison_demo.py`), 4 tests `test_*.py` et un `README.md`, plus un sous-dossier `_archive/` (qui contient `reorganize_tweety.py`, déplacé depuis le premier niveau — plus de doublon). Le dossier `_output/` n'est pas présent dans cette partition (les traces Papermill ne sont pas conservées). Audit §E whole-file gate 2026-07-15, re-audit 2026-08-15.
 
 ## Outils Externes
 
@@ -645,7 +645,7 @@ EProver peut bloquer sur des formules FOL complexes avec égalité. La solution 
 
 ### Erreur de chargement d'un JAR Tweety
 
-Vérifier que la version Tweety dans `Tweety-1-Setup.ipynb` correspond à la version téléchargée. La version recommandée est 1.30. Pour changer de version, modifier la variable `TWEETY_VERSION` puis relancer le notebook 1.
+Vérifier que la version Tweety dans `Tweety-01-Setup-Python.ipynb` correspond à la version téléchargée. La version recommandée est 1.30. Pour changer de version, modifier la variable `TWEETY_VERSION` puis relancer le notebook 1.
 
 ### `ClassCastException` en argumentation
 
@@ -667,7 +667,7 @@ Chaque notebook présuppose la configuration faite dans Tweety-1-Setup (JDK, JAR
 | **1.29** | Juillet 2025 | arg.eaf (Epistemic AF), graph rendering |
 | **1.30** | Janvier 2026 | causal reasoning, arg.explanations, equivalence checking |
 
-La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSION`). La version 1.30 est recommandée — elle inclut les sémantiques de causalité, les explications en argumentation, et le checking d'équivalence de frameworks.
+La version est configurable dans `Tweety-01-Setup-Python.ipynb` (variable `TWEETY_VERSION`). La version 1.30 est recommandée — elle inclut les sémantiques de causalité, les explications en argumentation, et le checking d'équivalence de frameworks.
 
 ## Ressources
 

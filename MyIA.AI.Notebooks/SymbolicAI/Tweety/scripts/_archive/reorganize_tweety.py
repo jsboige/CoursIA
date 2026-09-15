@@ -88,8 +88,8 @@ def main():
             "## Navigation\n",
             "\n",
             "- **Precedent**: [Tweety-4-Belief-Revision.ipynb](Tweety-4-Belief-Revision.ipynb)\n",
-            "- **Suivant**: [Tweety-6-Structured-Argumentation.ipynb](Tweety-6-Structured-Argumentation.ipynb)\n",
-            "- **Index**: [Tweety-1-Setup.ipynb](Tweety-1-Setup.ipynb)\n"
+            "- **Suivant**: [Tweety-06-Structured-Argumentation-Python.ipynb](Tweety-06-Structured-Argumentation-Python.ipynb)\n",
+            "- **Index**: [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb)\n"
         ]
     }
     new_tweety5_cells.append(nav_tweety5)
@@ -103,9 +103,9 @@ def main():
             "\n",
             "Ce notebook couvre les cadres d'argumentation abstraits de Dung.\n",
             "\n",
-            "**Pre-requis**: Executez d'abord [Tweety-1-Setup.ipynb](Tweety-1-Setup.ipynb) pour configurer l'environnement.\n",
+            "**Pre-requis**: Executez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) pour configurer l'environnement.\n",
             "\n",
-            "**Navigation**: [Precedent](Tweety-4-Belief-Revision.ipynb) | [Suivant](Tweety-6-Structured-Argumentation.ipynb)\n"
+            "**Navigation**: [Precedent](Tweety-4-Belief-Revision.ipynb) | [Suivant](Tweety-06-Structured-Argumentation-Python.ipynb)\n"
         ]
 
     write_notebook(tweety5_path, new_tweety5)
@@ -122,7 +122,7 @@ def main():
             "\n",
             "Ce notebook couvre les frameworks d'argumentation structuree : ASPIC+, DeLP, ABA, Argumentation Deductive et ASP.\n",
             "\n",
-            "**Pre-requis**: Executez d'abord [Tweety-1-Setup.ipynb](Tweety-1-Setup.ipynb) pour configurer l'environnement.\n",
+            "**Pre-requis**: Executez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) pour configurer l'environnement.\n",
             "\n",
             "**Navigation**: [Precedent](Tweety-5-Abstract-Argumentation.ipynb) | [Suivant](Tweety-7-Advanced-Argumentation.ipynb)\n"
         ]
@@ -142,13 +142,13 @@ def main():
             "\n",
             "- **Precedent**: [Tweety-5-Abstract-Argumentation.ipynb](Tweety-5-Abstract-Argumentation.ipynb)\n",
             "- **Suivant**: [Tweety-7-Advanced-Argumentation.ipynb](Tweety-7-Advanced-Argumentation.ipynb)\n",
-            "- **Index**: [Tweety-1-Setup.ipynb](Tweety-1-Setup.ipynb)\n"
+            "- **Index**: [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb)\n"
         ]
     }
     tweety6_cells.append(nav_tweety6)
 
     new_tweety6 = create_notebook_from_cells(tweety6_cells, metadata)
-    tweety6_path = base_dir / "Tweety-6-Structured-Argumentation.ipynb"
+    tweety6_path = base_dir / "Tweety-06-Structured-Argumentation-Python.ipynb"
     write_notebook(tweety6_path, new_tweety6)
 
     # 5. Renommer ancien Tweety-6 en Tweety-7
@@ -187,7 +187,7 @@ def main():
     print("="*60)
     print(f"\nNouvelle structure :")
     print(f"  - Tweety-5-Abstract-Argumentation.ipynb (Dung uniquement)")
-    print(f"  - Tweety-6-Structured-Argumentation.ipynb (ASPIC+, DeLP, ABA, etc.)")
+    print(f"  - Tweety-06-Structured-Argumentation-Python.ipynb (ASPIC+, DeLP, ABA, etc.)")
     print(f"  - Tweety-7-Advanced-Argumentation.ipynb (ancien Tweety-6)")
     print(f"\nBackup conservé : {backup_path}")
 
