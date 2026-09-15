@@ -33,6 +33,8 @@ Trois parcours sont proposés selon ton but :
 
 **Conventions de navigation.** Les modules sont regroupés en dossiers `Grothendieck/` et `SheafCohomology/` ; chaque module `Foo.lean` a un sibling `Foo_en.lean` pour la version anglaise (convention i18n EPIC #4980). Le tableau ci-dessous donne, pour chaque Partie, le module FR + le module `_en` + une ligne de contenu.
 
+**Invariant i18n de l'umbrella.** Le fichier racine `Grothendieck.lean` (imports-only, 0 déclaration) est un **root aggregator FR-only by design** (cf `docs/lean/i18n-inventory-cycle-38.md`, EPIC #4980) : il importe uniquement les modules FR. Les siblings `_en` restent auto-découverts via `globs := #[`Grothendieck.*]` dans `lakefile.lean` et construits par `lake build`, et leur fidélité byte-identity avec leur FR jumeau est tenue par `scripts/lean/check_i18n_siblings.py`. Le garde anti-dérive de l'umbrella est `scripts/lean/check_umbrella_fr_only.py` (issue #16154).
+
 ## La trajectoire
 
 Les **76 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
