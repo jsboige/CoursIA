@@ -6,7 +6,9 @@ Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules
 
 ## 1. Pourquoi un tag déclaré plutôt qu'une simple exhortation
 
-Les concepts de variation (tiers, rotation, never-idle) existaient déjà dans [`proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) R6/R7 depuis 2026-07-06. La monoculture a persisté quinze jours de plus. Diagnostic du mandat 2026-07-21 : les concepts étaient **auto-évalués** (le worker décide seul si son grain est « de la substance »), **invisibles** (rien dans la PR ne dit à quel tier elle prétend), et **non-gatés** (le coordinateur mergeait sans lire).
+Verbatim du mandat user 2026-07-21 : « la monoculture de PRs facile est toujours bien là, il faut que tu steere mieux, c'est peut-être le moment d'imposer un protocole de variation ».
+
+Les concepts de variation (tiers, rotation, never-idle) existaient déjà dans [`proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) R6/R7 depuis 2026-07-06. La monoculture a persisté quinze jours de plus. Diagnostic du mandat : les concepts étaient **auto-évalués** (le worker décide seul si son grain est « de la substance »), **invisibles** (rien dans la PR ne dit à quel tier elle prétend), et **non-gatés** (le coordinateur mergeait sans lire).
 
 C'est l'application directe de la leçon `rule-needs-an-organ-not-more-vigilance` : une règle dont le seul mécanisme d'application est la vigilance sera violée. Le tag est l'organe — il rend le grain **auditable en un coup d'œil**, ce qui est la précondition du merge-gate.
 
@@ -48,6 +50,8 @@ Pire, il **fabriquait** le travail en double qu'il prétendait économiser. Inci
 Le ratio `max(1, grains_mergés // 3)` garde l'intention (une lane ne peut pas être *majoritairement* LIGHT) en la rendant proportionnelle à la production réelle. D'où aussi la règle des 24 h au merge-gate : passé une journée, on merge ou on ferme **en nommant le remplaçant** — jamais un hold qui dort.
 
 Organe : [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — le budget est **calculé** (`--replay <merged.json>`), et c'est cette sortie qu'on cite dans un HOLD, jamais une estimation à l'œil.
+
+**Arbitrage #11154 — `DEFECT-ALIVE` et dette #11044** (option 1) : les PRs `DEFECT-ALIVE` (dette de review #11044) **consomment le budget LIGHT**, avec exception écrite + mesure de la dette résiduelle citée à chaque merge au cap — justification chiffrée dans [#11154](https://github.com/jsboige/CoursIA/issues/11154). Réouverture : si la dette remonte, c'est le compte qui redécide.
 
 ### 4.1 Vue agrégée cross-lane (per-lane, 7j)
 
@@ -142,6 +146,11 @@ Le mandat 2026-07-21 dit « steere **mieux** », pas « constate la vague au mer
 
 Détail du mécanisme (loterie substance, variation du dispatch d'un cycle à l'autre) : mémoire locale `feedback-substance-lottery-provisioning.md`. Le principe qui lie le coordinateur : **sous-provisionner puis merger la monoculture qui en résulte est le manquement que ce protocole corrige.**
 
+Deux corollaires mesurés de l'obligation « ≥1 grain DEEP de CONTENU par lane » :
+
+1. **Agréger les GENRES des merges récents avant de provisionner, pas seulement leurs tiers.** « 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook` — le tier alone répète exactement l'échappatoire que la clause CONTENU/META a fermée (§11).
+2. **Un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle (précédent ICT) : vider d'un coup la file d'une famille laisse les lanes qui la servaient sans grain, et le premier réflexe disponible est la veine facile.
+
 ## 10. Alias — table de normalisation du GENRE
 
 Le GENRE est le **type de travail**, jamais la famille où vivent les fichiers. Le merge-gate normalise avant d'appliquer les gates ; le worker n'est ni repris ni HOLD pour un alias.
@@ -170,6 +179,34 @@ Justification complète de la clause de genre de G-VAR-1. Mesuré sur six semain
 | préfixe `feat` | 26 % | **15 %** |
 
 Aucun gate n'avait rougi pendant cette dérive, et aucune lane n'avait menti : un grain `tooling`/`guard` qui attrape un vrai défaut « change quelque chose », donc **MED** est défendable, donc le plancher paraît tenu. L'échappatoire était dans la **spécification**, pas dans la discipline des lanes — d'où la clause de genre plutôt qu'un re-steer.
+
+## 12. Durcissement du plancher (#15793, 2026-09-12) et organe de sécheresse (#13086)
+
+### 12.1 La mesure motrice du durcissement
+
+Le plancher passe de « DEEP **ou MED** » à **DEEP**. Mesure déposée datée dans [`proactive-coordination-detail.md`](proactive-coordination-detail.md), section Plancher durci : **15 % de DEEP sur 7 j**, le **META passant devant le CONTENU sur 48 h**, avec un contraste fort par lane — les lanes saines prouvent que le plancher DEEP est tenable, donc que les autres n'ont pas d'alibi de capacité.
+
+### 12.2 Le contre-poids anti-inflation
+
+Exiger un DEEP crée une incitation à **sur-coter le tier**. Ce qui la couvre est **déjà en place et n'a pas été inventé pour le durcissement** : le signal bot `TIER-INFLATION`, et le merge-gate qui **re-qualifie lui-même un tag mal dérivé** (règle §3, ligne « Tag mal dérivé »). Le litmus DEEP reste objectif — *`main` contient-il désormais un résultat ou une capacité qui n'existait pas, dont la production a demandé du raisonnement de domaine ?* Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
+
+### 12.3 Pourquoi la sécheresse a eu besoin d'un organe (#13086)
+
+G-VAR-1 est resté **prose auto-déclarée** pendant que G-VAR-2 avait son organe, et c'est ce déséquilibre qui l'a rendu inapplicable : `variation_light_cap.py` n'émet que des signaux de comptabilité LIGHT, si bien qu'une lane alternant `guard` → `tooling` → `docs` → `test` ne déclenche **jamais** `GENRE-RUN` tout en produisant zéro contenu indéfiniment.
+
+Le picker ([`scripts/pick_idle_grain.py`](../../scripts/pick_idle_grain.py)) compte désormais les **merges consécutifs sans genre CONTENU** de la lane et, au seuil (3 par défaut, calibré pour ne pas pouvoir se déclencher sur la lane la plus saine de la flotte), **restreint le tirage aux genres CONTENU** au lieu de se contenter de les pondérer. Ce n'est pas un refus : la lane reçoit un grain, et ce grain tient le plancher — mandat user #13086, « tu prends un deep grain ». L'échappatoire `--ignore-drought` existe pour la lane dont la capability exclut le contenu (GPU-only, vision-only) et **se justifie par écrit**, jamais en silence. Une capability **se mesure sur les lanes sœurs du même modèle**, elle ne se déclare pas : tant qu'une lane sœur livre du contenu, « ma capability exclut le contenu » est réfuté, et la sécheresse invoquée est un frein, pas un mur.
+
+## 13. Grain REPAIR — raisonnement complet et arbitrage #11815
+
+L'héritage du genre se déduit de la question même de G-VAR-1 : « qu'est-ce qui atteint `main` quand ce travail aboutit ? » — la réponse regarde ce qui **arrive sur `main`**, pas ce que le REPAIR a fait. Quand une PR de notebook passe au vert et merge, ce qui arrive sur `main` est un notebook. Le REPAIR est de la fabrication qui sortait de l'entrepôt, pas de l'outillage.
+
+**Cas négatif explicite** : un REPAIR d'une PR **META** reste **META**. Une lane qui ne réparerait que ses propres PRs de tooling/docs ne tiendrait toujours pas G-VAR-1 — l'échappatoire se ferme d'elle-même, sans clause spéciale.
+
+**Forme du tag** : le REPAIR déclare directement le genre hérité, sans annotation spéciale. Le fait que ce soit un REPAIR se lit dans le titre (préfixe `fix(`) et le diff (`<fichiers de la PR originale> + ajustements`). Une annotation `MED/notebook-python (repair de #11722)` ajoute du bruit sans information : le tag existe pour répondre « quel genre de substance ce grain met-il sur `main` », et la réponse est la même dans les deux cas.
+
+**Tier du REPAIR** : litmus habituel. Un REPAIR qui demande une **ré-exécution complète + diagnostic de ratchet** est `MED` ; un REPAIR d'**une ligne de body** reste `LIGHT` et consomme le budget G-VAR-2 — pas d'exception. Depuis le durcissement #15793 (§12), un REPAIR `MED` ne tient plus le plancher G-VAR-1 : le tableau du rule dit « grain de contenu **au-delà** du plancher ».
+
+**Sources de l'arbitrage** : ticket [#11815](https://github.com/jsboige/CoursIA/issues/11815) (escalade formelle po-2023 après 3 cycles G-VAR-1 non-tenu sur REPAIR de notebooks ; DM `msg-20260819T163135-h66acw`, arbitrage `msg-20260819T171752-4jd3od`). La clause en codifie la lecture **au cas** en forme **durable**, sous sign-off user (CLAUDE.md §A).
 
 ## Voir aussi
 
