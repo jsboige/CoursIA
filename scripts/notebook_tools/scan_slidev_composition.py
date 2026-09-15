@@ -271,6 +271,9 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
             // (RECOUVREMENT ci-après), qui mesure le contenu rendu et
             // l'ordre de peinture au lieu de la boîte élément naïve.
             const chevauchements = [];
+            // #16188 — porte de confirmation élément : on compte les paires éteintes
+            // (Range chevauche mais boîtes élément disjointes) au lieu de `continue` muet.
+            const chevauchementsEteints = [];
             const textEls = Array.from(
                 root.querySelectorAll('h1, h2, h3, h4, p, li, blockquote, td, th')
             );
@@ -319,11 +322,37 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                     const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
                     const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
                     if (overlapX > 1 && overlapY > 1) {
+                        // FP v2 (#15695) — confirmation par boîtes éléments.
+                        // Range.getClientRects() absorbe padding + bordure
+                        // des inline à boîte propre (<code>, <sup>, <kbd>,
+                        // badge…) : l'union des rects d'un <li> dépasse sa
+                        // line-box d'environ 1.2 px et effleure le rect du
+                        // voisin alors que l'écran les sépare. Les
+                        // getBoundingClientRect() des ÉLÉMENTS ne subissent
+                        // pas cette inflation : si les boîtes éléments sont
+                        // disjointes, le chevauchement n'existe pas au rendu.
+                        const ea = a.el.getBoundingClientRect();
+                        const eb = b.el.getBoundingClientRect();
+                        const eOverlapX = Math.min(ea.right, eb.right) - Math.max(ea.left, eb.left);
+                        const eOverlapY = Math.min(ea.bottom, eb.bottom) - Math.max(ea.top, eb.top);
+                        // #16188 — porte de confirmation élément muette = silent suppression.
+                        // Comptage explicite des paires éteintes pour observabilité : si la
+                        // porte disparaît dans un refactor futur, une mesure bouge. Doctrine
+                        // #12719 acceptance 4 ("un marqueur presque-juste qui le DIT ne coûte rien").
+                        if (eOverlapX <= 0 || eOverlapY <= 0) {
+                            chevauchementsEteints.push({
+                                a: a.key, b: b.key,
+                                overlap_range: [Math.round(overlapX), Math.round(overlapY)],
+                                element_disjoint: true,
+                            });
+                            continue;
+                        }
                         chevauchements.push({
                             a: a.key, b: b.key,
                             a_bbox: [Math.round(a.left), Math.round(a.top), Math.round(a.right), Math.round(a.bottom)],
                             b_bbox: [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)],
                             overlap: [Math.round(overlapX), Math.round(overlapY)],
+                            element_overlap: [Math.round(eOverlapX), Math.round(eOverlapY)],
                         });
                     }
                 }
@@ -523,7 +552,7 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
                 };
             }
 
-            return { horsCanvas, chevauchements, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
+            return { horsCanvas, chevauchements, chevauchementsEteints, recouvrements, occupation, contentBottom: Math.round(contentBottom) };
         }""",
         [canvas_w, canvas_h],
     )
@@ -539,6 +568,10 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
         "hors_canvas": hors,
         "container_only": bool(hors) and not any(h.get("tag") in CONTENT_TAGS for h in hors),
         "chevauchements": raw.get("chevauchements", []),
+        # #16188 — porte de confirmation élément (#15695/#15877) maintenant
+        # observable : champ exposé pour que github_annotations puisse émettre
+        # `::notice [CHEVAUCHEMENT-FANTOME]` au lieu de `continue` silencieux.
+        "chevauchements_eteints": raw.get("chevauchementsEteints", []),
         "recouvrements": raw.get("recouvrements", []),
         "occupation": raw.get("occupation"),
     }
@@ -647,7 +680,18 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
         for c in r.get("chevauchements", [])[:3]:
             out.append(
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
-                f"{c['a']} × {c['b']} overlap={c['overlap']}px"
+                f"{c['a']} × {c['b']} overlap={c['overlap']}px element_overlap={c.get('element_overlap')}px"
+            )
+        # #16188 — porte de confirmation élément (#15695/#15877) : signaler
+        # les paires Range×Range éteintes par boîtes élément disjointes
+        # (chevauchement-fantôme : graze Range ~1.2 px, boîtes disjointes).
+        # `::notice` non bloquant, agrégé par slide.
+        eteints = r.get("chevauchements_eteints", [])
+        if eteints:
+            out.append(
+                f"::notice file={rel},line={line}::[CHEVAUCHEMENT-FANTOME] slide {r['slide']} ({head}) — "
+                f"{len(eteints)} effleurement(s) Range éteint(s) par la confirmation élément — "
+                f"boîtes élément disjointes, rien à l'écran"
             )
         for rv in r.get("recouvrements", [])[:3]:
             out.append(
@@ -744,6 +788,11 @@ def main():
     n_total = len(results)
     n_hors = sum(1 for r in results if content_overflow(r))
     n_chev = sum(1 for r in results if r.get("chevauchements"))
+    # #16188 — compteur de paires éteintes par la confirmation élément
+    # (#15695/#15877) : la porte muette devient un signal mesurable. Si
+    # `n_chevauchements_eteints` tombe à 0 sur un deck où l'on sait que
+    # des effleurements Range existaient, c'est que la porte a disparu.
+    n_eteints = sum(len(r.get("chevauchements_eteints", [])) for r in results)
     n_rec = sum(1 for r in results if r.get("recouvrements"))
     n_occ = sum(1 for r in results if occupation_flagged(r, canvas_h))
 
@@ -775,6 +824,7 @@ def main():
         "n_slides": n_total,
         "n_hors_canvas": n_hors,
         "n_chevauchements": n_chev,
+        "n_chevauchements_eteints": n_eteints,
         "n_recouvrements": n_rec,
         "n_occupation_flagged": n_occ,
         "recouvrement_borne": (

@@ -25,9 +25,11 @@ CLEAN -> non-CLEAN regression exists.
 """
 
 import argparse
+import errno
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -40,15 +42,33 @@ from check_exec_sequence import code_exec_counts, sequence_verdict
 EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
                    "/research/")
 
+# EAGAIN au spawn (contention de processus, p.ex. pytest-xdist -n 4 sur le
+# runner) est transitoire : le `except OSError: return None` historique
+# transformait ce pic de charge en "changed notebooks : 0" -> faux vert CI
+# (flake diagnostique sur #16125, tentative 3). On retente borne avant de
+# rendre l'echec.
+_EAGAIN_ERRNOS = (errno.EAGAIN, getattr(errno, "EWOULDBLOCK", errno.EAGAIN))
+_EAGAIN_ATTEMPTS = 3
+_EAGAIN_BACKOFF = (0.05, 0.15)  # avant les 2e et 3e tentatives
+
+
+def _est_eagain(exc):
+    return isinstance(exc, OSError) and exc.errno in _EAGAIN_ERRNOS
+
 
 def git(*args, cwd=None):
     """Run a git command, returning stdout (utf-8) or None on failure."""
-    try:
-        out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                             encoding="utf-8", errors="replace", check=False)
-    except OSError:
-        return None
-    return out.stdout if out.returncode == 0 else None
+    for tentative in range(_EAGAIN_ATTEMPTS):
+        try:
+            out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+                                 encoding="utf-8", errors="replace",
+                                 check=False)
+            return out.stdout if out.returncode == 0 else None
+        except OSError as exc:
+            if not _est_eagain(exc) or tentative == _EAGAIN_ATTEMPTS - 1:
+                return None
+            time.sleep(_EAGAIN_BACKOFF[tentative])
+    return None
 
 
 def resolve_base(base, cwd=None):

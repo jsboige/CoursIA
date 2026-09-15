@@ -77,8 +77,33 @@ def test_verify_installation_false_when_not_in_path(monkeypatch):
 
 
 def test_verify_installation_true_when_in_path(monkeypatch):
+    # Hermetic: mock BOTH layers -- shutil.which resolves the binary AND
+    # subprocess.run answers -- so the verdict never depends on a real CLI
+    # installed on the host running the suite (#15672).
     monkeypatch.setattr(claude_cli.shutil, "which", lambda cmd: "/usr/local/bin/claude")
+
+    class _FakeOk:
+        returncode = 0
+        stdout = "1.0.100 (Claude Code)\n"
+        stderr = ""
+
+    monkeypatch.setattr(claude_cli.subprocess, "run", lambda *a, **k: _FakeOk())
     assert claude_cli.verify_installation() is True
+
+
+def test_verify_installation_false_when_run_fails(monkeypatch):
+    # Falsification companion: same PATH hit, failing '--version' run.
+    # Proves the True verdict above depends on execution, not on
+    # shutil.which alone.
+    monkeypatch.setattr(claude_cli.shutil, "which", lambda cmd: "/usr/local/bin/claude")
+
+    class _FakeFail:
+        returncode = 127
+        stdout = ""
+        stderr = "command failed"
+
+    monkeypatch.setattr(claude_cli.subprocess, "run", lambda *a, **k: _FakeFail())
+    assert claude_cli.verify_installation() is False
 
 
 # --------------------------------------------------------------------------

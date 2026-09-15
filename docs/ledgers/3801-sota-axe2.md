@@ -125,7 +125,7 @@ Chaque entry = 1 audit de famille/source, avec :
   - **Tweety .NET via .NET Interactive** (15 nb .net-csharp) — kernelspec `.net-csharp`, vrais appels NuGet
   - **Lean 4 via WSL** (1 nb Tweety-5b-Lean-Argumentation companion formel au lake `argumentation_lean`) — kernelspec `lean4-wsl`
 
-- **Workaround dégradé** : **0/31** (2 occurrences du mot « workaround » : (a) `Tweety-2-Basic-Logics-Csharp.ipynb` cell 18 = commentaire référençant leçon C171 PR #5147 + RECOVERABLE-MACHINE disclosure honnête VS Code Interactive pour .NET + Stop & Repair appliqué ; (b) `Tweety-3-Advanced-Logics.ipynb` cell 24 = disclosure honnête limitation SPASS parsing modal avec fallback sémantique Kripke. **Aucune dégradation cachée**, **disclosure authentique** comme attendu par sota-not-workaround.md).
+- **Workaround dégradé** : **0/31** (2 occurrences du mot « workaround » : (a) `Tweety-02-Basic-Logics-CSharp.ipynb` cell 18 = commentaire référençant leçon C171 PR #5147 + RECOVERABLE-MACHINE disclosure honnête VS Code Interactive pour .NET + Stop & Repair appliqué ; (b) `Tweety-3-Advanced-Logics.ipynb` cell 24 = disclosure honnête limitation SPASS parsing modal avec fallback sémantique Kripke. **Aucune dégradation cachée**, **disclosure authentique** comme attendu par sota-not-workaround.md).
 
 - **Problème non-trivial** (Prong B) : 31/31 OK — chaque notebook pose un problème Tweety avancé :
   - Tweety-1-Setup : bootstrap JVM/JPype + 76 jars Tweety

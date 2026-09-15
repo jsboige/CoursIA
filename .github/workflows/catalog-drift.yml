@@ -84,14 +84,36 @@ jobs:
 
       # Canonical regeneration (local to the runner only — nothing is written
       # back to the branch). git-tracked notebooks only, for CI determinism.
+      # generate_catalog.py sort en 2 quand `git log` n'a pas pu rendre
+      # l'historique des notebooks (#14831). Ce detecteur read-only, qui se
+      # declare toujours vert, ABSORBE cet abandon au lieu de rougir -- et ce
+      # n'est pas de la complaisance : sans metadonnees git, le catalogue
+      # regenere classe TOUT en UNREVIEWED, si bien que le diff de derive
+      # calcule juste apres mesurerait la panne du runner, pas la derive de la
+      # PR. Sans historique il n'y a pas de derive mesurable : on l'annonce en
+      # annotation et on s'arrete la. Tout autre code de sortie reste un echec.
       - name: Regenerate catalog + README markers
+        id: regen
         run: |
           git fetch origin main --depth=1 || true
+          set +e
           python scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only
+          rc=$?
+          set -e
+          if [ "$rc" -eq 2 ]; then
+            echo "git_unavailable=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Catalog drift check skipped::Les metadonnees git etaient indisponibles sur ce runner (diagnostic complet dans le journal de ce step). La derive n'est pas mesurable sans elles, et ce job read-only ne bloque pas la PR. Le catalogue est regenere quotidiennement sur main par catalog-cron.yml."
+            exit 0
+          fi
+          if [ "$rc" -ne 0 ]; then
+            echo "generate_catalog.py a rendu rc=$rc" >&2
+            exit "$rc"
+          fi
           python scripts/notebook_tools/expand_catalog_markers.py
 
       - name: Detect drift
         id: diff
+        if: steps.regen.outputs.git_unavailable != 'true'
         run: |
           # Only the catalog JSON and the README marker files are in scope.
           git add COURSE_CATALOG.generated.json MyIA.AI.Notebooks/README.md 'MyIA.AI.Notebooks/*/README.md' 2>/dev/null || true

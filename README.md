@@ -486,7 +486,7 @@ s'installent directement via leur `requirements.txt`.
 | Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
 | SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
 | SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb`, `SC-2-Setup-Web3py.ipynb` | `SymbolicAI/SmartContracts/setup_env.py`, `SymbolicAI/SmartContracts/scripts/setup_wsl_smartcontracts.sh` |
-| Tweety | `SymbolicAI/Tweety/Tweety-1-Setup.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
+| Tweety | `SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
 | Argument Analysis | `SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb` | `install_jdk_portable.py` |
 | IIT | `requirements.txt` | `IIT/scripts/setup_pyphi_env.ps1` |
 | GenAI / Aspire | `GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb` | SDK .NET 10 + CLI Aspire (`dotnet tool install -g Aspire.Cli`) ; Docker démarré |
@@ -636,12 +636,12 @@ Les dépendances principales par série (vérifiées contre les `requirements.tx
 
 ## Contribution
 
-1. Fork le dépôt
-2. Créer une branche (`git checkout -b feature/nouveau-notebook`)
-3. Commit (`git commit -m 'Add: notebook sur les Transformers'`)
-4. Push et ouvrir une Pull Request
+Vous pouvez contribuer de deux façons :
 
-Conventions : PEP 8 pour Python, conventions standard pour C#, pas d'emojis dans le code, documentation en français. Chaque famille de notebooks doit inclure un `.env.example` documentant les variables requises.
+- [signaler une erreur ou proposer une amélioration](https://github.com/jsboige/CoursIA/issues/new?template=content-feedback.yml), sans Pull Request obligatoire ;
+- ouvrir une Pull Request, y compris pour proposer une correction d'exercice qui sera transformée en exemple guidé crédité avec un nouvel exercice non résolu.
+
+Le [guide de contribution](CONTRIBUTING.md) détaille le processus, les validations et l'accompagnement proposé par les mainteneurs et leurs agents.
 
 ## Licence
 
