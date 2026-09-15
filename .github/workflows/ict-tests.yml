@@ -36,52 +36,31 @@ name: ICT-Series Tests
 # RE-MESURE firsthand po-2023 (2026-09-14, arbre MERGE de cette branche avec
 # origin/main@8e96961377 -- python 3.9 + numpy 1.26.4 SANS torch, la forme de
 # l'env CI ; decomposition verifiee par collecte par fichier, les deux arbres
-# mesures separement) :
+# mesures separement :
 #   tests/     = 1148 items sur l'arbre merge (= origin/main pur, cette PR
 #                 n'y apporte rien ; floor conserve tel quel)
-#   ict/tests/ = 811 items sur l'arbre merge = 783 sur origin/main PUR
-#                 (mesure directe au meme env, worktree detache) + 27 du
-#                 POC S-Lens (ict/tests/test_slens.py, 49e fichier test du
-#                 package) + 1 de la jambe causale appariee
-#                 (ict/tests/test_causal_engine.py : 23 cote merge contre 22
-#                 cote main). 783 + 27 + 1 = 811 ferme l'arithmetique.
+#   ict/tests/ = 846 items sur l'arbre MERGE, re-mesure firsthand par cette PR
+#                 le 2026-09-15 (D:/Dev/venvs/ict-py39, python 3.9.23 + numpy
+#                 1.26.4 SANS torch -- la forme de l'env CI ; `pytest --co`,
+#                 51 fichiers test_*.py). 822 (floor de main) + 24 du case 5bis
+#                 axes causaux #15798 (ict/tests/test_attention_schema_causal.py)
+#                 = 846 ferme l'arithmetique.
 # NOTA : le floor de origin/main lui-meme (763, pose par lens_gates #15660)
 # est PERIME de +20 sur le main courant (763 -> 783) -- drift ascendant porté
 # par d'autres PRs ICT ; le garde de main emettra son ::warning jusqu'a son
-# propre rattrapage, hors perimetre de cette PR. Le 811 ci-dessous compte
+# propre rattrapage, hors perimetre de cette PR. Le 846 ci-dessous compte
 # contre le main COURANT, pas contre le 763 perime.
 # DRAINAGE QUEUE 2026-09-14 soir : re-merge de origin/main (44f6c0fd48) ; le floor
 # passe de 811 a 822 (+11 : tranche 4 endpoints #15627, portee par main depuis la
-# mesure du matin qui comptait contre 783). Les deux blocs de provenance ci-dessus
-# restent exacts pour leurs arbres respectifs.
-# RE-MESURE firsthand po-2027 (2026-09-13, arbre REBASE sur origin/main COURANT,
-# python 3.9.25 + numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 SANS torch --
-# la forme de l'env CI) :
-#   tests/     = 1148 items  (origin/main collecte 1148 : 1107 + 41 test_regards
-#                             portes par main -- aucun apport de cette PR)
-#   ict/tests/ = 763 items   (origin/main : 752 ; cette branche : +11 lens_gates)
-# 752 + 11 = 763 ferme l'arithmetique. Un floor mesure contre un origin/main
-# PERIME est faux quelle que soit la qualite de la mesure locale : c'est la
-# TROISIEME re-mesure de ce commit (739 -> 752-base -> 763), chacune causee
-# par un floor de main qui a bouge sous elle (#8182 case 4 +20 items, puis
-# #15665 +8 items sae_dictionary). La mesure du 2026-09-12 portait sur un main
-# LOCAL PERIME ; celle du 13/09 matin sur un origin/main pre-#15665.
-# RE-MESURE firsthand po-2023 (2026-09-14, tete de cette PR 6fe8c0caf4, venv
-# D:/Dev/venvs/ict-py39 : python 3.9.23 + pyphi 1.2.0 + numpy 1.26.4) -- les
-# DEUX jambes mesurees a la meme seance, l'une sur la branche, l'autre sur
-# origin/main dans un worktree detache :
-#   tests/     = 1148 items (branche) -- identique a main : cette branche n'y
-#                             ajoute aucun fichier de test.
-#   ict/tests/ =  774 items (branche) vs 763 sur origin/main mesure DIRECTEMENT
-#                             au meme moment. 763 + 11 items
-#                             test_lens_endpoints.py = 774 ferme l'arithmetique.
-# Le "752 + 11 = 763" du bloc po-2027 ci-dessus etait mesure contre un
-# origin/main PRE-#15660 : #15660 (lens_gates) est MERGED depuis le
-# 2026-09-13T23:58:58Z et a porte main de 752 a 763. Sous-declarer est
-# silencieux -- le garde directionnel n'emet qu'un ::warning non bloquant --
-# donc une base perimee laisse le cliquet ne plus proteger les 11 nouveaux
-# tests : une suppression future jusqu'a 763 resterait verte.
-# Fichiers test_*.py dans ict/tests/ : 46 sur origin/main, 47 sur cette branche.
+# mesure du matin qui comptait contre 783).
+# MERGE 2026-09-15 : les DEUX lignees se rejoignent et leurs apports COEXISTENT
+# sur l'arbre merge -- main apporte test_slens.py (+27) et +1 jambe causale
+# (test_causal_engine.py) ; cette PR apporte test_attention_schema_causal.py
+# (+24). Les deux additions sont presentes simultanement (51 fichiers). Prendre
+# le 822 de main sous-declarerait de 24 et rouvrirait le trou que le garde
+# directionnel ne voit pas (collected > floor n'emet qu'un ::warning) ; prendre
+# le 807 anterieur de la branche baisserait le cliquet de 39. La valeur mesuree
+# sur l'arbre merge fait foi.
 # Le venv local AVEC torch collecte 1111 en tests/ : les 4 items d'ecart sont
 # tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
@@ -209,24 +188,24 @@ jobs:
           # (ict/tests/test_self_model_minimal.py -- 43e strate package) --
           # porte par MAIN egalement, posterieurement.
           # Floor cumulatif : 728 (base commune) -> 744 (+16 bench_factorise
-          # Floor 752 -> 763 (lens_gates #15660, MERGED sur main, floor courant
-          # de main -- lui-meme perime de +20, voir NOTA ci-dessus) -> 811
-          # (cette PR, sur l'arbre merge) : +27 POC S-Lens (test_slens.py,
-          # en trois paliers mesures sur la branche : 23 bancs copy_offset /
-          # variable_binding / oracles / probes / agregation multi-runs,
-          # +4 verrouillage des defauts corriges apres la premiere mesure,
-          # dont la decomposition 23+4=27 est confirme par collecte isolee du
-          # fichier sur l'arbre merge) et +1 jambe causale appariee
-          # (test_causal_engine.py : recodage des classes de valeur sur un
-          # vocabulaire non dense -- le banc qui verrouille ce defaut est le
-          # 23e item du fichier, absent de main).
-          # 783 (main pur, mesure) + 28 = 811 ferme l'arithmetique, et 811
-          # EST la collection mesuree sur l'arbre merge (py3.9.25 +
-          # numpy 1.26.4, SANS torch -- la forme de l'env CI).
+          # Floor cumulatif porte par main : 728 (base commune des tranches
+          # 1-4) -> 744 (+16 bench_factorise #15657) -> 752 (+8 sae_dictionary
+          # #15665) -> 763 (+11 lens_gates #15660) -> 822 (+27 test_slens.py
+          # POC S-Lens, +1 jambe causale test_causal_engine.py, +11 tranche 4
+          # endpoints #15627).
+          # Floor 822 -> 846 (cette PR, sur l'arbre MERGE) : +24 items case
+          # 5bis axes causaux #15798. 846 EST la collection mesuree sur l'arbre
+          # merge (pytest --co, D:/Dev/venvs/ict-py39 python 3.9.23 + numpy
+          # 1.26.4 SANS torch, la forme de l'env CI, 51 fichiers test_*.py).
+          # Les deux apports (test_slens.py de main, test_attention_schema_
+          # causal.py de cette PR) coexistent : ni l'un ni l'autre ne remplace
+          # l'autre. L'ancien 807 de la branche (783 + 24) comptait contre un
+          # main pre-#15627 : post-merge le floor doit compter contre le main
+          # COURANT ET porter l'apport de cette PR.
           - suite-name: "ict/tests/ (44 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 822
+            test-floor: 846
 
     steps:
       - uses: actions/checkout@v4
