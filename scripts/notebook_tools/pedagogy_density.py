@@ -49,9 +49,16 @@ Usage:
         | python pedagogy_density.py --stdin --json
 
 Always exits 0 (advisory): the signal is the label, not this exit code.
-Sole exception -- ``--check-orphans`` exits 1 when the baseline carries keys
-that git no longer tracks. That mode is a correctness check, not a
-pedagogical judgement: its non-zero is a verdict, never a crash.
+Sole exception -- ``--check-orphans`` exits 1 when the baseline and the tracked
+tree disagree in a way that costs the ratchet a reference: #13815
+``ORPHAN_KEY`` (a key with no file) or #16122 ``LOST_KEY`` (a rename that
+deleted a key instead of moving it -- the #15917 regression). It also REPORTS
+``UNKEYED_FILE``, the inventory of judged notebooks the baseline does not key;
+that inventory is not a failure (measured: mostly notebooks added after the
+baseline freeze, never under the ratchet). That mode is a correctness check,
+not a pedagogical judgement: its non-zero is a verdict, never a crash. Each
+direction is printed under its own label so the message names which question
+failed.
 """
 
 from __future__ import annotations
@@ -105,6 +112,26 @@ LABEL_UNMEASURED = "pedagogy-density-unmeasured"
 #: a set of hashes. Population derives from `git ls-files` (amendment
 #: 19:40Z), never an rglob -- untracked files would silently skew it.
 BASELINE_FILE = _TOOLS_DIR / "pedagogy_density_baseline.json"
+
+#: A UNKEYED_FILE is reported for every judged notebook the baseline does not
+#: key, because that is the population the ratchet silently exempts (#16122).
+#: It is NOT what the gate fails on, and the distinction is measured, not
+#: stylistic: on 2026-09-15 the baseline holds 811 keys while the judged tracked
+#: population is 1094, and the 283 un-keyed notebooks were almost all ADDED on
+#: 2026-09-07..13 -- i.e. after the 2026-08-11 freeze ("burn down, do not grow",
+#: confirmed over 7 baseline-touching commits whose ``count`` stayed 811 through
+#: two large rename waves). Failing on the inventory would therefore redden every
+#: PR that ADDS a notebook -- a brand-new notebook was never under the ratchet,
+#: so its absence weakens nothing -- and the fleet would inherit a gate that
+#: cries on its most common change.
+#:
+#: What the gate DOES fail on is the regression the #15917 incident actually
+#: produced: a notebook that HELD a key and lost it while remaining tracked
+#: (a renumber whose key was deleted rather than moved). That one is a real loss
+#: -- the ratchet drops a reference it used to hold -- and it is detectable
+#: exactly, by pairing the baseline's keys with git's rename detection against
+#: the change's base (``--base``), so it needs no allowance file and cannot be
+#: confused with the growth of the corpus.
 
 
 @dataclass
@@ -421,27 +448,179 @@ def _baseline_orphan_keys(baseline: dict[str, float], tracked: set[str]) -> list
     return sorted(k for k in baseline if k not in tracked)
 
 
-def _check_orphans() -> int:
-    """Report baseline keys that are no longer tracked (the #13815 organ).
+def _baseline_unkeyed_files(
+    baseline: dict[str, float],
+    population: set[str],
+) -> list[str]:
+    """Density-judged tracked notebooks with NO baseline key (the #16122 organ).
+
+    The counterpart of :func:`_baseline_orphan_keys`. #13815 asks "does every
+    key have a file?"; this asks the opposite question -- "does every file have
+    a key?" -- which the guard never posed. A notebook the baseline does not key
+    is not "uncovered", it is EXEMPT IN SILENCE: no future density regression of
+    it can ever be refused, and nothing says so.
+
+    The comparison is against :func:`_baseline_population` (density-judged
+    kinds), NOT against every tracked notebook: ``setup`` and out-of-corpus
+    notebooks are legitimately absent from the baseline, and flagging them would
+    be a false positive by construction. Sorted for a deterministic diff.
+    """
+    return sorted(p for p in population if p not in baseline)
+
+
+def _baseline_at(ref: str) -> dict | None:
+    """Parse :data:`BASELINE_FILE` as it stood at ``ref``; ``None`` if unreadable.
+
+    LOST_KEY is defined against the change's BASE, so the organ must read the
+    key set the ratchet held before the change. ``None`` means "could not read"
+    (shallow clone, absent object) and is propagated as "not evaluated" -- never
+    silently treated as an empty baseline, which would report every key as
+    newly added and every rename as clean.
+    """
+    import subprocess
+
+    repo_root = _TOOLS_DIR.parents[1]
+    rel = BASELINE_FILE.resolve().relative_to(repo_root.resolve())
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), "show", f"{ref}:{rel.as_posix()}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def _renamed_notebook_pairs(base_ref: str) -> list[tuple[str, str]] | None:
+    """``(old, new)`` pairs git reports as renames between ``base_ref`` and HEAD.
+
+    ``-M`` enables rename detection; ``--name-status`` gives ``R<score> old new``.
+    Returns ``None`` when the base ref cannot be resolved (shallow clone, absent
+    object), so the caller can say "not evaluated" instead of claiming a
+    conformity it never measured -- the #8819 lesson transposed.
+    """
+    import subprocess
+
+    repo_root = _TOOLS_DIR.parents[1]
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), "-c", "core.quotepath=false", "diff",
+         "-M", "--name-status", f"{base_ref}...HEAD", "--", "*.ipynb"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    pairs: list[tuple[str, str]] = []
+    for line in proc.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[0].startswith("R"):
+            pairs.append((parts[1], parts[2]))
+    return pairs
+
+
+def _keys_lost_by_rename(
+    base_baseline: dict[str, float],
+    head_baseline: dict[str, float],
+    renamed: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Renames that DROPPED a baseline key instead of moving it (#16122).
+
+    The regression the #15917 incident produced: ``02-7-Song-Generation.ipynb``
+    was renamed to ``02-7-YuE2-Song-Generation.ipynb`` and its key was deleted
+    rather than moved -- the check-run stayed green and the ratchet silently
+    lost its reference (count 811 -> 810). A rename that MOVES its key (what the
+    renumber waves do) is not a finding.
+
+    Returns ``(old, new)`` pairs, sorted, for a deterministic diff.
+    """
+    lost = [
+        (old, new)
+        for old, new in renamed
+        if old in base_baseline and new not in head_baseline
+    ]
+    return sorted(lost)
+
+
+def _check_orphans(base_ref: str | None = None) -> int:
+    """Report EVERY direction of the baseline <-> tree correspondence (#13815, #16122).
 
     Loads :data:`BASELINE_FILE`, cross-references against ``git ls-files``, and
-    prints each orphan. Intentionally NOT advisory (unlike the density label):
-    a stale baseline key is a correctness defect, not a soft pedagogical
-    threshold -- so it exits non-zero when orphans exist.
+    prints each finding under the direction that produced it:
+
+    - ``ORPHAN_KEY``   -- a baseline key whose path is no longer tracked
+                          (renamed or deleted, #13815);
+    - ``UNKEYED_FILE`` -- a density-judged tracked notebook with no baseline key
+                          (#16122): the inventory of what the ratchet exempts in
+                          silence. REPORTED, never a failure -- see the module
+                          constant's note: these are overwhelmingly notebooks
+                          ADDED after the baseline freeze, and a brand-new
+                          notebook was never under the ratchet;
+    - ``LOST_KEY``     -- a rename that DELETED a key the baseline held instead
+                          of moving it (#16122), the #15917 regression. BLOCKING,
+                          and reported only when ``base_ref`` is given: it is
+                          defined against the change's base, so without one the
+                          organ says "not evaluated" rather than "clean".
+
+    Intentionally NOT advisory (unlike the density label): ORPHAN_KEY and
+    LOST_KEY are correctness defects, not soft pedagogical thresholds -- so a
+    non-empty finding exits non-zero. The directions are printed separately so
+    the message names which question failed instead of collapsing distinct
+    failures into one count.
     """
     data = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
     baseline = data.get("notebooks", {})
     tracked = _tracked_notebook_paths()
     orphans = _baseline_orphan_keys(baseline, tracked)
+
+    population = {str(p).replace("\\", "/") for p in _baseline_population()}
+    unkeyed = _baseline_unkeyed_files(baseline, population)
+
+    lost: list[tuple[str, str]] = []
+    if not base_ref:
+        lost_note = (
+            "LOST_KEY non evalue (pas de --base : la perte se definit contre la base)"
+        )
+    else:
+        base_data = _baseline_at(base_ref)
+        renamed = _renamed_notebook_pairs(base_ref)
+        if base_data is None or renamed is None:
+            lost_note = (
+                f"LOST_KEY non evalue (base {base_ref} illisible dans ce clone) "
+                f"-- conformite ni affirmee ni niee"
+            )
+        else:
+            lost = _keys_lost_by_rename(base_data.get("notebooks", {}), baseline, renamed)
+            lost_note = (
+                f"LOST_KEY evalue contre {base_ref} "
+                f"({len(renamed)} renommage(s) de notebook detecte(s))"
+            )
+
+    failed = False
     if orphans:
-        print(f"WARN: {len(orphans)} cle(s) orpheline(s) dans le baseline:")
+        print(f"WARN: {len(orphans)} ORPHAN_KEY (cle(s) du baseline sans fichier suivi):")
         for key in orphans:
-            print(f"  - {key}")
-        return 1
+            print(f"  ORPHAN_KEY {key}")
+        failed = True
+    if lost:
+        print(
+            f"WARN: {len(lost)} LOST_KEY (renommage(s) ayant SUPPRIME une cle du "
+            f"baseline au lieu de la deplacer -- cliquet amputé en silence):"
+        )
+        for old, new in lost:
+            print(f"  LOST_KEY {old} -> {new}")
+        failed = True
+
+    # The inventory is reported on BOTH paths: a failing gate must not hide the
+    # state of the ratchet it just refused (the reader needs the whole picture).
     print(
-        f"OK: {len(baseline)} cles du baseline, 0 orpheline "
-        f"(vs {len(tracked)} notebooks suivi(s))."
+        f"INFO: inventaire UNKEYED_FILE : {len(unkeyed)} notebook(s) juge(s) sans cle "
+        f"sur {len(population)} (non bloquant), "
+        f"vs {len(tracked)} notebooks suivi(s). {lost_note}"
     )
+    if failed:
+        return 1
+    print(f"OK: {len(baseline)} cles du baseline, 0 ORPHAN_KEY, 0 LOST_KEY.")
     return 0
 
 
@@ -523,11 +702,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--check-orphans", action="store_true",
         help=(
-            "Fail (non-zero) if the baseline carries orphan keys (a notebook "
-            "path that is no longer tracked -- renamed or deleted), signaling a "
-            "density value lost before a renum PR merges (#13815). NOT advisory "
-            "by design: a stale baseline key is a correctness defect, not a soft "
-            "pedagogical threshold."
+            "Report every direction of the baseline <-> tree correspondence "
+            "(#13815, #16122). Fail (non-zero) on ORPHAN_KEY (a baseline key no "
+            "longer tracked -- renamed or deleted) and on LOST_KEY (a rename "
+            "that DELETED a key instead of moving it, the #15917 regression). "
+            "UNKEYED_FILE (a judged notebook the baseline does not key) is "
+            "REPORTED as an inventory, never a failure: measured 2026-09-15, "
+            "those are overwhelmingly notebooks ADDED after the baseline freeze, "
+            "which were never under the ratchet. NOT advisory by design: the two "
+            "blocking directions are correctness defects, not soft pedagogical "
+            "thresholds."
+        ),
+    )
+    parser.add_argument(
+        "--base", default=None, metavar="REF",
+        help=(
+            "Base ref of the change (e.g. the PR base sha). Required to evaluate "
+            "LOST_KEY, which is defined against the base; without it the organ "
+            "reports 'LOST_KEY non evalue' rather than claiming clean."
         ),
     )
     # The floor is deliberately NOT a CLI flag: it is locked by calibration
@@ -539,7 +731,7 @@ def main(argv: list[str] | None = None) -> int:
         return _update_baseline()
 
     if args.check_orphans:
-        return _check_orphans()
+        return _check_orphans(args.base)
 
     targets = list(args.paths) + list(args.targets)
     if not targets and not args.stdin:
