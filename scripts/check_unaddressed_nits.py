@@ -108,7 +108,7 @@ BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-r
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
-    "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION",
+    "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
