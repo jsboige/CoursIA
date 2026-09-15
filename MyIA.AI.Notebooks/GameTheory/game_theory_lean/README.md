@@ -119,10 +119,10 @@ préservé ici — anti-régression 4 étapes respectée).
 | Sous-module | Lignes (FR / EN) | Sorries (FR / EN) | Contenu |
 |-------------|------------------|------------------|---------|
 | [`StableMarriage.Definitions`](StableMarriage/Definitions.lean) | 125 / 132 | 0 / 0 | `PrefProfile`, `Matching`, `IsStable`, ordre `ManLE` |
-| [`StableMarriage.GSState`](StableMarriage/GSState.lean) | 168 / 177 | 0 / 0 | État de l'algorithme Gale-Shapley, file d'hommes libres, propositions |
+| [`StableMarriage.GSState`](StableMarriage/GSState.lean) | 178 / 187 | 0 / 0 | État de l'algorithme Gale-Shapley, file d'hommes libres, propositions |
 | [`StableMarriage.Lemmas`](StableMarriage/Lemmas.lean) | 898 / 907 | 0 / 0 | Lemmes intermédiaires (44 lemmes, 0 sorry) |
 | [`StableMarriage.Lattice`](StableMarriage/Lattice.lean) | 885 / 881 | 0 / 0 | Treillis des mariages (join/meet), optimalité homme/femme ; les énoncés contrefactuels `man_optimality_key_step` et `doctor_optimal_eq_top` ont été **retirés et réfutés** (`NoCrossCounterexample.*_is_false`, carré latin 3×3), Lattice est sorry-free |
-| [`StableMarriage.GaleShapley`](StableMarriage/GaleShapley.lean) | 181 / 171 | 0 / 0 | Terminaison, stabilité, optimalité homme, existence d'un stable |
+| [`StableMarriage.GaleShapley`](StableMarriage/GaleShapley.lean) | 191 / 184 | 0 / 0 | Terminaison, stabilité, optimalité homme, existence d'un stable |
 
 **Théorèmes clés** (`namespace StableMarriage`) :
 
@@ -139,6 +139,36 @@ préservé ici — anti-régression 4 étapes respectée).
   dans le treillis des mariages préserve la stabilité
 - `man_optimality_key_step_is_false` — l'**énoncé contrefactuel**
   documenté qui démontre pourquoi une approche intuitive échoue
+
+#### Chemin de découverte (traces prover)
+
+Ces preuves ne sont pas sorties d'un coup : le harnais prover du dépôt
+(`MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/`) conserve le
+chemin — objectifs résiduels (`partial_progress`), motifs d'échec
+(`failure_patterns`), tentatives infructueuses (`failed_approaches`,
+245 entrées dont une trentaine pour le mariage stable) — et `StableMarriage`
+en est l'illustration la plus complète.
+
+- **Un verdict d'intractabilité qui a cadré la solution.** Avant le port de
+  l'algorithme, le prover a marqué `gale_shapley_stable`,
+  `gale_shapley_man_optimal` et `gale_shapley_woman_pessimal`
+  `INTRACTABLE_UNTIL_GS_IMPL` : les tentatives stagnaient de façon
+  **reproductible** (138 s sur l'énoncé de stabilité, 83 s sur l'optimalité
+  homme), et le diagnostic nommait la seule condition déblocante — le port
+  complet de l'algorithme (~1000 lignes de lemmes), livré par #997. Les
+  trois théorèmes ci-dessus sont le produit direct de cette condition
+  diagnostiquée.
+- **Un résiduel fermé par l'indice conservé.** `gsChooseMax_maximal` est
+  resté en `partial_progress` avec un objectif résiduel explicite (la
+  stricte inégalité de maximalité sous l'ordre personnalisé `gsMenPrefLE`)
+  et un indice de fermeture : `Nat.lt_trichotomy` sur la préférence `Nat`
+  sous-jacente. La preuve actuelle matérialise exactement cet indice, et
+  évite le piège tracé par ailleurs : `Finset.exists_maximal` ne fournit
+  qu'une maximalité **conditionnelle**, pas absolue.
+
+Le tableau ci-dessus conserve le même genre d'enseignement pour `Lattice`
+(énoncés contrefactuels réfutés, non des preuves abandonnées) — mais par
+documentation directe, les traces prover ne couvrant pas ce module.
 
 ### `CooperativeGames` — Jeux coopératifs à utilité transférable
 

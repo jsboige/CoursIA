@@ -507,6 +507,38 @@ def test_check_clear_when_only_my_lane(capsys):
     assert "CLEAR" in out
 
 
+def test_delivered_marker_sentence_period_is_not_a_phantom_lane(capsys):
+    """#15864 -- a lane's own `[DELIVERED]` marker must not become a SECOND lane.
+
+    Reproduced from issue #15674 (2026-09-12). The DELIVERED body ends with
+    French prose right after the lane -- `lane myia-po-2023:CoursIA. Énoncé
+    réécrit ...` -- and the sentence period plus the accented capital word were
+    swallowed into the lane token (`myia-po-2023:CoursIA. Énoncé`, a lane that
+    matches nothing). The guard then blocked the declaring lane on its OWN
+    claim, and the refusal named a lane that does not exist. Measured
+    end-to-end on the guard's own entry point: pre-fix this returns a non-zero
+    verdict, post-fix CLEAR.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA — 2026-09-12T09:0xZ — paths: "
+            "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+            "2026-09-12T09:13:07Z",
+        ),
+        comment(
+            "[DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit en "
+            "deux gestes (chercher inchangé + recenser via "
+            "`client2.count(count_filter=...)`), le piège top-10 nommé dans "
+            "l'énoncé. Exéc complète 12.2s, validate 17 cells PASS.",
+            "2026-09-12T09:17:24Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    out = capsys.readouterr().out
+    assert "myia-po-2023:CoursIA. Énoncé" not in out
+    assert rc == 0
+
+
 def test_check_no_paths_returns_exit_2_and_not_scoped(capsys):
     # #12322 -- when the caller does NOT pass `--paths` AND has no scoped
     # active claim of their own, the call cannot prove disjointness from any
@@ -898,6 +930,132 @@ def test_quasi_fenced_citation_not_flagged(capsys):
     assert rc == 0
     assert '"suspected_typo_markers": 0' in captured.out
     assert '"composite_single_line_markers": 0' in captured.out
+
+
+# --- #15982: composed marker (`[CLAIMED-RELEASED]`) ---------------------------
+# The measured incident: po-2023 LIFTED its claim on #15835 by writing
+# `[CLAIMED-RELEASED]`. All three readers missed it -- `_MARKER_RE` wants the
+# keyword alone in brackets, `_MALFORMED_MARKER_RE` wants no brackets at all,
+# and the quasi classifier fell into the distance<=2 branch because
+# `_QUASI_MARKER_RE` captures group(1) with a class that CONTAINS the hyphen,
+# so the token was the whole 16-char string (near no keyword). The claim stayed
+# alive and PR #15846, from another lane, was blocked for 48 h. WARN-only here
+# too: the quasi marker is SIGNALLED, never enacted (doctrine #12624).
+
+INCIDENT_COMPOSE_RELEASE_LINE = (
+    "[CLAIMED-RELEASED] lane myia-po-2023:CoursIA -- grain DEEP/lean, prev: "
+    "DEEP/lean #15812 -- paths: MyIA.AI.Notebooks/GameTheory/social_choice_lean/"
+)
+
+INCIDENT_COMPOSE_UNDERSCORE_LINE = (
+    "[CLAIMED_RELEASED] lane myia-po-2023:CoursIA -- paths: "
+    "MyIA.AI.Notebooks/GameTheory/social_choice_lean/"
+)
+
+
+def test_quasi_compose_release_surfaces_with_canonical_close_form(capsys):
+    # The incident line: flagged as a COMPOSE quasi marker, and the WARN must
+    # recommend `[RELEASED]` -- recommending the token's HEAD (`[CLAIMED]`)
+    # would tell the author to RE-CLAIM the grain they just handed back.
+    p = payload(comment(INCIDENT_COMPOSE_RELEASE_LINE, "2026-09-13T08:20:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert "deux mots-cles joints" in captured.err
+    assert 'canonique "[RELEASED] lane' in captured.err
+    assert 'canonique "[CLAIMED] lane' not in captured.err
+
+
+def test_quasi_compose_underscore_variant_surfaces(capsys):
+    # `_QUASI_MARKER_RE` group(1) admits `_` as well as `-`; both compose forms
+    # must reach the same verdict (the separator is not the signal).
+    p = payload(comment(INCIDENT_COMPOSE_UNDERSCORE_LINE, "2026-09-13T08:21:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert 'canonique "[RELEASED] lane' in captured.err
+
+
+def test_quasi_compose_is_not_enacted_as_a_release(capsys):
+    # The damage, stated as an assertion: the quasi-release leaves the writer's
+    # claim ACTIVE. That is precisely why the WARN exists -- the signal is the
+    # only remedy, since enacting it would be #12624's forbidden auto-correct.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- paths: "
+                "MyIA.AI.Notebooks/GameTheory/social_choice_lean/",
+                "2026-09-13T08:00:00Z"),
+        comment(INCIDENT_COMPOSE_RELEASE_LINE, "2026-09-13T08:20:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"my_active_claim": true' in captured.out
+
+
+def test_quasi_compose_marker_kind_and_canonical_fields():
+    # Field-level pin: `nearest` stays the HEAD (it names the family, and the
+    # WARN prints it as "tete"), `canonical` carries the OPERATIVE keyword.
+    p = payload(comment(INCIDENT_COMPOSE_RELEASE_LINE, "2026-09-13T08:20:00Z"))
+    found = clc._find_suspected_typo_markers(p)
+    assert len(found) == 1
+    s = found[0]
+    assert s["token"] == "CLAIMED-RELEASED"   # verbatim, original case
+    assert s["kind"] == "compose"
+    assert s["nearest"] == "CLAIMED"
+    assert s["canonical"] == "RELEASED"
+
+
+def test_quasi_compose_negative_controls_stay_silent(capsys):
+    # NEGATIVE CONTROLS (acceptance #2). Each of these is a gesture the organ
+    # READS, or an almost-marker it must not invent: any WARN here is a false
+    # positive that teaches the fleet to ignore the lint.
+    #   - `[RELEASED]` / `[CLAIMED]`: canonical (word alone in brackets).
+    #   - `[CLAIMED-AMEND]`: an ENACTED composite -- `_MARKER_RE` lists it as a
+    #     first-class alternative, so the classifier must not call it compose
+    #     (the regression this guard is here to prevent).
+    for line in (
+        "[RELEASED] lane myia-po-2023:CoursIA -- paths: a/**",
+        "[CLAIMED] lane myia-po-2023:CoursIA -- paths: a/**",
+        "[CLAIMED-AMEND] lane myia-po-2023:CoursIA -- paths: a/**",
+    ):
+        p = payload(comment(line, "2026-09-13T08:20:00Z"))
+        # Checked as the MARKER'S OWN lane: a real [CLAIMED] from another lane
+        # would block (exit 2) and hide the lint assertion behind an unrelated
+        # red. The subject here is the quasi count, not the block verdict.
+        rc = clc._run_check(p, "myia-po-2023:CoursIA")
+        captured = capsys.readouterr()
+        assert rc == 0, line
+        assert '"suspected_typo_markers": 0' in captured.out, line
+        assert "quasi-marqueur" not in captured.err, line
+
+
+def test_quasi_compose_requires_claim_motif_and_brackets(capsys):
+    # Selectivity, same two gates as the other quasi kinds: no claim motif on
+    # the line (prose about the shape) and a fenced citation are both silent.
+    for body in (
+        "Le marqueur [CLAIMED-RELEASED] n'est lu par personne.",
+        "```\n" + INCIDENT_COMPOSE_RELEASE_LINE + "\n```\n(citation)",
+    ):
+        p = payload(comment(body, "2026-09-13T08:20:00Z"))
+        rc = clc._run_check(p, "myia-po-2026:CoursIA")
+        captured = capsys.readouterr()
+        assert rc == 0, body
+        assert '"suspected_typo_markers": 0' in captured.out, body
+
+
+def test_close_keyword_only_counts_enacting_keywords():
+    # `is_release_shaped` drives the BLOCKING gate's warning (#15982): it must
+    # fire for close vocabulary and stay quiet for a quasi-CLAIM, otherwise
+    # every quasi-claim would tell its author to release a grain they hold.
+    assert clc.is_release_shaped({"token": "CLAIMED-RELEASED", "nearest": "CLAIMED"})
+    assert clc.is_release_shaped({"token": "CLAIMED_RELEASED", "nearest": "CLAIMED"})
+    assert clc.is_release_shaped({"token": "CLAIMED-DELIVERED", "nearest": "CLAIMED"})
+    # A quasi-claim, a quasi-typo and an unreadable head are all NOT releases.
+    assert not clc.is_release_shaped({"token": "CLAIMED-AMENDED", "nearest": "CLAIMED"})
+    assert not clc.is_release_shaped({"token": "CLAGED", "nearest": "CLAIMED"})
+    assert not clc.is_release_shaped({"token": "", "nearest": ""})
 
 
 def test_template_prose_line_not_composite(capsys):
@@ -6257,3 +6415,31 @@ def test_14187_truncated_flag_sur_repo_volumineux(capsys, monkeypatch):
     assert out["blocked"] is False
     assert out["free_paths_size"] == 25
     assert out["free_paths_truncated"] is True
+
+
+def test_reconciliation_release_closes_the_subject_lane_not_the_cited_one_15918():
+    # #15918 -- the founder shape of a collision reconciliation: the closing
+    # lane names ITSELF bare ("Claim de myia-po-2026:CoursIA retiré") while
+    # crediting the winning lane in keyworded form ("(lane myia-po-2023:CoursIA,
+    # ouverte 00:19Z)") -- that is the claim format itself. The keyworded
+    # primary used to attribute the close to the CITED lane, so the subject
+    # claim stayed active and blocked the winner's PR (measured on #15798:
+    # po-2026's 04:50:09Z release left the claim open against #15878).
+    events = clc._sort_events(payload(
+        comment(
+            "[CLAIMED] myia-po-2026:CoursIA -- paths: MyIA.AI.Notebooks/IIT/ICT-Series/**",
+            "2026-09-13T04:25:31Z",
+        ),
+        comment(
+            "[RELEASED] Claim de myia-po-2026:CoursIA retiré — réconcilié : la PR #15878 "
+            "(lane myia-po-2023:CoursIA, ouverte 00:19Z) couvre le grain en surensemble.",
+            "2026-09-13T04:50:09Z",
+        ),
+    ))
+    active, _unattributed = clc.compute_active_claims(events)
+    assert "myia-po-2026:CoursIA" not in active, (
+        "the reconciliation release must close the SUBJECT lane"
+    )
+    assert "myia-po-2023:CoursIA" not in active, (
+        "the cited lane never had a claim here -- the misattributed close must not open one"
+    )

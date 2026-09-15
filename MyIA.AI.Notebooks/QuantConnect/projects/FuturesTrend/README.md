@@ -214,27 +214,34 @@ quand la cible est proche de la position actuelle.
 ### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2`)
 
 - Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 465
+
   lignes, EOL LF, 0 secret literal).
 - **Aucun backtest exécuté** : le verdict SOTA est `RECOVERABLE-MACHINE` (credentials
+
   QC absents sur po-2027 — vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` =
   0 hit). La jambe QC Cloud (compile/backtests) sera déléguée à une lane CoursIA-2
   équipée, sur cette branche, **sans transmission de secret** (Tell secrets-hygiene
   règle 1 : jamais de clair sur dashboard/PR/commit, `os.getenv("KEY","<literal>")`
   interdit).
 - **Verdict futur** : `BEATS` / `NO BEATS` / `INCONCLUSIVE` selon Sharpe/CAGR/MaxDD/
+
   PSR/exposition/coûts/ordres sur fenêtre >= 2016-2026, **sans présumer** du
   Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023 (fenêtre
   favorable non-représentative).
 - **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
+
   (`msg-20260911T040615-4c08xy`) avant lancement des runs QC Cloud — (a) carry
   proxy identique à EWMAC(8,32), (b) FDM clip à l'inverse de la docstring.
 - **c.1063 increment** : scalaire per-horizon `sqrt(slow/32)`, warmup 2x cohérent,
+
   history bulk 1 call. Détails dans le commit `e41a4eb8d632`.
 - **REPAIR-3 c.1109** : FDM requalifié en breadth multiplier (Tell c.1069 strict
+
   honnêteté référentielle) + retarget delta direct (pas d'aller-retour fabriqué).
   Préflight adjoint po-2025 `msg-20260911T043805-i7tl0g` ; jambe QC po-2026
   suspendue jusqu'au nouveau head exact.
 - **REPAIR-5 c.1111** : docstring `_breadth_multiplier` sign-invariant magnitude
+
   concentration (Tell c.1069 strict honnêteté référentielle — l'`abs()` efface les
   signes, `[10,10] == [10,-10]`) + `config.json` Carver FDM stale → breadth
   multiplier sign-invariant. Préflight adjoint po-2025
@@ -243,11 +250,13 @@ quand la cible est proche de la position actuelle.
   jusqu'à cette dissipation par le worker (REPAIR-6 c.1111 = cohérence prose
   README ↔ source).
 - **REPAIR-6 c.1111 (worker)** : cohérence README ↔ source REPAIR-5 — section
+
   « Note Tell c.1069 strict — FDM requalifié » étendue avec le défaut sign-invariant
   (la prose c.1109 disait « bonus quand le book est unidirectionnel », faux) +
   statut courant étendu avec REPAIR-5. Amend borné scope unique
   `FuturesTrend/README.md`. Push `--force-with-lease=refs/heads/feature/15549-carver13-futures:5c316080f10ffcf0dd011a4da1a7ce77dad20277`.
 - **REPAIR-7 c.1113 (worker)** : correction sémantique « effective breadth /
+
   inverse concentration » (Tell c.1069 strict honnêteté référentielle, par
   préflight adjoint po-2025 habilité n°3 urne `delivered` Tell c.15069 strict,
   `msg-20260911T063424-qnc0q9`) — la formule `sum(|f|)/sqrt(sum(f^2))` mesure

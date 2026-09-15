@@ -90,9 +90,17 @@ theorem degree_le_card {α : Type*} [DecidableEq α] (F : Finset (Finset α)) (x
 `C` telle que toute famille de parties de `Fin n` de degré au plus `k` admet
 une coloration `±1` de discrépance au plus `C * √k`.
 
-C'est la conjecture ouverte centrale du domaine. Bansal–Jiang (2025) la
+Longtemps la conjecture ouverte centrale du domaine. Bansal–Jiang (2025) la
 résolvent en régime grand degré `k ≥ (log n)²` — voir
-`Discrepancy.BansalJiangLargeDegree`. -/
+`Discrepancy.BansalJiangLargeDegree`. En 2026, le preprint arXiv:2609.11189
+(Guo–Fang–Lu, 10/09/2026) annonce la résolution : borne universelle
+`3√(2πt)`, soit la dépendance en `√t` prédite par la conjecture.
+
+Ce preprint n'est **pas encore revu par les pairs** et la preuve est
+existentielle (aucune implémentation revendiquée). L'énoncé ci-dessus reste
+donc un `Prop` nommé : aucune preuve formelle n'est engagée ici. Prendre garde
+à ne pas citer la borne `√(32π)` — qui circule, mais n'est pas celle du
+papier, `3√(2π) ≈ 7,52`. -/
 def BeckFialaConjecture : Prop :=
   ∃ C : ℕ, ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ discrepancy F c ≤ C * Nat.sqrt k

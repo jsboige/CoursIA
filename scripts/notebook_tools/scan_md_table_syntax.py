@@ -29,7 +29,10 @@ breaks rendering on at least one common renderer, not a post-render check):
     recognized table row. GitHub's notebook renderer splits cells before math
     rendering, so ``$|F_B| / |A|$`` creates phantom columns. Regular ``.md``
     rendering remains out of scope because it handles this notation correctly.
-    The portable notebook fix is pipe-free LaTeX such as ``\\lvert``/``\\rvert``.
+    The portable notebook fix is pipe-free LaTeX: ``\\mid`` for a conditional
+    (``p(a \\mid s)``) or ``\\vert`` for an absolute value. Always space the
+    operator -- a control word glued to the following letter is absorbed by it,
+    which makes the command undefined.
 
   - **NO_SEP**: a run of 3+ consecutive ``|``-shaped lines with NO
     ``:?-+:?`` separator row among them. GFM does not recognize the block as a
@@ -186,6 +189,46 @@ ORPHAN_LOOKAHEAD = 30
 # tables: a GFM table row never starts with a list marker. See #10097.
 LIST_MARKER_RE = re.compile(r'^ {0,3}(?:[-*+]|[0-9]{1,9}[.)])(?:[ \t]+|$)')
 
+# A navigation strip: ``**Navigation** : [..](..) | [..](..)`` (the space before
+# the colon is optional; a bare ``Index`` word may sit in a cell). The pipes
+# separate navigation links, never table columns -- GFM parses no table there,
+# so an ORPHAN_TABLE_ROW on such a line is a false positive. Killed here at the
+# source, never "repaired" by inventing a header: #15719 names this class
+# explicitly. The guard is anchored on the bold label at line start, so a real
+# bordered row ``| **Navigation** : x | y |`` is untouched.
+NAV_STRIP_RE = re.compile(r'^\s*\*\*\s*Navigation\s*\*\*\s*:')
+
+# The unlabelled twin of the above, the QC-Py-Cloud form:
+# ``[< Retour au sommaire](../README.md) | [Suivant : Risk Parity >](./x.ipynb)``.
+# Requires EVERY pipe-separated segment to be a markdown link AND at least one
+# link text to carry navigation vocabulary -- a genuine two-column link table
+# row (``| [a](a.md) | [b](b.md) |``) has a leading cell pipe and no nav wording,
+# so it is not matched.
+NAV_LINK_LINE_RE = re.compile(
+    r'^\s*\[[^\]]*\]\([^)]*\)\s*(?:\|\s*\[[^\]]*\]\([^)]*\)\s*)+$'
+)
+NAV_VOCAB_RE = re.compile(
+    r'Pr[ée]c[ée]dent|Suivant|Retour|Sommaire|\bIndex\b|\bNext\b|\bPrev\b|'
+    r'\bPrevious\b|\bBack\b|\bHome\b',
+    re.I,
+)
+
+# #15719 names this class explicitly ("métadonnées de forme
+# ``**Durée estimée** : ... | **Prérequis** : ...``"). The colon is required
+# BEFORE the first pipe, which is what separates a metadata line from a
+# borderless table row whose first cell merely starts with such a word
+# (``**Durée** | 2h`` has no colon there and stays a table row).
+#
+# That colon-before-the-pipe IS the property; the label whitelist this rule
+# opened with was incidental, and it was the incidental part that broke:
+# ``GameTheory/LEAN_INVENTORY.md`` carries seven ``**Compilation** : ``lake
+# build`` — SUCCESS | **COMPLET : 0 sorry**`` banners -- structurally identical
+# to the ``Durée``/``Prérequis`` ones, and a whitelist cannot foresee the next
+# label. The rule is therefore stated on the property itself, anchored on the
+# bold label at line start (a real bordered row starts with its cell pipe:
+# ``| **Navigation** : x | y |`` is untouched).
+META_STRIP_RE = re.compile(r'^\s*\*\*[^|\n]*:', re.I)
+
 
 def _has_delimiter_pipe(line):
     """True if ``line`` has a pipe that could be a GFM table column delimiter.
@@ -196,9 +239,15 @@ def _has_delimiter_pipe(line):
     Mirrors the protection already applied by ``_column_count`` (which handles
     code/math/escaped) and extends it to bare ``P(X|Y)`` plain-text conditional
     notation that ``$...$`` stripping does not reach. A list-item line (CommonMark
-    marker) is never a table row, so its pipes are content regardless.
+    marker) is never a table row, so its pipes are content regardless. Same for
+    the navigation and metadata strips of #15719 -- their pipes separate links or
+    labelled fields, never cells.
     """
     if LIST_MARKER_RE.match(line):
+        return False
+    if NAV_STRIP_RE.match(line) or META_STRIP_RE.match(line):
+        return False
+    if NAV_LINK_LINE_RE.match(line) and NAV_VOCAB_RE.search(line):
         return False
     t = CODE_SPAN_RE.sub('', line)
     t = MATH_SPAN_RE.sub('', t)
@@ -305,6 +354,37 @@ def _build_fence_state(lines):
     return state
 
 
+def _is_padded_delimiter(span, index):
+    """True if ``span[index]`` is a ``|`` acting as a table cell delimiter.
+
+    ``MATH_SPAN_RE`` can conservatively bridge two currency markers across a cell
+    delimiter (``Input ($/1M) | Output ($/1M)``): a whitespace-padded pipe inside
+    such a match is that delimiter, not math content.
+    """
+    return (
+        index > 0
+        and index + 1 < len(span)
+        and span[index - 1].isspace()
+        and span[index + 1].isspace()
+    )
+
+
+def _math_span_filler(match):
+    """Replace a ``MATH_SPAN_RE`` match, keeping the delimiters it swallowed.
+
+    The span is neutralized, but a whitespace-padded pipe inside it is preserved
+    (see ``_is_padded_delimiter``). Without this, the header
+    ``| Modèle | Input ($/1M tokens) | Output ($/1M tokens) | Vitesse |`` loses its
+    middle delimiter, counts one column short, and every data row of that table
+    is reported as ``COL_MISMATCH``.
+    """
+    span = ESCAPED_PIPE_RE.sub('', match.group(0))
+    return ''.join(
+        '|' if char == '|' and _is_padded_delimiter(span, index) else 'X'
+        for index, char in enumerate(span)
+    )
+
+
 def _column_count(line):
     """Count GFM table columns in a line.
 
@@ -315,7 +395,7 @@ def _column_count(line):
     bordered ``| a | b | c |``). Returns the logical column count.
     """
     tmp = CODE_SPAN_RE.sub('X', line)
-    tmp = MATH_SPAN_RE.sub('X', tmp)
+    tmp = MATH_SPAN_RE.sub(_math_span_filler, tmp)
     tmp = ESCAPED_PIPE_RE.sub('X', tmp)
     parts = tmp.split('|')
     if parts and parts[0].strip() == '':
@@ -354,13 +434,7 @@ def _has_bare_pipe_in_math_span(line):
         for index, char in enumerate(span):
             if char != '|':
                 continue
-            is_padded_delimiter = (
-                index > 0
-                and index + 1 < len(span)
-                and span[index - 1].isspace()
-                and span[index + 1].isspace()
-            )
-            if not is_padded_delimiter:
+            if not _is_padded_delimiter(span, index):
                 return True
     return False
 
@@ -474,7 +548,10 @@ def detect_md_table_syntax(
                         "detail": (
                             "pipe brute dans un span mathematique ($...$) d'une "
                             "cellule de table -> le renderer notebook decoupe la "
-                            "cellule et casse la table ; utiliser \\lvert/\\rvert"
+                            "cellule et casse la table ; utiliser \\mid (condition, "
+                            "ex. p(a \\mid s)) ou \\vert (valeur absolue), TOUJOURS "
+                            "espaces : une commande LaTeX collee a la lettre "
+                            "suivante est absorbee et devient non definie"
                         ),
                         "snippet": c_line.strip()[:80],
                     })

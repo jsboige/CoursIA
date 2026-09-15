@@ -100,9 +100,16 @@ theorem degree_le_card {α : Type*} [DecidableEq α] (F : Finset (Finset α)) (x
 such that every family of subsets of `Fin n` of degree at most `k` admits a
 `±1` coloring with discrepancy at most `C * √k`.
 
-This is the central open conjecture of the field. Bansal–Jiang (2025)
-resolve it in the large-degree regime `k ≥ (log n)²` — see
-`Discrepancy.BansalJiangLargeDegree`. -/
+Long the central open conjecture of the field. Bansal–Jiang (2025) resolve it
+in the large-degree regime `k ≥ (log n)²` — see
+`Discrepancy.BansalJiangLargeDegree`. In 2026, the preprint arXiv:2609.11189
+(Guo–Fang–Lu, 10/09/2026) announces a resolution: universal bound
+`3√(2πt)`, i.e. the `√t` dependence predicted by the conjecture.
+
+That preprint is **not yet peer-reviewed** and its proof is existential (no
+implementation claimed). The statement above therefore remains a named `Prop`:
+no formal proof is engaged here. Beware of citing the bound `√(32π)` — it
+circulates, but it is not the paper's, `3√(2π) ≈ 7.52`. -/
 def BeckFialaConjecture : Prop :=
   ∃ C : ℕ, ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ discrepancy F c ≤ C * Nat.sqrt k

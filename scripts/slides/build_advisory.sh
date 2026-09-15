@@ -57,9 +57,33 @@ is_deck_dir() {
 # deck_dirs() feeds a process substitution (subshell), a probe side-effect set
 # here could not reach the parent; the symmetric probe runs in check_denominator
 # itself (where exit status is decided). deck_dirs() stays stdout-pure.
+# A positive-control fixture declared by ANOTHER organ is exempt from the
+# symmetric trap below. `slides/_composition-control/slides.md` is the fixture
+# armed by #15545 for slides-composition-advisory.yml: that workflow REQUIRES
+# the deck at exactly this path (`CTRL_DIR=slides/_composition-control`, it
+# copies `slides.md` -> `dev.md` to arm a deterministic HORS_CANVAS defect) and
+# excludes it from its own discovery by name (`-not -path
+# '*/_composition-control/*'`). Without the reciprocal exemption here, one
+# organ's positive control is the other organ's permanent red -- and it was:
+# `Shebang + dry-run advisory` fails on `main` itself, and on every PR, since
+# 6c903ed6af.
+#
+# The exemption is deliberately NARROW -- an exact basename, not a `_*` glob.
+# A `_`-prefixed dir carrying a REAL deck must keep tripping the trap: that is
+# the hole #8929 closed, and a glob here would reopen it for free.
+_is_control_fixture_dir() {
+  case "$(basename "$1")" in
+    _composition-control) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 _warn_nonconvention_with_deck() {
   # Emit ERROR to stderr if $1 carries a deck; always returns 0 (set -e safe).
   local d="$1" dk has_deck=0
+  if _is_control_fixture_dir "$d"; then
+    return 0
+  fi
   [ -f "$d/slides.md" ] && has_deck=1
   for dk in "$d"/deck-*.md; do [ -f "$dk" ] && has_deck=1; done
   if [ "$has_deck" -eq 1 ]; then

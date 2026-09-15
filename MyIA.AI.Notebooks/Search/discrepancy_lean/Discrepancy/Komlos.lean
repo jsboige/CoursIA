@@ -33,7 +33,15 @@ admet une coloration `±1` des colonnes dont chaque somme de ligne reste
 bornée par `C` en valeur absolue.
 
 Le théorème de Banaszczyk (1998) donne `O(√(log n))` ; la conjecture exige
-`O(1)`. Ouverte. -/
+`O(1)`. En 2026, le preprint arXiv:2609.11189 (Guo–Fang–Lu, 10/09/2026)
+annonce la résolution : la somme signée est de norme `ℓ∞` **inférieure à**
+`3√(2π) ≈ 7,52`, indépendamment de la dimension et du nombre de colonnes.
+
+Ce preprint n'est **pas encore revu par les pairs**. L'énoncé ci-dessus reste
+un `Prop` nommé — aucune preuve formelle n'est engagée. Noter qu'il est posé
+sur `ℚ` avec `C : ℚ` alors que la borne du papier est **réelle** : tout
+alignement futur devra choisir explicitement un témoin rationnel (`8`
+convient). -/
 def KomlosConjecture : Prop :=
   ∃ C : ℚ, ∀ (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℚ),
     (∀ j : Fin n, ∑ i, A i j * A i j = 1) →

@@ -23,6 +23,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
+    types: [opened, synchronize, edited, reopened]
     branches: [main]
     paths:
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'

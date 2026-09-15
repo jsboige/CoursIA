@@ -4,13 +4,17 @@ Tests focus on pure functions: filter_for_parcours, generate_parcours_page,
 check_coverage. Uses synthetic catalog entries.
 """
 
+import json
 import sys
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import generate_parcours as gp
 from generate_parcours import (
+    GENERATED_MARKER,
+    GENERATED_MARKER_SCAN_LINES,
     PARCOURS,
     check_coverage,
     filter_for_parcours,
@@ -200,3 +204,92 @@ class TestParcoursConstants:
         assert "Search" in all_series
         assert "GenAI" in all_series
         assert "QuantConnect" in all_series
+
+
+# ---------------------------------------------------------------------------
+# Fail-closed write guard (#15882): refuser d'ecraser une page sans en-tete
+# ---------------------------------------------------------------------------
+
+MANUAL_BODY = "# Mon parcours manuel\n\nContenu ecrit a la main.\n"
+
+
+def _run_main(monkeypatch, tmp_path, argv):
+    """Isole le generateur sur tmp_path (catalogue vide + PARCOURS_DIR)."""
+    (tmp_path / "catalog.json").write_text(json.dumps([]), encoding="utf-8")
+    monkeypatch.setattr(gp, "CATALOG_PATH", tmp_path / "catalog.json")
+    monkeypatch.setattr(gp, "PARCOURS_DIR", tmp_path / "curriculum")
+    monkeypatch.setattr(sys, "argv", ["generate_parcours.py", *argv])
+
+
+class TestFailClosedWrite:
+    def test_manual_page_without_marker_is_refused_and_preserved(
+            self, monkeypatch, tmp_path, capsys):
+        _run_main(monkeypatch, tmp_path, [])
+        out = tmp_path / "curriculum" / "trading.md"
+        out.parent.mkdir(parents=True)
+        out.write_text(MANUAL_BODY, encoding="utf-8")
+
+        with pytest.raises(SystemExit) as exc:
+            gp.main()
+        assert exc.value.code == 2
+        err = capsys.readouterr().err
+        assert "trading.md" in err, "le message doit nommer le fichier refuse"
+        assert "REFUS" in err
+        # Fail-closed : le contenu manuel survit integralement.
+        assert out.read_text(encoding="utf-8") == MANUAL_BODY
+
+    def test_page_with_marker_is_regenerated(self, monkeypatch, tmp_path):
+        _run_main(monkeypatch, tmp_path, ["--parcours", "trading"])
+        out = tmp_path / "curriculum" / "trading.md"
+        out.parent.mkdir(parents=True)
+        # La page existante est une vraie page generee (en-tete marque) mais
+        # perimee : la regen doit la reecrire.
+        stale = generate_parcours_page("trading", []) + "\nSTALE RESIDU\n"
+        out.write_text(stale, encoding="utf-8")
+
+        gp.main()  # pas de SystemExit
+        fresh = out.read_text(encoding="utf-8")
+        assert "# Trading Algorithmique" in fresh
+        assert "STALE RESIDU" not in fresh
+
+    def test_absent_file_is_created(self, monkeypatch, tmp_path):
+        _run_main(monkeypatch, tmp_path, ["--parcours", "genai"])
+        gp.main()
+        out = tmp_path / "curriculum" / "genai.md"
+        assert out.exists()
+        assert out.read_text(encoding="utf-8").startswith("<!--")
+
+    def test_marker_deep_in_body_does_not_opt_in(
+            self, monkeypatch, tmp_path):
+        _run_main(monkeypatch, tmp_path, ["--parcours", "genai"])
+        out = tmp_path / "curriculum" / "genai.md"
+        out.parent.mkdir(parents=True)
+        # Le marqueur cite au-dela de la fenetre de scan = prose, pas opt-in.
+        pad = "\n".join(f"ligne {i}" for i in range(GENERATED_MARKER_SCAN_LINES + 5))
+        out.write_text(
+            MANUAL_BODY + pad + f"\nmention tardive : {GENERATED_MARKER}\n",
+            encoding="utf-8",
+        )
+
+        with pytest.raises(SystemExit) as exc:
+            gp.main()
+        assert exc.value.code == 2
+        assert MANUAL_BODY.splitlines()[0] in out.read_text(encoding="utf-8")
+
+    def test_refused_target_does_not_block_clean_targets(
+            self, monkeypatch, tmp_path, capsys):
+        _run_main(monkeypatch, tmp_path, [])
+        poisoned = tmp_path / "curriculum" / "genai.md"
+        poisoned.parent.mkdir(parents=True)
+        poisoned.write_text(MANUAL_BODY, encoding="utf-8")
+
+        with pytest.raises(SystemExit) as exc:
+            gp.main()
+        assert exc.value.code == 2
+        # Les cibles propres sont regenerees malgre le refus de la cible sale.
+        clean = tmp_path / "curriculum" / "trading.md"
+        assert clean.exists()
+        assert "# Trading Algorithmique" in clean.read_text(encoding="utf-8")
+        assert MANUAL_BODY.splitlines()[0] in poisoned.read_text(encoding="utf-8")
+        summary = capsys.readouterr().err
+        assert "genai.md" in summary

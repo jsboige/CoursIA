@@ -466,8 +466,11 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 - **`Positive-Negative-Splits-ML` (Sharpe 1.511 / PSR 82.33 % / CAGR 75.72 % / MaxDD 37.60 %)` : **edge ★ cohorte max** = **2ᵉ PSR > 50 % cohorte QC #1621 depuis tr.3 BlackLitterman PSR 51 %** (tranche 16 c.705 `Framework_Composite_TrendWeather` PSR 77.94 % désormais 3ᵉ). Sharpe 1.511 + CAGR 75.72 % + NP $1.83M record cohorte = profil event-driven fundamental exceptionnel. `LinearRegression` earnings surprise magnitude + historical split ratios predicts post-earnings drift. tradeableDates=1320 j. (post-#2801 IBKR margin verify) confirmant robustness long-terme. **Confirmation empirique** : event-driven fundamental bien calibré >>> trend pur sur Sharpe par unité de risque ET signification statistique. Walk-forward multi-seed OOS requis avant promotion production, mais PSR 82.33 % in-sample = signal robuste.
 - **`Stoploss-Volatility-ML` (Sharpe 0.291 / MaxDD 20.00 % / PSR 1.84 %)` : **min MaxDD cohorte (20.00 %)** + profil risk-management discipliné = stoploss volatility SPY vol-proxy v2 fonctionne structurellement (MaxDD contenu) MAIS PSR 1.84 % reste sous 50 %, edge statistique **non confirmée**. ML risk-management = discipline structurelle sans alpha significative, typique des stratégies défensives post-2020.
+
 - **`ML-SVM` (Sharpe 0.147 / MaxDD 27.10 % / PSR 0.46 %)` : SVM biweekly equity-only v3-no-regime-2015 = profil le plus prudent cohorte. 823 ordres sur 2825 j. = signal haute fréquence. MAIS PSR 0.46 % quasi-nul + Sharpe 0.147 = SVM supervisé equity ne surfit pas la cohorte, **pattern ML/DL post-2020**.
+
 - **`EMA-Cross-Alpha` (Sharpe -0.01 / MaxDD 14.00 % / PSR 0.54 %)` : **proche cash (Sharpe -0.01)** MAIS **MaxDD 14.00 % = 2ᵉ min cohorte** = profil défensif extrême. 2516 j. post-#2801 IBKR margin verify confirmant stabilité long-terme. EMA classique 2018-2025 = sous-perform systematic sur fenêtre post-2020 trend-following regime, MAIS le **MaxDD contenu 14 % = trader discipline** (pas de disaster drawdown).
+
 
 ### Leçon méthodologique (cohorte HandsOn / EMA / ML)
 
@@ -499,12 +502,14 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > extension du périmètre vise à densifier le rollout #1621 au-delà des best-guess déjà connus et
 > à capter les stratégies récemment créées / fixées côté QC Cloud (dates de création 2026-04-28
 > à 2026-06-23). **0 QCC dépensé** (lecture seule de backtests existants).
+
 >
 > **R3 collision-check** : grep `AdaptiveConformalRisk|S3-HMM|S4-RegimeRidge|1630-robustness-c2-regime`
 > dans `docs/qc/qc-strategies-status.md` AVANT tr.18 = **0 match** = toutes freshly-discovered. Une
 > collision détectée sur `HighBookToMarketFScore-QC` (déjà vérifié tranche 6) a conduit à un pivot
 > vers le 4ᵉ candidat `1630-robustness-c2-regime` pour préserver l'atomicité R3 (cf leçon
 > C596-L1 ★★ « R3 scan APRÈS claim PAS seulement avant worktree »).
+
 >
 > **Cohorte Risk + Régime + Robustness** : 4 paradigmes distincts non couverts par les tranches
 > précédentes :
@@ -517,6 +522,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > 4. **Robustness multi-période** : `1630-robustness-c2-regime` (walk-forward robustness test
 >    c2-régime avec backtests R1 (2018-2019), R2 (2020-2021), R3 (2022), R4 (2023-2024),
 >    et un backtest consolidé po2026-c340 post-pipeline).
+
 >
 > **Verdict honnête : 0 edge statistiquement significative** (PSR < 50 % sur toute la cohorte).
 > Max PSR = **12.53 %** `AdaptiveConformalRisk` (best PSR cohorte mais très loin du seuil 50 %
@@ -527,6 +533,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > tr.7 (HMM-KMeans-Voting PSR 6.9 %), et tr.6 (Markov-Regime-Detection PSR 5.8 %) : la **détection
 > de régime seule**, sans lissage ou composite weighting, **ne suffit pas à produire un edge
 > statistiquement significative** sur le référentiel pleine période in-sample.
+
 >
 > **Leçon technique (Runtime Error → Fixed naming pattern)** : les 2 stratégies V2-Keeper
 > (`S3-HMM-Daily-V2-Keeper`, `S4-RegimeRidge-V2-Keeper`) ont des backtests en **Runtime Error**,
@@ -547,10 +554,14 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 #### Vérifié (tranche 19, backtests QC Cloud via MCP) (4)
 
 > **Scope tranche 19 (#1621)** : 4 stratégies **freshly-discovered** hors bucket Vivant local, sélectionnées via scan systématique `list_projects name_contains:` sur les patterns `Framework_*` / `Composite_*` / `NB14-*` / `QCP13_*` (L709-L3 ★ extension hors-bucket Vivant). Toutes collision-check 0 match AVANT tr.19 (cf `grep -nE` sur les noms de projets) — atomicité R3 préservée. Variante intra-tranche = 2 BROKEN (baselines QCP13 pédagogiques) + 1 near-edge (ESGF Composite) + 1 Needs-improvement (NB14 CompositeRisk) — pas d'edge significative, mais **2 leçons cross-tranches renforcées** :
+
 >
 > - **L709-L1 ★★★ (renforcée)** : **QCP13/NB14/ESGF Composite baselines pédagogiques** sans moteur validé sous-performent vs **Framework Composite multi-factors** TrendWeather/MomentumRegime (tr.16) ; confirme que **blending composite méthodologique** (multi-stratégies + multi-facteurs) > sophistication isolée (moyennes mobiles + classes d'actifs mixées sans signal de momentum/régime).
+
 > - **L709-L2 ★★ (renforcée)** : **Runtime Error → Fixed** confirmée sur `ESGF-Kit-Framework-Composite` (9 backtests : v1 Runtime Error + v2-v8 itérations successives de fix dont `v2-fixed-api`) ; naming pattern observable = **`v<N>-<feature>-<params>` → `v<N>-fixed-api`** puis **`-RF-alpha-80-20`** etc. Pattern L709-L2 ★★ confirmé pour batches QC #1621 futurs.
+
 > - **L709-L3 ★ (renforcée)** : scan `name_contains:` détecte **6 projets Composite hors-bucket Vivant** créés entre 2026-04 et 2026-06 (ESGF-Kit, ESGF-Framework, NB14-Cell75, QCP13_Cell6/Cell38/Cell47) — confirme que **le bucket Vivant local est sous-représentatif** de l'activité QC Cloud. Substance fraîche cross-tranches via scan = levier principal pour densifier le rollout #1621.
+
 >
 > **Note leçons par stratégie** : 2 BROKEN structurels = `QCP13_Cell6_BasicFramework` (BasicAlgorithm Sharpe -0.213 sur 9 ans) et `QCP13_Cell38_CompositeAlpha` (CompositeAlpha Sharpe -0.394 sur 9 ans) — confirme que **les baselines QCP13 pédagogiques (livre Hands-On)** ne sont pas des stratégies déployables telles quelles, contrairement aux Composite Framework qui intègrent un signal de momentum/régime. `ESGF-Framework-Composite` PSR 32.52 % = meilleur signal hors-bucket Vivant post-tr.16, mais reste sous le cap edge. `NB14-Cell75-CompositeRisk` PSR 27.94 % = composite risque décent (MaxDD 20.2 % = 2ᵉ plus bas hors-tr.16) mais edge non-significative.
 
@@ -566,10 +577,14 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 #### Vérifié (tranche 20, backtests QC Cloud via MCP) (5)
 
 > **Scope tranche 20 (#1621)** : 5 stratégies **freshly-discovered** hors bucket Vivant local, sélectionnées via scan systématique `list_projects name_contains:` sur 8 patterns (`Spread`/`Alpha`/`Factor`/`MeanReversion`/`LSTM`/`Momentum`/`Carry`/`Breakout`) — extension L709-L3 ★ diversification hors-bucket Vivant. Toutes collision-check 0 match AVANT tr.20 (cf `grep -nE` sur les noms de projets) — atomicité R3 préservée. Variante intra-tranche = **3 BROKEN** (2 QCP6 BullCallSpread + 1 QCP13 Cell38 CompositeAlpha) + **2 Needs-improvement** (`dbg-DualMomentum-6192` + `1630-lstm-forecasting-post2801`) — **0 edge significative** (PSR max 13.42 %), cohérent avec la cohorte pédagogique QCPxx (L710-L1 ★★★ confirmée). Leçons cross-tranches :
+
 >
 > - **L710-L1 ★★★ (consolidée, 2ᵉ BROKEN QCP13 consécutive)** : `QCP13_Cell38_CompositeAlpha_3367` Sharpe -0.394 / MaxDD 62 % / PSR 0.000 % sur 9 ans = 2ᵉ baseline QCP13 pédagogique structurellement BROKEN (après `QCP13_Cell6_BasicFramework` tr.19 Sharpe -0.213). Pattern consolidé = **baselines Hands-On QCP13 systématiquement négatives in-sample**, vs Composite Framework (tr.16) qui intègrent un signal de momentum/régime validé. Pour batches QC #1621 futurs : **prioriser `-V2-Fixed` / `-v2`** quand Runtime Error/V1 coexiste avec V2 (L709-L2 ★★), et **skipper les `QCP*` baselines** sauf contre-exemple BROKEN documenté (L710-L1 ★★★).
+
 > - **L711-L1 ★ NEW** : **2 BullCallSpread (QCP6_Cell23 + QCP6_Cell35) backtests strictement identiques** (même Sharpe -3.20, CAGR 0.75 %, MaxDD 0.70 %, NP 0.37 % / $37, 4 ordres, 124 jours tradeable). Probable bug de projet QC Cloud (clonage accidentel) ou copier-coller de backtest entre 2 projets QCP6 distincts ; signal de qualité de données à documenter. Leçon : **toujours collisionner les backtests entre projets partageant un préfixe commun** (`QCP6_*`) avant de claim une promotion edge — si backtests sont identiques byte-pour-byte, c'est une seule stratégie économique réelle, pas deux.
+
 > - **L711-L2 ★ NEW** : `dbg-DualMomentum-6192` (projet 34032518, créé **2026-07-11**) = stratégie freshly-discovered la plus récente du corpus QC #1621 (1 jour après c.711, 11 juillet 2026). PSR 1.72 % modeste + CAGR 8.41 % + MaxDD 14.90 % propre. Suggère que **QC Cloud héberge une activité de debug instrumentation récente non-couverte par le bucket Vivant local** : scan `dbg-*` projects pour cycles futurs probable.
+
 
 | Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
 |-----------|--------|------|--------|------------------------------------------------------------------------|
@@ -883,13 +898,21 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 Entrées où le statut *best-guess* était le plus fragile (divergence nom de dossier / nom de classe, doublons suspects). **Résolution firsthand par lecture directe de `main.py`** — la divergence de nommage se tranche par le code, pas par les métriques, donc aucun backtest requis :
 
 - **`Multi-Layer-EMA`** (`OptimizedCryptoAlgorithm`) — **résolu**. Vérifié tranche 4 (Needs-improvement, Sharpe 0.798). Divergence de nommage levée : crypto BTC/ETH/LTC (Binance) avec EMA10/50 + RSI + Bollinger + filtre de volatilité ATR (max 3 positions) — « Multi-Layer-EMA » est défendable (EMA = couche primaire d'un empilement multi-indicateurs).
+
 - **`LeveragedETFMomentum-QC`** (`ConditionalSectorRotation`) — **résolu, pas une divergence**. QC Strategy Library #60 (Grant Forman) : ETF à effet de levier SPY/QQQ/TQQQ/UVXY/TECL/SPXL/SQQQ/TECS/BSV, régime RSI + SMA. Le dossier nomme le *thème* (momentum ETF levier), la classe le *mécanisme* (rotation conditionnelle) — complémentaires. Déjà backtesté tranche 6 (PSR 79.8 %, flag OOS ETF levier).
+
 - **`MacroFactorRotation-QC`** (`AIStocksBondsRotationAlgorithm`) — **résolu, pas une divergence**. QC Strategy Library #72 (Derek Melchin) : rotation cross-actifs SPY/GLD/BND/BTCUSD pilotée par `DecisionTreeRegressor` sur facteurs FRED (VIX, courbe 10Y-3M, fed funds), rebalancement mensuel. Nom = thème macro-factoriel, classe = mécanisme ML actions/bonds/crypto. Multi-actifs sur brokerage par défaut (IBKR rejette le crypto — cf #1027).
+
 - **`FamaFrench`** (`FactorETFRotation`) — **résolu, pas une divergence**. Rotation d'ETF factoriels VLUE/MTUM/SIZE/QUAL/USMV (momentum risk-adjusted 12m/vol63 + régime SMA200, stop -12 %). La sémantique Fama-French *est* portée par les ETF factoriels tradés ; la classe nomme le mécanisme. Métriques auto-rapportées v3.0 (Sharpe 0.540) dans la docstring — non recroisées firsthand.
+
 - **`Options-VGT`** (`GainStrategy`) — **résolu**. Stratégie d'*income options* (contrats OTM, `OptionChainProvider`, échéance ~30 j) sur des tech single-names NVDA/ORCL/CSCO/AMD/QCOM, benchmark VGT. Le dossier « VGT » désigne le *benchmark*, pas le sous-jacent tradé. Nom de classe `GainStrategy` vague mais contenu clair.
+
 - **`HAR-RV-J-Kelly`** vs **`HAR-RV-Kelly`** — **résolu : PAS une relation de supersession**. Classes d'actifs distinctes : `HAR-RV-J-Kelly` (`HarrvjKellyAlgorithm`) trade du **crypto** (BTC/ETH/LTC/BCH, Binance) avec composante de saut Huang-Tauchen (paramètre `use_jumps`) ; `HAR-RV-Kelly` (`HarrvKellyAlgorithm`) trade des **ETF multi-actifs actions** (SPY/EFA/EEM/TLT/GLD/DBC, HAR classique Corsi). Deux démonstrations complémentaires (crypto-jump vs equity-classique, Kelly 1/4 commun) — backtester la variante « J » ne la rend pas « supérieure » à la plain puisque l'univers diffère.
+
 - **`MomentumStrategy`** vs **`SectorMomentum`** — **résolu : deux stratégies distinctes, toutes deux ARCHIVÉES** (reclassées hors du bucket Vivant, cf synthèse). `MomentumStrategy` (`SectorMomentumETFRotation`, `ARCHIVE.md`) = rotation d'ETF sectoriels v4.0, plafond Sharpe ~0.48 ; `SectorMomentum` (`SectorDualMomentumStrategy`, `ARCHIVE.md`) = dual-momentum 3 actifs SPY/TLT/GLD v3.2, plafond ~0.56. Chevauchement de *thème* (momentum) seulement, univers + mécanisme distincts. Les deux portent l'en-tête `# [ARCHIVED …]` : le best-guess « Vivant » était erroné.
+
 - **`DL-LSTM` / `ML-DeepLearning` / `Crypto-LSTM-Prediction` / `LSTM-Forecasting`** — **résolu : périmètres distincts (profondeur de modèle × classe d'actifs)**. `DL-LSTM` = PyTorch LSTM bidirectionnel (2×50), prédiction de prix mono-action (modèle de `research_lstm.ipynb`). `ML-DeepLearning` = PyTorch LSTM simple (1×32), prédiction de rendement multi-actions (baseline). `Crypto-LSTM-Prediction` = PyTorch DLinear (AAAI 2023) + LSTM comparé, **crypto** BTCUSDT. `LSTM-Forecasting` = **PAS un LSTM** : `MLPClassifier` sklearn (docstring honnête « replacing hand-rolled fake LSTM »), actions, livre Ch06 — le nom est un héritage du « fake LSTM » remplacé. Les quatre ne sont pas redondants.
+
 - **`RL-DQN-Trading`** vs **`Reinforcement-Learning-Trading`** — **résolu : classification doc correcte**. Nom de classe identique `ReinforcementLearningTrading`, mais `RL-DQN-Trading` = DQN amélioré v2.0.1 (`MLPRegressor(64,32)`, 11 features, reward risk-adjusted) = *Vivant/développé* ; `Reinforcement-Learning-Trading` = démo DQN basique SPY-seul (livre Ch07) = *Squelette*. Seule l'homonymie de classe créait l'ambiguïté.
 
 ## Travaux connexes

@@ -57,6 +57,7 @@ on:
       - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain'
   pull_request:
+    types: [opened, synchronize, edited, reopened]
     branches: [main]
     paths:
       - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/**.lean'

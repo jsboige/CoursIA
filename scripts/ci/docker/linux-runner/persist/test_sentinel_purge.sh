@@ -99,11 +99,18 @@ run_case() {  # $1 = script de purge ; $2 = STATE_DIR ; $3 = table de processus
   return $?
 }
 
-for LEG in runner waiters lean; do
+# `runner` = la jambe ai-01 (wrapper sous ai-01/) ; `po2024` = le wrapper de la
+# RACINE, qui est celui de po-2024 et que son unite systemd pilote en `start` /
+# `stop` (table de correspondance : persist/README.md). Les deux portent le meme
+# predicat `supervise\.sh start` ; ils divergent par leur arret, et c'est ce qui
+# rend la jambe po2024 non redondante -- sa purge est gardee sur la forme
+# `start`, parce que `stop` retombe sur le meme bloc.
+for LEG in runner waiters lean po2024; do
   case "$LEG" in
     runner)  SRC="$HERE/ai-01/coursia-runner-start.sh"; OTHER=waiters ;;
     waiters) SRC="$HERE/coursia-waiters-start.sh";      OTHER=start   ;;
     lean)    SRC="$HERE/coursia-lean-start.sh";         OTHER=start   ;;
+    po2024)  SRC="$HERE/coursia-runner-start.sh";       OTHER=waiters ;;
   esac
   [ -r "$SRC" ] || { bad "$LEG: wrapper illisible ($SRC)"; continue; }
 
@@ -140,6 +147,7 @@ for LEG in runner waiters lean; do
     runner)  MINE='bash ./supervise.sh start 4' ;;
     waiters) MINE='bash ./supervise.sh waiters 4' ;;
     lean)    MINE='bash ./supervise.sh lean 2' ;;
+    po2024)  MINE='bash ./supervise.sh start 12' ;;
   esac
   out="$(run_case "$PURGE" "$SD" "$MINE")"; rc=$?
   if [ "$rc" -eq 1 ] && [ -e "$SD/stop" ] && ! printf '%s' "$out" | grep -q 'DEMARRAGE'; then

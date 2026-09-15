@@ -92,6 +92,7 @@ DataScienceWithAgents/
 │   ├── 2.5c-Equite-Sous-Groupes.ipynb
 │   ├── 2.6-Clustering-KMeans-PCA.ipynb
 │   ├── 2.7-Modeles-Non-Parametriques.ipynb
+│   ├── 2.7b-SMO-From-Scratch.ipynb
 │   ├── 2.8-Theorie-PAC.ipynb
 │   ├── 2.8b-Theorie-PAC-Lean.ipynb
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
@@ -118,7 +119,12 @@ DataScienceWithAgents/
 ├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning
 │   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
 │   ├── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│   ├── 4.2b-Lean-GradientFlow-Vanishing.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
+│
+├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
+│   ├── WS-00a-Ondelettes-1D-from-scratch.ipynb
+│   └── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -141,7 +147,7 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt-et-un notebooks (workflow, descente de gradient, régression linéaire/logistique complétée par le pont génératif Naive Bayes et la régression en grande dimension PCR/PLS/Ridge, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC et ses trois compagnons formel/concentration/Perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — optimisation d'hyperparamètres, régularisation sparse LASSO/ElasticNet, classes déséquilibrées, et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt-deux notebooks (workflow, descente de gradient, régression linéaire/logistique complétée par le pont génératif Naive Bayes et la régression en grande dimension PCR/PLS/Ridge, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN puis l'accrétion 2.7b qui ouvre le solveur (SMO de Platt) et chiffre son écart à l'optimum par le gap de dualité, théorie PAC/dimension VC et ses trois compagnons formel/concentration/Perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — optimisation d'hyperparamètres, régularisation sparse LASSO/ElasticNet, classes déséquilibrées, et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -157,6 +163,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.5c-Equite-Sous-Groupes](02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | équité par sous-groupe : parité démographique, equalized odds, post-traitement par seuils (Hardt) | **L'accuracy globale ne suffit pas** : 96,4 % global coexiste avec des écarts de groupe [0,92–1,00] |
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
 | [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
+| [2.7b-SMO-From-Scratch](02-ML-Cours/2.7b-SMO-From-Scratch.ipynb) | *Accrétion de 2.7* — SMO (Platt) écrit à la main : sous-problème 2D (dont la branche dégénérée `η ≤ 0`), cascade de working set, KKT et gap de dualité | **Le solveur écrit à la main retrouve sklearn** : même biais à 4·10⁻⁴ près, gap de dualité ≈ 3·10⁻³, pire violation KKT ponctuelle ≈ 10⁻³ |
 | [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
 | [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
 | [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
@@ -188,7 +195,6 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 
 Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 
-
 ## Vision par ordinateur (04-Vision)
 
 [`03-DeepLearning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
@@ -200,6 +206,17 @@ Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 | [4.3-TransferLearning-ResNet](04-Vision/4.3-TransferLearning-ResNet.ipynb) | ResNet18 pré-entraîné ImageNet, tête greffée (5 130 params entraînables sur 11,18 M), gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes, 3 graines appariées + test de permutation des signes) | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : gelé ~89 % ; fine-tuné +6,2 pts appariés, mais seulement à taux différencié décroissant (à taux constants, l'optimiseur finit sous le gelé) |
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
+
+## Ondelettes et scattering (04b-Wavelet-Scattering)
+
+Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle — avant son extension 2D séparable aux bandes orientées et à la compression d'image.
+
+| Notebook | Sujet | Concept-phare |
+|----------|-------|---------------|
+| [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+| [WS-00b-Ondelettes-2D-from-scratch](04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
+
+Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 
@@ -410,6 +427,7 @@ Cette série vous a fait traverser un **changement de posture** en data science 
 
 - **Les fondations, volontairement manuelles** — NumPy (vectorisation) et Pandas (DataFrame, groupby, nettoyage) d'abord pratiqués à la main. Cette base n'est pas un préalable accessoire : c'est le référent qui rend *jugeable* le travail de l'agent. On ne peut évaluer ce qu'un agent produit sur un DataFrame que si l'on sait soi-même le manipuler — d'où la règle des 80/20 (CrowdFlower, 2016) qui ouvre le Lab 4 : la préparation reste le cœur du métier, l'agent l'accélère sans l'effacer.
 - **Le track LangChain — l'agent unique outillé (Days 1-3)** — on assemble les quatre composants d'un agent (LLM + outils + prompt + orchestrateur), puis on l'applique à des tâches documentaires (parsing d'appel d'offre, scoring de CV) et d'analyse (wrangling, classification, agent DataFrame). Deux paradigmes canoniques structurent cette track : **LCEL** (composition par tube `prompt | llm`) pour les chaînes, et **ReAct** (boucle Pensée→Action→Observation) couplée au **tool-calling** pour le premier agent ; le `create_pandas_dataframe_agent` concrétise **CodeAct** (l'agent écrit et exécute lui-même son Python). L'enjeu n'est pas la magie du LLM mais la *qualité du prompt* et du *schéma de sortie* (JSON structuré).
+
 - **Le track Google ADK — les systèmes multi-agents (Days 4-7)** — on monte en abstraction : du single-agent on passe à des *systèmes* (boucles planner-coder-verifier), puis aux architectures SOTA (DS-STAR pour la data science, MLE-STAR pour l'ingénierie ML), jusqu'à concourir sur Kaggle (MLE-bench) et déployer en production (BigQuery, Vertex AI, BQML). La question bascule : ce n'est plus « comment coder cette analyse ? » mais « comment concevoir un *système d'agents* qui l'exécute, la valide et la raffine ? ».
 - **La finesse** — la série ne vend pas l'agent autonome comme une solution universelle. Chaque lab pose la question du *cadre* : quels outils exposer, comment valider la sortie, quand l'agent accélère réellement *vs* quand il hallucine ou dérive. Le survey sur l'hallucination (Lab 17) et la méthodologie d'ablation (Lab 14) ancrent cette lucidité.
 

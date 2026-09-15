@@ -1,0 +1,7 @@
+date: '2026-09-13'
+by: myia-po-2024:CoursIA
+python_sha: 4c953bd9b121fd1aac9683859e2571c32a9a5f4e
+csharp_sha: 62d089558097085b4221f5f53cddb12b0d110d12
+content_python_sha: fcab516dc4e71b5b96fe9a760675a805e4890e736802519fc410bd6a6162bcc2
+content_csharp_sha: d8a93c30da3c647ad3bd8f3567d5394523c73e1a5cf7b4b0f7adfc6ed10961ed
+reason: "Markdown-only cote Python (#12797, tranche 2 CFR) : 2 cellules markdown intermediaires inserees dans le run des verifications (briques de composition -> verify_product_decomposition -> verify_hull_bound), aucune cellule code touchee (source/execution_count/outputs verifiees identiques vs origin/main). Cote C# intact (csharp_sha = HEAD). Parite de contenu algorithmique inchangee (niveau semantic). Precedents re-baseline markdown-only sur cette paire : 2026-08-05 (de-pin utilites derniere iteration), 2026-07-25 (doc-honesty cell[30])."

@@ -111,15 +111,151 @@ noncomputable def discountedPayoff (g : PrisonersDilemma) (δ : ℝ)
     (a : ℕ → PDAction × PDAction) : ℝ :=
   ∑' n : ℕ, δ^n * stagePayoff g (a n).1 (a n).2
 
-/-- Le théorème de Folk ACTUALISÉ (Fudenberg–Maskin 1986, simplifié pour 2x2) :
+/-- Témoin de réfutation (#15655) : le DP `T = 3, R = 2, P = 1, S = 0` —
+lecture positionnelle de `(3, 2, 1, 0)` dans l'ordre des champs `(T, R, P, S)`.
+Les quatre axiomes de `PrisonersDilemma` se vérifient par `norm_num` (aucune
+donnée numérique citée en aval : tout est porté par la structure). Ce jeu
+porte la cible faisable strictement IR `u = (2, 2)` (le sommet coopératif
+`(R, R)`), qui réfute l'énoncé non normalisé du théorème de Folk actualisé —
+voir `folk_theorem_discounted_unnormalized_refuted`. -/
+def folkCounterexample : PrisonersDilemma where
+  T := 3
+  R := 2
+  P := 1
+  S := 0
+  hTR := by norm_num
+  hRP := by norm_num
+  hPS := by norm_num
+  hPD := by norm_num
+
+/-- Les hypothèses du théorème de Folk sont SATISFAITES par le témoin : pour
+`folkCounterexample` (T3, R2, P1, S0), la cible `u = (2, 2)` est
+individuellement rationnelle, faisable (le sommet coopératif `(R, R)` : poids
+`pCC = 1`, autres nuls) et strictement individuellement rationnelle
+(`2 > P`). La réfutation ci-dessous porte donc sur l'énoncé lui-même, pas sur
+un artefact d'hypothèse. -/
+theorem folkCounterexample_hypotheses :
+    IndividuallyRational folkCounterexample 2 2 ∧
+      Feasible folkCounterexample 2 2 ∧
+      (2 > folkCounterexample.P ∧ 2 > folkCounterexample.P) := by
+  refine ⟨⟨?_, ?_⟩, ⟨1, 0, 0, 0, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_⟩⟩ <;>
+    norm_num [folkCounterexample]
+
+/-- Somme des paiements de stage symétrisée sur le jeu témoin : toute paire
+de coups rapporte au total au moins `2`. Les quatre cas possibles donnent
+`R + R = 4` (coopération), `S + T = 3` et `T + S = 3` (exploitation),
+`P + P = 2` (défection mutuelle) — le minimum est le niveau de défection. -/
+lemma stage_sum_ge_two (x y : PDAction) :
+    2 ≤ stagePayoff folkCounterexample x y + stagePayoff folkCounterexample y x := by
+  cases x <;> cases y <;> simp only [stagePayoff, folkCounterexample] <;> norm_num
+
+/-- **Réfutation de l'énoncé NON NORMALISÉ** (#15655). L'ancienne conclusion du
+théorème de Folk actualisé — `discountedPayoff g d a = u_row ∧ … = u_col` sur
+les séries BRUTES — est FAUSSE, et ce pour n'importe quel seuil `δ_star < 1` :
+sur le jeu témoin `folkCounterexample` (T3, R2, P1, S0) et la cible faisable
+strictement IR `u = (2, 2)`, aucune trajectoire ne peut réaliser le couple
+`(2, 2)` dès que `d > 1/2`.
+
+    Argument (par l'absurde) : chaque profil de stage rapporte au total au
+    moins `2` (`stage_sum_ge_two`), donc la somme des deux séries vaut
+    `Σ' dⁿ · (p_row + p_col) ≥ 2 · Σ' dⁿ = 2 / (1 - d)`. Si les deux paiements
+    actualisés valaient `2` chacun, la somme vaudrait `4` — or `2 / (1 - d) > 4`
+    dès que `d > 1/2`. Pour tout `δ_star < 1` on choisit `d = max δ_star (3/4)`
+    (qui vérifie `δ_star ≤ d < 1` et `d > 1/2`) et la contradiction éclate.
+
+    Détail technique : chaque série est sommable car sa somme vaut `2 ≠ 0`
+    (`tsum_eq_zero_of_not_summable`), ce qui permet `Summable.tsum_add` puis la
+    comparaison `Summable.tsum_le_tsum` avec la série géométrique (dé doublée
+    `dⁿ + dⁿ` pour rester dans les lemmes de base des sommes infinies). L'énoncé
+    corrigé `folk_theorem_discounted` normalise les deux équations par
+    `1 - d` : la cible est le paiement MOYEN actualisé, dont la somme vaut
+    `u_row + u_col`, compatible avec la minoration en `2`. -/
+theorem folk_theorem_discounted_unnormalized_refuted :
+    ¬ ∃ (δ_star : ℝ), δ_star < 1 ∧
+      ∀ (d : ℝ), d ≥ δ_star → d < 1 →
+        ∃ (a : ℕ → PDAction × PDAction),
+          discountedPayoff folkCounterexample d a = 2 ∧
+          discountedPayoff folkCounterexample d (fun n => ((a n).2, (a n).1)) = 2 := by
+  rintro ⟨δ_star, hδs, hall⟩
+  have hdl : max δ_star (3 / 4) < 1 := max_lt_iff.mpr ⟨hδs, by norm_num⟩
+  obtain ⟨a, ha1, ha2⟩ := hall (max δ_star (3 / 4)) (le_max_left _ _) hdl
+  set d := max δ_star (3 / 4)
+  have hd0 : (1 / 2 : ℝ) < d := lt_of_lt_of_le (by norm_num) (le_max_right _ _)
+  have hdnn : 0 ≤ d := by linarith
+  have hs1 : Summable fun n : ℕ =>
+      d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2 := by
+    by_contra hns
+    simp only [discountedPayoff] at ha1
+    rw [tsum_eq_zero_of_not_summable hns] at ha1
+    norm_num at ha1
+  have hs2 : Summable fun n : ℕ =>
+      d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 := by
+    by_contra hns
+    simp only [discountedPayoff] at ha2
+    rw [tsum_eq_zero_of_not_summable hns] at ha2
+    norm_num at ha2
+  have h4 : discountedPayoff folkCounterexample d a
+      + discountedPayoff folkCounterexample d (fun n => ((a n).2, (a n).1)) = 4 := by
+    rw [ha1, ha2]; norm_num
+  have hgeo : Summable fun n : ℕ => d ^ n := summable_geometric_of_lt_one hdnn hdl
+  have hlb : ∀ n : ℕ, d ^ n + d ^ n
+      ≤ d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+        + d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 := by
+    intro n
+    have hp : 2 ≤ stagePayoff folkCounterexample (a n).1 (a n).2
+        + stagePayoff folkCounterexample (a n).2 (a n).1 :=
+      stage_sum_ge_two (a n).1 (a n).2
+    have hdn : 0 ≤ d ^ n := pow_nonneg (by linarith) n
+    calc d ^ n + d ^ n = d ^ n * 2 := by ring
+      _ ≤ d ^ n * (stagePayoff folkCounterexample (a n).1 (a n).2
+          + stagePayoff folkCounterexample (a n).2 (a n).1) :=
+        mul_le_mul_of_nonneg_left hp hdn
+      _ = d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+          + d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 := by ring
+  have hbound : 2 / (1 - d) ≤ discountedPayoff folkCounterexample d a
+      + discountedPayoff folkCounterexample d (fun n => ((a n).2, (a n).1)) := by
+    have hgeo' : ∑' n : ℕ, (d ^ n + d ^ n) = 2 / (1 - d) := by
+      rw [Summable.tsum_add hgeo hgeo, tsum_geometric_of_lt_one hdnn hdl]; ring
+    rw [← hgeo']
+    simp only [discountedPayoff]
+    calc ∑' n : ℕ, (d ^ n + d ^ n)
+        ≤ ∑' n : ℕ, (d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+          + d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1) :=
+        Summable.tsum_le_tsum hlb (hgeo.add hgeo) (hs1.add hs2)
+      _ = ∑' n : ℕ, d ^ n * stagePayoff folkCounterexample (a n).1 (a n).2
+          + ∑' n : ℕ, d ^ n * stagePayoff folkCounterexample (a n).2 (a n).1 :=
+        Summable.tsum_add hs1 hs2
+  rw [h4] at hbound
+  have h1pos : 0 < 1 - d := by linarith
+  rw [div_le_iff₀ h1pos] at hbound
+  ring_nf at hbound
+  have h4d : (2 : ℝ) < 4 * d := by
+    have hmul := mul_lt_mul_of_pos_left hd0 (show (0 : ℝ) < 4 by norm_num)
+    norm_num at hmul
+    exact hmul
+  linarith
+
+/-- Le théorème de Folk ACTUALISÉ (Fudenberg–Maskin 1986, simplifié pour 2x2),
+    forme NORMALISÉE (#15655) :
 
       Pour tout paiement faisable strictement individuellement rationnel
       `u = (u_row, u_col)`, il existe δ* < 1 tel que pour tout δ ∈ [δ*, 1) le
-      vecteur `u` est réalisé comme paiement actualisé d'une trajectoire
-      d'actions conjointes.
+      vecteur `u` est réalisé comme paiement MOYEN actualisé d'une trajectoire
+      d'actions conjointes — chaque équation porte le facteur `1 - d` :
+      `(1 - d) · Σ' dⁿ · payoff = u`.
 
-    La conclusion est une **équation réelle** (`discountedPayoff … = u_row ∧
-    … = u_col`), pas un `True` : le `sorry` porte donc la dette authentique
+    La normalisation n'est pas décorative : l'énoncé BRUT
+    (`discountedPayoff … = u` sans facteur) est réfuté formellement par
+    `folk_theorem_discounted_unnormalized_refuted` ci-dessus — sur le jeu
+    témoin (T3, R2, P1, S0) et la cible faisable strictement IR (2, 2), la
+    somme des deux séries est minorée par `2 / (1 - d) > 4` dès que `d > 1/2`,
+    donc aucune trajectoire ne peut réaliser le couple brut près de 1. Le
+    paiement MOYEN, lui, échappe à la réfutation : sa somme vaut
+    `u_row + u_col`, dans la plage permise par la minoration.
+
+    La conclusion reste une **équation réelle** (`(1 - d) * discountedPayoff …
+    = u_row ∧ … = u_col`), pas un `True` : le `sorry` porte donc la dette
+    authentique
     (existence de la trajectoire réalisant le vecteur cible — construction de
     Fudenberg–Maskin par alternance action-cible / phase de punition, avec la
     convexité du polytope des paiements faisables). Ne PAS fermer sur `True` :
@@ -139,13 +275,21 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
       ∃ (δ_star : ℝ), δ_star < 1 ∧
         ∀ (d : ℝ), d ≥ δ_star → d < 1 →
           ∃ (a : ℕ → PDAction × PDAction),
-            discountedPayoff g d a = u_row ∧
-            discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
+            (1 - d) * discountedPayoff g d a = u_row ∧
+            (1 - d) * discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
+  -- Énoncé normalisé (2026-09-13, #15655) : facteur `1 - d` sur les DEUX
+  -- équations — c'est le paiement MOYEN actualisé, la conclusion standard de
+  -- Fudenberg–Maskin. L'ancienne conclusion non normalisée était FAUSSE :
+  -- réfutée formellement par `folk_theorem_discounted_unnormalized_refuted`
+  -- (témoin T3/R2/P1/S0, u = (2, 2) : chaque stage rapporte au total ≥ 2,
+  -- donc la somme des deux séries ≥ 2 / (1 - d) > 4 = u_row + u_col dès que
+  -- d > 1/2 — aucune trajectoire ne réalise le couple brut près de 1).
+  --
   -- STRETCH (Fudenberg–Maskin 1986) : existence d'une trajectoire d'actions
   -- conjointes réalisant le vecteur de paiement cible (u_row, u_col) comme
-  -- paiement actualisé, pour tout δ assez proche de 1. Requiert la convexité
-  -- du polytope des paiements faisables et un argument de point extrême ;
-  -- preuve de plusieurs pages, pas une seule tactique.
+  -- paiement moyen actualisé, pour tout δ assez proche de 1. Requiert la
+  -- convexité du polytope des paiements faisables et un argument de point
+  -- extrême ; preuve de plusieurs pages, pas une seule tactique.
   --
   -- Bord d'énoncé réparé (2026-08-15) : l'ancien quantificateur « ∀ d ≥ δ* »
   -- (sans borne d < 1) rendait le théorème FAUX — à d ≥ 1 les séries

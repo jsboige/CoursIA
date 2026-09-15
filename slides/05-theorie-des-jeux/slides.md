@@ -325,6 +325,21 @@ layout: dense
 layout: dense
 ---
 
+# Jeux combinatoires -- Grundy et les nimbers
+
+## Sprague-Grundy
+
+- Classe : information parfaite, sans hasard, somme nulle, fini (Nim)
+  - Théorème de Sprague-Grundy : chaque position vaut un nimber, la somme disjointe vaut le XOR
+  - Position perdante (P-position) ssi Grundy = 0 -- l'induction arrière devient un calcul
+- Compagnons formels du corpus : port Lean « from scratch », puis lake natif dédié
+
+*Notebooks : [GameTheory-08-CombinatorialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Native](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Native.ipynb) (lake `conway_cgt_lean`).*
+
+---
+layout: dense
+---
+
 # Formes stratégiques avancees
 
 ## Raisonner avec des variables
@@ -538,6 +553,22 @@ layout: dense
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
 *Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb) (screening formalise).*
+
+---
+layout: dense
+---
+
+# Information imparfaite -- le regret contraposé (CFR)
+
+## Poker et apprentissage auto-centré
+
+- Théorème de Kuhn : à rappel parfait, stratégies comportementales = mixtes
+  - L'information set porte la croyance qui pilote la meilleure réponse
+- CFR (Counterfactual Regret Minimization) : minimiser le regret contraposé
+  - Convergence vers l'équilibre de Nash -- la famille qui a révolutionné la résolution du poker
+  - Safe subgame solving : recoller une sous-partie sans supposer les croyances (le mauvais recollement produit un témoin adversarial)
+
+*Notebooks : [GameTheory-13-ImperfectInfo-CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb) · [GameTheory-13c-Safe-Subgame-Solving-Csharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR.ipynb).*
 
 ---
 layout: section
@@ -932,6 +963,55 @@ layout: default
 - Details mathematiques dans les references du cours
 
 *Notebooks : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
+
+---
+layout: dense
+---
+
+# Apprentissage multi-agents -- self-play, NFSP, PSRO
+
+## Quand l'equilibre s'apprend au lieu de se calculer
+
+- Self-play : l'agent devient son propre adversaire -- la population des strategies passees tient lieu d'opposant
+  - Fictitious Play : meilleure reponse a la frequence empirique des coups adverses
+  - NFSP : un reseau apprend la meilleure reponse, un autre la politique moyenne -- l'equilibre emerge de leur melange
+  - PSRO (Policy-Space Response Oracles) : population de meilleures reponses imbriquees, l'echelle ou FP s'essouffle
+- La serie se decline en jumeau C# pour les TP .NET
+
+*Notebooks : [GameTheory-17-MultiAgent-RL](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb) (self-play, FP, NFSP, PSRO) · [GameTheory-17-MultiAgent-RL-Csharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb) (jumeau C#).*
+
+---
+layout: dense
+---
+
+# Rationalite bornee -- agents-programmes a budget
+
+## Le cout du raisonnement entre dans le modele
+
+- Agent-programme : code public + budget de raisonnement fini (Barasz et al. 2014, Critch 2016)
+  - Interprete total : budget nul = action immediate, budget epuise = arret -- la terminaison est structurelle, pas esperee
+  - Simuler l'adversaire coute des steps : chaque borne `MAX_DEPTH` / `STEP_BUDGET` deplace l'equilibre atteignable
+- Equilibre de programmes par simulation : deux adversaires au comportement identique sont traites pareil -- l'inspection syntaxique, elle, se trompe
+- Compagnon formel : module `ProgramGames.Bounded` du lake `game_theory_lean` -- code public, budget, interprete `act`
+- Oracles reflexifs (Fallenstein, Taylor, Christiano 2015) : decider sur sa propre decision sans paradoxe
+
+*Notebooks : [GameTheory-06e-Open-Source-Game-Theory](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb) · [GameTheory-06f-Bounded-Agents-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb) · [GameTheory-06f-Bounded-Proofs-Reasoning-Costs](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb) (preuves bornees) · [GameTheory-06g-Bounded-Agents-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Bounded-Agents-Lean.ipynb) · [GameTheory-06g-Simulation-Based-Program-Equilibria](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb) · [GameTheory-04e-Reflective-Oracles](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles.ipynb).*
+
+---
+layout: dense
+---
+
+# Jeux ouverts et lentilles -- composer les jeux
+
+## La theorie des jeux compositionnelle
+
+- Open game : un jeu a frontieres -- entrees, sorties, couts, strategies locales
+  - Lentille (get/set) : le regard qui lit l'etat global et reecrit localement -- composer les jeux, c'est composer les lentilles
+  - Propriete de Hedges : la meilleure reponse de la composition est la composition des meilleures reponses -- quand elle tient
+- Casser la composition : deux surfaces d'attaque ou la meilleure reponse composee cesse d'etre l'equilibre du jeu compose
+- Abstraction a dette mesurable (Kroer & Sandholm) : resoudre le jeu abstrait puis retransporter la strategie -- avec une borne sur ce que le detour coute au pire cas
+
+*Notebooks : [GameTheory-18-Open-Games-et-Lentilles](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles.ipynb) (lentilles, Hedges) · [GameTheory-18b-Casser-la-Composition](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition.ipynb) (attaques) · [GameTheory-19-Abstraction-a-Dette](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette.ipynb) (bornes d'abstraction).*
 
 ---
 layout: section

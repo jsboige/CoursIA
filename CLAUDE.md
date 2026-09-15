@@ -63,6 +63,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 |---|---|---|
 | Notebooks | `notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering` | C.1/C.2/C.3 sont précisés au §C ci-dessous. Un notebook **ne se renomme pas sans un argument pédagogique écrit** (`notebook-accretion-numbering`) ; un finding d'audit automatisé **se re-vérifie avant tout fix** (`audit-reassessment`, ~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre (`audit-cross-source-distillation`, déjà porté par §A). |
 | Catalogue & README | `catalog-pr-hygiene` · `readme-french-first` | **Le catalogue appartient à l'automatisation** : `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature — laisser byte-identique à `main`. Toute prose de doc **ajoutée ou réécrite** est en français, même dans un fichier anglais. |
+| Artefacts de résultats | `results-artifact-policy` | **Nouveau fichier de `scripts/results/` > 512 Ko = bloqué par CI** (#15890) : committer l'agrégé falsifiable (biais signés, p-values DM, preuves de folds), les séries complètes vont hors dépôt (GDrive) avec le chemin cité dans le body. Artefacts déjà sur main : grandfathered, aucune réécriture d'historique. |
 | GenAI | `genai-config` | — |
 | Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` | — |
 | Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
@@ -103,10 +104,10 @@ Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que
 
 **Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
 
-- **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue. (#12798 : `[Hermes] COMMENT_WITH_CONCERNS` éteint par une phrase de l'auteur ; livrable réel = stub `Cle presente False` sous un body annonçant SOTA-OK.)
-- **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**. (#12347 : `CHANGES_REQUESTED` 17:03:20Z → merge 21:23:56Z → levée **21:24:28Z, 32 s après le merge**, et annotée comme telle par son auteur. Aucune ignorance en cause : rien ne contraignait l'ordre.)
+- **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
 
-**Un commit poussé après la remarque ne la lève PAS à lui seul.** Sur #10761 le « traitement » était un rebase à 19:41 qui n'adressait aucun des deux nits de 11:07 — un push muet est indiscernable d'un push qui répond. Ce qui lève une remarque est **une phrase**, pas un SHA.
+**Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
 
 L'écoulement du temps n'est **pas** une levée. `mergeStateStatus: CLEAN` n'est **pas** une levée. `state: COMMENTED` n'est **pas** une absence de réserve. Un reviewer qui écrit « je ne peux pas approuver seul sur ce format » **bloque** — c'est un refus d'approbation, pas un avis.
 
@@ -117,9 +118,9 @@ python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
 python scripts/check_unaddressed_nits.py --audit --limit 400
 ```
 
-**`exit 0` répond « aucune phrase de levée ne manque » — et rien d'autre.** Il ne dit ni **qui** l'a écrite, ni **avant ou après le merge**, ni si la **substance** est traitée. Ces trois-là se lisent à la main, et la troisième exige d'**ouvrir les corps de review** : un `state: COMMENTED` de `jsboige` est un verdict Hermes dont le sens vit dans le préfixe du body. Prendre le vert de l'organe pour une dispense de lecture est le manquement que cette section existe pour empêcher. L'organe ne lit aussi que ses **marqueurs** : une réserve bloquante posée **sans** marqueur, en prose libre, rend `rc=0` (**#14658** — résolu côté émission : le reviewer porte toujours un préfixe de verdict ou un glyphe, cf [pr-review-discipline.md](.claude/rules/pr-review-discipline.md) ; les marqueurs ne s'élargissent pas à la prose, mesure #14682).
+**`exit 0` répond « aucune phrase de levée ne manque » — et rien d'autre.** Il ne dit ni **qui** l'a écrite, ni **avant ou après le merge**, ni si la **substance** est traitée. Ces trois-là se lisent à la main, et la troisième exige d'**ouvrir les corps de review** : un `state: COMMENTED` de `jsboige` est un verdict Hermes dont le sens vit dans le préfixe du body. Prendre le vert de l'organe pour une dispense de lecture est le manquement que cette section existe pour empêcher. L'organe ne lit aussi que ses **marqueurs** : une réserve bloquante posée **sans** marqueur, en prose libre, rend `rc=0` — le contrat est côté **émission**, et les marqueurs ne s'élargissent pas à la prose ([pr-review-discipline.md](.claude/rules/pr-review-discipline.md)).
 
-**Incident fondateur — PR #10761** : mergée malgré 2 nits user vieux de 17 h et une review Hermes `COMMENT_WITH_CONCERNS`, parce que `mergeStateStatus: CLEAN` et `reviews[].state: COMMENTED` étaient tous deux verts. L'attribution fautive (Sendov → Tao) est corrigée depuis (`e1ad7868a`, #11065). La **classe** de défaut reste vivante (#11110, #11127) : « la référence est fausse » ≠ « l'attribution est fausse ». Récit complet : [pr-review-context.md](docs/reference/pr-review-context.md).
+**Incidents fondateurs** — #10761 (mergée sur deux champs verts malgré 2 nits user de 17 h et un `COMMENT_WITH_CONCERNS`), #12798 (levée signée par l'auteur de la PR), #12347 (levée postée 32 s **après** le merge), #14658 (réserve bloquante sans marqueur, `rc=0`) : [pr-review-context.md](docs/reference/pr-review-context.md).
 
 #### Les 5 points
 

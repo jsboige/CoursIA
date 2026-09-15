@@ -74,6 +74,7 @@ bestiary below. EPIC #3846 / #6724 / #9568.
 import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.LightCone_en
+import Conway.Life.Oscillators_en
 
 namespace Conway_en
 open Conway
@@ -712,6 +713,52 @@ theorem periodic_fix_toGrid_zero (g : Grid) (hg : Canonical g) {T : Nat}
     toGrid_shift_grid _ 0 0 _ _
   rw [hshift, ← evolve_shift, hrt, hper]
 
+/-- **Tranche 8a — capture of oscillators with arbitrary period.** Generalization
+    of `jumpCapturedF_of_period_divides`: the divisibility `T ∣ 2^c.level` was only
+    used to build `hself` ("the jump of horizon `2^c.level` lands back on the
+    pattern"), which de facto excludes every non-dyadic period — an oscillator of
+    minimal odd period `T` never satisfies `evolve (2^ℓ) g = g`. Here the exact
+    landing is replaced by the modulo fold (`evolve_mod_period`: the jump lands on
+    phase `2^c.level % T`), and the only requested counterpart is **spatial**:
+    every phase of the orbit fits in the starting phase's box (`hwin`, bounds
+    `[0, 2^c.level)²` in origin framing — exactly what `cellWfF_toGrid_bounds`
+    gives for the phase itself). The `padCenter2` geometry and the arithmetic
+    tail are unchanged: a phase inside the box shifted by `3·2^(c.level-1)`
+    stays in the central window `[2^c.level, 2^c.level + 2^(c.level+1))²`.
+    `T = 1` (still life) and the dyadic case remain instances: `hwin` is then
+    trivially the phase's own box. -/
+theorem jumpCapturedF_of_period_mod (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hwin : ∀ i, i < T → ∀ p ∈ evolve i (c.toGrid (0, 0)),
+      (0 : Int) ≤ p.1 ∧ p.1 < (2 ^ c.level : Int) ∧
+        (0 : Int) ≤ p.2 ∧ p.2 < (2 ^ c.level : Int)) :
+    jumpCapturedF c = true := by
+  have hr' : 2 ^ c.level % T < T := Nat.mod_lt _ hT0
+  have hmod : evolve (2 ^ c.level) (c.toGrid (0, 0))
+      = evolve (2 ^ c.level % T) (c.toGrid (0, 0)) :=
+    evolve_mod_period _ hper _
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
+          (evolve (2 ^ c.level % T) (c.toGrid (0, 0))) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hmod]
+  rw [jumpCapturedF_iff]
+  intro p hp
+  rw [hfinal, mem_shift] at hp
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin _ hr' _ hp
+  dsimp only at hb1 hb2 hb3 hb4
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  omega
+
 /-- **Capture of the reconstruction of a periodic phase.** For any
     canonical phase `g` of a `T`-periodic oscillator (`T > 1` a fortiori
     `0 < T`), whose reconstruction level divides the jump horizon
@@ -782,6 +829,244 @@ theorem hashlife_correct_margin_of_period (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_period _ (canonical_sortDedup _) hT0 hper hdiv t)
+
+/-! ## Tranche 8a/8b — relaxed chain for arbitrary periods
+
+Exact mirror of the three dyadic links above, consuming
+`jumpCapturedF_of_period_mod`: the divisibility `T ∣ 2^level` is everywhere
+replaced by the spatial counterpart “every phase of the orbit fits inside the
+reconstruction frame of the starting phase” — the absolute statement
+`[o, o + 2^level)²` where `o` is the offset of the `gridToMacroCellWithOffset`
+frame — which transports to the cell's origin framing via `evolve_shift` +
+`mem_shift`. The starting phase automatically lies in its own frame (it is
+the one built on its bounding box); the hypothesis only bears on the other
+`T - 1` phases. This opens the class to non-dyadic periods (flagship witness
+`T = 3`, etc.) as soon as the witness checks the containment.
+-/
+
+/-- **Tranche 8b — reconstruction capture, arbitrary periods.**
+    Variant of `jumpCapturedF_reconstruction_of_period`: the divisibility
+    premise is replaced by the containment of the orbit's phases inside the
+    reconstruction frame of `g` (absolute coordinates). The transport to the
+    cell's origin framing goes through `toGrid_shift_grid` + `evolve_shift`.
+    -/
+theorem jumpCapturedF_reconstruction_of_period_mod (g : Grid) (hg : Canonical g)
+    {T : Nat} (hT0 : 0 < T) (hper : evolve T g = g)
+    (hwin : ∀ i, i < T → ∀ p ∈ evolve i g,
+      (gridToMacroCellWithOffset g).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset g).1.1
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+      (gridToMacroCellWithOffset g).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset g).1.2
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+        = shift (0 - (gridToMacroCellWithOffset g).1.1,
+            0 - (gridToMacroCellWithOffset g).1.2)
+            ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+      toGrid_shift_grid _ 0 0 _ _
+    have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+        = g := toGrid_gridToMacroCellWithOffset_eq g hg
+    have hwin' : ∀ i, i < T → ∀ p ∈
+        evolve i ((gridToMacroCellWithOffset g).2.toGrid (0, 0)),
+      (0 : Int) ≤ p.1 ∧ p.1 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+        (0 : Int) ≤ p.2 ∧ p.2 < (2 ^ (gridToMacroCellWithOffset g).2.level : Int) := by
+      intro i hi p hp
+      rw [hshift, ← evolve_shift, mem_shift, hrt] at hp
+      obtain ⟨hb1, hb2, hb3, hb4⟩ := hwin i hi _ hp
+      dsimp only at hb1 hb2 hb3 hb4
+      omega
+    exact jumpCapturedF_of_period_mod _ hwf hlvl hT0
+      (periodic_fix_toGrid_zero g hg hper) hwin'
+
+/-- **Tranche 8b — hcap of the periodic class, arbitrary periods.**
+    Variant of `hcap_of_period`: each phase carries its own frame, and the
+    premise asks the `T` phases to live inside the reconstruction frame of
+    each one — for a real oscillator whose phases overlap, this is the same
+    bounded neighbourhood, stated `T` times.
+    -/
+theorem hcap_of_period_mod (g : Grid) (hg : Canonical g) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T g = g)
+    (hwin : ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_mod_period g hper t]
+  have hr : t % T < T := Nat.mod_lt _ hT0
+  have hcan : Canonical (evolve (t % T) g) := by
+    rcases Nat.eq_zero_or_pos (t % T) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  have hfix : evolve T (evolve (t % T) g) = evolve (t % T) g :=
+    evolve_phase_fix g hper _
+  exact jumpCapturedF_reconstruction_of_period_mod _ hcan hT0 hfix (hwin _ hr)
+
+/-- **Tranche 8b — L3 closed for the general periodic class: Hashlife
+    correctness of arbitrary-period oscillators.** Mirror assembly corollary
+    of `hashlife_correct_margin_of_period`: under phase containment (no more
+    divisibility), the global equality holds at any horizon `2^k` under
+    `centralCorrect`.
+    -/
+theorem hashlife_correct_margin_of_period_mod (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hwin : ∀ r, r < T → ∀ i, i < T →
+      ∀ p ∈ evolve i (evolve r (c.toGrid (0, 0))),
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ (gridToMacroCellWithOffset
+            (evolve r (c.toGrid (0, 0)))).2.level : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_period_mod _ (canonical_sortDedup _) hT0 hper hwin t)
+
+/-! ### Flagship witness `T = 3`: the pulsar (tranche 8b, admission)
+
+First **non-dyadic** witness admitted through the relaxed chain: the pulsar
+(`Conway.Life.Oscillators.pulsar`, 48 cells, 13×13 box). Since 3 divides no
+power of 2, the dyadic chain `T ∣ 2^level` structurally cannot admit it —
+only the phase-containment relaxation reaches it. The three step equations
+are proved by the **kernel** reducer (`decide` under `maxRecDepth 1000000`),
+without consuming `Oscillators.pulsar_period_three` (a `native_decide`
+proof, forbidden by bestiary note c.212). -/
+/-- Phase 1 of the pulsar (56 cells, box `[-1, 13]²`): the only phase that
+spills outside the phase-0 13×13 box. Lexicographically sorted literal. -/
+def pulsarP1 : Grid :=
+  [(-1, 3), (-1, 9), (0, 3), (0, 9), (1, 3), (1, 4), (1, 8), (1, 9),
+  (3, -1), (3, 0), (3, 1), (3, 4), (3, 5), (3, 7), (3, 8), (3, 11),
+  (3, 12), (3, 13), (4, 1), (4, 3), (4, 5), (4, 7), (4, 9), (4, 11),
+  (5, 3), (5, 4), (5, 8), (5, 9), (7, 3), (7, 4), (7, 8), (7, 9),
+  (8, 1), (8, 3), (8, 5), (8, 7), (8, 9), (8, 11), (9, -1), (9, 0),
+  (9, 1), (9, 4), (9, 5), (9, 7), (9, 8), (9, 11), (9, 12), (9, 13),
+  (11, 3), (11, 4), (11, 8), (11, 9), (12, 3), (12, 9), (13, 3), (13, 9)]
+/-- Phase 2 of the pulsar (72 cells, box `[0, 12]²`). Sorted literal. -/
+def pulsarP2 : Grid :=
+  [(0, 2), (0, 3), (0, 9), (0, 10), (1, 3), (1, 4), (1, 8), (1, 9),
+  (2, 0), (2, 3), (2, 5), (2, 7), (2, 9), (2, 12), (3, 0), (3, 1),
+  (3, 2), (3, 4), (3, 5), (3, 7), (3, 8), (3, 10), (3, 11), (3, 12),
+  (4, 1), (4, 3), (4, 5), (4, 7), (4, 9), (4, 11), (5, 2), (5, 3),
+  (5, 4), (5, 8), (5, 9), (5, 10), (7, 2), (7, 3), (7, 4), (7, 8),
+  (7, 9), (7, 10), (8, 1), (8, 3), (8, 5), (8, 7), (8, 9), (8, 11),
+  (9, 0), (9, 1), (9, 2), (9, 4), (9, 5), (9, 7), (9, 8), (9, 10),
+  (9, 11), (9, 12), (10, 0), (10, 3), (10, 5), (10, 7), (10, 9), (10, 12),
+  (11, 3), (11, 4), (11, 8), (11, 9), (12, 2), (12, 3), (12, 9), (12, 10)]
+set_option maxRecDepth 1000000 in
+/-- The pulsar definition is already canonical (sorted, duplicate-free):
+certified by the kernel, then converted through `canonical_sortDedup`. -/
+theorem pulsar_canonical : Canonical pulsar := by
+  have h : pulsar = sortDedup pulsar := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Likewise for phase 1. -/
+theorem pulsarP1_canonical : Canonical pulsarP1 := by
+  have h : pulsarP1 = sortDedup pulsarP1 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Likewise for phase 2. -/
+theorem pulsarP2_canonical : Canonical pulsarP2 := by
+  have h : pulsarP2 = sortDedup pulsarP2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equation by the kernel reducer: phase 0 evolves into phase 1
+(~4.5 min of reduction). -/
+theorem pulsar_step1 : step pulsar = pulsarP1 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, phase 1 into phase 2. -/
+theorem pulsarP1_step : step pulsarP1 = pulsarP2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, phase 2 back to phase 0: the period-3 loop is closed. -/
+theorem pulsarP2_step : step pulsarP2 = pulsar := by decide
+/-- Trivial decomposition of iterates: two steps compose two unit steps
+(`evolve` is the iterate of `step`). -/
+theorem evolve_two (g : Grid) : evolve 2 g = evolve 1 (evolve 1 g) := rfl
+/-- Likewise for three steps. -/
+theorem evolve_three (g : Grid) : evolve 3 g = evolve 1 (evolve 1 (evolve 1 g)) := rfl
+/-- Chain of phases under `evolve 1`: phase 0. -/
+theorem pulsar_ev1 : evolve 1 pulsar = pulsarP1 := pulsar_step1
+/-- Chain of phases: phase 1. -/
+theorem pulsarP1_ev1 : evolve 1 pulsarP1 = pulsarP2 := pulsarP1_step
+/-- Chain of phases: phase 2. -/
+theorem pulsarP2_ev1 : evolve 1 pulsarP2 = pulsar := pulsarP2_step
+/-- Period 3 of the pulsar proved by the **kernel**: composition of the
+three step equations. The `native_decide` proof
+`Oscillators.pulsar_period_three` is not consumed (note c.212). -/
+theorem pulsar_period_three_kernel : evolve 3 pulsar = pulsar := by
+  rw [evolve_three, pulsar_ev1, pulsarP1_ev1, pulsarP2_ev1]
+set_option maxRecDepth 1000000 in
+/-- Reconstruction frame of phase 0: offset `(-2, -2)` (padding 2 around
+the `[0, 12]²` box). -/
+theorem pulsar_frame_off : (gridToMacroCellWithOffset pulsar).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the phase-0 frame: side 18 → level 5, frame `[-2, 30)²`. -/
+theorem pulsar_frame_lvl : (gridToMacroCellWithOffset pulsar).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 1: box `[-1, 13]²` → offset `(-3, -3)`, level 5
+(frame `[-3, 29)²`). -/
+theorem pulsarP1_frame_off : (gridToMacroCellWithOffset pulsarP1).1 = (-3, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the phase-1 frame: side 20 → level 5. -/
+theorem pulsarP1_frame_lvl : (gridToMacroCellWithOffset pulsarP1).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 2: box `[0, 12]²` → offset `(-2, -2)`. -/
+theorem pulsarP2_frame_off : (gridToMacroCellWithOffset pulsarP2).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the phase-2 frame: level 5. -/
+theorem pulsarP2_frame_lvl : (gridToMacroCellWithOffset pulsarP2).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Containment of the 9 phase combinations `(r, i) < 3 × 3`: every image
+`evolve i (evolve r pulsar)` lives inside the reconstruction frame of
+phase `r`. Phase 1 spills outside the 13×13 box, but its image stays
+inside the enclosing phase-0 frame `[-2, 30)²`. -/
+theorem pulsar_hwin : ∀ r, r < 3 → ∀ i, i < 3 → ∀ p ∈ evolve i (evolve r pulsar),
+    (gridToMacroCellWithOffset (evolve r pulsar)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r pulsar)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r pulsar)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r pulsar)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r pulsar)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r pulsar)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, evolve_two, pulsar_ev1, pulsarP1_ev1, pulsarP2_ev1] <;>
+    first
+    | (rw [pulsar_frame_off, pulsar_frame_lvl]; decide)
+    | (rw [pulsarP1_frame_off, pulsarP1_frame_lvl]; decide)
+    | (rw [pulsarP2_frame_off, pulsarP2_frame_lvl]; decide)
+/-- Capstone: the pulsar is admitted by `hcap_of_period_mod` — the first
+concrete **non-dyadic** instance. For every horizon `t`, the
+reconstruction of `evolve t pulsar` is captured by Hashlife. -/
+theorem pulsar_hcap_of_period_mod :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t pulsar)).2 = true :=
+  hcap_of_period_mod pulsar pulsar_canonical (by decide)
+    pulsar_period_three_kernel pulsar_hwin
+
 
 /-! ## Translation invariance of the reconstruction (tranche 3, step 7, brick 1)
 

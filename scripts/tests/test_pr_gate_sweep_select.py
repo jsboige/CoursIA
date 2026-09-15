@@ -83,7 +83,8 @@ def _run_selector_both(tmp_path, rows):
     fixture.write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
     )
-    env = dict(os.environ, SWEEP_RUNS_FILE=str(fixture))
+    env = dict(os.environ, SWEEP_RUNS_FILE=str(fixture),
+               SWEEP_MUTE_FILE=str(tmp_path / "mute.txt"))
     out = subprocess.run(
         ["python", "-c", SELECTOR],
         capture_output=True, text=True, encoding="utf-8", env=env, cwd=tmp_path,
@@ -99,6 +100,12 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
     replie alors sous la cle sentinel ``unattributed`` (comportement des
     donnees collectees avant #11808). Avec un run_id, la fixture porte le
     details_url REST (.../actions/runs/{run_id}/job/...).
+
+    Le 6e element est le ``output.title`` collecte (#15825) : absent, la
+    fixture decrit la forme PRE-collection du champ et la leg n'est jamais
+    classee muette ; les fixtures muettes le portent a "" explicitement --
+    la forme exacte que le collecteur emet pour un check-run conclu sans
+    output.
     """
     rows = []
     for ch in checks:
@@ -109,6 +116,8 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
                 "https://github.com/jsboige/CoursIA/actions/runs/"
                 f"{ch[4]}/job/96158568958"
             )
+        if len(ch) > 5:
+            row["title"] = ch[5]
         rows.append(row)
     row_out = {"number": number, "sha": sha, "fork": fork, "checks": rows}
     if workflows:
@@ -122,6 +131,11 @@ GATE_FAIL = ("PR gate", "completed", "failure", "2026-01-01T10:00:00Z")
 OTHER_GREEN = ("Hermes review", "completed", "success", "2026-01-01T10:05:00Z")
 OTHER_RED = ("Hermes review", "completed", "failure", "2026-01-01T10:05:00Z")
 OTHER_QUEUED = ("Hermes review", "queued", None, "2026-01-01T10:05:00Z")
+# (#15825) legs portant le titre collecte : muet (rouge, titre vide) vs
+# eloquent (rouge, titre porte) -- la mesure 2026-09-12 : 9 muets sur 43.
+GATE_MUTE = ("PR gate", "completed", "failure", "2026-01-01T10:00:00Z", 111, "")
+GATE_FAIL_TITLED = ("PR gate", "completed", "failure", "2026-01-01T10:00:00Z",
+                    111, "FAIL -- failing checks: Proof integrity (knot_lean)")
 
 
 def test_gate_cancelled_alone_is_candidate(tmp_path):
@@ -154,6 +168,72 @@ def test_gate_failure_others_green_candidate(tmp_path):
     reste candidat."""
     out = _run_selector(tmp_path, [_pr(104, [GATE_FAIL, OTHER_GREEN])])
     assert out.strip() == "104 deadbeef false 0"
+
+
+# --- #15825 : legs muettes (rouge, output.title vide) -> reparation, pas re-run
+#
+# Mesure 2026-09-12 : 9 echecs `PR gate` sur 43 rendent output.title = null.
+# Classe stale-snapshot : le rerun rejoue l'event payload fige, dont le
+# checkout PREDATE la machinerie de publication (#15725) -- le script
+# re-execute est l'ancien, sans publication. Preuve : run 34608518559 sur
+# #15440, 8 tentatives x ~23 s, identiques, pendant que le log portait le
+# verdict depuis la premiere. Ces tests epinglent le routage : jamais un
+# candidat re-run (inert et brule un slot waiter), toujours le flux de
+# reparation (job_id + run_id pour le PATCH du titre depuis le log).
+
+
+def _run_selector_with_mute(tmp_path, rows):
+    """Exec le selecteur livree et rend (stdout, lignes du flux muet)."""
+    out = _run_selector_both(tmp_path, rows)
+    mute_file = tmp_path / "mute.txt"
+    lines = (mute_file.read_text(encoding="utf-8").splitlines()
+             if mute_file.exists() else [])
+    return out.stdout, lines
+
+
+def test_mute_gate_leg_routed_to_repair_not_rerun(tmp_path):
+    """#15825 critere 2 : un gate rouge SANS output.title va au flux de
+    reparation -- stdout VIDE (aucun candidat re-run)."""
+    stdout, mute_lines = _run_selector_with_mute(
+        tmp_path, [_pr(101, [GATE_MUTE, OTHER_GREEN])])
+    assert stdout.strip() == ""
+    assert mute_lines == ["101 deadbeef 96158568958 111"]
+
+
+def test_titled_red_gate_still_rerun_candidate(tmp_path):
+    """Contre-falsification : le meme rouge AVEC titre reste un candidat
+    re-run -- le predicat muet ne doit pas absorber les gates eloquents."""
+    out = _run_selector(tmp_path, [_pr(105, [GATE_FAIL_TITLED, OTHER_GREEN])])
+    assert out.strip() == "105 deadbeef false 0"
+
+
+def test_mute_gate_leg_with_other_red_still_routed_to_repair(tmp_path):
+    """La reparation muette est inconditionnelle : nommer la cause vaut meme
+    si un autre check est rouge (c'est un diagnostic, pas un deblocage)."""
+    stdout, mute_lines = _run_selector_with_mute(
+        tmp_path, [_pr(106, [GATE_MUTE, OTHER_RED])])
+    assert stdout.strip() == ""
+    assert mute_lines == ["106 deadbeef 96158568958 111"]
+
+
+def test_mute_leg_without_details_url_diagnosed_not_crashed(tmp_path):
+    """Leg muette sans details_url (verdict POSTe, aucun run derriere) :
+    diag nomme, ni candidat ni reparation -- le selecteur ne crashe pas."""
+    leg = ("PR gate", "completed", "failure", "2026-01-01T10:00:00Z", None, "")
+    stdout, mute_lines = _run_selector_with_mute(
+        tmp_path, [_pr(107, [leg, OTHER_GREEN])])
+    assert stdout.strip() == ""
+    assert mute_lines == []
+
+
+def test_titleless_success_leg_is_never_mute(tmp_path):
+    """Un SUCCESS sans titre n'est jamais muet (rien a diagnostiquer) ni
+    candidat (pas rouge) : PR saine, le sweep la traverse."""
+    leg = ("PR gate", "completed", "success", "2026-01-01T10:00:00Z", 111, "")
+    stdout, mute_lines = _run_selector_with_mute(
+        tmp_path, [_pr(108, [leg, OTHER_GREEN])])
+    assert stdout.strip() == ""
+    assert mute_lines == []
 
 
 def test_no_gate_leg_skipped(tmp_path):
@@ -435,3 +515,86 @@ def test_workflow_pins_tier_sort_and_per_tier_caps():
     # Le cap d'un tier ne doit pas arreter la boucle : les immatures ranges
     # derriere doivent rester servis (continue, pas break).
     assert "break" not in re.sub(r"#.*", "", run.split("MAX_MATURE=12")[1].split("done <")[0])
+
+
+# --- #15775 : la classe `cancelled`-constituant -- le sweep relaie la CAUSE ---
+
+# Mesure du 2026-09-12 : le sweep exemptait `cancelled` cote constituants mais
+# relaissait ensuite le GATE, qui relisait un constituant inchangé et re-renderait
+# le même FAIL -- la reparation re-selectionnait ce qu'elle ne pouvait pas
+# reparer (#15452, #15748 : six re-lancements de gate sans effet). Le selecteur
+# emet désormais les run ids des constituants annules en 5e champ CONDITIONNEL :
+# absent, la ligne reste au format historique 4 champs et l'action relaie le
+# gate (comportement d'origine, y compris pour test 108 dont la jambe annulee
+# n'a pas de details_url resolvable).
+
+CPU_CANCELLED_555 = ("Scripts Tests (CPU)", "completed", "cancelled",
+                     "2026-01-01T10:05:00Z", 555123)
+GUARD_CANCELLED_666 = ("Always-on guards", "completed", "cancelled",
+                       "2026-01-01T10:06:00Z", 556987)
+
+
+def test_cancelled_constituent_emits_rerun_target(tmp_path):
+    """Acceptance 1 (#15775) -- le test de falsification : constituant
+    `cancelled` (resolvable) + gate rouge + reste vert -> la ligne candidate
+    porte le run id du CONSTITUANT en 5e champ. Echoue sur le RED d'avant (la
+    ligne n'avait que 4 champs) : c'est ce qui distinguait la nouvelle action
+    de l'ancienne relance de gate."""
+    out = _run_selector(tmp_path, [_pr(125, [GATE_FAIL, OTHER_GREEN, CPU_CANCELLED_555])])
+    assert out.strip() == "125 deadbeef false 0 555123"
+
+
+def test_two_cancelled_constituants_emit_both_ids(tmp_path):
+    """Plusieurs constituants annules -> tous leurs run ids, dans l'ordre de
+    premiere apparition (celui du pliage), separes par des virgules."""
+    out = _run_selector(
+        tmp_path,
+        [_pr(126, [GATE_FAIL, CPU_CANCELLED_555, GUARD_CANCELLED_666])],
+    )
+    assert out.strip() == "126 deadbeef false 0 555123,556987"
+
+
+def test_cancelled_constituant_unresolvable_keeps_gate_rerun(tmp_path):
+    """Une jambe annulee SANS details_url resolvable n'emet rien : repli
+    conservateur sur le format 4 champs (relance de gate, l'etat d'avant).
+    Jamais plus permissif -- meme philosophie que le repli wfmap."""
+    cancelled_norun = ("Hermes review", "completed", "cancelled", "2026-01-01T11:00:00Z")
+    out = _run_selector(tmp_path, [_pr(127, [GATE_FAIL, cancelled_norun])])
+    assert out.strip() == "127 deadbeef false 0"
+
+
+def test_superseded_cancelled_emits_no_target(tmp_path):
+    """Un `cancelled` SUPSEDE par un vert plus recent de la meme cle de pliage
+    n'est pas une cause vivante : aucun 5e champ. Relancer un run annule
+    ecrase par un verdict plus recent serait une reparation fantome."""
+    cancelled_old = ("Hermes review", "completed", "cancelled",
+                     "2026-01-01T09:00:00Z", 777)
+    green_new = ("Hermes review", "completed", "success",
+                 "2026-01-01T11:00:00Z", 888)
+    # workflows map les DEUX run ids vers le meme workflow : c'est le cas
+    # reel de supersession (deux runs d'un meme workflow). Sans elle, le
+    # repli par run id les garde en cles DISTINCTES et la jambe annulee
+    # reste vivante -- la relancer serait alors correct.
+    out = _run_selector(tmp_path, [_pr(
+        128, [GATE_FAIL, cancelled_old, green_new], workflows={777: 12, 888: 12})])
+    assert out.strip() == "128 deadbeef false 0"
+
+
+def test_workflow_pins_constituent_rerun_branch():
+    """Garde structurelle : le workflow CONSOMME le 5e champ. Sans ce pin, le
+    selecteur pourrait emettre des cibles que l'action ignorerait -- la boucle
+    relancerait le gate sur une ligne a 5 champs en la tronquant, revenant au
+    defaut #15775 sans qu'aucun test du selecteur ne rougisse."""
+    with open(WORKFLOW, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    run = str(next(
+        step.get("run", "") for step in doc["jobs"]["sweep"]["steps"]
+        if "MAX_MATURE" in str(step.get("run", ""))
+    ))
+    assert "while read -r NUM SHA FORK RANK TARGET; do" in run
+    assert 'TARGET="${TARGET:--}"' in run
+    # La branche constituant relaie les ids du 5e champ et ne touche pas au
+    # gate (pas de lookup "PR gate" dans cette branche).
+    branch = run.split('TARGET="${TARGET:--}"', 1)[1].split("fi", 1)[0]
+    assert "gh run rerun" in branch
+    assert "PR gate" not in branch

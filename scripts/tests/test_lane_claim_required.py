@@ -482,3 +482,71 @@ def test_10323_cli_pr_closing_refs_arg_parsed(tmp_path):
     assert v["guard_pass"] is True  # GitHub closes nothing -> no block
     assert v["closing_issues"] == []
     assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+
+
+# --- #15982: the blocking verdict must NAME the quasi-release ----------------
+#
+# #15846 shape: po-2023 claims #15835, then writes `[CLAIMED-RELEASED]`. None of
+# the three readers enacts it, so the claim is still fresh and the gate blocks a
+# second lane's `Closes #15835`. The block itself is CORRECT (the release was
+# never registered) -- what was missing is the reason: the verdict read as "a
+# foreign lane is holding your grain", which sends the author to ask for an
+# [OVERRIDE] or to wait 48 h, when the holder had already handed it back. The
+# warning names the quasi marker and the canonical form to re-post. It is
+# WARN-only: the marker is never enacted (doctrine #12624).
+
+def test_15982_block_names_the_compose_release():
+    body = _body_with("Closes #15835")
+    fetch = fetcher_from({15835: issue_payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- paths: a/**",
+                "2026-08-09T11:00:00Z"),
+        comment("[CLAIMED-RELEASED] lane myia-po-2023:CoursIA -- paths: a/**",
+                "2026-08-09T14:00:00Z"),
+        number=15835,
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    # The quasi-release LIFTS NOTHING -- this is the measured damage, and the
+    # fix must not paper over it by enacting the marker.
+    assert v["guard_pass"] is False
+    assert v["blocking_lane"] == "myia-po-2023:CoursIA"
+    named = [w for w in v["warnings"] if "CLAIMED-RELEASED" in w]
+    assert named, v["warnings"]
+    assert "[RELEASED]" in named[0]
+    assert "reposter" in named[0]
+    assert "#15982" in named[0]
+
+
+def test_15982_quasi_claim_is_not_reported_as_a_release():
+    # NEGATIVE CONTROL (acceptance #3's discriminant): the warning is reserved
+    # for close-shaped markers. A compose quasi-CLAIM carries no release, so
+    # telling its author to re-post `[RELEASED]` would be advice to hand back a
+    # grain they are holding. The block persists on the REAL claim; only the
+    # release warning stays silent.
+    body = _body_with("Closes #15835")
+    fetch = fetcher_from({15835: issue_payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- paths: a/**",
+                "2026-08-09T11:00:00Z"),
+        comment("[CLAIMED-NOTES] lane myia-po-2023:CoursIA -- paths: a/**",
+                "2026-08-09T14:00:00Z"),
+        number=15835,
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is False
+    assert not any("[RELEASED]" in w for w in v["warnings"])
+
+
+def test_15982_prose_mention_of_the_compose_shape_is_silent():
+    # Selectivity: the gate inherits the quasi lint's two gates (claim motif on
+    # the line, real brackets). Prose about the shape is not a gesture, so a
+    # block on an unrelated fresh claim must not carry the release warning.
+    body = _body_with("Closes #15835")
+    fetch = fetcher_from({15835: issue_payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- paths: a/**",
+                "2026-08-09T11:00:00Z"),
+        comment("Le marqueur [CLAIMED-RELEASED] n'est lu par personne.",
+                "2026-08-09T14:00:00Z"),
+        number=15835,
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is False
+    assert not any("[RELEASED]" in w for w in v["warnings"])
