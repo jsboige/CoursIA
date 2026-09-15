@@ -100,12 +100,24 @@ on:
       - 'COURSE_CATALOG.generated.json'
 ```
 
-Two checks run in sequence:
+Le job régénère le catalogue et les marqueurs **sur le runner** (rien n'est réécrit sur
+la branche), puis compare le résultat aux fichiers commités par un unique test
+`git diff --cached`. La dérive est remontée en **annotation `notice` uniquement**.
 
-1. **CATALOG-STATUS marker drift** — `expand_catalog_markers.py --check` verifies all markers match the catalog
-2. **Notebook catalog drift** — `verify_catalog_readme.py` checks declared counts vs actual notebooks on disk
+**Ce check est advisory, non bloquant** (#15998). Le marqueur `advisory` dans le **nom**
+du job — `Notebook catalog drift (read-only, advisory)` — **est** le contrat :
+`pr_gate.py` classe les checks par nom et ne lit pas `fast_lane_registry.py`. Le job est
+**toujours vert** : une panne d'infrastructure (runner, `pip`, `generate_catalog.py`) ne
+peut donc pas bloquer une PR notebook/README. Le catalogue est régénéré quotidiennement
+sur `main` par `catalog-cron.yml` ; **aucune action manuelle n'est requise sur une branche
+de feature** (cf [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md), #2632).
 
-If either check fails, the PR is blocked until markers are updated.
+> Correction factuelle (2026-09-15) : cette section décrivait deux checks en séquence
+> (`expand_catalog_markers.py --check`, `verify_catalog_readme.py`) et concluait qu'un
+> échec **bloquait** la PR jusqu'à mise à jour des marqueurs. Les deux affirmations
+> étaient fausses : le workflow n'utilise pas `--check` (il régénère), ne fait appel à
+> `verify_catalog_readme.py` dans **aucun** workflow, et son job est advisory depuis
+> #15998.
 
 ## Adding Markers to a New README
 
