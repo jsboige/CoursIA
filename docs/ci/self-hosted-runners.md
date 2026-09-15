@@ -229,11 +229,14 @@ Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` tra
 `scripts/ci/docker/linux-runner/supervise.sh` (livré 2026-09-01, finalisation du volet laissé en conception). Un slot = une boucle `while` qui relance un conteneur dès que le précédent meurt ; **N slots = N jobs concurrents**. C'est toute la différence entre le conteneur et le service Windows : côté Windows, chaque ré-enregistrement est une tâche planifiée à orchestrer ; ici c'est un `docker run` de plus, gratuit et parallélisable.
 
 ```bash
-docker build -t coursia-linux-runner:2.336.0 scripts/ci/docker/linux-runner/
+scripts/ci/docker/linux-runner/supervise.sh pin        # epingle le contexte hors arbre (#16134)
+docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
 scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
 scripts/ci/docker/linux-runner/supervise.sh status
 scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
 ```
+
+Le **build se fait depuis l'épingle** (`pin`, défaut `$STATE_DIR/image-context`), pas depuis le checkout : le garde de fraîcheur #14801 compare l'image à cette copie épinglée, et un checkout de branche ou une édition non commitée n'invalident plus le parc (#16134 — l'incident du 2026-09-14 : 1 h 15 de flotte morte parce que le garde comparait l'arbre vivant). Après un merge qui touche `entrypoint.sh` ou `work_cache_health.sh` : `pin` (qui publie le diff d'empreintes), rebuild, restart.
 
 Trois points de conception qui ne sont pas négociables :
 
