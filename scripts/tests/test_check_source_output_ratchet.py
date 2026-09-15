@@ -629,13 +629,19 @@ class TestDiffOutputsGranularity(unittest.TestCase):
             self.assertEqual(nb_rec["verdict"], "CHANGED")
             self.assertEqual(nb_rec["code_cells"], 14)
             # 7 cells with output diff (4 TEXT_DIFF + 3 PAYLOAD_DIFF),
-            # 7 cells UNCHANGED_SOURCE.
-            moved = [d for d in nb_rec["diffs"]
-                     if d["kind"] != "UNCHANGED_SOURCE"]
-            self.assertEqual(len(moved), 7,
-                             f"expected 7 moved cells, got {len(moved)}")
-            text_moved = [d for d in moved if d["kind"] == "TEXT_DIFF"]
-            payload_moved = [d for d in moved if d["kind"] == "PAYLOAD_DIFF"]
+            # 7 cells UNCHANGED_SOURCE. The count is read from the report's
+            # own `moved` field. This fixture carries no IDENTICAL cell, so
+            # it cannot catch the pre-fix predicate by itself -- that guard
+            # is test_identical_outputs_not_counted_as_moved. NanoClaw
+            # #16234 re-review: asserting a locally re-derived count pins
+            # the restatement, not the counter.
+            self.assertEqual(nb_rec["moved"], 7,
+                             f"expected 7 moved cells, got "
+                             f"{nb_rec['moved']}")
+            text_moved = [d for d in nb_rec["diffs"]
+                          if d["kind"] == "TEXT_DIFF"]
+            payload_moved = [d for d in nb_rec["diffs"]
+                             if d["kind"] == "PAYLOAD_DIFF"]
             self.assertEqual(len(text_moved), 4)
             self.assertEqual(len(payload_moved), 3)
             # Indices 2, 4, 5, 9 carry TEXT_DIFF; 6, 7, 10 carry PAYLOAD.
@@ -734,17 +740,35 @@ class TestDiffOutputsGranularity(unittest.TestCase):
             unchanged = [d for d in nb_rec["diffs"]
                          if d["index"] == 2][0]
             self.assertEqual(unchanged["kind"], "UNCHANGED_SOURCE")
-            # The moved count: only TEXT_DIFF (1) + PAYLOAD_DIFF (1) = 2.
-            # NOT 3 -- IDENTICAL must NOT be counted.
-            moved = [d for d in nb_rec["diffs"]
-                     if d["kind"] not in ("UNCHANGED_SOURCE", "UNPAIRED",
-                                           "IDENTICAL")]
-            self.assertEqual(len(moved), 2,
-                             f"expected 2 moved cells (TEXT+PAYLOAD), "
-                             f"got {len(moved)}: kinds="
-                             f"{[d['kind'] for d in nb_rec['diffs']]}")
-            kinds_moved = sorted(d["kind"] for d in moved)
-            self.assertEqual(kinds_moved, ["PAYLOAD_DIFF", "TEXT_DIFF"])
+            # The moved count is the REPORT's own field -- the same number
+            # the CLI prints -- not a local restatement of the rule. This
+            # fixture carries an IDENTICAL cell, so widening NON_MOVED_KINDS
+            # back to the pre-fix predicate makes this assertion fail.
+            # NanoClaw #16234 re-review.
+            self.assertEqual(
+                nb_rec["moved"], 2,
+                f"expected 2 moved cells (TEXT+PAYLOAD), got "
+                f"{nb_rec['moved']}: kinds="
+                f"{[d['kind'] for d in nb_rec['diffs']]}")
+            # Which cells those are is fixture documentation, asserted by
+            # index rather than by re-filtering the rule.
+            self.assertEqual(
+                sorted(d["index"] for d in nb_rec["diffs"]
+                       if d["index"] in (1, 3)), [1, 3])
+            self.assertEqual(
+                {d["index"]: d["kind"] for d in nb_rec["diffs"]},
+                {0: "IDENTICAL", 1: "TEXT_DIFF", 2: "UNCHANGED_SOURCE",
+                 3: "PAYLOAD_DIFF"})
+            # Second surface, same field: the TEXT render prints the
+            # report's `moved`, so a divergence between what a human reads
+            # and what the JSON carries would fail here too.
+            text_proc = subprocess.run(
+                [sys.executable, str(TOOL), "HEAD~1", "--show-output-diffs"],
+                cwd=repo.path, capture_output=True, text=True,
+                encoding="utf-8", check=False)
+            self.assertEqual(text_proc.returncode, 0, text_proc.stderr)
+            self.assertIn("moved=2", text_proc.stdout)
+            self.assertNotIn("moved=3", text_proc.stdout)
         finally:
             repo.dir.cleanup()
 

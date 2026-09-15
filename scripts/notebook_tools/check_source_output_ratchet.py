@@ -457,6 +457,14 @@ def ratchet(base, cwd=None, body_text=""):
     return records
 
 
+# The `moved` counter has ONE definition, read by the text render, the JSON
+# report and the tests alike. IDENTICAL means "source changed but outputs are
+# byte-identical" -- the STALE_OUTPUT class. It is reported in `diffs` (it is
+# the whole point of the ratchet) but it is NOT an output diff: counting it
+# would lie about the output axis. ai-01 #16234 review.
+NON_MOVED_KINDS = ("UNCHANGED_SOURCE", "UNPAIRED", "IDENTICAL")
+
+
 def report_output_diffs(base, cwd=None):
     """Per-cell truth about output diffs, independent of regression class.
 
@@ -472,6 +480,7 @@ def report_output_diffs(base, cwd=None):
         {"base": <ref>, "notebooks": [
             {"notebook": <path>,
              "code_cells": <int>,
+             "moved": <int>,
              "diffs": [
                  {"index": <int>,
                   "source_same": <bool>,
@@ -486,6 +495,12 @@ def report_output_diffs(base, cwd=None):
     IDENTICAL cells. `text_delta_chars` is the absolute difference in the
     decoded text payload (the deaccentuation fingerprint on #14958 is
     exactly this).
+
+    `moved` is the count of cells whose OUTPUTS moved -- `diffs` minus
+    NON_MOVED_KINDS. It is the number a reader of the CLI actually sees,
+    so it is carried in the machine-readable report too: a test that
+    recomputes it from `diffs` would assert its own restatement of the
+    rule instead of the counter under test (NanoClaw #16234 re-review).
     """
     base = resolve_base(base, cwd=cwd)
     out = {"base": base, "notebooks": []}
@@ -493,7 +508,8 @@ def report_output_diffs(base, cwd=None):
         content = git("show", f"{base}:{path}", cwd=cwd)
         if content is None:
             out["notebooks"].append({"notebook": path, "verdict": "ADDED",
-                                     "code_cells": 0, "diffs": []})
+                                     "code_cells": 0, "moved": 0,
+                                     "diffs": []})
             continue
         base_nb, b_status = _parse_notebook(content)
         try:
@@ -504,7 +520,8 @@ def report_output_diffs(base, cwd=None):
             head_nb, h_status = None, "PARSE_ERROR"
         if b_status != "OK" or h_status != "OK":
             out["notebooks"].append({"notebook": path, "verdict": "PARSE_ERROR",
-                                     "code_cells": 0, "diffs": []})
+                                     "code_cells": 0, "moved": 0,
+                                     "diffs": []})
             continue
         base_by_id = {c.get("id"): c for c in base_nb.get("cells", [])
                       if c.get("id")}
@@ -554,6 +571,8 @@ def report_output_diffs(base, cwd=None):
             "notebook": path,
             "verdict": "CHANGED",
             "code_cells": code_count,
+            "moved": sum(1 for d in diffs
+                         if d["kind"] not in NON_MOVED_KINDS),
             "diffs": diffs,
         })
     return out
@@ -601,16 +620,13 @@ def main():
                     print(f"  {nb_rec['verdict']:12s} {nb_rec['notebook']}")
                     continue
                 moved = [d for d in nb_rec["diffs"]
-                         if d["kind"] not in ("UNCHANGED_SOURCE", "UNPAIRED",
-                                              "IDENTICAL")]
-                # moved = cells whose OUTPUTS moved (kind is TEXT_DIFF,
-                # PAYLOAD_DIFF, BOTH_DIFF, EMPTY_BASE, EMPTY_HEAD, or
-                # METADATA_DIFF). IDENTICAL = source changed but outputs
-                # byte-identical (the STALE_OUTPUT class) is reported in
-                # `diffs` but NOT counted as an output diff here -- it
-                # would lie about the output axis. ai-01 #16234 review.
+                         if d["kind"] not in NON_MOVED_KINDS]
+                # The printed count is the report's own `moved` field, not a
+                # second computation: one definition, one number. INDIVIDUAL
+                # cells are still listed below from `moved` (the report only
+                # carries the count, not the filtered list). ai-01 #16234.
                 print(f"  {nb_rec['notebook']}  "
-                      f"code={nb_rec['code_cells']}  moved={len(moved)}")
+                      f"code={nb_rec['code_cells']}  moved={nb_rec['moved']}")
                 for d in moved:
                     mark = []
                     if d["payload_deltas"]:
