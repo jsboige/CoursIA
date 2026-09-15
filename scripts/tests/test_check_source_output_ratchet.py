@@ -634,6 +634,88 @@ class TestDiffOutputsGranularity(unittest.TestCase):
         finally:
             repo.close()
 
+    def test_identical_outputs_not_counted_as_moved(self):
+        # Cell with source changed BUT outputs byte-identical = the
+        # STALE_OUTPUT class. ai-01 #16234 review flagged this as a
+        # bug: report_output_diffs listed such cells as "moved" because
+        # the old filter excluded only UNCHANGED_SOURCE / UNPAIRED, not
+        # IDENTICAL. The fix: `moved` counts only cells whose OUTPUTS
+        # differ (TEXT_DIFF, PAYLOAD_DIFF, BOTH_DIFF, EMPTY_BASE,
+        # EMPTY_HEAD, METADATA_DIFF). IDENTICAL cells remain in `diffs`
+        # (with source_same=False, so the STALE_OUTPUT class is named)
+        # but are NOT counted as moved.
+        def stream(text):
+            return [{"output_type": "stream", "name": "stdout",
+                     "text": [text]}]
+
+        # 4 cells: 1 STALE (source changed, outputs identical -> kind=IDENTICAL,
+        # source_same=False), 1 TEXT_DIFF, 1 UNCHANGED_SOURCE, 1 PAYLOAD_DIFF.
+        bases = [
+            code("x = 1\nprint(x)", stream("1\n")),
+            code("print('foo')", stream("foo\n")),
+            code("y = 2\nprint(y)", stream("2\n")),
+            code("plt.savefig('a.png')",
+                 [{"output_type": "display_data",
+                   "data": {"image/png": "data:image/png;base64," + "A" * 100}}]),
+        ]
+        heads = [
+            code("x = 1   # edited comment\nprint(x)", stream("1\n")),  # STALE
+            code("print('foo')", stream("foo accentuated\n")),  # TEXT_DIFF
+            code("y = 2\nprint(y)", stream("2\n")),  # UNCHANGED_SOURCE
+            code("plt.savefig('a.png')",
+                 [{"output_type": "display_data",
+                   "data": {"image/png": "data:image/png;base64,"
+                           + "A" * 200}}]),  # PAYLOAD_DIFF
+        ]
+        repo = GitRepo.__new__(GitRepo)
+        import tempfile
+        repo.dir = tempfile.TemporaryDirectory()
+        repo.path = Path(repo.dir.name)
+        subprocess.run(["git", "init", "-q"], cwd=repo.path, check=True)
+        nb_path = "MyIA.AI.Notebooks/Fake/GT-05-IDENTICAL.ipynb"
+        (repo.path / "MyIA.AI.Notebooks/Fake").mkdir(parents=True)
+        for state in (nb(bases), nb(heads)):
+            (repo.path / nb_path).write_text(
+                json.dumps(state, ensure_ascii=False, indent=1) + "\n",
+                encoding="utf-8")
+            subprocess.run(["git", "add", "-A"], cwd=repo.path, check=True)
+            subprocess.run(["git", "-c", "user.email=t@t", "-c",
+                            "user.name=t", "commit", "-q", "-m", "s"],
+                           cwd=repo.path, check=True)
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(TOOL), "HEAD~1",
+                 "--show-output-diffs", "--json"],
+                cwd=repo.path, capture_output=True, text=True,
+                encoding="utf-8", check=False)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            payload = json.loads(proc.stdout)
+            nb_rec = payload["notebooks"][0]
+            self.assertEqual(nb_rec["verdict"], "CHANGED")
+            self.assertEqual(nb_rec["code_cells"], 4)
+            # The STALE cell (index 0): IDENTICAL kind, source_same=False.
+            stale = [d for d in nb_rec["diffs"]
+                     if d["index"] == 0][0]
+            self.assertEqual(stale["kind"], "IDENTICAL")
+            self.assertFalse(stale["source_same"])
+            # UNCHANGED_SOURCE cell (index 2): UNCHANGED_SOURCE kind.
+            unchanged = [d for d in nb_rec["diffs"]
+                         if d["index"] == 2][0]
+            self.assertEqual(unchanged["kind"], "UNCHANGED_SOURCE")
+            # The moved count: only TEXT_DIFF (1) + PAYLOAD_DIFF (1) = 2.
+            # NOT 3 -- IDENTICAL must NOT be counted.
+            moved = [d for d in nb_rec["diffs"]
+                     if d["kind"] not in ("UNCHANGED_SOURCE", "UNPAIRED",
+                                           "IDENTICAL")]
+            self.assertEqual(len(moved), 2,
+                             f"expected 2 moved cells (TEXT+PAYLOAD), "
+                             f"got {len(moved)}: kinds="
+                             f"{[d['kind'] for d in nb_rec['diffs']]}")
+            kinds_moved = sorted(d["kind"] for d in moved)
+            self.assertEqual(kinds_moved, ["PAYLOAD_DIFF", "TEXT_DIFF"])
+        finally:
+            repo.dir.cleanup()
+
 
 if __name__ == "__main__":
     unittest.main()

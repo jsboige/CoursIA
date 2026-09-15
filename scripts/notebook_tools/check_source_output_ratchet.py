@@ -601,7 +601,14 @@ def main():
                     print(f"  {nb_rec['verdict']:12s} {nb_rec['notebook']}")
                     continue
                 moved = [d for d in nb_rec["diffs"]
-                         if d["kind"] not in ("UNCHANGED_SOURCE", "UNPAIRED")]
+                         if d["kind"] not in ("UNCHANGED_SOURCE", "UNPAIRED",
+                                              "IDENTICAL")]
+                # moved = cells whose OUTPUTS moved (kind is TEXT_DIFF,
+                # PAYLOAD_DIFF, BOTH_DIFF, EMPTY_BASE, EMPTY_HEAD, or
+                # METADATA_DIFF). IDENTICAL = source changed but outputs
+                # byte-identical (the STALE_OUTPUT class) is reported in
+                # `diffs` but NOT counted as an output diff here -- it
+                # would lie about the output axis. ai-01 #16234 review.
                 print(f"  {nb_rec['notebook']}  "
                       f"code={nb_rec['code_cells']}  moved={len(moved)}")
                 for d in moved:
