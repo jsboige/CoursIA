@@ -201,7 +201,7 @@ dépôt.
 
 ## Technologies et écosystème
 
-- **OpenAI API** : GPT-4o, GPT-4o-mini, o4-mini, gpt-5-thinking
+- **OpenAI API** : GPT-5, GPT-5-mini, o4-mini, gpt-5-thinking
 - **Python** : openai, pydantic, tiktoken, semantic-kernel
 - **Local** : vLLM, KV-cache et PagedAttention, métriques TTFT/ITL, Qwen3.5-35B-A3B, ZwZ-8B, llmcompressor, AWQ/GPTQ
 - **Bases vectorielles** : scikit-learn (demo), Pinecone, Qdrant, Chroma

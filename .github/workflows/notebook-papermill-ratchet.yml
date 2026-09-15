@@ -10,6 +10,7 @@ name: Notebook Papermill Ratchet
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_papermill_ratchet.py'
