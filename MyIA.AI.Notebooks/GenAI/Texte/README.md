@@ -121,6 +121,7 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 23 | `23_TAL_Du_Mot_Aux_Dependances.ipynb` | Pipeline **spaCy** `fr_core_news_sm` (CPU) : lemmes/POS/morphologie, arcs de dépendance + tripleaux SVO (displacy), NER avec rendu surligné, comparaison mots/lemmes/BPE (60 fusions) sur le corpus exact du NB-04, analyse d'erreurs contre gold (lemmes 8/8, NER 2/5 : dates manquées, ORG/PER instables), recherche lemmatisée vs surface | 60 min |
+| 25 | `25_CRF_Etiquetage_Sequentiel.ipynb` | **CRF linéaire from scratch** sur corpus NER français BIO : émissions, transitions, log-partition forward/backward, NLL et Viterbi ; gradient vérifié numériquement, baseline token-wise, témoin `sklearn-crfsuite`, métriques token/entité, ablation et analyse d'erreurs | 75 min |
 
 ## Prérequis
 
