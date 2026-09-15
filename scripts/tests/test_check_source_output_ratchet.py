@@ -425,33 +425,65 @@ class TestDiffOutputsGranularity(unittest.TestCase):
     BOTH_DIFF, and the unchanged cells named UNCHANGED_SOURCE.
     """
 
-    def test_text_only_diff_is_TEXT_DIFF(self):
-        # Source unchanged (per the issue: re-execution produced fresh text
-        # but kept the same print statement); outputs differ in plain text.
+    def test_classify_marks_source_only_diff_as_unchanged(self):
+        # Source unchanged but outputs differ (per #14958 fingerprint):
+        # classify_cells still labels the cell UNCHANGED because the
+        # source axis is identical - the ratchet's regression class is
+        # gated on source change + output drift (STALE_OUTPUT). The
+        # granular kind of the OUTPUT drift lives in report_output_diffs,
+        # tested separately below.
         base = nb([code("print('Strategie Row')",
                         [{"output_type": "stream", "name": "stdout",
                           "text": ["Strategie Row\n"]}])])
         head = nb([code("print('Strategie Row')",
                         [{"output_type": "stream", "name": "stdout",
                           "text": ["Stratégie Row\n"]}])])
-        diffs = CSR.report_output_diffs.__wrapped__ if False else None
-        # Direct unit test on classify_cells:
         recs = CSR.classify_cells(base, head)
-        # Source identical + outputs differ -> the per-cell record's
-        # verdict is now UNCHANGED_SOURCE only when source AND outputs are
-        # both identical; here only source is identical, so the verdict
-        # is the diff_outputs kind.
-        self.assertEqual(recs[0]["source_same"] if "source_same" in recs[0]
-                         else True, True)
-        # classify_cells does not record source_same explicitly; the kind
-        # lives in verdict. With UNCHANGED source, the verdict split:
-        # source identical -> we'd normally skip and mark UNCHANGED, but
-        # here we deliberately want the diff named. Re-confirm: the
-        # current implementation pairs source-identity FIRST and labels
-        # such cells UNCHANGED. This is the right ratchet behavior (no
-        # regression = no STALE_OUTPUT); the issue #14978 demand lives
-        # in report_output_diffs, which we test separately below.
         self.assertEqual(recs[0]["verdict"], "UNCHANGED")
+        self.assertFalse(recs[0]["regression"])
+
+    def test_report_output_diffs_names_source_only_diff_as_TEXT_DIFF(self):
+        # Counterpart of the test above at the report_output_diffs layer.
+        # Source identical + outputs differ -> the report must name the
+        # diff as TEXT_DIFF (otherwise the user's "0 diff" complaint on
+        # #14958 survives). This is the granularity the audit uses.
+        base = nb([code("print('Strategie Row')",
+                        [{"output_type": "stream", "name": "stdout",
+                          "text": ["Strategie Row\n"]}])])
+        head = nb([code("print('Strategie Row')",
+                        [{"output_type": "stream", "name": "stdout",
+                          "text": ["Stratégie Row\n"]}])])
+        repo = GitRepo.__new__(GitRepo)
+        import tempfile
+        repo.dir = tempfile.TemporaryDirectory()
+        repo.path = Path(repo.dir.name)
+        subprocess.run(["git", "init", "-q"], cwd=repo.path, check=True)
+        nb_path = "MyIA.AI.Notebooks/Fake/GT-text.ipynb"
+        (repo.path / "MyIA.AI.Notebooks/Fake").mkdir(parents=True)
+        for state in (base, head):
+            (repo.path / nb_path).write_text(
+                json.dumps(state, ensure_ascii=False, indent=1) + "\n",
+                encoding="utf-8")
+            subprocess.run(["git", "add", "-A"], cwd=repo.path, check=True)
+            subprocess.run(["git", "-c", "user.email=t@t", "-c",
+                            "user.name=t", "commit", "-q", "-m", "s"],
+                           cwd=repo.path, check=True)
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(TOOL), "HEAD~1",
+                 "--show-output-diffs", "--json"],
+                cwd=repo.path, capture_output=True, text=True,
+                encoding="utf-8", check=False)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            payload = json.loads(proc.stdout)
+            diffs = payload["notebooks"][0]["diffs"]
+            self.assertEqual(len(diffs), 1)
+            cell = diffs[0]
+            self.assertEqual(cell["kind"], "TEXT_DIFF")
+            self.assertTrue(cell["source_same"])
+            self.assertFalse(cell["text_identical"])
+        finally:
+            repo.dir.cleanup()
 
     def test_payload_diff_is_PAYLOAD_DIFF(self):
         # Two PNG payloads of different sizes; identical source.
