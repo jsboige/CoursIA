@@ -350,6 +350,76 @@ class TestScanNotebook:
         findings = scan_notebook(str(nb_path))
         assert any(f["severity"] == "MEDIUM" for f in findings)
 
+    def test_acceptance_body_then_exercices_section_numbering_independent(self, tmp_path):
+        # #16121 acceptance form #1: body-level exercises ("## Exercice N")
+        # numbering is INDEPENDENT from a downstream "## Exercices" section
+        # that lists sub-exercises ("### Exercice 1..3" of a different scope).
+        # Before the parent-scope fix, the scanner emitted a phantom
+        # MEDIUM "Duplicate Exercice 1" between the body-level "## Exercice 1"
+        # and the section child "### Exercice 1".
+        nb_path = _write_nb(tmp_path / "body_then_section.ipynb", [
+            _md("## Exercice 1 : Introduction"),
+            _md("## Exercices suggeres"),
+            _md("### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("### Exercice 2 : Second"),
+            _code("pass"),
+            _md("### Exercice 3 : Troisieme"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        # "Exercice 1 : Introduction" is num-less ("## Exercice 1" with no
+        # colon-separated subtitle is treated as num-less per the regex), so
+        # no MEDIUM is expected between it and the section's numbered
+        # sub-exercises. The point of the test is to confirm the parent-scope
+        # fix keeps body-level and section-level numbering independent.
+        medium_dups = [f for f in findings if f["severity"] == "MEDIUM"
+                       and "Duplicate" in f.get("message", "")]
+        assert medium_dups == [], f"expected no phantom MEDIUM between body and section, got: {medium_dups}"
+
+    def test_acceptance_multiple_parties_same_heading_distinct_scope(self, tmp_path):
+        # #16121 acceptance form #2: multiple "### Exercices — Partie X"
+        # siblings (level-3) with reset numbering must NOT collide. The
+        # grandparent ("# Partie X") anchors the ancestry path so two
+        # "### Exercice 1" under different Parties yield different parent
+        # keys and no MEDIUM is emitted.
+        nb_path = _write_nb(tmp_path / "parties.ipynb", [
+            _md("# Partie A"),
+            _md("### Exercices — Partie A"),
+            _md("#### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("#### Exercice 2 : Second"),
+            _code("pass"),
+            _md("# Partie B"),
+            _md("### Exercices — Partie B"),
+            _md("#### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("#### Exercice 2 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        medium_dups = [f for f in findings if f["severity"] == "MEDIUM"
+                       and "Duplicate" in f.get("message", "")]
+        assert medium_dups == [], f"expected no MEDIUM across Parties, got: {medium_dups}"
+
+    def test_acceptance_positive_same_parent_duplicate_emits_medium(self, tmp_path):
+        # #16121 acceptance form #3: positive control — two "### Exercice 1"
+        # under the SAME ancestor chain MUST emit a MEDIUM. The fix must not
+        # collapse real duplicates.
+        nb_path = _write_nb(tmp_path / "real_dup.ipynb", [
+            _md("# Section unique"),
+            _md("### Exercices"),
+            _md("#### Exercice 1 : First"),
+            _code("pass"),
+            _md("#### Exercice 1 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate under identical parent chain"
+
     def test_no_exercises_clean(self, tmp_path):
         nb_path = _write_nb(tmp_path / "none.ipynb", [
             _md("# Title"),
@@ -894,7 +964,7 @@ class TestLastExerciseHeaderMatch:
     def test_single_numless_header(self):
         m = _last_exercise_header_match("## Exercices")
         assert m is not None
-        assert m.group(1) == ""
+        assert (m.group(1) or "") == ""
 
     def test_multi_header_picks_last_numbered(self):
         # The exact real-world pattern: num-less parent + numbered sub-header.
@@ -908,7 +978,7 @@ class TestLastExerciseHeaderMatch:
         src = "## 6. Exercices\n\n### Exercices avances"
         m = _last_exercise_header_match(src)
         assert m is not None
-        assert m.group(1) == "", "with no numbered matches, last match wins"
+        assert (m.group(1) or "") == "", "with no numbered matches, last match wins"
 
     def test_multi_header_recall_keeps_numbered(self):
         # Recall guard: when MULTIPLE numbered matches exist in the same cell
@@ -929,7 +999,7 @@ class TestLastExerciseHeaderMatch:
         src = "## Conclusion et exercices\n\n### Exercices suggeres\n\n#### Exercice 1 : Foo\n\n#### Exercice 2 : Bar\n\n#### Exercice 3 : Baz"
         m = _last_exercise_header_match(src)
         assert m is not None
-        assert m.group(1) == "", "first match (num-less 'Exercices suggeres') wins when multiple numbered siblings follow"
+        assert (m.group(1) or "") == "", "first match (num-less 'Exercices suggeres') wins when multiple numbered siblings follow"
 
     def test_no_match(self):
         assert _last_exercise_header_match("## Introduction") is None
