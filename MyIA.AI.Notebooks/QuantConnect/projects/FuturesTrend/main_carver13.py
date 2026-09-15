@@ -269,7 +269,19 @@ class CarverThirteen(QCAlgorithm):
         # so identical windows imply identical orders by construction.
         n_bars = 2 * self.max_slow + self.vol_lookback + 20
         self._roll_cache = {
-            t: {"closes": deque(maxlen=n_bars), "primed": False, "mapped": None}
+            t: {
+                "closes": deque(maxlen=n_bars),
+                "primed": False,
+                "mapped": None,
+                # 16076 sentinel state (divergence-probe findings, PR #16298
+                # comment): the mapped-contract memo alone misses re-maps the
+                # net state cannot see and feed bars that disagree with
+                # history() rows on the same date.
+                "remap": False,           # symbol_changed_event since last seed
+                "diverted": False,        # feed != history() on a shared date
+                "clean_seeds": 0,         # consecutive seeds without divergence
+                "feed": deque(maxlen=10),  # (iso-date, close) of recent bars
+            }
             for t in self.futures_universe
         }
         # 3-way clock (hist / fc / wall) + fetch-vs-cache counters, same
@@ -281,6 +293,10 @@ class CarverThirteen(QCAlgorithm):
         self._hist_s = 0.0
         self._fc_s = 0.0
         self._wall_s = 0.0
+        # 16076 sentinel counters.
+        self._remap_events = 0
+        self._div_detects = 0
+        self._sentinel_stale = 0
 
         # Warmup: 2x the slowest EWMAC span (avoids seed-bias on the 256-day
         # slow EWMA — alpha = 2/(256+1) ≈ 0.0078, half-life ~88 bars, so 1x
@@ -445,10 +461,21 @@ class CarverThirteen(QCAlgorithm):
         if self._roll_cache is None or self.is_warming_up:
             return
         for ticker, sym in self.symbols.items():
+            w = self._roll_cache[ticker]
+            # 16076 sentinel: every re-mapping event re-scales the whole
+            # BACKWARDS_RATIO past. The mapped-contract memo only sees the
+            # NET state at rebalance time, so a flip-and-back between two
+            # rebalances goes unnoticed while the feed bars on either side
+            # of the flip carry different normalisations (probe class A:
+            # whole-window divergence with mapped_stable=True).
+            if data.symbol_changed_events.contains_key(sym):
+                w["remap"] = True
+                self._remap_events += 1
             if data.bars.contains_key(sym):
-                self._roll_cache[ticker]["closes"].append(
-                    float(data.bars[sym].close)
-                )
+                bar = data.bars[sym]
+                close = float(bar.close)
+                w["closes"].append(close)
+                w["feed"].append((bar.end_time.date().isoformat(), close))
 
     def _stale_tickers(self):
         """Tickers whose window is not guaranteed identical to history().
@@ -471,6 +498,13 @@ class CarverThirteen(QCAlgorithm):
                 continue
             if self._mapped_contract(sym) != w["mapped"]:
                 stale.append(ticker)
+                continue
+            # 16076 sentinel triggers: a re-mapping event since the last
+            # seed, or a ticker whose feed has been observed disagreeing
+            # with history() on shared dates, voids the window guarantee.
+            if w["remap"] or w["diverted"]:
+                stale.append(ticker)
+                self._sentinel_stale += 1
         return stale
 
     def _seed_windows(self, bulk):
@@ -497,6 +531,36 @@ class CarverThirteen(QCAlgorithm):
                 w["primed"] = True
                 w["mapped"] = self._mapped_contract(sym)
                 self._cache_seeded = True
+                # 16076 sentinel: compare the feed bars received since the
+                # previous seed against the same dates in this bulk tail. A
+                # shared date whose close disagrees proves the on_data feed
+                # and history() do not serve the same series for this ticker
+                # (probe classes B/C) -> diverted: re-fetched every rebalance
+                # until 20 consecutive clean seeds (a persistent
+                # disagreement keeps the flag set; a one-off bar clears it).
+                div = False
+                try:
+                    tail = {}
+                    for d, c in zip(hist.index[-12:], closes[-12:]):
+                        tail[getattr(d, "date", lambda: d)().isoformat()] = float(c)
+                    for dstr, fclose in w["feed"]:
+                        bclose = tail.get(dstr)
+                        if bclose is not None and abs(fclose - bclose) > 1e-9 * max(
+                            1.0, abs(bclose)
+                        ):
+                            div = True
+                            break
+                except Exception:
+                    div = False
+                if div:
+                    w["diverted"] = True
+                    w["clean_seeds"] = 0
+                    self._div_detects += 1
+                else:
+                    w["clean_seeds"] += 1
+                    if w["clean_seeds"] >= 20:
+                        w["diverted"] = False
+                w["remap"] = False
         if self._last_bulk_shape is None:
             try:
                 n_unique = int(
@@ -750,5 +814,9 @@ class CarverThirteen(QCAlgorithm):
             f"| 16076 CLOCKS: hist={self._hist_s:.1f}s fc={self._fc_s:.1f}s "
             f"wall={self._wall_s:.1f}s "
             f"history_calls={self._history_calls} "
-            f"cache_served={self._cache_served}"
+            f"cache_served={self._cache_served} "
+            f"| 16076 SENTINEL: remap_events={self._remap_events} "
+            f"div_detects={self._div_detects} "
+            f"diverted_now={sum(1 for w in self._roll_cache.values() if w['diverted'])} "
+            f"sentinel_stale_days={self._sentinel_stale}"
         )
