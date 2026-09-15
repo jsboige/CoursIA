@@ -213,6 +213,25 @@ def test_prev_abandoned_blocks():
                for h in v["hits"]["prev_invalid"])
 
 
+def test_prev_abandoned_prescription_repairs_the_target_not_the_genre():
+    """#15896 : un prev-abandoned prescrit de repointer la CIBLE (vers une PR
+    de la lane mergée ou ouverte), jamais de réécrire le genre -- réécrire le
+    genre est la prescription du mode close-keyword (#10093), un finding
+    différent. Suivre la mauvaise prescription ne peut pas lever le rouge :
+    ce test pince la séparation des deux messages."""
+    v = vpg.check(_ABANDONED_BODY, current_pr=13473,
+                  prev_targets={"13465": {"kind": "pr", "state": "CLOSED",
+                                          "merged": False}})
+    assert v["guard_pass"] is False
+    # nomme le mode et la PR fautive
+    assert "prev-abandoned" in v["reason"]
+    assert "[13465]" in v["reason"]
+    # prescrit le geste qui lève le rouge : repointer la cible
+    assert "merged or still open" in v["reason"]
+    # pas la prescription de l'autre mode
+    assert "rewrite the `prev:` genre" not in v["reason"]
+
+
 def test_prev_open_abstains_the_predecessor_is_in_flight():
     # THE REPAIR. Same body, same current PR, ONE field different -- and the
     # verdict flips. A predecessor still open is not a broken lineage: it is

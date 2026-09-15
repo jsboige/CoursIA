@@ -34,7 +34,7 @@ Examples:
     python verify_all_tweety.py --analyze-outputs --verbose  # Analyze existing outputs
     python verify_all_tweety.py --execute --verbose          # Full execution test
     python verify_all_tweety.py --cell-by-cell               # Cell-by-cell execution
-    python verify_all_tweety.py --notebook Tweety-1-Setup    # Single notebook
+    python verify_all_tweety.py --notebook Tweety-01-Setup-Python    # Single notebook
 """
 
 import argparse
@@ -52,17 +52,17 @@ from typing import Any, Dict, List, Optional
 
 # Expected Tweety notebooks in order
 TWEETY_NOTEBOOKS = [
-    "Tweety-1-Setup.ipynb",
-    "Tweety-2-Basic-Logics.ipynb",
+    "Tweety-01-Setup-Python.ipynb",
+    "Tweety-02-Basic-Logics-Python.ipynb",
     "Tweety-3-Advanced-Logics.ipynb",
     "Tweety-4-Belief-Revision.ipynb",
     "Tweety-5-Abstract-Argumentation.ipynb",
-    "Tweety-6-Structured-Argumentation.ipynb",
+    "Tweety-06-Structured-Argumentation-Python.ipynb",
     # Tweety-7 divided into 7a and 7b
-    "Tweety-7a-Extended-Frameworks.ipynb",
-    "Tweety-7b-Ranking-Probabilistic.ipynb",
-    "Tweety-8-Agent-Dialogues.ipynb",
-    "Tweety-9-Preferences.ipynb",
+    "Tweety-07a-Extended-Frameworks-Python.ipynb",
+    "Tweety-07b-Ranking-Probabilistic-Python.ipynb",
+    "Tweety-08-Agent-Dialogues-Python.ipynb",
+    "Tweety-09-Preferences-Python.ipynb",
 ]
 
 # Expected support directories and files
@@ -113,18 +113,18 @@ KNOWN_ISSUES = {
         "AF Learning disabled - ClassCastException (Tautology cannot be cast to AssociativePlFormula)",
         "Limitation: Internal Tweety bug, section commented out"
     ],
-    "Tweety-7a-Extended-Frameworks.ipynb": [
+    "Tweety-07a-Extended-Frameworks-Python.ipynb": [
         "ADF section may fail - requires native SAT solver",
         "Other sections (Bipolar, WAF, SAF, SetAF, Extended) work correctly"
     ],
-    "Tweety-7b-Ranking-Probabilistic.ipynb": [
+    "Tweety-07b-Ranking-Probabilistic-Python.ipynb": [
         "All sections should work correctly"
     ],
-    "Tweety-8-Agent-Dialogues.ipynb": [
+    "Tweety-08-Agent-Dialogues-Python.ipynb": [
         "Module coverage limited - agents.dialogues is relatively undocumented",
         "Lottery examples from arg.prob work correctly"
     ],
-    "Tweety-9-Preferences.ipynb": [
+    "Tweety-09-Preferences-Python.ipynb": [
         "preferences module may have limited API exposure",
         "Python simulation of voting rules provided as alternative"
     ],
@@ -456,7 +456,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
         env.jars_found = len(jars)
         env.jars_path = str(libs_path)
     else:
-        env.errors.append("Tweety JARs not found - run Tweety-1-Setup.ipynb first")
+        env.errors.append("Tweety JARs not found - run Tweety-01-Setup-Python.ipynb first")
 
     # Check Clingo (optional)
     clingo_path = shutil.which("clingo")
