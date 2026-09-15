@@ -1184,7 +1184,7 @@ Affensattelpunkt chorde, métamérie, somites) est une **concaténation de
 cycles d'hystérésis** — Thom y voit un théorème de Poincaré : la scission
 d'un cycle correspond à la scission d'une singularité.
 
-**Référence :** [ICT-9-AgencyRegeneration](ICT-9-AgencyRegeneration.ipynb) (régénération Gray-Scott comme morphogenèse), [ICT-19b-EnjeuBattery-Raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) (`repair_gain` +0.82±0.27 sur S4).
+**Référence :** [ICT-09-AgencyRegeneration](ICT-09-AgencyRegeneration.ipynb) (régénération Gray-Scott comme morphogenèse), [ICT-19b-EnjeuBattery-Raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) (`repair_gain` +0.82±0.27 sur S4).
 
 ### Plan Général d'Organisation (Ch.5) — controverse Cuvier / Geoffroy
 

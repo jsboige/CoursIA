@@ -25,7 +25,7 @@ Chaque palier marque une **rupture** dans la carrière d'un scalaire fondateur �
 
 ### Palier 1 — ICT-1 : Φ comme scalaire-suffisant
 
-[`ICT-1-PhiTrajectories`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb) (strate 1, cellule [7] `def phi_landscape`) mesure Φ directement sur des TPM 3-nœuds AND/OR et trace la **trajectoire de Φ** (cellule [11]) le long de 4 états. Le verdict est **scalaire-suffisant** : Φ distingue les régimes AND/OR,Φ varie de manière monotone avec l'amplitude de perturbation (cellule [15]). **Statut** : Φ est ici **mesuré** (sortie brute du package PyPhi).
+[`ICT-01-PhiTrajectories`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories.ipynb) (strate 1, cellule [7] `def phi_landscape`) mesure Φ directement sur des TPM 3-nœuds AND/OR et trace la **trajectoire de Φ** (cellule [11]) le long de 4 états. Le verdict est **scalaire-suffisant** : Φ distingue les régimes AND/OR,Φ varie de manière monotone avec l'amplitude de perturbation (cellule [15]). **Statut** : Φ est ici **mesuré** (sortie brute du package PyPhi).
 
 **Ce que ce palier ne dit pas.** Φ est mesuré sur des **TPM discrètes à 3 nœuds** : un substrat-jouet. La dissolution ne commence pas par manque de mesure, elle commence par **manque de substrat**.
 
