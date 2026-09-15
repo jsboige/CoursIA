@@ -31,7 +31,7 @@
       Output: ..\libs\org.tweetyproject.tweety-dialogues-java8-shade.jar
       (gitignored, rebuildable), then bin\Release\net8.0\org.tweetyproject.tweety-dialogues.dll
 
-      Consumed by Tweety-8-Agent-Dialogues-Csharp.ipynb Tranche 2:
+      Consumed by Tweety-08-Agent-Dialogues-CSharp.ipynb Tranche 2:
         #r "org.tweetyproject.tweety-dialogues.dll"
         org.tweetyproject.agents.dialogues.oppmodels.ArguingAgent
         org.tweetyproject.agents.dialogues.oppmodels.GroundedGameSystem

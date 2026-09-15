@@ -81,11 +81,13 @@ imprimes : "rien trouve" et "rien regarde" ne doivent jamais se confondre.
 from __future__ import annotations
 
 import argparse
+import errno
 import fnmatch
 import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 _here = str(Path(__file__).resolve().parent)
@@ -264,10 +266,30 @@ def classify(path: str, name: str, kernelspec: str | None, meta_present: bool,
 
 
 # ------------------------------------------------------------------ sources
+# EAGAIN au spawn (contention de processus, p.ex. pytest-xdist -n 4 sur le
+# runner) est transitoire : sans reprise, le garde crashait en traceback
+# (exit 1, stdout vide -- flake diagnostique sur #16125, tentative 1). On
+# retente borne ; les autres OSError propagent comme avant.
+_EAGAIN_ERRNOS = (errno.EAGAIN, getattr(errno, "EWOULDBLOCK", errno.EAGAIN))
+_EAGAIN_ATTEMPTS = 3
+_EAGAIN_BACKOFF = (0.05, 0.15)  # avant les 2e et 3e tentatives
+
+
+def _est_eagain(exc):
+    return isinstance(exc, OSError) and exc.errno in _EAGAIN_ERRNOS
+
+
 def _git(args: list[str]) -> str:
     env = dict(os.environ, MSYS_NO_PATHCONV="1")
-    r = subprocess.run(["git"] + args, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", env=env)
+    for tentative in range(_EAGAIN_ATTEMPTS):
+        try:
+            r = subprocess.run(["git"] + args, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", env=env)
+            break
+        except OSError as exc:
+            if not _est_eagain(exc) or tentative == _EAGAIN_ATTEMPTS - 1:
+                raise
+            time.sleep(_EAGAIN_BACKOFF[tentative])
     if r.returncode != 0:
         raise RuntimeError("git %s -> %s"
                            % (" ".join(args), (r.stderr or "").strip()[:200]))
