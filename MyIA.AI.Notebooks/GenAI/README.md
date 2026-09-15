@@ -78,9 +78,9 @@ Avant de commencer, vérifiez votre configuration :
 - `OPENAI_API_KEY` — gpt-image-1, GPT-5, Whisper, TTS (Image, Audio, Texte)
 - `ANTHROPIC_API_KEY` — Claude Vision (Video)
 - `HUGGINGFACE_TOKEN` — modèles HF open-source (Image, Video)
-- `COMFYUI_BEARER_TOKEN` — services locaux ComfyUI (Image local, Video) ; fourni par l'enseignant
+- `COMFYUI_API_TOKEN` (alias accepté : `COMFYUI_AUTH_TOKEN`) — services locaux ComfyUI (Image local, Video) ; fourni par l'enseignant
 
-Sans `COMFYUI_BEARER_TOKEN`, les notebooks basculent automatiquement en mode cloud (DALL-E/OpenAI) si `OPENAI_API_KEY` est présent — c'est la **graceful degradation** systématique de la série.
+Sans `COMFYUI_API_TOKEN`, les notebooks locaux se connectent **sans authentification** (`comfyui_client.py` l'affiche) et reçoivent 401 si le service en exige une. La génération cloud (`OPENAI_API_KEY`) est portée par des notebooks distincts de la série — il n'y a pas de bascule automatique local→cloud dans un même notebook.
 
 ## Limitations connues
 
@@ -98,7 +98,7 @@ Chaque sous-domaine (Image, Audio, Video, Texte, SemanticKernel) est indépendan
 
 ### Erreurs fréquentes
 
-- **ComfyUI 401 Unauthorized** : vérifier `COMFYUI_BEARER_TOKEN` dans `.env`. Sans token, fallback cloud (DALL-E/OpenAI) si `OPENAI_API_KEY` présent.
+- **ComfyUI 401 Unauthorized** : vérifier `COMFYUI_API_TOKEN` dans `.env` (token fourni par l'enseignant). Sans token, le notebook se connecte sans authentification et le service refuse — ce n'est pas un secret mal configuré.
 - **Docker services ne démarrent pas** : `python scripts/genai-stack/genai.py docker status` puis `genai.py docker start`. Détails : [docs/genai/genai-services.md](../../docs/genai/genai-services.md).
 
 ## Concepts clés
@@ -297,7 +297,7 @@ Oui. Chaque sous-domaine (Image, Audio, Video, Texte, SemanticKernel) est indép
 
 ### Erreur ComfyUI 401 Unauthorized
 
-Vérifiez que `COMFYUI_BEARER_TOKEN` est configuré dans `.env`. Le token est disponible auprès de l'enseignant. Sans token, les notebooks basculent en mode cloud (DALL-E/OpenAI) si `OPENAI_API_KEY` est présent.
+Vérifiez que `COMFYUI_API_TOKEN` est configuré dans `.env`. Le token est disponible auprès de l'enseignant. Sans token, les notebooks locaux se connectent sans authentification (401 si le service en exige une) ; la génération cloud se fait dans les notebooks dédiés, avec `OPENAI_API_KEY`.
 
 ### Docker services ne démarrent pas
 
@@ -353,10 +353,10 @@ Lancez Jupyter Lab et commencez par `00-GenAI-Environment/00-1-Environment-Setup
 Les services GenAI locaux (Qwen Image Edit, Z-Image, Whisper, etc.) sont protégés par authentification Bearer Token.
 
 1. **Obtenir le token** : contactez votre enseignant
-2. **Configuration** : ajoutez `COMFYUI_BEARER_TOKEN` dans `.env`
+2. **Configuration** : ajoutez `COMFYUI_API_TOKEN` dans `.env`
 3. **Utilisation** : les notebooks chargent automatiquement les credentials via `comfyui_client.py`
 
-Tous les notebooks supportent la graceful degradation : sans token, ils utilisent les APIs cloud en fallback.
+Sans token, `comfyui_client.py` se connecte sans authentification (401 si le service en exige une) — il n'y a pas de bascule cloud automatique ; les notebooks cloud sont des notebooks distincts.
 
 ### Variables d'environnement
 
@@ -367,7 +367,7 @@ Les clés essentielles dans `.env` :
 | `OPENAI_API_KEY` | gpt-image-1, GPT-5, Whisper, TTS | Image, Audio, Texte |
 | `ANTHROPIC_API_KEY` | Claude Vision | Video |
 | `HUGGINGFACE_TOKEN` | Modèles HF open-source | Image, Video |
-| `COMFYUI_BEARER_TOKEN` | Services locaux ComfyUI | Image (local), Video |
+| `COMFYUI_API_TOKEN` | Services locaux ComfyUI (alias `COMFYUI_AUTH_TOKEN`) | Image (local), Video |
 
 Template complet : [`.env.example`](.env.example)
 

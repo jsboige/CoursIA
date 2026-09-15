@@ -122,16 +122,17 @@ def classify_runs(runs: list[dict], cutoff: datetime) -> dict:
 
 
 def verdict(ghosts: int, live: int, parse_failures: int) -> str:
-    """`CLEAN` if no ghosts and no parse failures. Otherwise `GHOST_RUNS_DETECTED`.
+    """Verdict for one measurement.
 
-    `GHOST_RUNS_DETECTED` is the expected verdict on CoursIA itself (the 18
-    ghosts of 2026-08-19). `CLEAN` is expected on repos without historical
-    incidents. `STALE_FLOOR` is reserved for the precise case where the ghost
-    count equals `INCIDENT_FLOOR_COUNT` (18) AND the live bucket is empty --
-    the conjunction matters: 18 ghosts WITH new live runs is
-    `GHOST_RUNS_DETECTED` (the floor is being augmented by fresh activity,
-    not just the historical signature). Useful for surfacing the bare
-    signature on CoursIA without false-positive alarms on other repos.
+    `CLEAN` if no ghosts and no parse failures (no historical incident, no
+    new zombie runs). `STALE_FLOOR` is the precise "the 18 ghosts of
+    2026-08-19 are still there, no new activity" shape on CoursIA -- both
+    conditions must hold (ghosts == INCIDENT_FLOOR_COUNT AND live == 0);
+    this is the routine steady state and the watch mode returns `OK` on it.
+    `GHOST_RUNS_DETECTED` means a new ghost appeared (count drifted away
+    from the floor, or live activity is now blocked). `INCOMPLETE` means the
+    instrument itself could not parse one or more runs -- never confuse a
+    broken instrument with a broken state (#14367 acceptance).
     """
     if parse_failures > 0:
         return "INCOMPLETE"
@@ -140,6 +141,34 @@ def verdict(ghosts: int, live: int, parse_failures: int) -> str:
     if ghosts == INCIDENT_FLOOR_COUNT and live == 0:
         return "STALE_FLOOR"
     return "GHOST_RUNS_DETECTED"
+
+
+def watch_verdict(ghosts: int, live: int, parse_failures: int) -> str:
+    """Verdict for the watch workflow (--watch mode).
+
+    The watch runs on a cron and exists to surface NEW ghost activity
+    (post-2026-08-19 zombie runs the API cannot purge). It collapses the
+    four measurement verdicts into three actionable buckets:
+
+      * `OK`         : either CLEAN (no ghosts at all) or STALE_FLOOR
+                       (the 18 historical ghosts are still there, no new
+                       activity) -- the routine CoursIA shape, no action.
+      * `DRIFT`      : GHOST_RUNS_DETECTED (ghost count drifted, or live
+                       queue is blocked). The watch opens an alert.
+      * `BROKEN`     : INCOMPLETE (the instrument could not parse). The
+                       watch cannot conclude and surfaces the failure so a
+                       human can investigate.
+
+    This split keeps the steady-state CoursIA signature (18 ghosts, 0 live)
+    from spamming an issue every day while still catching real drift the
+    moment it happens. See PR for #14367.
+    """
+    v = verdict(ghosts, live, parse_failures)
+    if v in ("CLEAN", "STALE_FLOOR"):
+        return "OK"
+    if v == "INCOMPLETE":
+        return "BROKEN"
+    return "DRIFT"
 
 
 def load_snapshot(path: Path) -> tuple[list[dict], list[dict]]:
@@ -204,6 +233,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cutoff", default="2026-08-20",
                         help=f"ghost-vs-live cutoff date (YYYY-MM-DD); default 2026-08-20")
     parser.add_argument("--output", type=Path, help="write JSON result (default: stdout)")
+    parser.add_argument("--watch", action="store_true",
+                        help="emit the watch verdict (OK / DRIFT / BROKEN) and a "
+                             "matching exit code; intended for the advisory cron "
+                             "workflow that surfaces new ghost activity. Collapses "
+                             "the measurement verdict to actionable buckets -- see "
+                             "watch_verdict(). Without --watch, the original four-"
+                             "bucket measurement verdict is returned.")
     args = parser.parse_args(argv)
 
     try:
@@ -240,6 +276,32 @@ def main(argv: list[str] | None = None) -> int:
             "parse_failures": classification["parse_failures"],
         }
         rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+        if args.watch:
+            # Watch mode replaces the four-bucket verdict with three
+            # actionable buckets (OK / DRIFT / BROKEN) and corresponding
+            # exit codes. The measurement verdict is preserved under
+            # `verdict_measurement` so the alert payload remains
+            # diagnosable by the receiver of the JSON.
+            watch = watch_verdict(gh_count, lv_count, pf_count)
+            result["verdict_watch"] = watch
+            result["verdict_measurement"] = v
+            watch_rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(watch_rendered, encoding="utf-8")
+                print(f"[queue-health-watch] wrote {args.output} (verdict={watch})")
+            else:
+                print(watch_rendered, end="")
+            if watch == "OK":
+                return EXIT_OK
+            if watch == "BROKEN":
+                print(f"[queue-health-watch] BROKEN INSTRUMENT: {pf_count} parse failures",
+                      file=sys.stderr)
+                return EXIT_BROKEN
+            # DRIFT: ghost count drifted from the floor or live queue is
+            # blocked. Exit code 1 -- the workflow uses this to fan out the
+            # alert (issue creation, label, etc.).
+            return EXIT_GHOST
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(rendered, encoding="utf-8")

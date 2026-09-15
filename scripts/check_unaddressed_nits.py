@@ -373,6 +373,16 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
+# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
+# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
+# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
+# ne sont PAS des marqueurs de severite et ne le deviendront pas —
+# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
+# introduit un nouveau glyphe de severite doit le proposer ici avec une
+# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
+# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
+# mais le verdict litteral en narration de dissipation avec attribution
+# tell — cf `_MENTION_VERDICT_TELL` (Position K).
 # `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
 # symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
 # ciblent l'ASCII formel et ignorent les glyphes ; la Position J
@@ -1034,6 +1044,49 @@ _MENTION_VERDICT_REPORTED = re.compile(
 )
 
 
+# #15951 — Position K : attribution par reference tell du cluster. Instance
+# fondatrice (PR #15762 c.1102, po-2024:CoursIA-2, 2026-09-12T16:26Z) :
+# « dissipation CHANGES_REQUESTED c.589 leve N-1/N ET cross-base c.1063-L1 »
+# — le commentaire de DISSIPATION lui-meme etait classe BOT-CONCERN. Le
+# verdict nomme est suivi de la reference tell de SA SOURCE (« c.589 »),
+# l'idiome de citation interne du cluster (ledger Tell). L'issue #15951
+# attribuait le defaut au glyphe de nouveaute « ★ » : mesure faite, le
+# glyphe n'est PAS dans SEVERITY_GLYPHS (cf contrat en tete de ce bloc) et
+# le declencheur reel est le litteral CHANGES_REQUESTED en narration de
+# dissipation PASSEE avec attribution de source. Les positions A-H
+# echouaient toutes sur cette forme : la Position C+/D+ exige le verbe de
+# levee IMMEDIATEMENT apres le verdict (la ref tell s'intercale) et ne
+# connait que commit/#N/PR#N/pull/N comme refs pointables (pas c.NNN).
+#
+# Discrimination vs emission formelle :
+# (1) Adjacence IMMEDIATE verdict -> ref tell (`\s+c\.\d+`, forme etendue
+#     `c.NNN-LN`) : une emission ecrit le verdict nu puis son contenu
+#     (« CHANGES_REQUESTED: edge case »), jamais « VERDICT c.NNN » — la
+#     ref tell suit le verdict uniquement pour DESIGNER la source du
+#     verdict rapporte. Meme doctrine que la Position D hors parentheses
+#     (#12944) : une ref pointable designe l'evenement passe rapporte,
+#     une emission ne pointe pas.
+# (2) Verdict case-sensitive `[A-Z][A-Z_]{3,}` (memes bornes que A-H) :
+#     pas de capture d'un mot naturel de la prose dans la fenetre.
+# (3) Garde dure commune (Position E/H) : si la suite de la phrase (200
+#     chars, meme phrase) declare un blocage vivant, la position ne
+#     s'applique PAS — le verdict reste emis.
+#
+# Mesure discriminatoire :
+#   TP (doit matcher, rendre le verdict mort) :
+#     - "dissipation CHANGES_REQUESTED c.589 leve N-1/N" (c.1102 #15762)
+#     - "le REQUEST_CHANGES c.1102 est leve sur head a2bdc9789a42."
+#   FN (ne doit PAS matcher, doit rester BOT-CONCERN) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu, emission)
+#     - "CHANGES_REQUESTED c.589 reste bloquante." (garde dure (3))
+#     - "CHANGES_REQUESTED cycle c.1102" (ref non adjacente — reste vif)
+_MENTION_VERDICT_TELL = re.compile(
+    r"(?<![\w/])(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"\s+c\.\d+(?:-L\d+)?"
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
+)
+
+
 # #14199 (cf grain) — Position I : `avant merge` en position de mention (FP).
 # Le marqueur `avant merge` est dans CONCERN_MARKERS comme signal d'un nit
 # redige a la main, MAIS trois formes mesurees 2026-09-02 le portent en
@@ -1404,7 +1457,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     """
     # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
     # negation — leur discrimination par contexte est suffisante).
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED, _MENTION_VERDICT_TELL):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     # Phase 1b : Position I — neutralise `avant [le/la/l'] merge` en position
@@ -1589,6 +1642,32 @@ CITERS = (
     # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
     "per",
     "precedent",
+    # #15837 — NARRATION RETROSPECTIVE FRANCAISE. Le depot est bilingue a
+    # l'ecriture : les listes ci-dessus ne reconnaissaient la narration qu'en
+    # anglais ("previous", "stale", "earlier"), alors que les lanes redigent en
+    # francais. « dissipation CHANGES_REQUESTED c.589 leve » (#15762) bloquait
+    # donc le merge d'un commentaire qui declare l'inverse d'une reserve.
+    #
+    # MESURE (point 1 de l'issue) : 2000 PRs mergees, tous les corps de
+    # commentaire et de review, toutes occurrences de marqueur. Un candidat
+    # n'entre ici que si AUCUNE occurrence neutralisee ne portait de reserve
+    # reelle — l'asymetrie est totale : un mot de trop ici rend une reserve
+    # invisible (#10761), la ou un mot manquant ne coute qu'un tri.
+    #   - "dissipation" : 7/7 narrations (« dissipation CHANGES_REQUESTED
+    #     c.589 leve », « ### dissipation CHANGES_REQUESTED c.1105 »).
+    #
+    # Pourquoi "dissipation" et pas "levee" (mesure pourtant 3/3 narration :
+    # « La reserve est levee avant merge », « demande re-review ... pour
+    # levee CHANGES_REQUESTED »). C'est une question de NATURE GRAMMATICALE,
+    # pas de taux : un NOM ne peut ici que signifier « dissipation DU
+    # verdict » (il est le dernier mot devant lui). Un PARTICIPE, lui, peut
+    # qualifier un AUTRE nom — « les reserves precedentes sont levees. » puis
+    # « CHANGES_REQUESTED: le split manque » sur une reserve NEUVE. Le
+    # controle negatif de #15837 le fait refuser : meme fenetre, meme liste,
+    # et une reserve vivante rendue invisible (#10761). Residu assume : la
+    # narration « reserve levee avant merge » reste flagee (2 occurrences
+    # mesurees) — un faux positif a trier, pas une reserve manquee.
+    "dissipation",
 )
 
 
@@ -1821,14 +1900,41 @@ def _excerpt(body: str) -> str:
     return snippet[:200] + " [...] " + snippet[-200:]
 
 
+# #15989 -- frontiere de PARAGRAPHE de la fenetre de citation. Les sites
+# d'appel passent les 30 caracteres qui precedent l'occurrence, sans borne :
+# un mot de citation place dans le paragraphe PRECEDENT neutralisait une
+# occurrence du paragraphe SUIVANT. Le declencheur mesure est le titre de
+# section nu -- l'idiome des commentaires de lane :
+#
+#     ## stale
+#     <ligne vide>
+#     CHANGES_REQUESTED: le split manque sur le head neuf.
+#
+# Sans borne, la fenetre vaut '## stale\n\n' et eteint ce verdict NEUF
+# (`classify` rend None). Le citer doit deja vivre dans CITERS pour que la
+# classe soit atteignable : c'est le cas de « stale », « previous », « sans »,
+# « aucune » sur main, et #15843 ouvre le meme chemin aux mots francais de
+# narration retrospective (« dissipation »).
+#
+# La borne est le PARAGRAPHE, pas la ligne : un citer pose sur la ligne
+# immediatement precedente, SANS ligne vide, reste une narration d'un meme
+# paragraphe et neutralise toujours (#15989, critere 2).
+_PARAGRAPH_BREAK_RE = re.compile(r"\n[ \t\r]*\n")
+
+
 def _is_cited(window: str) -> bool:
     """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
 
     Le mot doit etre delimite : le caractere qui le precede est non-alphanumerique
     (espace, newline, ponctuation) ou le debut de la fenetre. Sans frontiere,
     « xxxtechno » matcherait « no ».
+
+    #15989 -- la fenetre est bornee a la frontiere de PARAGRAPHE (derniere ligne
+    vide) : un citer du paragraphe precedent ne la franchit plus, donc n'eteint
+    plus le verdict du paragraphe suivant. Rejeu du corpus de #15843 (1936 PRs
+    mergees, 13113 corps, 2420 occurrences) : 0 verdict change.
     """
-    w = window
+    w = _PARAGRAPH_BREAK_RE.split(window)[-1]
     # Fleche immediatement devant le marqueur : derivation conditionnelle
     # (« Si X → CHANGES_REQUESTED », #1247), pas une emission de verdict.
     stripped = w.rstrip()
@@ -3224,16 +3330,26 @@ _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 
 
 def _cited_shas(body: str) -> set[str]:
-    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre.
+    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
+    MOINS un chiffre.
 
     Un token 100% numerique de 7+ chiffres (une date 20260830, un run-id)
     est hex-compatible mais n'est quasi jamais un SHA -- l'exiger lettree
     evite de partir resoudre une date cote serveur pour rien.
+
+    #16103 defaut 1 : un token 100% LETTRES de a-f est la meme classe de
+    bruit en francais -- « effacee », « effacees », « deface » satisfont
+    le motif hexa et se font lire comme des empreintes (levee d'ai-01 du
+    2026-09-14T02:45:56Z sur #16022 rendue « cite effacee ... absent des
+    commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
+    improbable ((6/16)^7 ~ 1e-3 au format court) ;
+    l'exiger chiffre supprime la classe entiere.
     """
     out: set[str] = set()
     for m in _SHA_CITED.finditer((body or "").lower()):
         tok = m.group(0)
-        if any(ch in "abcdef" for ch in tok):
+        if (any(ch in "abcdef" for ch in tok)
+                and any(ch.isdigit() for ch in tok)):
             out.add(tok)
     return out
 
@@ -3306,6 +3422,9 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
     #15556 : le MEME appel porte deja l'arbre du commit (`commit.tree.sha`)
     -- le capter ici evite un second aller-retour par SHA au moment de
     distinguer push muet (arbre identique) et push de contenu.
+    #15973 : il porte AUSSI les blobs par chemin du commit (`files[].sha`)
+    -- la moitie deja-payee de l'identite par chemin qui distingue un rebase
+    preserve d'un rembobinage destructeur.
     """
     oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
     oids.discard("")
@@ -3323,8 +3442,13 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
             continue  # non resoluble -> analyse restera en mode avertissement
         head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
         tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+        files = [
+            (f.get("filename") or "", f.get("sha") or "",
+             f.get("status") or "", f.get("previous_filename") or "")
+            for f in (commit.get("files") or [])
+        ]
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree}
+            state[sha] = {"message": head or "", "tree": tree, "files": files}
     return state
 
 
@@ -3358,6 +3482,57 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
 # surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
 # au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
+#
+# #15973 -- le rebase ne retombe PLUS sur le refus quand son contenu est
+# prouve preserve : `tree(rembobine) == tree(tete)` est structurellement
+# incapable de voir un rebase sur une base avancee (l'arbre d'un commit
+# porte aussi les fichiers de sa base, il change NECESSAIREMENT meme si le
+# travail de la PR n'a pas bouge d'un octet -- mesure #15902 : levees
+# refusees sur un blob de notebook byte-identique). L'identite qui survit
+# au rebase est celle des BLOBS PAR CHEMIN : `files[].sha` du commit
+# rembobine est deja dans l'appel `commits/{sha}` existant (cout nul,
+# moitie de la donnee), et la carte chemin->blob de la tete se prend en UN
+# appel `git/trees/{arbre}?recursive=1`. La note « 3 appels par SHA contre
+# 1 » ci-dessus reste vraie pour une comparaison par chemin DEUX-A-DEUX ;
+# elle ne s'applique plus a cette voie. Degradation seulement : le refus
+# demeure la reponse par defaut, et toute donnee manquante (pas de files[],
+# carte vide, arbre tronque, statut non reconnu) y retombe.
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """#15973 : chaque chemin touche par le commit rembobine doit se
+    retrouver dans la tete, byte pour byte -- modification presente au meme
+    blob, deletion toujours absente, rename installe au nouveau chemin et
+    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
+    reconnu : un organe de merge-gate ne devient jamais permissif sur un
+    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    """
+    if not rewound_files or not head_blobs:
+        return False
+    # L'API commits plafonne `files` a 300 entrees sans drapeau de
+    # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
+    # -- une identite demi-prouvee est un fail-open, pas une preuve.
+    if len(rewound_files) >= 300:
+        return False
+    for filename, blob, status, previous in rewound_files:
+        if not filename or not blob:
+            return False
+        if status == "removed":
+            if filename in head_blobs:
+                return False
+            continue
+        if status == "renamed":
+            if not previous or previous in head_blobs:
+                return False
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        if status in ("added", "modified", "changed", "copied"):
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        return False  # statut inconnu : refus conservateur
+    return True
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3376,15 +3551,18 @@ def _pr_head_oid(data: dict) -> str:
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
-    Assemble les deux vues que `analyse` consulte : messages (rattachement
-    #13639) et arbres des commits rembobines plus arbre de la tete
-    (#15556) -- un appel reseau par SHA, plus un pour la tete.
+    Assemble les vues que `analyse` consulte : messages (rattachement
+    #13639), arbres des commits rembobines plus arbre de la tete (#15556),
+    et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
+    la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
                                     if v.get("message")}
     data["_absent_sha_trees"] = {s: v["tree"] for s, v in state.items()
                                  if v.get("tree")}
+    data["_absent_sha_files"] = {s: v["files"] for s, v in state.items()
+                                 if v.get("files")}
     head_oid = _pr_head_oid(data)
     head_tree = ""
     if head_oid:
@@ -3395,6 +3573,26 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
+    head_blobs: dict[str, str] = {}
+    if head_tree and data["_absent_sha_files"]:
+        # #15973 : la carte chemin->blob de la tete, en UN appel (l'arbre
+        # recursif) -- pas un appel par chemin. Inerte quand aucun SHA
+        # absent n'a ete resolu : le gate courant ne paie rien de plus.
+        # Truncated = carte partielle = non-verifiable : on rend vide et
+        # l'analyse retombe sur le refus conservateur, jamais sur une
+        # identite demi-prouvee.
+        try:
+            tree_obj = gh_json(
+                ["api", f"repos/{REPO}/git/trees/{head_tree}?recursive=1"])
+            if not tree_obj.get("truncated"):
+                head_blobs = {
+                    e["path"]: e["sha"]
+                    for e in (tree_obj.get("tree") or [])
+                    if e.get("type") == "blob" and e.get("path") and e.get("sha")
+                }
+        except subprocess.CalledProcessError:
+            head_blobs = {}
+    data["_head_blobs"] = head_blobs
 
 
 def can_lift(comment: dict) -> bool:
@@ -4075,7 +4273,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         pr_refs.discard("")
         resolved = pr_data.get("_absent_sha_messages") or {}
         rewound_trees = pr_data.get("_absent_sha_trees") or {}
+        rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
+        head_blobs = pr_data.get("_head_blobs") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
@@ -4099,6 +4299,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     if tree and head_tree and tree == head_tree:
                         if artifact is None:
                             artifact = (sha, "same_tree")
+                        continue
+                    # #15973 -- un rebase sur une base avancee change l'arbre
+                    # par construction : avant de refuser, verifier l'identite
+                    # par chemin (blobs du commit rembobine, deja captures par
+                    # l'appel commits/{sha}, contre la carte chemin->blob de
+                    # la tete). Fail-closed : sans donnees ou sans identite,
+                    # le refus #15556 reste la reponse.
+                    sha_files = rewound_files_map.get(sha) or []
+                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                        if artifact is None:
+                            artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
                     if tree and head_tree:
@@ -4530,9 +4741,12 @@ def _print_sha_notes(result: dict) -> None:
     demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
     """
     for a in result.get("rewind_artifacts") or []:
-        why = ("arbre identique à la tête"
-               if a["reason"] == "same_tree"
-               else "fichiers de la PR inchangés")
+        if a["reason"] == "same_tree":
+            why = "arbre identique à la tête"
+        elif a["reason"] == "rebase_preserved":
+            why = "rebase sur base avancée, blobs identiques par chemin"
+        else:
+            why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
@@ -4571,7 +4785,23 @@ def analyse_pr(pr: int) -> dict:
                    dismissed_improperly=improper_dismissals(pr))
 
 
+def _ensure_utf8_stdout() -> None:
+    """#16103 defaut 3 : le verdict ne doit jamais dependre de la page de
+    code de la console. Sous cp1252 (Windows), l'impression d'un commentaire
+    a relire portant un caractere hors page (`→` levait UnicodeEncodeError
+    dans _print_unevaluated) crashait APRES le verdict -- rc=1 faux rouge
+    pour tout consommateur scripte alors que l'analyse disait OK.
+    Idempotent ; silencieux sous un stdout non reconfigurable (buffers
+    de test).
+    """
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
+
+
 def gate(pr: int, as_json: bool) -> int:
+    _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
@@ -4606,6 +4836,7 @@ def gate(pr: int, as_json: bool) -> int:
 
 
 def audit(limit: int, search: str | None = None) -> int:
+    _ensure_utf8_stdout()
     cmd = ["pr", "list", "--repo", REPO, "--state", "merged",
            "--limit", str(limit), "--json", LIST_FIELDS]
     if search:

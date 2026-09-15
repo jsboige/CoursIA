@@ -29,7 +29,7 @@ Les notebooks utilisent **deux implémentations** pour exécuter TweetyProject, 
 
 | Implémentation           | Stack                          | Kernel        | JVM requise ?                     | Notebooks                                                                                                                               |
 | ------------------------ | ------------------------------ | ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (+ `Tweety-5b-Lean-Argumentation` companion Lean 4 et `Tweety-5d-Stable-Synthesis-Lean` synthèse Z3→Lean, soit **14 notebooks**)                                    |
+| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (+ `Tweety-5b-Lean-Argumentation` companion Lean 4, `Tweety-5d-Stable-Synthesis-Lean` synthèse Z3→Lean et `Tweety-5e-Propositional-Lab-Lean` laboratoire propositionnel, soit **15 notebooks**)                                    |
 | **C#/.NET** (port natif) | IKVM 8.14 (bytecode Java→.NET) | `.net-csharp` | **Non** (runtime IKVM pur .NET)   | **18 notebooks** `*-Csharp` (de `Tweety-2-Basic-Logics-Csharp` à `Tweety-11-Causal-Csharp` ; ex. `2b-Semantics`, `3-Dung`, `4-Aspic`)   |
 
 Les deux implémentations couvrent les mêmes concepts fondamentaux (logique propositionnelle, sémantique des mondes possibles, logique du premier ordre, argumentation de Dung) ; le port C# les expose **sans JVM**, directement dans le runtime .NET, ce qui les rend exécutables côté .NET Interactive comme n'importe quel notebook C#. Les notebooks `-Csharp` vivent **à côté** de leurs homologues Python (pas dans un sous-dossier), pour faciliter la comparaison des deux stacks sur un même concept. Voir EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667).
@@ -142,11 +142,11 @@ Pour les praticiens intéressés par les applications multi-agents :
 | # | Notebook                                  | Thème                                                          | Durée   | Stack  |
 |---|-------------------------------------------|----------------------------------------------------------------|---------|--------|
 | **Fondations** |   |   |   |   |
-| 1  | [Tweety-1-Setup](Tweety-1-Setup.ipynb)    | Configuration JVM, JARs, outils externes                       | 20 min  | Python |
-| 2  | [Tweety-2-Basic-Logics](Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle et FOL                          | 45 min  | Python |
-| 2a | [Tweety-2-Basic-Logics-Csharp](Tweety-2-Basic-Logics-Csharp.ipynb) | Logique propositionnelle .NET (IKVM, port pilot #4792) | 30 min | C# PROD |
-| 2b | [Tweety-2b-Semantics-Csharp](Tweety-2b-Semantics-Csharp.ipynb) | Sémantique propositionnelle .NET (mondes possibles)  | 30 min  | C# BETA |
-| 2c | [Tweety-2c-FOL-Csharp](Tweety-2c-FOL-Csharp.ipynb) | FOL porté .NET (IKVM)                                    | 30 min  | C# BETA |
+| 1  | [Tweety-1-Setup](Tweety-01-Setup-Python.ipynb)    | Configuration JVM, JARs, outils externes                       | 20 min  | Python |
+| 2  | [Tweety-2-Basic-Logics](Tweety-02-Basic-Logics-Python.ipynb) | Logique Propositionnelle et FOL                          | 45 min  | Python |
+| 2a | [Tweety-2-Basic-Logics-Csharp](Tweety-02-Basic-Logics-CSharp.ipynb) | Logique propositionnelle .NET (IKVM, port pilot #4792) | 30 min | C# PROD |
+| 2b | [Tweety-2b-Semantics-Csharp](Tweety-02b-Semantics-CSharp.ipynb) | Sémantique propositionnelle .NET (mondes possibles)  | 30 min  | C# BETA |
+| 2c | [Tweety-2c-FOL-Csharp](Tweety-02c-FOL-CSharp.ipynb) | FOL porté .NET (IKVM)                                    | 30 min  | C# BETA |
 | 3  | [Tweety-3-Advanced-Logics](Tweety-3-Advanced-Logics.ipynb) | DL, Modale, QBF, Conditionnelle                      | 40 min  | Python |
 | 3c-DL | [Tweety-3-Advanced-Logics-Csharp](Tweety-3-Advanced-Logics-Csharp.ipynb) | DL/ML/QBF/CL .NET (DRAFT - conflits DLL)         | 30 min  | C# DRAFT |
 | 3c-CL | [Tweety-3-Conditional-Logics-Csharp](Tweety-3-Conditional-Logics-Csharp.ipynb) | Logique conditionnelle .NET (IKVM)              | 25 min  | C# PROD |
@@ -162,28 +162,29 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety-5b-Lean-Argumentation.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean` (grounded = point fixe Knaster–Tarski), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min  | Lean BETA |
 | 5c | [Tweety-5-Abstract-Argumentation-Csharp](Tweety-5-Abstract-Argumentation-Csharp.ipynb) | Twin C# Dung AF **from-scratch** (BCL .NET uniquement, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire de cadres, 3 exercices. Complémentarité from-scratch ↔ Python/IKVM (marathon #4956, §3801) | 50 min | C# BETA |
 | 5d | [Tweety-5d-Stable-Synthesis-Lean](Tweety-5d-Stable-Synthesis-Lean.ipynb) | Synthèse certifiée d'extensions stables (Loi II #12205, variante `-c`, #13597) : spécification → **Z3** (générateur ≠ vérificateur) → témoin `{1, 2, 5}` → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis` + sibling `_en`, i18n #4980) ; cas UNSAT du 3-cycle certifié (`afB_no_stable`) — dissociation enregistrée à la borne n = 3 | 40 min | Python+Lean BETA |
-| 6  | [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
-| 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-6-Structured-Argumentation-Csharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
-| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-7a-Extended-Frameworks-Csharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety reelle via IKVM (DLL shade 7a versionnee a la racine, rebuildable dotnet-build/rebuild-7a.sh ; See #4956) | 55 min | C# PROD |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
-| 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
+| 5e | [Tweety-5e-Propositional-Lab-Lean](Tweety-5e-Propositional-Lab-Lean.ipynb) | Companion transversal (tranche A de l'EPIC [#15066](https://github.com/jsboige/CoursIA/issues/15066)) : trois formules-témoins (`SYL` valide, `ORB` satisfiable non valide, `CONTR` insatisfiable) traversent **trois lectures** — Tweety via JPype (verdicts et contre-modèles **calculés**), recomptage Python indépendant des 8 mondes du fragment `{a, b, c}`, certification du kernel Lean natif sur **Foundation (FFL)** au commit épinglé ; la même chaîne de formule est sérialisée pour les deux moteurs (SOTA, aucune réimplémentation jouet) | 40 min | Python+Lean BETA |
+| 6  | [Tweety-6-Structured-Argumentation](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
+| 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-06-Structured-Argumentation-CSharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
+| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-07a-Extended-Frameworks-CSharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety reelle via IKVM (DLL shade 7a versionnee a la racine, rebuildable dotnet-build/rebuild-7a.sh ; See #4956) | 55 min | C# PROD |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
+| 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-07b-Ranking-Probabilistic-CSharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
 | **Applications** |   |   |   |   |
-| 8  | [Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries            | 35 min  | Python |
-| 8c | [Tweety-8-Agent-Dialogues-Csharp](Tweety-8-Agent-Dialogues-Csharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) | 35 min | C# PROD |
-| 9  | [Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | Préférences, Théorie du vote                          | 30 min  | Python |
-| 9c | [Tweety-9-Preferences-Csharp](Tweety-9-Preferences-Csharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268)            | 30 min  | C# PROD |
+| 8  | [Tweety-8-Agent-Dialogues](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, Dialogues argumentatifs, Loteries            | 35 min  | Python |
+| 8c | [Tweety-8-Agent-Dialogues-Csharp](Tweety-08-Agent-Dialogues-CSharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) | 35 min | C# PROD |
+| 9  | [Tweety-9-Preferences](Tweety-09-Preferences-Python.ipynb) | Préférences, Théorie du vote                          | 30 min  | Python |
+| 9c | [Tweety-9-Preferences-Csharp](Tweety-09-Preferences-CSharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268)            | 30 min  | C# PROD |
 | **Synthèse** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb)       | Markov Logic Networks (FOL pondérée)                      | 50 min  | Python |
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209)                | 30 min  | C# PROD |
 | 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min  | Python |
 | 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-Csharp.ipynb) | Twin C# moteur causal booléen from-scratch (do-operator, contrefactuel) | 35 min  | C# PROD |
 
-**Durée totale estimée** : ~13h (Python) + ~7h (C#/.NET). Le tableau ci-dessus couvre les **32 notebooks principaux** (12 Python + 18 C#/.NET + 2 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4, toolchain `v4.32.1` depuis #11587, avec 12 fichiers `.lean` au dossier `Argumentation/` — 6 modules FR : Basic, Characteristic, Extensions, Fundamental, Grounded, Synthesis + leurs 6 siblings `_en` i18n #4980).
+**Durée totale estimée** : ~13h (Python) + ~7h (C#/.NET). Le tableau ci-dessus couvre les **33 notebooks principaux** (12 Python + 18 C#/.NET + 3 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4, toolchain `v4.32.1` depuis #11587, avec 12 fichiers `.lean` au dossier `Argumentation/` — 6 modules FR : Basic, Characteristic, Extensions, Fundamental, Grounded, Synthesis + leurs 6 siblings `_en` i18n #4980).
 
 ## En quoi chaque notebook est unique
 
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **32 notebooks principaux** (12 Python + 18 C#/.NET + 2 Lean companion) :
+Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **33 notebooks principaux** (12 Python + 18 C#/.NET + 3 Lean companion) :
 
 | #  | Notebook                      | Concept clé enseigné                                                    |
 |----|-------------------------------|--------------------------------------------------------------------------|
@@ -204,6 +205,8 @@ Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau
 | 5  | Abstract Argumentation        | Sémantiques de Dung (grounded/stable/CF2) + frameworks aléatoires      |
 | 5b | Lean Argumentation            | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean`, BETA |
 | 5c | Abstract Argumentation (C#)   | Dung AF **from-scratch** BCL .NET (sans IKVM/JVM) : sémantiques grounded/stable/preferred, labeling 3 valeurs |
+| 5d | Stable Synthesis (Lean)       | Synthèse certifiée d'extensions stables : spécification → générateur **Z3** → témoin → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis`), cas UNSAT du 3-cycle certifié |
+| 5e | Propositional Lab (Lean)      | Trois lectures d'une même formule — Tweety (verdicts et contre-modèles **calculés**), recomptage Python des 8 mondes, certification **Lean sur Foundation (FFL)** au commit épinglé ; théâtre des trois verdicts `valid` / `satisfiable non valide` / `insatisfiable` |
 | 6  | Structured Argumentation      | Comparaison ASPIC+/DeLP/ABA/ASP — le cadre idéal selon le domaine      |
 | 6c | Structured Argumentation (C#) | ASPIC+ **from-scratch** BCL .NET (sans IKVM) — DeLP/ABA/ASP en contrepoint conceptuel |
 | 7a | Extended Frameworks           | Au-delà de Dung : ADF, bipolarité, attaques pondérées et collectives   |
@@ -319,7 +322,7 @@ flowchart LR
 pip install jpype1 requests tqdm clingo z3-solver python-sat
 
 # 2. Ouvrir le notebook de setup (auto-télécharge JDK + JARs)
-jupyter notebook Tweety-1-Setup.ipynb
+jupyter notebook Tweety-01-Setup-Python.ipynb
 
 # 3. Exécuter toutes les cellules, puis passer à Tweety-2
 ```
@@ -377,7 +380,7 @@ pip install jpype1 requests tqdm clingo z3-solver python-sat
 
 ```bash
 # Lancer le notebook de setup
-jupyter notebook Tweety-1-Setup.ipynb
+jupyter notebook Tweety-01-Setup-Python.ipynb
 # Exécuter toutes les cellules — il télécharge JDK, JARs, outils externes
 
 # Ou utiliser le script de validation
@@ -391,11 +394,11 @@ JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes :
 
 ```
 Tweety/
-├── Tweety-1-Setup.ipynb                           # Configuration JVM/JPype
-├── Tweety-2-Basic-Logics.ipynb                    # PL + FOL
-├── Tweety-2-Basic-Logics-Csharp.ipynb             # Logique propositionnelle .NET (IKVM, PROD)
-├── Tweety-2b-Semantics-Csharp.ipynb               # Sémantique propositionnelle .NET (IKVM, BETA)
-├── Tweety-2c-FOL-Csharp.ipynb                     # FOL .NET (IKVM, BETA)
+├── Tweety-01-Setup-Python.ipynb                           # Configuration JVM/JPype
+├── Tweety-02-Basic-Logics-Python.ipynb                    # PL + FOL
+├── Tweety-02-Basic-Logics-CSharp.ipynb             # Logique propositionnelle .NET (IKVM, PROD)
+├── Tweety-02b-Semantics-CSharp.ipynb               # Sémantique propositionnelle .NET (IKVM, BETA)
+├── Tweety-02c-FOL-CSharp.ipynb                     # FOL .NET (IKVM, BETA)
 ├── Tweety-3-Advanced-Logics.ipynb                 # DL, ML, QBF, CL
 ├── Tweety-3-Advanced-Logics-Csharp.ipynb          # DL/ML/QBF/CL .NET (DRAFT — conflits DLL)
 ├── Tweety-3-Conditional-Logics-Csharp.ipynb       # Logique conditionnelle .NET (IKVM, PROD)
@@ -409,16 +412,17 @@ Tweety/
 ├── Tweety-5-Abstract-Argumentation-Csharp.ipynb   # Twin C# Dung AF from-scratch (BCL, BETA)
 ├── Tweety-5b-Lean-Argumentation.ipynb             # Companion kernel Lean 4
 ├── Tweety-5d-Stable-Synthesis-Lean.ipynb          # Synthèse certifiée Z3→Lean (Loi II #12205)
-├── Tweety-6-Structured-Argumentation.ipynb        # ASPIC+, DeLP, ABA, ASP
-├── Tweety-6-Structured-Argumentation-Csharp.ipynb # Twin C# ASPIC+ from-scratch (BCL, PROD)
-├── Tweety-7a-Extended-Frameworks.ipynb            # ADF, Bipolar, WAF, SAF
-├── Tweety-7a-Extended-Frameworks-Csharp.ipynb     # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, PROD)
-├── Tweety-7b-Ranking-Probabilistic.ipynb          # Ranking Semantics
-├── Tweety-7b-Ranking-Probabilistic-Csharp.ipynb   # Ranking/Probabiliste .NET (IKVM, PROD)
-├── Tweety-8-Agent-Dialogues.ipynb                 # Agents, dialogues, loteries
-├── Tweety-8-Agent-Dialogues-Csharp.ipynb          # Twin C# dialogues from-scratch (BCL, PROD)
-├── Tweety-9-Preferences.ipynb                     # Préférences, vote
-├── Tweety-9-Preferences-Csharp.ipynb              # Préférences .NET (IKVM, PROD)
+├── Tweety-5e-Propositional-Lab-Lean.ipynb         # Laboratoire propositionnel Tweety/Lean (tranche A #15066)
+├── Tweety-06-Structured-Argumentation-Python.ipynb        # ASPIC+, DeLP, ABA, ASP
+├── Tweety-06-Structured-Argumentation-CSharp.ipynb # Twin C# ASPIC+ from-scratch (BCL, PROD)
+├── Tweety-07a-Extended-Frameworks-Python.ipynb            # ADF, Bipolar, WAF, SAF
+├── Tweety-07a-Extended-Frameworks-CSharp.ipynb     # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, PROD)
+├── Tweety-07b-Ranking-Probabilistic-Python.ipynb          # Ranking Semantics
+├── Tweety-07b-Ranking-Probabilistic-CSharp.ipynb   # Ranking/Probabiliste .NET (IKVM, PROD)
+├── Tweety-08-Agent-Dialogues-Python.ipynb                 # Agents, dialogues, loteries
+├── Tweety-08-Agent-Dialogues-CSharp.ipynb          # Twin C# dialogues from-scratch (BCL, PROD)
+├── Tweety-09-Preferences-Python.ipynb                     # Préférences, vote
+├── Tweety-09-Preferences-CSharp.ipynb              # Préférences .NET (IKVM, PROD)
 ├── Tweety-10-MLN.ipynb                            # Markov Logic Networks
 ├── Tweety-10-MLN-Csharp.ipynb                     # MLN .NET (IKVM, PROD)
 ├── Tweety-11-Causal.ipynb                         # do-calculus Pearl
@@ -444,7 +448,7 @@ Tweety/
 └── README.md                                      # Ce fichier
 ```
 
-> **Note** : les dossiers `libs/`, `jdk-17-portable/`, `ext_tools/` et `resources/` sont des répertoires d'exécution (non suivis par Git, téléchargés automatiquement par `Tweety-1-Setup.ipynb` ou `scripts/download_tweety_tools.py`). L'ancien dossier `templates student/` n'existe plus dans cette partition. `scripts/` contient 5 scripts `.py` au premier niveau (`download_tweety_tools.py`, `verify_all_tweety.py`, `validate_syntax.py`, `sat_calibration.py`, `sat_comparison_demo.py`), 4 tests `test_*.py` et un `README.md`, plus un sous-dossier `_archive/` (qui contient `reorganize_tweety.py`, déplacé depuis le premier niveau — plus de doublon). Le dossier `_output/` n'est pas présent dans cette partition (les traces Papermill ne sont pas conservées). Audit §E whole-file gate 2026-07-15, re-audit 2026-08-15.
+> **Note** : les dossiers `libs/`, `jdk-17-portable/`, `ext_tools/` et `resources/` sont des répertoires d'exécution (non suivis par Git, téléchargés automatiquement par `Tweety-01-Setup-Python.ipynb` ou `scripts/download_tweety_tools.py`). L'ancien dossier `templates student/` n'existe plus dans cette partition. `scripts/` contient 5 scripts `.py` au premier niveau (`download_tweety_tools.py`, `verify_all_tweety.py`, `validate_syntax.py`, `sat_calibration.py`, `sat_comparison_demo.py`), 4 tests `test_*.py` et un `README.md`, plus un sous-dossier `_archive/` (qui contient `reorganize_tweety.py`, déplacé depuis le premier niveau — plus de doublon). Le dossier `_output/` n'est pas présent dans cette partition (les traces Papermill ne sont pas conservées). Audit §E whole-file gate 2026-07-15, re-audit 2026-08-15.
 
 ## Outils Externes
 
@@ -641,7 +645,7 @@ EProver peut bloquer sur des formules FOL complexes avec égalité. La solution 
 
 ### Erreur de chargement d'un JAR Tweety
 
-Vérifier que la version Tweety dans `Tweety-1-Setup.ipynb` correspond à la version téléchargée. La version recommandée est 1.30. Pour changer de version, modifier la variable `TWEETY_VERSION` puis relancer le notebook 1.
+Vérifier que la version Tweety dans `Tweety-01-Setup-Python.ipynb` correspond à la version téléchargée. La version recommandée est 1.30. Pour changer de version, modifier la variable `TWEETY_VERSION` puis relancer le notebook 1.
 
 ### `ClassCastException` en argumentation
 
@@ -663,7 +667,7 @@ Chaque notebook présuppose la configuration faite dans Tweety-1-Setup (JDK, JAR
 | **1.29** | Juillet 2025 | arg.eaf (Epistemic AF), graph rendering |
 | **1.30** | Janvier 2026 | causal reasoning, arg.explanations, equivalence checking |
 
-La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSION`). La version 1.30 est recommandée — elle inclut les sémantiques de causalité, les explications en argumentation, et le checking d'équivalence de frameworks.
+La version est configurable dans `Tweety-01-Setup-Python.ipynb` (variable `TWEETY_VERSION`). La version 1.30 est recommandée — elle inclut les sémantiques de causalité, les explications en argumentation, et le checking d'équivalence de frameworks.
 
 ## Ressources
 
@@ -730,7 +734,7 @@ Le pitch de Tweety tient en un mot : **explicabilité**. Là où un LLM produit 
 
 ---
 
-**Version 1.2.2 — Août 2026 — ajout Tweety-5d (synthèse certifiée Z3→Lean, Loi II #12205/#13597) : lake `argumentation_lean` 6+6 siblings `_en` (module `Synthesis`), toolchain corrigée v4.32.1 (#11587), comptes re-mesurés 33 notebooks / 969 cellules dont 390 code (périmètre : 32 `Tweety-*` + 1 probe). Précédent : Version 1.2.1 — re-audit fichier-entier §E : 18 DLLs shades, scripts/ 5+4+`_archive`, pin IKVM 8.14, limitations re-ancrées 1.30. EPIC #3975 tranche tweety.**
+**Version 1.2.3 — Septembre 2026 — entree README de `Tweety-5e-Propositional-Lab-Lean` (tranche A de l'EPIC #15066, laboratoire propositionnel Tweety/Lean) : table Structure (32 → 33 notebooks principaux), table « En quoi chaque notebook est unique » (ajout de 5d et 5e, 31 → 33 lignes), arbre de structure, statistiques par sous-categorie (Lean companion 2 → 3, total 33 → 34) et colonne Python du tableau des stacks (14 → 15). Residu declare, non comble ici : `Tweety-12-Grounded-Via-TweetyProject` (13e notebook Python, kernel `python3`, execute 8/8 sans erreur) reste absent des tables — sa duree n'est declaree nulle part dans le notebook, aucune ligne n'a donc ete inventee. Precedent : Version 1.2.2 — Août 2026 — ajout Tweety-5d (synthèse certifiée Z3→Lean, Loi II #12205/#13597) : lake `argumentation_lean` 6+6 siblings `_en` (module `Synthesis`), toolchain corrigée v4.32.1 (#11587), comptes re-mesurés 33 notebooks / 969 cellules dont 390 code (périmètre : 32 `Tweety-*` + 1 probe). Précédent : Version 1.2.1 — re-audit fichier-entier §E : 18 DLLs shades, scripts/ 5+4+`_archive`, pin IKVM 8.14, limitations re-ancrées 1.30. EPIC #3975 tranche tweety.**
 
 ## Statistiques catalogue à jour
 
@@ -739,14 +743,14 @@ Statistiques détaillées de la sous-série Tweety. Le `pedagogical_count: 32` e
 | Sous-catégorie        |    NB | Statut                       |
 |-----------------------|-------|------------------------------|
 | Python (Tw-1..11)     |    12 | PROD=12                      |
-| Lean companion (5b, 5d) |   2 | BETA=2                       |
+| Lean companion (5b, 5d, 5e) |   3 | BETA=3                  |
 | C#/.NET               |    18 | PROD=12, BETA=5, DRAFT=1     |
 | Probe `_probes/`      |     1 | BETA                         |
-| Total                 |    33 | PROD=24, BETA=8, DRAFT=1     |
+| Total                 |    34 | PROD=24, BETA=9, DRAFT=1     |
 
 Détails paradigmes/stacks :
 
-- **Python (JPype, 12 nb)** : PL/FOL/DL/ML/QBF/CL/Dung/ASPIC+/AGM/MLN/do-calculus Pearl — double stack sur Tw-3 (DL+Modale+QBF), Tw-4 (Belief Revision), Tw-7b (Ranking), Tw-9 (vote/préférences), Tw-10 (MLN), Tw-11 (causal). Tous PROD. Voir aussi le companion **Lean** `Tweety-5b-Lean-Argumentation` (BETA, kernel Lean 4, `argumentation_lean/`) et `Tweety-5d-Stable-Synthesis-Lean` (BETA, kernel Python + Z3, Loi II #12205 : spécification → générateur Z3 → témoin → certificat Lean `by decide`).
+- **Python (JPype, 12 nb)** : PL/FOL/DL/ML/QBF/CL/Dung/ASPIC+/AGM/MLN/do-calculus Pearl — double stack sur Tw-3 (DL+Modale+QBF), Tw-4 (Belief Revision), Tw-7b (Ranking), Tw-9 (vote/préférences), Tw-10 (MLN), Tw-11 (causal). Tous PROD. Voir aussi le companion **Lean** `Tweety-5b-Lean-Argumentation` (BETA, kernel Lean 4, `argumentation_lean/`) et `Tweety-5d-Stable-Synthesis-Lean` (BETA, kernel Python + Z3, Loi II #12205 : spécification → générateur Z3 → témoin → certificat Lean `by decide`), ainsi que `Tweety-5e-Propositional-Lab-Lean` (BETA, kernels Python + Lean, tranche A de l'EPIC #15066 : trois formules-témoins lues par Tweety, recomptées en Python et certifiées sur Foundation (FFL) au commit épinglé).
 - **C#/.NET (IKVM 8.14, 18 nb)** : bytecode Java→.NET downgrade Java 15→8 (post-C190 `JvmDowngrader`), sans JVM. PROD=12, BETA=5 (`Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-4-Belief-Revision-Csharp`, `Tweety-4-Aspic-Csharp`, `Tweety-5-Abstract-Argumentation-Csharp`), DRAFT=1 = BROKEN (`Tweety-3-Advanced-Logics-Csharp`, conflits de noms sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés dans la même DLL).
 - **Probe (`_probes/Tweety-IKVM-Init-Probe`, 1 nb)** : IKVM init smoke-test BETA.
 

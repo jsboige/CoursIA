@@ -19,6 +19,7 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -158,6 +159,184 @@ def test_posted_check_run_message_is_not_escaped(monkeypatch):
     assert posted["message"] == (
         "FAIL -- cannot establish check state: gh api failed (exit 1): 50%\r\nline2"
     )
+
+
+# --- #15825 -- toute conclusion non-success porte un titre non vide -----------
+#
+# Mesure 2026-09-12 : 9 echecs `PR gate` sur 43 rendent output.title = null.
+# Deux classes : (a) le snapshot de script fige par le rerun d'un event
+# payload stale -- le head de #15440 est derriere main de 175 commits, ses
+# 8 tentatives rejouent l'ancien script depourvu de publication (classe
+# irreparable cote gate, d'ou le repli lecteur, critere 2 de l'issue) ;
+# (b) le crash non rattrape dans le script ACTUEL : une exception hors
+# GateError sous main() court-circuitait la queue d'emission. Ces tests
+# epinglent (b) : le contrat est « toute conclusion non-success porte un
+# titre non vide » (critere 3).
+
+
+def test_crashed_gate_publishes_nonempty_title(monkeypatch, capsys):
+    """Critere 1 : un crash sous main() publie quand meme un titre."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("pollution du rollup par un dict inattendu")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(repo=repo, run_id=run_id, job_name=job_name, code=code,
+                    title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "internal error" in seen["title"]
+    assert "ValueError" in seen["title"]
+    assert seen["job_name"] == pr_gate.DEFAULT_SELF_NAME
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+    assert "::error::" in out.err
+
+
+def test_crashed_gate_without_publish_context_still_fails_one(
+    monkeypatch, capsys
+):
+    """Hors Actions (ni GITHUB_REPOSITORY ni GITHUB_RUN_ID) : la publication
+    n'est pas possible, mais l'exit code 1 et le motif FAIL restent -- un
+    contexte de publication absent ne doit jamais transformer un crash en
+    silence (ou pire, en 0)."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom local")
+
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("ne doit pas publier sans contexte Actions")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+
+
+def test_crash_fallback_publish_failure_does_not_mask_the_crash(
+    monkeypatch, capsys
+):
+    """La publication de repli ne doit JAMAIS masquer le crash d'origine :
+    si le PATCH plante aussi, le motif FAIL interne reste emis et l'exit
+    reste 1."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("crash d'origine")
+
+    def exploding_publish(*_a, **_k):
+        raise RuntimeError("PATCH explose aussi")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", exploding_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- internal error" in out.out
+    assert "crash fallback not published" in out.out
+
+
+def test_crash_fallback_propagates_the_current_run_attempt(
+    monkeypatch, capsys
+):
+    """Le repli de crash doit viser le check-run de la tentative COURANTE.
+
+    Mesure de l'adjudant (head `1c7f57119a`) : sur un `run_attempt=2` qui
+    porte encore les jobs des tentatives 1 et 2, la voie normale filtre par
+    `GITHUB_RUN_ATTEMPT` mais le repli ne le transmettait pas -- il resolvait
+    alors le titre de crash sur le check-run SUPERSEDE de la tentative 1, et
+    la tentative courante gardait `output.title = null` : le defaut meme que
+    #15825 elimine, sur le chemin qui doit justement le couvrir.
+    """
+    def crash(*_args, **_kwargs):
+        raise ValueError("boom au run_attempt 2")
+
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message,
+                     advisory=(), run_attempt=None, **_k):
+        seen["run_attempt"] = run_attempt
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    assert seen["run_attempt"] == "2", (
+        "sans la tentative courante, le repli PATCH le check-run supersede et "
+        "le defaut #15825 survit sur le run_attempt > 1"
+    )
+    capsys.readouterr()
+
+
+def test_crash_fallback_preserves_the_traceback(monkeypatch, capsys):
+    """Le titre du check-run tient sur une ligne, donc le repli ne garde que
+    `repr(exc)` ; la trame causale doit rester lisible dans le log."""
+    def crash(*_args, **_kwargs):
+        raise ValueError("cause racine a diagnostiquer")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", crash)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+    captured = capsys.readouterr()
+    assert "Traceback (most recent call last)" in captured.err
+    assert "cause racine a diagnostiquer" in captured.err
+
+
+def test_argparse_failure_publishes_title_and_propagates_exit_code(
+    monkeypatch, capsys
+):
+    """Un echec d'argparse leve SystemExit(2) AVANT tout parsing : comme
+    SystemExit derive de BaseException, le `except Exception` de `_entry`
+    ne le voyait pas -- la gate sortait en code 2 sans jamais publier de
+    titre, exactement #15825 par une autre porte (reserve ai-01 : un
+    `--flag ${{ inputs.x }}` ajoute demain au workflow suffit a rouvrir
+    le defaut en silence)."""
+    seen = {}
+
+    def fake_publish(repo, run_id, job_name, code, message, *_a, **_k):
+        seen.update(code=code, title=message.splitlines()[0] if message else "")
+        return True
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "jsboige/CoursIA")
+    monkeypatch.setenv("GITHUB_RUN_ID", "34608518559")
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", fake_publish)
+    assert pr_gate._entry(["--repo", "o/r", "--sha", "deadbeef",
+                           "--timeout-min", "abc"]) == 2
+    assert seen["code"] == 1
+    assert seen["title"], "un titre vide est exactement le defaut #15825"
+    assert "SystemExit" in seen["title"]
+    out = capsys.readouterr()
+    assert "[pr-gate] FAIL -- exit 2 before verdict" in out.out
+    assert "invalid float value" in out.err  # le diagnostic argparse reste le sien
+
+
+def test_argparse_help_exit_zero_propagates_without_publishing(monkeypatch):
+    """`--help` sort en SystemExit(0) : un exit NUL n'est pas un echec, il se
+    propage intact et ne publie RIEN -- le branchement sur `.code` ne doit
+    pas avaler --help (ni le transformer en rouge de gate)."""
+    def must_not_publish(*_a, **_k):
+        raise AssertionError("--help n'est pas un echec, rien a publier")
+
+    monkeypatch.setattr(pr_gate, "publish_check_run_output", must_not_publish)
+    with pytest.raises(SystemExit) as caught:
+        pr_gate._entry(["--help"])
+    assert caught.value.code == 0
 
 
 def test_completed_without_conclusion_is_pending_not_pass():
@@ -1634,6 +1813,29 @@ def test_step_summary_dwell_guides_against_repush(tmp_path, monkeypatch):
     assert "Ne pas re-pusher" in text
 
 
+def test_verdict_body_dwell_ne_prescrit_pas_l_attente():
+    """#15726 : la consigne DWELL publiee ne doit pas fabriquer de l'attente.
+
+    Cette assertion porte sur des ABSENCES, et c'est voulu -- la regression
+    qu'elle attrape n'est pas un calcul faux mais une PHRASE. Le verdict
+    etait juste (`False`) tandis que le corps publie disait « le balayage
+    horaire leve seul » : faux sur la cadence (mesuree 2 h 33 - 5 h 18 entre
+    tirs, #15197) et, surtout, une instruction d'attente machine-emise sur
+    chaque gate rouge. Depuis #15693 ce corps est aussi le `summary` du
+    check-run : il est lu dans l'UI par chaque lane, pas seulement en log.
+    """
+    body = pr_gate.verdict_body("DWELL -- tete du 2026-09-07T11:55:00Z")
+    assert "balayage horaire" not in body
+    assert "leve seul" not in body
+    # Ce que le retrait laisse ouvert, et rien de plus : que fait la lane.
+    assert "enchainer un autre grain" in body
+    assert "rerun" in body
+    # La garde anti-re-push de #15693 survit au retrait.
+    assert "Ne pas re-pusher" in body
+    # Controle negatif : hors DWELL, aucune de ces consignes n'est ajoutee.
+    assert "enchainer un autre grain" not in pr_gate.verdict_body("FAIL -- x")
+
+
 def test_step_summary_fork_short_circuit(tmp_path, monkeypatch):
     """The fork PASS publishes too (#10072) -- a student PR's check-run
     should not be the only one whose summary stays null."""
@@ -1770,6 +1972,52 @@ def test_check_run_output_is_patched_with_the_verdict(monkeypatch):
     assert seen["fields"]["output[title]"].startswith(
         "PR gate: FAIL -- failing checks"
     )
+
+
+def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch):
+    """#15859 acceptance 1, 2 and 4 at the decision surface.
+
+    A DWELL red's check-run TITLE names the floor and its ABSOLUTE lift
+    time. The message is built by the real merge_dwell.evaluate() (as
+    main() wires it at the dwell block), not a fixture string, so the pin
+    covers the whole chain: evaluate -> "DWELL -- " prefix -> first line
+    -> title. The lift asserted in the title IS head + dwell minutes --
+    the unit-level form of the update-branch positive control: whatever
+    the last commit is (a fresh push, or the merge commit an update-branch
+    creates), the title announces the floor re-armed from THAT commit.
+    """
+    monkeypatch.setenv("GITHUB_RUN_ID", "424242")
+    monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "2")
+    monkeypatch.setattr(pr_gate, "_gh_api", lambda _p: _jobs_two_attempts())
+    seen = {}
+    monkeypatch.setattr(
+        pr_gate, "_gh_api_patch",
+        lambda path, fields: seen.update({"path": path, "fields": fields}) or {},
+    )
+    committed = datetime(2026, 9, 13, 10, 0, 0, tzinfo=timezone.utc)
+    _ok, _remaining, dwell_msg = pr_gate._merge_dwell.evaluate(
+        committed, committed + timedelta(minutes=45), 120.0
+    )
+    ok = pr_gate.publish_check_run_output(
+        "o/r", "424242", pr_gate.DEFAULT_SELF_NAME, 1,
+        "DWELL -- {}".format(dwell_msg),
+    )
+    assert ok is True
+    title = seen["fields"]["output[title]"]
+    assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
+    assert "plancher 120 min" in title
+    # L'instant que le titre annonce (ecoulement du plancher) est tete + 120 min
+    # -- lisible sans rien recalculer (acceptance 2), re-arme depuis le commit
+    # le plus recent apres tout push ou update-branch (acceptance 4). #15726 :
+    # le titre DATE l'ecoulement, il ne promet plus le balayage -- l'ancienne
+    # formule « leve au premier balayage suivant » adossait la levee a un
+    # balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ; cette cadence vit
+    # dans le summary, pas dans une promesse du titre.
+    assert "ecoule a 2026-09-13T12:00:00Z" in title
+    # Garantie « rien a reparer » au niveau du TITRE aussi : la troncature
+    # [:255] peut l'y couper sans que rien ne l'annonce -- le test doit tomber.
+    assert "Rien a corriger dans le code" in title
+    assert "Plancher mecanique -- rien a reparer" in seen["fields"]["output[summary]"]
 
 
 def test_check_run_output_is_reached_from_the_emission_tail(monkeypatch):

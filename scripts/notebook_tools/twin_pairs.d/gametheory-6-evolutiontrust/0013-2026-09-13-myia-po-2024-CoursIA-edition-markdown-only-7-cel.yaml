@@ -1,0 +1,14 @@
+date: '2026-09-13'
+by: myia-po-2024:CoursIA
+reason: 'Markdown-only insertion of 2 prose cells on the Python side (tranche 3 of the
+  consecutive-code-cells drain, #12797): one before the ESS verdicts (why `is_ess`
+  returns its failing mutants) and one before the hawk-dove positive control (why a
+  control is needed to tell a real absence from a broken instrument). No Python code
+  cell touched, no output changed, no re-execution, `parity_level: semantic` unchanged;
+  the C# twin keeps no marker for either point, so no parallel defect and no new
+  known_differences. Rebaseline is parity-preserving, same class as the 2026-08-01
+  SC-04 markdown-only precedent.'
+python_sha: 9aaaf6a46f9db24f9686901343db4650101bd92c
+csharp_sha: b9dbff101c26a9135562845f8a36be8bc36e066e
+content_python_sha: dd65e70f055885c5564dae52209290ea0a633dcda37b2790200a58fc809a9e05
+content_csharp_sha: 16a44dc520955b52abc12a61c95ec60da50a32d7db26035f35c982cfe133e777

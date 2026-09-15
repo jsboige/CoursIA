@@ -28,6 +28,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from collections import Counter
 from pathlib import Path
@@ -93,6 +94,45 @@ def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
     return "15min"
 
 
+# Plafond mesure, pas devine. Sur le pool `[self-hosted, coursia-ephemeral,
+# coursia-linux]` qui publie le catalogue (checkout `fetch-depth: 0`), sept runs
+# du 2026-09-13 rendent ce step entre 10 s et 64 s. Les trois runs sous 25 s
+# impriment `Preserved curated fields ... for 1 entries` (sain) ; les trois a
+# 40 s et plus impriment `... for 1094 entries` (degrade) -- ils ont brule
+# 30 s dans le delai, obtenu {} en silence, et publie un catalogue ou
+# `scientific_review` vaut UNREVIEWED partout. C'est #14831.
+#
+# `git log` ayant ete TUE a 30 s, ce qu'il lui fallait reellement n'a jamais ete
+# observe : le plafond est donc releve genereusement plutot qu'ajuste au plus
+# juste. L'echec bruyant ci-dessous reste la vraie garantie -- si meme ce plafond
+# se revelait insuffisant, la generation s'arrete en le disant au lieu de
+# publier un catalogue faux en concluant `success`.
+GIT_LOG_TIMEOUT_SECONDS = 180
+
+# Restreindre l'historique aux notebooks : c'est le seul sous-arbre que le
+# parser ci-dessous retient, et 40 % de la sortie de `git log` n'en releve pas.
+# Equivalence verifiee en passant les deux sorties par ce meme parser
+# (1335 notebooks dates de part et d'autre, aucune cle et aucun champ divergents,
+# 1,0 Mo -> 0,6 Mo). Allegement sur -- gain de temps NON demontre : en local les
+# deux formes mesurent 0,45 s contre 0,48 s, soit rien. Le remede de #14831 est
+# le plafond ci-dessus, pas cette ligne.
+GIT_LOG_PATHSPEC = "MyIA.AI.Notebooks"
+
+
+class GitMetadataUnavailable(RuntimeError):
+    """Raised when ``git log`` could not produce notebook history.
+
+    Returning ``{}`` instead is indistinguishable from "no notebook has any
+    history". That silence is the defect of #14831: every ``last_validator``
+    reads falsy, ``classify_scientific_review`` can open no gate and falls
+    through to UNREVIEWED, and ``_merge_curated_fields`` then restores
+    ``last_validation``/``last_validator`` from ``origin/main`` -- the two
+    fields that would have exposed the failure -- while ``scientific_review``,
+    absent from ``CURATED_GIT_FIELDS``, passes through untouched. The run
+    concludes ``success`` and publishes a catalog that is green and wrong.
+    """
+
+
 def build_git_metadata() -> dict[str, dict]:
     """Build last-commit metadata for all notebooks via git log.
 
@@ -100,22 +140,46 @@ def build_git_metadata() -> dict[str, dict]:
         last_validation: ISO date of last commit touching the file
         last_validator: email of last committer
         issues_prs: list of '#NNN' references from commit messages
+
+    Raises:
+        GitMetadataUnavailable: git timed out, is missing, or exited non-zero.
+            Whether that aborts the run or degrades it is the caller's
+            decision (``--allow-degraded-git``) -- never this function's, and
+            never silent.
     """
+    started = time.monotonic()
     try:
         result = subprocess.run(
-            ["git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=30,
+            [
+                "git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s",
+                "--", GIT_LOG_PATHSPEC,
+            ],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=str(REPO_ROOT), timeout=GIT_LOG_TIMEOUT_SECONDS,
         )
-        if result.returncode != 0:
-            return {}
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return {}
+    except subprocess.TimeoutExpired as exc:
+        raise GitMetadataUnavailable(
+            f"'git log' a depasse le delai de {GIT_LOG_TIMEOUT_SECONDS}s "
+            f"(cwd={REPO_ROOT})"
+        ) from exc
+    except FileNotFoundError as exc:
+        raise GitMetadataUnavailable(
+            f"executable 'git' introuvable (cwd={REPO_ROOT})"
+        ) from exc
+
+    elapsed = time.monotonic() - started
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip().replace("\n", " | ")[:500]
+        raise GitMetadataUnavailable(
+            f"'git log' a rendu rc={result.returncode} en {elapsed:.1f}s "
+            f"(cwd={REPO_ROOT}) -- stderr: {stderr or '(vide)'}"
+        )
 
     metadata: dict[str, dict] = {}
     current_date = ""
     current_email = ""
     current_subject = ""
-    prefix = "MyIA.AI.Notebooks/"
+    prefix = f"{GIT_LOG_PATHSPEC}/"
 
     for line in result.stdout.split("\n"):
         if line.startswith("COMMIT:"):
@@ -139,6 +203,10 @@ def build_git_metadata() -> dict[str, dict]:
                     "issues_prs": [f"#{n}" for n in issues[:5]],
                 }
 
+    # Emitted on every run so a healthy pass is legible too: a low
+    # "Preserved curated fields" count only means something next to the number
+    # of notebooks git actually dated here.
+    print(f"Git metadata: {len(metadata)} notebooks dates en {elapsed:.1f}s")
     return metadata
 
 
@@ -1560,11 +1628,41 @@ def main():
         "--git-tracked-only", action="store_true",
         help="Only include notebooks tracked by git (for CI consistency)",
     )
+    parser.add_argument(
+        "--allow-degraded-git", action="store_true",
+        help=(
+            "Generate even when 'git log' fails, leaving git metadata empty. "
+            "Without it a git failure aborts, rather than publishing a catalog "
+            "whose scientific_review silently reads UNREVIEWED (#14831)."
+        ),
+    )
     args = parser.parse_args()
 
     scan_exclusions: Counter[str] = Counter()
     pedagogical = not args.all
-    git_meta = build_git_metadata()
+    try:
+        git_meta = build_git_metadata()
+    except GitMetadataUnavailable as exc:
+        print(f"ERREUR: metadonnees git indisponibles -- {exc}", file=sys.stderr)
+        print(
+            "  Sans elles, chaque notebook perd last_validation/last_validator, "
+            "scientific_review retombe a UNREVIEWED, et _merge_curated_fields "
+            "restaure justement les deux champs qui auraient revele la panne "
+            "(#14831). Le catalogue produit serait vert et faux.",
+            file=sys.stderr,
+        )
+        if not args.allow_degraded_git:
+            print(
+                "  Abandon sans ecrire de catalogue. Utiliser --allow-degraded-git "
+                "pour generer malgre tout (hors depot git, par exemple).",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        print(
+            "  --allow-degraded-git: poursuite avec des metadonnees git vides.",
+            file=sys.stderr,
+        )
+        git_meta = {}
     forensic_meta = build_forensic_metadata()
     head_sha = get_head_sha()
     # Merge forensic metadata into git_meta (forensic wins on overlap for forensic-only keys)
