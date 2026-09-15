@@ -5,6 +5,9 @@ name: Paragraph Length Advisory
 # commit 76d7a5bc, no guard caught it). The signal: any markdown prose
 # paragraph > 2000 chars on a *single* run of non-empty lines, after
 # stripping code fences / tables / headings / HTML comments (CATALOG-STATUS).
+# A list ITEM is measured on its own: a run of contiguous items is split
+# item by item, never summed into one block (#15512 -- six MANIFEST
+# provenance fields, each <= 1600 c, summed to 3457 c and fired).
 #
 # ADVISORY, never blocking at this stage (decision user 2026-09-10). The
 # job ALWAYS exits 0. The actionable payload is the `paragraph-length` LABEL,
@@ -21,6 +24,14 @@ name: Paragraph Length Advisory
 # These 42 pre-existing files are NOT corrected here -- sweep is its own
 # follow-up issue, tracked separately. This PR only adds the organ that
 # SHOULD HAVE CAUGHT the Probas paragraph in #15405.
+#
+# Re-count 2026-09-15 (#15512), same corpus definition (`git ls-files
+# '*.md'`), after the per-item segmentation: 375 blocks / 124 files ->
+# 157 blocks / 30 files, with the 12 prose-wall files unchanged (0 lost,
+# 0 newly flagged, 94 files de-flagged). The residual is real signal:
+# 12 raw `Roo-Code/**/roo_task_*.md` transcripts (structurally legitimate
+# walls, already out of scope in #15512) + 9 genuine multi-line prose
+# paragraphs. The 2000 threshold itself is unchanged.
 
 on:
   pull_request:

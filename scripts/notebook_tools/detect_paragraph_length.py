@@ -21,9 +21,12 @@ Le seuil 2000 est choisi pour :
 
 Signal : tout bloc contigu de lignes non-vides, en dehors de fences de
 code (``` ou ~~~), de lignes de tableau markdown (commencant par `|`) et
-de titres (`#`, `##`, ...). Listes, blockquotes et paragraphes ordinaires
-comptent comme bloc -- un item de liste de 10k caracteres est un mur
-aussi.
+de titres (`#`, `##`, ...). Blockquotes et paragraphes ordinaires
+comptent comme bloc, et **un item de liste de 10k caracteres est un mur
+aussi** -- mais mesure **seul** : un run d'items contigus est segmente
+item par item, jamais somme en un bloc unique (#15512 : six champs de
+provenance d'un MANIFEST, chacun <= 1600 c, sommaient a 3457 c et
+declenchaient un finding).
 
 Codes de retour : 0 = clean ; 1 = fichier illisible/introuvable ou scan
 vacuue (aucun bloc eligible) ; 2 = findings (avec --fail-on-findings).
@@ -31,6 +34,11 @@ vacuue (aucun bloc eligible) ; 2 = findings (avec --fail-on-findings).
 Detection : stdlib uniquement (regex). O(n_lignes) par fichier, ~1 ms
 pour 1000 lignes. Voir scripts/notebook_tools/tests/fixtures/
 paragraph_wall_md.md pour les cas fondateur.
+
+Re-mesure 2026-09-15 (#15512) apres cette segmentation : 375 blocs /
+124 fichiers -> 157 blocs / 30 fichiers sur `git ls-files '*.md'`, avec
+les 12 fichiers de vrais murs de prose a l'identique (0 perdu, 0
+nouveau). Le seuil 2000 reste celui de la calibration du 2026-09-10.
 """
 
 from __future__ import annotations
@@ -95,6 +103,18 @@ def iter_paragraphs(text: str) -> list[tuple[int, int, str]]:
     rompent pas un paragraphe legitime -- elles sont ignorees
     (reconstructibles via leur contexte).
 
+    **Un item de liste est un bloc a lui seul** : un run d'items contigus
+    (`- a` / `- b` / `- c`, sans ligne vide entre eux) est segmente item
+    par item, pas somme en un bloc unique -- de meme qu'une phrase
+    d'introduction suivie d'items (la phrase d'introduction ferme le bloc
+    precedent). Markdown rend ces lignes en `<li>` distincts ; les
+    additionner mesure une longueur qu'aucun lecteur ne parcourt d'un
+    trait. C'est l'intention documentee du module (« un item de liste de
+    10k caracteres est un mur aussi » -- *un* item) ; sans cette
+    segmentation, six champs de provenance d'un `assets/readme/
+    MANIFEST.md` (chacun <= 1600 c) declenchaient un finding a 3457 c
+    (#15512, faux positifs mesures).
+
     Longueur = len(text) du paragraphe nettoye, sans les nouvelles
     lignes de separation. Premiere ligne rapportee = 0-indexe.
     """
@@ -128,6 +148,13 @@ def iter_paragraphs(text: str) -> list[tuple[int, int, str]]:
             continue
         if not buf:
             buf_start = i
+        elif LIST_ITEM_RE.match(line):
+            # Un item de liste ouvre toujours un bloc : soit l'item suivant
+            # d'un run, soit le premier item apres une phrase d'introduction.
+            # Les deux cas sont de la structure, pas de la prose continue.
+            paragraphs.append((buf_start, _para_len(buf), "\n".join(buf)))
+            buf_start = i
+            buf = []
         buf.append(line)
     if buf:
         paragraphs.append((buf_start, _para_len(buf), "\n".join(buf)))
@@ -137,10 +164,11 @@ def iter_paragraphs(text: str) -> list[tuple[int, int, str]]:
 def _para_len(lines: list[str]) -> int:
     """Longueur d'un paragraphe en caracteres (hors separateurs internes).
 
-    Les lignes vides inserees pour skipper la structure comptent quand
-    meme (sinon un mur de 9 paragraphes-listes en para unique serait
-    invisible). On mesure la longueur totale du bloc, pas seulement la
-    prose -- c'est l'experience de lecture qu'on cherche a borner.
+    On mesure la longueur totale du bloc, prose et structure intercalee
+    comprises -- c'est l'experience de lecture qu'on cherche a borner, et
+    un bloc reste un bloc meme si un titre s'y glisse. La borne porte sur
+    le bloc tel que segmente par `iter_paragraphs` : un paragraphe de
+    prose, ou **un** item de liste (les runs d'items sont decoupes).
     """
     return sum(len(line) for line in lines)
 
@@ -352,13 +380,36 @@ def self_test() -> int:
     if detect(vacuous):
         failures.append("scan non vacu : structure seule signalee comme prose")
 
+    # 6. FAUX POSITIF #15512 -- un run d'items de liste courts n'est PAS un
+    # mur. Six champs de provenance d'un `assets/readme/MANIFEST.md`, chacun
+    # sous le seuil, sommaient a 3457 c et declenchaient un finding. La
+    # preuve d'appartenance est verifiee ici : sans la segmentation
+    # par-item, ce texte DOIT depasser le seuil (sinon le controle est
+    # vacuement vert).
+    field = "- **Champ** : " + ("mesure " * 80) + "\n"  # ~580 c, sous 2000
+    run = field * 6
+    if sum(len(l) for l in run.splitlines()) <= MAX_PARAGRAPH_LEN:
+        failures.append("controle FP #15512 vacue : le run ne depasse pas "
+                        "le seuil, il ne prouve rien")
+    if detect(run):
+        failures.append("FAUX POSITIF #15512 : un run de 6 items courts "
+                        "(chacun < seuil) declenche encore un finding")
+
+    # 7. TEMOIN POSITIF de la segmentation -- **un** item de liste long tire
+    # toujours (intention documentee : « un item de liste de 10k caracteres
+    # est un mur aussi »).
+    if not detect("- **Champ** : " + ("mesure " * 400) + "\n"):
+        failures.append("item de liste unique > seuil NON signale : la "
+                        "segmentation par-item a supprime un vrai positif")
+
     if failures:
         print("SELF-TEST FAILED")
         for f in failures:
             print(f"  - {f}")
         return 1
     print(f"self-test OK : temoin fondateur tire ({wall[0]['chars']} c), "
-          f"post-fix muet, seuil exact, fences/structure ignorees.")
+          f"post-fix muet, seuil exact, fences/structure ignorees, "
+          f"run d'items courts muet, item long signale.")
     return 0
 
 

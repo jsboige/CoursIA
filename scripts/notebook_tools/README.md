@@ -261,6 +261,11 @@ son extrait. Ignore les fences code (``` / ~~~), les lignes de tableau
 (`|`), les titres (`#` ... `######`), les commentaires HTML (`<!--
 ... -->` dont le marqueur CATALOG-STATUS) et les directives Sphinx.
 Listes et blockquotes comptent (un item de liste de 10k c est un mur).
+**Un item de liste est un bloc a lui seul** : un run d'items contigus
+(`- a` / `- b` / `- c`, sans ligne vide) est mesure item par item, jamais
+somme en un bloc unique (markdown les rend en `<li>` distincts) -- cf
+#15512, ou six champs de provenance d'un `assets/readme/MANIFEST.md`
+(chacun <= 1600 c) declenchaient un finding a 3457 c.
 
 Incident fondateur : le README Probas (PR #15405, commit `76d7a5bc`,
 remarque user 2026-09-10) livrait un paragraphe unique de **3336 c / 24
@@ -270,6 +275,16 @@ Calibration 2026-09-10 (rglob sur 791 `*.md` / 23049 paragraphes) :
 p50=79, p75=274, p90=536, p95=760, p99=1437, max=13409. Le seuil 2000
 capture l'incident avec marge et signale 42 fichiers / 84 paragraphes
 (les autres sont de la prose technique legitime, sweeps a venir).
+
+> **Re-mesure #15512 (2026-09-15)** apres la segmentation par-item : sur le
+> corpus suivi (`git ls-files '*.md'`), **375 blocs / 124 fichiers -> 157
+> blocs / 30 fichiers**. Les vrais murs de prose sont **inchanges : 12
+> fichiers** (ensemble identique, verifie en chargeant la version pre-fix) ;
+> **0 vrai positif perdu, 0 fichier nouvellement signale**, **94 fichiers
+> de-signales**. Le residu restant est legitime : 12 transcripts bruts
+> `Roo-Code/**/roo_task_*.md` (murs structurellement legitimes, deja hors
+> scope de #15512) et 9 paragraphes de prose reellement longs multi-lignes
+> (18 et 26 lignes physiques continues), qui restent de vrais positifs.
 
 ```bash
 python scripts/notebook_tools/detect_paragraph_length.py README.md              # human-readable
