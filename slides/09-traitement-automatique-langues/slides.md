@@ -346,7 +346,7 @@ vs.
 
 **Solution** : stocker les résultats intermédiaires → **Chart parsing**, **CYK**.
 
-*Notebooks : [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) (§4 : parsing par **dépendances universelles** sur corpus français — l'autre grande tradition du parsing, où l'arbre porte les relations de tête à subordonné plutôt que les syntagmes) · CYK/PCFG constituant : gap du dépôt confirmé (aucun notebook, mesures au mot près)*
+*Notebooks : [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) (§4 : **dépendances syntaxiques** sur corpus français — étiquettes `nsubj`/`obj`/`obl:mod`/`det`, le jeu de relations d'Universal Dependencies — l'autre grande tradition du parsing, où l'arbre porte les relations de tête à subordonné plutôt que les syntagmes) · CYK/PCFG constituant : gap du dépôt confirmé (aucun notebook, mesures au mot près)*
 
 *Figure historique (Chart parsing)* : extrait du PPTX original 2018.
 
