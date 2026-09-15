@@ -207,10 +207,19 @@ def _first_grain_line(text: str | None) -> str | None:
     ``pr_number: None`` on it -- a line without a `<TIER>/<genre> #N` slot
     is structurally not a declaration, and returning `None` preserves the
     safety property.
+
+    Fenced blocks are masked BEFORE the line search (#15932), and with the
+    NARROW mask (`gt.mask_fenced_blocks`, inline spans kept): a reproduction
+    block that quotes a defective tag line verbatim is a citation, and when
+    it sits ABOVE the real tag line it used to win the "first line" race --
+    the guard then validated the quote's target as if it were the author's
+    `prev:` and red-lit the PR on a predecessor it never pointed at (#15925).
+    Masking inline spans here instead would break the backtick-wrapped tag
+    line that `parse_prev` relies on, hence the split surface.
     """
     if not text:
         return None
-    for line in text.splitlines():
+    for line in gt.mask_fenced_blocks(text).splitlines():
         if "Grain:" in line:
             return line
     return None

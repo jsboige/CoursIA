@@ -1077,10 +1077,17 @@ jobs:
             echo "::warning::closingIssuesReferences fetch failed; falling back to regex finder (#10323)."
           fi
 
+          # Le shell par defaut du runner est `bash -e -o pipefail` ; le
+          # `set -uo pipefail` ci-dessus n'y retire PAS -e. Sans le guard
+          # `&& RC=0 || RC=$?` (la convention des gardes freres
+          # variation_prev_guard / variation_adjacency_guard ci-dessus), un
+          # exit non nul du helper (1 = BLOCK legitime, 2 = caller error)
+          # tuait le step AVANT l'affichage du verdict et le commentaire de
+          # resolution (RELEASED/OVERRIDE/48 h) : blocage muet, diagnostique
+          # a la main sur #15846.
           python3 scripts/ci/lane_claim_required.py \
             --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
-            > /tmp/verdict.json 2>/tmp/verdict.err
-          RC=$?
+            > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"

@@ -4,7 +4,7 @@ Chaque module FR de `Grothendieck/` y figure ; les siblings `_en` (miroir
 anglais, EPIC #4980) n'y figurent jamais — ils restent construits par les
 `globs := #[`Grothendieck.*`]` du lakefile, qui auto-découvrent les deux
 langues. Un index bilingue de 150 entrées ne serait plus un index. Tenu par
-`scripts/lean/tests/test_grothendieck_umbrella.py`.
+`scripts/lean/tests/test_check_grothendieck_umbrella.py`.
 -/
 import Grothendieck.Adjunction
 import Grothendieck.Calibration
@@ -68,6 +68,7 @@ import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
+import Grothendieck.Skyscraper
 import Grothendieck.Spaces
 import Grothendieck.SpacesMathlib
 import Grothendieck.SpacesSubcanonical
