@@ -244,6 +244,153 @@ def test_child_failure_maps_to_exit_1():
         assert res["status"] == "child_failed"
 
 
+# ---------------------------------------------------------------------------
+# Confinement : `resume_process` compte les threads SUSPENDUS, pas les ouvrables
+# ---------------------------------------------------------------------------
+
+_WINDOWS_ONLY = pytest.mark.skipif(
+    os.name != "nt",
+    reason=(
+        "CREATE_SUSPENDED et le suspend count rendu par ResumeThread n'ont "
+        "pas d'equivalent POSIX : le test y mesurerait sa propre sonde "
+        "(reserve 2, arbitrage #15666)."
+    ),
+)
+
+
+@_WINDOWS_ONLY
+def test_resume_process_does_not_count_a_root_never_suspended():
+    """Controle negatif du compteur de reprise (#15900).
+
+    Un root lance SANS ``CREATE_SUSPENDED`` n'a aucun thread a reprendre : le
+    compteur doit rendre 0, sinon la garde fail-closed ``if n_resumed == 0:``
+    ne se declenche jamais et le run publie un confinement qui n'a pas eu
+    lieu. Le compteur precedent rendait ici le nombre de threads simplement
+    OUVRABLES (mesure : 3 sur un enfant ``python -c time.sleep``).
+    """
+    proc = subprocess.Popen(SLEEP_CMD)
+    try:
+        time.sleep(0.5)
+        assert le.resume_process(proc.pid) == 0, (
+            "un root jamais suspendu ne compte aucun thread repris")
+    finally:
+        proc.kill()
+        proc.wait(timeout=30)
+
+
+@_WINDOWS_ONLY
+def test_resume_process_counts_a_suspended_root_and_really_resumes_it():
+    """Controle positif : un root ``CREATE_SUSPENDED`` compte >= 1 ET repart.
+
+    La seconde moitie est ce qui distingue « le compteur a vu une vraie
+    suspension » de « le compteur compte encore n'importe quel thread » : le
+    root ne peut atteindre sa sortie que si la reprise a effectivement eu
+    lieu (un processus suspendu ne se termine pas tout seul).
+    """
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(0.3)"],
+        creationflags=le.CREATE_SUSPENDED,
+    )
+    try:
+        time.sleep(0.5)
+        assert le.resume_process(proc.pid) >= 1, (
+            "un root reellement suspendu doit etre compte")
+        assert proc.wait(timeout=30) == 0, (
+            "le root suspendu devait repartir apres reprise")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=30)
+
+
+@pytest.mark.parametrize("prev,expected", [
+    (0, False),           # suspend count precedent 0 : thread seulement OUVRABLE
+    (1, True),            # precedent 1 : le thread etait reellement suspendu
+    (2, True),            # suspendu deux fois : toujours un vrai suspendu
+    (0xFFFFFFFF, False),  # (DWORD)-1 : echec de ResumeThread
+    (-1, False),          # le defaut c_int SIGNE : le compteur inerte d'avant #15900
+])
+def test_resume_prev_count_discriminates(prev, expected):
+    """Pin portable du discriminant #15900 (reserve Hermes 2026-09-13 : aucun
+    siege CI n'execute les tests ``_WINDOWS_ONLY`` -- la non-regression ne
+    doit pas tenir sur la seule mesure d'auteur). La discrimination des
+    valeurs rendues par ResumeThread est la cause racine : avec le restype
+    par defaut (signe), l'echec arrive en -1 et le compteur ne distingue
+    plus un suspendu d'un echec d'appel."""
+    assert le._prev_marks_suspended(prev) is expected
+
+
+def test_unresumed_root_aborts_killing_the_job_before_the_verdict(monkeypatch):
+    """Pin portable de la garde fail-closed (meme reserve) : pour
+    ``n_resumed == 0``, le statut vaut internal-error/EXIT_INTERNAL, le
+    backend porte le suffixe ``-resume-failed``, ET l'effet de bord de nettoyage
+    a lieu AVANT le rendu -- terminate_job d'abord, kill_pids ensuite. C'est
+    l'assertion discriminante « le refus precede l'effet de bord ». Sans
+    processus : la garde est extraite et pilotee avec des doublons."""
+    order = []
+
+    class FakeJob:
+        ok = True
+        handle = 1
+
+        def terminate(self):
+            order.append("terminate-job")
+
+    def fake_kill(pids):
+        order.append(("kill-pids", list(pids)))
+
+    monkeypatch.setattr(le, "kill_pids", fake_kill)
+    monkeypatch.setattr(le, "descendants_of", lambda pid: {pid + 1, pid + 2})
+    monkeypatch.setattr(le.time, "sleep", lambda _s: None)
+
+    result = {"backend": "windows-job"}
+    le._abort_unresumed_root(result, FakeJob(), root_pid=100)
+
+    assert result["status"] == "internal-error"
+    assert result["exit_code"] == le.EXIT_INTERNAL
+    assert result["backend"] == "windows-job-resume-failed"
+    assert "resumed 0 threads" in result["reason"]
+    assert order == [
+        "terminate-job",
+        ("kill-pids", [102, 101]),  # tri desc : les enfants profonds d'abord
+    ], "le job doit mourir avant le kill des descendants, avant le rendu"
+
+
+def test_resume_restype_declaration_pinned_in_source():
+    """Pin CI-executable de la DECLARATION restype (item 2 de l'acceptance
+    #16195 : un restype remis a ``c_int`` doit faire rougir au moins un
+    organe). Les pins comportementaux (``test_resume_prev_count_discriminates``
+    et les sondes ``_WINDOWS_ONLY``) ne rougissent PAS sur ce revert : le
+    ``-1`` signe est deja rejete par ``_prev_marks_suspended``, et un runner
+    Linux n'execute jamais l'appel Win32. Seule la declaration est l'organe
+    -- ce pin source tourne sur chaque runner de ``scripts-tests.yml``."""
+    source = Path(le.__file__).read_text(encoding="utf-8")
+    assert "k32.ResumeThread.restype = ctypes.c_ulong" in source, (
+        "la declaration restype c_ulong de ResumeThread (#15940) a ete "
+        "retiree ou modifiee : un revert vers c_int lirait (DWORD)-1 en "
+        "signe et reouvrirait #15900")
+
+
+@_WINDOWS_ONLY
+def test_resume_thread_restype_declared_unsigned():
+    """Controle d'identite Windows vif (limite declaree par la review Hermes
+    de #15940 : « je n'ai pas execute la sonde Windows, aucun poste Windows
+    accessible depuis ce siege »). Apres un passage reel de ``resume_process``,
+    le kernel32 partage porte bien restype ``c_ulong`` : le revert ``c_int``
+    rend ce controle rouge meme si les threads suspendus se comptent encore."""
+    import ctypes
+
+    proc = subprocess.Popen(SLEEP_CMD)
+    try:
+        time.sleep(0.5)
+        le.resume_process(proc.pid)
+        assert ctypes.windll.kernel32.ResumeThread.restype is ctypes.c_ulong, (
+            "ResumeThread.restype doit rester c_ulong apres resume_process")
+    finally:
+        proc.kill()
+        proc.wait(timeout=30)
+
+
 @pytest.mark.skipif(
     os.name != "nt",
     reason=(
