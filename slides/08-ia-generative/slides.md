@@ -733,7 +733,52 @@ flowchart LR
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb">15_Tree_of_Thoughts_Search.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb">12_Test_Time_Scaling.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb">15_Tree_of_Thoughts_Search.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb">16_Scaling_Test_Time_Compute.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
+
+---
+
+# Test-time scaling : quatre moteurs
+
+<v-clicks at="1">
+
+- **Best-of-N** — *N* tirages indépendants, on retient celui que le vérificateur valide. Budget : *N* appels **parallèles**. Vise l'erreur **aléatoire** : les tirages fautifs ne se répètent pas identiquement, le vote les annule.
+- **Réflexion** — générateur → critique → mémoire : on remontre au modèle *quel* test échoue et *pourquoi*, pour qu'il en corrige la cause. Budget : 2 à 3× les appels. Vise l'erreur **systématique**, qu'un vote ne peut pas corriger.
+- **Tree-of-Thoughts** — recherche sur des états partiels, avec évaluation et élagage. Budget variable. Pour les problèmes **combinatoires** où un état intermédiaire peut être noté.
+- **Routeur adaptatif** — estime la difficulté, escalade vers le moteur adapté, et sait **s'arrêter**. Pour les cas où la structure d'erreur n'est pas connue à l'avance.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb">12_Test_Time_Scaling.ipynb</a>.</p>
+
+---
+
+# La structure d'erreur décide du moteur
+
+<v-clicks at="1">
+
+- **Un vote corrige l'aléatoire, pas le systématique.** Si le modèle se trompe *toujours de la même façon*, échantillonner davantage reproduit la même erreur : il n'y a rien à moyenner.
+- **Ce que le banc d'essai du notebook montre** — sur ses trois problèmes, le Best-of-N n'améliore **aucun** score : deux sont déjà résolus du premier coup, et sur le troisième l'échec est systématique. Le coût, lui, croît avec *N*.
+- **La Réflexion seule ne suffit pas non plus** — même en nommant au modèle le test qui échoue, il peut persister dans la même stratégie. Le gain dépend de la **capacité du modèle à exploiter le signal**, pas du seul calcul dépensé.
+- **Conséquence pratique** — la structure d'erreur se **mesure** sur votre tâche et votre modèle avant de choisir un moteur. Le cadre théorique oriente ; il ne dispense pas de la mesure.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb">12_Test_Time_Scaling.ipynb</a>.</p>
+
+---
+
+# La frontière compute-optimale (Snell 2024)
+
+<v-clicks at="1">
+
+- **L'idée** — le calcul d'inférence se met à l'échelle comme le calcul d'entraînement, mais la stratégie **optimale dépend du régime** : échantillonner large en parallèle sur les problèmes faciles, chercher séquentiellement avec retour du vérificateur sur les difficiles.
+- **Ce que le notebook mesure** — une suite graduée à réponse vérifiable, l'estimateur *pass@k* non biaisé par bucket, puis, **à budget égal**, Best-of-N parallèle contre Réflexion séquentielle.
+- **Plafond des buckets faciles** — quand *pass@1* est déjà haut, le scaling parallèle n'ajoute presque rien : le signal vit sur le bucket **difficile**.
+- **Limites revendiquées (G.2)** — petit *n*, petit *k*, petit modèle, et **échantillonnage non seedé** : les valeurs exactes bougent d'un run à l'autre. Ce qui est démontré et transférable est la **méthodologie**, pas un chiffre.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb">16_Scaling_Test_Time_Compute.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
 
 ---
 
