@@ -278,6 +278,177 @@ def test_failed_delete_is_reported_not_swallowed(monkeypatch):
     assert len(warnings) == 1 and "404" in warnings[0], warnings
 
 
+# ---------------------------------------------------------------------------
+# Second review surface : une passe emise en COMMENTAIRE d'issue (#16284).
+#
+# Le perimetre `reviews[]` seul rendait l'organe aveugle a un mode d'emission
+# STRUCTUREL du cluster : les personas emettent leur verdict en commentaire
+# quand elles sont contraintes en jetons (« contrainte token : COMMENT only
+# — opener `jsboige`, cap self-review #3219 », verbatim des fils).
+#
+# Les deux fixtures ci-dessous sont les corps REELS des deux cas mesures le
+# 2026-09-15 ; l'organe avait publie « aucune review » 9 min et 6 min APRES
+# la passe, et les deux PR portent encore le label.
+# ---------------------------------------------------------------------------
+
+# Reel #16133 — clusterManager-Myia, 2026-09-14T12:29:47Z (tronque a la 3e
+# ligne, qui suffit : le tag ouvre le paragraphe).
+_REAL_PASS_CONCERNS = (
+    "VERDICT: CONCERNS\n"
+    "\n"
+    "**[Hermes]** — #16133 — reproduction firsthand sur head `250707e2` "
+    "(fetch raw du notebook au ref branche), 3 artefacts :\n"
+)
+# Reel #16145 — clusterManager-Myia, 2026-09-14T12:31:38Z.
+_REAL_PASS_LGTM = (
+    "VERDICT: LGTM\n"
+    "\n"
+    "**[Hermes]** — #16145 — reproduction firsthand sur head `f230ac1e` "
+    "(fetch raw du notebook + patch README au ref branche), 3 artefacts :\n"
+)
+
+
+def _comment(login: str, body: str) -> dict:
+    """Une entree de `gh pr list --json comments` (forme mesuree : author.login)."""
+    return {"author": {"login": login}, "body": body}
+
+
+def _pr_with_comments(additions: int, comments: list[dict]) -> dict:
+    return {**_pr(additions, 0), "comments": comments}
+
+
+def test_review_pass_in_comment_lifts_the_flag():
+    """#16133 : verdict CONCERNS en commentaire -> clear, plus flag."""
+    pr = _pr_with_comments(2531, [_comment("clusterManager-Myia", _REAL_PASS_CONCERNS)])
+    assert classify(pr) == "clear"
+
+
+def test_review_pass_approval_in_comment_lifts_the_flag():
+    """#16145 : verdict LGTM en commentaire -> clear.
+
+    Meme defaut, surface APPROBATION -- le cas qui condamne un predicat bati
+    sur `nits.classify()` (cf. la garde ci-dessous).
+    """
+    pr = _pr_with_comments(1705, [_comment("clusterManager-Myia", _REAL_PASS_LGTM)])
+    assert classify(pr) == "clear"
+
+
+def test_classify_alone_would_miss_the_approval():
+    """Garde du choix d'implementation -- le piege, en executable.
+
+    `nits.classify()` attrape CONCERNS (``BOT-CONCERN``) mais rend **None**
+    sur LGTM : cet organe classe les RESERVES, pas les passes. Un predicat
+    bati dessus fermerait #16133 en laissant #16145 faux -- le defaut du
+    ticket, deplace sur la surface des approbations.
+    """
+    assert rc.nits.classify("clusterManager-Myia", _REAL_PASS_CONCERNS) == "BOT-CONCERN"
+    assert rc.nits.classify("clusterManager-Myia", _REAL_PASS_LGTM) is None
+    # ...et pourtant c'est une passe, des deux cotes :
+    for body in (_REAL_PASS_CONCERNS, _REAL_PASS_LGTM):
+        assert rc.review_pass_in_comments([_comment("clusterManager-Myia", body)])
+
+
+def test_bare_login_verdict_is_not_a_review_pass():
+    """Un commentaire NU d'un login partage ne prouve pas qu'on a relu.
+
+    `jsboige` est l'identite de poussee de toutes les lanes (#13316), donc un
+    ``VERDICT: LGTM`` nu sous ce login peut etre une lane qui parle de sa
+    propre PR. Le canon ne l'admet que porteur d'un marqueur ; on suit le
+    canon plutot que d'ouvrir un second juge.
+    """
+    pr = _pr_with_comments(
+        1000, [_comment("jsboige", "VERDICT: LGTM\n\nOK pour moi.\n")])
+    assert classify(pr) == "flag"
+
+
+def test_own_remediation_comment_never_self_exempts():
+    """Le commentaire de l'organe n'est JAMAIS une passe de review.
+
+    Garde d'auto-desactivation : le texte de remediation nomme les reviewers
+    (« Hermes, ai-01, ou review humaine »). Le jour ou il les nommerait entre
+    crochets, l'organe se reconnaitrait comme revu et ne poserait plus jamais
+    son label -- en silence.
+    """
+    own = f"{rc.COMMENT_MARKER_START}\n{rc.REMEDIATION}\n{rc.COMMENT_MARKER_END}"
+    assert rc.review_pass_in_comments([_comment("github-actions[bot]", own)]) is False
+    # Controle : le MEME texte, sans nos marqueurs mais coiffe d'un tag de
+    # persona -- la garde tombe, la passe est vue. C'est bien le marqueur de
+    # l'organe, et non son auteur, qui l'exempte.
+    tagged = "**[Hermes]**\n" + rc.REMEDIATION
+    assert rc.review_pass_in_comments([_comment("clusterManager-Myia", tagged)]) is True
+
+
+def test_untagged_persona_comment_is_not_a_pass():
+    """Mesure qui a tranche le predicat : le login SEUL compterait une LEVEE.
+
+    Sur les 121 PR ouvertes du 2026-09-15, ``clusterManager-Myia`` a commente
+    10 fois : 9 passes portant le tag, et 1 sans tag -- #15795, une levee
+    (« Levee a la tete exacte ... -- review 5202580554 »).
+
+    Honnetement : sur ce corpus les deux predicats rendent le **meme**
+    verdict, parce que cette levee tombe sur une PR sous le seuil. Le test
+    ne pretend donc pas que le login coute quelque chose aujourd'hui -- il
+    fige la classe : une levee non taggee n'est pas une passe, et le jour ou
+    elle tombe sur une PR large non revue, le login la declarerait couverte
+    (le trou de #11232, invisible). Le tag est requis, comme le demande le
+    canon.
+    """
+    lift = ("Levée à la tête exacte `284d067ee6265d99e42590897d8c38597c47cca4`"
+            " — review `5202580554`.\n")
+    pr = _pr_with_comments(1000, [_comment("clusterManager-Myia", lift)])
+    assert classify(pr) == "flag"
+
+
+def test_backticked_tag_is_a_citation_not_a_pass():
+    """`` `[Hermes]` `` cite est une CITATION, pas une emission (#13030).
+
+    C'est la raison exacte pour laquelle on importe le motif durci du canon au
+    lieu du `has_marker()` public : ce dernier est un `in` de sous-chaine et
+    compterait la citation. Le test fige les deux comportements cote a cote --
+    si le public devenait utilisable, ce test le dirait.
+    """
+    quoted = "Le ticket dit : `[Hermes]` a rendu un verdict CONCERNS.\n"
+    assert rc.nits.has_marker(quoted, ("[Hermes]",)) is True      # le public matcherait
+    assert rc.nits._PERSONA_MARKERS_RE.search(quoted) is None     # le durci non
+    pr = _pr_with_comments(1000, [_comment("clusterManager-Myia", quoted)])
+    assert classify(pr) == "flag"
+
+
+def test_bold_persona_tag_counts():
+    """Un en-tete en GRAS compte (#14503, PR #14548).
+
+    Une variante `(?:^|\\s)` du motif exigeait une espace avant `[` : le `*`
+    du gras suffisait alors a effacer la passe entiere du radar.
+    """
+    assert rc.review_pass_in_comments(
+        [_comment("clusterManager-Myia", "**[NanoClaw]** structural review\n")]) is True
+
+
+def test_comment_pass_does_not_override_the_skips():
+    """L'ordre des verdicts tient : un draft reste un draft.
+
+    Les skips precedent le seuil ET les surfaces de review ; une passe en
+    commentaire ne doit pas transformer un hors-perimetre en couvert.
+    """
+    draft = {**_pr(9999, 0, is_draft=True),
+             "comments": [_comment("clusterManager-Myia", _REAL_PASS_LGTM)]}
+    assert classify(draft) == "skip_draft"
+    off_base = {**_pr(9999, 0, base="feature/x"),
+                "comments": [_comment("clusterManager-Myia", _REAL_PASS_LGTM)]}
+    assert classify(off_base) == "skip_base"
+
+
+def test_missing_comments_key_is_not_a_crash():
+    """Projection anterieure / fixture sans `comments` : pas de passe, pas d'exception.
+
+    Le cron ne doit pas tomber parce qu'une forme de payload a change -- et
+    les fixtures historiques du haut de ce fichier n'ont pas la cle.
+    """
+    assert rc.review_pass_in_comments(None) is False
+    assert rc.review_pass_in_comments([]) is False
+    assert classify(_pr(1000, 0)) == "flag"
+
+
 def test_label_constants_within_github_api_limits():
     # 422 muet du run 2026-08-29 : LABEL_DESC faisait 189 chars, la limite
     # REST est 100 -- gh label create echouait en silence et le payload

@@ -19,11 +19,13 @@ is the absence of a review and the only remedy is to obtain one. On each
 sweep it:
 
   - flags OPEN non-draft PRs (base=main) with ``additions > THRESHOLD`` AND
-    ``reviews[]`` empty (no bot, no human) ;
+    no review on EITHER surface -- ``reviews[]`` OR a persona-attributed
+    review pass in the issue comments (cf. ``review_pass_in_comments``) ;
   - labels ``large-pr-no-review`` (regular) and posts a one-shot comment
     (marker-guarded, no spam on re-runs) ;
-  - removes the label when a review arrives (or the diff shrinks below the
-    threshold), so the label is a current-state signal, not a sticky one.
+  - removes the label on the next sweep once a review arrives (or the diff
+    shrinks below the threshold), so the label is a current-state signal,
+    not a sticky one.
 
 Acceptance mirrors the issue body: the signal is the **absence**, not the
 content. A check that posted ``rien trouve`` on a PR with no review would
@@ -58,7 +60,17 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 from typing import Iterable
+
+# Le motif qui identifie une voix de persona (`[Hermes]`, `[NanoClaw]`) vit
+# dans l'organe canonique `check_unaddressed_nits`, deja importe ainsi par
+# `audit/nit_lift_authorship.py`. On ne le redefinit PAS : il a ete durci par
+# incidents (un tag en backtick est une CITATION, #13030 ; un en-tete en gras
+# `**[NanoClaw]**` doit compter, #14503) et une copie locale divergerait en
+# silence. Cf. `review_pass_in_comments`.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import check_unaddressed_nits as nits  # noqa: E402
 
 # The label is the *signal* -- a current-state flag the reviewer/coordinator
 # reads. Color is red (the absence is a coverage hole, not a failure).
@@ -101,9 +113,10 @@ REMEDIATION = (
     "[`scripts/review_coverage.py`](../../scripts/review_coverage.py) "
     "porte par l'issue #11232. Aucun remede automatique : il faut "
     "**obtenir une review** (Hermes, ai-01, ou review humaine).\n\n"
-    "Le label sera **retire des qu'une review arrive** (ou que le diff "
-    "passe sous le seuil). Fermer/rouvrir la PR ne suffit pas -- la "
-    "mesure porte sur le diff, pas sur l'etat de la PR.\n\n"
+    "Le label est **retire au balayage suivant** (quotidien) des qu'une "
+    "review arrive -- dans ``reviews[]`` ou en commentaire de verdict -- ou "
+    "que le diff passe sous le seuil. Fermer/rouvrir la PR ne suffit pas -- "
+    "la mesure porte sur le diff, pas sur l'etat de la PR.\n\n"
     "Seuil, historique et exceptions : cf. "
     "[`docs/reference/review-coverage-threshold.md`]"
     "(../../docs/reference/review-coverage-threshold.md)."
@@ -112,11 +125,67 @@ REMEDIATION = (
 THRESHOLD_DEFAULT = 300
 
 
+def review_pass_in_comments(comments: Iterable[dict] | None) -> bool:
+    """Une passe de review a-t-elle ete emise en COMMENTAIRE d'issue ?
+
+    Le perimetre ``reviews[]`` seul rendait cet organe aveugle a un mode
+    d'emission **structurel** du cluster : une persona emet son verdict en
+    commentaire quand elle est contrainte en jetons (verbatim du fil :
+    « contrainte token : COMMENT only — opener `jsboige`, cap self-review
+    #3219 »). Mesure du 2026-09-15 sur le jeu labellise :
+
+    | PR | passe emise dans le fil | l'organe publiait |
+    |---|---|---|
+    | #16133 | ``VERDICT: CONCERNS`` + tag, 12:29:47Z | « aucune review » 12:38:21Z |
+    | #16145 | ``VERDICT: LGTM`` + tag, 12:31:38Z | « aucune review » 12:38:10Z |
+
+    **Le signal est le TAG, et lui seul** -- motif durci du canon, qui exclut
+    la citation en backtick (#13030) et admet l'en-tete en gras (#14503).
+
+    Ce qu'on ne compte PAS, et pourquoi -- chaque exclusion est mesuree :
+
+    - ``nits.classify()`` : cet organe classe les **reserves**, pas les
+      passes. Sur ces deux memes corps : ``VERDICT: CONCERNS`` ->
+      ``BOT-CONCERN`` mais ``VERDICT: LGTM`` -> ``None``. Un predicat bati
+      dessus fermerait #16133 en laissant #16145 faux -- le defaut meme que
+      ce correctif ferme, deplace sur la surface des approbations ;
+    - le **login** alias de persona, seul : sur les 121 PR ouvertes du
+      2026-09-15, ``clusterManager-Myia`` a commente 10 fois -- 9 passes
+      portant le tag, et 1 sans tag qui est une **levee**
+      (``#15795`` : « Levee a la tete exacte ... -- review 5202580554 »).
+      Ce n'est pas une passe. Honnetement : sur ce corpus les deux predicats
+      rendent le **meme** verdict (cette levee tombe sur une PR sous le
+      seuil), donc le login seul ne coute rien **aujourd'hui** -- mais la
+      classe non taggee existe et n'est pas une revue, et le jour ou une
+      telle levee tombe sur une PR large non revue, le login la declarerait
+      **couverte** : le trou de #11232 rendu invisible. Le canon demande le
+      marqueur, le login n'etant qu'un conjoint (#13316 : sans marqueur, un
+      login partage ne prouve pas qu'on a relu) ;
+    - notre **propre** commentaire, reconnu a ses marqueurs. Sans cette
+      garde, le jour ou le texte de remediation nommerait un tag entre
+      crochets, l'organe se reconnaitrait comme revu et ne poserait plus
+      jamais son label -- une auto-desactivation silencieuse.
+
+    ``comments`` : entree de ``gh pr list --json comments`` (``body`` lu seul).
+    ``None`` (projection anterieure, fixture) = pas de commentaires, jamais
+    une exception.
+    """
+    for comment in comments or []:
+        body = comment.get("body") or ""
+        if COMMENT_MARKER_START in body:
+            continue  # le notre -- ne s'auto-exempte jamais
+        if nits._PERSONA_MARKERS_RE.search(body):
+            return True
+    return False
+
+
 def classify(pr: dict, threshold: int = THRESHOLD_DEFAULT) -> str:
     """Classify a PR (as returned by ``gh pr view --json ...``).
 
     Returns one of:
-      - ``"flag"``     : PR exceeds threshold AND has no review (any author)
+      - ``"flag"``     : PR exceeds threshold AND has no review (any author,
+                         on either surface -- ``reviews[]`` or a
+                         persona-attributed review pass in the comments)
       - ``"clear"``    : PR is below threshold OR has at least one review
       - ``"skip_draft"``: PR is draft (excluded by design)
       - ``"skip_base"`` : PR base is not ``main`` (excluded by design)
@@ -138,6 +207,8 @@ def classify(pr: dict, threshold: int = THRESHOLD_DEFAULT) -> str:
         return "clear"
     if len(reviews) > 0:
         return "clear"
+    if review_pass_in_comments(pr.get("comments")):
+        return "clear"
     return "flag"
 
 
@@ -146,14 +217,20 @@ def fetch_open_prs(threshold: int) -> list[dict]:
 
     Why minimum JSON: ``gh pr list`` on a 800-PR repo with full payloads
     is slow and noisy. The classifier reads only ``number``, ``title``,
-    ``isDraft``, ``baseRefName``, ``additions``, ``reviews``. We use
-    ``--jq`` to project server-side and skip the rest.
+    ``isDraft``, ``baseRefName``, ``additions``, ``reviews``, ``comments``.
+    We use ``--jq`` to project server-side and skip the rest.
+
+    ``comments`` joined the projection with the second review surface
+    (#16284). Its cost is measured, not assumed: on 121 open PRs the sweep
+    went 4.7 s / 466 Ko -> 11.7 s / 1.67 Mo, once a day, on an advisory cron.
+    The alternative (a second, per-candidate fetch) trades a bounded constant
+    for a re-classify dance; the union belongs in ONE place, ``classify``.
     """
     cmd = [
         "gh", "pr", "list",
         "--state", "open",
         "--base", "main",
-        "--json", "number,title,isDraft,baseRefName,additions,reviews,author,url",
+        "--json", "number,title,isDraft,baseRefName,additions,reviews,author,url,comments",
         "--limit", "300",
     ]
     out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
