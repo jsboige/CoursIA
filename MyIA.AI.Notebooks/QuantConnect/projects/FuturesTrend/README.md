@@ -118,9 +118,11 @@ la doc plateforme et le constat positif ci-dessus, pas sur cette énumération. 
 | Cap forecasts | n/a | +/-20 par forecast |
 | Position sizing | fixe 33% par position (max 3) | vol-scaled, sign-normalisé, retarget du **delta** (pas d'aller-retour fabriqué, c.1109) |
 | Fenêtre de backtest | 2015-2024 | 2016-2026 (acceptance #15549) |
-| **Backtest mesuré (2026-09-13)** | **Sharpe 0,07 / CAGR 4,170 % / MaxDD 15,500 % / PSR 0,007 % / 463 ordres / 2913 séances** | **0 ordre — Sharpe/CAGR/MaxDD/PSR n/a (indéfinis : aucune série de rendements) / $0,00 / 2763 séances** |
+| **Backtest mesuré (2026-09-13, pré-fix)** | **Sharpe 0,07 / CAGR 4,170 % / MaxDD 15,500 % / PSR 0,007 % / 463 ordres / 2913 séances** | **0 ordre — Sharpe/CAGR/MaxDD/PSR n/a (indéfinis : aucune série de rendements) / $0,00 / 2763 séances** |
 
-### Résultat mesuré de la comparaison (2026-09-13, acceptance #15549)
+### Mesure historique pré-fix (2026-09-13, acceptance #15549) — artefact daté
+
+> **Statut de cette sous-section** : elle enregistre la mesure **telle qu'elle a été faite le 2026-09-13**, avant les réparations `#16003` / `#16051`. Le verdict `INCONCLUSIVE` qui suit est **borné à cet artefact** (backtest `b7b7217ee540757f3d78167ab9eeea2e`) et **ne décrit plus l'état courant** du bras — voir « Post-fix » plus bas.
 
 Les deux bras ont été mesurés dans QC Cloud. La baseline est relue **firsthand**
 (backtest `b869c19d1320401e3c3a84ae7037abc4`, projet 28657834) et non reprise de la
@@ -162,12 +164,14 @@ mesurés sont : **0 ordre**, **$0,00** de profit, **2763 séances** négociables
 0 erreur. Écrire « Sharpe 0 » dans les mêmes cases numériques que la baseline
 inviterait précisément la lecture « Carver sous-performe » que le verdict interdit.
 
-**Verdict : `INCONCLUSIVE` — et le motif n'est pas une faiblesse d'edge.** La jambe
-Carver #13 n'émet **aucun ordre** sur 2763 séances : elle ne perd pas contre la
-baseline, elle ne trade pas du tout. Un bras à 0 ordre ne peut ni battre ni perdre.
-C'est une **non-fonctionnalité**, pas une mesure d'edge : la conclusion scientifique
-`BEATS` / `NO BEATS` est **indécidable en l'état**, et l'accepter comme « Carver sous-
-performe » serait exactement l'erreur que l'acceptance interdit.
+**Verdict de cet artefact : `INCONCLUSIVE` — et le motif n'est pas une faiblesse d'edge.**
+Sur le run du 2026-09-13, la jambe Carver #13 n'émet **aucun ordre** sur 2763 séances :
+elle ne perd pas contre la baseline, elle ne trade pas du tout. Un bras à 0 ordre ne peut
+ni battre ni perdre, donc `BEATS` / `NO BEATS` est **indécidable pour ce run**.
+
+**Ce que ce verdict ne dit pas** : il ne dit **pas** que le bras est non fonctionnel par
+nature. La cause du silence a été trouvée et réparée depuis (section « Post-fix » ci-dessous) ;
+l'`INCONCLUSIVE` est donc **borné au run pré-fix daté**, il ne qualifie plus l'état courant.
 
 **Ce résultat reproduit une observation antérieure** (préflight adjoint po-2025 :
 « 0 orders + Sharpe 0 / 2762 dates ») — il la corrobore désormais par une exécution
@@ -177,16 +181,70 @@ indépendante et datée, avec le backtestId à l'appui.
 Carver sur 2016-2026 (dates fixées en dur dans chaque `initialize()`). Les deux
 colonnes ne sont donc pas alignées à la séance près ; l'écart est porté ici plutôt
 que suppose neutre. Il est **secondaire** devant le fait mesuré (0 ordre), qui rend
-la comparaison sans objet.
+la comparaison sans objet **pour ce run** (le bras n'ayant rien négocié).
 
-**Ce qui reste ouvert** : la cause du 0 ordre. Un instrument d'instrumentation
-existe déjà dans le code (`_rebalance_early_returns`, REPAIR-9 c.1117 : `warming_up`,
-`bulk_empty`, `no_raw_forecasts`, `abs_sum_zero`, `completed_no_order`,
-`completed_with_orders`) et est journalisé en fin d'algorithme — mais le wrapper
-`qc-mcp-lite` ne rend **pas** les runtime logs (`self.log`), donc la branche réellement
-empruntée n'est pas lisible par ce canal. Diagnostic suivant : rejouer avec
-`self.error(...)` sur le compteur (surfacé dans le champ `error`), ou lire l'onglet
-Logs de l'UI QC.
+### Post-fix : la cause du 0 ordre, mesurée et réparée
+
+**La cause est connue et n'est plus ouverte.** Elle n'est pas dans la stratégie mais dans
+la **cible d'ordre** : `set_holdings` visait le **symbole continu canonique**
+(`/ES`, non négociable) au lieu du **contrat mappé**. Une cible canonique est acceptée par
+l'appel puis **avalée par LEAN** — zéro ordre matérialisé, sans erreur remontée.
+
+La sonde décisive est **à capital constant** (run `07ca3d10db1abcd18c11cc4b87ea4c35`,
+projet 36488678, $2 M, même appel planifié, **seule variable = le symbole cible**) :
+
+```
+sent=['ES/canonical->/ES', 'NQ/mapped->NQ WSVU0MELFS3L', 'CL/chain=SKIPPED']
+orders_count=2   events={'NQ WSVU0MELFS3L': {'SUBMITTED': 1, 'FILLED': 2}}
+notes={'ES/canonical': 'is_canonical=True',
+       'NQ/mapped': 'Mapped=NQ WSVU0MELFS3L is_canonical=False',
+       'CL/chain': 'chain-empty'}
+```
+
+`ES` canonique → **zéro événement d'ordre** ; `NQ` mappé → `SUBMITTED` puis `FILLED` ;
+`CL` chaîne → `SKIPPED` (`chain-empty`). C'est donc le **symbole**, pas le capital, qui
+décide de l'aboutissement de l'ordre.
+
+**Réparations mergées sur `main`** : `#16003` (commit `a3a30c1b5f3e47445ba8b51a6788bc69eeb0c20a`)
+et `#16051` (commit `821487a8cd5bc86afc2f5917f3cf2e10b79c8104`). Le canal de diagnostic qui
+manquait a été obtenu en écrivant les compteurs dans le champ `error` (`self.error(...)`,
+surfacé par le wrapper) plutôt que dans des runtime logs non rendus :
+
+```
+CARVER13: Final=$3,843.29, Return=-96.16%, Breadth-multiplied forecasts=19
+REPAIR-9 INSTRUMENTATION: rebalance_calls=3368, completed_calls=2759
+  (with_orders=2759, no_order=0), early_returns: (aucun)
+```
+
+À travers les deux runs, `with_orders=2759 / no_order=0` : la stratégie a émis un
+`set_holdings` à **chaque** appel complété dans les deux cas. Le chemin d'appel est
+identique ; ce qui change est que l'ordre **aboutisse ou soit avalé**.
+
+**Résultat post-fix le plus récent disponible** — run d'acceptation
+`dc7663525ef3068b4edaee6fec457e29`, contrat mappé, fenêtre 2016-2026, capital $100 k :
+
+| | baseline (cible canonique) `0b4b9d52af476d8c36bc5b5e5798406e` | post-fix (contrat mappé) `dc7663525ef3068b4edaee6fec457e29` |
+|---|---|---|
+| capital | $2 000 000 | $100 000 |
+| `totalOrders` | **0** | **1447** |
+| net P&L | `$0.00` | `$-96 156,71` (**-96,16 %**) |
+| Sharpe | `0` (défaut) | **-0,168** |
+| CAGR | — | **-26,247 %** |
+| MaxDD | — | **98,0 %** |
+
+⚠️ **Ce run n'est pas une comparaison scientifique finale**, et il ne doit pas être lu
+comme telle : (a) les deux exécutions **ne partagent pas le capital** ($2 M vs $100 k) ;
+(b) le sizing et le sur-levier n'y sont **pas contrôlés** — 19 contrats futurs sur $100 k
+produisent un levier que le run ne neutralise pas, ce qui suffit à expliquer l'ampleur du
+drawdown ; (c) le run est **instrumenté** (porteur de diagnostic `raise` en
+`on_end_of_algorithm`, donc `Runtime Error` **par construction**, après tout le trading) ;
+(d) les fenêtres des deux bras restent désalignées (2015-2024 vs 2016-2026).
+La conclusion `BEATS` / `NO BEATS` reste donc **non tranchée** — mais pour une raison
+**différente** de celle du run pré-fix : ce n'est plus un bras muet, c'est une comparaison
+dont les conditions ne sont pas encore appariées.
+
+**Ce qui reste ouvert, désormais** : apparier la comparaison (capital, sizing, fenêtre,
+levier) avant tout verdict d'edge. La cause du 0 ordre, elle, est close.
 
 **Correction d'une affirmation fausse de ce dépôt.** Le `config.json` et cette section
 présentaient le portage comme reconnu par QC Cloud « sans modifier la baseline » :
@@ -320,14 +378,19 @@ quand la cible est proche de la position actuelle.
   **résolu** : la jambe QC Cloud a été portée par la lane `myia-po-2026:CoursIA`,
   **sans transmission de secret**, sur un projet QC dédié). Résultat : compile
   `BuildSuccess` 0 erreur, backtest `b7b7217ee540757f3d78167ab9eeea2e` `Completed`,
-  2763 séances négociables, **0 ordre**. Détail et comparaison au bras baseline :
-  section « Résultat mesuré de la comparaison » ci-dessus.
-- **Verdict rendu** : `INCONCLUSIVE` — **non pas** parce que Carver #13 perdrait
+  2763 séances négociables, **0 ordre** — mesure **pré-fix** du 2026-09-13. Depuis,
+  la cause du 0 ordre a été identifiée (cible canonique non négociable au lieu du
+  contrat mappé) et réparée par `#16003` / `#16051` : le bras produit désormais
+  **1447 ordres**. Détail et chronologie pré-fix / post-fix : sections « Mesure
+  historique pré-fix » et « Post-fix » ci-dessus.
+- **Verdict rendu (pré-fix, daté)** : `INCONCLUSIVE` — **non pas** parce que Carver #13
 
-  contre la baseline, mais parce que la jambe n'émet **aucun ordre** (0 ordre /
-  2763 séances) : un bras qui ne trade pas ne peut ni battre ni perdre. La
-  comparaison scientifique reste **indécidable** tant que la cause du 0 ordre n'est
-  pas dissipée. Le Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023
+  perdrait contre la baseline, mais parce que le run du 2026-09-13 n'émet **aucun ordre**
+  (0 ordre / 2763 séances) : un bras qui ne trade pas ne peut ni battre ni perdre. La
+  cause du 0 ordre est depuis **dissipée** (cible canonique → contrat mappé, `#16003` /
+  `#16051`) ; la comparaison reste **non tranchée** pour une autre raison — conditions
+  non appariées (capital, sizing, fenêtre, levier). Le verdict n'est donc plus borné par
+  un bras muet mais par l'absence d'un protocole comparable. Le Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023
   n'a **pas** été présumé : il n'entre pas dans ce verdict (fenêtre favorable
   non-représentative, et la jambe mesurée ici est muette de toute façon).
 - **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
