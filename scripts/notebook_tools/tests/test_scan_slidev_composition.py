@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scan_slidev_composition import (  # noqa: E402
     content_overflow,
+    github_annotations,
     occupation_flagged,
     parse_headmatter_canvas,
     split_slides_source,
@@ -330,7 +331,7 @@ def test_controle_positif_warning_when_baseline_omitted():
             "canvas_w": 980, "canvas_h": 552,
             "BORNE": "ADVISORY",
             "ctrl_positif_ok": None, "ctrl_positif_msg": None,
-            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_rec": 0, "n_occ": 0,
+            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_eteints": 0, "n_rec": 0, "n_occ": 0,
         }
         exec(block, ns)
         return ns["report"]
@@ -396,3 +397,99 @@ def test_positive_control_fixture_canvas_default():
     # le contrôle CI suppose le canvas par défaut 980×552 : top:600px déborde
     # de 48 px. Un canvasHeight headmatter > 600 casserait la garantie.
     assert parse_headmatter_canvas(FIXTURE) == (980, 552)
+
+
+# #16188 — porte de confirmation élément (#15695/#15877) maintenant observable.
+# 3 tests synthétiques sur `github_annotations` : rapport par slide avec
+# `chevauchements_eteints` non vide → 1 `::notice [CHEVAUCHEMENT-FANTOME]`,
+# AUCUN `::warning [CHEVAUCHEMENT]` (les paires éteintes sont des fantômes,
+# pas des vrais chevauchements) ; rapport propre → rien.
+def _fake_report(slide_results, canvas=(980, 552), slides_md=None):
+    """Construit un rapport minimal pour github_annotations."""
+    from pathlib import Path
+    return {
+        "canvas": list(canvas),
+        "_slide_lines": {r["slide"]: 1 for r in slide_results},
+        "results": slide_results,
+        "url": "test://fixture",
+        "baseline_slide": None,
+        "baseline_commit": None,
+        "slides_md": slides_md or Path("slides/test/slides.md"),
+    }
+
+
+def test_chevauchement_fantome_notice_when_pair_eteinte(tmp_path):
+    # Paire Range×Range éteinte par la confirmation élément : 1 `::notice`,
+    # 0 `::warning [CHEVAUCHEMENT]`. Reproduit le cas fondateur #15695
+    # (puces inline effleurent ~1.2 px, boîtes disjointes).
+    fake_slides_md = tmp_path / "slides.md"
+    fake_slides_md.write_text("placeholder", encoding="utf-8")
+    report = _fake_report([
+        {
+            "slide": 5,
+            "text_head": "slide test fantôme",
+            "chevauchements": [],  # porte a éteint
+            "chevauchements_eteints": [
+                {"a": "LI", "b": "LI", "overlap_range": [2, 1], "element_disjoint": True},
+                {"a": "P", "b": "P", "overlap_range": [1, 1], "element_disjoint": True},
+            ],
+        }
+    ], slides_md=fake_slides_md)
+    anns = github_annotations(report, fake_slides_md)
+    notice_lines = [a for a in anns if "[CHEVAUCHEMENT-FANTOME]" in a]
+    warning_lines = [a for a in anns if "[CHEVAUCHEMENT]" in a and "FANTOME" not in a]
+    assert len(notice_lines) == 1, f"attendu 1 notice fantôme, vu {len(notice_lines)} : {notice_lines}"
+    assert "2 effleurement(s)" in notice_lines[0], \
+        f"compteur agrégé manquant : {notice_lines[0]}"
+    assert "boîtes élément disjointes" in notice_lines[0], \
+        f"libellé de la notice incorrect : {notice_lines[0]}"
+    assert warning_lines == [], \
+        f"les paires éteintes ne doivent PAS générer de warning CHEVAUCHEMENT : {warning_lines}"
+
+
+def test_chevauchement_warning_pair_raportee(tmp_path):
+    # Paire Range×Range NON éteinte (boîtes éléments qui se chevauchent
+    # réellement) : 1 `::warning [CHEVAUCHEMENT]`, 0 notice fantôme.
+    fake_slides_md = tmp_path / "slides.md"
+    fake_slides_md.write_text("placeholder", encoding="utf-8")
+    report = _fake_report([
+        {
+            "slide": 7,
+            "text_head": "slide test vrai chevauchement",
+            "chevauchements": [
+                {
+                    "a": "P.x", "b": "P.y",
+                    "overlap": [10, 20],
+                    "element_overlap": [10, 20],
+                }
+            ],
+            "chevauchements_eteints": [],
+        }
+    ], slides_md=fake_slides_md)
+    anns = github_annotations(report, fake_slides_md)
+    notice_lines = [a for a in anns if "[CHEVAUCHEMENT-FANTOME]" in a]
+    warning_lines = [a for a in anns if "[CHEVAUCHEMENT]" in a and "FANTOME" not in a]
+    assert len(warning_lines) == 1, \
+        f"attendu 1 warning chevauchement, vu {len(warning_lines)} : {warning_lines}"
+    assert notice_lines == [], \
+        f"pas de notice fantôme pour un vrai chevauchement : {notice_lines}"
+
+
+def test_chevauchement_no_signal_propre(tmp_path):
+    # Slide propre : pas de chevauchement, pas d'éteint → aucun signal
+    # CHEVAUCHEMENT ni CHEVAUCHEMENT-FANTOME (les autres notices de
+    # synthèse type `Plancher mécanique advisory` restent autorisées).
+    fake_slides_md = tmp_path / "slides.md"
+    fake_slides_md.write_text("placeholder", encoding="utf-8")
+    report = _fake_report([
+        {
+            "slide": 9,
+            "text_head": "slide test propre",
+            "chevauchements": [],
+            "chevauchements_eteints": [],
+        }
+    ], slides_md=fake_slides_md)
+    anns = github_annotations(report, fake_slides_md)
+    chev_lines = [a for a in anns if "CHEVAUCHEMENT" in a]
+    assert chev_lines == [], \
+        f"slide propre ne doit produire aucun signal CHEVAUCHEMENT : {chev_lines}"
