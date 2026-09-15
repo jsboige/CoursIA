@@ -673,6 +673,170 @@ def test_partial_inheritance_keeps_the_lane_cause():
                                resolved_keys_by_name={AGG: both}) == []
 
 
+# --- #15910 : un agregateur rouge par DWELL est un MINUTEUR, pas un defaut ---
+
+DWELL_ANN = (
+    "[pr-gate] DWELL -- tete du 2026-09-13T12:14:44Z, 7 min -- plancher 120 min, "
+    "reste 113 min, leve au premier balayage suivant 2026-09-13T14:14:44Z. Le "
+    "balayage horaire (pr-gate-stale-sweep.yml, cron '7 * * * *') re-agrege "
+    "cette jambe des que le plancher est ecoule ; aucun geste manuel n'est requis."
+)
+FAIL_ANN = "[pr-gate] FAIL -- failing checks: Static validation (H.1/H.3/C.1) (failure)"
+
+
+def _dwell_state(run_id):
+    """Etat rouge dont l'agregateur porte un check-run id (annotation lisible)."""
+    st = _state(checks=[("PR gate", "FAILURE", True)])
+    st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+        "nodes"][0]["databaseId"] = run_id
+    return st
+
+
+def _patch_dwell(monkeypatch, dwell_by_run):
+    """Remplace la lecture d'annotation : id -> dict de plancher, ou None."""
+    monkeypatch.setattr(pig, "fetch_check_dwell",
+                        lambda rid: dwell_by_run.get(rid))
+
+
+def _patch_gh_annotations(monkeypatch, messages):
+    """Fait rendre a `gh api .../annotations` une liste de messages donnes."""
+    def fake_run(cmd, **kwargs):
+        return _FakeCompleted(json.dumps([{"message": m} for m in messages]))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_dwell_banner_is_parsed_from_the_check_run_annotation(monkeypatch):
+    """La surface existe et porte les trois champs : plancher, reste, levee.
+
+    Le fragment GraphQL des etats de PR ne porte PAS `title`/`summary` d'un
+    check-run : la seule surface qui dit le DWELL est l'annotation. Sans cette
+    lecture, « il n'y a rien a reparer » et « je n'ai pas pu lire » rendent le
+    meme `[]` (cf `fetch_check_organs`) -- et c'est le second que la lane subit.
+    Texte de reference = annotation reelle du check-run 103721837941 (#15956).
+    """
+    _patch_gh_annotations(monkeypatch, [DWELL_ANN])
+    dwell = pig.fetch_check_dwell(103721837941)
+    assert dwell == {"head_at": "2026-09-13T12:14:44Z", "dwell_min": 120,
+                     "remaining_min": 113, "lift_at": "2026-09-13T14:14:44Z"}
+
+
+def test_dwell_banner_control_negative_fail_and_unreadable(monkeypatch):
+    """Controle NEGATIF : un FAIL nomme et une panne ne sont pas des DWELL.
+
+    Sans ce controle, un detecteur qui rendrait un dict sur n'importe quelle
+    annotation ferait passer le test precedent avec un motif faux -- et
+    l'annulation de cause emporterait les vrais rouges avec elle.
+    """
+    # FAIL nomme : ce n'est pas un plancher.
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    assert pig.fetch_check_dwell(1) is None
+    # Annotation d'organe : ce n'est pas un plancher non plus (le cas NOMINAL,
+    # celui ou un organe est nomme et ou l'appelant ne paie meme pas la lecture).
+    _patch_gh_annotations(monkeypatch, ["Organes bloquants en echec : perimeter"])
+    assert pig.fetch_check_dwell(2) is None
+    # Lecture impossible : None, et l'appelant retombe sur le fail-closed.
+    def _raise_gh(cmd, **kwargs):
+        raise OSError("gh indisponible")
+    monkeypatch.setattr(pig.subprocess, "run", _raise_gh)
+    assert pig.fetch_check_dwell(3) is None
+
+
+def test_dwell_red_is_not_a_repairable_cause():
+    """Le fond de #15910 : la lane ne recoit PLUS de cause a reparer.
+
+    `pr_gate.py` n'emet le plancher que sur le chemin VERT (`code == 0`) :
+    tous les checks sont verts, seule l'anciennete de la tete manque. En
+    faire un « check requis en echec » envoyait la lane chercher dans son diff
+    une cause inexistante -- et trois PRs poussees dans la meme fenetre
+    suffisaient a declencher P0 par le seul minuteur.
+    """
+    state = _dwell_state(103721837941)
+    dwell = {"PR gate": {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"}}
+    assert pig.blocking_causes(state, dwell_by_name=dwell) == []
+    # Controle POSITIF : sans la lecture, le meme etat est bien un rouge --
+    # sinon le test precedent passerait sur un etat qui n'est pas rouge du tout.
+    assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+def test_dwell_does_not_swallow_the_other_reds_of_the_same_pr():
+    """Un DWELL n'absout pas les vrais rouges qui l'accompagnent.
+
+    La PR peut porter un agregateur en attente de plancher ET un check direct
+    en echec substance : la cause du second doit survivre, sinon la reparation
+    du rouge reel serait annulee par un minuteur sans rapport.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", True)])
+    causes = pig.blocking_causes(
+        state, dwell_by_name={"PR gate": {"dwell_min": 120,
+                                          "remaining_min": 10,
+                                          "lift_at": "2026-09-13T14:14:44Z"}})
+    assert causes == ["check requis en echec : Scripts Tests (CPU)"]
+
+
+def test_dwell_pr_leaves_the_red_backlog_and_is_reported(monkeypatch):
+    """Bout en bout : la PR au seul rouge DWELL sort du refus, et est DITE.
+
+    Deux exigences opposees : ne plus la compter comme un grain a reparer
+    (sinon le cycle part sur une reparation inexistante), mais ne pas la taire
+    non plus (sinon la lane croit son ardoise propre et ignore qu'une PR est
+    en attente de plancher).
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
+                                     "lift_at": "2026-09-13T14:14:44Z"}})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _dwell_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["aged"] == []
+    assert out["triggers"] == []
+    assert out["base_inherited"] == []
+    assert out["base_unresolved"] == []          # rien d'illisible : pas un fail-closed
+    assert out["dwell_waiting"] == [{"number": 1, "check": "PR gate",
+                                     "lift_at": "2026-09-13T14:14:44Z",
+                                     "remaining_min": 113}]
+
+
+def test_unreadable_aggregate_still_falls_back_to_the_lane(monkeypatch):
+    """Controle negatif du precedent : sans DWELL lisible, le rouge RESTE.
+
+    Le fail-closed #14567 ne doit pas etre court-circuite par la lecture du
+    DWELL : une panne reseau n'est pas un plancher, et la confondre
+    acquitterait la lane d'un rouge qu'elle doit reparer.
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: None})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _dwell_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["dwell_waiting"] == []
+    assert {i["check"] for i in out["base_unresolved"]} == {"PR gate"}
+
+
+def test_print_dwell_waiting_says_the_only_gesture_is_waiting(capsys):
+    """La sortie humaine doit porter l'INTERDIT : ne pas repousser.
+
+    Un push remet le plancher a zero (pr_gate.py l.~1421) : la lane qui
+    « repare » un DWELL en poussant repart pour 120 min. C'est le geste
+    reflexe de cette lane, donc c'est ce qu'il faut dire a voix haute.
+    """
+    pig.print_dwell_waiting({"dwell_waiting": [
+        {"number": 15956, "check": "PR gate", "lift_at": "2026-09-13T14:14:44Z",
+         "remaining_min": 113}]})
+    out = capsys.readouterr().out
+    assert "#15956" in out
+    assert "14:14:44Z" in out
+    assert "NE PAS repousser" in out
+    # Silence total quand il n'y a rien : pas de section vide a lire.
+    assert pig.print_dwell_waiting({"dwell_waiting": []}) is None
+    assert capsys.readouterr().out == ""
+
+
 def test_required_failure_links_advisory_as_its_probable_cause():
     """#13545 (presentation) : l'agregateur requis et sa cause advisory ne
     s'affichent plus comme deux lignes qui se contredisent.
