@@ -35,6 +35,7 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 | [3.7-Distillation-Maitre-Eleve](3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : un maître entraîné distille son savoir (dark knowledge) vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict — gain par exemple net (DM p < 0.001, CE 0.63 → 0.58) mais edge 0.6σ/1.4σ sous 5 folds × 4 graines | maître 0.8906 / distillé 0.8145 vs baseline 0.8029 ; ECE 0.0458 vs 0.0684 ; ratio params 8.9× ; 5 folds × 4 graines (20 paires), entrainement deterministe |
 | [3.8-Representations-Contrastives](3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne sur vues continues : augmentations contrôlées du sac-de-mots (mask/swap/identité), encodeur MLP et loss InfoNCE écrits from scratch sans autograd, pont explicite vers le skip-gram (cooccurrence discrète vs vue continue) | **Apprendre des représentations sans étiquettes** : deux vues d'une même phrase attirent leurs embeddings, les autres phrases les repoussent | sonde linéaire 0,432 (chance 1/7 = 0,143 ; aléatoire gelé 0,161 ; skip-gram BoW 0,154 ; supervisé from scratch 0,368) ; contre-témoin de collapse mesuré (verdict NON) ; ablations température × augmentations × graines avec écart-type inter-graines ; 3 exercices |
 | [3.9a-Compression-Quantization-INT8](3.9a-Compression-Quantization-INT8.ipynb) | La quantification INT8 construite à la main (mapping affine, fake-quant per-tensor/per-channel, activations dynamiques par hooks, calibrations statiques min/max et KL — port fidèle TensorRT) sur ResNet-20/CIFAR-10 entraîné dans le notebook, puis la falaise INT4 | **Le déjeuner gratuit et sa limite** : INT8 égale le FP32 à ±0,001 près pour 4× moins de mémoire ; la discrimination vit dans l'erreur de poids et la falaise INT4 | FP32 0,9019 ; w8 per-tensor 0,9024 / per-channel 0,9020 (erreur s3.1.conv1 : 1,05e-2 vs 7,72e-3) ; dynamique w-channel 0,9018 ; statique min/max 0,9017 ; statique KL 0,9012 (seuils 60-100 % du range, masse coupée ≤ 0,005 %) ; INT4 0,8778 (−2,4 pts, erreur ×18) ; 270 906 poids : 1,08 Mo → 0,27 Mo (4,0×) |
+| [3.9c-Pruning-From-Scratch](3.9c-Pruning-From-Scratch.ipynb) | Trois familles de pruning écrites en numpy pur — unstructured magnitude top-k% par layer (Han et al. 2015), structured filter pruning L1-norm sur kernels (Li et al. 2017), Lottery Ticket Hypothesis reset-poids-init + retrain (Frankle & Carlin 2019) — puis confrontation avec `torch.nn.utils.prune` (Bloc B.2 #16060) sur MLP 784-256-128-10 / MNIST subset 20k (CPU-compatible, <10 min) | **Le reset à l'init est la clef LTH** : à 80% de sparsité, le sous-réseau remis à l'initialisation et ré-entraîné égale l'accuracy du réseau dense (Δ = -0.08 pt) là où le pruning simple (mask sans reset) dégrade plus (-0.23 pt) ; `torch.nn.utils.prune` ne reproduit pas ce reset | Dense 0.9675, `torch.nn.utils.prune` 0.9719, LTH 0.9667, Pruning simple 0.9652 ; 235 146 paramètres, ~7s/epoch CPU, 5 epochs/méthode ; 3 exercices C.1 |
 
 
 ## Feuille de route
@@ -45,6 +46,15 @@ appliquée — entropie, KL, cross-entropy (#12420, livrée par #12640 → noteb
 (#12409, livrée par #12527 → notebook [3.3](3.3-Regularisation.ipynb)). Le fil directeur n'a
 pas changé et vaut pour la suite : chaque mécanisme écrit à la main, vérifié contre torch,
 puis consommé via l'API officielle.
+
+**Bloc A — Compression de modèles from scratch** (EPIC #16060, sous-notebooks par technique) :
+- Bloc A.1 — Quantification FP32→FP16 [3.9] (#16127, OPEN po-2026)
+- Bloc A.2 — Quantification INT8 [3.9a] (#16094, MERGED po-2023)
+- Bloc A.3 — Pruning from scratch [3.9c] (#16060, PR en cours po-2024 — unstructured magnitude, structured filter pruning, Lottery Ticket Hypothesis)
+- Bloc A.4 — Distillation teacher/student [3.7] (#12675, MERGED — teacher/student sur MLP)
+
+**Bloc B — Confrontation au SOTA** (mêmes techniques, via les libs standard) :
+- Bloc B.2 — `torch.quantization` / `torch.nn.utils.prune` (à venir, ferme le Bloc A).
 
 ## Prérequis
 
