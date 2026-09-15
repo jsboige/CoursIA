@@ -748,7 +748,7 @@ flowchart LR
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb">9b_Prompt_Security_RedTeam.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb">09b_Prompt_Security_RedTeam.ipynb</a>.</p>
 
 ---
 
