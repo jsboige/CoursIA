@@ -267,7 +267,8 @@ jobs:
         # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
         # dep delta vs this job (pillow arrives transitively with matplotlib).
         run: |
-          pytest \
+          python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
+            pytest \
             scripts/tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
@@ -282,6 +283,18 @@ jobs:
             scripts/quantconnect/tests \
             GradeBookApp \
             -n 4 --dist loadscope --tb=short -q
+        # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
+        # down`), le master attend des workers morts SANS qu'aucun test soit en
+        # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
+        # du job, et le gate lit le blocage comme un depassement. Le watchdog
+        # recopie la sortie tel quel, puis tue et rend un verdict qui NOMME le
+        # worker mort si la sortie se tait --idle-limit secondes.
+        # 480 s, arithmetique : un run bloque echoue a (derniere progression
+        # 3,3-5,5 min) + 480 s = 11,5-13,5 min < 17,4 min (plus long succes
+        # legitime, mesure #16087) ; et un faux positif exigerait 8 min de
+        # silence global alors que 4 workers emettent des points en continu
+        # sous -q. pytest-timeout ne peut pas tirer ici (borne par TEST, aucun
+        # test en cours) ; le plafond du job reste celui de #16087.
         # `--dist loadscope` is load-bearing, not a default: it groups tests by
         # module, so a module's tests never run concurrently with each other.
         # test_audit_engine_named_not_invoked.py writes ~17 fixed /tmp/_test_*
