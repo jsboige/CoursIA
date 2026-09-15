@@ -62,23 +62,24 @@ layout: default
 
 # Couverture moderne (notebooks du dépôt)
 
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+</style>
+
 | Concept | Owner dans le dépôt |
 |---|---|
 | Token, BPE, vocabulaire | [04-Tokenisation-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) |
 | Lemmes, POS, dépendances, NER | [23_TAL_Du_Mot_Aux_Dependances](../../MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb) |
 | n-grammes, perplexité, lissage | **GAP** — pas de notebook dédié (23_TAL ne les couvre pas) |
-| IR : métriques, reranking, HyDE | [02-Retrieval-Avance](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) |
-| Recherche hybride (lexical + vecteurs) | [08-KernelMemory-Hybrid-Search](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) |
-| Embeddings (skip-gram from scratch) | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) |
-| Vectoriel serveur, HNSW exact/ANN | [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
+| IR : métriques, reranking, HyDE · recherche hybride | [02-Retrieval-Avance](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) · [08-KernelMemory-Hybrid-Search](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) |
+| Embeddings (skip-gram) · vectoriel serveur (HNSW) | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
 | Automates finis, transducteurs | sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) (C#) |
-| CRF / structured prediction | **GAP** — pas de notebook dédié |
-| Parsing CFG/PCFG, CYK | **GAP** — le parsing du dépôt est dépendanciel (23_TAL), pas constituant |
-| Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb), [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) |
-| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb), [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb) |
-| Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb), [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) |
+| CRF / structured prediction · parsing CFG/PCFG, CYK | **GAP** — pas de notebook dédié ; le parsing du dépôt est dépendanciel (23_TAL), pas constituant |
+| Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) |
+| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb) |
+| Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) |
 | Attention (MHA, MQA, GQA, SWA) | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) |
-| Agents conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb), [configurer-chatbots](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
+| Agents conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
 
 > Aucun arc n'est perdu : chaque ligne pointe un **owner réel** ou un **GAP**
 > assumé, à fermer par un notebook atomique dédié.
