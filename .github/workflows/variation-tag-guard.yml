@@ -356,7 +356,7 @@ jobs:
           # donc create/add/remove tolerent l'echec sans tuer le job (|| true).
           gh label create variation-light-cap-reached \
             --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
-            --color B60205 --force 2>/dev/null || true
+            --color B60205 --force || true
 
           if [ "$CAP" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
@@ -907,8 +907,8 @@ jobs:
           # Advisory label for DEEP/MED adjacency (guard_pass stays true, the
           # job passes; the label surfaces the §2 judgment for the coordinator).
           gh label create variation-adjacency-deep-med \
-            --description "Adjacence de genre DEEP/MED (hors liste LIGHT) : §2 l'autorise si substance distincte -- jugement au coordinateur" \
-            --color FEF2C0 --force 2>/dev/null || true
+            --description "Adjacence DEEP/MED hors LIGHT : §2 l'autorise si substance distincte (coordinateur)" \
+            --color FEF2C0 --force || true
           if [ "$ADJACENT" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-adjacency-deep-med 2>/dev/null || true
           else

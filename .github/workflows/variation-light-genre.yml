@@ -239,7 +239,7 @@ jobs:
               # initialisee ; on en reste a SIGVAL=False sans crasher.
               SIGVAL="${!SIGVAR:-False}"
             fi
-            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
+            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
             # #10341 -- aggregate signals (MAY_LABEL_INNOCENT="no") must not
             # label an innocent CONTENT candidate. The lane-day signal stays
             # real (surfaced in the diagnostic comment below), but the LABEL

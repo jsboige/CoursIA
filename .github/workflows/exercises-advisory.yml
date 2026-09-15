@@ -105,7 +105,7 @@ jobs:
 
           # Helper: ensure a label exists (idempotent), then add/remove it.
           ensure_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }

@@ -309,7 +309,7 @@ jobs:
           # travail passe comme marqueurs historiques; aucun nouveau n'est
           # pose par ce job.
           mk_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           mk_label "lane-claim-absent" "Closing issue carries no claim at all (#10223)" "fbca04"
 

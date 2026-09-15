@@ -89,6 +89,6 @@ jobs:
           fi
           gh label create "h1-hygiene-advisory" \
             --description "Added notebook(s) carry H1 markdown/emoji/'Notebook:' prefix (#11840, advisory)" \
-            --color "D4AC0D" --force 2>/dev/null || true
+            --color "D4AC0D" --force || true
           gh pr edit "$PR_NUMBER" --add-label "h1-hygiene-advisory" 2>/dev/null || true
           echo "::warning::H1 hygiene advisory: see scan output above (#11840)"

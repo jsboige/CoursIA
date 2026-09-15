@@ -78,7 +78,7 @@ jobs:
           echo "Modified *.md in this PR: $COUNT"
 
           ensure_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
@@ -117,9 +117,9 @@ jobs:
           echo "Flagged files: $FLAG_COUNT"
 
           ensure_label "$LABEL_OVERSIZED" \
-            "A modified markdown file carries a paragraph > 2000 chars (wall-of-text, see #15405 incident). Resorb before merge." "FBCA04"
+            "Paragraph > 2000 chars (wall-of-text, #15405). Resorb before merge." "FBCA04"
           ensure_label "$LABEL_UNMEASURED" \
-            "A modified markdown file could not be measured by detect_paragraph_length.py -- NOT verified (#8819)." "BFD4F2"
+            "Not measured by detect_paragraph_length.py -- NOT verified (#8819)" "BFD4F2"
 
           # #8819 guard: if the payload is unreadable, never claim green.
           if [ "${OVERSZ_COUNT:-0}" = "UNREADABLE" ] 2>/dev/null; then

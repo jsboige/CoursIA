@@ -351,7 +351,7 @@ jobs:
 
           gh label create variation-light-cap-reached \
             --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
-            --color B60205 --force 2>/dev/null || true
+            --color B60205 --force || true
 
           if [ "$CAP" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
@@ -508,7 +508,7 @@ jobs:
             else
               SIGVAL="${!SIGVAR:-False}"
             fi
-            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
+            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
             # #10341 : les signaux agreges ne labelisent pas une candidate
             # innocente ; la branche else retire aussi un label pose avant
             # que la lane ne croise le cap (idempotence symetrique).
@@ -613,7 +613,7 @@ jobs:
           # en silence (check=False historique) -- longueur epinglee en dur ici.
           gh label create trivial-diff-advisory \
             --description "Diff trivial : grain META mecanique sans fournee ni exception ecrite (#15740)" \
-            --color C2A76D --force 2>/dev/null || true
+            --color C2A76D --force || true
           gh pr edit "$PR_NUMBER" --add-label trivial-diff-advisory 2>/dev/null || true
 
           MARK="<!-- trivial-diff-15740 -->"
@@ -670,7 +670,7 @@ jobs:
           fi
 
           mk_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           mk_label "lane-claim-absent" "Closing issue carries no claim at all (#10223)" "fbca04"
 
@@ -995,8 +995,8 @@ jobs:
 
           # Label advisory pour l'adjacence DEEP/MED (jugement coord).
           gh label create variation-adjacency-deep-med \
-            --description "Adjacence de genre DEEP/MED (hors liste LIGHT) : §2 l'autorise si substance distincte -- jugement au coordinateur" \
-            --color FEF2C0 --force 2>/dev/null || true
+            --description "Adjacence DEEP/MED hors LIGHT : §2 l'autorise si substance distincte (coordinateur)" \
+            --color FEF2C0 --force || true
           if [ "$ADJACENT" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-adjacency-deep-med 2>/dev/null || true
           else
