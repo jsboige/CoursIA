@@ -65,13 +65,18 @@ def count_open_prs_on_base(repo: str, base: str) -> int:
 # ---------------------------------------------------------------------------
 #
 # Le compte de PR ouvertes ci-dessus dit si le STACK est legitime. Il ne dit
-# rien de ce que ce stack a COUTE en couverture : 80 des 148 workflows du
-# depot gatent leur `pull_request` sur `branches: [main]`, donc une PR dont la
-# base n'est pas `main` ne les declenche jamais -- et GitHub rend quand meme
-# `mergeStateStatus: CLEAN`. L'advisory ne disait jusqu'ici que « la cible de
-# livraison n'est pas main » ; un reviewer attentif en a tire l'inverse
-# (« ce n'est donc pas un defaut », #15940). Le trou restait invisible la ou
-# on le regarde.
+# rien de ce que ce stack a COUTE en couverture. Mesure firsthand du depot
+# (2026-09-15) : 162 fichiers workflow, 90 declarent un trigger
+# `pull_request`, et 80 de ces 90 gatent ce trigger sur `branches: [main]`.
+# Une PR dont la base n'est pas `main` ne les declenche donc jamais -- et
+# GitHub rend quand meme `mergeStateStatus: CLEAN`. L'advisory ne disait
+# jusqu'ici que « la cible de livraison n'est pas main » ; un reviewer
+# attentif en a tire l'inverse (« ce n'est donc pas un defaut », #15940). Le
+# trou restait invisible la ou on le regarde.
+#
+# L'issue #16194 annonce « 80 des 148 ». Le numerateur reproduit exactement ;
+# le denominateur non -- 148 ne correspond ni aux 90 declarants ni aux 162
+# fichiers. Ce module porte la mesure, pas le chiffre de l'issue.
 #
 # Ces trois fonctions mesurent le trou : quels workflows se declencheraient si
 # la base etait `main`, et ne se declenchent pas ici.
@@ -83,6 +88,14 @@ def _glob_to_regex(pattern: str) -> re.Pattern:
     ``scripts/*`` y matcherait ``scripts/a/b.py``. Un workflow declare pour un
     seul niveau serait alors compte comme declenche, et l'ecart annonce au
     reviewer serait faux -- exactement le tort que #16194 mesure.
+
+    Sous-ensemble traduit : ``*``, ``**``, ``?``. Les formes ``+``, ``[...]``
+    et le ``!`` initial des filtres GitHub ne le sont **pas** -- elles seraient
+    lues litteralement. Mesure du 2026-09-15 : aucun des 162 workflows du
+    depot ne les emploie dans ``paths``/``branches``, donc la mesure n'en
+    depend pas aujourd'hui. La semantique exacte du ``?`` GitHub n'a pas ete
+    verifiee firsthand : si un filtre vient a l'employer, la verifier avant de
+    s'y fier.
     """
     out: list[str] = []
     i, n = 0, len(pattern)
