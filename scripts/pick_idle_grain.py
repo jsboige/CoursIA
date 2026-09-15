@@ -1016,6 +1016,11 @@ def filter_candidates_with_continuity(
     return fallback, fallback_funnel
 
 
+def requested_filter_funnel(funnel: dict[str, Any]) -> dict[str, Any]:
+    """Retourne la passe qui porte les filtres effectivement demandes."""
+    return funnel.get("first_pass", funnel)
+
+
 # Une issue portant l'une de ces etiquettes se consomme sans delai : le
 # dwell existe pour empecher l'emballement d'audit, pas pour retarder un
 # correctif de securite ou une regression qui casse main.
@@ -3684,7 +3689,7 @@ def main(argv: list[str] | None = None) -> int:
             "cache": cache_status,
             "filters": {
                 "active": filter_active,
-                "excluded": filter_funnel["excluded"],
+                "excluded": requested_filter_funnel(filter_funnel)["excluded"],
                 "funnel": filter_funnel,
                 "fallback_after_claims": continuity["used"],
             },
@@ -3713,13 +3718,14 @@ def main(argv: list[str] | None = None) -> int:
         if value not in (None, [], sorted(URN_NAMES))
     }
     if non_default_filters:
+        requested_funnel = requested_filter_funnel(filter_funnel)
         details = ", ".join(
             f"{name}={count}"
-            for name, count in filter_funnel["excluded"].items()
+            for name, count in requested_funnel["excluded"].items()
         ) or "aucune exclusion"
         print(
-            f"Filtres locaux : {filter_funnel['initial']} admis -> "
-            f"{filter_funnel['final']} candidats ({details})."
+            f"Filtres locaux : {requested_funnel['initial']} admis -> "
+            f"{requested_funnel['final']} candidats ({details})."
         )
         if filter_funnel.get("fell_back"):
             print("   Repli automatique applique : labels et bornes locales relaches ;")

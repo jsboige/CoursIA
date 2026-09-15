@@ -129,6 +129,20 @@ def test_narrow_local_filters_fail_open_to_a_bounded_second_pass():
     assert funnel["fallback_final"] == 1
     assert funnel["by_urn"]["grain"] == 1
     assert funnel["excluded_total"] == 0
+    requested = pig.requested_filter_funnel(funnel)
+    assert requested["excluded"] == {"require_label": 1}
+    assert requested["final"] == 0
+
+
+def test_requested_filter_funnel_preserves_non_fallback_contract():
+    items = [_item(1), _item(2, age=1)]
+    _, funnel = pig.filter_candidates_with_continuity(
+        items, min_age_days=5)
+    assert funnel["fell_back"] is False
+    assert pig.requested_filter_funnel(funnel) is funnel
+    assert pig.requested_filter_funnel(funnel)["excluded"] == {
+        "min_age_days": 1,
+    }
 
 
 def test_continuity_fallback_keeps_explicit_exclusions_and_urn_gate():

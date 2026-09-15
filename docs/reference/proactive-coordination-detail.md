@@ -165,7 +165,7 @@ python scripts/pick_idle_grain.py \
   --cache-status
 ```
 
-Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Un résultat vide nomme le filtre dominant à relâcher : il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
+Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Si ces filtres locaux vident la première passe, le picker les relâche automatiquement et l'annonce ; exclusions explicites et urnes restent fermes. Il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
 
 ### Picker — les deux axes de pondération (complément)
 
