@@ -8,7 +8,7 @@ name: Always-on guards
 # dont le travail reel additionne ~178 s de runner. Chacun paiait son propre
 # `actions/checkout` + `setup-python` et surtout OCCUPAIT UN SLOT -- c'est
 # le slot, pas la minute-CPU, qui est la ressource rare a 14 runners
-# heberges. Ce workflow paie un checkout et enchaine les quatorze organes.
+# heberges. Ce workflow paie un checkout et enchaine les quinze organes.
 #
 # Sources absorbees (les fichiers RESTENT, dormants -- declencheurs
 # pull_request retires, jobs conserves verbatim pour la tracabilite et les
@@ -89,7 +89,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 14 organes, 1 checkout"
+    name: "Always-on guards -- 15 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -1171,6 +1171,20 @@ jobs:
         continue-on-error: true
         run: python scripts/ci/check_absorbed_check_run_identity.py --check
 
+      # #16154 :: umbrella Grothendieck FR-only. Meme motif que hot-subset
+      # (#15196) : un cliquet aveugle a son sujet. Ce workflow n'a PAS de
+      # paths: (canary bloquante, cf en-tete + #10045), donc l'organe tourne
+      # sur CHAQUE PR -- une derive de l'umbrella (import `_en` reintroduit,
+      # module FR orphelin, import fantome) rougit au moment meme ou elle est
+      # introduite, pas au prochain build du lake. Purement local (aucun
+      # appel gh, aucun token) ; le verrou de detection est epingle par
+      # scripts/lean/tests/test_check_grothendieck_umbrella.py.
+      - name: "Umbrella Grothendieck FR-only (#16154)"
+        id: grothendieck_umbrella
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python scripts/ci/check_grothendieck_umbrella.py --check
+
       # Porte du cliquet hot-subset traduction (#15196, 5e occurrence du motif
       # #10416 -- un garde aveugle a son SUJET). Le cliquet SRC_DRIFT +
       # traduction deposee (#13551) vivait sous scripts-tests.yml, dont le
@@ -1293,6 +1307,7 @@ jobs:
           check identity     "${{ steps.identity.outcome }}"
           check hot_subset   "${{ steps.hot_subset.outcome }}"
           check results_weight "${{ steps.results_weight.outcome }}"
+          check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1
