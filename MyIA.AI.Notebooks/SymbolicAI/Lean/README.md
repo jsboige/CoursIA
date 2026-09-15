@@ -100,6 +100,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+| 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | Companion **natif** du lake `conway_lean` : la borne de Tsirelson exécutée in-kernel — `#check` de la signature exacte (7 classes de types + `IsCHSHTuple`, conclusion `≤ (2 * √2) • 1`), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, frontière classique mesurée (score `2` atteint, mélange équilibré → `0`), contrôle positif de kernel contre le REPL muet (#11874) et 3 exercices - Epic #13106 | 30 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | Companion **natif** (kernel Lean) : les 7 déclarations du lake `finiteness_lean` (`Regex`, `nullable`, `deriv`, `derivWord`, `accepts`, `aStar`, `abWord`) re-déclarées fidèlement (kernel sans oleans), vérifiées et exécutées in-kernel, finitude observée sur une regex à union (6 préfixes → 4 dérivées distinctes) | 20 min |
 
@@ -135,7 +136,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 18 | [Search-03e-AStar-Optimality](../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_le_suffix_cost` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
 
-### Partie 7 : Digestions de résultats profonds et companions (Sendov, Tao, PFR, MIMO, Galois, ERC-20, calibration, décision, Hopf S⁶)
+### Partie 7 : Digestions de résultats profonds et companions (Sendov, Tao, PFR, MIMO, Galois, ERC-20, calibration, décision, Hopf S⁶, Hecke, groupes formels, Euler et Navier–Stokes)
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
@@ -154,8 +155,11 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 26 | [Lean-26-Munkres-Tribute](Lean-26-Munkres-Tribute.ipynb) | Hommage à James R. Munkres (1930-2026), le cours 18.901 dans Mathlib en kernel **natif** `lean4-wsl`, exécuté sur le lake `mathlib_examples` (environnement d'exécution Mathlib, cf. [`mathlib_examples/`](mathlib_examples/)) : les cinq chapitres du manuel *Topology* — axiomes (`IsOpen`), adhérence/intérieur (`nhds`, dualités §17 ex. 6), continuité (`continuous_def` = Munkres §18.1), T2/compacité, connexité — chaque notion interrogée par `#check`/`example`/`#print axioms` (0 axiome), 3 exercices `sorry` | 30 min |
 | 27 | [Lean-27-EdgeColoring-Tutte-Companion](Lean-27-EdgeColoring-Tutte-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du notebook [App-22](../../Search/Applications/CSP/App-22-EdgeColoring-Tutte.ipynb) (théorème apex arXiv 2608.22870, #13031) : définitions `IsCubic`/`Edge3Colorable`/`IsApexRelativeTo` posées sur `SimpleGraph` (absentes de Mathlib, vérifié), Petersen = Kneser KG(5,2) via `SimpleGraph.mk'` — 10 sommets, 15 arêtes, cubique prouvés par `decide`, backtracking `#eval` qui certifie l'absence de toute 3-coloration d'arêtes (`0`) avec contrôle positif K4 (`6`), ancrage `SimpleGraph.tutte` | 35 min |
 | 28 | [Lean-28-Complex-Structure-S6](Lean-28-Complex-Structure-S6.ipynb) | Le problème de Hopf résolu : une structure complexe intégrable sur S⁶ (énoncé `Mathoverflow1973` de Formal Conjectures) — digestion du fil constructif (triangle (3,4,∞), accouplement de Shioda ⟨P,P⟩=1/6 calculé, transformations logarithmiques 3 et 4, remplissage de Mumford dP₆, reconnaissance Hurewicz→Smale→Kervaire–Milnor) avec deux invariants **calculés** (\|π₁\| = \|4m+3n\| par forme normale de Smith, χ = 2), reproduction **réelle** du dépôt piné `plby/HopfProblem` via `hopf_s6_reproduction.py` (248 818 lignes compilées en 1154 s, 0 sorry/0 axiom, comparator double kernel Lean+nanoda : *« Your solution is okay! »*, axiomes [propext, Classical.choice, Quot.sound]) et attribution différenciée (manuscrit écrit par Claude/communiqué par Alpöge, exposition Engel avec caveat, code Lean majoritairement Codex) | 45 min |
+| 29 | [Lean-29-Hecke-Operators-Native](Lean-29-Hecke-Operators-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `hecke_lean` (port pédagogique de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les opérateurs de Hecke T_p et U_p sur le demi-plan supérieur — représentants γ_{p,j} et partie diagonale, action de slash et ses deux comportements opposés, formule des coefficients a(np) + p^{k−1}·a(n/p) portée par `coeffHeckeT` — chaque déclaration interrogée par `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
+| 30 | [Lean-30-FormalGroups-Native](Lean-30-FormalGroups-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
+| 31 | [Lean-31-Euler-Navier-Stokes](Lean-31-Euler-Navier-Stokes.ipynb) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict — kernel `python3`, 10 cellules code exécutées sans erreur, 3 exercices | 45 min |
 
-**Durée totale** : ~33h30min
+**Durée totale** : ~39h25min
 
 ## Acquis d'apprentissage
 
@@ -185,7 +189,9 @@ A l'issue de la série, vous saurez :
 
 - **Lire le paysage galoisien moderne** : la preuve formelle que **M₂₃ (groupe sporadique de Mathieu d'ordre 10 200 960) est simple** est *vendored* dans le companion `galois_lean/` (PR #10486, août 2026, Apache-2.0) ; la réalisation galoisienne — *M₂₃ groupe de Galois sur ℚ* — est **prouvée** dans le préprint (Huang–Jackson–Lee–Poonen–Pries–Zhang, arXiv:2608.08538, 9 août 2026 : polynôme explicite f₁ de degré 23, identification `23T5`) mais **non formalisée** — le notebook [Lean-22](Lean-22-Galois-Probleme-Inverse-M23.ipynb) exécute la preuve formelle côté groupe et vérifie f₁ computationnellement, les deux énoncés soigneusement distingués (Epic #10478).
 
-- **Construire le témoin d'une incohérence** : le Dutch book de de Finetti — si les prix violent l'inclusion-exclusion, un livret (+1,+1,−1,−1) encaisse l'écart uniformément dans tous les états (miroir exact du lake `decision_theory_lean`, arithmétique exacte `Fraction`), et un balayage borné certifie l'absence de livre sur le système réparé ; symétriquement, seule la transformation **affine** d'une utilité vNM préserve les préférences (0 divergence) quand le carré en fabrique (124 sur les 2145 paires de 66 loteries). Notebook 27.
+- **Construire le témoin d'une incohérence** : le Dutch book de de Finetti — si les prix violent l'inclusion-exclusion, un livret (+1,+1,−1,−1) encaisse l'écart uniformément dans tous les états (miroir exact du lake `decision_theory_lean`, arithmétique exacte `Fraction`), et un balayage borné certifie l'absence de livre sur le système réparé ; symétriquement, seule la transformation **affine** d'une utilité vNM préserve les préférences (0 divergence) quand le carré en fabrique (124 sur les 2145 paires de 66 loteries). Notebook 25.
+
+- **Séparer exposition et vérification d'un résultat formel profond** : relire les chaînes Euler/BKM et les deux adaptateurs Navier–Stokes sans confondre leur portée mathématique avec l'acceptation mécanique, puis re-dériver un verdict fail-closed depuis huit termes indépendants — identité, dépendances, toolchain, confinement, axiomes, intégrité et deux gates exacts. Notebook 31.
 
 Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
@@ -210,6 +216,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
+| 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
 | 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 15 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
@@ -241,6 +248,11 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 24 | Calibration-Native-Companion | ~27 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
 | 25 | Coherence-et-Temoin | ~21 | 3 | 0 | **NOUVEAU** (kernel python3, miroir exact du lake) |
 | 26 | Munkres-Tribute | ~9 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| 27 | EdgeColoring-Tutte-Companion | ~10 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`, compagnon App-22) |
+| 28 | Complex-Structure-S6 | ~28 | 3 | 0 | **NOUVEAU** (kernel python3, reproduction du dépôt piné) |
+| 29 | Hecke-Operators-Native | ~32 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
+| 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
+| 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
@@ -423,6 +435,7 @@ Lean/
 ├── Lean-16i-Translateur-Life.ipynb                 # Python kernel - synthèse d'un translateur minuscule (SAT borné, Loi II, Chantier 2 #12205)
 ├── Lean-16j-Conway-Hashlife-Correctness-Native.ipynb # Lean4 (WSL) kernel - compagnon Hashlife correctness (cône, MacroCell, 4 murs, marge, batterie adverse, Epic #11703)
 ├── Lean-13-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
+├── Lean-13b-CHSH-Tsirelson-Native.ipynb # Lean4 (WSL, conway-build) kernel - borne de Tsirelson : signature, axiomes, frontière classique (Epic #13106)
 ├── Lean-14-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
 ├── Lean-16f-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
@@ -445,6 +458,9 @@ Lean/
 ├── Lean-26-Munkres-Tribute.ipynb # Lean4 (WSL) kernel - hommage Munkres, cours 18.901 dans Mathlib (mathlib_examples, #check/#print axioms natifs)
 ├── Lean-27-EdgeColoring-Tutte-Companion.ipynb # Lean4 (WSL) kernel - coloration d'arêtes & Tutte (définitions SimpleGraph, Petersen exécutable, decide/eval)
 ├── Lean-28-Complex-Structure-S6.ipynb # Python kernel - problème de Hopf sur S⁶ (digestion Engel + reproduction plby/HopfProblem piné, comparator double kernel)
+├── Lean-29-Hecke-Operators-Native.ipynb # Lean4 (WSL) kernel - opérateurs de Hecke T_p/U_p natifs (lake hecke_lean, #check/#print axioms in-kernel)
+├── Lean-30-FormalGroups-Native.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
+├── Lean-31-Euler-Navier-Stokes.ipynb # Python kernel - reproduction pinée Euler/Navier–Stokes, double noyau, confinement et re-dérivation fail-closed
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
