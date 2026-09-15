@@ -1,7 +1,7 @@
 - name: Tweety-8 Agent-Dialogues
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Lib-vs-lib meme moteur Java TweetyProject (agents/dialogues/oppmodels + ExecutableExtension de Thimm 2012) : C# branche IKVM 8.14.0 avec org.tweetyproject.tweety-dialogues.dll (source-recompilee depuis agents/dialogues-1.30, Java 8 pur, javac --release 8) invoquee via Assembly.LoadFrom + GetType(''org.tweetyproject.agents.dialogues.ExecutableExtension'') ; Python branche JPype + from org.tweetyproject.agents.dialogues import ExecutableExtension, meme moteur Java runtime. Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : le pont est LIVRE ET VERIFIE -- PR #10544 MERGED 2026-08-12 (commit e3aa1150a), DLLs trackees sur disque, kernel .NET Interactive execute le twin C# avec vraie instantiation du type ExecutableExtension et debat grounded, sorties reelles commitees. Le RECOVERABLE-LOCAL anterieur datait du moment ou il refutait l''INTRINSIC de #10537 : la livraison a eu lieu depuis, le verdict n''avait pas suivi (stale post-delivery). Residuel (known_difference) : la recompilation de la DLL depuis les sources Java exige un JDK 8+ local (javac --release 8, build documente dans dotnet-build/rebuild-dialogues.sh) -- note de maintenance, pas un gap de bridge.'

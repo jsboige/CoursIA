@@ -15,7 +15,19 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 - `--dispatch` : forcer une passe de dispatch explicite vers les lanes idle
 - `--focus <topic>` : concentrer le cycle sur un sujet (texte libre : lean, genai, qc, renum, ...)
 
+## Budget de cycle (HARD — mandat user 2026-09-14)
+
+1. **Un cycle tient en 1 h a 1 h 30 de travail entre deux crons de 4 h**, puis la session se rendort. Verbatim user : « Ca donne entre 1h et 1h30 max de travail entre 2 crons, c'est deja beaucoup je pense, et il ne faudrait pas depasser ca. Sinon c'est un defaut de delegation. »
+2. **Decoupe interne des phases — EN ATTENTE DE MESURE.** Le user a recuse une decoupe chiffree posee au jugement : « sur les durees suggerees c'est au doigt mouille, hein, le mieux serait d'etudier ce qui a bien marche debut juillet quand on produisait beaucoup sans pour autant trop lesiner sur la qualite ». La mesure du regime de debut juillet (fenetre 2026-07-01 → 07-14) est deleguee a la lane `myia-ai-01:claudish` (DM `msg-20260914T195758-l93rsb`). **A REMPLACER par la decoupe mesuree — ne pas poser de chiffre au jugement.** Tant que cette mesure n'est pas rendue, aucune duree de phase n'est normative : les trois phases gardent leur ORDRE (grounding → dispatch → travail reel) sans budget chiffre.
+3. **Mesurer le temps activement**, pas au ressenti : `date -u` en entree et en sortie de chaque phase ; le total du cycle est annonce dans le rapport de fin.
+4. **Un depassement se traite en DELEGUANT**, jamais en rognant le grounding ou le dispatch.
+5. **Tout ce qui est delegable EST delegue**, sans arbitrage au cas par cas. Attendre le cron suivant pour recuperer un resultat est gratuit — verbatim : « tu peux tout a fait attendre un cron pour economiser tes tokens, on n'est pas a 4h pres sauf crise a gerer ».
+6. **Le contenu appartient au coordinateur adjoint** (`myia-po-2025:CoursIA-2`) : notebooks, series, pedagogie. ai-01 ne garde que les PRs de **CI et de harnais**. Entrer dans le corps d'une PR de contenu est par defaut une faute de budget.
+7. **Les taches lourdes** (tests, builds lake, trainings, papermill) se lancent en arriere-plan **AU DEBUT de la phase de travail reel**, pour travailler en foreground pendant leur execution.
+
 ## Process
+
+Les phases ci-dessous s'executent sous le budget defini par la section `## Budget de cycle` ci-dessus : 1 h a 1 h 30 de travail au total, tout depassement etant un defaut de delegation.
 
 ### Phase 1 - Contexte memoire
 
@@ -29,7 +41,7 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 1. **Dashboards (canal PRINCIPAL) — lire LES DEUX, independamment** : `roosync_dashboard(action:"read", type:"workspace", section:"all")` pour `workspace-CoursIA` **et** pour `workspace-CoursIA-2`. Deux lanes co-egales ; **aucune n'est "le dashboard du coordinateur"**. Une `lane` = machine x workspace : chaque machine avec une lane CoursIA-2 a AUSSI une lane CoursIA. Lire chacun separement pour ne rater aucun ASK/blocker.
 2. **Inbox DM — drainer et EXTRAIRE, jamais survoler** : `roosync_messages(action:"inbox", status:"unread", deep:true)` — **sans `deep:true` le compte de non-lus est un faux zero**. Deux gestes, dans cet ordre. **(a) Purger les classes qui doublonnent une surface deja lue** — `bulk_mark_read(subject_contains:"Worker Report")` et `bulk_mark_read(subject_contains:"[MENTION] Dashboard")` : sans ca l'arriere se reconstruit a ~8 DM/h et noie le signal utile, qui pese moins de 10 % du volume. **(b) Extraire la liste nommee des PRs deja pre-machees** — marqueurs `[ADJOINT PREFLIGHT]`, `[ADJOINT VERIFIED]`, `[ADJOINT DECISION PACK]`, `preflight exact-head`. Cette liste est une **entree obligatoire de la Phase 3.3** : le pre-machage est produit qu'on le lise ou non ; non consomme, il est paye deux fois.
 3. **GitHub** : `gh pr list --state open` (a merger) + le pool **tire, jamais scanne** — `python scripts/pick_idle_grain.py --lane myia-ai-01:CoursIA` (un `gh issue list` nu plafonne a 30, tries par recence : il ne montre que ce que je viens de creer, et c'est ce biais que le steering doit eviter de reproduire).
-4. **Cron** : `CronList` — si le job coordinateur a disparu (session-only), re-armer `CronCreate("13 0-23/2 * * *", "/coordinate", recurring)`. Cadence unique, PAS de 2e cron ni ScheduleWakeup en plus.
+4. **Cron** : `CronList` — si le job coordinateur a disparu (session-only), re-armer `CronCreate("27 */4 * * *", "/coordinate", recurring)` — **4 h, minute off-`:00`** (mandat user 2026-09-13, crise de consommation Anthropic : le coordinateur doit etre le dernier agent a tourner sur le provider ; le jitter evite de frapper l'API a la meme seconde que le reste de la flotte). Cadence unique, PAS de 2e cron ni ScheduleWakeup en plus — un cycle plus long que sa cadence annule deja ses propres declenchements, en empiler un second ne fait qu'ajouter de la conso.
 
 ### Phase 3 - Dispatchs, relances, memoire (LES 30 PREMIERES MINUTES)
 
