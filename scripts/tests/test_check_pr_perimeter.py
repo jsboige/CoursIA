@@ -3885,3 +3885,110 @@ def test_16085_cas_b_additive_ninclut_pas_la_provenance():
         "fichiers de `fe04e1f37`, ~793 lignes) : relayée."
     )
     assert _additive_line_sum(line) == 0
+
+
+# ---------------------------------------------------------------------------
+# #16162 — un compte sous negation ou portant sur une AUTRE PR n'est pas
+# un perimetre. Fondateurs mesures par ai-01 sur deux PRs ouvertes :
+# #16147 (« Ne convertit pas le notebook en deux fichiers ») et #16157
+# (« le diff de #16125 (2 fichiers, ...) »).
+# ---------------------------------------------------------------------------
+FOUNDER_16147_LINE = (
+    "- **Ne convertit pas** le notebook en **deux fichiers** "
+    "(`-solutions.ipynb` frere) — option jugée plus lourde pour un gain "
+    "pédagogique équivalent."
+)
+
+FOUNDER_16157_LINE = (
+    "le diff de **#16125** (**2 fichiers**, tests hermétiques monkeypatch-only, "
+    "audit statique : zéro écriture d'état global) ne peut pas produire ces "
+    "signatures"
+)
+
+
+def test_16162_negated_word_form_founder_passes():
+    """Fondateur 1 (#16147) : le word-form « deux fichiers » decrit une
+    option ECARTEE -- ni mismatch, ni « formulation non verifiable » en
+    second message (la sonde --assert de l'issue doit passer verte)."""
+    files = [{
+        "path": "MyIA.AI.Notebooks/GenAI/FineTuning/"
+                "FT-00b-LoRA-Hyperparams-from-scratch.ipynb"
+    }]
+    assert check_assertion(files, FOUNDER_16147_LINE) == []
+
+
+def test_16162_negated_digit_form_passes():
+    """Variante chiffree du fondateur 1 : « n'ajoute pas 2 fichiers »."""
+    files = [{"path": "a.py"}]
+    assert check_assertion(files, "n'ajoute pas 2 fichiers de doc (option écartée)") == []
+
+
+def test_16162_other_pr_digit_founder_passes():
+    """Fondateur 2 (#16157) : le « 2 fichiers » mesure le diff de #16125,
+    pas le perimetre de la PR courante (4 fichiers)."""
+    files = [{"path": f"f{i}.py"} for i in range(4)]
+    assert check_assertion(files, FOUNDER_16157_LINE) == []
+
+
+def test_16162_other_pr_word_form_twin_passes():
+    """Jumeau word-form du fondateur 2 : cardinal en lettres dans la
+    parenthese d'une autre PR."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    line = "le diff de #16125 (deux fichiers, tests) ne peut pas produire ceci"
+    assert check_assertion(files, line) == []
+
+
+def test_16162_negation_keeps_the_real_perimeter_red():
+    """Controle FN : l'assertion perimetrique fondatrice reste rouge."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    line = "Périmètre : 2 fichiers uniquement, aucune autre modification."
+    assert check_assertion(files, line) != []
+
+
+def test_16162_clause_break_reopens_assertion():
+    """Controle FN : un separateur de clause entre le negateur et le compte
+    rouvre l'assertion -- « Ce n'est pas le cas : 2 fichiers » porte un
+    vrai compte (le « pas » nie « le cas », pas le compte)."""
+    files = [{"path": f"f{i}.py"} for i in range(3)]
+    assert check_assertion(files, "Ce n'est pas le cas : 2 fichiers touchés") != []
+
+
+def test_16162_universality_is_not_a_negation():
+    """« pas seulement N fichiers » elargit l'ensemble, il ne nie pas le
+    compte -- comportement d'avant #16162 conserve (non mesure)."""
+    files = [{"path": f"f{i}.py"} for i in range(3)]
+    assert check_assertion(files, "pas seulement 2 fichiers touchés") != []
+
+
+def test_16162_count_outside_parens_stays_red():
+    """Controles FN de la forme parenthese : le compte HORS parenthese
+    reste confrontable, qu'une ref #N suive ou precede."""
+    files = [{"path": f"f{i}.py"} for i in range(3)]
+    assert check_assertion(files, "1 fichier (cf. #16062)") != []
+    assert check_assertion(files, "Merge de #16062 : 2 fichiers") != []
+
+
+def test_16162_negated_count_never_joins_additive_sum():
+    """Le compte nie n'entre pas dans la somme additive (#12103) : « 1
+    fichier modifie, ne touche pas 2 fichiers de docs » declare 1, pas 3."""
+    line = "1 fichier modifié, ne touche pas 2 fichiers de docs"
+    assert _additive_line_sum(line) == 1
+
+
+def test_16162_other_pr_count_never_joins_additive_sum():
+    line = "le diff de #16062 (3 fichiers, déjà mergé), 2 fichiers touchés ici"
+    assert _additive_line_sum(line) == 2
+
+
+def test_16162_scan_thread_extracts_founders_without_blocking():
+    """Voie --scan-thread (le gate CI) : les lignes fondatrices restent des
+    candidates visibles mais la ligne n'est pas bloquante."""
+    body = FOUNDER_16147_LINE + "\n" + FOUNDER_16157_LINE + "\n"
+    cands = select_candidates(
+        [{"body": body, "kind": "PR body", "author": "w", "source": "body"}],
+        n_files=4,
+    )[0]
+    assert len(cands) == 2
+    files = [{"path": f"f{i}.py"} for i in range(4)]
+    for c in cands:
+        assert check_assertion(files, c.text, block=c.block, body_hint=c.body_text) == []

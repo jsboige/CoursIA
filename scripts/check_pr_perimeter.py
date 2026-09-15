@@ -436,6 +436,84 @@ def _count_is_out_of_scope_annotation(body: str, m: re.Match) -> bool:
     return bool(_OUT_OF_SCOPE_LINE.search(line))
 
 
+# #16162 : deux familles de comptes qui ne sont PAS des pretentions sur le
+# perimetre de CETTE PR, mais que COUNT_CLAIM lit comme telles. Fondateurs
+# mesures par ai-01 sur deux PRs ouvertes simultanement :
+#   - PR #16147 : « Ne convertit pas le notebook en deux fichiers (...) » --
+#     une option ECARTEE, lue comme un perimetre de 2 contre une liste de 1.
+#   - PR #16157 : « le diff de #16125 (2 fichiers, tests hermetiques ...) »
+#     -- le compte decrit le diff d'UNE AUTRE PR, confronte a la liste de 4
+#     de #16157.
+# Meme famille d'echec que _ONLY_STANDALONE (#11654) et _NEG_PREFIX (#12547)
+# sur la branche des marqueurs d'exclusivite : le nombre est present, sa
+# force ne l'est pas. Ces predicats ferment la branche voisine des comptes.
+_NEG_COUNT_CLOSER = re.compile(r"\b(?:pas|plus|jamais|not|never)\b", re.IGNORECASE)
+_NEG_COUNT_OPENER_FR = re.compile(r"\b(?:ne|n')\b", re.IGNORECASE)
+# « pas seulement N » / « pas juste N » / « not only N » elargissent
+# l'ensemble, ils ne nient pas le compte : pas une negation au sens de ce
+# filtre (le compte garde son comportement d'avant #16162, non mesure).
+_NEG_COUNT_UNIVERSALITY = re.compile(r"^\s*(?:seulement|juste|que|only)\b", re.IGNORECASE)
+# Un separateur de clause entre le closer et le compte rouvre l'assertion :
+# « Ce n'est pas le cas : 2 fichiers touches » porte un vrai compte (controle
+# FN du fondateur -- le closer nie « le cas », pas le compte qui suit).
+_NEG_COUNT_CLAUSE_BREAK = re.compile(r"[:;]")
+_PR_NUM_REF = re.compile(r"#\d+")
+
+
+def _count_is_negated(line: str, m: re.Match) -> bool:
+    """#16162 : True when the count match `m` sits after a closed negation
+    bracket on the same line (« Ne convertit pas le notebook en deux
+    fichiers », founder #16147) -- the count names a REJECTED option, the
+    opposite of a perimeter claim. FR closers (pas/plus/jamais) need their
+    « ne » opener earlier on the line; EN closers (not/never) self-certify.
+    Universality phrases (« pas seulement N ») are skipped and a clause
+    break (':' ';') between the closer and the count reopens the assertion
+    (FN control « Ce n'est pas le cas : 2 fichiers » stays red)."""
+    before = line[: m.start()].rsplit("\n", 1)[-1]
+    for cm in _NEG_COUNT_CLOSER.finditer(before):
+        if _NEG_COUNT_UNIVERSALITY.match(before, cm.end()):
+            continue
+        if cm.group(0).lower() in ("pas", "plus", "jamais"):
+            if not _NEG_COUNT_OPENER_FR.search(before[: cm.start()]):
+                continue
+        run_up = before[cm.end():]
+        if _NEG_COUNT_CLAUSE_BREAK.search(run_up):
+            continue
+        if len(run_up) <= 60:
+            return True
+    return False
+
+
+def _count_is_other_pr(line: str, m: re.Match) -> bool:
+    """#16162 : True when the count sits inside a parenthetical span whose
+    opening '(' follows a #PR reference within ~20 chars (« le diff de
+    #16125 (2 fichiers, ...) », founder #16157) -- the count measures
+    ANOTHER PR's diff, not this one. Parenthetical shape only: « 1 fichier
+    (cf. #16062) » or « Merge de #N : 2 fichiers » carry their count OUTSIDE
+    the parens and stay confrontable (FN controls). The imparfait variant
+    (« la PR precedente touchait 3 fichiers ») is already Forme 5
+    (PAST_REFERENCE, #11790) at the routing level."""
+    depth = 0
+    open_pos = -1
+    for i in range(m.start() - 1, -1, -1):
+        ch = line[i]
+        if ch == "\n":
+            break  # the parenthetical shape is a same-line notation
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            if depth == 0:
+                open_pos = i
+                break
+            depth -= 1
+    if open_pos < 0:
+        return False
+    refs = list(_PR_NUM_REF.finditer(line[:open_pos].rsplit("\n", 1)[-1]))
+    if not refs:
+        return False
+    return open_pos - refs[-1].end() <= 20
+
+
 # #13946 fallback : enumeration verb « touche N » / « toucher N » /
 # « touches N » (FR + EN) followed by an optional space + opening paren or
 # end-of-line. Matches the FIRST occurrence; subsequent occurrences on later
@@ -537,6 +615,8 @@ def check_assertion(
                 and not _count_in_citation(scan_target, mm)
                 and not _count_is_range_enum(scan_target, mm)
                 and not _count_is_out_of_scope_annotation(scan_target, mm)
+                and not _count_is_negated(scan_target, mm)
+                and not _count_is_other_pr(scan_target, mm)
             ),
             None,
         )
@@ -610,6 +690,10 @@ def check_assertion(
         # objects of a comparison, not the perimeter (founder #13736 l.26).
         if _word_form_is_indef_non_pr_subject(scan_target, files):
             pass
+        elif _word_form_is_negated(scan_target):
+            pass
+        elif _word_form_is_other_pr(scan_target):
+            pass
         elif _word_form_is_measurement_object(scan_target):
             pass
         elif _word_form_is_measurement_result(scan_target, block):
@@ -631,7 +715,19 @@ def check_assertion(
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
                     )
-    if not count_claim and word_count is None and not exclusive and not guard_self:
+    # #16162 : une ligne dont TOUS les comptes chiffres ont ete eteints
+    # comme non-claims (negation, autre PR) n'est pas une « formulation non
+    # verifiable » -- l'auteur n'a rien revendique sur son perimetre. Sans
+    # ce garde, la sonde --assert de l'issue resterait rouge avec un second
+    # message apres la disparition du mismatch.
+    non_claim_count = any(
+        _count_is_negated(scan_target, mm) or _count_is_other_pr(scan_target, mm)
+        for mm in COUNT_CLAIM.finditer(scan_target)
+    )
+    if (
+        not count_claim and word_count is None and not exclusive
+        and not guard_self and not non_claim_count
+    ):
         problems.append(
             "assertion sans compte de fichiers ni marqueur d'exclusivite reconnaissable -- "
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"
@@ -1247,6 +1343,31 @@ def _word_form_is_measurement_result(text: str, block: str = "") -> bool:
     return bool(result)
 
 
+def _word_form_is_negated(line: str) -> bool:
+    """#16162 word-path twin of _count_is_negated: _word_form_count returns
+    an int and loses the trigger's position, so this guard re-finds each
+    word-form trigger and reuses the positional predicate. Founder #16147 :
+    « Ne convertit pas le notebook en deux fichiers » -- the word-form
+    count of a REJECTED option."""
+    for _word, _n, trig in WORD_FORM_TRIGGERS:
+        for m in trig.finditer(line):
+            if _count_is_negated(line, m):
+                return True
+    return False
+
+
+def _word_form_is_other_pr(line: str) -> bool:
+    """#16162 word-path twin of _count_is_other_pr (same re-find pattern):
+    a spelled-out cardinal inside the parenthetical of another PR's
+    reference (« le diff de #16125 (deux fichiers, ...) ») measures that
+    other PR, not this one."""
+    for _word, _n, trig in WORD_FORM_TRIGGERS:
+        for m in trig.finditer(line):
+            if _count_is_other_pr(line, m):
+                return True
+    return False
+
+
 def _additive_line_sum(line: str) -> int:
     """#12103: sum of the line's COUNT_CLAIM values that survive the per-count
     filters. An additive enumeration -- "1 fichier modifie, 1 fichier ajoute" --
@@ -1269,6 +1390,8 @@ def _additive_line_sum(line: str) -> int:
         and not _count_in_citation(line, m)
         and not _count_is_range_enum(line, m)
         and not _count_is_out_of_scope_annotation(line, m)
+        and not _count_is_negated(line, m)
+        and not _count_is_other_pr(line, m)
     )
     low = line.lower()
     for _word, n, trig in WORD_FORM_TRIGGERS:

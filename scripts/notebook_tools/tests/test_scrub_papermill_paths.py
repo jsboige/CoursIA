@@ -548,6 +548,38 @@ def test_scrub_outputs_posix_checkout_root(tmp_path):
     assert json.loads(after)["cells"][0]["source"] == ["setup()"]
 
 
+def test_scrub_outputs_worktree_checkout_root(tmp_path):
+    """A WORKTREE checkout root (CoursIA-<sujet>, the fleet's canonical
+    ``git worktree add ../CoursIA-<sujet>`` layout) -> <repo>.
+
+    Regression: Lean-15b (#16205). The ``-2``-only tail ``CoursIA(?:-2)?``
+    matched plain clones but not worktree dirs (``CoursIA-16200-lean15b``),
+    so a re-execution FROM a worktree left its raw checkout path in the
+    setup cell's output and the Output-failure ratchet flagged
+    MACHINE_PATH +2.
+    """
+    raw = (
+        "Setup OK : projet detecte a D:\\dev\\CoursIA-16200-lean15b\\MyIA."
+        "AI.Notebooks\\SymbolicAI\\Lean\\grothendieck_lean\n"
+        "  WSL path : /mnt/d/dev/CoursIA-16200-lean15b/MyIA.AI.Notebooks/"
+        "SymbolicAI/Lean/grothendieck_lean\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "setup()", raw)
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    after = p.read_text(encoding="utf-8")
+    out_text = "".join(json.loads(after)["cells"][0]["outputs"][0]["text"])
+    # BOTH views (Windows + WSL) of the worktree root anonymized
+    assert out_text.count("<repo>") == 2
+    assert "CoursIA-16200-lean15b" not in out_text
+    assert "D:\\dev" not in out_text
+    # the repo-relative tail survives
+    assert "SymbolicAI\\Lean\\grothendieck_lean" in out_text
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["setup()"]
+
+
 def test_scrub_outputs_repo_regex_does_not_span_newlines(tmp_path):
     """A Windows checkout path and a POSIX checkout path on consecutive lines
     are scrubbed INDEPENDENTLY; the _REPO_RES char class must not accept newlines
@@ -611,7 +643,7 @@ def test_cli_apply_scrubs_multiple_files_in_one_invocation(tmp_path):
     b = _write_leaked(tmp_path / "nbB.ipynb", "nbB")
     r = subprocess.run(
         [sys.executable, _SCRIPT, "--apply", str(a), str(b)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert r.returncode == 0, r.stderr
     # BOTH files scrubbed to their basename, not just the first positional arg.
@@ -627,7 +659,7 @@ def test_cli_apply_leaves_clean_notebook_untouched(tmp_path):
     clean_before = clean.read_bytes()
     r = subprocess.run(
         [sys.executable, _SCRIPT, "--apply", str(leaked), str(clean)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert r.returncode == 0, r.stderr
     assert _pm(leaked)["output_path"] == "leaked.ipynb"
@@ -640,7 +672,7 @@ def test_cli_apply_is_idempotent(tmp_path):
     for _ in range(2):
         r = subprocess.run(
             [sys.executable, _SCRIPT, "--apply", str(a)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         assert r.returncode == 0, r.stderr
     assert _pm(a)["output_path"] == "nbA.ipynb"
@@ -649,7 +681,7 @@ def test_cli_apply_is_idempotent(tmp_path):
 def test_cli_apply_requires_at_least_one_path(tmp_path):
     r = subprocess.run(
         [sys.executable, _SCRIPT, "--apply"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert r.returncode != 0
     assert "at least one argument" in r.stderr
