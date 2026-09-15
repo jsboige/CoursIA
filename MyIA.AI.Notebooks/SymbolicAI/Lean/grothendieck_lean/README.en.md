@@ -30,7 +30,7 @@ Three paths are offered depending on your goal:
 
 3. **Reader interested in the Lawvere–Tierney ↔ Grothendieck bridge.** Parts 58 (classifier `Ω`), 59 (closure operator `j` on Ω), 60 (the dictionary: Grothendieck topologies = Lawvere–Tierney topologies, the two notions coincide). This is the bridge where categorical logic meets relative geometry.
 
-**Navigation conventions.** Modules are grouped into `Grothendieck/` and `SheafCohomology/` folders; each `Foo.lean` module has a sibling `Foo_en.lean` for the English version (i18n convention, EPIC #4980). The table below gives, for each Part, the FR module + the `_en` module + one content line.
+**Navigation conventions.** Modules are grouped into `Grothendieck/` and `SheafCohomology/` folders; each `Foo.lean` module has a sibling `Foo_en.lean` for the English version (i18n convention, EPIC #4980). The `Grothendieck.lean` umbrella is a **FR-only** reading index: it imports every FR module and never an `_en` one — English siblings remain built by the lakefile `globs` (#16154, invariant held by `scripts/lean/tests/test_check_grothendieck_umbrella.py`). The table below gives, for each Part, the FR module + the `_en` module + one content line.
 
 ## The arc
 
