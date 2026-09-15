@@ -16,7 +16,10 @@ toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `standalone-tacti
 `hecke_lean` (#14784, premier lake sur la cible 4.33.0 de #14773 — port pédagogique
 FLT, autonomous, 0 sorry) sans refresh complet des autres lignes. Ajout ponctuel
 2026-09-06 : ligne `formal_groups_lean` (#14785, deuxième lake 4.33.0 — même ancrage
-FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
+FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke). Passage ponctuel
+2026-09-14 : ligne `knot_lean` à v4.33.0 (#15829 — déblocage de la synthèse `Decidable`
+de `Knots/Invariant.lean`, troisième lake sur la cible #14773), sans refresh complet
+des autres lignes.
 
 ## Résumé
 
@@ -24,7 +27,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 8² | 15 | 3 | PEDA/REF | #2874, #3003, #14821 |
+| `knot_lean` | v4.33.0 | 10² | 15 | 3 | PEDA/REF | #2874, #3003, #14821, #15829 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
