@@ -427,21 +427,61 @@ def execute_notebook_native(notebook: str, output: str | None = None,
 # `output_type == "error"` rend donc le meme `0 errors` sur un kernel mort et
 # sur un kernel sain (#16176, finding 1) -- et c'est ce verdict que cite la
 # preuve d'execution H.1 de toute PR de notebook Lean natif.
-_LEAN_MESSAGES_KEY = '{"messages"'
+#
+# L'ancre est la CLE `"messages"`, jamais le prefixe `{"messages"` : le REPL ne
+# garantit pas que `messages` soit le PREMIER champ du bloc. Mesure du
+# 2026-09-15 sur les 1291 notebooks du depot : 1030 blocs portent la cle
+# `messages`, et 108 d'entre eux commencent par `sorries` -- une ancre de
+# prefixe en ratait donc 108 en silence, rendant un nombre PLUS PETIT que la
+# verite sans le dire : le defaut meme que ce compteur corrige, un cran plus
+# fin.
+_LEAN_MESSAGES_KEY = '"messages"'
 
 
 def _output_texts(output: dict):
-    """Rend les chaines d'une sortie de cellule (display_data/execute_result/stream)."""
-    kind = output.get("output_type")
-    if kind in ("display_data", "execute_result"):
-        for value in (output.get("data") or {}).values():
+    """Rend les chaines portees par une sortie de cellule.
+
+    Pas de filtre sur `output_type` : un type non enumere qui porte un `data` ou
+    un `text` ne doit pas faire perdre sa contribution a un diagnostic, ce qui
+    serait le silence que ce compteur corrige. Mesure du 2026-09-15 : les 1030
+    blocs `messages` du depot vivent tous dans une `display_data`.
+    """
+    data = output.get("data")
+    if isinstance(data, dict):
+        for value in data.values():
             if isinstance(value, str):
                 yield value
             elif isinstance(value, list):
-                yield "".join(value)
-    elif kind == "stream":
-        text = output.get("text")
-        yield text if isinstance(text, str) else "".join(text or [])
+                yield "".join(v for v in value if isinstance(v, str))
+    text = output.get("text")
+    if isinstance(text, str):
+        yield text
+    elif isinstance(text, list):
+        yield "".join(v for v in text if isinstance(v, str))
+
+
+def _lean_payloads(text: str):
+    """Rend les objets JSON d'un texte qui portent une cle `messages`.
+
+    Du texte a la cle, puis de la cle vers le `{` englobant : le premier qui
+    parse en un objet portant cette cle. Remonter ainsi plutot que d'ancrer un
+    prefixe est ce qui rend visibles les blocs ou `messages` n'est pas le
+    premier champ (`{"sorries": [...], "messages": [...]}`).
+    """
+    decoder = json.JSONDecoder()
+    pos = text.find(_LEAN_MESSAGES_KEY)
+    while pos != -1:
+        start = text.rfind("{", 0, pos + 1)
+        while start != -1:
+            try:
+                payload, _ = decoder.raw_decode(text[start:])
+            except ValueError:
+                payload = None
+            if isinstance(payload, dict) and "messages" in payload:
+                yield payload
+                break
+            start = text.rfind("{", 0, start)
+        pos = text.find(_LEAN_MESSAGES_KEY, pos + len(_LEAN_MESSAGES_KEY))
 
 
 def count_cell_errors(nb: dict) -> tuple[int, int]:
@@ -453,7 +493,6 @@ def count_cell_errors(nb: dict) -> tuple[int, int]:
     """
     jupyter = 0
     lean = 0
-    decoder = json.JSONDecoder()
     for cell in nb.get("cells", []) or []:
         if cell.get("cell_type") != "code":
             continue
@@ -463,16 +502,10 @@ def count_cell_errors(nb: dict) -> tuple[int, int]:
             if output.get("output_type") == "error":
                 cell_jupyter = True
             for text in _output_texts(output):
-                start = text.find(_LEAN_MESSAGES_KEY)
-                while start != -1:
-                    try:
-                        payload, _ = decoder.raw_decode(text[start:])
-                    except ValueError:
-                        break
-                    if any(m.get("severity") == "error"
-                           for m in payload.get("messages", []) or []):
-                        cell_lean = True
-                    start = text.find(_LEAN_MESSAGES_KEY, start + 1)
+                if any(m.get("severity") == "error"
+                       for payload in _lean_payloads(text)
+                       for m in (payload.get("messages") or [])):
+                    cell_lean = True
         jupyter += int(cell_jupyter)
         lean += int(cell_lean)
     return jupyter, lean

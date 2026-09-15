@@ -203,11 +203,51 @@ class TestLeanSeverityErrors:
         assert count_cell_errors(nb) == (0, 1)
 
     def test_severity_mentioned_without_a_messages_block_is_not_flagged(self, tmp_path):
-        """Un texte qui PARLE de la severite, sans bloc `{"messages"`, n'est pas un diagnostic."""
+        """Un texte qui PARLE de la severite, sans bloc portant la cle `messages`,
+        n'est pas un diagnostic."""
         nb = self._nb_with(["La sortie porte \"severity\": \"error\" quand ca casse."])
         p = tmp_path / "prose.ipynb"
         p.write_text(json.dumps(nb), encoding="utf-8")
         assert _validate_output(p, 1.0) == 0
+
+    # --- l'ancre doit viser la CLE, pas le prefixe `{"messages"` ---
+    #
+    # Le REPL Lean ne garantit pas que `messages` soit le premier champ du bloc.
+    # Mesure sur le corpus : 108 des 1030 blocs commencent par `sorries`, donc
+    # une ancre de prefixe les ratait tous en silence.
+
+    def test_lean_error_counted_when_messages_is_not_the_first_field(self):
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [], "messages": [{"severity": "error",'
+            ' "data": "failed to synthesize instance"}], "env": 11}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_counted_when_a_nested_brace_precedes_the_key(self):
+        """Le `{` le plus proche de la cle peut appartenir a un AUTRE objet : la
+        remontee doit continuer jusqu'a celui qui porte vraiment `messages`."""
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [{"pos": {"line": 9, "column": 2}}],'
+            ' "messages": [{"severity": "error", "data": "boom"}], "env": 3}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_and_sorries_count_once_per_cell(self):
+        """Un bloc a champs multiples reste UNE cellule en erreur, meme si les
+        deux champs portent de la matiere."""
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [{"pos": {"line": 1}}],'
+            ' "messages": [{"severity": "error", "data": "boom"},'
+            ' {"severity": "error", "data": "boom2"}], "env": 0}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_counted_in_a_non_enumerated_output_type(self):
+        """Aucun filtre sur `output_type` : un type non enumere qui porte le
+        diagnostic ne doit pas le perdre en silence."""
+        nb = {"cells": [{"cell_type": "code", "execution_count": 1,
+                         "outputs": [{"output_type": "some_future_kind",
+                                      "data": {"text/html": _lean_html(
+                                          '{"messages": [{"severity": "error",'
+                                          ' "data": "boom"}], "env": 0}')}}]}]}
+        assert count_cell_errors(nb) == (0, 1)
 
 
 # --- execute_notebook dispatch ---
