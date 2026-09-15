@@ -12,12 +12,12 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 774 items.
+#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 806 items.
 #     57 != 1148 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1148/774), le label garde les strates (57/44).
-#     Les strates 57 (tests/, +1 test_regards) et 44 (ict/tests/, +1
-#     test_lens_gates) sont celles de cette branche ; le "55/42" des lignes
+#     floor garde la collection (1148/806), le label garde les strates (57/50).
+#     Les strates 57 (tests/, +1 test_regards) et 50 (ict/tests/ = 50 fichiers
+#     test_*.py comptes sur l'arbre fusionne 2026-09-14) ; le "55/42" des lignes
 #     ci-dessus est la prose d'origine heritee -- le label du matrix fait foi.
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
@@ -210,7 +210,7 @@ jobs:
           # porte par MAIN egalement, posterieurement.
           # Floor cumulatif : 728 (base commune) -> 744 (+16 bench_factorise
           # Floor 752 -> 763 (lens_gates #15660, MERGED sur main, floor courant
-          # de main -- lui-meme perime de +20, voir NOTA ci-dessus) -> 811
+          # de main -- lui-meme perime de +20, voir NOTA ci-dessus) -> 822
           # (cette PR, sur l'arbre merge) : +27 POC S-Lens (test_slens.py,
           # en trois paliers mesures sur la branche : 23 bancs copy_offset /
           # variable_binding / oracles / probes / agregation multi-runs,
@@ -223,10 +223,17 @@ jobs:
           # 783 (main pur, mesure) + 28 = 811 ferme l'arithmetique, et 811
           # EST la collection mesuree sur l'arbre merge (py3.9.25 +
           # numpy 1.26.4, SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (44 package)"
+          # RE-MESURE post-rebase (2026-09-15, lane po-2027) : l'arbre merge
+          # post-integration #15480 + main courant porte 51 fichiers
+          # test_*.py, 834 items collectes. Le floor 822 etait en retard de
+          # +12 (apport test_intervention_battery, +12 items) -- drift porte
+          # par les merges intermediaires de main entre la mesure pre-rebase
+          # et l'integration finale. 822 + 12 = 834 ferme l'arithmetique.
+          # Aucun nombre recopie -- la collecte de l'arbre fusionne fait foi.
+          - suite-name: "ict/tests/ (51 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 822
+            test-floor: 834
 
     steps:
       - uses: actions/checkout@v4
