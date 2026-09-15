@@ -121,8 +121,9 @@ jobs:
       # Checkout UNION des trois organes : fetch-depth 0 + blob:none (le
       # graphe complet est requis par l'organe stale-base -- rev-list BASE..main
       # et dates de commits, cf #11835 ; les blobs restent paresseux) ;
-      # sparse-checkout .github + scripts (organes base-not-main et
-      # concurrency-conj n'ont besoin que de leurs scripts).
+      # sparse-checkout .github + scripts (base-not-main lit ses scripts ET
+      # .github/workflows -- il mesure la couverture CI perdue sur une base
+      # empilee, #16194 ; concurrency-conj n'a besoin que de son script).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -145,8 +146,10 @@ jobs:
       # ------------------------------------------------------------------
       # ORGANE 1 (advisory) : base-not-main. Porte depuis
       # base-not-main-advisory.yml (partie (a) de #10918). Ne lit QUE l'API
-      # `gh pr` (scripts/base_not_main.py:143 -- baseRefName + title), jamais
-      # l'arbre. Skip le travail quand base == main (~95 % des PRs).
+      # `gh pr` (baseRefName + title a scripts/base_not_main.py:358, puis les
+      # chemins modifies via fetch_changed_files, pour mesurer la couverture CI
+      # perdue sur une base empilee -- #16194), plus .github/workflows du
+      # checkout -- jamais l'arbre de travail. Skip quand base == main (~95 %).
       # ------------------------------------------------------------------
       - name: "Organe base-not-main : signaler une base != main (advisory)"
         if: github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'main'
