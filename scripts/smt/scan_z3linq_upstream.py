@@ -15,7 +15,7 @@ Usage :
     python scripts/smt/scan_z3linq_upstream.py --prs 44,45,47,...,99 --out JSON
     python scripts/smt/scan_z3linq_upstream.py --pr-list 28prs.txt --out JSON
 
-Voir docs/smt/reports/2026-09-13-z3linq-G1-scan/README.md pour le rapport G1.
+Rapport G1 depose sur le dashboard RooSync workspace CoursIA (cf PR body), pas dans le repo (harness-hygiene).
 """
 import argparse
 import json
@@ -110,7 +110,7 @@ def main() -> int:
         "--prs",
         type=str,
         default=",".join(str(n) for n in DEFAULT_PRS),
-        help=f"PR numbers, comma-separated (default: 28 PRs du body EPIC #14169)",
+        help=f"PR numbers, comma-separated (default: {len(DEFAULT_PRS)} PRs du body EPIC #14169)",
     )
     ap.add_argument("--out", type=Path, default=None, help="Output JSON path (default: stdout)")
     args = ap.parse_args()
