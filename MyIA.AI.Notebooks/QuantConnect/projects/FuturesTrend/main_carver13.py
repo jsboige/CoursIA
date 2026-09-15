@@ -277,6 +277,7 @@ class CarverThirteen(QCAlgorithm):
         # 694.0 s / 236 ms-per-call reference came from.
         self._history_calls = 0
         self._cache_served = 0
+        self._cache_seeded = False
         self._hist_s = 0.0
         self._fc_s = 0.0
         self._wall_s = 0.0
@@ -459,7 +460,7 @@ class CarverThirteen(QCAlgorithm):
         A not-primed ticker with an empty window is NOT stale: it has no
         data at all, exactly like a ticker absent from the bulk today.
         """
-        if self._roll_cache is None:
+        if not self._cache_seeded:
             return None
         stale = []
         for ticker, sym in self.symbols.items():
@@ -495,6 +496,7 @@ class CarverThirteen(QCAlgorithm):
                     w["closes"].append(float(c))
                 w["primed"] = True
                 w["mapped"] = self._mapped_contract(sym)
+                self._cache_seeded = True
         if self._last_bulk_shape is None:
             try:
                 n_unique = int(
