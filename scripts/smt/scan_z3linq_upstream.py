@@ -13,7 +13,6 @@ Lane         : myia-po-2027:CoursIA-2
 
 Usage :
     python scripts/smt/scan_z3linq_upstream.py --prs 44,45,47,...,99 --out JSON
-    python scripts/smt/scan_z3linq_upstream.py --pr-list 28prs.txt --out JSON
 
 Rapport G1 depose sur le dashboard RooSync workspace CoursIA (cf PR body), pas dans le repo (harness-hygiene).
 """
