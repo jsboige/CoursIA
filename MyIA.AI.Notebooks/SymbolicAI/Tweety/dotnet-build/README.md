@@ -4,7 +4,7 @@ Ce dossier contient les **recettes de build** (POM shade + csproj) des runtimes 
 recompilés via IKVM 8.15.0. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`)
 est placé **à côté du notebook** qui le charge.
 
-## Fichiers — cluster `pl` (notebook [`../Tweety-2-Basic-Logics-Csharp.ipynb`](../Tweety-2-Basic-Logics-Csharp.ipynb))
+## Fichiers — cluster `pl` (notebook [`../Tweety-02-Basic-Logics-CSharp.ipynb`](../Tweety-02-Basic-Logics-CSharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
 |---------|------|-----------|
@@ -58,7 +58,7 @@ cp bin/Release/net8.0/org.tweetyproject.tweety-pl.dll .
   en version 8.0 ; un DLL `net10.0` compile `Proposition` mais lève `FileNotFoundException:
   System.Runtime 10.0.0.0` au premier appel méthode.
 
-Voir `Tweety-2-Basic-Logics-Csharp.ipynb` pour l'utilisation. Epic #4667.
+Voir `Tweety-02-Basic-Logics-CSharp.ipynb` pour l'utilisation. Epic #4667.
 
 ## Fichiers — IKVM shade 5 modules (notebooks Tweety-5/7a/7b)
 
@@ -69,11 +69,11 @@ committée (pattern #4711). Les cinq DLLs couvrent les modules argumentation
 
 | Module | Version | Notebook consommateur | Statut |
 |--------|---------|----------------------|--------|
-| `bipolar` | 1.21 | `Tweety-7a-Extended-Frameworks-Csharp.ipynb` (cell 30+, ADF + Bipolar) | SOTA-OK |
-| `social` | 1.21 | `Tweety-7a-Extended-Frameworks-Csharp.ipynb` (cell 28-29) | SOTA-OK |
-| `setaf` | 1.21 | `Tweety-7a-Extended-Frameworks-Csharp.ipynb` (cell 30+, SetAF) | SOTA-OK |
-| `extended` | 1.30 | `Tweety-7a-Extended-Frameworks-Csharp.ipynb` (EAF = Extended Argumentation Framework) | SOTA-OK |
-| `weighted` | 1.30 | `Tweety-7a-Extended-Frameworks-Csharp.ipynb` (cell 26-27) | SOTA-OK |
+| `bipolar` | 1.21 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 30+, ADF + Bipolar) | SOTA-OK |
+| `social` | 1.21 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 28-29) | SOTA-OK |
+| `setaf` | 1.21 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 30+, SetAF) | SOTA-OK |
+| `extended` | 1.30 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (EAF = Extended Argumentation Framework) | SOTA-OK |
+| `weighted` | 1.30 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 26-27) | SOTA-OK |
 
 ### Pipeline de rebuild — `rebuild-5shades.sh`
 
