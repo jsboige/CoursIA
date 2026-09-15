@@ -30,6 +30,7 @@ du comportement historique :
     maquiller en vert).
 """
 
+import ast
 import json
 import os
 import re
@@ -45,6 +46,7 @@ REPO_ROOT = os.path.abspath(
 WORKFLOW = os.path.join(
     REPO_ROOT, ".github", "workflows", "pr-gate-stale-sweep.yml"
 )
+PR_GATE = os.path.join(REPO_ROOT, "scripts", "pr_gate.py")
 
 
 def _extract_selector() -> str:
@@ -71,20 +73,37 @@ def _extract_selector() -> str:
 SELECTOR = _extract_selector()
 
 
-def _run_selector(tmp_path, rows):
+def _run_selector(tmp_path, rows, wfnames=None):
     """Exec le selecteur livré sur des lignes de fixtures, capture stdout."""
-    return _run_selector_both(tmp_path, rows).stdout
+    return _run_selector_both(tmp_path, rows, wfnames=wfnames).stdout
 
 
-def _run_selector_both(tmp_path, rows):
+def _run_selector_both(tmp_path, rows, wfnames=None):
     """Comme _run_selector mais rend le process complet (stdout + stderr) --
-    les diagnostics d'exclusion (#11808) vont sur stderr."""
+    les diagnostics d'exclusion (#11808) vont sur stderr.
+
+    ``wfnames`` alimente la carte id -> NOM de workflow (2e signal de
+    ``is_advisory``). Le seam est TOUJOURS pose : sans cela le selecteur
+    lirait le ``/tmp/wfnames.json`` de la machine -- present sur un runner,
+    absent ailleurs -- et le meme test rendrait deux verdicts.
+    """
     fixture = tmp_path / "runs.jsonl"
     fixture.write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
     )
-    env = dict(os.environ, SWEEP_RUNS_FILE=str(fixture),
-               SWEEP_MUTE_FILE=str(tmp_path / "mute.txt"))
+    env = dict(
+        os.environ,
+        SWEEP_RUNS_FILE=str(fixture),
+        SWEEP_MUTE_FILE=str(tmp_path / "mute.txt"),
+    )
+    if wfnames is None:
+        # Chemin inexistant : le selecteur retombe sur une carte vide, comme
+        # quand l'appel ``actions/workflows`` echoue.
+        env["SWEEP_WFNAMES_FILE"] = str(tmp_path / "wfnames-absent.json")
+    else:
+        wf = tmp_path / "wfnames.json"
+        wf.write_text(json.dumps(wfnames), encoding="utf-8")
+        env["SWEEP_WFNAMES_FILE"] = str(wf)
     out = subprocess.run(
         ["python", "-c", SELECTOR],
         capture_output=True, text=True, encoding="utf-8", env=env, cwd=tmp_path,
@@ -516,6 +535,182 @@ def test_workflow_pins_tier_sort_and_per_tier_caps():
     # derriere doivent rester servis (continue, pas break).
     assert "break" not in re.sub(r"#.*", "", run.split("MAX_MATURE=12")[1].split("done <")[0])
 
+
+# --- #15976 : exemption advisory -------------------------------------------
+# Le selecteur doit porter la MEME exemption que `pr_gate.py` (rule 6). Un
+# selecteur de REPARATION plus strict que la gate qu'il repare retire du champ
+# exactement les PRs qu'il existe pour reprendre : mesure fondatrice sur
+# #15757, exclue par `scan_md_hierarchy drift (advisory)` = failure alors que
+# la gate la jugeait reparable.
+
+ADVISORY_RED = (
+    "scan_md_hierarchy drift (advisory)", "completed", "failure",
+    "2026-01-01T10:05:00Z",
+)
+
+
+def _func_ast(source, fname):
+    """AST d'une fonction module-level, DOCSTRING RETIREE -- le texte doc n'est
+    pas un contrat, la logique l'est."""
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == fname:
+            first = node.body[0] if node.body else None
+            if (isinstance(first, ast.Expr)
+                    and isinstance(first.value, ast.Constant)
+                    and isinstance(first.value.value, str)):
+                node.body = node.body[1:]
+            return ast.dump(node)
+    raise AssertionError(f"fonction {fname} introuvable")
+
+
+def _const_ast(source, name):
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == name:
+                    return ast.dump(node.value)
+    raise AssertionError(f"constante {name} introuvable")
+
+
+def test_inline_is_advisory_matches_pr_gate_source():
+    """#15976 -- VERROU ANTI-DRIFT : les deux `is_advisory` sont UNE logique.
+
+    Le selecteur ne peut pas IMPORTER `pr_gate.py` : ce sweep tourne sans
+    checkout (design mesure : ~40 s de runner par passage, toutes les 20 min,
+    sur un depot dont le probleme EST la penurie de runners), et un import du
+    module du check REQUIS ferait mourir la selection -- donc l'organe advisory
+    s'eteindrait en silence -- sur toute panne d'import de la gate.
+
+    L'exemption est donc une COPIE. Une copie non verrouillee est exactement la
+    "seconde liste de noms a maintenir en parallele" que #15976 refuse : deux
+    predicats qui decident "ce rouge compte-t-il ?" finissent par diverger.
+
+    Ce test ferme la divergence : il compare l'AST de la fonction LIVREE dans
+    le heredoc a celui de `pr_gate.is_advisory`, docstring retiree. Retoucher
+    l'une sans l'autre rougit ici.
+    """
+    with open(PR_GATE, encoding="utf-8") as f:
+        gate_src = f.read()
+    assert _func_ast(SELECTOR, "is_advisory") == _func_ast(gate_src, "is_advisory")
+    assert (_const_ast(SELECTOR, "ADVISORY_MARKER")
+            == _const_ast(gate_src, "ADVISORY_MARKER"))
+
+
+def test_advisory_red_is_not_a_blocker(tmp_path):
+    """#15976, CONTROLE POSITIF -- calque sur la mesure fondatrice.
+
+    #15757 portait un `PR gate` rouge ET un `scan_md_hierarchy drift
+    (advisory)` = failure : le sweep ecartait la PR pour l'advisory, alors que
+    `pr_gate.py` ne compte pas ce check comme un rouge (rule 6) et la jugeait
+    reparable. Une PR dont l'unique autre rouge est advisory reste candidate.
+
+    Falsification : ROUGE sur le selecteur d'avant le correctif (stdout vide,
+    la PR etait exclue).
+    """
+    out = _run_selector(tmp_path, [_pr(201, [GATE_FAIL, ADVISORY_RED])])
+    assert out.strip() == "201 deadbeef false 0"
+
+
+def test_blocking_red_still_excludes_beside_advisory(tmp_path):
+    """#15976, CONTROLE NEGATIF -- exige par l'acceptance.
+
+    Le correctif ne doit pas ouvrir le sweep a ce qu'il doit ecarter : un rouge
+    BLOQUANT exclut toujours, meme accompagne d'un advisory tolere. Sans ce
+    test, le correctif serait indistinguable d'un filtre debranche.
+    """
+    blocking = ("Papermill ratchet", "completed", "failure",
+                "2026-01-01T10:06:00Z")
+    out = _run_selector(tmp_path, [_pr(202, [GATE_FAIL, ADVISORY_RED, blocking])])
+    assert out.strip() == ""
+
+
+def test_advisory_tolerance_and_exclusion_are_both_named(tmp_path):
+    """Acceptance 4 + anti-blanchiment silencieux (#11808).
+
+    Ce qui est TOLERE est nomme (sinon le blanchiment serait indistinguable
+    d'un filtre debranche), et l'exclusion continue de nommer le check
+    BLOQUANT qui l'a causee.
+    """
+    out = _run_selector_both(tmp_path, [_pr(203, [GATE_FAIL, ADVISORY_RED, OTHER_RED])])
+    assert out.stdout.strip() == ""
+    assert "advisory red tolerated" in out.stderr
+    assert "scan_md_hierarchy drift (advisory)" in out.stderr
+    assert "Hermes review" in out.stderr
+    assert "203" in out.stderr
+
+
+# --- #15976, 2e signal : le workflow PARENT --------------------------------
+# `is_advisory` porte deux signaux ; le verrou AST garde leur FIDELITE, pas la
+# COMPLETUDE de leur branchement. Les trois tests ci-dessous gardent le
+# branchement : le 2e argument doit etre reellement alimente (sinon la copie
+# verbatim est un remede documente qui ne tient pas sa promesse -- la maxime
+# que ce fichier porte lui-meme), la carte presente ne doit pas tolerer a
+# tort, et une resolution en echec ne doit jamais elargir.
+
+# Nom de check SANS le marqueur : seul son workflow parent se declare advisory.
+# Convention minoritaire (la courante porte le marqueur dans le nom du job),
+# mais la gate la juge non-bloquante -- mesure faite le 2026-09-13 sur
+# `pr_gate.py:653` (`is_advisory(name, workflow_label)`), ou l'appelant passe
+# bien le 2e argument. Le selecteur, lui, ne le passait pas : strictement plus
+# strict que la gate qu'il repare, soit le defaut de #15976 deplace d'un axe.
+ADVISORY_BY_WORKFLOW_ONLY = (
+    "scan_md_hierarchy drift", "completed", "failure",
+    "2026-01-01T10:05:00Z", 555,
+)
+ADVISORY_WORKFLOW_ID = 999
+ADVISORY_WORKFLOW_NAME = "Scan MD Hierarchy (advisory)"
+
+
+def test_advisory_by_workflow_name_is_not_a_blocker(tmp_path):
+    """#15976 -- le 2e signal est BRANCHE, pas seulement declare.
+
+    Falsification : ROUGE avant le branchement (le check n'ayant pas le
+    marqueur dans son nom, la PR etait exclue du balayage).
+    """
+    out = _run_selector(
+        tmp_path,
+        [_pr(301, [GATE_FAIL, ADVISORY_BY_WORKFLOW_ONLY],
+             workflows={555: ADVISORY_WORKFLOW_ID})],
+        wfnames={str(ADVISORY_WORKFLOW_ID): ADVISORY_WORKFLOW_NAME},
+    )
+    assert out.strip() == "301 deadbeef false 0"
+
+
+def test_non_advisory_workflow_name_still_blocks(tmp_path):
+    """Controle negatif du branchement : la carte PRESENTE ne suffit pas.
+
+    Sans ce test, "la carte est la" pourrait tolerer n'importe quoi. Le
+    marqueur est cherche DANS le nom resolu : un workflow parent qui ne se
+    declare pas advisory laisse son rouge bloquant.
+    """
+    out = _run_selector(
+        tmp_path,
+        [_pr(302, [GATE_FAIL, ADVISORY_BY_WORKFLOW_ONLY],
+             workflows={555: ADVISORY_WORKFLOW_ID})],
+        wfnames={str(ADVISORY_WORKFLOW_ID): "Scan MD Hierarchy"},
+    )
+    assert out.strip() == ""
+
+
+def test_workflow_name_resolution_failure_never_widens(tmp_path):
+    """Resolution en echec -> comportement d'AVANT, jamais plus permissif.
+
+    L'appel `actions/workflows` peut echouer : la carte est vide, le 2e
+    argument retombe sur "", la PR est exclue -- plus etroit, jamais tolera a
+    tort. C'est la seule direction sure : un correctif qui elargirait sur une
+    panne de resolution serait un blanchiment par indisponibilite.
+    """
+    out = _run_selector(
+        tmp_path,
+        [_pr(303, [GATE_FAIL, ADVISORY_BY_WORKFLOW_ONLY],
+             workflows={555: ADVISORY_WORKFLOW_ID})],
+        wfnames={},
+    )
+    assert out.strip() == ""
+
+# --- (main side kept below, both families coexist) ---
 
 # --- #15775 : la classe `cancelled`-constituant -- le sweep relaie la CAUSE ---
 
