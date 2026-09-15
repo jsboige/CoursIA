@@ -97,6 +97,8 @@ Quand le user formule une demande concrete et realisable :
 
 **Verification fin de session** : avant `[DONE]`, parcourir les N derniers messages user et confirmer que chaque demande a soit (a) ete executee, (b) eu un dispatch trace, (c) eu une issue ouverte, (d) ete reportee avec justification ecrite acceptee. Reflexe G.9 : "qu'est-ce que le user a demande que je n'ai pas encore fait ?" > "qu'est-ce qui reste dans mon plan ?".
 
+**Cote sortant** (escalades coord -> user en attente de SA reponse) : Regle 7 — registre re-parcouru, la demande ne meurt plus a la condensation du dashboard.
+
 ## Regle 3 : coordonner CHAQUE lane independamment (HARD)
 
 **Deux dashboards workspace co-egaux** : `workspace-CoursIA` et `workspace-CoursIA-2`. **Aucun n'est "le dashboard du coordinateur"**. Un `lane` = **machine x workspace** ; chaque worker avec une lane CoursIA-2 a **AUSSI** une lane CoursIA.
@@ -142,6 +144,18 @@ Mandat user 2026-09-07 (verbatim, #15069) : « si ton travail de coordination es
 | Recalcul firsthand d'un verdict ou d'une metrique contestee | Toute decision de perimetre/design-gate |
 
 L'adjoint **est** la lane habilitee n°3 de `DELIVERED_URN_LANES` dans `pick_idle_grain.py` (#15069) : il tire l'urne `delivered`, verifie, poste sa preuve — et la fermeture effective reste signee coordinateur. Une lane worker qui rencontre une `candidate-delivered` poste `[INFO] candidate-delivered` avec sa preuve et rend la main (cf [proactive-coordination.md](proactive-coordination.md), urne `delivered`).
+
+## Regle 7 : registre re-parcouru des arbitrages user en attente (HARD)
+
+Complement SORTANT de la Regle 2 : la Regle 2 couvre l'entrant (demandes user -> action) ; celle-ci couvre les decisions escaladees AU user (sign-offs de regles, arbitrages de politique, approbations que le mandat reserve au user) qui attendent SA reponse. **Non-but : ne pas reduire l'auto-arbitrage** (Regle 5.3 — trancher soi-meme dans le cycle reste la norme, atout debit) ; le registre ne couvre QUE ce qui exige le user.
+
+1. **Registre persistant** : `.claude/local/arbitrations-user.md` (machine ai-01, gitignore `.claude/local/`) — une entree par decision en attente, creee A L'INSTANT de l'escalade (jamais « je la noterai plus tard »). Portage du registre open-questions roo-ext (roo-extensions#3656/#3657, mandat user 15/09).
+2. **Liste re-parcourue chaque cycle** : le bilan de CHAQUE cycle `/coordinate` re-presente les entrees ouvertes en section recurree « En attente d'arbitrage user (aucune action prise) », sur LES DEUX dashboards (Regle 3). Un item ne peut pas disparaitre silencieusement : la condensation n'emporte plus la demande.
+3. **Sortie UNIQUEMENT sur reponse user explicite** (tranchee / annulee / remplacee) — jamais auto-expiree, jamais retiree silencieusement. Reponse datee tracee dans l'entree, entree archivee en fin de fichier (rien n'est efface).
+
+**Test de fin de cycle (critere R2 etendu)** : une demande escaladee sans reponse au cycle N DOIT reapparaitre dans la section du cycle N+1. Avant de poster le bilan : comparer la section du cycle precedent au registre — tout item disparu sans reponse user tracee = violation.
+
+Preuve mesuree + mecanisme complet (format d'entree, exemple de section, verification N cycles) : [§2.7](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
 ## Voir aussi
 
