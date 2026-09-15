@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-FineTuning
-pedagogical_count: 7
-breakdown: FineTuning=7
-maturity: BETA=7
+pedagogical_count: 9
+breakdown: FineTuning=9
+maturity: BETA=9
 -->
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ PostTraining](../PostTraining/README.md)
