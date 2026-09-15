@@ -192,6 +192,19 @@ _GRAIN_FULL_RE = re.compile(
 # body class widens to the corresponding lowercase range (`à-öø-ÿ` + ſ) so the
 # maximal-munch `(?![A-Za-z0-9._À-ſ-])` keeps working with the new characters.
 # Tested in `test_lane_workspace_accented` + the existing #12145 / #12719 set.
+#
+# #15864 -- #12719 and #13830 INTERACT: `lane myia-po-2023:CoursIA. Énoncé
+# réécrit ...` parsed as the lane `myia-po-2023:CoursIA. Énoncé`. The `.` is
+# admitted by the token class (hostnames need it) and `É` is admitted as a
+# continuation initial (`À-ÖØ-Þ`), so the period is no longer TRAILING and
+# #12719's `rstrip(".")` cannot see it. Since a `[DELIVERED]` marker re-marks
+# the claim while its PR is OPEN (#12320), the declaring lane was blocked on
+# its OWN claim by a lane token that matches nothing -- the 4th variant of the
+# self-block class (#12145, #12719, #13830). A `.` followed by whitespace is
+# prose punctuation, never part of `<machine>:<workspace>`; a `.` INSIDE the
+# token (a hostname, `Foo.Bar`) is followed by a non-space and survives. The
+# negative lookbehind refuses the continuation, so the token ends at the
+# period and #12719's strip applies exactly as before.
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
     # #13830 V2 -- union of #13869 (full Latin-1 + Latin Extended-A `À-ſ`)
@@ -213,7 +226,7 @@ _LANE_RE = re.compile(
     # `test_lane_workspace_accented` + the existing #12145 / #12719 set
     # + the #13869 comparative table (LivresAgités / Cours×IA / Łódź).
     r"([A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]+"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
+    r"(?:(?<!\.)[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
 
@@ -246,6 +259,11 @@ _LANE_RE = re.compile(
 # #13830 -- the accent tolerance added to `_LANE_RE` applies here too:
 # the fallback lane token for marker comments that omit `lane` must accept the
 # same workspace names. Same widening of body class and continuation initial.
+#
+# #15864 -- the sentence-period guard above moves here too, for the same
+# reason the bare-date guard did: a marker that omits the literal `lane`
+# keyword can equally end its token with a period followed by prose
+# (`[DELIVERED] myia-po-2023:CoursIA. Énoncé ...`).
 _LANE_FALLBACK_RE = re.compile(
     # #13830 V2 -- twin of `_LANE_RE`: the workspace class widens from
     # `[A-Za-z][A-Za-z0-9._-]*` to `[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*`
@@ -257,7 +275,7 @@ _LANE_FALLBACK_RE = re.compile(
     # The twin MUST move with the primary or the founder's class of bug
     # (#12145) re-opens on the fallback only.
     r"\b(myia-[A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
+    r"(?:(?<!\.)[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME
@@ -388,6 +406,64 @@ CODE_SPAN_RE = re.compile(r"```.*?```|(`+)[^`]*\1", re.DOTALL)
 def mask_code_spans(text: str) -> str:
     r"""Blank out inline code spans / fenced blocks, preserving length."""
     return CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
+
+
+def _blank_keeping_shape(line: str) -> str:
+    r"""Same length, same line endings, everything else erased."""
+    return "".join(c if c in "\r\n" else " " for c in line)
+
+
+def mask_fenced_blocks(text: str) -> str:
+    r"""Blank out FENCED BLOCKS ONLY, keeping inline code spans visible.
+
+    `mask_code_spans` masks the union of both surfaces, which is what a
+    ``finditer`` sweep over a whole body needs. The TAG-LINE search needs the
+    narrow half instead, and for an asymmetric reason (#15932):
+
+    - a fence is NEVER a declaration. GitHub renders it as code; nobody reads
+      a tag line inside a reproduction block as the author's own tag;
+    - an inline-backticked tag line IS still a declaration -- it is the
+      BLIND-SPOT CONTROL `_declared_prev_pr` exists for, and `parse_prev`
+      strips the backticks. Masking it here would hand every lane a trivial
+      bypass: wrap the tag line in backticks and every `prev:` invariant goes
+      silent.
+
+    So the two masks are NOT interchangeable in this position, and the narrow
+    one is what `_first_grain_line` consumes.
+
+    The scan is line-based, not a regex, so a fence that is never closed masks
+    to the END of the text -- which is exactly what GitHub renders, and so
+    what a human reviewer sees. Both fence characters are honoured (``` and
+    ~~~), with a run of any length; a 4-space indented block is deliberately
+    NOT masked (`check_lane_claim` measured that indentation also belongs to
+    nested lists, where a marker is legitimate).
+
+    Length is preserved character for character, line endings included, so
+    the line at index N of the masked text is the line at index N of the
+    original: the caller can search masked and still return the ORIGINAL
+    line verbatim. Same contract as `check_lane_claim._mask_fenced_blocks`.
+    """
+    out: list[str] = []
+    fence: str | None = None
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if fence is None:
+            opener = None
+            for ch in ("`", "~"):
+                if stripped.startswith(ch * 3):
+                    opener = ch * (len(stripped) - len(stripped.lstrip(ch)))
+                    break
+            if opener is None:
+                out.append(line)
+            else:
+                fence = opener
+                out.append(_blank_keeping_shape(line))
+        else:
+            out.append(_blank_keeping_shape(line))
+            tail = stripped.rstrip()
+            if tail.startswith(fence) and not tail.strip(fence[0]):
+                fence = None
+    return "".join(out)
 
 
 # Matches `<closing-keyword> #N` in free prose (#10101). The keyword set is
@@ -540,6 +616,12 @@ def extract_lane(body: str | None, marker_line: str | None = None) -> str | None
     a lane that matches nothing. No cluster lane ends in a period, so the
     residue is stripped here; `lane_marker_residues` reports it so the organ
     can surface the malformed form instead of silently reinterpreting it.
+
+    #15864 -- and when prose FOLLOWS the period, the regex itself now stops
+    at it (see `_LANE_RE`): `lane myia-po-2023:CoursIA. Énoncé réécrit` yields
+    the same `myia-po-2023:CoursIA.` here, which this strip then cleans. The
+    two halves are complementary -- the lookbehind refuses the accented
+    continuation, this strip removes the period it stopped at.
     """
     if not body:
         return None
@@ -561,6 +643,18 @@ def extract_lane(body: str | None, marker_line: str | None = None) -> str | None
         m_kw = _LANE_RE.search(flat_line)
         if m_bare is not None and (m_kw is None or m_bare.start() < m_kw.start(1)):
             return m_bare.group(1).rstrip(".")
+        # #15864 x #15918 -- a position tie falls through to the primary, but
+        # the primary that #15918 kept in scope is the BODY match `m`. When
+        # the body is silent (#10395 Variante 1 -- `marker_line` is the
+        # human-stated intent searched on its own), that fallthrough hit
+        # `if m:` with m=None and returned None even though the marker line
+        # names its lane in keyworded form (`lane X. Énoncé ...`, the
+        # #15864 phantom). The tie's primary IS m_kw here: return it instead
+        # of the absent body match. Both real callers are unaffected -- they
+        # pass the marker line as (part of) the body, so m is non-None
+        # whenever m_kw is, and this branch stays dead for them.
+        if m is None and m_kw is not None:
+            return m_kw.group(1).rstrip(".")
     if m:
         return m.group(1).rstrip(".")
     return None
@@ -587,7 +681,10 @@ def lane_marker_residues(marker_line: str | None) -> list[str]:
         token, which the continuation guard refused and the declaring lane
         did not intend as part of the lane;
       * `"trailing-period:<token>"` -- the token ended in a sentence period
-        that `extract_lane` strips before comparing.
+        that `extract_lane` strips before comparing. Since #15864 this also
+        covers the period that PROSE follows (`lane X. Énoncé ...`): the
+        refused continuation leaves the period trailing, so the writer sees
+        why the rest of their sentence was not read as part of the lane.
     """
     if not marker_line:
         return []

@@ -567,14 +567,58 @@ def snapshot_processes() -> dict[int, int]:
     return table
 
 
+def _prev_marks_suspended(prev) -> bool:
+    """ResumeThread rend le suspend count PRECEDENT du thread (winbase.h),
+    ou (DWORD)-1 en echec. Seul un precedent STRICTEMENT positif designe un
+    thread reellement suspendu : 0 = seulement ouvrable, 0xFFFFFFFF = echec
+    de l'appel. Avec le restype par defaut (`c_int`, signe), l'echec arrive
+    en -1 et le compteur ne discrimine plus rien : c'est la cause racine de
+    #15900 — d'ou le restype `c_ulong` pose dans resume_process."""
+    return prev != 0xFFFFFFFF and prev > 0
+
+
+def _abort_unresumed_root(result: dict, job, root_pid: int) -> None:
+    """Reserve 1 (arbitrage #15666) : un root cree suspendu et non repris
+    n'a PAS ete confine -- l'echec doit invalider le run, pas decorer le
+    backend d'un suffixe vert. Le root est encore suspendu : on tue le job
+    avant de rendre l'echec (meme ordre que terminate_tree), puis la
+    descendance encore vivante."""
+    if job is not None and job.handle:
+        job.terminate()
+        time.sleep(1.0)
+    kill_pids(sorted(descendants_of(root_pid), reverse=True))
+    result.update(
+        status="internal-error",
+        exit_code=EXIT_INTERNAL,
+        reason=(
+            "resume_process resumed 0 threads: the root was "
+            "spawned with CREATE_SUSPENDED and could not be "
+            "resumed -- confinement is NOT delivered"
+        ),
+        backend=f"{result['backend']}-resume-failed",
+    )
+
+
 def resume_process(pid: int) -> int:
     """Reprend un processus cree suspendu (CREATE_SUSPENDED) : resume chaque
     thread du pid. Necessaire pour que la racine n'execute rien avant d'etre
     assignee au Job Object — c'est ce qui ferme la fenetre ou un enfant
-    pourrait naitre hors du job."""
+    pourrait naitre hors du job.
+
+    Rend le nombre de threads **effectivement suspendus** qui ont ete repris
+    (jamais le nombre de threads ouverts) : l'appelant s'en sert comme
+    assertion de confinement (`if n_resumed == 0:` ⇒ le root n'etait pas
+    suspendu ⇒ le confinement n'a pas ete livre). Un root jamais suspendu rend
+    donc 0, meme si ses threads ont tous pu etre ouverts (#15900)."""
     if os.name != "nt":
         return 0
     k32 = ctypes.windll.kernel32
+    # `ResumeThread` rend le suspend count PRECEDENT du thread (winbase.h), ou
+    # (DWORD)-1 en echec ; le defaut ctypes (c_int) lirait ce -1 en signe.
+    # C'est cette valeur qui distingue un thread suspendu d'un thread
+    # seulement OUVRABLE — le compteur precedent ne pouvait pas le faire, et
+    # la garde fail-closed en aval ne se declenchait donc jamais.
+    k32.ResumeThread.restype = ctypes.c_ulong
     TH32CS_SNAPTHREAD = 0x00000004
     THREAD_SUSPEND_RESUME = 0x0002
 
@@ -603,9 +647,10 @@ def resume_process(pid: int) -> int:
                         THREAD_SUSPEND_RESUME, False, entry.th32ThreadID
                     )
                     if h:
-                        k32.ResumeThread(h)
+                        prev = k32.ResumeThread(h)
                         k32.CloseHandle(h)
-                        resumed += 1
+                        if _prev_marks_suspended(prev):
+                            resumed += 1
                 if not k32.Thread32Next(snap, ctypes.byref(entry)):
                     break
     finally:
@@ -829,26 +874,8 @@ def run_command(
                 n_resumed = resume_process(proc.pid)
                 result["threads_resumed"] = n_resumed
                 if n_resumed == 0:
-                    # Reserve 1 (arbitrage #15666) : un root cree suspendu et
-                    # non repris n'a PAS ete confine -- l'echec doit invalider
-                    # le run, pas decorer le backend d'un suffixe vert. Le root
-                    # est encore suspendu : on tue le job avant de rendre
-                    # l'echec (meme ordre que terminate_tree).
                     confined = False
-                    if job is not None and job.handle:
-                        job.terminate()
-                        time.sleep(1.0)
-                    kill_pids(sorted(descendants_of(proc.pid), reverse=True))
-                    result.update(
-                        status="internal-error",
-                        exit_code=EXIT_INTERNAL,
-                        reason=(
-                            "resume_process resumed 0 threads: the root was "
-                            "spawned with CREATE_SUSPENDED and could not be "
-                            "resumed -- confinement is NOT delivered"
-                        ),
-                        backend=f"{result['backend']}-resume-failed",
-                    )
+                    _abort_unresumed_root(result, job, proc.pid)
                     return _emit(result, as_json)
 
             _write_run_record(run_id, {
