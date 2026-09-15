@@ -506,10 +506,6 @@ DEMOS = [
         "complexity": "Avancee - plusieurs rewrites necessaires",
         "strategy": "rw [Nat.add_assoc, Nat.add_comm b c, ...] OU omega",
         "trap": "Un seul rewrite ne suffit pas, strategie multi-etapes"
-    }
-],
-        "complexity": "Triviale - une tactique suffit",
-        "strategy": "rfl"
     },
     {
         "name": "DEMO_2_SUCCESSOR",
