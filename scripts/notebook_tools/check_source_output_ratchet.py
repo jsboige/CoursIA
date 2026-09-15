@@ -77,7 +77,6 @@ import argparse
 import difflib
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -88,6 +87,10 @@ from validate_pr_notebooks import (  # noqa: E402
     QC_CLOUD_PATHS,
     QUANTBOOK_PATTERN,
 )
+# Reprise bornee sur la pression de fork (#16213) : sous `pytest-xdist -n 4`, le
+# spawn de `git` est refuse par intermittence (`EAGAIN`). Primitive partagee par
+# les gardes, pas une cinquieme copie de la meme boucle.
+from fork_retry import run_with_fork_retry  # noqa: E402
 
 # Same exclusions as check_papermill_ratchet.py / check_exec_ratchet.py:
 # archived, papermill-output and research copies are not deliverable
@@ -117,10 +120,17 @@ _EXEMPT_RE = re.compile(
 
 
 def git(*args, cwd=None):
-    """Run a git command, returning stdout (utf-8) or None on failure."""
+    """Run a git command, returning stdout (utf-8) or None on failure.
+
+    Fail-open a l'epuisement de la reprise : l'`OSError` est avalee en `None`,
+    comme avant #16213. Cette politique est PREEXISTANTE et deliberement
+    conservee ici -- la mutualisation de la reprise ne doit pas trancher en
+    passant un arbitrage qui appartient a #16164 (un ratchet muet qui rend
+    « 0 changement » est un faux vert, pas une mesure).
+    """
     try:
-        out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                             encoding="utf-8", errors="replace", check=False)
+        out = run_with_fork_retry(["git", *args], cwd=cwd, capture_output=True,
+                                  encoding="utf-8", errors="replace", check=False)
     except OSError:
         return None
     return out.stdout if out.returncode == 0 else None
