@@ -1,6 +1,7 @@
 # region imports
 from AlgorithmImports import *
 import numpy as np
+import time
 from collections import deque
 
 # Pure-numpy breadth multiplier (REPAIR-8 c.1115). Imported here so the
@@ -257,6 +258,29 @@ class CarverThirteen(QCAlgorithm):
         # Per-instrument state: latest forecast, latest scaled weight.
         self.forecasts = {t: 0.0 for t in self.futures_universe}
 
+        # 16076 rollover-aware sliding windows. Under BACKWARDS_RATIO the
+        # WHOLE past of a continuous series is re-scaled when the mapped
+        # contract changes, so a window fed by on_data is only identical
+        # to history() while the mapping is stable. Windows are seeded by
+        # ONE bulk history() call, extended by each closed daily bar in
+        # on_data, and re-fetched (grouped) whenever a ticker's mapped
+        # contract differs from the one memoised at its last fetch. The
+        # downstream forecast loop is re-executed verbatim on every call,
+        # so identical windows imply identical orders by construction.
+        n_bars = 2 * self.max_slow + self.vol_lookback + 20
+        self._roll_cache = {
+            t: {"closes": deque(maxlen=n_bars), "primed": False, "mapped": None}
+            for t in self.futures_universe
+        }
+        # 3-way clock (hist / fc / wall) + fetch-vs-cache counters, same
+        # definitions as the #16073 acceptance measurement the 650.9 s /
+        # 694.0 s / 236 ms-per-call reference came from.
+        self._history_calls = 0
+        self._cache_served = 0
+        self._hist_s = 0.0
+        self._fc_s = 0.0
+        self._wall_s = 0.0
+
         # Warmup: 2x the slowest EWMAC span (avoids seed-bias on the 256-day
         # slow EWMA — alpha = 2/(256+1) ≈ 0.0078, half-life ~88 bars, so 1x
         # max_slow leaves a non-trivial residual; 2x reaches ~99% mass).
@@ -408,41 +432,71 @@ class CarverThirteen(QCAlgorithm):
             return None
         return mapped
 
-    # ----- main daily entrypoint ------------------------------------------
+    # ----- 16076 sliding windows -------------------------------------------
 
-    def _rebalance(self):
-        self._rebalance_call_count += 1
-
-        if self.is_warming_up:
-            self._rebalance_early_returns["warming_up"] += 1
+    def on_data(self, data):
+        # 16076: extend each window with the closed daily bar of its
+        # continuous canonical series. Only runs once the cache is seeded:
+        # bars received before the seed are covered by the seed fetch
+        # itself (history() reads the whole past). During warmup on_data
+        # is not called by the engine for algorithm use anyway; the guard
+        # keeps the intent explicit.
+        if self._roll_cache is None or self.is_warming_up:
             return
+        for ticker, sym in self.symbols.items():
+            if data.bars.contains_key(sym):
+                self._roll_cache[ticker]["closes"].append(
+                    float(data.bars[sym].close)
+                )
 
-        # Bulk history: one call for all 19 instruments rather than 19
-        # individual `history()` calls (point 3 of the review, c.1063).
-        n_bars = 2 * self.max_slow + self.vol_lookback + 20
-        sym_list = list(self.symbols.values())
-        bulk = self.history(sym_list, n_bars, Resolution.DAILY)
-        if bulk.empty:
-            self._rebalance_early_returns["bulk_empty"] += 1
-            # Snapshot the bulk shape on the first empty bulk so the
-            # post-mortem can distinguish H1.0 (truly empty DataFrame)
-            # from H1.1 (empty after index slice).
-            if self._last_bulk_shape is None:
-                self._last_bulk_shape = (0, 0)
-            return
+    def _stale_tickers(self):
+        """Tickers whose window is not guaranteed identical to history().
 
-        # Snapshot the bulk shape on the first non-empty call so the
-        # post-mortem can confirm 19 symbols / >= 612 rows reached the
-        # slice. Subsequent calls do not overwrite (the shape is stable
-        # in steady state).
+        Returns None when the cache has never been seeded (first call:
+        fetch everything). Otherwise returns the tickers whose mapped
+        contract differs from the one memoised at their last fetch, plus
+        tickers that gained on_data bars without ever having been seeded.
+        A not-primed ticker with an empty window is NOT stale: it has no
+        data at all, exactly like a ticker absent from the bulk today.
+        """
+        if self._roll_cache is None:
+            return None
+        stale = []
+        for ticker, sym in self.symbols.items():
+            w = self._roll_cache[ticker]
+            if not w["primed"]:
+                if len(w["closes"]) > 0:
+                    stale.append(ticker)
+                continue
+            if self._mapped_contract(sym) != w["mapped"]:
+                stale.append(ticker)
+        return stale
+
+    def _seed_windows(self, bulk):
+        """Fill the sliding windows (and the bulk-shape snapshot) from a
+        bulk history() frame. Called on the seed fetch and on every
+        rollover-triggered re-fetch. The deque maxlen keeps the last
+        n_bars closes exactly as history() would return them."""
+        sym_level = "symbol" if "symbol" in bulk.index.names else 0
+        present_syms = set(bulk.index.get_level_values(sym_level))
+        for ticker, sym in self.symbols.items():
+            w = self._roll_cache[ticker]
+            if sym in present_syms:
+                hist = (
+                    bulk.xs(sym, level="symbol")
+                    if sym_level == "symbol"
+                    else bulk.loc[sym]
+                )
+                closes = (
+                    hist["close"].values if "close" in hist.columns else np.array([])
+                )
+                w["closes"].clear()
+                for c in closes:
+                    w["closes"].append(float(c))
+                w["primed"] = True
+                w["mapped"] = self._mapped_contract(sym)
         if self._last_bulk_shape is None:
             try:
-                # 15992: count unique values at the SYMBOL level by name.
-                # For continuous futures the bulk frame index is
-                # (expiry, symbol, time) and level 0 (expiry) is the
-                # constant 1899-12-30 no-expiry sentinel on every row,
-                # which used to read as "1 symbol".
-                sym_level = "symbol" if "symbol" in bulk.index.names else 0
                 n_unique = int(
                     bulk.index.get_level_values(sym_level).unique().size
                 )
@@ -450,23 +504,67 @@ class CarverThirteen(QCAlgorithm):
                 n_unique = 0
             self._last_bulk_shape = (int(bulk.shape[0]), n_unique)
 
+    # ----- main daily entrypoint ------------------------------------------
+
+    def _rebalance(self):
+        t_wall_start = time.perf_counter()
+        self._rebalance_call_count += 1
+
+        if self.is_warming_up:
+            self._rebalance_early_returns["warming_up"] += 1
+            self._wall_s += time.perf_counter() - t_wall_start
+            return
+
+        # 16076: serve the forecast loop from the rollover-aware sliding
+        # windows when they are guaranteed identical to a fresh bulk
+        # (mapping stable since the last fetch), and re-fetch only the
+        # stale tickers otherwise. One bulk call on the first post-warmup
+        # rebalance, then one grouped call per day where at least one
+        # mapped contract changed.
+        stale = self._stale_tickers()
+        if stale is None or stale:
+            t_hist = time.perf_counter()
+            fetch_syms = (
+                list(self.symbols.values())
+                if stale is None
+                else [self.symbols[t] for t in stale]
+            )
+            bulk = self.history(fetch_syms, 2 * self.max_slow + self.vol_lookback + 20, Resolution.DAILY)
+            self._hist_s += time.perf_counter() - t_hist
+            self._history_calls += 1
+            if bulk.empty and stale is None:
+                # Seed fetch empty: nothing has ever been served, behave
+                # exactly like the pre-16076 code. A stale-only fetch that
+                # comes back empty leaves the windows as they are and will
+                # be retried next call (the mapping memo is only updated
+                # on a successful seed).
+                self._rebalance_early_returns["bulk_empty"] += 1
+                # Snapshot the bulk shape on the first empty bulk so the
+                # post-mortem can distinguish H1.0 (truly empty DataFrame)
+                # from H1.1 (empty after index slice).
+                if self._last_bulk_shape is None:
+                    self._last_bulk_shape = (0, 0)
+                self._wall_s += time.perf_counter() - t_wall_start
+                return
+            self._seed_windows(bulk)
+        else:
+            self._cache_served += 1
+
+        t_fc = time.perf_counter()
         raw_forecasts = {}
-        # 15992: membership test and slice must address the SYMBOL level by
-        # name. A positional test/slice on level 0 addresses the EXPIRY
-        # level of the continuous-futures bulk frame, where every row
-        # carries 1899-12-30 -- the measured cause of 0 orders across the
-        # whole window (all 19 instruments skipped, no_raw_forecasts on
-        # every post-warmup call).
-        sym_level = "symbol" if "symbol" in bulk.index.names else 0
-        present_syms = set(bulk.index.get_level_values(sym_level))
-        for ticker, sym in self.symbols.items():
-            if sym not in present_syms:
+        # 16076: closes now come from the sliding windows, which carry the
+        # same bars history() would return (seeded by it, extended by the
+        # same daily feed). A ticker with an empty window is exactly a
+        # ticker absent from today's bulk under the pre-16076 code.
+        closes_by_ticker = {
+            t: np.array(w["closes"], dtype=float)
+            for t, w in self._roll_cache.items()
+            if len(w["closes"]) > 0
+        }
+        for ticker in self.futures_universe:
+            closes = closes_by_ticker.get(ticker)
+            if closes is None:
                 continue
-            if sym_level == "symbol":
-                hist = bulk.xs(sym, level="symbol")
-            else:
-                hist = bulk.loc[sym]
-            closes = hist["close"].values if "close" in hist.columns else np.array([])
             # REPAIR-9 c.1117 guard tightening: require max_slow + 2 bars
             # before even attempting the slowest EWMAC(64, 256). The
             # EWMA(256) alpha = 2/(256+1) ≈ 0.0078 has a half-life of ~88
@@ -526,6 +624,8 @@ class CarverThirteen(QCAlgorithm):
 
         if not raw_forecasts:
             self._rebalance_early_returns["no_raw_forecasts"] += 1
+            self._fc_s += time.perf_counter() - t_fc
+            self._wall_s += time.perf_counter() - t_wall_start
             return
 
         # Apply breadth multiplier at portfolio level.
@@ -535,6 +635,8 @@ class CarverThirteen(QCAlgorithm):
         abs_sum = sum(abs(v) for v in self.forecasts.values())
         if abs_sum <= 0.0:
             self._rebalance_early_returns["abs_sum_zero"] += 1
+            self._fc_s += time.perf_counter() - t_fc
+            self._wall_s += time.perf_counter() - t_wall_start
             return
 
         target_value = self.portfolio.total_portfolio_value * breadth
@@ -609,6 +711,8 @@ class CarverThirteen(QCAlgorithm):
             self._rebalance_early_returns["completed_with_orders"] += 1
         else:
             self._rebalance_early_returns["completed_no_order"] += 1
+        self._fc_s += time.perf_counter() - t_fc
+        self._wall_s += time.perf_counter() - t_wall_start
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
@@ -640,5 +744,9 @@ class CarverThirteen(QCAlgorithm):
             f"(warming_up/bulk_empty/no_forecasts/abs_sum_zero), "
             f"bulk_shape={bulk_str}, "
             f"ORDER-PATH: mapped_resolved={self._order_path['mapped_resolved']} "
-            f"unmapped_skipped={self._order_path['unmapped_skipped']}"
+            f"unmapped_skipped={self._order_path['unmapped_skipped']} "
+            f"| 16076 CLOCKS: hist={self._hist_s:.1f}s fc={self._fc_s:.1f}s "
+            f"wall={self._wall_s:.1f}s "
+            f"history_calls={self._history_calls} "
+            f"cache_served={self._cache_served}"
         )
