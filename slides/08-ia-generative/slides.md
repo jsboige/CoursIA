@@ -482,7 +482,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb">3_Structured_Outputs.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/03_Structured_Outputs.ipynb">03_Structured_Outputs.ipynb</a>.</p>
 
 ---
 
@@ -497,7 +497,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb">4_Function_Calling.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb">04_Function_Calling.ipynb</a>.</p>
 
 ---
 
@@ -512,7 +512,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb">5_RAG_Modern.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb">05_RAG_Modern.ipynb</a>.</p>
 
 ---
 layout: image-overlay
