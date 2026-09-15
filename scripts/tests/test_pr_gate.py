@@ -1813,6 +1813,29 @@ def test_step_summary_dwell_guides_against_repush(tmp_path, monkeypatch):
     assert "Ne pas re-pusher" in text
 
 
+def test_verdict_body_dwell_ne_prescrit_pas_l_attente():
+    """#15726 : la consigne DWELL publiee ne doit pas fabriquer de l'attente.
+
+    Cette assertion porte sur des ABSENCES, et c'est voulu -- la regression
+    qu'elle attrape n'est pas un calcul faux mais une PHRASE. Le verdict
+    etait juste (`False`) tandis que le corps publie disait « le balayage
+    horaire leve seul » : faux sur la cadence (mesuree 2 h 33 - 5 h 18 entre
+    tirs, #15197) et, surtout, une instruction d'attente machine-emise sur
+    chaque gate rouge. Depuis #15693 ce corps est aussi le `summary` du
+    check-run : il est lu dans l'UI par chaque lane, pas seulement en log.
+    """
+    body = pr_gate.verdict_body("DWELL -- tete du 2026-09-07T11:55:00Z")
+    assert "balayage horaire" not in body
+    assert "leve seul" not in body
+    # Ce que le retrait laisse ouvert, et rien de plus : que fait la lane.
+    assert "enchainer un autre grain" in body
+    assert "rerun" in body
+    # La garde anti-re-push de #15693 survit au retrait.
+    assert "Ne pas re-pusher" in body
+    # Controle negatif : hors DWELL, aucune de ces consignes n'est ajoutee.
+    assert "enchainer un autre grain" not in pr_gate.verdict_body("FAIL -- x")
+
+
 def test_step_summary_fork_short_circuit(tmp_path, monkeypatch):
     """The fork PASS publishes too (#10072) -- a student PR's check-run
     should not be the only one whose summary stays null."""
@@ -1983,10 +2006,17 @@ def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch
     title = seen["fields"]["output[title]"]
     assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
     assert "plancher 120 min" in title
-    # The lift the title announces is the head commit + 120 min -- readable
-    # without recomputing anything (acceptance 2), and re-armed from the
-    # newest commit after any push or update-branch (acceptance 4).
-    assert "leve au premier balayage suivant 2026-09-13T12:00:00Z" in title
+    # L'instant que le titre annonce (ecoulement du plancher) est tete + 120 min
+    # -- lisible sans rien recalculer (acceptance 2), re-arme depuis le commit
+    # le plus recent apres tout push ou update-branch (acceptance 4). #15726 :
+    # le titre DATE l'ecoulement, il ne promet plus le balayage -- l'ancienne
+    # formule « leve au premier balayage suivant » adossait la levee a un
+    # balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ; cette cadence vit
+    # dans le summary, pas dans une promesse du titre.
+    assert "ecoule a 2026-09-13T12:00:00Z" in title
+    # Garantie « rien a reparer » au niveau du TITRE aussi : la troncature
+    # [:255] peut l'y couper sans que rien ne l'annonce -- le test doit tomber.
+    assert "Rien a corriger dans le code" in title
     assert "Plancher mecanique -- rien a reparer" in seen["fields"]["output[summary]"]
 
 

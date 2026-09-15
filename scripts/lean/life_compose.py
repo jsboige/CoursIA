@@ -72,9 +72,14 @@ from life_components import (  # noqa: E402
     measure_motif,
 )
 
-# Seuil de non-interaction de Conway : deux groupes de cellules à distance
-# de Chebysyshev >= 2 ne se voient pas. Gonfler chaque enveloppe de 1
-# matérialise exactement cette frontière.
+# Frontière d'influence directe de Conway : à distance de Chebyshev < 2, deux
+# groupes de cellules sont dans le voisinage 3x3 l'un de l'autre (rejet du
+# modèle) ; à distance exactement 2, seules des naissances croisées sont
+# possibles et tout dépend du contenu — la bande passe l'élagage et le replay
+# de certification tranche ; à distance >= 3, jamais d'interaction (mesuré,
+# test_chebyshev_3_est_sur_sans_interaction). Gonfler chaque enveloppe de 1
+# fait entrer toutes les paires à distance <= 2 dans le contrôle exact, qui
+# rejette alors à < 2.
 GROW = 1
 
 DEFAULT_NODE_BUDGET = 200_000
@@ -792,9 +797,11 @@ class Searcher:
                     ra = swept_rect(catalog, a, 0, t_end)
                     rb = swept_rect(catalog, b, 0, t_end)
                     if ra and rb and _rects_overlap(_grown(ra), _grown(rb)):
-                        # emprises proches : contrôle exact, instant par instant
-                        # (deux blocs séparés d'une colonne sont à Chebyshev 2 :
-                        # non-interaction réelle que les rectangles se touchent)
+                        # emprises proches (Chebyshev <= 2) : contrôle exact,
+                        # instant par instant. Rejet à < 2 (influence directe) ;
+                        # la bande à exactement 2 (naissances croisées possibles
+                        # seulement) coexiste et sera tranchée par le replay de
+                        # certification.
                         for t in range(max(t_start(a), t_start(b)), t_end + 1):
                             if _min_chebyshev(
                                 cells_at(catalog, a, t), cells_at(catalog, b, t)
@@ -1195,7 +1202,7 @@ def _run_sig(run: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in run.items() if k not in ("wall_s", "peak_mem_kib")}
 
 
-def run_baseline(reps: int = 3) -> dict[str, Any]:
+def run_baseline(reps: int = 3, measure_memory: bool = False) -> dict[str, Any]:
     """Baseline B1 : énumération cellulaire de life_synthesize sur la cible.
 
     `synthesize(1, (0,0), box, max_cells)` retourne TOUTES les formes de
@@ -1203,6 +1210,9 @@ def run_baseline(reps: int = 3) -> dict[str, Any]:
     pas de cible, son coût pour atteindre LA forme visée est donc son
     énumération complète (appartenance vérifiée a posteriori). Elle produit
     une existence, pas une construction — c'est mesuré, pas caché.
+
+    `measure_memory` : n'instrumente le pic mémoire que si demandé. Même
+    justification mesurée que `run_compositional` (facteur 14,5x).
     """
     from life_synthesize import synthesize
 
@@ -1210,17 +1220,20 @@ def run_baseline(reps: int = 3) -> dict[str, Any]:
     target = normalize(set(TWO_BLOCKS_TARGET))
     runs = []
     for _ in range(reps):
-        tracemalloc.start()
+        if measure_memory:
+            tracemalloc.start()
         t0 = time.perf_counter()
         found = synthesize(1, (0, 0), box, max_cells)
         wall = time.perf_counter() - t0
-        _, peak = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
+        peak = 0
+        if measure_memory:
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
         normalized = [normalize(set(p)) for p in found]
         runs.append(
             {
                 "wall_s": round(wall, 3),
-                "peak_mem_kib": peak // 1024,
+                "peak_mem_kib": peak // 1024 if measure_memory else None,
                 "candidates": sum(
                     comb(box * box, k) for k in range(1, max_cells + 1)
                 ),
@@ -1237,23 +1250,49 @@ def run_baseline(reps: int = 3) -> dict[str, Any]:
     }
 
 
-def run_compositional(goal: Goal, reps: int = 3, **kwargs: Any) -> dict[str, Any]:
+def run_compositional(
+    goal: Goal, reps: int = 3, measure_memory: bool = False, **kwargs: Any
+) -> dict[str, Any]:
+    """Exécute `reps` recherches indépendantes et rend leurs mesures.
+
+    MESURE MEMOIRE -- OPT-IN, et pourquoi (#16032)
+    ----------------------------------------------
+    `tracemalloc` trace CHAQUE allocation. Sur cette recherche, qui construit
+    des millions de tuples/sets, le facteur mesuré est de **14,54x** : la même
+    recherche, même verdict, mêmes noeuds, passe de 15,882 s à 230,884 s des
+    qu'on l'instrumente (expérience `exp_tracemalloc.py`, 2026-09-14, budget
+    4000 noeuds, `two_blocks_catalyse`).
+
+    Or `peak_mem_kib` n'est lu par AUCUN test : `_run_sig` l'exclut
+    explicitement de la comparaison de stabilité, et le seul consommateur est
+    le rapport de `main()`, qui instrumente de son côté. Les tests payaient
+    donc 14,5x pour un nombre qu'ils ne regardent pas -- c'est ce qui plaçait
+    `test_reutilisation_stricte_impossible_borne` à 274,22 s sur un budget de
+    20 min de `Scripts Tests (CPU)`.
+
+    L'instrumentation devient donc explicite : `measure_memory=True` la
+    rétablit à l'identique (le rapport CLI la demande), et `None` marque la
+    valeur non mesurée -- jamais un zéro qui se lirait comme une mesure.
+    """
     runs = []
     for _ in range(reps):
         _WINDOW_CACHE.clear()
-        tracemalloc.start()
+        if measure_memory:
+            tracemalloc.start()
         t0 = time.perf_counter()
         searcher = Searcher(load_catalog_fixture(kwargs["fixture"]), goal, **{
             k: v for k, v in kwargs.items() if k != "fixture"
         })
         report = searcher.run()
         wall = time.perf_counter() - t0
-        _, peak = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
+        peak = 0
+        if measure_memory:
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
         runs.append(
             {
                 "wall_s": round(wall, 4),
-                "peak_mem_kib": peak // 1024,
+                "peak_mem_kib": peak // 1024 if measure_memory else None,
                 "verdict": report["verdict"],
                 "nodes": report["stats"]["nodes"],
                 "candidates": report["stats"]["candidates"],
@@ -1323,10 +1362,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     catalog = load_catalog(args.fixture)
 
     if args.full_report:
+        # Le rapport CLI DEMANDE la mesure memoire (measure_memory=True) : il la
+        # publie. C'est la seule surface qui la consomme -- les tests ne la
+        # lisent pas et ne doivent donc pas en payer le facteur 14,5x (#16032).
         payload = {
             "objective": args.objective,
             "base": run_compositional(
-                goal, fixture=args.fixture, node_budget=args.node_budget
+                goal, fixture=args.fixture, node_budget=args.node_budget,
+                measure_memory=True,
             ),
             "ablations": {
                 fam: run_compositional(
@@ -1334,12 +1377,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                     fixture=args.fixture,
                     ablations=frozenset([fam]),
                     node_budget=args.node_budget,
+                    measure_memory=True,
                 )
                 for fam in ABLATION_FAMILIES
             },
         }
         if args.objective == "two_blocks":
-            payload["baseline"] = run_baseline(reps=3)
+            payload["baseline"] = run_baseline(reps=3, measure_memory=True)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
 
