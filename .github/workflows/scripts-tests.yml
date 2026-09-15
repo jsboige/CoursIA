@@ -125,23 +125,37 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Plafond 20 -> 30 (#15853). Mesure du 2026-09-14 au niveau JOB
-    # (started_at -> completed_at), la grandeur sur laquelle timeout-minutes
-    # agit : sur les 30 runs conclus depuis le merge de xdist (#15833,
-    # 2026-09-13T23:08:18Z), 15 portent un job -- 8 succes (le plus long
-    # 18,4 min), 5 echecs, 2 annulations dont le temoin 34788823010 coupe a
-    # 20,3 min -- et 15 sont des supplantations de file (jobs: [], jamais
-    # demarres, hors de toute discussion de plafond). Aucun job qui reussit
-    # ne depasse 18,4 min et pourtant un job a atteint 20,3 min et s'est
-    # fait couper : la queue traverse l'ancien plafond de 20 alors que le
-    # corps reste 1,6 min en dessous -- la variance du pool decide, pas le
-    # fond des tests.
-    # (Les chiffres run-level qui figuraient ici en v1 -- 26 runs, mediane
-    # 17,5 min, max 19,8 min, 16 annulations -- couvraient la file d'attente
-    # et, pour un rerun, les deux tentatives : mauvaise grandeur, retiree ;
-    # retraction ecrite en tete du body de #16087.)
-    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur pr_gate.py
-    # (--timeout-min 45) et le job pr-gate.yml (timeout-minutes: 52).
+    # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
+    # (started_at -> completed_at du job nomme exactement "Scripts Tests
+    # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
+    # du run (file d'attente comprise, et pour un rerun les deux
+    # tentatives : c'etait la faute de grandeur de la v1).
+    #
+    # Requete a rejouer telle quelle avant de citer ou de retirer ce
+    # tableau (photographie datee, pas une verite) : runs du workflow
+    # 296034456, branch=main, status=completed, run_started_at >
+    # 2026-09-13T23:08:18Z (merge de xdist #15833) ; dans chaque run, job
+    # de nom EXACT "Scripts Tests (CPU)".
+    #
+    # Mesure du 2026-09-15T07:00Z, rejouee a 07:22Z sans derive :
+    #   70 runs conclus
+    #     - 25 sans job : jobs: [], jamais demarres (supplantation de
+    #       file) -- hors de toute discussion de plafond ;
+    #     - 45 porteurs d'un job, max par conclusion :
+    #         success    30   max 17,4 min
+    #         failure    11   max 14,3 min
+    #         cancelled   4   20,32-20,43 min
+    # Les 4 cancelled sont des kills au mur de 20 min alors en vigueur sur
+    # main (runs 34788823010, 34839042549, 34924561729, 34934339136) :
+    # dans cette fenetre aucun succes ne depasse 17,4 min, et la queue a
+    # quatre reprises franchi le mur de 20. Fenetre mesuree sous l'ANCIEN
+    # plafond : elle fonde le relevement, elle ne valide PAS un 30
+    # post-merge -- aucun run de main n'a encore execute sous 30.
+    # (Retraction de la v1 run-level -- 26 runs, mediane 17,5 min, max
+    # 19,8 min, 16 annulations -- ecrite en tete du body de #16087.)
+    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur
+    # pr_gate.py (--timeout-min 45) et le job pr-gate.yml
+    # (timeout-minutes: 52).
     timeout-minutes: 30
 
     steps:
