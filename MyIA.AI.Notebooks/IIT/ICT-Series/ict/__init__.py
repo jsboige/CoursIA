@@ -98,6 +98,8 @@ from . import concept_inoculation
 from . import bridge_testing
 from . import phat_self_reference
 from . import salience_valence_dissociation
+from . import bench_factorise
+from . import mixed_state
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -123,4 +125,6 @@ __all__ = [
     "bridge_testing",
     "phat_self_reference",
     "salience_valence_dissociation",
+    "bench_factorise",
+    "mixed_state",
 ]
