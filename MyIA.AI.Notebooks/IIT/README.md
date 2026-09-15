@@ -429,7 +429,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 | **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
 | **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
-| **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-Series/ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
+| **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence](ICT-Series/ICT-05-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
 **Le pont le plus profond — ICT-5 lève le do-calculus au niveau des échelles.** Dans la théorie
 de l'émergence causale (Hoel, *Causal Emergence 2.0* ; Jansma & Hoel, *Engineering Emergence*,
@@ -447,7 +447,7 @@ causal que le micro — l'`effectiveness` monte sous coarse-graining.
 nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb)
 message passing, [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
-([ICT-5](ICT-Series/ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
+([ICT-5](ICT-Series/ICT-05-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
 échelles**.
 
 **Articles d'ancrage** : Pearl, *Causality* (2009) ; Hoel, *Causal Emergence 2.0*

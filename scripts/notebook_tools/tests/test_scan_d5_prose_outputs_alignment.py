@@ -1666,6 +1666,9 @@ class TestICT1CounterEvidence:
         Path(os.environ.get("COURSIA_ROOT", "") or "_/_"),
     )
     REPO_ROOT = next((p for p in _CANDIDATE_ROOTS if p.exists() and p.is_dir()), _CANDIDATE_ROOTS[0])
+    # Chemin lu a une revision HISTORIQUE (`7de14792c^`, `e8dc56ac9`) : le fichier
+    # portait alors le nom NON pade. Le passer a `ICT-01-` ferait echouer `git show`
+    # et transformerait la contre-epreuve positive en skip silencieux.
     NB_PATH = "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb"
 
     def _git_show(self, ref: str) -> bytes:

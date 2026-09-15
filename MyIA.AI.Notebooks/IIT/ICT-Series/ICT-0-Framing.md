@@ -307,15 +307,15 @@ pour revenir à des calculs IIT stricts sur de petits systèmes.
 ```
 IIT/
 ├── ICT-0-Framing.md                       # ce document
-├── ICT-1-PhiTrajectories.ipynb            # ✅ trajectoires de Φ (vrai PyPhi)
-├── ICT-2-SelfSortingMorphogenesis.ipynb   # ✅ premier livrable (#4588)
-├── ICT-3-RobustnessDelayedGratification.ipynb  # ✅ étude quantitative
-├── ICT-4-ChimericArraysKinAggregation.ipynb  # ✅ jeu de règles riche : agrégation « kin » émergente
-├── ICT-5-CausalEmergence.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
-├── ICT-6-SortingToTPM-CausalEmergence.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
-├── ICT-7-ScaleFreeSignatures.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
-├── ICT-8-AttractorLandscapesEWS.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
-├── ICT-9-AgencyRegeneration.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
+├── ICT-01-PhiTrajectories.ipynb            # ✅ trajectoires de Φ (vrai PyPhi)
+├── ICT-02-SelfSortingMorphogenesis.ipynb   # ✅ premier livrable (#4588)
+├── ICT-03-RobustnessDelayedGratification.ipynb  # ✅ étude quantitative
+├── ICT-04-ChimericArraysKinAggregation.ipynb  # ✅ jeu de règles riche : agrégation « kin » émergente
+├── ICT-05-CausalEmergence.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
+├── ICT-06-SortingToTPM-CausalEmergence.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
+├── ICT-07-ScaleFreeSignatures.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
+├── ICT-08-AttractorLandscapesEWS.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
+├── ICT-09-AgencyRegeneration.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
 ├── ICT-10-CatastropheGrammar.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
 ├── ICT-22b-CausalInterventionEngine.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
 └── ict/
@@ -543,7 +543,7 @@ ICT mesure ce que les modèles font **vraiment**, pas ce qu'on espérait. ICT-2 
 le toy model minimal reproduit fidèlement la robustesse et le délai de gratification, mais
 **pas** l'agrégation « kin » positive du papier (ses règles uni-directionnelles produisent au
 contraire des impasses de coordination). Le notebook le dit honnêtement et renvoie l'agrégation
-à ICT-4. [ICT-4](ICT-4-ChimericArraysKinAggregation.ipynb) tient cette promesse avec un jeu de
+à ICT-4. [ICT-4](ICT-04-ChimericArraysKinAggregation.ipynb) tient cette promesse avec un jeu de
 règles plus riche — et la même discipline : l'agrégation émerge, mais **seulement** dans les
 degrés de liberté laissés par le tri (sans valeurs répétées, elle disparaît), ce que le notebook
 mesure au lieu de le proclamer. Cette discipline — exécuter, mesurer, narrer le résultat réel —
