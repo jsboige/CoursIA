@@ -2701,6 +2701,77 @@ def test_16005_emissions_reelles_restent_detectees():
     ) == "BLOCK"
 
 
+# --- #16006 : la fenetre pre-marqueur etait sentence-agnostic -----------------
+# Toute la liste des mots de narration, telle que le module la porte. Servir de
+# source unique au test evite la derive : chaque forme est verifiee DANS LES
+# DEUX SENS (narration liee au nom = mention ; suivie d'un deux-points =
+# emission), et l'appartenance de la forme a la liste est prouvee sur le
+# pattern lui-meme (sinon le balayage serait vacuamente vert).
+_NARRATION_FORMS = (
+    "Levée", "Lèvement", "Je lève", "Lifted", "Retrait", "Annulation",
+    "Chronologie", "Historique", "État", "Résumé", "Récapitulatif", "Bilan",
+    "Contexte", "Suite",
+)
+
+
+def test_16006_les_deux_points_annoncent_l_emission_sur_toute_la_liste():
+    """#16006 : `Suite(?!\\s*:)` traitait UN mot sur quatorze — l'echappatoire
+    etait le symptome de l'asymetrie, pas le correctif. Le deux-points ANNONCE
+    ce qui suit (« État : BLOCAGE maintenu »), il ne relie pas le nom a sa
+    narration comme le fait la preposition (« État du blocage »). Le correctif
+    devait valoir pour la liste entiere, pas pour `suite`."""
+    # `Je lève` est le VERBE DE LEVEE canonique : `classify` le resout a
+    # l'etage superieur (branche levee) avant meme d'appeler `_block_emitted`.
+    # L'assertion qui suit prouve que ce n'est PAS la fenetre de narration qui
+    # l'ecarte -- sinon l'exception masquerait un faux negatif de plus.
+    assert mod._block_emitted("Je lève : BLOCAGE — ne pas merger.") is True
+    assert mod.classify("myia-ai-01", "Je lève : BLOCAGE — ne pas merger.") is None
+
+    for forme in _NARRATION_FORMS:
+        # Le module normalise (sans accents) avant de chercher : la preuve
+        # d'appartenance doit porter sur la meme forme que la recherche reelle.
+        assert mod._NARRATION_BEFORE_RE.search(
+            f"{mod._unaccent(forme)} du blocage"
+        ), (
+            f"« {forme} » n'est plus dans la liste des mots de narration : "
+            "le balayage ci-dessous serait vacuamente vert"
+        )
+        if forme == "Je lève":
+            continue  # resolu en amont (cf ci-dessus), pas par cette fenetre
+        assert mod.classify("myia-ai-01", f"{forme} : BLOCAGE — ne pas merger.") \
+            == "BLOCK", f"« {forme} : BLOCAGE » est une EMISSION"
+        assert mod.classify("myia-ai-01", f"{forme} du blocage") is None, (
+            f"« {forme} du blocage » est une MENTION (narration liee au nom)"
+        )
+
+
+def test_16006_le_trou_ne_franchit_pas_une_fin_de_phrase():
+    """#16006 : `[^\\n]{0,24}` laissait le mot de narration de la phrase
+    PRECEDENTE neutraliser l'emission de la suivante — deux mesures sur
+    l'arbre fusionne (« Résumé fait. BLOCAGE maintenu », « Historique court.
+    BLOCAGE »). Le trou est desormais borne a une proposition nominale."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé fait. BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court. BLOCAGE"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Contexte posé. BLOCAGE — run rouge, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "État stable. BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-epreuves : la narration reste une narration quand la ponctuation
+    # est hors du trou (avant le mot, ou apres le nom).
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Premier point. Historique du blocage, pour mémoire."
+    ) is None
+
+
 def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
     """#13083 garde-fou : un verdict positif (APPROVE) qui nomme le BLOCAGE
     d'un autre cycle dans sa narration reste positif — la mention « leve par »
