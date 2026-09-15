@@ -207,14 +207,19 @@ décide de l'aboutissement de l'ordre.
 
 **Réparations mergées sur `main`** : `#16003` (commit `a3a30c1b5f3e47445ba8b51a6788bc69eeb0c20a`)
 et `#16051` (commit `821487a8cd5bc86afc2f5917f3cf2e10b79c8104`). Le canal de diagnostic qui
-manquait a été obtenu en écrivant les compteurs dans le champ `error` (`self.error(...)`,
-surfacé par le wrapper) plutôt que dans des runtime logs non rendus :
+manquait a été obtenu en **levant** le payload depuis `on_end_of_algorithm`
+(`raise RuntimeError(payload)`, `main.py:642`) plutôt que dans des runtime logs non rendus :
 
 ```
-CARVER13: Final=$3,843.29, Return=-96.16%, Breadth-multiplied forecasts=19
-REPAIR-9 INSTRUMENTATION: rebalance_calls=3368, completed_calls=2759
-  (with_orders=2759, no_order=0), early_returns: (aucun)
+CARVER13: Final=$3,843.29, Return=-96.16%, Breadth-multiplied forecasts=19 | REPAIR-9 INSTRUMENTATION: rebalance_calls=3368, completed_calls=2759 (with_orders=2759, no_order=0), early_returns=609+0+0+0 (warming_up/bulk_empty/no_forecasts/abs_sum_zero), bulk_shape=rows=10617, unique_syms=18, ORDER-PATH: mapped_resolved=49662 unmapped_skipped=2759 orders_count=1447
+  at on_end_of_algorithm
+    raise RuntimeError(payload)
+ in main.py: line 642
 ```
+
+Le `early_returns=609+0+0+0` se recoupe arithmétiquement avec la même ligne :
+`rebalance_calls=3368 − completed_calls=2759 = 609` — ce sont les appels sortis **avant**
+d'atteindre le chemin d'ordre (`warming_up` / `bulk_empty` / `no_forecasts` / `abs_sum_zero`).
 
 À travers les deux runs, `with_orders=2759 / no_order=0` : la stratégie a émis un
 `set_holdings` à **chaque** appel complété dans les deux cas. Le chemin d'appel est
