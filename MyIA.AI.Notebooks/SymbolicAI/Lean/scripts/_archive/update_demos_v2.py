@@ -67,6 +67,33 @@ NEW_DEMOS_STR = '''DEMOS = [
 ]'''
 
 
+def _match_demos_block(text):
+    """Match a `DEMOS = [ ... ]` block in linear time.
+
+    ReDoS fix (CodeQL py/redos): the previous regex
+    `(DEMOS\\s*=\\s*\\[(?:[^\\[\\]]*\\{[^}]*\\})*[^\\[\\]]*\\])` had nested
+    quantifiers and tripped the CodeQL py/redos check on input like
+    `DEMOS=[{{{{...`. Replace with a single-pass bracket counter — O(n),
+    no backtracking states.
+    """
+    m = re.search(r'DEMOS\s*=\s*\[', text)
+    if not m:
+        return None
+    depth = 0
+    i = m.end() - 1  # position of `[`
+    n = len(text)
+    while i < n:
+        c = text[i]
+        if c == '[':
+            depth += 1
+        elif c == ']':
+            depth -= 1
+            if depth == 0:
+                return text[m.start():i + 1]
+        i += 1
+    return None
+
+
 def update_file_demos(filepath, is_notebook=False):
     """Update DEMOS in a file."""
     print(f"Processing: {filepath}")
@@ -82,10 +109,9 @@ def update_file_demos(filepath, is_notebook=False):
 
                 # Look for DEMOS definition
                 if 'DEMOS = [' in source and '"name":' in source:
-                    # Find the start and end of DEMOS
-                    match = re.search(r'(DEMOS\s*=\s*\[(?:[^\[\]]*\{[^}]*\})*[^\[\]]*\])', source, re.DOTALL)
-                    if match:
-                        old_demos = match.group(1)
+                    # Find the start and end of DEMOS (linear-time, ReDoS-safe)
+                    old_demos = _match_demos_block(source)
+                    if old_demos:
                         new_source = source.replace(old_demos, NEW_DEMOS_STR)
 
                         if new_source != source:
@@ -102,10 +128,9 @@ def update_file_demos(filepath, is_notebook=False):
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Find and replace DEMOS block
-        match = re.search(r'(DEMOS\s*=\s*\[(?:[^\[\]]*\{[^}]*\})*[^\[\]]*\])', content, re.DOTALL)
-        if match:
-            old_demos = match.group(1)
+        # Find and replace DEMOS block (linear-time, ReDoS-safe)
+        old_demos = _match_demos_block(content)
+        if old_demos:
             new_content = content.replace(old_demos, NEW_DEMOS_STR)
 
             if new_content != content:
