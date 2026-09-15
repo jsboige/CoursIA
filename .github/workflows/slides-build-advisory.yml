@@ -303,7 +303,7 @@ jobs:
             fi
             gh label create "$LABEL" \
               --description "A Slidev deck impacted by this PR does not construct (#8807)" \
-              --color "D93F0B" --force 2>/dev/null || true
+              --color "D93F0B" --force || true
             [ "$NOCTURNE" -eq 0 ] && gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
           else
             echo "All ${#TOUCHED[@]} impacted deck(s) build cleanly."
