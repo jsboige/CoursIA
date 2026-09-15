@@ -1,4 +1,4 @@
-/-!
+/-
 Invariant d'index (#16154) : cet umbrella est un index de lecture **FR-only**.
 Chaque module FR de `Grothendieck/` y figure ; les siblings `_en` (miroir
 anglais, EPIC #4980) n'y figurent jamais — ils restent construits par les
