@@ -91,9 +91,9 @@ def test_get_defaults_returns_empty_dict_for_unknown_provider():
 
 
 def test_provider_config_is_constructible_with_minimal_fields():
-    cfg = ProviderConfig(provider=ProviderType.OPENAI, model="gpt-4o")
+    cfg = ProviderConfig(provider=ProviderType.OPENAI, model="gpt-5.6-sol")
     assert cfg.provider == ProviderType.OPENAI
-    assert cfg.model == "gpt-4o"
+    assert cfg.model == "gpt-5.6-sol"
     assert cfg.api_key is None  # Optional, defaults to None
     assert cfg.base_url is None
 
@@ -235,7 +235,7 @@ def test_get_litellm_model_openrouter_prefix():
 
 
 @pytest.mark.parametrize("provider,model,prefix", [
-    (ProviderType.OPENAI, "gpt-4o", "openai"),
+    (ProviderType.OPENAI, "gpt-5.6-sol", "openai"),
     (ProviderType.QWEN, "qwen3.6-flash", "openai"),       # Qwen Cloud uses OpenAI API
     (ProviderType.VLLM, "qwen3.6-35b-a3b", "openai"),      # vLLM uses OpenAI API
     (ProviderType.LMSTUDIO, "local-model", "openai"),       # LM Studio uses OpenAI API

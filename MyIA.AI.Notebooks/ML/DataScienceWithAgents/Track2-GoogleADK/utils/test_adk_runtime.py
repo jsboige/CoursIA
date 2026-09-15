@@ -79,12 +79,12 @@ def test_build_adk_model_openai_uses_provider_mapping():
     model = build_adk_model(
         _config(
             ProviderType.OPENAI,
-            model="gpt-4o-mini",
+            model="gpt-5.6-luna",
             base_url="https://api.openai.com/v1",
             api_key="configured-test-key",
         )
     )
-    assert model.model == "openai/gpt-4o-mini"
+    assert model.model == "openai/gpt-5.6-luna"
 
 
 def test_build_data_agent_uses_public_adk_agent_and_real_tool():
