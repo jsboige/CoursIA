@@ -223,10 +223,25 @@ jobs:
           # 783 (main pur, mesure) + 28 = 811 ferme l'arithmetique, et 811
           # EST la collection mesuree sur l'arbre merge (py3.9.25 +
           # numpy 1.26.4, SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (44 package)"
+          # Floor 822 -> 835 : +13 items du module de test apparie de
+          # l'extraction F-Lens (#15943, ict/tests/test_factor_geometry.py,
+          # 13 contrats dont 12 portes sur le comportement DEPLACE et le 13e
+          # sur l'artefact consciemment conserve -- cf. le module). Mesure
+          # firsthand sur cet arbre, meme rootdir que la CI :
+          #   AVANT (origin/main@2699ebdaad) : 822 collected
+          #   APRES (avec le module)         : 835 collected
+          # +13 = le delta exact du fichier collecte isolement (13 items).
+          #
+          # Le label "(44 package)" passe a 51 : il comptait des strates
+          # (modules de test) et il etait PERIME de 7 sur main AVANT cette PR
+          # -- mesure : `ls test_*.py | wc -l` rend 50 sur origin/main (51 avec
+          # ce module), pas 44. Le chiffre 51 est la mesure, pas un increment
+          # du chiffre precedent (44 + 1 = 45 aurait propage une valeur fausse).
+          # Le floor, lui, garde la COLLECTION (835), pas les strates.
+          - suite-name: "ict/tests/ (51 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 822
+            test-floor: 835
 
     steps:
       - uses: actions/checkout@v4
