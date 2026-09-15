@@ -53,7 +53,7 @@ docs/                      # Documentation projet (règles, harnais, référence
 
 ## Comment commencer ?
 
-Trois parcours certifiés selon votre niveau — voir [PARCOURS.md](parcours.qmd) :
+Trois parcours certifiés selon votre niveau — voir [parcours.qmd](parcours.qmd) :
 
 1. **Local sobre** — Python + Jupyter uniquement, sans GPU, sans Docker. Idéal pour démarrer.
 2. **ML.NET + Symbolic** — Ajout de .NET Interactive pour les algorithmes C# et Lean 4.

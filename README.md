@@ -16,7 +16,7 @@ Les notebooks utilisent Python, C# avec .NET Interactive et Lean 4. De nombreux 
 
 Trois chemins permettent d'entrer dans le dépôt sans parcourir tout le catalogue :
 
-1. **Suivre un parcours guidé** : [PARCOURS.md](PARCOURS.md) relie les notebooks en cinq itinéraires thématiques et indique leur maturité.
+1. **Suivre un parcours narratif** : [PARCOURS.md](PARCOURS.md) présente trois itinéraires certifiées (accéléré GenAI, IA symbolique, lecture AIMA), avec public, durée et sortie concrète. Les cinq pages catalogue qui listent les notebooks par domaine y sont repositionnées comme **vues du catalogue**, pas comme parcours.
 2. **Choisir une série** : chaque README de série présente son objectif, son ordre de lecture, ses prérequis et ses notebooks.
 3. **Préparer l'environnement** : pour exécuter immédiatement, commencer par [Mise en route](#mise-en-route), puis ouvrir le notebook `Setup` ou `Environment` de la série choisie.
 
@@ -112,7 +112,7 @@ L'apprentissage n'est pas une sixième étape : c'est une **couche disponible à
 
 **Explorer les frontières de recherche** -- Les preuves formelles, le pipeline ML multi-seed, le post-training des LLMs et IIT/ICT proposent des résultats falsifiables, y compris des résultats négatifs documentés.
 
-Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis, voir [PARCOURS.md](PARCOURS.md).
+Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis, voir [PARCOURS.md](PARCOURS.md) (parcours narratifs) et [`parcours.qmd`](parcours.qmd) (choix par contraintes d'infrastructure).
 
 ---
 
