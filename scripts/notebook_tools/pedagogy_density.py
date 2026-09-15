@@ -133,6 +133,14 @@ BASELINE_FILE = _TOOLS_DIR / "pedagogy_density_baseline.json"
 #: the change's base (``--base``), so it needs no allowance file and cannot be
 #: confused with the growth of the corpus.
 
+#: Acceptance #1 of #16122 asks the organ to name the unkeyed files, not merely
+#: count them: a count says the ratchet exempts something without saying WHAT.
+#: The listing is bounded because that inventory is 283 entries on main -- an
+#: unbounded dump would flood every PR log (it is reported on the failing path
+#: too, deliberately). The head is what a reader recognises the families from;
+#: the tail is announced rather than silently dropped.
+UNKEYED_LIST_CAP = 20
+
 
 @dataclass
 class DensityVerdict:
@@ -618,6 +626,16 @@ def _check_orphans(base_ref: str | None = None) -> int:
         f"sur {len(population)} (non bloquant), "
         f"vs {len(tracked)} notebooks suivi(s). {lost_note}"
     )
+    # Named, not just counted (acceptance #1): the reader must be able to see
+    # WHICH notebooks the ratchet exempts. Bounded -- see UNKEYED_LIST_CAP.
+    for path in unkeyed[:UNKEYED_LIST_CAP]:
+        print(f"  UNKEYED_FILE {path}")
+    if len(unkeyed) > UNKEYED_LIST_CAP:
+        print(
+            f"  ... (+{len(unkeyed) - UNKEYED_LIST_CAP} autre(s) non liste(s). "
+            f"Inventaire complet = population jugee moins les cles du baseline, "
+            f"les deux ensemble ci-dessus.)"
+        )
     if failed:
         return 1
     print(f"OK: {len(baseline)} cles du baseline, 0 ORPHAN_KEY, 0 LOST_KEY.")

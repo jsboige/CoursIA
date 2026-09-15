@@ -256,6 +256,30 @@ class TestCheckOrphansBothDirections:
         out = capsys.readouterr().out
         assert "inventaire UNKEYED_FILE : 1 notebook(s)" in out  # inventoried...
         assert "0 LOST_KEY" in out  # ...but not a failure
+        # Acceptance #1 asks the organ to NAME the unkeyed files: a bare count
+        # says the ratchet exempts something without saying what.
+        assert "UNKEYED_FILE MyIA.AI.Notebooks/GameTheory/GameTheory-02-Nouveau.ipynb" in out
+
+    def test_unkeyed_listing_is_bounded_and_announces_its_tail(
+        self, _rename_repo, monkeypatch, capsys
+    ):
+        """The inventory is 283 entries on main: named, but capped.
+
+        The cap must ANNOUNCE what it drops -- a listing that silently truncates
+        reads as a complete inventory, which is the same class of lie as a
+        verdict that contradicts its measure.
+        """
+        repo, tools, family = _rename_repo
+        extra = 24
+        for i in range(extra):
+            (family / f"GameTheory-{i + 10:02d}-Bulk.ipynb").write_text("{}", encoding="utf-8")
+        _commit(repo, "c2")
+        _wire(monkeypatch, tools)
+        assert pd._check_orphans("HEAD~1") == 0
+        out = capsys.readouterr().out
+        assert f"inventaire UNKEYED_FILE : {extra} notebook(s)" in out
+        assert out.count("  UNKEYED_FILE ") == pd.UNKEYED_LIST_CAP
+        assert f"+{extra - pd.UNKEYED_LIST_CAP} autre(s) non liste(s)" in out
 
     def test_orphan_key_alone_fails(self, _rename_repo, monkeypatch, capsys):
         repo, tools, family = _rename_repo
