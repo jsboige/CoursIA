@@ -162,6 +162,96 @@ def canonical_outputs(cell):
                       ensure_ascii=False)
 
 
+def _outputs_text(outs):
+    """Extract all stream/execute_result text from outputs (decoded).
+
+    Used by diff_outputs to produce the *honest* report NanoClaw missed on
+    #14958: when a comparison only counts image/* payloads it declares
+    "0 diff" and hides text-only output drift (deaccentuation, line join).
+    """
+    parts = []
+    for o in outs or []:
+        ot = o.get("output_type")
+        if ot == "stream":
+            text = o.get("text") or []
+            if isinstance(text, list):
+                parts.append("".join(text))
+            else:
+                parts.append(str(text))
+        elif ot in ("execute_result", "display_data"):
+            data = o.get("data") or {}
+            text = data.get("text/plain")
+            if isinstance(text, list):
+                parts.append("".join(text))
+            elif text is not None:
+                parts.append(str(text))
+            # Other MIME types (image/png, html, latex) contribute nothing
+            # here; they are tallied separately by _outputs_payload_sizes.
+    return "".join(parts)
+
+
+def _outputs_payload_sizes(outs):
+    """Sizes of binary/structured payloads (image/png, application/json, etc).
+
+    The founding class of false-negative in #14978: the comparison omitted
+    image/* entirely, so three PNG re-encodings (86064→86272, 78012→78040,
+    31668→31812 octets) read as 0 diff. We tally sizes here so a side-by-side
+    report names the cells that moved on the binary axis.
+    """
+    sizes = {}
+    for o in outs or []:
+        data = o.get("data") or {}
+        for mime, payload in data.items():
+            if mime.startswith("image/") or mime == "application/json":
+                if isinstance(payload, list):
+                    blob = "".join(payload)
+                else:
+                    blob = str(payload)
+                sizes[mime] = sizes.get(mime, 0) + len(blob.encode("utf-8",
+                                                                    errors="replace"))
+    return sizes
+
+
+def diff_outputs(base_cell, head_cell):
+    """Classify the output diff between a base and head code cell.
+
+    Returns one of:
+        "IDENTICAL"           - byte-identical (canonical_outputs)
+        "TEXT_DIFF"           - canonical differs AND text payload differs
+        "PAYLOAD_DIFF"        - canonical differs AND a non-text payload size changed
+        "BOTH_DIFF"           - canonical differs AND text + payload moved
+        "EMPTY_BASE"          - base had no outputs, head has (re-execution)
+        "EMPTY_HEAD"          - head has no outputs (cleared, suspicious)
+    The four non-IDENTICAL classes are what the existing ratchet lumps into
+    "EXECUTED" and what NanoClaw on #14958 misreported as 0. Splitting them
+    lets a reader tell *why* the output moved (text drift vs re-execution).
+    """
+    bouts = base_cell.get("outputs") or []
+    houts = head_cell.get("outputs") or []
+    if not bouts and houts:
+        return "EMPTY_BASE"
+    if bouts and not houts:
+        return "EMPTY_HEAD"
+    if canonical_outputs(base_cell) == canonical_outputs(head_cell):
+        return "IDENTICAL"
+    b_text = _outputs_text(bouts)
+    h_text = _outputs_text(houts)
+    b_sizes = _outputs_payload_sizes(bouts)
+    h_sizes = _outputs_payload_sizes(houts)
+    text_diff = b_text != h_text
+    payload_diff = b_sizes != h_sizes
+    if text_diff and payload_diff:
+        return "BOTH_DIFF"
+    if payload_diff:
+        return "PAYLOAD_DIFF"
+    if text_diff:
+        return "TEXT_DIFF"
+    # canonical differs but neither text nor payload moved: rare; the diff
+    # lives in nbformat metadata (e.g. transient fields, traceback
+    # timestamps). Name it rather than lump it with IDENTICAL.
+    return "METADATA_DIFF"
+
+
 def notebook_kernel(nb):
     """kernelspec.name of a notebook, or None."""
     return ((nb.get("metadata") or {}).get("kernelspec") or {}).get("name")
@@ -249,6 +339,14 @@ def classify_cells(base_nb, head_nb):
     feeds git blobs. No exemption logic here - the caller applies
     notebook-level and body-level lifts so the classification stays
     reusable for the tier-1 sweep.
+
+    Output-diff granularity (issue #14978): each cell where source AND
+    outputs both move is split by `diff_outputs` into TEXT_DIFF /
+    PAYLOAD_DIFF / BOTH_DIFF rather than the single EXECUTED verdict the
+    ratchet used to render. A bot (NanoClaw on #14958) that declares
+    "outputs = 0 diff" against such a pair is wrong on the face of it -
+    the local report names the cells, the kind of diff, and the byte
+    deltas so any external reviewer can be held to the truth.
     """
     base_cells = base_nb.get("cells", [])
     head_cells = head_nb.get("cells", [])
@@ -294,7 +392,11 @@ def classify_cells(base_nb, head_nb):
             records.append({"index": i, "verdict": "STALE_OUTPUT",
                             "regression": True})
         else:
-            records.append({"index": i, "verdict": "EXECUTED",
+            # Was: verdict="EXECUTED". Split so a reader sees *why* the
+            # output moved - the issue #14978 demand that a report say
+            # what it actually compared.
+            records.append({"index": i,
+                            "verdict": diff_outputs(bcell, hcell),
                             "regression": False})
     return records
 
@@ -355,15 +457,125 @@ def ratchet(base, cwd=None, body_text=""):
     return records
 
 
+def report_output_diffs(base, cwd=None):
+    """Per-cell truth about output diffs, independent of regression class.
+
+    Issue #14978: a reviewer (NanoClaw on #14958) declared "outputs = 0 diff"
+    on a pair where 7 of 14 code cells differed (3 PNG re-encodings + 4 text
+    deaccentuations). The ratchet's EXECUTED verdict already catches *that*
+    a cell changed - what the reviewer missed was naming which cells and
+    why. This report emits every paired code cell with its diff kind and
+    payload deltas, so any external claim of "0 diff" can be cross-checked
+    against the local truth.
+
+    Returned shape (machine-readable):
+        {"base": <ref>, "notebooks": [
+            {"notebook": <path>,
+             "code_cells": <int>,
+             "diffs": [
+                 {"index": <int>,
+                  "source_same": <bool>,
+                  "kind": "IDENTICAL"|"TEXT_DIFF"|"PAYLOAD_DIFF"|"BOTH_DIFF"
+                          |"EMPTY_BASE"|"EMPTY_HEAD"|"METADATA_DIFF"
+                          |"UNCHANGED_SOURCE",
+                  "payload_deltas": {"image/png": 208, ...},
+                  "text_delta_chars": <int>},
+                 ...]},
+            ...]}
+    `payload_deltas` is signed bytes (head - base) and is empty for
+    IDENTICAL cells. `text_delta_chars` is the absolute difference in the
+    decoded text payload (the deaccentuation fingerprint on #14958 is
+    exactly this).
+    """
+    base = resolve_base(base, cwd=cwd)
+    out = {"base": base, "notebooks": []}
+    for path in changed_notebooks(base, cwd=cwd):
+        content = git("show", f"{base}:{path}", cwd=cwd)
+        if content is None:
+            out["notebooks"].append({"notebook": path, "verdict": "ADDED",
+                                     "code_cells": 0, "diffs": []})
+            continue
+        base_nb, b_status = _parse_notebook(content)
+        try:
+            head_nb = json.loads((Path(cwd or ".") / path).read_text(
+                encoding="utf-8"))
+            h_status = "OK"
+        except Exception:
+            head_nb, h_status = None, "PARSE_ERROR"
+        if b_status != "OK" or h_status != "OK":
+            out["notebooks"].append({"notebook": path, "verdict": "PARSE_ERROR",
+                                     "code_cells": 0, "diffs": []})
+            continue
+        base_by_id = {c.get("id"): c for c in base_nb.get("cells", [])
+                      if c.get("id")}
+        use_ids = bool(base_by_id)
+        content_pairs = (None if use_ids
+                         else _pair_by_content(base_nb.get("cells", []),
+                                               head_nb.get("cells", [])))
+        diffs = []
+        code_count = 0
+        for i, hcell in enumerate(head_nb.get("cells", [])):
+            if hcell.get("cell_type") != "code":
+                continue
+            code_count += 1
+            bcell = None
+            if use_ids:
+                hid = hcell.get("id")
+                if hid and hid in base_by_id:
+                    bcell = base_by_id[hid]
+                elif not hid:
+                    bcell = (base_nb.get("cells", [])[i]
+                             if i < len(base_nb.get("cells", [])) else None)
+            elif content_pairs and i in content_pairs:
+                bcell = base_nb.get("cells", [])[content_pairs[i]]
+            if bcell is None or bcell.get("cell_type") != "code":
+                diffs.append({"index": i, "source_same": None,
+                              "kind": "UNPAIRED",
+                              "payload_deltas": {}, "text_delta_chars": 0})
+                continue
+            source_same = (canonical_source(bcell)
+                           == canonical_source(hcell))
+            kind = diff_outputs(bcell, hcell)
+            if source_same and kind == "IDENTICAL":
+                kind = "UNCHANGED_SOURCE"
+            b_sizes = _outputs_payload_sizes(bcell.get("outputs") or [])
+            h_sizes = _outputs_payload_sizes(hcell.get("outputs") or [])
+            deltas = {mime: h_sizes.get(mime, 0) - b_sizes.get(mime, 0)
+                      for mime in set(b_sizes) | set(h_sizes)
+                      if h_sizes.get(mime, 0) != b_sizes.get(mime, 0)}
+            b_text = _outputs_text(bcell.get("outputs") or [])
+            h_text = _outputs_text(hcell.get("outputs") or [])
+            diffs.append({"index": i, "source_same": source_same,
+                          "kind": kind,
+                          "payload_deltas": deltas,
+                          "text_delta_chars": abs(len(h_text) - len(b_text)),
+                          "text_identical": (b_text == h_text)})
+        out["notebooks"].append({
+            "notebook": path,
+            "verdict": "CHANGED",
+            "code_cells": code_count,
+            "diffs": diffs,
+        })
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Source-output ratchet: changed code must not ride "
-                    "unchanged outputs (issue #13562)")
+                    "unchanged outputs (issue #13562). --show-output-diffs "
+                    "(issue #14978) emits the truth about every cell's "
+                    "output diff, independent of regression class.")
     ap.add_argument("base", help="Base git ref (CI: origin/<base branch>)")
     ap.add_argument("--json", action="store_true", dest="as_json",
                     help="Machine-readable output")
     ap.add_argument("--body-file", dest="body_file", default=None,
                     help="PR body text carrying per-cell exemptions")
+    ap.add_argument("--show-output-diffs", action="store_true",
+                    dest="show_output_diffs",
+                    help="Emit per-cell output diff report (issue #14978). "
+                         "Independent of the regression check; the report "
+                         "is the ground truth against which any external "
+                         "'0 diff' claim should be cross-checked.")
     args = ap.parse_args()
 
     body_text = ""
@@ -377,6 +589,35 @@ def main():
     records = ratchet(args.base, body_text=body_text)
     total_reg = sum(r["regressions"] for r in records)
     failing = [r for r in records if r["regressions"]]
+
+    if args.show_output_diffs:
+        report = report_output_diffs(args.base)
+        if args.as_json:
+            print(json.dumps(report, ensure_ascii=False, indent=1))
+        else:
+            print(f"output-diff report -- base {args.base}")
+            for nb_rec in report["notebooks"]:
+                if nb_rec["verdict"] != "CHANGED":
+                    print(f"  {nb_rec['verdict']:12s} {nb_rec['notebook']}")
+                    continue
+                moved = [d for d in nb_rec["diffs"]
+                         if d["kind"] not in ("UNCHANGED_SOURCE", "UNPAIRED")]
+                print(f"  {nb_rec['notebook']}  "
+                      f"code={nb_rec['code_cells']}  moved={len(moved)}")
+                for d in moved:
+                    mark = []
+                    if d["payload_deltas"]:
+                        for m, b in sorted(d["payload_deltas"].items()):
+                            sign = "+" if b >= 0 else ""
+                            mark.append(f"{m}={sign}{b}")
+                    if d["text_delta_chars"]:
+                        mark.append(f"text={d['text_delta_chars']}")
+                    suffix = " " + " ".join(mark) if mark else ""
+                    print(f"    [{d['index']:>3}] {d['kind']:<14} "
+                          f"src_same={d['source_same']}{suffix}")
+        # --show-output-diffs is read-only; do NOT enforce the regression
+        # gate (caller is auditing, not policing). Exit 0.
+        sys.exit(0)
 
     if args.as_json:
         print(json.dumps({
