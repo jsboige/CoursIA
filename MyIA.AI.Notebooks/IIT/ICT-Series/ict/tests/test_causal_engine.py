@@ -27,6 +27,7 @@ module-level, fixtures synthetiques placees a la main, tolerances commentees).
 
 from __future__ import annotations
 
+import math
 import sys
 import unittest
 from pathlib import Path
@@ -320,6 +321,29 @@ class TestGate5DommageGeneral(unittest.TestCase):
         verdict = selectivity_verdict(damage)
         self.assertEqual(verdict, "global_damage")  # l'effet cible existe mais le
         # dommage hors cible disqualifie la lecture selective
+
+    def test_ratio_sature_a_inf_sous_le_plancher_de_mesure(self) -> None:
+        """Hors cible au plancher = rapport NON BORNE, pas un grand nombre.
+
+        ``on_rel / eps`` publiait une magnitude qui dependait de la constante
+        interne (462774272000.00 mesure sur le banc copy_offset pour une
+        intervention parfaitement propre) : lisible comme une mesure alors
+        qu'elle n'en est pas une. Et une intervention sans AUCUN effet ne doit
+        pas ressortir selective -- son rapport vaut 0.0.
+        """
+        x = _panel()
+        spec = _clamp_spec()
+        out = apply_intervention(x, spec)
+        damage = damage_metrics(x, out, spec)
+        self.assertLessEqual(damage["off_target_rel"], 1e-12)  # sous le plancher
+        self.assertTrue(math.isinf(damage["selectivity_ratio"]))
+        self.assertGreater(damage["selectivity_ratio"], 0.0)  # inf passe le seuil
+        self.assertEqual(selectivity_verdict(damage), "selective")
+
+        # rien ne bouge : aucun rapport mesurable, et surtout pas "selective"
+        neutre = damage_metrics(x, x, spec)
+        self.assertEqual(neutre["selectivity_ratio"], 0.0)
+        self.assertEqual(selectivity_verdict(neutre), "not_selective")
 
 
 class TestGate6RejouabiliteEtContrat(unittest.TestCase):
