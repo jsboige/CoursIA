@@ -1,8 +1,8 @@
 # Topologie baseline hôte myia-po-2024 — sous-grain #15574
 
-Mesure first-hand 2026-09-15T17:55Z sur `myia-po-2024` (Windows 11 Pro 10.0.26200 / MSI GE76 Raider 11UG). Fournie par `scripts/ci/measure_po2024_topology.py` (cross-platform Windows/Linux/macOS, dépendance standard uniquement).
+Mesure first-hand 2026-09-15T15:55Z sur `myia-po-2024` (Windows 11 Pro 10.0.26200 / MSI GE76 Raider 11UG). Fournie par `scripts/ci/measure_po2024_topology.py` (cross-platform Windows/Linux/macOS, dépendance standard uniquement).
 
-## Mesures instantanées
+## Mesures stables (propriétés de la machine)
 
 | Métrique | Valeur | Source instrument |
 |---|---|---|
@@ -13,14 +13,22 @@ Mesure first-hand 2026-09-15T17:55Z sur `myia-po-2024` (Windows 11 Pro 10.0.2620
 | **CPU modèle** | 11th Gen Intel Core i7-11800H @ 2.30GHz | `Win32_Processor.Name` |
 | **Cores physiques** | **8** | `Win32_Processor.NumberOfCores` |
 | **Logical processors** | **16** (hyperthreading actif) | `Win32_Processor.NumberOfLogicalProcessors` |
-| **CPU Load instant** | **76 %** | `Win32_Processor.LoadPercentage` |
 | **RAM totale** | **63.71 GiB** | `Win32_ComputerSystem.TotalPhysicalMemory` |
-| **RAM libre** | **7.17 GiB** | `Win32_OperatingSystem.FreePhysicalMemory` (KiB → GiB) |
+| **RAM libre** | **7.17 GiB** (88.7 % utilisée) | `Win32_OperatingSystem.FreePhysicalMemory` (KiB → GiB) |
 | **Slots RAM** | 2 × 32 GiB DDR4-3200 MHz | `Win32_PhysicalMemory` (×2 instances) |
 | Daemon Docker | Docker Desktop / WSL2 kernel 6.6.87.2 | `docker info` |
 | **Docker plafonné** | **16 vCPU / 23.47 GiB** | `docker info NCPU/MemTotal` |
 | Docker conteneurs running | 0 | `docker info ContainersRunning` |
 | Docker conteneurs total | 2 (lean_cli + lean_research, exited) | `docker info Containers` |
+
+## Volatile (instantané — non reproductible)
+
+| Métrique | Valeur au moment de la mesure | Périmé au re-run |
+|---|---|---|
+| **CPU Load instant** | **76 %** | Oui — instantané |
+| **RAM libre** | **7.17 GiB** | Oui — varie selon charge |
+
+Les 2 mesures « instant » (CPU Load, RAM free) **changent à chaque relecture** ; elles documentent un état ponctuel, pas une propriété de la machine. Le champ JSON `cpu_load_instant_pct` est explicitement nommé `instant` pour porter cette volatilité dans la sortie reproductible.
 
 ## Complémentarité avec le commentaire ai-01 #5645345667
 
