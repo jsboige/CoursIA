@@ -154,10 +154,8 @@ def compose_strudel(
     # Bloc fade-out coordonne : multiplier la sortie par une rampe
     # lineaire decroissante sur les 8 derniers cycles.
     fade_cycles = 8
-    lines.append(
-        f"// fade-out coordonne sur les {fade_cycles} derniers cycles : "
-        "premultiplier chaque voix par gain(1 - cycles_left/{fade_cycles})"
-    )
+    fade_marker = f"// fade-out coordonne sur les {fade_cycles} derniers cycles : premultiplier chaque voix par gain(1 - cycles_left/{fade_cycles})"
+    lines.append(fade_marker)
 
     return "\n".join(lines)
 

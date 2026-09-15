@@ -78,6 +78,24 @@ class TestComposeStrudel:
                 f"style {style_name!r} : pas de bloc fade-out documente"
             )
 
+    def test_fade_out_marker_substituted(self):
+        """Le marqueur fade-out doit etre une f-string COMPLETE, sinon
+        ``{fade_cycles}`` sort litteralement dans le script Strudel
+        genere. C'est le bug releve par CHANGES_REQUESTED myia-ai-01
+        sur PR #16259 (c.575 REPAIR P0-my-own-red)."""
+        for style_name in STYLES:
+            script = compose_strudel(style_name=style_name, duration_seconds=180)
+            # Le marqueur NE DOIT PAS contenir le placeholder non substitue.
+            assert "{fade_cycles}" not in script, (
+                f"style {style_name!r} : marqueur fade-out non substitue "
+                "(la 2e moitie du commentaire n'etait pas une f-string)."
+            )
+            # Il DOIT contenir la valeur numerique effective.
+            assert "8 derniers cycles" in script, (
+                f"style {style_name!r} : valeur fade_cycles absente du "
+                "marqueur ; verifier que la f-string est complete."
+            )
+
 
 class TestRunPipeline:
     """L'orchestrateur marque les etapes non livrees comme ``deferred``
