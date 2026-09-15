@@ -1070,3 +1070,6 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/bin/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
+
+# Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
+.claude/local/
