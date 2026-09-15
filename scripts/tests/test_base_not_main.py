@@ -43,6 +43,7 @@ from base_not_main import (  # noqa: E402
     _glob_to_regex,
     _paths_filter_matches,
     build_comment as _bc,
+    fetch_changed_files,
     workflows_skipped_by_base,
 )
 
@@ -160,3 +161,68 @@ def test_comment_is_unchanged_when_nothing_is_skipped():
     """Retro-compatibilite : le corps sans mesure reste byte-identique."""
     assert _bc("feature/x", 1, "t") == _bc("feature/x", 1, "t", [])
     assert "Couverture CI perdue" not in _bc("feature/x", 1, "t")
+
+
+# ---------------------------------------------------------------------------
+# Repli pagine de fetch_changed_files (#16194)
+# ---------------------------------------------------------------------------
+#
+# La forme `--paginate --slurp ... --jq` ecrite d'abord etait REFUSEE par gh
+# (2.81.0 : « the --slurp option is not supported with --jq »). La branche
+# etait donc morte, et la troncature a 100 fichiers qu'elle devait reparer
+# revenait en silence -- mesuree par aucun test, puisque le repli ne s'arme
+# que sur les PRs de plus de 100 fichiers.
+
+
+def test_paginated_fallback_flattens_the_page_array(monkeypatch):
+    """`--slurp` rend un tableau de PAGES : sans aplatissement, le repli ne
+    rendait rien et la premiere page tronquee repartait telle quelle."""
+    import base_not_main as m
+
+    calls = []
+
+    def fake_gh(args):
+        calls.append(args)
+        if args[:2] == ["pr", "view"]:
+            return {"files": [{"path": "a.py"}], "changedFiles": 3}
+        return [[{"filename": "a.py"}, {"filename": "b.py"}],
+                [{"filename": "c.py"}]]
+
+    monkeypatch.setattr(m, "_gh_json", fake_gh)
+    assert fetch_changed_files("o/r", 1) == ["a.py", "b.py", "c.py"]
+    # Et la commande ne repasse jamais a `--jq` : c'est ce couplage qui tuait
+    # la branche.
+    api_calls = [c for c in calls if c and c[0] == "api"]
+    assert api_calls and all("--jq" not in c for c in api_calls)
+    assert all("--slurp" in c for c in api_calls)
+
+
+def test_paginated_fallback_never_returns_less_than_the_first_page(monkeypatch):
+    """Un repli qui rend MOINS que ce qu'on avait deja degrade la mesure."""
+    import base_not_main as m
+
+    def fake_gh(args):
+        if args[:2] == ["pr", "view"]:
+            return {"files": [{"path": "a.py"}, {"path": "b.py"}],
+                    "changedFiles": 9}
+        return []
+
+    monkeypatch.setattr(m, "_gh_json", fake_gh)
+    assert fetch_changed_files("o/r", 1) == ["a.py", "b.py"]
+
+
+def test_changed_files_are_not_paginated_when_the_first_page_is_complete(
+        monkeypatch):
+    """Aucun appel API supplementaire quand `files` couvre deja `changedFiles`
+    (le cas de ~toutes les PRs du depot)."""
+    import base_not_main as m
+
+    calls = []
+
+    def fake_gh(args):
+        calls.append(args)
+        return {"files": [{"path": "a.py"}], "changedFiles": 1}
+
+    monkeypatch.setattr(m, "_gh_json", fake_gh)
+    assert fetch_changed_files("o/r", 1) == ["a.py"]
+    assert len(calls) == 1

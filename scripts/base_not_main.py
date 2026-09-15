@@ -235,6 +235,13 @@ def fetch_changed_files(repo: str, number: int) -> list[str]:
     perdue -- un silence qui relache, exactement le defaut que #16194 mesure.
     On ne pagine donc que lorsque c'est necessaire (cas rare ici : aucun des
     200 derniers PRs ne depasse 90 fichiers).
+
+    Le repli pagine n'accompagne PAS la commande de ``--jq`` : gh refuse cette
+    combinaison (verifie sur gh 2.81.0 -- « the --slurp option is not supported
+    with --jq or --template »). L'aplatissement se fait donc ici, sur le
+    tableau de pages. La forme ``--paginate --slurp ... --jq`` a bien ete
+    ecrite d'abord : elle rendait cette branche **morte**, donc la troncature
+    qu'elle devait reparer revenait en silence.
     """
     pr = _gh_json(["pr", "view", str(number), "--repo", repo,
                    "--json", "files,changedFiles"]) or {}
@@ -243,10 +250,16 @@ def fetch_changed_files(repo: str, number: int) -> list[str]:
     if len(files) >= total:
         return files
     paged = _gh_json(["api", "--paginate", "--slurp",
-                      f"repos/{repo}/pulls/{number}/files?per_page=100",
-                      "--jq", "[.[][] | .filename]"]) or []
-    if isinstance(paged, list) and paged:
-        return [str(p) for p in paged]
+                      f"repos/{repo}/pulls/{number}/files?per_page=100"]) or []
+    if isinstance(paged, list) and paged and isinstance(paged[0], list):
+        # L'API REST nomme le champ `filename` (le `files` de GraphQL ci-dessus
+        # nomme le meme champ `path`).
+        names = [str(f["filename"]) for page in paged if isinstance(page, list)
+                 for f in page if isinstance(f, dict) and f.get("filename")]
+        # Ne jamais rendre MOINS que ce qu'on avait deja : le repli doit
+        # ameliorer la mesure, pas la degrader si la pagination rend peu.
+        if len(names) > len(files):
+            return names
     return files
 
 
