@@ -2622,6 +2622,61 @@ def _lift_participle_after(head: str, end: int) -> bool:
     return word.lower() in ("leve", "levee", "lifted")
 
 
+# #16005 -- le francais place le mot de LEVEE avant le nom (« Levée du
+# blocage ») ou NARRE le blocage dans un titre (« Chronologie du blocage »).
+# La boucle mot-nu de `_block_emitted` (b) ne regardait qu'APRES l'occurrence
+# (`_lift_participle_after`) : la levée canonique elle-même, postée par la
+# lane sur sa PR, était lue comme une émission de hold (mesuré sur #15846 --
+# deux réserves BLOCK auto-infligées par les commentaires de diagnostic de la
+# lane, non levables par l'auteur sous #13083). Fenêtre pré-marqueur MIRROIR
+# de celle de `_is_cited` (30 chars) : un mot de levée/narration lié au nom
+# par une courte proposition nominale (« du », « de la », « de mon », « — »)
+# est une MENTION, pas une émission. Les déterminants vides (« BLOCAGE : ne
+# pas merger ») ne matchent pas : le pattern exige le mot de narration
+# lui-même dans les 24 chars qui precedent.
+#
+# #16006 -- la premiere version de cette fenetre etait SENTENCE-AGNOSTIQUE :
+# `[^\n]{0,24}` laissait le trou ENJAMBER une fin de phrase (le mot de
+# narration de la phrase PRECEDENTE neutralisait l'emission de la suivante),
+# et l'echappatoire des deux-points ne couvrait qu'un seul mot de la liste
+# (`suite`). Deux faux NEGATIFS mesures sur l'arbre fusionne, 5 sondes :
+#   « Resume fait. BLOCAGE maintenu »   -> « fait. » appartient a la phrase
+#       precedente ; celle qui suit EMET.
+#   « Historique court. BLOCAGE »       -> idem.
+#   « Etat : BLOCAGE maintenu »         -> le deux-points ANNONCE l'emission
+#       (il ne relie pas le nom a sa narration, contrairement au « du » de
+#       « Chronologie du blocage »).
+#   « Resume : BLOCAGE — run rouge »    -> idem.
+#   « Contexte : BLOCAGE »              -> idem.
+# Le trou exclut donc les bornes de phrase et de clause (`.`, `!`, `?`, `;`)
+# ainsi que le deux-points : la fenetre ne peut plus relier le nom a un mot de
+# narration qui appartient a une AUTRE phrase. La regle des deux-points vaut
+# des lors pour TOUTE la liste -- le `(?!\s*:)` propre a `suite` disparait, il
+# etait le symptome de l'asymetrie, pas le correctif. Le sens de l'erreur est
+# celui du protocole : une emission non reconnue est la dechirure qu'on ferme,
+# une narration sur-bloquee se leve par les formes canoniques.
+_NARRATION_BEFORE_RE = re.compile(
+    r"\b(?:levee?|levement|je\s+leve|lifted?|retrait|annulation"
+    r"|chronologie|historique|etat|resume|recap(?:itulatif)?|bilan"
+    r"|contexte|suite)\b[^\n.!?:;]{0,24}$",
+    re.IGNORECASE,
+)
+
+
+def _narrated_blockage_before(head: str, i: int) -> bool:
+    """La fenêtre qui PRECEDE l'occurrence la narré-t-elle ou ne la LÈVE-t-elle pas ?
+
+    « ## Levée du blocage — en forme canonique » : la levée vient AVANT le
+    nom. « ## Chronologie du blocage » : le nom est complément d'un titre de
+    narration. Dans les deux cas rien n'est posé (mesure #16005 sur #15846).
+
+    #16006 -- la fenêtre ne franchit ni une fin de phrase ni un deux-points :
+    « Résumé fait. BLOCAGE » et « État : BLOCAGE » sont des EMISSIONS (le mot
+    de narration est hors de la proposition nominale qui porte le nom).
+    """
+    return bool(_NARRATION_BEFORE_RE.search(head[:i]))
+
+
 def _block_emitted(body: str) -> bool:
     """Le coordinateur POSE-t-il un blocage (verdict, jamais une citation) ?
 
@@ -2689,6 +2744,9 @@ def _block_emitted(body: str) -> bool:
                 pos = i + len(marker)
                 continue
             if _lift_participle_after(head, i + len(marker)):
+                pos = i + len(marker)
+                continue
+            if _narrated_blockage_before(head, i):
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):
