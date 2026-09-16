@@ -6,13 +6,24 @@ name: Slides Build Advisory
 # caught only by a human running the build locally, which nobody did. This workflow
 # makes a deck that does not construct VISIBLE on the PR that touches it.
 #
-# ADVISORY, never blocking (issue #8817 acceptance 5): the job ALWAYS exits 0 on a
-# build failure. The actionable payload is the `slides-build-failed` LABEL, NEVER
-# the green conclusion of the job (which is green by construction). A reviewer who
-# reads only "exit 0" as "the slides build" has read the wrong signal -- the same
-# trap that let a non-conforming PR through in #8797, and that #8816 codified for
-# the exercises convention. The job prints its denominator precisely so this
-# confusion is impossible.
+# TWO LEGS, TWO VERDICTS (#15835).
+#
+# The PR leg BLOCKS: a deck that does not construct is a broken deliverable, not
+# an observation, so the job exits 1 and the check-run goes RED on the very PR
+# that introduced it. The nocturne leg stays ADVISORY (issue #8817 acceptance 5):
+# under `schedule` there is no PR to signal and no merge to gate, exit 0 is the
+# only sane conclusion, and the payload is the build output itself.
+#
+# Why a SCOPE change and not a pendulum. "Advisory, never blocking" was written
+# for a gate whose only consumer was a human reading a label at night. On a PR
+# the same finding has a different consumer -- the merge gate -- and a label is
+# not a signal that gate reads. So #8817's contract is preserved verbatim where
+# it was written (the nocturne) and given teeth only where it was silent (the
+# PR). A reviewer who reads "exit 0" as "the slides build" still reads the wrong
+# signal on the nocturne leg, where the LABEL remains the payload -- the trap
+# that let a non-conforming PR through in #8797, and that #8816 codified for the
+# exercises convention. The job prints its denominator precisely so this
+# confusion is impossible on either leg.
 #
 # Per-PR scope (acceptance 1): builds ONLY the decks impacted by the PR -- either
 # the deck whose directory changed, or ALL decks when shared slides infra changed
@@ -48,15 +59,54 @@ name: Slides Build Advisory
 # builds the decks impacted by the last-24h window of main; the label side is
 # PR-only and skipped at night -- the nocturne payload is the build output.
 #
-# Promoting to a blocking gate is a separate decision, to revisit only once the
-# advisory has run green-and-stable across enough slide PRs to trust it.
+# #15835 re-arms that trigger, so the #12817 trap is live again and is answered
+# head-on: the job carries the UNIVERSAL same-repo guard
+# (`head.repo.full_name == null || == github.repository`). It is TRUE under
+# schedule/workflow_dispatch (the field is null) and still FALSE for a fork PR.
+# The DIRECT form would extinguish the nocturne exactly as #12817 measured --
+# scripts/ci/check_self_hosted_runner_policy.py accepts both forms, and only one
+# of them keeps the organ alive. That asymmetry is the reason this paragraph is
+# spelled out instead of left to the guard's default.
+#
+# Promoting the NOCTURNE to blocking remains a separate decision, unchanged.
 
 on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+    # #15835 -- the build was cron-only, so a PR could break a deck and stay
+    # green end to end. #15808 wrote it down: "slidev build NOT RUN this cycle
+    # ... the repo CI will replay it (to be confirmed)". The "to be confirmed"
+    # was the honest part, and the answer was NO -- nothing replayed it. The
+    # worker assumed a net that did not exist; that is what a CI is for.
+    #
+    # The `paths` filter is not cosmetic: it is the scope guarantee (acceptance
+    # 3). A PR outside slides/ never wakes this job at all, and the job never
+    # holds a self-hosted slot to prove it had nothing to do.
+    #
+    # The SECOND entry is not part of that scope, it is a consequence of the
+    # job POSING A LABEL. #8822, enforced blocking by label-paths-guard.yml
+    # ("Label-poser workflows self-cover"): a label-poser that is paths-filtered
+    # without covering its own file can never re-run once the matching paths
+    # leave the diff -- so it can never REMOVE the label it added, and the label
+    # outlives the defect it names. Measured: without this line the guard names
+    # this very file. A workflow-only PR therefore fires this job and gets the
+    # "no deck impacted" exit 0 -- cheap, and the price of a label that can be
+    # taken back.
+    paths:
+      - 'slides/**'
+      - '.github/workflows/slides-build-advisory.yml'
   schedule:
     # Nocturnal sweep -- post-merge main verification.
     # Tranche 1 #12817 : sortir les advisory lourds de pull_request
     # (clone 2.22 Go par run). Stratification user 2026-08-23 :
     # "les jobs lourds devraient être payés une fois par fournée".
+    #
+    # #15835 nuance cette stratification plutot que de la retourner : le cout
+    # qu'elle visait est celui du CLONE paye a chaque PR. Le job PR ne paye que
+    # les decks du diff (portee ci-dessus) et le cache lockfile, soit la part
+    # fixe du cout -- le nocturne garde le balayage complet, une fois par
+    # fournee. La stratification tient ; c'est son perimetre qui se precise.
     - cron: '20 03 * * *'
   workflow_dispatch: {}
 permissions:
@@ -69,18 +119,33 @@ concurrency:
 
 jobs:
   slides-build-advisory:
-    name: "Slidev build advisory (label, non-blocking)"
+    name: "Slidev build (PR blocking, nocturne advisory)"
     # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
-    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    # #15835 ajoute le declencheur pull_request : le profil change (le job
+    # n'est plus cron-only), donc la garde same-repo redevient EXIGEE par
+    # scripts/ci/check_self_hosted_runner_policy.py -- c'est le `if:`
+    # ci-dessous, et c'est la forme UNIVERSELLE (le commentaire d'en-tete
+    # explique pourquoi la forme directe eteindrait le nocturne, #12817).
+    # `runs-on` reste STATIQUE : une expression dynamique leverait
+    # DYNAMIC_RUNS_ON. Retour arriere = remettre `runs-on: ubuntu-latest`
+    # + retrait de l'allowlist + retrait du declencheur pull_request.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Newly blocking on the PR leg, so it must not be able to hang one: the
+    # worst case is a cold `npm ci` (~12 min, #15835 body) plus one build per
+    # touched deck. 30 min bounds that without ratcheting the normal path.
+    timeout-minutes: 30
 
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
+          # #15835 -- the PR leg diffs `base.sha...head.sha`, so it must check
+          # out and build the PR's OWN head, not the merge ref (the merge ref
+          # would silently build main's version of the deck merged in). Under
+          # schedule there is no PR and `github.sha` is main's HEAD, which is
+          # exactly what the nocturne window resolves against.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # Need base..head history for `git diff` of changed slides.
           fetch-depth: 0
           filter: blob:none
@@ -122,6 +187,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          # #15835 point 3. The `node_modules` cache below already skips `npm ci`
+          # entirely on a hit; this one caches the npm DOWNLOAD cache, which is
+          # what the miss pays -- and a miss is the normal case on the first PR
+          # that moves the lockfile. `cache-dependency-path` is not optional
+          # here: the lockfile lives in slides/, not at the repo root, so the
+          # default lookup would find nothing and cache nothing, silently.
+          cache: npm
+          cache-dependency-path: slides/package-lock.json
 
       - name: Cache slides node_modules
         id: cache-nm
@@ -185,6 +258,26 @@ jobs:
           for d in slides/*/; do
             [ -d "$d" ] || continue
             base="$(basename "$d")"
+
+            # NAMED fixture exclusion. `slides/_composition-control/` is the
+            # committed positive-control deck of slides-composition-advisory
+            # (#15545) -- a FIXTURE, not a course deck. That organ excludes it
+            # in three places (find `-not -path`, `grep -v`, CTRL_DIR); this one
+            # excluded it nowhere, so the file committed on 2026-09-11 made the
+            # symmetric check below fire on EVERY run: measured red nocturne
+            # 2026-09-12T07:58Z (M=17 N=19, ZERO_TARGET_DIRS=1), with the build
+            # loop never reaching a single deck -- the organ reporting its own
+            # confusion, loudly and correctly, and building nothing.
+            #
+            # Excluded BY NAME on purpose. A blanket `_*` rule reads tidier and
+            # would reopen exactly the hole the symmetric check exists to close:
+            # renaming 01-introduction to _introduction would go silent instead
+            # of loud, which is the #8807 incident one notch down. A new fixture
+            # must be named here -- deliberately, in a diff a reviewer reads.
+            if [ "$base" = "_composition-control" ]; then
+              continue
+            fi
+
             if ! printf '%s' "$base" | grep -qE '^(S)?[0-9]'; then
               # SYMMETRIC of trap 1 (ai-01 #8821 review blocage 2): a dir that
               # does NOT match the convention but DOES carry a deck file is
@@ -294,19 +387,24 @@ jobs:
             fi
           done
 
-          # ---- Label signaling (advisory: exit 0 regardless). ----
+          # ---- Verdict. PR leg: RED. Nocturne leg: advisory + label (#15835). ----
           if [ "$FAILURES" -gt 0 ]; then
-            if [ "$NOCTURNE" -eq 1 ]; then
-              echo "::warning::$FAILURES deck(s) impacted by the last-24h window failed to build. Failed:$FAILED_LIST"
-            else
-              echo "::notice::$FAILURES impacted deck(s) failed to build. See the '$LABEL' label. Failed:$FAILED_LIST"
-            fi
             gh label create "$LABEL" \
               --description "A Slidev deck impacted by this PR does not construct (#8807)" \
               --color "D93F0B" --force 2>/dev/null || true
-            [ "$NOCTURNE" -eq 0 ] && gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
-          else
-            echo "All ${#TOUCHED[@]} impacted deck(s) build cleanly."
-            [ "$NOCTURNE" -eq 0 ] && gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            if [ "$NOCTURNE" -eq 1 ]; then
+              echo "::warning::$FAILURES deck(s) impacted by the last-24h window failed to build. Failed:$FAILED_LIST"
+              exit 0
+            fi
+            # Acceptance 1 of #15835 asks for a RED check-run, and the label is
+            # NOT one: `gh pr edit` succeeding colours nothing. Only the exit
+            # code reddens the check -- so it is the LAST statement, placed
+            # after the annotation and the label, so the failing decks are
+            # named in the log before the job dies.
+            echo "::error::$FAILURES deck(s) touched by this PR failed to build. Failed:$FAILED_LIST"
+            gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+            exit 1
           fi
+          echo "All ${#TOUCHED[@]} impacted deck(s) build cleanly."
+          [ "$NOCTURNE" -eq 0 ] && gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
           exit 0
