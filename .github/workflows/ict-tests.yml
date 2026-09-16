@@ -7,18 +7,17 @@ name: ICT-Series Tests
 #   - ict/tests/  -> rootdir = ict/tests/   (pytest.ini, mode prepend)
 #
 # DEUX conventions de compte, ne pas confondre (post-#9478) :
-#   - suite-name (matrix) compte les STRATES (classes/modules de test) :
-#       tests/ = 55 strates (34 originales + 21 edge-cases spectral/bistable/
-#       sensitivity consolides depuis ict/tests/, #9478).
-#       ict/tests/ = 42 strates package.
+#   - suite-name (matrix) porte le nombre de FICHIERS test_*.py du package :
+#       tests/ = 57, ict/tests/ = 52 -- recopies tels quels du matrix, qui
+#       fait foi (les "55/42" puis "57/50" anterieurs etaient de la prose
+#       heritee qui a derive des comptes reels).
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 806 items.
-#     57 != 1148 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
-#     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1148/806), le label garde les strates (57/50).
-#     Les strates 57 (tests/, +1 test_regards) et 50 (ict/tests/ = 50 fichiers
-#     test_*.py comptes sur l'arbre fusionne 2026-09-14) ; le "55/42" des lignes
-#     ci-dessus est la prose d'origine heritee -- le label du matrix fait foi.
+#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 858 items
+#     (re-mesure post-merge 2026-09-16, bloc de provenance ci-dessous).
+#     57 != 1148 PAR CONSTRUCTION (une suite se developpe en N items
+#     parametres) : NE PAS "harmoniser" le floor sur le compte de fichiers, ni
+#     inversement. Le floor garde la collection (1148/858), le label garde les
+#     fichiers (57/52).
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
