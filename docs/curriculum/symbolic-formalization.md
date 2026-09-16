@@ -45,7 +45,7 @@ formalisation dont la correction est vérifiée par une machine.
 | WSL2 + elan **(bloc 4 seulement)** | `wsl --status` puis, dans WSL, `elan show` | une toolchain `stable` s'affiche |
 | Clé OpenAI **(aucune)** | — | ce parcours n'appelle AUCUNE API payante |
 
-Les blocs 1-3 tournent sur Python seul (Tweety-1 télécharge et configure lui-même
+Les blocs 1-3 tournent sur Python seul (Tweety-01 télécharge et configure lui-même
 le JDK Zulu et les JARs ; Z3 et fast-downward s'installent par pip). Le bloc 4
 exige WSL2 + elan — vérifiable en 2 minutes, et TOUJOURS installable
 (voir [kernels-runtime](../../docs/reference/kernels-runtime.md)).
@@ -112,16 +112,16 @@ est la Phase 3, argumentation).
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 1 | [Tweety-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb) | 45 min | JDK + 42 JARs + solveurs externes auto-installés → rien |
-| 2 | [Tweety-2-Basic-Logics](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb) | 45 min | PL, SAT (pySAT), FOL → étape 1 |
+| 1 | [Tweety-01-Setup-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb) | 45 min | JDK + 42 JARs + solveurs externes auto-installés → rien |
+| 2 | [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) | 45 min | PL, SAT (pySAT), FOL → étape 1 |
 | 3 | [Tweety-3-Advanced-Logics](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb) | 45 min | logiques de description, modale, QBF → étape 2 |
 | 4 | [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) | 30 min | MUS, mesure d'incohérence, révision AGM, MaxSAT → étape 2 |
 | 5 | [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | 45 min | **cœur** : sémantiques de Dung (grounded, preferred, stable) → étapes 2-4 |
-| 6 | [Tweety-6-Structured-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb) | 30 min | ASPIC+, DeLP, ABA, ASP (Clingo) → étape 5 |
-| 7 | [Tweety-7a-Extended-Frameworks](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb) | 30 min | ADF, bipolaire, WAF, attaques récursives → étape 5 |
-| 8 | [Tweety-7b-Ranking-Probabilistic](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | 30 min | classement et probabilités sur arguments → étape 5 |
-| 9 | [Tweety-8-Agent-Dialogues](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb) | 30 min | protocoles de dialogue, jeux grounded → étape 6 |
-| 10 | [Tweety-9-Preferences](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb) | 30 min | préférences, vote (Borda, Condorcet) → étape 6 |
+| 6 | [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | 30 min | ASPIC+, DeLP, ABA, ASP (Clingo) → étape 5 |
+| 7 | [Tweety-07a-Extended-Frameworks-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | 30 min | ADF, bipolaire, WAF, attaques récursives → étape 5 |
+| 8 | [Tweety-07b-Ranking-Probabilistic-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | 30 min | classement et probabilités sur arguments → étape 5 |
+| 9 | [Tweety-08-Agent-Dialogues-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb) | 30 min | protocoles de dialogue, jeux grounded → étape 6 |
+| 10 | [Tweety-09-Preferences-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb) | 30 min | préférences, vote (Borda, Condorcet) → étape 6 |
 
 ### Bloc 2 — Décision automatique : SMT (Z3, étapes 11-18, 3 h 45)
 

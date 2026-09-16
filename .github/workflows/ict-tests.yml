@@ -223,17 +223,18 @@ jobs:
           # 783 (main pur, mesure) + 28 = 811 ferme l'arithmetique, et 811
           # EST la collection mesuree sur l'arbre merge (py3.9.25 +
           # numpy 1.26.4, SANS torch -- la forme de l'env CI).
-          # RE-MESURE post-rebase (2026-09-15, lane po-2027) : l'arbre merge
-          # post-integration #15480 + main courant porte 51 fichiers
-          # test_*.py, 834 items collectes. Le floor 822 etait en retard de
-          # +12 (apport test_intervention_battery, +12 items) -- drift porte
-          # par les merges intermediaires de main entre la mesure pre-rebase
-          # et l'integration finale. 822 + 12 = 834 ferme l'arithmetique.
-          # Aucun nombre recopie -- la collecte de l'arbre fusionne fait foi.
-          - suite-name: "ict/tests/ (51 package)"
+          # RE-MESURE post-merge (2026-09-16, lane po-2027) : l'arbre merge
+          # #15480 + main courant porte 52 fichiers test_*.py, 858 items
+          # collectes firsthand (py3.9-slim + pins CI numpy 1.26.4 /
+          # scipy 1.13.1 / matplotlib 3.9.4 / pandas 2.3.3, SANS torch,
+          # arbre complet monte, 0 erreur de collection). Decomposition :
+          # 822 (base) + 12 battery intervention #15480 (floor 834 cote
+          # branche) + 24 confabulation broadcast #8182 (floor 846 cote
+          # main) = 858. Run combine des deux fichiers ajoutes : 36 passed.
+          - suite-name: "ict/tests/ (52 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 834
+            test-floor: 858
 
     steps:
       - uses: actions/checkout@v4
