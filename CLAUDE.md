@@ -84,6 +84,8 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
 
+**Gouvernance des règles** : tout changement normatif substantiel du harnais (`CLAUDE.md`, `.claude/rules/**`) exige une PR et un sign-off user avant merge. Est substantiel ce qui ajoute une obligation ou une interdiction, crée une règle HARD, durcit ou élargit une prescription, change une autorité, un droit d'action ou une escalade, ou transforme une recommandation en gate. Un mandat user direct vaut sign-off. Une correction de typo ou de lien, une clarification qui ne change aucune prescription, un déplacement fidèle du détail vers `docs/`, ou un slimming qui préserve exactement la règle n'exige pas de sign-off supplémentaire ; la PR et la review restent obligatoires dans tous les cas.
+
 ### B. Reviews PR — B.0 bloquant, puis 5 points
 
 #### B.0 — Aucun nit non levé ne survit à un merge (HARD, mandat user 2026-08-15)
