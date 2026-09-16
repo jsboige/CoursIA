@@ -605,9 +605,9 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 
 | Concept RL (cette série) | Réalisation côté LLM (GenAI) |
 |--------------------------|------------------------------|
-| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.html) |
+| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.html) |
 | Contrainte de support BCQ = pénalité KL ([rl_9](rl_9_offline_rl.html)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.html) |
-| Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO.html) |
+| Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO-Python.html) |
 | Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
 | Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
 | MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.html)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
