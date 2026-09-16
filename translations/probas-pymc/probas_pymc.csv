@@ -6294,9 +6294,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,b5a4a10f,markdown,fr
 
 | Précédent | Suivant |
 |-----------|---------|
-| [PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | (fin de la serie) |
+| [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | (fin de la serie) |
 
-> **Note de numerotation** : ce notebook porte le numéro **5** par **parite** avec son jumeau C# [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, cote Python, **integre dans** [PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) (section 10ter, bandits bayesiens) — d'ou l'absence d'un PyMC-21 distinct.
+> **Note de numerotation** : ce notebook porte le numéro **5** par **parite** avec son jumeau C# [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, cote Python, **integre dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) (section 10ter, bandits bayesiens) — d'ou l'absence d'un PyMC-21 distinct.
 
 > **Ponts inter-series** : le versant **message passing** (Infer.NET, effet causal *calcule* par EP/VMP) est dans [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb) ; le versant **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb). Ce notebook en est le versant **probabiliste MCMC + enumeration exacte**, ou l'opérateur `do` est une **transformation de graphe native** de PyMC.",,,,,,,,5012eef6f40f61e2,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,715907fb,markdown,fr,55de101d49d00325,"## 1. Pourquoi la causalite ? — L'echelle de Pearl
@@ -6675,7 +6675,7 @@ Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.
 
 ---
 
-[← PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | [Retour a la serie](README.md)",,,,,,,,51caf77a527de88f,,,,,,,,
+[← PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | [Retour a la serie](README.md)",,,,,,,,51caf77a527de88f,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,053d8f08d8dd0989,"# PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques
 
 **Serie** : Programmation probabiliste avec PyMC (6/20)  
