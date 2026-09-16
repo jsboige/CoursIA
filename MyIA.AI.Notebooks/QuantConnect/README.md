@@ -355,6 +355,7 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 - **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
 - **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
 - **[docs/PROCEDURE_DEPLOIEMENT.md](docs/PROCEDURE_DEPLOIEMENT.md)** : Procédure de déploiement
+- **[docs/GRILLE_PREUVES.md](docs/GRILLE_PREUVES.md)** : Grille de preuves du projet collectif RNCP41881 (mapping compétence→artefact, exigences minimales, vérification individuelle en soutenance — #16239)
 - **[docs/audits/](docs/audits/)** : Rapports d'audit historiques (AUDIT_QC_CLOUD, AUDIT_QC_ORG, VALIDATION-REPORT, AUDIT_RAPPORT)
 
 ### Bibliothèques partagées
