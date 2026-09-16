@@ -19,7 +19,7 @@ Le contraste par lane rend le mécanisme lisible : la lane au plus gros volume s
 
 **Contre-poids anti-inflation, nommé et non inventé.** Exiger un DEEP crée une incitation à **sur-coter le tier**. Ce qui la couvre est déjà en place : le signal bot `TIER-INFLATION`, et le merge-gate qui **re-qualifie lui-même un tag mal dérivé** (§3 de [variation-protocol.md](../../.claude/rules/variation-protocol.md), ligne « Tag mal dérivé »). Le litmus DEEP reste objectif — *`main` contient-il désormais un résultat ou une capacité qui n'existait pas, dont la production a demandé du raisonnement de domaine ?* Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
 
-**Éditer `.claude/rules/**` exige un sign-off user** (CLAUDE.md §A) : la PR #15793 qui a porté ce durcissement ne se self-merge pas.
+**Ce durcissement normatif substantiel exigeait un sign-off user** conformément à CLAUDE.md §A : la PR #15793 qui l'a porté ne se self-merge pas. Les corrections non normatives suivent la même PR/review, sans sign-off supplémentaire.
 
 ## Backlog pickup — sources autorisees (ordre de priorite decroissant)
 
