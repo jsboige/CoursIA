@@ -214,7 +214,7 @@ _REPO_RES = [
     # 2-char '\n' escape on disk) -> 0 fixed, leak left in place AND, worse, if it
     # ever DID match it would delete the text between the two paths. Regression:
     # Lean-13/15b/16a (this PR). Excluding \n\r keeps each path on its own line.
-    re.compile(r"(?<![a-zA-Z])[A-Za-z]:[\\/]+(?:[^\\/'\"<>|\n\r]+[\\/]+)*CoursIA(?:-2)?[\\/]+"),
+    re.compile(r"(?<![a-zA-Z])[A-Za-z]:[\\/]+(?:[^\\/'\"<>|\n\r]+[\\/]+)*CoursIA(?:-[\w.-]+)?[\\/]+"),
 ]
 
 # POSIX checkout-root prefixes: the WSL view of the repo checkout
@@ -224,8 +224,14 @@ _REPO_RES = [
 # Windows path. The Windows _REPO_RES never matches it (no drive letter), so
 # without this pattern the POSIX view leaks while the Windows view is scrubbed.
 # Same newline exclusion so it cannot span lines.
+# The `CoursIA(?:-...)?` tail covers WORKTREE checkout roots too
+# (CoursIA-16200-lean15b, CoursIA-15611-hrsw, ...): the fleet's canonical
+# `git worktree add ../CoursIA-<sujet>` layout re-executes notebooks from
+# worktrees, and a `-2`-only tail left those raw in outputs -- witnessed by
+# the Output-failure ratchet MACHINE_PATH +2 on Lean-15b (#16205), the third
+# recurrence of the Lean-13/15b/16a class cited above.
 _REPO_POSIX_RES = [
-    re.compile(r"/mnt/[a-z]/(?:[^/\n\r\"'<>|]+/)*CoursIA(?:-2)?/"),
+    re.compile(r"/mnt/[a-z]/(?:[^/\n\r\"'<>|]+/)*CoursIA(?:-[\w.-]+)?/"),
 ]
 
 # Process/file-specific ids that sit *inside* a home-relative temp path. These

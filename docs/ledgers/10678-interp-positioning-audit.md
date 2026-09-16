@@ -37,7 +37,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 | `Search-03-Informed.ipynb` | 1/8 | MISPLACED |
 | `Sudoku-14-BDD-Csharp.ipynb` | 1/3 | MISPLACED |
 | `Lean-7b-Examples.ipynb` | 1/7 | MISPLACED |
-| `Tweety-8-Agent-Dialogues.ipynb` | 1/1 | MISPLACED |
+| `Tweety-08-Agent-Dialogues-Python.ipynb` | 1/1 | MISPLACED |
 
 ## Detail des 24 cellules MISPLACED
 
@@ -195,7 +195,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 - **next_code[19]** : `// TODO: Définissez le problème de portefeuille / // - 4 actifs disponibles avec rendements attendus / // - Contrainte : budget total de 100 000€ / // - Contrainte : risque maximum par catégorie / // - Object`
 - reason : gap_b=3, gap_a=4 (interp is in MD-only zone between code blocks)
 
-### `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb` (1 cellules)
+### `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb` (1 cellules)
 #### cell[2] gap_b=1 gap_a=5
 - **interp** : `### Interprétation de la configuration /  / Les résultats ci-dessus confirment que l'environnement est correctement configuré pour simuler des dialogues multi-agents: /  / **Configuration JVM validée:** / - **JDK portable**: Zulu 17 détecté et configuré automa`
 - **prev_code[1]** : `# --- Initialisation JVM Tweety + Outils Externes --- / print("--- Verification JVM Tweety + Outils ---") / jvm_ready = False /  / import jpype / import jpype.imports / import os / import pathlib / import shutil / impo`

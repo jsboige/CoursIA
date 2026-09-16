@@ -17,11 +17,14 @@ la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
+from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 class _FakeCompleted:
@@ -282,16 +285,48 @@ def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
     assert any("non bloquant" in c and "Papermill ratchet" in c for c in causes)
 
 
-def test_cancelled_is_not_a_failure():
-    """Un run annule par `concurrency` n'est pas un echec.
+def test_unconcluded_required_is_a_distinct_cause():
+    """#15769 : un requis annule n'est ni un vert ni un echec de lane.
 
-    Les confondre est le faux positif qui rend un garde de cascade
-    inutilisable : le 2026-08-21, un SHA de main portait 69 `cancelled`
-    pour 0 echec reel.
+    Un check requis CANCELLED empeche le merge sans que la lane puisse rien :
+    avant #15769, le `continue` sur `verdict not in CHECK_FAILED` le filtrait
+    exactement comme un advisory vert, AVANT le test `isRequired` -- la PR
+    etait BLOCKED sans aucune cause rendue (7 PRs simultanees le 2026-09-12).
+    La cause doit nommer l'etat et ne JAMAIS dire « echec » : imputer un
+    CANCELLED a la lane l'envoie chercher un rouge qui n'existe pas, le cycle
+    brule que la R0 de coordinator-discipline interdit.
     """
-    assert pig.blocking_causes(_state(checks=[("PR gate", "CANCELLED", True)])) == []
-    assert pig.blocking_causes(_state(checks=[("PR gate", "SKIPPED", True)])) == []
-    assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == []
+    assert pig.blocking_causes(_state(checks=[("PR gate", "CANCELLED", True)])) == [
+        "check requis non conclu : PR gate (CANCELLED)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "STALE", True)])) == [
+        "check requis non conclu : PR gate (STALE)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "SKIPPED", True)])) == [
+        "check requis non conclu : PR gate (SKIPPED)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == [
+        "check requis non conclu : PR gate (NEUTRAL)"]
+
+
+def test_unconcluded_failure_control_renders_en_echec():
+    """Controle positif (acceptance #15769.3) : meme entree, requis FAILURE.
+
+    Sans lui, un test vert ne distinguerait pas « la cause CANCELLED est
+    rendue » de « toutes les causes sont rendues » : le refus de confondre
+    CANCELLED avec FAILURE (2026-08-21 : 69 cancelled pour 0 echec sur un
+    SHA de main) doit SURVIVRE a l'ajout de la cause non conclue.
+    """
+    causes = pig.blocking_causes(_state(checks=[("PR gate", "FAILURE", True)]))
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_unconcluded_advisory_is_still_silent():
+    """Le complement du garde d'origine : seul un REQUIS non conclu cause.
+
+    Un advisory annule reste du bruit que la lane ne doit pas reparer.
+    """
+    assert pig.blocking_causes(_state(checks=[
+        ("fast-lane (ombre): perimeter-review-guard", "CANCELLED", False),
+        ("PR gate", "SUCCESS", True),
+    ])) == []
 
 
 def test_conflicts_are_a_red():
@@ -643,12 +678,14 @@ def test_partial_inheritance_keeps_the_lane_cause():
 
 # --- #15910 : un agregateur rouge par DWELL est un MINUTEUR, pas un defaut ---
 
-DWELL_ANN = (
-    "[pr-gate] DWELL -- tete du 2026-09-13T12:14:44Z, 7 min -- plancher 120 min, "
-    "reste 113 min, leve au premier balayage suivant 2026-09-13T14:14:44Z. Le "
-    "balayage horaire (pr-gate-stale-sweep.yml, cron '7 * * * *') re-agrege "
-    "cette jambe des que le plancher est ecoule ; aucun geste manuel n'est requis."
-)
+DWELL_ANN = "[pr-gate] DWELL -- " + _md_evaluate(
+    datetime(2026, 9, 13, 12, 14, 44, tzinfo=timezone.utc),
+    datetime(2026, 9, 13, 12, 21, 44, tzinfo=timezone.utc),
+    120.0,
+)[2]
+# Regeneré depuis evaluate() (repair #15981) : la fixture ne peut plus deriver
+# du message reel du gate -- un changement de forme casse le round-trip ICI,
+# dans le fichier qui le consomme, au lieu de matcher en silence.
 FAIL_ANN = "[pr-gate] FAIL -- failing checks: Static validation (H.1/H.3/C.1) (failure)"
 
 
@@ -800,6 +837,10 @@ def test_print_dwell_waiting_says_the_only_gesture_is_waiting(capsys):
     assert "#15956" in out
     assert "14:14:44Z" in out
     assert "NE PAS repousser" in out
+    # #15748 : la guidance courante dit comment rejouer, pas d'attendre.
+    assert "gh run rerun" in out
+    assert "aucun geste" not in out
+    assert "balayage horaire" not in out
     # Silence total quand il n'y a rien : pas de section vide a lire.
     assert pig.print_dwell_waiting({"dwell_waiting": []}) is None
     assert capsys.readouterr().out == ""
@@ -833,7 +874,7 @@ def test_required_failure_links_advisory_as_its_probable_cause():
 
 
 def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
-    """Sortie 0 et un travail NOMME : la reparation EST le grain du cycle.
+    """Sortie 0 et travail NOMME : la reparation ouvre la file de session.
 
     Le code 2 est la convention "rien a rendre". L'employer ici disait a la
     lane, dans le seul canal qu'elle lit, l'exact contraire de la regle HARD
@@ -848,7 +889,7 @@ def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
     # phrase "ce n'est PAS un refus", plus bas, contient le mot a dessein.
     head = out.splitlines()[0]
     assert "REFUS" not in head.upper(), f"l'en-tete annonce encore un refus : {head!r}"
-    assert "GRAIN DU CYCLE" in head
+    assert "FILE DE REPARATION" in head
     assert "#1" in out, "la PR a reprendre doit etre nommee"
     # Le fond qui marchait deja ne doit pas disparaitre avec la forme.
     assert "check requis en echec" in out
@@ -910,7 +951,7 @@ def test_adjacency_red_advice_replaces_three_generic_gestures(monkeypatch, capsy
     )
     # L'en-tete Reparation doit toujours etre la (coherence avec le
     # test existant).
-    assert "GRAIN DU CYCLE" in out
+    assert "FILE DE REPARATION" in out
     assert "#99" in out
 
 
@@ -1108,7 +1149,7 @@ def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
     backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
     assert backlog["triggers"] == []
     pig.print_red_assignment("myia-po-2026:CoursIA", {"red": [], "triggers": []}, 24)
-    assert "GRAIN DU CYCLE" in capsys.readouterr().out  # la fonction existe et rend
+    assert "FILE DE REPARATION" in capsys.readouterr().out  # la fonction existe et rend
 
 
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
@@ -1678,6 +1719,25 @@ def test_crowding_never_zeroes_a_candidate():
     item = {"number": 1, "age": 400, "idle": 90, "genre": "lean"}
     assert pig.weight(item, None, {1: 50}) > 0
 
+
+def test_all_session_genres_are_penalized_not_only_the_last_one():
+    """#14704 : guard -> docs -> guard reste penalise au troisieme tirage."""
+    guard = {"number": 1, "age": 30, "idle": 1, "genre": "guard"}
+    docs = {"number": 2, "age": 30, "idle": 1, "genre": "docs"}
+    fresh = {"number": 3, "age": 30, "idle": 1, "genre": "lean"}
+    prior = "guard,docs"
+    assert pig.weight(dict(guard), prior) == pig.weight(dict(guard), None) * 0.25
+    assert pig.weight(dict(docs), prior) == pig.weight(dict(docs), None) * 0.25
+    assert pig.weight(dict(fresh), prior) == pig.weight(dict(fresh), None)
+
+
+def test_prev_genres_accept_repeated_csv_and_persisted_pipe_forms():
+    assert pig.normalize_prev_genres(["guard,docs", "slides"]) == {
+        "guard", "docs", "slides"}
+    assert pig.normalize_prev_genres("guard|docs") == {"guard", "docs"}
+    assert pig.normalize_prev_genres("guard") == {"guard"}
+
+
 # --- points de review non leves : la 4e cause (mandat user 2026-08-24) -------
 #
 # "Fais en sorte que les agents ne produisent plus tant qu'il leur reste des
@@ -2064,12 +2124,38 @@ def test_14591_volet_a_write_then_read_csv(tmp_path) -> None:
     with csv_path.open(encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l]
     assert len(lines) == 2, f"attendu 2 (header + 1 lane), obtenu {len(lines)}"
+    # Migration multi-genres : un ancien scalaire et une nouvelle liste se
+    # relisent par la meme fonction, sans exception ni perte.
+    pig.write_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2",
+                            "guard|docs", "2026-09-04T22:15Z")
+    genres, ts = pig.read_prev_genre_csv(
+        str(csv_path), "myia-po-2027:CoursIA-2")
+    assert pig.normalize_prev_genres(genres) == {"guard", "docs"}
+    assert ts == "2026-09-04T22:15Z"
+    assert csv_path.read_text(encoding="utf-8").startswith(
+        "lane,last_genres,last_ts\n")
     # Upsert ajoute une lane differente
     pig.write_prev_genre_csv(str(csv_path), "myia-po-2026:CoursIA",
                             "notebook-python", "2026-09-04T22:30Z")
     with csv_path.open(encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l]
     assert len(lines) == 3, f"attendu 3 (header + 2 lanes), obtenu {len(lines)}"
+
+
+def test_14704_cli_accepts_repeated_and_csv_prev_genres(monkeypatch, capsys) -> None:
+    """Les deux formes CLI alimentent le meme ensemble de genres de session."""
+    class _R:
+        stdout = "[]"
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: _R())
+    rc = pig.main([
+        "--admissible=99999999",
+        "--lane=myia-po-2027:CoursIA-2",
+        "--prev-genre=guard,docs",
+        "--prev-genre=slides",
+    ])
+    assert rc == 1
+    assert "absente du pool ouvert" in capsys.readouterr().out
 
 
 def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch, capsys) -> None:
@@ -2081,8 +2167,8 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     """
     csv_path = tmp_path / "picker_state.csv"
     csv_path.write_text(
-        "lane,last_genre,last_ts\n"
-        "myia-po-2027:CoursIA-2,tooling,2026-09-04T22:00Z\n",
+        "lane,last_genres,last_ts\n"
+        "myia-po-2027:CoursIA-2,guard|tooling,2026-09-04T22:00Z\n",
         encoding="utf-8",
     )
     # Utiliser --admissible et un numero inexistant pour sortie rapide 1 sans
@@ -2102,7 +2188,7 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "prev-genre auto-applique depuis CSV" in captured, (
         f"auto-apply absent. Sortie: {captured[:400]}"
     )
-    assert "tooling" in captured
+    assert "guard|tooling" in captured
 
 
 def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):

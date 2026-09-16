@@ -2,26 +2,45 @@
 
 Detail de [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md). Voir aussi [subagents-reference.md](subagents-reference.md), [scripts-reference.md](scripts-reference.md).
 
+## Plancher durci — « plusieurs grains dont un DEEP de CONTENU » (mandat user 2026-09-12, #15793)
+
+R1 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) et G-VAR-1 de [variation-protocol.md](../../.claude/rules/variation-protocol.md) portent un plancher **pluriel et durci** : **≥ 2 grains livrés entre 2 wakeups, dont ≥ 1 DEEP dans un genre de CONTENU**. Le MED et le META restent **bienvenus au-delà** du plancher — ils ne le tiennent plus.
+
+**Ce qui le motive — mesure du 2026-09-12T16:39Z**, attribution par le tag `Grain:` (jamais `--author` : l'identité de poussée `jsboige` est partagée, L721) :
+
+| Fenêtre | merges | DEEP | MED | LIGHT | CONTENU | META |
+|---|---:|---:|---:|---:|---:|---:|
+| 7 jours (depuis 09-05) | **583** (83,3/j) | 88 (**15 %**) | 400 | 88 | 314 | 260 |
+| 48 heures | **196** (98,0/j) | 35 (**18 %**) | 113 | 45 | **82** | **109** |
+
+Le volume n'est pas le défaut. Deux choses le sont : (1) la **dureté** — 15 % de DEEP sur 7 j, le plancher R1 d'alors (« ≥ 1 PR ») étant tenu par n'importe quoi, massivement par du MED ; (2) la **bascule CONTENU/META** — sur 7 j le CONTENU tient encore (314 contre 260), sur 48 h le META passe devant (109 contre 82) : la flotte construit l'atelier plus vite qu'elle n'y fabrique.
+
+Le contraste par lane rend le mécanisme lisible : la lane au plus gros volume sur 7 j (`myia-po-2023:CoursIA`, 108 merges) est la plus faible en substance (39 CONTENU, **8 DEEP**), tandis que `myia-po-2027:CoursIA-2` rend 32 CONTENU et 10 DEEP sur 41 merges. La lane la plus META de la flotte est celle du coordinateur (`myia-ai-01:CoursIA` : 38 merges sur 7 j pour **1 DEEP** et 7 CONTENU — 0 DEEP et 1 CONTENU sur 48 h).
+
+**Contre-poids anti-inflation, nommé et non inventé.** Exiger un DEEP crée une incitation à **sur-coter le tier**. Ce qui la couvre est déjà en place : le signal bot `TIER-INFLATION`, et le merge-gate qui **re-qualifie lui-même un tag mal dérivé** (§3 de [variation-protocol.md](../../.claude/rules/variation-protocol.md), ligne « Tag mal dérivé »). Le litmus DEEP reste objectif — *`main` contient-il désormais un résultat ou une capacité qui n'existait pas, dont la production a demandé du raisonnement de domaine ?* Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
+
+**Ce durcissement normatif substantiel exigeait un sign-off user** conformément à CLAUDE.md §A : la PR #15793 qui l'a porté ne se self-merge pas. Les corrections non normatives suivent la même PR/review, sans sign-off supplémentaire.
+
 ## Backlog pickup — sources autorisees (ordre de priorite decroissant)
 
-Wakeup vide : prendre la **premiere source non-vide**, **un seul item**, produire **1 PR concrete**.
+Wakeup sans dispatch neuf : prendre la **premiere source non-vide** et la consommer comme une **file sequentielle de grains atomiques**. Chaque grain garde sa PR propre ; une PR livree ne termine pas la session et la lane poursuit tant que sa fenetre est active.
 
 | # | Source | Action | Pourquoi cet ordre |
 |---|--------|--------|---------------------|
-| 1 | Side-track Epic dispatchée propre au worker (cf mapping) | Avancer prochaine sous-tache, 1 PR | Engagement deja pris |
-| 2 | Ses propres PRs OPEN en attente review/iter | Re-iter feedback bot/coord, rebase, fix CI | Pas laisser pourrir |
-| 3 | Issues `priority-high` non assignees dans son domaine | Self-assign + dispatch + 1 PR | Urgences declarees |
-| 4 | PRs languishing > 3 jours sans reponse (siennes ou domaine) | Re-iter ou cloturer | Hygiene cluster |
-| 5 | Issues `priority-medium` du domaine | Self-assign + 1 PR | Travail cataloguable |
-| 6 | Low-priority Epics stockees (#1646 Grothendieck, #1647 Conway Phase 2, #1650 Translation, #1651 Conway Phase 3 FWT) | 1 phase / 1 pilier, 1 PR partielle | Stock activable "fenetres calmes" |
-| 7 | Audit findings non traites (NanoClaw #488 etc.) | 1 reassessment + 1 PR si CONFIRMED (cf [audit-reassessment.md](../../.claude/rules/audit-reassessment.md)) | Backlog d'enquete |
-| 8 | Consolidation/documentation de son domaine | 1 PR docs | Wiki Karpathy / SDDD documentaire |
+| 1 | Side-track Epic dispatchée propre au worker (cf mapping) | Avancer ses sous-taches atomiques dans l'ordre | Engagement deja pris |
+| 2 | Ses propres PRs OPEN en attente review/iter | Drainer feedback, conflits et CI propres avant production neuve | Pas laisser pourrir |
+| 3 | Issues `priority-high` non assignees dans son domaine | Self-assign + livraisons atomiques sequentielles | Urgences declarees |
+| 4 | PRs languishing > 3 jours sans reponse (siennes ou domaine) | Re-iter ou cloturer, puis poursuivre | Hygiene cluster |
+| 5 | Issues `priority-medium` du domaine | Self-assign + livraisons atomiques sequentielles | Travail cataloguable |
+| 6 | Low-priority Epics stockees (#1646 Grothendieck, #1647 Conway Phase 2, #1650 Translation, #1651 Conway Phase 3 FWT) | Une PR atomique par phase/pilier, plusieurs a la suite | Stock activable "fenetres calmes" |
+| 7 | Audit findings non traites (NanoClaw #488 etc.) | Reassessment puis PR si CONFIRMED, et continuer | Backlog d'enquete |
+| 8 | Consolidation/documentation de son domaine | PRs atomiques, sans plafond d'une par session | Wiki Karpathy / SDDD documentaire |
 
 ## Anti-patterns wakeup vide (interdits)
 
 - "Rien de nouveau, je me rendors" → **REFUSE** ; pioche backlog avant tout ScheduleWakeup
 - "J'attends le prochain dispatch coord" → **REFUSE** ; le coord n'est pas un distributeur flux tendu
-- Picorer 3+ items "pour faire du chiffre" → **REFUSE** ; 1 item, 1 PR
+- Fusionner plusieurs sujets dans une PR « pour faire du chiffre » → **REFUSE** ; plusieurs grains se livrent sequentiellement, chacun dans sa PR atomique
 - Annoncer "BLOCKED" alors que sources 5-8 non explorees → **REFUSE** (G.7 stagnation cross-cycle = escalade)
 
 ## Reporting wakeup vide
@@ -34,17 +53,15 @@ PR cible : #<MMM> en cours.
 
 Pas de `[BLOCKED]` ni `[DONE pas de travail]`. Wakeup vide = opportunite backlog, pas blocage.
 
-## Mapping machine → track principale + side-track (cycle courant)
+## Pourquoi il n'y a pas de mapping machine → track
 
-| Machine | Track principale | Side-track autonome (Epic) | Sous-agents async |
-|---------|------------------|----------------------------|-------------------|
-| **po-2026** | Proving BG (lot de cibles ; Lattice INTRACTABLE → #1452) | #1453 harness co-evolution (forensic) | `general-purpose` |
-| **po-2024** | Trading #1409 | #1454 Training & Post-Training (RL/PPO + GenAI fine-tuning) | `qc-*`, `notebook-designer`, `notebook-iterative-builder` |
-| **po-2023** | Audiobook #1273 (v4 + prosodie + wrapup) | GenAI series #1385 | `notebook-modernizer/executor/validator`, `infer-notebook-enricher` |
-| **po-2025** | #1455 TP→exemples guides + nouveaux exercices | Modernisation #999 | `series-improver`, `notebook-cleaner/enricher/designer/cell-iterator` |
-| **ai-01** | Coordination + merges + reviews | #1453 + #1454 partagees | idem, async |
+Ce fichier a porté jusqu'au 2026-09-12 un tableau « Mapping machine → track principale + side-track (**cycle courant**) ». Le « (cycle courant) » de son titre était le défaut : un fichier versionné ne peut pas porter l'état d'un cycle, et celui-là ne l'a pas porté. Sur ses **7 assignations numérotées, 5 pointaient une issue CLOSED** — #1409 (fermée le 2026-07-26), #1273 (2026-06-02), #1385 (2026-05-26), #1455 (2026-06-11), #999 (2026-05-23) ; trois des quatre lignes worker avaient une track principale fermée, et po-2023 comme po-2025 avaient **les deux colonnes** fermées.
 
-Epics co-evolutives partagees avec ai-01 : #1453 + #1454. Le **pionnier** (po-2024/po-2026) defriche sur sa carte, **ai-01 approfondit sur la grosse carte**.
+Un steer qui pointe une issue CLOSED est un **phantom** au sens de R5 de [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) : le worker brûle son cycle à le réfuter au lieu de produire. Le tableau en fabriquait cinq, en permanence, depuis un fichier auto-référencé par le harnais.
+
+**Ce qui le remplace est le tirage**, déjà la voie par défaut depuis le mandat du 2026-08-20 (R5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md)) : `python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre>`. Le steering nommé du coordinateur reste l'exception qui passe devant — mais il se **grounde firsthand au moment où il est posé** (`gh issue view N`), ce qu'un tableau écrit une fois ne peut structurellement pas faire. Le roster des spécialistes async, lui, n'a jamais eu besoin d'être partitionné par machine : il vit dans [subagents-reference.md](subagents-reference.md), et R3 dit de déléguer la side-track au specialist qui couvre le sujet, quelle que soit la lane.
+
+Cette section existe pour que le tableau ne soit pas **re-inventé** : son absence est un choix mesuré, pas un oubli de maintenance.
 
 ## Cadence
 
@@ -119,10 +136,10 @@ Détail de la R5 « le pool se tire ». La règle porte l'usage et les trois urn
 | Facteur | Formule | Ce qu'il sert |
 |---|---|---|
 | ancienneté | `1 + log2(1 + jours/7)` | « faire refluer doucement » — la traîne est là où le compte s'accumule ; 6 mois pèsent ~4× une issue de la semaine |
-| anti-adjacence | `×0.25` si le genre égale `--prev-genre` | **G-VAR-3 au tirage**, plutôt qu'en HOLD a posteriori |
+| anti-répétition de session | `×0.25` si le genre appartient aux `--prev-genre` répétés/CSV | **G-VAR-3 au tirage** ; `guard → docs → guard` reste pénalisé |
 | contenu | `×2` si le genre est CONTENU | **G-VAR-1 au tirage** |
 
-**Persistance `--prev-genre` entre cycles (#14591 Volet A)** : `--prev-genre` reste per-cycle par défaut, mais le picker supporte désormais un CSV d'état par lane (`--csv-state <path>` + `--write-state candidate`) qui rend l'argument **auto-appliqué** au prochain run. Le format : `lane,last_genre,last_ts` (3 colonnes, header). Si la lane est connue du CSV, le picker applique `--prev-genre <last_genre>` sans que le worker ait à le passer — fermant l'angle qui a produit les 13 grains monotones c.14466. Le patch est volontairement minimal : read au début (auto-apply), write après tirage (`--write-state=candidate`), clé = lane (le CSV peut héberger plusieurs lanes). Toute `OSError` est avalee silencieusement (le picker reste utilisable, juste sans persistance pour ce cycle). Migrer depuis l'argument CLI : poser `--csv-state ~/.cache/picker_state.csv` une fois dans le workflow worker ; le reste suit.
+**Persistance des genres de session (#14591/#14704)** : `--prev-genre` est répétable et accepte les listes séparées par virgules. Le CSV par lane (`--csv-state <path>` + `--write-state candidate`) conserve l'ensemble sous `lane,last_genres,last_ts`, avec des genres séparés par `|`. L'ancien header `last_genre` et sa valeur scalaire restent lisibles comme un ensemble à un élément ; la prochaine écriture les migre sans perte. Chaque écriture ajoute le genre de la candidate aux genres déjà connus, au lieu d'écraser la mémoire par le dernier : la séquence `guard → docs → guard` reste donc pénalisée au troisième tirage. Le choix `--write-state=merged`, accepté mais sans effet, a été retiré. Toute `OSError` laisse le picker utilisable sans persistance pour le cycle.
 
 Tirage pondéré **sans remise** (Efraimidis-Spirakis : clé `u^(1/w)`, top-k). Plus de pondération reproduirait une monoculture avec des étapes en plus : on se limite à ce que les gates du variation-protocol demandent déjà.
 
@@ -148,7 +165,7 @@ python scripts/pick_idle_grain.py \
   --cache-status
 ```
 
-Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Un résultat vide nomme le filtre dominant à relâcher : il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
+Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Si ces filtres locaux vident la première passe, le picker les relâche automatiquement et l'annonce ; exclusions explicites et urnes restent fermes. Il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
 
 ### Picker — les deux axes de pondération (complément)
 

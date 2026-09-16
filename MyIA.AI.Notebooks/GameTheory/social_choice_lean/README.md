@@ -73,6 +73,8 @@ Résultats formalisés par Peters :
 3. **Phase 3** : Portage sélectif dans notre framework `PrefOrder` (impossibilités Condorcet, règles de scoring)
 
 **Différences de framework** :
+
+
 | Aspect | Notre projet (ChaseNorman) | DominikPeters |
 |--------|---------------------------|---------------|
 | Type de préférence | `PrefOrder α` (réflexif, total, transitif) | `LinearOrder A` (strict, Mathlib) |

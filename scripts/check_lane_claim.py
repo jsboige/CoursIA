@@ -205,6 +205,12 @@ _MIDLINE_KEYWORD_RE = re.compile(
     re.IGNORECASE,
 )
 _KEYWORDS = ("CLAIMED", "RELEASED", "CANCELLED", "ABANDONED", "DONE", "OVERRIDE", "DELIVERED")
+# #15982 -- tokens que `_MARKER_RE` lit REELLEMENT, donc a ne jamais signaler
+# comme quasi-marqueurs. `CLAIMED-AMEND` en fait partie mais n'est PAS dans
+# `_KEYWORDS` (il n'a pas la semantique d'un mot-cle simple : c'est un OPEN
+# remplacant, cf `_OPEN`) -- c'est cette absence qui faisait signaler un
+# marqueur canonique des que la classification composee l'a regarde.
+_ENACTED_MARKERS = frozenset(_KEYWORDS) | {"CLAIMED-AMEND"}
 
 
 def _blank_keeping_shape(line: str) -> str:
@@ -2018,6 +2024,61 @@ def _nearest_keyword(word: str) -> tuple[str | None, int]:
     return best, best_d
 
 
+def _close_keyword(quasi: dict) -> "str | None":
+    """Mot-cle de FERMETURE porte par le token quasi, ou None (#15982).
+
+    Teste TOUS les composants du token, pas seulement sa tete : le cas fondateur
+    `[CLAIMED-RELEASED]` a pour tete `CLAIMED` (famille « prise ») alors que son
+    sens est une levee. Une regle par la tete seule manquerait precisement le cas
+    qu'elle doit attraper -- et pire, recommanderait de reposter `[CLAIMED]`, donc
+    de reprendre le grain que l'auteur vient de rendre.
+
+    Le vocabulaire reste `_CLOSE`, la constante du reduceur : une seconde liste
+    locale deriverait en silence. Distinguer une quasi-LEVEE d'une quasi-PRISE
+    sert au BLOCAGE -- les deux sont invisibles a l'organe, mais seule la
+    premiere explique qu'une lane attende ; lui conseiller de « lever » sur une
+    quasi-prise serait un conseil que son auteur n'a pas a suivre.
+    """
+    for part in re.split(r"[-_\s]+", quasi.get("token") or ""):
+        if part.upper() in _CLOSE:
+            return part.upper()
+    nearest = (quasi.get("nearest") or "").upper()
+    return nearest if nearest in _CLOSE else None
+
+
+def is_release_shaped(quasi: dict) -> bool:
+    """Ce quasi-marqueur ressemble-t-il a une LEVEE plutot qu'a une prise ?"""
+    return _close_keyword(quasi) is not None
+
+
+def _composed_keyword(word: str) -> "str | None":
+    """Mot-cle de tete d'un token COMPOSE, ou None (#15982).
+
+    ``[CLAIMED-RELEASED]`` esquivait les trois lecteurs a la fois : `_MARKER_RE`
+    exige le mot-cle seul, `_MALFORMED_MARKER_RE` exige l'absence de crochets, et
+    la classification quasi tombait dans la branche « distance <= 2 » parce que
+    `_QUASI_MARKER_RE` capture son premier groupe avec la classe
+    `[A-Za-z][A-Za-z_-]{2,}` -- **qui contient le tiret**. Le groupe valait donc
+    le token entier, la partie « suffixe » etait vide, et un token de 16
+    caracteres n'est proche d'aucun mot-cle.
+
+    Mesure 2026-09-13 : po-2023 a leve son claim sur #15835 avec
+    ``[CLAIMED-RELEASED]`` ; l'organe a continue de le dire vivant et la PR
+    #15846 d'une autre lane est restee bloquee 48 h, alors que la levee etait
+    ecrite.
+
+    Renvoie le mot-cle de TETE : c'est lui qui dit la FAMILLE du marqueur, et
+    l'appelant en fait le `nearest` du WARN. La TETE ne dit PAS le sens -- le cas
+    fondateur est justement un ``CLAIMED-*`` qui leve ; c'est ``_close_keyword``
+    qui tranche le sens et fournit la forme a recommander. Doctrine #12624 : on
+    SIGNALE, on n'enacte pas.
+    """
+    if word in _ENACTED_MARKERS:
+        return None  # deja lu par `_MARKER_RE` -- le signaler serait un faux positif
+    head = re.split(r"[-_]", word, maxsplit=1)[0]
+    return head if head in _KEYWORDS else None
+
+
 def _find_suspected_typo_markers(payload: dict) -> list[dict]:
     """Bracketed line-head tokens that ALMOST form a marker (#12624 Defaut 1).
 
@@ -2025,9 +2086,13 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
     and `_MALFORMED_MARKER_RE` (bare keyword, no brackets): a bracketed
     `[CLAGED]` / `[RELEASED claim-malformed]` at line head is read by
     NEITHER, so the writer's gesture enacts nothing while they believe their
-    lock is posted. WARN-only, never enacted, never auto-corrected -- the
-    signal tells the writer to re-post the canonical form. Fenced blocks are
-    masked (a quoted quasi marker is a citation, not a gesture).
+    lock is posted. Same for a COMPOSED token (`[CLAIMED-RELEASED]`, #15982):
+    `_QUASI_MARKER_RE` matches it whole -- hyphen included -- leaving the
+    suffix group empty, so BOTH classification branches below (`suffix` and
+    "distance <= 2") used to miss it. WARN-only, never enacted, never
+    auto-corrected -- the signal tells the writer to re-post the canonical
+    form. Fenced blocks are masked (a quoted quasi marker is a citation, not
+    a gesture).
     """
     found: list[dict] = []
     for c in payload.get("comments", []):
@@ -2044,14 +2109,24 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
             if word in _KEYWORDS:
                 kind, nearest = "suffix", word
             else:
-                nearest, dist = _nearest_keyword(word)
-                # len >= 4: a 3-letter token is within distance 2 of DONE for
-                # almost any input -- the motif gate alone would not save us.
-                if nearest is None or dist > 2 or len(word) < 4:
-                    continue
-                kind = "typo"
+                composed = _composed_keyword(word)
+                if composed is not None:
+                    kind, nearest = "compose", composed
+                else:
+                    nearest, dist = _nearest_keyword(word)
+                    # len >= 4: a 3-letter token is within distance 2 of DONE for
+                    # almost any input -- the motif gate alone would not save us.
+                    if nearest is None or dist > 2 or len(word) < 4:
+                        continue
+                    kind = "typo"
+            # Forme a RECOMMANDER dans le WARN : pour un compose c'est le mot de
+            # fermeture porte par le token, jamais sa tete -- conseiller
+            # `[CLAIMED]` a l'auteur de `[CLAIMED-RELEASED]` lui ferait reprendre
+            # le grain qu'il vient de rendre (#15982).
+            canonical = _close_keyword({"token": m.group(1), "nearest": nearest}) or nearest
             found.append({
                 "nearest": nearest,
+                "canonical": canonical,
                 "token": m.group(1),
                 "kind": kind,
                 "line": line if len(line) <= 160 else line[:160] + "…",
@@ -2228,12 +2303,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         who = f" by @{s['author']}" if s["author"] else ""
         if s["kind"] == "typo":
             why = f'"{s["token"]}" (distance <= 2 de {s["nearest"]})'
+        elif s["kind"] == "compose":
+            why = (f'"{s["token"]}" (deux mots-cles joints ; tete {s["nearest"]} '
+                   f'-- l\'organe ne lit QUE le mot-cle seul entre crochets)')
         else:
             why = f'"{s["token"]}..." ({s["nearest"]} + suffixe dans les crochets)'
         print(
             f"WARN: quasi-marqueur {why}{who} -- l'organe ne le lit PAS "
             f'(ni evenement, ni malformed_markers). Reposter la forme '
-            f'canonique "[{s["nearest"]}] lane <machine:workspace>" dans un '
+            f'canonique "[{s["canonical"]}] lane <machine:workspace>" dans un '
             f"commentaire neuf ; ne jamais corriger a la main le marqueur "
             f"existant (le createdAt serveur fait foi). {s['line']}",
             file=sys.stderr,
