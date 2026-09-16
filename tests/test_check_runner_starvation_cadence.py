@@ -31,7 +31,7 @@ def _v(**kw) -> object:
         kw.get("scheduled", []),
         kw.get("now", NOW),
         kw.get("declared", 30.0),
-        kw.get("warn", 240.0),
+        kw.get("warn", 360.0),
     )
 
 
@@ -45,19 +45,20 @@ def test_note_porte_la_cadence_servie() -> None:
 
 
 def test_pas_de_warning_sur_retard_chronique() -> None:
-    # Intervalles servis ~5 h observés à l'ét nominal : sous le seuil de 240 min
-    # depuis le DERNIER run, aucune alerte.
-    v = _v(scheduled=[NOW - timedelta(minutes=200), NOW - timedelta(minutes=500)])
+    # Bande servie nominale mesurée jusqu'à ~323 min (#15332 + run live de
+    # validation ; revue ai-01 2026-09-16) : 320 min depuis le DERNIER run
+    # reste SOUS le seuil de 360 -- pas de fausse alerte en service nominal.
+    v = _v(scheduled=[NOW - timedelta(minutes=320), NOW - timedelta(minutes=640)])
     assert v.status == "OK"
     assert not v.warnings
 
 
 def test_warning_scheduler_muet_au_dela_du_seuil() -> None:
-    v = _v(scheduled=[NOW - timedelta(minutes=300), NOW - timedelta(minutes=600)])
+    v = _v(scheduled=[NOW - timedelta(minutes=400), NOW - timedelta(minutes=800)])
     assert v.status == "OK"  # warning, pas ERROR
     assert len(v.warnings) == 1
     assert "SCHEDULER MUET" in v.warnings[0]
-    assert "300 min" in v.warnings[0]
+    assert "400 min" in v.warnings[0]
 
 
 def test_aucun_run_lisible_donner_warning() -> None:

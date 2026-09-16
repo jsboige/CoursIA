@@ -66,7 +66,11 @@ DEFAULT_LABEL = "coursia-linux"
 DEFAULT_STARVE_MINUTES = 15.0
 DEFAULT_WARN_FLOOR = 2
 DEFAULT_WINDOW_MAX_MINUTES = 360.0
-DEFAULT_CADENCE_WARN_MINUTES = 240.0
+# Seuil SCHEDULER MUET : au-dessus de la queue de la bande servie NOMINALE
+# (intervalles planifiés de 30 min servis à 168-323 min mesurés, #15332 ;
+# un seuil dans la bande fabrique des fausses alertes en service normal --
+# revue ai-01 du 2026-09-16 sur #16388).
+DEFAULT_CADENCE_WARN_MINUTES = 360.0
 RUNS_PAGE_SIZE = 100
 
 
