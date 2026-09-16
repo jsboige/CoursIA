@@ -29,7 +29,7 @@
 
 Le défaut n'est pas le **ratio** `// 3` mais la **fenêtre glissante UTC** : la lane commence chaque journée à budget 1, et ce budget monte **après** les premiers merges. Tant que le numérateur n'a pas atteint 3 (par tous genres), la lane ne peut pas dépasser **1 LIGHT par jour**. Conséquence pratique : une lane qui ouvre la journée par un `guard` + un `docs` (= 2 LIGHT, budget 1) se fait bloquer dès le 2ᵉ, alors qu'elle **a déjà entamé la journée par du travail utile**.
 
-**Piste pour Volet D (proposition, à soumettre sign-off user — CLAUDE.md §A) :** fenêtre glissante 7 j (rolling window) au lieu de jour UTC fixe. Une lane qui ouvre 2 LIGHT lundi + 1 LIGHT mardi + 1 LIGHT jeudi n'est pas en monoculture — elle étale ; une fenêtre glissante verrait 4 LIGHT / 7 j = budget 1, plus tolérant.
+**Piste pour Volet D (changement normatif substantiel proposé, à soumettre au sign-off user conformément à CLAUDE.md §A) :** fenêtre glissante 7 j (rolling window) au lieu de jour UTC fixe. Une lane qui ouvre 2 LIGHT lundi + 1 LIGHT mardi + 1 LIGHT jeudi n'est pas en monoculture — elle étale ; une fenêtre glissante verrait 4 LIGHT / 7 j = budget 1, plus tolérant.
 
 ## Volet C — `dwell` est redondant avec la pondération
 
@@ -43,7 +43,7 @@ Le défaut n'est pas le **ratio** `// 3` mais la **fenêtre glissante UTC** : la
 
 `dwell` (veto absolu sur les issues créées dans les dernières 24 h) **ne mord jamais sur du CONTENU** dans cette fenêtre 14 j. La pondération du picker (axe `inact` × axe `age`) traite déjà le cas — une issue fraîche a un poids faible, presque jamais tirée.
 
-**Conséquence pratique** : si on supprime `dwell`, le comportement observable du picker ne change pas sur le pool actuel. C'est une seconde couche **inutile** de défense. La règle `dwell` peut être **retirée sans coût** (Volet D — proposition à soumettre sign-off user).
+**Conséquence pratique** : si on supprime `dwell`, le comportement observable du picker ne change pas sur le pool actuel. C'est une seconde couche **inutile** de défense. Retirer cette règle reste un changement normatif substantiel (Volet D — proposition à soumettre au sign-off user conformément à CLAUDE.md §A).
 
 **Caveat** : la mesure est faite sur 1 lane (po-2027) avec 3 seeds. Pour valider structurellement, il faudrait étendre à 11 lanes × 5 seeds = 55 tirages. Coût : ~10 min. **À considérer si l'EPIC veut un verdict chiffré global, pas local.**
 
@@ -60,7 +60,7 @@ python scripts/variation_volet_bc.py \
 
 Ré-exécutable. Aucune dépendance externe au-delà de `gh` CLI (qui doit être authentifié).
 
-## Proposition Volet D (soumise sign-off user — CLAUDE.md §A)
+## Proposition Volet D (changement normatif substantiel soumis au sign-off user conformément à CLAUDE.md §A)
 
 Deux modifications de `.claude/rules/variation-protocol.md` cohérentes avec les mesures :
 
