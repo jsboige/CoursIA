@@ -120,7 +120,7 @@ mieux c'est). Un modèle triviale (uniforme) donne une perplexité ≈ taille du
 
 # 5. n-grammes
 
-- Modèles **n-gramme** : P(c₁:N) ≈ ∏ P(cᵢ | cᵢ₋ₙ₊₁:ᵢ⁻¹)
+- Modèles **n-gramme** : P(c₁:N) ≈ ∏ P(cᵢ | cᵢ₋ₙ₊₁:ᵢ₋₁)
 - Markov d'ordre n − 1
 - Valable pour caractères, syllabes, mots, phrases
 - Estimation par comptage sur corpus + **lissage** (Laplace, Kneser-Ney)
