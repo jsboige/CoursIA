@@ -59,5 +59,5 @@ DecInfer est une série .NET (Infer.NET probabilistic programming) sans labs age
 ## Hors scope
 
 - `DecInfer-2-Lean-ExpectedUtility.ipynb`, `DecInfer-9-Lean-Gittins.ipynb` — notebooks **Lean 4** exclus (EPIC #4980, sibling-pair FR-first, piste i18n distincte gérée par po-2026). Convention cohérente avec `probas_infer.csv` / `probas_pymc.csv` (0 notebook Lean en CSV).
-- `Probas/DecisionTheory/PyMC/` (DecPyMC-1..7) — série Python PyMC, owner po-2025 (cf owner-lock `Probas-DecPyMC`). Non incluse ici.
+- `Probas/DecisionTheory/DecPyMC/` (DecPyMC-1..7) — série Python PyMC, owner po-2025 (cf owner-lock `Probas-DecPyMC`). Non incluse ici.
 - `Probas/DecisionTheory/Causal-Bridges/` — série causale Python standalone, non encore seedée.
