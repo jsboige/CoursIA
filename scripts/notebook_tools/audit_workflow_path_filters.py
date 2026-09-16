@@ -64,6 +64,18 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
 }
 
 
+# Workflows sans ``paths:`` par DECISION ECRITE, hors du perimetre required.
+# Chaque entree porte la reference de sa decision (jamais un oubli).
+# Consolide #15962 depuis scripts/audit_workflow_paths_filters.py L57-76
+# (instrument jumeau supprime par la meme PR -- les entrees couvertes par
+# REQUIRED_UNFILTERED_WORKFLOWS ci-dessus n'ont pas ete dupliquees).
+EXEMPT_DOCUMENTED: dict[str, str] = {
+    # discipline d'auto-couverture paths, ecrite dans le workflow : un seul
+    # evenement manquant = la garde ne protege rien.
+    "notebook-plan-loss-gate.yml": "#14391/#14429",
+}
+
+
 # Workflows dont le clone complet (fetch-depth: 0 SANS filter: blob:none) est
 # DELIBERE. Un clone partiel (filter: blob:none) ne checkout pas les blobs ;
 # tout workflow qui consomme le contenu des blobs de l'historique complet a
@@ -94,10 +106,36 @@ def _parse_on_key(data: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _classify_unfiltered(name: str) -> str:
-    """Classifie un workflow unfiltered en 'required' ou 'optional'."""
+    """Classifie un workflow unfiltered en 'required', 'exempt_documented'
+    ou 'optional' (= eligible : devrait porter un filtre)."""
     if name in REQUIRED_UNFILTERED_WORKFLOWS:
         return "required"
-    return "optional"  # nouveau, non audite -> a investiguer
+    if name in EXEMPT_DOCUMENTED:
+        return "exempt_documented"
+    return "optional"  # eligible : sans filtre et sans decision ecrite
+
+
+def _pr_target_filter_excludes_main(pr_config: Any) -> bool:
+    """True ssi le trigger ``pull_request`` porte un filtre de branche cible
+    qui exclut ``main`` -- le workflow ne se declenche pas sur les PR vers
+    main, meme sans ``paths:`` (filtre effectif equivalent).
+
+    Formes reconnues (semantique GitHub Actions) :
+      - ``branches-ignore: [main]``
+      - ``branches: [...]`` sans ``main`` dans la liste
+
+    Porte depuis scripts/audit_workflow_paths_filters.py L100-124 (#15165)
+    lors de la consolidation #15962.
+    """
+    if not isinstance(pr_config, dict):
+        return False
+    branches_ignore = pr_config.get("branches-ignore")
+    if isinstance(branches_ignore, list) and "main" in branches_ignore:
+        return True
+    branches = pr_config.get("branches")
+    if isinstance(branches, list) and branches and "main" not in branches:
+        return True
+    return False
 
 
 def _scan_checkout_steps(jobs: dict[str, Any]) -> tuple[bool, bool, bool]:
@@ -268,13 +306,18 @@ def audit_workflows(workflows_dir: Path) -> dict[str, Any]:
                     paths_combined.extend(_parse_paths(entry))
             has_filter = len(paths_combined) > 0
             paths_list = paths_combined
+            target_excl = any(
+                _pr_target_filter_excludes_main(e) for e in pr
+            )
         elif isinstance(pr, dict):
             paths_list = _parse_paths(pr)
             has_filter = len(paths_list) > 0
+            target_excl = _pr_target_filter_excludes_main(pr)
         else:
             # pr is None or scalar -> all PRs, no filter
             has_filter = False
             paths_list = []
+            target_excl = False
 
         workflows.append(
             {
@@ -283,10 +326,18 @@ def audit_workflows(workflows_dir: Path) -> dict[str, Any]:
                 "has_filter": has_filter,
                 "paths_count": len(paths_list),
                 "paths_list": paths_list,
+                # Filtre effectif sans paths : cible != main (branches-ignore
+                # ou allowlist sans main), #15165/#15962.
+                "pr_target_filter_excludes_main": target_excl,
+                "exempt_documented": EXEMPT_DOCUMENTED.get(fname.name),
                 "classification": (
                     "filtered"
                     if has_filter
-                    else _classify_unfiltered(fname.name)
+                    else (
+                        "target_filtered"
+                        if target_excl
+                        else _classify_unfiltered(fname.name)
+                    )
                 ),
             }
         )
@@ -321,6 +372,30 @@ def audit_workflows(workflows_dir: Path) -> dict[str, Any]:
             and not w["has_filter"]
             and w["classification"] == "optional"
         ),
+        # Consolidation #15962 : vocabulaire du recensement autoritaire.
+        # Filtre effectif = paths/paths-ignore OU cible != main ;
+        # eligible = sans paths, sans filtre-par-la-base, ni required
+        # ni exemption documentee (le seul deficit qui compte).
+        "with_effective_filter": sum(
+            1
+            for w in workflows
+            if w["has_pr_trigger"]
+            and (
+                w["has_filter"] or w.get("pr_target_filter_excludes_main")
+            )
+        ),
+        "exempt_documented": sum(
+            1
+            for w in workflows
+            if w["has_pr_trigger"]
+            and w.get("classification") == "exempt_documented"
+        ),
+        "unfiltered_eligible": sum(
+            1
+            for w in workflows
+            if w["has_pr_trigger"]
+            and w["classification"] == "optional"
+        ),
         "no_pr_trigger": sum(1 for w in workflows if not w["has_pr_trigger"]),
         # Hygiene checkout (issue #12385)
         "checkout_hygiene_machines": sum(
@@ -352,70 +427,67 @@ def audit_workflows(workflows_dir: Path) -> dict[str, Any]:
 def check_regression(
     current: dict[str, Any], previous: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    """Detecte les ajouts recents sans filtre par rapport a un audit anterieur.
+    """Detecte les regressions de couverture vs un audit anterieur.
+
+    Une regression = soit un workflow ELIGIBLE (sans paths, sans
+    filtre-par-la-base, ni required ni exemption documentee) apparu depuis
+    l'audit precedent, soit un workflow qui avait un paths filter et l'a
+    perdu sans acquerir de filtre-par-la-base ni d'exemption (#15962).
+
+    Fail-closed sur schema illisible : un audit anterieur sans cle
+    ``workflows`` (schema du recensement #15417, pre-consolidation) leve
+    une ValueError plutot qu'un KeyError anonyme -- un ratchet qui compare
+    n'importe quoi ne ratchet rien.
 
     Returns:
-        liste de {name, reason} pour chaque regression detectee.
+        liste de {name, reason, explanation} pour chaque regression.
     """
-    previous_filtered = {
+    if not isinstance(previous.get("workflows"), list):
+        raise ValueError(
+            "audit anterieur illisible (cle 'workflows' absente : schema du "
+            "recensement #15417 pre-consolidation #15962, ou JSON corrompu). "
+            "Regenerer docs/audit/workflow-path-filters/latest.json avec "
+            "l'instrument consolide avant de rejouer --check-regression."
+        )
+
+    previous_pr_triggered = {
         w["name"] for w in previous["workflows"] if w["has_pr_trigger"]
     }
-    current_unfiltered = {
-        w["name"]
-        for w in current["workflows"]
-        if w["has_pr_trigger"] and not w["has_filter"]
-    }
+    previous_by_name = {w["name"]: w for w in previous["workflows"]}
 
     regressions: list[dict[str, Any]] = []
-    # Nouveaux workflows sans filtre (ni dans la liste required)
-    for name in current_unfiltered:
-        if name not in previous_filtered and name not in REQUIRED_UNFILTERED_WORKFLOWS:
+    for w in current["workflows"]:
+        if not w["has_pr_trigger"]:
+            continue
+        # Seule la classe "optional" est eligible (les required, exemptions
+        # documentees et filtres-par-la-base ne sont jamais des regressions).
+        if w["classification"] != "optional":
+            continue
+        name = w["name"]
+        if name not in previous_pr_triggered:
             regressions.append(
                 {
                     "name": name,
-                    "reason": "newly_added_unfiltered_optional",
+                    "reason": "newly_added_unfiltered_eligible",
                     "explanation": (
-                        f"{name} added since previous audit without paths/paths-ignore filter "
-                        f"and not in REQUIRED_UNFILTERED_WORKFLOWS whitelist"
+                        f"{name} apparu depuis l'audit precedent sans paths, "
+                        f"sans filtre-par-la-base, ni required, ni exemption "
+                        f"documentee"
                     ),
                 }
             )
-    # Workflows qui ont perdu leur filtre
-    current_filtered = {
-        w["name"]
-        for w in current["workflows"]
-        if w["has_pr_trigger"] and w["has_filter"]
-    }
-    for name in previous_filtered:
-        if (
-            name in current_unfiltered
-            and name in REQUIRED_UNFILTERED_WORKFLOWS
-        ):
-            # Was filtered, now unfiltered-required -> check if was in required list
-            # actually this means someone REMOVED the filter from a workflow that
-            # wasn't on the whitelist originally. Skip if it's currently required.
-            continue
-        if name in current_unfiltered and name not in REQUIRED_UNFILTERED_WORKFLOWS:
-            # Was filtered, now unfiltered-optional -> filter removed!
-            previous_filter_status = next(
-                (
-                    w
-                    for w in previous["workflows"]
-                    if w["name"] == name
-                ),
-                None,
+        elif previous_by_name[name].get("has_filter"):
+            regressions.append(
+                {
+                    "name": name,
+                    "reason": "filter_removed",
+                    "explanation": (
+                        f"{name} avait un paths filter a l'audit precedent et "
+                        f"ne porte plus ni paths, ni filtre-par-la-base, ni "
+                        f"exemption documentee"
+                    ),
+                }
             )
-            if previous_filter_status and previous_filter_status.get("has_filter"):
-                regressions.append(
-                    {
-                        "name": name,
-                        "reason": "filter_removed",
-                        "explanation": (
-                            f"{name} previously had a filter but filter was removed "
-                            f"(now in unfiltered-optional)"
-                        ),
-                    }
-                )
     return regressions
 
 
@@ -568,7 +640,9 @@ def write_markdown(audit: dict[str, Any], path: Path) -> None:
         f"| **Avec filtre paths/paths-ignore** | **{s['filtered']}** |",
         f"| Sans filtre | {s['unfiltered']} |",
         f"| - dont required (gates/advisories) | {s['unfiltered_required']} |",
-        f"| - dont optional (a investiguer) | {s['unfiltered_optional']} |",
+        f"| - dont exemptions documentees | {s['exempt_documented']} |",
+        f"| - dont filtre par la base (cible != main) | {s['with_effective_filter'] - s['filtered']} |",
+        f"| - dont eligible (a investiguer) | {s['unfiltered_eligible']} |",
         f"| Sans `pull_request` trigger | {s['no_pr_trigger']} |",
         f"",
         f"## Sans filtre `paths`/`paths-ignore`",
@@ -593,10 +667,39 @@ def write_markdown(audit: dict[str, Any], path: Path) -> None:
             lines.append(f"- `{w['name']}`")
         lines.append("")
 
+    unfiltered_exempt = [
+        w for w in audit["workflows"] if w["classification"] == "exempt_documented"
+    ]
+    if unfiltered_exempt:
+        lines.extend(
+            [
+                f"### Exemptions documentees (decision ecrite, pas un oubli)",
+                f"",
+            ]
+        )
+        for w in unfiltered_exempt:
+            ref = w.get("exempt_documented") or ""
+            lines.append(f"- `{w['name']}` — {ref}")
+        lines.append("")
+
+    target_filtered = [
+        w for w in audit["workflows"] if w["classification"] == "target_filtered"
+    ]
+    if target_filtered:
+        lines.extend(
+            [
+                f"### Filtre par la base (cible != main, #15165)",
+                f"",
+            ]
+        )
+        for w in target_filtered:
+            lines.append(f"- `{w['name']}`")
+        lines.append("")
+
     if unfiltered_optional:
         lines.extend(
             [
-                f"### Optional (a investiguer - devrait avoir un filtre)",
+                f"### Eligibles sans filtre effectif (a investiguer)",
                 f"",
             ]
         )
@@ -726,6 +829,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Audit completed: {s['with_pr_trigger']} PR-triggered workflows")
         print(f"  Filtered: {s['filtered']}")
         print(f"  Unfiltered: {s['unfiltered']} (required: {s['unfiltered_required']}, optional: {s['unfiltered_optional']})")
+        print(f"  Effective filter (paths OR target!=main): {s['with_effective_filter']}")
+        print(f"  Exempt documented: {s['exempt_documented']}, unfiltered eligible: {s['unfiltered_eligible']}")
         pc = audit["checkout_hygiene_positive_control"]
         print(f"  Checkout hygiene: {s['checkout_hygiene_nonconforming']} "
               f"nonconforming / {s['checkout_hygiene_machines']} clone machines "
@@ -760,7 +865,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
         previous = json.loads(prev_path.read_text(encoding="utf-8"))
-        regressions = check_regression(audit, previous)
+        try:
+            regressions = check_regression(audit, previous)
+        except ValueError as exc:
+            # Schema pre-consolidation (#15417) ou JSON corrompu : un ratchet
+            # qui compare n'importe quoi ne ratchet rien -- fail-closed (#15962).
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
         if regressions:
             rc = 1
             print(f"\nREGRESSIONS DETECTED: {len(regressions)}", file=sys.stderr)

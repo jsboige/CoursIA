@@ -12,15 +12,15 @@ from typing import List, Tuple, Dict
 
 # Notebooks to validate
 TWEETY_NOTEBOOKS = [
-    "Tweety-1-Setup.ipynb",
-    "Tweety-2-Basic-Logics.ipynb",
+    "Tweety-01-Setup-Python.ipynb",
+    "Tweety-02-Basic-Logics-Python.ipynb",
     "Tweety-3-Advanced-Logics.ipynb",
     "Tweety-4-Belief-Revision.ipynb",
     "Tweety-5-Abstract-Argumentation.ipynb",
-    "Tweety-6-Structured-Argumentation.ipynb",
+    "Tweety-06-Structured-Argumentation-Python.ipynb",
     "Tweety-7-Advanced-Argumentation.ipynb",
-    "Tweety-7a-Extended-Frameworks.ipynb",
-    "Tweety-7b-Ranking-Probabilistic.ipynb",
+    "Tweety-07a-Extended-Frameworks-Python.ipynb",
+    "Tweety-07b-Ranking-Probabilistic-Python.ipynb",
 ]
 
 

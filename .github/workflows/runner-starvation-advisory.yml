@@ -51,10 +51,26 @@ concurrency:
 jobs:
   starve:
     name: Runner starvation advisory (${{ matrix.label }})
-    # Route vers la jambe Linux auto-hebergee : un observateur qui tourne sur
-    # le label qu'il observe mourrait avec lui. Meme raisonnement que
-    # linux-runner-starvation-advisory.yml l.44-46.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # ubuntu-latest (#16134, 2026-09-14).
+    #
+    # Ce job portait ce commentaire : « un observateur qui tourne sur le label
+    # qu'il observe mourrait avec lui ». Le raisonnement est juste, la
+    # conclusion ne l'etait pas -- `coursia-linux` n'est pas un abri, c'est une
+    # troisieme jambe du MEME parc que `coursia-waiter` et `coursia-lean`.
+    # Changer de label ne change pas de risque : une reconstruction d'image
+    # invalide les trois ensembles (le garde de fraicheur de #14801 est
+    # fail-closed et compare le checkout vivant a l'image), et plus aucune des
+    # trois ne peut alors heberger l'observateur.
+    #
+    # Mesure du 2026-09-14 : 01:44Z -> 07:11Z sans un seul run pour un cron
+    # declare `23,53 * * * *`. Le run de 07:12Z n'a tourne que parce qu'une
+    # jambe etait deja revenue -- et c'est lui, et lui seul, qui a rougi. Sur
+    # tout le creneau ou le parc etait mort, la sonde n'a rien pu dire.
+    #
+    # L'organe n'a aucune dependance a l'hote (auth par API uniquement) : le
+    # routage auto-heberge ne lui apportait rien. Depot public => minutes
+    # GitHub-hosted gratuites.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false

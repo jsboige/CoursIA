@@ -358,3 +358,122 @@ def test_13966_load_snapshot_raw_shape_returns_empty_preserved(tmp_path: Path) -
     runs, preserved = mod.load_snapshot(snapshot)
     assert len(runs) == 1
     assert preserved == []
+
+
+# ---------------------------------------------------------------------------
+# watch_verdict / --watch CLI  (#14367 guard anti-derive)
+# ---------------------------------------------------------------------------
+
+def test_watch_verdict_clean_collapses_to_ok() -> None:
+    """No ghosts at all -> watch verdict OK (matches measurement CLEAN)."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.watch_verdict(0, 5, 0) == "OK"
+    assert mod.watch_verdict(0, 0, 0) == "OK"
+
+
+def test_watch_verdict_stale_floor_collapses_to_ok() -> None:
+    """The historical 18 ghosts + 0 live -> watch verdict OK (steady state).
+
+    This is the routine CoursIA signature: the 18 ghosts of 2026-08-19 are
+    unpurgeable, but the queue is otherwise empty. The watch should NOT
+    fire an alert on this shape -- only on genuine drift.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.watch_verdict(18, 0, 0) == "OK"
+
+
+def test_watch_verdict_drift_on_count_change() -> None:
+    """Ghost count drifted away from the floor -> watch verdict DRIFT."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    # 19 ghosts -- the historical floor was 18, a new ghost appeared.
+    assert mod.watch_verdict(19, 0, 0) == "DRIFT"
+    # 17 ghosts -- the floor shrank (one historical ghost got cleaned up).
+    assert mod.watch_verdict(17, 0, 0) == "DRIFT"
+
+
+def test_watch_verdict_drift_on_live_activity() -> None:
+    """18 ghosts + live activity -> watch verdict DRIFT.
+
+    The historical floor is 18 ghosts with 0 live. Live activity (jobs in
+    the queue) means the runner pool is being asked to do work -- this is
+    the actionable signal even if the floor count is unchanged.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.watch_verdict(18, 1, 0) == "DRIFT"
+
+
+def test_watch_verdict_incomplete_collapses_to_broken() -> None:
+    """Parse failures -> watch verdict BROKEN (instrument cannot conclude).
+
+    The watch must not silently collapse INCOMPLETE to DRIFT: a broken
+    instrument and a real drift require different responses (redeploy vs
+    investigate).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.watch_verdict(0, 0, 1) == "BROKEN"
+    assert mod.watch_verdict(18, 0, 3) == "BROKEN"
+
+
+def test_cli_watch_stale_floor_exits_zero(tmp_path: Path) -> None:
+    """--watch on the steady-state CoursIA shape exits 0 (no alert)."""
+    runs = [
+        {"id": i, "name": f"ghost-{i}", "created_at": f"2026-08-19T03:{i:02d}:00Z",
+         "html_url": f"https://gh/ghost/{i}"}
+        for i in range(18)
+    ]
+    snapshot = tmp_path / "ghost.json"
+    snapshot.write_text(_make_snapshot(runs), encoding="utf-8")
+    proc = _run("--watch", "--input", str(snapshot))
+    assert proc.returncode == 0, (
+        f"expected watch OK=0 on STALE_FLOOR, got {proc.returncode}; "
+        f"stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "OK"
+    assert body["verdict_measurement"] == "STALE_FLOOR"
+
+
+def test_cli_watch_drift_exits_one(tmp_path: Path) -> None:
+    """--watch on a new ghost (count drifted) exits 1 (alert)."""
+    runs = [
+        {"id": i, "name": f"ghost-{i}", "created_at": f"2026-08-19T03:{i:02d}:00Z",
+         "html_url": f"https://gh/ghost/{i}"}
+        for i in range(19)  # one MORE than the historical floor
+    ]
+    snapshot = tmp_path / "drift.json"
+    snapshot.write_text(_make_snapshot(runs), encoding="utf-8")
+    proc = _run("--watch", "--input", str(snapshot))
+    assert proc.returncode == 1, (
+        f"expected watch DRIFT=1, got {proc.returncode}; stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "DRIFT"
+    assert body["verdict_measurement"] == "GHOST_RUNS_DETECTED"
+
+
+def test_cli_watch_broken_exits_two(tmp_path: Path) -> None:
+    """--watch on a parse failure exits 2 (broken instrument, do not alert).
+
+    Without the BROKEN collapse, the watch would fire DRIFT alerts on
+    transient API hiccups -- alert fatigue is the failure mode the
+    three-bucket split exists to prevent.
+    """
+    runs = [{"id": 1, "name": "no-date"}]  # missing created_at
+    snapshot = tmp_path / "broken.json"
+    snapshot.write_text(_make_snapshot(runs), encoding="utf-8")
+    proc = _run("--watch", "--input", str(snapshot))
+    assert proc.returncode == 2, (
+        f"expected watch BROKEN=2, got {proc.returncode}; stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "BROKEN"

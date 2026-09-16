@@ -1122,3 +1122,100 @@ def test_lane_ascii_control_unchanged():
     assert g == "myia-po-2026:CoursIA"
 
 
+# --- #15864: sentence period + accented continuation (#12719 x #13830) ------
+#
+# The two earlier fixes interact. `_LANE_RE` admits `.` in the token class
+# (#12719, hostnames) and admits an accented uppercase as a continuation
+# initial (#13830). Together, `lane myia-po-2023:CoursIA. Énoncé réécrit ...`
+# parsed the lane as `myia-po-2023:CoursIA. Énoncé` -- a token that matches no
+# lane, so `check_lane_claim` blocked the declaring lane on its OWN claim.
+#
+# The real-world trigger is the lane's own `[DELIVERED]` marker, which
+# re-marks the claim while the PR is OPEN (#12320) and is followed by French
+# prose that naturally starts with an accented capital word.
+
+_REAL_DELIVERED_15864 = (
+    "[DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit en deux "
+    "gestes (chercher inchangé + recenser via `client2.count(count_filter=...)`), "
+    "le piège top-10 nommé dans l'énoncé. Exéc complète 12.2s, validate 17 cells PASS."
+)
+
+
+def test_lane_sentence_period_stops_the_token_primary():
+    # Acceptance #15864-1: the real marker from issue #15674 parses to the
+    # BARE lane, not to `...CoursIA. Énoncé`.
+    assert gt.extract_lane(_REAL_DELIVERED_15864) == "myia-po-2023:CoursIA"
+
+
+def test_lane_sentence_period_stops_the_token_fallback():
+    # Acceptance #15864-2: the twin carries the same case, or the defect stays
+    # whole in the copy (#12145 discipline).
+    line = "lane myia-po-2023:CoursIA. Énoncé réécrit"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-po-2023:CoursIA"
+
+
+def test_lane_sentence_period_parse_grain_tag_same_lane():
+    # Acceptance #15864-3: single-reader discipline (#9485) -- `parse_grain_tag`
+    # reads `_LANE_RE` directly and must not diverge from `extract_lane`.
+    body = "Grain: MED/notebook-python — lane myia-po-2023:CoursIA. Énoncé réécrit"
+    assert gt.parse_grain_tag(body)["lane"] == "myia-po-2023:CoursIA"
+    assert gt.extract_lane(body) == "myia-po-2023:CoursIA"
+
+
+def test_lane_sentence_period_residue_witnessed():
+    # Acceptance #15864-4: the malformed form is REPORTED, not silently
+    # reinterpreted (#12719 acceptance 4). The writer learns that the text
+    # after their period was not read as part of the lane.
+    residues = gt.lane_marker_residues(_REAL_DELIVERED_15864)
+    assert any(r.startswith("trailing-period:") for r in residues), residues
+
+
+def test_lane_period_is_the_discriminator():
+    # The two halves of the pair, side by side. Without a period the accented
+    # continuation is a legitimate workspace word (#13830, preserved); with a
+    # period it is prose.
+    assert gt.extract_lane("lane myia-x:W Énoncé") == "myia-x:W Énoncé"
+    assert gt.extract_lane("lane myia-x:W. Énoncé") == "myia-x:W"
+
+
+def test_lane_inner_period_still_inside_the_token():
+    # Non-regression #12719: a period followed by a NON-space is part of the
+    # token (hostnames, `Foo.Bar`). Only `.` + whitespace ends the lane.
+    assert gt.extract_lane("lane myia-x:A.B") == "myia-x:A.B"
+    assert gt.extract_lane("lane host.example:Baz Qux") == "host.example:Baz Qux"
+
+
+def test_lane_period_after_accented_workspace():
+    # #13830 and #12719 at once: accented workspace, period, accented prose.
+    # The residue is stripped, the ghost token never forms.
+    body = "[CLAIMED] lane myia-ai-01:LivresAgités. Épisode suivant"
+    assert gt.extract_lane(body, marker_line=body) == "myia-ai-01:LivresAgités"
+
+
+_REAL_RECONCILIATION_15918 = (
+    "[RELEASED] Claim de myia-po-2026:CoursIA retiré — réconcilié : la PR #15878 "
+    "(lane myia-po-2023:CoursIA, ouverte 00:19Z) couvre le grain en surensemble."
+)
+
+
+def test_lane_bare_subject_beats_keyworded_citation_15918():
+    # #15918: a reconciliation close names its OWN lane bare ("Claim de
+    # myia-po-2026:CoursIA retiré") while the parenthetical crediting the
+    # winning lane carries the `lane` keyword -- the claim format itself.
+    # The keyworded primary used to attribute the close to the CITED lane.
+    line = _REAL_RECONCILIATION_15918
+    assert (
+        gt.extract_lane(line, marker_line=line) == "myia-po-2026:CoursIA"
+    ), "the bare subject token before the keyworded citation must win"
+
+
+def test_lane_keyworded_marker_keeps_priority_on_tie_15918():
+    # Position tie (the bare token IS the keyworded one): primary unchanged.
+    line = "[RELEASED] lane myia-po-2026:CoursIA — la lane myia-po-2023:CoursIA reprend"
+    assert gt.extract_lane(line, marker_line=line) == "myia-po-2026:CoursIA"
+
+
+def test_lane_keyword_only_in_body_still_primary_without_marker_line_15918():
+    # Legacy callers (no marker_line): the whole-body keyworded primary is
+    # untouched -- the proximity rule is scoped to the marker's own line.
+    assert gt.extract_lane(_REAL_RECONCILIATION_15918) == "myia-po-2023:CoursIA"
