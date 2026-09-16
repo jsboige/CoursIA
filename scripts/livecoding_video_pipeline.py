@@ -1,4 +1,4 @@
-"""V0 narrow du pipeline livecoding-video (issue #15604, hommage SwitchAngel).
+"""V0 narrow du pipeline livecoding-video (issue #15604, homage a une voix tierce).
 
 **Scope V0 narrow** (c.573, fenetre 30 min) :
 Cette V0 livre UNIQUEMENT l'etape 1 du pipeline (composition Strudel
@@ -29,7 +29,7 @@ quand il ne fait que composer).
 - Etape 6 mixage ffmpeg : `scripts/audiobook_pipeline.py` a deja
   l'integration loudnorm -14 LUFS + fade-out.
 
-**Voie 3 B.0** : voie du retrait consenti SwitchAngel tenue
+**Voie 3 B.0** : voie du retrait consenti d'une voix tierce tenue
 (bibliography-hygiene §2, audit-cross-source-distillation §3.1,
 02-2-XTTS-Voice-Cloning l.2018). Aucune voix clonee, aucun verbatim,
 aucune archive media dans le depot. La methode (narration + composition
