@@ -95,7 +95,7 @@ class TestIsReprQuotedEntry:
         line = '    "This is a quoted phrase in narrative markdown."\n'
         assert _is_repr_quoted_entry(line) is False, line
 
-    def test_model_identifier_in_config_not_flagged(self):
+    def test_model_identifier_in_config_matches_line_pattern(self):
         # A plain model-identifier line in markdown is JSON-like but the
         # content lacks quote-opener + escape structure. Wait: actually this
         # matches -- so we ENSURE the detector's overall cell-level filter
@@ -229,7 +229,8 @@ class TestScanCellReprQuoted:
         matching = [f for f in scan_cell(cell)
                     if f["rule"] == "repr_quoted_source_entries"]
         assert len(matching) == 1
-        assert "4 repr-quoted" in matching[0]["message"] or "4 repr-quoted" in matching[0]["message"]
+        # detector message format: "N repr-quoted JSON-encoded source entry(ies) found in ..."
+        assert "4 repr-quoted" in matching[0]["message"]
 
 
 class TestScanCellReprQuotedErrorBlocker:
