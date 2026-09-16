@@ -32,8 +32,8 @@ name: Variation Tag Guard
 #      Constate sur deux PR d'un meme rollout, aucune des deux signalee.
 #
 # Relever a la main ce qu'un organe devrait dire est le reflexe a supprimer :
-# ce fichier APPLIQUE la §1 telle qu'ecrite, il ne la modifie pas — aucun
-# fichier de `.claude/rules/` n'est touche, donc pas de sign-off requis.
+# ce fichier APPLIQUE la §1 telle qu'ecrite, il ne la modifie pas : aucune
+# prescription ne change, donc pas de sign-off supplementaire (CLAUDE.md §A).
 #
 # Un label distinct par classe de defaut (plutot qu'un label fourre-tout) rend
 # la nature du manquement lisible dans `gh pr list --json labels`, sans avoir a
