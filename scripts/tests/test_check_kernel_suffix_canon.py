@@ -314,5 +314,73 @@ class TestRenameAwareness(unittest.TestCase):
             self.assertIn("App-5-Timetabling-Csharp.ipynb", r.stdout)
 
 
+class TestGitTransientSpawnRetry(unittest.TestCase):
+    """EAGAIN au spawn = contention de processus transitoire (pytest-xdist
+    -n 4 sur le runner). Sans reprise, le garde crashait en traceback : exit 1,
+    stdout vide -- le flake #16125, tentative 1. Reprise borne ; les autres
+    OSError propagent comme avant."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "cksc_retry_under_test", _SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.g = mod
+
+    def _faux_run_eagain(self, appels, echecs):
+        import errno
+
+        def faux_run(*args, **kwargs):
+            appels["n"] += 1
+            if appels["n"] <= echecs:
+                raise BlockingIOError(errno.EAGAIN,
+                                      "Resource temporarily unavailable")
+            return subprocess.CompletedProcess(args=(), returncode=0,
+                                                stdout="ok\n")
+        return faux_run
+
+    def test_eagain_retente_puis_passe(self):
+        from unittest import mock
+        g = self.g
+        appels, dors = {"n": 0}, []
+        with mock.patch.object(g.subprocess, "run",
+                               self._faux_run_eagain(appels, 2)), \
+             mock.patch.object(g.time, "sleep", lambda s: dors.append(s)):
+            self.assertEqual(g._git(["status"]), "ok\n")
+        self.assertEqual(appels["n"], 3)
+        self.assertEqual(dors, list(g._EAGAIN_BACKOFF))
+
+    def test_eagain_epuise_propage_apres_backoff_complet(self):
+        from unittest import mock
+        g = self.g
+        appels, dors = {"n": 0}, []
+        with mock.patch.object(g.subprocess, "run",
+                               self._faux_run_eagain(appels, 99)), \
+             mock.patch.object(g.time, "sleep", lambda s: dors.append(s)):
+            with self.assertRaises(BlockingIOError):
+                g._git(["status"])
+        self.assertEqual(appels["n"], g._EAGAIN_ATTEMPTS)
+        self.assertEqual(dors, list(g._EAGAIN_BACKOFF))
+
+    def test_autre_oserror_propage_immediatement(self):
+        import errno
+        from unittest import mock
+        g = self.g
+        appels, dors = {"n": 0}, []
+
+        def faux_run(*args, **kwargs):
+            appels["n"] += 1
+            raise OSError(errno.ENOENT, "git introuvable")
+
+        with mock.patch.object(g.subprocess, "run", faux_run), \
+             mock.patch.object(g.time, "sleep", lambda s: dors.append(s)):
+            with self.assertRaises(OSError):
+                g._git(["status"])
+        self.assertEqual(appels["n"], 1)
+        self.assertEqual(dors, [])
+
+
 if __name__ == "__main__":
     unittest.main()
