@@ -138,8 +138,11 @@ lean_lib ProgramGames where
 -- = (C,C)), inexploitabilité sous fiabilité locale explicite
 -- (`fairBot_unexploitable`). AUCUN axiome ad hoc : l'indépendance du
 -- schéma vis-à-vis de D1/D2/D3 est mesurée dans le module
--- (`bump_loeb_fails`), et le témoin noyau-vérifié du schéma est importé
--- par RÉFÉRENCE (`FormalLogic.GLBridge.loeb_schema`, lake voisin
--- `formal_logic_lean` v4.33.1, PR #15923) — conformément au gate L3 de
+-- (`bump_loeb_fails`), et le champ `loeb` reste une hypothèse explicite
+-- de l'interface — sa non-vacuité est attestée par le témoin
+-- noyau-vérifié `FormalLogic.GLBridge.loeb_schema` (lake voisin
+-- `formal_logic_lean` v4.33.1, PR #15923), cité par RÉFÉRENCE et jamais
+-- importé ; ce module ne définit aucune instance de `ModalProvability` —
+-- conformément au gate L3 de
 -- l'EPIC : « sans forcer ces dépendances dans game_theory_lean 4.32.1 »
 -- (split toolchain 4.32.1/4.33.1 mesuré). 0 sorry ajouté.

@@ -63,14 +63,17 @@ FairBot as "certified". This module proceeds differently, in three steps:
    satisfies D1/D2/D3 but violates Löb's schema (`bump_loeb_fails`):
    the `loeb` field is therefore NOT redundant — no proof of Löb can be
    obtained from the HBL derivations alone. The field's content is real.
-3. **Verified witness.** The field is justified by import: the GL bridge
-   of the neighbouring lake `formal_logic_lean` (PR #15923, library
-   `ProvabilityLogic` at a pinned commit) derives `□(□A → A) → □A` in
-   the GL Hilbert calculus, checked by the Lean kernel
-   (`FormalLogic.GLBridge.loeb_schema`). This module does not couple the
-   build of `game_theory_lean` to that dependency ("deliberately light
-   libs" pattern of the lakefile: `Swaps`, `Abstraction`): the interface
-   above is the attachment point, the bridge is its reference instance.
+3. **Verified witness.** This module does not couple the build of
+   `game_theory_lean` to the GL lake ("deliberately light libs" pattern
+   of the lakefile: only `Mathlib.Tactic` and `RepeatedGames.Stage` are
+   imported): the `loeb` field is an **explicit assumption of the
+   interface**, and its non-emptiness is attested by the external
+   kernel-checked witness `FormalLogic.GLBridge.loeb_schema` (lake
+   `formal_logic_lean`, PR #15923, library `ProvabilityLogic` at a pinned
+   commit), which derives `□(□A → A) → □A` in the GL Hilbert calculus —
+   **cited by reference, never imported, and this module defines no
+   `ModalProvability` instance**: any instance must supply the field, the
+   bridge acting as witness, not instance.
 
 ## Headline results
 
@@ -104,13 +107,15 @@ namespace ProgramGames_en
 
 open RepeatedGames PDAction
 
-/-! ## Provability interface: Box + D1/D2/D3 + imported Löb -/
+/-! ## Provability interface: Box + D1/D2/D3 + postulated Löb -/
 
 /-- Provability modality in the Hilbert-Bernays-Löb sense. `box p` reads
 "p is provable in the system". The first three fields are the classical
-HBL derivations; the fourth is Löb's schema, justified by import from
-the verified GL bridge (see the module docstring: the field is neither a
-local axiom nor redundant — `bump_loeb_fails` measures its independence). -/
+HBL derivations; the fourth is Löb's schema, **postulated as an explicit
+assumption of the interface** (see the module docstring: the field is
+neither a local axiom nor imported nor redundant — `bump_loeb_fails`
+measures its independence, its non-emptiness is attested by the external
+witness cited by reference). -/
 class ModalProvability (box : Prop → Prop) where
   /-- D1 — necessitation (meta-rule): what is established is provable. -/
   nec {p : Prop} (h : p) : box p
@@ -122,11 +127,13 @@ class ModalProvability (box : Prop → Prop) where
   object of proof). -/
   posIntros {p : Prop} (hp : box p) : box (box p)
   /-- Löb's schema: if "provably (provable p implies p)" then
-  "provable p". An interface FIELD, not a local axiom: the kernel-checked
-  witness for GL is `FormalLogic.GLBridge.loeb_schema` (lake
+  "provable p". An **explicit assumption of the interface**, not a local
+  axiom nor an import: its non-emptiness is attested by the external
+  kernel-checked witness `FormalLogic.GLBridge.loeb_schema` (lake
   `formal_logic_lean`, PR #15923, ProvabilityLogic library at a pinned
-  commit). This field's independence from D1/D2/D3 is measured by
-  `bump_loeb_fails` below. -/
+  commit), **cited by reference without coupling the build**. This
+  field's independence from D1/D2/D3 is measured by `bump_loeb_fails`
+  below. -/
   loeb {p : Prop} (h : box (box p → p)) : box p
 
 open ModalProvability
@@ -292,8 +299,9 @@ theorem fairBot_vs_defectBot (hconsis : ¬ box False) :
 derivations (D1, D2, D3 — see the three lemmas below) but not Löb's
 schema. It proves that no proof of Löb can be derived from D1/D2/D3
 alone: the field `ModalProvability.loeb` has a content of its own, and
-its import (the GL bridge #15923) is an addition of substance, not a
-disguised redundant axiom. -/
+its external attestation (the GL witness #15923, cited by reference)
+shows that this content is realizable — not a disguised redundant
+axiom. -/
 private def bump (p : Prop) : Prop := p ∨ ((0 : ℕ) = 1)
 
 private theorem bump_nec {p : Prop} (h : p) : bump p := Or.inl h
@@ -314,9 +322,10 @@ private theorem bump_posIntros {p : Prop} (hp : bump p) : bump (bump p) :=
 `bump False → False` is equivalent to refuting `0 = 1`, a decidable
 tautology), while `bump False` is false. Löb is therefore independent of
 the HBL derivations in this setting — the `ModalProvability` interface
-makes it an explicitly imported field, whose kernel-checked witness in
-this repository is `FormalLogic.GLBridge.loeb_schema` (GL logic,
-ProvabilityLogic library, PR #15923). -/
+makes it a postulated field (an explicit assumption any instance must
+supply), whose external kernel-checked witness in this repository is
+`FormalLogic.GLBridge.loeb_schema` (GL logic, ProvabilityLogic library,
+PR #15923), cited by reference. -/
 theorem bump_loeb_fails :
     ¬ (bump (bump False → False) → bump False) := by
   intro h

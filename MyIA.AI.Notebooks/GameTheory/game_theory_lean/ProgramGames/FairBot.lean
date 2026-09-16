@@ -39,14 +39,17 @@ FairBot comme « certifié ». Ce module procède autrement, en trois temps :
    satisfait D1/D2/D3 mais viole le schéma de Löb (`bump_loeb_fails`) :
    le champ `loeb` n'est donc PAS redondant, aucune preuve de Löb ne peut
    être obtenue des seules dérivées HBL. Le contenu du champ est réel.
-3. **Témoin vérifié.** Le champ est justifié par import : le pont GL du
-   lake voisin `formal_logic_lean` (PR #15923, bibliothèque
-   `ProvabilityLogic` à commit épinglé) dérive `□(□A → A) → □A` dans le
-   calcul de Hilbert GL, vérifié par le noyau Lean
-   (`FormalLogic.GLBridge.loeb_schema`). Ce module ne couple pas le build
-   de `game_theory_lean` à cette dépendance (pattern « libs volontairement
-   légères » du lakefile : `Swaps`, `Abstraction`) : l'interface ci-dessus
-   en est le point de branchement, le pont en est l'instance de référence.
+3. **Témoin vérifié.** Ce module ne couple pas le build de
+   `game_theory_lean` au lake GL (pattern « libs volontairement légères »
+   du lakefile : seuls `Mathlib.Tactic` et `RepeatedGames.Stage` sont
+   importés) : le champ `loeb` est une **hypothèse explicite de
+   l'interface**, et sa non-vacuité est attestée par le témoin externe
+   noyau-vérifié `FormalLogic.GLBridge.loeb_schema` (lake
+   `formal_logic_lean`, PR #15923, bibliothèque `ProvabilityLogic` à
+   commit épinglé) qui dérive `□(□A → A) → □A` dans le calcul de Hilbert
+   GL — **cité par référence, jamais importé, et ce module ne définit
+   aucune instance de `ModalProvability`** : toute instance devra fournir
+   le champ, le pont servant de témoin, pas d'instance.
 
 ## Résultats-phare
 
@@ -79,13 +82,15 @@ namespace ProgramGames
 
 open RepeatedGames PDAction
 
-/-! ## Interface de prouvabilité : Box + D1/D2/D3 + Löb importé -/
+/-! ## Interface de prouvabilité : Box + D1/D2/D3 + Löb postulé -/
 
 /-- Modalité de prouvabilité au sens de Hilbert-Bernays-Löb. `box p` se lit
 « p est prouvable dans le système ». Les trois premiers champs sont les
-dérivées HBL classiques ; le quatrième est le schéma de Löb, justifié par
-import du pont GL vérifié (voir le docstring du module : le champ n'est ni
-un axiome local ni redondant — `bump_loeb_fails` mesure son indépendance). -/
+dérivées HBL classiques ; le quatrième est le schéma de Löb, **postulé
+comme hypothèse explicite de l'interface** (voir le docstring du module :
+le champ n'est ni un axiome local ni importé ni redondant —
+`bump_loeb_fails` mesure son indépendance, sa non-vacuité est attestée par
+le témoin externe cité par référence). -/
 class ModalProvability (box : Prop → Prop) where
   /-- D1 — nécessitation (méta-règle) : ce qui est établi est prouvable. -/
   nec {p : Prop} (h : p) : box p
@@ -97,11 +102,13 @@ class ModalProvability (box : Prop → Prop) where
   elle-même objet de preuve). -/
   posIntros {p : Prop} (hp : box p) : box (box p)
   /-- Schéma de Löb : si « prouvablement (prouvable p implique p) » alors
-  « prouvable p ». CHAMP d'interface, pas un axiome local : le témoin
-  noyau-vérifié pour la logique GL est `FormalLogic.GLBridge.loeb_schema`
-  (lake `formal_logic_lean`, PR #15923, bibliothèque ProvabilityLogic à
-  commit épinglé). L'indépendance de ce champ vis-à-vis de D1/D2/D3 est
-  mesurée par `bump_loeb_fails` ci-dessous. -/
+  « prouvable p ». **Hypothèse explicite de l'interface**, pas un axiome
+  local ni un import : sa non-vacuité est attestée par le témoin externe
+  noyau-vérifié `FormalLogic.GLBridge.loeb_schema` (lake
+  `formal_logic_lean`, PR #15923, bibliothèque ProvabilityLogic à commit
+  épinglé), **cité par référence sans coupler le build**. L'indépendance
+  de ce champ vis-à-vis de D1/D2/D3 est mesurée par `bump_loeb_fails`
+  ci-dessous. -/
   loeb {p : Prop} (h : box (box p → p)) : box p
 
 open ModalProvability
@@ -268,8 +275,8 @@ theorem fairBot_vs_defectBot (hconsis : ¬ box False) :
 HBL (D1, D2, D3 — voir les trois lemmes suivants) mais pas le schéma de
 Löb. Elle prouve qu'aucune preuve de Löb ne peut être dérivée des seules
 D1/D2/D3 : le champ `ModalProvability.loeb` a un contenu propre, et son
-import (le pont GL #15923) est un ajout de substance, pas une redondance
-déguisée en axiome. -/
+attestation externe (le témoin GL #15923, cité par référence) prouve que
+ce contenu propre est réalisable — pas une redondance déguisée en axiome. -/
 private def bump (p : Prop) : Prop := p ∨ ((0 : ℕ) = 1)
 
 private theorem bump_nec {p : Prop} (h : p) : bump p := Or.inl h
@@ -290,9 +297,10 @@ private theorem bump_posIntros {p : Prop} (hp : bump p) : bump (bump p) :=
 `bump False → False` équivaut à la réfutation de `0 = 1`, une tautologie
 décidable), tandis que `bump False` est faux. Löb est donc indépendant des
 dérivées HBL dans ce cadre — l'interface `ModalProvability` en fait un
-champ explicitement importé, dont le témoin noyau-vérifié du dépôt est
+champ postulé (hypothèse explicite que toute instance devra fournir),
+dont le témoin externe noyau-vérifié du dépôt est
 `FormalLogic.GLBridge.loeb_schema` (logique GL, bibliothèque
-ProvabilityLogic, PR #15923). -/
+ProvabilityLogic, PR #15923), cité par référence. -/
 theorem bump_loeb_fails :
     ¬ (bump (bump False → False) → bump False) := by
   intro h
