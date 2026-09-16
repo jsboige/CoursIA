@@ -223,10 +223,16 @@ jobs:
           # 783 (main pur, mesure) + 28 = 811 ferme l'arithmetique, et 811
           # EST la collection mesuree sur l'arbre merge (py3.9.25 +
           # numpy 1.26.4, SANS torch -- la forme de l'env CI).
-          - suite-name: "ict/tests/ (44 package)"
+          # Floor 822 -> 846 (cette PR) : +24 items case 3 confabulation
+          # broadcast #8182 (ict/tests/test_confabulation_broadcast.py) --
+          # 822 main pur + 24 = 846, mesure sur l'arbre MERGE (py3.9-slim,
+          # numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 + pandas 2.3.3,
+          # SANS torch -- la forme de l'env CI) ; decomposition verifiee
+          # par collecte isolee du fichier (24).
+          - suite-name: "ict/tests/ (45 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
-            test-floor: 822
+            test-floor: 846
 
     steps:
       - uses: actions/checkout@v4
