@@ -2648,9 +2648,14 @@ def _lift_participle_after(head: str, end: int) -> bool:
 #       « Chronologie du blocage »).
 #   « Resume : BLOCAGE — run rouge »    -> idem.
 #   « Contexte : BLOCAGE »              -> idem.
-# Le trou exclut donc les bornes de phrase et de clause (`.`, `!`, `?`, `;`)
-# ainsi que le deux-points : la fenetre ne peut plus relier le nom a un mot de
-# narration qui appartient a une AUTRE phrase. La regle des deux-points vaut
+# Le trou exclut donc les bornes de phrase et de clause (`.`, `!`, `?`, `;`,
+# `,`, tiret `—`, trait d'union `-`) ainsi que le deux-points : la fenetre ne
+# peut plus relier le nom a un mot de narration qui appartient a une AUTRE
+# phrase ni a une AUTRE proposition. Les separateurs de clause ont la meme
+# gravite que la fin de phrase sur ce point (mesure ai-01 2026-09-16 :
+# « Resume termine, BLOCAGE maintenu », « Historique court — BLOCAGE
+# maintenu », « Bilan fait, BLOCAGE maintenu » neutralisaient l'emission a
+# tort). La regle des deux-points vaut
 # des lors pour TOUTE la liste -- le `(?!\s*:)` propre a `suite` disparait, il
 # etait le symptome de l'asymetrie, pas le correctif. Le sens de l'erreur est
 # celui du protocole : une emission non reconnue est la dechirure qu'on ferme,
@@ -2658,7 +2663,7 @@ def _lift_participle_after(head: str, end: int) -> bool:
 _NARRATION_BEFORE_RE = re.compile(
     r"\b(?:levee?|levement|je\s+leve|lifted?|retrait|annulation"
     r"|chronologie|historique|etat|resume|recap(?:itulatif)?|bilan"
-    r"|contexte|suite)\b[^\n.!?:;]{0,24}$",
+    r"|contexte|suite)\b[^\n.!?:;,—-]{0,24}$",
     re.IGNORECASE,
 )
 
@@ -2670,9 +2675,10 @@ def _narrated_blockage_before(head: str, i: int) -> bool:
     nom. « ## Chronologie du blocage » : le nom est complément d'un titre de
     narration. Dans les deux cas rien n'est posé (mesure #16005 sur #15846).
 
-    #16006 -- la fenêtre ne franchit ni une fin de phrase ni un deux-points :
-    « Résumé fait. BLOCAGE » et « État : BLOCAGE » sont des EMISSIONS (le mot
-    de narration est hors de la proposition nominale qui porte le nom).
+    #16006 -- la fenêtre ne franchit ni une fin de phrase ni un deux-points
+    ni un séparateur de clause (`,`, `—`, `-`) : « Résumé fait. BLOCAGE »,
+    « État : BLOCAGE » et « Bilan fait, BLOCAGE maintenu » sont des EMISSIONS
+    (le mot de narration est hors de la proposition nominale qui porte le nom).
     """
     return bool(_NARRATION_BEFORE_RE.search(head[:i]))
 

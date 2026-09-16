@@ -2835,6 +2835,41 @@ def test_16006_le_trou_ne_franchit_pas_une_fin_de_phrase():
     ) is None
 
 
+def test_16006_le_trou_ne_franchit_pas_un_separateur_de_clause():
+    """#16006 (2e frontiere, mesure ai-01 2026-09-16) : la classe intermediaire
+    excluait les bornes de PHRASE mais pas les separateurs de CLAUSE — la
+    virgule et les tirets laissaient un mot de narration d'une autre
+    proposition neutraliser l'emission. Quatre reproductions exactes rendaient
+    None au lieu de BLOCK ; les formes canoniques de narration liee au nom
+    restent None (elles ne contiennent aucun separateur dans leur trou)."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé terminé, BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court — BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court - BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Bilan fait, BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-exemples causaux a conserver : la narration liee au nom par la
+    # preposition reste une MENTION — aucun separateur de clause dans le trou.
+    assert mod.classify(
+        "myia-ai-01", "Chronologie du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Levée du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Levée du blocage — en forme canonique"
+    ) is None
+
+
 def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
     """#13083 garde-fou : un verdict positif (APPROVE) qui nomme le BLOCAGE
     d'un autre cycle dans sa narration reste positif — la mention « leve par »
