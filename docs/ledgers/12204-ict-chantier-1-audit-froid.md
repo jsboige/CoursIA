@@ -33,7 +33,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 8 | Certifier | FIRSTHAND (ce cycle) | 2+ (22 lakes) | Lean-formel | **TABLE** — 18/22 lakes à 0 sorry réel (mesuré §P3) |
 | 9 | Élargir l'espace | FIRSTHAND (A3) | **2** (`planning_lean` Admissibility.lean:50 + SW-14 #12263) | Lean-formel + empirique | **TABLE** — promotion mesurée §Tombées (gain) |
 | 10 | Concevoir la règle | FIRSTHAND (ce cycle) | 2+ (GT-16b #12259, GT-20 #12303, SC-27 #12265) | empirique | **TABLE** — le mécanisme comme variable, trois familles |
-| 11 | Descendre sous budget | FIRSTHAND (A6) | **1** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation, témoin connu (budget atteint / blocage) |
+| 11 | Descendre sous budget | FIRSTHAND (A6 + c.1208) | **1 + 1 en instance** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free ; Search-11d #16392 — comptée dès merge, convention op 7) | Lean-formel + empirique | en constitution — 2ᵉ attestation livrée sur substrat indépendant (c.1208) ; promotion TABLE à statuer par A7 |
 | 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **1 directe** (GT-21 #12245) + renfort Loi III non indépendant | empirique-notebook | en constitution — **candidate forte** ; promotion A6 refusée (§Tranche A6) |
 | 13 | Traverser un mur | FIRSTHAND (A6) | **1** (GT-24 #12364 MERGED ; 24b = témoins impossibilité, même substrat) | empirique | en constitution — A6 : 1 attestation, famille 24/24b |
 | 14 | Agréger un collectif | FIRSTHAND (A6) | **1** (`Shapley.lean:614-634` Möbius/Harsanyi, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation ; GaleShapley n'est pas une 2ᵉ (appariement ≠ agrégation) |
@@ -110,6 +110,10 @@ Mandat §4bis : « A6 est donc une décision, plus une enquête. » Vérificatio
 **File d'attente — point fixe.** Second usage de Knaster-Tarski : `git grep -il knaster -- "*.lean"` → `argumentation_lean/Argumentation.lean` + `Argumentation/Characteristic.lean` (+ sibling `_en`) — un seul locus substantiel après dédoublonnage FR/EN (racine et module du même lake). Pas de second usage indépendant atterri : la promotion « dès le second usage » reste en attente.
 
 **Bilan A6** : quatre opérations statuées, zéro promotion, zéro descente. La table reste à **6 opérations en TABLE** (1, 4, 7, 8, 9, 10), **4 en file d'attente** (2, 3, 5, 6), **4 en constitution — toutes quatre FIRSTHAND désormais**. Reste **A7** (relecture froide : la table est-elle un catalogue ? une quatrième loi est-elle apparue ?) — dernier grain.
+
+## Tranche c.1208 (2026-09-16, po-2026:CoursIA-2) — op 11 : 2ᵉ attestation livrée (PR #16392)
+
+**Op 11 — FIRSTHAND (ce cycle), 2ᵉ attestation sur substrat indépendant.** `Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb` (série Search, Python stdlib, exécuté papermill, 0 erreur) : knapsack 0/1, potentiel Φ = −valeur, voisinage bit-flip, barrière = borne LP relaxée, budget = plafond d'évaluations. La loi de `Descent.lean` y est **exercée** (asserts runtime sur 60 exécutions : 0 violation `hstrict`, 0 violation `hbarrier`, 0 dépassement de plafond) et sa troisième hypothèse **réfutée exécutablement** : `hnostall` est fausse dans un paysage générique (100 % d'arrêts « blocage » hors cible à budget généreux, gap médian 10,4 %) — la dissociation budget-vs-blocage exigée par `Descent.lean` l.148 est mesurée dans deux régimes (budget serré : 30/30 arrêts « budget » sur 30 graines ; budget généreux : 60/60 arrêts « blocage » hors cible sur 60 graines) ; courbe qualité-budget médiane 86,3 % → 8,9 % (B ∈ {20..800}, 30 seeds, saturation = optima locaux). **Verdict : reste en constitution jusqu'au merge** (convention op 7 : non comptée tant qu'OPEN) — la promotion en TABLE appartient à A7, qui tranche sur deux attestations indépendantes (Lean-formel + empirique-notebook).
 
 ## Références
 

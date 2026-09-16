@@ -206,7 +206,7 @@ L'héritage du genre se déduit de la question même de G-VAR-1 : « qu'est-ce q
 
 **Tier du REPAIR** : litmus habituel. Un REPAIR qui demande une **ré-exécution complète + diagnostic de ratchet** est `MED` ; un REPAIR d'**une ligne de body** reste `LIGHT` et consomme le budget G-VAR-2 — pas d'exception. Depuis le durcissement #15793 (§12), un REPAIR `MED` ne tient plus le plancher G-VAR-1 : le tableau du rule dit « grain de contenu **au-delà** du plancher ».
 
-**Sources de l'arbitrage** : ticket [#11815](https://github.com/jsboige/CoursIA/issues/11815) (escalade formelle po-2023 après 3 cycles G-VAR-1 non-tenu sur REPAIR de notebooks ; DM `msg-20260819T163135-h66acw`, arbitrage `msg-20260819T171752-4jd3od`). La clause en codifie la lecture **au cas** en forme **durable**, sous sign-off user (CLAUDE.md §A).
+**Sources de l'arbitrage** : ticket [#11815](https://github.com/jsboige/CoursIA/issues/11815) (escalade formelle po-2023 après 3 cycles G-VAR-1 non-tenu sur REPAIR de notebooks ; DM `msg-20260819T163135-h66acw`, arbitrage `msg-20260819T171752-4jd3od`). La clause en codifie la lecture **au cas** en forme **durable** ; ce changement normatif substantiel a été soumis au sign-off user conformément à CLAUDE.md §A.
 
 ## Voir aussi
 
