@@ -109,7 +109,7 @@ Ces dépendances **ne sont pas figées** : les notebooks trackés utilisent prob
 - **#9914** — PR d'archive c.1284 (`feature/c1284-9535-port-py-plan-archive`) qui a supprimé `PORT_PYTHON_PLAN.md` + `PORT_PYTHON_PLAN.en.md`
 - **#1650** — EPIC traduction multilingue (interdit de traduire des fichiers transitoires)
 - `MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-1..7.ipynb` — track Decision Theory en PyMC
-- `MyIA.AI.Notebooks/Probas/Pyro_RSA_Hyperbole.ipynb` — précédent Pyro
+- `MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb` — précédent Pyro
 - `docs/reference/mbml-source-attribution.md` — modèle de référence suivi pour ce document (note *« ce qui est pérenne et ce qui ne l'est pas »*)
 
 ## Historique
