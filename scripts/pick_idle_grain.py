@@ -1781,6 +1781,87 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     return organs
 
 
+# #15764 : clauses du message FAIL du gate agregateur (scripts/pr_gate.py
+# `verdict`, #15693/#15905). "failing checks:" porte les VRAIS rouges ; les
+# deux clauses "checks that hit their declared timeout-minutes" / "checks
+# that never concluded" portent les constituants COUPES, chaque entree
+# pouvant trainer son annotation "name (conclusion, duree)". C'est la seule
+# preuve causale BORNEE : ce message NOMME, pour CET agregateur, les
+# constituants qui l'ont fait echouer -- la coexistence d'un CANCELLED
+# quelconque dans le rollup ne prouve rien (review #15764).
+_GATE_FAILED_CLAUSE_RE = re.compile(r"failing checks:\s*(?P<names>[^;]+)")
+_GATE_CUT_CLAUSE_RE = re.compile(
+    r"(?:checks that hit their declared timeout-minutes"
+    r"|checks that never concluded)[^:]*:\s*(?P<names>[^;]+)")
+
+
+def _split_gate_entries(chunk: str) -> list[str]:
+    """Noms nus d'une liste d'entrees du message FAIL.
+
+    Separe sur les virgules HORS parentheses (une entree coupee porte son
+    annotation "name (cancelled, 29m13s)", qui contient une virgule), puis
+    retire l'annotation finale pour ne garder que le nom.
+    """
+    names: list[str] = []
+    for entry in re.split(r",\s*(?![^()]*\))", chunk.strip()):
+        name = re.sub(r"\s*\([^()]*\)\s*$", "", entry).strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def parse_gate_failure(message: str) -> tuple[list[str], list[str]]:
+    """(vrais_rouges_nommes, coupes_nommes) depuis un message FAIL du gate.
+
+    Rend ([], []) quand le message n'est pas un FAIL (DWELL, STARVED,
+    annotation illisible) : l'absence de preuve est tranchee FAIL-CLOSED par
+    l'appelant -- jamais en exemption.
+    """
+    if not isinstance(message, str) or "FAIL -- " not in message:
+        return [], []
+    failed: list[str] = []
+    cut: list[str] = []
+    m = _GATE_FAILED_CLAUSE_RE.search(message)
+    if m:
+        failed = _split_gate_entries(m.group("names"))
+    for m in _GATE_CUT_CLAUSE_RE.finditer(message):
+        chunk = m.group("names")
+        # La clause timeout embarque sa guidance apres " -- " : les noms
+        # s'arretent au premier separateur, sinon la guidance serait prise
+        # pour un constituant.
+        dash = chunk.find(" -- ")
+        if dash != -1:
+            chunk = chunk[:dash]
+        cut.extend(_split_gate_entries(chunk))
+    return failed, [n for n in cut if n]
+
+
+def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
+    """(vrais rouges, coupes) NOMMES par le message FAIL du gate lui-meme.
+
+    L'annotation ``::error::[pr-gate] FAIL -- ...`` du check-run porte le
+    verdict du gate -- la seule surface qui nomme, pour CET agregateur, les
+    constituants qui l'ont fait echouer, clause par clause. Best-effort et
+    fail-closed comme ``fetch_check_organs`` : annotations illisibles ou
+    verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
+    """
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+        return [], []
+    failed: list[str] = []
+    cut: list[str] = []
+    for ann in annotations or []:
+        ann_failed, ann_cut = parse_gate_failure(ann.get("message") or "")
+        failed.extend(ann_failed)
+        cut.extend(ann_cut)
+    return failed, cut
+
+
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
     """Cles de CAUSE d'un check rouge, pas de son nom de job (#14537, #14567).
 
@@ -1906,10 +1987,44 @@ def cut_constituents(contexts: list[dict]) -> tuple[list[str], bool]:
     return cut, real_red
 
 
+def gate_evidence_for(state: dict, cache: dict[int, tuple[list[str], list[str]]],
+                      ) -> dict[str, tuple[list[str], list[str]]] | None:
+    """Preuve causale bornee pour les agregateurs candidats a l'exemption.
+
+    Ne paie l'appel d'annotations QUE si le rollup presente deja la
+    configuration candidate (un constituant coupe, aucun vrai rouge, un
+    agregateur requis en FAILURE) -- sinon rend None et ``blocking_causes``
+    reste fail-closed. Un agregateur sans ``databaseId`` n'est pas sonde :
+    pas de preuve possible, pas d'exemption (#15764).
+    """
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut, real_red = cut_constituents(contexts)
+    if not cut or real_red:
+        return None
+    evidence: dict[str, tuple[list[str], list[str]]] = {}
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if not is_aggregator_check(name):
+            continue
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict != "FAILURE" or not ctx.get("isRequired"):
+            continue
+        run_id = ctx.get("databaseId")
+        if run_id is None:
+            continue
+        if run_id not in cache:
+            cache[run_id] = fetch_gate_cut_evidence(run_id)
+        evidence[name] = cache[run_id]
+    return evidence or None
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
-                    resolved_keys_by_name: dict[str, set[str]] | None = None
+                    resolved_keys_by_name: dict[str, set[str]] | None = None,
+                    gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -1980,18 +2095,38 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             # « check requis en echec » et la lane repare. On ne dispense
             # jamais d'une reparation reelle ; on cesse seulement d'en
             # prescrire une qui n'existe pas.
+            #
+            # #15764 (review bloquante) : la coexistence d'un constituant
+            # COUPE dans le rollup n'etablit PAS la causalite -- un gate
+            # echoue aussi sur DWELL, une regle interne ou un constituant
+            # reel que la dedup temporelle a masque, pendant qu'un advisory
+            # independant est coupe par `concurrency`. La preuve causale
+            # bornee est le message FAIL du gate LUI-MEME (annotations du
+            # check-run, `fetch_gate_cut_evidence`) : il NOMME les
+            # constituants qui l'ont fait echouer, clause par clause. Sans
+            # preuve -- pas de `gate_evidence`, ou un vrai rouge nomme, ou
+            # des coupes nommes qui ne sont pas dans CE rollup -- on reste
+            # sur « check requis en echec » : fail-closed, la lane repare.
             if is_aggregator_check(name) and cut and not real_red:
-                cause = (
-                    f"{name} rouge par constituant(s) COUPE(S), pas par un "
-                    f"defaut de code : {', '.join(cut[:3])} -- NON REPARABLE "
-                    f"par la lane (un kill `timeout-minutes` ou un "
-                    f"`cancel-in-progress` rend `cancelled`, jamais `failure` : "
-                    f"la couleur ne distingue pas « le code est faux » de « la "
-                    f"machine a ete coupee »). Geste : rejouer la jambe "
-                    f"(`gh run rerun <run_id> --job <job_id>`), ou commenter la "
-                    f"PR pour imputer le rouge a la base puis `--ignore-red`. "
-                    f"Ne PAS chercher quoi corriger dans le diff."
-                )
+                evidence = (gate_evidence or {}).get(name)
+                named_failed = list(evidence[0]) if evidence else []
+                named_cut = list(evidence[1]) if evidence else []
+                corroborated = [n for n in named_cut if n in cut]
+                if evidence is not None and not named_failed and corroborated:
+                    cause = (
+                        f"{name} rouge par constituant(s) COUPE(S), nommes par son "
+                        f"propre message FAIL -- pas par un defaut de code : "
+                        f"{', '.join(corroborated[:3])} -- NON REPARABLE "
+                        f"par la lane (un kill `timeout-minutes` ou un "
+                        f"`cancel-in-progress` rend `cancelled`, jamais `failure` : "
+                        f"la couleur ne distingue pas « le code est faux » de « la "
+                        f"machine a ete coupee »). Geste : rejouer la jambe "
+                        f"(`gh run rerun <run_id> --job <job_id>`), ou commenter la "
+                        f"PR pour imputer le rouge a la base puis `--ignore-red`. "
+                        f"Ne PAS chercher quoi corriger dans le diff."
+                    )
+                else:
+                    cause = f"check requis en echec : {name}"
             else:
                 cause = f"check requis en echec : {name}"
             if cause not in causes:
@@ -2369,6 +2504,9 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
+    # PRs de la lane dans ce passage, comme organ_cache.
+    gate_cache: dict[int, tuple[list[str], list[str]]] = {}
     unresolved_aggregates: list[tuple[str, int]] = []
     inherited: dict[str, list[int]] = {}
     if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
@@ -2400,7 +2538,8 @@ def red_backlog(lane: str, threshold_hours: float,
                     failed_check_keys(ctx, organ_cache))
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
-                                 resolved_keys_by_name=keys_by_name)
+                                 resolved_keys_by_name=keys_by_name,
+                                 gate_evidence=gate_evidence_for(state, gate_cache))
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
