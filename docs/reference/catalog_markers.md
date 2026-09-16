@@ -1,6 +1,6 @@
 # Catalog Markers - README Auto-Update System
 
-Source-of-truth counts driven by `COURSE_CATALOG.generated.json`. Markers in README files are expanded by `scripts/notebook_tools/expand_catalog_markers.py` and verified by CI on every PR.
+Source-of-truth counts driven by `COURSE_CATALOG.generated.json`. Markers in README files are expanded by `scripts/notebook_tools/expand_catalog_markers.py` and verified by CI on PRs that touch notebooks, series READMEs, or the catalog — the `catalog-drift.yml` workflow is filtered by `paths:`, so it does not run on every PR.
 
 ## Overview
 
@@ -75,7 +75,7 @@ python scripts/notebook_tools/expand_catalog_markers.py
 # Dry-run (show what would change)
 python scripts/notebook_tools/expand_catalog_markers.py --dry-run
 
-# Check for drift (exit 1 if stale, used by CI)
+# Check for drift (exit 1 if stale; local tool -- CI regenerates instead and never calls --check)
 python scripts/notebook_tools/expand_catalog_markers.py --check
 
 # Expand a specific file
@@ -106,9 +106,12 @@ la branche), puis compare le résultat aux fichiers commités par un unique test
 
 **Ce check est advisory, non bloquant** (#15998). Le marqueur `advisory` dans le **nom**
 du job — `Notebook catalog drift (read-only, advisory)` — **est** le contrat :
-`pr_gate.py` classe les checks par nom et ne lit pas `fast_lane_registry.py`. Le job est
-**toujours vert** : une panne d'infrastructure (runner, `pip`, `generate_catalog.py`) ne
-peut donc pas bloquer une PR notebook/README. Le catalogue est régénéré quotidiennement
+`pr_gate.py` classe les checks par nom et ne lit pas `fast_lane_registry.py`. Le job **peut rougir** : seule l'indisponibilité des métadonnées git (`rc=2` de
+`generate_catalog.py`) est absorbée en annotation `notice` ; tout autre échec (runner, checkout,
+`pip`, `generate_catalog.py` hors `rc=2`) exécute `exit "$rc"` et rend le job rouge. Mais ce
+rouge est **exclu des causes bloquantes** : le marqueur `advisory` du nom fait que `PR gate`
+le signale sans bloquer — une panne d'infrastructure est remontée, jamais bloquante pour une PR
+notebook/README (contrôle positif #16015). Le catalogue est régénéré quotidiennement
 sur `main` par `catalog-cron.yml` ; **aucune action manuelle n'est requise sur une branche
 de feature** (cf [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md), #2632).
 
