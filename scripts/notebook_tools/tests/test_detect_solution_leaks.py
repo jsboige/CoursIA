@@ -26,6 +26,7 @@ from detect_solution_leaks import (
     commented_template_stub,
     discover_notebooks,
     display_path,
+    get_parent_header_key,
     is_stub_code,
     scan_notebook,
 )
@@ -1140,6 +1141,114 @@ class TestMultiHeaderAttributionFix:
         highs = [f for f in findings if f.get("severity") == "HIGH"]
         assert len(highs) == 1
         assert "Exercice 3" in highs[0]["message"]
+
+
+class TestGetParentHeaderKeyInCellAncestors:
+    """Regression for the layout-dependent false negative where a parent
+    heading living in the SAME markdown cell as the exercise header was
+    invisible to ``get_parent_header_key`` (the backward walk started at
+    ``idx - 1``). Two notebooks with semantically identical hierarchy
+    produced different duplicate verdicts depending on cell boundaries.
+    """
+
+    def test_separate_cells_duplicate_still_flagged(self, tmp_path):
+        # Positive control (pre-existing behaviour). Two `### Exercice 1`
+        # cells under the same `## Exercices` parent cell: one MEDIUM
+        # duplicate finding. The separate-cell layout has always reported
+        # this; the test guards against the in-cell fix regressing it.
+        nb = _write_nb(
+            tmp_path / "separate.ipynb",
+            [
+                _md("## Exercices\n\nIntro."),
+                _md("### Exercice 1 : a faire"),
+                _md("### Exercice 1 : encore un"),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        dups = [f for f in findings if f.get("severity") == "MEDIUM"
+                and "Duplicate" in f.get("message", "")]
+        assert len(dups) == 1, (
+            f"separate-cell layout must still flag one duplicate, got: "
+            f"{[f.get('message') for f in findings]}"
+        )
+        assert dups[0]["cell_index"] == 2
+
+    def test_in_cell_parent_layout_duplicate_now_flagged(self, tmp_path):
+        # The fix: when the parent `## Exercices` sits in the SAME cell as
+        # the first `### Exercice 1`, the parent key was previously
+        # computed against the preceding cell's last header (often absent),
+        # making the two `### Exercice 1` cells appear under distinct
+        # parents and ZERO duplicate findings reported. After the fix,
+        # the in-cell parent is collected first, both exercise cells
+        # resolve to the same parent key, and the duplicate surfaces.
+        nb = _write_nb(
+            tmp_path / "incell.ipynb",
+            [
+                _md("## Exercices\n\nIntro.\n\n### Exercice 1 : a faire"),
+                _md("### Exercice 1 : encore un"),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        dups = [f for f in findings if f.get("severity") == "MEDIUM"
+                and "Duplicate" in f.get("message", "")]
+        assert len(dups) == 1, (
+            f"in-cell parent layout must now report one duplicate "
+            f"(was 0 before the fix), got: "
+            f"{[f.get('message') for f in findings]}"
+        )
+        assert dups[0]["cell_index"] == 1
+
+    def test_in_cell_key_matches_separate_cell_key(self):
+        # Direct unit-level guarantee: the parent key produced by the
+        # in-cell layout equals the one produced by the separate-cell
+        # layout for the same logical hierarchy. Without this, the
+        # duplicate scan would still differ between the two layouts even
+        # with the in-cell fix in place (e.g. if the walk order changed
+        # which ancestor got recorded first).
+        cells_separate = [
+            _md("## Exercices"),
+            _md("### Exercice 1"),
+        ]
+        cells_incell = [
+            _md("## Exercices\n\nIntro.\n\n### Exercice 1"),
+        ]
+        key_separate = get_parent_header_key(
+            cells_separate, 1, current_level=3)
+        key_incell = get_parent_header_key(
+            cells_incell, 0, current_level=3)
+        assert key_separate == key_incell, (
+            f"in-cell parent key ({key_incell!r}) must equal separate-cell "
+            f"parent key ({key_separate!r}) for identical hierarchy"
+        )
+        assert key_separate != "root"
+
+    def test_in_cell_outside_heading_collected(self):
+        # The in-cell scan must pick up strictly-lower-level ancestors in
+        # document order, joined outermost-first. Here a top-level
+        # `## Exercices` (level 2) is in the same cell as `### Exercice 1`
+        # (level 3); the parent key must contain the level-2 segment.
+        cells = [
+            _md("## Exercices\n\n### Exercice 1"),
+        ]
+        key = get_parent_header_key(cells, 0, current_level=3)
+        assert "2:Exercices" in key, (
+            f"expected level-2 ancestor in key, got {key!r}"
+        )
+
+    def test_in_cell_exercise_heading_self_excluded(self):
+        # The exercise heading itself (level == current_level) must NOT
+        # be added to the parent key, neither from the in-cell scan nor
+        # the backward walk. Otherwise `3:Exercice 1` would pollute the
+        # key and distinct exercises would collide on a non-existent
+        # shared ancestor.
+        cells = [
+            _md("## Exercices\n\n### Exercice 1"),
+        ]
+        key = get_parent_header_key(cells, 0, current_level=3)
+        assert "3:Exercice 1" not in key, (
+            f"exercise heading must be excluded from parent key, got "
+            f"{key!r}"
+        )
 
 
 # ---------------------------------------------------------------------------

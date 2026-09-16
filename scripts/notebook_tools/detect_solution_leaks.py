@@ -220,16 +220,38 @@ def get_parent_header_key(cells, idx, current_level=0) -> str:
             if matches:
                 current_level = _header_level(matches[-1])
 
-    # 2. Walk backwards, accumulating ancestors whose level is STRICTLY lower
-    #    than the exercise header. The first header we encounter at a given
-    #    level is the innermost ancestor of that level (closest to the
-    #    exercise). We then OVERWRITE it if a closer cell at the same level
-    #    appears later in the scan (but no closer header at strictly lower
-    #    level exists, so the previous strictly-lower header is the canonical
-    #    ancestor for its level).
+    # 2. Qualifying ancestors IN THE CURRENT CELL (level strictly lower than
+    #    the exercise header). The walk below only sees cells idx-1..0; a
+    #    parent heading that lives in the SAME markdown cell as the exercise
+    #    would be missed otherwise — a layout-dependent false negative where
+    #    the only difference between two notebook layouts is where the cell
+    #    boundary falls. Collect them first so the backward walk's
+    #    `seen_levels` guard deduplicates if the same level also appears in a
+    #    preceding cell.
     ancestors = []  # list of (level, text) ordered innermost first
     seen_levels = set()
     found_any = False
+    if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+        for header_line in HEADER_LINE_RE.findall(''.join(
+                cells[idx].get('source', []))):
+            level = _header_level(header_line)
+            if level <= 0 or level >= current_level:
+                continue  # siblings/cousins of the exercise, not ancestors
+            if level in seen_levels:
+                continue
+            ancestors.append((level, re.sub(r'^#+\s*', '', header_line)))
+            seen_levels.add(level)
+            found_any = True
+            if 1 in seen_levels:
+                break  # outermost — cannot have anything outside it
+
+    # 3. Walk backwards across preceding cells, accumulating ancestors whose
+    #    level is STRICTLY lower than the exercise header. The first header we
+    #    encounter at a given level is the innermost ancestor of that level
+    #    (closest to the exercise). We then OVERWRITE it if a closer cell at
+    #    the same level appears later in the scan (but no closer header at
+    #    strictly lower level exists, so the previous strictly-lower header
+    #    is the canonical ancestor for its level).
     for k in range(idx - 1, -1, -1):
         cell = cells[k]
         if cell.get('cell_type') != 'markdown':
