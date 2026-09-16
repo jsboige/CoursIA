@@ -68,7 +68,7 @@ Les notebooks utilisent principalement **Python 3.10+** (PyTorch, OR-Tools, PyMC
 
 **Fil conducteur** : prouver des theoremes classiques (Arrow, Conway, Kochen-Specker) en Lean 4, utiliser des solveurs (Z3, OR-Tools), et explorer les logiques non-classiques.
 
-**Entree recommandee** : [Lean-1-Setup](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) configure l'environnement Lean 4 (kernel WSL). Puis [Tweety-2](../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb) pour les fondamentaux logiques.
+**Entree recommandee** : [Lean-1-Setup](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) configure l'environnement Lean 4 (kernel WSL). Puis [Tweety-2](../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) pour les fondamentaux logiques.
 
 **Etapes cles** : Lean 4 (16 nb, theoremes portes) → Tweety (logiques, argumentation) → Planners (PDDL, Fast-Downward) → SmartContracts (Solidity, verification formelle). Les series Lean et SymbolicAI sont partagees avec le **Parcours A** ; ici on les lit comme le coeur de la verification formelle (la preuve comme garantie, pas comme exploration).
 

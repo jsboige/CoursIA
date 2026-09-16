@@ -328,6 +328,49 @@ def test_elagage_rejette_le_spawn_dans_la_fenetre() -> None:
     assert not s._spatial_ok(state0, (gspawn, bspawn), ev1, consumed)
 
 
+def test_elagage_r3_bande_chebyshev_2_passe_le_modele() -> None:
+    """Contrat R3 du code (schéma §Fenêtres spatiales) : le rejet du modèle
+    tombe à < 2 (influence directe, voisinage 3x3) ; la bande à exactement 2
+    passe l'élagage — c'est le replay de certification qui tranche
+    (naissances croisées contenu-dépendantes, cf la leçon mesurée)."""
+    state0, _, ev0 = _state_after_e0()
+    goal = lc.OBJECTIVES["two_blocks_catalyse_free"]
+    s = lc.Searcher(CATALOG, goal, node_budget=10)
+    reaction = CATALOG.reactions[ev0.reaction_id]
+    window_ever: set = set()
+    for cells in lc.reaction_window_cells(CATALOG, reaction, ev0.offset):
+        window_ever |= cells
+    block_phase0 = lc._motif_phases(CATALOG, "block")[0]
+
+    def block_cells(anchor: tuple[int, int]) -> set:
+        return {(x + anchor[0], y + anchor[1]) for (x, y) in block_phase0}
+
+    def in_clearance(cell: tuple[int, int]) -> bool:
+        for x0, y0, w, h in reaction.clearance:
+            abs_rect = (x0 + ev0.offset[0], y0 + ev0.offset[1], w, h)
+            if lc._rect_contains_cell(abs_rect, cell):
+                return True
+        return False
+
+    def anchor_at_distance(d: int) -> tuple[int, int]:
+        for x in range(-8, 24):
+            for y in range(-8, 24):
+                cells = block_cells((x, y))
+                if lc._min_chebyshev(cells, window_ever) == d and not any(
+                    in_clearance(c) for c in cells
+                ):
+                    return (x, y)
+        raise AssertionError(f"aucune ancre de bloc à distance {d} hors clearance")
+
+    consumed = {lc.handle_key(b) for b in ev0.bindings}
+    # distance 1 : bande d'influence directe -> rejet par le modèle
+    b1 = lc.Spawn("block", anchor_at_distance(1), 0)
+    assert not s._spatial_ok(state0, (b1,), ev0, consumed)
+    # distance exactement 2 : passe l'élagage, le replay décidera
+    b2 = lc.Spawn("block", anchor_at_distance(2), 0)
+    assert s._spatial_ok(state0, (b2,), ev0, consumed)
+
+
 # ---------------------------------------------------------------------------
 # Budgets (critere 3 : contraintes bornées)
 # ---------------------------------------------------------------------------

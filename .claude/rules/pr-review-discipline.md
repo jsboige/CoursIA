@@ -4,6 +4,8 @@ S'applique à **tous les reviewers**, humains et bots (clusterManager-Myia, jsbo
 
 **Exception — PRs de TP étudiantes (mandat user 2026-05-20).** Les critères A-H ci-dessous visent les PRs **internes/contributeurs**. Les PRs **étudiantes** suivent [student-pr-reviews.md](student-pr-reviews.md) : review **bienveillante**, bypass template + CI, **pas de CHANGES_REQUESTED** sur scaffolding. Ne PAS appliquer A-H à un TP étudiant.
 
+**Contributeurs publics.** Les critères de fond A-H restent applicables à une PR publique ordinaire, mais le triage, le ton et l'escalade suivent [public-contribution-triage.md](public-contribution-triage.md) : aider à qualifier et corriger, jamais opposer un verdict abrupt ou impersonnel. Une correction volontaire d'exercice suit en plus [exercise-example-labeling.md](exercise-example-labeling.md).
+
 **Contexte, incidents fondateurs, workflow ai-01, anti-patterns détaillés** : [docs/reference/pr-review-context.md](../../docs/reference/pr-review-context.md).
 
 ## Émission du verdict — un point qui tient le merge porte un marqueur (HARD, #14682)

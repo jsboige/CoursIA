@@ -1,0 +1,60 @@
+name: Signaler ou proposer un contenu
+description: Signaler une erreur, suggérer une amélioration ou proposer un contenu à distiller
+title: "[Contribution] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de contribuer à CoursIA. Un agent peut assurer le premier triage et vous répondra avec bienveillance. La demande sera escaladée vers un mainteneur humain ou un spécialiste si nécessaire.
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Type de contribution
+      description: Choisissez l'option la plus proche de votre demande.
+      options:
+        - Erreur ou coquille
+        - Suggestion d'amélioration
+        - Nouveau contenu ou nouvelle source à distiller
+        - Autre
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Emplacement concerné
+      description: Chemin du notebook, section, cellule, URL ou autre repère. Facultatif pour une proposition entièrement nouvelle.
+      placeholder: MyIA.AI.Notebooks/.../notebook.ipynb, cellule ou URL
+
+  - type: textarea
+    id: observation
+    attributes:
+      label: Constat ou proposition
+      description: Décrivez le problème observé ou le contenu que vous proposez.
+      placeholder: Ce que vous avez constaté, compris ou souhaitez voir ajouté.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources ou références
+      description: Ajoutez, si possible, une source vérifiable, une documentation officielle ou un exemple reproductible.
+      placeholder: Liens, citation, commande ou résultat observé.
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Résultat attendu ou intérêt pédagogique
+      description: Qu'est-ce qui devrait changer, et en quoi cela aiderait-il les lecteurs ?
+      placeholder: Correction attendue, angle pédagogique ou objectif d'apprentissage.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Données publiques
+      options:
+        - label: Je confirme ne pas inclure de secret, de copie étudiante, de note ni de donnée personnelle non destinée à être publique.
+          required: true

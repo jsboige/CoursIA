@@ -1,58 +1,81 @@
-# User-blocker signaling — detail
+# User-blocker signaling — détail
 
-Detail de [.claude/rules/user-blocker-signaling.md](../../.claude/rules/user-blocker-signaling.md). Voir aussi [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md), [proactive-coordination.md](../../.claude/rules/proactive-coordination.md).
+Détail de [.claude/rules/user-blocker-signaling.md](../../.claude/rules/user-blocker-signaling.md). Voir aussi [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) et [proactive-coordination.md](../../.claude/rules/proactive-coordination.md).
 
-## Source mandate (2026-05-28T12:48Z)
+## Deux mandats, une seule règle actuelle
 
-Apres l'episode audiobook #1273 ou la validation subjective restait pendante depuis plusieurs cycles sans qu'aucun agent ne re-amorce la demande.
+### Mandat initial — visibilité (2026-05-28T12:48Z)
 
-Verbatim user :
-> "Globalement quand c'est moi qui bloque, il faut que les agents me le signalent dans un message en fin de session. Comme il y a des wakeup, ca peut se diluer sans que je m'en rende compte, mais il faut en remettre une couche a chaque fin de session en attendant le wakeup, ou bien alors il faut que toi tu me le signales si ca traine (ex pour les notes a rendre)."
+Après l'épisode audiobook #1273, une validation subjective avait disparu pendant plusieurs cycles. Le user a demandé qu'un blocage dont il porte l'action soit visible en fin de session plutôt que dilué dans un long `[DONE]`.
 
-## Workers (po-2023 / po-2024 / po-2025 / po-2026)
+### Mandat supersédant — arbitrage par pull (2026-09-15, #3656)
 
-1. **Fin de session = tag dedie `[ASK USER]`**, en plus du `[DONE]` :
-   ```
-   [ASK USER] <one-line action attendue> — bloque depuis <N> sessions, attente <X>
-   ```
-   Pas noye dans la prose du rapport. Tag separe, visible.
+Le user a ensuite précisé :
 
-2. **Re-poke a CHAQUE fin de session** tant que l'action user n'est pas faite. Re-afficher avec compteur d'anciennete.
+> « Je prefere que tu gardes tes questions pour la fin de session, et si jamais le cron reprend, que tu les gardes tant qu'elles sont pas repondues dans une memoire que tu dois restituer en fin de session. Ca va demander une MAJ du harnais global en coordination avec roo-extensions »
 
-3. **Ping direct au prochain passage user** : si le worker detecte une session interactive user (message user recu pendant le tour), presenter le bloqueur **en premier** dans la reponse, pas apres le travail technique.
+Et pour les plans :
 
-4. **Plafond escalation** : apres **5 sessions sans action user** (~15h en cron 3h), escalader vers ai-01 via `roosync_messages send` (priority HIGH).
+> « Pour le mode plan utilisez un scratchpad et si une validation utilisateur est necessaire, donner le chemin du scratchpad en fin de session »
 
-## Coordinateur (ai-01)
+Le second mandat conserve le but du premier — aucun blocage ne disparaît — mais retire son mécanisme répétitif. La visibilité vient désormais d'une **restitution unique en fin de session**, alimentée par une mémoire durable, et non de messages répétés pendant le cycle.
 
-1. **Section dediee "Actions user en attente"** en tete du briefing `/coordinate` au debut de **chaque** wakeup. Tableau avec anciennete en cycles + machine + une-ligne d'action. Toujours en haut.
+## Support canonique
 
-2. **Escalation timer** : si un bloqueur user depasse **3 cycles (~9h)** sans action, post explicite `[ESCALATION USER]` sur dashboard workspace en tete du rapport courant.
+Chaque workspace tient un fichier :
 
-3. **Signaler proactivement** quand le user est en session interactive sur ai-01 et que **n'importe quel** bloqueur user (sur n'importe quelle machine) traine.
+`~/.claude/projects/<hash>/memory/user-question-registry.md`
 
-4. **Fin de session ai-01 = rappeler les blocs user actifs** dans le resume final, meme si rien n'a change ce cycle.
+Il est indexé dans `MEMORY.md` pour être rechargé après reprise ou cron. Une entrée ouverte contient au minimum :
+
+| Champ | Rôle |
+|---|---|
+| Question / action | décision ou geste précis, sans contexte implicite |
+| Attendu du user | ce que le user doit fournir ou décider |
+| Critère de mort | preuve observable qui permet de retirer l'entrée |
+| Ouverte depuis | date/cycle pour conserver l'ancienneté sans re-poke |
+
+Le registre porte deux sections courtes : **ouvertes** et **répondues**. Une entrée ne quitte les ouvertes qu'après réponse user et vérification de son critère de mort. Elle passe alors dans « répondues » ; elle n'est jamais auto-expirée.
+
+## Cycle worker et coordinateur
+
+1. Dès qu'une question non bloquante apparaît, l'agent l'ajoute ou la met à jour dans le registre — sans l'adresser dans le fil.
+2. Le travail non bloqué continue (`always-pick-next`).
+3. En fin de session, l'agent restitue en **un bloc** toutes les entrées ouvertes pertinentes.
+4. Au cycle suivant, `MEMORY.md` rend le registre retrouvable ; les entrées ouvertes sont restituées à nouveau en fin de session si elles n'ont pas été répondues.
+5. Une réponse user déclenche la vérification du critère de mort puis le déplacement vers « répondues ».
+
+Le coordinateur agrège de la même manière les questions des lanes : il ne maintient pas une seconde table dashboard. Si un tag `ASK`, `[ASK USER]` ou une section « Actions user en attente » est utile pour signaler le bloc final, ce signal **référence le registre** et ne devient jamais le stockage de l'état.
+
+## Migration de l'ancienne règle
+
+Les prescriptions suivantes sont retirées parce qu'elles créaient précisément les interruptions et listes divergentes interdites par #3656 :
+
+- re-poke à chaque fin de payload ou wakeup ;
+- ping en premier dès qu'un message user arrive ;
+- compteurs d'escalade automatiques à 3 ou 5 cycles ;
+- table « Actions user en attente » entretenue séparément du registre ;
+- copie d'une même question dans `[ASK USER]`, dashboard, DM et rapport final.
+
+La suppression ne retire aucune protection : la persistance vient du fichier mémoire, l'ancienneté reste un champ, et la restitution finale conserve la visibilité demandée en mai.
+
+## Plans avec validation
+
+Un plan qui nécessite une validation user est écrit dans le scratchpad (`$TEMP`). Le registre contient la question, l'attendu et le critère de mort ; le rapport final donne le **chemin du scratchpad**. Le plan n'est pas recopié dans le fil.
 
 ## Anti-patterns interdits
 
-- **Diluer dans un rapport DONE long** : le user ne scrolle pas, signal noye = perdu.
-- **Attendre passivement le wakeup suivant** sans re-poke : la dilution mandate vient explicitement de la.
-- **Mentionner une fois puis disparaitre** : re-poster chaque fin de session.
-- **Lister 5 user-blocks d'un coup en bloc** : hierarchiser par priorite reelle (notes a rendre = urgent calendaire ; validation audiobook = pas calendaire).
-- **Inverser la responsabilite** : "le user n'a pas regarde, c'est bloque" sans re-pinger = faute de l'agent.
+- Poser une question en milieu de session alors qu'elle peut attendre la restitution finale.
+- Arrêter tout le cycle pour une question non bloquante.
+- Ouvrir une entrée sans attendu explicite ou sans critère de mort.
+- Auto-expirer une question faute de réponse.
+- Maintenir une liste dashboard parallèle au registre mémoire.
+- Répéter la question à chaque wakeup au lieu de laisser le registre assurer la continuité.
+- Copier un plan complet dans le fil au lieu de rendre son chemin scratchpad.
 
-## Categories actuelles user-blocking (exemples, etat 2026-05-28)
+## Interaction avec les autres règles
 
-| Categorie | Detail | Anciennete | Urgence calendaire |
-|-----------|--------|------------|---------------------|
-| ESGF GForm CSV peer-evals | Export manuel CSV depuis GForm pour `GradeBookApp` | Plusieurs cycles | OUI — soutenances 26+29 mai |
-| Confirmation grades Gr03 ESGF | Decision user cas borderline | Plusieurs cycles | OUI — meme fenetre |
-| Validation subjective audiobook | Ecoute Act 1+2 tags-only FishAudio | Plusieurs cycles | NON |
-| Sign-off batch delete branches ZERO-DIFF | ~78 branches | Plusieurs cycles | NON — hygiene |
-| Sign-off relance Jared Broad | Decision "QC bien en ordre" | En cours | NON — conditionne gates QC |
-
-## Interaction avec autres regles
-
-- **[coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md)** "Aucune demande user ne pourrit > 1 cycle" : cette regle = l'inverse symetrique (quand c'est le user qui pourrit cote action).
-- **CLAUDE.md section A** "Reporting dashboard" : `[ASK USER]` en plus des posts debut/livraison/fin, pas a la place.
-- **CLAUDE.md G.7** "Stagnation cross-cycle = escalade" : applicable user-block > 5 cycles.
+- **Harnais global #3656** : `.claude/configs/user-global-claude.md` définit le contrat machine-global ; cette règle CoursIA en est le renvoi workspace.
+- **[coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md)** : les obligations agent restent dans le ledger turn-local ; seules les questions user traversant les sessions vont dans ce registre.
+- **CLAUDE.md reporting dashboard** : un signal `ASK` reste possible, mais le dashboard ne porte pas l'état durable et ne duplique pas les entrées.
+- **`always-pick-next`** : une question ouverte exclut uniquement le geste qui en dépend ; elle n'arrête pas les autres grains.

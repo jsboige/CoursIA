@@ -123,5 +123,68 @@ class TestRenameAwareness(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
+class TestPerimeterIsStated(unittest.TestCase):
+    """Acceptance #16040 : la portee du LECTEUR est imprimee avant le verdict.
+
+    Le defaut ferme n'est pas un faux vert mais un vert MAL LU : le garde ne
+    compare que les noms dont l'index ouvre le nom, or la convention majoritaire
+    du depot est `<Prefixe>-<num>`. Sans denombrement, « OK » se lisait « aucune
+    collision dans cette serie » au lieu de « aucune collision dans mon
+    perimetre ». Les deux tests ci-dessous portent sur le COMPTE (il doit tirer,
+    pas etre decoratif) et sur sa PRESENCE quand il n'y a rien a verifier.
+    """
+
+    def test_perimeter_line_printed_even_with_no_addition(self):
+        """Le cas ou l'on croit n'avoir rien a verifier est celui ou la portee
+        manque le plus : la ligne sort malgre `added == 0`."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+
+            r = _run_guard(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("aucun notebook ajoute", r.stdout)
+            self.assertIn("PERIMETRE du lecteur d'index", r.stdout)
+            # Les deux notebooks de la fixture portent un index ouvrant : le
+            # compte doit etre MESURE sur la base, pas ecrit en dur.
+            self.assertIn("2/2 notebooks lisibles", r.stdout)
+            self.assertIn("0 a prefixe de serie", r.stdout)
+
+    def test_perimeter_counts_the_majority_convention_out_of_scope(self):
+        """La convention majoritaire (`<Prefixe>-<num>`, lue par `parse_name`
+        mais rendue `None` par `index_key`) doit tomber HORS portee -- c'est
+        exactement l'angle mort que l'issue mesure."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _git(repo, "init", "-q")
+            _git(repo, "config", "user.email", "test@example.invalid")
+            _git(repo, "config", "user.name", "test")
+            _write(repo, "g/GameTheory-04c-NashExistence.ipynb")
+            _write(repo, "g/GameTheory-04d-Pareto.ipynb")
+            _write(repo, "g/README-notes.ipynb")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "base")
+            base = _git(repo, "rev-parse", "HEAD").strip()
+
+            r = _run_guard(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("0/3 notebooks lisibles", r.stdout)
+            self.assertIn("2 a prefixe de serie", r.stdout)
+
+            # Un ajout reel a index LIBRE : la comparaison a effectivement lieu
+            # et ne trouve rien -- c'est le seul vert qui pouvait se mal lire
+            # comme « aucune collision dans cette serie ». Il doit porter sa
+            # borne, la ou le vert « rien a verifier » (added == 0) n'a pas
+            # besoin de la porter puisqu'il ne dit deja rien d'autre.
+            _write(repo, "g/GameTheory-05a-Nouveau.ipynb")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "addition onto free index")
+
+            r = _run_guard(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("aucun index de serie en conflit", r.stdout)
+            self.assertIn("DANS LE PERIMETRE", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
