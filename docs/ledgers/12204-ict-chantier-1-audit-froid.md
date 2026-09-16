@@ -34,7 +34,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 9 | Élargir l'espace | FIRSTHAND (A3) | **2** (`planning_lean` Admissibility.lean:50 + SW-14 #12263) | Lean-formel + empirique | **TABLE** — promotion mesurée §Tombées (gain) |
 | 10 | Concevoir la règle | FIRSTHAND (ce cycle) | 2+ (GT-16b #12259, GT-20 #12303, SC-27 #12265) | empirique | **TABLE** — le mécanisme comme variable, trois familles |
 | 11 | Descendre sous budget | FIRSTHAND (A6 + c.1208) | **1 + 1 en instance** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free ; Search-11d #16392 — comptée dès merge, convention op 7) | Lean-formel + empirique | en constitution — 2ᵉ attestation livrée sur substrat indépendant (c.1208) ; promotion TABLE à statuer par A7 |
-| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **1 directe** (GT-21 #12245) + renfort Loi III non indépendant | empirique-notebook | en constitution — **candidate forte** ; promotion A6 refusée (§Tranche A6) |
+| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **2 directes** (GT-21 #12245 jeux 2×2 + Search-12a #16426 gridworld pondéré — comptée dès merge, convention op 7) | empirique-notebook ×2, substrats indépendants | en constitution — 2ᵉ attestation directe livrée ; promotion TABLE à statuer par la revue (witness form connu : paire incompatible exhibée, Search-12a §5) |
 | 13 | Traverser un mur | FIRSTHAND (A6) | **1** (GT-24 #12364 MERGED ; 24b = témoins impossibilité, même substrat) | empirique | en constitution — A6 : 1 attestation, famille 24/24b |
 | 14 | Agréger un collectif | FIRSTHAND (A6) | **1** (`Shapley.lean:614-634` Möbius/Harsanyi, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation ; GaleShapley n'est pas une 2ᵉ (appariement ≠ agrégation) |
 
