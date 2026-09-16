@@ -89,8 +89,19 @@ def _run_guard(repo: Path, cfg: Path, base: str | None = None) -> subprocess.Com
         args += ["--scan-all"]
     else:
         args += ["--base", base, "--head", "HEAD"]
-    return subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+    r = subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    # #16186 : ce garde parle toujours -- il imprime au moins son denominateur,
+    # quel que soit le verdict. Un stdout vide n'est donc jamais un verdict :
+    # c'est un plantage, et son traceback est dans stderr. Sans ce controle, un
+    # crash sort en 1 (le code attendu d'un refus legitime), l'assertEqual du
+    # returncode passe par coincidence et les assertIn downstream echouent
+    # contre '' sans jamais nommer la cause.
+    if not r.stdout.strip():
+        raise AssertionError(
+            "le garde n'a rien imprime : plantage, pas un verdict "
+            f"(returncode={r.returncode})\n--- stderr ---\n{r.stderr}")
+    return r
 
 
 class TestCaseCanonInAdoptedSeries(unittest.TestCase):
