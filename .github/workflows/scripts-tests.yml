@@ -145,12 +145,12 @@ jobs:
     #         success    30   max 17,4 min
     #         failure    11   max 14,3 min
     #         cancelled   4   20,32-20,43 min
-    # Les 4 cancelled sont des kills au mur de 20 min alors en vigueur sur
-    # main (runs 34788823010, 34839042549, 34924561729, 34934339136) :
-    # dans cette fenetre aucun succes ne depasse 17,4 min, et la queue a
-    # quatre reprises franchi le mur de 20. Fenetre mesuree sous l'ANCIEN
-    # plafond : elle fonde le relevement, elle ne valide PAS un 30
-    # post-merge -- aucun run de main n'a encore execute sous 30.
+    # Les 4 cancelled ont bien ete termines au mur de 20 min, mais les
+    # logs montrent des workers xdist morts puis 14-15 min de silence : ce
+    # sont des hangs que relever le plafond ne repare pas (suivi #16288),
+    # pas quatre cas de queue lente. Le relevement repose sur la marge
+    # preventive : le succes max a 17,4 min ne laisse que 2,6 min sous 20;
+    # 30 laisse ~12,6 min tout en restant sous les bornes 45/52 ci-dessous.
     # (Retraction de la v1 run-level -- 26 runs, mediane 17,5 min, max
     # 19,8 min, 16 annulations -- ecrite en tete du body de #16087.)
     # 30 reste sous les deux plafonds qui l'englobent : l'agregateur
