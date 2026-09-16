@@ -227,8 +227,14 @@ def workflows_skipped_by_base(workflows_dir: Path, base: str,
     return skipped
 
 
-def fetch_changed_files(repo: str, number: int) -> list[str]:
+def fetch_changed_files(repo: str, number: int) -> list[str] | None:
     """Chemins modifies par la PR, sans troncature a 100 fichiers.
+
+    ``None`` = mesure indisponible (``gh pr view --json files`` rend un
+    stdout vide ou un JSON illisible) : fail-closed (CR #16281). Le verdict
+    d'une acquisition indisponible ne doit JAMAIS ressembler a un 0 de
+    mesure reelle -- le caller refuse alors tout verdict au lieu de publier
+    ``files=0`` comme si le garde n'avait rien trouve.
 
     ``gh pr view --json files`` rend la premiere page (100 max) et ne dit pas
     qu'il a coupe. Sous-compter les fichiers sous-compterait la couverture
@@ -244,7 +250,9 @@ def fetch_changed_files(repo: str, number: int) -> list[str]:
     qu'elle devait reparer revenait en silence.
     """
     pr = _gh_json(["pr", "view", str(number), "--repo", repo,
-                   "--json", "files,changedFiles"]) or {}
+                   "--json", "files,changedFiles"])
+    if pr is None:
+        return None
     files = [f.get("path") for f in (pr.get("files") or []) if f.get("path")]
     total = pr.get("changedFiles") or 0
     if len(files) >= total:
@@ -381,7 +389,15 @@ def main(argv: list[str] | None = None) -> int:
         or "jsboige/CoursIA")
 
     pr = _gh_json(["pr", "view", str(args.pr), "--repo", repo,
-                   "--json", "baseRefName,title"]) or {}
+                   "--json", "baseRefName,title"])
+    if pr is None:
+        # CR #16281 : `gh pr view` indisponible = etat NON mesure, meme fail-
+        # closed que fetch_changed_files. Un pr view vide rendrait base='' et
+        # le garde imprimerait "rien a faire" comme si la base etait main --
+        # un faux verdict sur une acquisition echouee.
+        print(f"[base-not-main] #{args.pr} UNMEASURED -- `gh pr view` indisponible "
+              f"(stdout vide ou JSON illisible) ; verdict refuse, fail-closed (#16194)")
+        return 2
     base = pr.get("baseRefName", "")
     title = pr.get("title", "")
 
@@ -390,6 +406,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     changed = fetch_changed_files(repo, args.pr)
+    if changed is None:
+        # CR #16281 : jamais un `files=0` de mesure indisponible -- le verdict
+        # ressemblerait a un 0 de scan reel (0 workflow a couvrir sur la base).
+        print(f"[base-not-main] #{args.pr} UNMEASURED -- liste des fichiers de la PR "
+              f"indisponible ; le verdict serait un faux 0, fail-closed (#16194)")
+        return 2
     open_count = count_open_prs_on_base(repo, base)
     skipped = workflows_skipped_by_base(WORKFLOWS_DIR, base, changed)
     print(f"[base-not-main] #{args.pr} base={base} open_prs_to_main={open_count} "

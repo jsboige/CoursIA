@@ -226,3 +226,43 @@ def test_changed_files_are_not_paginated_when_the_first_page_is_complete(
     monkeypatch.setattr(m, "_gh_json", fake_gh)
     assert fetch_changed_files("o/r", 1) == ["a.py"]
     assert len(calls) == 1
+
+
+def test_fetch_changed_files_rend_none_quand_pr_view_indisponible(monkeypatch):
+    """CR #16281 -- acquisistion indisponible = None, jamais [] (faux 0)."""
+    import base_not_main as m
+
+    monkeypatch.setattr(m, "_gh_json", lambda args: None)
+    assert fetch_changed_files("o/r", 1) is None
+
+
+def test_main_refuse_le_verdict_quand_pr_view_indisponible(monkeypatch, capsys):
+    """CR #16281 -- `gh pr view` indisponible : rc != 0, UNMEASURED, et jamais
+    de ligne `ci_skipped=<int> files=<int>` qui ressemblerait a un 0 de mesure."""
+    import base_not_main as m
+
+    monkeypatch.setattr(m, "_gh_json", lambda args: None)
+    assert m.main(["--pr", "1", "--repo", "o/r"]) != 0
+    out = capsys.readouterr().out
+    assert "UNMEASURED" in out
+    assert "ci_skipped=" not in out
+
+
+def test_main_refuse_le_verdict_quand_files_indisponible(monkeypatch, capsys):
+    """CR #16281 -- `pr view` pose la base mais la liste des fichiers est
+    indisponible : fail-closed aussi, jamais `files=0`."""
+    import base_not_main as m
+
+    calls = []
+
+    def fake_gh(args):
+        calls.append(args)
+        if len(calls) == 1:  # pr view (baseRefName,title) de main()
+            return {"baseRefName": "feature/x", "title": "t"}
+        return None  # fetch_changed_files -> None
+
+    monkeypatch.setattr(m, "_gh_json", fake_gh)
+    assert m.main(["--pr", "1", "--repo", "o/r"]) != 0
+    out = capsys.readouterr().out
+    assert "UNMEASURED" in out
+    assert "files=" not in out
