@@ -25,6 +25,28 @@ Tirage pondéré dans **trois urnes** : **grain** (issue unitaire → la livrer)
 
 **Le picker ne décide pas.** Il propose ; l'agent tranche selon les critères de variété de sa lane et pose son `[CLAIMED]` (`check_lane_claim.py` avant d'**éditer**, cf [lane-claim-protocol.md](lane-claim-protocol.md)). Plutôt que rejouer aveuglément : demander davantage de candidats et passer les exclusions factuelles (`--exclude-issue`, labels, bornes age/inactivité, `--urns`) ; `--reroll` reste le dernier recours ; le cache ne touche jamais les organes minute-sensitive ([détail §Cache](../../docs/reference/proactive-coordination-detail.md)). **Aucun résultat vide filtré ne justifie un `[ASK coordinator]` ni un statut idle.**
 
+**Sur un tirage d'urne `umbrella`, confronter le body au réel AVANT de juger l'actionnabilité (HARD, #11900).** Un body est daté de sa rédaction, jamais de sa lecture — et le picker pondère le **délaissement**, donc plus une EPIC est ancienne, plus son body a de chances d'être faux : **plus le picker fait son travail, plus il remonte d'impasses apparentes.** Le paragraphe bloquant y a souvent survécu à sa propre résolution (mesuré sur #2874 et #7357, dont les deux conditions étaient levées depuis 68 j et 31 j). Sans ce réflexe, le régime produit des rerolls en boucle et la lane conclut à tort que le pool est saturé — l'inverse exact de l'intention de la règle 5.
+
+Trois surfaces mentent vite, et **deux sont décidables mécaniquement** :
+
+1. **un numéro de contenu** (`#N`) → l'organe résout son type et son état. Une EPIC dont **tous** les enfants cités sont CLOSED n'a plus rien à piocher : le picker a offert un **conteneur**, pas un grain ;
+2. **un chemin de fichier** → vérifié contre l'arbre de travail (`find`, **jamais** `ls` : un `ls` sur un chemin périmé rend vide, et « rien trouvé » y est indiscernable de « pas regardé ») ;
+3. **une demande de décision** → **non automatisable** : `gh issue view N --json comments`, la réponse est souvent le premier commentaire.
+
+**Organe** (la règle ne tient pas par la vigilance) :
+
+```bash
+python scripts/ci/check_umbrella_freshness.py <N> [<N>...]   # exit 1 = SATURATED, ne pas piocher ici
+```
+
+`SATURATED` (tous les enfants cités sont fermés) est le **seul** verdict qui prend la sortie **1** — c'est la seule lecture non ambiguë. Un chemin cité introuvable sort en **avertissement**, jamais en rouge : il a pu légitimement déménager. `UNRESOLVED` (aucun enfant cité) reste **advisory** et renvoie à la surface 3.
+
+**Ce que l'organe ne dit pas** : il mesure la vacuité du **conteneur**, pas la viabilité du **grain**. Une EPIC `FRESH` peut n'avoir que du résiduel `INTRINSIC` — mesuré le 2026-09-15 : les 8 `sorry` distincts de `knot_lean`, que #1453 désigne comme « le grain DEEP de cet EPIC », portent chacun, dans le fichier, l'annotation qui les déclare hors d'atteinte (`decades` away / *not in Mathlib*). La lecture du contenu reste due.
+
+**Précondition toxique** : une condition de reprise que *rien ne mesure* ne peut jamais être constatée atteinte — elle diffère indéfiniment contre la volonté de qui l'a posée. La rendre observable est **plus petit** que le travail différé, et le débloque entièrement.
+
+**Réparation d'un body périmé** : préfixer d'un bloc `> Etat mesure au <date>` (« ce que le body dit » / « ce qui est mesuré », préconditions et leur état, ce qu'une lane peut faire), **conserver l'historique intact en dessous**, écrire la **portée** de ce qui n'a pas été vérifié. Jamais de réécriture en place : le lecteur suivant doit voir ce qui a changé.
+
 **Reparer son propre rouge, dans le meme cycle que la production (HARD, mandat user 2026-08-22 ; l'ordre retire le 2026-09-12).** Le picker rend la reparation (sortie **0** — le grain rendu *est* la reprise) tant que la lane porte une PR **bloquee et ouverte depuis plus de 24 h** ; il nomme la liste, la cause et le geste. Ce n'est **pas un prealable a produire** : au debut de chaque session, la lane inventorie **toutes** ses PRs portant nits, reserves, `CHANGES_REQUESTED` ou threads inline non resolus, puis traite sequentiellement **tous** les points reparables qui la concernent — jamais un seul nit ou une seule PR. Chaque remarque recoit une correction reelle si necessaire et une reponse ecrite qui la nomme ; les attentes externes (`CI`, `DWELL`, re-review, merge ou dependance) **sortent du champ de vision de la lane** — elles appartiennent a la candidate, qui attend seule, et une candidate n'attend jamais avec sa lane. La file reparable ne precede pas le tirage : la lane tire son grain DEEP de contenu dans le **meme** cycle, sequentiellement, tant que la fenetre reste ouverte.
 
 - **Une PR reparee et mergee compte dans le plancher R1** : ce n'est pas un a-cote, c'est du travail deja ecrit porte a son terme. Elle ne le tient pas **seule** — le plancher exige ≥1 DEEP de CONTENU, et un REPAIR est au mieux MED ([variation-protocol.md](variation-protocol.md), §Grain REPAIR) : il compte comme grain, jamais comme plancher. Une PR seulement corrigee mais encore en attente externe ne compte pas encore ; la lane continue donc a produire. Elle garde son tag `Grain:` d'origine — la reparation ne re-qualifie pas le tier.
