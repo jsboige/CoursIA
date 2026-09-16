@@ -76,6 +76,15 @@ jobs:
       - name: Run Windows-confinement tests
         run: python -m pytest scripts/tests/test_manage_self_hosted_runner.py -v
 
+      # Voie 1 de #16195 : les sondes _WINDOWS_ONLY de resume_process
+      # (CREATE_SUSPENDED, suspend count via ResumeThread) n'ont d'equivalent
+      # nulle part -- ce job dispatch-only est la seule jambe CI qui les
+      # execute reellement sur Windows. Selection bornee : resume/unresumed/
+      # restype uniquement (les tests d'admission positifs lake restent sur
+      # leur lane dediee).
+      - name: Run lean_exec resume-process tests (voie 1, #16195)
+        run: python -m pytest scripts/lean/tests/test_lean_exec.py -k "resume or unresumed or restype" -v
+
   windows-dotnet-tests:
     # Job GradeBookApp.Tests -- mission ai-01 chiffree dans #13378 :
     # valider que le runner Windows `myia-po-2024-fast-guards` peut absorber

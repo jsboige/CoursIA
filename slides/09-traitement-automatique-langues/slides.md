@@ -73,9 +73,8 @@ layout: default
 | Word embeddings → Transformers | `GenAI/Texte/10*` |
 | Agents conversationnels, LUIS, Dialogflow | `GenAI/Plateformes-Conversationnelles` |
 
-> Aucun des 8 arcs n'est perdu silencieusement : chacun renvoie vers un **owner
-> réel** ou est marqué **GAP** quand aucun notebook exécutable n'existe. Les
-> gaps restent à fermer par des notebooks atomiques additionnels (jamais autofermés).
+> Aucun arc n'est perdu : chaque ligne pointe un **owner réel** ou un **GAP**
+> assumé, à fermer par un notebook atomique dédié.
 
 ---
 layout: section
