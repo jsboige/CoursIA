@@ -128,19 +128,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function showProjectModal(projectTitle) {
         const modal = document.createElement('div');
         modal.className = 'project-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="modal-close">&times;</span>
-                <h2>${projectTitle}</h2>
-                <p>Détails complets du projet à venir...</p>
-                <p>Cette fonctionnalité sera développée dans une future version.</p>
-            </div>
-        `;
-        
+
+        // Le titre vient du DOM de la page : il est pose en textContent, jamais
+        // interpole dans un innerHTML -- sinon la valeur devient un sink XSS
+        // (CodeQL js/xss-through-dom, #16185).
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'modal-close';
+        closeBtn.textContent = '×';
+
+        const title = document.createElement('h2');
+        title.textContent = projectTitle;
+
+        const details = document.createElement('p');
+        details.textContent = 'Détails complets du projet à venir...';
+
+        const future = document.createElement('p');
+        future.textContent = 'Cette fonctionnalité sera développée dans une future version.';
+
+        content.append(closeBtn, title, details, future);
+        modal.appendChild(content);
+
         document.body.appendChild(modal);
-        
+
         // Close modal functionality
-        const closeBtn = modal.querySelector('.modal-close');
         closeBtn.addEventListener('click', function() {
             document.body.removeChild(modal);
         });
