@@ -215,7 +215,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 
 | Sous-série | Cœur pédagogique | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
-| [Part1-Foundations](Part1-Foundations/) | 19 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03d, Search-09b à Search-09d) | Python (14) + Lean (Search-09d) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
+| [Part1-Foundations](Part1-Foundations/) | 22 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09d, Search-11c, Search-11d) | Python (20) + Lean (Search-09d) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 20 cas réels (App-1 à App-20) | Python + .NET | **20 binômes complets** (40 notebooks) + 1 compagnon statistical-validity (App-2 Python) |
@@ -322,7 +322,7 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et données
 │
-├── Part1-Foundations/                     # Search Fondamental (33 notebooks : 15 Python + 1 Lean + 17 C# — 12 jumeaux directs Search-1..11/2b + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c/09d discrépance)
+├── Part1-Foundations/                     # Search Fondamental (41 notebooks : 20 Python + 1 Lean + 20 C# — 15 jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c/09d discrépance + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget)
 │   ├── Search-01-StateSpace.ipynb
 │   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
@@ -340,7 +340,8 @@ Search/
 │   ├── Search-09d-Lean-Discrepancy-Komlos.ipynb   # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
-│   └── Search-11c-Empirical-Algorithm-Selection.ipynb
+│   ├── Search-11c-Empirical-Algorithm-Selection.ipynb
+│   └── Search-11d-Descente-Sous-Budget.ipynb   # Descente gloutonne sous plafond d'évaluations : loi Descent.lean (hstrict/hbarrier) exercée, hnostall réfuté (See #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb
@@ -476,18 +477,18 @@ Allez directement aux applications qui correspondent à votre domaine : **App-3/
 
 ---
 
-## Statistiques catalogue à jour (audit fichier-entier §E, 2026-08-31)
+## Statistiques catalogue à jour (audit fichier-entier §E, 2026-09-16)
 
-Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-files MyIA.AI.Notebooks/Search | grep -E '\.ipynb$'` + comptage disque par sous-dossier. **Référence canonique = fichiers gît-tracked** (les `_output.ipynb` sont des artéfacts non-trackés par `.gitignore` — exclus du compte ; `MetaGeneticSharp/` et `search_lean/` ne contiennent aucun `.ipynb`). La répartition de maturité (PRODUCTION/BETA) est portée par le marqueur `CATALOG-STATUS` en tête de fichier, régénéré quotidiennement par l'automatisation (son compte peut traîner d'un jour — le compte ci-dessous fait foi au 2026-08-31).
+Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-files MyIA.AI.Notebooks/Search | grep -E '\.ipynb$'` + comptage disque par sous-dossier. **Référence canonique = fichiers gît-tracked** (les `_output.ipynb` sont des artéfacts non-trackés par `.gitignore` — exclus du compte ; `MetaGeneticSharp/` et `search_lean/` ne contiennent aucun `.ipynb`). La répartition de maturité (PRODUCTION/BETA) est portée par le marqueur `CATALOG-STATUS` en tête de fichier, régénéré quotidiennement par l'automatisation (son compte peut traîner d'un jour — le compte ci-dessous fait foi au 2026-09-16).
 
 | Sous-série | Fichiers `.ipynb` gît-tracked | Langages | Algorithmes représentatifs |
 | --- | --- | --- | --- |
-| **Part 1 — Fondements** (`Part1-Foundations/`) | **39** (**16 notebooks Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d (ex-Partie 3), 17b, Search-09b, Search-09c + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **17 C#** : jumeaux `-Csharp` (Search-1 à 11 et 2b) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós) |
+| **Part 1 — Fondements** (`Part1-Foundations/`) | **41** (**21 notebooks Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d/03e (ex-Partie 3 + optimalité A*), Search-09b, Search-09c, Search-11c, Search-11d + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **20 C#** : jumeaux `-Csharp` (Search-1 à 11, 2b et 03b/03c/03d) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós), sélection empirique d'algorithme, descente gloutonne sous plafond d'évaluations (loi `Descent.lean`) |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **35** (MGS-1 → MGS-31 : cœur MGS-1..19, **trilogie MGS-7b/7c/7d** de projection N-D des paysages, MGS-17b sélection empirique, **MGS-21** représentation vs algorithme ; le **volet comparatif vs MEALPY** (10 notebooks MGS-22..31) vit dans la sous-série [`Part4-Metaheuristics/MGS-vs-mealpy/`](Part4-Metaheuristics/MGS-vs-mealpy/README.md) — duels PSO/DE/SA/WOA/EO/FBI/BBPSO/GA/ScatterSearch vs Mealpy + synthèse croisée ; tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, projection N-D des paysages, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion, représentation vs algorithme, [campagne comparative MGS vs mealpy](Part4-Metaheuristics/MGS-vs-mealpy/README.md) |
-| **Applications** (`Applications/`) | **50** (30 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity et jumeaux Python) | 30 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
+| **Applications** (`Applications/`) | **57** (37 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity, jumeaux Python et notebooks d'audit App-23 à App-31) | 37 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
 | **archive** (`archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
-| **Total** | **142** (33 + 18 + 6 + 35 + 50 = 142 pédagogiques, Search-09d inclus + 2 archive = 144) | Python + Lean 4 + C# | 5 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
+| **Total** | **151** (41 + 18 + 35 + 57 = 151 pédagogiques, Search-09d inclus + 2 archive = 153) | Python + Lean 4 + C# | 4 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
 
 **Note de maturité** : la validation end-to-end (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`) est documentée PR par PR dans l'EPIC #4956 pour les jumeaux C#, et dans les PRs po-2025:CoursIA-2 pour la série landscape-bias MGS-10 → MGS-19 (analyse comparative NFL/WOA encore en cours, cf EPIC #3975).
 
