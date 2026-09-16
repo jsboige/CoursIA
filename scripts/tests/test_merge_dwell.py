@@ -172,27 +172,72 @@ def test_check_bout_en_bout_accepte_une_tete_agee():
 
 # --- 5. #16149 -- le rafraichissement de base ne re-arme pas le plancher ----
 
-def _commit(sha, date, parents):
-    return {
+def _commit(sha, date, parents, tree=None):
+    payload = {
         "commit": {"committer": {"date": date}},
         "parents": [{"sha": p} for p in parents],
     }
+    if tree is not None:
+        payload["commit"]["tree"] = {"sha": tree}
+    return payload
+
+
+def _git_proving(auto_tree):
+    """Fake run_git dont merge-tree PROUVE l'equivalence : l'auto-merge des
+    parents donne exactement `auto_tree` (les objets sont presents)."""
+    def run_git(args):
+        if args[:2] == ["cat-file", "-e"]:
+            return 0, ""
+        if args[0] == "fetch":
+            return 0, ""
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            return 0, auto_tree + "\n"
+        raise AssertionError("git inattendu: " + " ".join(args))
+    return run_git
+
+
+def _git_conflicting():
+    """Fake run_git dont merge-tree rend non nul : l'auto-merge CONFLIT -- un
+    merge reel n'existe qu'avec une resolution d'auteur."""
+    def run_git(args):
+        if args[:2] == ["cat-file", "-e"]:
+            return 0, ""
+        if args[0] == "fetch":
+            return 0, ""
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            return 1, ""
+        raise AssertionError("git inattendu: " + " ".join(args))
+    return run_git
+
+
+def _git_absent():
+    """Fake run_git dont l'execution meme echoue (git introuvable) : preuve
+    indisponible -> fail-closed, jamais d'exemption."""
+    def run_git(args):
+        raise OSError("git introuvable")
+    return run_git
 
 
 def test_16149_update_branch_ne_re_armed_pas_le_plancher():
     """Critere d'acceptation de l'issue : commit d'auteur T-180 min, puis
     fusion de rafraichissement de base T-1 min (second parent = la base
-    elle-meme) -- le plancher se mesure sur l'auteur, donc ecoule."""
+    elle-meme, arbre PROUVE identique a l'auto-merge) -- le plancher se
+    mesure sur l'auteur, donc ecoule."""
     def fetch(path):
         if path == "repos/o/r/pulls/42":
             return {"labels": [], "base": {"sha": "ba5e"}}
         if path == "repos/o/r/commits/m3rg3":
-            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["auc0", "ba5e"])
+            return _commit(
+                "m3rg3", "2026-09-07T11:59:00Z", ["auc0", "ba5e"], tree="7ee0"
+            )
         if path == "repos/o/r/commits/auc0":
             return _commit("auc0", "2026-09-07T09:00:00Z", ["r00t"])
         raise AssertionError("chemin inattendu: " + path)
 
-    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch,
+        run_git=_git_proving("7ee0"),
+    )
     assert ok is True
     assert "2026-09-07T09:00:00Z" in msg, (
         "le plancher doit se mesurer sur le commit d'auteur, pas la fusion"
@@ -206,14 +251,19 @@ def test_16149_second_parent_via_compare_behind():
         if path == "repos/o/r/pulls/42":
             return {"labels": [], "base": {"sha": "ba5e"}}
         if path == "repos/o/r/commits/m3rg3":
-            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["auc0", "0ld"])
+            return _commit(
+                "m3rg3", "2026-09-07T11:59:00Z", ["auc0", "0ld"], tree="7ee0"
+            )
         if path == "repos/o/r/commits/auc0":
             return _commit("auc0", "2026-09-07T08:00:00Z", ["r00t"])
         if path == "repos/o/r/compare/ba5e...0ld":
             return {"status": "behind", "behind_by": 3}
         raise AssertionError("chemin inattendu: " + path)
 
-    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch,
+        run_git=_git_proving("7ee0"),
+    )
     assert ok is True
     assert "2026-09-07T08:00:00Z" in msg
 
@@ -254,22 +304,29 @@ def test_16149_filiation_illisible_reste_stricte():
 
 
 def test_16149_deux_fusions_empilees_sont_toutes_deux_franchies():
-    """Deux update-branch successifs : la remontee franchit les deux et
-    mesure le commit d'auteur d'origine."""
+    """Deux update-branch successifs (chacun PROUVE content-free) : la
+    remontee franchit les deux et mesure le commit d'auteur d'origine."""
     def fetch(path):
         if path == "repos/o/r/pulls/42":
             return {"labels": [], "base": {"sha": "ba5e"}}
         if path == "repos/o/r/commits/m3rg3":
-            return _commit("m3rg3", "2026-09-07T11:59:00Z", ["m3rg2", "ba5e"])
+            return _commit(
+                "m3rg3", "2026-09-07T11:59:00Z", ["m3rg2", "ba5e"], tree="7ee0"
+            )
         if path == "repos/o/r/commits/m3rg2":
-            return _commit("m3rg2", "2026-09-07T10:59:00Z", ["auc0", "0ld"])
+            return _commit(
+                "m3rg2", "2026-09-07T10:59:00Z", ["auc0", "0ld"], tree="7ee0"
+            )
         if path == "repos/o/r/commits/auc0":
             return _commit("auc0", "2026-09-07T07:00:00Z", ["r00t"])
         if path == "repos/o/r/compare/ba5e...0ld":
             return {"status": "behind", "behind_by": 2}
         raise AssertionError("chemin inattendu: " + path)
 
-    ok, msg = merge_dwell.check("o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch)
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW, fetch=fetch,
+        run_git=_git_proving("7ee0"),
+    )
     assert ok is True
     assert "2026-09-07T07:00:00Z" in msg
 
@@ -284,3 +341,90 @@ def test_16149_payload_pr_sans_base_leve():
 
     with pytest.raises(merge_dwell.DwellError):
         merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+
+
+# --- CR ai-01 2026-09-16 : la forme des parents ne prouve pas l'absence de
+# contenu d'auteur ; l'exemption exige une equivalence d'arbre PROUVEE ----
+
+
+def _cr_payloads(tree):
+    """Le contre-exemple exact de la review : head merge frais a 11:59,
+    parents [author-old, base], auteur ancien a 08:00 -- NOW = 12:00, donc
+    mesurer l'auteur rend le plancher ecoule (240 min), mesurer la fusion
+    le re-arme (1 min)."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": "ba5e"}}
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit(
+                "m3rg3", "2026-09-07T11:59:00Z", ["auc0", "ba5e"], tree=tree
+            )
+        if path == "repos/o/r/commits/auc0":
+            return _commit("auc0", "2026-09-07T08:00:00Z", ["r00t"])
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+def test_cr_20260916_resolution_manuelle_substantive_re_arme():
+    """LE faux negatif de la review : merge manuel de la base porteur d'une
+    resolution de conflit substantielle -- l'arbre du commit DIFFERE de
+    l'auto-merge (res0 != auto). La fusion reste authoritative : le plancher
+    se re-arme sur 11:59, l'ok=True d'avant le repair est impossible."""
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree="res0"), run_git=_git_proving("a010"),
+    )
+    assert ok is False, (
+        "une resolution d'auteur substantive dans un merge de base doit "
+        "re-armer le plancher -- c'est le bypass exact de la review"
+    )
+    assert msg.startswith("tete du 2026-09-07T11:59:00Z")
+
+
+def test_cr_20260916_auto_merge_conflitant_re_arme():
+    """merge-tree rend non nul : l'auto-merge CONFLIT, donc tout merge reel
+    de ces parents ne peut exister qu'avec une resolution d'auteur -- meme
+    si l'arbre du commit etait par hasard celui d'un des parents, aucune
+    equivalence n'est prouvable : la fusion se mesure."""
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree="a010"), run_git=_git_conflicting(),
+    )
+    assert ok is False
+    assert msg.startswith("tete du 2026-09-07T11:59:00Z")
+
+
+def test_cr_20260916_preuve_indisponible_fail_closed():
+    """git introuvable : la preuve d'equivalence est indisponible, PAS
+    acquise. Fail-closed -- la fusion se mesure elle-meme (le trade-off
+    assume de la CR : jamais d'exemption sur une absence de preuve)."""
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree="a010"), run_git=_git_absent(),
+    )
+    assert ok is False
+    assert msg.startswith("tete du 2026-09-07T11:59:00Z")
+
+
+def test_cr_20260916_payload_sans_tree_fail_closed():
+    """Le payload API ne porte pas commit.tree.sha : la comparaison
+    d'equivalence est incomplete -- pas d'exemption sur une moitie de
+    preuve."""
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree=None), run_git=_git_proving("a010"),
+    )
+    assert ok is False
+    assert msg.startswith("tete du 2026-09-07T11:59:00Z")
+
+
+def test_cr_20260916_vrai_update_branch_equivalent_passe_toujours():
+    """Controle FP : un update-branch REEL (arbre du commit == auto-merge)
+    franchit toujours la remontee -- le repair ne retablit pas la taxe de
+    2 h pour le cas legitime #16149."""
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree="a010"), run_git=_git_proving("a010"),
+    )
+    assert ok is True
+    assert "2026-09-07T08:00:00Z" in msg

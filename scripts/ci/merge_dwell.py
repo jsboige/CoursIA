@@ -69,15 +69,37 @@ rafraichit la date de committer : le remede re-armait les 120 min qu'il sert
 a franchir -- une taxe de 2 h par reparation, sur un commit sans aucun
 contenu d'auteur (son delta appartient a `main`, deja gate par ses propres
 gardes). Le plancher se mesure desormais sur le DERNIER COMMIT QUI MODIFIE
-LE COTE PR : la chaine first-parent est remontee au-dela des fusions dont le
-SECOND parent est un ancetre de la base (la forme exacte d'un rafraichissement
-de base). Un rebase, lui, reecrit les commits d'auteur : single-parent, il
+LE COTE PR. Un rebase, lui, reecrit les commits d'auteur : single-parent, il
 reste mesure -- le comportement voulu ci-dessus. Une fusion dont le second
 parent n'est PAS sur la base (l'auteur incorpore sa propre sous-branche)
 introduit du contenu d'auteur : elle reste mesuree aussi. Une filiation
 illisible ne vaut pas reconnaissance de rafraichissement : la fusion se
 mesure alors elle-meme (comportement d'avant #16149 -- plus strict, jamais
 plus lache).
+
+CR ai-01 2026-09-16 -- la forme des parents ne prouve pas l'absence de contenu
+-----------------------------------------------------------------------------
+
+Contre-exemple exact-tree (review CHANGES_REQUESTED sur la tete b722ae246f) :
+un `git merge main` MANUEL avec resolution substantielle de conflit a
+exactement la forme de parents d'un update-branch (second parent ancetre de
+la base) tout en ecrivant du contenu d'auteur frais dans l'arbre. Remonter
+sur la seule forme des parents exemptait a tort cette resolution : le
+plancher etait mesure sur le vieux premier parent alors que la tete portait
+du contenu jamais observe par la CI.
+
+L'exemption exige desormais une PREUVE d'absence de contenu d'auteur :
+l'arbre du commit de fusion doit etre IDENTIQUE a l'auto-merge de ses deux
+parents, verifie par `git merge-tree --write-tree <P1> <P2>` (Git >= 2.38)
+apres fetch borne des parents manquants. Un auto-merge impossible (conflits
+-- sortie non nulle de merge-tree) prouve qu'un VRAI merge ne peut exister
+qu'avec une resolution d'auteur : jamais exemptee. Une preuve indisponible
+(git absent, fetch muet, sortie illisible) ne vaut PAS exemption : la fusion
+se mesure elle-meme -- fail-closed, exactement comme une filiation
+illisible. Le prix assume : un update-branch serveur dont la preuve echoue
+pour raison d'infrastructure re-arme le plancher (2 h) ; c'est le trade-off
+d'une frontiere de securite -- on ne franchit jamais sur une absence de
+preuve.
 
 Derogation
 ----------
@@ -239,6 +261,59 @@ def _second_parent_is_base_ancestor(
     return cmp.get("status") in ("behind", "identical")
 
 
+def _default_run_git(args):
+    """Execute `git <args>` dans le depot courant (le gate tourne a la racine
+    du checkout). Renvoie (returncode, stdout) ; les erreurs d'execution
+    remontent a l'appelant, qui les traite en preuve indisponible."""
+    completed = subprocess.run(
+        ["git"] + list(args),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,
+    )
+    return completed.returncode, completed.stdout
+
+
+def _ensure_commit_present(sha, run_git):
+    """Best effort : ramener localement un parent absent avant merge-tree.
+    Le checkout du gate porte le cote PR ; la base, elle, peut manquer. Un
+    echec ici n'est PAS fatal : merge-tree echouera ensuite et la fusion se
+    mesurera elle-meme (fail-closed, cf. CR 2026-09-16)."""
+    try:
+        rc, _ = run_git(["cat-file", "-e", sha + "^{commit}"])
+        if rc == 0:
+            return
+        run_git(["fetch", "--depth=1", "--quiet", "origin", sha])
+    except (OSError, subprocess.SubprocessError):
+        pass  # best effort : merge-tree echouera, la fusion se mesurera
+
+
+def _auto_merge_tree(first, second, run_git):
+    """Tree OID de l'auto-merge de deux parents, ou None si non calculable.
+
+    `git merge-tree --write-tree` (Git >= 2.38) ecrit l'arbre du merge
+    automatique SANS toucher a l'index ni au worktree, et sort non nul en
+    cas de conflits -- un merge reel n'existe alors qu'avec une resolution
+    d'auteur : jamais content-free. Toute execution defaillante (git absent,
+    OSError, sortie vide) vaut preuve indisponible : None, fail-closed."""
+    try:
+        rc, out = run_git(["merge-tree", "--write-tree", first, second])
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if rc != 0:
+        return None
+    for line in (out or "").splitlines():
+        oid = line.strip()
+        if oid:
+            return oid
+    return None
+
+
+def _tree_sha(payload):
+    commit = payload.get("commit") or {}
+    tree = commit.get("tree") or {}
+    return tree.get("sha") if isinstance(tree, dict) else None
+
+
 #: Borne de la remontee first-parent : au-dela, l'etat est pathologique (une
 #: PR accumule rarement 50 rafraichissements de base non rebases) et on
 #: refuse plutot que de mesurer silencieusement un commit arbitraire.
@@ -246,15 +321,23 @@ _MAX_WALK = 50
 
 
 def last_authoritative_committed_at(
-    repo: str, sha: str, base_sha: str, fetch=_gh_json
+    repo: str,
+    sha: str,
+    base_sha: str,
+    fetch=_gh_json,
+    run_git=None,
 ) -> datetime:
     """#16149 : date de COMMITTER du dernier commit qui modifie le cote PR.
 
     Remonte la chaine first-parent au-dela des fusions de rafraichissement
-    de base : un commit a deux parents dont le SECOND est un ancetre de la
-    base n'introduit aucun contenu d'auteur (son delta appartient a la base,
-    deja gatee). Le rebase et la fusion d'une sous-branche propre restent
-    mesures -- voir la section #16149 du docstring de module."""
+    de base PROUVEES content-free : deux parents, le SECOND ancetre de la
+    base, ET l'arbre du commit identique a l'auto-merge des parents (CR
+    ai-01 2026-09-16 : la forme des parents seule n'exempte pas une
+    resolution manuelle de conflit). Le rebase, la fusion d'une sous-branche
+    propre, une resolution d'auteur et toute fusion dont la preuve
+    d'equivalence est indisponible restent mesurees -- fail-closed."""
+    if run_git is None:
+        run_git = _default_run_git
     current = sha
     for _ in range(_MAX_WALK):
         payload = _commit_payload(repo, current, fetch)
@@ -269,8 +352,18 @@ def last_authoritative_committed_at(
                     raise DwellError(
                         "fusion sans premier parent sur {}".format(current[:12])
                     )
-                current = first
-                continue
+                # CR 2026-09-16 : preuve d'absence de contenu d'auteur.
+                # L'arbre du merge doit etre exactement l'auto-merge ; sinon
+                # (resolution substantif, conflits, preuve muette) la fusion
+                # se mesure elle-meme.
+                _ensure_commit_present(first, run_git)
+                _ensure_commit_present(second, run_git)
+                auto_tree = _auto_merge_tree(first, second, run_git)
+                merge_tree = _tree_sha(payload)
+                if auto_tree and merge_tree and auto_tree == merge_tree:
+                    current = first
+                    continue
+                return _committer_date(payload, current)
         return _committer_date(payload, current)
     raise DwellError(
         "chaine first-parent de plus de {} fusions de base depuis {} "
@@ -311,6 +404,7 @@ def check(
     dwell_min: float = DEFAULT_DWELL_MIN,
     now: "datetime | None" = None,
     fetch=_gh_json,
+    run_git=None,
 ) -> tuple[bool, str]:
     """Verdict reseau complet. Renvoie `(ok, message)`.
 
@@ -328,7 +422,7 @@ def check(
     if not base_sha:
         raise DwellError("pas de base.sha sur la PR #{}".format(pr_number))
     committed = last_authoritative_committed_at(
-        repo, sha, base_sha, fetch=fetch
+        repo, sha, base_sha, fetch=fetch, run_git=run_git
     )
     ok, _remaining, message = evaluate(
         committed, now or datetime.now(timezone.utc), dwell_min, waived
