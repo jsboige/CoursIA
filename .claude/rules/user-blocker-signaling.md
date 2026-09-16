@@ -1,24 +1,28 @@
-# User-blocker signaling — anti-dilution
+# User-blocker signaling — registre durable
 
-S'applique a **tous les agents** du cluster CoursIA (workers `po-*` + coordinateur `ai-01`). Source : mandat user 2026-05-28T12:48Z (verbatim + workers/coordinator detail + categories + anti-patterns) : [docs/user-blocker-signaling-detail.md](../../docs/reference/user-blocker-signaling-detail.md).
+S'applique à **tous les agents** du cluster CoursIA (workers `po-*` + coordinateur `ai-01`). Sources : mandat user 2026-05-28T12:48Z sur la visibilité des blocages, puis mandat supersédant du 2026-09-15 (#3656) : le user arbitre **par pull, pas par push**. Détail et articulation : [docs/user-blocker-signaling-detail.md](../../docs/reference/user-blocker-signaling-detail.md).
 
-## Regle HARD
+## Règle HARD
 
-Quand un livrable d'agent **depend d'une action user non faite** (relecture, validation subjective, export manuel, signature, confirmation, sign-off), le bloqueur **doit etre signale explicitement a chaque fin de session** — pas dilue dans `[DONE]` long, pas laisse dependre du wakeup.
+Toute question ou action qui attend le user est écrite immédiatement dans le registre persistant du workspace :
 
-| Agent | Mecanisme | Cadence |
-|-------|-----------|---------|
-| Workers `po-*` | Tag `[ASK USER] <action> — bloque depuis <N>` separe du `[DONE]` | A CHAQUE fin de session |
-| Workers `po-*` | Ping en **premier** si user-message recu | Sur session interactive detectee |
-| Workers `po-*` | Escalation `roosync_messages send` priority HIGH vers ai-01 | Apres 5 sessions sans action (~15h) |
-| ai-01 | Section "Actions user en attente" en tete `/coordinate` | Chaque wakeup |
-| ai-01 | Post `[ESCALATION USER]` en tete dashboard | Bloqueur > 3 cycles (~9h) |
-| ai-01 | Rappel actifs en fin de session, meme si rien n'a change | Chaque fin |
+`~/.claude/projects/<hash>/memory/user-question-registry.md`
 
-**Anti-patterns** : diluer dans rapport DONE long ; attendre passivement le wakeup ; mentionner une fois puis disparaitre ; lister 5 user-blocks en bloc sans hierarchie ; "le user n'a pas regarde" sans re-pinger.
+Le registre est indexé dans `MEMORY.md`. Chaque entrée ouverte porte obligatoirement :
+
+1. **ce qui est attendu du user** ;
+2. **comment vérifier qu'elle est morte**.
+
+En fin de session, les questions ouvertes sont restituées **en un seul bloc** depuis ce registre. Une question non répondue survit aux reprises de cron et se représente au cycle suivant ; elle n'est jamais re-postée séparément dans le fil ou dupliquée dans une seconde liste. Une réponse vérifiée déplace l'entrée dans la courte section « répondues ».
+
+Les tags `ASK` / `[ASK USER]` et la section « Actions user en attente » sont des **signaux ponctuels** : ils pointent vers le registre, qui seul porte l'état durable. Ils ne créent pas une file parallèle et ne prescrivent aucun re-poke intermédiaire.
+
+Un plan demandant validation vit dans le scratchpad (`$TEMP`) ; la restitution finale donne son **chemin**, pas une copie du plan dans le fil.
+
+**Anti-patterns** : question en cours de session ; même question dans le registre et dans une liste dashboard ; re-poke à chaque wakeup ; entrée sans critère de mort ; retrait sans réponse user vérifiée ; plan recopié dans le fil.
 
 ## Voir aussi
 
-- [docs/user-blocker-signaling-detail.md](../../docs/reference/user-blocker-signaling-detail.md) — verbatim, categories, anti-patterns, interaction regles
-- [coordinator-discipline.md](coordinator-discipline.md) — symetrique cote agent ("aucune demande user ne pourrit > 1 cycle")
-- [proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup + main + side-track
+- [docs/user-blocker-signaling-detail.md](../../docs/reference/user-blocker-signaling-detail.md) — mandats, migration de l'ancienne cadence, cycle de vie des entrées
+- [coordinator-discipline.md](coordinator-discipline.md) — discipline symétrique côté agent
+- [proactive-coordination.md](proactive-coordination.md) — coordination proactive sans interruption user
