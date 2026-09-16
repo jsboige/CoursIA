@@ -27,7 +27,7 @@ des autres lignes.
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.33.0 | 10² | 15 | 3 | PEDA/REF | #2874, #3003, #14821, #15829 |
+| `knot_lean` | v4.33.0 | 8² | 15 | 3 | PEDA/REF | #2874, #3003, #14821, #15829 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
@@ -126,7 +126,7 @@ Game of Life / Hashlife, Free Will Theorem (Kochen-Specker 18-vecteurs).
 **Objectif** : théorie des nœuds — tricolorabilité, polynôme d'Alexander, mutants, slicing,
 théorème de Conway.
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
+- **Toolchain** : `leanprover/lean4:v4.33.0` (migration #14773/#15829) · **Dépendance** : Mathlib4
 - **`.lean` files** : 15 (vs 6 modules déclarés 2026-07-15 — cf. EN-siblings comptés
   dans la mesure brute)
 - **sorry (production)** : **8 distincts** (16 code_sorry bruts = 8 FR + 8 EN,

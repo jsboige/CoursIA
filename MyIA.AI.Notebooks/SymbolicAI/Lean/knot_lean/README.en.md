@@ -5,7 +5,7 @@ strategic commented sorries (paper references + Mathlib prerequisites).
 
 Epic #2874 (Phase 5 in progress). Toolchain `v4.33.0` (migration #14773, cf #15829).
 
-## Sorry-state (verified 2026-09-14 against `origin/main`, **10 real**)
+## Sorry-state (verified 2026-09-16 at the branch head, **8 real**)
 
 Two counts, depending on the filter:
 
@@ -14,15 +14,19 @@ Two counts, depending on the filter:
 | `Knots/Basic.lean` | 0 | 3 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | **0** | 5 |
-| `Knots/Conway.lean` | 6 | 12 |
+| `Knots/Conway.lean` | 4 | 9 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **10** | **28** |
+| **Total** | **8** | **25** |
 
 - **real sorries** (`exact sorry`, `:= sorry`, `:= by sorry`) = what's actually
-  missing as a proof. **10** total: **0 in `Invariant.lean`** (the master
+  missing as a proof. **8** total: **0 in `Invariant.lean`** (the master
   `tricolorable_invariant` is PROVEN, #11958; `Knot.unknottingNumber` closed by
-  #15082 via `Nat.sInf`), 2 `reidemeister_theorem` (PL topology), 6 Conway,
+  #15082 via `Nat.sInf`), 2 `reidemeister_theorem` (PL topology), 4 Conway
+  (2 undefined definitions `IsSmoothlySlice`/`IsTopologicallySlice` + the 2
+  Piccirillo/Freedman theorem sorries — the 2 Alexander bounds
+  `conway_trivial_alexander`/`KT_trivial_alexander` were discharged by the
+  #14821 split, #15440/#15460),
   2 Lidman. The **2 §9.1
   backward-transfer residuals `fox`/`col` were DISCHARGED by #11227**: the
   kink all-distinct mode is **vacuous** — the R1 kink `C = ⟨a,b,c,c⟩` has
@@ -31,12 +35,14 @@ Two counts, depending on the filter:
   `c₂ ≠ c₃` → `absurd` closes both residuals in one line each. The
   **R1-connected bi-implication is COMPLETE** (forward #3000 + backward
   #3124/#11227).
-- **Historic decrease 17 → 16 → 14 → 11 → 10**: #8766 discharged
+- **Historic decrease 17 → 16 → 14 → 11 → 10 → 8**: #8766 discharged
   `trefoil_not_unknot`
   (composition), #9966 raised back to 17 (the `tricolorable_forward_r1`
   wrapper wall), the wall was then discharged (16), #11227 closed
-  fox/col (14), the 2026-08-28 `count_code_sorry.py` recount gave 11, and
-  #15082 closed `Knot.unknottingNumber` (10). #11276 added, sorry-free, the
+  fox/col (14), the 2026-08-28 `count_code_sorry.py` recount gave 11,
+  #15082 closed `Knot.unknottingNumber` (10), and the #14821 split
+  (#15440, merging #15460) discharged the two Alexander bounds
+  `conway_trivial_alexander` + `KT_trivial_alexander` (8). #11276 added, sorry-free, the
   **PROVEN**
   `tricolorable_forward_r2_up` transfer plus the named walls
   `r2_append_only_wall` (L1061) and `r3_determined_wall` (L1214) that bound
@@ -48,10 +54,10 @@ Two counts, depending on the filter:
   L554 still counts as a real-mode sorry. The previous README recount
   (2026-07-06) predated the CI prose-header→real switch of 2026-07-11 and
   undercounted by 1).
-- **prose sorries** (any line containing `sorry`) = **28** (re-measured
-  2026-09-14 against `origin/main`; the former 37 no longer reproduced under
+- **prose sorries** (any line containing `sorry`, FR files) = **25** (re-measured
+  2026-09-16 at the branch head; the former 37 no longer reproduced under
   this definition). The CI `lean-knot.yml`
-  switched to **`real` mode** (`sorry-baseline: "10"`) — the real mode
+  switched to **`real` mode** (`sorry-baseline: "8"`) — the real mode
 
   strips `--` line comments and `/- -/` block comments, then counts the
   word-bounded `\bsorry\b` — it is now the sole official CI mode for
@@ -60,13 +66,13 @@ Two counts, depending on the filter:
   `KnotDiagram.wf` in `Basic.lean`).
 
 The CI `.github/workflows/lean-knot.yml` gate is on the **real-mode baseline
-10** (history: prose-header 25→28 in #3124 for
+8** (history: prose-header 25→28 in #3124 for
 the backward transfer decomposition, lowered to 27 after the `num` proof
 #3163, re-bumped to 28 by the GF(3) follow-up #3003; then prose-header→real
 switch to baseline 17 on 2026-07-11 when the raw count diverged from the
 real count; 16 after #8766, re-17 by #9966, 16 at the wall discharge, 14
 after #11227, 11 after the 2026-08-28 `count_code_sorry.py` recount,
-10 after #15082): any PR adding a real sorry raises the real count and fails
+10 after #15082, 8 after the #14821 split #15440/#15460): any PR adding a real sorry raises the real count and fails
 CI, unless justified in the PR body.
 
 ## Results by real status (verified against the code)
@@ -127,9 +133,9 @@ CI, unless justified in the PR body.
 ### Scaffolding (sorry, formal target)
 - [ ] Conway (11n34): `conway_not_smoothly_slice` (Piccirillo 2018/
   Annals 2020), `conway_topologically_slice` (Freedman 1982), mutation
-  Kinoshita-Terasaka — 6 sorries, permanent scaffolding (the 2 historically
-  Open sorries of `conway_trivial_alexander` and `KT_trivial_alexander` are
-  targeted by PRs #15440 / #15460 of the #14821 split — cf note ² of
+  Kinoshita-Terasaka — 4 sorries, permanent scaffolding (the 2 historically
+  Open sorries of `conway_trivial_alexander` and `KT_trivial_alexander` were
+  DISCHARGED by PRs #15440 / #15460 of the #14821 split — cf note ² of
   `LEAN_INVENTORY.md`)
 - [ ] Lidman 11n102: unknotting number = 2 (Heegaard-Floer) — 2 sorries,
   scaffolding (the L39 diagram sorry was eliminated by #4899, PD-code
@@ -138,12 +144,12 @@ CI, unless justified in the PR body.
   (PL topology of 3-manifolds, beyond current Mathlib scope) — 2
   sorries, permanent
 
-### Verdict by sorry (G.1 audit, re-verified 2026-09-14 against `origin/main`)
+### Verdict by sorry (G.1 audit, re-verified 2026-09-16 at the branch head)
 
 Re-verification firsthand against the code (`Reidemeister.lean` +
 `Invariant.lean`). `Invariant.lean` carries **no real sorry anymore**
 (master proven, #11958): the lake's open sheets live in
-`Reidemeister.lean` (2, PL topology), `Conway.lean` (6) and
+`Reidemeister.lean` (2, PL topology), `Conway.lean` (4) and
 `Lidman.lean` (2). Classify each named theorem
 into **PROVEN** / **OPEN (`sorry`)** / **RESEARCH-HOLD** / **INFRASTRUCTURE**
 — the real formal state, coupled to the proofs:
@@ -161,8 +167,8 @@ The marquee **`tricolorable_invariant` is PROVEN**: R1-connected
 bi-implication (#3000 + #3124/#11227), connected R2/R3 transfers
 (#11469, #11903), master induction over `ReidemeisterEquiv` (#11958,
 `Invariant.lean` L3535). `Invariant.lean` carries **no real sorry
-anymore** — the lake's 10 remaining sorries live in `Reidemeister.lean`
-(2, PL topology), `Conway.lean` (6) and `Lidman.lean` (2). The named
+anymore** — the lake's 8 remaining sorries live in `Reidemeister.lean`
+(2, PL topology), `Conway.lean` (4) and `Lidman.lean` (2). The named
 walls `r2_append_only_wall` (L1061) / `r3_determined_wall` (L1214)
 remain in the code as **formal witnesses** of why the free model fails —
 the connected re-modelling they called for has been delivered.
@@ -344,7 +350,7 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | `Knots/Basic.lean` | Definitions (Knot, Link, PD-code, named knots), `KnotDiagram.wf` | 0 |
 | `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
 | `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, PR1 counter-example, connected R1 bi-implication (#3000 + #3124/#11227), R2-up transfer + named walls (#11276), master `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
-| `Knots/Conway.lean` | Conway knot (11n34), Piccirillo, smooth/topological dichotomy | 6 |
+| `Knots/Conway.lean` | Conway knot (11n34), Piccirillo, smooth/topological dichotomy | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index of missing Mathlib prerequisites by tier | 0 |
 
@@ -437,7 +443,8 @@ invariant is itself proven: the corollary carries no sorry anymore. The
 framed by the named walls `r2_append_only_wall` (L1061) /
 `r3_determined_wall` (L1214) (formal witnesses of the free model's
 failure; **14 real sorries** in total at the time of #11227, CI
-baseline recalibrated to 10 after #15082), and the marquee
+baseline recalibrated to 10 after #15082 then 8 after the #14821 split
+#15440/#15460), and the marquee
 `tricolorable_invariant` is **proven** (#11958).
 
 The **Reidemeister corridor #8696** (5 PRs MERGED, c.8162-c.8169)
@@ -496,9 +503,9 @@ statement" pattern (R1: 2526 diagrams/24 monogon failures; R2:
 1. ~~Deliver the connected R2/R3 re-modelling, then the master~~ —
    **done**: `Reidemeister2Connected` (#11469), connected R3 transfers
    (#11903), `tricolorable_invariant` proven (#11958).
-2. Continue reducing the 10 remaining sorries: Conway via the #14821
-   split (`conway_trivial_alexander` #15440, `KT_trivial_alexander`
-   #15460, which carry the CI baseline recalibration), then Lidman
+2. Continue reducing the 8 remaining sorries: the #14821 split is
+   discharged (`conway_trivial_alexander` #15440 + `KT_trivial_alexander`
+   #15460, CI baseline recalibrated to 8) — next is Lidman
    11n102.
 3. Distant scaffolding: wait for the evolution of Mathlib
    (3-manifolds, Heegaard-Floer) for Conway and Lidman.

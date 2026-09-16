@@ -111,7 +111,7 @@
       "configFile": "lakefile.toml"
     }
   ],
-  "name": "grothendieck",
+  "name": "knot_lean",
   "lakeDir": ".lake",
   "fixedToolchain": false
 }
