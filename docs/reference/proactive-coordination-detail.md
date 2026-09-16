@@ -23,24 +23,24 @@ Le contraste par lane rend le mécanisme lisible : la lane au plus gros volume s
 
 ## Backlog pickup — sources autorisees (ordre de priorite decroissant)
 
-Wakeup vide : prendre la **premiere source non-vide**, **un seul item**, produire **1 PR concrete**.
+Wakeup sans dispatch neuf : prendre la **premiere source non-vide** et la consommer comme une **file sequentielle de grains atomiques**. Chaque grain garde sa PR propre ; une PR livree ne termine pas la session et la lane poursuit tant que sa fenetre est active.
 
 | # | Source | Action | Pourquoi cet ordre |
 |---|--------|--------|---------------------|
-| 1 | Side-track Epic dispatchée propre au worker (cf mapping) | Avancer prochaine sous-tache, 1 PR | Engagement deja pris |
-| 2 | Ses propres PRs OPEN en attente review/iter | Re-iter feedback bot/coord, rebase, fix CI | Pas laisser pourrir |
-| 3 | Issues `priority-high` non assignees dans son domaine | Self-assign + dispatch + 1 PR | Urgences declarees |
-| 4 | PRs languishing > 3 jours sans reponse (siennes ou domaine) | Re-iter ou cloturer | Hygiene cluster |
-| 5 | Issues `priority-medium` du domaine | Self-assign + 1 PR | Travail cataloguable |
-| 6 | Low-priority Epics stockees (#1646 Grothendieck, #1647 Conway Phase 2, #1650 Translation, #1651 Conway Phase 3 FWT) | 1 phase / 1 pilier, 1 PR partielle | Stock activable "fenetres calmes" |
-| 7 | Audit findings non traites (NanoClaw #488 etc.) | 1 reassessment + 1 PR si CONFIRMED (cf [audit-reassessment.md](../../.claude/rules/audit-reassessment.md)) | Backlog d'enquete |
-| 8 | Consolidation/documentation de son domaine | 1 PR docs | Wiki Karpathy / SDDD documentaire |
+| 1 | Side-track Epic dispatchée propre au worker (cf mapping) | Avancer ses sous-taches atomiques dans l'ordre | Engagement deja pris |
+| 2 | Ses propres PRs OPEN en attente review/iter | Drainer feedback, conflits et CI propres avant production neuve | Pas laisser pourrir |
+| 3 | Issues `priority-high` non assignees dans son domaine | Self-assign + livraisons atomiques sequentielles | Urgences declarees |
+| 4 | PRs languishing > 3 jours sans reponse (siennes ou domaine) | Re-iter ou cloturer, puis poursuivre | Hygiene cluster |
+| 5 | Issues `priority-medium` du domaine | Self-assign + livraisons atomiques sequentielles | Travail cataloguable |
+| 6 | Low-priority Epics stockees (#1646 Grothendieck, #1647 Conway Phase 2, #1650 Translation, #1651 Conway Phase 3 FWT) | Une PR atomique par phase/pilier, plusieurs a la suite | Stock activable "fenetres calmes" |
+| 7 | Audit findings non traites (NanoClaw #488 etc.) | Reassessment puis PR si CONFIRMED, et continuer | Backlog d'enquete |
+| 8 | Consolidation/documentation de son domaine | PRs atomiques, sans plafond d'une par session | Wiki Karpathy / SDDD documentaire |
 
 ## Anti-patterns wakeup vide (interdits)
 
 - "Rien de nouveau, je me rendors" → **REFUSE** ; pioche backlog avant tout ScheduleWakeup
 - "J'attends le prochain dispatch coord" → **REFUSE** ; le coord n'est pas un distributeur flux tendu
-- Picorer 3+ items "pour faire du chiffre" → **REFUSE** ; 1 item, 1 PR
+- Fusionner plusieurs sujets dans une PR « pour faire du chiffre » → **REFUSE** ; plusieurs grains se livrent sequentiellement, chacun dans sa PR atomique
 - Annoncer "BLOCKED" alors que sources 5-8 non explorees → **REFUSE** (G.7 stagnation cross-cycle = escalade)
 
 ## Reporting wakeup vide
@@ -136,10 +136,10 @@ Détail de la R5 « le pool se tire ». La règle porte l'usage et les trois urn
 | Facteur | Formule | Ce qu'il sert |
 |---|---|---|
 | ancienneté | `1 + log2(1 + jours/7)` | « faire refluer doucement » — la traîne est là où le compte s'accumule ; 6 mois pèsent ~4× une issue de la semaine |
-| anti-adjacence | `×0.25` si le genre égale `--prev-genre` | **G-VAR-3 au tirage**, plutôt qu'en HOLD a posteriori |
+| anti-répétition de session | `×0.25` si le genre appartient aux `--prev-genre` répétés/CSV | **G-VAR-3 au tirage** ; `guard → docs → guard` reste pénalisé |
 | contenu | `×2` si le genre est CONTENU | **G-VAR-1 au tirage** |
 
-**Persistance `--prev-genre` entre cycles (#14591 Volet A)** : `--prev-genre` reste per-cycle par défaut, mais le picker supporte désormais un CSV d'état par lane (`--csv-state <path>` + `--write-state candidate`) qui rend l'argument **auto-appliqué** au prochain run. Le format : `lane,last_genre,last_ts` (3 colonnes, header). Si la lane est connue du CSV, le picker applique `--prev-genre <last_genre>` sans que le worker ait à le passer — fermant l'angle qui a produit les 13 grains monotones c.14466. Le patch est volontairement minimal : read au début (auto-apply), write après tirage (`--write-state=candidate`), clé = lane (le CSV peut héberger plusieurs lanes). Toute `OSError` est avalee silencieusement (le picker reste utilisable, juste sans persistance pour ce cycle). Migrer depuis l'argument CLI : poser `--csv-state ~/.cache/picker_state.csv` une fois dans le workflow worker ; le reste suit.
+**Persistance des genres de session (#14591/#14704)** : `--prev-genre` est répétable et accepte les listes séparées par virgules. Le CSV par lane (`--csv-state <path>` + `--write-state candidate`) conserve l'ensemble sous `lane,last_genres,last_ts`, avec des genres séparés par `|`. L'ancien header `last_genre` et sa valeur scalaire restent lisibles comme un ensemble à un élément ; la prochaine écriture les migre sans perte. Chaque écriture ajoute le genre de la candidate aux genres déjà connus, au lieu d'écraser la mémoire par le dernier : la séquence `guard → docs → guard` reste donc pénalisée au troisième tirage. Le choix `--write-state=merged`, accepté mais sans effet, a été retiré. Toute `OSError` laisse le picker utilisable sans persistance pour le cycle.
 
 Tirage pondéré **sans remise** (Efraimidis-Spirakis : clé `u^(1/w)`, top-k). Plus de pondération reproduirait une monoculture avec des étapes en plus : on se limite à ce que les gates du variation-protocol demandent déjà.
 
@@ -165,7 +165,7 @@ python scripts/pick_idle_grain.py \
   --cache-status
 ```
 
-Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Un résultat vide nomme le filtre dominant à relâcher : il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
+Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Si ces filtres locaux vident la première passe, le picker les relâche automatiquement et l'annonce ; exclusions explicites et urnes restent fermes. Il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
 
 ### Picker — les deux axes de pondération (complément)
 
