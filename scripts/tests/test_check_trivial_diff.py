@@ -9,6 +9,7 @@ l'organe a derive d'un verdict fonde par le user :
   #15737  26 fichiers, +737/-19  la fournée demandée (x37,8 en lignes)          -> OK
   fix 2 lignes d'un bug critique (contre-exemple VERBATIM du user)              -> OK
 """
+import re
 import sys
 from pathlib import Path
 
@@ -115,6 +116,62 @@ def test_find_written_exception_accents_et_null():
     assert find_written_exception("rien ici") is None
     got = find_written_exception("Exception seulement résidu final mesuré (recensement joint).")
     assert got is not None and "résidu final mesuré" in got
+
+
+# --- frontière de mot : marqueurs SNAKE_CASE (#16143) -----------------------
+
+def test_marqueur_snake_case_seul_eteint_le_warning():
+    """Un marqueur SNAKE_CASE écrit SEUL (sans prose autour) est reconnu.
+
+    Défaut #16143, mesuré sur #15849 : le détecteur rendait `verdict: trivial`
+    + `written_exception: null` sur un corps qui portait `FINAL_RESIDUAL` --
+    exactement ce qu'il rend quand rien n'est invoqué, donc faux dans le sens
+    qui ACCUSE l'auteur. La dernière ligne du tableau de l'issue (marqueur
+    entouré de prose) masquait le défaut : elle passait par les mots de prose,
+    pas par le marqueur.
+    """
+    for marker in ("FINAL_RESIDUAL", "RESIDU_FINAL_MESURE"):
+        out = _verdict(BODY_TRIVIAL_DOCS + f"\n{marker}\n", 6, 2, 2)
+        assert out["verdict"] == "ok", (marker, out["verdict"])
+        assert out["signals"]["written_exception"] == marker, marker
+
+
+def test_table_des_deux_colonnes_de_la_frontiere():
+    """La colonne de DROITE compte autant que celle de gauche.
+
+    Un test qui ne vérifierait que la gauche repasserait au vert avec les `\\b`
+    simplement retirés, en rouvrant la sur-accusation (`finalement`,
+    `finaliser`, `seulement`) -- l'erreur symétrique, et moins visible.
+    """
+    doit_accrocher = [
+        "FINAL_RESIDUAL",
+        "RESIDU_FINAL_MESURE",
+        "final_residual",
+        "residu final mesure",
+        "Exception : FINAL_RESIDUAL reste a traiter",
+    ]
+    doit_rester_muet = [
+        "finalement le sweep est termine",
+        "il faut finaliser le recensement",
+        "seulement deux fichiers restent",
+        "le fichier finalise est commite",
+        "definal",
+        "exception sans portee",  # lexical seul = prose, pas une exception
+    ]
+    for line in doit_accrocher:
+        assert find_written_exception(line) is not None, line
+    for line in doit_rester_muet:
+        assert find_written_exception(line) is None, line
+
+
+def test_sans_frontiere_droite_final_mordrait_finalement():
+    """Contrôle du raisonnement : c'est la frontière DROITE qui protège
+    `finalement`, pas autre chose. La forme naïve (celle qu'on obtiendrait en
+    retirant simplement les `\\b`) mord -- et c'est précisément la
+    sur-accusation que le fix doit éviter."""
+    naive = re.compile(r"(?<![a-z0-9])(?:final|dernier|seul)")
+    assert naive.search("finalement")            # la forme naïve accuse
+    assert find_written_exception("finalement") is None  # la forme livrée non
 
 
 # --- états unknown (jamais de verdict sur absence de donnée, #14849) --------
