@@ -109,6 +109,22 @@ pour raison d'infrastructure re-arme le plancher (2 h) ; c'est le trade-off
 d'une frontiere de securite -- on ne franchit jamais sur une absence de
 preuve.
 
+CR ai-01 2026-09-16 19:10Z -- la preuve doit etre ATTEIGNABLE dans le gate
+---------------------------------------------------------------------------
+
+`pr-gate.yml` tourne sur un checkout `actions/checkout@v4` SANS fetch-depth
+(shallow depth 1) et sparse. Dans cette topologie, chaque parent est ramene
+en `--depth=1` : les deux parents n'ont aucun historique commun, `merge-base`
+echoue, et `git merge-tree --write-tree` refuse de calculer ("unrelated
+histories") -- la preuve d'equivalence etait INATTENABLE et meme un
+update-branch serveur LEGITIME se re-armait 120 min. Le repair : avant
+merge-tree, on approfondit le checkout par palliers bornes
+(`git fetch --deepen=N`, cap `_DEEPEN_MAX_DEPTH`) jusqu'a rendre le
+merge-base calculable. Au-dela du cap, ou dans un depot non shallow (des
+historiques veritablement sans relation), la preuve reste indisponible ->
+fail-closed : l'exemption ne franchit jamais sur une absence de preuve
+(inchange).
+
 Derogation
 ----------
 
@@ -290,7 +306,8 @@ def _ensure_commit_present(sha, run_git):
     """Best effort : ramener localement un parent absent avant merge-tree.
     Le checkout du gate porte le cote PR ; la base, elle, peut manquer. Un
     echec ici n'est PAS fatal : merge-tree echouera ensuite et la fusion se
-    mesurera elle-meme (fail-closed, cf. CR 2026-09-16)."""
+    mesurera elle-meme (fail-closed, cf. CR 2026-09-16). L'approfondissement
+    qui rendra le merge-base calculable est gere par `_deepen_until_merge_base`."""
     try:
         rc, _ = run_git(["cat-file", "-e", sha + "^{commit}"])
         if rc == 0:
@@ -300,15 +317,76 @@ def _ensure_commit_present(sha, run_git):
         pass  # best effort : merge-tree echouera, la fusion se mesurera
 
 
+#: Bornes de l'approfondissement shallow (CR ai-01 2026-09-16 19:10Z). Le
+#: checkout du gate est shallow (actions/checkout@v4 sans fetch-depth, depth
+#: 1) : deux parents ramenes en --depth=1 n'ont aucun historique commun, et
+#: merge-tree refuse alors de calculer -- le cas legitime update-branch se
+#: re-armait. On approfondit par palliers croissants jusqu'au merge-base ;
+#: au-dela de la borne, la preuve reste indisponible -> fail-closed.
+_DEEPEN_START_DEPTH = 64
+_DEEPEN_FACTOR = 2
+_DEEPEN_MAX_DEPTH = 1024
+
+
+def _merge_base_available(first, second, run_git):
+    """Le merge-base des deux parents est-il calculable localement ?
+    Une execution defaillante vaut indisponible (False), jamais acquise."""
+    try:
+        rc, _ = run_git(["merge-base", first, second])
+        return rc == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _is_shallow_repository(run_git):
+    """Le checkout courant est-il shallow ? `git fetch --deepen` y est
+    refuse : un merge-base introuvable dans un depot COMPLET est un
+    veritable unrelated-histories, qui reste fail-closed sans aucun fetch."""
+    try:
+        rc, out = run_git(["rev-parse", "--is-shallow-repository"])
+        return rc == 0 and (out or "").strip() == "true"
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _deepen_until_merge_base(first, second, run_git):
+    """Best effort borne : rendre le merge-base de deux parents calculable.
+
+    `git fetch --deepen=N` approfondit TOUTES les frontieres shallow du
+    checkout (y compris les parents ramenes par sha en --depth=1) ; le
+    merge-base est re-teste apres chaque pallier. Echec ou cap atteint :
+    False -- merge-tree echouera ensuite et la fusion se mesurera elle-meme
+    (fail-closed, cf. CR 2026-09-16). Ne leve jamais."""
+    if not _is_shallow_repository(run_git):
+        return False
+    depth = _DEEPEN_START_DEPTH
+    while depth <= _DEEPEN_MAX_DEPTH:
+        try:
+            rc, _ = run_git(
+                ["fetch", "--deepen={}".format(depth), "--quiet", "origin"]
+            )
+            if rc == 0 and _merge_base_available(first, second, run_git):
+                return True
+        except (OSError, subprocess.SubprocessError):
+            return False
+        depth *= _DEEPEN_FACTOR
+    return False
+
+
 def _auto_merge_tree(first, second, run_git):
     """Tree OID de l'auto-merge de deux parents, ou None si non calculable.
 
     `git merge-tree --write-tree` (Git >= 2.38) ecrit l'arbre du merge
     automatique SANS toucher a l'index ni au worktree, et sort non nul en
     cas de conflits -- un merge reel n'existe alors qu'avec une resolution
-    d'auteur : jamais content-free. Toute execution defaillante (git absent,
-    OSError, sortie vide) vaut preuve indisponible : None, fail-closed."""
+    d'auteur : jamais content-free. Dans le checkout shallow du gate, les
+    parents sont d'abord approfondis par palliers bornes jusqu'a rendre le
+    merge-base calculable (CR ai-01 2026-09-16 19:10Z). Toute execution
+    defaillante (git absent, OSError, sortie vide) vaut preuve indisponible :
+    None, fail-closed."""
     try:
+        if not _merge_base_available(first, second, run_git):
+            _deepen_until_merge_base(first, second, run_git)
         rc, out = run_git(["merge-tree", "--write-tree", first, second])
     except (OSError, subprocess.SubprocessError):
         return None

@@ -18,6 +18,9 @@ Ce que ces tests epinglent, par ordre de degat s'ils cassent :
 
 Run: python -m pytest scripts/tests/test_merge_dwell.py
 """
+import os
+import shutil
+import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -184,12 +187,15 @@ def _commit(sha, date, parents, tree=None):
 
 def _git_proving(auto_tree):
     """Fake run_git dont merge-tree PROUVE l'equivalence : l'auto-merge des
-    parents donne exactement `auto_tree` (les objets sont presents)."""
+    parents donne exactement `auto_tree` (les objets sont presents, donc le
+    merge-base est calculable)."""
     def run_git(args):
         if args[:2] == ["cat-file", "-e"]:
             return 0, ""
         if args[0] == "fetch":
             return 0, ""
+        if args[0] == "merge-base":
+            return 0, "b0"
         if args[:2] == ["merge-tree", "--write-tree"]:
             return 0, auto_tree + "\n"
         raise AssertionError("git inattendu: " + " ".join(args))
@@ -204,6 +210,8 @@ def _git_conflicting():
             return 0, ""
         if args[0] == "fetch":
             return 0, ""
+        if args[0] == "merge-base":
+            return 0, "b0"
         if args[:2] == ["merge-tree", "--write-tree"]:
             return 1, ""
         raise AssertionError("git inattendu: " + " ".join(args))
@@ -451,3 +459,223 @@ def test_le_verdict_ne_dit_jamais_d_attendre():
     # Et ce qui doit y etre : la lane continue, et peut rejouer elle-meme.
     assert "NE PAS ATTENDRE" in msg
     assert "rerun" in msg
+
+
+# --- CR ai-01 2026-09-16 19:10Z : la preuve doit etre ATTEIGNABLE dans le
+# checkout shallow du gate (integration depot reel, chemin de production
+# `_default_run_git`) ------------------------------------------------------
+
+
+def _git_version_supported():
+    """`git merge-tree --write-tree` demande Git >= 2.38 (CR 2026-09-16)."""
+    try:
+        out = subprocess.run(
+            ["git", "--version"], capture_output=True, text=True
+        ).stdout
+    except OSError:
+        return False
+    parts = out.strip().split()
+    if len(parts) < 3 or parts[0] != "git":
+        return False
+    try:
+        major, minor = (int(x) for x in parts[2].split(".")[:2])
+    except ValueError:
+        return False
+    return (major, minor) >= (2, 38)
+
+
+def _git(cwd, *args, env=None):
+    e = {
+        "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@local",
+        "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@local",
+    }
+    if env:
+        e.update(env)
+    return subprocess.run(
+        ["git", *args], cwd=str(cwd), env={**os.environ, **e},
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+
+
+def _git_ok(result, what):
+    assert result.returncode == 0, "{} a echoue:\n{}\n{}".format(
+        what, result.stdout, result.stderr
+    )
+
+
+def _build_gate_topology(tmp_path, substantive=False):
+    """Mini-depot REEL simulant la topologie du gate (`pr-gate.yml` :
+    `actions/checkout@v4` sans fetch-depth -> checkout shallow depth 1). Le
+    clone gate ne porte que la tete de PR ; les parents du merge de base en
+    sont absents. Renvoie (chemin du clone, info) avec les sha/arbres REELS.
+
+    `substantive=False` : update-branch legitime (arbre == auto-merge).
+    `substantive=True`  : merge --no-commit + contenu d'auteur ajoute (arbre
+    != auto-merge) -- la resolution manuelle substantive de la CR."""
+    origin = tmp_path / "origin"
+    uri = origin.as_uri()
+    _git_ok(_git(tmp_path, "init", "--bare", "-b", "main", str(origin)),
+            "init origin")
+    work = tmp_path / "work"
+    _git_ok(_git(tmp_path, "clone", uri, str(work)), "clone work")
+    _git(work, "config", "user.name", "test")
+    _git(work, "config", "user.email", "test@local")
+    _git_ok(_git(work, "commit", "--allow-empty", "-m", "b0"), "b0")
+    root_sha = _git(work, "rev-parse", "HEAD").stdout.strip()
+    for i in range(40):
+        (work / "g{:02d}".format(i)).write_text("g", encoding="utf-8")
+        _git(work, "add", "-A")
+        _git_ok(_git(work, "commit", "-m", "base{}".format(i)),
+                "base{}".format(i))
+    base_tip = _git(work, "rev-parse", "main").stdout.strip()
+
+    author_env = {"GIT_AUTHOR_DATE": "2026-09-07T08:00:00Z",
+                  "GIT_COMMITTER_DATE": "2026-09-07T08:00:00Z"}
+    _git_ok(_git(work, "checkout", "-b", "pr", root_sha), "branch pr")
+    (work / "a").write_text("a1", encoding="utf-8")
+    _git(work, "add", "-A")
+    _git_ok(_git(work, "commit", "-m", "a1", env=author_env), "a1")
+    (work / "b").write_text("b1", encoding="utf-8")
+    _git(work, "add", "-A")
+    _git_ok(_git(work, "commit", "-m", "a2", env=author_env), "a2")
+    author_tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+
+    merge_env = {"GIT_AUTHOR_DATE": "2026-09-07T11:59:00Z",
+                 "GIT_COMMITTER_DATE": "2026-09-07T11:59:00Z"}
+    if substantive:
+        _git_ok(_git(work, "merge", "--no-commit", "main"), "merge no-commit")
+        with (work / "a").open("a", encoding="utf-8") as fh:
+            fh.write("\nresolution substantive d'auteur")
+        _git(work, "add", "-A")
+        _git_ok(_git(work, "commit", "-m", "merge resolution", env=merge_env),
+                "commit resolution")
+    else:
+        _git_ok(_git(work, "merge", "-m", "update-branch merge", "main",
+                     env=merge_env), "merge update-branch")
+    merge_sha = _git(work, "rev-parse", "HEAD").stdout.strip()
+    merge_tree = _git(work, "rev-parse", merge_sha + "^{tree}").stdout.strip()
+
+    _git_ok(_git(work, "push", "origin", "main"), "push main")
+    _git_ok(_git(work, "push", "origin", "pr"), "push pr")
+
+    gate = tmp_path / "gate"
+    _git_ok(_git(tmp_path, "clone", "--depth=1", "--branch", "pr",
+                 uri, str(gate)), "clone gate shallow")
+    return gate, {
+        "merge_sha": merge_sha, "merge_tree": merge_tree,
+        "merge_date": "2026-09-07T11:59:00Z", "author_tip": author_tip,
+        "author_date": "2026-09-07T08:00:00Z", "base_tip": base_tip,
+        "root_sha": root_sha,
+    }
+
+
+def _shallow_fetch_payloads(info):
+    """Payloads API coherents avec le depot REEL construit : les sha et
+    arbres cites sont ceux du repo ; seules les lectures gh api sont fakes."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [], "base": {"sha": info["base_tip"]}}
+        if path == "repos/o/r/commits/" + info["merge_sha"]:
+            return _commit(info["merge_sha"], info["merge_date"],
+                           [info["author_tip"], info["base_tip"]],
+                           tree=info["merge_tree"])
+        if path == "repos/o/r/commits/" + info["author_tip"]:
+            return _commit(info["author_tip"], info["author_date"],
+                           [info["root_sha"]])
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch
+
+
+@pytest.mark.skipif(not _git_version_supported(),
+                    reason="git >= 2.38 requis (merge-tree --write-tree)")
+def test_cr_20260916_update_branch_legitime_franchit_le_checkout_shallow(
+    tmp_path, monkeypatch
+):
+    """LE defaut de la CR 19:10Z : dans le checkout shallow du gate
+    (actions/checkout depth 1), les parents ramenes en --depth=1 n'ont aucun
+    historique commun -> merge-base indisponible, merge-tree refusait de
+    calculer -> la preuve d'equivalence etait inatteignable et meme le
+    update-branch LEGITIME se re-armait 120 min. Avec l'approfondissement
+    borne, l'exemption est prouvable et la remontee mesure le commit
+    d'auteur (T-240 min) -- plancher ecoule."""
+    gate, info = _build_gate_topology(tmp_path, substantive=False)
+    monkeypatch.chdir(gate)
+    ok, msg = merge_dwell.check(
+        "o/r", info["merge_sha"], 42, 120.0, now=NOW,
+        fetch=_shallow_fetch_payloads(info),
+        run_git=merge_dwell._default_run_git,
+    )
+    assert ok is True, msg
+    assert info["author_date"] in msg, (
+        "le plancher doit se mesurer sur le commit d'auteur, pas la fusion"
+    )
+
+
+@pytest.mark.skipif(not _git_version_supported(),
+                    reason="git >= 2.38 requis (merge-tree --write-tree)")
+def test_cr_20260916_resolution_substantive_re_arme_le_checkout_shallow(
+    tmp_path, monkeypatch
+):
+    """Dans la MEME topologie shallow, un merge de base porteur de contenu
+    d'auteur (arbre != auto-merge) reste autoritatif : le plancher se re-arme
+    sur la fusion (T-1 min)."""
+    gate, info = _build_gate_topology(tmp_path, substantive=True)
+    monkeypatch.chdir(gate)
+    ok, msg = merge_dwell.check(
+        "o/r", info["merge_sha"], 42, 120.0, now=NOW,
+        fetch=_shallow_fetch_payloads(info),
+        run_git=merge_dwell._default_run_git,
+    )
+    assert ok is False, msg
+    assert msg.startswith("tete du " + info["merge_date"])
+
+
+def test_cr_20260916_approfondissement_indisponible_fail_closed():
+    """Le deepen ne repond plus (reseau) : la preuve reste indisponible, la
+    fusion se mesure elle-meme -- l'approfondissement ne transforme jamais
+    un echec en exemption."""
+    def run_git(args):
+        if args[:2] == ["cat-file", "-e"]:
+            return 0, ""
+        if args[0] == "merge-base":
+            return 1, ""
+        if args[:2] == ["rev-parse", "--is-shallow-repository"]:
+            return 0, "true\n"
+        if args[0] == "fetch":  # deepen : plus rien ne repond
+            return 128, ""
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            return 128, "fatal: refusing to merge unrelated histories"
+        raise AssertionError("git inattendu: " + " ".join(args))
+
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree="a010"), run_git=run_git,
+    )
+    assert ok is False
+    assert msg.startswith("tete du 2026-09-07T11:59:00Z")
+
+
+def test_cr_20260916_repo_complet_sans_merge_base_reste_fail_closed():
+    """Depot COMPLET (non shallow) sans merge-base = historiques veritablement
+    sans relation : --deepen y est refuse par git et on ne tente AUCUN fetch
+    -- la fusion se mesure elle-meme."""
+    calls = []
+
+    def run_git(args):
+        calls.append(args[0])
+        if args[:2] == ["cat-file", "-e"]:
+            return 0, ""
+        if args[0] == "merge-base":
+            return 1, ""
+        if args[:2] == ["rev-parse", "--is-shallow-repository"]:
+            return 0, "false\n"
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            return 128, "fatal: refusing to merge unrelated histories"
+        raise AssertionError("git inattendu: " + " ".join(args))
+
+    ok, msg = merge_dwell.check(
+        "o/r", "m3rg3", 42, 120.0, now=NOW,
+        fetch=_cr_payloads(tree="a010"), run_git=run_git,
+    )
+    assert ok is False
+    assert "fetch" not in calls, "un depot complet sans merge-base ne fetch pas"
