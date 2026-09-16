@@ -118,6 +118,47 @@ def test_empty_result_names_all_exclusions_without_claiming_empty_pool():
     assert funnel["examples"] == {"exclude_issue": [1, 2]}
 
 
+def test_narrow_local_filters_fail_open_to_a_bounded_second_pass():
+    items = [_item(1, labels=("pedagogy",), age=30)]
+    kept, funnel = pig.filter_candidates_with_continuity(
+        items, required_labels={"missing"}, min_age_days=90)
+    assert [item["number"] for item in kept] == [1]
+    assert funnel["fell_back"] is True
+    assert funnel["first_pass"]["final"] == 0
+    assert funnel["final"] == 1
+    assert funnel["fallback_final"] == 1
+    assert funnel["by_urn"]["grain"] == 1
+    assert funnel["excluded_total"] == 0
+    requested = pig.requested_filter_funnel(funnel)
+    assert requested["excluded"] == {"require_label": 1}
+    assert requested["final"] == 0
+
+
+def test_requested_filter_funnel_preserves_non_fallback_contract():
+    items = [_item(1), _item(2, age=1)]
+    _, funnel = pig.filter_candidates_with_continuity(
+        items, min_age_days=5)
+    assert funnel["fell_back"] is False
+    assert pig.requested_filter_funnel(funnel) is funnel
+    assert pig.requested_filter_funnel(funnel)["excluded"] == {
+        "min_age_days": 1,
+    }
+
+
+def test_continuity_fallback_keeps_explicit_exclusions_and_urn_gate():
+    items = [_item(1), _item(2, klass="delivered"), _item(3)]
+    kept, funnel = pig.filter_candidates_with_continuity(
+        items,
+        exclude_issues={1},
+        required_labels={"missing"},
+        urns={"grain"},
+    )
+    assert [item["number"] for item in kept] == [3]
+    assert funnel["fell_back"] is True
+    assert 1 not in {item["number"] for item in kept}
+    assert 2 not in {item["number"] for item in kept}
+
+
 @pytest.mark.parametrize(
     "extra",
     [
@@ -125,6 +166,7 @@ def test_empty_result_names_all_exclusions_without_claiming_empty_pool():
         ["--min-idle-days", "-1"],
         ["--urns", "grain,unknown"],
         ["--exclude-issue", "not-a-number"],
+        ["--write-state", "merged"],
     ],
 )
 def test_cli_rejects_invalid_filter_arguments(extra):
