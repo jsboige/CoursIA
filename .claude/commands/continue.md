@@ -50,7 +50,7 @@ python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre
 
 1. **Commit + PR AVANT le rapport** — jamais de [DONE] sur un travail non commite.
 2. `[DONE]` lane-specific sur le dashboard workspace (resume : livrables, PRs, residuel). Une PR livree ne clot jamais la session : poursuivre la file puis re-piocher jusqu'a la fin effective de la session.
-3. Bloqueur necessitant une action user : tag `[ASK USER]` separe du [DONE], repete a CHAQUE fin de session ([user-blocker-signaling](../rules/user-blocker-signaling.md)).
+3. Bloqueur nécessitant une action user : l'inscrire dans le registre durable, puis restituer les questions ouvertes en un seul bloc en fin de session ([user-blocker-signaling](../rules/user-blocker-signaling.md)).
 4. Repondre au DM coordinateur si une mission a ete traitee.
 5. MAJ `MEMORY.md` si lecon durable (les PR#/SHA ephemeres vont au dashboard, pas en memoire).
 
