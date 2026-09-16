@@ -421,6 +421,64 @@ class TestScanNotebook:
             for f in findings
         ), "expected MEDIUM Duplicate under identical parent chain"
 
+    def test_causal_closest_same_level_parent_in_cell(self, tmp_path):
+        # ai-01 re-review FN #1 (2026-09-16): a cell holding '## Parent A',
+        # '## Parent B', '### Exercice 1' must scope the exercise under
+        # Parent B — the LAST same-level heading before the match is the
+        # closest open parent. Before the positional fix the forward
+        # first-per-level collect kept Parent A, so this real duplicate
+        # against a later '## Parent B > ### Exercice 1' cell produced
+        # different keys and 0 MEDIUM.
+        nb_path = _write_nb(tmp_path / "closest_parent.ipynb", [
+            _md("## Parent A\n\n## Parent B\n\n### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("## Parent B\n\n### Exercice 1 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate: both Exercice 1 live under Parent B"
+
+    def test_causal_heading_after_exercise_is_not_parent(self, tmp_path):
+        # ai-01 re-review FN #2 (2026-09-16): '### Exercice 1' followed by
+        # '## Parent B' in the SAME cell must NOT take Parent B as ancestor —
+        # it opens a LATER section. The exercise stays under the parent
+        # opened before it (here '## Parent A' in a preceding cell), so the
+        # real duplicate under Parent A must be caught. Before the fix the
+        # future heading was taken as parent and the duplicate was lost.
+        nb_path = _write_nb(tmp_path / "future_heading.ipynb", [
+            _md("## Parent A"),
+            _md("### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("### Exercice 1 : Second\n\n## Parent B"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate: both Exercice 1 live under Parent A"
+
+    def test_in_cell_and_separate_cell_parents_equivalent(self, tmp_path):
+        # Equivalence guard (ai-01 re-review 2026-09-16): the same parent
+        # heading scoped inside the exercise's own cell and scoped in a
+        # preceding cell must yield the SAME ancestry key — where the cell
+        # boundary falls must not change duplicate detection.
+        nb_path = _write_nb(tmp_path / "equivalence.ipynb", [
+            _md("## Parent A"),
+            _md("### Exercice 1 : Separate"),
+            _code("pass"),
+            _md("## Parent A\n\n### Exercice 1 : InCell"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate across in-cell/separate parent layouts"
+
     def test_no_exercises_clean(self, tmp_path):
         nb_path = _write_nb(tmp_path / "none.ipynb", [
             _md("# Title"),

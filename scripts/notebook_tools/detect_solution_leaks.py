@@ -188,7 +188,7 @@ def _header_level(line: str) -> int:
     return len(m.group(1)) if m else 0
 
 
-def get_parent_header_key(cells, idx, current_level=0) -> str:
+def get_parent_header_key(cells, idx, current_level=0, match_pos=None) -> str:
     """Return a key representing the hierarchical ancestry enclosing cell at
     ``idx``.
 
@@ -205,6 +205,14 @@ def get_parent_header_key(cells, idx, current_level=0) -> str:
     falls back to the last header of the cell (legacy behaviour, retained
     for callers that do not yet pass the level).
 
+    ``match_pos`` is the character offset of the exercise header match in the
+    cell source. Only headings STRICTLY BEFORE this offset can be ancestors:
+    a heading after the exercise header opens a LATER section and taking it
+    as a parent mis-attributes the exercise (causal false negative — a real
+    duplicate under the true parent gets lost). Same-level headings before
+    the match resolve to the LAST one, the closest open parent. If omitted,
+    the bound falls back to the last header of the cell (legacy behaviour).
+
     Identity = full hierarchical path. Two ancestors that happen to share the
     same immediate heading text but live under different grand-ancestors are
     distinct. So ``# Partie A > ## Exercices > ### Exercice 1`` and
@@ -220,30 +228,40 @@ def get_parent_header_key(cells, idx, current_level=0) -> str:
             if matches:
                 current_level = _header_level(matches[-1])
 
-    # 2. Qualifying ancestors IN THE CURRENT CELL (level strictly lower than
-    #    the exercise header). The walk below only sees cells idx-1..0; a
+    # 2. Ancestry opened IN THE CURRENT CELL, strictly before the exercise
+    #    header match position. The walk below only sees cells idx-1..0; a
     #    parent heading that lives in the SAME markdown cell as the exercise
     #    would be missed otherwise — a layout-dependent false negative where
     #    the only difference between two notebook layouts is where the cell
-    #    boundary falls. Collect them first so the backward walk's
-    #    `seen_levels` guard deduplicates if the same level also appears in a
-    #    preceding cell.
-    ancestors = []  # list of (level, text) ordered innermost first
-    seen_levels = set()
-    found_any = False
+    #    boundary falls. Causality is positional: a heading at or after the
+    #    match opens a sibling or LATER section and is never an ancestor,
+    #    and within the pre-match prefix the stack keeps the LAST heading
+    #    per level (the closest open parent) — a level-l heading closes
+    #    every open section at level >= l, as markdown does.
+    ancestors = []  # open heading stack, outermost-first, one entry per level
     if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
-        for header_line in HEADER_LINE_RE.findall(''.join(
-                cells[idx].get('source', []))):
-            level = _header_level(header_line)
-            if level <= 0 or level >= current_level:
-                continue  # siblings/cousins of the exercise, not ancestors
-            if level in seen_levels:
+        src = ''.join(cells[idx].get('source', []))
+        header_matches = list(HEADER_LINE_RE.finditer(src))
+        if match_pos is None and header_matches:
+            # Legacy fallback: bound at the last header of the cell (the
+            # presumed owning header when the caller passes no position).
+            match_pos = header_matches[-1].start()
+        for hm in header_matches:
+            if match_pos is not None and hm.start() >= match_pos:
+                break  # at/after the exercise header: sibling or later section
+            level = _header_level(hm.group(0))
+            if level <= 0:
                 continue
-            ancestors.append((level, re.sub(r'^#+\s*', '', header_line)))
-            seen_levels.add(level)
-            found_any = True
-            if 1 in seen_levels:
-                break  # outermost — cannot have anything outside it
+            while ancestors and ancestors[-1][0] >= level:
+                ancestors.pop()  # a level-l heading closes every >=l section
+            ancestors.append((level, re.sub(r'^#+\s*', '', hm.group(0))))
+        # Siblings of the exercise opened in the same cell (level >=
+        # current_level) sit at the top of the stack; they are not ancestors.
+        while ancestors and ancestors[-1][0] >= current_level:
+            ancestors.pop()
+
+    seen_levels = {level for level, _ in ancestors}
+    found_any = bool(ancestors)
 
     # 3. Walk backwards across preceding cells, accumulating ancestors whose
     #    level is STRICTLY lower than the exercise header. The first header we
@@ -944,6 +962,7 @@ def scan_notebook(path: str) -> list[dict]:
             # new sections (e.g., "### Exercices — Partie A" then "### Exercices — Partie B").
             parent_key = get_parent_header_key(
                 cells, i, current_level=_header_level(m.group(0)),
+                match_pos=m.start(),
             )
             if parent_key not in exercise_numbers:
                 exercise_numbers[parent_key] = {}
