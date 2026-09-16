@@ -44,9 +44,11 @@ read-only : incapable de minter un registration-token). Sans PAT, l'organe
 degrade proprement sur le seul symptome.
 
 Sortie : exit 1 + annotation ::error:: sur EXTINCTION ou STARVATION ;
-::warning:: sur perte partielle (online < WARN_FLOOR) sans extinction.
-Advisory par construction du workflow appelant (schedule/workflow_dispatch
-uniquement, jamais pull_request/push -- il ne peut jamais bloquer une PR).
+::warning:: sur perte partielle (online < WARN_FLOOR) sans extinction, ou sur
+CADENCE SERVIE (le scheduler GitHub ne livre plus l'evenement schedule, #15332).
+Advisory par construction du workflow appelant (schedule/workflow_dispatch +
+heartbeat workflow_run, jamais pull_request/push -- il ne peut jamais bloquer
+une PR).
 """
 
 from __future__ import annotations
@@ -64,6 +66,7 @@ DEFAULT_LABEL = "coursia-linux"
 DEFAULT_STARVE_MINUTES = 15.0
 DEFAULT_WARN_FLOOR = 2
 DEFAULT_WINDOW_MAX_MINUTES = 360.0
+DEFAULT_CADENCE_WARN_MINUTES = 240.0
 RUNS_PAGE_SIZE = 100
 
 
@@ -301,6 +304,75 @@ def fetch_starvation(
     return result
 
 
+def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3) -> list[datetime]:
+    """Dates de creation (UTC, ordre descroissant) des derniers runs
+    ``event=schedule`` du workflow lui-meme.
+
+    #15332 : la cadence SERVIE se mesure sur les seuls runs planifies -- les
+    runs workflow_run/workflow_dispatch (heartbeats) ne prouvent rien du
+    scheduler et ne doivent pas fausser la mesure.
+    """
+    data = _gh_json(
+        [f"repos/{repo}/actions/workflows/{self_workflow}/runs"
+         f"?event=schedule&per_page={limit}"]
+    )
+    if not isinstance(data, dict):
+        return []
+    out: list[datetime] = []
+    for run in data.get("workflow_runs", []):
+        d = _parse_iso(run.get("created_at"))
+        if d is not None:
+            out.append(d)
+    return out
+
+
+def evaluate_cadence(
+    scheduled: list[datetime],
+    now: datetime,
+    declared_minutes: float,
+    warn_minutes: float,
+) -> Verdict:
+    """Mesure l'ecart entre cadence cron DECLAREE et cadence SERVIE (#15332).
+
+    Le 2026-09-09, le scheduler GitHub a cesse de livrer ``schedule`` (4 h
+    sans declenchement, depot entier) : un organe porte par schedule seul
+    mourait avec la panne. Deux signaux, calibres pour eviter le rouge
+    permanent :
+
+      - une NOTE systantique : minutes depuis le dernier run planifie +
+        intervalle servi precedent -- la mesure demande par #15332 point 2 ;
+      - un WARNING seulement au-dela de ``warn_minutes`` sans run planifie :
+        l'echelle de l'arret total (>= 4 h), pas le retard chronique de
+        GitHub sur un depot a 159 workflows (intervalles servis de ~2,5-5 h
+        deja observes a l'etat nominal -- rougir dessus apprendrait a etre
+        ignore, cf garde anti-FP de STARVATION).
+    """
+    v = Verdict()
+    if not scheduled:
+        v.warnings.append(
+            "SCHEDULER MUET: aucun run event=schedule lisible -- l'API ou le "
+            "scheduler est en panne (#15332)"
+        )
+        return v
+    since_last = (now - scheduled[0]).total_seconds() / 60.0
+    if len(scheduled) >= 2:
+        gap = (scheduled[0] - scheduled[1]).total_seconds() / 60.0
+        gap_txt = f"intervalle servi precedent: {gap:.0f} min"
+    else:
+        gap_txt = "un seul run schedule visible"
+    v.notes.append(
+        f"cadence servie: {since_last:.0f} min depuis le dernier run planifie "
+        f"({gap_txt} ; declare {declared_minutes:.0f} min)"
+    )
+    if since_last > warn_minutes:
+        v.warnings.append(
+            f"SCHEDULER MUET: {since_last:.0f} min sans run planifie "
+            f"(seuil {warn_minutes:.0f} min, declare {declared_minutes:.0f} min) "
+            f"-- l'evenement schedule n'est plus livre (#15332)"
+        )
+    return v
+
+
 @dataclass
 class Verdict:
     status: str = "OK"  # OK | ERROR -- fixe par evaluate()
@@ -368,6 +440,16 @@ def main() -> int:
                     default=float(os.environ.get("WINDOW_MAX_MINUTES", DEFAULT_WINDOW_MAX_MINUTES)),
                     help="fenetre d'examen ; les runs queued plus vieux sont "
                          "la classe ABANDONNEE, notes sans rouge")
+    ap.add_argument("--self-workflow", default=os.environ.get("SELF_WORKFLOW", ""),
+                    help="fichier du workflow appelant -- mesure la cadence "
+                         "servie de SES runs event=schedule (#15332) ; vide = desactive")
+    ap.add_argument("--declared-cadence-minutes", type=float,
+                    default=float(os.environ.get("DECLARED_CADENCE_MINUTES", 30.0)),
+                    help="cadence cron declaree, pour la note de cadence servie")
+    ap.add_argument("--cadence-warn-minutes", type=float,
+                    default=float(os.environ.get("CADENCE_WARN_MINUTES", DEFAULT_CADENCE_WARN_MINUTES)),
+                    help="minutes sans run planifie avant le warning "
+                         "SCHEDULER MUET (echelle de l'arret total, pas du retard chronique)")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
 
@@ -378,6 +460,17 @@ def main() -> int:
         window_max_minutes=args.window_max_minutes,
     )
     v = evaluate(inv, st, args.warn_floor)
+    if args.self_workflow:
+        cad = evaluate_cadence(
+            fetch_scheduled_runs(args.repo, args.self_workflow),
+            datetime.now(timezone.utc),
+            args.declared_cadence_minutes,
+            args.cadence_warn_minutes,
+        )
+        v.notes.extend(cad.notes)
+        v.warnings.extend(cad.warnings)
+        v.errors.extend(cad.errors)
+        v.status = "ERROR" if v.errors else "OK"
 
     payload = {
         "status": v.status,

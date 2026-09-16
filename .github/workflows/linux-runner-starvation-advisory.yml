@@ -17,15 +17,28 @@ name: Linux runner starvation advisory
 # de minter un registration-token, par design). Sans PAT, l'organe degrade
 # proprement sur le seul symptome.
 #
-# Advisory PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
-# pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
+# Advisory PAR CONSTRUCTION : schedule + workflow_dispatch + un heartbeat
+# workflow_run, jamais pull_request/push -- un run rouge ne peut jamais
+# bloquer une PR (workflow_run ne cree pas de check-run sur une PR). Le nom
 # porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
 # Le cron est a l'offset des sweeps 13,43 pour ne jamais les collider.
+#
+# #15332 : le scheduler GitHub a cesse de livrer l'evenement schedule le
+# 2026-09-09 (4 h sans AUCUN declenchement planifie, depot entier, 159
+# workflows) -- un organe porte par schedule seul meurt de la panne qu'il
+# observe. Le heartbeat workflow_run s'ancre sur Secret Scan : workflow
+# frequent (chaque push et pull_request) et heberge GitHub, donc vivant
+# meme quand le scheduler se tait ET quand le parc self-hosted est eteint.
+# La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
+# uniquement -- les runs workflow_run ne faussent pas la mesure).
 
 on:
   schedule:
     - cron: '19,49 * * * *'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Secret Scan"]
+    types: [completed]
 
 permissions:
   contents: read   # checkout du script
@@ -62,7 +75,7 @@ jobs:
     # GitHub-hosted sont gratuites, l'argument de cout ne s'applique pas.
     #
     # La garde same-repo qui vivait ici a ete retiree avec le routage : ce
-    # workflow n'a que `schedule` et `workflow_dispatch`, donc
+    # workflow n'a pas de declencheur pull_request, donc
     # `github.event.pull_request` y est toujours nul et la condition etait
     # vacuously vraie. Elle etait le vestige du raisonnement qui a justifie
     # l'auto-hebergement, et la laisser invitait a le re-deriver.
@@ -76,4 +89,9 @@ jobs:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           STARVE_MINUTES: "15"
           WINDOW_MAX_MINUTES: "360"
+          # #15332 : mesurer la cadence SERVIE (runs event=schedule de CE
+          # workflow uniquement) contre la cadence declaree du cron.
+          SELF_WORKFLOW: linux-runner-starvation-advisory.yml
+          DECLARED_CADENCE_MINUTES: "30"
+          CADENCE_WARN_MINUTES: "240"
         run: python scripts/ci/check_runner_starvation.py
