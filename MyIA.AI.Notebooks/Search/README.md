@@ -342,7 +342,9 @@ Search/
 │   ├── Search-11d-Descente-Sous-Budget.ipynb   # Descente gloutonne sous plafond d'évaluations : loi Descent.lean (hstrict/hbarrier) exercée, hnostall réfuté (See #12204)
 │   ├── Search-03b-PatternDatabases.ipynb
 │   ├── Search-03c-LimitedDiscrepancySearch.ipynb
-│   └── Search-03d-WeightedAstar.ipynb
+│   ├── Search-03d-WeightedAstar.ipynb
+│   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
+│   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb
