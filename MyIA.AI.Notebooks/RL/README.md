@@ -9,9 +9,9 @@ breakdown: root=26
 maturity: BETA=25, DRAFT=1
 -->
 
-> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
+> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé. Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 16/09/2026 :
 >
-> **17 Python = python/python3 = 17/17 mono-kernel Python 100% ✓** (17 fichiers `*.ipynb` canoniques au total sur disque — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
+> **31 Python = 31/31 mono-kernel Python 100% ✓** (31 fichiers `*.ipynb` au total sur disque — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`). La table « Notebooks » ci-dessous documente les 31 — les lignes de `rl_1b`, `rl_1c`, `RL-7b` et `rl_14`, absentes depuis leur livraison (dérive pré-existante), y sont réconciliées à la livraison du notebook 16.
 >
 > RL est un cas de **mono-kernel Python 100%** : tous les algorithmes (DQN, REINFORCE, A2C, PPO, SAC, GRPO, Dyna-Q, BCQ offline, reward shaping, POMDP belief tracker, C51 distributional, RND curiosity) sont implémentés en Python, soit via PyTorch / Stable Baselines3 / Gymnasium, soit from-scratch en NumPy + PyTorch. C'est une **variante L392 #6 NEW** : contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5918 / c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, RL a une **uniformité mono-paradigme** avec 7 moteurs SOTA distincts (PyTorch, NumPy, matplotlib, Stable Baselines3, Gymnasium, highway_env, PettingZoo) — registre EPIC #3801 entry #009 (PR #5922 — collision avec PR canonique utilisateur #5925, await ai-01 decision).
 >
@@ -32,6 +32,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
+| 1b | [rl_1b_bitwise_logic_synthesis](rl_1b_bitwise_logic_synthesis.ipynb) | Synthèse logique d'un contrôleur CartPole : bitwise 4-règles — scellement observation→bits IEEE-754, contrôleur LQR de référence (taux de désaccord), PPO budget modeste, étude de rupture et ablation. Accrétion de rl_1 | 20-25 min |
+| 1c | [rl_1c_prolog_distillation](rl_1c_prolog_distillation.ipynb) | Distillation d'une politique RL en programme Prolog exécutable : teacher PPO from scratch (seed fixe), census exhaustif de T-bar, induction gloutonne type FOIL, liste de décision avec cuts, one-pass vs DAgger, SWI-Prolog réel journalisé. Accrétion de rl_1 | 45-60 min |
 | 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
 | 3 | [rl_3_experience_replay_her](rl_3_experience_replay_her.ipynb) | HER, goal-conditioned RL | 40-45 min |
 | 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
@@ -42,13 +44,16 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.html) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
 | 6e | [rl_6e_grpo_from_scratch](rl_6e_grpo_from_scratch.html) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
+| 7b | [RL-7b-Climbing-Game](RL-7b-Climbing-Game.ipynb) | Sur-généralisation relative dans le Climbing Game coopératif : même agent tabulaire, IQL vs Hysteretic Q-learning, protocole multi-graines, IQM + intervalle bootstrap, ablation du pessimisme | ~45 min |
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.html) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.html) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.html) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
 | 11 | [rl_11_pomdp](rl_11_pomdp.html) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.html) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
+| 14 | [rl_14_hierarchical_rl](rl_14_hierarchical_rl.ipynb) | Hierarchical RL — l'Option framework de Sutton, Precup & Singh : abstraction temporelle, options `(I, π, β)`, gridworld quatre-pièces, crédit sur longue horizon | ~50 min |
 | 15 | [rl_15_grpo_group_relative_policy](rl_15_grpo_group_relative_policy.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, multi-seed 6 (0/1/7/42/99/123), Wilcoxon signed-rank + IC95% bootstrap. Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict v3 (REPAIR c.644) : INCONCLUSIVE** (le claim initial v1 « GRPO BEATS PPO » souffrait de défauts done-mask + pad-mask — c.642 a corrigé en INCONCLUSIVE, puis c.644 a détecté 4 post-fix incohérences résolues : Wilcoxon n=4 inatteignable, verdict tri-state asymmétrique, hypothèse descriptive fausse réfutée, titre PR ré-aligné — verdict v3 INCONCLUSIVE maintenu, moyennes v3 = 299.36 vs 197.65, std = 55.26 vs 104.99) | 40-45 min |
+| 16 | [rl_16_dream_rsi](rl_16_dream_rsi.ipynb) | Dream-RSI (arXiv 2609.14858, preprint 14/09/2026) : exploration explicite **programmable** (politique = code), historique de découverte = simulateur-replay, **dreaming** = évaluation off-policy à coût zéro, boucle RSI avec incumbent (garantie non-régression replay-only) — monde jouet circle-packing stdlib (16 cercles), ablation replay brut vs guidance sémantique mesurée (3/2/7), chiffres du papier rapportés non canonisés. Distillation #16417 | 40-45 min |
 | pt-0 | [rlpt_0_reward_model_from_scratch](rlpt_0_reward_model_from_scratch.ipynb) | Reward model from scratch (Bradley-Terry) : apprendre r(x, y) depuis des paires de préférences sur le monde de rlpt_1 — MLE BT sans `trl.RewardTrainer`, évaluation honnête vs plafond de Bayes, calibration (ECE), identification affine, multi-seed 4 | 35-40 min |
 | pt-0b | [rlpt_0b_preference_dataset_bias](rlpt_0b_preference_dataset_bias.ipynb) | Biais d'un dataset de préférences, mesurés sur monde synthétique à longueurs variables : les trois biais classiques (longueur, position, annotateurs) injectés à paramètres connus, dégât mesuré contre le plafond de Bayes d'un juge **oracle non biaisé**, puis les mitigations du cahier des charges (length-controlled, swap-augmentation, annotator embedding) plus une quatrième qui sert de contrôle — verdict mesuré : aucune ne franchit 2σ, le length-controlled est **structurellement** sans effet sur une métrique de classement, l'orthogonalisation de longueur **aggrave** le biais | 40-45 min |
 | pt-0e | [rlpt_0e_trl_DPO_SOTA](rlpt_0e_trl_DPO_SOTA.ipynb) | `trl.DPOTrainer` (bras SOTA) contre DPO from scratch et reward model explicite de `rlpt_0` sur le **même monde et les mêmes paires de préférences**, à budget égal (même β, même lr, mêmes époques) — multi-seed {0,1,7,42} départagé au plafond de Bayes : verdict **B ≈ C > A** (DPO maison 0.679 / trl 0.678 / RM 0.661 vs plafond 0.695 ; B vs C indiscernables à ±0.008 près), marges implicites B↔C corrélées ρ≈0.98 = même math ; la différence robuste est le **coût fixe** de la pile (×22 sur jouet CPU) — inclut la garde de frontière prompt/complétion (piège trl : prompt sans espace finale) | 25-35 min |
@@ -556,6 +561,8 @@ L'expérience replay (notebook 6) stocke les transitions (état, action, reward,
 ```
 RL/
 ├── rl_1_intro_cartpole.ipynb
+├── rl_1b_bitwise_logic_synthesis.ipynb
+├── rl_1c_prolog_distillation.ipynb
 ├── rl_2_wrappers_sauvegarde_callbacks.ipynb
 ├── rl_3_experience_replay_her.ipynb
 ├── rl_4_multi_armed_bandits.ipynb
@@ -566,12 +573,24 @@ RL/
 ├── rl_6d_sac_from_scratch.ipynb
 ├── rl_6e_grpo_from_scratch.ipynb
 ├── rl_7_multi_agent_rl.ipynb
+├── RL-7b-Climbing-Game.ipynb
 ├── rl_8_model_based_dyna_q.ipynb
 ├── rl_9_offline_rl.ipynb
 ├── rl_10_reward_shaping.ipynb
 ├── rl_11_pomdp.ipynb
 ├── rl_12_distributional_rl.ipynb
 ├── rl_13_curiosity_exploration.ipynb
+├── rl_14_hierarchical_rl.ipynb
+├── rl_15_grpo_group_relative_policy.ipynb
+├── rl_16_dream_rsi.ipynb
+├── rlpt_0_reward_model_from_scratch.ipynb
+├── rlpt_0b_preference_dataset_bias.ipynb
+├── rlpt_0e_trl_DPO_SOTA.ipynb
+├── rlpt_0f_comparaison_GRPO_TRL_et_PPO_maison.ipynb
+├── rlpt_1_ppo_lm_rlhf.ipynb
+├── rlpt_2_grpo_minimal.ipynb
+├── rlpt_3_reward_hacking.ipynb
+├── rlpt_4_dpo_vs_ppo.ipynb
 └── README.md
 ```
 
