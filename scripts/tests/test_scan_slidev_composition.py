@@ -126,6 +126,70 @@ class TestGithubAnnotationsNonRegression:
         assert "::warning" in hc and "IMG" in hc
 
 
+class TestChevauchementFantomeEteint:
+    """Issue #16188 — porte de confirmation élément muette = silent suppression.
+    Les paires Range×Range éteintes par boîtes élément disjointes
+    (chevauchement-fantôme) doivent être :
+      1. visibles dans github_annotations sous le label [CHEVAUCHEMENT-FANTOME]
+         en `::notice` non bloquant, avec le compte exact ;
+      2. sans générer de warning [CHEVAUCHEMENT] (la porte les a étouffées) ;
+      3. absentes en silence quand le slide n'en porte aucune.
+    """
+
+    def test_chevauchements_eteints_emet_notice_avec_compte(self):
+        r = {
+            "slide": 5, "text_head": "graze ~1.2 px",
+            "hors_canvas": [], "chevauchements": [],
+            # 3 paires Range chevauchent (graze ~1.2 px inline <code>),
+            # mais boîtes élément disjointes → éteintes par la porte #15877.
+            "chevauchements_eteints": [
+                {"a": "LI.foo", "b": "LI.bar", "overlap_range": [1, 2], "element_disjoint": True},
+                {"a": "LI.bar", "b": "LI.baz", "overlap_range": [1, 3], "element_disjoint": True},
+                {"a": "P.qux",  "b": "P.quux", "overlap_range": [2, 1], "element_disjoint": True},
+            ],
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        fantome = [l for l in lines if "CHEVAUCHEMENT-FANTOME" in l]
+        assert len(fantome) == 1, f"une notice agregee par slide, got {fantome}"
+        assert "::notice" in fantome[0], "notice non bloquante (HARD)"
+        assert "3 effleurement(s)" in fantome[0], "compte exact des paires eteintes"
+        assert "boîtes élément disjointes" in fantome[0]
+
+    def test_chevauchements_eteints_etente_pas_de_warning(self):
+        """La porte eteint les paires fantomes : aucun [CHEVAUCHEMENT] warning
+        ne doit etre emis quand `chevauchements` est vide."""
+        r = {
+            "slide": 7, "text_head": "graze",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": [
+                {"a": "LI.foo", "b": "LI.bar", "overlap_range": [1, 2], "element_disjoint": True},
+            ],
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        # pas de warning CHEVAUCHEMENT (la porte a eteinte la paire)
+        chev_warn = [l for l in lines if "[CHEVAUCHEMENT]" in l and "FANTOME" not in l]
+        assert not chev_warn, f"la porte eteint : pas de warning CHEVAUCHEMENT, got {chev_warn}"
+        # notice presente
+        assert any("CHEVAUCHEMENT-FANTOME" in l for l in lines)
+
+    def test_slide_propre_sans_eteint_n_emet_pas_notice(self):
+        """Ni chevauchements ni eteints : aucune notice CHEVAUCHEMENT-FANTOME.
+        Seule la notice plancher reste (cf TestGithubAnnotationsRecouvrement)."""
+        r = {
+            "slide": 2, "text_head": "propre",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": [],
+            "recouvrements": [], "occupation": None,
+        }
+        lines = ssc.github_annotations(_report([r]), Path("slides.md"))
+        assert not any("CHEVAUCHEMENT-FANTOME" in l for l in lines)
+        assert not any("CHEVAUCHEMENT" in l for l in lines)
+        # la notice plancher reste
+        assert any("Plancher" in l for l in lines)
+
+
 class TestBornesAdvisory:
     def test_borne_documentee_dans_docstring(self):
         """Le signal est ADVISORY : le docstring du module (charge par
