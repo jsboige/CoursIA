@@ -70,6 +70,57 @@ def test_urne_entierement_tenue_ne_boucle_pas():
     assert len(conflicts) == 3
 
 
+def test_poignee_etroite_tenue_puise_dans_la_reserve_globale():
+    """Une passe locale non vide ne devient pas terminale apres claim-check."""
+    real = pick.check_claims
+    pick.check_claims = lambda nums, lane: {
+        n: ("BLOQUE par other:lane" if n == 1 else "libre") for n in nums}
+    state = {}
+    try:
+        picks, _, conflicts = pick.draw_unclaimed(
+            dict(EMPTY, grain=[_it(1)]), _args(), random.Random(7),
+            None, None, None,
+            fallback_by_class=dict(EMPTY, grain=[_it(1), _it(2)]),
+            continuity_state=state,
+        )
+    finally:
+        pick.check_claims = real
+    assert [p["number"] for p in picks] == [2]
+    assert state == {"used": True}
+    assert [item[0]["number"] for item in conflicts] == [1]
+    assert all(p["number"] != 1 for p in picks)
+
+
+def test_reserve_globale_ne_reintroduit_ni_claim_ni_livraison():
+    """Le repli post-check garde les deux exclusions live sur sa reserve."""
+    primary = _it(1)
+    delivered = _it(2)
+    delivered["labels"] = [pick.DELIVERED_LABEL]
+    free = _it(3)
+    real_check = pick.check_claims
+    real_draw = pick.draw
+    pick.check_claims = lambda nums, lane: {
+        n: ("BLOQUE par other:lane" if n == 1 else "libre") for n in nums}
+    pick.draw = lambda items, n, *args, **kwargs: items[:n]
+    state = {}
+    try:
+        picks, _, conflicts = pick.draw_unclaimed(
+            dict(EMPTY, grain=[primary]), _args(), random.Random(7),
+            None, None, None,
+            fallback_by_class=dict(
+                EMPTY, grain=[primary, delivered, free]),
+            continuity_state=state,
+        )
+    finally:
+        pick.check_claims = real_check
+        pick.draw = real_draw
+    assert [p["number"] for p in picks] == [3]
+    assert state == {"used": True}
+    assert {item[0]["number"] for item in conflicts} == {1, 2}
+    assert any(cause.startswith("CLAIM :") for _, cause in conflicts)
+    assert any(cause.startswith("LIVRAISON :") for _, cause in conflicts)
+
+
 def test_le_quota_est_tenu_malgre_les_retraits():
     by = dict(EMPTY, grain=[_it(i) for i in range(1, 7)])
     picks, _, conflicts = _run(by, _args(grains=2), held={1, 2, 3})
