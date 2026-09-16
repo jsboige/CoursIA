@@ -84,6 +84,7 @@ layout: section
 
 # Qu'est-ce que l'intelligence artificielle?
 
+<div class="grid grid-cols-2 gap-x-10 -mt-1">
 
 - Définitions multiples
 - Notre angle :
@@ -92,19 +93,17 @@ layout: section
 
 **Fondements**
 
-- Philosophie
-- Maths
-- Économie
-- Biologie
-- Neurosciences
-- Psychologie
-- Informatique
-- Théorie du contrôle
-- Linguistique
+- Philosophie · Maths · Économie
+- Biologie · Neurosciences
+- Psychologie · Informatique
+- Théorie du contrôle · Linguistique
 
-<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
 
-<div class="absolute top-[395px] right-[20px] w-[460px] text-xs text-slate-500 italic text-center">
+<div class="flex justify-center mt-2">
+  <img src="./images/img_005.png" class="max-h-[190px] w-auto object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
+<div class="text-xs text-slate-500 italic text-center mt-1 px-10">
   Modèle biologique (neurone de McCulloch & Pitts, 1943) — source d'inspiration directe pour le perceptron de Rosenblatt (1958).
 </div>
 ---
@@ -125,14 +124,14 @@ layout: section
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
-<img src="./images/img_006.png" class="absolute top-[80px] right-[20px] w-[340px] max-w-full object-contain" alt="Repères historiques" />
-
-<div class="absolute top-[220px] right-[20px] w-[340px] flex gap-4 items-center justify-center">
-  <img src="./images/img_007.jpg" class="h-12 max-w-[45%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-10 max-w-[55%] object-contain" alt="Logo ImageNet" />
+<div class="flex justify-between items-end gap-6 mt-3 px-6">
+  <img src="./images/img_006.png" class="max-h-[120px] w-[52%] object-contain" alt="Repères historiques" />
+  <div class="flex gap-5 items-center pb-2">
+    <img src="./images/img_007.jpg" class="h-14 object-contain" alt="Logo DARPA" />
+    <img src="./images/img_008.jpg" class="h-12 object-contain" alt="Logo ImageNet" />
+  </div>
 </div>
-
-<div class="absolute top-[290px] right-[20px] w-[340px] text-xs text-slate-500 italic text-center">
+<div class="text-xs text-slate-500 italic text-center mt-1 px-10">
   Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
 </div>
 
@@ -160,6 +159,8 @@ layout: section
 
 # Dans la vie de tous les jours
 
+<div class="grid grid-cols-2 gap-x-10 text-xs mt-1">
+
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
 - **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
@@ -170,7 +171,11 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
-<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
+
+<div class="flex justify-center mt-1">
+  <img src="./images/img_013.jpg" class="w-[26%] max-h-[115px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
 
 
 ---
@@ -193,7 +198,9 @@ layout: section
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
+<div class="flex justify-center mt-2">
+  <img src="./images/img_009.png" class="max-h-[130px] w-auto object-contain" alt="Les agents" />
+</div>
 ---
 
 # Conception d'agents
@@ -245,7 +252,9 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
+<div class="flex justify-center mt-4">
+  <img src="./images/img_012.png" class="max-h-[230px] w-auto object-contain" alt="Agent réflexe fondé sur un modèle" />
+</div>
 ---
 
 
@@ -437,17 +446,17 @@ layout: section
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-<img src="./images/img_020.png" class="absolute top-[60px] right-[20px] w-[420px] max-h-[200px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
-
-
 **Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="absolute top-[280px] right-[20px] w-[280px] max-h-[140px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
-<img src="./images/img_024.png" class="absolute top-[430px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+<div class="grid grid-cols-3 gap-3 mt-2 px-6 items-center">
+  <img src="./images/img_020.png" class="max-h-[130px] w-full object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
+  <img src="./images/img_023.png" class="max-h-[130px] w-full object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
+  <img src="./images/img_024.png" class="max-h-[130px] w-full object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+</div>
 
 
 
@@ -513,6 +522,7 @@ layout: default
 
 # Stratégies d'exploration (2/2)
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - Si seule la solution compte
   - pas le chemin
@@ -520,8 +530,6 @@ layout: default
 - Paysage de l'espace des états
   - Optimisation d'une fonction
   - Escalade, descente de gradient
-
-
 - Problèmes :
   - Bloqué sur un optimum local
 - Solutions:
@@ -532,17 +540,15 @@ layout: default
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<div class="absolute top-[130px] right-[20px] w-[560px] flex flex-col gap-2">
-<div class="flex gap-2">
-<img src="./images/img_027.png" class="w-[275px] max-h-[120px] max-w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
-<img src="./images/img_028.png" class="w-[275px] max-h-[120px] max-w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
 </div>
-<div class="img-grid-2x2">
-<img src="./images/img_030.png" class="max-h-[140px] max-w-full object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
-<img src="./images/img_031.png" class="max-h-[140px] max-w-full object-contain" />
-<img src="./images/img_032.png" class="max-h-[140px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
-<img src="./images/img_033.png" class="max-h-[140px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
-</div>
+
+<div class="grid grid-cols-6 gap-1 mt-2 px-4">
+<img src="./images/img_027.png" class="max-h-[100px] w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
+<img src="./images/img_028.png" class="max-h-[100px] w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
+<img src="./images/img_030.png" class="max-h-[100px] w-full object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
+<img src="./images/img_031.png" class="max-h-[100px] w-full object-contain" />
+<img src="./images/img_032.png" class="max-h-[100px] w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
+<img src="./images/img_033.png" class="max-h-[100px] w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
 </div>
 
 
@@ -558,7 +564,7 @@ layout: default
 </div>
 
 
-<div class="dense-list">
+<div class="dense-list text-sm">
 
 - Arbre de jeu
 - Environnements
@@ -582,7 +588,9 @@ layout: default
 
 </div>
 
-<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+<div class="flex justify-center mt-1">
+  <img src="./images/img_031.png" class="max-h-[100px] w-[56%] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+</div>
 
 
 
@@ -628,15 +636,14 @@ layout: default
 - Structure des valeurs
   - Symétrie (rupture de)
 
-<div class="flex gap-2">
-<img src="./images/img_035.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
-<img src="./images/img_036.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
-<img src="./images/img_037.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
-
 </div>
 
 </div>
 
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_035.png" class="max-h-[105px] w-full object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
+<img src="./images/img_036.png" class="max-h-[105px] w-full object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+<img src="./images/img_037.png" class="max-h-[105px] w-full object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
 </div>
 
 
@@ -697,11 +704,13 @@ layout: default
 
 **Raisonnement**
 
-<img src="./images/img_035.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
-<img src="./images/img_036.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+</div>
 
 </div>
 
+<div class="flex justify-center gap-10 mt-2">
+<img src="./images/img_035.png" class="max-h-[200px] w-[42%] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
+<img src="./images/img_036.png" class="max-h-[200px] w-[42%] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
 </div>
 
 
@@ -762,9 +771,11 @@ layout: default
 - Enemy(x,America) => Hostile(x)
 - Américain(x) ET Arme(y) ET Vend(x,y,z) ET Hostile(z) => Criminel(x)
 
-<img src="./images/img_040.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
-
 </div>
+</div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_040.png" class="max-h-[190px] w-auto object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 ---
 
@@ -848,12 +859,11 @@ layout: default
   - Contre-exemple absurde
   - Fair-play
 
-<div class="img-grid">
-<img src="./images/img_041.jpg" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
-
+</div>
 </div>
 
-</div>
+<div class="flex justify-center mt-1">
+  <img src="./images/img_041.jpg" class="max-h-[160px] w-auto object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
 </div>
 ---
 
@@ -902,9 +912,9 @@ layout: default
   - W3C
   - Linked Data
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_048.png" class="w-full object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
-<img src="./images/img_049.png" class="w-full object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
+<div class="flex justify-center gap-6 mt-3">
+<img src="./images/img_048.png" class="max-h-[170px] w-[45%] object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
+<img src="./images/img_049.png" class="max-h-[170px] w-[45%] object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
 </div>
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
@@ -982,9 +992,11 @@ layout: section
 - Alternatives
 - Niveau de succès espéré
 
-<img src="./images/img_051.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
-
 </div>
+</div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_051.png" class="max-h-[180px] w-auto object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
 </div>
 
 
@@ -1021,13 +1033,13 @@ layout: section
   - Indépendance conditionnelle
   - Facteurs de distributions continues
 
-<div class="img-grid">
-<img src="./images/img_052.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Ajustement d'un nuage de points par une courbe bleue oscillante, une droite rouge et un segment vert" />
-<img src="./images/img_053.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surapprentissage : courbe orange très oscillante collée aux points, contre droite et segment de régression" />
-<img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
+</div>
+</div>
 
-</div>
-</div>
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_052.png" class="max-h-[115px] w-full object-contain" alt="Ajustement d'un nuage de points par une courbe bleue oscillante, une droite rouge et un segment vert" />
+<img src="./images/img_053.png" class="max-h-[115px] w-full object-contain" alt="Surapprentissage : courbe orange très oscillante collée aux points, contre droite et segment de régression" />
+<img src="./images/img_054.png" class="max-h-[115px] w-full object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
 </div>
 
 ---
@@ -1137,13 +1149,13 @@ layout: section
 - Mixtes (probabilistes)
 - Utilité espérée
 
-<div class="img-grid mt-2 grid grid-cols-3 gap-2">
-<img src="./images/img_067.png" class="w-full max-h-[260px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
-<img src="./images/img_068.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
-<img src="./images/img_069.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
+</div>
 </div>
 
-</div>
+<div class="grid grid-cols-3 gap-3 mt-2 px-6">
+<img src="./images/img_067.png" class="max-h-[150px] w-full object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
+<img src="./images/img_068.png" class="max-h-[150px] w-full object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
+<img src="./images/img_069.png" class="max-h-[150px] w-full object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
 </div>
 ---
 
@@ -1238,16 +1250,13 @@ layout: section
 - Libratus
 - Deepstack
 
-<div class="img-grid">
-<img src="./images/img_072.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Composition abstraite : panneau jaune, point rouge et point bleu, bandes verticales" />
-<img src="./images/img_073.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surface 3D incurvée en selle, rendu bleu translucide sans texte" />
-<img src="./images/img_074.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
-
+</div>
 </div>
 
-
-
-</div>
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_072.png" class="max-h-[120px] w-full object-contain" alt="Composition abstraite : panneau jaune, point rouge et point bleu, bandes verticales" />
+<img src="./images/img_073.png" class="max-h-[120px] w-full object-contain" alt="Surface 3D incurvée en selle, rendu bleu translucide sans texte" />
+<img src="./images/img_074.png" class="max-h-[120px] w-full object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
 </div>
 ---
 
@@ -1278,12 +1287,12 @@ layout: section
 - Stratégies sociétales
   - Évolution de la confiance
 
-<div class="img-grid mt-2 flex flex-col gap-2 items-center">
-<img src="./images/img_075.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
-<img src="./images/img_076.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
+</div>
 </div>
 
-</div>
+<div class="flex justify-center gap-8 mt-2 px-8">
+<img src="./images/img_075.png" class="max-h-[150px] w-[44%] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
+<img src="./images/img_076.png" class="max-h-[150px] w-[44%] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
 </div>
 ---
 
@@ -1317,11 +1326,11 @@ layout: section
   - Jugement majoritaire
   - Scrutin bipartipludique
 
-<img src="./images/img_078.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Zone d'accord de négociation salariale : salages rejetés par chacun, fourchette 0 à 50 dollars" />
-
-
-
 </div>
+</div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_078.png" class="max-h-[180px] w-auto object-contain" alt="Zone d'accord de négociation salariale : salages rejetés par chacun, fourchette 0 à 50 dollars" />
 </div>
 ---
 layout: section
@@ -1365,10 +1374,7 @@ layout: section
 
 # Apprentissage
 
-
-
-<div class="grid grid-cols-2 gap-5 -mt-2">
-<div>
+<div class="grid grid-cols-2 gap-x-10 text-sm -mt-1">
 
 **Enjeux**
 
@@ -1376,12 +1382,6 @@ layout: section
 - Méthode de conception de systèmes
 - Améliorer la prise de décision
 - Les performances
-
-
-</div>
-<div>
-
-<TeachingStep placement="below" size="md">
 
 **Structure d'agent**
 
@@ -1391,13 +1391,10 @@ layout: section
   - Critique
   - Générateur de problème
 
-<template #visual>
-<img src="./images/img_080.png" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
-</template>
-
-</TeachingStep>
-
 </div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_080.png" class="max-h-[165px] w-[60%] object-contain" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
 </div>
 ---
 
@@ -1432,13 +1429,12 @@ layout: section
   - Connaissance a priori / modèles
   - Feedback pour apprendre
 
-<img src="./images/img_081.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x" />
-<img src="./images/img_082.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Ajustement du nuage par une courbe bleue oscillante, une droite rouge et un segment vert" />
-
-
-
-
 </div>
+</div>
+
+<div class="flex justify-center gap-8 mt-2 px-8">
+<img src="./images/img_081.png" class="max-h-[170px] w-[44%] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x" />
+<img src="./images/img_082.png" class="max-h-[170px] w-[44%] object-contain" alt="Ajustement du nuage par une courbe bleue oscillante, une droite rouge et un segment vert" />
 </div>
 ---
 
@@ -1446,6 +1442,7 @@ layout: section
 
 # Caractéristiques (2/2)
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - On construit une hypothèse
   - h consistante avec les données
@@ -1460,9 +1457,11 @@ layout: section
   - d'ensemble
   - Boosting
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_083.png" class="w-full object-contain" alt="Surapprentissage : courbe orange oscillante collée aux points contre droite et segment de régression" />
-<img src="./images/img_084.png" class="w-full object-contain" alt="Découpage des données : échantillonnage, entraînement, validation, test avec sélection de modèle" />
+</div>
+
+<div class="flex justify-center gap-6 mt-2 px-8">
+<img src="./images/img_083.png" class="max-h-[170px] w-[45%] object-contain" alt="Surapprentissage : courbe orange oscillante collée aux points contre droite et segment de régression" />
+<img src="./images/img_084.png" class="max-h-[170px] w-[45%] object-contain" alt="Découpage des données : échantillonnage, entraînement, validation, test avec sélection de modèle" />
 </div>
 ---
 
@@ -1724,6 +1723,7 @@ layout: section
 
 # Apprentissage et connaissances
 
+<div class="text-sm -mt-1">
 
 - Utilisation de la connaissance
   - Passé + futur
@@ -1740,9 +1740,11 @@ layout: section
   - Knowledge Based Inductive Learning
 - Programmation logique inductive (Prolog)
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_118.png" class="w-full object-contain" alt="Système d'apprentissage inductif fondé sur connaissances : exemples, connaissance du domaine, modèle induit" />
-<img src="./images/img_119.png" class="w-full object-contain" alt="Boucle agent-environnement : récompense, état, action" />
+</div>
+
+<div class="flex justify-center gap-6 mt-1 px-8">
+<img src="./images/img_118.png" class="max-h-[115px] w-[45%] object-contain" alt="Système d'apprentissage inductif fondé sur connaissances : exemples, connaissance du domaine, modèle induit" />
+<img src="./images/img_119.png" class="max-h-[115px] w-[45%] object-contain" alt="Boucle agent-environnement : récompense, état, action" />
 </div>
 ---
 
@@ -1750,6 +1752,7 @@ layout: section
 
 # Apprentissage par renforcement
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - Pas d'exemple
   - Feedback = bon ou mauvais
@@ -1767,9 +1770,11 @@ layout: section
   - Modèles paramétriques
   - Deep Q-learning
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_120.png" class="w-full object-contain" alt="Boucle d'apprentissage par renforcement : agent, environnement, échanges récompense/état/action" />
-<img src="./images/img_121.png" class="w-full object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
+</div>
+
+<div class="flex justify-center gap-6 mt-1 px-8">
+<img src="./images/img_120.png" class="max-h-[130px] w-[45%] object-contain" alt="Boucle d'apprentissage par renforcement : agent, environnement, échanges récompense/état/action" />
+<img src="./images/img_121.png" class="max-h-[130px] w-[45%] object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
 </div>
 ---
 layout: section
@@ -1889,14 +1894,12 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
   - Modèles sémantiques
   - Ambiguités, Modèles imbriqués
 
-<div class="img-grid">
-<img src="./images/img_125.png" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Règle de grammaire probabiliste PCFG : VP vers Verb (0,70) ou VP NP (0,30)" />
-<img src="./images/img_126.png" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Arbre syntaxique probabiliste de « Every wumpus smells » avec probabilités par nœud" />
-
+</div>
 </div>
 
-
-</div>
+<div class="flex justify-center gap-8 mt-1 px-8">
+<img src="./images/img_125.png" class="max-h-[160px] w-[44%] object-contain" alt="Règle de grammaire probabiliste PCFG : VP vers Verb (0,70) ou VP NP (0,30)" />
+<img src="./images/img_126.png" class="max-h-[160px] w-[44%] object-contain" alt="Arbre syntaxique probabiliste de « Every wumpus smells » avec probabilités par nœud" />
 </div>
 ---
 
@@ -1926,6 +1929,7 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
 
 # Agents conversationnels
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - Agents algorithmiques couplé au NLP
   - Modèles de langage
@@ -1942,10 +1946,12 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
   - Bootstrap
   - Entraînement en ligne
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_131.png" class="w-full object-contain" alt="Architecture Microsoft Bot Framework : service bot, connecteur, canaux (Skype, Slack, Facebook...)" />
-<img src="./images/img_132.png" class="w-full object-contain" alt="Interface LUIS : énoncé utilisateur annoté avec entité reconnue (réservation de congés)" />
-<img src="./images/img_133.png" class="w-full object-contain" alt="Pipeline de dialogue : prétraitement de l'entrée, NLU, gestion de dialogue, génération, sortie" />
+</div>
+
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_131.png" class="max-h-[125px] w-full object-contain" alt="Architecture Microsoft Bot Framework : service bot, connecteur, canaux (Skype, Slack, Facebook...)" />
+<img src="./images/img_132.png" class="max-h-[125px] w-full object-contain" alt="Interface LUIS : énoncé utilisateur annoté avec entité reconnue (réservation de congés)" />
+<img src="./images/img_133.png" class="max-h-[125px] w-full object-contain" alt="Pipeline de dialogue : prétraitement de l'entrée, NLU, gestion de dialogue, génération, sortie" />
 </div>
 ---
 
@@ -2208,10 +2214,6 @@ graph TD
 
 # Modèles de diffusion : générer une image
 
-<div class="grid grid-cols-[1fr_1fr] gap-6 mt-2">
-
-<div>
-
 **Principe : apprendre à débruiter**
 
 - Phase aller : on ajoute progressivement du bruit à une image
@@ -2225,16 +2227,9 @@ graph LR
     C --> D[- bruit<br/>retour appris] --> E[Nouvelle image]
 ```
 
-</div>
-
-<div>
-
-<img src="./images/img_112.png" class="w-full object-contain" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
-
-<img src="./images/img_113.png" class="w-[88%] mx-auto mt-3 object-contain" alt="Architecture latent diffusion : encodeur, U-Net de débruitage dans l'espace latent, décodeur" />
-
-</div>
-
+<div class="flex justify-center gap-6 mt-2 px-8">
+<img src="./images/img_112.png" class="max-h-[150px] w-[45%] object-contain" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
+<img src="./images/img_113.png" class="max-h-[150px] w-[45%] object-contain" alt="Architecture latent diffusion : encodeur, U-Net de débruitage dans l'espace latent, décodeur" />
 </div>
 
 > Les générateurs d'images (DALL-E, Stable Diffusion, Midjourney) reposent sur ce principe
