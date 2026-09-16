@@ -223,7 +223,8 @@ AIF = Namespace("http://www.arg.dundee.ac.uk/aif#")
 
 # 1) Classes AIF reellement declarees dans l'ontologie Argumentum (parseur regex tolere,
 #    meme methode que Ontology_AIF : rdflib echoue sur les ExactCardinality mal formes)
-OWL = Path("MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_fallacies.owl")
+_THIS_DIR = Path(__file__).resolve().parent
+OWL = _THIS_DIR / "ontologies" / "argumentum_fallacies.owl"
 owl_text = OWL.read_text(encoding="utf-8", errors="replace")
 class_decls = re.findall(r'<Declaration>\s*<Class IRI="([^"]+)"\s*/>\s*</Declaration>', owl_text)
 aif_classes = {c.split("#")[-1] for c in class_decls if "arg.dundee.ac.uk/aif" in c}
