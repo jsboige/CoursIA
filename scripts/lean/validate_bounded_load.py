@@ -29,7 +29,10 @@ harnais verifie que la machine reste vivable) :
 
 Post-conditions lues dans l'enregistrement de l'organe (``last_run.json``,
 ecrit a CHAQUE sortie de ``run``, y compris refuse) : status ``ok``,
-orphelins vides, sortie 0.
+orphelins vides, sortie 0. L'enregistrement est lie a CETTE invocation :
+son ``run_id`` doit etre frais (inconnu avant le lancement du harnais) --
+un crash de l'organe avant emission laisse le ``last_run.json`` du run
+precedent, qui porte un run_id deja connu et est rejete.
 
 Generation de la charge : le harnais ne fabrique pas de charge fictive. Il
 lance ``lean_exec.py run -- lake build`` dans le lake fourni ; pour qu'un
@@ -218,15 +221,26 @@ def evaluate(baseline: list[dict], load: list[dict],
         f"organ status={status!r} orphelins={len(orphans)}",
     )
 
-    pops = [s["population"] for s in load]
+    pops_all = [s["population"] for s in load]
+    # -1 = scan_native_population en echec : une mesure INVALIDE ne doit
+    # jamais valider le critere (un run tout -1 produirait max=-1 <= cap).
+    pops = [p for p in pops_all if p is not None and p >= 0]
     max_pop = max(pops) if pops else None
+    if pops:
+        pop_detail = (f"max population observee {max_pop} <= cap {cap} "
+                      f"({len(pops)} mesures valides / {len(pops_all)} "
+                      f"echantillons)")
+    elif pops_all:
+        pop_detail = (f"0 mesure de population valide sur {len(pops_all)} "
+                      f"echantillons (scan en echec) -- critere non "
+                      f"verifiable")
+    else:
+        pop_detail = ("0 echantillon pendant la charge -- critere non "
+                      "verifiable")
     hard(
         "population_cap",
         bool(pops) and max_pop is not None and max_pop <= cap,
-        (f"max population observee {max_pop} <= cap {cap} "
-         f"({len(pops)} echantillons)")
-        if pops else
-        f"0 echantillon pendant la charge -- critere non verifiable",
+        pop_detail,
     )
 
     timeouts = [s for s in load if s["drivefs"] == DRIVEFS_TIMEOUT]
@@ -294,12 +308,41 @@ def touch_own_modules(lake_dir: Path, n: int) -> list[str]:
     return touched
 
 
-def read_organ_record(expected_cmd: list[str]) -> dict | None:
+def known_run_ids() -> set[str]:
+    """Run_ids deja presents AVANT le lancement de la charge.
+
+    Sources : le ``last_run.json`` preexistant (run le plus recent, son
+    registre est nettoye en fin de run propre) et le registre des runs
+    vivants (``runs/*.json``). L'organe genere un run_id frais (uuid) par
+    invocation : apres le run, un ``last_run.json`` qui porte un de ces
+    run_ids n'a pas ete reecrit par CE run.
+    """
+    ids: set[str] = set()
+    state = lean_exec.state_dir()
+    try:
+        prev = json.loads((state / "last_run.json").read_text(
+            encoding="utf-8"))
+        if isinstance(prev, dict) and prev.get("run_id"):
+            ids.add(prev["run_id"])
+    except (OSError, ValueError):
+        pass
+    try:
+        ids.update(p.stem for p in (state / "runs").glob("*.json"))
+    except OSError:
+        pass
+    return ids
+
+
+def read_organ_record(expected_cmd: list[str],
+                      preexisting_run_ids: set[str] | None = None) -> dict | None:
     """Lit ``last_run.json`` ; None si absent ou manifestement stale.
 
-    Un enregistrement d'un run precedent (cmd differente) n'est pas une
-    preuve pour CE run : le harnais le rejete plutot que de valider sur du
-    stale.
+    Un enregistrement d'un run precedent n'est pas une preuve pour CE run.
+    Deux defenses cumulees : la cmd doit etre celle attendue, et (quand le
+    harnais fournit les run_ids connus avant lancement) le ``run_id`` doit
+    etre frais -- un organe crashe avant emission laisse le fichier du run
+    precedent, qui porte un run_id deja connu ; un fichier sans run_id
+    (format anterieur) est traite en stale potentiel, pas en preuve.
     """
     path = lean_exec.state_dir() / "last_run.json"
     try:
@@ -308,6 +351,10 @@ def read_organ_record(expected_cmd: list[str]) -> dict | None:
         return None
     if record.get("cmd") != expected_cmd:
         return None
+    if preexisting_run_ids is not None:
+        run_id = record.get("run_id")
+        if not run_id or run_id in preexisting_run_ids:
+            return None
     return record
 
 
@@ -386,6 +433,11 @@ def main(argv: list[str] | None = None) -> int:
         organ_cli += ["--timeout", str(args.timeout)]
     organ_cli += ["--", *load_cmd]
 
+    # Run_ids connus AVANT lancement : le record final doit en porter un
+    # frais -- sinon c'est le fichier d'un run precedent (crash avant
+    # emission), pas une preuve pour CE run.
+    pre_run_ids = known_run_ids()
+
     started = time.monotonic()
     # Sortie de l'organe vers FICHIER, jamais vers un pipe non lu : un build
     # lake emet bien plus que le buffer de pipe, et personne ne draine tant
@@ -410,7 +462,7 @@ def main(argv: list[str] | None = None) -> int:
     with open(log_path, encoding="utf-8", errors="replace") as fh:
         output_tail = fh.read().splitlines()[-15:]
 
-    record = read_organ_record(load_cmd)
+    record = read_organ_record(load_cmd, pre_run_ids)
     verdict = evaluate(baseline, load, record, cap,
                        args.spawn_ratio, args.spawn_floor_ms)
     if wall_exceeded:

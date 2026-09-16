@@ -260,3 +260,77 @@ def test_read_organ_record_rejette_le_stale(tmp_path, monkeypatch):
     # validation sur du stale.
     assert vbl.read_organ_record(["lake", "exe", "cache", "get"]) is None
     assert vbl.read_organ_record(["lake", "build"]) is not None
+
+
+def test_population_non_mesurable_ne_valide_rien():
+    # scan_native_population en echec retourne -1 : un run tout -1 produirait
+    # max=-1 <= cap -- FAUX PASS. Le critere doit echouer avec 0 mesure
+    # valide, meme s'il y a des echantillons.
+    load = [_sample(population=-1) for _ in range(5)]
+    verdict = _evaluate([_sample("baseline")], load, organ=None, cap=8)
+    pop = _check(verdict, "population_cap")
+    assert pop["pass"] is False
+    assert "0 mesure de population valide" in pop["detail"]
+    assert "5 echantillons" in pop["detail"]
+    assert verdict["pass"] is False
+
+
+def test_population_mixte_juge_sur_les_mesures_valides():
+    # Quelques scans en echec parmi des mesures valides : le verdict porte
+    # sur les valides et cite les deux comptes.
+    load = ([_sample(population=-1), _sample(population=6)]
+            + [_sample(population=3) for _ in range(6)])
+    verdict = _evaluate([_sample("baseline")], load)
+    pop = _check(verdict, "population_cap")
+    assert pop["pass"] is True
+    assert "6 <= cap 8" in pop["detail"]
+    assert "6 mesures valides / 8 echantillons" in pop["detail"]
+
+
+def test_read_organ_record_rejette_le_stale_meme_commande(tmp_path, monkeypatch):
+    # Crash de l'organe AVANT emission : last_run.json porte encore le run
+    # PRECEDENT -- meme cmd, donc la reconciliation par cmd seule passe. Le
+    # run_id deja connu avant lancement doit le demasquer.
+    import json
+    state = tmp_path / "state"
+    monkeypatch.setattr(
+        vbl.lean_exec, "state_dir", lambda: state, raising=True
+    )
+    state.mkdir()
+
+    def _write(record):
+        (state / "last_run.json").write_text(
+            json.dumps(record), encoding="utf-8"
+        )
+
+    _write({"run_id": "runprecedent", "cmd": ["lake", "build"],
+            "status": "ok", "orphans": []})
+    pre_ids = vbl.known_run_ids()
+    assert pre_ids == {"runprecedent"}
+    # Le fichier n'a pas ete reecrit (crash) : run_id preexistant -> stale.
+    assert vbl.read_organ_record(["lake", "build"], pre_ids) is None
+    # Format sans run_id : stale potentiel, jamais une preuve.
+    _write({"cmd": ["lake", "build"], "status": "ok", "orphans": []})
+    assert vbl.read_organ_record(["lake", "build"], pre_ids) is None
+    # Run_id frais : CE run a atteint l'emission -> accepte.
+    _write({"run_id": "runfrais", "cmd": ["lake", "build"],
+            "status": "ok", "orphans": []})
+    assert vbl.read_organ_record(["lake", "build"], pre_ids) is not None
+
+
+def test_known_run_ids_lit_aussi_le_registre_des_runs(tmp_path, monkeypatch):
+    # Les runs vivants (registre runs/*.json) comptent aussi comme connus :
+    # un run concurrent ne doit pas pouvoir etre valide comme preuve.
+    import json
+    state = tmp_path / "state"
+    monkeypatch.setattr(
+        vbl.lean_exec, "state_dir", lambda: state, raising=True
+    )
+    state.mkdir()
+    (state / "runs").mkdir()
+    (state / "runs" / "runvivant.json").write_text("{}", encoding="utf-8")
+    (state / "last_run.json").write_text(
+        json.dumps({"run_id": "runprecedent", "cmd": ["lake", "build"]}),
+        encoding="utf-8",
+    )
+    assert vbl.known_run_ids() == {"runprecedent", "runvivant"}
