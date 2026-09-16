@@ -115,7 +115,7 @@ jobs:
 
           # Label helpers (idempotent).
           ensure_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           set_label()   { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
@@ -126,7 +126,7 @@ jobs:
             unset_label() { true; }
           fi
 
-          ensure_label "$LABEL_DEFECT" "PR introduces a markdown table syntax defect (COL_MISMATCH / CODE_SPAN_PIPE / MATH_SPAN_PIPE / NO_SEP / NO_BLANK_BEFORE/AFTER / ORPHAN_TABLE_ROW). Advisory, non-blocking. See #10097." "d93f0b"
+          ensure_label "$LABEL_DEFECT" "Markdown table syntax defect: COL_MISMATCH / CODE_SPAN_PIPE / NO_SEP etc. (#10097)" "d93f0b"
 
           if [ "$COUNT" -eq 0 ]; then
             echo "No in-scope files to scan."

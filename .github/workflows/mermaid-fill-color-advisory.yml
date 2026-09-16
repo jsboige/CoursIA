@@ -105,7 +105,7 @@ jobs:
 
           # Helper: ensure a label exists (idempotent), then add/remove it.
           ensure_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
@@ -139,9 +139,9 @@ jobs:
           # is > 0 and cleared otherwise (a stale label from an earlier push
           # must not stick).
           ensure_label "$LABEL_FINDING" \
-            "A modified .md or .ipynb carries a mermaid style/classDef rule with fill: but no color: -- light-on-light label risk in dark theme (#15022 founding incident, #15502 fix + guard)" "E99695"
+            "Mermaid rule with fill: but no color: -- dark-theme label risk (#15022)" "E99695"
           ensure_label "$LABEL_UNMEASURED" \
-            "A modified .md or .ipynb could not be measured by the mermaid fill-color detector -- NOT verified (#8819)" "BFD4F2"
+            "Not measured by the mermaid fill-color detector -- NOT verified (#8819)" "BFD4F2"
 
           # The #8819 guard: if the detector died, FIND/UNM are not integers
           # (FIND defaults to -1 on unreadable payload). With only `set -uo
