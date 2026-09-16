@@ -7,7 +7,7 @@ maturity: BETA=2
 
 # kelly_lean — optimalité du critère de Kelly (log-croissance)
 
-Mini-projet Lean 4 (avec Mathlib, toolchain `v4.31.0-rc1`) prouvant l'**optimalité du
+Mini-projet Lean 4 (avec Mathlib, toolchain `v4.33.0`) prouvant l'**optimalité du
 critère de Kelly** pour le *position sizing*. Pour un pari de Bernoulli (probabilité
 `p` de gain, cote nette `b`, `q = 1 − p`), la fraction optimale du capital à risquer
 est
