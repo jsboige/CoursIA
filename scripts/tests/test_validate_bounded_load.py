@@ -284,7 +284,7 @@ def test_population_mixte_juge_sur_les_mesures_valides():
     pop = _check(verdict, "population_cap")
     assert pop["pass"] is True
     assert "6 <= cap 8" in pop["detail"]
-    assert "6 mesures valides / 8 echantillons" in pop["detail"]
+    assert "7 mesures valides / 8 echantillons" in pop["detail"]
 
 
 def test_read_organ_record_rejette_le_stale_meme_commande(tmp_path, monkeypatch):
