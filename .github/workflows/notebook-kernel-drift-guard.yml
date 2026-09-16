@@ -19,6 +19,7 @@ name: Notebook Kernel Drift Guard
 #     without a documented justification.
 on:
   pull_request:
+    types: [opened, synchronize, edited, reopened]
     branches: [main]
     paths:
       - '**.ipynb'
@@ -62,12 +63,21 @@ jobs:
         env:
           BASE_REF: ${{ github.event.inputs.base_ref }}
           PR_BASE: ${{ github.base_ref }}
+          PR_BODY_FILE: ${{ runner.temp }}/pr_body
         run: |
           BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
-          python scripts/notebook_tools/check_kernel_drift.py "$BASE" --explain
-          # Always emit JSON for downstream consumption / dashboard parsing.
-          python scripts/notebook_tools/check_kernel_drift.py "$BASE" --json > kernel-drift.json || true
+          # Write the PR body to a file the script can read (defect 1: exemption check).
+          if [ -n "$PR_BODY" ]; then
+            printf '%s' "$PR_BODY" > "$PR_BODY_FILE"
+          fi
+          # Defect 3: ONE invocation. --json is the source of truth.
+          set +e
+          python scripts/notebook_tools/check_kernel_drift.py "$BASE" --explain --json > kernel-drift.json
+          rc=$?
+          set -e
           echo "JSON findings:" && cat kernel-drift.json
+          echo "Exit code: ${rc}"
+          exit ${rc}
 
       - name: Kernel drift unit tests
         run: |

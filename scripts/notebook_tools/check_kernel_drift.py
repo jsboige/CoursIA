@@ -39,6 +39,7 @@ shows kernel or float-format drift without a documented justification.
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -51,24 +52,37 @@ EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
 
 
 def git(*args, cwd=None):
+    """Run a git command. Fail-closed: raise RuntimeError on OSError.
+
+    Returns stdout string on success, raises on subprocess failure.
+    Empty stdout is a valid result and is returned as ''.
+    """
     try:
         out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
                              encoding="utf-8", errors="replace", check=False)
-    except OSError:
-        return None
-    return out.stdout if out.returncode == 0 else None
+    except OSError as e:
+        raise RuntimeError(f"git subprocess failed: {e}") from e
+    if out.returncode != 0:
+        raise RuntimeError(
+            f"git {args!r} failed (rc={out.returncode}): "
+            f"{out.stderr.strip()[:200] if out.stderr else '<no stderr>'}"
+        )
+    return out.stdout
+
+
+def git_fail_closed(*args, cwd=None):
+    """Wrapper used in tests: same as git() but explicitly named for clarity."""
+    return git(*args, cwd=cwd)
 
 
 def resolve_base(base, cwd=None):
     out = git("merge-base", base, "HEAD", cwd=cwd)
-    return out.strip() if out and out.strip() else base
+    return out.strip() if out.strip() else base
 
 
 def changed_notebooks(base, cwd=None):
     out = git("diff", "--name-only", "--diff-filter=ACMR",
               base, "HEAD", "--", "*.ipynb", cwd=cwd)
-    if out is None:
-        return []
     paths = []
     for line in out.splitlines():
         posix = line.strip().replace("\\", "/")
@@ -78,9 +92,18 @@ def changed_notebooks(base, cwd=None):
 
 
 def read_blob(commit_ref, nb_path, cwd=None):
-    """Read a notebook JSON from a git blob (returns None if absent)."""
-    out = git("show", f"{commit_ref}:{nb_path}", cwd=cwd)
-    if out is None:
+    """Read a notebook JSON from a git blob (returns None if absent).
+
+    Returns None ONLY when the blob doesn't exist (legitimately absent path).
+    Raises RuntimeError if git itself fails (fail-closed per defect 4).
+    """
+    try:
+        out = git("show", f"{commit_ref}:{nb_path}", cwd=cwd)
+    except RuntimeError as e:
+        if "exists on disk, but not in" in str(e) or "does not exist" in str(e) or "bad revision" in str(e):
+            return None
+        raise
+    if not out:
         return None
     try:
         return json.loads(out)
@@ -100,6 +123,18 @@ FLOAT_ARRAY_RE = re.compile(
 )
 
 
+def _flatten_text(value):
+    """Normalize a text field (string OR list of strings) to a single string.
+
+    Defect 5 (PR #16082 review): corpus real shows 1409/1430 cells have
+    text/plain as a LIST of strings (Papermill artifact). Old code did
+    `''.join(...)` which raised TypeError. We accept both shapes.
+    """
+    if isinstance(value, list):
+        return "".join(str(s) for s in value)
+    return str(value)
+
+
 def float_signatures(nb):
     """For each code cell, return a tuple of float-array signatures.
 
@@ -109,6 +144,8 @@ def float_signatures(nb):
     check_output_collapse.py and check_output_failure_text.py) — this
     gate only flags textual-shape changes that are characteristic of a
     NumPy 1.x vs 2.x repr change or a cmath exp precision drift.
+
+    Defect 5 fix: text/plain can be a string OR a list of strings.
     """
     sigs = []
     for cell in nb.get("cells", []):
@@ -116,10 +153,10 @@ def float_signatures(nb):
             continue
         text_parts = []
         for out in cell.get("outputs", []):
-            if "text" in out and isinstance(out["text"], list):
-                text_parts.extend(out["text"])
+            if "text" in out:
+                text_parts.append(_flatten_text(out["text"]))
             elif "data" in out and "text/plain" in out["data"]:
-                text_parts.append(out["data"]["text/plain"])
+                text_parts.append(_flatten_text(out["data"]["text/plain"]))
         joined = "".join(text_parts)
         sigs.append(tuple(FLOAT_ARRAY_RE.findall(joined)))
     return tuple(sigs)
@@ -150,8 +187,71 @@ def diff_kernel(base_info, head_info):
     return diffs
 
 
-def diff_signatures(base_sig, head_sig):
-    """Return a list of cell indices whose float signature changed."""
+def body_has_derive_exemption(body):
+    """Defect 1: PR body contains '## Diagnostic dérive' section.
+
+    Per acceptance of issue #15650 (point 4): cellules non touchées
+    reproduisent leurs sorties - ou l'écart résiduel est expliqué par
+    une section '## Diagnostic dérive' (C.4).
+    """
+    if not body:
+        return False
+    # Match the section header (case-insensitive, optional whitespace)
+    pattern = re.compile(r"^##\s*Diagnostic\s*d[ée]rive\s*$", re.MULTILINE)
+    return bool(pattern.search(body))
+
+
+def _cell_index_by_id(nb):
+    """Build a mapping cell_id -> ordinal index for stable alignment.
+
+    Defect 2 (PR #16082 review): ordinal alignment produces false drifts
+    when a new cell is inserted before unchanged cells. We align by cell
+    id when available, fall back to ordinal for legacy notebooks (no ids).
+    """
+    result = {}
+    cells = nb.get("cells", [])
+    for i, cell in enumerate(cells):
+        cid = cell.get("id") or None
+        if cid:
+            result[cid] = i
+    return result
+
+
+def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
+    """Return a list of cell identifiers whose float signature changed.
+
+    Defect 2 fix: aligns by cell id when notebooks are provided (stable
+    under insertions); falls back to ordinal otherwise (legacy).
+    Returns a list of ids (str) when aligned by id, or ints (legacy).
+    """
+    # If we have notebooks with cell ids, align by id
+    if base_nb is not None and head_nb is not None:
+        base_ids = _cell_index_by_id(base_nb)
+        head_ids = _cell_index_by_id(head_nb)
+        # Only consider cells present in BOTH (intersection), plus
+        # report new cells (in head but not base) as drifts.
+        common = set(base_ids.keys()) & set(head_ids.keys())
+        if not common and (base_ids or head_ids):
+            # No common ids -> fall back to ordinal
+            return _diff_signatures_ordinal(base_sig, head_sig)
+        diffs = []
+        # Common cells: compare signatures
+        for cid in sorted(common):
+            b_idx = base_ids[cid]
+            h_idx = head_ids[cid]
+            b = base_sig[b_idx] if b_idx < len(base_sig) else ()
+            h = head_sig[h_idx] if h_idx < len(head_sig) else ()
+            if b != h:
+                diffs.append(cid)
+        # Added cells (only in head)
+        for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
+            diffs.append(cid)
+        return diffs
+    return _diff_signatures_ordinal(base_sig, head_sig)
+
+
+def _diff_signatures_ordinal(base_sig, head_sig):
+    """Legacy ordinal alignment: returns int indices."""
     diffs = []
     n = max(len(base_sig), len(head_sig))
     for i in range(n):
@@ -162,17 +262,24 @@ def diff_signatures(base_sig, head_sig):
     return diffs
 
 
-def main():
-    p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    p.add_argument("base_ref")
-    p.add_argument("--json", action="store_true",
-                   help="emit findings as JSON on stdout")
-    p.add_argument("--explain", action="store_true",
-                   help="annotate each finding with probable cause")
-    args = p.parse_args()
-
-    base = resolve_base(args.base_ref)
+def _run(args_obj):
+    """Core logic shared between CLI and tests. Returns dict or prints."""
+    base = resolve_base(args_obj.base_ref)
     notebooks = changed_notebooks(base)
+
+    # Defect 1: read PR body for exemption
+    pr_body = ""
+    try:
+        from pathlib import Path
+        # Path is taken from env var or .git/PR_BODY
+        pr_body_path = Path(os.environ.get("PR_BODY_FILE", "/tmp/pr_body"))
+        if pr_body_path.exists():
+            pr_body = pr_body_path.read_text(encoding="utf-8", errors="replace")
+    except (ImportError, OSError):
+        pass
+
+    body_exempts = body_has_derive_exemption(pr_body)
+
     findings = []
     for nb_path in notebooks:
         base_nb = read_blob(base, nb_path)
@@ -184,7 +291,9 @@ def main():
         base_sig = float_signatures(base_nb)
         head_sig = float_signatures(head_nb)
         kernel_diffs = diff_kernel(base_kernel, head_kernel)
-        sig_diffs = diff_signatures(base_sig, head_sig)
+        # Defect 2: pass notebooks for id-based alignment
+        sig_diffs = diff_signatures(base_sig, head_sig,
+                                     base_nb=base_nb, head_nb=head_nb)
         if kernel_diffs or sig_diffs:
             finding = {
                 "notebook": nb_path,
@@ -192,8 +301,15 @@ def main():
                 "signature_drift_cells": sig_diffs,
                 "base_kernel": base_kernel,
                 "head_kernel": head_kernel,
+                "body_exemption": body_exempts,
             }
-            if args.explain:
+            # Defect 1: if body exempts and drift is documented, downgrade
+            if body_exempts and (kernel_diffs or sig_diffs):
+                finding["acknowledged"] = True
+                finding["acknowledgment_reason"] = (
+                    "PR body contains '## Diagnostic dérive' (C.4 exemption)"
+                )
+            if args_obj.explain:
                 causes = []
                 if kernel_diffs:
                     causes.append(
@@ -212,17 +328,37 @@ def main():
                 finding["probable_causes"] = causes
             findings.append(finding)
 
+    return {"findings": findings, "base": base, "body_exempts": body_exempts}
+
+
+def main():
+    """Defect 3 fix: parse argv once, build args, call _run ONCE."""
+    p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    p.add_argument("base_ref")
+    p.add_argument("--json", action="store_true",
+                   help="emit findings as JSON on stdout")
+    p.add_argument("--explain", action="store_true",
+                   help="annotate each finding with probable cause")
+    args = p.parse_args()
+
+    result = _run(args)
+    findings = result["findings"]
+
     if args.json:
-        print(json.dumps({"findings": findings, "base": base}, indent=2))
+        # Defect 3: emit a SINGLE JSON document
+        print(json.dumps(result, indent=2))
+        return 0 if not findings or all(f.get("acknowledged") for f in findings) else 1
     else:
         if not findings:
             print(f"OK: 0 kernel-drift regression across "
-                  f"{len(notebooks)} changed notebooks (base={base}).")
+                  f"{len(changed_notebooks(result['base']))} changed notebooks "
+                  f"(base={result['base']}).")
             return 0
         print(f"FAIL: kernel-drift regression in {len(findings)} notebook(s):",
               file=sys.stderr)
         for f in findings:
-            print(f"  {f['notebook']}", file=sys.stderr)
+            tag = " [ACKNOWLEDGED via ## Diagnostic dérive]" if f.get("acknowledged") else ""
+            print(f"  {f['notebook']}{tag}", file=sys.stderr)
             for k in f["kernel_diffs"]:
                 print(f"    - {k}", file=sys.stderr)
             if f["signature_drift_cells"]:
@@ -231,5 +367,29 @@ def main():
         return 1
 
 
+def main_with_args(argv):
+    """Entry point for tests: parse argv as a list, run ONCE, return rc + result.
+
+    Defect 3 fix verification: this function calls _run() exactly once and
+    prints a single JSON document when --json is set.
+    """
+    p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    p.add_argument("base_ref")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--explain", action="store_true")
+    args = p.parse_args(argv)
+    result = _run(args)
+    findings = result["findings"]
+    if args.json:
+        # Single JSON emission
+        print(json.dumps(result, indent=2))
+        return 0 if not findings or all(f.get("acknowledged") for f in findings) else 1
+    if not findings:
+        print(f"OK: 0 kernel-drift regression across 0 changed notebooks (base={result['base']}).")
+        return 0
+    print(f"FAIL: {len(findings)} drift(s)", file=sys.stderr)
+    return 1
+
+
 if __name__ == "__main__":
-    sys.exit(0 if main() == 0 or main() == None else 1)
+    sys.exit(main())
