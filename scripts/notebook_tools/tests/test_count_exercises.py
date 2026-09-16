@@ -262,6 +262,50 @@ class TestCodeCellOnlyExercise:
         )
         assert all(h.detected_by == "code_cell_comment" for h in result.exercises)
 
+    def test_numbered_print_marker_computing_skeleton_is_counted(
+        self, tmp_path
+    ):
+        """Numbered C.1 print idiom on a scaffolded skeleton whose body
+        computes (the rl_8_model_based_dyna_q Ex2 shape). The skeleton's
+        ``# TODO etudiant`` markers sit above scaffolding with a DERIVED
+        return (``return list(steps), Q`` -- a call), so the comment-marker
+        gate in ``_is_stub_code`` skips them ("leftover comments above a body
+        that computes") and the only executable marker left is
+        ``print("Exercice 2 a completer")`` -- which the pre-fix pattern
+        missed because of the digit. The markdown header above must pair to
+        exactly one hit, not double-count.
+        """
+        nb = _write_nb(
+            tmp_path / "numbered_print_skeleton.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 2 — Prioritized Sweeping"),
+                _code(
+                    "import heapq\n"
+                    "\n"
+                    "\n"
+                    "def sweep(env, n_episodes=50):\n"
+                    '    """Squelette — a completer (exercice 2)."""\n'
+                    "    Q = {}\n"
+                    "    steps = []\n"
+                    "    for _ in range(n_episodes):\n"
+                    "        # TODO etudiant — Etape 1 : inserer dans la file\n"
+                    "        steps.append(1)\n"
+                    "    return list(steps), Q\n"
+                    "\n"
+                    "\n"
+                    "# TODO etudiant — Etape 2 : comparer avec dyna_q\n"
+                    'print("Exercice 2 a completer")'
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "A scaffolded skeleton whose only executable marker is the "
+            "numbered print idiom must count as one exercise"
+        )
+        assert result.exercises[0].detected_by == "markdown_header"
+
     def test_stub_preceding_different_number_header_is_not_absorbed(
         self, tmp_path
     ):
