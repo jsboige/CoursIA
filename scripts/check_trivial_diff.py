@@ -87,8 +87,23 @@ TRIVIAL_CHANGED_LINES = 100
 # mesure). A line extinguishes when it names an exception/residue AND scopes
 # it to a measured end (final/mesure/restant/dernier/seul) -- either half
 # alone is prose, not a declared exception.
-_EXCEPTION_LEXICAL = re.compile(r"\bexception|\bresidu|\bjustification")
-_EXCEPTION_SCOPE = re.compile(r"\bfinal\b|\bmesur|\brestant|\bdernier\b|\bseul\b")
+#
+# Boundary rule (#16143): `\b` does NOT treat the underscore as a separator --
+# `_` is a word character in `re`, so a SNAKE_CASE marker the author wrote to
+# be unmistakable (`FINAL_RESIDUAL`) had NO boundary anywhere around `final`
+# or `residu` and was INERT to both patterns. The organ then rendered
+# `verdict: trivial` + `written_exception: null`, i.e. exactly what it renders
+# when nothing was invoked: false in the direction that ACCUSES the author
+# (measured on #15849). The fix is an explicit boundary, not the removal of
+# `\b` -- `final` unbounded would match `finalement` and `finaliser`, the
+# symmetric over-accusation. `[a-z0-9]` suffices on both sides: the input is
+# already accent-stripped and lowercased (_strip_accents_lower), so no
+# uppercase can reach these patterns.
+_EXCEPTION_LEXICAL = re.compile(
+    r"(?<![a-z0-9])(?:exception|residu|justification)")
+_EXCEPTION_SCOPE = re.compile(
+    r"(?<![a-z0-9])(?:final|dernier|seul)(?![a-z0-9])"
+    r"|(?<![a-z0-9])(?:mesur|restant)")
 
 
 def _strip_accents_lower(line: str) -> str:

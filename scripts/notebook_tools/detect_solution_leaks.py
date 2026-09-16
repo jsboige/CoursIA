@@ -987,7 +987,11 @@ def scan_notebook(path: str) -> list[dict]:
                     "exercise_num": num or "?",
                     "message": f"Solution leak: Exercice {num or '?'} has {len(next_code_source)} chars of code (not stub)",
                     "preview": next_code_source[:150],
-                    "fix": "Relabel header to 'Exemple guide' or replace code with stub",
+                    "fix": "Give the exercise its own stub code cell (canonical), or replace "
+                           "the resolved code with a stub. Relabel the header to 'Exemple "
+                           "guide' ONLY if the content is genuinely a worked example - "
+                           "classification is by CONTENT "
+                           "(.claude/rules/exercise-example-labeling.md).",
                 })
 
     return findings
@@ -1012,6 +1016,22 @@ def discover_notebooks(root: str) -> list[str]:
             if f.endswith('.ipynb') and not f.endswith('_output.ipynb'):
                 notebooks.append(os.path.join(dirpath, f))
     return sorted(notebooks)
+
+
+def display_path(path: str, repo_root: str) -> str:
+    """Path to print for a finding: relative to the repo when possible, absolute otherwise.
+
+    ``os.path.relpath`` raises ``ValueError`` when ``path`` and ``repo_root`` sit on
+    different Windows volumes ("path is on mount 'D:', start on mount 'C:'"). The scanner
+    accepts any ``--scan`` target, so a notebook outside the repo volume is a supported
+    input, not an error: without this fallback the scan *counts* its findings, prints the
+    "Results: N HIGH" line, then dies while formatting the detail -- the operator gets a
+    count with no way to learn *which* finding, and an rc=1 that reads as a failed scan.
+    """
+    try:
+        return os.path.relpath(path, repo_root)
+    except ValueError:
+        return path
 
 
 def main():
@@ -1060,7 +1080,7 @@ def main():
     if high:
         print("=== HIGH SEVERITY (Solution Leaks) ===")
         for f in high:
-            rel = os.path.relpath(f['path'], repo_root)
+            rel = display_path(f['path'], repo_root)
             print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
             if args.verbose and 'preview' in f:
                 print(f"    Preview: {f['preview'][:120]}...")
@@ -1071,7 +1091,7 @@ def main():
     if medium:
         print("=== MEDIUM SEVERITY (Duplicate Numbers) ===")
         for f in medium:
-            rel = os.path.relpath(f['path'], repo_root)
+            rel = display_path(f['path'], repo_root)
             print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
         print()
 

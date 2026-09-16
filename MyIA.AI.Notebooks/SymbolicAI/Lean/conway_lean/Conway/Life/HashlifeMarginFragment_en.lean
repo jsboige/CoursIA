@@ -74,6 +74,7 @@ bestiary below. EPIC #3846 / #6724 / #9568.
 import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
 import Conway.Life.LightCone_en
+import Conway.Life.Oscillators_en
 
 namespace Conway_en
 open Conway
@@ -940,6 +941,131 @@ theorem hashlife_correct_margin_of_period_mod (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_period_mod _ (canonical_sortDedup _) hT0 hper hwin t)
+
+/-! ### Flagship witness `T = 3`: the pulsar (tranche 8b, admission)
+
+First **non-dyadic** witness admitted through the relaxed chain: the pulsar
+(`Conway.Life.Oscillators.pulsar`, 48 cells, 13×13 box). Since 3 divides no
+power of 2, the dyadic chain `T ∣ 2^level` structurally cannot admit it —
+only the phase-containment relaxation reaches it. The three step equations
+are proved by the **kernel** reducer (`decide` under `maxRecDepth 1000000`),
+without consuming `Oscillators.pulsar_period_three` (a `native_decide`
+proof, forbidden by bestiary note c.212). -/
+/-- Phase 1 of the pulsar (56 cells, box `[-1, 13]²`): the only phase that
+spills outside the phase-0 13×13 box. Lexicographically sorted literal. -/
+def pulsarP1 : Grid :=
+  [(-1, 3), (-1, 9), (0, 3), (0, 9), (1, 3), (1, 4), (1, 8), (1, 9),
+  (3, -1), (3, 0), (3, 1), (3, 4), (3, 5), (3, 7), (3, 8), (3, 11),
+  (3, 12), (3, 13), (4, 1), (4, 3), (4, 5), (4, 7), (4, 9), (4, 11),
+  (5, 3), (5, 4), (5, 8), (5, 9), (7, 3), (7, 4), (7, 8), (7, 9),
+  (8, 1), (8, 3), (8, 5), (8, 7), (8, 9), (8, 11), (9, -1), (9, 0),
+  (9, 1), (9, 4), (9, 5), (9, 7), (9, 8), (9, 11), (9, 12), (9, 13),
+  (11, 3), (11, 4), (11, 8), (11, 9), (12, 3), (12, 9), (13, 3), (13, 9)]
+/-- Phase 2 of the pulsar (72 cells, box `[0, 12]²`). Sorted literal. -/
+def pulsarP2 : Grid :=
+  [(0, 2), (0, 3), (0, 9), (0, 10), (1, 3), (1, 4), (1, 8), (1, 9),
+  (2, 0), (2, 3), (2, 5), (2, 7), (2, 9), (2, 12), (3, 0), (3, 1),
+  (3, 2), (3, 4), (3, 5), (3, 7), (3, 8), (3, 10), (3, 11), (3, 12),
+  (4, 1), (4, 3), (4, 5), (4, 7), (4, 9), (4, 11), (5, 2), (5, 3),
+  (5, 4), (5, 8), (5, 9), (5, 10), (7, 2), (7, 3), (7, 4), (7, 8),
+  (7, 9), (7, 10), (8, 1), (8, 3), (8, 5), (8, 7), (8, 9), (8, 11),
+  (9, 0), (9, 1), (9, 2), (9, 4), (9, 5), (9, 7), (9, 8), (9, 10),
+  (9, 11), (9, 12), (10, 0), (10, 3), (10, 5), (10, 7), (10, 9), (10, 12),
+  (11, 3), (11, 4), (11, 8), (11, 9), (12, 2), (12, 3), (12, 9), (12, 10)]
+set_option maxRecDepth 1000000 in
+/-- The pulsar definition is already canonical (sorted, duplicate-free):
+certified by the kernel, then converted through `canonical_sortDedup`. -/
+theorem pulsar_canonical : Canonical pulsar := by
+  have h : pulsar = sortDedup pulsar := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Likewise for phase 1. -/
+theorem pulsarP1_canonical : Canonical pulsarP1 := by
+  have h : pulsarP1 = sortDedup pulsarP1 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+/-- Likewise for phase 2. -/
+theorem pulsarP2_canonical : Canonical pulsarP2 := by
+  have h : pulsarP2 = sortDedup pulsarP2 := by decide
+  rw [h]
+  exact canonical_sortDedup _
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Step equation by the kernel reducer: phase 0 evolves into phase 1
+(~4.5 min of reduction). -/
+theorem pulsar_step1 : step pulsar = pulsarP1 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, phase 1 into phase 2. -/
+theorem pulsarP1_step : step pulsarP1 = pulsarP2 := by decide
+set_option maxRecDepth 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Likewise, phase 2 back to phase 0: the period-3 loop is closed. -/
+theorem pulsarP2_step : step pulsarP2 = pulsar := by decide
+/-- Trivial decomposition of iterates: two steps compose two unit steps
+(`evolve` is the iterate of `step`). -/
+theorem evolve_two (g : Grid) : evolve 2 g = evolve 1 (evolve 1 g) := rfl
+/-- Likewise for three steps. -/
+theorem evolve_three (g : Grid) : evolve 3 g = evolve 1 (evolve 1 (evolve 1 g)) := rfl
+/-- Chain of phases under `evolve 1`: phase 0. -/
+theorem pulsar_ev1 : evolve 1 pulsar = pulsarP1 := pulsar_step1
+/-- Chain of phases: phase 1. -/
+theorem pulsarP1_ev1 : evolve 1 pulsarP1 = pulsarP2 := pulsarP1_step
+/-- Chain of phases: phase 2. -/
+theorem pulsarP2_ev1 : evolve 1 pulsarP2 = pulsar := pulsarP2_step
+/-- Period 3 of the pulsar proved by the **kernel**: composition of the
+three step equations. The `native_decide` proof
+`Oscillators.pulsar_period_three` is not consumed (note c.212). -/
+theorem pulsar_period_three_kernel : evolve 3 pulsar = pulsar := by
+  rw [evolve_three, pulsar_ev1, pulsarP1_ev1, pulsarP2_ev1]
+set_option maxRecDepth 1000000 in
+/-- Reconstruction frame of phase 0: offset `(-2, -2)` (padding 2 around
+the `[0, 12]²` box). -/
+theorem pulsar_frame_off : (gridToMacroCellWithOffset pulsar).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the phase-0 frame: side 18 → level 5, frame `[-2, 30)²`. -/
+theorem pulsar_frame_lvl : (gridToMacroCellWithOffset pulsar).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 1: box `[-1, 13]²` → offset `(-3, -3)`, level 5
+(frame `[-3, 29)²`). -/
+theorem pulsarP1_frame_off : (gridToMacroCellWithOffset pulsarP1).1 = (-3, -3) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the phase-1 frame: side 20 → level 5. -/
+theorem pulsarP1_frame_lvl : (gridToMacroCellWithOffset pulsarP1).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Frame of phase 2: box `[0, 12]²` → offset `(-2, -2)`. -/
+theorem pulsarP2_frame_off : (gridToMacroCellWithOffset pulsarP2).1 = (-2, -2) := by decide
+set_option maxRecDepth 1000000 in
+/-- Level of the phase-2 frame: level 5. -/
+theorem pulsarP2_frame_lvl : (gridToMacroCellWithOffset pulsarP2).2.level = 5 := by decide
+set_option maxRecDepth 1000000 in
+/-- Containment of the 9 phase combinations `(r, i) < 3 × 3`: every image
+`evolve i (evolve r pulsar)` lives inside the reconstruction frame of
+phase `r`. Phase 1 spills outside the 13×13 box, but its image stays
+inside the enclosing phase-0 frame `[-2, 30)²`. -/
+theorem pulsar_hwin : ∀ r, r < 3 → ∀ i, i < 3 → ∀ p ∈ evolve i (evolve r pulsar),
+    (gridToMacroCellWithOffset (evolve r pulsar)).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset (evolve r pulsar)).1.1
+        + (2 ^ (gridToMacroCellWithOffset (evolve r pulsar)).2.level : Int) ∧
+    (gridToMacroCellWithOffset (evolve r pulsar)).1.2 ≤ p.2 ∧
+      p.2 < (gridToMacroCellWithOffset (evolve r pulsar)).1.2
+        + (2 ^ (gridToMacroCellWithOffset (evolve r pulsar)).2.level : Int) := by
+  intro r hr i hi
+  interval_cases r <;> interval_cases i <;>
+    simp only [evolve_zero, evolve_two, pulsar_ev1, pulsarP1_ev1, pulsarP2_ev1] <;>
+    first
+    | (rw [pulsar_frame_off, pulsar_frame_lvl]; decide)
+    | (rw [pulsarP1_frame_off, pulsarP1_frame_lvl]; decide)
+    | (rw [pulsarP2_frame_off, pulsarP2_frame_lvl]; decide)
+/-- Capstone: the pulsar is admitted by `hcap_of_period_mod` — the first
+concrete **non-dyadic** instance. For every horizon `t`, the
+reconstruction of `evolve t pulsar` is captured by Hashlife. -/
+theorem pulsar_hcap_of_period_mod :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t pulsar)).2 = true :=
+  hcap_of_period_mod pulsar pulsar_canonical (by decide)
+    pulsar_period_three_kernel pulsar_hwin
 
 
 /-! ## Translation invariance of the reconstruction (tranche 3, step 7, brick 1)

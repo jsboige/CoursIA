@@ -12,9 +12,10 @@ ouvrir. Le picker defait la troncature courante par construction (`--limit
 2000`, une seule requete, plafond surveille) et rend la selection *aleatoire ponderee* au lieu de
 *recente-d'abord*.
 
-Il **ne decide pas** du grain. Il tire une poignee de candidats et laisse a
-l'agent le choix final selon les criteres de variete de sa lane (G-VAR-1/2/3).
-Il decide en revanche de ce qui est **admissible** -- voir ci-dessous.
+Il **ne decide pas** du grain. Il rend une poignee qui se consomme comme une
+file sequentielle : claim, PR atomique, puis candidat suivant sans attendre la
+review ou le merge du precedent. Il decide en revanche de ce qui est
+**admissible** -- voir ci-dessous.
 
 Classer ne suffisait pas : le garde d'admission (mandat user 2026-08-28)
 ------------------------------------------------------------------------
@@ -77,8 +78,8 @@ Trois urnes, parce que le pool n'est pas homogene
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
-Le picker **assigne la reparation** (sortie 0, un grain rendu) tant que la
-lane porte une PR a reprendre, ouverte depuis plus de 24 h. La reparation
+Le picker **assigne la file de reparation** (sortie 0, backlog complet) tant
+que la lane porte une PR a reprendre, ouverte depuis plus de 24 h. La reparation
 n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser, ni corriger,
 ni repondre a sa place -- une lane qui pioche du neuf en laissant sa PR
 derriere elle fabrique un residu que personne d'autre ne peut resorber.
@@ -89,8 +90,9 @@ disait *l'outil n'a rien pour toi*, et une lane pouvait s'arreter en croyant
 la sortie sanctionnee. Une lane a forte cadence accumule les PRs plus vite,
 declenche `count`/`nits` plus tot, et recevait donc ce refus a **chaque**
 cycle : le boost causait le drain (incident lanes 2, 2026-08-30). Le travail
-rendu ici EST le grain du cycle. Aucune sortie de cet outil n'autorise une
-lane a ne rien produire tant que du rouge lui appartient ou que
+rendu ici EST la premiere file de la session ; une fois drainee, la lane
+reprend sa file productive. Aucune sortie de cet outil n'autorise une lane a
+ne rien produire tant que du rouge lui appartient ou que
 `gh issue list` renvoie > 0.
 
 Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
@@ -98,6 +100,9 @@ Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
 1. **check requis en echec** -- lu sur le champ GraphQL `isRequired`, ce que la
    protection de branche exige vraiment, et non "au moins un check rouge", qui
    rougissait 52 PRs sur 55 le 2026-08-22 en comptant les advisories ;
+   variante #15769 : un requis **non conclu** (CANCELLED/STALE/SKIPPED/NEUTRAL)
+   rend la cause distincte « check requis non conclu » -- le geste est la
+   reprise coordinateur, jamais une reparation de lane ;
 2. **conflit avec main** ;
 3. **CHANGES_REQUESTED non leve** ;
 4. **point de review non leve** (mandat 2026-08-24 : "ne plus produire tant
@@ -134,7 +139,7 @@ Elle est INFORMATIONNELLE : aucun gate, aucun changement du tirage.
 Usage
 -----
     python scripts/pick_idle_grain.py --lane myia-po-2026:CoursIA
-    python scripts/pick_idle_grain.py --lane myia-po-2023:CoursIA-2 --prev-genre guard
+    python scripts/pick_idle_grain.py --lane myia-po-2023:CoursIA-2 --prev-genre guard,docs
     python scripts/pick_idle_grain.py --lane <l> --reroll 1        # nouveau tirage
     python scripts/pick_idle_grain.py --lane <l> --no-check-claims # sans verif claims
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
@@ -143,8 +148,8 @@ Usage
 
 Le tirage est **deterministe par (lane, heure UTC, reroll)** : deux lanes
 tirent des candidats differents a la meme minute, et une meme lane qui relance
-dans l'heure retrouve son tirage (idempotent, pas de thrash). `--reroll N`
-decale la graine quand aucun candidat ne convient.
+dans l'heure retrouve sa file (idempotent, pas de thrash). `--reroll N` sert a
+renouveler la poignee apres l'avoir consommee, jamais a justifier un arret.
 """
 
 from __future__ import annotations
@@ -872,18 +877,17 @@ def print_delivered_signal_report(
 
 def print_empty_draw_notice(withheld: list, picks: list,
                             include_delivered: bool) -> None:
-    """Un tirage vide se DIT, et nomme le filtre quand il en est la cause."""
+    """Une poignee epuisee route vers le pool global, jamais vers l'idle."""
     if picks:
         return
-    print("TIRAGE VIDE : aucun candidat retenu apres filtres et gardes.")
+    print("FILE LOCALE EPUISEE : aucun candidat libre dans cette poignee.")
     if not include_delivered and any(
             cause.startswith("LIVRAISON") for _, cause in withheld):
-        print("   Une partie s'explique par le signal de livraison ci-dessus :")
-        print("   ces issues sont deja livrees, pas inaccessibles. Le vivier")
-        print("   de production est donc plus petit que le pool, et ce n'est")
-        print("   PAS une absence de travail pour la lane.")
-    print("   Ce n'est pas un refus de la lane : relancer avec --reroll, ou")
-    print("   elargir les filtres (`--urns`, bornes d'age/inactivite).")
+        print("   Une partie a deja ete livree et reste reservee a l'urne de")
+        print("   fermeture ; elle ne doit pas etre reproduite.")
+    print("   Claims, livraisons et urnes autorisees restent proteges. Enchainer")
+    print("   immediatement sur la deep-queue ou le fallback global de la lane.")
+    print("   Une poignee locale epuisee ne termine jamais la session.")
     print()
 
 
@@ -954,6 +958,68 @@ def filter_candidates(
             for name in sorted(URN_NAMES)
         },
     }
+
+
+def filter_candidates_with_continuity(
+    items: list[dict],
+    *,
+    exclude_issues: set[int] | None = None,
+    required_labels: set[str] | None = None,
+    excluded_labels: set[str] | None = None,
+    min_age_days: int | None = None,
+    max_age_days: int | None = None,
+    min_idle_days: int | None = None,
+    max_idle_days: int | None = None,
+    urns: set[str] | None = None,
+) -> tuple[list[dict], dict[str, Any]]:
+    """Filtre une poignee, puis relache les filtres etroits si elle est vide.
+
+    Le repli est borne a une seconde passe. Il conserve les exclusions d'issues
+    deja refutees et les urnes autorisees ; claims et signaux de livraison sont
+    encore verifies ensuite par ``draw_unclaimed``. Age, inactivite et labels
+    orientent un tirage, ils ne peuvent pas devenir un verdict terminal-idle.
+    """
+    kwargs = {
+        "exclude_issues": exclude_issues,
+        "required_labels": required_labels,
+        "excluded_labels": excluded_labels,
+        "min_age_days": min_age_days,
+        "max_age_days": max_age_days,
+        "min_idle_days": min_idle_days,
+        "max_idle_days": max_idle_days,
+        "urns": urns,
+    }
+    kept, funnel = filter_candidates(items, **kwargs)
+    relaxable = any((
+        required_labels,
+        excluded_labels,
+        min_age_days is not None,
+        max_age_days is not None,
+        min_idle_days is not None,
+        max_idle_days is not None,
+    ))
+    if kept or not items or not relaxable:
+        funnel["fell_back"] = False
+        return kept, funnel
+
+    fallback, fallback_funnel = filter_candidates(
+        items,
+        exclude_issues=exclude_issues,
+        urns=urns,
+    )
+    if not fallback:
+        funnel["fell_back"] = False
+        return kept, funnel
+    fallback_funnel["fell_back"] = True
+    fallback_funnel["fallback_final"] = len(fallback)
+    fallback_funnel["first_pass"] = funnel
+    return fallback, fallback_funnel
+
+
+def requested_filter_funnel(funnel: dict[str, Any]) -> dict[str, Any]:
+    """Retourne la passe qui porte les filtres effectivement demandes."""
+    return funnel.get("first_pass", funnel)
+
 
 # Une issue portant l'une de ces etiquettes se consomme sans delai : le
 # dwell existe pour empecher l'emballement d'audit, pas pour retarder un
@@ -1041,7 +1107,26 @@ def admissibility(item: dict, balance: dict | None,
 # (verdict DESEQUILIBRE), parce qu'elle vise la redaction des EPICs -- c'est
 # au coordinateur d'y repondre en ouvrant des grains, pas au worker d'y buter.
 
-def weight(item: dict, prev_genre: str | None,
+def normalize_prev_genres(value: str | list[str] | tuple[str, ...] | set[str] | None
+                          ) -> set[str]:
+    """Genres deja consommes dans la session, depuis scalaire/repetitions/CSV.
+
+    L'ancien contrat etait scalaire. Accepter encore une chaine simple rend la
+    migration transparente ; les virgules et ``|`` portent la multiplicite.
+    """
+    if not value:
+        return set()
+    groups = [value] if isinstance(value, str) else value
+    return {
+        genre.strip()
+        for group in groups
+        for part in str(group).split("|")
+        for genre in part.split(",")
+        if genre.strip()
+    }
+
+
+def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] | None,
            visits: dict[int, int] | None = None,
            series: dict[str, dict] | None = None,
            issue_to_family: dict[int, str] | None = None,
@@ -1061,8 +1146,10 @@ def weight(item: dict, prev_genre: str | None,
     # que le tirage doit atteindre : un EPIC intouche depuis 53 j pese ~2.4x un
     # sujet du jour, assez pour remonter, trop peu pour devenir la seule veine.
     w *= 1.0 + math.log2(1.0 + item["idle"] / 14.0)
-    # G-VAR-3 au tirage plutot qu'en HOLD a posteriori.
-    if prev_genre and item["genre"] == prev_genre:
+    # G-VAR-3 au tirage plutot qu'en HOLD a posteriori. Tous les genres deja
+    # consommes dans la session restent penalises : guard -> docs -> guard ne
+    # doit pas redevenir libre au troisieme tirage (#14704).
+    if item["genre"] in normalize_prev_genres(prev_genre):
         w *= 0.25
     # G-VAR-1 : le plancher exige DEEP/MED **et** CONTENU.
     if item["genre"] in CONTENU:
@@ -1112,7 +1199,8 @@ def weight(item: dict, prev_genre: str | None,
     return w
 
 
-def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
+def draw(items: list[dict], n: int, rng: random.Random,
+         prev_genre: str | list[str] | tuple[str, ...] | set[str] | None,
          visits: dict[int, int] | None = None,
          series: dict[str, dict] | None = None,
          issue_to_family: dict[int, str] | None = None,
@@ -1218,7 +1306,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
-                   delivery=None, delivered_probe=None, delivered_state=None):
+                   delivery=None, delivered_probe=None, delivered_state=None,
+                   fallback_by_class=None, continuity_state=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Deux raisons de remplacer plutot que d annoter :
@@ -1265,43 +1354,54 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
         return (delivered_probe or delivered_probe_inert)(number, lane_name)
 
     for cls, want, prev in urnes:
-        pool = list(by_class[cls])
+        primary = list(by_class[cls])
+        primary_numbers = {item["number"] for item in primary}
+        reserve = [
+            item for item in (fallback_by_class or {}).get(cls, [])
+            if item["number"] not in primary_numbers
+        ]
         got = []
-        # Borne dure : au pire on epuise l urne. Pas de while nu.
-        for _ in range(len(pool) + 1):
-            if len(got) >= want or not pool:
-                break
-            cand = draw(pool, want - len(got), rng, prev, visits,
-                        series, issue_to_family, delivery)
-            if not cand:
-                break
-            nums = [c["number"] for c in cand]
-            verdicts = (check_claims(nums, args.lane)
-                        if args.check_claims and args.lane else {})
-            claims.update(verdicts)
-            drawn = {c["number"] for c in cand}
-            pool = [it for it in pool
-                    if it["number"] not in drawn]
-            for c in cand:
-                v = verdicts.get(c["number"], "")
-                if v.startswith("BLOQUE par"):
-                    conflicts.append((c, "CLAIM : " + v + (
-                        ". Une autre lane tient ce grain -- ecrire dessus "
-                        "produirait la collision, pas le livrable. Candidat "
-                        "remplace dans la meme urne.")))
-                    continue
-                if cls == "grain" and not include_delivered:
-                    # Le label est teste A COUT NUL et vaut meme quand le
-                    # plafond de sondes est epuise ; seule la sonde de
-                    # commentaire est plafonnee, et son epuisement est
-                    # fail-OPEN (le candidat est conserve).
-                    reason = delivered_signal_reason(
-                        c, args.lane, _counted_probe, failures)
-                    if reason is not None:
-                        conflicts.append((c, "LIVRAISON : " + reason + (
-                            " Candidat remplace dans la meme urne.")))
+        for pool_index, candidate_pool in enumerate((primary, reserve)):
+            pool = list(candidate_pool)
+            # Borne dure : au pire on epuise chaque poignee. Pas de while nu.
+            for _ in range(len(pool) + 1):
+                if len(got) >= want or not pool:
+                    break
+                cand = draw(pool, want - len(got), rng, prev, visits,
+                            series, issue_to_family, delivery)
+                if not cand:
+                    break
+                nums = [c["number"] for c in cand]
+                verdicts = (check_claims(nums, args.lane)
+                            if args.check_claims and args.lane else {})
+                claims.update(verdicts)
+                drawn = {c["number"] for c in cand}
+                pool = [it for it in pool
+                        if it["number"] not in drawn]
+                for c in cand:
+                    v = verdicts.get(c["number"], "")
+                    if v.startswith("BLOQUE par"):
+                        conflicts.append((c, "CLAIM : " + v + (
+                            ". Une autre lane tient ce grain -- ecrire dessus "
+                            "produirait la collision, pas le livrable. Candidat "
+                            "remplace dans la meme urne.")))
                         continue
-                got.append(c)
+                    if cls == "grain" and not include_delivered:
+                        # Le label est teste A COUT NUL et vaut meme quand le
+                        # plafond de sondes est epuise ; seule la sonde de
+                        # commentaire est plafonnee, et son epuisement est
+                        # fail-OPEN (le candidat est conserve).
+                        reason = delivered_signal_reason(
+                            c, args.lane, _counted_probe, failures)
+                        if reason is not None:
+                            conflicts.append((c, "LIVRAISON : " + reason + (
+                                " Candidat remplace dans la meme urne.")))
+                            continue
+                    got.append(c)
+                    if pool_index and continuity_state is not None:
+                        continuity_state["used"] = True
+            if len(got) >= want:
+                break
         picks.extend(got)
     return picks, claims, conflicts
 
@@ -1459,6 +1559,14 @@ RED_COUNT_DEFAULT = 3
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
+
+# #15769 : conclusions non concluantes d'un check TERMINE. Ni vert (un requis
+# dans cet etat empeche le merge) ni un echec de lane (imputer un CANCELLED a
+# la lane l'envoie chercher un rouge qui n'existe pas -- regime nominal sous
+# file chargee : `--timeout-min 45` du slot rend `cancelled`, jamais
+# `failure`). Rendu par `blocking_causes` comme cause DISTINCTE « non conclue »,
+# dont le geste (re-agregation par le coordinateur) n'est pas celui d'un echec.
+CHECK_UNCONCLUDED = {"CANCELLED", "STALE", "SKIPPED", "NEUTRAL"}
 
 # #13420 : un check "en vol" est celui dont la file peut encore bouger. C'est
 # lui qui date la saturation -- pas la PR qui le porte. La chaine vide couvre
@@ -1777,6 +1885,17 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
+            # #15769 : un requis non conclu (CANCELLED/STALE/SKIPPED/NEUTRAL)
+            # empeche le merge sans que la lane puisse quoi que ce soit -- le
+            # `continue` historique le filtrait exactement comme un advisory
+            # vert, AVANT le test `isRequired` : la PR etait BLOCKED sans
+            # aucune cause rendue (7 PRs simultanees le 2026-09-12). Cause
+            # distincte d'un echec : le geste est la reprise coordinateur, pas
+            # une reparation de lane. Un advisory non conclu reste du bruit.
+            if verdict in CHECK_UNCONCLUDED and ctx.get("isRequired"):
+                cause = f"check requis non conclu : {name} ({verdict})"
+                if cause not in causes:
+                    causes.append(cause)
             continue
         if inherited:
             # #13545/#14537 : rouge impute a la base (cause commune corroboree
@@ -2437,7 +2556,7 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     if "aged" in triggers:
         motifs.append(f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus "
                       f"de {threshold_hours:g} h")
-    print(f"GRAIN DU CYCLE -- lane {lane} : reparer ses propres PRs.")
+    print(f"FILE DE REPARATION -- lane {lane} : reparer ses propres PRs.")
     print("Motif : la lane " + ", ".join(motifs) + ".")
     print()
     print("Ce n'est PAS un refus de tirage : le travail de ce cycle est nomme")
@@ -2445,9 +2564,11 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print("produire -- ni celle-ci, ni un tirage dont aucun candidat ne plait.")
     print()
     print_nits_gap(backlog)
-    print("Reprendre ses propres PRs est la PREMIERE tache du cycle, avant tout")
-    print("grain neuf : la PR ne peut etre reparee que par sa lane, le")
-    print("coordinateur ne peut ni rebaser, ni corriger, ni repondre a sa place.")
+    print("Drainer cette file est la PREMIERE sequence de la session, avant les")
+    print("grains neufs : chaque PR ne peut etre reparee que par sa lane. Pour")
+    print("chaque rouge propre, reproduire, corriger et relancer les tests avant")
+    print("d'impliquer reviewer, adjoint ou coordinateur. Puis poursuivre aussitot")
+    print("la file productive sans attendre review, CI, DWELL ou merge.")
     print()
     for item in red:
         print(f"  #{item['number']}  ouverte depuis {item['age_hours']} h  -- {item['title'][:66]}")
@@ -2975,19 +3096,21 @@ def print_lane_record(record: dict | None) -> None:
 #
 # Le remede : un etat CSV persistant par lane, que le picker lit au debut
 # du run pour auto-appliquer --prev-genre, et qu'il ecrit a la fin si
-# --write-state est passe. Format : `lane,last_genre,last_ts` (3 colonnes,
-# header). Le fichier est laisse a la lane (chemin standard
+# --write-state est passe. Format : `lane,last_genres,last_ts` (3 colonnes,
+# genres separes par `|`). L'ancien header/scalair est accepte en lecture.
+# Le fichier est laisse a la lane (chemin standard
 # `~/.cache/picker_state.csv` ou override via --csv-state).
 
-CSV_STATE_HEADER = "lane,last_genre,last_ts\n"
+CSV_STATE_HEADER = "lane,last_genres,last_ts\n"
 
 
 def read_prev_genre_csv(path: str, lane: str) -> tuple[str | None, str | None]:
-    """#14591 Volet A : lire (genre, ts) depuis le CSV pour la lane.
+    """Lire les genres de session et leur timestamp pour une lane.
 
-    Fichier absent : (None, None), pas d'exception. Lane inconnue : (None, None).
-    Lignes mal formees (<3 champs) : on skip silencieusement. Le picker reste
-    utilisable meme avec un CSV partiellement corrompu.
+    La valeur rendue reste une chaine pour compatibilite avec les appelants de
+    #14591. ``normalize_prev_genres`` lui donne la semantique d'un ensemble :
+    un ancien scalaire vaut un ensemble a un element, une valeur neuve utilise
+    ``|``. Les deux headers ``last_genre`` et ``last_genres`` sont acceptes.
     """
     if not os.path.exists(path):
         return (None, None)
@@ -3031,15 +3154,16 @@ def write_prev_genre_csv(path: str, lane: str, genre: str, ts: str) -> None:
                 rows.append(parts)
         except OSError:
             rows = []
+    encoded_genres = "|".join(sorted(normalize_prev_genres(genre)))
     found = False
     for row in rows:
         if row[0].strip() == lane:
-            row[1] = genre
+            row[1] = encoded_genres
             row[2] = ts
             found = True
             break
     if not found:
-        rows.append([lane, genre, ts])
+        rows.append([lane, encoded_genres, ts])
     try:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(CSV_STATE_HEADER)
@@ -3061,20 +3185,22 @@ def main(argv: list[str] | None = None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
                     help="machine:workspace, ex. myia-po-2026:CoursIA (requis hors --orphans-report)")
-    ap.add_argument("--prev-genre", default=None,
-                    help="genre du grain precedent de la lane (penalise ce genre au tirage)")
+    ap.add_argument("--prev-genre", action="append", default=[],
+                    metavar="GENRE[,GENRE...]",
+                    help="genres deja consommes dans la session ; option repetable "
+                         "ou separee par virgules (tous penalises au tirage)")
     ap.add_argument("--csv-state", dest="csv_state", default=None,
                     metavar="PATH",
                     help="#14591 Volet A : chemin d'un CSV d'etat par lane. "
-                         "Si la lane a une entree (colonnes lane,last_genre,last_ts), "
-                         "le picker auto-applique --prev-genre sans qu'il faille le "
+                         "Si la lane a une entree (lane,last_genres,last_ts ; genres "
+                         "separes par |, ancien scalaire accepte), le picker auto-applique "
+                         "--prev-genre sans qu'il faille le "
                          "passer en argument. Defaut : aucun.")
     ap.add_argument("--write-state", dest="write_state",
-                    choices=("none", "candidate", "merged"), default=None,
-                    help="#14591 Volet A : quand ecrire le CSV d'etat. "
-                         "'candidate' (au moment du tirage), 'merged' (apres "
-                         "merge d'une PR, via appel ulterieur). Defaut : aucun "
-                         "(le picker ne touche pas au CSV).")
+                    choices=("none", "candidate"), default=None,
+                    help="#14591 Volet A : ecrire le CSV au moment du tirage "
+                         "('candidate'). Defaut : aucun. L'ancien choix 'merged' "
+                         "etait un no-op et a ete retire (#14704).")
     ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
@@ -3153,6 +3279,7 @@ def main(argv: list[str] | None = None) -> int:
                          "l'issue N (defaut : dry-run, impression seule)")
     ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
+    args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
     if not args.lane and not args.orphans_report and args.admissible is None:
@@ -3218,7 +3345,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.csv_state and args.lane and not args.prev_genre:
         csv_genre, csv_ts = read_prev_genre_csv(args.csv_state, args.lane)
         if csv_genre:
-            args.prev_genre = csv_genre
+            args.prev_genre = sorted(normalize_prev_genres(csv_genre))
             print(f"(prev-genre auto-applique depuis CSV : {csv_genre} "
                   f"(dernier grain @ {csv_ts}))")
 
@@ -3320,8 +3447,8 @@ def main(argv: list[str] | None = None) -> int:
                              ensure_ascii=False, indent=2))
         else:
             print_red_assignment(args.lane, backlog, args.red_hours)
-            # Apres l'assignation : l'en-tete "GRAIN DU CYCLE" doit rester la
-            # premiere ligne lue (test pinné), l'ardoise vient en rappel.
+            # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
+            # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
         return 0
     if not args.json:
@@ -3400,7 +3527,7 @@ def main(argv: list[str] | None = None) -> int:
         "max_idle_days": args.max_idle_days,
         "urns": sorted(selected_urns),
     }
-    filtered, filter_funnel = filter_candidates(
+    filtered, filter_funnel = filter_candidates_with_continuity(
         admitted,
         exclude_issues=excluded_issues,
         required_labels=required_labels,
@@ -3411,6 +3538,18 @@ def main(argv: list[str] | None = None) -> int:
         max_idle_days=args.max_idle_days,
         urns=selected_urns,
     )
+    # Reserve globale admissible : utilisee seulement si la poignee locale est
+    # epuisee APRES les checks live de claim/livraison. Les deux protections
+    # structurelles restent appliquees ici : exclusions explicites et urnes.
+    fallback_filtered, _ = filter_candidates(
+        admitted,
+        exclude_issues=excluded_issues,
+        urns=selected_urns,
+    )
+    fallback_by_class = {
+        k: [it for it in fallback_filtered if it["klass"] == k]
+        for k in ("grain", "umbrella", "delivered")
+    }
     filter_funnel.update({
         "pool_initial": len(pool),
         "admitted": len(admitted),
@@ -3460,6 +3599,11 @@ def main(argv: list[str] | None = None) -> int:
             if restricted["grain"] or restricted["umbrella"]:
                 by_class = restricted
                 by_class["delivered"] = []
+                fallback_by_class = {
+                    k: [it for it in v if drought_admits(it)]
+                    for k, v in fallback_by_class.items()
+                }
+                fallback_by_class["delivered"] = []
             else:
                 drought_fell_back = True
             if not args.json:
@@ -3493,16 +3637,20 @@ def main(argv: list[str] | None = None) -> int:
         and not drought_fell_back
         else None)
 
+    continuity = {"used": False}
     picks, claims, claim_conflicts = draw_unclaimed(
         by_class, args, rng, visits, series, issue_to_family,
         delivery=delivery_weights if args.delivery_boost_max > 0 else None,
-        delivered_probe=delivered_probe, delivered_state=delivered_state)
+        delivered_probe=delivered_probe, delivered_state=delivered_state,
+        fallback_by_class=fallback_by_class,
+        continuity_state=continuity)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
     if args.json:
         print(json.dumps({
             "lane": args.lane, "seed_src": seed_src,
+            "session_genres_penalized": list(args.prev_genre),
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
             "withheld": [{"number": it["number"], "title": it["title"],
@@ -3541,8 +3689,9 @@ def main(argv: list[str] | None = None) -> int:
             "cache": cache_status,
             "filters": {
                 "active": filter_active,
-                "excluded": filter_funnel["excluded"],
+                "excluded": requested_filter_funnel(filter_funnel)["excluded"],
                 "funnel": filter_funnel,
+                "fallback_after_claims": continuity["used"],
             },
         }, ensure_ascii=False, indent=2))
         return 0
@@ -3569,25 +3718,23 @@ def main(argv: list[str] | None = None) -> int:
         if value not in (None, [], sorted(URN_NAMES))
     }
     if non_default_filters:
+        requested_funnel = requested_filter_funnel(filter_funnel)
         details = ", ".join(
             f"{name}={count}"
-            for name, count in filter_funnel["excluded"].items()
+            for name, count in requested_funnel["excluded"].items()
         ) or "aucune exclusion"
         print(
-            f"Filtres locaux : {filter_funnel['initial']} admis -> "
-            f"{filter_funnel['final']} candidats ({details})."
+            f"Filtres locaux : {requested_funnel['initial']} admis -> "
+            f"{requested_funnel['final']} candidats ({details})."
         )
-        if not filtered:
-            dominant = max(
-                filter_funnel["excluded"],
-                key=filter_funnel["excluded"].get,
-                default=None,
-            )
-            if dominant:
-                print(
-                    f"Aucun candidat final : relacher d'abord `{dominant}` "
-                    f"({filter_funnel['excluded'][dominant]} exclusions)."
-                )
+        if filter_funnel.get("fell_back"):
+            print("   Repli automatique applique : labels et bornes locales relaches ;")
+            print("   exclusions explicites et urnes autorisees conservees.")
+        print()
+    if continuity["used"]:
+        print("Repli de continuite apres claims/livraisons : la poignee locale")
+        print("etait epuisee ; remplacement pris dans le pool global admissible.")
+        print("Exclusions explicites, urnes, claims et livraisons restent proteges.")
         print()
     if series_err:
         if (cache_status.get("series") or {}).get("status") == "stale":
@@ -3671,9 +3818,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
               f"a reparer ({numbers}).")
         print("   La justification doit etre ECRITE sur chacune, pas seulement invoquee ici.")
+    penalized = ", ".join(args.prev_genre)
     print(f"Lane {args.lane} | graine {stamp}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
-          + (f" | genre precedent penalise : {args.prev_genre}" if args.prev_genre else ""))
+          + (f" | genres de session penalises : {penalized}" if penalized else ""))
     print()
     header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
@@ -3746,19 +3894,19 @@ def main(argv: list[str] | None = None) -> int:
         print("             preuve et rend la main, sans fermer.")
     print("Avant d'EDITER : python scripts/check_lane_claim.py --lane <machine:workspace> <N>")
 
-    # #14591 Volet A : persister le genre du grain choisi vers le CSV si
-    # --write-state=candidate. Le timestamp est l'instant du tirage.
-    # --write-state=merged est reserve a un appel ulterieur (post-merge) ;
-    # il n'est pas applicable ici (le picker vient de tirer, le merge n'a
-    # pas eu lieu).
+    # Persister tous les genres deja vus dans la session, plus celui de la
+    # prochaine candidate. Un ecrasement par le seul premier pick recreerait
+    # l'echappement guard -> docs -> guard que #14704 ferme.
     if (args.write_state == "candidate"
             and args.csv_state and args.lane and picks):
         chosen = picks[0]
+        session_genres = normalize_prev_genres(args.prev_genre)
+        session_genres.add(chosen["genre"])
+        encoded = "|".join(sorted(session_genres))
         ts_now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-        write_prev_genre_csv(args.csv_state, args.lane,
-                            chosen["genre"], ts_now)
+        write_prev_genre_csv(args.csv_state, args.lane, encoded, ts_now)
         print(f"(CSV d'etat : {args.csv_state} ecrit -- lane={args.lane} "
-              f"genre={chosen['genre']} @ {ts_now})")
+              f"genres={encoded} @ {ts_now})")
     return 0
 
 
