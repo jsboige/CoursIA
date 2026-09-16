@@ -180,9 +180,39 @@ jobs:
           # silencieusement, et le label n'a jamais existe).
           ensure_label "$LABEL_DEFECT" "Table syntax defect in changed files (CODE_SPAN_PIPE, NO_SEP, ...). Advisory. See #10097." "d93f0b"
 
+          # ---- Controle positif CR #16207 : nom in-scope avec espaces ----
+          # Tourne a CHAQUE run (meme sans fichier in-scope dans la PR, meme
+          # en nocturne) : il gate la FIABILITE de la mesure, pas le contenu.
+          # Le fichier "md-table controle.md" porte trois lignes pipe sans
+          # separateur (NO_SEP) et doit rendre total >= 1. Un split
+          # whitespace a l'ancienne casserait ce path en argv orphelins ->
+          # exit 2 -> controle rouge. Il ne nourrit jamais le label.
+          SCAN_RC=0
+          CONTROL="$RUNNER_TEMP/md-table controle.md"
+          printf '| a | b |\n| c | d |\n| e | f |\n' > "$CONTROL" || true
+          python scripts/notebook_tools/scan_md_table_syntax.py --json "$CONTROL" > control.json 2>/dev/null
+          CTRL_RC=$?
+          CTRL_TOTAL=0
+          if [ "$CTRL_RC" -eq 0 ]; then
+            CTRL_TOTAL=$(python -c "import json,sys; print(json.load(open('control.json'))['total_findings'])" 2>/dev/null) || true
+          fi
+          if [ "${CTRL_TOTAL:-0}" -lt 1 ]; then
+            echo "::error::positive control failed (rc=$CTRL_RC, total=$CTRL_TOTAL) -- whitespace argv is lossy, measurement unreliable"
+            SCAN_RC=1
+          else
+            echo "Positive control passed (whitespace filename fed to argv: $CTRL_TOTAL NO_SEP finding)"
+          fi
+          rm -f "$CONTROL" control.json
+
           if [ "$COUNT" -eq 0 ]; then
             echo "No in-scope files to scan."
-            unset_label "$LABEL_DEFECT"
+            # CR #16207 : meme sans fichier in-scope, un controle de mesure
+            # echoue (SCAN_RC != 0) interdit l'unset -- le rouge reste.
+            if [ "$SCAN_RC" -eq 0 ]; then
+              unset_label "$LABEL_DEFECT"
+            else
+              echo "::warning::measurement control failed -- leaving '$LABEL_DEFECT' label untouched"
+            fi
             exit 0
           fi
 
@@ -204,10 +234,13 @@ jobs:
           # silence apres le split whitespace. RC explicite : un echec du
           # scanner = PANNE DE MESURE (total illisible), jamais un "Clean.".
           python scripts/notebook_tools/scan_md_table_syntax.py --json "${PATHS[@]}" > payload.json 2> scan.err
-          SCAN_RC=$?
-          if [ "$SCAN_RC" -ne 0 ]; then
-            echo "::error::scan_md_table_syntax.py failed (rc=$SCAN_RC) -- $LABEL_DEFECT NOT touched"
+          SRC=$?
+          if [ "$SRC" -ne 0 ]; then
+            echo "::error::scan_md_table_syntax.py failed (rc=$SRC) -- $LABEL_DEFECT NOT touched"
             if [ -s scan.err ]; then cat scan.err; fi
+            SCAN_RC=1
+          elif [ "$SCAN_RC" -ne 0 ]; then
+            echo "::error::positive control failed -- total unreliable, $LABEL_DEFECT NOT touched"
           else
             cat payload.json
             TOTAL=$(python -c "import json,sys; print(json.load(open('payload.json'))['total_findings'])" 2>/dev/null) || true
@@ -218,29 +251,6 @@ jobs:
               ''|*[!0-9]*) echo "::error::payload unreadable (total='$TOTAL') -- $LABEL_DEFECT NOT touched"; SCAN_RC=1 ;;
             esac
           fi
-
-          # ---- Controle positif CR #16207 : nom in-scope avec espaces ----
-          # Prouve a chaque run que le passage argv est lossless : le fichier
-          # "md-table controle.md" porte trois lignes pipe sans separateur
-          # (NO_SEP) et doit rendre total >= 1. Un split whitespace a
-          # l'ancienne casserait ce path en argv orphelins -> exit 2 ->
-          # controle rouge. Le controle ne nourrit PAS le label (scan separe) :
-          # il gate la FIABILITE de la mesure.
-          CONTROL="$RUNNER_TEMP/md-table controle.md"
-          printf '| a | b |\n| c | d |\n| e | f |\n' > "$CONTROL" || true
-          python scripts/notebook_tools/scan_md_table_syntax.py --json "$CONTROL" > control.json 2>/dev/null
-          CTRL_RC=$?
-          CTRL_TOTAL=0
-          if [ "$CTRL_RC" -eq 0 ]; then
-            CTRL_TOTAL=$(python -c "import json,sys; print(json.load(open('control.json'))['total_findings'])")
-          fi
-          if [ "$CTRL_TOTAL" -lt 1 ]; then
-            echo "::error::positive control failed (rc=$CTRL_RC, total=$CTRL_TOTAL) -- whitespace argv is lossy, measurement unreliable"
-            SCAN_RC=1
-          else
-            echo "Positive control passed (whitespace filename fed to argv: $CTRL_TOTAL NO_SEP finding)"
-          fi
-          rm -f "$CONTROL" control.json scan.err
 
           # Label decision. CR #16207 : jamais d'unset sur un etat non mesure
           # (SCAN_RC != 0) -- le label pose par un run precedent reste en
