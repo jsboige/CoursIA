@@ -295,7 +295,7 @@ def extract_figure(nb_path, cell_index: int, output_index: int,
                    description_visuelle: str,
                    max_dim: int = MAX_DIM_DEFAULT,
                    max_bytes: int = MAX_BYTES_DEFAULT,
-                   serie_root=None) -> dict:
+                   serie_root=None, write_manifest: bool = True) -> dict:
     """Extrait une figure PNG d'une cellule de notebook vers ``assets/readme/``.
 
     Lit le PNG a l'index ``(cell_index, output_index)`` du notebook, l'optimise
@@ -322,6 +322,12 @@ def extract_figure(nb_path, cell_index: int, output_index: int,
     ``serie_root`` (optionnel) : si fourni, le chemin relatif du notebook dans
     le manifest est calcule depuis cette racine (plus lisible). Sinon, chemin
     absolu.
+
+    ``write_manifest`` (defaut ``True``) : quand il vaut ``False``, le PNG est
+    ecrit mais aucun bloc n'est ajoute au ``MANIFEST.md``. A utiliser pour les
+    series dont le MANIFEST est **curate** (champs mesures + blocs d'audit
+    dates) : l'append remplace le bloc de meme nom de fichier et perdrait ces
+    champs (#16275).
 
     Retourne le record d'extraction :
 
@@ -376,8 +382,16 @@ def extract_figure(nb_path, cell_index: int, output_index: int,
         "used_pil": used_pil,
         "over_weight": len(optimized) > max_bytes,
     }
-    _append_manifest(
-        out_path.parent, entry, alt_text_fr, description_visuelle, serie_root)
+    # ``write_manifest=False`` : le PNG est ecrit, le MANIFEST est laisse
+    # intact. Necessaire pour les series dont le MANIFEST est CURATE (champs
+    # ``Contenu reel verifie`` / ``Description visuelle`` mesures, blocs
+    # d'audit dates) : l'append ci-dessous ne remplace que le bloc de meme nom
+    # de fichier, donc il detruit ces champs (#16275, mesure : 6 -> 5
+    # occurrences de ``Contenu reel verifie`` sur GenAI/Texte).
+    if write_manifest:
+        _append_manifest(
+            out_path.parent, entry, alt_text_fr, description_visuelle,
+            serie_root)
     return entry
 
 
