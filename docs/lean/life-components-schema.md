@@ -168,11 +168,17 @@ exactement une satisfait la congruence — le test de non-régression l'exige.
 ### Fenêtres spatiales (R3)
 
 Deux événements aux fenêtres spatiales chevauchantes, ou dont un objet vivant
-passe à moins de 3 (Chebyshev) des cellules d'une fenêtre étrangère, sont
+passe à moins de 2 (Chebyshev) des cellules d'une fenêtre étrangère, sont
 rejetés — avec une exception structurelle : un produit est *par construction*
 la dernière image de la fenêtre de son propre événement, il n'est jamais
 confronté à elle (le replay aux bornes exactes couvre déjà cette transition).
-Le seuil 3 n'est pas un réglage, c'est la mesure ci-dessous.
+La bande à distance exactement 2 passe l'élagage : l'interaction y dépend du
+contenu (mesure ci-dessous) ; c'est le replay de certification qui tranche —
+c'est lui, pas le modèle, qui produit `replay_rejected ≥ 1` sur la variante
+stricte de `two_blocks_catalyse`. Le seuil du modèle est donc 2 — à moins de
+2, les cellules sont dans le voisinage 3×3 l'une de l'autre, influence
+directe — tandis que 3 est la mesure physique de la non-interaction
+universelle, pas le seuil d'élagage.
 
 ### Dédup d'états (R1)
 
@@ -207,7 +213,10 @@ des confusions non fondées, pas par du travail évité. La sensibilité de la c
    n'interagissent jamais ; à distance 2, tout dépend du contenu. Deux blocs
    gap-1 sont stables, mais un glider à distance 2 d'un bloc engendre des
    naissances croisées — une cellule morte voit 2 voisins d'un objet plus 1 de
-   l'autre. Le seuil 3 de R3 est cette mesure, pas une heuristique.
+   l'autre. Cette mesure fixe les deux seuils : le modèle rejette sous 2
+   (influence directe, voisinage 3×3), et la bande contenu-dépendante à
+   exactement 2 est déléguée au replay de certification (cf §Fenêtres
+   spatiales).
 2. **Atteignabilité du placement déclaré.** Le placement tranche 1+2 de
    `block_catalyses_glider` démarrait au milieu de l'interaction : l'approche
    naturelle du glider annihile tout (population 0). La réaction a été
