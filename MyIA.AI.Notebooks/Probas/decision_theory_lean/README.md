@@ -29,6 +29,7 @@ Trois modules livrés :
   ticket unique équivaut aux bornes de probabilité `0 ≤ q ≤ 1`), et **des poids
   additifs normalisés on dérive une fonction de prix mono-cohérente**
   (`priceFromWeights_single_coherent`, #4244). La **réciproque complète** sur livrets de
+
   taille arbitraire (`coherent_iff_probability`, qui fait de `q` une mesure de
   probabilité) nécessite la séparation d'hyperplans / dualité LP en dimension finie et
   reste un **jalon ouvert** (délibérément non `sorry`-backed).
@@ -172,6 +173,7 @@ contraposée :
 - **Énoncé, jalon ouvert** (réciproque complète) : la direction « additivité + normalisation
   ⟹ cohérence » (le `coherent_iff_probability` complet, qui fait de `q` une mesure de
   probabilité) nécessite la **séparation d'hyperplans / dualité LP** en dimension
+
   finie. Elle est laissée comme **jalon naturel** et **délibérément non `sorry`-backed**
   — la bibliothèque reste entièrement `sorry`-free. Cette structure (une direction
   prouvée + la réciproque ouverte documentée) est cohérente avec le module `Utility`

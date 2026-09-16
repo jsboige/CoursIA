@@ -62,16 +62,26 @@ def test_founding_case_12014_surfaces_12077(monkeypatch):
 
 
 def test_query_shape_bounded_one_per_candidate(monkeypatch):
-    """Cout borne : exactement une requete par candidat tire, jamais le pool.
+    """Cout borne : une requete PR par candidat tire, jamais le pool.
 
     La commande doit chercher les PRs MERGEES referencant le numero
-    (troisieme surface de grounding, cf #12174).
+    (troisieme surface de grounding, cf #12174). c.1115 voie 1 ajoute un
+    appel `gh issue view N --comments` conditionnel (uniquement si pas de
+    PR couvrante) -- verifie separement dans
+    `test_marker_check_one_request_per_pick_invariant`.
     """
     calls = []
-    _patch_gh(monkeypatch, [[], []], calls)
+    # Patch retourne TOUJOURS [] -- traite comme "pas de PR couvrante",
+    # declenche le check marqueur qui retourne aussi [] (charge vide).
+    # recent_delivery appelle donc 2x par pick (pr list + issue view).
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
     pig.recent_delivery([_pick(n=1), _pick(n=2)])
-    assert len(calls) == 2
-    for cmd, n in zip(calls, (1, 2)):
+    pr_list = [c for c in calls if c[1] == "pr" and c[2] == "list"]
+    assert len(pr_list) == 2
+    for cmd, n in zip(pr_list, (1, 2)):
         # --state all depuis #12504 : ouvertes ET mergees dans la MEME
         # requete, donc l'invariant "une par candidat" tient toujours.
         assert "--state" in cmd and "all" in cmd
@@ -272,16 +282,48 @@ def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
     assert any("non bloquant" in c and "Papermill ratchet" in c for c in causes)
 
 
-def test_cancelled_is_not_a_failure():
-    """Un run annule par `concurrency` n'est pas un echec.
+def test_unconcluded_required_is_a_distinct_cause():
+    """#15769 : un requis annule n'est ni un vert ni un echec de lane.
 
-    Les confondre est le faux positif qui rend un garde de cascade
-    inutilisable : le 2026-08-21, un SHA de main portait 69 `cancelled`
-    pour 0 echec reel.
+    Un check requis CANCELLED empeche le merge sans que la lane puisse rien :
+    avant #15769, le `continue` sur `verdict not in CHECK_FAILED` le filtrait
+    exactement comme un advisory vert, AVANT le test `isRequired` -- la PR
+    etait BLOCKED sans aucune cause rendue (7 PRs simultanees le 2026-09-12).
+    La cause doit nommer l'etat et ne JAMAIS dire « echec » : imputer un
+    CANCELLED a la lane l'envoie chercher un rouge qui n'existe pas, le cycle
+    brule que la R0 de coordinator-discipline interdit.
     """
-    assert pig.blocking_causes(_state(checks=[("PR gate", "CANCELLED", True)])) == []
-    assert pig.blocking_causes(_state(checks=[("PR gate", "SKIPPED", True)])) == []
-    assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == []
+    assert pig.blocking_causes(_state(checks=[("PR gate", "CANCELLED", True)])) == [
+        "check requis non conclu : PR gate (CANCELLED)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "STALE", True)])) == [
+        "check requis non conclu : PR gate (STALE)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "SKIPPED", True)])) == [
+        "check requis non conclu : PR gate (SKIPPED)"]
+    assert pig.blocking_causes(_state(checks=[("PR gate", "NEUTRAL", True)])) == [
+        "check requis non conclu : PR gate (NEUTRAL)"]
+
+
+def test_unconcluded_failure_control_renders_en_echec():
+    """Controle positif (acceptance #15769.3) : meme entree, requis FAILURE.
+
+    Sans lui, un test vert ne distinguerait pas « la cause CANCELLED est
+    rendue » de « toutes les causes sont rendues » : le refus de confondre
+    CANCELLED avec FAILURE (2026-08-21 : 69 cancelled pour 0 echec sur un
+    SHA de main) doit SURVIVRE a l'ajout de la cause non conclue.
+    """
+    causes = pig.blocking_causes(_state(checks=[("PR gate", "FAILURE", True)]))
+    assert causes == ["check requis en echec : PR gate"]
+
+
+def test_unconcluded_advisory_is_still_silent():
+    """Le complement du garde d'origine : seul un REQUIS non conclu cause.
+
+    Un advisory annule reste du bruit que la lane ne doit pas reparer.
+    """
+    assert pig.blocking_causes(_state(checks=[
+        ("fast-lane (ombre): perimeter-review-guard", "CANCELLED", False),
+        ("PR gate", "SUCCESS", True),
+    ])) == []
 
 
 def test_aggregator_red_by_cancelled_constituents_is_not_repairable():
@@ -415,6 +457,10 @@ def _patch_backlog(monkeypatch, prs, states, nits=None):
     # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
     # numeros), et la suite deviendrait non deterministe sans jamais rougir.
     monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
+    # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
+    # rouge -- meme neutralisation par defaut, meme raison (reseau +
+    # determinisme). Les tests qui veulent une ardoise la re-patchent apres.
+    monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -593,7 +639,7 @@ def test_inheritance_does_not_swallow_other_causes(monkeypatch):
     assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
 
 
-AGG = "Always-on guards -- 12 organes, 1 checkout"
+AGG = "Always-on guards -- 13 organes, 1 checkout"
 
 
 def _agg_red(run_id, name=AGG, required=True):
@@ -748,7 +794,7 @@ def test_required_failure_links_advisory_as_its_probable_cause():
 
 
 def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
-    """Sortie 0 et un travail NOMME : la reparation EST le grain du cycle.
+    """Sortie 0 et travail NOMME : la reparation ouvre la file de session.
 
     Le code 2 est la convention "rien a rendre". L'employer ici disait a la
     lane, dans le seul canal qu'elle lit, l'exact contraire de la regle HARD
@@ -763,7 +809,7 @@ def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
     # phrase "ce n'est PAS un refus", plus bas, contient le mot a dessein.
     head = out.splitlines()[0]
     assert "REFUS" not in head.upper(), f"l'en-tete annonce encore un refus : {head!r}"
-    assert "GRAIN DU CYCLE" in head
+    assert "FILE DE REPARATION" in head
     assert "#1" in out, "la PR a reprendre doit etre nommee"
     # Le fond qui marchait deja ne doit pas disparaitre avec la forme.
     assert "check requis en echec" in out
@@ -825,7 +871,7 @@ def test_adjacency_red_advice_replaces_three_generic_gestures(monkeypatch, capsy
     )
     # L'en-tete Reparation doit toujours etre la (coherence avec le
     # test existant).
-    assert "GRAIN DU CYCLE" in out
+    assert "FILE DE REPARATION" in out
     assert "#99" in out
 
 
@@ -1023,7 +1069,7 @@ def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
     backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
     assert backlog["triggers"] == []
     pig.print_red_assignment("myia-po-2026:CoursIA", {"red": [], "triggers": []}, 24)
-    assert "GRAIN DU CYCLE" in capsys.readouterr().out  # la fonction existe et rend
+    assert "FILE DE REPARATION" in capsys.readouterr().out  # la fonction existe et rend
 
 
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
@@ -1593,6 +1639,25 @@ def test_crowding_never_zeroes_a_candidate():
     item = {"number": 1, "age": 400, "idle": 90, "genre": "lean"}
     assert pig.weight(item, None, {1: 50}) > 0
 
+
+def test_all_session_genres_are_penalized_not_only_the_last_one():
+    """#14704 : guard -> docs -> guard reste penalise au troisieme tirage."""
+    guard = {"number": 1, "age": 30, "idle": 1, "genre": "guard"}
+    docs = {"number": 2, "age": 30, "idle": 1, "genre": "docs"}
+    fresh = {"number": 3, "age": 30, "idle": 1, "genre": "lean"}
+    prior = "guard,docs"
+    assert pig.weight(dict(guard), prior) == pig.weight(dict(guard), None) * 0.25
+    assert pig.weight(dict(docs), prior) == pig.weight(dict(docs), None) * 0.25
+    assert pig.weight(dict(fresh), prior) == pig.weight(dict(fresh), None)
+
+
+def test_prev_genres_accept_repeated_csv_and_persisted_pipe_forms():
+    assert pig.normalize_prev_genres(["guard,docs", "slides"]) == {
+        "guard", "docs", "slides"}
+    assert pig.normalize_prev_genres("guard|docs") == {"guard", "docs"}
+    assert pig.normalize_prev_genres("guard") == {"guard"}
+
+
 # --- points de review non leves : la 4e cause (mandat user 2026-08-24) -------
 #
 # "Fais en sorte que les agents ne produisent plus tant qu'il leur reste des
@@ -1979,12 +2044,38 @@ def test_14591_volet_a_write_then_read_csv(tmp_path) -> None:
     with csv_path.open(encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l]
     assert len(lines) == 2, f"attendu 2 (header + 1 lane), obtenu {len(lines)}"
+    # Migration multi-genres : un ancien scalaire et une nouvelle liste se
+    # relisent par la meme fonction, sans exception ni perte.
+    pig.write_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2",
+                            "guard|docs", "2026-09-04T22:15Z")
+    genres, ts = pig.read_prev_genre_csv(
+        str(csv_path), "myia-po-2027:CoursIA-2")
+    assert pig.normalize_prev_genres(genres) == {"guard", "docs"}
+    assert ts == "2026-09-04T22:15Z"
+    assert csv_path.read_text(encoding="utf-8").startswith(
+        "lane,last_genres,last_ts\n")
     # Upsert ajoute une lane differente
     pig.write_prev_genre_csv(str(csv_path), "myia-po-2026:CoursIA",
                             "notebook-python", "2026-09-04T22:30Z")
     with csv_path.open(encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l]
     assert len(lines) == 3, f"attendu 3 (header + 2 lanes), obtenu {len(lines)}"
+
+
+def test_14704_cli_accepts_repeated_and_csv_prev_genres(monkeypatch, capsys) -> None:
+    """Les deux formes CLI alimentent le meme ensemble de genres de session."""
+    class _R:
+        stdout = "[]"
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: _R())
+    rc = pig.main([
+        "--admissible=99999999",
+        "--lane=myia-po-2027:CoursIA-2",
+        "--prev-genre=guard,docs",
+        "--prev-genre=slides",
+    ])
+    assert rc == 1
+    assert "absente du pool ouvert" in capsys.readouterr().out
 
 
 def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch, capsys) -> None:
@@ -1996,8 +2087,8 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     """
     csv_path = tmp_path / "picker_state.csv"
     csv_path.write_text(
-        "lane,last_genre,last_ts\n"
-        "myia-po-2027:CoursIA-2,tooling,2026-09-04T22:00Z\n",
+        "lane,last_genres,last_ts\n"
+        "myia-po-2027:CoursIA-2,guard|tooling,2026-09-04T22:00Z\n",
         encoding="utf-8",
     )
     # Utiliser --admissible et un numero inexistant pour sortie rapide 1 sans
@@ -2017,7 +2108,7 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "prev-genre auto-applique depuis CSV" in captured, (
         f"auto-apply absent. Sortie: {captured[:400]}"
     )
-    assert "tooling" in captured
+    assert "guard|tooling" in captured
 
 
 def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):
@@ -2190,3 +2281,148 @@ def test_delivery_boost_spreads_without_monopoly():
         f"{share_starved_boost:.2f} vs {share_starved_base:.2f}")
     assert max(boosted.values()) / 400 < 0.5, (
         f"aucune umbrella ne doit monopoliser : {boosted}")
+
+
+# --- LIVRÉ-urn via marqueur [INFO] candidate-delivered (c.1115 voie 1) -------
+#
+# Le sweep quotidien 05:37Z retracte le label `candidate-delivered` sur
+# activite de commentaire post-merge ; or les lanes elles-memes postent des
+# commentaires `[INFO] candidate-delivered` quand elles en rencontrent une.
+# Resultat : des LIVRE-urn restent sans label alors qu'un marqueur en
+# commentaire les designe explicitement. Tell c.1060-L1 reformule (msg-20260912T165428-k6rbfc,
+# ai-01 spec) : la klasse `delivered` doit etre posee sur signal label OU
+# marqueur, avec 1 requete par candidat tire (invariant recent_delivery l.958).
+#
+# Cas fondateur (2026-09-12) : #14373 (4 commentaires `[INFO candidate-delivered]`
+# de 4 lanes distinctes, PR #14455 MERGED, label absent au moment du test).
+
+
+def _patch_gh_dispatch(calls, monkeypatch, pr_payload, comments_payload):
+    """Dispatcher : repond selon la sous-commande gh (pr list vs issue view).
+
+    `calls` (premier arg, positionnel obligatoire) est une liste mutable
+    enrichie en place pour permettre les assertions sur le nombre d'appels
+    et les commandes exactes.
+    """
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        # gh pr list ... | gh issue view N ...
+        if cmd[1:3] == ["issue", "view"]:
+            return _FakeCompleted(json.dumps(comments_payload))
+        return _FakeCompleted(json.dumps(pr_payload))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def _delivered_marker_comment(body=(
+    "[INFO] candidate-delivered — verification first-hand du geste 1 "
+    "sur origin/main, MERGE 6d0bd02093.")):
+    return {"body": body, "author": {"login": "jsboige"}}
+
+
+def test_marker_only_surfaces_delivered_urn(monkeypatch):
+    """c.1115 voie 1 controle positif : pas de PR couvrante, marqueur en
+    commentaire -> klass mutee a delivered, note ajoutee. Cas fondateur
+    #14373 (label absent, 4 marqueurs multi-lanes)."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+            {"body": "Commentaire sans marqueur, hors perimetre."},
+            _delivered_marker_comment(
+                body="[INFO candidate-delivered] verifie par po-2023 c.485"),
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert "MARQUEUR" in notes[14373]
+    assert "[INFO]" in notes[14373]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_no_marker_no_label_no_note(monkeypatch):
+    """Pas de PR couvrante, pas de marqueur -> pas de signal (regression
+    preservee). Couvre le cas standard 'issue vivante sans livraison'."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "Commentaire normal d'un humain."},
+            {"body": "Autre commentaire sans [INFO] candidate-delivered."},
+        ]})
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
+
+
+def test_marker_check_one_request_per_pick_invariant(monkeypatch):
+    """L'invariant recent_delivery (1 requete par candidat tire) tient aussi
+    pour le check marqueur : pour 3 picks SANS PR couvrante, exactement 3
+    appels a `gh pr list` ET 3 appels a `gh issue view`."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": []})
+    pig.recent_delivery([_pick(n=1), _pick(n=2), _pick(n=3)])
+    pr_list = [c for c in calls if c[1] == "pr" and c[2] == "list"]
+    issue_view = [c for c in calls if c[1] == "issue" and c[2] == "view"]
+    assert len(pr_list) == 3
+    assert len(issue_view) == 3
+    # Verification qu'on ne scanne PAS le pool : les appels `issue view`
+    # prennent un numero explicite, pas un filtre large.
+    for cmd in issue_view:
+        assert cmd[3] in {"1", "2", "3"}
+
+
+def test_marker_does_not_shortcut_pr_check(monkeypatch):
+    """Si une PR OUVERTE couvre l'issue, le marqueur en commentaire ne doit
+    pas detourner l'annotation : TRAVAIL EN COURS prime (priorite du signal,
+    l.1044)."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch,
+        pr_payload=[{"number": 15755, "state": "OPEN",
+                     "isDraft": False, "mergedAt": None}],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+        ]})
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert notes[15794].startswith("TRAVAIL EN COURS")
+    assert picks[0]["klass"] == "grain"  # PAS mute : TRAVAIL EN COURS prime
+    # Et on n'a PAS appele gh issue view pour ce pick (shortcut evite).
+    issue_view = [c for c in calls if c[1] == "issue" and c[2] == "view"]
+    assert issue_view == []
+
+
+def test_marker_check_failure_treated_as_no_signal(monkeypatch):
+    """Si `gh issue view` timeout/rate-limit, _has_delivered_marker retourne
+    None ; recent_delivery continue sans annoter (best-effort, parite avec
+    la doctrine candidate-delivered : signale sans casser le flux)."""
+    def boom(cmd, **kwargs):
+        if cmd[1:3] == ["issue", "view"]:
+            raise pig.subprocess.TimeoutExpired(cmd, 20)
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    # Pas de LIVRE-urn annotation, pas de mutation de klasse.
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
+
+
+def test_marker_regex_matches_both_bracket_forms(monkeypatch):
+    """Le pattern couvre les deux formes employees : `[INFO] candidate-delivered`
+    ET `[INFO candidate-delivered]` (espace au lieu de `]`). Cf Tell c.1115
+    voie 1 : unification lexicale sans casser l'existant."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "[INFO candidate-delivered] variante espace au lieu de ]"},
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert picks[0]["klass"] == "delivered"

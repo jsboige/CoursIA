@@ -2,7 +2,7 @@
 
 [← DataScienceWithAgents (série parente)](../README.md) | [02-ML-Cours (prérequis)](../02-ML-Cours/README.md)
 
-**Kernel** : Python 3 (`coursia-ml-training` pour 3.7) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui
+**Kernel** : Python 3 (`coursia-ml-training` pour 3.7) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (3.7, 3.9a) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exception 3.9a : entraînement ResNet-20 sur GPU, ~8 min)
 
 ## Pourquoi cette série
 
@@ -34,6 +34,7 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 | [3.6b-Modeles-Generatifs-PyTorch](3.6b-Modeles-Generatifs-PyTorch.ipynb) | Versant **framework** du 3.6 : VAE, GAN et DDPM (diffusion) entraînés sur une même cible 2D à 4 modes (mélange de Gaussiennes, PyTorch CPU) puis comparés — ELBO vs adversarial vs débruitage | **Le compromis qualité/diversité** : 4 mécanismes génératifs sur les mêmes métriques (couverture de modes, entropie effective), le GMM empirique en référence « modèle exact » | médiane sur 3 graines (budget de pas commun) : GMM cov 4/4 ESS 3,96 · VAE cov 4/4 ESS 3,95 · GAN cov 3/4 ESS 2,99 (perte de diversité, un mode jamais couvert) · Diff cov 4/4 ESS 1,62 (couvre mais sous-échantillonne le mode le plus faible) — verdict nuancé, pas de « gagnant » unique |
 | [3.7-Distillation-Maitre-Eleve](3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : un maître entraîné distille son savoir (dark knowledge) vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict — gain par exemple net (DM p < 0.001, CE 0.63 → 0.58) mais edge 0.6σ/1.4σ sous 5 folds × 4 graines | maître 0.8906 / distillé 0.8145 vs baseline 0.8029 ; ECE 0.0458 vs 0.0684 ; ratio params 8.9× ; 5 folds × 4 graines (20 paires), entrainement deterministe |
 | [3.8-Representations-Contrastives](3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne sur vues continues : augmentations contrôlées du sac-de-mots (mask/swap/identité), encodeur MLP et loss InfoNCE écrits from scratch sans autograd, pont explicite vers le skip-gram (cooccurrence discrète vs vue continue) | **Apprendre des représentations sans étiquettes** : deux vues d'une même phrase attirent leurs embeddings, les autres phrases les repoussent | sonde linéaire 0,432 (chance 1/7 = 0,143 ; aléatoire gelé 0,161 ; skip-gram BoW 0,154 ; supervisé from scratch 0,368) ; contre-témoin de collapse mesuré (verdict NON) ; ablations température × augmentations × graines avec écart-type inter-graines ; 3 exercices |
+| [3.9a-Compression-Quantization-INT8](3.9a-Compression-Quantization-INT8.ipynb) | La quantification INT8 construite à la main (mapping affine, fake-quant per-tensor/per-channel, activations dynamiques par hooks, calibrations statiques min/max et KL — port fidèle TensorRT) sur ResNet-20/CIFAR-10 entraîné dans le notebook, puis la falaise INT4 | **Le déjeuner gratuit et sa limite** : INT8 égale le FP32 à ±0,001 près pour 4× moins de mémoire ; la discrimination vit dans l'erreur de poids et la falaise INT4 | FP32 0,9019 ; w8 per-tensor 0,9024 / per-channel 0,9020 (erreur s3.1.conv1 : 1,05e-2 vs 7,72e-3) ; dynamique w-channel 0,9018 ; statique min/max 0,9017 ; statique KL 0,9012 (seuils 60-100 % du range, masse coupée ≤ 0,005 %) ; INT4 0,8778 (−2,4 pts, erreur ×18) ; 270 906 poids : 1,08 Mo → 0,27 Mo (4,0×) |
 
 
 ## Feuille de route
@@ -58,8 +59,8 @@ puis consommé via l'API officielle.
 
 ```bash
 pip install numpy matplotlib
-# notebook 3.7 (torch + torchvision, kernel coursia-ml-training) :
+# notebooks 3.7 et 3.9a (torch + torchvision, kernel coursia-ml-training pour 3.7) :
 pip install torch torchvision
 ```
 
-Tous les notebooks tournent sur CPU en moins de dix minutes.
+Tous les notebooks tournent sur CPU en moins de dix minutes — exception [3.9a](3.9a-Compression-Quantization-INT8.ipynb) : l'entraînement complet de ResNet-20 sur CIFAR-10 (~8 min sur RTX 3090) exige un GPU ; sur CPU le notebook bascule sur une recette réduite de 6 époques.

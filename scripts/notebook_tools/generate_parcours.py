@@ -30,6 +30,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 PARCOURS_DIR = REPO_ROOT / "docs" / "curriculum"
 
+# Fail-closed (#15882): docs/curriculum/ mixes generated pages (ids of the
+# PARCOURS dict, rewritten daily by catalog-cron.yml) with manual pages, and
+# nothing in the name tells them apart. A target that exists WITHOUT this
+# marker in its opening lines is presumed manual and must never be
+# overwritten -- the regen refuses instead. The scan window is limited to the
+# head of the file: generated pages carry the marker as their opening comment
+# block, and a manual page quoting the phrase mid-body must not opt in by
+# accident.
+GENERATED_MARKER = "FICHIER GENERE"
+GENERATED_MARKER_SCAN_LINES = 15
+
 PARCOURS = {
     "ia-classique": {
         "title": "IA Classique",
@@ -93,6 +104,20 @@ PARCOURS = {
         "icon": "research",
     },
 }
+
+
+def _carries_generated_marker(path: Path) -> bool:
+    """True si le fichier existant porte l'en-tete de page generee en tete.
+
+    Un echec de lecture (fichier verrouille, illisible) vaut False : ne pas
+    pouvoir prouver l'en-tete, c'est ne pas pouvoir ecraser (fail-closed).
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    head = text.splitlines()[:GENERATED_MARKER_SCAN_LINES]
+    return any(GENERATED_MARKER in line for line in head)
 
 
 def load_catalog() -> list[dict]:
@@ -263,6 +288,7 @@ def main():
 
     targets = [args.parcours] if args.parcours else list(PARCOURS.keys())
 
+    refused: list[Path] = []
     unresolved: list[str] = []
     for pid in targets:
         filtered = filter_for_parcours(entries, pid)
@@ -276,6 +302,17 @@ def main():
         else:
             PARCOURS_DIR.mkdir(parents=True, exist_ok=True)
             out_path = PARCOURS_DIR / f"{pid}.md"
+            if out_path.exists() and not _carries_generated_marker(out_path):
+                refused.append(out_path)
+                print(
+                    f"REFUS (fail-closed, #15882): {out_path} existe sans "
+                    f"l'en-tete '{GENERATED_MARKER}' -- page presumee "
+                    "MANUELLE, regeneration refusee. Renommer la page "
+                    "manuelle, ou lui faire porter l'en-tete si elle doit "
+                    "etre generee.",
+                    file=sys.stderr,
+                )
+                continue
             # newline="\n" forces LF: on Windows, Path.write_text's default
             # text mode translates "\n" -> "\r\n", polluting the committed LF
             # files (docs/curriculum/*.md are LF per .gitattributes) with a
@@ -291,6 +328,14 @@ def main():
         )
         for p in sorted(set(unresolved)):
             print(f"  {p}", file=sys.stderr)
+
+    if refused:
+        print(
+            f"{len(refused)} page(s) presumee(s) manuelle(s) refusee(s) par "
+            "la regen: " + ", ".join(str(p) for p in refused),
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     if not args.dry_run and not args.parcours:
         print(f"\nGenerated {len(targets)} parcours pages in {PARCOURS_DIR}")

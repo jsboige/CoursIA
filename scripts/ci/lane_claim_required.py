@@ -317,6 +317,25 @@ def check(
         if fresh_others:
             blocking = sorted(fresh_others)[0]
             ev = fresh_others[blocking]
+            # #15982 : dire la quasi-levee plutot que de laisser un blocage muet.
+            # Un marqueur COMPOSE (`[CLAIMED-RELEASED]`) n'est lu par aucun des
+            # trois lecteurs de `check_lane_claim` : la lane titulaire croit avoir
+            # rendu le grain, l'organe le dit toujours vivant, et le verdict
+            # ci-dessous conseille de lui demander de lever -- ce qu'elle vient de
+            # faire. Mesure 2026-09-13 : #15846 bloquee 48 h pour cette raison.
+            # Le quasi-marqueur n'est PAS enacte (doctrine #12624) : il est dit,
+            # et l'auteur reposte la forme canonique.
+            for s in clc._find_suspected_typo_markers(payload):
+                if s["kind"] != "compose" or not clc.is_release_shaped(s):
+                    continue  # une prise quasi (`[CLAIMED-X]`) n'explique pas ce blocage
+                warnings.append(
+                    f"#{num}: un marqueur COMPOSE `[{s['token']}]` poste par "
+                    f"@{s['author'] or '?'} ressemble a une levee mais n'est PAS lu "
+                    f"par l'organe (il n'enacte que le mot-cle seul entre crochets). "
+                    f"Demander a cette lane de reposter la forme canonique "
+                    f"`[{s['canonical']}]` plutot que d'attendre "
+                    f"{stale_threshold:g}h (#15982)."
+                )
             return {
                 "guard_pass": False,
                 "reason": (

@@ -60,7 +60,11 @@ jobs:
         id: audit
         run: |
           AUDIT_DIR="docs/audit/workflow-path-filters"
-          if [ "${{ inputs.check_regression }}" = "true" ] && [ -f "${AUDIT_DIR}/latest.json" ]; then
+          # Regression ratchet : actif sur workflow_dispatch (input) ET sur
+          # schedule -- inputs.* est VIDE sur les evenements schedule, la
+          # condition precedente n'a donc jamais ete vraie sur le cron
+          # quotidien (ratchet mort depuis l'origine, #15962).
+          if { [ "${{ inputs.check_regression }}" = "true" ] || [ "${{ github.event_name }}" = "schedule" ]; } && [ -f "${AUDIT_DIR}/latest.json" ]; then
             python scripts/notebook_tools/audit_workflow_path_filters.py \
               --audit-dir "${AUDIT_DIR}" \
               --check-regression "${AUDIT_DIR}/latest.json" \

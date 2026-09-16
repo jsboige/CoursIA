@@ -1,20 +1,36 @@
 # Guide d'enrichissement des notebooks — méthodologie & vocabulaire par domaine
 
+
+
 > **Provenance** : consolidé depuis `.claude/agent-memory/notebook-enricher/MEMORY.md` (relocalisé ici le 2026-08-10, item-7 de #9535). Ce fichier regroupe les leçons trans-machine de l'agent `notebook-enricher` : règles de positionnement des cellules, vocabulaire pédagogique par famille, patrons de contenu et checklist qualité. Il complète [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) (règles C.1/C.2/C.3) et [docs/reference/procedures-recurrentes.md](procedures-recurrentes.md) (workflow d'enrichissement).
 >
 > **Note de fraîcheur** : les « session logs » datés (2026-02 à 2026-06) sont conservés comme provenance historique ; les références de fichiers `enrichment-log-*.md` / `enrichment_summary_*.md` pointent vers des journaux de session locaux non conservés dans le dépôt. Les noms de notebooks cités peuvent avoir évolué (renumérotation #5081).
 
+
+
 ## Règles de positionnement des cellules (CRITIQUE)
+
+
 
 ### Cell Positioning Rules (CRITICAL)
 
+
+
 **Golden Rule**: Work BOTTOM to TOP to avoid index shifting during insertions.
+
+
 
 **Verification**: After each insertion batch, re-read the notebook to confirm cell_id references.
 
+
+
 **Never**: Insert cells before re-reading when doing multiple insertions in one notebook.
 
+
+
 ### Successful Enrichment Sessions
+
+
 
 - **2026-02-15**: QC-Py-24-Autoencoders-Anomaly (11 cells added, 7.5/10 → 9.0/10)
   - VAE + HMM for anomaly detection and regime switching
@@ -25,6 +41,8 @@
   - Critical transition cell between VAE and HMM sections
   - Summary report: `enrichment_summary_qc24.md`
 
+
+
 - **2026-02-15**: QC-Py-23-Attention-Transformers (11 cells added, 7/10 → 8.5/10)
   - Advanced ML/SSM content with PyTorch implementations
   - BOTTOM-to-TOP insertion strategy flawless (11 cells, no errors)
@@ -32,6 +50,8 @@
   - All interpretations positioned correctly after code outputs
   - Added interpretations for: complexity viz, SSM demo, S4 test, Mamba test, training results, SST hybrid, benchmark
   - Summary report: `enrichment_summary_qc23.md`
+
+
 
 - **2026-02-07**: DataScienceWithAgents Labs (3 notebooks, 11 cells added) — journal de session local `enrichment-log-2026-02-07.md` (non conservé dans le dépôt)
   - All cells positioned correctly on first attempt
@@ -51,6 +71,7 @@
 - **2026-02-19**: Video GPU Notebooks Pedagogical Enhancement (6 notebooks)
   - Replaced "désactivé/non disponible" messages with detailed pedagogical outputs
   - Added MODE PEDAGOGIQUE sections with expected parameters, results, and reproduction code
+
   - Notebooks: 01-3-Qwen-VL, 01-4-ESRGAN, 02-1-HunyuanVideo, 02-2-LTX-Video, 02-3-Wan, 02-4-SVD
   - Used edit_mode="replace" on existing interpretation cells (not insertions)
   - No cell positioning issues since we replaced existing cells
@@ -66,6 +87,8 @@
   - GameTheory domain: CFR, Stackelberg, Fictitious Play, PSRO, AlphaZero, Arrow/Sen, Sprague-Grundy
   - Key rule confirmed: Lean notebooks follow same header standards as Python notebooks
 
+
+
 - **2026-06-03**: DataScienceWithAgents Exercise Stubs (8 notebooks, 17 exercise pairs added for >=3 convention, See #2161)
   - Added exercise stubs (markdown context + code cell) to meet >=3 exercises per notebook
   - Notebooks: Lab2-RFP (+2), Lab3-CV (+2), Lab4-DataWrangling (+1), Lab5-Viz-ML (+2), Lab6-First-Agent (+3), Lab7-Data-Analysis-Agent (+2), 1.2-NumPy (+1), 1.3-Pandas (+3)
@@ -73,6 +96,8 @@
   - Each exercise preceded by markdown cell with objective + indices
   - No `raise NotImplementedError` / `assert False` / `1/0` used
   - Path correction: NumPy/Pandas notebooks are under `01-PythonForDataScience/` not `Track1-LangChain/`
+
+
 
 - **2026-03-03**: Lean-11-TorchLean Pedagogical Enhancement (4 cells added, SQUELETTE → COMPLET)
   - TorchLean: réseaux de neurones formellement vérifiés avec Lean 4
@@ -83,7 +108,11 @@
   - README status updated from SQUELETTE to COMPLET
   - Summary report: `enrichment-log-2026-03-03-lean-torchlean.md`
 
+
+
 ### Domain-Specific Patterns
+
+
 
 | Domain | Key Vocabulary | Common Patterns |
 |--------|----------------|-----------------|
@@ -98,24 +127,36 @@
 | SymbolicAI/TorchLean | Semantic gap, Float32, IEEE-754, rounding modes, IBP, CROWN, LiRPA, PINNs, Lyapunov, FloVerCoq | API philosophy, numerical error accumulation, interval propagation visualization, ecosystem diagrams |
 | GameTheory | Nash equilibrium, Stackelberg, CFR, Fictitious Play, PSRO, AlphaZero, Sprague-Grundy, Nim, Arrow impossibility, Sen paradox, MARL, self-play | Convergence plots, exploitability tables, strategy evolution, P/N-position analysis |
 
+
+
 ### Content Strategy Templates
+
+
 
 **Introduction Cell** (BEFORE code):
 - Future tense ("nous allons...", "le code va...")
 - Sets expectations
 - Explains "why" before "how"
 
+
+
 **Interpretation Cell** (AFTER code):
 - Past/present tense ("le resultat montre...", "on observe...")
 - Tables for structured data
 - > **Note technique** for important details
+
+
 
 **Transition Cell** (BETWEEN sections):
 - Links concepts
 - Previews next steps
 - Maintains pedagogical flow
 
+
+
 ### Errors to Avoid
+
+
 
 1. **Never** insert interpretation BEFORE the code it analyzes
 2. **Never** skip re-reading after insertions
@@ -123,7 +164,11 @@
 4. **Never** add emojis
 5. **Never** modify existing code cells (l'enrichissement ajoute du markdown autour du code existant ; pour corriger une cellule code cassée, tracer une PR séparée — cf [anti-regression.md](../../.claude/rules/anti-regression.md))
 
+
+
 ### Quality Checklist
+
+
 
 Before completing enrichment:
 - [ ] No consecutive code cells without markdown
@@ -134,39 +179,64 @@ Before completing enrichment:
 - [ ] Professional French language (no emojis)
 - [ ] Domain vocabulary is accurate
 
+
+
 ### Tools Reference
 
+
+
 L'outil désigné (cf [CLAUDE.md](../../CLAUDE.md) « Catalogue agents / skills / scripts ») est la CLI multi-famille `scripts/notebook_tools/notebook_tools.py` :
+
+
 
 ```bash
 # Valider la structure d'un notebook (cellules, execution_count, outputs)
 python scripts/notebook_tools/notebook_tools.py validate <path>
 
+
+
 # Analyser les sorties (détecter les erreurs, les outputs vides)
 python scripts/notebook_tools/notebook_tools.py analyze <path>
+
+
 
 # Extraire le squelette (index de cellules pour le repérage avant insertion)
 python scripts/notebook_tools/notebook_tools.py skeleton <path>
 ```
 
+
+
 L'utilitaire `notebook_helpers.py` reste utile pour un listing détaillé par cellule :
+
+
 
 ```bash
 # Lister les cellules avec leurs indices (repérage avant insertion BOTTOM-to-TOP)
 python scripts/notebook_tools/notebook_helpers.py list <path> --verbose
 
+
+
 # Vérifier l'absence de cellules code consécutives sans markdown intercalaire
 grep -A1 "cell_type.*code" <path>
+
+
 
 # Vérifier le diff final
 git diff --stat <path>
 ```
 
+
+
 Catalogue complet des scripts : [scripts-reference.md](scripts-reference.md).
 
+
+
 ### Documentation associée
+
+
 
 - [notebook-conventions.md](../../.claude/rules/notebook-conventions.md) — règles C.1/C.2/C.3 (stubs sans erreur volontaire, outputs commités, scope des re-exécutions).
 - [procedures-recurrentes.md](procedures-recurrentes.md) — workflow d'enrichissement et pré-commit notebook (H.3).
 - [subagents-reference.md](subagents-reference.md) — catalogue des sous-agents (`notebook-enricher`, `notebook-cleaner`, `notebook-designer`).
 - Les journaux de session détaillés (`enrichment-log-YYYY-MM-DD.md`) sont des artefacts locaux hors dépôt ; cette doc n'en conserve que la synthèse trans-machine.
+

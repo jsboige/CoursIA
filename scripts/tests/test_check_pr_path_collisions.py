@@ -411,7 +411,7 @@ class TestTerminalMergedPairs(unittest.TestCase):
         )
 
     def test_terminal_render_names_the_merged_side_and_main(self):
-        """Acceptance 2: the comment SAYS the substance is already on main."""
+        """Acceptance 2: the comment NAMES the merged side and says `main`."""
         f_open, f_merged, f_paths, _ = _mod.FOUNDING_TERMINAL_PAIR
         result = detect_path_collisions([
             _pr(f_open, list(f_paths), title="tooling(notebook): detecteur"),
@@ -461,6 +461,130 @@ class TestTerminalMergedPairs(unittest.TestCase):
                                  collisions_for_pr(1, after.collisions))
         self.assertEqual(b_before, b_after)
         self.assertNotIn("terminal", b_before)
+
+
+class TestTerminalVerdictDoesNotOverclaim(unittest.TestCase):
+    """#15768: the terminal verdict must state a FACT, not a conclusion.
+
+    The gap being closed: the organ observes a shared PATH and asserted a
+    consumed SUBSTANCE. `grep` on the module shows no `diff`/`blob`/`hunk`/
+    `additions`/`deletions` anywhere -- there is no content comparison to base
+    the conclusion on. The founding instance is #15454/#15502, and it is the
+    sharpest possible one: both PRs touch exactly ONE path -- the same one --
+    so the overlap ratio is a PERFECT 1.00 while the deliveries are disjoint.
+    No threshold could have saved it; only the wording can.
+    """
+
+    def _overclaim_rows(self, merged_issue: int, open_issue: int,
+                        state: str = "merged"):
+        n_open, n_merged, path, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        return [
+            _pr(n_open, [path], title=f"docs(probas,#{open_issue}): segmenter"),
+            _pr(n_merged, [path], title=f"fix(probas,#{merged_issue}): couleur",
+                state=state),
+        ]
+
+    def test_overclaim_instance_is_terminal_at_a_perfect_path_overlap(self):
+        """Measured fixture: 1 of 1 path on BOTH sides -> ratio exactly 1.00."""
+        n_open, n_merged, path, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        result = detect_path_collisions(self._overclaim_rows(15022, 14871))
+        self.assertEqual(result.n_collisions, 1)
+        c = result.collisions[0]
+        self.assertEqual((c.a_number, c.b_number), (n_open, n_merged))
+        self.assertEqual(c.tier, "terminal")
+        self.assertEqual(c.merged_side, n_merged)
+        self.assertAlmostEqual(c.overlap_ratio, 1.0)
+        self.assertEqual(c.shared_paths, (path,))
+
+    def test_the_fixture_path_really_exists_in_the_checkout(self):
+        """A measured fixture, not an invented one: the path is a real file."""
+        _, _, path, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        proc = _subprocess.run(
+            ["git", "cat-file", "-e", f"HEAD:{path}"],
+            capture_output=True,
+        )
+        self.assertEqual(proc.returncode, 0, f"{path} not in the checkout")
+
+    def test_terminal_render_does_not_claim_the_substance_is_consumed(self):
+        """Acceptance 1: the unprovable claim is out of the output vocabulary."""
+        n_open, n_merged, _, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        result = detect_path_collisions(self._overclaim_rows(15022, 14871))
+        body = render_comment(
+            n_open, "docs(probas,#14871): segmenter",
+            collisions_for_pr(n_open, result.collisions),
+        )
+        for banned in ("substance est consommee", "deja integre",
+                       "travail deja", "is consumed", "already integrated"):
+            self.assertNotIn(banned, body, f"unprovable claim: {banned!r}")
+        # ... while still rendering the FACT it can prove.
+        self.assertIn("terminal", body)
+        self.assertIn(f"**#{n_merged}**", body)
+        self.assertIn("est deja sur", body)
+
+    def test_both_sides_render_the_same_fact_without_a_conclusion(self):
+        """The merged side's thread gets the fact too, not a verdict."""
+        _, n_merged, _, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        result = detect_path_collisions(self._overclaim_rows(15022, 14871))
+        body = render_comment(
+            n_merged, "fix(probas,#15022): couleur",
+            collisions_for_pr(n_merged, result.collisions),
+        )
+        self.assertIn(f"**#{n_merged}**", body)
+        self.assertNotIn("substance est consommee", body)
+        self.assertNotIn("deja integre", body)
+
+    def test_a_common_issue_is_rendered_on_the_terminal_tier(self):
+        """Acceptance 4: the one honest hint is no longer silently dropped."""
+        n_open, n_merged, _, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        # Both sides cite the SAME issue -- the strongest overlap evidence
+        # this organ can hold. Pre-fix it was computed, serialized to JSON,
+        # and omitted from the comment.
+        result = detect_path_collisions(self._overclaim_rows(14871, 14871))
+        c = result.collisions[0]
+        self.assertEqual(c.tier, "terminal")
+        self.assertEqual(c.common_issues, (14871,))
+        body = render_comment(
+            n_open, "docs(probas,#14871): segmenter",
+            collisions_for_pr(n_open, result.collisions),
+        )
+        self.assertIn("#14871", body)
+        # ... but a shared issue is still EVIDENCE, not proof: the verdict
+        # must not harden into the redundancy claim it cannot support.
+        self.assertNotIn("substance est consommee", body)
+
+    def test_disjoint_issues_leave_no_common_issue_marker(self):
+        """The founding instance cites disjoint issues, and says so by silence."""
+        n_open, _, _, _, _ = _mod.FOUNDING_OVERCLAIM_PAIR
+        result = detect_path_collisions(self._overclaim_rows(15022, 14871))
+        c = result.collisions[0]
+        self.assertEqual(c.tier, "terminal")
+        self.assertEqual(c.common_issues, ())
+        body = render_comment(
+            n_open, "docs(probas,#14871): segmenter",
+            collisions_for_pr(n_open, result.collisions),
+        )
+        self.assertNotIn("issues communes", body)
+
+    def test_open_tier_rendering_is_untouched_by_the_wording_change(self):
+        """Acceptance 5: no open/open pair changes body or tier."""
+        result = detect_path_collisions([
+            _pr(1, ["a/x.ipynb"], title="fix(#7): a"),
+            _pr(2, ["a/x.ipynb"], title="fix(#7): b"),
+            _pr(3, ["a/x.ipynb"], title="docs(#9): c"),
+            _pr(4, ["gone/y.md"], title="fix(#8): d", state="merged"),
+        ])
+        strong = [c for c in result.collisions if c.tier == "strong"]
+        weak = [c for c in result.collisions if c.tier == "weak"]
+        self.assertEqual(len(strong), 1)
+        self.assertEqual(len(weak), 2)
+        body = render_comment(1, "fix(#7): a",
+                              collisions_for_pr(1, result.collisions))
+        # The open-tier lines are byte-identical to pre-#15768: no ratio, no
+        # terminal prose, no closing note.
+        self.assertNotIn("terminal", body)
+        self.assertNotIn("recouvrement de chemins", body)
+        self.assertIn("- **fort** --", body)
+        self.assertIn("- **faible** --", body)
 
 
 class TestMergedPoolWiring(unittest.TestCase):

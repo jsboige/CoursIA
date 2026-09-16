@@ -150,9 +150,18 @@ def test_prev_self_reference_blocks():
                for h in v["hits"]["prev_invalid"])
 
 
-def test_prev_self_in_commit_message_blocks():
-    # The #10093 precedent says commit messages are in scope (squash-merge
-    # publishes them). A PREV-SELF in a commit must be flagged the same way.
+def test_prev_self_in_commit_message_does_not_block():
+    # INVERSE depuis #15309 (4e axe, arbitrage ai-01 2026-09-12T03:36Z) : les
+    # invariants `prev:` s'evaluent sur le BODY SEUL, la surface declarative
+    # du §1 de variation-protocol.md. Le precedent #10093 (squash-merge
+    # publie les messages de commit) reste valable pour les CLOSE-KEYWORDS --
+    # la, la surface est le mecanisme -- mais pas pour `prev:` : corriger un
+    # `prev:` de commit exige une reecriture d'historique, le geste que
+    # git-workflow.md presente comme dernier recours. Un garde n'exige pas,
+    # pour etre satisfait, un geste que la regle voisine decourage.
+    # Ce test etait l'assertion inverse (commits[1] prev-self bloquant)
+    # avant #15309 ; il epingle desormais la non-remontee de la surface
+    # commits, et le maintien du blocage cote body.
     commits = [
         "feat: normal commit",
         "Grain: MED/refactor -- prev: MED/refactor #13473",
@@ -166,7 +175,7 @@ def test_prev_self_in_commit_message_blocks():
     assert v["guard_pass"] is False
     kinds_by_loc = {(h["location"], h["kind"]) for h in v["hits"]["prev_invalid"]}
     assert ("body", "prev-self") in kinds_by_loc
-    assert ("commits[1]", "prev-self") in kinds_by_loc
+    assert not any(loc.startswith("commits[") for loc, _ in kinds_by_loc)
 
 
 def test_prev_self_abstains_when_current_pr_unknown():
@@ -204,11 +213,32 @@ def test_prev_abandoned_blocks():
                for h in v["hits"]["prev_invalid"])
 
 
+def test_prev_abandoned_prescription_repairs_the_target_not_the_genre():
+    """#15896 : un prev-abandoned prescrit de repointer la CIBLE (vers une PR
+    de la lane mergée ou ouverte), jamais de réécrire le genre -- réécrire le
+    genre est la prescription du mode close-keyword (#10093), un finding
+    différent. Suivre la mauvaise prescription ne peut pas lever le rouge :
+    ce test pince la séparation des deux messages."""
+    v = vpg.check(_ABANDONED_BODY, current_pr=13473,
+                  prev_targets={"13465": {"kind": "pr", "state": "CLOSED",
+                                          "merged": False}})
+    assert v["guard_pass"] is False
+    # nomme le mode et la PR fautive
+    assert "prev-abandoned" in v["reason"]
+    assert "[13465]" in v["reason"]
+    # prescrit le geste qui lève le rouge : repointer la cible
+    assert "merged or still open" in v["reason"]
+    # pas la prescription de l'autre mode
+    assert "rewrite the `prev:` genre" not in v["reason"]
+
+
 def test_prev_open_abstains_the_predecessor_is_in_flight():
     # THE REPAIR. Same body, same current PR, ONE field different -- and the
     # verdict flips. A predecessor still open is not a broken lineage: it is
-    # the state R1 of `proactive-coordination.md` mandates ("1 PR entre 2
-    # wakeups = PLANCHER, jamais plafond -- re-pioche IMMEDIATEMENT").
+    # the state R1 of `proactive-coordination.md` mandated when this
+    # invariant was retired ("1 PR entre 2 wakeups = PLANCHER, jamais
+    # plafond -- re-pioche IMMEDIATEMENT"; R1 porte depuis #15793 un
+    # plancher pluriel, la conclusion est inchangee).
     #
     # The witness the original invariant cited, #13473, was tagged
     # `prev: ... #13465` while #13465 was OPEN -- and it MERGED on
@@ -608,6 +638,104 @@ def test_fenced_block_is_masked_too():
     assert vpg.find_prev_target_pr_numbers(body) == [14501]
 
 
+# --------------------------------------------------------------------------
+# #15932 -- the fence ABOVE the tag line. `test_fenced_block_is_masked_too`
+# above only holds when the real tag line comes FIRST; the first-line race is
+# what leaked.
+# --------------------------------------------------------------------------
+
+# Shape of the real #15925 body (compressed): the reproduction block is a
+# `python` fence whose first statement quotes a defective tag verbatim, and it
+# sits ABOVE the author's own trailer. `_first_grain_line` took the first
+# `Grain:` substring it met -- inside the fence -- so `_declared_prev_pr`
+# returned the QUOTE's target (15832, CLOSED/unmerged) instead of the real
+# trailer (15924, OPEN), and the guard red-lit the PR with
+# `prev-abandoned -> [15832]` on a predecessor the author never pointed at.
+#
+# The real trailer is held OPEN on purpose (the section NOTE convention): a
+# leaking mask must turn this red, and only the CLOSED quote can do that. The
+# teeth therefore sit entirely on the mask, not on the predicate.
+FENCED_CITATION_ABOVE_TAG = (
+    "## Reproduction\n"
+    "```python\n"
+    'body = "Grain: MED/lean -- lane myia-x:CoursIA -- prev: MED/lean #15832"\n'
+    "vpg.check(body, [], current_pr=15869, prev_targets=meta)\n"
+    "```\n"
+    "\n"
+    "## Suite\n"
+    "Grain: LIGHT/tooling -- lane myia-po-2023:CoursIA -- prev: MED/tooling #15924\n"
+)
+
+FENCED_CITATION_TARGETS = {
+    "15832": {"kind": "pr", "state": "CLOSED", "merged": False},
+    "15924": {"kind": "pr", "state": "OPEN", "merged": False},
+}
+
+
+def test_fenced_citation_above_the_tag_line_is_not_a_declaration():
+    # The #15932 defect, first-hand.
+    assert vpg._declared_prev_pr(FENCED_CITATION_ABOVE_TAG) == 15924
+    assert 15832 not in vpg.find_prev_target_pr_numbers(FENCED_CITATION_ABOVE_TAG)
+    v = vpg.check(FENCED_CITATION_ABOVE_TAG, current_pr=15925,
+                  prev_targets=FENCED_CITATION_TARGETS)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_fenced_citation_does_not_trip_prev_self():
+    # Symmetric half: the quote names the CURRENT PR (mine-po-2023's body
+    # quotes it with `current_pr=15869`), which must not read as a
+    # self-reference either -- `find_prev_self_references` falls back to
+    # `_declared_prev_pr` (l.281), the same function that leaked.
+    assert vpg.find_prev_self_references(FENCED_CITATION_ABOVE_TAG, 15832) == []
+
+
+def test_plain_citation_above_the_tag_line_still_fails():
+    # NEGATIVE CONTROL -- the mask is not a blanket amnesty on the ORDER. The
+    # SAME clause, written in plain text above the tag line, is a real
+    # declaration and must still be rejected. This is the pair that proves
+    # the pass above was earned by the fence.
+    body = ("## Reproduction\n"
+            "Grain: MED/lean -- lane myia-x:CoursIA -- prev: MED/lean #15832\n"
+            "\n"
+            "Grain: LIGHT/tooling -- lane myia-po-2023:CoursIA -- prev: MED/tooling #15924\n")
+    assert vpg._declared_prev_pr(body) == 15832
+    v = vpg.check(body, current_pr=15925, prev_targets=FENCED_CITATION_TARGETS)
+    assert v["hits"]["prev_invalid"] == [
+        {"location": "body", "kind": "prev-abandoned", "prev_pr": 15832}]
+    assert v["guard_pass"] is False
+
+
+def test_mask_fenced_blocks_keeps_the_inline_span_surface():
+    # The narrow mask is the whole point (#15932): a fully backticked tag line
+    # must SURVIVE it, or `test_fully_backticked_tag_is_still_evaluated`'s
+    # blind-spot control becomes a silent bypass -- a lane would wrap its tag
+    # in backticks and every `prev:` invariant would go quiet.
+    backticked = "`Grain: MED/guard -- lane a:b -- prev: MED/guard #14548`\n"
+    assert gt.mask_fenced_blocks(backticked) == backticked
+    # ... while the WIDE mask does blank it (that is why the two are split).
+    assert "14548" not in gt.mask_code_spans(backticked)
+
+
+def test_mask_fenced_blocks_shape_and_both_fence_characters():
+    fenced = "avant\n```python\nGrain: MED/qc -- prev: MED/qc #14548\n```\napres\n"
+    masked = gt.mask_fenced_blocks(fenced)
+    assert "14548" not in masked
+    assert len(masked) == len(fenced)
+    lines = masked.splitlines()
+    assert len(lines) == len(fenced.splitlines())
+    assert lines[0] == "avant" and lines[-1] == "apres"
+    # every line of the fence is blanked to the SAME length as its original
+    assert all(l == " " * len(o) for l, o in zip(lines[1:-1], fenced.splitlines()[1:-1]))
+    # `~~~` is a fence too, and an UNCLOSED fence masks to the end -- which is
+    # exactly what GitHub renders, so what a reviewer sees.
+    assert "14548" not in gt.mask_fenced_blocks("avant\n~~~\nGrain: a:b -- prev: a #14548\n")
+    # A 4-space indented block is deliberately NOT masked (nested lists carry
+    # legitimate markers there -- see check_lane_claim's scope note).
+    assert gt.mask_fenced_blocks("    Grain: a:b -- prev: a #14548\n") == \
+        "    Grain: a:b -- prev: a #14548\n"
+
+
 def test_plain_prev_at_an_abandoned_pr_still_fails():
     # NEGATIVE CONTROL -- the mask is not a blanket amnesty. The SAME clause
     # as the citation above, written in plain text (the canonical tag), at
@@ -851,26 +979,66 @@ def test_multiline_backticked_citation_in_commit_passes_full_guard():
     assert v["guard_pass"] is True
     assert v["hits"]["prev_invalid"] == []
 
-    # TEETH CONTROL: the SAME wrapped clause WITHOUT backticks is a bare
-    # `prev:` declaration in a commit -- it must still block (the regex
-    # matches across the soft line break via ``\\s*``). This is what makes
-    # the two tests above fail on the pre-#14700 regex (`` `[^`\\n]*` ``):
-    # back then the L5 half ``#14592`` escaped the mask and this exact
-    # block fired. If the mask ever regresses, the pair above goes red
-    # while this one stays red-but-expected -- remove it and the suite
-    # loses its proof that the pass was earned.
-    commit_bare_wrapped = (
-        "fix(guard): stray declaration\n"
+    # TEETH CONTROL, deplace sur la surface BODY par #15309 (4e axe,
+    # arbitrage ai-01 2026-09-12T03:36Z) : la meme clause nue SANS
+    # backticks, dans le BODY cette fois, doit toujours bloquer -- la
+    # surface ou les invariants `prev:` s'evaluent desormais. Avant
+    # #15309, ce controle etait joue sur ``commits[0]`` ; la prescription
+    # a retire la surface commits des invariants prev: (corriger un
+    # message de commit exige une reecriture d'historique), donc la
+    # preuve que le vert est MERITE par le masque se joue maintenant
+    # cote body : si le masque regressait (regex `` `[^`\\n]*` `` de
+    # pre-#14700), le ``#14592`` fuiterait du code span et ce bloc
+    # rougirait.
+    body_with_bare_wrapped = (
+        "Grain: LIGHT/refactor -- lane myia-po-2026:CoursIA "
+        "-- prev: LIGHT/refactor #13826\n"
         "\n"
         "1. text with prev: MED/training\n"
         "#14592 outside any backticks.\n"
     )
-    v = vpg.check(CLEAN_PREV_BODY, [commit_bare_wrapped],
+    v = vpg.check(body_with_bare_wrapped, [],
                   current_pr=14703, prev_targets=targets)
     assert v["guard_pass"] is False
     assert any(h["kind"] == "prev-abandoned" and h["prev_pr"] == 14592
-               and h["location"] == "commits[0]"
+               and h["location"] == "body"
                for h in v["hits"]["prev_invalid"])
+
+
+def test_stale_commit_prev_cannot_veto_a_valid_body_15303():
+    # #15309 4e axe -- le controle positif d'ai-01, rejoue : au head
+    # ``1c2f8b7af9`` de #15303, ``--body-file`` seul rend guard_pass=True
+    # (prev: DEEP/lean #15082, PR MERGED) et l'ajout de ``--commits-file``
+    # rendait guard_pass=False sur ``commits[0]``, qui porte une
+    # declaration ANTERIEURE pointant #15288 (une ISSUE). La correction
+    # dans la surface declarative (le body) doit SUFFIRE : un message de
+    # commit n'est pas une surface declarative, et la lane ne peut pas
+    # l'editer sans reecrire l'historique.
+    targets = {
+        "15082": {"kind": "pr", "state": "MERGED", "merged": True},
+        "15288": {"kind": "issue"},
+    }
+    body = ("Grain: DEEP/lean -- lane myia-po-2024:CoursIA-2 "
+            "-- prev: DEEP/lean #15082")
+    stale_commit = (
+        "feat(lean): premiere tranche\n"
+        "\n"
+        "Grain: CONTENU/lean -- lane myia-po-2024:CoursIA-2 "
+        "-- prev: MED/lean #15288\n"
+    )
+    v = vpg.check(body, [stale_commit], current_pr=15303,
+                  prev_targets=targets)
+    assert v["guard_pass"] is True
+    assert v["hits"]["prev_invalid"] == []
+    # Controle negatif de la prescription : la meme declaration dans le
+    # BODY rougit toujours -- c'est exactement ce que #13475 voulait
+    # attraper, et le retrait de la surface commits ne l'atteint pas.
+    v2 = vpg.check(body.replace("#15082", "#15288"), [],
+                   current_pr=15303, prev_targets=targets)
+    assert v2["guard_pass"] is False
+    assert any(h["kind"] == "prev-not-pr" and h["prev_pr"] == 15288
+               and h["location"] == "body"
+               for h in v2["hits"]["prev_invalid"])
 
 
 # --- #14550, second defect: a silent fail-open is an unearned attestation ----

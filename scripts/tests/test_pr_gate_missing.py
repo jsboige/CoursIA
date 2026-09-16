@@ -37,6 +37,7 @@ from pr_gate_missing import (  # noqa: E402
     rollup_names,
     list_open_prs,
     has_label,
+    is_bot_author,
     GATE_NAME,
     LABEL_BOT_DESC,
     LABEL_CONFLICT_DESC,
@@ -312,6 +313,78 @@ def test_collector_output_carries_author_and_labels():
     assert rows[0]["author_login"] == "jsboige"
     assert has_label(rows[0], "pr-gate-missing")
     assert not has_label(rows[0], "pr-gate-conflict")
+
+
+# --- #15758 : le bot du depot n'a pas UNE orthographe -----------------------
+#
+# Mesure firsthand sur #15678 (2026-09-12) :
+#   REST    `gh api repos/jsboige/CoursIA/pulls/15678 --jq '.user.login'`
+#           -> github-actions[bot]
+#   GraphQL `gh pr view 15678 --json author` -> app/github-actions
+#   GraphQL `author.login` (brut)            -> github-actions
+#
+# Le collecteur lit en REST, donc la PREMIERE est ce que `classify_input` range
+# sous `author_login`. La constante unique d'origine portait la deuxieme : la
+# comparaison etait fausse pour toute PR du bot, et `bot_missing` comme la cause
+# `bot` etaient inatteignables (#15758).
+REST_BOT = "github-actions[bot]"
+GQL_BOT = "app/github-actions"
+RAW_BOT = "github-actions"
+
+
+def test_bot_verdict_for_every_measured_spelling():
+    for spelling in (REST_BOT, GQL_BOT, RAW_BOT):
+        verdict, why = classify(_pr(10558, author=spelling,
+                                    rollup=_codeql_only_rollup()))
+        assert verdict == "bot_missing", f"{spelling!r} -> {verdict} ({why})"
+
+
+def test_prescribe_names_the_bot_cause_for_the_rest_spelling():
+    # L'autre site de comparaison : c'est `prescribe` qui choisit le label et le
+    # commentaire. Le defaut les rendait muets tous les deux.
+    cause, detail = prescribe(_candidate(10558, author=REST_BOT))
+    assert cause == "bot", detail
+    assert REST_BOT in detail, detail
+
+
+def test_human_author_is_not_absorbed_by_the_bot_predicate():
+    for author in ("jsboige", "myia-ai-01", ""):
+        assert not is_bot_author(author), author
+        assert prescribe(_candidate(10558, author=author))[0] == "unknown", author
+    assert classify(_pr(10558, author="jsboige",
+                        rollup=_codeql_only_rollup()))[0] == "missing"
+
+
+def test_collector_contract_reads_the_login_in_rest():
+    # Contrat du PRODUCTEUR. Rien n'epinglait l'orthographe produite : les tests
+    # passaient `app/github-actions` a la main -- la valeur de la constante du
+    # consommateur, jamais celle que le collecteur rend vraiment. Changer la
+    # source d'auteur (REST -> GraphQL) change l'orthographe rendue ; ce test
+    # doit rougir a ce moment-la plutot que suivre en silence.
+    seen = {}
+
+    def fake_rows(args):
+        seen["args"] = args
+        return []
+
+    with mock.patch("pr_gate_missing._gh_rows", fake_rows):
+        list_open_prs("jsboige/CoursIA")
+    args = seen["args"]
+    jq = args[args.index("--jq") + 1]
+    assert "author: .user.login" in jq, jq
+    assert "author: .author.login" not in jq, jq
+    assert "state=open" in args[1] and "repos/" in args[1], args[1]
+
+
+def test_collector_emits_the_rest_spelling_end_to_end():
+    # Chemin reel producteur -> consommateur, avec l'orthographe que le
+    # collecteur produit. C'est ce couple que le test d'origine ratait : il
+    # pilotait le collecteur mais lui donnait la chaine du consommateur.
+    rows = _collector_output([_collector_row(10558, author=REST_BOT)],
+                             check_run_names=("CodeQL",))
+    assert rows[0]["author_login"] == REST_BOT
+    verdict, why = classify(rows[0])
+    assert verdict == "bot_missing", why
 
 
 def test_classify_input_is_the_only_shape():

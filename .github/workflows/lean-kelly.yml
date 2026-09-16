@@ -23,6 +23,7 @@ on:
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean'
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean'

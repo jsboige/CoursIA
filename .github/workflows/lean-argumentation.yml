@@ -30,6 +30,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lean-toolchain'
   pull_request:
+    types: [opened, synchronize, edited, reopened]
     branches: [main]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean'

@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ── Canonical speaker enum ──
@@ -70,6 +70,33 @@ class CharacterProfile(BaseModel):
     emotional_arc: dict[str, str]
     prosody_defaults: list[str]
     relationships: dict[str, str]
+
+    @field_validator("relationships", mode="before")
+    @classmethod
+    def _relationships_from_list(cls, value):
+        """Accept the LLM's observed "Name : description" list form.
+
+        Strict JSON Schema mode is off for NarrativeContext (its nested
+        ``additionalProperties`` objects force loose mode in
+        ``build_json_schema_response_format``), so the model's shape is not
+        enforced server-side. Measured on the 2026-09-12 gpt-5.2 run: all 11
+        characters came back with ``relationships`` as a list of
+        ``"Name : description"`` strings while every other dict[str, str]
+        field conformed. Split on the FIRST separator so descriptions
+        containing " : " stay intact; strings without one become the key
+        with an empty description.
+        """
+        if not isinstance(value, list):
+            return value
+        out: dict[str, str] = {}
+        for item in value:
+            if not isinstance(item, str):
+                continue
+            name, sep, desc = item.partition(" : ")
+            if not sep:
+                name, sep, desc = item.partition(": ")
+            out[name.strip()] = desc.strip() if sep else ""
+        return out
 
 
 class NarrativeContext(BaseModel):

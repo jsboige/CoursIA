@@ -6,6 +6,13 @@ name: Docs Link Check
 # toute la lane). Ce fichier garde `workflow_dispatch` pour le re-run manuel
 # sur `main` apres une panne CI (#9858). Les `paths:` d'origine vivent dans
 # `scripts/ci/fast_lane_registry.py` (TRANCHE1).
+#
+# Les deux voies n'excusent PAS les liens casses de la meme facon (#15766) :
+# la garde de PR compare a sa base (`--base {base_ref}`), ou un lien deja
+# casse n'est pas la regression de la branche ; ce dispatch, qui n'a pas de
+# base a comparer, s'en remet seul au fichier de reference fige. C'est
+# volontaire : `--baseline` n'est appele par aucune automatisation, donc ce
+# fichier ne doit rien excuser de plus que ce qu'il contient deja.
 
 on:
   workflow_dispatch:

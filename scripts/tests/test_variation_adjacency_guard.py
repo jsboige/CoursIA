@@ -877,3 +877,87 @@ def test_unreadable_merged_window_is_loud_in_verdict(tmp_path, capsys):
     assert "prev_fallback" in verdict
     assert "window merge illisible" in verdict["prev_fallback"]
     assert "window merge illisible" in verdict["reason"]
+
+
+# --- #15739 : le referentiel du verdict (peremption visible) ----------------
+
+# Le cas fondateur, mesure le 2026-09-12 : dix PRs LIGHT/docs de
+# myia-po-2025:CoursIA rouges pendant que le predecesseur etait docs (#15723),
+# puis #15687 (MED/notebook-python, merge 08:15:17Z) a deplace le predecesseur
+# -- les dix verdicts affiches restaient rouges sans que rien ne les re-tourne.
+_FOUNDER_BODY = (
+    "Grain: LIGHT/docs — lane myia-po-2025:CoursIA — prev: LIGHT/docs #15723"
+)
+_SEQ_A = [  # sequence AVANT le merge basculeur : le predecesseur est docs
+    {"number": 15723, "body": "Grain: LIGHT/docs — lane myia-po-2025:CoursIA",
+     "mergedAt": "2026-09-12T07:00:00Z"},
+]
+_SEQ_B = _SEQ_A + [  # #15687 merge : le predecesseur devient notebook-python
+    {"number": 15687, "body": "Grain: MED/notebook-python — lane myia-po-2025:CoursIA",
+     "mergedAt": "2026-09-12T08:15:17Z"},
+]
+
+
+def test_sequence_as_of_helper():
+    assert vag.sequence_as_of(None) is None
+    assert vag.sequence_as_of([]) is None
+    got = vag.sequence_as_of(_SEQ_B)
+    assert got == "2026-09-12T08:15:17Z"
+
+
+def test_15739_deux_etats_du_cas_fondateur(tmp_path, capsys):
+    """Controle positif exigé par l'acceptance : un rouge d'adjacence, puis un
+    merge de la même lane changeant le genre du prédécesseur -- la sortie du
+    check nomme les DEUX états (rouge avec son référentiel, recalcul vert)."""
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(_FOUNDER_BODY, encoding="utf-8")
+
+    seq_a = tmp_path / "seq_a.json"
+    seq_a.write_text(json.dumps(_SEQ_A), encoding="utf-8")
+    rc_a = vag.main(["--body-file", str(body_file), "--merged-prs-file", str(seq_a)])
+    red = json.loads(capsys.readouterr().out)
+
+    # Etat 1 (le rouge perissable) : bloquant, ET son referentiel est nomme.
+    assert rc_a == 1
+    assert red["guard_pass"] is False and red["blocking"] is True
+    assert red["prev_pr"] == 15723
+    assert red["prev_genre"] == "docs"
+    assert red["prev_source"] == "merged-sequence"
+    assert red["sequence_as_of"] == "2026-09-12T07:00:00Z"
+
+    seq_b = tmp_path / "seq_b.json"
+    seq_b.write_text(json.dumps(_SEQ_B), encoding="utf-8")
+    rc_b = vag.main(["--body-file", str(body_file), "--merged-prs-file", str(seq_b)])
+    green = json.loads(capsys.readouterr().out)
+
+    # Etat 2 (le recalcul apres merge de la meme lane) : passant, prevourseur
+    # deplace, sequence datee au merge basculeur -- les deux verdicts
+    # distinguish un rouge vivant d'un rouge perime par leur referentiel.
+    assert rc_b == 0
+    assert green["guard_pass"] is True
+    assert green["prev_pr"] == 15687
+    assert green["prev_genre"] == "notebook-python"
+    assert green["sequence_as_of"] == "2026-09-12T08:15:17Z"
+
+
+def test_15739_sequence_as_of_null_sans_fenetre(tmp_path, capsys):
+    """Sans fenetre de merges, le verdict repose sur l'axe declared : pas de
+    sequence a dater, le champ est null (jamais une date fabriquee)."""
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(_FOUNDER_BODY, encoding="utf-8")
+    rc = vag.main(["--body-file", str(body_file)])
+    verdict = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert verdict["prev_source"] == "declared"
+    assert verdict["sequence_as_of"] is None
+
+
+def test_15739_argv_sans_body_ni_pr_nombre():
+    """La validation d'argv echoue proprement (exit 2) quand aucun mode n'est
+    fourni -- pas de crash silencieux en aval."""
+    try:
+        vag.main([])
+    except SystemExit as e:
+        assert e.code == 2
+    else:
+        raise AssertionError("main([]) doit sortir en argparse error")

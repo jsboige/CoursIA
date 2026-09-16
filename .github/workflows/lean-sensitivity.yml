@@ -22,6 +22,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'

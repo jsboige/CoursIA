@@ -2,10 +2,13 @@
 
 > **Statut.** Document de cadrage **méta** (mode 3 d'articulation), grade **C-documentaire**. Ni vertical (par fil : Thom, Grothendieck, Schmidhuber, Friston), ni horizontal (cartographie de la tresse, [#7738](https://github.com/jsboige/CoursIA/issues/7738)) : ce document **articule** ce que le cadrage formel D1 ([#7745](https://github.com/jsboige/CoursIA/issues/7745), [`strate7-cadres-libres.md`](strate7-cadres-libres.md)) et la jauge opérationnelle C4 ([#7743](https://github.com/jsboige/CoursIA/issues/7743), [`jambe-c4-propagation.md`](jambe-c4-propagation.md)) *se doivent mutuellement*. Il ne refait ni l'un ni l'autre : il explicite le **seuil commun** (ρ_c ↔ (π_c, W_c, P_c)), montre **pourquoi** ce seuil est le même objet vu sous deux angles, et identifie **ce que cette articulation rend possible** (et ce qu'elle interdit). *See* [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT). *Part of* [#7395](https://github.com/jsboige/CoursIA/issues/7395) (méta-proxy ICT).
 >
+
 > **Objet.** (a) **Reformuler l'isomorphisme** ρ_c = (π_c, W_c, P_c) en termes symétriques (D1 *nomme*, C4 *mesure* — mais aussi C4 *contraint* D1, D1 *qualifie* C4) ; (b) **montrer** que cette articulation n'est ni redondante (chaque jambe fournit un contenu que l'autre ne porte pas) ni accidentelle (elle est *nécessaire* parce que la strate 7 a une face formelle et une face opérationnelle inséparables) ; (c) **borner** ce que le pont permet (passer d'une jambe à l'autre dans un raisonnement) et ce qu'il interdit (réduire l'une à l'autre, ou agréger les 3 dimensions en un scalaire — cf. dissolution Φ/F/K [#7736](https://github.com/jsboige/CoursIA/issues/7736)).
 >
+
 > **Discipline.** Cadrage grade C, **AUCUNE nouvelle dépendance expérimentale** n'est créée. Pas de notebook, pas de banc, pas de verdict. Le présent document *consolide* deux cadrages existants (D1 livré c.1246 PR [#9596](https://github.com/jsboige/CoursIA/pull/9596), C4 livré c.1247 PR [#9601](https://github.com/jsboige/CoursIA/pull/9601) OPEN), et explicite leur articulation *après* que les deux jambes aient été posées séparément. C'est précisément ce timing (méta-cadrage *après* les deux jambes) qui rend le pont lisible : on ne pouvait pas l'écrire avant d'avoir les deux faces.
 >
+
 > **Avertissement méthodologique.** Ce document **n'est pas** une promotion de la jauge `(π, W, causalité)` au rang de « vrai » seuil de la strate 7, ni une réduction du jeu évolutif `G_t` à la grammaire de propagation. La rencontre est *bidirectionnelle*, pas hiérarchique. D1 et C4 sont **complémentaires** au sens strict : chacune a la moitié d'un objet que l'autre moitié ne porte pas. Cf. [`strate7-cadres-libres.md`](strate7-cadres-libres.md) §0 et [`jambe-c4-propagation.md`](jambe-c4-propagation.md) §0 — les deux cadrages posent explicitement leur propre *avertissement méthodologique* ; le présent document assume les deux.
 
 ## 0. Pourquoi un troisième mode d'articulation
@@ -127,11 +130,17 @@ Ce passage **n'est pas** un claim actuel. Si l'articulation tient ce passage, ce
 ## Voir aussi
 
 - **Issue source implicite** : ce document n'ouvre pas d'issue dédiée ; il est *greffé* sur [#7745](https://github.com/jsboige/CoursIA/issues/7745) (D1) et [#7743](https://github.com/jsboige/CoursIA/issues/7743) (C4), qu'il *re-lit* ensemble. Cf. [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT).
+
 - **Cadrage D1** : [`strate7-cadres-libres.md`](strate7-cadres-libres.md) — livré c.1246, PR [#9596](https://github.com/jsboige/CoursIA/pull/9596) MERGED. Le présent document *consolide* D1 en articulation avec C4.
+
 - **Cadrage C4** : [`jambe-c4-propagation.md`](jambe-c4-propagation.md) — livré c.1247, PR [#9601](https://github.com/jsboige/CoursIA/pull/9601) OPEN. Le présent document *étend* C4 §4 (le pont à sens unique) en pont *bidirectionnel*.
+
 - **Cartographie tresse (mode horizontal)** : [`tresse-cartographie.md`](tresse-cartographie.md) — livré c.1239, PR [#9551](https://github.com/jsboige/CoursIA/pull/9551) MERGED. La cartographie dit *comment les fils se croisent* ; le présent document dit *comment deux livrables coïncident sur un seuil*.
+
 - **Dissolution des scalaires** : [`dissolution-scalaires.md`](dissolution-scalaires.md) — livré c.1238, PR [#9547](https://github.com/jsboige/CoursIA/pull/9547) MERGED. L'héritage de la dissolution est *transmis* à l'articulation D1 ↔ C4 (pas de scalaire unique, pas d'agrégation).
+
 - **Boussole narrative D3** : [`strate7-boussole-myth.md`](strate7-boussole-myth.md) — livré c.1243, PR [#9579](https://github.com/jsboige/CoursIA/pull/9579) MERGED. D3 *raconte* la strate 7 ; D1 la *formalise* ; C4 l'*opérationnalise* ; le présent document *articule* D1 et C4. D3 reste complémentaire (mode narratif, pas mode méta).
+
 - **Synthèse invariants/dissociations/obstructions** : [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) — [#7399](https://github.com/jsboige/CoursIA/issues/7399) MERGED. La grille 3-régimes *précède* l'articulation D1 ↔ C4 : les invariants/dissociations/obstructions sont *ce qui peut être formalisé* (D1) ou *opérationnalisé* (C4) sans perte.
 
 — *CoursIA-2 — c.1248 (po-2025) — 2026-08-06*

@@ -18,6 +18,8 @@ S'applique a **toute review humaine ou bot sur depots etudiants** : `jsboigeECE/
 
 Sur PR etudiante : review **breve et bienveillante**, points forts uniquement. NE PAS appliquer les criteres CHANGES_REQUESTED A-G de [pr-review-discipline.md](pr-review-discipline.md) (ils visent les contributeurs internes). CHANGES_REQUESTED reserve aux VRAIS problemes (code qui ne tourne pas du tout, TP hors-sujet, fichier essentiel manquant). Template vide + CI rouges = OK. Merge admin via `gh auth switch -u jsboige`. Format public + bypass + workflow : cf [detail](../../docs/reference/student-pr-reviews-detail.md).
 
+Après l'évaluation, lorsqu'une correction étudiante est distillée dans CoursIA, appliquer [exercise-example-labeling.md](exercise-example-labeling.md) : solution convertie en **Exemple guidé crédité** et nouvel exercice non résolu ajouté à la place. Ne jamais effectuer ou annoncer cette distillation avant l'épreuve si elle révèle une solution ou donne un avantage indu.
+
 ## Regle HARD — un seul reviewer public
 
 `@clusterManager-Myia` (reviewer principal) et `@jsboige self-bot` coordonnent via dashboard workspace CoursIA. Une seule review publique breve par PR. Pas de double review redondante ni contradictoire (incident 2026-05-17).

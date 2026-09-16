@@ -24,6 +24,7 @@ name: Notebook Cell Source Parses
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_cell_source_parses.py'

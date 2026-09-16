@@ -95,6 +95,11 @@ constructive** : la machine à étapes d'acceptation différée (`gsRunSteps pro
 `gsNoBlockingPairs` (portés et adaptés depuis `mmaaz-git/stable-marriage-lean`,
 ~1000 lignes de lemmes auxiliaires) démontrent la stabilité. Cette déclaration
 est complète : aucune tactique stub et aucun axiome ne sont utilisés.
+
+Chemin de découverte (traces prover) : ce but a d'abord été diagnostiqué
+`INTRACTABLE_UNTIL_GS_IMPL` — les tentatives stagnaient de façon reproductible
+(138 s ici, 83 s sur l'optimalité homme), et le diagnostic nommait la seule
+condition déblocante : le port complet de l'algorithme GS, livré par #997.
 -/
 theorem gale_shapley_stable (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by

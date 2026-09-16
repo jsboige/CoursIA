@@ -66,30 +66,40 @@ def run_searxng_searches() -> list[dict]:
 
 
 def _search_via_requests() -> list[dict]:
-    """Fallback: search via direct HTTP to SearXNG instance."""
+    """Fallback: search via direct HTTP to the SearXNG instance.
+
+    The working instance is the local container (searxng/searxng on :8181).
+    ``https://search.myia.io`` is a Basic-auth reverse proxy (401 measured
+    2026-09-12, ``WWW-Authenticate: Basic realm="myia"`` behind IIS): pointing
+    there by default silently degraded every query to an empty result. The URL
+    comes from the environment; the default is the local instance, never a
+    hardcoded edge.
+    """
+    import os
+
     import requests
 
-    searxng_url = "https://search.myia.io"
+    searxng_url = os.getenv("SEARXNG_URL", "http://localhost:8181").rstrip("/")
     all_results = []
     for query in SEARCH_QUERIES:
         print(f"  [P0] Searching: {query}")
-        try:
-            resp = requests.get(
-                f"{searxng_url}/search",
-                params={"q": query, "format": "json", "language": "fr"},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            for r in data.get("results", [])[:10]:
-                all_results.append({
-                    "query": query,
-                    "title": r.get("title", ""),
-                    "url": r.get("url", ""),
-                    "snippet": r.get("content", ""),
-                })
-        except Exception as e:
-            print(f"  [P0] Search error: {e}")
+        resp = requests.get(
+            f"{searxng_url}/search",
+            params={"q": query, "format": "json", "language": "fr"},
+            timeout=30,
+        )
+        # A routing failure (401/5xx/timeout) must NOT look like a search that
+        # returned zero results: an empty list here poisons the whole P0
+        # synthesis downstream. Fail loud, let the pipeline report it.
+        resp.raise_for_status()
+        data = resp.json()
+        for r in data.get("results", [])[:10]:
+            all_results.append({
+                "query": query,
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "snippet": r.get("content", ""),
+            })
     return all_results
 
 

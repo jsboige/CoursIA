@@ -457,8 +457,17 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.wav
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/output/yue2-songs/*
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/output/mert2-corpus/*.wav
+
+# SheetSage2 (04-16) - audio->partition artifacts (regenerable by re-execution, kept local)
+# Whole directory: the model writes many artifact types (score.abc, *.mid, *.lab,
+# events.json, tokens.txt, playback.json) whose extension set drifts with the model
+# version. Enumerating them would rot; the directory is fully regenerable by
+# re-running the notebook, so the tree is ignored as a whole.
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/output/sheetsage2/
 
 # SymbolicAI notebook execution artifacts (regenerable, kept local, not committed)
 # Generated on notebook execution (matplotlib savefig / pyvis save). They are NOT
@@ -1053,3 +1062,11 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 # d'une lane (ou d'un agent etudiant) les embarquait dans sa PR.
 /scratchpad/
 /canary.txt
+
+# Harnais LLamaSharp bake-off (GenAI/Texte 10e, #15570) : artefacts locaux
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/models/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/publish/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/bin/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
+MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
