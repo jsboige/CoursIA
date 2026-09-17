@@ -6328,3 +6328,100 @@ def test_15772_faux_negatifs_documents_acceptance_point4() -> None:
     pass  # Suite vide : la justification par ecrit (commentaire du regex)
     # suffit, et ajouter des tests sur des formes rares ajouterait du bruit
     # sans valeur de protection. cf `anti-regression.md`.
+
+
+def test_16128_delivered_prefix_exempted_when_no_live_lift() -> None:
+    """#16128 -- `[DELIVERED]` est un tag de protocole de claim lie a
+    l'etat de la PR (#12386 v2, claim lie a l'etat de la PR), pas une
+    remarque adressee a l'auteur. Le prefixe doit donc etre dans
+    `AGENT_PREFIXES`, au meme titre que `[CLAIMED]` et `[RELEASED]`
+    qui appartiennent au meme protocole de cycle de vie de claim.
+
+    Le mecanisme qui releve le nit n'est pas `classify` mais
+    `can_lift` (l.3540) : un commentaire `[DELIVERED]` poste APRES un
+    nit humain NE DOIT PAS lever le nit, parce qu'il ne le nomme pas
+    (le commentaire est un etat de claim, pas une reponse a la
+    remarque). Si AGENT_PREFIXES ne contient pas `[DELIVERED`,
+    `can_lift` rend True pour le commentaire, ce qui eteint le nit
+    anterieur -- d'ou le `rc=1` au merge (cf issue #16093 mesure).
+
+    Test epinglant : le commentaire est `can_lift=False` car son
+    prefixe est dans AGENT_PREFIXES et il ne porte pas de live_lift.
+    """
+    comment = {
+        "author": {"login": "jsboige"},
+        "body": ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #16093 "
+                 "(#12386 v2: PR state-bound. Le lane garde une claim "
+                 "active tant que la PR est OUVERTE.)"),
+    }
+    assert mod.can_lift(comment) is False, (
+        "[DELIVERED] ne doit pas lever un nit anterieur : c'est un "
+        "etat de claim, pas une reponse ecrite qui nomme la remarque. "
+        "Cf #16128, mesure sur #16093 (rc=1 attendu par absence du prefixe)."
+    )
+
+
+def test_16128_delivered_prefix_keeps_live_reserve_in_classification() -> None:
+    """#16128 contre-positif -- symetrie cote reserve : un `[DELIVERED]`
+    suivi d'une vraie reserve (`-- il va falloir corriger la cellule 12
+    avant merge` -- reviewer signale quelque chose) RESTE classee comme
+    concern. L'exemption du prefixe ne blanchit pas les reserves reelles
+    emises dans le meme commentaire -- sans cette symetrie, l'exemption
+    serait indistinguable d'un trou.
+
+    L'auteur du commentaire (`jsboige`, login partage) est traite comme
+    par le code existant : le gate identifie la prose, pas l'auteur.
+    """
+    body = ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- il va falloir "
+            "corriger la cellule 12 avant merge.")
+    verdict = mod.classify("jsboige", body)
+    assert verdict in ("BOT-CONCERN", "HUMAN"), body
+    # Specifically NOT None : sans exemption du prefixe sur le body
+    # complet, le concern vit. Avec exemption, le gate joue toujours sur
+    # la prose portee par la mention qui suit le prefixe.
+    assert verdict is not None, body
+
+
+def test_16128_delivered_prefix_registered_in_agent_prefixes() -> None:
+    """#16128 acceptance -- preuve declarative : le prefixe `[DELIVERED]`
+    est dans `AGENT_PREFIXES`. Le tuple est l'instrument du gate (cf
+    `body.startswith(AGENT_PREFIXES)` l.3569 + l.3679). Si quelqu'un
+    retire l'entree par regression, ce test rougit.
+    """
+    assert "[DELIVERED" in mod.AGENT_PREFIXES, (
+        "[DELIVERED doit etre enregistre dans AGENT_PREFIXES (cf #16128)"
+    )
+
+
+def test_16128_delivered_prefix_mutation_rouge_le_test() -> None:
+    """#16128 acceptance #2 (valide par mutation) -- preuve que
+    l'exemption depend du token dans AGENT_PREFIXES : si on retire
+    `[DELIVERED` de la liste, `can_lift` re-passe a True sur le meme
+    commentaire, ce qui leve erronement un nit anterieur (le defaut
+    #16093 mesure).
+
+    Le gate est bien couvert -- le test rougit des qu'on mute, et l'etat
+    est restaure dans le finally (les tests en aval partagent l'etat du
+    module).
+    """
+    comment = {
+        "author": {"login": "jsboige"},
+        "body": ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #16093 "
+                 "(#12386 v2: PR state-bound.)"),
+    }
+    # Sanity : avec [DELIVERED dans la liste, can_lift est False
+    assert mod.can_lift(comment) is False, comment
+    # Mutation : retirer [DELIVERED de AGENT_PREFIXES, simule la
+    # regression observee sur #16093
+    original = mod.AGENT_PREFIXES
+    mod.AGENT_PREFIXES = tuple(p for p in original if not p.startswith("[DELIVERED"))
+    try:
+        # Sans le prefixe, can_lift re-passe a True -- le bug reproduce.
+        assert mod.can_lift(comment) is True, (
+            "Sans [DELIVERED dans AGENT_PREFIXES, `can_lift` accepte "
+            "le commentaire comme levee d'un nit anterieur -- c'est "
+            "le defaut mesure sur #16093."
+        )
+    finally:
+        # Restauration in-place
+        mod.AGENT_PREFIXES = original
