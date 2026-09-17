@@ -2373,20 +2373,61 @@ def _live_lift_positions(normalised: str) -> list[int]:
     cette zone — la levée n'est pas acquise.
     """
     out: list[int] = []
+    # #16103 (défaut n°4, mesure ai-01 sur 39 PRs ouvertes) — trois gardes
+    # manquaient à has_live_lift, de polarité INVERSE des défauts 1-3 : ils
+    # créaient des levées qui n'existent pas (faux déblocage), pas des
+    # blocages fantômes. Symétrie exacte avec `_override_scopes_reserve`,
+    # qui applique déjà ces deux pré-traitements du même fichier :
+    #   (1) les plages citées (bloc ```, « … », backticks, CAPS 'X_X') sont
+    #       neutralisées EN ISO-LONGUEUR — les offsets consommés en aval
+    #       (ordre concern/lift #12908, proximité SHA #13083) restent ceux
+    #       de la chaîne unaccentée, comme pour _unaccent ;
+    #   (2) tout hit EN AVAL d'un match de `_SCOPE_NEGATION_RE` dans sa
+    #       PHRASE (frontières .!?\n, même découpage que
+    #       `_scope_lifted_sentence`) est rejeté : « Je ne déclare pas
+    #       cette réserve levée pour autant » est un REFUS de lever, pas
+    #       une levée — la fenêtre locale 15 chars de `_lift_is_negated`
+    #       (#13622) ne voit pas un « ne … pas » à distance, la phrase
+    #       oui. L'invalidation va du match de négation vers la FIN de la
+    #       phrase uniquement : « Reserve levée il y a longtemps, mais la
+    #       réserve n'est pas levée vraiment » garde sa levée AMONT
+    #       (résiduel #13622 documenté — la négation y porte sur un AUTRE
+    #       état, pas sur le geste d'amont) ;
+    #   (3) un hit COLLÉ à un underscore (avant ou après) est un usage
+    #       technique — `py::test_15837_candidat_refuse_levee_devant_le_
+    #       marqueur` nomme le comportement qu'il vérifie, ce n'est pas
+    #       une émission (le `_` est un caractère de mot, cf #15849 : la
+    #       frontière \b ne coupe pas dessus). L'adhérence à une LETTRE
+    #       n'est PAS rejetée : les formes fléchies françaises vivent de
+    #       matchs préfixes (« Mergé » dans « **Mergée.** », « est levé »
+    #       dans « est levée ») — seul `_` distingue l'identifiant.
+    scanned = _QUOTED_RANGES.sub(
+        lambda q: " " * (q.end() - q.start()), normalised)
+    negation_zones: list[tuple[int, int]] = []
+    for neg in _SCOPE_NEGATION_RE.finditer(scanned):
+        ends = [j for j in (scanned.find(c, neg.end()) for c in ".!?\n")
+                if j != -1]
+        s1 = min(ends) if ends else len(scanned)
+        negation_zones.append((neg.start(), s1))
     for marker in LIFT_MARKERS:
         m = _unaccent(marker)
         bounded = _WORD_BOUNDED_LIFT_RE.get(m.lower())
         if bounded is not None:
-            hits = [(x.start(), x.end()) for x in bounded.finditer(normalised)]
+            hits = [(x.start(), x.end()) for x in bounded.finditer(scanned)]
         else:
             hits = []
             start = 0
-            while (i := normalised.find(m, start)) != -1:
+            while (i := scanned.find(m, start)) != -1:
                 hits.append((i, i + len(m)))
                 start = i + 1
         for i, i_end in hits:
-            window_before = normalised[max(0, i - 30):i]
-            window_after = normalised[i_end:i_end + 15]
+            # Garde (3) — collé à un underscore : usage technique
+            # (identifiant snake_case), pas une émission.
+            if (i > 0 and scanned[i - 1] == "_") \
+                    or (i_end < len(scanned) and scanned[i_end] == "_"):
+                continue
+            window_before = scanned[max(0, i - 30):i]
+            window_after = scanned[i_end:i_end + 15]
             # #15483 — fenetre etendue pour la garde de PENDING dissipation :
             # les constructions « reste à dissiper », « il faut dissiper »,
             # « sera dissipé », « doit être dissipé » peuvent avoir leurs
@@ -2394,8 +2435,8 @@ def _live_lift_positions(normalised: str) -> list[int]:
             # La fenetre `_live_lift_positions` reste à 30/15 par defaut (les
             # autres families de markers n'en profitent pas) ; on elargit
             # localement juste pour la garde `_dissipation_is_pending`.
-            window_before_25 = normalised[max(0, i - 25):i]
-            window_after_10 = normalised[i_end:i_end + 10]
+            window_before_25 = scanned[max(0, i - 25):i]
+            window_after_10 = scanned[i_end:i_end + 10]
             dissip_is_pending = m.startswith("dissip") and _dissipation_is_pending(
                 window_before_25, window_after_10, m
             )
@@ -2436,9 +2477,10 @@ def _live_lift_positions(normalised: str) -> list[int]:
             if dissip_is_pending:
                 continue
             if not _lift_is_narrated(window_before) \
-                    and not _arrow_precedes(normalised, i) \
+                    and not _arrow_precedes(scanned, i) \
                     and not _lift_is_negated(window_before, window_after) \
-                    and not intensified_marker:
+                    and not intensified_marker \
+                    and not any(z0 <= i < z1 for z0, z1 in negation_zones):
                 out.append(i)
     # #15483 — post-filtrage MIXTE. Si le body contient AU MOINS UN hit
     # dissipation en construction PENDING (infinitif/futur), TOUS les
@@ -2447,7 +2489,9 @@ def _live_lift_positions(normalised: str) -> list[int]:
     # sont dissipés, 1 point reste à dissiper » — AVANT cette garde, les
     # 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignore → la
     # review complete classee `None` alors qu'un point VIVAIT.
-    out = _invalidate_dissipation_in_pending_zone(normalised, out)
+    # #16103 — le post-filtrage tourne sur `scanned` : iso-longueur avec
+    # `normalised`, les positions de `out` restent dans son repère.
+    out = _invalidate_dissipation_in_pending_zone(scanned, out)
     return out
 
 
