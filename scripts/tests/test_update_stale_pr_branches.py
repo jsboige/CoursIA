@@ -14,8 +14,11 @@ ont chacun leurs tests ici :
      Mutations pendant/apres compare = REFUSE, zero ecriture ;
   2. le registre en vol est une RESERVATION acquise sous verrou
      inter-processus AVANT l'appel distant, en read-merge-write sous verrou,
-     fail-closed sur registre corrompu, temporaire unique, et liberee sans
-     perdre les enregistrements des autres PR -- avec contention REELLE par
+     fail-closed sur registre corrompu -- y compris CLE PAR CLE (review
+     5240575597, F2 residuel : schema structurel minimal par enregistrement,
+     une entree invalide refuse tout le registre avant toute mutation ou
+     reecriture) -- temporaire unique, et liberee sans perdre les
+     enregistrements des autres PR -- avec contention REELLE par
      sous-processus, pas des mocks ;
   3. `mergeStateStatus=UNKNOWN` avec `mergeable=MERGEABLE` est refuse
      fail-closed (test causal) ;
@@ -890,6 +893,176 @@ def test_ledger_that_is_not_an_object_refuses_fail_closed(
     assert rc == 1
     assert result["code"] == "LEDGER_CORRUPT"
     assert fake.writes == []
+
+
+# --- schema structurel de CHAQUE enregistrement (review 5240575597, F2) -----
+
+
+def _seed_raw_ledger(tmp_path, content):
+    """Ecrit un registre brut : contenu arbitraire, forme exacte conservée."""
+    path = mod.ledger_path(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(content), encoding="utf-8")
+    return path
+
+
+def test_scalar_record_for_our_pr_refuses_fail_closed(monkeypatch, capsys, tmp_path):
+    """Reproduction 1 de la review 5240575597 : le record scalaire ecrase.
+
+    `{"repo#1": "corrupt-record"}` passait la validation racine, echouait le
+    isinstance(record, dict) de la reservation, et l'organe reservait
+    PAR-DESSUS -- mutation distante autorisee sur un registre corrompu, et
+    registre reecrit. Desormais : TOUT le registre refuse, avant toute
+    mutation distante et avant toute reecriture.
+    """
+    key = mod.ledger_key(REPO, 1)
+    _seed_raw_ledger(tmp_path, {key: "corrupt-record"})
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 1
+    assert result["action"] == mod.ACTION_REFUSE
+    assert result["code"] == "LEDGER_CORRUPT"
+    assert fake.writes == []
+    # Le registre corrompu est REFUSE, pas repare : octet pour octet, il
+    # n'a pas ete reecrit par la tentative.
+    assert json.loads(mod.ledger_path(tmp_path).read_text(encoding="utf-8")) == {
+        key: "corrupt-record"
+    }
+
+
+def test_list_record_for_another_pr_refuses_fail_closed(monkeypatch, capsys, tmp_path):
+    """Reproduction 2 de la review 5240575597 : le record liste conserve.
+
+    `{"other#1": ["bad"]}` etait conserve sans etre regarde -- la corruption
+    d'une AUTRE cle n'arretait pas la mutation. Le refus porte sur TOUT le
+    registre : une entree qui echoue suffit.
+    """
+    _seed_raw_ledger(tmp_path, {mod.ledger_key(REPO, 99): ["bad"]})
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 1
+    assert result["action"] == mod.ACTION_REFUSE
+    assert result["code"] == "LEDGER_CORRUPT"
+    assert fake.writes == []
+
+
+def test_non_sha_previous_head_refuses_fail_closed(monkeypatch, capsys, tmp_path):
+    _seed_raw_ledger(
+        tmp_path,
+        {mod.ledger_key(REPO, 99): {"previous_head": "pas-un-sha", "started_at": time.time()}},
+    )
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 1
+    assert result["code"] == "LEDGER_CORRUPT"
+    assert fake.writes == []
+
+
+def test_non_numeric_started_at_refuses_fail_closed(monkeypatch, capsys, tmp_path):
+    """`started_at: "abc"` etait silencieusement lu comme 0 (expire jamais en
+    vol) par l'ancien try/except de `record_in_flight`."""
+    _seed_raw_ledger(
+        tmp_path,
+        {mod.ledger_key(REPO, 99): {"previous_head": H1, "started_at": "abc"}},
+    )
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 1
+    assert result["code"] == "LEDGER_CORRUPT"
+    assert fake.writes == []
+
+
+def test_missing_required_fields_refuse_fail_closed(monkeypatch, capsys, tmp_path):
+    """Aucun des deux champs requis n'est optionnel : l'organe ne les ecrit
+    jamais absents, donc leur absence est structurellement impossible et
+    signe une ecriture externe."""
+    incomplete = [
+        {"previous_head": H1},  # started_at manquant
+        {"started_at": time.time()},  # previous_head manquant
+        {},  # les deux
+    ]
+    for record in incomplete:
+        _seed_raw_ledger(tmp_path, {mod.ledger_key(REPO, 99): record})
+        rc, payload, fake = run(
+            monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"]
+        )
+        result = only(payload)
+        assert rc == 1, record
+        assert result["code"] == "LEDGER_CORRUPT", record
+        assert fake.writes == [], record
+
+
+def test_boolean_started_at_refuses_fail_closed(monkeypatch, capsys, tmp_path):
+    """`True` est un int en Python : sans exclusion explicite, un booleen
+    passerait la validation numerique -- et `True` n'est pas un instant."""
+    _seed_raw_ledger(
+        tmp_path,
+        {mod.ledger_key(REPO, 99): {"previous_head": H1, "started_at": True}},
+    )
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 1
+    assert result["code"] == "LEDGER_CORRUPT"
+    assert fake.writes == []
+
+
+def test_non_finite_started_at_refuses_fail_closed(monkeypatch, capsys, tmp_path):
+    """NaN et Infinity : `json.loads` les accepte (extension non standard) --
+    un `started_at` infini rendrait la fenetre de TTL incoherente."""
+    for bad in (float("nan"), float("inf")):
+        _seed_raw_ledger(
+            tmp_path,
+            {mod.ledger_key(REPO, 99): {"previous_head": H1, "started_at": bad}},
+        )
+        rc, payload, fake = run(
+            monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"]
+        )
+        result = only(payload)
+        assert rc == 1, bad
+        assert result["code"] == "LEDGER_CORRUPT", bad
+        assert fake.writes == [], bad
+
+
+def test_unknown_extra_field_stays_forward_compatible(monkeypatch, capsys, tmp_path):
+    """La SEULE tolerance de compatibilite, justifiee et testee.
+
+    Un champ supplementaire n'a jamais pu venir d'une version CORROMPUE de
+    cet organe : il vient d'une version future. Rejeter l'inconnu casserait
+    cette PR a la montee de version sans gagner une miette de surete -- les
+    champs requis restent valides.
+    """
+    key99 = mod.ledger_key(REPO, 99)
+    _seed_raw_ledger(
+        tmp_path,
+        {
+            key99: {
+                "previous_head": H2,
+                "started_at": time.time() - 30,
+                "future_field": "peu importe",
+            }
+        },
+    )
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 0
+    assert result["updated"] is True
+    assert len(fake.writes) == 1
+    # L'enregistrement futur survit INTACT a la reservation mergee.
+    ledger = mod.read_ledger(mod.ledger_path(tmp_path))
+    assert ledger[key99]["future_field"] == "peu importe"
+
+
+def test_sha256_previous_head_stays_compatible(monkeypatch, capsys, tmp_path):
+    """SHA-256 (hex 64) : GitHub peut rendre une ref migree en SHA-256 --
+    l'exclure ferait refuser a l'organe son propre registre sur un tel depot."""
+    _seed_raw_ledger(
+        tmp_path,
+        {mod.ledger_key(REPO, 99): {"previous_head": "c" * 64, "started_at": time.time()}},
+    )
+    rc, payload, fake = run(monkeypatch, capsys, tmp_path, {1: [view(1)]}, extra=["--apply"])
+    result = only(payload)
+    assert rc == 0
+    assert result["updated"] is True
 
 
 def test_absent_ledger_is_a_legitimate_empty_registry(monkeypatch, capsys, tmp_path):

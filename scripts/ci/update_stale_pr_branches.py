@@ -180,7 +180,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -398,6 +400,40 @@ def ledger_lock(path: Path):
         handle.close()
 
 
+#: Un `previous_head` est un SHA Git : hexadecimal SHA-1 (40) ou SHA-256 (64),
+#: les deux formats que l'API GitHub rend pour une ref de branche -- accepter
+#: les deux n'est pas de la complaisance, c'est la compatibilite avec un depot
+#: migre en SHA-256 (testee).
+RECORD_SHA_RE = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$")
+
+
+def valid_ledger_record(record: Any) -> bool:
+    """Schema structurel MINIMAL d'un enregistrement du registre en vol.
+
+    Un enregistrement ecrit par `try_reserve_update` porte TOUJOURS
+    `previous_head` (SHA hex 40 ou 64, jamais None -- la reservation n'a lieu
+    qu'apres un compare reussi, donc sur une tete epinglee) et `started_at`
+    (numerique FINI, pas booleen -- un bool est un int en Python, et `True`
+    n'est pas un instant). Tout enregistrement qui ne respecte pas ce schema
+    n'a pas pu etre ecrit par cet organe : corruption structurelle, pas une
+    version future.
+
+    Les champs SUPPLEMENTAIRES sont acceptes (review 5240575597) : une version
+    future de l'organe peut en ajouter, et rejeter l'inconnu casserait la
+    compatibilite sans gain de surete -- les champs requis restent valides.
+    C'est la SEULE tolerance de compatibilite, et elle est testee.
+    """
+    if not isinstance(record, dict):
+        return False
+    head = record.get("previous_head")
+    if not isinstance(head, str) or not RECORD_SHA_RE.fullmatch(head):
+        return False
+    started = record.get("started_at")
+    if isinstance(started, bool) or not isinstance(started, (int, float)):
+        return False
+    return math.isfinite(started)
+
+
 def read_ledger(path: Path) -> dict[str, dict[str, Any]]:
     """Lecture stricte : ABSENT = registre vide ; PRESENT mais illisible ou
     malforme = `LedgerError`.
@@ -406,6 +442,15 @@ def read_ledger(path: Path) -> dict[str, dict[str, Any]]:
     comme vide desarmerait la garde UPDATE_IN_FLIGHT au moment precis ou deux
     processus pourraient se marcher dessus. Le refus est explicite, il
     n'improvise pas un registre neuf.
+
+    La validation est STRUCTURELLE, cle par cle (review 5240575597, F2
+    residuel) : valider l'objet racine laissait passer un enregistrement
+    scalaire ou liste -- ecrase ou conserve en silence, pendant qu'une mutation
+    restait autorisee. Chaque enregistrement doit respecter le schema minimal
+    `valid_ledger_record` ; UNE entree qui echoue refuse TOUT le registre,
+    avant toute reecriture. Les seuls appelants mutation sont sous verrou
+    (`try_reserve_update`, `release_reservation`) : la validation est rendue
+    sous le meme verrou que la lecture.
     """
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -415,6 +460,12 @@ def read_ledger(path: Path) -> dict[str, dict[str, Any]]:
         raise LedgerError(f"registre {path.name} illisible ou corrompu : {exc}") from exc
     if not isinstance(data, dict):
         raise LedgerError(f"registre {path.name} corrompu : pas un objet JSON")
+    for record_key, record in data.items():
+        if not valid_ledger_record(record):
+            raise LedgerError(
+                f"registre {path.name} corrompu : l'enregistrement {record_key!r} ne "
+                "respecte pas le schema ({previous_head: SHA hex, started_at: numerique fini})"
+            )
     return data
 
 
@@ -448,11 +499,13 @@ def record_in_flight(record: dict[str, Any], *, head: str | None, now: float, tt
     Fenetre `--in-flight-ttl` non perimee ET meme tete : la mise a jour
     enregistree est toujours en vol. Une tete differente (l'ancienne mise a
     jour a atterri) ou un enregistrement perime ne bloquent pas.
+
+    Pas de try/except ici : l'appelant (`try_reserve_update`) n'atteint cette
+    fonction qu'avec un enregistrement VALIDE par `valid_ledger_record` -- un
+    `started_at` non numerique y serait un defaut de wiring a faire rougir,
+    pas une corruption a silencer (review 5240575597).
     """
-    try:
-        started_at = float(record.get("started_at", 0))
-    except (TypeError, ValueError):
-        started_at = 0.0
+    started_at = float(record["started_at"])
     return (now - started_at) < ttl and record.get("previous_head") == head
 
 
