@@ -209,41 +209,70 @@ def body_has_derive_exemption(body):
     return bool(pattern.search(body))
 
 
-def _cell_index_by_id(nb):
-    """Build a mapping cell_id -> ordinal index for stable alignment.
+def _code_index_by_id(nb):
+    """Build a mapping cell_id -> ordinal index for code cells only.
 
-    Defect 2 (PR #16082 review): ordinal alignment produces false drifts
-    when a new cell is inserted before unchanged cells. We align by cell
-    id when available, fall back to ordinal for legacy notebooks (no ids).
+    PR #16466 review (NanoClaw, exact-head 637a64ca): the previous
+    ``_cell_index_by_id`` walked ALL cells (markdown + code), but
+    ``float_signatures`` only emits one tuple per code cell. Mixing
+    those two spaces produced two pathologies at once:
+
+      * Markdown cells appeared as drift entries because their ordinal
+        in ``_cell_index_by_id`` resolved to a code cell's signature in
+        ``float_signatures`` (false positive on markdown).
+      * Code cells with shifted ordinals (after a markdown insertion)
+        compared their base/head signatures against the wrong code cell
+        (true code drift missed, markdown phantom listed instead).
+
+    Fix: walk code cells only, build the id->code-index map in the same
+    order as ``float_signatures`` consumes them. New markdown cells
+    (markdown present in head but absent in base) are simply absent from
+    ``base_ids`` and never enter the diff set; only new code cells
+    (``head_ids - base_ids``) are reported as added cells.
+
+    Defect 2 (PR #16082 review) original ordinal-vs-id alignment is
+    preserved: when at least one notebook has any id, alignment is by
+    id within the code-cell space; when neither notebook carries ids,
+    we fall back to ordinal (``_diff_signatures_ordinal``).
     """
     result = {}
-    cells = nb.get("cells", [])
-    for i, cell in enumerate(cells):
+    code_idx = 0
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
         cid = cell.get("id") or None
         if cid:
-            result[cid] = i
+            result[cid] = code_idx
+        code_idx += 1
     return result
 
 
 def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     """Return a list of cell identifiers whose float signature changed.
 
-    Defect 2 fix: aligns by cell id when notebooks are provided (stable
-    under insertions); falls back to ordinal otherwise (legacy).
-    Returns a list of ids (str) when aligned by id, or ints (legacy).
+    Defect 2 fix: aligns by code-cell id when notebooks are provided
+    (stable under insertions of either markdown or new code cells);
+    falls back to ordinal otherwise (legacy). Returns a list of ids
+    (str) when aligned by id, or ints (legacy).
+
+    PR #16466 review (NanoClaw, exact-head 637a64ca): the id->index map
+    is built from CODE cells only (``_code_index_by_id``), so the
+    ordinals match ``float_signatures``' own code-only ordinals.
+    Markdown cells are invisible to this map: they neither drift
+    themselves nor shift code cells' indices.
     """
     # If we have notebooks with cell ids, align by id
     if base_nb is not None and head_nb is not None:
-        base_ids = _cell_index_by_id(base_nb)
-        head_ids = _cell_index_by_id(head_nb)
+        base_ids = _code_index_by_id(base_nb)
+        head_ids = _code_index_by_id(head_nb)
         # Only consider cells present in BOTH (intersection), plus
-        # report new cells (in head but not base) as drifts.
+        # report new code cells (in head but not base) as drifts.
         common = set(base_ids.keys()) & set(head_ids.keys())
         if not common and (base_ids or head_ids):
-            # No common ids -> fall back to ordinal
+            # No common ids -> fall back to ordinal (legacy code cells)
             return _diff_signatures_ordinal(base_sig, head_sig)
         diffs = []
-        # Common cells: compare signatures
+        # Common code cells: compare signatures by code-ordinal
         for cid in sorted(common):
             b_idx = base_ids[cid]
             h_idx = head_ids[cid]
@@ -251,7 +280,7 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h:
                 diffs.append(cid)
-        # Added cells (only in head)
+        # Added code cells (only in head)
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
             diffs.append(cid)
         return diffs

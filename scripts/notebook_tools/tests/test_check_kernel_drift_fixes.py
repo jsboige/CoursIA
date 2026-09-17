@@ -320,3 +320,191 @@ def test_run_no_pr_body_file_exemption_false(tmp_path, monkeypatch, capsys):
     captured = capsys.readouterr()
     obj = json.loads(captured.out)
     assert obj["body_exempts"] is False
+
+
+# === Defect 7 (PR #16466 NanoClaw review, exact-head 637a64ca):
+# _cell_index_by_id walked ALL cells while float_signatures only emits
+# one tuple per code cell. The id->ordinal map and the signature tuple
+# were indexed in two different spaces, producing false-positive
+# markdown drifts and missed real code drifts in the same notebook.
+#
+# Fix: _code_index_by_id walks code cells only, so the ordinals match
+# float_signatures' code-only ordinals.
+#
+# The 4 tests below pin each scenario called out in NanoClaw's repro. ===
+
+
+def _mk_md(cid, source="Titre"):
+    return {
+        "cell_type": "markdown",
+        "id": cid,
+        "metadata": {},
+        "source": [source],
+    }
+
+
+def _mk_code(cid, src, sig_text):
+    """Code cell with one float-array-shaped output."""
+    return {
+        "cell_type": "code",
+        "id": cid,
+        "metadata": {},
+        "execution_count": 1,
+        "source": [src],
+        "outputs": [{
+            "output_type": "display_data",
+            "data": {"text/plain": sig_text},
+            "metadata": {},
+        }],
+    }
+
+
+def test_diff_signatures_md_before_modified_code():
+    """[markdown, code-drift]: drift must be reported on the code cell,
+    NOT on the markdown cell.
+
+    Pre-fix: ``_cell_index_by_id`` registered both ids with their
+    notebook-ordinal (md=0, code=1). ``float_signatures`` produced only
+    the code tuple, but ``diff_signatures`` indexed it via the markdown
+    id (0), comparing the code signature to itself and missing the drift.
+    Worse: when a second code cell existed, its id resolved to a
+    *different* code signature — the markdown phantom was listed as
+    drift and the real code drift was missed.
+    """
+    base_nb = {
+        "cells": [
+            _mk_md("md-1", "Titre original"),
+            _mk_code("code-1", "print([1.0, 1.0, 1.0])",
+                     "[1.0, 1.0, 1.0]"),
+        ],
+        "metadata": {},
+    }
+    head_nb = {
+        "cells": [
+            _mk_md("md-1", "Titre MODIFIÉ"),
+            _mk_code("code-1", "print([1.0, 1.0, 1.0])",
+                     "[1.0, 0.9999999999999999, 1.0]"),
+        ],
+        "metadata": {},
+    }
+    diffs = ckd.diff_signatures(
+        ckd.float_signatures(base_nb),
+        ckd.float_signatures(head_nb),
+        base_nb=base_nb, head_nb=head_nb,
+    )
+    assert diffs == ["code-1"], (
+        f"expected only the code cell to drift, got {diffs} "
+        "(pre-fix bug: markdown was reported as drift, code drift missed)"
+    )
+
+
+def test_diff_signatures_md_inserted_unchanged_code():
+    """[markdown inserted before unchanged code]: must report no drift.
+
+    Pre-fix: the inserted markdown shifted the code id to ordinal 1 in
+    ``_cell_index_by_id`` while ``float_signatures`` still emitted only
+    one tuple — the comparison was made against the wrong slot and the
+    unchanged code was spuriously listed as drift.
+    """
+    S0 = "[1.0, 1.0, 1.0]"
+    base_nb = {
+        "cells": [
+            _mk_code("code-1", "print([1.0, 1.0, 1.0])", S0),
+        ],
+        "metadata": {},
+    }
+    head_nb = {
+        "cells": [
+            _mk_md("md-inserted", "Section insérée"),
+            _mk_code("code-1", "print([1.0, 1.0, 1.0])", S0),
+        ],
+        "metadata": {},
+    }
+    diffs = ckd.diff_signatures(
+        ckd.float_signatures(base_nb),
+        ckd.float_signatures(head_nb),
+        base_nb=base_nb, head_nb=head_nb,
+    )
+    assert diffs == [], (
+        f"expected no drift (markdown-only insertion, code unchanged), "
+        f"got {diffs}"
+    )
+
+
+def test_diff_signatures_new_code_added_mixte_unchanged():
+    """[existing code unchanged, new code appended]: drift must be the
+    NEW code cell only.
+
+    Pre-fix: ``_cell_index_by_id`` indexed markdown before the existing
+    code, shifting its ordinal by +1 vs ``float_signatures``. The
+    unchanged code was reported as drift and the new code also appeared
+    as drift (double-counted).
+    """
+    base_nb = {
+        "cells": [
+            _mk_md("md-1", "Titre"),
+            _mk_code("code-1", "x = 1.0", ""),  # no float output
+        ],
+        "metadata": {},
+    }
+    head_nb = {
+        "cells": [
+            _mk_md("md-1", "Titre"),
+            _mk_code("code-1", "x = 1.0", ""),
+            _mk_code("code-2", "print([1.0, 2.0, 3.0])",
+                     "[1.0, 2.0, 3.0]"),
+        ],
+        "metadata": {},
+    }
+    diffs = ckd.diff_signatures(
+        ckd.float_signatures(base_nb),
+        ckd.float_signatures(head_nb),
+        base_nb=base_nb, head_nb=head_nb,
+    )
+    assert diffs == ["code-2"], (
+        f"expected only the newly added code cell, got {diffs} "
+        "(pre-fix bug: code-1 was spuriously listed as drift)"
+    )
+
+
+def test_diff_signatures_mixte_unchanged_two_codes_drifted():
+    """[markdown-1, code-1 (drift), markdown-2, code-2 (drift)]:
+    drift must be exactly ['code-1', 'code-2'] — markdown invisible.
+
+    This is the EXACT NanoClaw repro for #16466: with markdown between
+    two code cells, the pre-fix map registered md-1 at ordinal 0, code-1
+    at 1, md-2 at 2, code-2 at 3 — but ``float_signatures`` only had
+    2 entries (code-1 and code-2). The diff compared code-1's
+    signature to base_sig[1] (= code-2) and head_sig[1] (= code-2),
+    spuriously reporting md-1 as drift while missing code-2's drift.
+    """
+    base_nb = {
+        "cells": [
+            _mk_md("md-1", "Titre"),
+            _mk_code("code-1", "print([1.0, 1.0, 1.0])",
+                     "[1.0, 1.0, 1.0]"),
+            _mk_md("md-2", "Sous-titre"),
+            _mk_code("code-2", "print([2.0, 2.0])", "[2.0, 2.0]"),
+        ],
+        "metadata": {},
+    }
+    head_nb = {
+        "cells": [
+            _mk_md("md-1", "Titre inchangé"),
+            _mk_code("code-1", "print([1.0, 1.0, 1.0])",
+                     "[1.0, 0.9999999999999999, 1.0]"),
+            _mk_md("md-2", "Sous-titre inchangé"),
+            _mk_code("code-2", "print([2.0, 2.0])",
+                     "[2.0, 1.9999999999999998]"),
+        ],
+        "metadata": {},
+    }
+    diffs = ckd.diff_signatures(
+        ckd.float_signatures(base_nb),
+        ckd.float_signatures(head_nb),
+        base_nb=base_nb, head_nb=head_nb,
+    )
+    assert diffs == ["code-1", "code-2"], (
+        f"expected exactly the two drifted code cells, got {diffs} "
+        "(pre-fix bug: md-1 spuriously listed, code-2 drift missed)"
+    )
