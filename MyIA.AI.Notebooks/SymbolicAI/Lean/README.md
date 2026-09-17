@@ -159,6 +159,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 30 | [Lean-30-FormalGroups-Native](Lean-30-FormalGroups-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
 | 31 | [Lean-31-Euler-Navier-Stokes](Lean-31-Euler-Navier-Stokes.ipynb) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict — kernel `python3`, 10 cellules code exécutées sans erreur, 3 exercices | 45 min |
 | 34 | [Lean-34-Calculabilite-et-Limites](Lean-34-Calculabilite-et-Limites.ipynb) | **Tranche E** de l'Epic #15066 : calculabilité, diagonalisation et limites — témoins exécutables (diagonale de l'arrêt bornée, point fixe diagonal sur chaînes) puis certification au noyau via le lake `formal_logic_lean` (Foundation piné `81810b9f` + ProvabilityLogic `01628c51`, `CONSUMER_PINNÉ`) : Church (`undecidability_first_order_logic`), arrêt→incomplétude (`incomplete_of_halting_problem`), Gödel I/II, Rosser, Tarski (`undefinability_of_truth`) et Löb — 4 énoncés soigneusement séparés, `#check`/`#print axioms` audités, prérequis L2/L3 de #15062 — kernel `python3`, 11 cellules code exécutées sans erreur, 3 exercices | 45 min |
+
 **Durée totale** : ~40h10min
 
 ## Acquis d'apprentissage
@@ -254,6 +255,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
 | 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 | 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean`, Tranche E Epic #15066) |
+
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
 - Plan de ce Notebook avec liens ancres (notebooks 2-4)
