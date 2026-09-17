@@ -301,6 +301,7 @@ jobs:
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
+            tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
