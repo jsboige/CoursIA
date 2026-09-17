@@ -50,7 +50,7 @@ PYMC_IMPORT_RE = re.compile(
     re.MULTILINE,
 )
 # Match subpath: Probas/<sub-dir>/(PyMC|DecPyMC|Pyro|Infer) — accepte Probas/PyMC et
-# Probas/DecisionTheory/PyMC (DecPyMC), ou Probas/Infer (Infer.NET), etc.
+# Probas/DecisionTheory/DecPyMC (DecPyMC), ou Probas/Infer (Infer.NET), etc.
 # Pas de section .Infer/Infer/ (qui est aussi cette branche) — voir PYMC_INFER_RE si besoin.
 PYMC_NOTEBOOK_RE = re.compile(
     r"Probas[\\/]+(?:[^\\/]+[\\/]+)?(?:PyMC|DecPyMC|Pyro)\b"
@@ -151,7 +151,7 @@ def build_probas_cpu_cost(nb: dict, path: Path, by: str, today: str) -> dict:
       fallback sur `DECPYMC_NOTES` si DecPyMC-1..7 ; sinon note generique.
     - `reduced_pedagogical` :
       - `Probas/PyMC/PyMC-01-Setup.ipynb` pour PyMC-2..19 ;
-      - `Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb` pour DecPyMC-2..7 ;
+      - `Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb` pour DecPyMC-2..7 ;
       - `None` si NB lui-meme (PyMC-1, DecPyMC-1).
     - `metadata_written` : date du jour (etablissement metadata).
     """
@@ -167,7 +167,7 @@ def build_probas_cpu_cost(nb: dict, path: Path, by: str, today: str) -> dict:
             notes = DECPYMC_NOTES.get(d_idx, f"Notebook DecPyMC #{d_idx} — profile probas-cpu generique. Re-exec mesure : ~20s.")
             reduced_pedagogical = None
             if d_idx != 1:
-                reduced_pedagogical = "Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb"
+                reduced_pedagogical = "Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb"
         else:
             notes = f"Notebook probas-cpu generique ({path.name}) — execution PyMC CPU-only locale. Re-exec mesure : ~15s."
             reduced_pedagogical = None
