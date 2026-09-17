@@ -149,10 +149,12 @@ class TestRunPipeline:
     def test_no_voice_cloning_legal_proof(self):
         """Aucune voix clonee de tiers (regle 02-2-XTTS-Voice-Cloning.ipynb
         ligne 2018 'consentement ecrit obligatoire'). Le test verifie
-        qu'aucun IDENTIFIER ou APPEL lie au clonage n'est expose, sans
-        interdire la mention textuelle du nom SwitchAngel dans la
-        docstring (mention de retrait consenti, c.647 INLINE substance
-        autorisee — voir 'hommage' et 'voie 3 B.0' dans la docstring).
+        qu'aucun IDENTIFIER ou APPEL lie au clonage n'est expose dans le
+        code source. La docstring peut mentionner la voie de retrait
+        consenti d'une voix tierce en termes generiques ('homage',
+        'voie 3 B.0'), mais aucun identifiant personnel ne doit
+        apparaitre dans le code ni dans la docstring (CHANGES_REQUESTED
+        myia-ai-01 c.578 -- anonymisation stricte).
         """
         # 1. Aucune constante de voix clonee et aucun appel XTTS / clonage.
         forbidden = [
@@ -170,6 +172,15 @@ class TestRunPipeline:
                 f"{src_file} contient {token!r} : c.647 / 02-2-XTTS "
                 "violees. Refuser."
             )
+        # 1b. Aucun identifiant personnel litteral dans la source
+        # (CHANGES_REQUESTED myia-ai-01 c.578 -- anonymisation stricte :
+        # la docstring peut mentionner le retrait consenti en termes
+        # generiques, mais aucun identifiant reel).
+        assert "switchangel" not in src.lower(), (
+            f"{src_file} contient le token 'switchangel' : "
+            "CHANGES_REQUESTED myia-ai-01 c.578 violee. "
+            "Anonymiser en prose generique."
+        )
         # 2. Verdict explicite qu'aucune voix tierce n'est clonee.
         result = run_pipeline(style_name="ambient", duration_seconds=120, output_path="out/x.mp4")
         # Le run_pipeline ne capture PAS de voix tierce : il delegue
