@@ -4,13 +4,13 @@
 
 Ce module couvre l'orchestration de plusieurs modèles, les workflows complexes, et l'optimisation de performance.
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : en production, un seul modèle ne suffit pas. [03-1](03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur selon le contexte. [03-2](03-2-Workflow-Orchestration.ipynb) assemble des pipelines (génération, édition, upscaling). [03-3](03-3-Performance-Optimization.ipynb) optimise les performances pour le déploiement.
+**Dans le cadre du fil rouge contenu visuel éducatif** : en production, un seul modèle ne suffit pas. [03-1](03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur selon le contexte. [03-2](03-2-Workflow-Orchestration.ipynb) assemble des pipelines (génération, édition, upscaling). [03-3](03-3-Performance-Optimization.ipynb) optimise les performances pour le déploiement. [03-4](03-4-VLM-Character-Design-Workflow.ipynb) rejoue un workflow trouvé dans les métadonnées d'une image : un VLM in-graph qui écrit le prompt de character design depuis une image de référence.
 
 ## Vue d'overview
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 3 |
+| Notebooks | 4 |
 | Kernel | Python 3 |
 | Durée estimée | ~3-5h |
 | GPU requis | Variable |
@@ -22,6 +22,7 @@ Ce module couvre l'orchestration de plusieurs modèles, les workflows complexes,
 | 1 | [03-1-Multi-Model-Comparison](03-1-Multi-Model-Comparison.ipynb) | Comparaison multi-modèles | Mixed | Variable |
 | 2 | [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) | Orchestration de workflows | ComfyUI | Variable |
 | 3 | [03-3-Performance-Optimization](03-3-Performance-Optimization.ipynb) | Optimisation performance | ComfyUI | Variable |
+| 4 | [03-4-VLM-Character-Design-Workflow](03-4-VLM-Character-Design-Workflow.ipynb) | Boucle VLM in-graph (workflow embarqué dans un PNG) | ComfyUI (Krea 2) | 24 Go |
 
 ## Prérequis
 
@@ -43,6 +44,7 @@ pip install -r requirements-comfyui.txt
 1. **03-1-Multi-Model-Comparison** - Comparatif des modèles pour choisir le bon
 2. **03-2-Workflow-Orchestration** - Création de workflows complexes
 3. **03-3-Performance-Optimization** - Optimisation des performances
+4. **03-4-VLM-Character-Design-Workflow** - Forensics d'un workflow embarqué + boucle VLM in-graph
 
 ## Concepts clés
 
@@ -82,6 +84,13 @@ Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/read
 - **Techniques** : Quantization, caching, hardware acceleration
 - **Stratégies** : Progressive enhancement, early stopping
 - **Monitoring** : Profiling, resource tracking
+
+### VLM in-graph (03-4)
+- **Forensics** : un PNG ComfyUI embarque son workflow (chunks `tEXt` : format API + format UI)
+- **Boucle agentic** : un VLM examine une image de référence et écrit le prompt de génération, dans le graphe
+- **Séparation design / style** : le prompt VLM porte l'identité du personnage, le LoRA porte le rendu — deux canaux composables
+
+<p align="center"><img src="assets/readme/img3-workflow5.webp" alt="Triptyque démontrant la séparation design/style du pipeline VLM in-graph — une référence (robot photoréaliste) devient une character sheet blueprint (avec LoRA banjiesock_Krea2) puis le même personnage en rendu neutre (sans LoRA), même seed : le design vit dans le prompt VLM, le style vit dans le LoRA" width="840"/></p>
 
 ## Architecture
 
