@@ -109,6 +109,64 @@ def test_iter_paragraphs_keeps_list_with_long_item():
     assert walls, "item de liste > 2000 c devrait etre signale"
 
 
+def _bullet_run(n_items: int, per_item: int) -> str:
+    """Un run de `n_items` items de liste contigus, chacun de `per_item` c."""
+    return "".join(f"- **Champ{i}** : " + ("mesure " * (per_item // 7)) + "\n"
+                   for i in range(n_items))
+
+
+def test_bullet_run_of_short_items_is_silent():
+    """Controle de NON-REGRESSION #15512 : un run d'items courts n'est pas
+    un mur.
+
+    La preuve d'appartenance au motif est verifiee d'abord (le run depasse
+    le seuil *en somme* et chaque item reste dessous) : sans elle, le test
+    serait vacuement vert -- il passerait aussi sur un texte anodin.
+    """
+    run = _bullet_run(n_items=6, per_item=580)
+    items = [ln for ln in run.splitlines() if ln.strip()]
+    assert len(items) == 6
+    assert sum(len(ln) for ln in items) > MAX_PARAGRAPH_LEN, (
+        "controle vacue : le run ne depasse pas le seuil en somme")
+    assert max(len(ln) for ln in items) <= MAX_PARAGRAPH_LEN, (
+        "controle vacue : un item depasse deja le seuil tout seul")
+    assert detect(run) == [], (
+        "un run de 6 items courts (chacun <= seuil) ne doit pas tirer -- "
+        "c'est la classe de faux positifs #15512 (MANIFEST)")
+
+
+def test_single_long_bullet_still_fires():
+    """Controle POSITIF de la segmentation : **un** item long tire toujours.
+
+    Borne le fix precedent -- la segmentation par-item ne doit pas eteindre
+    l'intention documentee du module (« un item de liste de 10k caracteres
+    est un mur aussi »).
+    """
+    run = _bullet_run(n_items=1, per_item=2400)
+    got = detect(run)
+    assert got, "un item de liste unique > seuil doit tirer"
+    assert got[0]["chars"] > MAX_PARAGRAPH_LEN
+
+
+def test_bullet_run_splits_each_item_as_its_own_block():
+    """`iter_paragraphs` rend un bloc par item (pas la somme du run)."""
+    run = _bullet_run(n_items=4, per_item=700)
+    blocks = iter_paragraphs(run)
+    bodies = [b for _, _, b in blocks if b.strip()]
+    assert len(bodies) == 4, f"attendu 4 blocs, obtenu {len(bodies)}"
+    assert all("\n" not in b for b in bodies), (
+        "chaque item doit etre son propre bloc")
+
+
+def test_bullet_run_then_prose_is_not_merged_into_an_item():
+    """La prose qui suit un item lui reste attachee (continuation
+    paresseuse markdown) : elle n'ouvre pas un bloc separe."""
+    text = "- item.\nprose collee a l'item.\n"
+    blocks = [b for _, _, b in iter_paragraphs(text) if b.strip()]
+    assert len(blocks) == 1
+    assert "prose collee" in blocks[0]
+
+
 def test_detect_returns_sorted_findings():
     """Les findings sont tries par longueur decroissante (les murs
     d'abord), puis par start_line croissant."""

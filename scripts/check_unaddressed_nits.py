@@ -108,7 +108,7 @@ BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-r
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
-    "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION",
+    "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
@@ -3638,10 +3638,41 @@ def can_lift(comment: dict) -> bool:
     return True
 
 
+# #16442/#16443 — un bloc [ADJOINT PREFLIGHT] est une ATTESTATION, pas une
+# remarque. Defaut mesure (#16173, 2026-09-16) : l'organe comptait le
+# `verdict: BLOCKED` d'un dossier SUPERSEDE comme un nit [HUMAN] non leve --
+# le dossier devenait son propre bloquant, et le seul remede etait un PATCH
+# manuel du commentaire (pierre tombale + neutralisation des marqueurs ;
+# reproduction partielle par le dossier interim de lane sur #16449 a
+# 23:35:02Z). La separation des organes est le principe : le VERDICT d'un
+# dossier appartient au gate `check_adjoint_prevalidation.py` (#16443), qui
+# le fail-close a l'empreinte pres ; l'organe nits lit des REMARQUES a
+# lever. Le bloc schema est retire du corps AVANT classification -- ni
+# reserve, ni (cf explicit_lifts, meme strip) levee. Deux bornes
+# fail-closed : un bloc MALFORME (delimiter ouvrant sans fermant) n'est pas
+# retire -- c'est le gate qui refuse le dossier, pas l'organe qui le
+# blanchit ; la prose HORS du bloc (tete de pierre tombale comprise) reste
+# lue normalement.
+_ADJOINT_DOSSIER_SPAN = re.compile(
+    r"^[ \t]*\[ADJOINT PREFLIGHT\][ \t]*\r?\n"
+    r".*?"
+    r"^[ \t]*\[/ADJOINT PREFLIGHT\][ \t]*\r?(?:\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _strip_adjoint_dossier(body: str) -> str:
+    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites."""
+    return _ADJOINT_DOSSIER_SPAN.sub("", body)
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
         return None
+    body = _strip_adjoint_dossier(body)
+    if not body.strip():
+        return None  # attestation pure : le gate en lit le verdict, pas l'organe
     stripped = body.lstrip()
     # #12143 — Hermes severity glyphes (subordonne LIFT_MARKERS, fix concomitant
     # du PR #12148 fondateur) : un glyphe est une EMISSION, et une emission
@@ -4223,7 +4254,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if can_lift(c)
         # #12908 : levée VIVE exigée — le PREFLIGHT de #12798 qui demandait
         # « une levée explicite » était compté comme levée par le sac de mots.
-        and has_live_lift(c.get("body", ""))
+        and has_live_lift(_strip_adjoint_dossier(c.get("body", "")))
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
@@ -4241,7 +4272,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
-        and has_live_lift(r.get("body", ""))
+        and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
         and classify((r.get("author") or {}).get("login", ""),
                      r.get("body", "")) is None
