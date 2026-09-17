@@ -56,7 +56,7 @@ L'objectif du portage (intent original, 2024) : **rendre la série accessible au
 | 17 | Kalman Filter | Filtre de Kalman, état-espace | PyMC | **Absorbé** (`PyMC-17-Kalman-Filter.ipynb`) |
 | 18 | Change Point Detection | Détection de ruptures | PyMC | **Absorbé** (`PyMC-18-Change-Point.ipynb`) |
 | 19 | Survival Analysis | Modèles de survie, censures | PyMC (lifelines) | **Absorbé** (`PyMC-19-Survival-Analysis.ipynb`) |
-| 20 | Decision Theory (track séparé) | Utility, value of information | PyMC | **Absorbé** (`DecisionTheory/PyMC/DecPyMC-1..7.ipynb`) |
+| 20 | Decision Theory (track séparé) | Utility, value of information | PyMC | **Absorbé** (`DecisionTheory/DecPyMC/DecPyMC-1..7.ipynb`) |
 
 **Total : 20 notebooks PyMC + 7 notebooks DecPyMC + 1 notebook Pyro_RSA = 28 notebooks Python trackés**, soit **largement plus que les 20 initialement planifiés** — le périmètre a été étendu (track Decision Theory) et plusieurs notebooks ont été dédoublés.
 
@@ -108,7 +108,7 @@ Ces dépendances **ne sont pas figées** : les notebooks trackés utilisent prob
 - **#297** — issue cible exemple, CLOSED 2026-05-02 (work absorbé)
 - **#9914** — PR d'archive c.1284 (`feature/c1284-9535-port-py-plan-archive`) qui a supprimé `PORT_PYTHON_PLAN.md` + `PORT_PYTHON_PLAN.en.md`
 - **#1650** — EPIC traduction multilingue (interdit de traduire des fichiers transitoires)
-- `MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-1..7.ipynb` — track Decision Theory en PyMC
+- `MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-1..7.ipynb` — track Decision Theory en PyMC
 - `MyIA.AI.Notebooks/Probas/Pyro_RSA_Hyperbole.ipynb` — précédent Pyro
 - `docs/reference/mbml-source-attribution.md` — modèle de référence suivi pour ce document (note *« ce qui est pérenne et ce qui ne l'est pas »*)
 
