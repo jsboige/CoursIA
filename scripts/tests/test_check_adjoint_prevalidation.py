@@ -2,6 +2,7 @@
 
 import importlib.util
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -14,21 +15,36 @@ spec.loader.exec_module(mod)
 HEAD = "0123456789abcdef0123456789abcdef01234567"
 
 
-def _comment(body: str, login: str = "jsboige") -> dict:
-    return {"author": {"login": login}, "body": body}
+def _comment(
+    body: str,
+    login: str = "jsboige",
+    created_at: str = "2026-09-17T09:00:00Z",
+) -> dict:
+    return {
+        "id": f"comment-{abs(hash(body))}",
+        "author": {"login": login},
+        "createdAt": created_at,
+        "body": body,
+    }
 
 
 def _base_snapshot() -> dict:
     return {
         "number": 123,
         "body": "PR body",
+        "createdAt": "2026-09-16T08:00:00Z",
         "headRefOid": HEAD,
+        "commits": [{"oid": HEAD, "committedDate": "2026-09-17T07:00:00Z"}],
         "state": "OPEN",
         "title": "PR title",
         "isDraft": False,
         "baseRefName": "main",
+        "labels": [],
         "comments": [_comment("ordinary earlier comment")],
-        "reviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}],
+        "reviews": [
+            {"state": "COMMENTED", "commit": {"oid": HEAD}},
+            {"state": "APPROVED", "commit": {"oid": HEAD}},
+        ],
         "threads": [{"isResolved": True}],
         "statusCheckRollup": [{"name": "PR gate", "conclusion": "SUCCESS"}],
         "changedFiles": 3,
@@ -37,22 +53,26 @@ def _base_snapshot() -> dict:
     }
 
 
-def _body(**changes: str) -> str:
+def _body(source: dict | None = None, **changes: str) -> str:
+    source = source or _base_snapshot()
     fields = {
         "schema": "1",
         "lane": "myia-po-2025:CoursIA-2",
         "pr": "123",
-        "head": HEAD,
+        "head": source["headRefOid"],
         "complete": "true",
         "body": "read",
-        "comments-reviewed": "1",
-        "reviews-reviewed": "2",
-        "threads-reviewed": "1",
-        "threads-unresolved": "0",
-        "surfaces-sha256": mod.surfaces_fingerprint(_base_snapshot()),
-        "diff-files": "3",
-        "diff-additions": "42",
-        "diff-deletions": "7",
+        "comments-reviewed": str(len(source.get("comments") or [])),
+        "reviews-reviewed": str(len(source.get("reviews") or [])),
+        "threads-reviewed": str(len(source.get("threads") or [])),
+        "threads-unresolved": str(sum(
+            not thread.get("isResolved", False)
+            for thread in source.get("threads") or []
+        )),
+        "surfaces-sha256": mod.surfaces_fingerprint(source),
+        "diff-files": str(source["changedFiles"]),
+        "diff-additions": str(source["additions"]),
+        "diff-deletions": str(source["deletions"]),
         "checks": "latest-wins-green",
         "b0": "clear",
         "scope": "pass",
@@ -75,6 +95,19 @@ def _errors(snapshot: dict) -> list[str]:
     ready, errors = mod.evaluate(snapshot)
     assert not ready
     return errors
+
+
+def _queue_snapshot(**dossier_fields: str) -> dict:
+    snapshot = _base_snapshot()
+    snapshot["comments"].append(_comment(
+        _body(snapshot, **dossier_fields),
+        created_at="2026-09-17T09:30:00Z",
+    ))
+    return snapshot
+
+
+def _now() -> datetime:
+    return datetime(2026, 9, 17, 12, 0, tzinfo=timezone.utc)
 
 
 def test_exact_head_complete_ready_dossier_passes():
@@ -269,3 +302,237 @@ def test_ready_dossier_is_evidence_not_merge_authorization():
     # The result intentionally has no merge/approve decision or mutation API.
     assert not hasattr(mod, "merge")
     assert not hasattr(mod, "approve")
+
+
+def test_queue_typo_sha_is_blocked_never_ready():
+    entry = mod.classify_snapshot(
+        _queue_snapshot(head="f" * 39), now=_now()
+    )
+    assert entry.status == mod.BLOCKED
+    assert any("40-character SHA" in reason for reason in entry.reject_cause)
+
+
+def test_queue_in_flight_checks_contradict_green_claim():
+    snapshot = _base_snapshot()
+    snapshot["statusCheckRollup"] = [
+        {"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}
+    ]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.status == mod.BLOCKED
+    assert entry.checks == "in-flight"
+    assert "checks in-flight: PR gate" in entry.reject_cause
+
+
+def test_queue_latest_started_check_wins_over_older_completed_success():
+    snapshot = _base_snapshot()
+    snapshot["statusCheckRollup"] = [
+        {
+            "name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS",
+            "startedAt": "2026-09-17T08:00:00Z",
+            "completedAt": "2026-09-17T11:00:00Z",
+        },
+        {
+            "name": "PR gate", "status": "IN_PROGRESS", "conclusion": None,
+            "startedAt": "2026-09-17T10:00:00Z",
+        },
+    ]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.verdict == mod.BLOCKED
+    assert entry.checks == "in-flight"
+
+
+def test_latest_changes_requested_prevents_qualifying_review():
+    snapshot = _base_snapshot()
+    snapshot["reviews"][1].update({
+        "id": "approval", "submittedAt": "2026-09-17T08:00:00Z",
+        "author": {"login": "reviewer"},
+    })
+    snapshot["reviews"].append({
+        "id": "request", "submittedAt": "2026-09-17T09:00:00Z",
+        "author": {"login": "reviewer"},
+        "state": "CHANGES_REQUESTED", "commit": {"oid": HEAD},
+    })
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.verdict == mod.BLOCKED
+    assert not entry.review_qualifying
+
+
+def test_later_approval_supersedes_same_reviewers_change_request():
+    snapshot = _base_snapshot()
+    snapshot["reviews"] = [
+        {
+            "id": "request", "submittedAt": "2026-09-17T08:00:00Z",
+            "author": {"login": "reviewer"}, "state": "CHANGES_REQUESTED",
+            "commit": {"oid": HEAD},
+        },
+        {
+            "id": "approval", "submittedAt": "2026-09-17T09:00:00Z",
+            "author": {"login": "reviewer"}, "state": "APPROVED",
+            "commit": {"oid": HEAD},
+        },
+    ]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.verdict == mod.READY
+    assert entry.review_qualifying
+
+
+def test_queue_dossier_not_last_comment_is_stale_and_exposes_tail():
+    snapshot = _queue_snapshot()
+    snapshot["comments"].append(_comment(
+        "new concern", created_at="2026-09-17T10:00:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.status == mod.STALE
+    assert not entry.last_comment_is_dossier
+    assert [row["body"] for row in entry.tail_to_read] == ["new concern"]
+
+
+def test_queue_dwell_pending_until_floor_elapses():
+    snapshot = _queue_snapshot()
+    snapshot["commits"] = [{"oid": HEAD, "committedDate": "2026-09-17T11:30:00Z"}]
+    pending = mod.classify_snapshot(snapshot, now=_now())
+    ready = mod.classify_snapshot(
+        snapshot,
+        now=datetime(2026, 9, 17, 13, 31, tzinfo=timezone.utc),
+    )
+    assert pending.status == mod.DWELL_PENDING
+    assert pending.dwell_until == "2026-09-17T13:30:00Z"
+    assert ready.status == mod.READY
+
+
+def test_dwell_waiver_label_allows_ready_and_is_fingerprinted():
+    snapshot = _base_snapshot()
+    snapshot["commits"] = [{"oid": HEAD, "committedDate": "2026-09-17T11:30:00Z"}]
+    snapshot["labels"] = [{"name": mod.DWELL_WAIVER_LABEL}]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T11:40:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.verdict == mod.READY
+    snapshot["labels"] = []
+    assert mod.classify_snapshot(snapshot, now=_now()).verdict == mod.DWELL_PENDING
+
+
+def test_head_timestamp_must_belong_to_exact_head():
+    snapshot = _queue_snapshot()
+    snapshot["commits"] = [
+        {"oid": "f" * 40, "committedDate": "2026-09-01T00:00:00Z"}
+    ]
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.verdict == mod.BLOCKED
+    assert any("head commit timestamp unavailable" in reason for reason in entry.reject_cause)
+
+
+def test_dossier_age_becomes_stale_and_zero_disables_age_guard():
+    snapshot = _base_snapshot()
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-15T00:00:00Z"
+    ))
+    stale = mod.classify_snapshot(snapshot, now=_now())
+    disabled = mod.classify_snapshot(
+        snapshot, now=_now(), stale_after_minutes=0
+    )
+    assert stale.verdict == mod.STALE
+    assert any("stale by age" in reason for reason in stale.reject_cause)
+    assert disabled.verdict == mod.READY
+
+
+def test_latest_failed_check_blocks_queue():
+    snapshot = _base_snapshot()
+    snapshot["statusCheckRollup"] = [
+        {"name": "PR gate", "status": "COMPLETED", "conclusion": "FAILURE"}
+    ]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.verdict == mod.BLOCKED
+    assert entry.checks == "not-green"
+
+
+def test_queue_unresolved_b0_is_blocked():
+    entry = mod.classify_snapshot(
+        _queue_snapshot(b0="blocked", verdict="BLOCKED"),
+        now=_now(), b0_result=(1, "BLOCKED"),
+    )
+    assert entry.status == mod.BLOCKED
+    assert entry.b0_rc == 1
+    assert any("b0 must" in reason for reason in entry.reject_cause)
+
+
+def test_live_b0_nonzero_blocks_even_when_dossier_claims_clear():
+    entry = mod.classify_snapshot(
+        _queue_snapshot(), now=_now(), b0_result=(1, "BLOCKED -- live nit")
+    )
+    assert entry.verdict == mod.BLOCKED
+    assert entry.b0_rc == 1
+    assert any("B.0 organ blocked" in reason for reason in entry.reject_cause)
+
+
+def test_stacked_pr_domain_not_applicable_stays_ready():
+    snapshot = _base_snapshot()
+    snapshot["baseRefName"] = "feature/base-stack"
+    snapshot["comments"].append(_comment(
+        _body(snapshot, domain="not-applicable"),
+        created_at="2026-09-17T09:30:00Z",
+    ))
+    entry = mod.classify_snapshot(snapshot, now=_now())
+    assert entry.status == mod.READY
+
+
+def test_build_queue_sorts_oldest_first_and_counts_statuses():
+    newer = _base_snapshot()
+    newer["number"] = 124
+    newer["createdAt"] = "2026-09-16T09:00:00Z"
+    newer["comments"].append(_comment(
+        _body(newer, pr="124"), created_at="2026-09-17T09:30:00Z"
+    ))
+    older = _queue_snapshot()
+    older["createdAt"] = "2026-09-15T09:00:00Z"
+    snapshots = {123: older, 124: newer}
+    result, complete = mod.build_queue(
+        [124, 123, 124], now=_now(), loader=snapshots.__getitem__,
+        b0_runner=lambda _pr: (0, "OK"),
+    )
+    assert complete
+    assert [entry["pr"] for entry in result["queue"]] == [123, 124]
+    assert all(entry["verdict"] == mod.READY for entry in result["queue"])
+    assert result["metrics"]["received"] == 2
+    assert result["metrics"][mod.READY] == 2
+
+
+def test_consume_rereads_live_and_fails_closed_on_head_move():
+    snapshot = _queue_snapshot()
+    calls = 0
+
+    def loader(_pr: int) -> dict:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return snapshot
+        moved = dict(snapshot)
+        moved["headRefOid"] = "f" * 40
+        return moved
+
+    queue, complete = mod.build_queue(
+        [123], now=_now(), loader=loader, b0_runner=lambda _pr: (0, "OK")
+    )
+    consumed = mod.consume_pr(
+        123, now=_now(), loader=loader, b0_runner=lambda _pr: (0, "OK")
+    )
+    assert complete and queue["queue"][0]["verdict"] == mod.READY
+    assert calls == 2
+    assert consumed.status == mod.STALE
+    assert any("head is stale" in reason for reason in consumed.reject_cause)
