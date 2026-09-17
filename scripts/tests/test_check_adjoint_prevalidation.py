@@ -348,6 +348,27 @@ def test_queue_latest_started_check_wins_over_older_completed_success():
     assert entry.checks == "in-flight"
 
 
+def test_grain_tag_comes_only_from_pr_body():
+    snapshot = _base_snapshot()
+    snapshot["body"] = "Grain: MED/guard — lane author-lane"
+    snapshot["comments"].append(_comment(
+        "Bot instructions:\nGrain: <DEEP|MED|LIGHT>/<genre> -- lane placeholder"
+    ))
+
+    entry = mod.classify_snapshot(snapshot, now=_now())
+
+    assert entry.grain_tag == "MED/guard — lane author-lane"
+
+
+def test_comment_cannot_create_a_missing_grain_tag():
+    snapshot = _base_snapshot()
+    snapshot["comments"].append(_comment("Grain: DEEP/notebook-python -- lane bot"))
+
+    entry = mod.classify_snapshot(snapshot, now=_now())
+
+    assert entry.grain_tag is None
+
+
 def test_only_missing_exact_head_approval_is_review_ready():
     snapshot = _base_snapshot()
     snapshot["reviews"] = []

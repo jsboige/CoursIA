@@ -446,14 +446,10 @@ def _qualifying_review(snapshot: dict[str, Any]) -> bool:
 
 
 def _grain_tag(snapshot: dict[str, Any]) -> str | None:
-    texts = [snapshot.get("body") or ""]
-    texts.extend(comment.get("body") or "" for comment in snapshot.get("comments") or [])
+    """Return the PR author's authoritative grain declaration from the body."""
     pattern = re.compile(r"(?im)^\s*Grain:\s*(.+?)\s*$")
-    for text in reversed(texts):
-        match = pattern.search(text)
-        if match:
-            return match.group(1)
-    return None
+    match = pattern.search(snapshot.get("body") or "")
+    return match.group(1) if match else None
 
 
 def _head_committed_at(snapshot: dict[str, Any]) -> datetime | None:
