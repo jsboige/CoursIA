@@ -31,7 +31,8 @@ from review_coverage import classify  # noqa: E402
 
 
 def _pr(additions: int, reviews: int | None = 0, *,
-        is_draft: bool = False, base: str = "main") -> dict:
+        is_draft: bool = False, base: str = "main",
+        comments: list[dict] | None = None) -> dict:
     """Build a PR fixture shaped like ``gh pr view --json`` output."""
     return {
         "number": 99999,
@@ -40,6 +41,7 @@ def _pr(additions: int, reviews: int | None = 0, *,
         "baseRefName": base,
         "additions": additions,
         "reviews": [{"author": {"login": "x"}, "state": "APPROVED"}] * (reviews or 0),
+        "comments": comments if comments is not None else [],
     }
 
 
@@ -141,6 +143,73 @@ def test_legacy_classification_unknown_field_is_robust():
     # Specific check: no `additions` key + no `reviews` key = below threshold
     # + no reviews = clear (a no-op pass), not flag.
     assert classify(minimal) == "clear"
+
+
+def test_large_with_verdict_comment_clears():
+    """#16284 defect 1 (regression): a tagged review COMMENT clears too.
+
+    Before the fix, only ``reviews[]`` was counted; an Hermes review shipped
+    as an issue comment (the cluster convention for tag-only passes, #3612)
+    was invisible. PR #16133 (Hermes 2026-09-14T12:29:47Z) measured this:
+    the organ reported ``n'a reçu aucune review`` 9 minutes after the
+    verdict had shipped in the comment thread.
+    """
+    pr = _pr(1041, 0, comments=[
+        {"author": {"login": "clusterManager-Myia"},
+         "body": "VERDICT: CONCERNS **[Hermes]** -- scope drift"},
+    ])
+    assert classify(pr) == "clear"
+
+
+def test_large_with_hermes_bracket_comment_clears():
+    """#16284 complement: bracket-only tag also counts.
+
+    Some Hermes passes carry `[Hermes]` in the prose without a `VERDICT:`
+    prefix. The marker set covers both shapes.
+    """
+    pr = _pr(800, 0, comments=[
+        {"author": {"login": "ai-01"},
+         "body": "[Hermes] LGTM, je passe."},
+    ])
+    assert classify(pr) == "clear"
+
+
+def test_large_with_plain_human_comment_still_flags():
+    """#16284 negative: a human chat comment is NOT a review.
+
+    The fix must not over-clear: prose without a marker stays in the
+    ``flag`` class. We test the exact shape measured on the false-positive
+    regression of the FIRST draft of this fix (which over-cleared on any
+    non-empty comment).
+    """
+    pr = _pr(900, 0, comments=[
+        {"author": {"login": "external-contributor"},
+         "body": "Salut, j'ai pushé un fix, peux-tu reviewer quand tu as 5 min ?"},
+    ])
+    assert classify(pr) == "flag"
+
+
+def test_self_comment_does_not_clear():
+    """#16284 negative: the PR author's own comments don't count.
+
+    A PR author cannot review themselves. We exclude jsboige-authored
+    comments explicitly (the cluster's PR author is always jsboige on
+    CoursIA). Without this guard, a status update from the author would
+    silently clear the flag.
+    """
+    pr = _pr(950, 0, comments=[
+        {"author": {"login": "jsboige"},
+         "body": "VERDICT: LGTM (self-update, need external review)"},
+    ])
+    assert classify(pr) == "flag"
+
+
+def test_helper_empty_or_none():
+    """Helper contract: empty list / None / non-dict entries are safe."""
+    assert rc.has_review_signal_in_comments(None) is False
+    assert rc.has_review_signal_in_comments([]) is False
+    assert rc.has_review_signal_in_comments([{"body": ""}]) is False
+    assert rc.has_review_signal_in_comments(["string-not-dict", 42]) is False
 
 
 # ---------------------------------------------------------------------------

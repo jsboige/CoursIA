@@ -112,6 +112,52 @@ REMEDIATION = (
 THRESHOLD_DEFAULT = 300
 
 
+# Markers that identify a review-grade comment. The cluster uses two
+# surfaces for review verdicts: the GraphQL ``reviews[]`` array AND issue
+# comments carrying an explicit tag. Before this fix the organ only read
+# the first surface, which produced a known false-negative set on
+# ``large-pr-no-review`` (#16284, defect 1: ``reviews[]`` seul).
+#
+# We DO NOT consider every human comment a review -- a pas de review
+# "salut ça va" tagué en prose. We require either an explicit verdict
+# framing or a known review-bot persona bracket.
+_REVIEW_COMMENT_MARKERS: tuple[str, ...] = (
+    "VERDICT:",          # explicit verdict line (Hermes, NanoClaw, ai-01)
+    "[Hermes]",
+    "[NanoClaw]",
+    "[Hermes self-bot]",
+    "[NanoClaw self-bot]",
+)
+
+
+def has_review_signal_in_comments(comments: list[dict] | None) -> bool:
+    """Return True iff any comment in the list carries a review-grade marker.
+
+    ``comments`` is the projected list returned by ``gh pr list --json
+    comments``; each entry has at least ``body`` (str) and ``author``.
+    We deliberately do NOT count comments authored by the PR author
+    (a self-comment is not a review by definition).
+    """
+    if not comments:
+        return False
+    for c in comments:
+        if not isinstance(c, dict):
+            continue
+        body = c.get("body") or ""
+        if not body:
+            continue
+        author = c.get("author") or {}
+        if not isinstance(author, dict):
+            author = {}
+        login = (author.get("login") or "").lower()
+        if login == "jsboige":  # PR author = self-bot lane. Self-review is not a review.
+            continue
+        for marker in _REVIEW_COMMENT_MARKERS:
+            if marker in body:
+                return True
+    return False
+
+
 def classify(pr: dict, threshold: int = THRESHOLD_DEFAULT) -> str:
     """Classify a PR (as returned by ``gh pr view --json ...``).
 
@@ -124,6 +170,11 @@ def classify(pr: dict, threshold: int = THRESHOLD_DEFAULT) -> str:
     The order of checks matters: a draft is a draft even if it is large.
     The PR is in the ``clear`` class the moment any condition that would
     lift the flag holds (review present, or below threshold).
+
+    A review signal can come from TWO surfaces (#16284):
+    - ``reviews[]`` (GraphQL review state, the canonical one)
+    - ``comments[]`` carrying a review-grade marker (VERDICT: / [Hermes] /
+      [NanoClaw]) -- previously invisible to the organ, fixed in #16284.
     """
     # Skips first -- they are not just "no flag", they are "out of scope".
     if pr.get("isDraft"):
@@ -134,9 +185,12 @@ def classify(pr: dict, threshold: int = THRESHOLD_DEFAULT) -> str:
 
     additions = pr.get("additions", 0) or 0
     reviews = pr.get("reviews") or []
+    comments = pr.get("comments") or []
     if additions < threshold:
         return "clear"
     if len(reviews) > 0:
+        return "clear"
+    if has_review_signal_in_comments(comments):
         return "clear"
     return "flag"
 
@@ -146,14 +200,21 @@ def fetch_open_prs(threshold: int) -> list[dict]:
 
     Why minimum JSON: ``gh pr list`` on a 800-PR repo with full payloads
     is slow and noisy. The classifier reads only ``number``, ``title``,
-    ``isDraft``, ``baseRefName``, ``additions``, ``reviews``. We use
-    ``--jq`` to project server-side and skip the rest.
+    ``isDraft``, ``baseRefName``, ``additions``, ``reviews``, ``comments``.
+    We use ``--jq`` to project server-side and skip the rest.
+
+    Note (#16284): ``comments`` is now part of the projection. On a 300-PR
+    scan, the added weight is ~2x the previous payload but still bounded
+    (< 8 MB). The fix is necessary because the GraphQL ``reviews[]`` array
+    is NOT the only review surface on this cluster -- bot reviews sometimes
+    ship as tagged issue comments instead, which is the cluster convention
+    documented at #3612.
     """
     cmd = [
         "gh", "pr", "list",
         "--state", "open",
         "--base", "main",
-        "--json", "number,title,isDraft,baseRefName,additions,reviews,author,url",
+        "--json", "number,title,isDraft,baseRefName,additions,reviews,comments,author,url",
         "--limit", "300",
     ]
     out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
