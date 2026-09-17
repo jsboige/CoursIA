@@ -283,6 +283,21 @@ BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK|HOLD)\]\s+lane\s+\S+")
 #     du coordinateur l'ecrivent — « hold on, je regarde » ne pose rien.
 HOLD_HEAD = re.compile(r"^[\s*_#]*HOLD\b")
 
+# #15920 — la forme ETIQUETEE du HOLD coordinateur : `## [HOLD G-VAR-2] <titre>`
+# (commentaire reel myia-ai-01 du 2026-09-13T03:37:44Z sur #15868). Defaut mesure :
+# cette pose echappait aux TROIS voies existantes — BLOCAGE_LANE exige `] lane`
+# juste apres le crochet fermant, HOLD_HEAD exige HOLD nu (le `[` devant casse
+# l'ancre), et `[HOLD G-VAR-2]` n'est pas dans CONCERN_MARKERS — l'organe rendait
+# rc=0 pendant que le HOLD etait debout. La forme crocheted EST la pose stricte
+# (rejet des backticks herite de l'ancre : `[` n'est pas dans la classe de
+# tete) : la LEVEE reelle du meme HOLD (05:45:22Z, « Levée du HOLD G-VAR-2 »)
+# cite le label SANS crochets et ne matche pas — poser se distingue de nommer
+# par la paire de crochets, comme `[OVERRIDE]` vs « override » (#11639).
+# Le label est non contraint (`G-VAR-2`, mais tout identifiant de gate marche) :
+# ce qui pose le hold, c'est la paire `[HOLD ...]` en tete de corps, pas le
+# vocabulaire du label (mesure #14682 : pas d'elargissement a de la prose).
+HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
+
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 # #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
 # complete `CHANGES_REQUESTED` (nom) : Hermes self-bot est force a state:COMMENTED
@@ -1714,6 +1729,11 @@ def _arrow_precedes(normalised: str, index: int) -> bool:
     return normalised[:j].endswith(_ARROW_DERIVATIONS)
 
 
+# #15920 — ligne de heading markdown complete, pour borner la collecte des
+# verdicts d'EMISSION a la position de pose (`## [role — VERDICT] <titre>`).
+_HEADING_LINE_RE = re.compile(r"(?m)^[ \t]{0,3}#{1,6}[^\n]*")
+
+
 def _formal_concern_precedes_lift(body: str) -> bool:
     """Un verdict Hermes formel precede-t-il la narration de sa levee ?
 
@@ -1722,6 +1742,20 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     retracte pas le verdict vivant qui le precede. A l'inverse, « je leve ma
     CHANGES_REQUESTED » est une levee explicite historique : le marqueur nomme
     vient APRES le verbe et doit rester admissible.
+
+    #15920 — defaut mesure sur #15862 (commentaire myia-ai-01 du
+    2026-09-13T02:55:58Z) : le verdict ``## [ai-01 — CHANGES_REQUESTED]`` EMIS
+    en tete, puis en queue « Ma réserve précédente sur cette PR est levée par
+    celle-ci » (levée d'une réserve ANTERIEURE, ecriture B.0 legitime) — la
+    trappe de levée de `classify` lisait le ``est levée`` de la queue et
+    rendait None : la réserve s'éteignait ELLE-MEME, rc=0 sur trois surfaces
+    vertes. La comparaison positionnelle tranche : emission en tete < levée en
+    queue = la levée d'une AUTRE reserve ne retracte pas celle que le corps
+    EMET. BORNE (cf corps de la garde) : ``CHANGES_REQUESTED`` ne compte qu'en
+    heading d'emission — en prose il est l'objet des dissipations #15483 (« Le
+    nit CHANGES_REQUESTED ne concerne plus... »), dont la locution qui suit
+    decide seule. « je lève ma CHANGES_REQUESTED » reste admissible (ordre
+    inverse, lift avant marqueur).
     """
     stripped = _strip_mentioned_verdicts(_strip_quoted(body))
     normalised = _unaccent(stripped)
@@ -1731,6 +1765,33 @@ def _formal_concern_precedes_lift(body: str) -> bool:
                        "NEEDS_CHANGES", "**BLOCKED**", "BLOCKED  PR")
     ]
     concern_positions = [position for position in concern_positions if position >= 0]
+    # #15920 — CHANGES_REQUESTED ne compte qu'en POSITION D'EMISSION : une
+    # ligne de HEADING (`## [ai-01 — CHANGES_REQUESTED] <titre>`, la pose
+    # mesuree du 2026-09-13T02:55:58Z sur #15862). En PROSE, l'occurrence est
+    # l'OBJET d'une dissipation (« Le nit CHANGES_REQUESTED ne concerne plus
+    # le head courant », #15483) : la locution qui suit decide seule, la garde
+    # ne doit pas court-circuter l'instrument dedie. Sur la surface stripee,
+    # un heading NON tague agent-reviewer est deja neutralise par
+    # `_MENTION_VERDICT_HEADING` (mention) — ne survivent en heading que les
+    # emissions, exactement la classe cherchee.
+    cr = _unaccent("CHANGES_REQUESTED")
+    for m in _HEADING_LINE_RE.finditer(normalised):
+        i = m.group(0).find(cr)
+        if i >= 0:
+            concern_positions.append(m.start() + i)
+    # #15920 — la pose ETIQUETEE `[HOLD <label>]` en tete compte comme verdict
+    # formel pour cette comparaison positionnelle : le corps reel du HOLD
+    # #15868 porte l'engagement d'echeance « au plus tard le <date>, je merge
+    # #15868 ou je la ferme » — un LIFT_MARKER vivant que la trappe de levée
+    # de `classify` lisait comme une levée ACQUISE, eteignant le hold pose en
+    # tete. La position tranche : hold pose (t~0) < engagement (t~2000).
+    # Matcher sur la surface `_strip_quoted` (PAS `_strip_mentioned_verdicts`) :
+    # `_MENTION_VERDICT_HEADING` stripe le HOLD d'un heading non tague, et la
+    # pose crocheted est une EMISSION au sens de `_block_emitted` (voie d) —
+    # les offsets restent comparables, le strip est iso-longueur.
+    m_tagged = HOLD_TAGGED_HEAD.match(_unaccent(_strip_quoted(body)))
+    if m_tagged:
+        concern_positions.append(m_tagged.start())
     # #12908 : les occurrences NARRÉES de levée (« après la levée annoncée »)
     # ne sont pas des gestes — la garde compare le verdict vivant aux levées
     # VIVES uniquement.
@@ -2680,6 +2741,12 @@ def _block_emitted(body: str) -> bool:
     m_hold = HOLD_HEAD.match(head)
     if m_hold and _hold_head_is_emission(head, m_hold.end()):
         return True
+    # #15920 — voie (d) : la pose ETIQUETEE `## [HOLD G-VAR-2] <titre>`. Les
+    # rejets de `_hold_head_is_emission` s'appliquent tels quels au texte qui
+    # suit le crochet fermant : « [HOLD X] levé » nomme pour clore, ne pose pas.
+    m_tagged = HOLD_TAGGED_HEAD.match(head)
+    if m_tagged and _hold_head_is_emission(head, m_tagged.end()):
+        return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
         while (i := uhead.find(marker, pos)) != -1:
@@ -3571,10 +3638,41 @@ def can_lift(comment: dict) -> bool:
     return True
 
 
+# #16442/#16443 — un bloc [ADJOINT PREFLIGHT] est une ATTESTATION, pas une
+# remarque. Defaut mesure (#16173, 2026-09-16) : l'organe comptait le
+# `verdict: BLOCKED` d'un dossier SUPERSEDE comme un nit [HUMAN] non leve --
+# le dossier devenait son propre bloquant, et le seul remede etait un PATCH
+# manuel du commentaire (pierre tombale + neutralisation des marqueurs ;
+# reproduction partielle par le dossier interim de lane sur #16449 a
+# 23:35:02Z). La separation des organes est le principe : le VERDICT d'un
+# dossier appartient au gate `check_adjoint_prevalidation.py` (#16443), qui
+# le fail-close a l'empreinte pres ; l'organe nits lit des REMARQUES a
+# lever. Le bloc schema est retire du corps AVANT classification -- ni
+# reserve, ni (cf explicit_lifts, meme strip) levee. Deux bornes
+# fail-closed : un bloc MALFORME (delimiter ouvrant sans fermant) n'est pas
+# retire -- c'est le gate qui refuse le dossier, pas l'organe qui le
+# blanchit ; la prose HORS du bloc (tete de pierre tombale comprise) reste
+# lue normalement.
+_ADJOINT_DOSSIER_SPAN = re.compile(
+    r"^[ \t]*\[ADJOINT PREFLIGHT\][ \t]*\r?\n"
+    r".*?"
+    r"^[ \t]*\[/ADJOINT PREFLIGHT\][ \t]*\r?(?:\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _strip_adjoint_dossier(body: str) -> str:
+    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites."""
+    return _ADJOINT_DOSSIER_SPAN.sub("", body)
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
         return None
+    body = _strip_adjoint_dossier(body)
+    if not body.strip():
+        return None  # attestation pure : le gate en lit le verdict, pas l'organe
     stripped = body.lstrip()
     # #12143 — Hermes severity glyphes (subordonne LIFT_MARKERS, fix concomitant
     # du PR #12148 fondateur) : un glyphe est une EMISSION, et une emission
@@ -4156,7 +4254,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if can_lift(c)
         # #12908 : levée VIVE exigée — le PREFLIGHT de #12798 qui demandait
         # « une levée explicite » était compté comme levée par le sac de mots.
-        and has_live_lift(c.get("body", ""))
+        and has_live_lift(_strip_adjoint_dossier(c.get("body", "")))
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
@@ -4174,7 +4272,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
-        and has_live_lift(r.get("body", ""))
+        and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
         and classify((r.get("author") or {}).get("login", ""),
                      r.get("body", "")) is None
