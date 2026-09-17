@@ -13,7 +13,6 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/**.lean'

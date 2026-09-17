@@ -13,7 +13,6 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
