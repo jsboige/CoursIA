@@ -90,6 +90,8 @@ Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/read
 - **Boucle agentic** : un VLM examine une image de référence et écrit le prompt de génération, dans le graphe
 - **Séparation design / style** : le prompt VLM porte l'identité du personnage, le LoRA porte le rendu — deux canaux composables
 
+<p align="center"><img src="assets/readme/img3-workflow5.webp" alt="Triptyque démontrant la séparation design/style du pipeline VLM in-graph — une référence (robot photoréaliste) devient une character sheet blueprint (avec LoRA banjiesock_Krea2) puis le même personnage en rendu neutre (sans LoRA), même seed : le design vit dans le prompt VLM, le style vit dans le LoRA" width="840"/></p>
+
 ## Architecture
 
 ```
