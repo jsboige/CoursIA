@@ -1,6 +1,6 @@
 # Catalog Markers - README Auto-Update System
 
-Source-of-truth counts driven by `COURSE_CATALOG.generated.json`. Markers in README files are expanded by `scripts/notebook_tools/expand_catalog_markers.py` and verified by CI on every PR.
+Source-of-truth counts driven by `COURSE_CATALOG.generated.json`. Markers in README files are expanded by `scripts/notebook_tools/expand_catalog_markers.py` and verified by CI on PRs that touch notebooks, series READMEs, or the catalog — the `catalog-drift.yml` workflow is filtered by `paths:`, so it does not run on every PR.
 
 ## Overview
 
@@ -75,7 +75,7 @@ python scripts/notebook_tools/expand_catalog_markers.py
 # Dry-run (show what would change)
 python scripts/notebook_tools/expand_catalog_markers.py --dry-run
 
-# Check for drift (exit 1 if stale, used by CI)
+# Check for drift (exit 1 if stale; local tool -- CI regenerates instead and never calls --check)
 python scripts/notebook_tools/expand_catalog_markers.py --check
 
 # Expand a specific file
@@ -100,12 +100,27 @@ on:
       - 'COURSE_CATALOG.generated.json'
 ```
 
-Two checks run in sequence:
+Le job régénère le catalogue et les marqueurs **sur le runner** (rien n'est réécrit sur
+la branche), puis compare le résultat aux fichiers commités par un unique test
+`git diff --cached`. La dérive est remontée en **annotation `notice` uniquement**.
 
-1. **CATALOG-STATUS marker drift** — `expand_catalog_markers.py --check` verifies all markers match the catalog
-2. **Notebook catalog drift** — `verify_catalog_readme.py` checks declared counts vs actual notebooks on disk
+**Ce check est advisory, non bloquant** (#15998). Le marqueur `advisory` dans le **nom**
+du job — `Notebook catalog drift (read-only, advisory)` — **est** le contrat :
+`pr_gate.py` classe les checks par nom et ne lit pas `fast_lane_registry.py`. Le job **peut rougir** : seule l'indisponibilité des métadonnées git (`rc=2` de
+`generate_catalog.py`) est absorbée en annotation `notice` ; tout autre échec (runner, checkout,
+`pip`, `generate_catalog.py` hors `rc=2`) exécute `exit "$rc"` et rend le job rouge. Mais ce
+rouge est **exclu des causes bloquantes** : le marqueur `advisory` du nom fait que `PR gate`
+le signale sans bloquer — une panne d'infrastructure est remontée, jamais bloquante pour une PR
+notebook/README (contrôle positif #16015). Le catalogue est régénéré quotidiennement
+sur `main` par `catalog-cron.yml` ; **aucune action manuelle n'est requise sur une branche
+de feature** (cf [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md), #2632).
 
-If either check fails, the PR is blocked until markers are updated.
+> Correction factuelle (2026-09-15) : cette section décrivait deux checks en séquence
+> (`expand_catalog_markers.py --check`, `verify_catalog_readme.py`) et concluait qu'un
+> échec **bloquait** la PR jusqu'à mise à jour des marqueurs. Les deux affirmations
+> étaient fausses : le workflow n'utilise pas `--check` (il régénère), ne fait appel à
+> `verify_catalog_readme.py` dans **aucun** workflow, et son job est advisory depuis
+> #15998.
 
 ## Adding Markers to a New README
 
