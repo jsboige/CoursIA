@@ -1,0 +1,15 @@
+# Cache local des documents SEC EDGAR telecharges pour le calcul du signal
+# (edgar_signal.py). Reponses HTTP brutes, JSON de submissions, HTML des 10-K.
+# Reinitialisable: supprimer le dossier; le module re-telechargera a la prochaine
+# invocation dans le respect du throttling.
+cache/
+
+# Sorties de smoke test sur donnees reelles SEC.
+# Les runs reaux produisent un CSV par ticker; cette sortie est ephemere et
+# ne doit pas etre commitee (donnees fournisseurs tiers, resultat dependant
+# de la date d'execution).
+runs/
+
+# Artefacts pytest non versionables (cache bytecode CPython).
+__pycache__/
+.pytest_cache/
