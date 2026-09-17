@@ -193,11 +193,19 @@ def body_has_derive_exemption(body):
     Per acceptance of issue #15650 (point 4): cellules non touchées
     reproduisent leurs sorties - ou l'écart résiduel est expliqué par
     une section '## Diagnostic dérive' (C.4).
+
+    Fix v2 (post-NanoClaw review #16466): regex is now case-insensitive and
+    tolerates the unaccented 'derive' (covers authors who type the header
+    without the accent, a common shortcut when reviewing on a non-French
+    keyboard layout).
     """
     if not body:
         return False
-    # Match the section header (case-insensitive, optional whitespace)
-    pattern = re.compile(r"^##\s*Diagnostic\s*d[ée]rive\s*$", re.MULTILINE)
+    # Case-insensitive header, optional whitespace, optional accent on 'e'.
+    pattern = re.compile(
+        r"^##\s*Diagnostic\s*d[ée]rive\s*$",
+        re.MULTILINE | re.IGNORECASE,
+    )
     return bool(pattern.search(body))
 
 

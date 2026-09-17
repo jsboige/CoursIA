@@ -226,3 +226,97 @@ def test_workflow_pull_request_types():
     # The new contract: pull_request.types includes 'edited'
     assert "edited" in content, \
         "workflow must include 'edited' in pull_request.types"
+
+
+def test_workflow_defines_pr_body_env():
+    """The workflow MUST set PR_BODY in the env: block of the kernel-drift step.
+
+    Fix v2 (post-NanoClaw review #16466): without `PR_BODY: ${{ github.event.pull_request.body }}`
+    in env, the `if [ -n "$PR_BODY" ]; then printf '%s' "$PR_BODY" > "$PR_BODY_FILE"`
+    branch never fires in CI (PR_BODY is unset), so the `## Diagnostic dérive`
+    exemption can never activate. C.4 acceptance of #15650 becomes unreachable.
+    """
+    yml = Path(__file__).resolve().parents[3] / ".github" / "workflows" / "notebook-kernel-drift-guard.yml"
+    if not yml.exists():
+        pytest.skip(f"workflow file not present at {yml}")
+    content = yml.read_text(encoding="utf-8")
+    # The env: block of the kernel-drift step MUST contain PR_BODY
+    # pointing at github.event.pull_request.body.
+    assert "PR_BODY:" in content, \
+        "workflow env: block must declare PR_BODY so the body exemption can fire"
+    # And it must source it from the pull_request event body (not an empty literal).
+    assert "github.event.pull_request.body" in content, \
+        "PR_BODY must source github.event.pull_request.body, not an empty literal"
+
+
+def test_body_has_derive_exemption_case_insensitive():
+    """The regex must be case-insensitive (header in lowercase should also match)."""
+    body = "## diagnostic dérive\nblah\n"
+    assert ckd.body_has_derive_exemption(body) is True
+
+
+def test_body_has_derive_exemption_unaccented():
+    """The regex must tolerate 'derive' without accent."""
+    body = "## Diagnostic derive\nblah\n"
+    assert ckd.body_has_derive_exemption(body) is True
+
+
+# === Defect 1 v2: end-to-end branchement test (PR_BODY_FILE -> _run() -> exit 0) ===
+
+def test_run_reads_pr_body_file_and_exempts(tmp_path, monkeypatch, capsys):
+    """End-to-end: when PR_BODY_FILE points to a real file with '## Diagnostic dérive',
+    _run() reads it, sets body_exempts=True, and the resulting JSON carries
+    body_exempts=True even with a stub notebook that produces drift.
+
+    This is the maillon cassé identified by NanoClaw in #16466 review: the previous
+    fix added the function but never tested the branch from PR_BODY_FILE -> _run().
+    Without this test, a regression of the env var wiring (defect 1 v1) would be
+    invisible to the test suite.
+    """
+    # Write a real PR body with the diagnostic section
+    pr_body_file = tmp_path / "pr_body"
+    pr_body_file.write_text(
+        "## Summary\nFix kernel drift\n\n## Diagnostic dérive\n"
+        "Cell 12 and 14 drift due to numpy 2.x repr change.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PR_BODY_FILE", str(pr_body_file))
+
+    # Stub a notebook with kernel drift so the gate would otherwise fail
+    drift_nb = {
+        "cells": [],
+        "metadata": {
+            "kernelspec": {"name": "python3", "display_name": "Python"},
+            "language_info": {"version": "3.11.16"},
+        },
+    }
+
+    # Mock the git side so the script doesn't need a real repo
+    monkeypatch.setattr(ckd, "git", lambda *args, cwd=None: "")
+    monkeypatch.setattr(ckd, "resolve_base", lambda base, cwd=None: base)
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda base, cwd=None: ["x.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda *a, **kw: drift_nb)
+
+    # Run with --json to inspect the result
+    rc = ckd.main_with_args(["origin/main", "--json"])
+    captured = capsys.readouterr()
+    obj = json.loads(captured.out)
+    # The exemption must have fired -- otherwise the branchement is still broken
+    assert obj["body_exempts"] is True, \
+        f"PR body exemption did not fire: body_exempts={obj['body_exempts']!r}"
+
+
+def test_run_no_pr_body_file_exemption_false(tmp_path, monkeypatch, capsys):
+    """Negative control: when PR_BODY_FILE points to a non-existent path,
+    body_exempts must be False (no false positives on missing branchement)."""
+    monkeypatch.setenv("PR_BODY_FILE", str(tmp_path / "does_not_exist"))
+
+    monkeypatch.setattr(ckd, "git", lambda *args, cwd=None: "")
+    monkeypatch.setattr(ckd, "resolve_base", lambda base, cwd=None: base)
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda base, cwd=None: [])
+    monkeypatch.setattr(ckd, "read_blob", lambda *a, **kw: None)
+
+    rc = ckd.main_with_args(["origin/main", "--json"])
+    captured = capsys.readouterr()
+    obj = json.loads(captured.out)
+    assert obj["body_exempts"] is False
