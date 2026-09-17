@@ -1,0 +1,7 @@
+date: '2026-09-13'
+by: myia-po-2024:CoursIA
+python_sha: a22fe6223f22db9396bb6db0cd488dc61a6f08cf
+csharp_sha: ce00f38332fc86f42a5a907b5fb08e1989f5052e
+content_python_sha: 20901e4cec8a36560ca7196c3b8cea4d6fe30cf7abe23e38b89762994b8e6b7f
+content_csharp_sha: 217e7f7900bb5d747698e53ec2fb8facdf8f6ca7114be18cd005da9dad7e7ea8
+reason: "Markdown-only cote Python (#12797, tranche GameTheory) : 2 cellules markdown intermediaires inserees dans le run subsets_of_size -> support_enumeration -> RPS (geste Classe B, prose pedagogique entre etapes distinctes), aucune cellule code touchee (source/execution_count/outputs verifiees identiques vs origin/main) ; rider hook-mandate hr --- -> *** sur une cellule pre-existante. Cote C# intact (csharp_sha = HEAD). Parite de contenu algorithmique inchangee. Precedent re-baseline markdown-only cote unique : 2026-08-01 (SC-04)."
