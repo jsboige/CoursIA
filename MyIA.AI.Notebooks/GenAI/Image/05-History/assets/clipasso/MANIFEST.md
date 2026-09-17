@@ -30,3 +30,21 @@ Provenance des images cibles du notebook `05-2-CLIPasso-Semantic-Sketching.ipynb
 - **Alt-text (FR)** : Grille d'abstraction CLIPasso — la cible chameau et ses esquisses à 32, 16, 8 puis 4 traits de Bézier.
 - **Poids** : 122 880 octets
 - **Provenance** : `base64` du `image/png` de l'output de la cellule grille de l'exécution finale (papermill, kernel python3).
+
+## grid_robot_abstraction.png
+
+- **Source** : sortie de la cellule « Rendu de la grille robot » du notebook `05-2` (matplotlib) — extraction directe de l'output d'exécution.
+- **Description visuelle** : bande de 5 panneaux — source robot puis esquisses officielles CLIPasso 32/16/8/4 traits, toutes optimisées sur la cible **masquée** (`mask_object=1`, fond retiré par U²-Net).
+- **Contenu réel vérifié** : PNG 1589×344 RGBA (195 180 octets, dimensions PIL vérifiées). Les 4 SVG sources sont les `_best.svg` des runs officiels GPU du 18/09/2026 (00:32-00:58). Vérification visuelle déléguée merge-gate.
+- **Alt-text (FR)** : Grille d'abstraction CLIPasso sur le robot — la source et ses esquisses à 32, 16, 8 puis 4 traits, fond masqué par U²-Net.
+- **Poids** : 195 180 octets
+- **Provenance** : `base64` du `image/png` de l'output de la cellule rendu robot de l'exécution finale.
+
+## ab_fond_masque_brut.png
+
+- **Source** : sortie de la cellule « A/B : le coût du fond non extrait » du notebook `05-2` (matplotlib) — extraction directe de l'output d'exécution.
+- **Description visuelle** : triplet — source robot, esquisse 16 traits fond masqué (similarité CLIP 0.6519), esquisse 16 traits fond brut (0.5903) : même budget, mêmes graines.
+- **Contenu réel vérifié** : PNG 1036×368 RGBA (195 642 octets, dimensions PIL vérifiées). Les deux SVG sont des `_best.svg` de runs officiels GPU du 18/09/2026 (00:40 fond masqué, 00:46 fond brut). Vérification visuelle déléguée merge-gate.
+- **Alt-text (FR)** : A/B CLIPasso à 16 traits — esquisse optimisée sur cible masquée contre cible brute, même budget de traits.
+- **Poids** : 195 642 octets
+- **Provenance** : `base64` du `image/png` de l'output de la cellule A/B de l'exécution finale.
