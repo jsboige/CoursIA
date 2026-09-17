@@ -45,7 +45,8 @@ de fichier, **apres** la section « Voir aussi ».
 ### 1. La PR #15094 patche une copie qui ne tourne pas sur ai-01
 
 `persist/coursia-runner.service` et `persist/coursia-runner-start.sh` sont ceux de
-**po-2024** : depot sous `/mnt/c/dev/CoursIA`, prefixe `myia-po-2024-linux-docker`,
+**po-2024** : depot sous `/mnt/d/Dev/CoursIA` (historiquement `/mnt/c/dev/CoursIA`
+avant la migration 2026-09-17, voir #16578), prefixe `myia-po-2024-linux-docker`,
 et un wrapper qui relaie n'importe quelle sous-commande (`exec "$SUPERVISE" "$@"`).
 
 Les fichiers vivants d'ai-01 sont differents sur les trois points qui comptent :

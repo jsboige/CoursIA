@@ -28,8 +28,8 @@
 # jamais en argv).
 set -uo pipefail
 
-MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/c/dev/CoursIA/.secrets/master.env}"
-REPO_DIR="${COURSIA_REPO_DIR:-/mnt/c/dev/CoursIA}"
+MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
 ARG="${1:-2}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }

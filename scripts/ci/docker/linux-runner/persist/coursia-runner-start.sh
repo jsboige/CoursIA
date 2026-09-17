@@ -11,7 +11,7 @@
 #   - l'etat superviseur (sentinel, logs slots) vit sous /var/lib/coursia-runner.
 set -euo pipefail
 
-TOKEN_FILE="/mnt/c/dev/CoursIA/.secrets/master.env"
+TOKEN_FILE="${COURSIA_TOKEN_FILE:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
 TOKEN="$(sed -n 's/^GH_RUNNERS_ADMIN_TOKEN=//p' "$TOKEN_FILE" | tr -d '\r')"
 if [ -z "$TOKEN" ]; then
     echo "FATAL: GH_RUNNERS_ADMIN_TOKEN absent de $TOKEN_FILE" >&2
@@ -37,7 +37,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-SUPERVISE="/mnt/c/dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh"
+SUPERVISE="${COURSIA_SUPERVISE:-/mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------
