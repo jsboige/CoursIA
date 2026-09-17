@@ -603,7 +603,7 @@ def build_queue(
             ))
         except (
             RuntimeError, KeyError, TypeError, ValueError, OSError, UnicodeError,
-            json.JSONDecodeError,
+            json.JSONDecodeError, subprocess.SubprocessError,
         ) as exc:
             unknown.append({"pr": pr, "error": f"UNKNOWN: {exc}"})
     entries.sort(key=lambda entry: (entry.created_at, entry.pr))

@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -511,6 +512,39 @@ def test_build_queue_sorts_oldest_first_and_counts_statuses():
     assert all(entry["verdict"] == mod.READY for entry in result["queue"])
     assert result["metrics"]["received"] == 2
     assert result["metrics"][mod.READY] == 2
+
+
+def test_b0_timeout_classifies_unknown_without_aborting_batch():
+    surviving = _base_snapshot()
+    surviving["number"] = 124
+    surviving["comments"].append(_comment(
+        _body(surviving, pr="124"), created_at="2026-09-17T09:30:00Z"
+    ))
+    snapshots = {124: surviving}
+
+    def b0_runner(pr: int) -> tuple[int, str]:
+        if pr == 123:
+            raise subprocess.TimeoutExpired("check_unaddressed_nits.py", 120)
+        return 0, "OK"
+
+    result, complete = mod.build_queue(
+        [123, 124], now=_now(), loader=snapshots.__getitem__,
+        b0_runner=b0_runner,
+    )
+
+    assert not complete
+    assert [entry["pr"] for entry in result["queue"]] == [124]
+    assert result["queue"][0]["verdict"] == mod.READY
+    assert result["unknown"] == [{
+        "pr": 123,
+        "error": (
+            "UNKNOWN: Command 'check_unaddressed_nits.py' timed out "
+            "after 120 seconds"
+        ),
+    }]
+    assert result["metrics"]["received"] == 2
+    assert result["metrics"]["classified"] == 1
+    assert result["metrics"]["unknown"] == 1
 
 
 def test_consume_rereads_live_and_fails_closed_on_head_move():
