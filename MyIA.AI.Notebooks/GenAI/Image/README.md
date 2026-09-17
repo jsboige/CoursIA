@@ -29,10 +29,13 @@ Image/
 ├── 02-Advanced/       # Modèles avancés
 ├── 03-Orchestration/  # Multi-modèles
 ├── 04-Applications/   # Production
-├── 05-History/        # Racines pré-Stable-Diffusion
+<<<<<<< HEAD
+├── 05-History/        # Racines pré-Stable-Diffusion (DiscoDiffusion, CLIPasso)
 ├── assets/            # Médias partagés (couvertures, panneaux)
 └── examples/          # Cas d'usage par domaine
 ```
+
+> **Nouveau rayon 05-History (2026-09).** Lancé en réponse à la demande user du 17/09 (« deux références pré-Stable-Diffusion qui me sont chères »). Ce rayon comble un **trou généalogique** : tous les niveaux 01-04 documentent des modèles **postérieurs** à août 2022 (Rombach et al., SD latent-public). Rien ne documente la génération d'images d'avant : la CLIP-guided diffusion en espace pixel (512×512), sans encodeur de texte dédié ni espace latent. Voir l'argument pédagogique dans le body de la PR #16477.
 
 Les guides de référence transversaux (DALL-E 3, GPT-5 image, OpenRouter, workflows éducatifs) vivent dans le répertoire partagé [`../tutorials/`](../tutorials/README.md) — pas de doublon local ici.
 
