@@ -88,6 +88,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 7 | [Lean-7-LLM-Intégration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
+| 8b | [Lean-8b-Erdos-Formal-Conjectures-Native](Lean-8b-Erdos-Formal-Conjectures-Native.ipynb) | Companion **natif** (kernel Lean) : le programme Erdős et le pattern conjecture-as-sorry — EGZ importé de Mathlib (`#print axioms` = `[propext, Classical.choice, Quot.sound]`), équation d'Erdős–Moser restatée (`[sorryAx]` visible), témoin calculé dans `ZMod 3` - pilote narratif Epic #13106 | 25 min |
 | 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
@@ -210,6 +211,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 7 | LLM-Intégration | ~50 | 2 | 2 | **COMPLET** |
 | 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
+| 8b | Erdos-Formal-Conjectures (natif) | ~4 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-groth16200`, Epic #13106) |
 | 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
 | 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
@@ -419,6 +421,7 @@ Lean/
 ├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
 ├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
+├── Lean-8b-Erdos-Formal-Conjectures-Native.ipynb # Lean4 (WSL, grothendieck-16200) kernel - pattern conjecture-as-sorry : EGZ Mathlib + Erdős-Moser restatée (Epic #13106)
 ├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
