@@ -12,13 +12,14 @@ name: ICT-Series Tests
 #       sensitivity consolides depuis ict/tests/, #9478).
 #       ict/tests/ = 42 strates package.
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1148 items, ict/tests/ = 774 items.
-#     57 != 1148 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
+#     @pytest.mark.parametrize) : tests/ = 1156 items, ict/tests/ = 846 items.
+#     58 != 1156 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1148/774), le label garde les strates (57/44).
-#     Les strates 57 (tests/, +1 test_regards) et 44 (ict/tests/, +1
-#     test_lens_gates) sont celles de cette branche ; le "55/42" des lignes
-#     ci-dessus est la prose d'origine heritee -- le label du matrix fait foi.
+#     floor garde la collection (1156/846), le label garde les strates (58/51).
+#     Les strates 58 (tests/) et 51 (ict/tests/) sont les MODULES COLLECTES a
+#     la mesure du 2026-09-16 (bloc RE-MESURE ci-dessous) ; le "55/42" des
+#     lignes ci-dessus est la prose d'origine heritee -- le label du matrix
+#     fait foi.
 #
 # Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
 # tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
@@ -82,8 +83,29 @@ name: ICT-Series Tests
 # donc une base perimee laisse le cliquet ne plus proteger les 11 nouveaux
 # tests : une suppression future jusqu'a 763 resterait verte.
 # Fichiers test_*.py dans ict/tests/ : 46 sur origin/main, 47 sur cette branche.
-# Le venv local AVEC torch collecte 1111 en tests/ : les 4 items d'ecart sont
-# tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
+# RE-MESURE firsthand (2026-09-16, arbre MERGE de cette branche avec
+# origin/main@f673ef3d30 -- venv local python 3.9.23 + pyphi 1.2.0 +
+# numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 + pandas 2.3.3 SANS
+# torch, la forme de l'env CI ; invocation EXACTE du floor-guard, `pytest`
+# et pas `python -m pytest` ; decomposition verifiee par collecte par
+# fichier, les deux jambes mesurees sur le meme arbre) :
+#   tests/     = 1156 items / 58 modules collectes (= origin/main pur :
+#                 cette PR n'apporte aucun test, diff limite au workflow).
+#                 Le floor 1148 de main etait PERIME de +8 : tests/
+#                 test_sae_scales.py (#16026, merge main 2026-09-16)
+#                 porte exactement 8 items -- 1148 + 8 = 1156 ferme
+#                 l'arithmetique. 59 fichiers test_*.py sur disque, 58
+#                 modules collectes : test_sae_traces_layout.py reste
+#                 hors collection sans torch (importorskip module-level).
+#   ict/tests/ = 846 items / 51 modules collectes -- IDENTIQUE au floor
+#                 846 de main (accord de mesure, floor conserve tel quel).
+# Les labels rattrapent le compte de modules collectes a cette meme
+# mesure : 57 -> 58 (tests/, +1 test_sae_scales.py) et 45 -> 51
+# (ict/tests/) -- l'ecart 45 -> 51 cumulait les fichiers portes par
+# main sans bump de label depuis l'epoque S-Lens, ou le label 45
+# coexistait deja avec 50 fichiers sur disque.
+# Un venv local AVEC torch collecte +4 en tests/ (1156 -> 1160) : les 4 items
+# d'ecart sont tests/test_sae_traces_layout.py, `importorskip("torch")` module-level.
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
 # documente dans #9387 (acceptance : une panne d'infra doit se distinguer d'un finding).
 #
@@ -187,10 +209,54 @@ jobs:
           # conditionnes par torch, restent hors de l'env CI. Cette branche
           # (lens_gates) n'apporte RIEN a tests/ : 1148 = le floor de main,
           # conserve tel quel pour ne pas abaisser le cliquet.
-          - suite-name: "tests/ (57)"
+          # Floor 1148 -> 1156 : +8 items test_sae_scales.py (#16026,
+          # registre CPU des echelles SAE Qwen-Scope) portes par MAIN le
+          # 2026-09-16, APRES la mesure de main -- drift ascendant cote main,
+          # rattrape ici sur l'arbre merge (mesure 2026-09-16 ci-dessus,
+          # header). Cette branche (xdist) n'apporte RIEN a tests/ non plus :
+          # 1156 est la collection mesuree de l'arbre merge, le cliquet suit.
+          #
+          # PARALLELISATION (#14598 levier b) -- cette jambe UNIQUEMENT.
+          # Mesure de concentration sur la sonde `ict-tests-profile.yml`
+          # (run 34676978324, --durations=25 --durations-min=0) : 25 items
+          # = 792,56 s sur 890,36 s, soit 89,0 % du temps ; les 1054 autres
+          # items = 97,80 s (11,0 %). Ces 25 items vivent dans 6 modules :
+          #
+          #   test_basin_landscape2d.py  255,08 s      test_collective_adoption.py  56,63 s
+          #   test_basin_family.py       184,03 s      test_scale_free.py           19,76 s
+          #   test_basin_asym.py         149,48 s      test_inhibited_invention.py   4,85 s
+          #   test_bridge_testing.py     122,73 s
+          #
+          # POURQUOI `loadscope` ET PAS le defaut `load` : les 6 modules
+          # declarent 7 fixtures `scope="module"`. Sous `--dist load` les
+          # tests d'un module s'eparpillent sur les workers et la fixture est
+          # RECONSTRUITE une fois par worker -- la parallelisation paierait
+          # plus cher que le gain. `loadscope` garde un module entier sur un
+          # worker : exactement une construction par module, comme aujourd'hui.
+          #
+          # POURQUOI 4 ET PAS `auto` : sous `loadscope` l'unite est le module
+          # (ces 6 modules ne declarent AUCUNE classe de test -- verifie
+          # firsthand), donc le chemin critique ne peut pas descendre sous le
+          # plus gros module, 255,08 s. Repartition LPT des 7 modules sur 4
+          # workers : [255] [184] [149+57] [123+20+5] -> makespan 255 s. A 8
+          # workers le makespan reste 255 s : AU-DELA DE 4, ZERO GAIN. Et
+          # `auto` lit les CPU de l'HOTE, pas la part du conteneur : plusieurs
+          # conteneurs `coursia-ephemeral` co-locataires demanderaient chacun
+          # N workers sur N coeurs partages -- c'est la sur-souscription qui
+          # est le suspect n°1 de la variance 2,050 x mesuree. Un nombre fixe
+          # et petit capte tout le gain sans ajouter au probleme.
+          #
+          # SURETE : `tests/` ne porte AUCUN `conftest.py` et AUCUNE fixture
+          # `scope="session"` (verifie firsthand sur origin/main) -- les deux
+          # choses qui rendent une suite hostile a xdist. Les 3 seuls sites
+          # d'ecriture fichier passent par `tmp_path` ou
+          # `tempfile.NamedTemporaryFile` (noms uniques par test). Ni socket,
+          # ni port, ni `os.environ[...] =`, ni `chdir`.
+          - suite-name: "tests/ (58)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-floor: 1148
+            test-parallel: "-n 4 --dist loadscope"
+            test-floor: 1156
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 686 items collectes = 670 (mesure 2x sur
           # origin/main@5302d974aa, CI-confirme run 34307798875) + 16 tests
@@ -229,18 +295,22 @@ jobs:
           # numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 + pandas 2.3.3,
           # SANS torch -- la forme de l'env CI) ; decomposition verifiee
           # par collecte isolee du fichier (24).
-          # Floor 846 -> 870 (cette PR, sur l'arbre MERGE avec le main courant
-          # post-#15915) : +24 items case 5bis axes causaux #15798
-          # (ict/tests/test_attention_schema_causal.py, 46e package) --
-          # 846 main pur + 24 = 870, mesure sur l'arbre merge EXACT
-          # (D:/Dev/venvs/ict-py39 : python 3.9.23 + numpy 1.26.4 SANS torch,
-          # la forme de l'env CI) ; decomposition verifiee par collecte
-          # isolee du fichier (24). Les deux apports coexistent :
-          # test_confabulation_broadcast.py (main, #15915) ET
-          # test_attention_schema_causal.py (cette PR, #15798).
-          - suite-name: "ict/tests/ (46 package)"
+          # Floor 846 -> 870 (cette PR, RE-mesure sur l'arbre COMBINE
+          # post-#15762) : +24 items case 5bis axes causaux #15798
+          # (ict/tests/test_attention_schema_causal.py, 52e package du
+          # combine) -- 846 main pur + 24 = 870, collecte pytest
+          # --collect-only sur l'arbre merge exact : 870 collected
+          # (D:/Dev/venvs/ict-py39, 1.36s, la forme de l'env CI).
+          # Les deux apports coexistent : test_confabulation_broadcast.py
+          # (main, #15915) ET test_attention_schema_causal.py (cette PR,
+          # #15798). Reconcile #15762 : la jambe reste SEQUENTIELLE par
+          # choix (test-parallel vide -- elle n'a pas ete mesuree par la
+          # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
+          # en mode prepend, cf. #9387/#14598).
+          - suite-name: "ict/tests/ (52 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
+            test-parallel: ""
             test-floor: 870
 
     steps:
@@ -271,7 +341,7 @@ jobs:
           source "$ICT_VENV/bin/activate"
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest
+          pip install pytest pytest-xdist
           # Garde-fou : verifier que `pip show` rapporte le site-packages du venv,
           # pas celui du toolcache partage. Un editable install fait pointer
           # `ict.__file__` vers le source-tree (par design), donc on interroge pip.
@@ -284,9 +354,16 @@ jobs:
           python -c "import ict; print('ict import OK, __file__=', ict.__file__)"
           echo "$ICT_VENV/bin" >> "$GITHUB_PATH"
 
+      # `matrix.test-parallel` est VIDE sur la jambe ict/tests/ : l'invocation
+      # y reste mot pour mot celle d'avant. Le floor-guard ci-dessous, lui,
+      # n'est JAMAIS parallelise -- il compte une collecte (`--co -q`), et le
+      # resume canonique "N tests collected" qu'il parse n'a pas la meme forme
+      # sous xdist. Il garde donc l'invocation sequentielle, qui reste
+      # identique au step Run de la jambe non parallelisee (piege d'import
+      # #9387 : `pytest`, jamais `python -m pytest`).
       - name: Run ${{ matrix.suite-name }}
         working-directory: ${{ matrix.test-cwd }}
-        run: pytest ${{ matrix.test-args }} --tb=short -v
+        run: pytest ${{ matrix.test-args }} ${{ matrix.test-parallel }} --tb=short -v
 
       # Collection floor-guard (#9387). Acceptance de l'issue : "une panne
       # d'infra doit se distinguer d'un finding". pytest exit-code couvre deja
