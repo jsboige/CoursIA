@@ -21,6 +21,8 @@ Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'I
 
 Cette série couvre les **fondements théoriques** (bandits, MDP, équation de Bellman, Q-Learning), les **algorithmes avec réseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entraîner un agent en quelques lignes avec un framework industriel, puis vous implémenterez les mêmes algorithmes depuis zéro pour comprendre ce qui se cache sous le capot.
 
+> **Note de frontière — algorithmes online (rl_17, rl_18)** : ces deux distillations relèvent de l'**analyse compétitive** (garanties de pire cas contre l'optimum offline, sans boucle d'apprentissage) plutôt que du RL stricto sensu. Elles sont hébergées ici comme famille de la **décision séquentielle** — ratios compétitifs et regret étant les deux langages de garantie de la décision online. Le placement définitif (série RL vs axe « Search Online/Offline » dédié) est sous arbitrage utilisateur (#16429).
+
 **À qui s'adresse cette série** : étudiants en IA, développeurs souhaitant ajouter des capacités décisionnelles à leurs applications, et chercheurs en automatique ou robotique. Prérequis : Python intermédiaire et bases en calculus (gradients). Aucune expérience RL préalable nécessaire pour le notebook 1.
 
 ## Figures — extraites des sorties réelles des notebooks
