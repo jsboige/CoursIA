@@ -701,7 +701,7 @@ def test_required_failure_links_advisory_as_its_probable_cause():
 
 
 def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
-    """Sortie 0 et un travail NOMME : la reparation EST le grain du cycle.
+    """Sortie 0 et travail NOMME : la reparation ouvre la file de session.
 
     Le code 2 est la convention "rien a rendre". L'employer ici disait a la
     lane, dans le seul canal qu'elle lit, l'exact contraire de la regle HARD
@@ -716,7 +716,7 @@ def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
     # phrase "ce n'est PAS un refus", plus bas, contient le mot a dessein.
     head = out.splitlines()[0]
     assert "REFUS" not in head.upper(), f"l'en-tete annonce encore un refus : {head!r}"
-    assert "GRAIN DU CYCLE" in head
+    assert "FILE DE REPARATION" in head
     assert "#1" in out, "la PR a reprendre doit etre nommee"
     # Le fond qui marchait deja ne doit pas disparaitre avec la forme.
     assert "check requis en echec" in out
@@ -778,7 +778,7 @@ def test_adjacency_red_advice_replaces_three_generic_gestures(monkeypatch, capsy
     )
     # L'en-tete Reparation doit toujours etre la (coherence avec le
     # test existant).
-    assert "GRAIN DU CYCLE" in out
+    assert "FILE DE REPARATION" in out
     assert "#99" in out
 
 
@@ -976,7 +976,7 @@ def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
     backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
     assert backlog["triggers"] == []
     pig.print_red_assignment("myia-po-2026:CoursIA", {"red": [], "triggers": []}, 24)
-    assert "GRAIN DU CYCLE" in capsys.readouterr().out  # la fonction existe et rend
+    assert "FILE DE REPARATION" in capsys.readouterr().out  # la fonction existe et rend
 
 
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
@@ -1546,6 +1546,25 @@ def test_crowding_never_zeroes_a_candidate():
     item = {"number": 1, "age": 400, "idle": 90, "genre": "lean"}
     assert pig.weight(item, None, {1: 50}) > 0
 
+
+def test_all_session_genres_are_penalized_not_only_the_last_one():
+    """#14704 : guard -> docs -> guard reste penalise au troisieme tirage."""
+    guard = {"number": 1, "age": 30, "idle": 1, "genre": "guard"}
+    docs = {"number": 2, "age": 30, "idle": 1, "genre": "docs"}
+    fresh = {"number": 3, "age": 30, "idle": 1, "genre": "lean"}
+    prior = "guard,docs"
+    assert pig.weight(dict(guard), prior) == pig.weight(dict(guard), None) * 0.25
+    assert pig.weight(dict(docs), prior) == pig.weight(dict(docs), None) * 0.25
+    assert pig.weight(dict(fresh), prior) == pig.weight(dict(fresh), None)
+
+
+def test_prev_genres_accept_repeated_csv_and_persisted_pipe_forms():
+    assert pig.normalize_prev_genres(["guard,docs", "slides"]) == {
+        "guard", "docs", "slides"}
+    assert pig.normalize_prev_genres("guard|docs") == {"guard", "docs"}
+    assert pig.normalize_prev_genres("guard") == {"guard"}
+
+
 # --- points de review non leves : la 4e cause (mandat user 2026-08-24) -------
 #
 # "Fais en sorte que les agents ne produisent plus tant qu'il leur reste des
@@ -1932,12 +1951,38 @@ def test_14591_volet_a_write_then_read_csv(tmp_path) -> None:
     with csv_path.open(encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l]
     assert len(lines) == 2, f"attendu 2 (header + 1 lane), obtenu {len(lines)}"
+    # Migration multi-genres : un ancien scalaire et une nouvelle liste se
+    # relisent par la meme fonction, sans exception ni perte.
+    pig.write_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2",
+                            "guard|docs", "2026-09-04T22:15Z")
+    genres, ts = pig.read_prev_genre_csv(
+        str(csv_path), "myia-po-2027:CoursIA-2")
+    assert pig.normalize_prev_genres(genres) == {"guard", "docs"}
+    assert ts == "2026-09-04T22:15Z"
+    assert csv_path.read_text(encoding="utf-8").startswith(
+        "lane,last_genres,last_ts\n")
     # Upsert ajoute une lane differente
     pig.write_prev_genre_csv(str(csv_path), "myia-po-2026:CoursIA",
                             "notebook-python", "2026-09-04T22:30Z")
     with csv_path.open(encoding="utf-8") as fh:
         lines = [l for l in fh.read().splitlines() if l]
     assert len(lines) == 3, f"attendu 3 (header + 2 lanes), obtenu {len(lines)}"
+
+
+def test_14704_cli_accepts_repeated_and_csv_prev_genres(monkeypatch, capsys) -> None:
+    """Les deux formes CLI alimentent le meme ensemble de genres de session."""
+    class _R:
+        stdout = "[]"
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: _R())
+    rc = pig.main([
+        "--admissible=99999999",
+        "--lane=myia-po-2027:CoursIA-2",
+        "--prev-genre=guard,docs",
+        "--prev-genre=slides",
+    ])
+    assert rc == 1
+    assert "absente du pool ouvert" in capsys.readouterr().out
 
 
 def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch, capsys) -> None:
@@ -1949,8 +1994,8 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     """
     csv_path = tmp_path / "picker_state.csv"
     csv_path.write_text(
-        "lane,last_genre,last_ts\n"
-        "myia-po-2027:CoursIA-2,tooling,2026-09-04T22:00Z\n",
+        "lane,last_genres,last_ts\n"
+        "myia-po-2027:CoursIA-2,guard|tooling,2026-09-04T22:00Z\n",
         encoding="utf-8",
     )
     # Utiliser --admissible et un numero inexistant pour sortie rapide 1 sans
@@ -1970,7 +2015,7 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     assert "prev-genre auto-applique depuis CSV" in captured, (
         f"auto-apply absent. Sortie: {captured[:400]}"
     )
-    assert "tooling" in captured
+    assert "guard|tooling" in captured
 
 
 def _untagged_pr(n, *, author="jsboige", branch="feature/foo"):

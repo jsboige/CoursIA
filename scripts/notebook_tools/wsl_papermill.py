@@ -35,8 +35,8 @@ Prerequisites (native macOS/Linux):
     (plus any notebook-specific dependencies: nashpy, matplotlib, numpy, scipy, etc.)
 
 Usage:
-    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto] [--venv <path>]
-    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto] [--venv <path>]
+    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto] [--venv <path>] [--cwd <dir>]
+    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto] [--venv <path>] [--cwd <dir>]
     python wsl_papermill.py check-env [--mode auto]
 
 Examples:
@@ -48,6 +48,7 @@ Examples:
 import argparse
 import json
 import platform
+import shlex
 import shutil
 import subprocess
 import sys
@@ -181,9 +182,31 @@ def _wsl_home() -> str:
     return out.strip()
 
 
+def _quote_wsl_path(path: str) -> str:
+    """Quote a WSL path while preserving ``~`` expansion."""
+    if path == "~":
+        return '"$HOME"'
+    if path.startswith("~/"):
+        return f'"$HOME"/{shlex.quote(path[2:])}'
+    return shlex.quote(path)
+
+
 def _papermill_cmd(venv: str) -> str:
     """Build the WSL papermill activation command for a venv."""
-    return f"source {venv}/bin/activate && papermill"
+    return f"source {_quote_wsl_path(venv)}/bin/activate && papermill"
+
+
+def _wsl_lake_root(execution_cwd: str) -> str | None:
+    """Return the nearest Lake root above ``execution_cwd`` inside WSL."""
+    script = (
+        f'd={shlex.quote(execution_cwd)}; '
+        'while true; do '
+        'if [ -f "$d/lakefile.lean" ] || [ -f "$d/lakefile.toml" ]; then '
+        'printf "%s" "$d"; exit 0; fi; '
+        '[ "$d" = "/" ] && exit 1; d=$(dirname "$d"); done'
+    )
+    rc, out, _ = run_wsl(script)
+    return out.strip() if rc == 0 and out.strip() else None
 
 
 def check_env_wsl() -> bool:
@@ -254,12 +277,18 @@ def check_env_wsl() -> bool:
 
 def execute_notebook_wsl(notebook: str, output: str | None = None,
                          kernel: str = "python3", timeout: int = 300,
-                         in_place: bool = False, venv: str | None = None) -> int:
+                         in_place: bool = False, venv: str | None = None,
+                         cwd: str | None = None) -> int:
     """Execute a single notebook via WSL papermill.
 
     ``venv`` overrides the execution venv (default ``~/coursia-wsl``, unchanged).
     When the kernelspec the notebook declares points to a different venv, the
     divergence is printed on stdout instead of diverging silently (#14908).
+
+    ``cwd`` selects the execution directory passed to Papermill and inherited by
+    the kernel. It defaults to the notebook directory. Lean companion notebooks
+    stored beside several Lake projects must pass their intended Lake root
+    explicitly (#16181).
     """
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
@@ -279,14 +308,33 @@ def execute_notebook_wsl(notebook: str, output: str | None = None,
     if _WIN_DRIVE_RE.match(use_venv):
         use_venv = win_to_wsl_path(use_venv)
 
+    execution_cwd = Path(cwd).resolve() if cwd else nb_path.parent
+    if not execution_cwd.is_dir():
+        print(f"ERROR: execution cwd {execution_cwd} is not a directory")
+        return 1
+    wsl_cwd = win_to_wsl_path(str(execution_cwd))
+    if kernel == "lean4-wsl":
+        lake_root = _wsl_lake_root(wsl_cwd)
+        if lake_root is None:
+            print("ERROR: Lean 4 kernel startup aborted: no lakefile.lean or "
+                  f"lakefile.toml found from {wsl_cwd}. Pass --cwd <lake-root>.")
+            return 1
+        wsl_cwd = lake_root
+
     declared = _declared_venv_from_kernel_json(_find_kernel_json_wsl(kernel))
     if declared:
         msg = _venv_mismatch_message(kernel, use_venv, declared, _wsl_home())
         if msg:
             print(msg)
     print(f"[info] venv: {use_venv}")
+    print(f"[info] cwd: {wsl_cwd}")
 
-    cmd = f'{_papermill_cmd(use_venv)} --kernel {kernel} "{wsl_input}" "{wsl_output}"'
+    cmd = (
+        f'cd {shlex.quote(wsl_cwd)} && {_papermill_cmd(use_venv)} '
+        f'--kernel {shlex.quote(kernel)} --cwd {shlex.quote(wsl_cwd)} '
+        f'--start-timeout {timeout} '
+        f'{shlex.quote(wsl_input)} {shlex.quote(wsl_output)}'
+    )
     print(f"Executing (WSL): {nb_path.name} ...")
 
     start = time.time()
@@ -368,11 +416,13 @@ def _find_papermill() -> str | None:
 
 def execute_notebook_native(notebook: str, output: str | None = None,
                             kernel: str = "python3", timeout: int = 300,
-                            in_place: bool = False, venv: str | None = None) -> int:
+                            in_place: bool = False, venv: str | None = None,
+                            cwd: str | None = None) -> int:
     """Execute a single notebook via native papermill (macOS/Linux).
 
     ``venv`` is accepted for API symmetry with the WSL path but ignored: in
     native mode the interpreter is ``sys.executable`` (the current venv).
+    ``cwd`` defaults to the notebook directory, matching WSL mode.
     """
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
@@ -386,11 +436,16 @@ def execute_notebook_native(notebook: str, output: str | None = None,
     else:
         out_path = str(nb_path.parent / f"{nb_path.stem}_output.ipynb")
 
+    execution_cwd = Path(cwd).resolve() if cwd else nb_path.parent
+    if not execution_cwd.is_dir():
+        print(f"ERROR: execution cwd {execution_cwd} is not a directory")
+        return 1
+
     cmd = [
         sys.executable, "-m", "papermill",
         str(nb_path), out_path,
         "--kernel", kernel,
-        "--cwd", str(nb_path.parent),
+        "--cwd", str(execution_cwd),
     ]
 
     print(f"Executing (native): {nb_path.name} ...")
@@ -446,15 +501,17 @@ def _validate_output(nb_path: Path, elapsed: float) -> int:
 def execute_notebook(notebook: str, output: str | None = None,
                      kernel: str = "python3", timeout: int = 300,
                      in_place: bool = False, mode: str = "auto",
-                     venv: str | None = None) -> int:
+                     venv: str | None = None, cwd: str | None = None) -> int:
     """Execute a single notebook, dispatching to native or WSL mode."""
     if mode == "auto":
         mode = _default_mode()
 
     if mode == "wsl":
-        return execute_notebook_wsl(notebook, output, kernel, timeout, in_place, venv)
+        return execute_notebook_wsl(
+            notebook, output, kernel, timeout, in_place, venv, cwd)
     elif mode == "native":
-        return execute_notebook_native(notebook, output, kernel, timeout, in_place, venv)
+        return execute_notebook_native(
+            notebook, output, kernel, timeout, in_place, venv, cwd)
     else:
         print(f"ERROR: unknown mode '{mode}' (use 'wsl', 'native', or 'auto')")
         return 1
@@ -462,7 +519,8 @@ def execute_notebook(notebook: str, output: str | None = None,
 
 def batch_execute(directory: str, pattern: str = "*.ipynb",
                   kernel: str = "python3", timeout: int = 300,
-                  mode: str = "auto", venv: str | None = None) -> int:
+                  mode: str = "auto", venv: str | None = None,
+                  cwd: str | None = None) -> int:
     """Execute all matching notebooks in a directory."""
     nb_dir = Path(directory).resolve()
     if not nb_dir.exists():
@@ -480,7 +538,7 @@ def batch_execute(directory: str, pattern: str = "*.ipynb",
     for i, nb in enumerate(notebooks, 1):
         print(f"\n[{i}/{len(notebooks)}] {nb.name}")
         rc = execute_notebook(str(nb), kernel=kernel, timeout=timeout,
-                              in_place=True, mode=mode, venv=venv)
+                              in_place=True, mode=mode, venv=venv, cwd=cwd)
         if rc == 0:
             results["ok"] += 1
         elif rc == 2:
@@ -527,6 +585,10 @@ def main():
                         help="WSL venv to execute in (default: ~/coursia-wsl). "
                              "If omitted, the venv derived from the notebook's "
                              "kernelspec is compared and a divergence is printed.")
+    p_exec.add_argument("--cwd", default=None,
+                        help="Kernel execution directory (default: notebook directory). "
+                             "On Windows, pass a Windows host path. For Lean companions "
+                             "beside multiple Lake projects, pass the intended Lake root.")
 
     # batch
     p_batch = sub.add_parser("batch", help="Execute all notebooks in directory")
@@ -541,6 +603,9 @@ def main():
                         help="WSL venv to execute in (default: ~/coursia-wsl). "
                              "If omitted, the venv derived from each notebook's "
                              "kernelspec is compared and a divergence is printed.")
+    p_batch.add_argument("--cwd", default=None,
+                         help="Kernel execution directory for every notebook "
+                              "(default: each notebook directory).")
 
     # check-env
     p_check = sub.add_parser("check-env", help="Check papermill environment")
@@ -550,11 +615,13 @@ def main():
 
     args = parser.parse_args()
     if args.command == "execute":
-        sys.exit(execute_notebook(args.notebook, args.output, args.kernel,
-                                  args.timeout, mode=args.mode, venv=args.venv))
+        sys.exit(execute_notebook(
+            args.notebook, args.output, args.kernel, args.timeout,
+            mode=args.mode, venv=args.venv, cwd=args.cwd))
     elif args.command == "batch":
-        sys.exit(batch_execute(args.directory, args.pattern, args.kernel,
-                               args.timeout, mode=args.mode, venv=args.venv))
+        sys.exit(batch_execute(
+            args.directory, args.pattern, args.kernel, args.timeout,
+            mode=args.mode, venv=args.venv, cwd=args.cwd))
     elif args.command == "check-env":
         sys.exit(0 if check_env(args.mode) else 1)
     else:
