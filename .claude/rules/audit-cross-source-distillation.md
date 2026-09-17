@@ -14,7 +14,7 @@ Incident fondateur : **18 rapports `audit-distillation` déposés dans l'arbre n
 
 ## Règle HARD 2 — un audit est un grain au cas par cas, jamais un genre reconductible
 
-Un audit se justifie sur **une** cible concrète (ce notebook, cette source), quand un doute réel de fidélité existe. Il ne se déroule **jamais** en **rollout de genre** — « auditer toutes les familles en série », une table « reconductibilité N/N », un décret « audit = contribution, je promeus ma méthode en règle avant de clore ». C'est la monoculture LIGHT scan-générable fermée par [variation-protocol.md](variation-protocol.md) (litmus : « je peux en produire une douzaine en scannant le notebook suivant » → LIGHT). Aucun agent ne s'auto-autorise à promouvoir une règle : tout ajout à `.claude/rules/` passe par une **PR + sign-off user** (CLAUDE.md §A).
+Un audit se justifie sur **une** cible concrète (ce notebook, cette source), quand un doute réel de fidélité existe. Il ne se déroule **jamais** en **rollout de genre** — « auditer toutes les familles en série », une table « reconductibilité N/N », un décret « audit = contribution, je promeus ma méthode en règle avant de clore ». C'est la monoculture LIGHT scan-générable fermée par [variation-protocol.md](variation-protocol.md) (litmus : « je peux en produire une douzaine en scannant le notebook suivant » → LIGHT). Aucun agent ne s'auto-autorise à promouvoir une règle : toute promotion normative substantielle vers `.claude/rules/` passe par une **PR + sign-off user**, conformément à la gouvernance des règles de CLAUDE.md §A.
 
 ## Méthode (quand un audit est réellement justifié)
 
