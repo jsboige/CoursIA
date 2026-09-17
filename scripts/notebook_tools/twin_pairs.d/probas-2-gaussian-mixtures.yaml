@@ -57,6 +57,12 @@
       csharp_sha: f7d507ae2ac763906e13d6ba61240219f5193ab4
       content_python_sha: d097e445246d572e6a5e758b31e5c98587b7d29174d6c55596e949e4874da28b
       content_csharp_sha: 193d1a1aa8d5a5fe5da8159efcba581bcbc402afb68247a3c3e14d78f380a76a
+    - date: "2026-08-28"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 9cfd2a2fd4971f898fc156767770f45427c6b8e8
+      csharp_sha: f7d507ae2ac763906e13d6ba61240219f5193ab4
+      content_python_sha: cd7456ba906f7fafe38411af38e48278ef8682ec0dab56de805ba3ff6dfdfe9c
+      content_csharp_sha: 193d1a1aa8d5a5fe5da8159efcba581bcbc402afb68247a3c3e14d78f380a76a
   known_differences:
   - '2026-08-21 (rebaseline asymetrique myia-po-2024:CoursIA-2) : PR #12065 corrige heading_in_list cote C# (Infer-2-Gaussian-Mixtures.ipynb, 1 finding) tandis que le jumeau Python (PyMC-2-Gaussian-Mixtures.ipynb) etait deja a 0 finding. La convergence unilaterale est legitime (cf ai-01 arbitrage 2026-08-21 15:00Z, DM msg-20260821T130006-lc9u2c) : la parite reelle s''ameliore, elle n''est pas enshrinee. Aucun strip outille en attente (probe banner 0, papermill 0, machine paths 0).'
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
