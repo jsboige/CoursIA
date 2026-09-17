@@ -302,16 +302,26 @@ jobs:
           # --collect-only sur l'arbre merge exact : 870 collected
           # (D:/Dev/venvs/ict-py39, 1.36s, la forme de l'env CI).
           # Les deux apports coexistent : test_confabulation_broadcast.py
-          # (main, #15915) ET test_attention_schema_causal.py (cette PR,
+          # (main, #15915) ET test_attention_schema_causal.py (main,
           # #15798). Reconcile #15762 : la jambe reste SEQUENTIELLE par
           # choix (test-parallel vide -- elle n'a pas ete mesuree par la
           # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
           # en mode prepend, cf. #9387/#14598).
+          # ET test_confabulation_ignition.py (cette PR, #8182,
+          # +16 -- floor porte a 886, derivation au test-floor ci-dessous).
           - suite-name: "ict/tests/ (52 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
-            test-floor: 870
+            # Floor 846 -> 870 -> 886 : +24 items case 5bis #15798 (main,
+            # ict/tests/test_attention_schema_causal.py) PUIS +16 items
+            # case 15 confabulation ignition #8182 (cette PR,
+            # ict/tests/test_confabulation_ignition.py) -- 870 main pur
+            # + 16 = 886 ; decomposition verifiee par run isole du fichier
+            # (16 passed, aucun parametrize -- collection == run).
+            # Fichier sans parametrize, imports numpy+stdlib uniquement,
+            # py3.9-safe (typing.Dict, pas de PEP 604 ni walrus).
+            test-floor: 886
 
     steps:
       - uses: actions/checkout@v4
