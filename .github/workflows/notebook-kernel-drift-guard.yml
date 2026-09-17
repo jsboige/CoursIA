@@ -63,10 +63,14 @@ jobs:
         env:
           BASE_REF: ${{ github.event.inputs.base_ref }}
           PR_BASE: ${{ github.base_ref }}
+          PR_BODY: ${{ github.event.pull_request.body }}
           PR_BODY_FILE: ${{ runner.temp }}/pr_body
         run: |
           BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
           # Write the PR body to a file the script can read (defect 1: exemption check).
+          # PR_BODY env must be set ABOVE (github.event.pull_request.body) for the
+          # '## Diagnostic dérive' exemption to activate in CI -- without it, body_exempts
+          # is False on every run and C.4 acceptance is unreachable.
           if [ -n "$PR_BODY" ]; then
             printf '%s' "$PR_BODY" > "$PR_BODY_FILE"
           fi
