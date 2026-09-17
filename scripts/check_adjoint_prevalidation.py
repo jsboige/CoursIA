@@ -56,6 +56,7 @@ START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
 READY = "READY"
+REVIEW_READY = "REVIEW_READY"
 BLOCKED = "BLOCKED"
 DWELL_PENDING = "DWELL_PENDING"
 STALE = "STALE"
@@ -117,6 +118,7 @@ class QueueEntry:
     b0_rc: int | None
     checks: str
     review_qualifying: bool
+    review_disposition: str
     grain_tag: str | None
     last_comment_is_dossier: bool
     tail_to_read: list[dict[str, Any]]
@@ -413,8 +415,7 @@ def _checks_summary(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
     return "latest-wins-green", []
 
 
-def _qualifying_review(snapshot: dict[str, Any]) -> bool:
-    head = snapshot.get("headRefOid")
+def _latest_reviews(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
     latest_by_author: dict[str, tuple[tuple[str, str], dict[str, Any]]] = {}
     for index, review in enumerate(snapshot.get("reviews") or []):
         author = (review.get("author") or {}).get("login", "") or f"unknown-{index}"
@@ -422,14 +423,26 @@ def _qualifying_review(snapshot: dict[str, Any]) -> bool:
         current = latest_by_author.get(author)
         if current is None or order > current[0]:
             latest_by_author[author] = (order, review)
-    latest = [item[1] for item in latest_by_author.values()]
+    return [item[1] for item in latest_by_author.values()]
+
+
+def _review_disposition(snapshot: dict[str, Any]) -> str:
+    head = snapshot.get("headRefOid")
+    latest = _latest_reviews(snapshot)
     if any(review.get("state") == "CHANGES_REQUESTED" for review in latest):
-        return False
-    return any(
-        review.get("state") == "APPROVED"
-        and (review.get("commit") or {}).get("oid") == head
-        for review in latest
-    )
+        return "changes-requested"
+    approvals = [review for review in latest if review.get("state") == "APPROVED"]
+    if any((review.get("commit") or {}).get("oid") == head for review in approvals):
+        return "approved-exact-head"
+    if approvals:
+        return "approval-not-on-head"
+    if latest:
+        return "reviewed-without-disposition"
+    return "unreviewed"
+
+
+def _qualifying_review(snapshot: dict[str, Any]) -> bool:
+    return _review_disposition(snapshot) == "approved-exact-head"
 
 
 def _grain_tag(snapshot: dict[str, Any]) -> str | None:
@@ -478,7 +491,8 @@ def classify_snapshot(
     head = str(snapshot.get("headRefOid") or "")
     live_fingerprint = surfaces_fingerprint(snapshot)
     checks, check_errors = _checks_summary(snapshot)
-    review_qualifying = _qualifying_review(snapshot)
+    review_disposition = _review_disposition(snapshot)
+    review_qualifying = review_disposition == "approved-exact-head"
 
     if not dossiers:
         return QueueEntry(
@@ -487,6 +501,7 @@ def classify_snapshot(
             surfaces_sha256=live_fingerprint,
             b0_rc=b0_result[0] if b0_result is not None else None,
             checks=checks, review_qualifying=review_qualifying,
+            review_disposition=review_disposition,
             grain_tag=_grain_tag(snapshot), last_comment_is_dossier=False,
             tail_to_read=[], dossier_age_minutes=None, dwell_until=None,
             reject_cause=["no [ADJOINT PREFLIGHT] dossier comment found"],
@@ -553,8 +568,14 @@ def classify_snapshot(
         dwell_until = _iso(floor)
         dwell_pending = not dwell_waived and now < floor
 
+    review_reason = "no qualifying APPROVED review on exact head"
     if stale_reasons:
         status = STALE
+    elif reasons == [review_reason]:
+        # The adjoint has completed every delegable preflight surface. Formal
+        # exact-head review is coordinator work, not an external blocker and
+        # not a reason to stop the adjoint's continuous preparation pipeline.
+        status = REVIEW_READY
     elif reasons:
         status = BLOCKED
     elif dwell_pending:
@@ -570,6 +591,7 @@ def classify_snapshot(
         surfaces_sha256=dossier.fields.get("surfaces-sha256", ""),
         b0_rc=b0_rc,
         checks=checks, review_qualifying=review_qualifying,
+        review_disposition=review_disposition,
         grain_tag=_grain_tag(snapshot),
         last_comment_is_dossier=dossier.comment_index == len(comments) - 1,
         tail_to_read=tail, dossier_age_minutes=dossier_age,
@@ -607,7 +629,10 @@ def build_queue(
         ) as exc:
             unknown.append({"pr": pr, "error": f"UNKNOWN: {exc}"})
     entries.sort(key=lambda entry: (entry.created_at, entry.pr))
-    counts = {status: 0 for status in (READY, BLOCKED, DWELL_PENDING, STALE)}
+    counts = {
+        status: 0
+        for status in (READY, REVIEW_READY, BLOCKED, DWELL_PENDING, STALE)
+    }
     for entry in entries:
         counts[entry.status] += 1
     result = {

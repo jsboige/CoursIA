@@ -348,6 +348,39 @@ def test_queue_latest_started_check_wins_over_older_completed_success():
     assert entry.checks == "in-flight"
 
 
+def test_only_missing_exact_head_approval_is_review_ready():
+    snapshot = _base_snapshot()
+    snapshot["reviews"] = []
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+
+    entry = mod.classify_snapshot(snapshot, now=_now())
+
+    assert entry.verdict == mod.REVIEW_READY
+    assert not entry.review_qualifying
+    assert entry.review_disposition == "unreviewed"
+    assert entry.reject_cause == [
+        "no qualifying APPROVED review on exact head"
+    ]
+
+
+def test_review_ready_remains_visible_while_dwell_runs():
+    snapshot = _base_snapshot()
+    snapshot["reviews"] = []
+    snapshot["commits"] = [{
+        "oid": HEAD, "committedDate": "2026-09-17T11:30:00Z"
+    }]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T11:40:00Z"
+    ))
+
+    entry = mod.classify_snapshot(snapshot, now=_now())
+
+    assert entry.verdict == mod.REVIEW_READY
+    assert entry.dwell_until == "2026-09-17T13:30:00Z"
+
+
 def test_latest_changes_requested_prevents_qualifying_review():
     snapshot = _base_snapshot()
     snapshot["reviews"][1].update({
@@ -363,8 +396,26 @@ def test_latest_changes_requested_prevents_qualifying_review():
         _body(snapshot), created_at="2026-09-17T09:30:00Z"
     ))
     entry = mod.classify_snapshot(snapshot, now=_now())
-    assert entry.verdict == mod.BLOCKED
+    assert entry.verdict == mod.REVIEW_READY
     assert not entry.review_qualifying
+    assert entry.review_disposition == "changes-requested"
+
+
+def test_approval_on_prior_head_is_distinct_review_ready_disposition():
+    snapshot = _base_snapshot()
+    snapshot["reviews"] = [{
+        "id": "approval", "submittedAt": "2026-09-17T08:00:00Z",
+        "author": {"login": "reviewer"}, "state": "APPROVED",
+        "commit": {"oid": "1" * 40},
+    }]
+    snapshot["comments"].append(_comment(
+        _body(snapshot), created_at="2026-09-17T09:30:00Z"
+    ))
+
+    entry = mod.classify_snapshot(snapshot, now=_now())
+
+    assert entry.verdict == mod.REVIEW_READY
+    assert entry.review_disposition == "approval-not-on-head"
 
 
 def test_later_approval_supersedes_same_reviewers_change_request():

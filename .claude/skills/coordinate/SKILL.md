@@ -29,16 +29,23 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 
 Les phases A-D s'executent dans cet ordre sous le budget total de 1 h a 1 h 30. La file READY est preparee inter-cycle : la reconstruire par un sweep manuel au debut annule le travail de l'adjoint.
 
-### Phase A - Deriver la queue READY une fois
+### Phase A - Deriver les deux files executables une fois
 
 1. Lire l'index memoire et `coordinator-durable-state.md`, puis les deux dashboards workspace et l'inbox `deep:true`. Relever les non-lus et les PRs en attente avant toute lecture de fichier.
 2. Verifier le cron unique. Ne pas bouger le checkout partage s'il est sale : travailler depuis `main` frais dans un worktree isole si necessaire.
-3. Extraire les numeros explicitement prepares par l'adjoint et lancer **une fois** : `python scripts/check_adjoint_prevalidation.py --queue <PR...>`. La sortie JSON est une queue **derivee**, oldest-first, sans registre persistant a invalider.
-4. `READY` entre en Phase B. `DWELL_PENDING` attend son `dwell_until`. `STALE` et `BLOCKED` sortent immediatement de la passe avec leur `reject_cause`, `tail_to_read`, `WAIT_FOR` et `RESUME_WHEN`. Exit 2 est UNKNOWN fail-closed.
+3. Extraire les numeros explicitement prepares par l'adjoint et lancer **une fois** : `python scripts/check_adjoint_prevalidation.py --queue <PR...>`. La sortie JSON est derivee oldest-first, sans registre persistant.
+4. `REVIEW_READY` entre en Phase B0 : toutes les portes prémâchées sont vertes, seule la review exact-head manque. `READY`/`MERGE_READY` entre en Phase B1. `DWELL_PENDING`, `STALE` et les vrais `BLOCKED` portent leur événement de reprise. Exit 2 est UNKNOWN fail-closed.
+5. **L'adjoint est un producteur continu, jamais un waiter.** Après avoir émis `REVIEW_READY`, il poursuit les candidates suivantes, refreshs, extensions et préparations conditionnelles. Il consomme les reviews ai-01 comme événements entrants et republie les dossiers finals, sans suspendre sa cadence ni attendre la fin de Phase B0.
 
-### Phase B - Consommer et merger en rafale
+### Phase B0 - Reviewer en rafale la file REVIEW_READY
 
-1. Parcourir les `READY` oldest-first. Juste avant la lecture personnelle, lancer `python scripts/check_adjoint_prevalidation.py --consume <PR>` : cette commande relit toutes les surfaces live et ne reutilise aucun cache de `--queue`.
+1. Parcourir `REVIEW_READY` oldest-first. Lire personnellement body, tous les commentaires, corps/états des reviews, threads et diff ; exploiter le dossier prémâché sans rejouer les audits déjà étayés.
+2. Poser la disposition formelle exact-head immédiatement (APPROVED ou CHANGES_REQUESTED motivée). Une absence d'approval n'est jamais redispatchée comme attente worker : c'est du travail local ai-01.
+3. Chaque APPROVED est un événement pour l'adjoint, qui finalise le dossier en parallèle. Continuer la rafale sans attendre chaque republication individuellement ; les dossiers finals alimentent Phase B1 dès qu'ils arrivent.
+
+### Phase B1 - Consommer et merger en rafale
+
+1. Parcourir les `READY` oldest-first, y compris celles générées pendant Phase B0. Juste avant la lecture personnelle, lancer `python scripts/check_adjoint_prevalidation.py --consume <PR>` : cette commande relit toutes les surfaces live et ne reutilise aucun cache de `--queue`.
 2. **Exit 0 seulement** ouvre la lecture B.0 personnelle minimale : body, commentaires, corps/etats des reviews, threads et diff. Lire `tail_to_read`, le delta et la preuve decisive ; ne pas rejouer l'audit complet de l'adjoint, d'Hermes ou de NanoClaw.
 3. Repasser `python scripts/check_unaddressed_nits.py <PR>`, latest-wins CI, H.4, catalogue byte-identique a main, scope, stack et variation. Un preflight READY n'autorise jamais a lui seul le merge.
 4. Merger avec le `head` retourne par **ce** `--consume` : `gh pr merge <PR> --repo jsboige/CoursIA --squash --match-head-commit <HEAD>`. Jamais `--delete-branch`. Recalculer la variation apres chaque merge pertinent.
@@ -46,7 +53,7 @@ Les phases A-D s'executent dans cet ordre sous le budget total de 1 h a 1 h 30. 
 
 ### Phase C - Dispatcher massivement les sorties et le travail lourd
 
-1. Regrouper `STALE`/`BLOCKED` et les rouges par lane ; citer la cause exacte et l'evenement de reprise attendu. Les dossiers invalides repartent vers l'adjoint, les reparations et re-reviews vers leur lane proprietaire.
+1. Regrouper `STALE`/vrais `BLOCKED` et les rouges par lane ; citer la cause exacte et l'événement de reprise attendu. **Ne jamais dispatcher une simple absence d’APPROVED** : elle appartient à `REVIEW_READY` et à la rafale locale ai-01. Les dossiers invalides repartent vers l'adjoint, les réparations vers leur lane propriétaire.
 2. Grounder chaque grain firsthand, poser le claim GitHub et utiliser le double canal DM + pointeur dashboard. Une lane sans grain recoit une deep-queue ou un fallback perenne ; elle n'attend jamais une candidate en HOLD, DWELL, CI ou review.
 3. Les investigations lourdes, tests, builds et reconciliations sont dispatches maintenant afin que le prochain cycle retrouve une queue actionnable. Après la rafale seulement, exécuter `python scripts/pick_idle_grain.py --orphans-report` : toute PR hors radar de l'adjoint reçoit alors un propriétaire ou un événement de reprise sans retarder le premier merge. Mettre a jour la memoire durable si son etat a change.
 
