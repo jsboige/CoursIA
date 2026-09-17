@@ -8,7 +8,6 @@ maturity:
 # Série Z3 - Programmation Déclarative avec Z3.Linq
 
 [← SMT](../README.md) | [Z3-API (série sœur) →](../Z3-API/README.md)
-
 ## Série en quelques mots
 
 Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit les contraintes, le solveur produit la solution. Série .NET 9 de **18 notebooks** (~15h), du théorème linéaire à l'optimisation sous contraintes molles (sac à dos, MaxSAT) — en passant par les cryptarithmes positionnels (arithmétique positionnelle + contrainte globale `Distinct` sur le classique SEND + MORE = MONEY), la vérification de débordement sur **bit-vectors**, le **raisonnement exact sur les réels**, et l'**explication de l'insatisfiabilité** (UNSAT cores — quelles contraintes, parmi des dizaines, se contredisent).
@@ -38,6 +37,7 @@ flowchart LR
     Z3 --> SAT{"Satisfiable ?"}
     SAT -->|"oui"| SOL["Solution / témoin<br/>(.Solve / .Optimize)"]
     SAT -->|"non"| UNS["UNSAT<br/>(preuve d'impossibilité)"]
+
 ```
 
 L'abstraction centrale du binding : on reste en C#, on décrit des contraintes, et le pipeline ci-dessus — traduction vers le solveur puis décision — se fait sans écrire un seul appel Z3 bas niveau.
@@ -78,41 +78,23 @@ Le bloc **B10** dans `11` (Job Shop, sur la même instance 3×2 que le bloc **B5
 | # | Notebook | Sujet | Durée | Statut |
 |---|----------|-------|------|--------|
 | 01 | [Linq2Z3 Intro](01_Linq2Z3_Intro.ipynb) | Théorèmes linéaires, Missionnaires-Cannibales, optimisation | ~45 min | PRODUCTION |
-
 | 02 | [Sudoku Theorem vs Array](02_Sudoku_Theorem_vs_Array.ipynb) | Sudoku explicite (81 propriétés) vs implicite (`List<int>` + lambdas/closures). **Bloc B8 — DSL `ForAll`/`Exists`** : quantificateurs bornés sur une rangée de cellules en double-stack (raw boucle `MkAnd`/`MkOr` ↔ DSL `Z3Methods.ForAll(Enumerable.Range(0,N), …)`, `Z3Methods.cs:57`/`:77`) — `∀ c∈[1,4] ∧ ∃ c=4` SAT / bornes [1,3] UNSAT (dérouler en une ligne, sémantique du domaine vide) | ~50 min | PRODUCTION |
-
 | 03 | [Sudoku Modes Comparison](03_Sudoku_Modes_Comparison.ipynb) | **`CollectionHandling`** ressuscité : même Sudoku 4x4 résolu en mode `Array` vs `Constants` | ~25 min | BETA |
-
 | 04 | [Array Theory](04_Array_Theory.ipynb) | Z3 array theory : Select/Store, switching dynamique | ~45 min | BETA |
-
 | 05 | [Nested Arrays 2D](05_Nested_Arrays_2D.ipynb) | Tableaux imbriqués, grilles 2D, Sudoku 4x4, carré magique | ~40 min | BETA |
-
 | 06 | [Meal Planner Modelisation](06_Meal_Planner_Modelisation.ipynb) | **Modélisation déclarative du planificateur de repas** (*fil rouge*, Epic #4677) : data fusion LINQ + théorème hiérarchique `int[][]` (Partie A) ; couplage hebdomadaire jour×plat — glouton bloqué au jour 4 vs SMT global (Partie B) ; rendu HTML des solutions — cartes color-codées, grille, front de Pareto (Partie C) | ~75 min | BETA |
-
 | 07 | [Meal Planner Data External](07_Meal_Planner_Data_External.ipynb) | **La couche de données du bloc meal-planner (0 Z3)** : fusion du corpus **RecipeML** (XML culinaire auto-décrit, `<amt><qty>` + `<unit>` + `<item>` — avec les quantités) et de **Ciqual ANSES 2025** (4 fichiers XML lus en flux). Appariement lexical **curé sans faux positifs** (head-noun + synonymes : `White sugar` → *Sugar, white*, pas *White pudding*), **normalisation des quantités en grammes** (unités culinaires + densités), agrégation nutritionnelle **pondérée par la masse** — le contraire du raccourci per-100g. Gating par couverture d'appariement (100 % / ≥80 % / ≥50 %) et cache `mealplan_cache.json` consommé par 09 | ~45 min | BETA |
-
 | 08 | [Meal Planner Patient Capstone](08_Meal_Planner_Patient_Capstone.ipynb) | **Le cœur du capstone à l'échelle réelle** : réalise le **port *fidèle* de `PlanificateurDeMenus.Create`** (Demo2) en deux mouvements sur le **corpus réel** Ciqual ANSES 2025 × Recettes, chargé depuis **`mealplan_cache.json`** (couche de données 07 — 5 constituants, énergies recalées **kcal→kJ ×4,184**). Mouvement 1 : le **théorème structurel `int[][]`** — bornes de catégorie, montée en gamme, permutation totale `Distinct` cross-row — passe *sans modification* du corpus jouet de 06 au réel (SAT en dizaines de ms). Mouvement 2 : le **théorème hiérarchique à 4 niveaux** Patient→Menus→Plats→Denrées avec ce que 06 n'avait pas — le **linking de composition** (`PlatId != candidat \|\| Comp == teneur`, variable nutritionnelle liée au plat réellement choisi) **et** les **restrictions patient Min/Max** par constituant (fenêtre énergie + plancher protéines + plafond lipides). Sous-ensemble curé tractable ; l'instance complète `7 × 5 × R × C` fait exploser le linking = convergence à l'échelle réservée à 09 | ~45 min | BETA |
-
 | 09 | [Meal Planner Convergence at Scale](09_Meal_Planner_Convergence_Scale.ipynb) | **Clôture du bloc meal-planner (Epic #4677, capstone #4617)** : le problème patient complet (7 menus × 5 plats × fenêtres Min/Max par constituant) reste-t-il tractable à l'échelle réelle ? Charge le **cache solveur-usable produit par 07** (R=2387 recettes à couverture ≥80 %, sur 5 424 brutes) et **auto-calibre les bornes patient depuis les quartiles mesurés** (fenêtre énergie [13 230, 71 605] kJ/menu). Puis **trois encodages SMT comparés** : disjonction naïve (~105 000 disjonctions dès R=1000, la construction seule explose), théorie des tableaux (`UNKNOWN` en 15 s sur chaînes de `Store` symboliques — compact mais insoluble), **one-hot pseudo-booléen** (`MkPBEq`/`MkPBLe`/`MkPBGe`, 83 545 booléens, SAT en ~5 s) = le seul qui passe l'échelle. Puis **partitionnement par catégorie** (un pool par créneau, 16 709 booléens, SAT en 0,9 s) et **restriction patient végétarienne** (316 recettes bannies, SAT en 0,8 s). Leçon structurante : les recettes sont des **contraintes énablantes** (plus de données = plus de solutions), et l'**encodage** décide seul de la tractabilité — la puissance brute du solveur ne compense pas un mauvais encodage | ~50 min | BETA |
-
 | 10 | [Witness Generation Automata](10_Witness_Generation_Automata.ipynb) | **Fork Automata** : générer un *témoin* depuis `A & ~B` (intersection/complément de surface), cap des 21 caractères levé (#6), émission SMT-LIB `re.inter`/`re.comp` | ~40 min | BETA |
-
 | 11 | [Job Shop Scheduling](11_Job_Shop_Scheduling.ipynb) | **Ordonnancement d'atelier** : 3 jobs × 2 machines, contraintes disjonctives de non-chevauchement (OU exclusif sur les créneaux), optimisation du `Cmax` par recherche linéaire SAT ascendante. Glouton FIFO **12h → Z3 optimal 9h** (= borne inférieure, charge Machine A) — NP-difficile, met le solveur en valeur (Prong-B). **Bloc B5 — DSL `Solve(inspect)`** : témoin d'une quantité dérivée (fin de job, makespan) en double-stack (raw `Model.Eval(MkAdd(s0,d0))` ↔ DSL `Solve(w => w.Eval(x => x.S0 + d0))`), même témoin sous le même modèle, callback non invoqué sur UNSAT. **Bloc B10 — DSL `.Optimize(Minimize, …)`** : optimisation directe en double-stack sur la même instance (raw `opt.MkMinimize(cmax) + opt.Check()` ↔ DSL `.OrderBy(t => t.Cmax)` ⇒ `Optimize(Optimization.Minimize, lambda)`, `Theorem{T}.cs:86`/`:142`), même `Cmax = 9h` en une passe chacun (anti-pattern de la recherche linéaire de la cellule 9 : le solveur sait nativement optimiser) | ~40 min | BETA |
-
 | 12 | [Graph Coloring Petersen](12_Graph_Coloring_Petersen.ipynb) | **Coloration de graphe** sur le graphe de Petersen : recherche du nombre chromatique `χ = 3` par requêtes SAT successives, glouton first-fit order-sensible (3 ou 4 couleurs) vs optimum prouvé Z3 (UNSAT à 2 couleurs). **Bloc B2 — DSL ternaire `? :`** : indicateur de conflit `(cu == cv ? 1 : 0)` en double-stack (raw `MkITE + MkAdd` ↔ DSL ternaire C# → `MkITE`, `ExpressionVisitor.cs:218`) sur un triangle sous-coloré à 2 couleurs — `somme conflits <= 1` SAT / `== 0` UNSAT (réifier pour compter, preuve χ>2) | ~40 min | BETA |
-
 | 13 | [Cryptarithmetic SMT](13_Cryptarithmetic_SMT.ipynb) | **Cryptarithmes** (SEND + MORE = MONEY) : arithmétique positionnelle traduite en contraintes linéaires + contrainte globale `Distinct` sur 8 lettres. Comparaison brute force P(10,8)=1,8M candidats vs propagation Z3 (`M=1` déduit sans essai) | ~35 min | BETA |
-
 | 14 | [Optimize MaxSAT](14_Optimize_MaxSAT.ipynb) | **De SAT à OPT** : le sac à dos 0/1 (`.Optimize(Maximize, …)`) puis le **MaxSAT** (roulement d'infirmières) — contraintes dures dans `.Where(…)`, préférences molles dans l'objectif, conflit A/B sur G1 arbitré globalement (optimum 2/3 prouvé vs glouton qui bégaie). Le passage de *une* solution à la *meilleure*. **Bloc B1 — DSL `SoftWhere`** : MaxSAT pondéré en double-stack (raw `MkOptimize + AssertSoft` ↔ DSL `.SoftWhere(constraint, weight: N)` côte-à-côte, routage automatique vers `MkOptimize` dès qu'une soft est présente, Theorem.cs:144). **Bloc B3 — DSL `Z3Methods.Sum`** : somme variadique en double-stack sur le sac à dos (raw `MkAdd(ArithExpr[])` rempli à la main ↔ DSL `Z3Methods.Sum(new[]{…})`, même optimum 27, le `+` binaire du visiteur ne repliant que deux opérandes, ExpressionVisitor.cs:482) | ~40 min | BETA |
-
 | 15 | [BitVectors Overflow](15_BitVectors_Overflow.ipynb) | **Théorie des bit-vectors** (`BV32`) : la seule théorie Z3 non couverte par 01-14. Arithmétique modulaire (3e9 + 1.5e9 *enveloppe* à 205032704 en `uint32`), puis **preuve** par réfutation (UNSAT) que le débordement est inévitable pour `x,y ≥ 2³¹`, et réciproque (absence prouvée pour `p,q < 1000`). API Z3 .NET brute (`MkBV`/`MkBVAdd`/`MkBVULT`/`MkExtract`) — le terrain de la vérification de code et de matériel. **Bloc B4 — DSL `[BitVecWidth(n)]`** : le prédicat de débordement `a + b < a` en double-stack (raw `MkBitVecSort + MkBVAdd + MkBVULT` ↔ DSL où l'attribut sur une propriété entière route `+`/`<` vers les opérateurs modulaires, `Theorem.cs:548`), même double verdict SAT en 4 bits / UNSAT sur les entiers non bornés — la largeur vit dans le type | ~45 min | BETA |
-
 | 16 | [Real Arithmetic](16_RealArithmetic.ipynb) | **Théorie des réels** (`RealSort`) : la seconde théorie Z3 non couverte par 01-15. Rationnels exacts (`1/3` reste `1/3`), irrationnels exacts (√2 renvoyé comme *objet racine algébrique*, pas approximation flottante), et **preuve d'absence de racine** (`x²+1=0` → UNSAT par élimination des quantificateurs sur les corps réels clos). Application géométrique (inégalité triangulaire). La théorie du continu et de l'exactitude algébrique. **Bloc B7 — DSL `Rational`** : le prédicat `x == 1/3 ∧ 3x == 1` en double-stack (raw `MkReal(1,3)` exact ↔ `MkReal("0.333…")` lossy ; DSL `Rational.Of(1,3)` ↔ littéral `double`), même double verdict SAT exact / UNSAT approché — l'exactitude vit dans le type de la constante (`ExpressionVisitor.cs:660`) | ~45 min | BETA |
-
 | 17 | [Unsat Cores](17_UnsatCores.ipynb) | **Expliquer l'insatisfiabilité** : non plus *décider* qu'un système est UNSAT, mais **isoler le sous-ensemble minimal** de contraintes qui se contredisent (le « pourquoi »). Sur 5 contraintes d'un planificateur, Z3 pointe les 2 coupables et ignore les 3 compatibles (`Check(assumptions)` + `UnsatCore`). L'outil canonique du débogage de spécifications surcontraintes — complète l'arc *décider* (15) → *prouver* (16) → *expliquer* (17). **Bloc B6 — DSL `Explain()`** : le même core minimal en double-stack (raw `Check(assumptions)` + `UnsatCore` ↔ DSL `Theorem<T>.Explain()` qui rend `SolveStatus` + le core comme `ConstraintRef (Index, Expression)`, `Explanation.cs:41`), le DSL portant en plus la ligne `.Where` source de chaque coupable | ~45 min | BETA |
-
-| 18 | [Einsteins Riddle](18_Einsteins_Riddle.ipynb) | **Énigme d'Einstein** (Zebra puzzle) : 5 maisons, 5 attributs (nationalité, couleur, boisson, cigarette, animal), 15 indices entrelacés. **Encodage par position** : 25 variables entières (une par couple attribut/valeur), « voisin de » traduit en disjonction `|X-Y|==1`. Z3 résout un espace de **(5!)^5 ≈ 2,5 milliards** de combinaisons en ~122 ms et **prouve l'unicité** de la solution par block-and-resolve (UNSAT) — le CSP à attributs croisés canonique, qui met la propagation globale en valeur (Prong-B) | ~45 min | BETA |
-
+| 18 | [Einsteins Riddle](18_Einsteins_Riddle.ipynb) | **Énigme d'Einstein** (Zebra puzzle) : 5 maisons, 5 attributs (nationalité, couleur, boisson, cigarette, animal), 15 indices entrelacés. **Encodage par position** : 25 variables entières (une par couple attribut/valeur), « voisin de » traduit en disjonction `\|X-Y\|==1`. Z3 résout un espace de **(5!)^5 ≈ 2,5 milliards** de combinaisons en ~122 ms et **prouve l'unicité** de la solution par block-and-resolve (UNSAT) — le CSP à attributs croisés canonique, qui met la propagation globale en valeur (Prong-B) | ~45 min | BETA |
 ### Fil pédagogique
 
 1. **Notebook 01** pose les bases : le patron `Theorem<T>` de Z3.Linq, les théorèmes linéaires, la recherche de plus court chemin, et le classique Missionnaires-Cannibales
@@ -143,8 +125,6 @@ Le bloc **B10** dans `11` (Job Shop, sur la même instance 3×2 que le bloc **B5
 14. **Notebook 17** franchit un **troisième seuil** : du *verdict* à l'*explication*. Les notebooks 15 (bit-vectors) et 16 (réels) avaient mis en scène la distinction cardinale **SAT vs UNSAT** — un solveur *certifie* l'impossibilité. Mais quand Z3 répond UNSAT, **pourquoi** ? L'utilisateur a écrit une dizaine de contraintes ; lesquelles, précisément, se contredisent ? L'**UNSAT core** répond : fournissons les contraintes comme *hypothèses* (`Check(assumptions)`), et Z3 isole le **sous-ensemble minimal** suffisant à prouver l'insatisfiabilité, écartant les contraintes *irrelevantes* (compatibles). Sur une spécification de 5 contraintes (un planificateur de réunion : `h≥9`, `h≤17`, `h≠12`, `h=12`, `h≥9` redondant), le core ne contient que `{h≠12, h=12}` — les 3 autres sont ignorées car compatibles. C'est l'outil canonique du **débogage de spécifications surcontraintes** : plutôt que de lire 100 contraintes à la main pour trouver l'incohérence, le solveur pointe les coupables. Le notebook **clôt l'arc des trois capacités** de Z3 ouvert par les notebooks 15-17 : *décider* (SAT, trouver un témoin) → *prouver* (UNSAT, certifier l'impossibilité) → *expliquer* (core, isoler les contraintes responsables)
 
 15. **Notebook 18** referme la série sur un **CSP à attributs croisés** canonique : l'énigme d'Einstein (Zebra puzzle) — 5 maisons, 5 attributs (nationalité, couleur, boisson, cigarette, animal), 15 indices entrelacés. L'encodage par position (25 variables entières, « voisin de » traduit en disjonction `|X-Y|==1`) résout un espace de **(5!)⁵ ≈ 2,5 milliards** de combinaisons en ~122 ms et **prouve l'unicité** de la solution par block-and-resolve (UNSAT). Le pendant *attributs croisés* du Sudoku, où la propagation globale du solveur écrase l'énumération brute (Prong-B)
-
-
 ## Concepts clés
 
 La série manipule un vocabulaire précis hérité de la programmation par contraintes et du binding Z3.Linq. Le tableau ci-dessous reprend les notions effectivement utilisées dans les notebooks, avec un pointeur vers celui qui les introduit.
@@ -152,49 +132,27 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | Concept | Description | Notebook |
 |---------|-------------|----------|
 | **Solveur SMT (Z3)** | Décide la satisfiabilité d'une formule sur des *théories* (entiers, réels, booléens, tableaux). Z3.Linq l'expose indirectement via le binding LINQ, sans appels Z3 bas niveau. | 01 |
-
 | **Binding Z3.Linq** | Traduit des expressions LINQ C# (`.Where`, projections) en formules SMT. On décrit le modèle et les contraintes, le binding fait la traduction vers le solveur. | 01 |
-
 | **Patron `Theorem<T>`** | Abstraction centrale de la série : déclarer une classe modèle `T`, des contraintes sous forme de lambdas LINQ, puis appeler `.Solve()` ou `.Optimize()`. | 01, 06 |
-
 | **`.Solve()` vs `.Optimize()`** | `.Solve()` trouve une solution satisfaisant les contraintes ; `.Optimize()` ajoute un objectif à maximiser ou minimiser sous ces contraintes. | 01 |
-
 | **Théorème linéaire** | Contraintes linéaires (égalités/inégalités) sur entiers et réels — le terrain de base de la série (Missionnaires-Cannibales, plus court chemin). | 01 |
-
 | **`CollectionHandling`** | Feature du fork contrôlant la traduction d'une collection C# : mode `Array` (un tableau Z3 via la théorie des tableaux) ou `Constants` (une constante Z3 par élément). Ressuscitée et câblée le 14/06/2026. | 03, 04, 06 |
-
 | **Théorie des tableaux (Select/Store)** | Modélisation de structures dynamiques via `select`/`store`, manipulées symboliquement par le solveur plutôt qu'en effet de bord. | 04 |
-
 | **Tableaux imbriqués (`int[][]`)** | Grilles 2D (Sudoku 4x4, carré magique) via `int[][]` — support du fork absent du NuGet public endjin. | 05 |
-
 | **Théorème hiérarchique** | Contraintes multi-niveaux organisées par priorité (objectifs durs puis souples), illustrées par le planificateur de repas. | 06 |
-
 | **Data fusion LINQ** | Intégration de sources de données hétérogènes (catalogue d'ingrédients, contraintes nutritionnelles) dans un même théorème via LINQ. | 06 |
-
 | **Matching lexical flou** | Réconcilier deux nomenclatures libres (denrées Recettes ↔ aliments Ciqual) sans clé commune : `CalculeProximiteLexicale` score un sac-de-mots normalisé (majuscules, suppression ponctuation, troncature pluriel/féminin), chaque denrée étant appariée à l'aliment de proximité maximale. Le « pont » qui transforme des données brutes hétérogènes en corpus jointurable, avant tout raisonnement SMT. | 07 |
-
 | **Linking de composition** | Lever l'impossibilité d'indexer un tableau C# par une variable Z3 (`Plats[PlatId]` interdit) : on introduit une variable auxiliaire `Comp[slot]` *liée* au plat choisi par une disjonction `PlatId != candidat \|\| Comp == teneur(candidat)`. Le motif canonique pour faire dépendre une grandeur (ici la nutrition) d'un choix symbolique du solveur. | 08 |
-
 | **Théorème hiérarchique à restrictions** | Contraintes organisées sur plusieurs niveaux (Patient→Menus→Plats→Denrées) où un niveau agrège le niveau inférieur (nutrition du menu = somme des plats) et un acteur externe (le patient) impose des bornes `Min`/`Max` par dimension. Le solveur arbitre globalement un choix combinatoire sous contraintes nutritionnelles réelles. | 08 |
-
 | **Génération de témoin** | Produire une solution concrète depuis `A & ~B` (intersection/complément de surface), via le fork Automata. | 10 |
-
 | **Reconnaissance vs résolution** | Distinction centrale : un vérificateur (RE#) *certifie* une solution existante en temps linéaire ; un résolveur (Z3) *produit* une solution (NP-dur). Les notebooks 10 et Sudoku-13 mettent cette distinction en scène. | 10 |
-
 | **Données externes (RecipeML/XML + Ciqual)** | La couche de données parse un corpus XML réel (RecipeML, LINQ-to-XML), le fusionne avec la table nutritionnelle Ciqual ANSES 2025 et sérialise un cache solveur-usable, consommé par le notebook 09 — plutôt que des littéraux *in-notebook*. Démontre que le paradigme déclaratif s'applique à des données structurées hétérogènes. | 07, 09 |
-
 | **Rendu HTML des solutions** | Production d'une sortie visuellement interprétable (`display(HTML(...))`) : cartes color-codées, grilles, front de Pareto. Un solveur se jauge aussi à la lisibilité de ses solutions pour l'humain. | 06 |
-
 | **Matrice booléenne jour×plat** | Modéliser un choix par `(jour, plat)` comme `Sel[j][i] ∈ {0,1}` plutôt que par un index `Plan[j]`. Permet d'**agréger linéairement** des attributs par jour (`sum_i Sel[j][i] × kcal[i]`) — impossible avec une grille d'index car on ne peut pas indexer un tableau C# par une variable Z3. | 06 |
-
 | **CSP couplé non trivial** | Couplage de deux contraintes **globales non compositionnelles** (fenêtre kcal par jour × variété une fois/semaine) : un glouton sans retour arrière s'y bloque (jour 4), alors que la propagation du solveur résout globalement. Définit le seuil où un solveur SMT *discrimine* face à une heuristique triviale (Prong-B). | 06 |
-
 | **Bit-vectors (`BV32`)** | Entiers *modulo 2ⁿ* (théorie SMT originelle de Z3) : l'addition **enveloppe** au-delà de la borne, là où les entiers non bornés ne débordent jamais. Permet de **prouver** (par réfutation UNSAT) qu'un débordement est inévitable ou impossible pour des entrées données — le service qu'attend la vérification de code. API Z3 .NET brute (`MkBV`/`MkBVAdd`/`MkBVULT`/`MkExtract`). | 15 |
-
 | **Réels (`RealSort`)** | Théorie du continu : les rationnels sont stockés exactement (`1/3 ≠ 0.333…`), les irrationnels algébriques (√2) comme *objets racine* (`root-obj`) — **pas** d'approximation flottante. Permet de **prouver** l'absence de racine réelle (`x²+1=0` → UNSAT) par élimination des quantificateurs sur les corps réels clos (Tarski). Raisonnement géométrique exact. | 16 |
-
 | **UNSAT cores** | Du *verdict* à l'*explication* : sur un système insatisfiable, Z3 isole le **sous-ensemble minimal** de contraintes (hypothèses) qui se contredisent (`Check(assumptions)` + `UnsatCore`), écartant les contraintes *irrelevantes* (compatibles). Outil canonique du débogage de spécifications surcontraintes — clôt l'arc *décider → prouver → expliquer*. | 17 |
-
 ## Prérequis
 
 | Besoin | Détail |
@@ -257,7 +215,6 @@ Le pattern « décrire les contraintes en C#, laisser le binding traduire vers Z
 | 2018-2023 | jsboige | Arrays, hierarchical objects, nested arrays, meal planner |
 | 2022-2023 | endjin | Modernisation .NET, CI, structure professionnelle |
 | 2026 | MyIntelligenceAgency | Réintégration EPFdevelopment + série pédagogique |
-
 ## Pour aller plus loin : regex symbolique, reconnaissance vs résolution
 
 Cette série (LINQ → SMT) est l'une des deux faces d'une même idée — **décrire des contraintes haut-niveau, laisser le solveur témoigner**. L'autre face est l'histoire des **expressions régulières symboliques**, où la contrainte est un motif de chaîne plutôt qu'un système d'entiers. Deux ressources voisines l'explorent et complètent directement cette série :
@@ -266,7 +223,6 @@ Cette série (LINQ → SMT) est l'une des deux faces d'une même idée — **dé
 |-----------|---------|---------------------|------|
 | **Z3-API-04 — Chaînes et regex** | Python (z3-py) | La théorie **native** des chaînes Z3 : `Re`, `InRe`, `Star`, `Range`. Z3 ne se contente pas de vérifier — il **génère un témoin** (une chaîne satisfaisant le regex). Extraction d'extension, détection d'insatisfiabilité. | [Z3-API/04](../Z3-API/Z3-Python-04-Strings-Regex.ipynb) |
 | **Sudoku-13 — Automates symboliques** | C# (.NET) | L'échelle en trois barreaux : Conway (PCRE folklore) → BREX/Rex 2020 (murs documentés) → RE# 2025. RE# **reconnaît** une grille remplie en temps linéaire ; Z3 **résout** et produit la grille. Le Sudoku donne à voir la distinction. | [Sudoku/13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) |
-
 ### Reconnaître ≠ Résoudre
 
 La distinction centrale, que le Sudoku met en scène de façon frappante :
@@ -320,25 +276,17 @@ La série manipule un vocabulaire précis (SMT, théorie des tableaux, standard 
 | Barrett, Fontaine & Tinelli, "The SMT-LIB Standard: Version 2.6" (2017) | Standard SMT-LIB émis par le convertisseur et consommé par Z3 (notebooks 04, 10) |
 | McCarthy, "Towards a Mathematical Science of Computation" (IFIP 1962) | Axiomes de la théorie des tableaux `select`/`store` (notebook 04) |
 | Tarski, "A Decision Method for Elementary Algebra and Geometry" (1948) | Décidabilité de la théorie des réels (élimination des quantificateurs sur les corps réels clos) — fondement des preuves d'absence de racine réelle (notebook 16) |
-
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
 |----------|----------|
 | **`Could not load file or assembly Z3.Linq`** | Le fork n'est pas buildé localement. Exécuter une fois [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou le `.sh` (Linux/macOS) — compile le wrapper (~1,5 s) et rassemble les DLL dans `.deploy/`. |
-
 | **`#r "../Z3.Linq/.deploy/..."` échoue au démarrage du notebook** | Le dossier `.deploy/` est absent = script de build non exécuté. Les notebooks 01-06 chargent le fork depuis `.deploy/`, pas depuis NuGet. |
-
 | **`CollectionHandling` introuvable ou mode `Constants` inopérant** | Cette feature a été ressuscitée et câblée le 14/06/2026 **dans le fork**. Vérifier que le notebook charge `.deploy/` depuis [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq), pas le NuGet public endjin (qui ne l'expose pas). |
-
 | **Support `int[][]` (tableaux 2D) absent** | Le support des tableaux imbriqués provient de la branche [EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) du fork, absent du NuGet public. Le notebook 05 le nécessite. |
-
 | **Le notebook 10 échoue (`Microsoft.Automata.dll` manquant)** | Le notebook 10 consomme un fork **distinct** (Automata, pas Z3.Linq). Exécuter [`automata-build-deploy.ps1`](../../../../scripts/environment/automata-build-deploy.ps1) une fois pour peupler son propre `.deploy/`. |
-
 | **`Theorem<T>` vs écriture Z3 bas niveau** | Z3.Linq masque volontairement l'API Z3 : on décrit le modèle et les contraintes LINQ, le binding traduit. Pour la théorie des **bit-vectors**, le notebook [15 (BitVectors Overflow)](15_BitVectors_Overflow.ipynb) de *cette* série montre l'API Z3 .NET brute (`MkBV`/`MkBVAdd`/`MkBVULT`) en C#. Pour les tactiques, la théorie des chaînes ou les quantificateurs, la [série sœur Z3-API](../Z3-API/README.md) expose l'API complète côté Python. |
-
 | **Le cache `mealplan_cache.json` est épinglé (pourquoi les compteurs ne bougent plus)** | Le corpus brut (RecipeML archive.org + Ciqual ANSES 2025) **bouge dans le temps** — les sources rajoutent/retirent des lots, les connexions réussissent ou échouent, et le compte de recettes dérive d'une exécution à l'autre. Pour stopper cette dérive, le **cache dérivé `data/meals/mealplan_cache.json` est committé** (~418 Ko) : les notebooks 07 (producteur), 08 et 09 le **lisent sans le régénérer**. `download_meal_data.py` sert à **régénérer** le brut si l'on veut un nouveau millésime, **pas** à rafraîchir le cache à chaque exécution — l'épinglage garantit qu'un étudiant qui clone voit les mêmes compteurs que le notebook (#8901). |
-
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris

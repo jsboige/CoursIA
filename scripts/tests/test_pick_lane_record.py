@@ -325,12 +325,12 @@ def test_main_repair_path_prints_the_record(monkeypatch, capsys):
     """Le chemin reparation porte AUSSI l'ardoise : une lane en cycles de
     reparation est precisement celle qui peut ecrire « rien livre » -- la
     mesure doit etre sous ses yeux sur TOUT chemin de sortie du picker,
-    apres l'assignation (l'en-tete GRAIN DU CYCLE reste la premiere ligne)."""
+    apres l'assignation (l'en-tete FILE DE REPARATION reste la premiere ligne)."""
     _patch_repair(monkeypatch, FOUNDING)
     rc = pig.main(["--lane", LANE])
     out = capsys.readouterr().out
     assert rc == 0
-    assert out.splitlines()[0].startswith("GRAIN DU CYCLE")
+    assert out.splitlines()[0].startswith("FILE DE REPARATION")
     assert "Ardoise de la lane" in out
     assert "#15662" in out  # la PR de l'incident, nommee dans la sortie
 
