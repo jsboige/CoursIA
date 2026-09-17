@@ -1454,9 +1454,10 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
 
     Nouvelle forme (#14911). `index` (optionnel) place l'audit dans l'ordre
     d'append : a la migration on passe l'index d'origine (1-base), a l'ajout
-    d'un nouvel audit (`--update`) il prend `count+1` pour trier en derniere
-    position (= plus recent). `used_names` suit les noms deja pris pour suffixer
-    `-2`, `-3`... en secours si un index venait a collider. Retourne le chemin.
+    d'un nouvel audit (`--update`) il prend `max(indexes existants)+1` pour
+    trier en derniere position (= plus recent). `used_names` suit les noms
+    deja pris pour suffixer `-2`, `-3`... en secours si un index venait a
+    collider. Retourne le chemin.
     """
     slug = _slug(name)
     d = _audit_dir(registry_dir, slug)
@@ -1464,7 +1465,7 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     date = str(audit.get("date") or _dt.date.today().isoformat())
     by = audit.get("by")
     if index is None:
-        index = len(list(d.glob("*.yaml"))) + 1
+        index = _next_audit_index(d)
     base = _audit_filename(date, by, index)
     stem = base[:-5]  # retire ".yaml"
     used = used_names if used_names is not None else set()
@@ -1473,10 +1474,27 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     while cand in used:
         cand = f"{stem}-{k}.yaml"
         k += 1
+    # Course entre branches (incident gametheory-4c : deux 0009 emis par deux
+    # lanes depuis des checkouts differents) : ne JAMAIS ecraser un fichier
+    # existant -- prendre l'index libre suivant. Le suffixe -2 ci-dessus garde
+    # le meme prefixe NNNN, que test_audit_index_unique interdit aujourd'hui ;
+    # il ne reste legitime que pour la migration inline (repertoire vierge).
+    while (d / cand).exists():
+        index += 1
+        cand = _audit_filename(date, by, index)
     used.add(cand)
     path = d / cand
     path.write_text(_dump_audit_yaml(audit), encoding="utf-8", newline="")
     return path
+
+
+def _next_audit_index(d: Path) -> int:
+    """Max des index NNNN existants + 1 -- jamais len()+1 : un trou ou un
+    doublon herite ferait re-emettre un index deja pris (l'index est la cle
+    de tri du journal, #14911/#15345)."""
+    idxs = [int(f.name.split("-", 1)[0]) for f in d.glob("*.yaml")
+            if f.name.split("-", 1)[0].isdigit()]
+    return max(idxs, default=0) + 1
 
 
 def migrate_registry_files_per_audit(registry_dir: Path,

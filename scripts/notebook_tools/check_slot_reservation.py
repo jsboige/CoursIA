@@ -175,6 +175,12 @@ if _here not in sys.path:
     sys.path.insert(0, _here)
 from naming_canon import index_key, strip_lang  # noqa: E402
 
+# Reprise bornee sur la pression de fork (#16213) : sous `pytest-xdist -n 4`, le
+# spawn de `git` est refuse par intermittence (`EAGAIN`). Meme raison de
+# mutualiser que la grammaire de nom ci-dessus -- cinq gardes reecrivaient la
+# meme boucle de reprise, mot pour mot.
+from fork_retry import run_with_fork_retry  # noqa: E402
+
 DEFAULT_RESERVATIONS = Path(__file__).resolve().parent / "slot_reservations.json"
 
 SOURCE_BASE = "base"
@@ -197,9 +203,17 @@ VERDICT_PRECEDENCE = (
 
 
 def _git(args):
+    """Appel git resilient a la pression de fork -- fail-closed a l'epuisement.
+
+    `run_with_fork_retry` remonte la derniere `OSError` une fois ses tentatives
+    epuisees, et ce garde la laisse remonter DELIBEREMENT. Un instrument qui n'a
+    pas pu mesurer ne doit pas rendre de verdict : ici, une reservation de slot
+    silencieusement absente laisserait passer la collision que le garde existe
+    pour attraper.
+    """
     env = dict(os.environ, MSYS_NO_PATHCONV="1")
-    r = subprocess.run(["git"] + args, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", env=env)
+    r = run_with_fork_retry(["git"] + args, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace", env=env)
     if r.returncode != 0:
         raise RuntimeError("git %s -> %s" % (" ".join(args), (r.stderr or "").strip()[:200]))
     return r.stdout

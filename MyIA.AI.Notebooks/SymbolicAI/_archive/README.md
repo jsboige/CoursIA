@@ -17,12 +17,12 @@ Ce répertoire contient les anciennes versions et fichiers historiques de la sé
 - Argumentation avancée (ADF, Bipolaire, Ranking, Probabiliste)
 
 **Nouvelle structure** (7 notebooks séparés):
-1. **Tweety-1-Setup.ipynb** - Configuration environnement uniquement
-2. **Tweety-2-Basic-Logics.ipynb** - PL et FOL
+1. **Tweety-01-Setup-Python.ipynb** - Configuration environnement uniquement
+2. **Tweety-02-Basic-Logics-Python.ipynb** - PL et FOL
 3. **Tweety-3-Advanced-Logics.ipynb** - DL, Modale, QBF
 4. **Tweety-4-Belief-Revision.ipynb** - Révision de croyances, MUS
 5. **Tweety-5-Abstract-Argumentation.ipynb** - Cadres de Dung
-6. **Tweety-6-Structured-Argumentation.ipynb** - ASPIC+, DeLP, ABA, ASP
+6. **Tweety-06-Structured-Argumentation-Python.ipynb** - ASPIC+, DeLP, ABA, ASP
 7. **Tweety-7-Advanced-Argumentation.ipynb** - ADF, Ranking, Probabiliste
 
 **Avantages de la nouvelle structure**:
