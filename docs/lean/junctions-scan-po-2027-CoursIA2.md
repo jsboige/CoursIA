@@ -14,23 +14,25 @@ Issue #13962 — Appliquer les junctions NTFS sur le cluster Mathlib 520045ab (1
 
 | Mesure | Valeur |
 |---|---|
-| Checkouts Mathlib **reels** sur po-2027 | **3** (search_lean + mimo_lean + kelly_lean) |
-| Jonctions NTFS **actives** sur po-2027 | **9** (8 v4.32.1 + 1 v4.33.0) |
-| Lanes v4.32.1-520045ab jonctionnees | game_theory_lean, repeated_games_lean, learning_theory_lean, percolation_lean, decision_theory_lean, conway_lean, knot_lean, argumentation_lean |
-| Lanes v4.33.0-db584cd6 jonctionnees | kelly_lean |
+| Checkouts Mathlib **presents** sur po-2027 | **3** (search_lean + mimo_lean + kelly_lean — kelly_lean via jonction) |
+| Checkouts Mathlib **physiques** (disque reel) | **2** (search_lean 6.9 Go + mimo_lean 6.63 Go = **13.53 Go** de donnees) |
+| Jonctions NTFS **actives** sur po-2027 | **9** toutes vers `D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib` (cible mesuree firsthand via `fsutil reparsepoint query` 2026-09-17) |
+| Lanes v4.32.1-520045ab jonctionnees (groupe MUTUALISABLE principal) | game_theory_lean, repeated_games_lean, learning_theory_lean, percolation_lean, decision_theory_lean, conway_lean, knot_lean, argumentation_lean |
+| Lanes v4.32.1-520045ab jonctionnees (meme cible que ci-dessus, manifest-identique) | **kelly_lean** — cible reelle mesuree : `.mathlib-cache/leanprover_lean4_v4.32.1-520045ab/mathlib` (PAS v4.33.0 : voir §Note sur kelly_lean ci-dessous) |
 | Lanes v4.33.0-db584cd6 **physiques** | search_lean (6.9 Go), mimo_lean (6.63 Go) |
-| Total **physique** non-jonctionne | **~13.5 Go** |
-| Cache deja pose sur po-2027 | `.mathlib-cache/leanprover_lean4_v4.32.1-520045ab/` (1 cible — kelly_lean + les 8 du groupe v4.32.1) |
+| Total **physique** non-jonctionne | **13.53 Go** (2 checkouts physiques) |
+| Cache deja pose sur po-2027 | `.mathlib-cache/leanprover_lean4_v4.32.1-520045ab/` (1 cible — kelly_lean + les 8 du groupe v4.32.1, 9 lanes au total) |
 
 ## Groupes identifies par le Scan
 
-### Groupe `leanprover_lean4_v4.32.1-520045ab` [MUTUALISABLE] — 8/8 JUNCTIONED
+### Groupe `leanprover_lean4_v4.32.1-520045ab` [MUTUALISABLE] — **9/9 JUNCTIONED** (corrigé c.629)
 
-8 lanes sur 8 manifest-identiques sont **deja** jonctionnees vers
-`.mathlib-cache/leanprover_lean4_v4.32.1-520045ab/mathlib`. **Aucun Apply
+**9** lanes sur 9 manifest-identiques sont **deja** jonctionnees vers
+`D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib`
+(cible vérifiée firsthand via `fsutil reparsepoint query` 2026-09-17). **Aucun Apply
 supplementaire a faire dans ce groupe sur po-2027**.
 
-Liste :
+Liste (les 8 du cluster principal + kelly_lean qui partage la même cible) :
 - `MyIA.AI.Notebooks/GameTheory/game_theory_lean`
 - `MyIA.AI.Notebooks/GameTheory/repeated_games_lean`
 - `MyIA.AI.Notebooks/ML/learning_theory_lean`
@@ -39,17 +41,33 @@ Liste :
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean`
+- `MyIA.AI.Notebooks/QuantConnect/kelly_lean` *(cible mesurée : v4.32.1, pas v4.33.0 — voir §Note sur kelly_lean ci-dessous)*
 
 Toutes les junctions pointent verifiees (c.1203 scan) :
 `{D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib}`.
 Aucun orphelin `v4.31.0-rc1`. Etat sain.
 
+### Note sur kelly_lean (c.629, vérif re-mesure)
+
+Le scan `setup_shared_mathlib.ps1 -Mode Scan` range kelly_lean sous le **groupe v4.33.0-db584cd6** parce que son manifest declare v4.33.0. Mais la **cible reelle** de la jonction `kelly_lean/.lake/packages/mathlib`, mesuree firsthand via `fsutil reparsepoint query`, est :
+
+```
+\??\D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib
+```
+
+Cible = v4.32.1, **pas** v4.33.0 comme le scan `.out` le suggerait par son regroupement. Consequences :
+
+1. **Le scan regroupe par manifest declare, pas par cible reelle** : un lane dont le manifest annonce v4.33.0 mais dont la jonction pointe vers un cache v4.32.1 apparaitra dans le groupe v4.33.0 du scan. La discrimination **present/physique** doit lire la cible reelle (`fsutil reparsepoint query`) et pas l'en-tête de groupe.
+2. **9 jonctions vers v4.32.1 sur po-2027**, pas 8+1. La ligne 17 (3 presents) garde 3 ; la ligne 18 (9 jonctions, 8 v4.32.1 + 1 v4.33.0) devient 9 v4.32.1.
+3. **Le groupe v4.33.0-db584cd6 [MUTUALISABLE]** ne contient en realite **aucune jonction sur po-2027** : kelly_lean y figure par erreur de groupement. Les 2 membres physiques du cluster v4.33.0 (search_lean, mimo_lean) ne sont pas encore jonctionnes. La conclusion pratique ("candidats Apply sur ce groupe") reste, mais l'etat present differe.
+
 ### Groupe `leanprover_lean4_v4.33.0-db584cd6` [MUTUALISABLE / partiellement applique]
+
+**État réel sur po-2027** (post-re-mesure c.629) : **0 jonction**, **2 physiques**.
 
 | Lane | Statut | Manifest | Note |
 |---|---|---|---|
-| kelly_lean | **JUNCTIONED** (deja) | 9 packages (Cli, LeanSearchClient, Qq, aesop, batteries, importGraph, mathlib, plausible, proofwidgets) | cible existante |
-| search_lean | **physique (6.9 Go)** | 9 packages (**byte-identique a kelly_lean**) | candidat jonction — manifest compatible |
+| search_lean | **physique (6.9 Go)** | 9 packages | candidat jonction — manifest compatible (byte-identique a mimo_lean sauf `slt`) |
 | mimo_lean | **physique (6.63 Go)** | **10 packages** (ajoute `slt 0b1020a4`) | manifest **divergent** — pas jonctionnable tel quel |
 
 **Conclusion search_lean** : le manifeste est **byte-identique** a celui de
@@ -58,8 +76,8 @@ kelly_lean. Junctionner search_lean vers la meme cible (vers un nouveau
 destructif et permet de mutualiser. Gain : **6.9 Go recuperes** sur po-2027.
 
 **Conclusion mimo_lean** : le manifeste inclut `slt 0b1020a4` que les autres
-9 lanes du groupe n'ont pas. Soit :
-1. mimo_lean et kelly_lean/search_lean divergent en profondeur et la jonction
+lanes du cluster v4.33.0 (search_lean notamment) n'ont pas. Soit :
+1. mimo_lean et search_lean divergent en profondeur et la jonction
    est impossible (l'issue #13962 alerte sur ce cas precis — un package
    transitif manquant casse le build) ;
 2. soit `slt` est un package **local** (manifest override), pas un pin
@@ -92,22 +110,24 @@ mathlib_examples, sensitivity_lean, planning_lean, erc20_lean). Ces lanes
 futur search_lean) **dès qu'elles seront construites pour la premiere
 fois** — gain preventif sur ~77 Go.
 
-## Comparaison multi-machine (mise a jour c.1205)
+## Comparaison multi-machine (mise a jour c.1205 + correction c.629)
 
-| Mesure | ai-01 (#13962) | po-2023 (#15070) | po-2024 | po-2026 (#14038) | po-2027 CoursIA (c.1059) | po-2027 CoursIA-2 (c.1205) |
+| Mesure | ai-01 (#13962) | po-2023 (#15070) | po-2024 | po-2026 (#14038) | po-2027 CoursIA (c.1059) | po-2027 CoursIA-2 (c.1205 + c.629) |
 |---|---:|---:|---:|---:|---:|---:|
-| Checkouts Mathlib reels | **17** | **3** | 22 jonctions posees, store vide | 0 | 0 | **3** |
-| Jonctions actives | 0 | 0 | **22** | 0 | **0** | **9** |
-| Empreinte totale | ~110 Go | **1,28 Go** | 0 Go — store vide | 0 Go | **0 Go** | **13.5 Go** |
-| Groupes mutualisables | 1 (15 lacs) | **2 (13 + 9 lacs)** | **2 (13 + 9 lacs)** | 1 (19 lacs) | **2 (13 + 9 lacs)** | **2 (13 + 9 lacs)** |
-| Économie jonction-cluster | ~90 Go | **0,64 Go** | 0 Go (store vide) | 0 Go | **0 GB** | **13.5 Go court terme / ~90 Go futur** |
+| Checkouts Mathlib presents | **17** | **3** | 22 jonctions posees, store vide | 0 | 0 | **3** (search_lean + mimo_lean + kelly_lean-en-jonction) |
+| Checkouts Mathlib **physiques** | **17** | **3** | 22 jonctions posees, store vide | 0 | 0 | **2** (search_lean 6.9 Go + mimo_lean 6.63 Go = **13.53 Go**) |
+| Jonctions actives | 0 | 0 | **22** | 0 | **0** | **9** (toutes v4.32.1, cf §Note sur kelly_lean) |
+| Empreinte totale | ~110 Go | **1,28 Go** | 0 Go — store vide | 0 Go | **0 Go** | **13.53 Go** |
+| Groupes identifies par le Scan (toutes categories) | 1 (15 lacs) | **2 (13 + 9 lacs)** | **2 (13 + 9 lacs)** | 1 (19 lacs) | **2 (13 + 9 lacs)** | **8** (2 MUTUALISABLES + 6 isoles) — voir §Verifications ci-dessous |
+| Économie jonction-cluster | ~90 Go | **0,64 Go** | 0 Go (store vide) | 0 Go | **0 GB** | **6.9 a 13.53 Go court terme / ~90 Go futur** |
 
 > **Reconciliation** — la colonne po-2027 CoursIA (c.1059, ancien rapport
 > `junctions-scan-po-2027.md`) rapportait 0 checkout reel car elle
 > mesurait depuis un worktree de l'autre workspace. La présente mesure
 > CoursIA-2 montre l'état du **clone principal**. Les deux rapports
 > ensemble documentent l'**état-machine reel de po-2027** : 9 jonctions
-> deja actives + 3 checkouts physiques candidats Apply.
+> deja actives (toutes v4.32.1, kelly_lean y compris post-re-mesure c.629) +
+> 2 checkouts physiques candidats Apply (search_lean + mimo_lean).
 
 ## Resume — gain potentiel sur po-2027
 
@@ -154,11 +174,13 @@ Prochaine etape conditionnelle :
 ## Verifications
 
 - **Mode Scan execute** : `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` rendu verbatim dans `c1205_scan_po-2027-coursia2.out`.
-- **Discrimination manifest-identity** : 7 groupes distincts (dont 2 MUTUALISABLES et 5 isoles) sur 28 lacs.
-- **3 checkouts reels identifies** : search_lean (6.9 Go), mimo_lean (6.63 Go), et kelly_lean (deja junctionne).
-- **9 jonctions actives verifiees** : 8 v4.32.1 (toutes pointent vers le cache partage) + 1 v4.33.0 (kelly_lean).
+- **Discrimination manifest-identity** : **8 groupes distincts** (dont 2 MUTUALISABLES et 6 isoles) sur 28 lacs — corrigé c.629, le rapport initial c.1205 annonçait 7.
+- **3 checkouts presents identifies** : search_lean (6.9 Go, physique), mimo_lean (6.63 Go, physique), kelly_lean (deja jonctionne v4.32.1).
+- **2 checkouts physiques = 13.53 Go** recuperables par Apply (search_lean candidat jonction simple ; mimo_lean necessite investigation `slt 0b1020a4`).
+- **9 jonctions actives verifiees firsthand** (c.629, `fsutil reparsepoint query`) : toutes v4.32.1 vers `D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib`. Le rapport c.1205 annonçait 8 v4.32.1 + 1 v4.33.0 ; la verif re-mesure a montre kelly_lean cible v4.32.1 (pas v4.33.0 comme le scan le rangeait par manifest).
 - **Aucun orphelin** v4.31.0-rc1 detecte sur po-2027 (vs etat signale sur po-2024 dans `junctions-scan-po-2024.md`).
 - **Tell c.808 ★★★** : mesure genuine (deux passes du script, sortie byte-identique au premier passage).
+- **Tell c.488 strict audit-reassessment** (c.629) : relecture du rapport suite a CHANGES_REQUESTED ai-01 (c.626) — fix docs-only appliques. Synthese finale : `LP ×2 corriees, FP ×0 retenu`.
 
 ## References
 
