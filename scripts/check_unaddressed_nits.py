@@ -1589,6 +1589,32 @@ CITERS = (
     # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
     "per",
     "precedent",
+    # #15837 — NARRATION RETROSPECTIVE FRANCAISE. Le depot est bilingue a
+    # l'ecriture : les listes ci-dessus ne reconnaissaient la narration qu'en
+    # anglais ("previous", "stale", "earlier"), alors que les lanes redigent en
+    # francais. « dissipation CHANGES_REQUESTED c.589 leve » (#15762) bloquait
+    # donc le merge d'un commentaire qui declare l'inverse d'une reserve.
+    #
+    # MESURE (point 1 de l'issue) : 2000 PRs mergees, tous les corps de
+    # commentaire et de review, toutes occurrences de marqueur. Un candidat
+    # n'entre ici que si AUCUNE occurrence neutralisee ne portait de reserve
+    # reelle — l'asymetrie est totale : un mot de trop ici rend une reserve
+    # invisible (#10761), la ou un mot manquant ne coute qu'un tri.
+    #   - "dissipation" : 7/7 narrations (« dissipation CHANGES_REQUESTED
+    #     c.589 leve », « ### dissipation CHANGES_REQUESTED c.1105 »).
+    #
+    # Pourquoi "dissipation" et pas "levee" (mesure pourtant 3/3 narration :
+    # « La reserve est levee avant merge », « demande re-review ... pour
+    # levee CHANGES_REQUESTED »). C'est une question de NATURE GRAMMATICALE,
+    # pas de taux : un NOM ne peut ici que signifier « dissipation DU
+    # verdict » (il est le dernier mot devant lui). Un PARTICIPE, lui, peut
+    # qualifier un AUTRE nom — « les reserves precedentes sont levees. » puis
+    # « CHANGES_REQUESTED: le split manque » sur une reserve NEUVE. Le
+    # controle negatif de #15837 le fait refuser : meme fenetre, meme liste,
+    # et une reserve vivante rendue invisible (#10761). Residu assume : la
+    # narration « reserve levee avant merge » reste flagee (2 occurrences
+    # mesurees) — un faux positif a trier, pas une reserve manquee.
+    "dissipation",
 )
 
 
