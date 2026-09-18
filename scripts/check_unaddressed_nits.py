@@ -2621,6 +2621,33 @@ _WORD_BOUNDED_MARKERS = {
     "no lgtm": re.compile(r"\bno\s+lgtm\b(?!\s+(?:needed|necessary|required))"),
 }
 
+# #15651 -- les marqueurs TEMPORELS (« avant merge » & co.) ne vivent que
+# POSES, pas en apposition d'une levee. Fondateur : « Le commentaire
+# precedent enregistrait une reserve ; voici sa levee, avant merge et
+# nommee. » — la phrase qui LEVE est comtee comme nouvelle reserve parce
+# qu'elle CONTIENT la chaine, et le gate ne peut alors jamais atteindre
+# rc=0 : la lane est tentee de reformuler sa levee pour verdir l'organe,
+# exactement la fabrication de vert que B.0 existe pour empecher. Classe
+# #13030 (« pose, pas cite ») transposee a la prose : l'apposition
+# levée + ponctuation est la signature du TIMING de la levee, pas d'une
+# exigence nouvelle.
+#
+# Le lexeme doit porter un PARTICIPE/NOMINAL de levee (leve/levee/levees,
+# lifted/lift) suivi d'une PONCTUATION d'apposition (, : ; -) : la
+# ponctuation est le discriminant. Sans elle, « n'est pas leve avant
+# merge » (negation) et « doit etre leve avant merge » (infinitif =
+# exigence) doivent rester VIVANTS. L'infinitif « lever » est exclu par
+# construction (\b apres le lexeme). Residu assume, sur-bloquant donc sans
+# danger : « le point est leve avant merge » (participe sans virgule)
+# reste vivant.
+_LIFT_TIMING_MARKERS = frozenset({
+    "avant merge", "avant de merger", "before merge",
+})
+_LIFT_TIMING_APPOSITION = re.compile(
+    r"\b(?:leve(?:e|es)?|lift(?:ed|es?)?)\s*[,:;-]\s*$",
+    re.IGNORECASE,
+)
+
 
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     """Marqueur present avec au moins une occurrence NON citee.
@@ -2662,7 +2689,14 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
             continue
         start = 0
         while (i := normalised.find(m, start)) != -1:
-            if not _is_cited(normalised[max(0, i - 30):i]):
+            window = normalised[max(0, i - 30):i]
+            # #15651 : un marqueur temporel en apposition d'une levee
+            # (« sa levee, avant merge et nommee ») est le TIMING de la
+            # levee, pas une reserve posee -- il meurt comme une citation.
+            if not _is_cited(window) and not (
+                m.lower() in _LIFT_TIMING_MARKERS
+                and _LIFT_TIMING_APPOSITION.search(window)
+            ):
                 return True
             start = i + 1
     return False
@@ -3774,6 +3808,31 @@ def _strip_adjoint_dossier(body: str) -> str:
     return _ADJOINT_DOSSIER_SPAN.sub("", body)
 
 
+# #16700 — vocabulaire de l'OUVERTURE de levée. Volontairement étroit
+# (whack-a-mole minimal) : les deux formes fondatrices de #16381 et leur
+# famille directe, le mot RESERVE inclus dans le discriminant. Un « levée »
+# nu (« Levée des alertes CI : ... ») est un RAPPORT, pas un geste — la
+# regex ne le matche pas (« des alertes » n'est pas « la réserve »).
+_OPENING_LIFT_RE = re.compile(
+    r"^(?:#{1,6}[ \t]+)?(?:\*\*[ \t]*)?"
+    r"(?:r[ée]serve[ \t]+(?:lev[ée]e|dissip[ée]e)"
+    r"|lev[ée]e[ \t]+de[ \t]+(?:la[ \t]+)?r[ée]serve"
+    r"|je[ \t]+l[eéè]v\w*[ \t]+(?:la[ \t]+)?r[ée]serve)",
+    re.IGNORECASE,
+)
+
+
+def _opens_on_lift(body: str) -> bool:
+    """#16700 — le corps OUVRIT sur une annonce de levée ?
+
+    La POSITION est le discriminant : ouvrir son commentaire sur « Levée de
+    la réserve X » est un geste de résolution par construction. Le rappeler
+    plus bas dans la prose ne suffit pas — c'est l'affaire de l'étage lift
+    complet (mention-aware) plus haut dans `classify`.
+    """
+    return bool(_OPENING_LIFT_RE.match(body.lstrip("\r\n \t")))
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
@@ -3842,6 +3901,23 @@ def classify(author: str, body: str) -> str | None:
     # sous-chaine (cf `_block_emitted`).
     if _block_emitted(body):
         return "BLOCK"
+    # #16700 — LEVÉE EN OUVERTURE, par contenu et quel que soit l'auteur.
+    # Défaut fondateur (#16381, 2026-09-18T13:47:46Z sous `jsboige`) : la
+    # levée ouvrait sur un heading (« ## Levée de la réserve NanoClaw »)
+    # mais portait un glyphe cité (🔴) et un résidu mineur — l'étage lift
+    # complet du dessus ne l'absorbait pas, la prose sans CRLF tombait dans
+    # BOT-CONCERN : le geste qui DÉBLOQUAIT la PR créait un nit de plus à
+    # son propre nom, régime absorbant. `LIFT_OVERRIDE_LOGINS` ne rattrapait
+    # rien — l'identité est le mauvais discriminant quand le trousseau gh
+    # bascule sans geste délibéré (le coordinateur poste sous `jsboige`
+    # aussi). Placé APRÈS `_block_emitted` (fail-closed) : un blocage
+    # coordinateur émis dans le corps reste BLOCK même sous une ouverture
+    # de levée. Risque assumé et mesuré (audit 25 PRs mergées, avant/après) :
+    # le commentaire mixte qui lève X et soulève Y en corps — Y sort du
+    # recensement ; le coût du double comptage absorbant dépassait celui du
+    # résidu mineur perdu.
+    if _opens_on_lift(body):
+        return None
     # #13598 — EMISSION informelle d'un LIFT_OVERRIDE_LOGINS : le
     # coordinateur tient un hold en francais courant (« ne pas merger sur
     # les verts », « j'attends le run GPU », etc.). Avant : None. Apres :
