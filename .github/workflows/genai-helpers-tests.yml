@@ -28,9 +28,12 @@ name: GenAI-Helpers-Tests
 #    PR, cf preuve dans body PR).
 # 3. pytest.ini gagne le testpath correspondant (découverte locale
 #    alignée sur la CI).
-# 4. Les autres familles non câblées (#13746 : GradeBookApp,
+# 4. Les autres familles SANS trigger path-reactif (#13746 : GradeBookApp,
 #    01-PythonForDataScience/tests, QuantConnect/scripts/tests) restent
-#    HORS de cette PR — une famille par PR (G.4 anti-composite).
+#    HORS de cette PR — une famille par PR (G.4 anti-composite). NB : ces
+#    trois familles SONT exécutées par scripts-tests.yml (cibles du run
+#    + collect floors) ; ce qui leur manque est une entree paths: propre
+#    (pattern #10416 : un push sur leur seul chemin ne declenche rien).
 #
 # Pièges évités (hérités de gametheory-tests.yml, tranche 1) :
 # - Pas de modification de scripts-tests.yml paths: (scope narrow).
