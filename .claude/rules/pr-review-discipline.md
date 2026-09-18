@@ -12,6 +12,10 @@ S'applique à **tous les reviewers**, humains et bots (clusterManager-Myia, jsbo
 
 Toute review (bot ou humaine) formulant **un point tenant le merge** porte un **marqueur reconnu** : préfixe de verdict (`[Hermes] COMMENT_WITH_CONCERNS`, `CHANGES_REQUESTED`) ou glyphe de sévérité (🟡, 🔴). L'organe B.0 (`scripts/check_unaddressed_nits.py`, `CONCERN_MARKERS`) ne lit **que** ces marqueurs : une réserve bloquante posée en prose libre **sans** marqueur lui est invisible et rend `rc=0`. **Ne pas élargir** le filet à des mots de prose : il sur-accuse d'un facteur 5 (mesure #14682) — le contrat est côté émission, pas côté filet. Instance #14658 + scan 80 PRs : [pr-review-context.md](../../docs/reference/pr-review-context.md).
 
+## Lecture de l'état des checks — à la source, dans les DEUX sens (HARD, #16765)
+
+`statusCheckRollup` est une **liste plate non triée** qui contient toutes les jambes du head, **y compris celles supersedées** par une tentative plus récente (rouges périmés compris — 12/160 PRs mesurées, dont les fondateurs #16232/#16499/#16579 : six rouges tous supersedés sur le même head). **Ne jamais refuser un merge sur le premier rouge de la liste**, ni acquitter sur son premier vert : re-lire à la source `commits/<headRefOid>/check-runs` et plier **dernier `started_at` par nom** — `python scripts/check_run_state.py --pr <N>` fait la lecture (fold canonique `pr_gate.py::dedupe_latest`, contrat dossier `checks: latest-wins-green`). Un `latest` vert n'est **pas** une preuve de mergeabilité : une jambe rouge résiduelle d'une suite distincte a déjà bloqué une PR verte (#11532, CodeQL) — le helper rend ces `residual_reds`, le verdict de merge reste `mergeStateStatus`.
+
 ## Critères CHANGES_REQUESTED obligatoires (HARD)
 
 Un reviewer **DOIT** poster `state: CHANGES_REQUESTED` (pas COMMENTED, pas APPROVED) si **un seul** point est violé. APPROVED malgré violation = **complicité de complaisance**.
