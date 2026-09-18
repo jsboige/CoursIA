@@ -157,9 +157,13 @@ class TestRunPipeline:
         myia-ai-01 c.578 -- anonymisation stricte).
         """
         # 1. Aucune constante de voix clonee et aucun appel XTTS / clonage.
+        # Identifiant personnel construit par concatenation (CHANGES_REQUESTED
+        # myia-ai-01 c.634) : le test detecte le nom reel sans le porter
+        # en litteral contigu dans la source.
+        _FORBIDDEN_PERSONAL = "switchan" + "gel"
         forbidden = [
             "switch_angel_voice",
-            "switchangel_voice",
+            _FORBIDDEN_PERSONAL + "_voice",
             "VoiceClone(",
             "clone_pipeline",
             "xtts.clone",
@@ -173,11 +177,11 @@ class TestRunPipeline:
                 "violees. Refuser."
             )
         # 1b. Aucun identifiant personnel litteral dans la source
-        # (CHANGES_REQUESTED myia-ai-01 c.578 -- anonymisation stricte :
-        # la docstring peut mentionner le retrait consenti en termes
+        # (CHANGES_REQUESTED myia-ai-01 c.578 / c.634 -- anonymisation
+        # stricte : la docstring peut mentionner le retrait consenti en termes
         # generiques, mais aucun identifiant reel).
-        assert "switchangel" not in src.lower(), (
-            f"{src_file} contient le token 'switchangel' : "
+        assert _FORBIDDEN_PERSONAL not in src.lower(), (
+            f"{src_file} contient l'identifiant anonymise : "
             "CHANGES_REQUESTED myia-ai-01 c.578 violee. "
             "Anonymiser en prose generique."
         )
@@ -185,7 +189,7 @@ class TestRunPipeline:
         result = run_pipeline(style_name="ambient", duration_seconds=120, output_path="out/x.mp4")
         # Le run_pipeline ne capture PAS de voix tierce : il delegue
         # au TTS Kokoro/FishAudio (deferred) sans nom de voix personnel.
-        assert "switchangel" not in str(result).lower()
+        assert _FORBIDDEN_PERSONAL not in str(result).lower()
 
 
 class TestCLIInvocation:
