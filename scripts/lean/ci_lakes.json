@@ -1,0 +1,83 @@
+{
+  "_comment": "Manifeste des lakes pilotes de la matrice lean-ci (#13751 sous-item workflows). Source unique de verite pour le dispatcher lean-ci-matrix.yml : chemins de declenchement + parametres par lake. Le sorry-baseline est le MEME contrat bidirectionnel que lean-build.yml (echoue au-dessus ET en-dessous) : decharger un sorry = decrementer ici dans la meme PR. Un lake migre ici seulement apres suppression de son dispatcher lean-<lake>.yml (jamais les deux declencheurs a la fois). Garde anti-drift : scripts/ci/check_lake_matrix_paths.py verifie que chaque chemin du manifeste figure dans le on.paths du dispatcher.",
+  "lakes": [
+    {
+      "lake": "sudoku",
+      "project-path": "MyIA.AI.Notebooks/Sudoku/sudoku_lean",
+      "display-name": "sudoku_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean",
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "kelly",
+      "project-path": "MyIA.AI.Notebooks/QuantConnect/kelly_lean",
+      "display-name": "kelly_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean",
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "minimax",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/minimax_lean",
+      "display-name": "minimax_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "search",
+      "project-path": "MyIA.AI.Notebooks/Search/search_lean",
+      "display-name": "search_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/Search/search_lean/**.lean",
+        "MyIA.AI.Notebooks/Search/search_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Search/search_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/Search/search_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "assignment",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/assignment_lean",
+      "display-name": "assignment_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "discrepancy",
+      "project-path": "MyIA.AI.Notebooks/Search/discrepancy_lean",
+      "display-name": "discrepancy_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean",
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain"
+      ]
+    }
+  ]
+}
