@@ -31,7 +31,7 @@ Trois parcours sont proposés selon ton but :
 
 3. **Lecteur intéressé par le pont Lawvere–Tierney ↔ Grothendieck**. Parties 58 (classifieur `Ω`), 59 (opérateur de clôture `j` sur Ω), 60 (le dictionnaire : topologies de Grothendieck = topologies de Lawvere–Tierney, les deux notions se confondent). C'est le pont où la logique catégorique rejoint la géométrie relative.
 
-**Conventions de navigation.** Les modules sont regroupés en dossiers `Grothendieck/` et `SheafCohomology/` ; chaque module `Foo.lean` a un sibling `Foo_en.lean` pour la version anglaise (convention i18n EPIC #4980). Le tableau ci-dessous donne, pour chaque Partie, le module FR + le module `_en` + une ligne de contenu.
+**Conventions de navigation.** Les modules sont regroupés en dossiers `Grothendieck/` et `SheafCohomology/` ; chaque module `Foo.lean` a un sibling `Foo_en.lean` pour la version anglaise (convention i18n EPIC #4980). L'umbrella `Grothendieck.lean` est un index de lecture **FR-only** : il importe chaque module FR et jamais un `_en` — les siblings anglais restent construits par les `globs` du lakefile (#16154, invariant tenu par `scripts/lean/tests/test_check_grothendieck_umbrella.py`). Le tableau ci-dessous donne, pour chaque Partie, le module FR + le module `_en` + une ligne de contenu.
 
 ## La trajectoire
 
