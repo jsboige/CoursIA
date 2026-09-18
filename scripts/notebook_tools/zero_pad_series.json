@@ -25,7 +25,7 @@
       "Lean -- SymbolicAI/Lean (11)",
       "Infer -- Probas/Infer (10)",
       "ICT -- IIT/ICT-Series (9)",
-      "DecPyMC -- Probas/DecisionTheory/PyMC (9)",
+      "DecPyMC -- Probas/DecisionTheory/DecPyMC (9)",
       "Planners -- SymbolicAI/Planners/02-Classical (8)",
       "Planners -- SymbolicAI/Planners/01-Foundation (6)",
       "Planners -- SymbolicAI/Planners/03-Advanced (6)",
@@ -62,7 +62,7 @@
     {
       "series": "PyMC",
       "dir": "MyIA.AI.Notebooks/Probas/PyMC",
-      "note": "9 noms zero-pades, 10 numeros a deux chiffres. A ne pas confondre avec Probas/DecisionTheory/PyMC (DecPyMC), famille distincte."
+      "note": "9 noms zero-pades, 10 numeros a deux chiffres. A ne pas confondre avec Probas/DecisionTheory/DecPyMC (DecPyMC), famille distincte."
     },
     {
       "series": "Search",
