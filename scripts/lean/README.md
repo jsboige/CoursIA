@@ -62,7 +62,9 @@ indisponible), `126` cleanup incomplet (orphelins), `127` erreur interne,
 Configuration : `LEAN_EXEC_CAP` (defaut `min(8, max(2, nproc/2))`),
 `LEAN_EXEC_BUDGET` (defaut 2), `LEAN_EXEC_JOBS` (defaut `nproc/4`),
 `LEAN_EXEC_MEM_FRAC` (0.80), `LEAN_EXEC_CPU_PCT` (90), `LEAN_EXEC_STATE_DIR`
-(isolation tests), `LEAN_EXEC_WSL=off` (desactive la sonde et le backend WSL),
+(isolation tests), `LEAN_EXEC_WSL=off` (desactive les sondes WSL et la
+resolution WSL d'un lake non epingle ; une epingle WSL existante n'est pas
+re-sondee — chemin rapide — et garde son backend),
 `LEAN_EXEC_FORCE_BACKENDS` (surcharge de test : liste virgule-separee, chaine
 vide = aucun backend disponible).
 

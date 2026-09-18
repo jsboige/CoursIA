@@ -93,7 +93,8 @@ Env de configuration : ``LEAN_EXEC_STATE_DIR`` (isolation tests), ``LEAN_EXEC_CA
 ``LEAN_EXEC_BUDGET``, ``LEAN_EXEC_JOBS``, ``LEAN_EXEC_MEM_FRAC``, ``LEAN_EXEC_CPU_PCT``,
 ``LEAN_EXEC_RESERVE_CORES``, ``LEAN_EXEC_MEM_PER_JOB_MB``, ``LEAN_EXEC_COMMIT_PER_JOB_MB``,
 ``LEAN_EXEC_MIN_FREE_GB``, ``LEAN_EXEC_QUEUE_MAX``, ``LEAN_EXEC_CALLER``,
-``LEAN_EXEC_WSL`` (desactive la sonde/le backend WSL si off/0/no),
+``LEAN_EXEC_WSL`` (desactive les sondes WSL si off/0/no ; une epingle WSL
+existante n'est pas re-sondee — chemin rapide — et garde son backend),
 ``LEAN_EXEC_FORCE_BACKENDS`` (surcharge les sondes, virgule-separe, tests).
 """
 
