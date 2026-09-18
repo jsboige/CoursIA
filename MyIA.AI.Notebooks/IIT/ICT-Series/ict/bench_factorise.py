@@ -40,19 +40,28 @@ class ProcessError(ValueError):
 
 
 @dataclass(frozen=True)
-class Mess3:
-    """Mess3 : 3 etats caches en cycle, emissions gaussiennes 1D.
+class Mess3_ObsCoupled:
+    """Mess3 legacy : 3 etats caches en cycle, emissions GAUSSIENNES 1D.
 
-    Parametres par defaut : modes bien separees (ecart des moyennes >= 4
-    ecarts-types) pour que la v1 ait une verite terrain lisible. Les
-    etudes de superposition resserreront l'ecart ensuite.
+    DEPRECIE pour les bancs de geometrie de croyance : les emissions
+    gaussiennes separees (>= 4 sigma) couplent presque deterministiquement
+    observation et etat cache, donc ``obs ~ etat`` et le belief exact
+    s'effondre en Dirac (P(s_k | o_0..k) ~ delta_{s_k}). La geometrie
+    fractale du simplexe n'a pas lieu d'etre dans ce cas.
+
+    Ce banc reste disponible pour les comparaisons de probe lineaire sur
+    signaux continus, mais il NE REMPLACE PAS le Mess3 canonique
+    (:class:`Mess3`) pour les tests de belief-state learning.
+
+    Reference : voir :class:`Mess3` (Marzen & Crutchfield 2017 [20] du
+    papier 2405.15943).
     """
 
     stay: float = 0.95
     means: Tuple[float, float, float] = (-0.15, 0.0, 0.15)
     std: float = 0.05
     n_states: int = 3
-    name: str = "mess3"
+    name: str = "mess3_obs_coupled"
 
     def __post_init__(self) -> None:
         if not 0.0 < self.stay < 1.0:
@@ -62,9 +71,7 @@ class Mess3:
         if len(self.means) != self.n_states:
             raise ProcessError("une moyenne par etat requise")
 
-    # --- structure connue -------------------------------------------------
     def transition_matrix(self) -> Array:
-        """Matrice T[i, j] = P(s_{t+1} = j | s_t = i) : rester, sinon avancer au suivant du cycle."""
         slip = 1.0 - self.stay
         t = np.zeros((self.n_states, self.n_states))
         for i in range(self.n_states):
@@ -73,19 +80,15 @@ class Mess3:
         return t
 
     def stationary(self) -> Array:
-        """Loi stationnaire : uniforme par symetrie du cycle."""
         return np.full(self.n_states, 1.0 / self.n_states)
 
     def emission_loglik(self, obs: Array) -> Array:
-        """Log-vraisemblance log P(obs | s) pour chaque etat, forme (T, n_states)."""
         means = np.asarray(self.means)[None, :]
         return -0.5 * ((obs[:, None] - means) / self.std) ** 2 - np.log(
             self.std * np.sqrt(2.0 * np.pi)
         )
 
-    # --- generation --------------------------------------------------------
     def sample(self, n: int, seed: int) -> Tuple[Array, Array]:
-        """Echantillonne n pas ; retourne (etats, observations), etat initial tiré selon la stationnaire."""
         rng = np.random.default_rng(seed)
         t = self.transition_matrix()
         states = np.empty(n, dtype=np.int64)
@@ -97,11 +100,9 @@ class Mess3:
             s = rng.choice(self.n_states, p=t[s])
         return states, obs
 
-    # --- belief exact ------------------------------------------------------
     def beliefs(self, obs: Array) -> Array:
-        """Filtration forward exacte : belief[k] = P(s_k | obs_{0..k}), forme (T, n_states)."""
         if obs.ndim != 1:
-            raise ProcessError("Mess3.beliefs attend une serie 1D")
+            raise ProcessError("Mess3_ObsCoupled.beliefs attend une serie 1D")
         t = self.transition_matrix()
         prior = self.stationary()
         ll = self.emission_loglik(obs)
@@ -113,6 +114,118 @@ class Mess3:
             z = w.sum()
             if z <= 0.0:
                 raise ProcessError(f"log-vraisemblance degeneratee au pas {k}")
+            b = w / z
+            out[k] = b
+        return out
+
+
+# Alias historique : l'ancien nom ``Mess3`` est preserve pour ne pas casser
+# les imports existants, mais il designe maintenant le banc DEPRECIE
+# (gaussien, observation couplee). Le nouveau banc canonique s'appelle
+# ``Mess3`` aussi mais precede l'ancien dans ce fichier ; voir :class:`Mess3`
+# ci-dessous.
+Mess3 = Mess3_ObsCoupled  # noqa: F811 — alias de compatibilite, voir NOTE ci-dessus
+
+
+@dataclass(frozen=True)
+class Mess3Canonical:
+    """Mess3 canonique (Marzen & Crutchfield 2017) : POMDP a 3 etats
+    caches en cycle + emissions ternaires DISCRETES non-couplees a l'etat.
+
+    Conformite au papier 2405.15943 §2.2 : l'observation est emise avec une
+    matrice d'emission E[y | s] qui n'est ni deterministe (sinon obs = etat)
+    ni diagonalement dominante (sinon obs ~ etat avec peu de bruit). On
+    prend E[y | s] = (1/3 + delta) sur la diagonale + (1/3 - delta)/(n-1)
+    hors diagonale, avec delta = 0.2 (regime intermediaire ou le belief
+    vit dans le 2-simplexe sans s'effondrer en Dirac).
+
+    L'observation est un indice dans {0, 1, 2} : alphabet ternaire.
+    L'etat cache reste dans {0, 1, 2}. La persistance p_stay = 0.95 assure
+    que les trajectoires sont longues (coherence temporelle du belief).
+
+    Reference :
+    - Marzen & Crutchfield 2017, "Inference, Prediction, and Animats",
+      ref [20] du papier 2405.15943.
+    - arXiv:2405.15943 §2.2 (geometrie de croyance dans le simplexe).
+    """
+
+    stay: float = 0.95
+    emission_diag: float = 0.5  # P(y = s | s) ; off-diag = (1 - diag) / (n - 1)
+    n_states: int = 3
+    name: str = "mess3_canonical"
+
+    def __post_init__(self) -> None:
+        if not 0.0 < self.stay < 1.0:
+            raise ProcessError(f"stay doit etre dans (0,1), recu {self.stay}")
+        if not (1.0 / self.n_states) < self.emission_diag < 1.0:
+            raise ProcessError(
+                f"emission_diag doit etre dans (1/{self.n_states}, 1), recu {self.emission_diag}"
+            )
+        if self.n_states < 2:
+            raise ProcessError("n_states doit etre >= 2")
+
+    def transition_matrix(self) -> Array:
+        """T[i, j] = P(s_{t+1} = j | s_t = i) : rester, sinon avancer au suivant du cycle."""
+        slip = 1.0 - self.stay
+        t = np.zeros((self.n_states, self.n_states))
+        for i in range(self.n_states):
+            t[i, i] = self.stay
+            t[i, (i + 1) % self.n_states] = slip
+        return t
+
+    def stationary(self) -> Array:
+        return np.full(self.n_states, 1.0 / self.n_states)
+
+    def emission_matrix(self) -> Array:
+        """E[i, y] = P(y_t = y | s_t = i) : matrice stochastique.
+
+        Diagonale : ``emission_diag`` (P(y = s | s)). Hors diagonale :
+        ``(1 - emission_diag) / (n - 1)``. Pour n=3 et emission_diag=0.5,
+        la diagonale domine moderement (50% que obs = etat), laissant 50%
+        que obs soit l'un des 2 autres etats. Le belief vit alors dans le
+        2-simplexe sans s'effondrer en Dirac (qui aurait emission_diag=1.0).
+        """
+        n = self.n_states
+        diag = self.emission_diag
+        off = (1.0 - diag) / (n - 1)
+        e = np.full((n, n), off)
+        for i in range(n):
+            e[i, i] = diag
+        return e
+
+    def sample(self, n: int, seed: int) -> Tuple[Array, Array]:
+        """Echantillonne n pas. Retourne (etats, observations) en indices entiers."""
+        rng = np.random.default_rng(seed)
+        t = self.transition_matrix()
+        e = self.emission_matrix()
+        states = np.empty(n, dtype=np.int64)
+        obs = np.empty(n, dtype=np.int64)
+        s = rng.choice(self.n_states, p=self.stationary())
+        for k in range(n):
+            states[k] = s
+            obs[k] = rng.choice(self.n_states, p=e[s])
+            s = rng.choice(self.n_states, p=t[s])
+        return states, obs
+
+    def beliefs(self, obs: Array) -> Array:
+        """Filtration forward exacte : belief[k] = P(s_k | obs_{0..k}), forme (T, n_states)."""
+        if obs.ndim != 1:
+            raise ProcessError("Mess3Canonical.beliefs attend une serie 1D")
+        if not np.all(np.isin(obs, np.arange(self.n_states))):
+            raise ProcessError(
+                f"observations doivent etre dans {{0,..,{self.n_states - 1}}}"
+            )
+        t = self.transition_matrix()
+        e = self.emission_matrix()
+        prior = self.stationary()
+        out = np.empty((len(obs), self.n_states))
+        b = prior
+        for k in range(len(obs)):
+            pred = b @ t if k > 0 else b
+            w = pred * e[:, int(obs[k])]
+            z = w.sum()
+            if z <= 0.0:
+                raise ProcessError(f"vraisemblance nulle au pas {k}")
             b = w / z
             out[k] = b
         return out
