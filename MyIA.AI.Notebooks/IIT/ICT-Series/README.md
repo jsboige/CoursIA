@@ -232,6 +232,22 @@ La **strate 5 commence ici** : le substrat mesuré n'est plus un système dynami
 | [ICT-38-SLens-SelfLocation](ICT-38-SLens-SelfLocation.ipynb) | **S-Lens — la représentation porte-t-elle la bonne référence ?** *(strate 5, GPU requis, POC expérimental)* : quand la valeur à produire se trouve à une position déterminée par le **contenu** (et non par la position absolue du token), bancs synthétiques à vérité terrain exacte — lecture par tête et intervention causale appariée | [#15814](https://github.com/jsboige/CoursIA/issues/15814) |
 | [ICT-39-CompositionRegards](ICT-39-CompositionRegards.ipynb) | **Composition de regards** *(opération 12 « Composer des regards »)* : distinguer la lecture avant (`get`/`play`) de la demande arrière (`put`/`coplay`), les composer réellement, et construire le témoin falsifiable où deux regards composés divergent de leurs lectures isolées — prérequis légers (fonctions, composition, modulo 3) | [#12204](https://github.com/jsboige/CoursIA/issues/12204) |
 
+### Distillation externe — hors strates
+
+Les grains de **distillation externe** (veille → notebook) s'ajoutent aux strates sans en faire partie : ils opérationnalisent en monde jouet des préprints récents, avec la discipline de la série (garde-fous d'honnêteté, bancs falsifiables, déterminisme complet par graine).
+
+| Notebook | Résumé | Issue |
+|----------|--------|-------|
+| [ICT-40-AnalogCognitionWaves](ICT-40-AnalogCognitionWaves.ipynb) | **Cognition analogique — les ondes cérébrales comme substrat de calcul** *(grain autonome, CPU uniquement, numpy-only)* : distillation du préprint Miller-Brincat-Roy 2026 (PsyArXiv z48x7_v3, non relu) — gating éphaptique par phase (profondeur mesurée fort/faible), stencil Spatial Computing → sélectivité mixte émergente **sans re-câblage** (MSI ~2 %, mécanisme démontré, taux biologique non prétendu), calcul analogique par superposition (témoin analytique exact 2\|cos(Δφ/2)\|, quatre combinaisons toutes distinctes, effet d'interaction rapporté à sa valeur réelle), transition de sous-espace par onde voyageuse (angle cible + distance monotone), effondrement de cohérence inter-régionale en régime anesthésie-jouet (PLV 0.997 → 0.227). Pont **qualitatif assumé** vers [ICT-15](ICT-15-IntegratedComplexity.ipynb) (le PLV n'est pas un Φ) ; garde-fou dimensionnel documenté (l'angle entre nuages bruités sature à 90° en dimension 4608 — toute mesure d'angle porte le signal, pas le bruit) | [#16550](https://github.com/jsboige/CoursIA/issues/16550) |
+
+![Spatial Computing — stencil et expression](assets/readme/ict40-spatialcomputing.png)
+
+*Figure extraite de `ICT-40-AnalogCognitionWaves.ipynb` (cellule 12, output 0) — le stencil inhibiteur (magma, 1 = suppression) sculpte l'expression des deux objets (viridis) : le même objet produit deux patrons spatiaux différents selon le contexte, sans qu'aucun poids synaptique n'ait changé. Limitation illustrative assumée : monde jouet 48×96, pas une feuille corticale ; l'indice de sélectivité mixte (~2 %) et la carte des voxels ayant basculé sont dans le notebook.*
+
+![Calcul analogique — quatre combinaisons par superposition](assets/readme/ict40-analogcombos.png)
+
+*Figure extraite de `ICT-40-AnalogCognitionWaves.ipynb` (cellule 21, output 0) — la somme de deux ondes de contexte (ordre × mode) produit quatre patrons tous distincts : l'intersection de contraintes est calculée par la physique de la superposition, en une opération parallèle, sans re-câblage synaptique. Limitation illustrative assumée : deux ondes planes jouet, pas la base de fonctions spatio-temporelles complète du préprint.*
+
 ### Strates 6 et 7 — cadrées, non encore livrées
 
 Les deux derniers barreaux de l'axe vertical **ne sont pas livrés**. Ils figurent ici pour que la progression en **sept strates** annoncée en tête se lise jusqu'au bout, et pour tenir la distinction que le [cadrage ICT-0](ICT-0-Framing.md#deux-axes-de-lecture--strates-verticales--tresse-transverse) a établie ([#13908](https://github.com/jsboige/CoursIA/issues/13908)) : **ni** le socle Thom **ni** les cinq expériences ICT-26 → ICT-30 ne sont ces strates — ce sont des objets de l'**axe transverse**. Les deux cartes du dépôt avaient divergé en projetant ces objets transverses sur l'échelle verticale ; c'est cette projection, et non les strates elles-mêmes, qui a été retirée.
