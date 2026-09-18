@@ -23,8 +23,7 @@ namespace MyIA.Trading.Backtester
     /// semantique C# : division entiere si deux litteraux entiers, decimale des
     /// qu'un operande est decimal. Operateurs relationnels et logiques en
     /// dialecte Flee : "=" et "&lt;&gt;" (pas "==" / "!="), "and" / "or" (pas "&amp;&amp;"
-    /// / "||"). Voir MEMORY "Flee 2.0.0 pièges fr-FR + dialecte" pour les 4 pieges
-    /// et la mesure 16/17 banc c.988.
+    /// / "||"). Voir MEMORY "Flee 2.0.0 pièges fr-FR + dialecte" pour les 4 pieges.
     /// </summary>
     [Serializable]
     public class SimpleExpression<T>
