@@ -159,7 +159,7 @@ Under an **admissible** heuristic, for every node `p.get i` of a path `p` going 
 
 **Module docstring (translated).**
 
-Issue #4048 (target: theorem `consistent_implies_admissible` — proven in this lake under the name `consistent_implies_admissible_bound`, corollary of `consistent_implies_path_bound`). **Consistency** (monotonicity per arc: `h n ≤ edge n n' + h n'`) is a **local** condition; **admissibility** (`h n ≤ hStar n`) is a **global** condition. The bridge between the two is **telescoping**: along the arcs of a path `start = v₀ → v₁ → … → vₖ = goal`, consistency composes into
+Issue #4048 (target: admissibility from consistency — theorem `consistent_implies_admissible_bound`, corollary of `consistent_implies_path_bound`). **Consistency** (monotonicity per arc: `h n ≤ edge n n' + h n'`) is a **local** condition; **admissibility** (`h n ≤ hStar n`) is a **global** condition. The bridge between the two is **telescoping**: along the arcs of a path `start = v₀ → v₁ → … → vₖ = goal`, consistency composes into
 
 ```
 h(start) ≤ edge(v₀,v₁) + h(v₁)

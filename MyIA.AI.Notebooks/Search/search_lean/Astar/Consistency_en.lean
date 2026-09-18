@@ -12,7 +12,7 @@ comment-4881909354): distinct FR + EN sibling files in the same lake, both compi
 namespace `Astar_en` (anti-collision with FR `Astar`); non-docstring content
 byte-identical (CI drift-detectable); EN docstrings manually translated.
 
-Issue #4048 (target: theorem `consistent_implies_admissible` — proven in this lake under the name `consistent_implies_admissible_bound`, corollary of `consistent_implies_path_bound`). **Consistency**
+Issue #4048 (target: admissibility from consistency — theorem `consistent_implies_admissible_bound`, corollary of `consistent_implies_path_bound`). **Consistency**
 (monotonicity per arc: `h n ≤ edge n n' + h n'`) is a **local** condition;
 **admissibility** (`h n ≤ hStar n`) is a **global** condition. The bridge between
 the two is a **telescoping**: along the arcs of a path `start = v₀ → v₁ → … → vₖ =
