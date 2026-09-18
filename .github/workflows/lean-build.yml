@@ -74,8 +74,10 @@ permissions:
 jobs:
   # Mono-lake : comportement historique, inchange pour les ~26 dispatchers
   # lean-<lake>.yml restants. Le garde `if` n'existe que pour le mode matrice
-  # (les deux jobs ne tournent jamais ensemble ; un job dont le `if` est faux
-  # ne cree AUCUN check-run, donc zero bruit pour les callers mono-lake).
+  # (les deux jobs ne tournent jamais ensemble). Un job garde par un `if`
+  # faux apparait comme check-run SKIPPED (inactif, jamais bloquant) : un
+  # caller mono-lake verra donc une ligne ci-matrix SKIPPED par run — bruit
+  # cosmétique, pas d'exécution.
   ci:
     if: inputs.lake-set == 'none'
     name: "Lean CI (${{ inputs.display-name }})"

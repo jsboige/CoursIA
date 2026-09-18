@@ -171,7 +171,7 @@ jobs:
   # par lake (job `ci-matrix` de lean-build.yml). Les 4 inputs mono-lake
   # sont des valeurs de facade (required: true au sens du schema) -- en
   # mode matrice, `ci` est garde par `if: lake-set == 'none'` et ne tourne
-  # jamais ; aucun check-run n'est cree pour lui.
+  # jamais ; il apparait comme check-run SKIPPED (inactif, jamais bloquant).
   lean-matrix:
     needs: changes
     if: needs.changes.outputs.any == 'true'
