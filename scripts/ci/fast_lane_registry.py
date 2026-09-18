@@ -1253,3 +1253,50 @@ TRANCHE11: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 12 (#16645) -- accord libelle/cible des liens pedagogiques,
+# advisory. Detecteur : `check_link_label_agreement.py` (#13645, herite
+# #14624 CLOSE_WITH_FOLLOWUP). Le stock y est resorbe avec preuve (organe
+# self-test PASS, scan complet main = 0 desaccord / 2182 fichiers), mais
+# AUCUN garde ne rejouait le detecteur sur les PRs : il vivait en scan
+# dispatch-only, indiscernable d'un detecteur debranche (lecon #11685,
+# incident d'agregat #14469). Ce cablage le fait vivre en advisory per-PR.
+#
+# Scan repo-wide SANS base : la baseline main est a 0 desaccord, donc le
+# scan complet ne mesure que ce que la PR ajoute -- pas besoin d'un delta
+# base-vs-head pour separer la dette heritee (il n'y en a plus). Le
+# pre-controle --self-test epingle le temoin fondateur en fixture (ICT-15d
+# pointant vers 15j, #13645), meme forme que TRANCHE7/TRANCHE11.
+#
+# warn_rc=(2,) : rc=2 est le refus anti-scan-vide du scope decks (#15867,
+# `slides/` present sans aucun slides.md) -- une anomalie de PORTEE, pas un
+# verdict sur le contenu ; en advisory la conclusion reste neutral de toute
+# facon, le code ne fait que nommer la cause.
+# ---------------------------------------------------------------------------
+TRANCHE12: list[Guard] = [
+    Guard(
+        name="Link/label agreement (advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "MyIA.AI.Notebooks/**/README.md",
+            "docs/**/*.md",
+            "slides/**/slides.md",
+            "scripts/notebook_tools/check_link_label_agreement.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_link_label_agreement.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_link_label_agreement.py",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]

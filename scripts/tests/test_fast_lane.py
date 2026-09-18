@@ -327,6 +327,45 @@ def test_self_hosted_policy_guard_is_wired_fail_closed():
     assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
+def test_link_label_advisory_guard_is_wired():
+    """Controle positif d'enregistrement #16645 : le detecteur d'accord
+    libelle/cible vit en ADVISORY dans la voie rapide (precedent de forme :
+    `check_output_collapse` #15327). Le pre-controle --self-test epingle le
+    temoin fondateur (#13645, [ICT-15d] pointant vers 15j) : un detecteur
+    enregistre mais incapable de prouver qu'il tire est indiscernable d'un
+    detecteur debranche (lecon #11685, incident d'agregat #14469)."""
+    import fast_lane_registry as registry
+    guards = registry.TRANCHE12
+    assert len(guards) == 1
+    guard = guards[0]
+    assert guard.name == "Link/label agreement (advisory)"
+    assert guard.blocking is False  # advisory : signal neutral, jamais rouge
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.needs_base is False  # scan repo-wide, baseline main = 0
+    assert guard.absorbed is True  # nom canonique meme en lane ombre (#12567)
+    assert guard.pre_argv == [
+        "python", "scripts/notebook_tools/check_link_label_agreement.py",
+        "--self-test",
+    ]
+    assert guard.argv == [
+        "python", "scripts/notebook_tools/check_link_label_agreement.py",
+        "--fail", "--json",
+    ]
+    # Parite de scope : les globs de declenchement couvrent la portee du
+    # detecteur (SCAN_GLOBS + DECK_GLOB) -- sinon un elargissement du scanner
+    # resterait muet au declenchement (cf test_deck_scope, #15867).
+    import importlib.util
+    nb_tools = Path(__file__).resolve().parents[1] / "notebook_tools"
+    spec = importlib.util.spec_from_file_location(
+        "check_link_label_agreement",
+        nb_tools / "check_link_label_agreement.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert set(module.SCAN_GLOBS) <= set(guard.paths)
+    assert module.DECK_GLOB in guard.paths
+    assert "scripts/notebook_tools/check_link_label_agreement.py" in guard.paths
+
+
 def test_iterates_paths_guards_carry_the_placeholder():
     """Le Pattern 1 (boucle bash absorbee) repose sur `{changed_paths}` dans
     argv. Si un garde `iterates_paths=True` ne porte pas ce placeholder,
