@@ -211,7 +211,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
+| 1 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
 
 ## Probas/Applications (2 notebooks)
 
