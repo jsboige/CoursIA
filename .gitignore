@@ -424,6 +424,17 @@ docker-compose.test.yml
 *.backup_*
 .env.backup_*
 
+# Sauvegardes d'env suffixees (.env.bak, .env.bak-<horodatage>, .env.sauvegarde, ...).
+# Les motifs ci-dessus couvrent .backup/.backup_* mais PAS le suffixe .bak : un
+# `.env.bak-20260912T1404Z` portant un token en clair restait non-ignore, donc a un
+# `git add -A` pres d'etre commite. Regle : le secret vit dans un fichier gitignore
+# (.claude/rules/secrets-hygiene.md) — encore faut-il que le motif l'attrape.
+*.env.bak*
+.env.bak*
+**/.env.bak*
+*.env.sav*
+.env.sav*
+
 # JDK Portable - Exclure tout le répertoire au lieu de lister chaque fichier
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/jdk-17-portable/
 .vscode/
