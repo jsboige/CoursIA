@@ -295,20 +295,23 @@ jobs:
           # numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 + pandas 2.3.3,
           # SANS torch -- la forme de l'env CI) ; decomposition verifiee
           # par collecte isolee du fichier (24).
-          #
-          # SEQUENTIELLE, deliberement (#14598). Cette jambe n'a PAS ete
-          # mesuree par la sonde, et elle n'est pas en danger : 6,85 min
-          # (run 34674233673) et 8,35 min (run 34684756616) contre 15,1 /
-          # 25,4 min pour l'autre jambe des memes runs. Elle porte en plus
-          # un `conftest.py` et un `pytest.ini` propres (mode prepend,
-          # cf. #9387). Paralleliser ce qu'on n'a pas mesure, sur la jambe
-          # qui ne coute rien, serait du risque sans contrepartie --
-          # `test-parallel` reste vide ici, et c'est un choix, pas un oubli.
-          - suite-name: "ict/tests/ (51 package)"
+          # Floor 846 -> 870 (cette PR, RE-mesure sur l'arbre COMBINE
+          # post-#15762) : +24 items case 5bis axes causaux #15798
+          # (ict/tests/test_attention_schema_causal.py, 52e package du
+          # combine) -- 846 main pur + 24 = 870, collecte pytest
+          # --collect-only sur l'arbre merge exact : 870 collected
+          # (D:/Dev/venvs/ict-py39, 1.36s, la forme de l'env CI).
+          # Les deux apports coexistent : test_confabulation_broadcast.py
+          # (main, #15915) ET test_attention_schema_causal.py (cette PR,
+          # #15798). Reconcile #15762 : la jambe reste SEQUENTIELLE par
+          # choix (test-parallel vide -- elle n'a pas ete mesuree par la
+          # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
+          # en mode prepend, cf. #9387/#14598).
+          - suite-name: "ict/tests/ (52 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
-            test-floor: 846
+            test-floor: 870
 
     steps:
       - uses: actions/checkout@v4
@@ -428,3 +431,4 @@ jobs:
             echo "::warning title=ICT collection floor stale (${{ matrix.suite-name }})::Collected $collected > floor $ICT_TEST_FLOOR -- DRIFT ASCENDANT : la collecte a grandi depuis le dernier rattrapage (#15471). Remonter matrix.test-floor ($ICT_TEST_FLOOR -> $collected) dans la PR qui introduit ces tests, sinon une suppression future jusqu'a l'ancien floor resterait verte."
           fi
           echo "Floor OK ($collected >= $ICT_TEST_FLOOR)."
+
