@@ -6,12 +6,20 @@
 # Design :
 #   - le token admin GitHub ne vit JAMAIS dans la distro ni dans un argv :
 #     il est relu a CHAQUE invocation depuis master.env cote Windows
-#     (/mnt/c/... via sed + tr -d '\r' -- CRLF tuerait la valeur) ;
+#     (sous /mnt/... via sed + tr -d '\r' -- CRLF tuerait la valeur) ;
 #   - DOCKER_HOST epingle le socket docker-ce, pas le Docker Desktop ;
 #   - l'etat superviseur (sentinel, logs slots) vit sous /var/lib/coursia-runner.
 set -euo pipefail
 
-TOKEN_FILE="/mnt/c/dev/CoursIA/.secrets/master.env"
+# Racine du depot. Le defaut a DEJA demenage : la migration du 2026-09-17 a
+# deplace `C:\dev\CoursIA` -> `D:\Dev\CoursIA`, et ce wrapper pointait encore
+# l'arborescence purgee. Consequence, mesuree (#16578) : `TOKEN_FILE` illisible
+# -> `FATAL` AVANT tout demarrage de slot, donc le pool d'execution reste a ZERO
+# jusqu'a intervention. Les deux surcharges sont celles de la jambe lean, pour
+# que les deux lanceurs po-2024 se reglent de la meme facon.
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
+
+TOKEN_FILE="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 TOKEN="$(sed -n 's/^GH_RUNNERS_ADMIN_TOKEN=//p' "$TOKEN_FILE" | tr -d '\r')"
 if [ -z "$TOKEN" ]; then
     echo "FATAL: GH_RUNNERS_ADMIN_TOKEN absent de $TOKEN_FILE" >&2
@@ -37,7 +45,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-SUPERVISE="/mnt/c/dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh"
+SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------

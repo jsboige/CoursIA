@@ -480,14 +480,13 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
 
         /// <summary>
         /// Test déterministe fr-FR sur la formule réelle de BidOrderAmountExpression
-        /// (extraite verbatim de TradingStrategy.cs:196) sous culture "fr-FR". Cette
-        /// formule inclut la bidouille documentée au commit c.988 : la parens autour de
-        /// "(Strategy.LimitOrderValueRate / 100 - 1)" — Tell bug parens Flee, où la
-        /// forme "((X) - 1)" lève ExpressionCompileException alors que "(X - 1)" est
-        /// acceptée. Le test confirme que la formule parente (la forme corrigée) passe
-        /// sous fr-FR. Le résultat est typé decimal (signature statique d'Evaluate) ;
-        /// la portée réelle de ce test ne va pas au-delà : il ne discrimine pas un
-        /// chemin interne double (cf. S1 #15141).
+        /// (extraite verbatim de TradingStrategy.cs:196) sous culture "fr-FR". La forme
+        /// "(Strategy.LimitOrderValueRate / 100 - 1)" est la forme courante de la
+        /// formule. Le label "bug parens Flee" du commit c.988 est REFUTE (repro
+        /// minimale Flee 2.0.0, config SimpleExpression, 2026-09-17 — S3 #15141) :
+        /// "((X) - 1)" compile et s'évalue à l'identique, formule complète incluse.
+        /// Le test confirme que la formule parente passe sous fr-FR et que le résultat
+        /// est strictement decimal.
         /// Restauration culture dans finally.
         /// </summary>
         [Fact]
@@ -508,9 +507,9 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
                 context.Price = 100m;
                 var bandContext = new BandTradingContext(context) { Price = 100m };
 
-                // Formule réelle verbatim (TradingStrategy.cs:196) — la forme corrigée
-                // (X - 1) sans parens externes autour du terme de soustraction, qui
-                // contourne le bug parens Flee documenté au commit c.988.
+                // Formule réelle verbatim (TradingStrategy.cs:196). La forme (X - 1) est
+                // équivalente à ((X) - 1) : le label "bug parens Flee" du commit c.988
+                // est REFUTE (repro minimale Flee 2.0.0, 2026-09-17 — S3 #15141).
                 const string realBidFormula =
                     "(CurrentOrders.LowestBid.Value * (Strategy.LimitOrderValueRate / 100 - 1) / BidSpan) " +
                     "+ ((CurrentOrders.LowestBid.Value * Strategy.LimitOrderValueRate / 100) " +
