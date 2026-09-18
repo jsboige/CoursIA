@@ -4,13 +4,22 @@
 Les deux premiers tests sont les **controles positifs** : un garde qui ne peut
 pas echouer ne prouve rien quand il rend vert.
 """
+import base64
 import json
 import sys
+
+import pytest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from check_density_anchor import MIN_OUTPUT_BYTES, audit, output_size  # noqa: E402
+from check_density_anchor import (  # noqa: E402
+    MIN_OUTPUT_BYTES,
+    BodyNotServed,
+    audit,
+    decode_payload,
+    output_size,
+)
 
 
 def md(text):
@@ -94,3 +103,41 @@ def test_notebook_sans_cellule_de_lecture_est_vert():
 def test_serialisation_json_du_verdict():
     cells = [code("# TODO\npass"), md("### Lecture du resultat\nfoo.")]
     json.dumps(audit(cells, base_cells=[]))
+
+
+# --- corps non servi : le defaut reproduit sur #16613 (notebook de 6,1 Mo) ------
+
+def _payload(cells, sha="abc123"):
+    body = json.dumps({"cells": cells}).encode("utf-8")
+    return {"sha": sha, "content": base64.b64encode(body).decode("ascii")}
+
+
+def test_decode_payload_lit_un_corps_normal():
+    assert decode_payload(_payload([md("titre")])) == [md("titre")]
+
+
+def test_decode_payload_signale_le_corps_vide_et_rend_le_sha():
+    """Controle positif : au-dela de 1 Mo, contents rend 200 avec content vide.
+
+    Avant ce garde, le `json.loads` de la ligne suivante levait un
+    `JSONDecodeError` opaque et tuait le mode --pr au premier gros notebook.
+    """
+    with pytest.raises(BodyNotServed) as exc:
+        decode_payload({"sha": "deadbeef", "content": "", "encoding": "none"})
+    assert str(exc.value) == "deadbeef"
+
+
+def test_decode_payload_tolere_le_base64_multiligne_de_l_api_blobs():
+    """L'API git/blobs rend son base64 decoupe en lignes ; contents non."""
+    body = json.dumps({"cells": [md("x")]}).encode("utf-8")
+    wrapped = base64.encodebytes(body).decode("ascii")  # decoupe en lignes
+    assert chr(10) in wrapped
+    assert decode_payload({"sha": "s", "content": wrapped}) == [md("x")]
+
+
+def test_decode_payload_sans_sha_rend_une_chaine_vide():
+    """Sans sha, le rattrapage par l'API blobs est impossible : le code appelant
+    doit pouvoir le distinguer d'un sha valide."""
+    with pytest.raises(BodyNotServed) as exc:
+        decode_payload({"content": ""})
+    assert str(exc.value) == ""

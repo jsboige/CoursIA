@@ -75,16 +75,46 @@ def _run(args: list[str]) -> str:
     return proc.stdout
 
 
+class BodyNotServed(Exception):
+    """L'API a repondu 200 sans porter le fichier ; l'argument est le sha du blob."""
+
+
+def decode_payload(payload: dict) -> list[dict]:
+    """Cellules d'un notebook depuis une reponse `contents` **ou** `blobs`.
+
+    L'API `contents` plafonne a 1 Mo : au-dela elle rend `200` avec
+    `content: ""` et `encoding: "none"`. C'est un succes HTTP qui ne porte pas
+    le fichier — le detecter ici evite un `JSONDecodeError` opaque a la ligne
+    suivante, et rend le sha qui permet de rattraper par l'API blobs (100 Mo).
+    """
+    content = (payload.get("content") or "").strip()
+    if not content:
+        raise BodyNotServed(payload.get("sha") or "")
+    raw = base64.b64decode(content).decode("utf-8", "replace")
+    return json.loads(raw)["cells"]
+
+
 def cells_at_ref(repo: str, path: str, ref: str) -> list[dict] | None:
-    """Cellules d'un notebook a une reference donnee, via l'API contents."""
+    """Cellules d'un notebook a une reference donnee, gros fichiers compris."""
     try:
-        encoded = _run(["gh", "api",
-                        "repos/%s/contents/%s?ref=%s" % (repo, path, ref),
-                        "--jq", ".content"])
+        payload = json.loads(_run(["gh", "api",
+                                   "repos/%s/contents/%s?ref=%s" % (repo, path, ref)]))
     except RuntimeError:
         return None
-    raw = base64.b64decode(encoded.strip()).decode("utf-8", "replace")
-    return json.loads(raw)["cells"]
+
+    try:
+        return decode_payload(payload)
+    except BodyNotServed as exc:
+        sha = str(exc)
+
+    # Blob > 1 Mo : l'API git/blobs le sert jusqu'a 100 Mo.
+    if not sha:
+        return None
+    try:
+        return decode_payload(json.loads(_run(["gh", "api",
+                                               "repos/%s/git/blobs/%s" % (repo, sha)])))
+    except (RuntimeError, BodyNotServed, KeyError, ValueError):
+        return None
 
 
 def audit(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
@@ -151,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         for path in paths:
             head = cells_at_ref(args.repo, path, meta["headRefOid"])
             if head is None:
-                results.append({"path": path, "error": "notebook illisible au head"})
+                results.append({"path": path, "error": "notebook illisible au head (blob non servi par contents ni blobs)"})
                 continue
             base = cells_at_ref(args.repo, path, meta["baseRefOid"]) or []
             results.append({"path": path, "findings": audit(head, base)})
