@@ -550,10 +550,34 @@ VISITS_WINDOW_DAYS = 1
 # se trouve.
 VISITS_SCALE = 4.0
 
+# --- Affluence LONGUE (#16625, mandat user 2026-09-18) ---------------------
+# Le compteur ci-dessus est anti-collision INTRA-JOURNEE : il retombe a zero
+# des que la flotte ralentit 12 h (nuit, week-end, arret de credits) et rend
+# son poids plein au sujet frequente -- le contre-exemple explicite de
+# #16625. La grandeur manquante (diagnostic ai-01 2026-09-18) est le compte
+# CUMULE de PRs mergees citant l'issue sur une fenetre LONGUE : les deux
+# mesurent des choses differentes et coexistent.
+# Dimensionnement mesure le 2026-09-18 sur le pool ouvert (2921 PRs mergees
+# / 30 j, 3518 citations d'issues) : mediane du pool = 1, q75 = 0, 29 % a
+# zero -- tete : #13410 = 83, #11601 = 73, puis 37, 27, 27. A l'echelle 16 :
+# mediane -> /1.09 (intouchable), 16 vus -> /2.0, 83 vus -> /3.6. La tete
+# seule est mordue ; le fond du pool ne sait pas que le facteur existe.
+LONG_VISITS_WINDOW_DAYS = 30
+LONG_VISITS_SCALE = 16.0
+# Seuil du signal PARKING rendu dans la sortie : a 12 PRs mergees / 30 j (une
+# tous les 2,5 j), un sujet n'est plus un grain delaisse que le tirage doit
+# remonter mais une veine deja ouverte. La mesure #16625 montre que la
+# monoculture ne venait PAS du tirage (P(#13410) ~ 0 sur 3000 rejeux du
+# moteur pondere) mais de provisions et d'auto-alimentation de sweeps AUTOUR
+# du picker : le signal doit donc etre VISIBLE la ou le choix se fait, pour
+# la lane qui lit le tirage et le coordinateur qui provisionne.
+PARKING_SIGNAL_THRESHOLD = 12
+
 
 def fetch_visits(
     days: int = VISITS_WINDOW_DAYS,
     *,
+    cache_name: str = "visits",
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
@@ -597,7 +621,7 @@ def fetch_visits(
 
     try:
         prs = _cached_payload(
-            "visits",
+            cache_name,
             identity,
             fetch_raw,
             cache=cache,
@@ -609,7 +633,7 @@ def fetch_visits(
             subprocess.TimeoutExpired, OSError) as exc:
         return {}, f"{type(exc).__name__}: {exc}"
 
-    cache_entry = (cache_status or {}).get("visits") or {}
+    cache_entry = (cache_status or {}).get(cache_name) or {}
     cache_err = None
     if cache_entry.get("status") == "stale":
         cache_err = "cache stale apres echec du refresh: " + str(
@@ -1130,7 +1154,8 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
            visits: dict[int, int] | None = None,
            series: dict[str, dict] | None = None,
            issue_to_family: dict[int, str] | None = None,
-           delivery: dict[int, float] | None = None) -> float:
+           delivery: dict[int, float] | None = None,
+           long_visits: dict[int, int] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -1163,6 +1188,14 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
     if seen:
         w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
     item["visits"] = seen
+    # Affluence longue (#16625) : meme forme douce, fenetre longue. Le compte
+    # 24 h ci-dessus garde son role anti-collision intra-journee ; celui-ci
+    # porte la MEMOIRE -- une reprise apres 12 h d'arret de flotte ne rend
+    # pas son poids plein au sujet deja frequente (acceptance 4 de #16625).
+    seen_long = (long_visits or {}).get(item["number"], 0)
+    if seen_long:
+        w /= 1.0 + math.log2(1.0 + seen_long / LONG_VISITS_SCALE)
+    item["visits_long"] = seen_long
     # Saturation de ZONE : le facteur que le compteur par issue ne peut pas
     # porter, parce qu il est defait par le partitionnement. Une fille NEUVE
     # (age 0, idle 0, aucune visite) herite ici du poids de la zone que sa
@@ -1204,13 +1237,15 @@ def draw(items: list[dict], n: int, rng: random.Random,
          visits: dict[int, int] | None = None,
          series: dict[str, dict] | None = None,
          issue_to_family: dict[int, str] | None = None,
-         delivery: dict[int, float] | None = None) -> list[dict]:
+         delivery: dict[int, float] | None = None,
+         long_visits: dict[int, int] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits, series, issue_to_family, delivery)
+        w = weight(it, prev_genre, visits, series, issue_to_family, delivery,
+                   long_visits)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -1220,6 +1255,11 @@ def draw(items: list[dict], n: int, rng: random.Random,
         it.pop("body", None)
         it["weight"] = round(w, 2)
         it.setdefault("visits", 0)
+        it.setdefault("visits_long", 0)
+        # Signal parking (#16625) : le pick porte le statut de veine deja
+        # ouverte -- c'est ici que la mesure devient une consigne, visible
+        # par la lane au tirage ET par le coordinateur au provisionnement.
+        it["parking"] = it.get("visits_long", 0) >= PARKING_SIGNAL_THRESHOLD
         it.setdefault("family", None)
         it.setdefault("family_new_notebooks", 0)
         it.setdefault("polarity", "neutral")
@@ -1307,7 +1347,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
-                   fallback_by_class=None, continuity_state=None):
+                   fallback_by_class=None, continuity_state=None,
+                   long_visits=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Deux raisons de remplacer plutot que d annoter :
@@ -1367,8 +1408,16 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             for _ in range(len(pool) + 1):
                 if len(got) >= want or not pool:
                     break
-                cand = draw(pool, want - len(got), rng, prev, visits,
-                            series, issue_to_family, delivery)
+                if long_visits is None:
+                    # Forme historique, signature bornee des fakes de test
+                    # (delivered-gate) : le facteur long est inerte quand la
+                    # mesure est absente, donc les deux formes sont egales.
+                    cand = draw(pool, want - len(got), rng, prev, visits,
+                                series, issue_to_family, delivery)
+                else:
+                    cand = draw(pool, want - len(got), rng, prev, visits,
+                                series, issue_to_family, delivery,
+                                long_visits=long_visits)
                 if not cand:
                     break
                 nums = [c["number"] for c in cand]
@@ -3692,6 +3741,13 @@ def main(argv: list[str] | None = None) -> int:
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    long_visits, long_visits_err = fetch_visits(
+        days=LONG_VISITS_WINDOW_DAYS,
+        cache_name="long_visits",
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
     series, issue_to_family, series_err = fetch_series_visits(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
@@ -3867,7 +3923,8 @@ def main(argv: list[str] | None = None) -> int:
         delivery=delivery_weights if args.delivery_boost_max > 0 else None,
         delivered_probe=delivered_probe, delivered_state=delivered_state,
         fallback_by_class=fallback_by_class,
-        continuity_state=continuity)
+        continuity_state=continuity,
+        long_visits=long_visits)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
@@ -3894,6 +3951,12 @@ def main(argv: list[str] | None = None) -> int:
             "visits_error": visits_err,
             "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
+            "long_visits_window_days": LONG_VISITS_WINDOW_DAYS,
+            "long_visits_measured": long_visits_err is None,
+            "long_visits_error": long_visits_err,
+            "long_visits_top": sorted(
+                ({"issue": k, "n": v} for k, v in long_visits.items()),
+                key=lambda d: (-d["n"], d["issue"]))[:10],
             "umbrella_delivery": {
                 **delivery_sig,
                 "items": {str(k): v for k, v in delivery_sig["items"].items()},
@@ -4085,6 +4148,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(pad + "-> " + quoi + " (renumeroter un numero eleve en "
                       "lettre d'un numero existant, ou fondre plusieurs "
                       "lettres en un petit nombre), pas une instance de plus.")
+        # #16625 : le statut de veine deja ouverte se lit sur la ligne du
+        # pick, pas seulement dans les metriques -- le vecteur mesure de la
+        # monoculture est le choix hors-tirage (provisions, sweeps), donc le
+        # signal doit toucher le lecteur au moment ou il choisit.
+        if p.get("parking"):
+            pad = f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  "
+            print(pad + f"PARKING : {p.get('visits_long', 0)} PRs mergees la "
+                        f"citant sur {LONG_VISITS_WINDOW_DAYS} j -- veine deja")
+            print(pad + "ouverte, pas un grain delaisse. Une tranche de plus ne solde")
+            print(pad + "rien : prendre un sous-grain ailleurs, sauf steer explicite.")
     print_delivered_signal_report(withheld, delivered_state,
                                   args.include_delivered)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
@@ -4100,8 +4173,17 @@ def main(argv: list[str] | None = None) -> int:
             print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
             print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
         print()
+    if long_visits_err:
+        print(f"!! affluence LONGUE NON MESUREE ({long_visits_err}) : la memoire")
+        print(f"   30 j n'est pas appliquee -- un parking peut garder un poids")
+        print("   plein malgre des semaines de visites. Ne pas lire l'absence de")
+        print("   signal PARKING comme une absence de parking.")
+        print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
     print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")
+    print(f"vus30 = idem sur {LONG_VISITS_WINDOW_DAYS} j, la MEMOIRE longue (#16625) : un")
+    print("       sujet a 0 vu du jour mais 30 PRs/30 j garde son amortissement -- une")
+    print("       reprise apres 12 h d'arret de flotte ne lui rend pas son poids plein.")
     print("      Le cap de veine ne voit qu'une lane a la fois : plusieurs lanes")
     print("      restant chacune sous son cap concentrent quand meme la flotte")
     print("      sur un meme sujet. C'est ce que cette colonne amortit.")
