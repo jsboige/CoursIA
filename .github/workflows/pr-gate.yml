@@ -45,6 +45,21 @@ name: PR gate
 on:
   pull_request:
     branches: [main]
+    # #16624: `edited` covers the stack retarget. The default activity types
+    # [opened, synchronize, reopened] exclude `edited`, so a PR retargeted onto
+    # main after living on a stack link NEVER fired this gate -- BLOCKED
+    # forever with zero red (14 checks green + APPROVED, measured firsthand on
+    # #16574, 2026-09-18). `edited` also fires on every title/body edit: the
+    # job-level `if` on the gate job skips those without taking a runner slot,
+    # and a SKIPPED `PR gate` check-run is non-blocking (same class as a
+    # path-filtered no-run; the stale-sweep folds `skipped` into GREEN). The
+    # skip can never CLEAR a verdict -- an in-job early-exit-0 could (it would
+    # conclude SUCCESS on a SHA whose previous real verdict is a stale FAIL),
+    # which is why the guard is on the job, not inside the step.
+    # `ready_for_review` rides along: draft -> ready emits no push, hence no
+    # synchronize, so without it the draft's `opened` verdict would be the
+    # last one the PR ever gets.
+    types: [opened, synchronize, reopened, ready_for_review, edited]
   # No inputs. This leg aggregates the ref it runs on, nothing else.
   #
   # It carried a `sha` input ('Head SHA to aggregate') that the run step never
@@ -94,6 +109,20 @@ jobs:
     # references a check nobody produces -- pending forever, the very deadlock
     # this workflow exists to avoid.
     name: PR gate
+    # #16624 -- the anti-rafale guard for the `edited` trigger type above.
+    # Pull-request `edited` events fire on every title/body edit too; only a
+    # BASE retarget carries `changes.base`. This guard must live at the JOB
+    # level: a skipped job yields a non-blocking `skipped` check-run, while an
+    # in-job early exit would conclude SUCCESS on a SHA whose previous verdict
+    # may be a legitimate red -- clearing it without ever aggregating. Property
+    # access in GitHub expressions is null-propagating, so
+    # `github.event.changes.base` on a title edit evaluates to null (no error).
+    # Every other event (opened / synchronize / reopened / ready_for_review /
+    # workflow_dispatch) passes the first two disjuncts.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.action != 'edited' ||
+      github.event.changes.base != null
     # #13363 (arbitrage ai-01 2026-09-02, jambes A+B): under load this
     # aggregator held 11/14 self-hosted runners just waiting (famine #11405),
     # while a short timeout made it FAIL below the Quarto duration it waited
