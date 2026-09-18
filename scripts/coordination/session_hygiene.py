@@ -187,7 +187,9 @@ def check_main_hostage(root: Path) -> list[Check]:
             Check(
                 "worktrees",
                 lvl,
-                f"{count} worktrees enregistres — la purge n'a pas tourne recemment",
+                f"{count} worktrees enregistres — inflation. ATTENTION : ce compte ne dit "
+                f"PAS qu'il y a quelque chose a purger (mesure du 18/09 : 59 enregistres, "
+                f"removable=0, tous legitimement detenus). Seul le script tranche.",
                 "python scripts/ci/prune_merged_worktrees.py  (puis --apply)",
                 {"count": count},
             )
