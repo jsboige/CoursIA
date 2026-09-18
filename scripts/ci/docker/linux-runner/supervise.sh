@@ -882,7 +882,9 @@ Un correctif pinne mais non reconstruit reste indiscernable d'un correctif absen
 #    chemin par lequel la derive redeviendrait silencieuse ;
 #  - le swap passe par un staging FRERE de l'epingle (meme filesystem,
 #    jamais PINNED_CTX lui-meme) : un demarrage concurrent lit l'ancien pin
-#    complet ou le nouveau complet, jamais un demi-etat.
+#    complet, le nouveau complet, ou une ABSENCE transitoire (fenetre entre
+#    les deux mv : le garde de fraicheur refuse alors fail-closed) -- jamais
+#    un demi-etat.
 cmd_pin() {
   local f staging parent new_sha i
   for f in $PIN_FILES; do
