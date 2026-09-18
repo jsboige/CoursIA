@@ -157,8 +157,8 @@ Fichier : `MyIA.AI.Notebooks/GenAI/.env`
 
 | Variable | Description |
 |----------|-------------|
-| `COMFYUI_BEARER_TOKEN` | Hash bcrypt pour auth ComfyUI |
-| `COMFYUI_RAW_TOKEN` | Token brut (pour login UI) |
+| `COMFYUI_API_TOKEN` | Credential API ComfyUI (source : fichier bind-mounte, cf #14382) |
+| `COMFYUI_AUTH_TOKEN` | Alias notebooks de `COMFYUI_API_TOKEN` (meme valeur) |
 | `HF_TOKEN` | Token HuggingFace (telechargement modeles) |
 | `FORGE_USER` / `FORGE_PASSWORD` | Auth Forge-Turbo |
 | `LOCAL_MODE` | `true` pour Docker local, `false` pour myia.io |
