@@ -23,7 +23,8 @@
 #      IGNORE avec preuve, la piste famille se referme.
 
 from AlgorithmImports import *
-from datetime import time as datetime_time
+import math
+from datetime import datetime as py_datetime, time as datetime_time, timedelta
 
 
 class SymbolData:
@@ -37,7 +38,7 @@ class SymbolData:
         self.opening_volume_history = RollingWindow[float](relvol_days)
         self.current_opening_volume: float | None = None
         self.atr = AverageTrueRange(atr_period, MovingAverageType.WILDERS)
-        algorithm.register_consolidator(symbol, self._consolidator(algorithm))
+        algorithm.subscription_manager.add_consolidator(symbol, self._consolidator(algorithm))
 
     def _consolidator(self, algorithm: QCAlgorithm) -> TradeBarConsolidator:
         consolidator = TradeBarConsolidator(timedelta(minutes=self.opening_minutes))
@@ -56,7 +57,7 @@ class SymbolData:
             self.opening_bar = None
 
     def on_daily_bar(self, bar: TradeBar) -> None:
-        self.atr.update(bar.end_time, bar.high, bar.low, bar.close)
+        self.atr.update(bar)
 
     @property
     def relative_volume(self) -> float:
@@ -73,8 +74,8 @@ class OpeningRangeBreakout(QCAlgorithm):
         # Fenetres dev/OOS passees en parametres de backtest ; defaut = dev.
         debut = self.get_parameter("start_date", "2016-01-01")
         fin = self.get_parameter("end_date", "2019-12-31")
-        self.set_start_date(datetime.strptime(debut, "%Y-%m-%d"))
-        self.set_end_date(datetime.strptime(fin, "%Y-%m-%d"))
+        self.set_start_date(py_datetime.strptime(debut, "%Y-%m-%d"))
+        self.set_end_date(py_datetime.strptime(fin, "%Y-%m-%d"))
         self.set_cash(100_000)
 
         self.universe_size = int(self.get_parameter("universe_size", 1000))
@@ -123,9 +124,11 @@ class OpeningRangeBreakout(QCAlgorithm):
         selection = [c.symbol for c in triees]
         # Deselection : retirer l'etat des symboles partis.
         for symbol in list(self._symbols):
-            if symbol not in selection and not self.portfolio.invested(symbol):
+            if symbol not in selection and not self.portfolio[symbol].invested:
                 if symbol in self._daily_consolidators:
-                    self.remove_consolidator(self._daily_consolidators.pop(symbol))
+                    self.subscription_manager.remove_consolidator(
+                        symbol, self._daily_consolidators.pop(symbol)
+                    )
                 self._symbols.pop(symbol, None)
         return selection
 
@@ -140,7 +143,7 @@ class OpeningRangeBreakout(QCAlgorithm):
                 # consolidateur d'ouverture.
                 daily = TradeBarConsolidator(timedelta(days=1))
                 daily.data_consolidated += lambda s, b, sym=symbol: self._on_daily(sym, b)
-                self.register_consolidator(symbol, daily)
+                self.subscription_manager.add_consolidator(symbol, daily)
                 self._daily_consolidators[symbol] = daily
 
     def _on_daily(self, symbol: Symbol, bar: TradeBar) -> None:
@@ -148,8 +151,11 @@ class OpeningRangeBreakout(QCAlgorithm):
         if data is not None:
             data.on_daily_bar(bar)
 
+    def _n_invested(self) -> int:
+        return sum(1 for s in self._symbols if self.portfolio[s].invested)
+
     def _scan_entries(self) -> None:
-        if len(self.portfolio.positions) >= self.max_positions:
+        if self._n_invested() >= self.max_positions:
             return
         candidates = []
         for symbol, data in self._symbols.items():
@@ -158,7 +164,7 @@ class OpeningRangeBreakout(QCAlgorithm):
             if data.relative_volume > 1 and data.atr > self.atr_threshold:
                 candidates.append((data.relative_volume, symbol, data))
         candidates.sort(key=lambda t: t[0], reverse=True)
-        places_disponibles = self.max_positions - len(self.portfolio.positions)
+        places_disponibles = self.max_positions - self._n_invested()
         for _, symbol, data in candidates[:places_disponibles]:
             self._place_entry(symbol, data)
 
@@ -203,6 +209,4 @@ class OpeningRangeBreakout(QCAlgorithm):
             del self._stops_en_attente[order_event.order_id]
 
     def _liquidate_all(self) -> None:
-        for symbol in list(self.portfolio.keys()):
-            if self.portfolio[symbol].invested:
-                self.market_order(symbol, -self.portfolio[symbol].quantity, False, "Cloture journaliere")
+        self.liquidate()
