@@ -322,6 +322,66 @@ class RRXOR:
         return out
 
 
+@dataclass(frozen=True)
+class RRXOR_Iid:
+    """RRXOR legacy : bits iid ``b_t``, observation ``y_t = b_{t-1} XOR b_t``.
+
+    DEPRECIE : les XOR adjacents de bits iid sont eux-memes iid -- ce banc
+    ne portait AUCUNE structure et ne meritait pas le nom RRXOR (cf.
+    :class:`RRXOR`, conforme a Riechers & Crutchfield 2018). Conserve pour
+    la REPRODUCTIBILITE de la batterie d'intervention (#15480/#16230) et du
+    pilote ICT-40, calibres sur ce banc ; toute nouvelle etude doit utiliser
+    :class:`RRXOR`.
+    """
+
+    n_states: int = 4
+    name: str = "rrxor_iid"
+
+    def transition_matrix(self) -> Array:
+        """T[(a,b) -> (b,c)] = 1/2 pour c dans {0,1} : le bit frais est iid uniforme."""
+        t = np.zeros((4, 4))
+        for a in (0, 1):
+            for b in (0, 1):
+                for c in (0, 1):
+                    t[2 * a + b, 2 * b + c] = 0.5
+        return t
+
+    def stationary(self) -> Array:
+        return np.full(4, 0.25)
+
+    def emission_matrix(self) -> Array:
+        """E[i, y] = P(y_t = y | etat i) : deterministe, y = a XOR b."""
+        e = np.zeros((4, 2))
+        for a in (0, 1):
+            for b in (0, 1):
+                e[2 * a + b, a ^ b] = 1.0
+        return e
+
+    def sample(self, n: int, seed: int) -> Tuple[Array, Array]:
+        """Echantillonne n bits iid + l'observation XOR ; retourne (etats (b_{t-1}, b_t), y)."""
+        rng = np.random.default_rng(seed)
+        bits = rng.integers(0, 2, size=n + 1)
+        states = 2 * bits[:-1] + bits[1:]
+        obs = bits[:-1] ^ bits[1:]
+        return states, obs
+
+    def beliefs(self, obs: Array) -> Array:
+        """Filtration forward exacte sur les 4 etats ; observation binaire deterministe."""
+        if obs.ndim != 1 or not np.all(np.isin(obs, (0, 1))):
+            raise ProcessError("RRXOR_Iid.beliefs attend une serie binaire 1D")
+        t = self.transition_matrix()
+        e = self.emission_matrix()
+        prior = self.stationary()
+        out = np.empty((len(obs), 4))
+        b = prior
+        for k in range(len(obs)):
+            pred = b @ t if k > 0 else b
+            w = pred * e[:, int(obs[k])]
+            b = w / w.sum()
+            out[k] = b
+        return out
+
+
 @dataclass
 class FactoredBench:
     """Banc a deux facteurs independants, factorisation latente connue.
