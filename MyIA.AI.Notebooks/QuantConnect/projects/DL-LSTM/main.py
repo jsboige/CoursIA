@@ -152,7 +152,14 @@ class DLLSTMAlgorithm(QCAlgorithm):
         if self.symbol not in data:
             return
 
-        price = data[self.symbol].Close
+        bar = data[self.symbol]
+        if bar is None:
+            # La Slice peut presenter la cle sans barre de trade (jour sans
+            # cotation SPY) ; rien a faire ce jour, la position est
+            # maintenue.
+            return
+
+        price = bar.Close
         self.price_history.append(price)
 
         # Attendre d'avoir assez de donnees
