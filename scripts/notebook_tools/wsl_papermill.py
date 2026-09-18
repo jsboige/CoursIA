@@ -476,6 +476,96 @@ def execute_notebook_native(notebook: str, output: str | None = None,
 # Shared validation
 # =============================================================================
 
+# Le noyau Lean n'emet jamais de sortie `output_type: "error"` : il rend une
+# `display_data` dont le HTML embarque le JSON du REPL dans un bloc
+# `<code>{"messages": [{"severity": "error", ...}]}</code>`. Compter seulement
+# `output_type == "error"` rend donc le meme `0 errors` sur un kernel mort et
+# sur un kernel sain (#16176, finding 1) -- et c'est ce verdict que cite la
+# preuve d'execution H.1 de toute PR de notebook Lean natif.
+#
+# L'ancre est la CLE `"messages"`, jamais le prefixe `{"messages"` : le REPL ne
+# garantit pas que `messages` soit le PREMIER champ du bloc. Mesure du
+# 2026-09-15 sur les 1291 notebooks du depot : 1030 blocs portent la cle
+# `messages`, et 108 d'entre eux commencent par `sorries` -- une ancre de
+# prefixe en ratait donc 108 en silence, rendant un nombre PLUS PETIT que la
+# verite sans le dire : le defaut meme que ce compteur corrige, un cran plus
+# fin.
+_LEAN_MESSAGES_KEY = '"messages"'
+
+
+def _output_texts(output: dict):
+    """Rend les chaines portees par une sortie de cellule.
+
+    Pas de filtre sur `output_type` : un type non enumere qui porte un `data` ou
+    un `text` ne doit pas faire perdre sa contribution a un diagnostic, ce qui
+    serait le silence que ce compteur corrige. Mesure du 2026-09-15 : les 1030
+    blocs `messages` du depot vivent tous dans une `display_data`.
+    """
+    data = output.get("data")
+    if isinstance(data, dict):
+        for value in data.values():
+            if isinstance(value, str):
+                yield value
+            elif isinstance(value, list):
+                yield "".join(v for v in value if isinstance(v, str))
+    text = output.get("text")
+    if isinstance(text, str):
+        yield text
+    elif isinstance(text, list):
+        yield "".join(v for v in text if isinstance(v, str))
+
+
+def _lean_payloads(text: str):
+    """Rend les objets JSON d'un texte qui portent une cle `messages`.
+
+    Du texte a la cle, puis de la cle vers le `{` englobant : le premier qui
+    parse en un objet portant cette cle. Remonter ainsi plutot que d'ancrer un
+    prefixe est ce qui rend visibles les blocs ou `messages` n'est pas le
+    premier champ (`{"sorries": [...], "messages": [...]}`).
+    """
+    decoder = json.JSONDecoder()
+    pos = text.find(_LEAN_MESSAGES_KEY)
+    while pos != -1:
+        start = text.rfind("{", 0, pos + 1)
+        while start != -1:
+            try:
+                payload, _ = decoder.raw_decode(text[start:])
+            except ValueError:
+                payload = None
+            if isinstance(payload, dict) and "messages" in payload:
+                yield payload
+                break
+            start = text.rfind("{", 0, start)
+        pos = text.find(_LEAN_MESSAGES_KEY, pos + len(_LEAN_MESSAGES_KEY))
+
+
+def count_cell_errors(nb: dict) -> tuple[int, int]:
+    """Compte les cellules en erreur : (erreurs Jupyter, cellules a diagnostic Lean `error`).
+
+    Les deux sont distinctes parce qu'elles n'ont pas la meme cause ni le meme
+    remede : une erreur Jupyter est une exception Python, un diagnostic Lean est
+    une erreur de compilation du noyau. Les separer rend le verdict lisible.
+    """
+    jupyter = 0
+    lean = 0
+    for cell in nb.get("cells", []) or []:
+        if cell.get("cell_type") != "code":
+            continue
+        cell_jupyter = False
+        cell_lean = False
+        for output in cell.get("outputs", []) or []:
+            if output.get("output_type") == "error":
+                cell_jupyter = True
+            for text in _output_texts(output):
+                if any(m.get("severity") == "error"
+                       for payload in _lean_payloads(text)
+                       for m in (payload.get("messages") or [])):
+                    cell_lean = True
+        jupyter += int(cell_jupyter)
+        lean += int(cell_lean)
+    return jupyter, lean
+
+
 def _validate_output(nb_path: Path, elapsed: float) -> int:
     """Validate executed notebook output. Returns 0 (OK), 3 (errors), 0 (warning)."""
     try:
@@ -483,11 +573,13 @@ def _validate_output(nb_path: Path, elapsed: float) -> int:
         nb = json.loads(content)
         code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
         exec_count = sum(1 for c in code_cells if c.get("execution_count"))
-        errors = sum(
-            1 for c in code_cells
-            if any(o.get("output_type") == "error" for o in c.get("outputs", []))
-        )
-        print(f"  OK: {exec_count}/{len(code_cells)} cells executed, {errors} errors ({elapsed:.1f}s)")
+        jupyter_errors, lean_errors = count_cell_errors(nb)
+        errors = jupyter_errors + lean_errors
+        if errors:
+            print(f"  OK: {exec_count}/{len(code_cells)} cells executed, {errors} errors "
+                  f"({jupyter_errors} Jupyter, {lean_errors} Lean) ({elapsed:.1f}s)")
+        else:
+            print(f"  OK: {exec_count}/{len(code_cells)} cells executed, 0 errors ({elapsed:.1f}s)")
         return 0 if errors == 0 else 3
     except Exception as e:
         print(f"  WARNING: could not validate output: {e}")
