@@ -16,8 +16,10 @@ name: GenAI-Helpers-Tests
 #     dans la même PR : `frame_limit` -> `length`, clé réelle de
 #     EmptyHunyuanLatentVideo dans comfyui_client.py — l'assert n'avait
 #     jamais tourné, personne n'avait vu le KeyError).
-#   - Imports top-level : stdlib + numpy + requests uniquement
-#     (moviepy est importé paresseusement dans audio/video_helpers).
+#   - Imports top-level : stdlib + numpy + requests. Imports en fonction
+#     (mesures sur run CI 35374523233) : python-dotenv (load_genai_config),
+#     pillow (frames_to_video), librosa (plot_waveform) — au pip install.
+#     moviepy reste importé paresseusement et mocké par les tests.
 #
 # Acceptance partielle (tranche 2/45, scope strict) :
 # 1. Workflow `genai-helpers-tests.yml` créé et déclenché sur push+PR
@@ -75,14 +77,14 @@ jobs:
           python-version: '3.11'
           cache: pip
 
-      # Deps minimales : numpy (audio/video_helpers), requests
-      # (genai_service), pytest. comfyui_client n'utilise que urllib
-      # (stdlib). moviepy est importé paresseusement et mocké par les
-      # tests — non requis à la collecte.
-      - name: Install minimal deps (numpy + requests + pytest)
+      # Deps réelles de la famille : numpy (audio/video), requests
+      # (genai_service), python-dotenv (load_genai_config), pillow
+      # (frames_to_video), librosa (plot_waveform), pytest. moviepy est
+      # importé paresseusement et mocké par les tests — non requis.
+      - name: Install deps (numpy requests python-dotenv pillow librosa pytest)
         run: |
           python -m pip install --upgrade pip
-          pip install numpy requests pytest
+          pip install numpy requests python-dotenv pillow librosa pytest
 
       - name: Run GenAI helpers tests
         run: |
