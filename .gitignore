@@ -1070,3 +1070,4 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/bin/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
+/.scratch-attic/

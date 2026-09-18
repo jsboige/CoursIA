@@ -30,6 +30,7 @@ le controle ci-dessous fait refuser `levee` malgre son taux.
 Aucun appel reseau : `classify` est pure, on lui passe le corps.
 """
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -172,6 +173,80 @@ def test_15837_candidat_refuse_levee_devant_le_marqueur():
         assert mod.has_live_marker(body, mod.CONCERN_MARKERS) is False
     finally:
         mod.CITERS = original
+
+
+# ---------------------------------------------------------------------------
+# Le CONTRAT que le controle precedent PRESUPPOSE : la borne de paragraphe
+# ---------------------------------------------------------------------------
+
+def test_15837_borne_paragraphe_rendue_mesurable():
+    """Le frere du controle precedent — il mesure que la fenetre EXISTE.
+
+    `test_15837_candidat_refuse_levee_devant_le_marqueur` tient en UN
+    paragraphe : il mesure le cout d'un candidat situe DANS la fenetre. Il ne
+    dit rien de ce qui borne cette fenetre. Si le bornage disparaissait, son
+    corps ne ferait plus qu'un paragraphe, la simulation y couterait a nouveau
+    le marqueur — et le test resterait VERT en cessant de mesurer la borne que
+    #15989 a posee. La dependance a `_is_cited` resterait implicite.
+
+    Ce test porte donc un corps a DEUX paragraphes : le citer dans le premier,
+    le verdict NEUF dans le second — l'idiome de lane que #15989 borne
+    (« ## stale », ligne vide, puis le verdict).
+
+    Deux volets le rendent mesurant plutot que suppose :
+
+    - (b) une PAIRE MINIMALE — les memes mots, la ligne vide en moins. Le citer
+      devient le mot terminal de la fenetre et eteint le verdict. C'est donc la
+      ligne vide SEULE qui decide, et non un mot du corps. La suite de base n'a
+      que le cas a deux paragraphes, sans terme de comparaison : elle ne peut
+      pas distinguer « la borne protege » de « rien ne franchit jamais ».
+    - (c) le controle positif : on abaisse la borne en rendant
+      `_PARAGRAPH_BREAK_RE` inoperant, ce qui reproduit l'etat d'AVANT #15989
+      (l'appelant passait 30 caracteres sans borne). Le citer du paragraphe
+      precedent franchit alors et eteint le verdict. Sans ce volet, rien ne
+      prouverait que c'est la borne qui protegeait le marqueur, et non autre
+      chose — exactement le piege qu'on repare.
+    """
+    # La ligne vide est ici VOLONTAIRE et necessaire : ce test est inerte sans
+    # elle. Le frere, lui, ne doit surtout pas en porter — cf son commentaire.
+    body = ("stale\n"
+            "\n"
+            "CHANGES_REQUESTED: le split manque sur le head neuf.")
+
+    # Anti-vacuite : le citer doit tomber DANS les 30 caracteres examines.
+    # Sinon (b) passerait parce que la fenetre est vide, pas parce qu'elle est
+    # bornee.
+    i = body.index("CHANGES_REQUESTED")
+    assert "stale" in body[max(0, i - 30):i]
+
+    # (a) etat reel : la frontiere de paragraphe protege le verdict neuf.
+    # C'est CETTE assertion qui rougit si le bornage est retire de `_is_cited`.
+    assert mod.has_live_marker(body, mod.CONCERN_MARKERS) is True, (
+        "la fenetre de _is_cited n'est plus bornee a la frontiere de "
+        "paragraphe : le citer `stale` du premier paragraphe eteint le verdict "
+        "NEUF du second")
+
+    # (b) paire minimale : les MEMES mots, la ligne vide en moins. Le citer
+    # reste le mot terminal de la fenetre, donc il eteint le verdict. C'est la
+    # ligne vide SEULE qui decide — et c'est la mesure que la suite de base ne
+    # porte pas (elle n'a que le cas a deux paragraphes, sans terme de
+    # comparaison).
+    assert mod.has_live_marker(body.replace("\n\n", "\n"),
+                               mod.CONCERN_MARKERS) is False, (
+        "sans la ligne vide, le citer `stale` doit eteindre le verdict : "
+        "sinon la borne n'agit sur rien et la paire minimale est vide")
+
+    # (c) controle positif : borne abaissee -> le citer franchit, verdict mort.
+    # Meme idiome que le frere (monkeypatch sous `finally`) : `_PARAGRAPH_BREAK_RE`
+    # rendu inoperant reproduit l'etat d'AVANT #15989.
+    original = mod._PARAGRAPH_BREAK_RE
+    mod._PARAGRAPH_BREAK_RE = re.compile(r"(?!)")  # ne matche jamais
+    try:
+        assert mod.has_live_marker(body, mod.CONCERN_MARKERS) is False, (
+            "borne abaissee : le citer du paragraphe precedent devrait "
+            "franchir et eteindre le verdict — le controle ne mesure plus rien")
+    finally:
+        mod._PARAGRAPH_BREAK_RE = original
 
 
 def test_15837_residu_assume_narration_levee_avant_merge():

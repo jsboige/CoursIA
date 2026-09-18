@@ -2710,6 +2710,166 @@ def test_13083_narration_pas_un_blocage_en_section_ne_declenche_pas():
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
 
 
+def test_16005_levee_syntaxe_inverse_ne_pose_pas():
+    """#16005 : le francais place le mot de LEVEE avant le nom. « Levée du
+    blocage » est la levée canonique elle-même — mesuré sur #15846, la phrase
+    par laquelle la lane levait le blocage était lue comme en POSANT un
+    (l'instrument lisait sa propre grammaire de levée comme une émission)."""
+    assert mod.classify(
+        "jsboige",
+        "## Levée du blocage — en forme canonique, avec les deux sorties nommées"
+    ) is None
+    assert mod.classify("jsboige", "Levé du blocage") is None
+    assert mod.classify(
+        "jsboige",
+        "## Levée du `[BLOCK]` : le rouge retenu est un check-run gelé"
+    ) is None
+
+
+def test_16005_narration_en_titre_ne_pose_pas():
+    """#16005 : le nom « blocage » complément d'un titre de narration ne pose
+    rien — 2e faux positif mesuré sur #15846 (« Chronologie du blocage »,
+    commentaire de diagnostic de la lane devenu réserve BLOCK non levable par
+    l'auteur sous #13083)."""
+    assert mod.classify(
+        "jsboige", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "jsboige", "Historique du blocage posé hier, pour mémoire."
+    ) is None
+    assert mod.classify(
+        "jsboige", "## Suite du blocage — ce qui reste en attente"
+    ) is None
+
+
+def test_16005_emissions_reelles_restent_detectees():
+    """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
+    narration liée au nom par une courte proposition — les émissions réelles
+    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01",
+        "BLOCAGE : cette PR ne merge pas tant que le run GPU n'est pas vert."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
+    ) == "BLOCK"
+
+
+# --- #16006 : la fenetre pre-marqueur etait sentence-agnostic -----------------
+# Toute la liste des mots de narration, telle que le module la porte. Servir de
+# source unique au test evite la derive : chaque forme est verifiee DANS LES
+# DEUX SENS (narration liee au nom = mention ; suivie d'un deux-points =
+# emission), et l'appartenance de la forme a la liste est prouvee sur le
+# pattern lui-meme (sinon le balayage serait vacuamente vert).
+_NARRATION_FORMS = (
+    "Levée", "Lèvement", "Je lève", "Lifted", "Retrait", "Annulation",
+    "Chronologie", "Historique", "État", "Résumé", "Récapitulatif", "Bilan",
+    "Contexte", "Suite",
+)
+
+
+def test_16006_les_deux_points_annoncent_l_emission_sur_toute_la_liste():
+    """#16006 : `Suite(?!\\s*:)` traitait UN mot sur quatorze — l'echappatoire
+    etait le symptome de l'asymetrie, pas le correctif. Le deux-points ANNONCE
+    ce qui suit (« État : BLOCAGE maintenu »), il ne relie pas le nom a sa
+    narration comme le fait la preposition (« État du blocage »). Le correctif
+    devait valoir pour la liste entiere, pas pour `suite`."""
+    # `Je lève` est le VERBE DE LEVEE canonique : `classify` le resout a
+    # l'etage superieur (branche levee) avant meme d'appeler `_block_emitted`.
+    # L'assertion qui suit prouve que ce n'est PAS la fenetre de narration qui
+    # l'ecarte -- sinon l'exception masquerait un faux negatif de plus.
+    assert mod._block_emitted("Je lève : BLOCAGE — ne pas merger.") is True
+    assert mod.classify("myia-ai-01", "Je lève : BLOCAGE — ne pas merger.") is None
+
+    for forme in _NARRATION_FORMS:
+        # Le module normalise (sans accents) avant de chercher : la preuve
+        # d'appartenance doit porter sur la meme forme que la recherche reelle.
+        assert mod._NARRATION_BEFORE_RE.search(
+            f"{mod._unaccent(forme)} du blocage"
+        ), (
+            f"« {forme} » n'est plus dans la liste des mots de narration : "
+            "le balayage ci-dessous serait vacuamente vert"
+        )
+        if forme == "Je lève":
+            continue  # resolu en amont (cf ci-dessus), pas par cette fenetre
+        assert mod.classify("myia-ai-01", f"{forme} : BLOCAGE — ne pas merger.") \
+            == "BLOCK", f"« {forme} : BLOCAGE » est une EMISSION"
+        assert mod.classify("myia-ai-01", f"{forme} du blocage") is None, (
+            f"« {forme} du blocage » est une MENTION (narration liee au nom)"
+        )
+
+
+def test_16006_le_trou_ne_franchit_pas_une_fin_de_phrase():
+    """#16006 : `[^\\n]{0,24}` laissait le mot de narration de la phrase
+    PRECEDENTE neutraliser l'emission de la suivante — deux mesures sur
+    l'arbre fusionne (« Résumé fait. BLOCAGE maintenu », « Historique court.
+    BLOCAGE »). Le trou est desormais borne a une proposition nominale."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé fait. BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court. BLOCAGE"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Contexte posé. BLOCAGE — run rouge, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "État stable. BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-epreuves : la narration reste une narration quand la ponctuation
+    # est hors du trou (avant le mot, ou apres le nom).
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Premier point. Historique du blocage, pour mémoire."
+    ) is None
+
+
+def test_16006_le_trou_ne_franchit_pas_un_separateur_de_clause():
+    """#16006 (2e frontiere, mesure ai-01 2026-09-16) : la classe intermediaire
+    excluait les bornes de PHRASE mais pas les separateurs de CLAUSE — la
+    virgule et les tirets laissaient un mot de narration d'une autre
+    proposition neutraliser l'emission. Quatre reproductions exactes rendaient
+    None au lieu de BLOCK ; les formes canoniques de narration liee au nom
+    restent None (elles ne contiennent aucun separateur dans leur trou)."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé terminé, BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court — BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court - BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Bilan fait, BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-exemples causaux a conserver : la narration liee au nom par la
+    # preposition reste une MENTION — aucun separateur de clause dans le trou.
+    assert mod.classify(
+        "myia-ai-01", "Chronologie du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Levée du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Levée du blocage — en forme canonique"
+    ) is None
+
+
 def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
     """#13083 garde-fou : un verdict positif (APPROVE) qui nomme le BLOCAGE
     d'un autre cycle dans sa narration reste positif — la mention « leve par »
@@ -6328,3 +6488,100 @@ def test_15772_faux_negatifs_documents_acceptance_point4() -> None:
     pass  # Suite vide : la justification par ecrit (commentaire du regex)
     # suffit, et ajouter des tests sur des formes rares ajouterait du bruit
     # sans valeur de protection. cf `anti-regression.md`.
+
+
+def test_16128_delivered_prefix_exempted_when_no_live_lift() -> None:
+    """#16128 -- `[DELIVERED]` est un tag de protocole de claim lie a
+    l'etat de la PR (#12386 v2, claim lie a l'etat de la PR), pas une
+    remarque adressee a l'auteur. Le prefixe doit donc etre dans
+    `AGENT_PREFIXES`, au meme titre que `[CLAIMED]` et `[RELEASED]`
+    qui appartiennent au meme protocole de cycle de vie de claim.
+
+    Le mecanisme qui releve le nit n'est pas `classify` mais
+    `can_lift` (l.3540) : un commentaire `[DELIVERED]` poste APRES un
+    nit humain NE DOIT PAS lever le nit, parce qu'il ne le nomme pas
+    (le commentaire est un etat de claim, pas une reponse a la
+    remarque). Si AGENT_PREFIXES ne contient pas `[DELIVERED`,
+    `can_lift` rend True pour le commentaire, ce qui eteint le nit
+    anterieur -- d'ou le `rc=1` au merge (cf issue #16093 mesure).
+
+    Test epinglant : le commentaire est `can_lift=False` car son
+    prefixe est dans AGENT_PREFIXES et il ne porte pas de live_lift.
+    """
+    comment = {
+        "author": {"login": "jsboige"},
+        "body": ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #16093 "
+                 "(#12386 v2: PR state-bound. Le lane garde une claim "
+                 "active tant que la PR est OUVERTE.)"),
+    }
+    assert mod.can_lift(comment) is False, (
+        "[DELIVERED] ne doit pas lever un nit anterieur : c'est un "
+        "etat de claim, pas une reponse ecrite qui nomme la remarque. "
+        "Cf #16128, mesure sur #16093 (rc=1 attendu par absence du prefixe)."
+    )
+
+
+def test_16128_delivered_prefix_keeps_live_reserve_in_classification() -> None:
+    """#16128 contre-positif -- symetrie cote reserve : un `[DELIVERED]`
+    suivi d'une vraie reserve (`-- il va falloir corriger la cellule 12
+    avant merge` -- reviewer signale quelque chose) RESTE classee comme
+    concern. L'exemption du prefixe ne blanchit pas les reserves reelles
+    emises dans le meme commentaire -- sans cette symetrie, l'exemption
+    serait indistinguable d'un trou.
+
+    L'auteur du commentaire (`jsboige`, login partage) est traite comme
+    par le code existant : le gate identifie la prose, pas l'auteur.
+    """
+    body = ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- il va falloir "
+            "corriger la cellule 12 avant merge.")
+    verdict = mod.classify("jsboige", body)
+    assert verdict in ("BOT-CONCERN", "HUMAN"), body
+    # Specifically NOT None : sans exemption du prefixe sur le body
+    # complet, le concern vit. Avec exemption, le gate joue toujours sur
+    # la prose portee par la mention qui suit le prefixe.
+    assert verdict is not None, body
+
+
+def test_16128_delivered_prefix_registered_in_agent_prefixes() -> None:
+    """#16128 acceptance -- preuve declarative : le prefixe `[DELIVERED]`
+    est dans `AGENT_PREFIXES`. Le tuple est l'instrument du gate (cf
+    `body.startswith(AGENT_PREFIXES)` l.3569 + l.3679). Si quelqu'un
+    retire l'entree par regression, ce test rougit.
+    """
+    assert "[DELIVERED" in mod.AGENT_PREFIXES, (
+        "[DELIVERED doit etre enregistre dans AGENT_PREFIXES (cf #16128)"
+    )
+
+
+def test_16128_delivered_prefix_mutation_rouge_le_test() -> None:
+    """#16128 acceptance #2 (valide par mutation) -- preuve que
+    l'exemption depend du token dans AGENT_PREFIXES : si on retire
+    `[DELIVERED` de la liste, `can_lift` re-passe a True sur le meme
+    commentaire, ce qui leve erronement un nit anterieur (le defaut
+    #16093 mesure).
+
+    Le gate est bien couvert -- le test rougit des qu'on mute, et l'etat
+    est restaure dans le finally (les tests en aval partagent l'etat du
+    module).
+    """
+    comment = {
+        "author": {"login": "jsboige"},
+        "body": ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #16093 "
+                 "(#12386 v2: PR state-bound.)"),
+    }
+    # Sanity : avec [DELIVERED dans la liste, can_lift est False
+    assert mod.can_lift(comment) is False, comment
+    # Mutation : retirer [DELIVERED de AGENT_PREFIXES, simule la
+    # regression observee sur #16093
+    original = mod.AGENT_PREFIXES
+    mod.AGENT_PREFIXES = tuple(p for p in original if not p.startswith("[DELIVERED"))
+    try:
+        # Sans le prefixe, can_lift re-passe a True -- le bug reproduce.
+        assert mod.can_lift(comment) is True, (
+            "Sans [DELIVERED dans AGENT_PREFIXES, `can_lift` accepte "
+            "le commentaire comme levee d'un nit anterieur -- c'est "
+            "le defaut mesure sur #16093."
+        )
+    finally:
+        # Restauration in-place
+        mod.AGENT_PREFIXES = original

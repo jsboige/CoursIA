@@ -29,6 +29,35 @@ serait rouge des sa naissance et chaque PR echouerait sur une dette qu'elle n'a 
 creee. Il empeche la recurrence, il ne solde pas le passe. Les collisions existantes
 se traitent par une issue (cf. #12753), pas par un gate qui bloque tout le monde.
 
+PORTEE DE LECTURE -- un vert ne dit pas « aucune collision dans cette serie » (#16040)
+--------------------------------------------------------------------------------------
+La portee ci-dessus borne les fichiers EXAMINES ; elle ne dit rien de ceux que le
+lecteur d'index sait LIRE. Or `index_key` n'accepte que les noms dont l'index OUVRE
+le nom. Mesure du 2026-09-13 sur `origin/main`, 1266 notebooks :
+
+    223 lisibles par ce garde (17,6 %)      3.1-Retropropagation, 04-1-Educational
+    641 a prefixe de serie, HORS portee     GameTheory-04c-NashExistence, SW-8-Python-SHACL
+    402 sans index du tout, HORS portee     README-notes, MGS-26-Equilibrium
+
+Autrement dit le garde ne couvre PAS la convention majoritaire du depot, celle que
+`naming_canon.SERIES_NUM_RE` lit pourtant deja (`parse_name` rend `series`/`number`
+pour ces noms -- c'est `index_key`, et lui seul, qui les rend `None`). C'est assume
+et desormais AFFICHE : le denombrement ci-dessus sort avant tout verdict, y compris
+quand la reponse est zero, pour qu'un vert se lise « aucun index en conflit dans le
+perimetre affiche » et jamais « aucune collision dans cette serie ».
+
+Elargir `index_key` a la forme prefixee a ete mesure puis ECARTE (#16040 point 2) :
+sur les 641 noms hors portee, un lecteur prefixe revelerait 16 groupes preexistants
+dont l'essentiel sont des faux positifs des classes que ce garde a DEJA apprises --
+categories a deux niveaux (`Tweety-3-advanced-logics` / `-dung` : le `3` est une
+categorie), paires de langue ecrites au MILIEU du nom (`SW-8-CSharp-SHACL` contre
+`SW-8-Python-SHACL`, que `strip_lang` ne voit pas puisqu'il ne retire qu'un suffixe
+TERMINAL), artefacts `-output` et decoupages `-part2`. Elargir le filet demanderait
+d'abord d'apprendre ces classes au nouveau lecteur ; le faire au passage aurait
+transforme un garde a portee connue en garde bruyant a portee inconnue. Les cas qui
+resistent a ces trois classes (`GameTheory-06f`, `-06g`, `-17c`, `SL-12b`) sont
+consignes dans la PR de cette tranche comme matiere a arbitrage -- pas tranches ici.
+
 RENAMES -- un ajout deguise (#15489)
 ------------------------------------
 Un `git mv vers-un-index-deja-pris` est precisement la collision que ce garde
@@ -84,7 +113,7 @@ from pathlib import Path
 _here = str(Path(__file__).resolve().parent)
 if _here not in sys.path:
     sys.path.insert(0, _here)
-from naming_canon import index_key, strip_lang  # noqa: E402
+from naming_canon import SERIES_NUM_RE, index_key, strip_lang  # noqa: E402
 
 
 def _git(args):
@@ -145,6 +174,46 @@ def collisions(added, base_files):
     return found
 
 
+def perimeter(files):
+    """Portee MESUREE du lecteur d'index sur une population de notebooks (#16040).
+
+    Le garde ne compare que les noms dont l'index OUVRE le nom (`index_key`). Les
+    autres portent une forme que ce lecteur ne lit pas : soit un prefixe de serie
+    (`<Prefixe>-<num>`, la convention MAJORITAIRE du depot, reconnue par
+    `SERIES_NUM_RE` mais que `index_key` rend `None`), soit aucun index du tout.
+
+    Ce denombrement existe parce qu'un vert ne doit jamais se lire « aucune
+    collision dans cette serie » quand il ne dit que « aucune collision dans mon
+    perimetre ». Mesure au 2026-09-13 sur `origin/main` : 223 lisibles sur 1266,
+    soit 17,6 % -- le garde ne couvre donc PAS la convention dominante, et le
+    dire est le livrable (cf. #16040 point 1), pas elargir a l'aveugle (point 2 :
+    un elargissement revelerait 16 groupes preexistants dont l'essentiel sont des
+    faux positifs des classes DEJA connues -- categories a deux niveaux, paires de
+    langue ecrites au MILIEU du nom (`SW-8-CSharp-SHACL`), artefacts `-output`).
+    """
+    readable = prefix = 0
+    for p in files:
+        b = os.path.basename(p)
+        if index_key(b) is not None:
+            readable += 1
+        elif SERIES_NUM_RE.match(strip_lang(b)):
+            prefix += 1
+    return {"examined": len(files), "index_readable": readable,
+            "series_prefix_out_of_scope": prefix,
+            "no_index": len(files) - readable - prefix}
+
+
+def perimeter_line(per):
+    """Rendu humain du perimetre. Imprime AVANT tout verdict, sans exception."""
+    n = per["examined"]
+    pct = (100.0 * per["index_readable"] / n) if n else 0.0
+    return ("PERIMETRE du lecteur d'index : %d/%d notebooks lisibles (%.1f%%) -- "
+            "%d a prefixe de serie et %d sans index sont HORS de portee : ce garde "
+            "ne les compare jamais."
+            % (per["index_readable"], n, pct,
+               per["series_prefix_out_of_scope"], per["no_index"]))
+
+
 # ---------------------------------------------------------------- self-test
 _CASES = [
     ("3.1-Retropropagation.ipynb", "3.1"),
@@ -196,6 +265,26 @@ _SCENARIOS = [
 ]
 
 
+_PERIMETER_CASES = [
+    # Un denombrement d'absence se valide par controles positif ET negatif : le
+    # positif prouve que le compteur TIRE, le negatif qu'il ne compte pas n'importe
+    # quoi, et la population vide qu'il ne divise pas par zero en s'affichant.
+    ("POSITIF    une de chaque classe",
+     ["m/03-DL/3.1-Retropropagation.ipynb",
+      "g/GameTheory-04c-NashExistence-Csharp.ipynb",
+      "g/README-notes.ipynb"], (1, 1, 1)),
+    ("POSITIF    la convention majoritaire compte bien comme HORS portee",
+     ["g/GameTheory-04c-NashExistence.ipynb",
+      "g/GameTheory-06f-Bounded-Agents.ipynb",
+      "G/SW-8-Python-SHACL.ipynb"], (0, 3, 0)),
+    ("FRONTIERE  prefixe alphabetique et index nu s'excluent (^\\d vs ^[A-Za-z])",
+     ["g/MGS-26-Equilibrium.ipynb", "m/22_Evaluating_Generated_Text.ipynb"],
+     (1, 1, 0)),
+    ("NEGATIF    population vide",
+     [], (0, 0, 0)),
+]
+
+
 def self_test():
     ko = 0
     print("--- extraction d'index (%d cas) ---" % len(_CASES))
@@ -215,7 +304,20 @@ def self_test():
         print("  %-4s %-48s -> %d (attendu %d)"
               % ("OK" if ok else "KO", label, got, want))
 
-    total = len(_CASES) + len(_SCENARIOS)
+    print("")
+    print("--- perimetre du lecteur d'index (#16040) ---")
+    for label, files, want in _PERIMETER_CASES:
+        per = perimeter(files)
+        got = (per["index_readable"], per["series_prefix_out_of_scope"],
+               per["no_index"])
+        ok = got == tuple(want)
+        ko += 0 if ok else 1
+        print("  %-4s %-52s -> %s (attendu %s)"
+              % ("OK" if ok else "KO", label, got, tuple(want)))
+        # La ligne doit s'afficher sur les quatre cas, population vide comprise.
+        print("        %s" % perimeter_line(per))
+
+    total = len(_CASES) + len(_SCENARIOS) + len(_PERIMETER_CASES)
     print("")
     print("%s : %d cas, %d echec(s)" % ("ECHEC" if ko else "SUCCES", total, ko))
     return 1 if ko else 0
@@ -241,11 +343,13 @@ def main():
         return 2
 
     hits = collisions(added, base_files)
+    per = perimeter(base_files)
 
     if a.json:
         print(json.dumps({"base": a.base, "head": a.head,
                           "added_notebooks": len(added),
                           "base_notebooks": len(base_files),
+                          "perimeter": per,
                           "collisions": hits}, indent=2, ensure_ascii=False))
         return 1 if hits else 0
 
@@ -253,13 +357,15 @@ def main():
     # et « rien regarde » ne doivent jamais avoir la meme sortie.
     print("notebooks ajoutes examines : %d   (base %s : %d notebooks)"
           % (len(added), a.base, len(base_files)))
+    print(perimeter_line(per))
     if not added:
         print("VERDICT: OK -- aucun notebook ajoute, rien a verifier.")
         return 0
     for p in added:
         print("   + %s   index=%s" % (p, index_key(os.path.basename(p)) or "(aucun)"))
     if not hits:
-        print("VERDICT: OK -- aucun index de serie en conflit.")
+        print("VERDICT: OK -- aucun index de serie en conflit DANS LE PERIMETRE "
+              "ci-dessus.")
         return 0
     print("")
     print("VERDICT: COLLISION D'INDEX (%d)" % len(hits))

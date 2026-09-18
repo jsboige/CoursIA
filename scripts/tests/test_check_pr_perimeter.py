@@ -3766,3 +3766,229 @@ def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
     monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
     with pytest.raises(SystemExit):
         cpp._pr_diff_text(101)
+
+
+# --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
+
+FILES_16085_A = [
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Invariant.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Invariant_en.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/README.md"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/README.md"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/TaitColor.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Matrix.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Smooth.lean"},
+]
+
+BODY_16085_A = (
+    "La migration Mathlib 4.33.0 porte sur `Knots/Invariant.lean` et son "
+    "sibling `Knots/Invariant_en.lean` : les instances sont fournies a la "
+    "forme exacte du sous-but.\n"
+    "\n"
+    "Les occurrences des mots `sorry` / `native_decide` dans ces deux "
+    "fichiers sont de la prose de docstring, pas des trous de preuve."
+)
+
+
+def test_16085_cas_a_cardinal_anaphorique_ne_rouge_pas():
+    """#16085 cas A (founder #16075) : « dans ces deux fichiers » ou
+    l'antecedent -- les deux modules NOMMES au paragraphe precedent -- porte
+    la reference (deixse anaphorique, pas assertion de perimetre). La PR
+    touche 7 fichiers, la phrase est vraie, le rouge etait un faux positif
+    bloquant."""
+    problems = check_assertion(FILES_16085_A, BODY_16085_A)
+    assert problems == [], repr(problems)
+
+
+def test_16085_cas_a_fn_antecedent_anonyme_reste_rouge():
+    """Controle FN 1 : sans antecedent nomme au paragraphe precedent, la
+    forme reste ambigue -- fail-loud, le rouge tient."""
+    body = (
+        "La migration porte sur les deux modules d'origine.\n"
+        "\n"
+        "Les occurrences des mots `sorry` / `native_decide` dans ces deux "
+        "fichiers sont de la prose."
+    )
+    problems = check_assertion(FILES_16085_A, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_16085_cas_a_fn_mot_de_scope_reste_rouge():
+    """Controle FN 2 : une ligne porteuse d'un mot de scope fort reste
+    bloquante meme sous demonstratif -- le garde ne masque pas une vraie
+    revendication de perimetre."""
+    body = (
+        "La migration porte sur `Knots/Invariant.lean` et "
+        "`Knots/Invariant_en.lean`.\n"
+        "\n"
+        "Perimetre : dans ces deux fichiers uniquement."
+    )
+    problems = check_assertion(FILES_16085_A, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_16085_cas_a_fn_demonstratif_absent_reste_rouge():
+    """Controle FN 3 : sans demonstratif, « deux fichiers » nu reste un
+    compte confronte -- c'est l'anaphore qui porte le masquage, pas le
+    cardinal."""
+    body = (
+        "La migration porte sur `Knots/Invariant.lean` et "
+        "`Knots/Invariant_en.lean`.\n"
+        "\n"
+        "deux fichiers sont de la prose."
+    )
+    problems = check_assertion(FILES_16085_A, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+BODY_16085_B = (
+    "La provenance citée (19 findings → 13 après restauration, 8 fichiers "
+    "de `fe04e1f37`, ~793 lignes de contexte de fence) : relayée, non "
+    "re-mesurée depuis mon siège."
+)
+
+
+def test_16085_cas_b_provenance_sha_est_incidentale():
+    """#16085 cas B (founder #15983, PR BODY -- le log du run 34758737057
+    montre le rouge body-sourced « pretend 8, liste 1 ») : « N fichiers de
+    `<sha>` » attribue la population a une REVISION PASSEE, relayee. Meme
+    famille que PAST_REFERENCE : mauvaise surface, pas mauvais compte. La
+    consequence passe au routage incidental #11712 (signal, pas blocage)."""
+    assert _is_incidental_assertion(BODY_16085_B) is True
+
+
+def test_16085_cas_b_fn_sha_trop_court_reste_bloquant():
+    """Controle FN : un suffixe < 7 hex n'est pas un SHA -- la forme n'est
+    pas une provenance, le compte reste confronte."""
+    line = "8 fichiers de `fe04e` dans la restauration"
+    assert _is_incidental_assertion(line) is False
+
+
+def test_16085_cas_b_fn_non_hex_reste_bloquant():
+    """Controle FN : un backtick non-hex (`main.yml`) n'est pas un SHA."""
+    line = "8 fichiers de `main.yml` cites pour memoire"
+    assert _is_incidental_assertion(line) is False
+
+
+def test_16085_cas_b_fn_vrai_perimetre_reste_bloquant():
+    """Controle FN : une vraie enumeration de perimetre reste bloquante --
+    le masque ne doit couvrir QUE la forme « de <sha> »."""
+    line = "8 fichiers : a.py, b.py, c.py"
+    assert _is_incidental_assertion(line) is False
+
+
+def test_16085_cas_b_additive_ninclut_pas_la_provenance():
+    """La somme additive (#12103) lit le corps comme la selection : un
+    compte exonere ne joint jamais la somme."""
+    line = (
+        "La provenance citée (19 findings → 13 après restauration, 8 "
+        "fichiers de `fe04e1f37`, ~793 lignes) : relayée."
+    )
+    assert _additive_line_sum(line) == 0
+
+
+# ---------------------------------------------------------------------------
+# #16162 — un compte sous negation ou portant sur une AUTRE PR n'est pas
+# un perimetre. Fondateurs mesures par ai-01 sur deux PRs ouvertes :
+# #16147 (« Ne convertit pas le notebook en deux fichiers ») et #16157
+# (« le diff de #16125 (2 fichiers, ...) »).
+# ---------------------------------------------------------------------------
+FOUNDER_16147_LINE = (
+    "- **Ne convertit pas** le notebook en **deux fichiers** "
+    "(`-solutions.ipynb` frere) — option jugée plus lourde pour un gain "
+    "pédagogique équivalent."
+)
+
+FOUNDER_16157_LINE = (
+    "le diff de **#16125** (**2 fichiers**, tests hermétiques monkeypatch-only, "
+    "audit statique : zéro écriture d'état global) ne peut pas produire ces "
+    "signatures"
+)
+
+
+def test_16162_negated_word_form_founder_passes():
+    """Fondateur 1 (#16147) : le word-form « deux fichiers » decrit une
+    option ECARTEE -- ni mismatch, ni « formulation non verifiable » en
+    second message (la sonde --assert de l'issue doit passer verte)."""
+    files = [{
+        "path": "MyIA.AI.Notebooks/GenAI/FineTuning/"
+                "FT-00b-LoRA-Hyperparams-from-scratch.ipynb"
+    }]
+    assert check_assertion(files, FOUNDER_16147_LINE) == []
+
+
+def test_16162_negated_digit_form_passes():
+    """Variante chiffree du fondateur 1 : « n'ajoute pas 2 fichiers »."""
+    files = [{"path": "a.py"}]
+    assert check_assertion(files, "n'ajoute pas 2 fichiers de doc (option écartée)") == []
+
+
+def test_16162_other_pr_digit_founder_passes():
+    """Fondateur 2 (#16157) : le « 2 fichiers » mesure le diff de #16125,
+    pas le perimetre de la PR courante (4 fichiers)."""
+    files = [{"path": f"f{i}.py"} for i in range(4)]
+    assert check_assertion(files, FOUNDER_16157_LINE) == []
+
+
+def test_16162_other_pr_word_form_twin_passes():
+    """Jumeau word-form du fondateur 2 : cardinal en lettres dans la
+    parenthese d'une autre PR."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    line = "le diff de #16125 (deux fichiers, tests) ne peut pas produire ceci"
+    assert check_assertion(files, line) == []
+
+
+def test_16162_negation_keeps_the_real_perimeter_red():
+    """Controle FN : l'assertion perimetrique fondatrice reste rouge."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    line = "Périmètre : 2 fichiers uniquement, aucune autre modification."
+    assert check_assertion(files, line) != []
+
+
+def test_16162_clause_break_reopens_assertion():
+    """Controle FN : un separateur de clause entre le negateur et le compte
+    rouvre l'assertion -- « Ce n'est pas le cas : 2 fichiers » porte un
+    vrai compte (le « pas » nie « le cas », pas le compte)."""
+    files = [{"path": f"f{i}.py"} for i in range(3)]
+    assert check_assertion(files, "Ce n'est pas le cas : 2 fichiers touchés") != []
+
+
+def test_16162_universality_is_not_a_negation():
+    """« pas seulement N fichiers » elargit l'ensemble, il ne nie pas le
+    compte -- comportement d'avant #16162 conserve (non mesure)."""
+    files = [{"path": f"f{i}.py"} for i in range(3)]
+    assert check_assertion(files, "pas seulement 2 fichiers touchés") != []
+
+
+def test_16162_count_outside_parens_stays_red():
+    """Controles FN de la forme parenthese : le compte HORS parenthese
+    reste confrontable, qu'une ref #N suive ou precede."""
+    files = [{"path": f"f{i}.py"} for i in range(3)]
+    assert check_assertion(files, "1 fichier (cf. #16062)") != []
+    assert check_assertion(files, "Merge de #16062 : 2 fichiers") != []
+
+
+def test_16162_negated_count_never_joins_additive_sum():
+    """Le compte nie n'entre pas dans la somme additive (#12103) : « 1
+    fichier modifie, ne touche pas 2 fichiers de docs » declare 1, pas 3."""
+    line = "1 fichier modifié, ne touche pas 2 fichiers de docs"
+    assert _additive_line_sum(line) == 1
+
+
+def test_16162_other_pr_count_never_joins_additive_sum():
+    line = "le diff de #16062 (3 fichiers, déjà mergé), 2 fichiers touchés ici"
+    assert _additive_line_sum(line) == 2
+
+
+def test_16162_scan_thread_extracts_founders_without_blocking():
+    """Voie --scan-thread (le gate CI) : les lignes fondatrices restent des
+    candidates visibles mais la ligne n'est pas bloquante."""
+    body = FOUNDER_16147_LINE + "\n" + FOUNDER_16157_LINE + "\n"
+    cands = select_candidates(
+        [{"body": body, "kind": "PR body", "author": "w", "source": "body"}],
+        n_files=4,
+    )[0]
+    assert len(cands) == 2
+    files = [{"path": f"f{i}.py"} for i in range(4)]
+    for c in cands:
+        assert check_assertion(files, c.text, block=c.block, body_hint=c.body_text) == []
