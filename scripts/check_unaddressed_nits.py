@@ -1427,27 +1427,47 @@ def _strip_avant_merge_mention(body: str) -> str:
 # (VP #12083) est délibérément EXCLU du set d'énumération. Substitution
 # iso-longueur (1 char -> 1 espace) : les offsets du reste du body sont
 # préservés, comme les autres strips.
+#
+# #16688 — discriminateur (C) DÉTERMINANT : un glyphe précédé immédiatement
+# d'un déterminant ou possessif sur la même ligne est un RÉFÉRENT, pas une
+# émission. Fondateur mesuré : la levée c.5730596602 sur #16617 titrait
+# « ### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé » — le
+# préfixe « ### 1. Le » ne porte ni méta-nom (A) ni séparateur (B), le
+# glyphe restait vivant et l'organe classait la levée elle-même comme
+# réserve neuve (rc=1 auto-infligé, jamais retombable). Structure : « Le 🟡
+# sur X » parle DU glyphe ; une émission Hermes ouvre la ligne ou suit un
+# décor de liste, elle n'est jamais introduite par un article. Ancre en fin
+# de préfixe (`\s+$`), symétrique de (B) : le déterminant doit toucher le
+# glyphe, un déterminant en début de ligne suivi d'autre prose ne neutralise
+# rien. Set borné FR+EN, confronté au corpus des 200 dernières PRs mergées
+# (voir test_16688_* + scan PR body) : 0 émission réelle éteinte.
 _GLYPH_META_NOUN_RE = re.compile(
     r"(?i)\b(?:glyphes?|glyphs?|marqueurs?|markers?|badges?|symboles?|emojis?)\b"
 )
 _GLYPH_ENUM_PRECEDER_RE = re.compile(r"[,+]\s+$")
+_GLYPH_DETERMINER_PRECEDER_RE = re.compile(
+    r"(?i)\b(?:le|la|les|ce|cet|cette|mon|ma|mes|ton|ta|son|sa|ses|un|une|"
+    r"notre|votre|nos|vos|the|this|that|these|those|my|its|his|her|their)\s+$"
+)
 _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 
 
 def _strip_glyphe_mentions(body: str) -> str:
     """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
 
-    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A) ou
-    qui est un item d'énumération `,`/`+` (B) est remplacé par une espace :
-    c'est une mention, pas une émission. Le glyphe en tête de ligne
-    (en-tête de verdict Hermes) reste vivant.
+    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A),
+    qui est un item d'énumération `,`/`+` (B), ou qui est immédiatement
+    précédé d'un déterminant/possessif — un référent, (C) #16688 — est
+    remplacé par une espace : c'est une mention, pas une émission. Le glyphe
+    en tête de ligne (en-tête de verdict Hermes) reste vivant.
     """
     out = list(body)
     for m in _SEVERITY_GLYPH_CLASS_RE.finditer(body):
         line_start = body.rfind("\n", 0, m.start()) + 1
         prefix = body[line_start:m.start()]
         if (_GLYPH_META_NOUN_RE.search(prefix)
-                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)):
+                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)
+                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)):
             out[m.start()] = " "
     return "".join(out)
 
