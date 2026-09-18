@@ -108,18 +108,32 @@ def _outlen(cell: dict) -> int:
     return total
 
 
+# Enonce d'exercice : la cellule INSTRUIT l'exercice (elle peut relire le
+# contexte amont sans lire une sortie). Pin FP : PyMC-17 c16.
+EXERCISE_HEADER_RE = re.compile(
+    r"^#{1,6}\s*(?:\d+[.\s]+)?(exercice|exercise|probl[èe]me|activit[ée]|travail pratique|tp)\b",
+    re.I,
+)
+
+
 def _first_line(source) -> str:
     s = "".join(source) if isinstance(source, list) else (source or "")
-    return s.lstrip().split("\n", 1)[0]
+    # sauter regles horizontales et lignes vides de tete (pin FP Infer-4 c17 :
+    # `***` puis `### Vers l'inference...` = transition, pas lecture)
+    for line in s.lstrip().split("\n"):
+        line = line.strip()
+        if line and not re.match(r"^(\*\*\*|---|___)\s*$", line):
+            return line
+    return ""
 
 
 def is_exempt(cell: dict) -> bool:
-    """Cloture/synthese OU ouverture de section (titre de section en premiere
-    ligne qui n'est pas un titre de lecture)."""
+    """Cloture/synthese, enonce d'exercice, OU ouverture de section (titre de
+    section en premiere ligne utile qui n'est pas un titre de lecture)."""
     first = _first_line(cell.get("source"))
-    if CLOSURE_RE.match(first):
+    if CLOSURE_RE.match(first) or EXERCISE_HEADER_RE.match(first):
         return True
-    if re.match(r"^#{1,2}\s", first) and not LECTURE_HEADER_RE.match(first):
+    if re.match(r"^#{1,4}\s", first) and not LECTURE_HEADER_RE.match(first):
         return True  # ouverture de section / transition : ne lit pas l'amont
     return False
 
@@ -239,9 +253,11 @@ def main(argv=None) -> int:
         if not path.exists():
             print("error: not found: %s" % p, file=sys.stderr)
             return 2
-        nb = json.loads(path.read_text(encoding="utf-8"))
-        for f in scan_cells(nb.get("cells")):
-            all_findings.append({"file": p, **f})
+        targets = sorted(path.rglob("*.ipynb")) if path.is_dir() else [path]
+        for tp in targets:
+            nb = json.loads(tp.read_text(encoding="utf-8"))
+            for f in scan_cells(nb.get("cells")):
+                all_findings.append({"file": str(tp), **f})
 
     if args.json:
         print(json.dumps({"total": len(all_findings),

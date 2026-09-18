@@ -68,6 +68,12 @@ def test_exemptions():
                               "L'etude de Kao et Goodman (2015)..."]))
     # mais **Note** n'est PAS exempte (trop generique : peut lire un output)
     assert not is_exempt(md_cell(["**Note** : on observe le pli."]))
+    # enonce d'exercice (pin FP PyMC-17 c16) : instruit, ne lit pas une sortie
+    assert is_exempt(md_cell(["### Exercice 2 -- Etat vectoriel\n",
+                              "Le filtre ci-dessus suit une position scalaire."]))
+    # regle horizontale puis titre de transition (pin FP Infer-4 c17)
+    assert is_exempt(md_cell(["***\n", "\n", "### Vers l'inference conditionnelle\n",
+                              "Les marginales nous donnent les probabilites a priori."]))
     # PAS exempt : titre de lecture, ou corps sans titre de section
     assert not is_exempt(md_cell(["### Lecture du resultat\n"]))
     assert not is_exempt(md_cell(["On observe une montee."]))
