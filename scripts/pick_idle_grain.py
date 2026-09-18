@@ -550,10 +550,34 @@ VISITS_WINDOW_DAYS = 1
 # se trouve.
 VISITS_SCALE = 4.0
 
+# --- Affluence LONGUE (#16625, mandat user 2026-09-18) ---------------------
+# Le compteur ci-dessus est anti-collision INTRA-JOURNEE : il retombe a zero
+# des que la flotte ralentit 12 h (nuit, week-end, arret de credits) et rend
+# son poids plein au sujet frequente -- le contre-exemple explicite de
+# #16625. La grandeur manquante (diagnostic ai-01 2026-09-18) est le compte
+# CUMULE de PRs mergees citant l'issue sur une fenetre LONGUE : les deux
+# mesurent des choses differentes et coexistent.
+# Dimensionnement mesure le 2026-09-18 sur le pool ouvert (2921 PRs mergees
+# / 30 j, 3518 citations d'issues) : mediane du pool = 1, q75 = 0, 29 % a
+# zero -- tete : #13410 = 83, #11601 = 73, puis 37, 27, 27. A l'echelle 16 :
+# mediane -> /1.09 (intouchable), 16 vus -> /2.0, 83 vus -> /3.6. La tete
+# seule est mordue ; le fond du pool ne sait pas que le facteur existe.
+LONG_VISITS_WINDOW_DAYS = 30
+LONG_VISITS_SCALE = 16.0
+# Seuil du signal PARKING rendu dans la sortie : a 12 PRs mergees / 30 j (une
+# tous les 2,5 j), un sujet n'est plus un grain delaisse que le tirage doit
+# remonter mais une veine deja ouverte. La mesure #16625 montre que la
+# monoculture ne venait PAS du tirage (P(#13410) ~ 0 sur 3000 rejeux du
+# moteur pondere) mais de provisions et d'auto-alimentation de sweeps AUTOUR
+# du picker : le signal doit donc etre VISIBLE la ou le choix se fait, pour
+# la lane qui lit le tirage et le coordinateur qui provisionne.
+PARKING_SIGNAL_THRESHOLD = 12
+
 
 def fetch_visits(
     days: int = VISITS_WINDOW_DAYS,
     *,
+    cache_name: str = "visits",
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
@@ -597,7 +621,7 @@ def fetch_visits(
 
     try:
         prs = _cached_payload(
-            "visits",
+            cache_name,
             identity,
             fetch_raw,
             cache=cache,
@@ -609,7 +633,7 @@ def fetch_visits(
             subprocess.TimeoutExpired, OSError) as exc:
         return {}, f"{type(exc).__name__}: {exc}"
 
-    cache_entry = (cache_status or {}).get("visits") or {}
+    cache_entry = (cache_status or {}).get(cache_name) or {}
     cache_err = None
     if cache_entry.get("status") == "stale":
         cache_err = "cache stale apres echec du refresh: " + str(
@@ -1130,7 +1154,8 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
            visits: dict[int, int] | None = None,
            series: dict[str, dict] | None = None,
            issue_to_family: dict[int, str] | None = None,
-           delivery: dict[int, float] | None = None) -> float:
+           delivery: dict[int, float] | None = None,
+           long_visits: dict[int, int] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -1163,6 +1188,14 @@ def weight(item: dict, prev_genre: str | list[str] | tuple[str, ...] | set[str] 
     if seen:
         w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
     item["visits"] = seen
+    # Affluence longue (#16625) : meme forme douce, fenetre longue. Le compte
+    # 24 h ci-dessus garde son role anti-collision intra-journee ; celui-ci
+    # porte la MEMOIRE -- une reprise apres 12 h d'arret de flotte ne rend
+    # pas son poids plein au sujet deja frequente (acceptance 4 de #16625).
+    seen_long = (long_visits or {}).get(item["number"], 0)
+    if seen_long:
+        w /= 1.0 + math.log2(1.0 + seen_long / LONG_VISITS_SCALE)
+    item["visits_long"] = seen_long
     # Saturation de ZONE : le facteur que le compteur par issue ne peut pas
     # porter, parce qu il est defait par le partitionnement. Une fille NEUVE
     # (age 0, idle 0, aucune visite) herite ici du poids de la zone que sa
@@ -1204,13 +1237,15 @@ def draw(items: list[dict], n: int, rng: random.Random,
          visits: dict[int, int] | None = None,
          series: dict[str, dict] | None = None,
          issue_to_family: dict[int, str] | None = None,
-         delivery: dict[int, float] | None = None) -> list[dict]:
+         delivery: dict[int, float] | None = None,
+         long_visits: dict[int, int] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits, series, issue_to_family, delivery)
+        w = weight(it, prev_genre, visits, series, issue_to_family, delivery,
+                   long_visits)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -1220,6 +1255,11 @@ def draw(items: list[dict], n: int, rng: random.Random,
         it.pop("body", None)
         it["weight"] = round(w, 2)
         it.setdefault("visits", 0)
+        it.setdefault("visits_long", 0)
+        # Signal parking (#16625) : le pick porte le statut de veine deja
+        # ouverte -- c'est ici que la mesure devient une consigne, visible
+        # par la lane au tirage ET par le coordinateur au provisionnement.
+        it["parking"] = it.get("visits_long", 0) >= PARKING_SIGNAL_THRESHOLD
         it.setdefault("family", None)
         it.setdefault("family_new_notebooks", 0)
         it.setdefault("polarity", "neutral")
@@ -1307,7 +1347,8 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
-                   fallback_by_class=None, continuity_state=None):
+                   fallback_by_class=None, continuity_state=None,
+                   long_visits=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Deux raisons de remplacer plutot que d annoter :
@@ -1367,8 +1408,16 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             for _ in range(len(pool) + 1):
                 if len(got) >= want or not pool:
                     break
-                cand = draw(pool, want - len(got), rng, prev, visits,
-                            series, issue_to_family, delivery)
+                if long_visits is None:
+                    # Forme historique, signature bornee des fakes de test
+                    # (delivered-gate) : le facteur long est inerte quand la
+                    # mesure est absente, donc les deux formes sont egales.
+                    cand = draw(pool, want - len(got), rng, prev, visits,
+                                series, issue_to_family, delivery)
+                else:
+                    cand = draw(pool, want - len(got), rng, prev, visits,
+                                series, issue_to_family, delivery,
+                                long_visits=long_visits)
                 if not cand:
                     break
                 nums = [c["number"] for c in cand]
@@ -1559,6 +1608,33 @@ RED_COUNT_DEFAULT = 3
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
+
+# #15763 : conclusions d'un constituant COUPE ou jamais demarre. Meme
+# taxonomie que `CONCLUSION_UNCONCLUDED` de scripts/pr_gate.py (#15693),
+# qui separe deja les deux dans SON message : elles ne mesurent RIEN du
+# code -- le check a ete COUPE (`timeout-minutes`, `cancel-in-progress`,
+# famine de runner) ou n'a jamais demarre. C'est la taxonomie de
+# `cut_constituents` : un AGREGATEUR qui les ANDe rend FAILURE, mais rien ne
+# dit que le code est faux -- exposer la liste des coupes est ce qui
+# distingue la reparation reelle de la pedale de frein.
+#
+# Nom distinct de `CHECK_UNCONCLUDED` (#15769) malgre deux membres communs
+# (CANCELLED/STALE) : l'un classe un REQUIS non conclu en cause « non
+# conclue », l'autre classe les CONSTITUANTS d'un agregateur en « coupe » --
+# TIMED_OUT/STARTUP_FAILURE sont des echecs pour l'un (ils sont dans
+# CHECK_FAILED), des coupures pour l'autre.
+#
+# `CANCELLED` n'est deliberement PAS dans CHECK_FAILED -- un run coupe par
+# `concurrency` n'est pas un echec (69 `cancelled` pour 0 echec reel sur un
+# SHA de main le 2026-08-21, cf test_unconcluded_required_is_a_distinct_cause
+# et test_unconcluded_advisory_is_still_silent, qui ne rendent pour lui qu'une
+# cause « non conclue » -- jamais « echec »). Il est ici
+# parce qu'un AGREGATEUR qui le ANDe, lui, rend FAILURE : l'exclusion qui
+# protege le cas simple laisse passer le cas agrege.
+CHECK_CUT = {"CANCELLED", "TIMED_OUT", "STALE", "STARTUP_FAILURE"}
+
+# Les rouges dont une lane peut vraiment faire quelque chose.
+CHECK_REALLY_RED = CHECK_FAILED - CHECK_CUT
 
 # #15769 : conclusions non concluantes d'un check TERMINE. Ni vert (un requis
 # dans cet etat empeche le merge) ni un echec de lane (imputer un CANCELLED a
@@ -1754,6 +1830,87 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     return organs
 
 
+# #15764 : clauses du message FAIL du gate agregateur (scripts/pr_gate.py
+# `verdict`, #15693/#15905). "failing checks:" porte les VRAIS rouges ; les
+# deux clauses "checks that hit their declared timeout-minutes" / "checks
+# that never concluded" portent les constituants COUPES, chaque entree
+# pouvant trainer son annotation "name (conclusion, duree)". C'est la seule
+# preuve causale BORNEE : ce message NOMME, pour CET agregateur, les
+# constituants qui l'ont fait echouer -- la coexistence d'un CANCELLED
+# quelconque dans le rollup ne prouve rien (review #15764).
+_GATE_FAILED_CLAUSE_RE = re.compile(r"failing checks:\s*(?P<names>[^;]+)")
+_GATE_CUT_CLAUSE_RE = re.compile(
+    r"(?:checks that hit their declared timeout-minutes"
+    r"|checks that never concluded)[^:]*:\s*(?P<names>[^;]+)")
+
+
+def _split_gate_entries(chunk: str) -> list[str]:
+    """Noms nus d'une liste d'entrees du message FAIL.
+
+    Separe sur les virgules HORS parentheses (une entree coupee porte son
+    annotation "name (cancelled, 29m13s)", qui contient une virgule), puis
+    retire l'annotation finale pour ne garder que le nom.
+    """
+    names: list[str] = []
+    for entry in re.split(r",\s*(?![^()]*\))", chunk.strip()):
+        name = re.sub(r"\s*\([^()]*\)\s*$", "", entry).strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def parse_gate_failure(message: str) -> tuple[list[str], list[str]]:
+    """(vrais_rouges_nommes, coupes_nommes) depuis un message FAIL du gate.
+
+    Rend ([], []) quand le message n'est pas un FAIL (DWELL, STARVED,
+    annotation illisible) : l'absence de preuve est tranchee FAIL-CLOSED par
+    l'appelant -- jamais en exemption.
+    """
+    if not isinstance(message, str) or "FAIL -- " not in message:
+        return [], []
+    failed: list[str] = []
+    cut: list[str] = []
+    m = _GATE_FAILED_CLAUSE_RE.search(message)
+    if m:
+        failed = _split_gate_entries(m.group("names"))
+    for m in _GATE_CUT_CLAUSE_RE.finditer(message):
+        chunk = m.group("names")
+        # La clause timeout embarque sa guidance apres " -- " : les noms
+        # s'arretent au premier separateur, sinon la guidance serait prise
+        # pour un constituant.
+        dash = chunk.find(" -- ")
+        if dash != -1:
+            chunk = chunk[:dash]
+        cut.extend(_split_gate_entries(chunk))
+    return failed, [n for n in cut if n]
+
+
+def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
+    """(vrais rouges, coupes) NOMMES par le message FAIL du gate lui-meme.
+
+    L'annotation ``::error::[pr-gate] FAIL -- ...`` du check-run porte le
+    verdict du gate -- la seule surface qui nomme, pour CET agregateur, les
+    constituants qui l'ont fait echouer, clause par clause. Best-effort et
+    fail-closed comme ``fetch_check_organs`` : annotations illisibles ou
+    verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
+    """
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+        return [], []
+    failed: list[str] = []
+    cut: list[str] = []
+    for ann in annotations or []:
+        ann_failed, ann_cut = parse_gate_failure(ann.get("message") or "")
+        failed.extend(ann_failed)
+        cut.extend(ann_cut)
+    return failed, cut
+
+
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
     """Cles de CAUSE d'un check rouge, pas de son nom de job (#14537, #14567).
 
@@ -1847,10 +2004,76 @@ def _has_failed_check(state: dict | None) -> bool:
                for c in contexts)
 
 
+def cut_constituents(contexts: list[dict]) -> tuple[list[str], bool]:
+    """Constituants COUPES, et « un vrai rouge existe-t-il ailleurs ? ».
+
+    Rend `(noms_coupes, un_vrai_rouge_existe)` en ne regardant QUE les checks
+    non-agregateurs : un agregateur rouge ne peut pas etre sa propre preuve.
+
+    C'est le discriminant de #15763. Mesure du 2026-09-12 sur #15657 et #15660,
+    lues sur le head exact :
+
+        PR gate             | conclusion=FAILURE   | isRequired=true
+        ICT tests/ (55)     | conclusion=CANCELLED | isRequired=false
+        Scripts Tests (CPU) | conclusion=CANCELLED | isRequired=false
+
+    `CANCELLED` etant hors de CHECK_FAILED, ces deux constituants ne tombaient
+    NI dans `causes` NI dans `advisory` : le picker ne les mis-attribuait meme
+    pas, il les rendait INVISIBLES, et la lane recevait `check requis en echec :
+    PR gate` tout court -- un agregateur a reparer, sans rien qui dise quoi.
+    """
+    cut: list[str] = []
+    real_red = False
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if is_aggregator_check(name):
+            continue
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict in CHECK_REALLY_RED:
+            real_red = True
+        elif verdict in CHECK_CUT and name not in cut:
+            cut.append(name)
+    return cut, real_red
+
+
+def gate_evidence_for(state: dict, cache: dict[int, tuple[list[str], list[str]]],
+                      ) -> dict[str, tuple[list[str], list[str]]] | None:
+    """Preuve causale bornee pour les agregateurs candidats a l'exemption.
+
+    Ne paie l'appel d'annotations QUE si le rollup presente deja la
+    configuration candidate (un constituant coupe, aucun vrai rouge, un
+    agregateur requis en FAILURE) -- sinon rend None et ``blocking_causes``
+    reste fail-closed. Un agregateur sans ``databaseId`` n'est pas sonde :
+    pas de preuve possible, pas d'exemption (#15764).
+    """
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut, real_red = cut_constituents(contexts)
+    if not cut or real_red:
+        return None
+    evidence: dict[str, tuple[list[str], list[str]]] = {}
+    for ctx in contexts:
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if not is_aggregator_check(name):
+            continue
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict != "FAILURE" or not ctx.get("isRequired"):
+            continue
+        run_id = ctx.get("databaseId")
+        if run_id is None:
+            continue
+        if run_id not in cache:
+            cache[run_id] = fetch_gate_cut_evidence(run_id)
+        evidence[name] = cache[run_id]
+    return evidence or None
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
-                    resolved_keys_by_name: dict[str, set[str]] | None = None
+                    resolved_keys_by_name: dict[str, set[str]] | None = None,
+                    gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -1881,6 +2104,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     commits = state.get("commits", {}).get("nodes") or []
     rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
     contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    cut, real_red = cut_constituents(contexts)
     for ctx in contexts:
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
@@ -1908,7 +2132,52 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             if keys <= inherited:
                 continue
         if ctx.get("isRequired"):
-            cause = f"check requis en echec : {name}"
+            # #15763 : un AGREGATEUR requis rouge dont aucun constituant n'est
+            # un vrai rouge, mais dont au moins un a ete COUPE, n'est pas
+            # reparable par cette lane. Le dire, avec le geste qui le leve --
+            # meme forme que `file_saturation` ci-dessous, qui traite deja un
+            # faux-rouge non-reparable sans pour autant dispenser la lane de
+            # la justification ecrite qu'exige `--ignore-red`.
+            #
+            # Fail-CLOSED dans le bon sens : des qu'UN constituant porte un
+            # vrai rouge (FAILURE / ACTION_REQUIRED / ERROR), la cause reste
+            # « check requis en echec » et la lane repare. On ne dispense
+            # jamais d'une reparation reelle ; on cesse seulement d'en
+            # prescrire une qui n'existe pas.
+            #
+            # #15764 (review bloquante) : la coexistence d'un constituant
+            # COUPE dans le rollup n'etablit PAS la causalite -- un gate
+            # echoue aussi sur DWELL, une regle interne ou un constituant
+            # reel que la dedup temporelle a masque, pendant qu'un advisory
+            # independant est coupe par `concurrency`. La preuve causale
+            # bornee est le message FAIL du gate LUI-MEME (annotations du
+            # check-run, `fetch_gate_cut_evidence`) : il NOMME les
+            # constituants qui l'ont fait echouer, clause par clause. Sans
+            # preuve -- pas de `gate_evidence`, ou un vrai rouge nomme, ou
+            # des coupes nommes qui ne sont pas dans CE rollup -- on reste
+            # sur « check requis en echec » : fail-closed, la lane repare.
+            if is_aggregator_check(name) and cut and not real_red:
+                evidence = (gate_evidence or {}).get(name)
+                named_failed = list(evidence[0]) if evidence else []
+                named_cut = list(evidence[1]) if evidence else []
+                corroborated = [n for n in named_cut if n in cut]
+                if evidence is not None and not named_failed and corroborated:
+                    cause = (
+                        f"{name} rouge par constituant(s) COUPE(S), nommes par son "
+                        f"propre message FAIL -- pas par un defaut de code : "
+                        f"{', '.join(corroborated[:3])} -- NON REPARABLE "
+                        f"par la lane (un kill `timeout-minutes` ou un "
+                        f"`cancel-in-progress` rend `cancelled`, jamais `failure` : "
+                        f"la couleur ne distingue pas « le code est faux » de « la "
+                        f"machine a ete coupee »). Geste : rejouer la jambe "
+                        f"(`gh run rerun <run_id> --job <job_id>`), ou commenter la "
+                        f"PR pour imputer le rouge a la base puis `--ignore-red`. "
+                        f"Ne PAS chercher quoi corriger dans le diff."
+                    )
+                else:
+                    cause = f"check requis en echec : {name}"
+            else:
+                cause = f"check requis en echec : {name}"
             if cause not in causes:
                 causes.append(cause)
         elif name not in advisory:
@@ -2284,6 +2553,9 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
+    # PRs de la lane dans ce passage, comme organ_cache.
+    gate_cache: dict[int, tuple[list[str], list[str]]] = {}
     unresolved_aggregates: list[tuple[str, int]] = []
     inherited: dict[str, list[int]] = {}
     if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
@@ -2315,7 +2587,8 @@ def red_backlog(lane: str, threshold_hours: float,
                     failed_check_keys(ctx, organ_cache))
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
-                                 resolved_keys_by_name=keys_by_name)
+                                 resolved_keys_by_name=keys_by_name,
+                                 gate_evidence=gate_evidence_for(state, gate_cache))
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -3468,6 +3741,13 @@ def main(argv: list[str] | None = None) -> int:
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
     )
+    long_visits, long_visits_err = fetch_visits(
+        days=LONG_VISITS_WINDOW_DAYS,
+        cache_name="long_visits",
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
     series, issue_to_family, series_err = fetch_series_visits(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
@@ -3643,7 +3923,8 @@ def main(argv: list[str] | None = None) -> int:
         delivery=delivery_weights if args.delivery_boost_max > 0 else None,
         delivered_probe=delivered_probe, delivered_state=delivered_state,
         fallback_by_class=fallback_by_class,
-        continuity_state=continuity)
+        continuity_state=continuity,
+        long_visits=long_visits)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
@@ -3670,6 +3951,12 @@ def main(argv: list[str] | None = None) -> int:
             "visits_error": visits_err,
             "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
+            "long_visits_window_days": LONG_VISITS_WINDOW_DAYS,
+            "long_visits_measured": long_visits_err is None,
+            "long_visits_error": long_visits_err,
+            "long_visits_top": sorted(
+                ({"issue": k, "n": v} for k, v in long_visits.items()),
+                key=lambda d: (-d["n"], d["issue"]))[:10],
             "umbrella_delivery": {
                 **delivery_sig,
                 "items": {str(k): v for k, v in delivery_sig["items"].items()},
@@ -3861,6 +4148,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(pad + "-> " + quoi + " (renumeroter un numero eleve en "
                       "lettre d'un numero existant, ou fondre plusieurs "
                       "lettres en un petit nombre), pas une instance de plus.")
+        # #16625 : le statut de veine deja ouverte se lit sur la ligne du
+        # pick, pas seulement dans les metriques -- le vecteur mesure de la
+        # monoculture est le choix hors-tirage (provisions, sweeps), donc le
+        # signal doit toucher le lecteur au moment ou il choisit.
+        if p.get("parking"):
+            pad = f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  "
+            print(pad + f"PARKING : {p.get('visits_long', 0)} PRs mergees la "
+                        f"citant sur {LONG_VISITS_WINDOW_DAYS} j -- veine deja")
+            print(pad + "ouverte, pas un grain delaisse. Une tranche de plus ne solde")
+            print(pad + "rien : prendre un sous-grain ailleurs, sauf steer explicite.")
     print_delivered_signal_report(withheld, delivered_state,
                                   args.include_delivered)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
@@ -3876,8 +4173,17 @@ def main(argv: list[str] | None = None) -> int:
             print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
             print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
         print()
+    if long_visits_err:
+        print(f"!! affluence LONGUE NON MESUREE ({long_visits_err}) : la memoire")
+        print(f"   30 j n'est pas appliquee -- un parking peut garder un poids")
+        print("   plein malgre des semaines de visites. Ne pas lire l'absence de")
+        print("   signal PARKING comme une absence de parking.")
+        print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
     print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")
+    print(f"vus30 = idem sur {LONG_VISITS_WINDOW_DAYS} j, la MEMOIRE longue (#16625) : un")
+    print("       sujet a 0 vu du jour mais 30 PRs/30 j garde son amortissement -- une")
+    print("       reprise apres 12 h d'arret de flotte ne lui rend pas son poids plein.")
     print("      Le cap de veine ne voit qu'une lane a la fois : plusieurs lanes")
     print("      restant chacune sous son cap concentrent quand meme la flotte")
     print("      sur un meme sujet. C'est ce que cette colonne amortit.")
