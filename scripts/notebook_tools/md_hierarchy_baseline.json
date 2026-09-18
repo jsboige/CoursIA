@@ -1,7 +1,7 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-17T09:58:51+00:00",
- "total_findings": 234,
+ "generated_at": "2026-09-18T01:52:53+00:00",
+ "total_findings": 222,
  "notebooks": {
   "MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb": {
    "HINT-AS-HEADING": 1
@@ -195,10 +195,10 @@
   "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb": {
+  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-3-Multi-Attribute.ipynb": {
+  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb": {
@@ -219,32 +219,13 @@
   "MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
   "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-04-Research-Workflow.ipynb": {
    "H1-DEEP": 2,
    "MULTI-H1": 1
   },
   "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb": {
    "H1-DEEP": 18,
-   "HINT-AS-HEADING": 4,
    "MULTI-H1": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-33-RL-PPO-Trading.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/projects/Alpha-Correlation-Analysis/quantbook.ipynb": {
-   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb": {
    "HINT-AS-HEADING": 1
