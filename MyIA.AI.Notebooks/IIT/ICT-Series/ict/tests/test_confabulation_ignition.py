@@ -3,7 +3,7 @@ confabulation, « W diffuse un q erroné », SECONDE opérationnalisation après
 case 3 #15915 SAE INCONCLUSIF PAR CONSTRUCTION — re-scope c.5709770262).
 
 Pins des prédictions pré-enregistrées (commentaire #8182 c.5709692119,
-2026-09-17T05:59Z ; amendement v1→v2 c.5709716652 AVANT re-run — P1
+2026-09-17T06:00:27Z ; amendement v1→v2 c.5709716652 AVANT re-run — P1
 stricte insatisfiable par construction au plafond, P5 bras vrai saturé ;
 mesures v2 du 2026-09-17, 5 graines 0/1/7/42/99) :
 

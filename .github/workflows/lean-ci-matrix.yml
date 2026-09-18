@@ -1,0 +1,190 @@
+name: Lean CI Matrix
+
+# Dispatcher matriciel des lakes Lean (#13751, sous-item « 23 workflows
+# lean-*.yml -> matrice parametree » ; mesure 2026-09-18 : 32 dispatchers,
+# dont 6 migres ici en pilote).
+#
+# POURQUOI UN DISPATCHER + UNE MATRICE DANS LE REUSABLE. Un job qui APPELLE
+# un workflow reutilisable (`uses:`) ne peut pas porter `strategy:` (limite
+# GitHub Actions) -- c'est la contrainte qui avait produit un fichier par
+# lake. La matrice vit donc dans lean-build.yml (job `ci-matrix`), et ce
+# fichier ne fait que : (1) detecter les lakes touches via le manifeste
+# scripts/lean/ci_lakes.json, (2) passer l'ensemble au reutilisable.
+#
+# CONTRAT DE DECLENCHEMENT. `on.paths` ci-dessous est l'UNION des chemins
+# des lakes du manifeste + le self-cover du gate. Le garde
+# scripts/ci/check_lake_matrix_paths.py verifie que l'union couvre le
+# manifeste : ajouter un lake au manifeste SANS l'ajouter ici fait rougir
+# le garde (fail-CLOSED) -- un lake non couvert serait un lake que plus
+# aucun declencheur ne voit.
+#
+# SELF-COVER (lecon #8712) : un changement du gate (ce fichier,
+# lean-build.yml, le composite, le script de dispatch, le manifeste) lance
+# TOUS les lakes du manifeste -- lake_matrix_dispatch.py porte la liste
+# GATE_SELF_COVER.
+#
+# Un lake migre ici en DEUX temps dans la MEME PR : suppression de son
+# dispatcher lean-<lake>.yml + entree dans ci_lakes.json + chemin dans
+# l'union. Jamais les deux declencheurs en meme temps (double build).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # sudoku_lean
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain'
+      # kelly_lean
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain'
+      # minimax_lean
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain'
+      # search_lean
+      - 'MyIA.AI.Notebooks/Search/search_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/search_lean/lean-toolchain'
+      # assignment_lean
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain'
+      # discrepancy_lean
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain'
+      # self-cover du gate (#8712) : un changement du gate lance le gate
+      - '.github/workflows/lean-ci-matrix.yml'
+      - '.github/workflows/lean-build.yml'
+      - '.github/actions/lean-build/action.yml'
+      - 'scripts/lean/ci_lakes.json'
+      - 'scripts/lean/lake_matrix_dispatch.py'
+      - 'scripts/ci/check_lake_matrix_paths.py'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      # UNION identique au push -- le garde check_lake_matrix_paths.py
+      # verifie les DEUX blocs contre le manifeste.
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/Search/search_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/search_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain'
+      - '.github/workflows/lean-ci-matrix.yml'
+      - '.github/workflows/lean-build.yml'
+      - '.github/actions/lean-build/action.yml'
+      - 'scripts/lean/ci_lakes.json'
+      - 'scripts/lean/lake_matrix_dispatch.py'
+      - 'scripts/ci/check_lake_matrix_paths.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Detection : quels lakes du manifeste sont touches par l'evenement.
+  # Les fichiers changes viennent de l'API REST (pull_request : fichiers
+  # de la PR ; push : compare avant..apres) -- pas d'un checkout profond
+  # du depot. Sur workflow_dispatch : tous les lakes (le declenchement
+  # manuel est une intention explicite de tout lancer ; le script y
+  # arrive par le self-cover).
+  changes:
+    name: lean-matrix-changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      any: ${{ steps.dispatch.outputs.any }}
+      lake-set: ${{ steps.dispatch.outputs.lake-set }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Changed files for this event
+        run: |
+          set -eu
+          out="$RUNNER_TEMP/changed.txt"
+          case "${{ github.event_name }}" in
+            pull_request)
+              gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+                --jq '.[].filename' > "$out" || echo -n "" > "$out"
+              ;;
+            push)
+              before="${{ github.event.before }}"
+              sha="${{ github.sha }}"
+              if [ "${before:0:7}" = "0000000" ]; then
+                # Nouvelle histoire de branche : on ne peut pas differencer -> tout.
+                echo ".github/workflows/lean-ci-matrix.yml" > "$out"
+              else
+                gh api "repos/${{ github.repository }}/compare/${before}...${sha}" \
+                  --jq '.files[].filename' > "$out" || echo -n "" > "$out"
+              fi
+              ;;
+            workflow_dispatch)
+              # Self-cover -> tous les lakes du manifeste.
+              echo ".github/workflows/lean-ci-matrix.yml" > "$out"
+              ;;
+          esac
+          echo "--- changed files (${{ github.event_name }}) ---"
+          cat "$out"
+      - name: Checkout (dispatch script + manifest only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/lean
+      - name: Dispatch lakes from manifest
+        id: dispatch
+        run: |
+          python scripts/lean/lake_matrix_dispatch.py \
+            --changed-file "$RUNNER_TEMP/changed.txt" \
+            --outputs-file "$GITHUB_OUTPUT"
+          echo "--- lake-set ---"
+          cat "$GITHUB_OUTPUT"
+
+  # Fan-out : passe l'ensemble au reutilisable, qui l'etale en une entree
+  # par lake (job `ci-matrix` de lean-build.yml). Les 4 inputs mono-lake
+  # sont des valeurs de facade (required: true au sens du schema) -- en
+  # mode matrice, `ci` est garde par `if: lake-set == 'none'` et ne tourne
+  # jamais ; il apparait comme check-run SKIPPED (inactif, jamais bloquant).
+  lean-matrix:
+    needs: changes
+    if: needs.changes.outputs.any == 'true'
+    # Ref LOCALE `./` (pas `jsboige/CoursIA/...@main`) : la resolution
+    # per-PR est la condition meme de livrabilite de cette PR -- sur une
+    # PR de test, `@main` appellerait le lean-build.yml de main, qui n'a
+    # pas encore l'input `lake-set` (echec d'appel : unknown input).
+    # Meme pattern que le job proof-integrity de lean-knot.yml (« ref
+    # locale ./ = resolution per-PR »).
+    uses: ./.github/workflows/lean-build.yml
+    with:
+      project-path: scripts/lean/ci_lakes.json
+      display-name: matrix
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+      lake-set: ${{ needs.changes.outputs.lake-set }}
