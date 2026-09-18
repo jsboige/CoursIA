@@ -233,6 +233,24 @@ _OVERRIDE_LANE = re.compile(
 )
 OVERRIDE_LANE = _OVERRIDE_LANE
 
+# #16764 classe 2 -- siege qualifiant (contrat #15511). Quand le reviewer
+# sous contrat #15511 ne peut emettre que COMMENT (self-review cap #3219 :
+# il poste sous l'identite partagee jsboige), SA review nomme le relais
+# « siege qualifiant » -- l'arbitre tiers designe par le contrat. La
+# reconnaissance est bornee des DEUX cotes : le NIT declare le relais
+# (corps du reviewer, recherche apres _strip_quoted) ET la LEVEE
+# revendique le siege en TETE de ligne (meme ancre de pose que
+# _OVERRIDE_LANE, #13030 -- une citation en milieu de phrase ne compte
+# pas) ET l'auteur de la levee EST le siege (LIFT_OVERRIDE_LOGINS).
+# Instance fondatrice #16608 : review Hermes r.5242448146 « relais a un
+# siege qualifiant », levee d'ai-01 c.5728784093 « ## Siege qualifiant --
+# les deux reserves sont levees » -- valide au contrat, invisible pour
+# l'organe (la trappe override exigeait le marqueur [OVERRIDE]).
+_QUALIFYING_SEAT_BODY_RE = re.compile(
+    r"si[èe]ge[ \t]+qualifiant", re.IGNORECASE)
+_QUALIFYING_SEAT_HEAD_RE = re.compile(
+    r"(?m)^[#>*+\-\s]*si[èe]ge[ \t]+qualifiant\b", re.IGNORECASE)
+
 # #14461 -- un marqueur d'override EN TÊTE est TOUT token bracketé dont
 # l'étiquette porte OVERRIDE, quel que soit le garde émetteur : `[OVERRIDE]`,
 # `[G-VAR-3 OVERRIDE]`, et les futurs overrides de gardes adjacents. Le
@@ -3505,6 +3523,60 @@ def _cited_shas(body: str) -> set[str]:
     return out
 
 
+# #16764 classe 1 -- un SHA cite dans une levee a deux usages syntaxiques :
+# DATER la reserve (identifier LAQUELLE on leve : « la reserve posee sur
+# <sha> », « (review 05:48Z, head <sha>) ») ou PROUVR qu'elle est traitee
+# (nommer le commit qui l'adresse : « traitee en <sha> »). Le refus #13639
+# ne doit viser que la preuve : un SHA de datation designe l'ETAT ou la
+# reserve vivait, son rembobinage est attendu et ne desnue rien. Instance
+# fondatrice : override d'ai-01 du 2026-09-18T20:46:45Z sur #16657
+# (r.5252462567) « Je leve la reserve ... (review 05:48:49Z, head
+# `c3095774`) » refuse, reposte 53 s plus tard sans aucun SHA
+# (r.5252468566) -- la levee finale MOINS precise que la refusee. Un gate
+# qui force a deformer la prose pour passer entraîne a ecrire pour
+# l'organe. Gouverneurs bornes (set ferme, fenetre courte), jamais la
+# prose libre (#14682).
+_SHA_GOVERNOR_WINDOW = 60
+_SHA_DATING_HEAD = re.compile(
+    r"\bhead\b[ \t]*(?:anterieur|precedent|courant|actuel)?[ \t]*[`'«]?\s*$")
+_SHA_DATING_POSED = re.compile(
+    r"\b(?:posee?|posees|emise?|emises)\s+(?:sur|dans|au)\b[ \t]*[`'«]?\s*$")
+_SHA_DATING_RESERVE = re.compile(
+    r"\b(?:reserve|nit|constat|concern|review|verdict)\b[^.\n]{0,40}?"
+    r"\b(?:sur|dans|de)\b[ \t]*[`'«]?\s*$")
+# Anti-collision : « traitee sur le head anterieur <sha> » gouverne le head
+# par un VERBE D'ADRESSE -- c'est une preuve vieillie, pas une datation.
+# Le verbe + preposition dans la meme fenetre retire l'exemption.
+_SHA_DATING_COLLIDES = re.compile(
+    r"\b(?:traite|traites|traitee|traitees|corrige|corriges|corrigee|"
+    r"corrigees|adresse|adresses|adressee|adressees|livre|livres|livree|"
+    r"livrees|repondu|repondue|reponse|fixe|fixes|fixee|fixees)\w*\s+"
+    r"(?:en|par|dans|avec|sur)\b[^.\n]{0,25}$")
+
+
+def _sha_dates_reserve(lift_body: str, sha: str) -> bool:
+    """Le SHA est-il gouverne par la DATATION (nomme la reserve) ?
+
+    Regarde la fenetre de caracteres AVANT chaque occurrence du SHA (corps
+    unaccente, minuscule) : le gouverneur d'un SHA est ce qui le precede
+    immediatement. Datation = apposition de head (« (review ..., head
+    <sha>) », « sur le head anterieur <sha> »), pose de la reserve
+    (« posee sur <sha> »), ou mot de reserve suivi de sur/dans/de
+    (« la reserve sur <sha> », « le nit de <sha> »).
+    """
+    norm = _unaccent(lift_body or "").lower()
+    start = 0
+    while (i := norm.find(sha, start)) != -1:
+        window = norm[max(0, i - _SHA_GOVERNOR_WINDOW):i]
+        if not _SHA_DATING_COLLIDES.search(window):
+            if (_SHA_DATING_HEAD.search(window)
+                    or _SHA_DATING_POSED.search(window)
+                    or _SHA_DATING_RESERVE.search(window)):
+                return True
+        start = i + len(sha)
+    return False
+
+
 # Proximite maximale (caracteres) entre un SHA cite et un marqueur de levee
 # VIVANT pour que le SHA compte comme la PREUVE avancee par la phrase.
 _LIFT_SHA_PROXIMITY = 150
@@ -4410,8 +4482,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        if not (lift_author in LIFT_OVERRIDE_LOGINS and m is not None):
+        # #16764 classe 2 -- siege qualifiant (contrat #15511) : le NIT
+        # declare le relais, la LEVEE revendique le siege en tete de ligne.
+        siege = (_QUALIFYING_SEAT_BODY_RE.search(_strip_quoted(nit_body or ""))
+                 and _QUALIFYING_SEAT_HEAD_RE.search(_strip_quoted(lift_body or "")))
+        if not (lift_author in LIFT_OVERRIDE_LOGINS
+                and (m is not None or siege)):
             return False
+        if siege and m is None:
+            # Le scope #14216 est porte par la DECLARATION du nit
+            # lui-meme : le reviewer designe son siege, le siege designe
+            # la review qu'il siege (« la review Hermes du ... », « les
+            # deux reserves »). La co-phrase nom+levee n'est pas exigee
+            # -- l'instance fondatrice wrappe « la review Hermes » et
+            # « Je leve » sur des lignes distinctes.
+            return True
         # #14216 — l'override est scope PAR RESERVE, plus par PR : sans
         # nomination de la reserve d'autrui (login ou persona Hermes), il ne
         # leve que les siennes. La trappe reste fermee a l'auteur de la PR
@@ -4511,6 +4596,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     continue  # present dans la PR : preuve valide
                 if not _sha_in_lift_claim(lift_body, sha):
                     continue  # citation de contexte : ni refus, ni signalement
+                if _sha_dates_reserve(lift_body, sha):
+                    # #16764 : SHA de DATATION -- il nomme la reserve
+                    # (l'etat ou elle vivait), pas la preuve ; son
+                    # rembobinage est attendu et ne desnue rien.
+                    continue
                 message = resolved.get(sha)
                 if message and _message_refs_pr(message, pr_refs):
                     # rembobine ET rattache. #15556 : avant de desnuer la
