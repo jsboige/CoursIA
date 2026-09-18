@@ -268,8 +268,12 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
         # Only consider cells present in BOTH (intersection), plus
         # report new code cells (in head but not base) as drifts.
         common = set(base_ids.keys()) & set(head_ids.keys())
-        if not common and (base_ids or head_ids):
-            # No common ids -> fall back to ordinal (legacy code cells)
+        if not common:
+            # No common ids (either both legacy/no-id notebooks, or only
+            # one side has ids and the other has none) -> fall back to
+            # ordinal (legacy code cells). Fix c.681: cover the case
+            # where base_ids and head_ids are both empty (notebooks
+            # without any cell ids) -- jsboige CONCERNS d008d8b8fa.
             return _diff_signatures_ordinal(base_sig, head_sig)
         diffs = []
         # Common code cells: compare signatures by code-ordinal

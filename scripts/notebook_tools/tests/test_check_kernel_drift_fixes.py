@@ -160,6 +160,42 @@ def test_diff_signatures_fallback_ordinal():
     assert diffs == [1]
 
 
+def test_diff_signatures_no_ids_production_path():
+    """Regression c.681: when BOTH base_nb and head_nb lack cell ids,
+    diff_signatures must take the ordinal fallback (NOT return []).
+
+    Reproduces jsboige CONCERNS d008d8b8fa: the production path always
+    passes base_nb/head_nb (l.327 _run), and for legacy notebooks
+    without cell ids both _code_index_by_id maps are empty -> 'common'
+    is empty -> the previous guard `not common and (base_ids or
+    head_ids)` was falsy on empty maps and returned []. The fix c.681
+    removes the `(base_ids or head_ids)` clause so the fallback fires
+    whenever 'common' is empty.
+    """
+    base_nb = {
+        "cells": [
+            {"cell_type": "code", "outputs": [{"text": "[1.0, 1.0, 1.0]"}]},
+            {"cell_type": "code", "outputs": [{"text": "[2.0, 2.0, 2.0]"}]},
+        ],
+    }
+    head_nb = {
+        "cells": [
+            {"cell_type": "code", "outputs": [{"text": "[1.0, 0.9999999999999999, 1.0]"}]},
+            {"cell_type": "code", "outputs": [{"text": "[2.0, 2.0, 2.0]"}]},
+        ],
+    }
+    base_sig = ckd.float_signatures(base_nb)
+    head_sig = ckd.float_signatures(head_nb)
+    # Production path: pass notebooks (legacy no-ids case)
+    diffs = ckd.diff_signatures(base_sig, head_sig, base_nb=base_nb, head_nb=head_nb)
+    # Cell 0 has a float drift (1.0 vs 0.999...); cell 1 unchanged.
+    # Without the fix, diffs == [] (false negative).
+    assert diffs == [0], (
+        f"Without the fix, diff_signatures returns [] for legacy no-id "
+        f"notebooks with real float drift. Got {diffs} instead of [0]."
+    )
+
+
 def test_diff_signatures_unchanged_with_id_alignment():
     """Cells unchanged by id should not be flagged even if ordinal shifts."""
     base_nb = {
