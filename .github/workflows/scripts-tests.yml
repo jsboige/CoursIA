@@ -301,6 +301,7 @@ jobs:
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
+            tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
@@ -335,16 +336,18 @@ jobs:
         # migrating that module to tmp_path.
         #
         # `--import-mode importlib` (pytest.ini addopts) is equally load-bearing
-        # here: three test basenames are duplicated across these 13 paths
+        # here: three test basenames are duplicated across these 14 paths
         # (test_check_dataset_registry, test_check_public_anchor,
         # scan_slidev_composition), and without it pytest raises
         # `import file mismatch` -- sequentially too, not just under xdist.
         #
         # Audited for inter-module parallel safety before enabling: no shared
         # fixed-path writes outside the module above, no git mutation against
-        # the real tree (every `git init` is in tmp_path), no real sockets, no
+        # the real tree (every `git init` is in tmp_path), no real sockets (sole
+# exception: tests/integration's localhost:8768 probe, timeout 1.0,
+# self-skipping when refused), no
         # unrestored os.environ/os.chdir, no session-scoped fixtures, no
-        # conftest.py in any of the 13 paths. Residual: module-scope fixtures
+        # conftest.py in any of the 14 paths. Residual: module-scope fixtures
         # that seed the global PRNG without restoring it (e.g.
         # test_kuhn_poker_cfr.py:64-75) make module ORDER non-reproducible --
         # no test currently depends on it.
