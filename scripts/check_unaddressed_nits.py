@@ -2621,6 +2621,33 @@ _WORD_BOUNDED_MARKERS = {
     "no lgtm": re.compile(r"\bno\s+lgtm\b(?!\s+(?:needed|necessary|required))"),
 }
 
+# #15651 -- les marqueurs TEMPORELS (« avant merge » & co.) ne vivent que
+# POSES, pas en apposition d'une levee. Fondateur : « Le commentaire
+# precedent enregistrait une reserve ; voici sa levee, avant merge et
+# nommee. » — la phrase qui LEVE est comtee comme nouvelle reserve parce
+# qu'elle CONTIENT la chaine, et le gate ne peut alors jamais atteindre
+# rc=0 : la lane est tentee de reformuler sa levee pour verdir l'organe,
+# exactement la fabrication de vert que B.0 existe pour empecher. Classe
+# #13030 (« pose, pas cite ») transposee a la prose : l'apposition
+# levée + ponctuation est la signature du TIMING de la levee, pas d'une
+# exigence nouvelle.
+#
+# Le lexeme doit porter un PARTICIPE/NOMINAL de levee (leve/levee/levees,
+# lifted/lift) suivi d'une PONCTUATION d'apposition (, : ; -) : la
+# ponctuation est le discriminant. Sans elle, « n'est pas leve avant
+# merge » (negation) et « doit etre leve avant merge » (infinitif =
+# exigence) doivent rester VIVANTS. L'infinitif « lever » est exclu par
+# construction (\b apres le lexeme). Residu assume, sur-bloquant donc sans
+# danger : « le point est leve avant merge » (participe sans virgule)
+# reste vivant.
+_LIFT_TIMING_MARKERS = frozenset({
+    "avant merge", "avant de merger", "before merge",
+})
+_LIFT_TIMING_APPOSITION = re.compile(
+    r"\b(?:leve(?:e|es)?|lift(?:ed|es?)?)\s*[,:;-]\s*$",
+    re.IGNORECASE,
+)
+
 
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     """Marqueur present avec au moins une occurrence NON citee.
@@ -2662,7 +2689,14 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
             continue
         start = 0
         while (i := normalised.find(m, start)) != -1:
-            if not _is_cited(normalised[max(0, i - 30):i]):
+            window = normalised[max(0, i - 30):i]
+            # #15651 : un marqueur temporel en apposition d'une levee
+            # (« sa levee, avant merge et nommee ») est le TIMING de la
+            # levee, pas une reserve posee -- il meurt comme une citation.
+            if not _is_cited(window) and not (
+                m.lower() in _LIFT_TIMING_MARKERS
+                and _LIFT_TIMING_APPOSITION.search(window)
+            ):
                 return True
             start = i + 1
     return False
