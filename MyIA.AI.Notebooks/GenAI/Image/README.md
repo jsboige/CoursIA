@@ -103,7 +103,7 @@ Le porte-drapeau de ce niveau pour la **qualité** est FLUX.1 ([02-2](02-Advance
 
 ### 03-Orchestration - Multi-modèles
 
-En production, un seul modèle ne suffit pas toujours. Ce niveau compare les modèles entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (génération puis édition puis upscaling), et optimise les performances pour le déploiement. L'orchestration se matérialise par un **workflow ComfyUI** : un graphe de nœuds (Sampler, VAE, upscaler) que l'on enchaîne et exporte en JSON pour le rendre reproductible. Le panneau ci-dessous illustre le concept de **multi-variations** appliqué à SD35 : trois exécutions du même prompt « chalet en bois dans une forêt de conifères sous la neige » avec des prompts de style distincts (`photorealistic` / `watercolor` / `anime`) produisent trois rendus différenciés tout en préservant le sujet — c'est exactement le scénario qu'un workflow ComfyUI orchestre de façon reproductible :
+En production, un seul modèle ne suffit pas toujours. Ce niveau compare les modèles entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (génération puis édition puis upscaling), et optimise les performances pour le déploiement. L'orchestration se matérialise par un **workflow ComfyUI** : un graphe de nœuds (Sampler, VAE, upscaler) que l'on enchaîne et exporte en JSON pour le rendre reproductible — reproductible jusqu'à voyager *dans l'image elle-même* : chaque PNG sauvegardé par ComfyUI embarque son propre workflow dans les métadonnées, et [03-4](03-Orchestration/03-4-VLM-Character-Design-Workflow.ipynb) montre qu'on peut extraire ce graphe par simple parsing binaire puis le rejouer, y compris sa boucle la plus intéressante : un VLM *dans le graphe* qui examine une image de référence et rédige lui-même le prompt de character design avant la diffusion Krea 2. Le panneau ci-dessous illustre le concept de **multi-variations** appliqué à SD35 : trois exécutions du même prompt « chalet en bois dans une forêt de conifères sous la neige » avec des prompts de style distincts (`photorealistic` / `watercolor` / `anime`) produisent trois rendus différenciés tout en préservant le sujet — c'est exactement le scénario qu'un workflow ComfyUI orchestre de façon reproductible :
 
 <p align="center">
   <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb"><img src="assets/readme/workflow-orchestration.png" width="420" alt="Multi-Variations SD35 — rendu réel : trois variations de style sur le même sujet (chalet en bois sous la neige), labels sd35 photorealistic / watercolor / anime, orchestration reproductible d'un même prompt avec variations de style."></a><br>
@@ -115,6 +115,7 @@ En production, un seul modèle ne suffit pas toujours. Ce niveau compare les mod
 | [03-1-Multi-Model-Comparison](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) | Comparaison multi-modèles |
 | [03-2-Workflow-Orchestration](03-Orchestration/03-2-Workflow-Orchestration.ipynb) | Orchestration de workflows |
 | [03-3-Performance-Optimization](03-Orchestration/03-3-Performance-Optimization.ipynb) | Optimisation performance |
+| [03-4-VLM-Character-Design-Workflow](03-Orchestration/03-4-VLM-Character-Design-Workflow.ipynb) | Boucle VLM in-graph (workflow embarqué dans un PNG) |
 
 [README 03-Orchestration](03-Orchestration/README.md)
 

@@ -137,7 +137,7 @@ C'est la conception d'un **Jumeau Numérique** du patient, capable d'éclairer l
 ## Ressources de référence
 
 ### Notebooks utiles dans le cours
-- `Probas/Pyro_RSA_Hyperbole.ipynb` : Exemple d'inférence sur variables latentes
+- `Probas/Applications/Pyro_RSA_Hyperbole.ipynb` : Exemple d'inférence sur variables latentes
 - `SymbolicAI/OR-tools-Stiegler.ipynb` : Contraintes et planification avec OR-Tools
 
 ### Bibliographie
