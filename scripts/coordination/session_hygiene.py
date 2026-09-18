@@ -7,7 +7,7 @@ Le geste est deja prescrit (skill ``/coordinate`` phase 2.0 : « revenir sur mai
 submodules »). Il n'a pourtant pas ete fait pendant des jours sur ai-01, et la raison est
 mesurable : ``git checkout main`` **echouait en silence** parce qu'un worktree residuel
 detenait ``main``. L'arbre est donc reste parke sur une branche de feature, et l'organe B.0
-qu'on y lancait avait 537 lignes de moins que celui de ``main`` — assez pour inverser des
+qu'on y lancait avait 437 lignes de moins que celui de ``main`` — assez pour inverser des
 verdicts de merge.
 
 Ajouter une ligne de prose disant « pense a revenir sur main » n'aurait rien change : la
