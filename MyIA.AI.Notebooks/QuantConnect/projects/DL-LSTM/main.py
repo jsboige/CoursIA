@@ -74,8 +74,14 @@ class DLLSTMAlgorithm(QCAlgorithm):
 
     def Initialize(self):
         """Initialisation de l'algorithme."""
-        self.SetStartDate(2015, 1, 1)
-        self.SetEndDate(2025, 1, 1)
+        # Fenetre OOS figee, coherente avec le quantbook : le modele (#15509)
+        # est entraine sur 2015-01-01 -> 2026-01-01 (split 80/20, coupure
+        # d'entrainement ~= fin 2023). Backtester depuis 2015 evaluerait le
+        # modele sur ses donnees d'entrainement ; la fenetre deployee couvre
+        # l'annee tenue hors apprentissage, jusqu'a la meme fin figee que
+        # le quantbook.
+        self.SetStartDate(2025, 1, 1)
+        self.SetEndDate(2026, 1, 1)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
