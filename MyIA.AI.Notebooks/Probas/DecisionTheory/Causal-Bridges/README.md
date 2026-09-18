@@ -17,6 +17,7 @@
 | [DoWhy-4 — Le confondeur non observé](DoWhy-4-Sensibilite-Confounder-Cache.ipynb) | ~50 min | Sensibilité, pas certitude : « quelle force devrait avoir un confondeur caché pour annuler cet effet ? » — robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy` avec benchmark McGowan-Greevy, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé (`direct-simulation`) |
 | [DoWhy-5 — L'instrument faible](DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `Quasi-Experimental.ipynb` |
 | [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
+| [Causal-Fairness — Décomposer la discrimination](Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
@@ -72,3 +73,10 @@ Exercices de DoWhy-4 (sensibilité au confondeur non observé) :
 1. **Le rapport de forces** — renforcer le cache (`coef_u_*=1.8`) : la robustness value MONTE avec l'association observée (ça survit encore) ; affaiblir le signal (`tau=0.2, bruit_y=3.0`) : le RV passe sous le R² réel de U et le verdict bascule en ANNULABLE — c'est l'effet faible qu'on annule, pas le cache fort.
 2. **L'E-value de l'IC et la taille d'échantillon** — à `n=10000` l'IC se resserre, sa borne s'éloigne de 1 et l'E-value de l'IC monte vers celui de l'estimé ; l'estimé ponctuel (biais constant de U) bouge à peine.
 3. **Γ\* d'un effet plus faible** — reprendre le monde binaire à `b_x=0.2`, ré-apparier et recalculer Γ* : plus proche de 1 ; Γ\* mesure la solidité statistique face au pire des mondes, pas la vérité de l'effet.
+
+Exercices de Causal-Fairness (famille TV, Epic #16620) :
+
+1. **Casser l'identité linéaire** — ajouter une interaction `A × W` dans l'équation de `Y` : l'identité simple `NDE − NIE = TE` ne tient plus, mais Lem 4.1 et Thm 4.2 (algébriques) tiennent à la précision machine.
+2. **Str-DE-fair n'efface pas l'écart observé** — mettre le coefficient direct `A → Y` à zéro : NDE ≈ 0 mais la TV reste positive (canal indirect + spurieux) ; la règle des 80 % mesure l'écart, pas la discrimination directe.
+3. **La règle des 80 % sur d'autres attributs du crédit allemand** — `foreign_worker` (groupe de référence minuscule : quelle confiance au ratio ?) et l'âge binarisé à 25 ans.
+
