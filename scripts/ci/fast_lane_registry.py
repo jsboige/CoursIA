@@ -1253,3 +1253,30 @@ TRANCHE11: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+TRANCHE13: list[Guard] = [
+    Guard(
+        name="Reading-anchor advisory (lecture sans output, #16695)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_reading_anchor.py",
+            "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--base", "{base_ref}",
+            "--head", "HEAD",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
