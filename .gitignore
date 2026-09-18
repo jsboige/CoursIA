@@ -1071,9 +1071,3 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 /.scratch-attic/
-
-# Local environment files (Forge validation)
-.env
-
-# Forge validation runtime artifacts (c.592 + dispatch EPF-LIVE #14617)
-_runtime/
