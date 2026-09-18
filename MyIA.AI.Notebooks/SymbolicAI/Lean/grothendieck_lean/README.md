@@ -108,12 +108,12 @@ treillis des topologies. Une troisième veine s'ouvre avec `Classifier.lean` (Pa
 ## Structure du code
 
 La formalisation couvre **76 modules leaf** + **1 umbrella** `Grothendieck.lean`
-(imports-only, bilingue inline FR/EN). Les trois sous-modules de
+(imports-only, index de lecture FR-only — #16154). Les trois sous-modules de
 `SheafCohomology/` sont les Parties 20, 22 et 23 du tableau.
 
 | Partie | Fichier | `_en` | Contenu | Lignes |
 |--------|---------|-------|---------|--------|
-| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe une **sélection** des leaf FR et un sous-ensemble des siblings `_en` (cf. corps du fichier ; couverture FR complète sur disque via les 76 leaf, les 76 siblings `_en` sont compilés par les `globs` du lakefile — l'umbrella n'importe pas tous les `_en`, par design) ; `ExceptionalDirect` importé c.2026-08-15, **fermeture #11286** | 273 |
+| racine | `Grothendieck.lean` | (aucun — FR-only) | **Racine umbrella** (imports-only + commentaire d'invariant FR-only) ; importe **chaque** leaf FR (76) et **jamais** un sibling `_en` (invariant #16154 ; les 76 siblings `_en` restent compilés par les `globs` du lakefile) ; `ExceptionalDirect` importé c.2026-08-15, **fermeture #11286** | 275 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
@@ -201,7 +201,7 @@ approximativement autant.*
 - **Preuves** : **0 `sorry`, 0 axiome ajouté** — tous les modules sont complets à la création. (Un `grep sorry` naïf matche des mentions en prose dans les docstrings bilingues, notamment deux dans `ExceptionalDirect.lean` ; la CI compte en mode `real` — après strip des commentaires — et vaut 0.)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
 
-- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **77 fichiers FR** (1 umbrella `Grothendieck.lean` + 76 leaf canoniques mesurés par `git ls-tree -r HEAD`) et **76 siblings `_en.lean`**, ratio 1:1 intégral (vérifié par `scripts/lean/check_i18n_siblings.py`). L'historique « gap `PullbackFunctor.lean` sans `_en` » est clos depuis c.2026-08-18 : `PullbackFunctor_en.lean` est sur disque, et les 76 modules FR ont leur sibling `_en`. Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
+- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **77 fichiers FR** (1 umbrella `Grothendieck.lean` + 76 leaf canoniques mesurés par `git ls-tree -r HEAD`) et **76 siblings `_en.lean`**, ratio 1:1 intégral (vérifié par `scripts/lean/check_i18n_siblings.py`). L'historique « gap `PullbackFunctor.lean` sans `_en` » est clos depuis c.2026-08-18 : `PullbackFunctor_en.lean` est sur disque, et les 76 modules FR ont leur sibling `_en`. Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est un index FR-only : il importe chaque leaf FR et jamais un `_en` (invariant #16154, tenu par l'organe always-on `scripts/ci/check_grothendieck_umbrella.py`). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
 
 *Note de cohérence* : couverture 1:1 intégrale — 76 leaf FR canoniques et 76 siblings `_en` (le gap `PullbackFunctor` sans `_en`, nommé dans une version antérieure de cette note, est comblé sur disque). Le `globs` du lakefile auto-découvre tous les modules présents, FR comme `_en`. Vérification reproductible : `python scripts/lean/check_grothendieck_readme.py` — sortie non-zéro sur tout écart entre prose et disque.
 
@@ -266,7 +266,7 @@ Quatre frictions réelles, documentées à la source :
 
 1. **Contrainte d'anti-régression auto-imposée** : chaque module complet à la création (0 `sorry`, 0 axiome ajouté) — le plafond du lake est borné par ce que Mathlib expose déjà, pas par un choix de sous-formalisation. C'est une friction **de périmètre** : quand un concept manque dans Mathlib, il est soit reconstruit localement, soit renvoyé en attente.
 2. **Frontière Mathlib vivante** : `Classifier.lean:190` — `ElementaryTopos` « pas encore disponible dans cette révision » : la borne du lake est mobile avec Mathlib.
-3. **Dette de raccord résolue** : `#11286` — import umbrella de `ExceptionalDirect` **CLOSED 2026-08-16** (PR #11294) : un module orphelin depuis #10357, relié en 6 semaines. L'umbrella importe une sélection explicite de leaf, tandis que le `globs` du lakefile assure la compilation des 76 leaf FR et de leurs siblings.
+3. **Dette de raccord résolue** : `#11286` — import umbrella de `ExceptionalDirect` **CLOSED 2026-08-16** (PR #11294) : un module orphelin depuis #10357, relié en 6 semaines. L'umbrella importe chaque leaf FR (76) et jamais un `_en` (#16154), tandis que le `globs` du lakefile assure aussi la compilation des 76 siblings `_en`.
 4. **Friction i18n historique résolue** : l'absence d'un sibling `_en` pour `PullbackFunctor` (comblée depuis c.2026-08-18, cf §Build & état) — la paire bilingue est une contrainte de maintenance vérifiable par `scripts/lean/check_i18n_siblings.py`.
 
 ### Point 7 — chemin de découverte (comblement)

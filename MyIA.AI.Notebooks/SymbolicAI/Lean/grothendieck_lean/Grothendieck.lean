@@ -263,12 +263,13 @@ Substance (English):
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
 
-Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : ce fichier root
-aggregator est bilingue inline (FR canonique d'abord, EN en miroir),
-conformément au pattern canonique `CooperativeGames.lean` (PR #5883,
-pilote EPIC), `Utility.lean` (PR #6045), `RepeatedGames.lean` (PR #6048),
-`Minimax.lean` (PR #6101), `SocialChoice.lean` (PR #6106), `Conway.lean`
-(PR #6111). Les modules substantiels vivent dans des fichiers siblings (cf.
-structure lake ci-dessous), auto-découverts par le
-`lean_lib «Grothendieck»` du lakefile (cf. `globs` glob par défaut).
+Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : contrairement aux
+agrégateurs racines bilingues inline (`CooperativeGames.lean` PR #5883,
+pilote EPIC ; `Utility.lean` PR #6045 ; `RepeatedGames.lean` PR #6048 ;
+`Minimax.lean` PR #6101 ; `SocialChoice.lean` PR #6106 ; `Conway.lean`
+PR #6111), ce fichier root aggregator est un index **FR-only** (#16154) :
+il importe chaque module FR et jamais un sibling `_en`. Les modules
+substantiels vivent dans des fichiers siblings (cf. structure lake
+ci-dessous), auto-découverts par le `lean_lib «Grothendieck»` du lakefile
+(cf. `globs` glob par défaut).
 -/
