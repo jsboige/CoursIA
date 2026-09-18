@@ -89,7 +89,7 @@ Central definitions of A*. Let `hStar : V → NNReal` be the "true optimal remai
 
 ### `Consistent` — definition
 
-**Consistent** (monotone) **heuristic**: relaxation of the Bellman equation along each arc. Consistency implies admissibility (`consistent_implies_admissible`), and further guarantees that the function `f = g + h` is increasing along paths, hence A* never re-expands a node.
+**Consistent** (monotone) **heuristic**: relaxation of the Bellman equation along each arc. Consistency implies admissibility (`consistent_implies_admissible_bound`, cf `Astar/Consistency.lean`), and further guarantees that the function `f = g + h` is increasing along paths, hence A* never re-expands a node.
 
 ### Basic properties of `Admissible` / `Consistent`
 
@@ -159,7 +159,7 @@ Under an **admissible** heuristic, for every node `p.get i` of a path `p` going 
 
 **Module docstring (translated).**
 
-Issue #4048, target theorem `consistent_implies_admissible`. **Consistency** (monotonicity per arc: `h n ≤ edge n n' + h n'`) is a **local** condition; **admissibility** (`h n ≤ hStar n`) is a **global** condition. The bridge between the two is **telescoping**: along the arcs of a path `start = v₀ → v₁ → … → vₖ = goal`, consistency composes into
+Issue #4048 (target: theorem `consistent_implies_admissible` — proven in this lake under the name `consistent_implies_admissible_bound`, corollary of `consistent_implies_path_bound`). **Consistency** (monotonicity per arc: `h n ≤ edge n n' + h n'`) is a **local** condition; **admissibility** (`h n ≤ hStar n`) is a **global** condition. The bridge between the two is **telescoping**: along the arcs of a path `start = v₀ → v₁ → … → vₖ = goal`, consistency composes into
 
 ```
 h(start) ≤ edge(v₀,v₁) + h(v₁)
@@ -174,7 +174,7 @@ Under the natural hypothesis `h(goal) = 0` (the heuristic vanishes at the goal),
 
 ### `consistent_implies_path_bound` — theorem
 
-**Consistency ⟹ path bound (telescoping).** Target theorem #4048 (`consistent_implies_admissible`). A **consistent** heuristic that vanishes at the goal (`h goal = 0`) never exceeds the cost of a realized path to the goal: for every path `p` from `start` to `goal`, `h(start) ≤ pathCost(p)`.
+**Consistency ⟹ path bound (telescoping).** Target theorem #4048 (`consistent_implies_admissible_bound`, corollary of `consistent_implies_path_bound`). A **consistent** heuristic that vanishes at the goal (`h goal = 0`) never exceeds the cost of a realized path to the goal: for every path `p` from `start` to `goal`, `h(start) ≤ pathCost(p)`.
 
 Consistency is local (per arc); by telescoping along the arcs of the path, it reaches the same global bound as admissibility (`h ≤ hStar ≤ pathCost`). This is the exact mechanism that makes A* optimal under a consistent heuristic: the function `f = g + h` is then increasing along paths, so no node is ever re-expanded (cf Hart, Nilsson & Raphael 1968).
 

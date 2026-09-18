@@ -471,10 +471,18 @@ host_probe() {
     fi
     return 0
   fi
-  command -v powershell.exe >/dev/null 2>&1 || return 0
+  # Resolution robuste de powershell.exe : le contexte systemd n'herite pas du
+  # PATH Windows annexe (login WSL uniquement) -- wslpath fournit l'absolu.
+  # wslpath pour le -File : natif WSL ; cygpath : repli Cygwin/Git-Bash. Bash
+  # ne resout pas cygpath.exe sans suffixe sous WSL -- le repli POSIX cassait
+  # la sonde (hote NON MESURABLE) depuis #15123.
+  local psexe
+  psexe="$(command -v powershell.exe 2>/dev/null)"
+  [ -n "$psexe" ] || psexe="$(wslpath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' 2>/dev/null)"
+  [ -n "$psexe" ] || return 0
   [ -f "$PROBE_PS1" ] || return 0
-  powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
-    -File "$(cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
+  "$psexe" -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+    -File "$(wslpath -w "$PROBE_PS1" 2>/dev/null || cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
     2>/dev/null | tr -d '\r' | head -1
 }
 
