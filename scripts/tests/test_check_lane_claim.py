@@ -2047,6 +2047,7 @@ def test_check_override_paths_keeps_other_lane_free_on_non_matching_path(capsys)
         p,
         "myia-po-2025:CoursIA-2",
         my_paths=["scripts/check_lane_claim.py"],
+        prs=[],  # #16570 -- opt out of live OPEN-PR fetch (test hermeticity)
     )
     assert rc == 0
     captured = capsys.readouterr()
@@ -2871,6 +2872,7 @@ def test_run_check_clean_brace_scope_does_not_show_unparseable(capsys):
     rc = clc._run_check(
         p, "myia-po-2025:CoursIA",
         my_paths=["scripts/check_lane_claim.py"],
+        prs=[],  # #16570 -- opt out of live OPEN-PR fetch (test hermeticity)
     )
     assert rc == 0
     out = capsys.readouterr().out
@@ -5092,7 +5094,8 @@ def test_delivered_closed_lifts_active_claim(capsys):
     )
     rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
                        pr_states=_pr_states(12253, "CLOSED"),
-                       my_paths=["scripts/check_lane_claim.py"])
+                       my_paths=["scripts/check_lane_claim.py"],
+                       prs=[])  # #16570 -- opt out of live OPEN-PR fetch
     assert rc == 0
     out = _json_out(capsys.readouterr())
     assert out["my_active_claim"] is False
@@ -5118,7 +5121,8 @@ def test_delivered_lookup_failure_legacy_close(capsys):
     )
     rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
                        pr_states={},  # 99999 not present -> legacy close
-                       my_paths=["scripts/check_lane_claim.py"])
+                       my_paths=["scripts/check_lane_claim.py"],
+                       prs=[])  # #16570 -- opt out of live OPEN-PR fetch
     assert rc == 0
     out = _json_out(capsys.readouterr())
     assert out["my_active_claim"] is False
@@ -5144,7 +5148,8 @@ def test_delivered_without_pr_ref_still_lifts_active_claim(capsys):
     )
     rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
                        pr_states=None,
-                       my_paths=["scripts/check_lane_claim.py"])
+                       my_paths=["scripts/check_lane_claim.py"],
+                       prs=[])  # #16570 -- opt out of live OPEN-PR fetch
     assert rc == 0
     out = _json_out(capsys.readouterr())
     assert out["my_active_claim"] is False
@@ -5724,6 +5729,7 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
     rc = clc._run_check(
         p, "myia-po-2023:CoursIA-2",
         my_paths=[f"{_RAG}/**"],
+        prs=[],  # #16570 -- opt out of live OPEN-PR fetch (test hermeticity)
     )
     assert rc == 0, (
         f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
@@ -5920,11 +5926,15 @@ def test_amend_blocks_other_lane_on_intersecting_amended_scope(capsys):
     )
     caller_path = "scripts/tests/test_check_lane_claim.py"
     rc_pre = clc._run_check(
-        payload(original), "myia-po-2023:CoursIA-2", my_paths=[caller_path]
+        payload(original), "myia-po-2023:CoursIA-2",
+        my_paths=[caller_path],
+        prs=[],  # #16570 -- opt out of live OPEN-PR fetch (test hermeticity)
     )
     assert rc_pre == 0, f"pre-amend scopes are disjoint, expected CLEAR, got rc={rc_pre}"
     rc_post = clc._run_check(
-        payload(original, amended), "myia-po-2023:CoursIA-2", my_paths=[caller_path]
+        payload(original, amended), "myia-po-2023:CoursIA-2",
+        my_paths=[caller_path],
+        prs=[],  # #16570 -- opt out of live OPEN-PR fetch (test hermeticity)
     )
     err = capsys.readouterr().err
     assert rc_post == 1, (

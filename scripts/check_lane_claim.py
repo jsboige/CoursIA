@@ -2256,8 +2256,11 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
-               pr_states: dict[int, str] | None = None) -> int:
+               pr_states: dict[int, str] | None = None,
+               prs: list[dict] | None = None) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
+
+    Args:
 
     Args:
         payload: `gh issue view --json ...` payload (or `from-json`).
@@ -2274,6 +2277,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             the caller's own claim), behaviour is unchanged: every other active
             claim blocks, regardless of its scope clause (we cannot prove
             disjointness, so we conservatively over-block).
+        prs: optional OPEN-PR list (testability seam, #16570). When `None`,
+            the OPEN-PR collision leg fetches live via
+            ``_gh_open_prs_with_files``; when supplied (typically
+            ``prs=[]`` in tests), the leg uses the caller's fixture and
+            skips the network call. Production CLI passes ``prs=None`` to
+            opt into the live fetch; tests pass ``prs=[]`` to stay
+            hermetic.
     """
     events = _sort_events(payload)
     # One shared tracked-files walk feeds BOTH the #10881 lint and the
@@ -2537,6 +2547,39 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             my_scope, others, tracked,
         )
 
+    # #16570 -- the missing leg in issue-mode: cross-lane OPEN-PR collisions
+    # on the same files. Before this, `check_lane_claim.py <issue> --paths ...`
+    # passed scope to the active-claim filter (so blocker claims were
+    # correctly intersected) but NEVER asked the OPEN-PR list. The leg
+    # exists in path-only mode (`_run_check_paths`) and is precisely what
+    # L898 pre-claim dispatches first; in issue mode it was structurally
+    # blind, returning CLEAR while a neighbour's PR already touched the
+    # same files. Compute it here when `my_paths` is given, parallel to
+    # the active-claim leg above. Failures to fetch are silenced (the
+    # active-claim leg still gives a useful verdict); a missing fetch is
+    # reported in `open_pr_collision_error` for forensics.
+    open_pr_collisions: list[dict] = []
+    open_pr_self_overlap: list[dict] = []
+    open_pr_collision_error: str | None = None
+    if my_paths:
+        # #16570 -- OPEN-PR leg. The leg uses a `prs` testability seam
+        # (same pattern as `_run_check_paths`): when `prs` is supplied,
+        # we trust the caller and skip the live `gh pr list`. When
+        # `prs` is `None`, we fetch live OPEN PRs via
+        # `_gh_open_prs_with_files`. Tests that don't care about the
+        # OPEN-PR leg pass `prs=[]`; the production CLI dispatcher
+        # passes `prs=None` (default) to opt in to the live fetch.
+        if prs is None:
+            try:
+                prs = _gh_open_prs_with_files()
+            except RuntimeError as exc:
+                open_pr_collision_error = str(exc)
+                prs = []
+        if prs:
+            _collisions, _self = _classify_pr_collisions(my_paths, my_lane, prs)
+            open_pr_collisions = [_serialise_path_collision(c) for c in _collisions]
+            open_pr_self_overlap = [_serialise_path_collision(c) for c in _self]
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -2753,6 +2796,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # always visible to a JSON sweep. Non-blocking by design -- it only
         # reports; it does not change the verdict.
         "dead_scope_globs": dead_scope_globs,
+        # #16570 -- OPEN-PR collisions on the caller's `--paths`. Always
+        # present in the summary; empty lists when `my_paths` was not
+        # supplied (the issue-mode caller has no paths to check) or when
+        # no OPEN PR of any lane intersects. Non-empty `open_pr_collisions`
+        # is the signal that drives the rc=2 verdict below -- the worker
+        # picked an issue whose files are already touched by another
+        # lane's PR, and the active-claim leg alone would have said CLEAR.
+        "open_pr_collisions": open_pr_collisions,
+        "open_pr_self_overlap": open_pr_self_overlap,
+        "open_pr_collision_error": open_pr_collision_error,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -3049,6 +3102,55 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"avant de demarrer (#13336).",
                 file=sys.stderr,
             )
+
+    # #16570 -- the missing leg. OPEN PRs of OTHER lanes touching the caller's
+    # `--paths` block the call at rc=2 (same contract as the active-claim
+    # leg, same exit code as the path-mode guard). The active-claim leg
+    # above would have returned CLEAR; this leg catches the case where the
+    # neighbour is WORKING the issue in an OPEN PR without holding a
+    # `[CLAIMED]` marker (the picker had measured this trap; this is the
+    # organ-level fix). Self-overlap (caller's OWN lane PR) is surfaced
+    # as `open_pr_self_overlap` but does NOT block.
+    if open_pr_collisions:
+        tagged = [c for c in open_pr_collisions if c.get("lane") is not None]
+        untagged = [c for c in open_pr_collisions if c.get("lane") is None]
+        msg = [
+            f"\nBLOCKED: OPEN PR(s) of other lanes touch the requested "
+            f"--paths on #{payload.get('number')}. The active-claim leg "
+            f"above would have said CLEAR; this leg closes the gap (#16570).",
+            "",
+        ]
+        for c in tagged:
+            inter = ", ".join(c.get("files_intersecting", []))
+            msg.append(
+                f"  - #{c['number']} lane={c['lane']} head={c['headRefName']} "
+                f"files=[{inter}] -- {c['title']}"
+            )
+        for c in untagged:
+            inter = ", ".join(c.get("files_intersecting", []))
+            msg.append(
+                f"  - #{c['number']} lane=UNREADABLE head={c['headRefName']} "
+                f"files=[{inter}] -- {c['title']}\n"
+                f"    (no `Grain:` lane tag in body; cannot attribute. "
+                f"Treat as a potential collision: coordinate before pushing.)"
+            )
+        msg.append(
+            "\nDo not start -- coordinate with the owner(s), or pick "
+            "another grain that does not intersect the open PR(s)."
+        )
+        print("\n".join(msg), file=sys.stderr)
+        return 2
+    if open_pr_self_overlap:
+        own_numbers = ", ".join(
+            f"#{c['number']}" for c in open_pr_self_overlap
+        )
+        print(
+            f"\nCLEAR for paths {my_paths!r} on #{payload.get('number')} -- "
+            f"your own OPEN PR(s) already touch these paths ({own_numbers}). "
+            f"Resuming your own work is fine; the OPEN-PR leg does not "
+            f"block your own lane (#16570).",
+            file=sys.stderr,
+        )
     return 0
 
 
@@ -3258,6 +3360,76 @@ class PathCollision:
         self.files = files  # the PR files that intersect the patterns
 
 
+def _classify_pr_collisions(
+    paths: list[str],
+    my_lane: str,
+    prs: list[dict],
+) -> tuple[list[PathCollision], list[PathCollision]]:
+    """Pure helper: classify OPEN PRs by path-vs-lane intersection (#16570).
+
+    Returns ``(collisions, self_overlap)``:
+      - ``collisions``     : OPEN PRs whose lane differs from ``my_lane``
+                              (including untagged PRs -- treated as a
+                              potential collision; author is jsboige on
+                              every PR, so the tag is the only signal).
+      - ``self_overlap``   : OPEN PRs whose lane equals ``my_lane`` -- the
+                              caller is resuming their own work, not a
+                              cross-lane collision.
+
+    Extracted from ``_run_check_paths`` (#16570) so the issue-mode check
+    can share the same classification when ``--paths`` is supplied
+    alongside an issue number. Before the extraction, the issue-mode
+    code path skipped this leg entirely (the bug: a worker could claim
+    an issue on the strength of a CLEAR from the issue layer, while
+    an OPEN PR of another lane already touched the same files).
+    """
+    collisions: list[PathCollision] = []
+    self_overlap: list[PathCollision] = []
+    for pr in prs:
+        pr_files = pr.get("files") or []
+        if not pr_files:
+            continue
+        intersecting = [
+            f.get("path", "") for f in pr_files
+            if f.get("path") and _path_matches(f["path"], paths)
+        ]
+        if not intersecting:
+            continue
+        lane = extract_lane(pr.get("body") or "")
+        coll = PathCollision(
+            pr=pr, lane=lane, files=[p for p in intersecting if p],
+        )
+        # Three-way classification:
+        #  - lane == my_lane             -> self_overlap (resuming own work)
+        #  - lane is None (no Grain tag) -> collisions (cannot attribute;
+        #                                    author is jsboige on every PR,
+        #                                    so the tag is the only signal;
+        #                                    absence = uncertainty, treated
+        #                                    as a potential collision -- not
+        #                                    silently ignored)
+        #  - lane != my_lane (tagged)    -> collisions
+        if lane == my_lane:
+            self_overlap.append(coll)
+        else:
+            collisions.append(coll)
+    return collisions, self_overlap
+
+
+def _serialise_path_collision(c: PathCollision) -> dict:
+    """Serialise a PathCollision for JSON output (#16570).
+
+    Extracted from ``_run_check_paths`` so the issue-mode summary can use
+    the same shape for ``open_pr_collisions`` and ``open_pr_self_overlap``.
+    """
+    return {
+        "number": c.number,
+        "title": c.title,
+        "headRefName": c.headRefName,
+        "lane": c.lane,
+        "files_intersecting": c.files,
+    }
+
+
 def _run_check_paths(
     paths: list[str],
     my_lane: str,
@@ -3297,35 +3469,7 @@ def _run_check_paths(
             print(f"error: {exc}", file=sys.stderr)
             return 1
 
-    collisions: list[PathCollision] = []
-    self_overlap: list[PathCollision] = []
-    for pr in prs:
-        pr_files = pr.get("files") or []
-        if not pr_files:
-            continue
-        intersecting = [
-            f.get("path", "") for f in pr_files
-            if f.get("path") and _path_matches(f["path"], paths)
-        ]
-        if not intersecting:
-            continue
-        lane = extract_lane(pr.get("body") or "")
-        coll = PathCollision(
-            pr=pr, lane=lane, files=[p for p in intersecting if p],
-        )
-        # Three-way classification:
-        #  - lane == my_lane             -> self_overlap (resuming own work)
-        #  - lane is None (no Grain tag) -> collisions (cannot attribute;
-        #                                    author is jsboige on every PR,
-        #                                    so the tag is the only signal;
-        #                                    absence = uncertainty, treated
-        #                                    as a potential collision -- not
-        #                                    silently ignored)
-        #  - lane != my_lane (tagged)    -> collisions
-        if lane == my_lane:
-            self_overlap.append(coll)
-        else:
-            collisions.append(coll)
+    collisions, self_overlap = _classify_pr_collisions(paths, my_lane, prs)
 
     def _serialise(c: PathCollision) -> dict:
         return {
