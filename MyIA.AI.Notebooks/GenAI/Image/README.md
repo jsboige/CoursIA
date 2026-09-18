@@ -29,6 +29,7 @@ Image/
 ├── 02-Advanced/       # Modèles avancés
 ├── 03-Orchestration/  # Multi-modèles
 ├── 04-Applications/   # Production
+├── 05-History/        # Racines pré-Stable-Diffusion
 ├── assets/            # Médias partagés (couvertures, panneaux)
 └── examples/          # Cas d'usage par domaine
 ```
@@ -130,6 +131,17 @@ Ce niveau met en œuvre les workflows complets : génération automatisée de co
 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) |
 
 [README 04-Applications](04-Applications/README.md)
+
+### 05-History - Racines pré-Stable-Diffusion
+
+Notebooks rétrospectifs : les outils d'avant Stable Diffusion (2021-2022) qui ont établi les paradigmes encore à l'œuvre aujourd'hui — CLIP comme fonction de perte sémantique, guidance par classifieur. [05-2](05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) exécute le code officiel de CLIPasso (SIGGRAPH 2022) : une image devient une esquisse de 4 à 32 traits, reconnaissable même à 4 — parce que l'optimisation est guidée par CLIP, pas par un signal bas-niveau.
+
+| Notebook | Contenu | Publication |
+|----------|---------|-------------|
+| [05-2-CLIPasso-Semantic-Sketching](05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) | Sketching sémantique, abstraction par nombre de traits | Vinker et al., SIGGRAPH 2022 |
+| 05-1-DiscoDiffusion *(en préparation, #16477)* | CLIP-guided diffusion pré-SD | — |
+
+[README 05-History](05-History/README.md)
 
 ### examples/ - Cas d'usage
 
