@@ -1071,3 +1071,29 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 /.scratch-attic/
+
+# Papermill run artifacts — #16633
+# Les patterns `*_executed.ipynb` / `*_output*.ipynb` sont déjà déclarés l.608-611
+# (« Notebook output files (Papermill execution artifacts) »). Cette section
+# rappelle **pourquoi** et **ce qui n'est pas couvert** par .gitignore :
+#
+#   1. .gitignore exclut les fichiers de run CRÉÉS par papermill/jupyter,
+#      mais PAS les chemins absolus que papermill **grave** dans
+#      `metadata.papermill.output_path` / `input_path` d'un notebook canonique.
+#      Mesure 2026-09-18 : 62 leaks `metadata_papermill_absolute` dans 33 fichiers.
+#
+#   2. Idem pour les chemins tempfile/user/AppData qui apparaissent dans les
+#      `outputs[*].text` (matplotlib UserWarning, pip already-satisfied, .NET
+#      Interactive Loading extensions, ipykernel temp paths).
+#      Mesure 2026-09-18 : 22 leaks `output_text_path_leak` dans 14 fichiers.
+#      Total : 84 defects / 42 fichiers (detect_papermill_path_leak.py --summary).
+#
+# Outillage canonique :
+#   - Read-only : scripts/notebook_tools/detect_papermill_path_leak.py
+#   - Correctif : scripts/notebook_tools/scrub_papermill_paths.py
+#   - Préventif post-re-exec : scripts/notebook_tools/_papermill_meta.py (strip
+#     metadata.papermill perime, garde structure cellules).
+#
+# Acceptance #16633 close par cette PR : les artefacts de run au sens strict
+# (fichiers) sont exclus ; les artefacts « embarqués dans le notebook canonique »
+# restent un angle mort que les outils ci-dessus adressent séparément.
