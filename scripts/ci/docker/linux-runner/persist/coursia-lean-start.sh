@@ -28,8 +28,14 @@
 # jamais en argv).
 set -uo pipefail
 
-MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/c/dev/CoursIA/.secrets/master.env}"
-REPO_DIR="${COURSIA_REPO_DIR:-/mnt/c/dev/CoursIA}"
+# Le defaut de chemin a DEJA demenage : la migration du 2026-09-17 a deplace le
+# depot `C:\dev\CoursIA` -> `D:\Dev\CoursIA`, et ce fichier pointait encore
+# l'arborescence purgee. Ce n'etait pas cosmetique : `[ -r "$MASTER_ENV" ]`
+# echoue AVANT la lecture du token, donc le lanceur sortait en `exit 1` et le
+# pool lean restait a ZERO jusqu'a intervention -- exactement l'incident du
+# 2026-09-09 que ce fichier existe pour fermer (#16578).
+MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
 ARG="${1:-2}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
