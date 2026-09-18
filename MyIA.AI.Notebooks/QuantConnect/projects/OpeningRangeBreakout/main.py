@@ -102,10 +102,15 @@ class OpeningRangeBreakout(QCAlgorithm):
         self._daily_consolidators: dict[Symbol, TradeBarConsolidator] = {}
         self.add_universe(self._select_coarse)
 
-        # Scan d'entree a la cloture de la barre d'ouverture.
+        # Scan d'entree APRES la cloture de la barre d'ouverture. Le
+        # consolidateur emet la barre 9h30-9h35 a 9h35:00 pendant la
+        # distribution des donnees, MAIS les evenements planifies de
+        # 9h35:00 tirent AVANT cette distribution : scanner a 9h35 voit
+        # un range encore vide (mesure : 4 ans de backtest a 0 ordre).
+        # Le +2 guarantee le range emis et pas encore efface.
         self.schedule.on(
             self.date_rules.every_day(),
-            self.time_rules.at(9, 30 + self.opening_minutes),
+            self.time_rules.at(9, 30 + self.opening_minutes + 2),
             self._scan_entries,
         )
         # Sortie totale juste avant la cloture (strategie intraday).
@@ -161,7 +166,7 @@ class OpeningRangeBreakout(QCAlgorithm):
         for symbol, data in self._symbols.items():
             if data.opening_bar is None or not data.atr.is_ready:
                 continue
-            if data.relative_volume > 1 and data.atr > self.atr_threshold:
+            if data.relative_volume > 1 and data.atr.current.value > self.atr_threshold:
                 candidates.append((data.relative_volume, symbol, data))
         candidates.sort(key=lambda t: t[0], reverse=True)
         places_disponibles = self.max_positions - self._n_invested()
@@ -170,7 +175,7 @@ class OpeningRangeBreakout(QCAlgorithm):
 
     def _place_entry(self, symbol: Symbol, data: SymbolData) -> None:
         barre = data.opening_bar
-        atr = float(data.atr)
+        atr = data.atr.current.value
         if barre.close > barre.open:
             entree, stop = float(barre.high), float(barre.high) - self.stop_atr_distance * atr
             direction = 1
@@ -183,19 +188,18 @@ class OpeningRangeBreakout(QCAlgorithm):
             return
         if direction == -1 and stop <= entree:
             return
-        risque_dollars = self.risk_per_trade * self.portfolio.total_portfolio_value
+        valeur = float(self.portfolio.total_portfolio_value)
+        risque_dollars = self.risk_per_trade * valeur
         distance = abs(entree - stop)
         if distance <= 0:
             return
         quantite = math.floor(risque_dollars / distance)
         # Plafond equal-weight : au plus 1 / max_positions de la valeur.
-        plafond = math.floor(
-            self.portfolio.total_portfolio_value / self.max_positions / entree
-        )
+        plafond = math.floor(valeur / self.max_positions / entree)
         quantite = min(quantite, plafond)
         if quantite <= 0:
             return
-        ticket = self.stop_market_order(symbol, direction * quantite, entree, "Entree ORB")
+        ticket = self.stop_market_order(symbol, direction * quantite, entree, tag="Entree ORB")
         # Stop de sortie des que l'entree est declenchee.
         self._stops_en_attente[ticket.order_id] = (symbol, direction, stop)
 
@@ -205,7 +209,10 @@ class OpeningRangeBreakout(QCAlgorithm):
         en_attente = self._stops_en_attente.get(order_event.order_id)
         if en_attente is not None:
             symbol, direction, stop = en_attente
-            self.stop_market_order(symbol, -direction * abs(order_event.fill_quantity), stop, "Stop ORB")
+            # fill_quantity est signe : son oppose ferme exactement le remplissage.
+            self.stop_market_order(
+                symbol, -order_event.fill_quantity, stop, tag="Stop ORB"
+            )
             del self._stops_en_attente[order_event.order_id]
 
     def _liquidate_all(self) -> None:
