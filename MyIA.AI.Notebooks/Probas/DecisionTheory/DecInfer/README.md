@@ -74,7 +74,7 @@ La concavité de la fonction d'utilité — fondement de l'aversion au risque et
 
 ![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente, tandis que la linéaire reste constante.](../../assets/readme/probas-utility-functions.png)
 
-*Figure reprise de la racine Probas (MANIFEST c.491 audit G.1, 1/1 ACCURATE). Source originale : [`DecPyMC-2-Utility-Money.ipynb`](../../DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb), cellule 10 « Démonstration numérique : utilité marginale décroissante ». Voir aussi le [README racine Probas § De la distribution à l'utilité](../../README.md#de-la-distribution-à-lutilité--pourquoi-la-courbe-est-concave) pour le cadrage théorique (Pratt 1964, Arrow 1965).*
+*Figure reprise de la racine Probas (MANIFEST c.491 audit G.1, 1/1 ACCURATE). Source originale : [`DecPyMC-2-Utility-Money.ipynb`](../../DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb), cellule 10 « Démonstration numérique : utilité marginale décroissante ». Voir aussi le [README racine Probas § De la distribution à l'utilité](../../README.md#de-la-distribution-à-lutilité--pourquoi-la-courbe-est-concave) pour le cadrage théorique (Pratt 1964, Arrow 1965).*
 
 ### DecInfer-04 : Utilité multi-attributs
 
@@ -125,7 +125,7 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | Série | Lien | Relation |
 | --- | --- | --- |
 | [Corpus bayésien Infer](../../Infer/README.md) | Posteriors (Beta, gaussianes) | Le posterior est l'input de la politique de décision |
-| [PyMC](../PyMC/README.md) | DecPyMC-1 à DecPyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
+| [PyMC](../DecPyMC/README.md) | DecPyMC-1 à DecPyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
 | [Lake `decision_theory_lean`](../../decision_theory_lean/) | Companions 2, 9 | Preuves formelles Lean 4 (vNM, Gittins) |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
 | [RL](../../../RL/README.md) | MDPs (DecInfer-08) | L'agent apprend la politique par interaction |
