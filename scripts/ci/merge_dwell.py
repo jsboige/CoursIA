@@ -144,8 +144,31 @@ from datetime import datetime, timedelta, timezone
 #: Plancher par defaut, en minutes. 120 = le mandat user du 2026-09-07.
 DEFAULT_DWELL_MIN = 120.0
 
+#: Minute du cron de `pr-gate-stale-sweep.yml` (l.102, `cron: '7 * * * *'`).
+#: `lift` est arrondi a l'instant `:07` strictement posterieur au plancher :
+#: c'est l'heure GARANTIE a laquelle un sweep nominal peut franchir, pas la
+#: seule (le `push` heartbeat sert en pratique 89 fois / 100 -- #15770,
+#: mediane 11 min), mais une heure a laquelle la lane qui revient au cron est
+#: sure de trouver la jambe relevee. Si le cron bouge, la constante doit
+#: bouger -- un commentaire en ce sens garde le lien casse si on l'oublie.
+SWEEP_MINUTE = 7
+
 #: Label qui leve le plancher sur une PR donnee.
 WAIVER_LABEL = "merge-dwell-waived"
+
+
+def _next_sweep_after(floor: datetime) -> datetime:
+    """Le premier instant `SWEEP_MINUTE:00:00Z` strictement posterieur a `floor`.
+
+    `floor` est la date-heure a laquelle le plancher est FRAICHEMENT ecoule.
+    Le sweep `:07` qui suit peut et anterieur -- dans ce cas on prend le suivant.
+    But : informer la lane de l'heure GARANTIE du balayage nominal, pas de
+    l'heure du plancher brut (qui tait que le sweep est anterieur).
+    """
+    candidate = floor.replace(minute=SWEEP_MINUTE, second=0, microsecond=0)
+    if candidate <= floor:
+        candidate = candidate + timedelta(hours=1)
+    return candidate
 
 
 class DwellError(RuntimeError):
@@ -208,7 +231,11 @@ def evaluate(
     # « 101 min » oblige la lane a refaire le calcul et l'incite a agir ; un
     # re-push reactionnaire remet le plancher a zero depuis la nouvelle tete
     # (le defaut multiplie le temps d'attente au lieu de le mesurer).
-    lift = (committed_at + timedelta(minutes=dwell_min)).strftime(
+    # #16092 : l'heure du plancher brut (tete + dwell_min) **tait** que le
+    # sweep `:07` est anterieur d'une fraction d'heure sur la majorite des PRs.
+    # On arrondit au premier `:07` STRICTEMENT postérieur -- c'est l'heure
+    # GARANTIE du balayage nominal, pas l'heure du plancher.
+    lift = _next_sweep_after(committed_at + timedelta(minutes=dwell_min)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
     return False, remaining, (
