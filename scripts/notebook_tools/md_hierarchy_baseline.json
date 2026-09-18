@@ -1,7 +1,7 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-18T01:55:17+00:00",
- "total_findings": 238,
+ "generated_at": "2026-09-18T10:57:53+00:00",
+ "total_findings": 202,
  "notebooks": {
   "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb": {
    "HINT-AS-HEADING": 1
@@ -35,35 +35,11 @@
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb": {
    "H1-DEEP": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-2-Creative-Workflows.ipynb": {
    "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb": {
-   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb": {
    "HINT-AS-HEADING": 1
@@ -74,14 +50,8 @@
   "MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb": {
    "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb": {
-   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb": {
    "HINT-AS-HEADING": 2
@@ -89,38 +59,8 @@
   "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb": {
    "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-1-Educational-Video-Generation.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-3-Sora-API-Cloud-Video.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb": {
-   "HINT-AS-HEADING": 3
   },
   "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb": {
    "H1-DEEP": 5,
@@ -181,6 +121,9 @@
   "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb": {
    "H1-DEEP": 18,
    "MULTI-H1": 1
+  },
+  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-29-Derivatives-Valuation.ipynb": {
+   "H1-DEEP": 1
   },
   "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb": {
    "HINT-AS-HEADING": 1
