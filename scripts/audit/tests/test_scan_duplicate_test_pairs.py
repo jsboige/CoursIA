@@ -25,10 +25,9 @@ ils vivent dans le rapport de l'issue et la revue humaine.
 """
 
 import importlib.util
-import io
+import os
 import subprocess
 import sys
-import tarfile
 from pathlib import Path
 
 import pytest
@@ -214,6 +213,30 @@ def _commit_exists(rev: str) -> bool:
     return proc.returncode == 0
 
 
+def _extract_scripts_tree(ref: str, dest: Path) -> None:
+    """Extrait scripts/ au ref donne dans dest/scripts/, sans toucher l'index du clone.
+
+    `git archive` ne recupere pas a la demande les blobs manquants d'un clone
+    partiel blob:none (exit 128 mesure sur le runner CI, workdir promisor
+    frais) ; read-tree + checkout-index passent par le magasin d'objets
+    fetch-aware -- le meme chemin que la materialisation initiale du
+    checkout d'actions/checkout.
+    """
+    index = dest / "_extract_idx"
+    env = {**os.environ, "GIT_INDEX_FILE": str(index)}
+    subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "read-tree", ref + ":scripts"],
+        check=True, env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    prefix = (dest / "scripts").as_posix() + "/"
+    subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "checkout-index", "-a", "--prefix=" + prefix],
+        check=True, env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    index.unlink(missing_ok=True)
+
 @pytest.mark.skipif(
     not _commit_exists(PRE_CONSOLIDATION),
     reason="historique indisponible (clone shallow) : controle retroactif non jouable",
@@ -226,16 +249,7 @@ def test_retroactive_control_sees_third_pair_pre_consolidation(tmp_path):
     extracteurs) a cote des deux suites canoniques — invisible a toute cle de
     basename.
     """
-    archive = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "archive", "--format=tar", PRE_CONSOLIDATION, "scripts"],
-        capture_output=True,
-        check=True,
-    )
-    with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar:
-        try:
-            tar.extractall(tmp_path, filter="data")
-        except TypeError:  # Python < 3.12 : pas de parametre filter
-            tar.extractall(tmp_path)
+    _extract_scripts_tree(PRE_CONSOLIDATION, tmp_path)
 
     result = scanner.scan(tmp_path)
     pairs = _pairs_by_module(result)
