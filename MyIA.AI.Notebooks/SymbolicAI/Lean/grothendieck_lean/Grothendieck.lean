@@ -39,11 +39,13 @@ import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
+import Grothendieck.Flasque
 import Grothendieck.Fppf
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
 import Grothendieck.Limits
+import Grothendieck.LocalSurjectivitySpectrum
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
@@ -54,6 +56,8 @@ import Grothendieck.PullbackCoversLaws
 import Grothendieck.PullbackFunctor
 import Grothendieck.PullbackFunctorLaws
 import Grothendieck.SchemesTour
+import Grothendieck.SerreMap
+import Grothendieck.SerreMap_en
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
 import Grothendieck.SheafCohomology.Cech
@@ -74,7 +78,17 @@ import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
+import Grothendieck.Skyscraper
+import Grothendieck.Skyscraper_en
+import Grothendieck.Spaces
+import Grothendieck.SpacesMathlib
+import Grothendieck.SpacesSubcanonical
+import Grothendieck.StalkCharacterization
+import Grothendieck.StalkCharacterization_en
 import Grothendieck.StalkGluing
+import Grothendieck.StalkPoints
+import Grothendieck.StalkSeparated
+import Grothendieck.Stalks
 import Grothendieck.Subcanonical
 import Grothendieck.TopologyDictionary
 import Grothendieck.TopologyDictionary_en
@@ -120,6 +134,10 @@ Substance réelle :
   structural, propriétés locales.
 - `Grothendieck.MathlibMap` : table de correspondance entre les concepts
   formalisés ici et les modules Mathlib 4 sous-jacents.
+- `Grothendieck.SerreMap` : le miroir Serre de `MathlibMap` — index vivant
+  du versant Serre du pont Serre–Grothendieck dans Mathlib (classes de
+  Serre, construction de Serre, dérivée de Serre, domaine fondamental,
+  perfection, DVR) et des grands absents (GAGA, dualité, FAC). #16334.
 - `Grothendieck.Calibration` : calibration track (Epic #1453) - quelques
   lemmes volontairement laissés en `sorry`s pour le gradient de difficulté du prouveur
   multi-agent.
@@ -212,6 +230,11 @@ Substance (English):
   standard cover by D(f) = Spec R_f, structure functor, local properties.
 - `Grothendieck.MathlibMap`: correspondence table between the formalized
   concepts and the underlying Mathlib 4 modules.
+- `Grothendieck.SerreMap`: the Serre mirror of `MathlibMap` — living index
+  of the Serre side of the Serre–Grothendieck bridge in Mathlib (Serre
+  classes, Serre construction, Serre derivative, fundamental domain,
+  perfectness, DVRs) and of the major absentees (GAGA, duality, FAC).
+  #16334.
 - `Grothendieck.Calibration`: calibration track (Epic #1453) - intentional
   these `sorry`s form a difficulty gradient for the multi-agent prover.
 - `Grothendieck.SieveLattice`: lattice of sieves on an object — closures,

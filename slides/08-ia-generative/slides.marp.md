@@ -188,7 +188,6 @@ Intelligence Artificielle -- VIII
   - Soutien psychologique, coaching, romance (ex: Replika)
 
 ![bg right:33% vertical contain](images/img_015.png)
-![bg contain](images/img_014.png)
 ![bg contain](images/img_013.png)
 
 ---
@@ -317,6 +316,7 @@ Intelligence Artificielle -- VIII
 - **Local** : Oobabooga, Ollama, vLLM
   - Quantification : GGUF, EXL2/3, AWQ
   - Containerisation Docker/Kubernetes
+- **Hybride** : Tailscale (mesh WireGuard) — GPU de poche + nœuds distants joignables comme en local
 - **Image** : Stable Diffusion, Flux, Qwen Image Edit, CivitAI
   - Apps : Forge, ComfyUI
 - **Conversationnel** : Open-WebUI, SillyTavern

@@ -5,6 +5,7 @@ Uses synthetic notebook dicts and tmp_path for filesystem isolation.
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -24,6 +25,8 @@ from detect_solution_leaks import (
     code_cell_first_comment_labels_example,
     commented_template_stub,
     discover_notebooks,
+    display_path,
+    get_parent_header_key,
     is_stub_code,
     scan_notebook,
 )
@@ -347,6 +350,134 @@ class TestScanNotebook:
         ])
         findings = scan_notebook(str(nb_path))
         assert any(f["severity"] == "MEDIUM" for f in findings)
+
+    def test_acceptance_body_then_exercices_section_numbering_independent(self, tmp_path):
+        # #16121 acceptance form #1: body-level exercises ("## Exercice N")
+        # numbering is INDEPENDENT from a downstream "## Exercices" section
+        # that lists sub-exercises ("### Exercice 1..3" of a different scope).
+        # Before the parent-scope fix, the scanner emitted a phantom
+        # MEDIUM "Duplicate Exercice 1" between the body-level "## Exercice 1"
+        # and the section child "### Exercice 1".
+        nb_path = _write_nb(tmp_path / "body_then_section.ipynb", [
+            _md("## Exercice 1 : Introduction"),
+            _md("## Exercices suggeres"),
+            _md("### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("### Exercice 2 : Second"),
+            _code("pass"),
+            _md("### Exercice 3 : Troisieme"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        # "Exercice 1 : Introduction" is num-less ("## Exercice 1" with no
+        # colon-separated subtitle is treated as num-less per the regex), so
+        # no MEDIUM is expected between it and the section's numbered
+        # sub-exercises. The point of the test is to confirm the parent-scope
+        # fix keeps body-level and section-level numbering independent.
+        medium_dups = [f for f in findings if f["severity"] == "MEDIUM"
+                       and "Duplicate" in f.get("message", "")]
+        assert medium_dups == [], f"expected no phantom MEDIUM between body and section, got: {medium_dups}"
+
+    def test_acceptance_multiple_parties_same_heading_distinct_scope(self, tmp_path):
+        # #16121 acceptance form #2: multiple "### Exercices — Partie X"
+        # siblings (level-3) with reset numbering must NOT collide. The
+        # grandparent ("# Partie X") anchors the ancestry path so two
+        # "### Exercice 1" under different Parties yield different parent
+        # keys and no MEDIUM is emitted.
+        nb_path = _write_nb(tmp_path / "parties.ipynb", [
+            _md("# Partie A"),
+            _md("### Exercices — Partie A"),
+            _md("#### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("#### Exercice 2 : Second"),
+            _code("pass"),
+            _md("# Partie B"),
+            _md("### Exercices — Partie B"),
+            _md("#### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("#### Exercice 2 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        medium_dups = [f for f in findings if f["severity"] == "MEDIUM"
+                       and "Duplicate" in f.get("message", "")]
+        assert medium_dups == [], f"expected no MEDIUM across Parties, got: {medium_dups}"
+
+    def test_acceptance_positive_same_parent_duplicate_emits_medium(self, tmp_path):
+        # #16121 acceptance form #3: positive control — two "### Exercice 1"
+        # under the SAME ancestor chain MUST emit a MEDIUM. The fix must not
+        # collapse real duplicates.
+        nb_path = _write_nb(tmp_path / "real_dup.ipynb", [
+            _md("# Section unique"),
+            _md("### Exercices"),
+            _md("#### Exercice 1 : First"),
+            _code("pass"),
+            _md("#### Exercice 1 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate under identical parent chain"
+
+    def test_causal_closest_same_level_parent_in_cell(self, tmp_path):
+        # ai-01 re-review FN #1 (2026-09-16): a cell holding '## Parent A',
+        # '## Parent B', '### Exercice 1' must scope the exercise under
+        # Parent B — the LAST same-level heading before the match is the
+        # closest open parent. Before the positional fix the forward
+        # first-per-level collect kept Parent A, so this real duplicate
+        # against a later '## Parent B > ### Exercice 1' cell produced
+        # different keys and 0 MEDIUM.
+        nb_path = _write_nb(tmp_path / "closest_parent.ipynb", [
+            _md("## Parent A\n\n## Parent B\n\n### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("## Parent B\n\n### Exercice 1 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate: both Exercice 1 live under Parent B"
+
+    def test_causal_heading_after_exercise_is_not_parent(self, tmp_path):
+        # ai-01 re-review FN #2 (2026-09-16): '### Exercice 1' followed by
+        # '## Parent B' in the SAME cell must NOT take Parent B as ancestor —
+        # it opens a LATER section. The exercise stays under the parent
+        # opened before it (here '## Parent A' in a preceding cell), so the
+        # real duplicate under Parent A must be caught. Before the fix the
+        # future heading was taken as parent and the duplicate was lost.
+        nb_path = _write_nb(tmp_path / "future_heading.ipynb", [
+            _md("## Parent A"),
+            _md("### Exercice 1 : Premier"),
+            _code("pass"),
+            _md("### Exercice 1 : Second\n\n## Parent B"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate: both Exercice 1 live under Parent A"
+
+    def test_in_cell_and_separate_cell_parents_equivalent(self, tmp_path):
+        # Equivalence guard (ai-01 re-review 2026-09-16): the same parent
+        # heading scoped inside the exercise's own cell and scoped in a
+        # preceding cell must yield the SAME ancestry key — where the cell
+        # boundary falls must not change duplicate detection.
+        nb_path = _write_nb(tmp_path / "equivalence.ipynb", [
+            _md("## Parent A"),
+            _md("### Exercice 1 : Separate"),
+            _code("pass"),
+            _md("## Parent A\n\n### Exercice 1 : InCell"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(
+            f["severity"] == "MEDIUM" and "Duplicate" in f.get("message", "")
+            for f in findings
+        ), "expected MEDIUM Duplicate across in-cell/separate parent layouts"
 
     def test_no_exercises_clean(self, tmp_path):
         nb_path = _write_nb(tmp_path / "none.ipynb", [
@@ -892,7 +1023,7 @@ class TestLastExerciseHeaderMatch:
     def test_single_numless_header(self):
         m = _last_exercise_header_match("## Exercices")
         assert m is not None
-        assert m.group(1) == ""
+        assert (m.group(1) or "") == ""
 
     def test_multi_header_picks_last_numbered(self):
         # The exact real-world pattern: num-less parent + numbered sub-header.
@@ -906,7 +1037,7 @@ class TestLastExerciseHeaderMatch:
         src = "## 6. Exercices\n\n### Exercices avances"
         m = _last_exercise_header_match(src)
         assert m is not None
-        assert m.group(1) == "", "with no numbered matches, last match wins"
+        assert (m.group(1) or "") == "", "with no numbered matches, last match wins"
 
     def test_multi_header_recall_keeps_numbered(self):
         # Recall guard: when MULTIPLE numbered matches exist in the same cell
@@ -927,7 +1058,7 @@ class TestLastExerciseHeaderMatch:
         src = "## Conclusion et exercices\n\n### Exercices suggeres\n\n#### Exercice 1 : Foo\n\n#### Exercice 2 : Bar\n\n#### Exercice 3 : Baz"
         m = _last_exercise_header_match(src)
         assert m is not None
-        assert m.group(1) == "", "first match (num-less 'Exercices suggeres') wins when multiple numbered siblings follow"
+        assert (m.group(1) or "") == "", "first match (num-less 'Exercices suggeres') wins when multiple numbered siblings follow"
 
     def test_no_match(self):
         assert _last_exercise_header_match("## Introduction") is None
@@ -1070,7 +1201,180 @@ class TestMultiHeaderAttributionFix:
         assert "Exercice 3" in highs[0]["message"]
 
 
+class TestGetParentHeaderKeyInCellAncestors:
+    """Regression for the layout-dependent false negative where a parent
+    heading living in the SAME markdown cell as the exercise header was
+    invisible to ``get_parent_header_key`` (the backward walk started at
+    ``idx - 1``). Two notebooks with semantically identical hierarchy
+    produced different duplicate verdicts depending on cell boundaries.
+    """
+
+    def test_separate_cells_duplicate_still_flagged(self, tmp_path):
+        # Positive control (pre-existing behaviour). Two `### Exercice 1`
+        # cells under the same `## Exercices` parent cell: one MEDIUM
+        # duplicate finding. The separate-cell layout has always reported
+        # this; the test guards against the in-cell fix regressing it.
+        nb = _write_nb(
+            tmp_path / "separate.ipynb",
+            [
+                _md("## Exercices\n\nIntro."),
+                _md("### Exercice 1 : a faire"),
+                _md("### Exercice 1 : encore un"),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        dups = [f for f in findings if f.get("severity") == "MEDIUM"
+                and "Duplicate" in f.get("message", "")]
+        assert len(dups) == 1, (
+            f"separate-cell layout must still flag one duplicate, got: "
+            f"{[f.get('message') for f in findings]}"
+        )
+        assert dups[0]["cell_index"] == 2
+
+    def test_in_cell_parent_layout_duplicate_now_flagged(self, tmp_path):
+        # The fix: when the parent `## Exercices` sits in the SAME cell as
+        # the first `### Exercice 1`, the parent key was previously
+        # computed against the preceding cell's last header (often absent),
+        # making the two `### Exercice 1` cells appear under distinct
+        # parents and ZERO duplicate findings reported. After the fix,
+        # the in-cell parent is collected first, both exercise cells
+        # resolve to the same parent key, and the duplicate surfaces.
+        nb = _write_nb(
+            tmp_path / "incell.ipynb",
+            [
+                _md("## Exercices\n\nIntro.\n\n### Exercice 1 : a faire"),
+                _md("### Exercice 1 : encore un"),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        dups = [f for f in findings if f.get("severity") == "MEDIUM"
+                and "Duplicate" in f.get("message", "")]
+        assert len(dups) == 1, (
+            f"in-cell parent layout must now report one duplicate "
+            f"(was 0 before the fix), got: "
+            f"{[f.get('message') for f in findings]}"
+        )
+        assert dups[0]["cell_index"] == 1
+
+    def test_in_cell_key_matches_separate_cell_key(self):
+        # Direct unit-level guarantee: the parent key produced by the
+        # in-cell layout equals the one produced by the separate-cell
+        # layout for the same logical hierarchy. Without this, the
+        # duplicate scan would still differ between the two layouts even
+        # with the in-cell fix in place (e.g. if the walk order changed
+        # which ancestor got recorded first).
+        cells_separate = [
+            _md("## Exercices"),
+            _md("### Exercice 1"),
+        ]
+        cells_incell = [
+            _md("## Exercices\n\nIntro.\n\n### Exercice 1"),
+        ]
+        key_separate = get_parent_header_key(
+            cells_separate, 1, current_level=3)
+        key_incell = get_parent_header_key(
+            cells_incell, 0, current_level=3)
+        assert key_separate == key_incell, (
+            f"in-cell parent key ({key_incell!r}) must equal separate-cell "
+            f"parent key ({key_separate!r}) for identical hierarchy"
+        )
+        assert key_separate != "root"
+
+    def test_in_cell_outside_heading_collected(self):
+        # The in-cell scan must pick up strictly-lower-level ancestors in
+        # document order, joined outermost-first. Here a top-level
+        # `## Exercices` (level 2) is in the same cell as `### Exercice 1`
+        # (level 3); the parent key must contain the level-2 segment.
+        cells = [
+            _md("## Exercices\n\n### Exercice 1"),
+        ]
+        key = get_parent_header_key(cells, 0, current_level=3)
+        assert "2:Exercices" in key, (
+            f"expected level-2 ancestor in key, got {key!r}"
+        )
+
+    def test_in_cell_exercise_heading_self_excluded(self):
+        # The exercise heading itself (level == current_level) must NOT
+        # be added to the parent key, neither from the in-cell scan nor
+        # the backward walk. Otherwise `3:Exercice 1` would pollute the
+        # key and distinct exercises would collide on a non-existent
+        # shared ancestor.
+        cells = [
+            _md("## Exercices\n\n### Exercice 1"),
+        ]
+        key = get_parent_header_key(cells, 0, current_level=3)
+        assert "3:Exercice 1" not in key, (
+            f"exercise heading must be excluded from parent key, got "
+            f"{key!r}"
+        )
+
+
 # ---------------------------------------------------------------------------
 # End of new tests
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# display_path — cross-volume rendering of a finding (#16113)
+# ---------------------------------------------------------------------------
+
+class TestDisplayPath:
+    def test_relativizes_within_the_same_volume(self):
+        assert display_path("/repo/nb/a.ipynb", "/repo") == os.path.join("nb", "a.ipynb")
+
+    def test_falls_back_to_absolute_on_cross_volume(self, monkeypatch):
+        # `--scan` accepts any path, so a notebook on another Windows volume is a
+        # supported input. os.path.relpath raises ValueError there; without the
+        # fallback main() prints the "Results: N HIGH" line and then dies while
+        # formatting the detail, so the operator never learns WHICH finding --
+        # and rc=1 reads as a failed scan although the scan succeeded.
+        # The ValueError is forced rather than produced by real drives: the
+        # behaviour is ntpath-only, so a real cross-volume path would not raise
+        # on the Linux CI runner.
+        def boom(*args, **kwargs):
+            raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+        monkeypatch.setattr(os.path, "relpath", boom)
+        assert display_path("D:/scratch/nb.ipynb", "C:/repo") == "D:/scratch/nb.ipynb"
+
+    def test_fallback_keeps_a_usable_path(self, monkeypatch):
+        def boom(*args, **kwargs):
+            raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+        monkeypatch.setattr(os.path, "relpath", boom)
+        # The finding must stay attributable: the fallback is the absolute path,
+        # never an empty string or a bare basename.
+        out = display_path("D:/scratch/sub/nb.ipynb", "C:/repo")
+        assert out.endswith("nb.ipynb")
+        assert "sub" in out
+
+
+# ---------------------------------------------------------------------------
+# Fix prescription — canonical path first, relabel conditioned (#16113)
+# ---------------------------------------------------------------------------
+
+class TestLeakFixPrescription:
+    def test_fix_names_the_structural_path_first(self, tmp_path):
+        # The prescription used to open with "Relabel header to 'Exemple guide'",
+        # which exercise-example-labeling.md forbids: classification is by
+        # CONTENT, and a resolved exercise is an exercise whatever its title.
+        nb = _write_nb(tmp_path / "leak.ipynb", [
+            _md("## Exercice 1 : Tri"),
+            _code(_SOLUTION_BODY),
+        ])
+        highs = [f for f in scan_notebook(str(nb)) if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        fix = highs[0]["fix"]
+        assert "stub code cell" in fix
+        assert fix.index("stub") < fix.index("Relabel")
+
+    def test_fix_conditions_the_relabel_on_content(self, tmp_path):
+        nb = _write_nb(tmp_path / "leak2.ipynb", [
+            _md("## Exercice 1 : Tri"),
+            _code(_SOLUTION_BODY),
+        ])
+        highs = [f for f in scan_notebook(str(nb)) if f.get("severity") == "HIGH"]
+        fix = highs[0]["fix"]
+        assert "ONLY if" in fix
+        assert "exercise-example-labeling.md" in fix
 

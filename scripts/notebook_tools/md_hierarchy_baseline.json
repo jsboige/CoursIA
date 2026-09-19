@@ -1,9 +1,12 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-08-24T18:51:32+00:00",
- "total_findings": 242,
+ "generated_at": "2026-09-18T10:54:14+00:00",
+ "total_findings": 186,
  "notebooks": {
   "MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb": {
+   "HINT-AS-HEADING": 1
+  },
+  "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb": {
@@ -13,9 +16,7 @@
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb": {
-   "H1-DEEP": 1,
-   "HINT-AS-HEADING": 2,
-   "MULTI-H1": 1
+   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb": {
    "HINT-AS-HEADING": 1
@@ -29,9 +30,6 @@
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb": {
    "HINT-AS-HEADING": 1
   },
@@ -39,14 +37,10 @@
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb": {
-   "H1-DEEP": 1,
-   "HINT-AS-HEADING": 4,
-   "MULTI-H1": 1
+   "HINT-AS-HEADING": 3
   },
   "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb": {
-   "H1-DEEP": 2,
-   "HINT-AS-HEADING": 5,
-   "MULTI-H1": 1
+   "HINT-AS-HEADING": 3
   },
   "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb": {
    "HINT-AS-HEADING": 3
@@ -61,9 +55,7 @@
    "HINT-AS-HEADING": 4
   },
   "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb": {
-   "H1-DEEP": 1,
-   "HINT-AS-HEADING": 4,
-   "MULTI-H1": 1
+   "HINT-AS-HEADING": 3
   },
   "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb": {
    "HINT-AS-HEADING": 5
@@ -75,46 +67,24 @@
    "HINT-AS-HEADING": 3
   },
   "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb": {
-   "HINT-AS-HEADING": 5
+   "HINT-AS-HEADING": 3
+  },
+  "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb": {
+   "H1-DEEP": 5,
+   "HINT-AS-HEADING": 1,
+   "MULTI-H1": 1
   },
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb": {
    "H1-DEEP": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-2-Creative-Workflows.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb": {
    "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb": {
-   "HEADING-IN-LIST": 6
   },
   "MyIA.AI.Notebooks/GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb": {
    "HINT-AS-HEADING": 1
@@ -122,21 +92,8 @@
   "MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/02-Claude-CLI-Sessions.ipynb": {
-   "HEADING-IN-LIST": 4,
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/04-Claude-CLI-Agents.ipynb": {
-   "HEADING-IN-LIST": 4
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb": {
-   "HINT-AS-HEADING": 1
+   "HINT-AS-HEADING": 2
   },
   "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb": {
    "HINT-AS-HEADING": 2
@@ -144,46 +101,44 @@
   "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb": {
-   "HINT-AS-HEADING": 1
+  "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb": {
+   "H1-DEEP": 5,
+   "HINT-AS-HEADING": 1,
+   "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb": {
-   "HINT-AS-HEADING": 3
+  "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb": {
+   "H1-DEEP": 15,
+   "HINT-AS-HEADING": 3,
+   "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb": {
-   "HINT-AS-HEADING": 3
+  "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": {
+   "H1-DEEP": 15,
+   "HINT-AS-HEADING": 4,
+   "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb": {
-   "HINT-AS-HEADING": 3
+  "MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb": {
+   "H1-DEEP": 3,
+   "HINT-AS-HEADING": 3,
+   "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-1-Educational-Video-Generation.ipynb": {
-   "HINT-AS-HEADING": 2
+  "MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb": {
+   "H1-DEEP": 7,
+   "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-3-Sora-API-Cloud-Video.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb": {
-   "HINT-AS-HEADING": 3
+  "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-4-Sensibilite-Confounder-Cache.ipynb": {
+   "H1-DEEP": 6,
+   "MULTI-H1": 1
   },
   "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb": {
+  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-3-Multi-Attribute.ipynb": {
+  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb": {
@@ -198,113 +153,52 @@
   "MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb": {
-   "HINT-AS-HEADING": 3
+  "MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb": {
+   "HINT-AS-HEADING": 1
+  },
+  "MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb": {
+   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-04-Research-Workflow.ipynb": {
    "H1-DEEP": 2,
    "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-33-RL-PPO-Trading.ipynb": {
-   "HINT-AS-HEADING": 1
+  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb": {
+   "H1-DEEP": 18,
+   "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/QuantConnect/projects/Alpha-Correlation-Analysis/quantbook.ipynb": {
-   "HINT-AS-HEADING": 1
+  "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-29-Derivatives-Valuation.ipynb": {
+   "H1-DEEP": 1
   },
   "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb": {
+  "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-Csharp.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb": {
+  "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb": {
    "HEADING-IN-LIST": 3
   },
-  "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Argumentum_Cards.ipynb": {
-   "H1-DEEP": 7,
-   "HINT-AS-HEADING": 2,
-   "MULTI-H1": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb": {
-   "HEADING-IN-LIST": 4
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb": {
-   "HEADING-IN-LIST": 8
+  "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": {
+   "H1-DEEP": 1
   },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb": {
-   "HEADING-IN-LIST": 4,
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb": {
-   "HEADING-IN-LIST": 8
-  },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb": {
+   "HINT-AS-HEADING": 1
+  },
+  "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb": {
-   "HEADING-IN-LIST": 8
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb": {
    "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb": {
-   "HEADING-IN-LIST": 2
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb": {
-   "H1-DEEP": 4,
-   "HINT-AS-HEADING": 2,
-   "MULTI-H1": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb": {
-   "HEADING-IN-LIST": 4
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb": {
-   "HINT-AS-HEADING": 1
   }
  }
 }

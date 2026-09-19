@@ -78,6 +78,28 @@ Conséquence : les **11 lacs en dérive sont tous parmi les 18** issus de l'`App
 
 **Origine datée de la dérive** : la PR **#15033** (`feat(lean,#14773): bump calibration_lean vers Lean/Mathlib 4.33.0`, lane `myia-po-2024:CoursIA-2`, mergée 2026-09-09) a fait passer `calibration_lean` — l'un des 11 lacs ci-dessus — de `v4.32.1`/`520045ab` à `v4.33.0`/`db584cd6`. Elle a mis à jour `lean-toolchain` et `lake-manifest.json` sans toucher à `.lake/packages/mathlib`, qui est gitignore et n'apparaît donc dans aucun diff. C'est exactement le geste qui fabrique la ligne 5 du tableau ; les 10 autres lacs ont suivi le même chemin lors de la migration 4.33.0.
 
+### Datation des 4 poses hors-`Apply` (Item 1 de #15959)
+
+Les 4 jonctions du paragraphe précédent étaient **identifiées sans être datées**. Datation par trace d'historique git du lac — trace explicitement admise par l'acceptance —, une ligne par jonction :
+
+| Jonction | Paire cible atteinte le (trace) | Dans `share-state.json` ? | Fourchette de pose |
+|---|---|---|---|
+| `Search/discrepancy_lean` | **2026-08-25 00:50** — création du lac (`d84eb35f5`, #12823) ; `lean-toolchain` ne porte **qu'un seul** commit, la paire `v4.32.1`/`520045ab` est celle d'origine (rev re-confirmée inchangée par `81684122e`, 2026-08-29) | non | **2026-08-30 04:08:54+02:00 → 2026-09-13** |
+| `SymbolicAI/Lean/mimo_lean` | **2026-08-17 00:50** — `29d2e445c` (#11325) fait passer la paire de `v4.32.0`/`81a5d257` à `v4.32.1`/`520045ab` | non | **2026-08-30 04:08:54+02:00 → 2026-09-13** |
+| `GameTheory/social_choice_lean_peters` | **2026-08-20 06:15** — `a4187ecd5` (#11888) fait passer la paire de `v4.27.0-rc1`/`8cb93191` à `v4.32.1`/`520045ab` | non | **2026-08-30 04:08:54+02:00 → 2026-09-13** |
+| `Probas/Applications/Percolation/percolation_lean` | **2026-09-06 14:13** — création du lac (`43875927b`, #14892) | non | **2026-09-06 14:13 → 2026-09-13** |
+
+**Bornes.** La borne **basse** est le maximum de deux contraintes : (a) la paire cible doit déjà être celle du lac — sinon la jonction viserait un autre store, et l'outil ne repointe jamais une jonction existante (l.233) ; (b) le store cible `leanprover_lean4_v4.32.1-520045ab` doit exister — sa date d'enregistrement est `createdAt 2026-08-30T04:08:54+02:00` (§1 point 7), et `Invoke-Apply` crée le store **avant** de jonctionner (l.253-259). Pour les trois premiers lacs, c'est (b) qui mord ; pour `percolation_lean`, c'est (a) — le lac est **postérieur** à l'`Apply`. La borne **haute** est la date de la mesure du §1 (2026-09-13).
+
+**L'outil ne peut pas être l'auteur de ces 4 poses.** `Invoke-Apply` ne retient que les groupes de `Count -ge 2` (l.223) : les 3 groupes isolés n'ont jamais été traités par un `Apply`. Et l'`Apply` **ré-enregistre** les membres déjà jonctionnés qu'il croise (l.259-262, « les membres deja junctionnes sont re-traites aussi ») : si ces lacs avaient été membres d'un groupe traité, ils figureraient dans `share-state.json`. Ils n'y figurent pas. `percolation_lean`, lui, n'existait pas encore au 2026-08-30. Les 4 sont donc des **poses manuelles d'opérateur** — ce que le V1 avait déjà documenté sur `mimo_lean` (« action manuelle de l'opérateur sur le worktree source (pas un Apply) », #14296 §« Nettoyage du checkout orphelin `mimo_lean` 1.18 GB »). Conséquence pour le §2 : l'hypothèse d'un **`Apply` antérieur** est **écartée**, et aucune des 4 n'étant dans les 11 lacs en dérive, la chaîne #15033 reste bien le seul chemin de datation de la dérive.
+
+**Limite explicite de cette datation.** La trace directe — `CreationTime` du point d'analyse NTFS, qui *est* l'instant de pose — n'est **pas lisible depuis cette lane** : po-2023 n'a pas d'accès au disque de po-2024, et les 4 chemins n'existent pas localement (`fsutil reparsepoint query` → « chemin introuvable » sur les quatre, vérifié le 2026-09-13). L'outil, lui, **n'écrit aucun log** : sa seule écriture de fichier est le `Set-Content` du `share-state.json` (l.337). Il n'existe donc **aucune trace d'horodatage côté outil**, et la fourchette ci-dessus est la borne la plus serrée dérivable à distance. Le geste qui la referme est **une commande par lac sur po-2024** :
+
+```powershell
+Get-Item -Force 'C:\dev\CoursIA\MyIA.AI.Notebooks\<lac>\.lake\packages\mathlib' |
+    Select-Object FullName, LinkType, Target, CreationTime, LastWriteTime
+```
+
 ## 3. Cause du store vide
 
 `Invoke-Apply` **déplace** le checkout physique du donneur dans le store : `Move-Item $donor.MathlibDir -Destination $cacheMathlib` (l.254). Le donneur enregistré est `argumentation_lean` et il **n'a pas** de `.bak-2611` — cohérent avec la branche donneur (déplacé, jamais sauvegardé). Le store correspondant est aujourd'hui **vide**.
@@ -85,6 +107,23 @@ Conséquence : les **11 lacs en dérive sont tous parmi les 18** issus de l'`App
 Autrement dit : le contenu a été **déplacé dans le store le 2026-08-30, puis a disparu**. Ce que la mesure établit : le store est vide (points 3/5/6). Ce qu'elle n'établit **pas** : *qui* l'a vidé. Aucun script du dépôt ne purge ce chemin (`grep` borné `scripts/` + `.github/` : seules occurrences = l'outil lui-même et `check_mathlib_cache.py`) — la cause est **hors dépôt** ou antérieure à l'historique consultable.
 
 **Piste `Remove-DirRobust` — inventoriée puis fermée.** Ce `grep` portait sur le **chemin du store**, il ne pouvait donc pas voir le seul organe du dépôt qui supprime des répertoires **Mathlib**. Inventaire de ses **appelants** (fait le 2026-09-13) : `Remove-DirRobust` a **un unique appelant** — `setup_shared_mathlib.ps1:311`, dans la branche `-RemoveBackups` de l'`Apply`, qui retire les `.bak-2611` des membres et **jamais le store**. Son commentaire (l.194-195) documente une purge de `mathlib.bak-2611` sur `calibration_lean` le **2026-06-11** : c'est un geste **manuel d'opérateur**, visant un **backup**, et **antérieur de 2,5 mois** à l'`Apply` du 2026-08-30. Le dépôt ne contient donc **aucun mécanisme automatique** capable de vider le store : la piste est **fermée**, et la cause reste hors dépôt. `.mathlib-cache/` est gitignore (`.gitignore:932`), donc l'état n'apparaît dans **aucun** artefact versionné ni en CI. Le disque `C:` est sous pression (127,9 Go libres sur ~930 Go), ce qui rend une purge de récupération d'espace l'hypothèse principale — **hypothèse, non mesurée**.
+
+**Inventaire exhaustif des sites de suppression du script (complément Item 2 de #15959).** Le paragraphe ci-dessus ne couvrait que les **appelants** de `Remove-DirRobust`. L'acceptance d'#15959 demande aussi « toute fonction de purge de répertoire du même script », avec cible et date. Les voici toutes, `setup_shared_mathlib.ps1` :
+
+| Site | Fonction | Cible supprimée | Condition | Date documentée |
+|---|---|---|---|---|
+| l.198 | `Remove-DirRobust` | le `$Path` reçu | après `Test-Path` | — |
+| l.201-202 | `Remove-DirRobust` | idem, **fallback** `robocopy /MIR` + `rd /s /q` | si `Remove-Item` a échoué | incident **2026-06-11** (commentaire l.194-195) |
+| l.203 | `Remove-DirRobust` | `$env:TEMP\empty-2611` (dossier vide jetable) | après le fallback | — |
+| **l.311 — unique appelant de `Remove-DirRobust`** | `Invoke-Apply`, branche `-RemoveBackups` | `<membre>\.lake\packages\mathlib.bak-2611` | `-RemoveBackups` **et** `hadBackup` **et** `lake build` SUCCESS | **2026-06-11** (purge manuelle du `.bak-2611` de `calibration_lean`) |
+| l.213 | `Restore-Member` | le **lien** (`cmd /c rmdir`), jamais la cible | membre `IsJunction`, sur échec de build | — |
+| l.362 | `Invoke-Rollback` | le **lien** (`cmd /c rmdir`), par membre, donneur en dernier | `IsJunction` | — |
+| l.385 | `Invoke-Rollback` | `<store>/share-state.json` | tous les membres restaurés | — |
+| l.389 | `Invoke-Rollback` | `<store>/` — le répertoire **de groupe** | `remaining` vide **et** `mathlib` absent du store | — |
+
+Deux lignes du script sont des **déplacements**, pas des purges, et ne figurent donc pas au tableau : l.217 (`Move-Item` du `.bak-2611` vers la cible) et l.365 (`Move-Item` du cache vers le donneur).
+
+**Lecture — le dépôt ne peut pas avoir vidé le store, et l'état mesuré n'est reproductible par aucun de ces sites.** Les seules cibles atteintes sont (a) des `.bak-2611` **de membres** (lignes 198-203, 311 — le seul appelant réel), (b) des **liens** de jonction (l.213, l.362 : `rmdir` ne touche jamais la cible), (c) des `share-state.json` et le répertoire de groupe **déjà vidé de son `mathlib` par le déplacement du donneur** (l.385/389). Crucialement, l'état relevé au §1 — store **présent**, `mathlib/` **présent mais vide**, `share-state.json` **présent** — n'est produit par **aucune** séquence : un `Rollback` mené à son terme **supprime le répertoire de groupe** (l.389, atteint parce que l.365 vient de déplacer `mathlib` hors du store, donc `Test-Path $cacheMathlib` est faux), et un `Rollback` interrompu avant l.365 laisse `mathlib` **absent**, jamais « présent et vide ». La piste dépôt reste donc **fermée**, et la cause hors dépôt.
 
 ## 4. Angle mort de l'instrument (et proposition)
 
@@ -202,6 +241,7 @@ Lakes: 32 | mathlib ok: 0 | froid: 22 | partiel: 0 | non installe: 7 | caches ph
 ## Référence croisée
 
 - Issue #13962 — grain parent (NTFS junctions Mathlib) · #2611 (alignement manifests, hors scope) · #15568 / #15577 (portée du scan = worktree)
+- Issue #15959 — points de veille de la revue #15938 : datation des 4 poses hors-`Apply` (§2) + inventaire exhaustif des sites de suppression du script (§3)
 - `scripts/lean/setup_shared_mathlib.ps1` — instrument Scan/Apply/Rollback (`Invoke-Scan` l.152-189, `Invoke-Apply` l.221+)
 - `scripts/lean/check_mathlib_cache.py` — organe de mesure du cache traversant les jonctions (#8801)
 - `docs/lean/cluster-junctions-c857.md` — V1 po-2024 (#14296, worktree frais)

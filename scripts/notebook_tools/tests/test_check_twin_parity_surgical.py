@@ -42,7 +42,6 @@ from __future__ import annotations
 
 import datetime as dt
 import importlib.util
-import shutil
 import sys
 from pathlib import Path
 
@@ -84,18 +83,22 @@ def _entry_files() -> list[Path]:
 
 
 @pytest.fixture
-def registry_backup():
-    """Sauvegarde + restauration du REPERTOIRE de registre autour de chaque test."""
-    files = _entry_files()
-    backup = REGISTRY_DIR.with_name(REGISTRY_DIR.name + ".bak.c8570")
-    if backup.exists():
-        shutil.rmtree(backup)
-    shutil.copytree(REGISTRY_DIR, backup)
-    try:
-        yield files
-    finally:
-        shutil.rmtree(REGISTRY_DIR)
-        shutil.move(str(backup), str(REGISTRY_DIR))
+def registry_entries():
+    """Fichiers de paires du registre -- LECTURE SEULE, aucune sauvegarde.
+
+    Cette fixture sauvegardait puis restaurait le repertoire partage
+    `twin_pairs.d/` : `copytree` -> `rmtree(REGISTRY_DIR)` -> `move`. Elle ne
+    protegeait rien : ses deux consommateurs (`test_pair_file_resolves_from_name`,
+    `test_schema_file_is_never_a_rebaseline_target`) ne font que lire. Son seul
+    effet mesurable etait la fenetre pendant laquelle le registre PARTAGE
+    n'existe pas sur disque.
+
+    Sous `-n 4` (#14598) cette fenetre casse tout module concurrent qui lit le
+    registre : `test_twin_registry_integrity.py` rougit en `FileNotFoundError`.
+    Un `--dist loadscope` n'y peut rien -- il epingle un module a un worker, et
+    la collision est ENTRE modules.
+    """
+    return _entry_files()
 
 
 def _pair_name(path: Path) -> str:
@@ -309,13 +312,13 @@ def test_other_pair_files_untouched(tmp_path):
         assert f.read_bytes() == content, f"fichier {f.name} modifie a tort"
 
 
-def test_pair_file_resolves_from_name(registry_backup):
+def test_pair_file_resolves_from_name(registry_entries):
     """`name` -> fichier : le mapping dont depend l'ecriture file-per-entry.
 
     En mode repertoire la boucle `--update` retrouve le fichier via `_pair_file`.
     Si ce mapping derive, le rebaseline n'ecrit nulle part -- en silence.
     """
-    for pfile in registry_backup:
+    for pfile in registry_entries:
         name = _pair_name(pfile)
         assert ctp._pair_file(REGISTRY_DIR, name) == pfile, (
             f"'{name}' resout vers {ctp._pair_file(REGISTRY_DIR, name).name}, "
@@ -323,7 +326,7 @@ def test_pair_file_resolves_from_name(registry_backup):
         )
 
 
-def test_schema_file_is_never_a_rebaseline_target(registry_backup):
+def test_schema_file_is_never_a_rebaseline_target(registry_entries):
     """La documentation (`_schema.yaml`) est hors du champ du rebaseline.
 
     C'est la ou vivent, depuis #8542, les lignes de commentaire que le bug
@@ -336,11 +339,11 @@ def test_schema_file_is_never_a_rebaseline_target(registry_backup):
                    if line.lstrip().startswith("#"))
     assert comments > 0, "_schema.yaml doit porter la documentation du registre"
 
-    for pfile in registry_backup:
+    for pfile in registry_entries:
         assert ctp._pair_file(REGISTRY_DIR, _pair_name(pfile)) != SCHEMA_FILE
 
     loaded_names = {p["name"] for p in ctp.load_registry(REGISTRY_DIR)}
-    assert loaded_names == {_pair_name(f) for f in registry_backup}
+    assert loaded_names == {_pair_name(f) for f in registry_entries}
 
 
 def test_write_preserves_lf_on_every_platform(tmp_path):

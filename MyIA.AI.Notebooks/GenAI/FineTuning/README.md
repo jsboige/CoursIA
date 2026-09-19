@@ -24,18 +24,22 @@ Série progressive sur le fine-tuning des modèles de langue : des bases LoRA à
 
 ```text
 FineTuning/
-├── FT-01-Introduction-FineTuning.ipynb   # LoRA, full vs partial vs PEFT
-├── FT-02-QLoRA-Quantization.ipynb        # Quantization 4-bit (NF4) + LoRA
-├── FT-03-Supervised-FineTuning-SFT.ipynb # SFT : contrat de format, Qwen3.5-0.8B
-├── FT-04-RLHF-DPO.ipynb                  # Alignement préférences, DPO
-├── FT-05-ModelMerging-Routing.ipynb      # Fusion d'adaptateurs, routage MoE
-└── FT-06-Vision-Language-LoRA.ipynb      # LoRA vision-langage, tâche image->texte
+├── FT-00a-LoRA-from-scratch.ipynb             # LoRA sans peft : décomposition, gel, fusion
+├── FT-00b-LoRA-Hyperparams-from-scratch.ipynb # Ablation rang × alpha, sweet-spots mesurés
+├── FT-01-Introduction-FineTuning.ipynb        # LoRA, full vs partial vs PEFT
+├── FT-02-QLoRA-Quantization.ipynb             # Quantization 4-bit (NF4) + LoRA
+├── FT-03-Supervised-FineTuning-SFT.ipynb      # SFT : contrat de format, Qwen3.5-0.8B
+├── FT-04-RLHF-DPO.ipynb                       # Alignement préférences, DPO
+├── FT-05-ModelMerging-Routing.ipynb           # Fusion d'adaptateurs, routage MoE
+└── FT-06-Vision-Language-LoRA.ipynb           # LoRA vision-langage, tâche image->texte
 ```
 
 ## Progression pédagogique
 
 | Notebook | Sujet | Prérequis | Durée | Niveau |
 |----------|-------|-----------|-------|--------|
+| [FT-00a](FT-00a-LoRA-from-scratch.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
+| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
 | [FT-01](FT-01-Introduction-FineTuning.ipynb) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
 | [FT-02](FT-02-QLoRA-Quantization.ipynb) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
 | [FT-03](FT-03-Supervised-FineTuning-SFT.ipynb) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
@@ -68,6 +72,8 @@ pip install mergekit  # Pour FT-05 uniquement
 
 | Notebook | VRAM minimale | VRAM recommandée |
 |----------|---------------|------------------|
+| FT-00a | Aucune (CPU possible) | 8 GB |
+| FT-00b | Aucune (CPU possible, ~15 min) | 8 GB |
 | FT-01 | 4 GB (CPU possible) | 8 GB |
 | FT-02 | 6 GB (QLoRA) | 12 GB |
 | FT-03 | 8 GB | 16 GB |
@@ -78,7 +84,7 @@ pip install mergekit  # Pour FT-05 uniquement
 ## Concepts clés
 
 ### LoRA (Low-Rank Adaptation)
-Décompose les mises à jour de poids en matrices de bas rang (A, B avec rang r << dim). Réduit les paramètres entraînables de ~99%.
+Décompose les mises à jour de poids en matrices de bas rang (A, B avec rang r << dim). Réduit les paramètres entraînables de ~99%. Le mécanisme est démonté from-scratch (sans `peft`) dans [FT-00a](FT-00a-LoRA-from-scratch.ipynb) : initialisation canonique, gel, budget `r(d+k)`, fusion et sa (non-)bit-exactitude. Le **réglage** `r × alpha` est mesuré dans [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) : 18 configurations sur la même mini-tâche, trois régularités quantifiées.
 
 ### QLoRA
 Combine quantization 4-bit (NF4 + double quantization) avec LoRA. Permet de fine-tuner des modèles 7B sur un GPU consumer (RTX 3090/4090).
@@ -94,9 +100,11 @@ Combine plusieurs adaptateurs LoRA fine-tunés sur des tâches différentes en u
 
 ## Parcours recommandé
 
-### Découverte (1h)
-1. **FT-01** - Comprendre LoRA et le compromis paramètres/qualité
-2. **FT-03** - SFT pour instruction-following (sans QLoRA)
+### Découverte (1h30)
+1. **FT-00a** - Démonter LoRA à la main : la décomposition, l'initialisation, la fusion — sans `peft`
+2. **FT-00b** - Mesurer le réglage `r × alpha` : 18 configurations, trois régularités firsthand
+3. **FT-01** - Comprendre LoRA et le compromis paramètres/qualité
+4. **FT-03** - SFT pour instruction-following (sans QLoRA)
 
 ### Standard (2-3h)
 1. FT-01 à FT-04 dans l'ordre

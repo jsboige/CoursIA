@@ -457,6 +457,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/tts_output_fishaudio/*.wav
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.wav
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/output/yue2-songs/*
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.wav
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/output/mert2-corpus/*.wav
@@ -1069,3 +1070,12 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/bin/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/obj/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/.cuda-libs/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
+/.scratch-attic/
+
+# Papermill run artifacts — #16633. Patterns `*_executed.ipynb` /
+# `*_output*.ipynb` déclarés l.608-611 ci-dessus. Les chemins absolus que
+# papermill grave dans `metadata.papermill.*` ou que les sorties exposent
+# (matplotlib/pip/.NET temp paths) ne sont **pas** couverts par .gitignore ;
+# outillage canonique : detect_papermill_path_leak.py (read-only),
+# scrub_papermill_paths.py (correctif), _papermill_meta.py (préventif).
+# Mesure fresh horodatée : voir commentaire GitHub sur l'issue #16633.

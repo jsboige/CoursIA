@@ -189,7 +189,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   meme profil que candidate-delivered-advisory). Rollback = revert de
     #   la PR (l'entree disparait de l'allowlist).
     "lane-claim-epic-wide-advisory.yml",
-    "leaky-fixture-sweep.yml",
+    # leaky-fixture-sweep.yml : RETIREE le 2026-09-14 (#16141). Elle etait
+    #   entree ici avec la tranche 4 (#14283) comme ses sœurs `schedule`-only,
+    #   mais son profil n'est PAS celui des autres : elle installe
+    #   `libfaketime` par `sudo apt-get`, donc elle exige root/apt que le pool
+    #   ne fournit pas (uid 1001, no-new-privileges, sans sudo ni dpkg).
+    #   C'est la meme exclusion que slides-composition-advisory
+    #   (`playwright --with-deps` exige root) et pr-gate.yml. Cout mesure de
+    #   l'erreur : 12 runs, 12 `failure`, du 2026-09-03 au 2026-09-14, zero
+    #   balayage effectif. Le job est repasse sur `ubuntu-latest`.
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
     "mermaid-fill-color-advisory.yml",
@@ -202,6 +210,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # Ne pas creer un troisieme organe").
     "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
+    # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
+    #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
+    #   du 2026-08-19. Meme profil que runner-starvation-advisory : advisory
+    #   schedule + workflow_dispatch UNIQUEMENT (doctrine #12817), runs-on
+    #   statique [self-hosted, coursia-ephemeral, coursia-linux], aucun
+    #   trigger pull_request. Pur-Python stdlib + gh binaire de l'image ;
+    #   permissions contents:read + issues:write + actions:read (ouvre
+    #   issue labellee `queue-ghost-watch` sur DRIFT). Aucun GITHUB_TOKEN
+    #   cote job pour les operations de decision -- uniquement pour ouvrir
+    #   l'issue (token du runner, scope contenu par les permissions).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "queue-ghost-watch.yml",
     "qc-research-monitor.yml",
     "repo-size-advisory.yml",
     "review-coverage-advisory.yml",

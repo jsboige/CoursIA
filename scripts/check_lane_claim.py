@@ -46,6 +46,13 @@ needs user sign-off; this is the mechanism that the rule will call):
     leg of L898. The motivating incident (2026-08-08 R3D, #9955 / #8696) was
     two lanes of the SAME machine, only minutes apart, each having passed
     the issue-claim check -- there was no other-lane issue claim to trip on.
+    **The leg also runs when an issue number is supplied** (#16570): it used
+    to be reachable ONLY without one, so the exact invocation L898 prescribes
+    (`<N> --lane L --paths p`) silently skipped it and printed `free_paths`
+    -- a list describing the CLAIM scope, never the open-PR space -- which
+    read as an all-clear on an occupied file. In that mixed form the finding
+    is merged into the issue report as `open_pr_collisions` and routes the
+    verdict to `exit 2`, after a blocking claim (which keeps `exit 1`).
 
 The authoritative timestamp is the comment's server `createdAt`, NEVER a stamp
 written in the body. That is the whole of the Defaut-2 fix.
@@ -205,6 +212,12 @@ _MIDLINE_KEYWORD_RE = re.compile(
     re.IGNORECASE,
 )
 _KEYWORDS = ("CLAIMED", "RELEASED", "CANCELLED", "ABANDONED", "DONE", "OVERRIDE", "DELIVERED")
+# #15982 -- tokens que `_MARKER_RE` lit REELLEMENT, donc a ne jamais signaler
+# comme quasi-marqueurs. `CLAIMED-AMEND` en fait partie mais n'est PAS dans
+# `_KEYWORDS` (il n'a pas la semantique d'un mot-cle simple : c'est un OPEN
+# remplacant, cf `_OPEN`) -- c'est cette absence qui faisait signaler un
+# marqueur canonique des que la classification composee l'a regarde.
+_ENACTED_MARKERS = frozenset(_KEYWORDS) | {"CLAIMED-AMEND"}
 
 
 def _blank_keeping_shape(line: str) -> str:
@@ -2018,6 +2031,61 @@ def _nearest_keyword(word: str) -> tuple[str | None, int]:
     return best, best_d
 
 
+def _close_keyword(quasi: dict) -> "str | None":
+    """Mot-cle de FERMETURE porte par le token quasi, ou None (#15982).
+
+    Teste TOUS les composants du token, pas seulement sa tete : le cas fondateur
+    `[CLAIMED-RELEASED]` a pour tete `CLAIMED` (famille « prise ») alors que son
+    sens est une levee. Une regle par la tete seule manquerait precisement le cas
+    qu'elle doit attraper -- et pire, recommanderait de reposter `[CLAIMED]`, donc
+    de reprendre le grain que l'auteur vient de rendre.
+
+    Le vocabulaire reste `_CLOSE`, la constante du reduceur : une seconde liste
+    locale deriverait en silence. Distinguer une quasi-LEVEE d'une quasi-PRISE
+    sert au BLOCAGE -- les deux sont invisibles a l'organe, mais seule la
+    premiere explique qu'une lane attende ; lui conseiller de « lever » sur une
+    quasi-prise serait un conseil que son auteur n'a pas a suivre.
+    """
+    for part in re.split(r"[-_\s]+", quasi.get("token") or ""):
+        if part.upper() in _CLOSE:
+            return part.upper()
+    nearest = (quasi.get("nearest") or "").upper()
+    return nearest if nearest in _CLOSE else None
+
+
+def is_release_shaped(quasi: dict) -> bool:
+    """Ce quasi-marqueur ressemble-t-il a une LEVEE plutot qu'a une prise ?"""
+    return _close_keyword(quasi) is not None
+
+
+def _composed_keyword(word: str) -> "str | None":
+    """Mot-cle de tete d'un token COMPOSE, ou None (#15982).
+
+    ``[CLAIMED-RELEASED]`` esquivait les trois lecteurs a la fois : `_MARKER_RE`
+    exige le mot-cle seul, `_MALFORMED_MARKER_RE` exige l'absence de crochets, et
+    la classification quasi tombait dans la branche « distance <= 2 » parce que
+    `_QUASI_MARKER_RE` capture son premier groupe avec la classe
+    `[A-Za-z][A-Za-z_-]{2,}` -- **qui contient le tiret**. Le groupe valait donc
+    le token entier, la partie « suffixe » etait vide, et un token de 16
+    caracteres n'est proche d'aucun mot-cle.
+
+    Mesure 2026-09-13 : po-2023 a leve son claim sur #15835 avec
+    ``[CLAIMED-RELEASED]`` ; l'organe a continue de le dire vivant et la PR
+    #15846 d'une autre lane est restee bloquee 48 h, alors que la levee etait
+    ecrite.
+
+    Renvoie le mot-cle de TETE : c'est lui qui dit la FAMILLE du marqueur, et
+    l'appelant en fait le `nearest` du WARN. La TETE ne dit PAS le sens -- le cas
+    fondateur est justement un ``CLAIMED-*`` qui leve ; c'est ``_close_keyword``
+    qui tranche le sens et fournit la forme a recommander. Doctrine #12624 : on
+    SIGNALE, on n'enacte pas.
+    """
+    if word in _ENACTED_MARKERS:
+        return None  # deja lu par `_MARKER_RE` -- le signaler serait un faux positif
+    head = re.split(r"[-_]", word, maxsplit=1)[0]
+    return head if head in _KEYWORDS else None
+
+
 def _find_suspected_typo_markers(payload: dict) -> list[dict]:
     """Bracketed line-head tokens that ALMOST form a marker (#12624 Defaut 1).
 
@@ -2025,9 +2093,13 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
     and `_MALFORMED_MARKER_RE` (bare keyword, no brackets): a bracketed
     `[CLAGED]` / `[RELEASED claim-malformed]` at line head is read by
     NEITHER, so the writer's gesture enacts nothing while they believe their
-    lock is posted. WARN-only, never enacted, never auto-corrected -- the
-    signal tells the writer to re-post the canonical form. Fenced blocks are
-    masked (a quoted quasi marker is a citation, not a gesture).
+    lock is posted. Same for a COMPOSED token (`[CLAIMED-RELEASED]`, #15982):
+    `_QUASI_MARKER_RE` matches it whole -- hyphen included -- leaving the
+    suffix group empty, so BOTH classification branches below (`suffix` and
+    "distance <= 2") used to miss it. WARN-only, never enacted, never
+    auto-corrected -- the signal tells the writer to re-post the canonical
+    form. Fenced blocks are masked (a quoted quasi marker is a citation, not
+    a gesture).
     """
     found: list[dict] = []
     for c in payload.get("comments", []):
@@ -2044,14 +2116,24 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
             if word in _KEYWORDS:
                 kind, nearest = "suffix", word
             else:
-                nearest, dist = _nearest_keyword(word)
-                # len >= 4: a 3-letter token is within distance 2 of DONE for
-                # almost any input -- the motif gate alone would not save us.
-                if nearest is None or dist > 2 or len(word) < 4:
-                    continue
-                kind = "typo"
+                composed = _composed_keyword(word)
+                if composed is not None:
+                    kind, nearest = "compose", composed
+                else:
+                    nearest, dist = _nearest_keyword(word)
+                    # len >= 4: a 3-letter token is within distance 2 of DONE for
+                    # almost any input -- the motif gate alone would not save us.
+                    if nearest is None or dist > 2 or len(word) < 4:
+                        continue
+                    kind = "typo"
+            # Forme a RECOMMANDER dans le WARN : pour un compose c'est le mot de
+            # fermeture porte par le token, jamais sa tete -- conseiller
+            # `[CLAIMED]` a l'auteur de `[CLAIMED-RELEASED]` lui ferait reprendre
+            # le grain qu'il vient de rendre (#15982).
+            canonical = _close_keyword({"token": m.group(1), "nearest": nearest}) or nearest
             found.append({
                 "nearest": nearest,
+                "canonical": canonical,
                 "token": m.group(1),
                 "kind": kind,
                 "line": line if len(line) <= 160 else line[:160] + "…",
@@ -2181,7 +2263,8 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
-               pr_states: dict[int, str] | None = None) -> int:
+               pr_states: dict[int, str] | None = None,
+               check_open_pr_paths: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Args:
@@ -2199,6 +2282,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             the caller's own claim), behaviour is unchanged: every other active
             claim blocks, regardless of its scope clause (we cannot prove
             disjointness, so we conservatively over-block).
+        check_open_pr_paths: when True AND `my_paths` is set, ALSO run the
+            #9959 open-PR leg on `my_paths` (#16570). The claim record only
+            sees markers; the strongest signal of occupation -- code already
+            pushed on another lane's branch -- lives in OPEN PRs, and
+            `--paths` was reachable ONLY without an issue number, i.e. never
+            in the form L898 prescribes (issue + paths). The leg is
+            best-effort: on `gh` failure it warns and leaves the primary
+            verdict untouched rather than failing the whole check.
     """
     events = _sort_events(payload)
     # One shared tracked-files walk feeds BOTH the #10881 lint and the
@@ -2228,12 +2319,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         who = f" by @{s['author']}" if s["author"] else ""
         if s["kind"] == "typo":
             why = f'"{s["token"]}" (distance <= 2 de {s["nearest"]})'
+        elif s["kind"] == "compose":
+            why = (f'"{s["token"]}" (deux mots-cles joints ; tete {s["nearest"]} '
+                   f'-- l\'organe ne lit QUE le mot-cle seul entre crochets)')
         else:
             why = f'"{s["token"]}..." ({s["nearest"]} + suffixe dans les crochets)'
         print(
             f"WARN: quasi-marqueur {why}{who} -- l'organe ne le lit PAS "
             f'(ni evenement, ni malformed_markers). Reposter la forme '
-            f'canonique "[{s["nearest"]}] lane <machine:workspace>" dans un '
+            f'canonique "[{s["canonical"]}] lane <machine:workspace>" dans un '
             f"commentaire neuf ; ne jamais corriger a la main le marqueur "
             f"existant (le createdAt serveur fait foi). {s['line']}",
             file=sys.stderr,
@@ -2307,6 +2401,28 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # caller declared no intent at all (legacy case, unchanged).
     mine_paths = mine.get("paths") if mine else None
     my_scope = list(dict.fromkeys((my_paths or []) + (mine_paths or []))) or None
+
+    # #16570 -- the OPEN-PR leg, run in the READ path only (never while
+    # posting: a `[CLAIMED]` must not be refused by a leg the writer did not
+    # ask for). Without this call, `--paths` was reachable ONLY when no issue
+    # number was given, so the exact invocation L898 prescribes
+    # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
+    # and printed `free_paths` -- a list that describes the CLAIM scope, never
+    # the open-PR space -- reading as an all-clear on an occupied file.
+    open_pr_collisions: list[PathCollision] = []
+    if check_open_pr_paths and my_paths:
+        try:
+            open_pr_collisions, _own = _compute_open_pr_collisions(
+                my_paths, my_lane)
+        except RuntimeError as exc:
+            print(
+                f"WARN: la jambe PR-ouverte n'a pas pu tourner sur "
+                f"`--paths` ({exc}) : ce CLEAR ne dit rien des PRs OUVERTES "
+                f"touchant ces chemins. Verifier a la main avec "
+                f"`check_lane_claim.py --lane {my_lane} --paths ...` "
+                f"(sans numero d'issue) avant d'editer (#16570).",
+                file=sys.stderr,
+            )
     # Dead-glob witness on the CALLER side (mirror of `empty_scope` on the
     # claim side, #10958). `caller_empty_scope` lists the globs in `my_scope`
     # that match ZERO tracked files in the repo. Empty list when:
@@ -2675,6 +2791,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # always visible to a JSON sweep. Non-blocking by design -- it only
         # reports; it does not change the verdict.
         "dead_scope_globs": dead_scope_globs,
+        # #16570 -- the OPEN-PR leg's finding, merged into the ONE report so
+        # callers keep parsing a single JSON document. Empty when the caller
+        # gave no `--paths`, or when no OPEN PR of another lane touches them
+        # (PRs of the caller's own lane are not collisions and are omitted).
+        # Non-empty means an occupied file: the verdict below routes to
+        # `exit 2`, matching the contract `--paths` already carries (#9959).
+        "open_pr_collisions": [
+            _serialise_path_collision(c) for c in open_pr_collisions],
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -2943,6 +3067,39 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             file=sys.stderr,
         )
         return 2
+    # #16570 -- an OPEN PR of another lane touching the caller's `--paths` is
+    # an OCCUPIED file even though no marker was posted: the claim record is
+    # marker-based, and the strongest occupation signal (code already pushed)
+    # never reaches it. `exit 2` -- not `exit 1` -- because `BLOCKED` names a
+    # marker the caller can go read and argue with, while this one names a
+    # fact of the branch that no marker will confirm.
+    if open_pr_collisions:
+        tagged = [c for c in open_pr_collisions if c.lane is not None]
+        untagged = [c for c in open_pr_collisions if c.lane is None]
+        lines = [
+            f"\nBLOCKED: OPEN PR(s) of other lanes touch this call's "
+            f"`--paths` on #{payload.get('number')} -- no marker was posted, "
+            f"so the claim record read CLEAR.",
+            "",
+        ]
+        for c in tagged:
+            lines.append(
+                f"  - #{c.number} lane={c.lane} head={c.headRefName} "
+                f"files=[{', '.join(c.files)}] -- {c.title}"
+            )
+        for c in untagged:
+            lines.append(
+                f"  - #{c.number} lane=UNREADABLE head={c.headRefName} "
+                f"files=[{', '.join(c.files)}] -- {c.title}\n"
+                f"    (no `Grain:` lane tag in body; cannot attribute. "
+                f"Treat as a potential collision: coordinate before pushing.)"
+            )
+        lines.append(
+            "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
+            "touches, or pick another grain (#16570)."
+        )
+        print("\n".join(lines), file=sys.stderr)
+        return 2
     parts = []
     if mine:
         parts.append("resuming your own active claim")
@@ -3180,6 +3337,67 @@ class PathCollision:
         self.files = files  # the PR files that intersect the patterns
 
 
+def _serialise_path_collision(c: PathCollision) -> dict:
+    """Render a `PathCollision` as the JSON shape both callers publish."""
+    return {
+        "number": c.number,
+        "title": c.title,
+        "headRefName": c.headRefName,
+        "lane": c.lane,
+        "files_intersecting": c.files,
+    }
+
+
+def _compute_open_pr_collisions(
+    paths: list[str],
+    my_lane: str,
+    prs: list[dict] | None = None,
+) -> tuple[list[PathCollision], list[PathCollision]]:
+    """Intersect OPEN PRs' `files[]` with `paths`, split by attribution.
+
+    Pure computation -- no printing, no exit code -- so the two callers share
+    one reader (#9485): the standalone `--paths` mode (#9959) and the issue
+    mode, which must consult this leg too when `--paths` is supplied (#16570).
+
+    Returns `(collisions, self_overlap)`:
+
+      - `collisions`  -- PRs of ANOTHER lane, plus PRs whose `Grain:` lane tag
+                         is unreadable (`lane is None`). The author is
+                         `jsboige` on every PR of this repo, so the tag is the
+                         only attribution signal; its absence is uncertainty,
+                         treated as a potential collision rather than ignored.
+      - `self_overlap` -- PRs of the caller's OWN lane. Resuming your own work
+                         is not a collision; the path gate does not block it.
+
+    Raises `RuntimeError` when `prs` is None and the `gh` call fails, so each
+    caller keeps its own error policy (the guard mode fails closed at `exit 1`;
+    the issue mode degrades to a warning so its primary verdict still lands).
+    """
+    if prs is None:
+        prs = _gh_open_prs_with_files()
+    collisions: list[PathCollision] = []
+    self_overlap: list[PathCollision] = []
+    for pr in prs:
+        pr_files = pr.get("files") or []
+        if not pr_files:
+            continue
+        intersecting = [
+            f.get("path", "") for f in pr_files
+            if f.get("path") and _path_matches(f["path"], paths)
+        ]
+        if not intersecting:
+            continue
+        lane = extract_lane(pr.get("body") or "")
+        coll = PathCollision(
+            pr=pr, lane=lane, files=[p for p in intersecting if p],
+        )
+        if lane == my_lane:
+            self_overlap.append(coll)
+        else:
+            collisions.append(coll)
+    return collisions, self_overlap
+
+
 def _run_check_paths(
     paths: list[str],
     my_lane: str,
@@ -3212,60 +3430,24 @@ def _run_check_paths(
     if not paths:
         print("error: --paths requires at least one path/glob", file=sys.stderr)
         return 1
-    if prs is None:
-        try:
-            prs = _gh_open_prs_with_files()
-        except RuntimeError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-
-    collisions: list[PathCollision] = []
-    self_overlap: list[PathCollision] = []
-    for pr in prs:
-        pr_files = pr.get("files") or []
-        if not pr_files:
-            continue
-        intersecting = [
-            f.get("path", "") for f in pr_files
-            if f.get("path") and _path_matches(f["path"], paths)
-        ]
-        if not intersecting:
-            continue
-        lane = extract_lane(pr.get("body") or "")
-        coll = PathCollision(
-            pr=pr, lane=lane, files=[p for p in intersecting if p],
-        )
-        # Three-way classification:
-        #  - lane == my_lane             -> self_overlap (resuming own work)
-        #  - lane is None (no Grain tag) -> collisions (cannot attribute;
-        #                                    author is jsboige on every PR,
-        #                                    so the tag is the only signal;
-        #                                    absence = uncertainty, treated
-        #                                    as a potential collision -- not
-        #                                    silently ignored)
-        #  - lane != my_lane (tagged)    -> collisions
-        if lane == my_lane:
-            self_overlap.append(coll)
-        else:
-            collisions.append(coll)
-
-    def _serialise(c: PathCollision) -> dict:
-        return {
-            "number": c.number,
-            "title": c.title,
-            "headRefName": c.headRefName,
-            "lane": c.lane,
-            "files_intersecting": c.files,
-        }
+    try:
+        collisions, self_overlap = _compute_open_pr_collisions(
+            paths, my_lane, prs)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
     summary = {
         "mode": "paths",
         "paths": list(paths),
         "my_lane": my_lane,
-        "other_lane_collisions": [_serialise(c) for c in collisions],
-        "self_overlap": [_serialise(c) for c in self_overlap],
+        "other_lane_collisions": [
+            _serialise_path_collision(c) for c in collisions],
+        "self_overlap": [
+            _serialise_path_collision(c) for c in self_overlap],
         "untagged_prs": [
-            _serialise(c) for c in collisions if c.lane is None
+            _serialise_path_collision(c) for c in collisions
+            if c.lane is None
         ],
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
@@ -3675,6 +3857,9 @@ def main(argv: list[str] | None = None) -> int:
         args.lane,
         stale_threshold=args.stale_threshold,
         my_paths=args.paths,
+        # #16570 -- read path only: the caller is asking "may I start?", so the
+        # open-PR leg is exactly what they need and could not reach.
+        check_open_pr_paths=True,
     )
 
 

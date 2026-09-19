@@ -342,6 +342,30 @@ class TestLostMotifs:
         kinds = [(f["kind"], f["delta"]) for f in findings]
         assert ("LOST_NAV_LINKS", 2) in kinds
 
+    def test_nav_link_retarget_to_readme_is_not_a_loss(self):
+        # RE-CIBLE legitime : le lien de navigation passe d'une cible notebook au
+        # `README.md` de serie (convention du sommaire haut du meme fichier, et
+        # majoritaire sur les autres barres de navigation de la serie). Le lien
+        # n'a pas disparu, sa cible a change -> aucun LOST_NAV_LINKS.
+        # Regression d'origine : la regex ne comptait que les cibles `*.ipynb`,
+        # donc cette re-cible faisait chuter le compte (4 -> 3) et etait
+        # rapportee comme une perte de contenu, bloquant une PR dont l'objet
+        # meme etait de reparer la couche de renvois.
+        base = _nb(_md("[<- 17-MultiAgent-RL](17.ipynb) [Index](01-Setup.ipynb) [04b ->](04b.ipynb)"))
+        head = _nb(_md("[<- 02-NormalForm](02.ipynb) [Index](README.md) [04b ->](04b.ipynb)"))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings)
+
+    def test_nav_link_real_removal_still_signals(self):
+        # Contre-epreuve : un lien REELLEMENT supprime decremente toujours le
+        # compte apres l'elargissement aux cibles `README.md`. Sans ce test,
+        # elargir la regex pourrait masquer une vraie perte.
+        base = _nb(_md("[a](1.ipynb) [Index](README.md) [b](2.ipynb)"))
+        head = _nb(_md("[a](1.ipynb) [Index](README.md)"))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        kinds = [(f["kind"], f["delta"]) for f in findings]
+        assert ("LOST_NAV_LINKS", 1) in kinds
+
     def test_motif_preserved_no_signal(self):
         # Le motif survit -> pas de signal.
         base = _nb(_md("**Navigation** : [Index](README.md)"))
