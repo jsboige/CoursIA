@@ -16,6 +16,15 @@ Proprietes sous test, dans l'ordre de ce qu'elles protegent :
    mur, et c'est ce qui fait lire un blocage comme un depassement.
 4. **Arme des le demarrage** -- un enfant muet depuis sa naissance (hang de
    collection) est aussi tue : l'armement ne depend pas d'une premiere ligne.
+5. **La fraicheur se mesure par OCTET, pas par ligne** (mode 2, run
+   35276661841 / PR #16240) : en fin de parcours ``-q``, pytest emet ses
+   points SANS saut de ligne tant que la ligne de ~72 caracteres n'est pas
+   pleine. Un garde qui n'ecouterait que les lignes completes croit a un
+   silence de 8 min et tue un run a ``[99%]`` en train de finir -- le
+   flush d'EOF du kill avait laisse sur le log une ligne partielle de 43
+   resultats emis PENDANT la fenetre dite muette. Des octets vivants sans
+   ``\\n`` doivent donc maintenir la fraicheur ; et un vrai blocage (zero
+   octet) doit toujours mourir.
 
 Les enfants sont des ``python -c`` mono-processus : aucun xdist requis
 (l'issue note le defaut propre a la classe de runner ; le garde doit etre
@@ -111,6 +120,72 @@ def test_bloque_apres_progression_tue_et_nomme_le_worker():
     assert "99%" in verdict
     assert "limite 1 s" in verdict
     assert "XDIST-WATCHDOG" not in out  # le verdict ne pollue pas la sortie pilote
+
+
+def test_fin_de_parcours_points_partiels_non_tue():
+    # Mode 2, run 35276661841 : des octets vivants SANS \n (points de fin
+    # de parcours -q) doivent maintenir la fraicheur. Un garde qui
+    # n'ecouterait que les lignes completes croirait a un silence et
+    # tuerait ce run a 1,0 s de limite -- c'est exactement le faux
+    # positif qui a bloque la PR #16240 a [99%].
+    code, out, verdict = _run_watchdog(
+        _child("""
+            import sys, time
+            for i in range(16):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                time.sleep(0.15)
+            raise SystemExit(0)
+        """),
+        idle_limit=1.0,
+    )
+    assert code == 0
+    assert "XDIST-WATCHDOG" not in verdict
+    assert "." in out
+
+
+def test_fragment_final_sans_saut_de_ligne_recopie():
+    # Pass-through du fragment final : le dernier chunk sans \n doit etre
+    # recopie a l'EOF. La ligne partielle de 43 resultats du run
+    # 35276661841 n'aurait jamais du etre invisible jusqu'au kill.
+    code, out, verdict = _run_watchdog(
+        _child("""
+            import sys
+            print(".... [ 99%]", flush=True)
+            sys.stdout.write("...............s...........................")
+            sys.stdout.flush()
+            raise SystemExit(0)
+        """),
+        idle_limit=10.0,
+    )
+    assert code == 0
+    assert "[ 99%]" in out
+    assert "...............s" in out
+    assert verdict == ""
+
+
+def test_bloque_apres_fragment_partiel_tue_quand_meme():
+    # Garde-fou anti-regression : la fraicheur par octet ne doit pas
+    # epargner les vrais blocages. Signature [99%] + worker mort, un
+    # dernier fragment partiel, puis ZERO octet : le kill doit partir
+    # (fenetre comptee depuis le DERNIER OCTET, pas la derniere ligne)
+    # et le verdict doit citer les octets pour la forensique.
+    code, out, verdict = _run_watchdog(
+        _child("""
+            import sys, time
+            print("............................ [ 99%]", flush=True)
+            print("[gw2] node down: Not properly terminated", flush=True)
+            sys.stdout.write("..")
+            sys.stdout.flush()
+            time.sleep(300)
+        """),
+        idle_limit=1.0,
+    )
+    assert code == wd.EXIT_BLOCKED
+    assert "BLOQUE" in verdict
+    assert "gw2" in verdict
+    assert "99%" in verdict
+    assert "octets" in verdict
 
 
 def test_bloque_muet_des_la_naissance_tue_aussi():

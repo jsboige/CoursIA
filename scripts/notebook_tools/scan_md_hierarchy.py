@@ -50,6 +50,14 @@ the second mouth of the same trap.
 import argparse, json, re, sys, pathlib
 from datetime import datetime, timezone
 
+# #16633 — marche canonique centralise (#8650) : tracked_only via `git ls-files`
+# + SKIP_DIRS + filtre artefacts papermill. Le rglob local comptait les
+# artefacts de run non trackes (`*_executed.ipynb`, `*_output.ipynb`) presentes
+# dans les worktrees de lane : le finding `+1 H1-DEEP` de #16633 porte sur un
+# fichier untracked — defaut de l'EMETTEUR, pas du .gitignore (cf c.16633-1).
+# Degrade a l'ancien scan quand git est indisponible (fixtures tmp, tarball).
+from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
+
 BASELINE_DEFAULT = pathlib.Path(__file__).with_name('md_hierarchy_baseline.json')
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
@@ -250,7 +258,7 @@ def iter_notebooks(args):
     for a in args:
         p = pathlib.Path(a)
         if p.is_dir():
-            yield from sorted(p.rglob('*.ipynb'))
+            yield from _walk_notebooks(p)
         elif p.suffix == '.ipynb' and p.is_file():
             yield p
         else:

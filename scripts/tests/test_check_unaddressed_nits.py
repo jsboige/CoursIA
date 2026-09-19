@@ -2308,17 +2308,30 @@ def test_12148_glyphe_narre_a_plus_d_un_mot_citer_surflagge_assume():
     que le mot precedent plus un mot d'attribution (#11044). Elargir la
     fenetre fabriquerait des faux NEGATIFS sur de vraies emissions — la
     sur-accusation coute une relecture, la sous-accusation coute un merge.
-    Autant que ce soit vu plutot que decouvert. Ce test AFFIRME le residu
-    par ecrit : si le path glyphe-precede-de-2-mots doit etre couvert un
-    jour, c'est un fix separe avec son propre scan distribution."""
-    body = (
+    Autant que ce soit vu plutot que decouvert.
+
+    #16688 — la moitie deterministe de ce residu est couverte : « un 🟡 »
+    (determinant + glyphe) est neutralise en amont par Position J (C)
+    DETERMINANT, avant meme que `_is_cited` n'entre en jeu. Le residu
+    `_is_cited` proprement dit (narration SANS determinant, a >1 mot du
+    citeur) reste assume : si ce path doit etre couvert un jour, c'est un
+    fix separe avec son propre scan distribution."""
+    body_det = (
         "## Suivi\n"
         "- la review precedente portait un 🟡 sur l'incoherence — leve "
         "par 06956bd0a. Tout est ok maintenant."
     )
-    # Sur-flag assume : le glyphe precede de 'un ' (a >1 mot du 'portait'),
-    # donc `_is_cited` ne neutralise pas et le glyphe reste vivant -> BOT-CONCERN.
-    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    # Couvert par #16688 Position J (C) : « un 🟡 » = referent, mention.
+    assert mod.classify("clusterManager-Myia", body_det) is None
+    body_nu = (
+        "## Suivi\n"
+        "- la review precedente portait 🟡 sur l'incoherence — leve "
+        "par 06956bd0a. Tout est ok maintenant."
+    )
+    # Sur-flag ASSUME (residu _is_cited vivant) : sans determinant, le
+    # glyphe n'est ni un referent (C) ni un enum (B) ni un meta-nom (A) ;
+    # `_is_cited` ne voit pas 'portait' a >1 mot -> reste vivant.
+    assert mod.classify("clusterManager-Myia", body_nu) == "BOT-CONCERN"
 
 
 # === GRAIN #12311 — REQUEST_CHANGES (verbe) complete CHANGES_REQUESTED (nom) ===
@@ -5303,6 +5316,65 @@ def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
     # Le méta-nom sur la ligne PRÉCÉDENTE ne ouvre pas la mention : la
     # portée est la ligne, pas le paragraphe.
     body = "Le glyphe de severite :\n🟡 FINDING — hyperparametres contredits."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+# --- #16688 — Position J discriminateur (C) DÉTERMINANT : référent vs émission ---
+# Fondateur : levée c.5730596602 sur #16617, titre
+# « ### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, c'est donc
+#  à moi de le lever » — préfixe sans méta-nom ni séparateur, glyphe resté
+# vivant, l'organe classait la levée elle-même comme réserve neuve.
+
+
+def test_16688_determinant_referent_fondateur_neutralise():
+    body = ("## Levée des deux réserves, par leur auteur ou par issue nommée — "
+            "avant merge\n"
+            "### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, "
+            "c'est donc à moi de le lever. Vérifié firsthand : la clause "
+            "`lane` est présente au head 92b74e9e1d.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_anglais_the_this_neutralise():
+    body = ("Lifting the 🟡 I raised on the Grain tag: lane clause verified "
+            "firsthand at head 92b74e9e1d. My 🔴 on the missing numpy-only "
+            "note is carried by #16687.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_en_milieu_de_ligne_neutralise():
+    # Le déterminant doit TOUCHER le glyphe mais peut suivre toute prose
+    # de ligne (l'ancre est la fin du préfixe, pas le début de ligne).
+    body = ("Reprise de la review : je lève le 🔴 sur la cellule [7] "
+            "(indexing corrigé au head 63960fd8d1), le reste est OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_vp_emission_tete_de_ligne_reste_bloquant():
+    # L'émission Hermes ouvre la ligne : aucun déterminant ne la précède.
+    body = "🟡 FINDING — les 5 hyperparametres contredisent le run mesure."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_nom_commun_non_determinant_reste_bloquant():
+    # « Nit 🟡 » pose une réserve : « nit » est un nom commun, pas un
+    # déterminant — le set (C) est borné, il ne s'étend pas aux noms.
+    body = "Nit 🟡 — le tag `Grain:` incomplet au head courant."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suffixe_dans_mot_neutre_reste_bloquant():
+    # « sample 🟡 » / « table 🔴 » : le `le` final de ces mots n'a pas de
+    # \b devant lui — l'ancre mot-borne empêche le déterminant suffixe.
+    body = "table 🔴 — la colonne mAP50-95 contredit la prose du 4.2h."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suivi_de_prose_reste_bloquant():
+    # Le déterminant doit toucher le glyphe : « le nit 🟡 » où 🟡 suit le
+    # nom n'est PAS couvert par (C) seul (l'ancre exige déterminant + espaces
+    # immédiatement avant le glyphe) — « le » précède « nit », pas 🟡.
+    body = "le nit 🟡 posé hier reste valable : cellule [7] non corrigée."
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
 

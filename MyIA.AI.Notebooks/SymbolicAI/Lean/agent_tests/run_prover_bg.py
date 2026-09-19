@@ -273,6 +273,8 @@ async def _run_calibration_ready(
     _bg(f"RESULT_BEST_SORRY {result.get('best_sorry')}")
     _bg(f"RESULT_ITERATIONS {result.get('iterations')}")
     _bg(f"RESULT_ATTEMPTS {result.get('attempts')}")
+    _bg(f"RESULT_FREEZE_LOOP {result.get('freeze_loop')} "
+        f"escalations={result.get('freeze_loop_escalations')}")
     _bg(f"RESULT_SORRY_EVOLUTION {result.get('sorry_evolution')}")
     if result.get("skipped"):
         _bg(f"RESULT_SKIPPED reason={result.get('reason')} detail={result.get('detail')}")

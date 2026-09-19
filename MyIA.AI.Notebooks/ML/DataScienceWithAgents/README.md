@@ -101,7 +101,8 @@ DataScienceWithAgents/
 │   ├── 2.10-Optimisation-Hyperparametres.ipynb
 │   ├── 2.11-Regularisation-Sparse-LASSO.ipynb
 │   ├── 2.12-Donnees-Desequilibrees.ipynb
-│   └── 2.13-Analyse-Erreurs.ipynb
+│   ├── 2.13-Analyse-Erreurs.ipynb
+│   └── 2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb
 │
 ├── 03-DeepLearning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
@@ -174,6 +175,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.11-Regularisation-Sparse-LASSO](02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | *Régularisation sparse* — LASSO (L1, polyèdre) vs Ridge (L2, boule), coord descent, sélection de λ, ElasticNet sur features corrélées | **la géométrie décide** : polyèdre L1 → sparsity, boule L2 → shrink ; sur ρ > 0.7, ElasticNet stabilise |
 | [2.12-Donnees-Desequilibrees](02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | *Classes déséquilibrées* — la métrique qui ment (accuracy vs PR), rééchantillonnage, seuillage par coût | **La courbe PR dit la vérité** : sur ~3 % de positifs, la ROC flatte — seule l'average precision rend l'arbitrage visible |
 | [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
+| [2.14-Explicabilite-SHAP-LIME-Contrefactuels](02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) | *Explicabilité XAI* — expliquer une décision individuelle : SHAP (arbre exact + kernel), LIME, contrefactuels DiCE, et leurs limites communes | **additivité exacte vs récits instables** : Tree SHAP vérifié à 1e-16, LIME instable de seed en seed |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 

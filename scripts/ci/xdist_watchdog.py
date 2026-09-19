@@ -24,6 +24,27 @@ sortie, le seul qui colle a la signature :
     d'acceptance de l'issue : un run bloque doit echouer vite, en disant
     pourquoi.
 
+Mode 2 -- le garde lui-meme tuait un run sain (run 35276661841, PR #16240,
+attempt 2, 2026-09-17 23:27Z) : en fin de parcours sous ``-q``, pytest
+ecrit ses points de test SANS saut de ligne tant que la ligne de ~72
+caracteres n'est pas pleine. Le fil de lecture, base sur ``readline``,
+restait bloque sur le fragment sans ``\\n`` pendant que des octets vivants
+traversaient le tube : verdict « silence 480 s ... ``[99%]`` ... workers
+morts : gw2 », kill d'un run a 99 % sans echec -- et le flush d'EOF du
+kill a laisse la preuve sur le log : une ligne partielle de 43 resultats
+emis PENDANT la fenetre dite muette (23:19:06 -> 23:27:07). Le master
+n'etait pas bloque, il finissait la queue (tests de queue lents, puis
+re-execution du lot du worker remplace). Correctif : la fraicheur se
+mesure desormais par OCTET lu (``os.read`` par chunks, lignes
+reconstituees en interne), pas par ligne complete. Un run qui emet ne
+peut plus etre tue ; un blocage reel (zero octet, signature originelle)
+l'est toujours.
+
+Une tolerance au pourcentage de fin de parcours (« [95%+] => grace ») a
+ete ecarte a dessin : le blocage originel #16288 s'est AUSSI produit a
+``[99%]`` -- le pourcentage ne discrimine rien, seul le flux d'octets le
+fait.
+
 Pistes rejetees, pour memoire (detail dans #16288) :
 
   - ``pytest-timeout`` + ``--timeout`` : borne un TEST qui bloque ; ici
@@ -92,6 +113,26 @@ class _StreamState:
         self.last_progress_line: str | None = None
         self.dead_workers: list[str] = []
         self.line_count = 0
+        # Forensique mode 2 : des octets sans aucune ligne complete (points
+        # de fin de parcours sans \n) sont le signe d'un run VIVANT -- le
+        # verdict doit pouvoir les citer apres coup.
+        self.byte_count = 0
+
+    def record_bytes(self, nbytes: int) -> None:
+        """Fraicheur par OCTET, pas par ligne complete (mode 2).
+
+        Sous ``-q``, les points de test n'emportent pas de ``\\n`` avant
+        que la ligne de ~72 caracteres soit pleine : un fil base sur
+        ``readline`` ne verrait rien pendant que le run finit sa queue
+        (run 35276661841 : 43 resultats emis pendant une fenetre que le
+        garde croyait muette). La boucle de surveillance appelle donc
+        ceci sur CHAQUE chunk lu du tube.
+        """
+        if nbytes <= 0:
+            return
+        with self.lock:
+            self.last_output = time.monotonic()
+            self.byte_count += nbytes
 
     def record(self, line: str) -> None:
         now = time.monotonic()
@@ -112,13 +153,45 @@ class _StreamState:
             return time.monotonic() - self.last_output
 
 
+# Taille d'un chunk de lecture du tube. Un seul os.read = un seul appel
+# systeme : il retourne des le PREMIER octet disponible (jamais apres un
+# remplissage complet ni un \n) -- c'est la propriete qui repare le mode 2.
+PIPE_CHUNK_BYTES = 65536
+
+
 def _pump(stream, state: _StreamState, echo) -> None:
-    """Lit les lignes d'un pipe du fils, les horodate et les recopie."""
-    # Sentinelle en BYTES : le pipe est binaire (Popen sans text=True),
-    # et b"" == "" est faux -- un sentinelle str ferait boucler le fil
-    # a l'infini apres l'EOF, inondant l'echo de lignes vides.
-    for raw in iter(stream.readline, b""):
-        line = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else raw
+    """Recopie la sortie du fils en mesurant l'activite par OCTET.
+
+    On lit le tube par chunks bruts (``os.read`` sur le fd) et on
+    reconstitue les lignes en interne : la fraicheur (``record_bytes``)
+    est mise a jour pour CHAQUE chunk, le decoupage en lignes ne sert
+    qu'au bookkeeping (progression, workers morts) et a l'echo.
+
+    Pourquoi pas ``readline`` : en fin de parcours ``-q``, pytest ecrit
+    ses points SANS saut de ligne -- un readline resterait bloque sur le
+    fragment pendant que le run finit sa queue, et le garde tuerait un
+    vivant (mode 2, run 35276661841). Un fragment final sans ``\\n``
+    n'est recopie qu'a l'EOF (ou au kill), exactement comme la ligne
+    partielle de 43 resultats revelee par le flush d'EOF du run cite.
+    """
+    fd = stream.fileno()
+    pending = b""
+    while True:
+        try:
+            chunk = os.read(fd, PIPE_CHUNK_BYTES)
+        except OSError:
+            break  # tube ferme sous nos pieds : equivaut a l'EOF
+        if not chunk:
+            break
+        state.record_bytes(len(chunk))
+        pending += chunk
+        while b"\n" in pending:
+            raw, pending = pending.split(b"\n", 1)
+            line = raw.decode("utf-8", errors="replace") + "\n"
+            state.record(line)
+            echo(line)
+    if pending:
+        line = pending.decode("utf-8", errors="replace")
         state.record(line)
         echo(line)
     try:
@@ -210,11 +283,13 @@ def _verdict_blocked(state: _StreamState, idle: float, idle_limit: float,
     emit(f"##[error]{VERDICT_PREFIX}: BLOQUE -- silence de sortie depuis "
          f"{idle:.0f} s (limite {idle_limit:.0f} s), mur du job non atteint")
     emit(f"##[error]{VERDICT_PREFIX}: derniere progression pytest : "
-         f"\"{progress}\" ; {state.line_count} lignes emises au total ; "
-         f"wall du wrapper {wall:.0f} s")
+         f"\"{progress}\" ; {state.line_count} lignes ({state.byte_count} "
+         f"octets) emises au total ; wall du wrapper {wall:.0f} s")
     emit(f"##[error]{VERDICT_PREFIX}: workers morts : {workers}")
-    emit(f"##[error]{VERDICT_PREFIX}: le master etait vivant mais n'attendait "
-         f"pas du travail -- signature #16288 ; kill du groupe de processus")
+    emit(f"##[error]{VERDICT_PREFIX}: zero octet emis pendant la fenetre "
+         f"(ni ligne ni fragment) -- le master etait vivant mais "
+         f"n'attendait pas du travail, signature #16288 ; kill du groupe "
+         f"de processus")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -18,13 +18,24 @@
 #
 # COMMENT LES CONTENEURS Y ENTRENT
 # --------------------------------
-# Par le defaut du daemon, pas par un drapeau que chaque appelant devrait
-# penser a passer -- `/etc/docker/daemon.json` porte `"cgroup-parent":
-# "coursia-ci.slice"` (copie de reference dans persist/daemon.json). Tout
-# conteneur du daemon docker-ce y atterrit, y compris ceux lances a la main
-# pour un debug, y compris ceux d'une famille future que personne n'aura pense
-# a cabler. Un garde qui depend de la memoire de son appelant n'est pas un
-# garde.
+# Par le drapeau EXPLICITE --cgroup-parent pose par supervise.sh ; et, sur
+# le daemon docker-ce seulement, par le defaut de son daemon.json. Ce defaut
+# NE COUVRE PAS LA FLOTTE (#15157, mesure ai-01 2026-09-08) : les conteneurs
+# de la CI tournent sur un AUTRE daemon (Docker Desktop, pilote cgroupfs)
+# qui ne porte aucun cgroup-parent par defaut. Pour lui, l'entree depend
+# entierement du drapeau : un conteneur lance a la main pour un debug y
+# echappe. supervise.sh rend cette evasion visible -- report_slice_membership
+# (cmd_status) confronte les sous-groupes de la slice aux conteneurs
+# label=coursia-ci=1 et crie EVASION sur decalage.
+#
+# PIEGE DE RECOPIE : sous pilote systemd, "coursia-ci.slice" se resout en
+# slice imbriquee sous coursia.slice -- correct, et c'est pourquoi le defaut
+# ne pose aucun probleme sur docker-ce. Sous pilote CGROUPFS (Docker
+# Desktop), la meme chaine est un chemin LITTERAL : docker cree
+# /sys/fs/cgroup/coursia-ci.slice A PLAT, SANS AUCUN plafond -- un leurre
+# homonyme un niveau au-dessus du vrai mur. La valeur correcte pour un
+# daemon cgroupfs est le chemin imbrique complet :
+# "coursia.slice/coursia-ci.slice".
 #
 # systemd imbrique une slice sur son nom : `coursia-ci.slice` vit sous
 # `coursia.slice`. Le chemin cgroup reel est donc

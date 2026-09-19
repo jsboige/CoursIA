@@ -100,6 +100,7 @@ from . import phat_self_reference
 from . import salience_valence_dissociation
 from . import bench_factorise
 from . import mixed_state
+from . import analog_waves
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -127,4 +128,5 @@ __all__ = [
     "salience_valence_dissociation",
     "bench_factorise",
     "mixed_state",
+    "analog_waves",
 ]

@@ -221,19 +221,32 @@ jobs:
     # (renamed or deleted); otherwise the Phase-2 regression ratchet reads
     # a stale float as if the notebook still existed there.
     #
+    # #16122 adds the missing direction: the organ also reports, and (for the
+    # loss case) FAILS on, a rename that DELETED a key instead of moving it --
+    # the #15917 incident, where the check-run stayed green while the ratchet
+    # silently lost a reference. That direction is defined against the change's
+    # BASE, hence the --base argument below. The inventory of judged notebooks
+    # the baseline does not key is REPORTED and never fails: measured
+    # 2026-09-15, they are overwhelmingly notebooks added after the baseline
+    # freeze, which were never under the ratchet -- failing on them would redden
+    # every PR that adds a notebook.
+    #
     # Blocking by design (different from the advisory above): --check-orphans
-    # exits non-zero when orphans exist, and a non-zero exit in this job is a
-    # PR-gate failure -- exactly the behavior the issue acceptance asks for.
-    # Cheap to run (git ls-files + JSON diff, no notebook execution), so it
-    # stays in the per-PR scope at full fidelity rather than being
+    # exits non-zero when the ratchet lost a reference, and a non-zero exit in
+    # this job is a PR-gate failure -- exactly the behavior the issue acceptance
+    # asks for. Cheap to run (git ls-files + JSON diff, no notebook execution),
+    # so it stays in the per-PR scope at full fidelity rather than being
     # pushed to a nocturnal window only.
-    name: "Pedagogy density baseline orphan guard (#13815)"
+    name: "Pedagogy density baseline orphan guard (#13815, #16122)"
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || github.event_name == 'push'
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
+          # fetch-depth: 0 -- LOST_KEY is evaluated against the base commit, so
+          # the base object must exist locally (a shallow clone would leave the
+          # direction unevaluated and the organ would say so).
           fetch-depth: 0
           filter: blob:none
 
@@ -242,11 +255,26 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Check baseline against tracked notebooks
+      - name: Check both directions of the baseline against tracked notebooks
+        env:
+          # PR base sha, or the previous tip on a push. `before` is the all-zero
+          # sha on a branch's first push: the guard below then omits --base and
+          # the organ reports the loss direction as "non evalue" rather than
+          # claiming clean on a comparison it never made.
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -uo pipefail
-          # --check-orphans exits 1 on orphans, 0 on clean.
-          # We propagate the exit code verbatim so a baseline drift blocks the
-          # PR gate (acceptance #2 of #13815: a stale baseline key is a
-          # correctness defect, not a soft pedagogical threshold).
-          python scripts/notebook_tools/pedagogy_density.py --check-orphans
+          # --check-orphans exits 1 when the ratchet lost a reference (ORPHAN_KEY
+          # or LOST_KEY), 0 on clean. We propagate the exit code verbatim so a
+          # baseline drift blocks the PR gate (acceptance #2 of #13815: a stale
+          # baseline key is a correctness defect, not a soft pedagogical
+          # threshold).
+          case "${BASE:-}" in
+            "" | 0000000000000000000000000000000000000000)
+              echo "No base sha on this event -- loss direction not evaluated."
+              python scripts/notebook_tools/pedagogy_density.py --check-orphans
+              ;;
+            *)
+              python scripts/notebook_tools/pedagogy_density.py --check-orphans --base "$BASE"
+              ;;
+          esac

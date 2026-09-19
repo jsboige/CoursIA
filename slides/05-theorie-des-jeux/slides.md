@@ -406,7 +406,7 @@ layout: dense
 ## Deformations et quotient
 
 - [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) : chemins continus entre classes
-- [GameTheory-03g-Derivation-Quotient](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Derivation-Quotient.ipynb) : deriver la structure quotient
+- [GameTheory-03-Topology2x2 (§9)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
 
 ## Parcours et extensions
 

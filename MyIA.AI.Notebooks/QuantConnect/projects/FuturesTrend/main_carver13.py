@@ -22,7 +22,7 @@ from breadth_multiplier import breadth_multiplier as _breadth_multiplier_pure
 # verdict on a >= 2016-2026 window.
 #
 # Differences vs the v3.1 ETF baseline (main.py):
-# - True continuous futures (19 instruments) instead of 6 ETF proxies.
+# - True continuous futures (18 instruments) instead of 6 ETF proxies.
 # - Six EWMAC horizons (Carver pairs: 8/32, 16/64, 32/128, 64/256, 16/48, 32/96)
 #   with per-horizon scalar normalisation (c.1063), not a single Donchian 20/10.
 # - Carry factor: DISABLED on this port (c.1107 REPAIR ADJOINT, see
@@ -190,9 +190,17 @@ class CarverThirteen(QCAlgorithm):
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
-        # 19 liquid continuous futures, diversified across asset classes.
+        # 18 liquid continuous futures, diversified across asset classes.
         # Mirrors Carver's handbook + the article #15989 universe (slight
         # adjustments to use QC-mapped canonical symbols).
+        #
+        # Sugar ("SB") is deliberately absent. Measured 2026-09-14 (#16064):
+        # this account's dataset serves no SB data at all -- over 386
+        # ES-anchored calls SB reported has_data=0 and Mapped=None every time,
+        # while all 18 instruments below reported has_data=386/386. The cause
+        # is data absence, not the calendar and not the 90-day filter, and no
+        # softs substitute (KC/CC/CT/OJ) is served either. Re-adding SB only
+        # re-creates a silent 18/19 universe on every rebalance.
         self.futures_universe = [
             # Equity indices
             "ES",   # S&P 500 e-mini
@@ -218,11 +226,9 @@ class CarverThirteen(QCAlgorithm):
             "ZC",   # Corn
             "ZW",   # Wheat
             "ZS",   # Soybeans
-            # Softs
-            "SB",   # Sugar
         ]
-        assert len(self.futures_universe) == 19, (
-            f"Carver #13 universe must have 19 instruments, got "
+        assert len(self.futures_universe) == 18, (
+            f"Carver #13 universe must have 18 instruments, got "
             f"{len(self.futures_universe)}"
         )
 
