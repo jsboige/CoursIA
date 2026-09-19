@@ -54,6 +54,12 @@ if [ "\$1" = "run" ]; then
   esac
   exit 0
 fi
+# Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
+# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS.
+if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
+  if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -2351,6 +2357,166 @@ STUB
   else
     ko "attente sur etat non qualifie attendue : err=$(head -2 "$TEST_DIR/err37.log") runs=$(cat "$TEST_DIR/run37.count" 2>/dev/null || echo 0)"
   fi
+)
+echo ""
+
+# --- Test 38 : 403 sur registration-token = terminal apres N essais (#15154) -
+echo "Test 38 : HTTP 403 sur fetch_token = terminal apres N essais consecutifs (#15154)"
+(
+  cd "$SCRIPT_DIR"
+  mkdir -p "$TEST_DIR/bin38" "$TEST_DIR/state-38"
+  cat > "$TEST_DIR/bin38/gh" <<'STUB'
+#!/usr/bin/env bash
+# Simule un compte sans droit admin : gh api rend HTTP 403 sur stderr
+# et exit 1, sans token.
+echo '{"message":"You must have repository admin permissions","documentation_url":"https://docs.github.com/rest","status":"403"}' >&2
+echo 'gh: You must have repository admin permissions (HTTP 403)' >&2
+exit 1
+STUB
+  chmod +x "$TEST_DIR/bin38/gh"
+  cp "$TEST_DIR/bin/docker" "$TEST_DIR/bin38/docker"
+  chmod +x "$TEST_DIR/bin38/docker"
+  cp "$TEST_DIR/bin/sleep" "$TEST_DIR/bin38/sleep"
+  chmod +x "$TEST_DIR/bin38/sleep"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin38/ps"
+  chmod +x "$TEST_DIR/bin38/ps"
+  export PATH="$TEST_DIR/bin38:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-38"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-38"
+  export COURSIA_RUNNER_AUTH_FAIL_MAX=3
+  unset COURSIA_RUNNER_GH_ACCOUNT || true
+  export SLEEP_LOG="$TEST_DIR/sleep38.log"
+  : > "$SLEEP_LOG"
+  # On lance supervise.sh avec un timeout court -- le ABANDON doit faire die().
+  timeout --kill-after=1 15 bash "$SCRIPT_DIR/supervise.sh" start 1 \
+    >/dev/null 2>"$TEST_DIR/err38.log"
+  rc=$?
+  if grep -q "ABANDON : 3 echecs consecutifs HTTP 403" "$TEST_DIR/err38.log"; then
+    ok "ABANDON emis apres 3 echecs HTTP 403 consecutifs"
+  else
+    ko "ABANDON HTTP 403 attendu, err=$(head -5 "$TEST_DIR/err38.log")"
+  fi
+  if grep -q "compte sans droit admin ?" "$TEST_DIR/err38.log"; then
+    ok "le diagnostic pointe la cause structurelle (compte sans droit admin)"
+  else
+    ko "diagnostic 'compte sans droit admin' attendu, err=$(head -5 "$TEST_DIR/err38.log")"
+  fi
+  # L'ARRET COORDONNE : un slot qui detecte une cause structurelle pose le
+  # sentinel STOP_FILE pour prevenir les slots siblings. Le superviseur
+  # parent finit sur `wait` quand tous les enfants sont morts. On verifie
+  # le sentinel -- pas le rc du superviseur, qui peut etre 0 si le wait
+  # global ne capture pas la mort individuelle d'un slot (les autres
+  # slots sont sains). Le mecanisme observable est le sentinel, pas le rc.
+  if [ -f "$TEST_DIR/state-38/stop" ]; then
+    ok "sentinel STOP_FILE pose par ABANDON -- arret coordonne des slots siblings"
+  else
+    ko "sentinel STOP_FILE attendu apres ABANDON (absent -- slots siblings ignoreraient la cause structurelle)"
+  fi
+  # Le compteur de sleep doit etre borne (3 essais, pas infini) : on tolere
+  # 4 (3 echecs + 1 jitter de cycle post-ABANDON si une autre branche tape).
+  n_sleeps="$(wc -l < "$SLEEP_LOG" | tr -d ' ')"
+  if [ "$n_sleeps" -le 4 ]; then
+    ok "backoff borne (sleep appele $n_sleeps fois, pas infini)"
+  else
+    ko "backoff excessif : $n_sleeps sleeps, err=$(head -5 "$TEST_DIR/err38.log")"
+  fi
+  unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+)
+echo ""
+
+# --- Test 39 : 5xx sur registration-token = retry indefini (#15154) -------
+echo "Test 39 : HTTP 5xx sur fetch_token = retry (transitoire) -- borne seulement par le timeout externe"
+(
+  cd "$SCRIPT_DIR"
+  mkdir -p "$TEST_DIR/bin39" "$TEST_DIR/state-39"
+  cat > "$TEST_DIR/bin39/gh" <<'STUB'
+#!/usr/bin/env bash
+# Simule une API GitHub momentanement indisponible : 503.
+echo '{"message":"Service Unavailable","status":"503"}' >&2
+echo 'gh: Service Unavailable (HTTP 503)' >&2
+exit 1
+STUB
+  chmod +x "$TEST_DIR/bin39/gh"
+  cp "$TEST_DIR/bin/docker" "$TEST_DIR/bin39/docker"
+  chmod +x "$TEST_DIR/bin39/docker"
+  cp "$TEST_DIR/bin/sleep" "$TEST_DIR/bin39/sleep"
+  chmod +x "$TEST_DIR/bin39/sleep"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin39/ps"
+  chmod +x "$TEST_DIR/bin39/ps"
+  export PATH="$TEST_DIR/bin39:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-39"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-39"
+  export COURSIA_RUNNER_AUTH_FAIL_MAX=3
+  unset COURSIA_RUNNER_GH_ACCOUNT || true
+  export SLEEP_LOG="$TEST_DIR/sleep39.log"
+  : > "$SLEEP_LOG"
+  timeout --kill-after=1 10 bash "$SCRIPT_DIR/supervise.sh" start 1 \
+    >/dev/null 2>"$TEST_DIR/err39.log"
+  rc=$?
+  # 5xx : aucun ABANDON, on doit voir AU MOINS 1 ligne "transitoire".
+  if grep -q "HTTP 503 (transitoire)" "$TEST_DIR/err39.log"; then
+    ok "HTTP 503 traite comme transitoire (pas d'ABANDON)"
+  else
+    ko "HTTP 503 transitoire attendu, err=$(head -5 "$TEST_DIR/err39.log")"
+  fi
+  if ! grep -q "ABANDON" "$TEST_DIR/err39.log"; then
+    ok "pas d'ABANDON sur 5xx (la voie retry reste ouverte)"
+  else
+    ko "ABANDON inattendu sur 5xx, err=$(head -5 "$TEST_DIR/err39.log")"
+  fi
+  unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+)
+echo ""
+
+# --- Test 53 : garde d'appartenance -- evasion visible (#15157) -------------
+#
+# Le defaut repare ici n'est pas un plafond manquant mais une appartenance
+# INVARIABLEMENT annoncee saine : assert_ci_slice rendait « mur ACTIF » alors
+# qu'aucun conteneur n'y etait -- le daemon de la flotte ne porte pas de
+# cgroup-parent par defaut (mesure 2026-09-08), l'entree depend du drapeau,
+# et un conteneur lance a la main echappe en silence. Deux conteneurs
+# declares par le stub docker, zero sous-groupe dans la slice : la ligne
+# EVASION doit exister, avec son compte.
+echo "Test 53 : conteneurs hors slice -> EVASION visible (#15157)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  mkdir -p "$TEST_DIR/slice-mursansloc"
+  echo "17179869184" > "$TEST_DIR/slice-mursansloc/memory.max"
+  echo "12884901888" > "$TEST_DIR/slice-mursansloc/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/slice-mursansloc"
+  # EXPORT obligatoire : le stub docker est un PROCESSUS FILS -- une variable
+  # shell nue ne franchit pas la frontiere, et le garde lirait 0 conteneur.
+  export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
+  out="$(report_slice_membership 2>&1)"
+  if echo "$out" | grep -q "EVASION" && echo "$out" | grep -q "conteneurs=2"; then
+    ok "evasion nommee avec son compte (conteneurs=2, sous-groupes=0)"
+  else
+    ko "ligne EVASION attendue, out=$out"
+  fi
+  unset STUB_CI_CONTAINER_IDS
+)
+echo ""
+
+# --- Test 54 : garde d'appartenance -- cas nominal sans faux positif --------
+echo "Test 54 : conteneurs dans la slice -> appartenance OK, pas d'EVASION (#15157)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  mkdir -p "$TEST_DIR/slice-muravecloc/id-aaa111" "$TEST_DIR/slice-muravecloc/id-bbb222"
+  echo "17179869184" > "$TEST_DIR/slice-muravecloc/memory.max"
+  echo "12884901888" > "$TEST_DIR/slice-muravecloc/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/slice-muravecloc"
+  export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
+  out="$(report_slice_membership 2>&1)"
+  if echo "$out" | grep -q "appartenance OK" && ! echo "$out" | grep -q "EVASION"; then
+    ok "appartenance nominale annoncee, pas de faux positif ($out)"
+  else
+    ko "appartenance OK attendue sans EVASION, out=$out"
+  fi
+  unset STUB_CI_CONTAINER_IDS
 )
 echo ""
 

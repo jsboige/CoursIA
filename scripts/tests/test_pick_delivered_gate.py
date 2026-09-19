@@ -34,6 +34,7 @@ from pick_idle_grain import (  # noqa: E402
     delivered_urn_allowed,
     draw_unclaimed,
     has_delivered_signal,
+    open_cover_signal,
     print_delivered_signal_report,
 )
 
@@ -439,3 +440,165 @@ def test_has_delivered_signal_est_tri_etat(monkeypatch):
 
     monkeypatch.setattr(pig.subprocess, "run", boom)
     assert has_delivered_signal(1) is None
+
+
+# --- surface 3 : la PR OUVERTE couvrante, meme rang (#16589) ---------------
+
+def _cover_probe(*covered):
+    """Sonde de couverture synthetique : descriptor pour les numeros listes,
+    chaine vide sinon. Retourne le descripteur « PR #<9000+n> » pour rendre
+    l'assertion lisible dans le message de conflit."""
+    covered = set(covered)
+
+    def probe(number):
+        return f"PR #{9000 + number}" if number in covered else ""
+    return probe
+
+
+def test_pr_ouverte_ecarte_le_grain_et_le_remplace(monkeypatch):
+    """Arbitrage #16589 : le candidat couvert par une PR OUVERTE est ecarte
+    ET remplace dans son urne -- au meme rang que candidate-delivered, pas
+    une annotation de plus. C'est le differenciateur du precedent #12504 :
+    le signal existait (annotation recent_delivery), il manquait la
+    sanction."""
+    _patch_draw(monkeypatch, [1, 2])
+    by = _by(grain=[_item(1), _item(2)])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=_cover_probe(1))
+    assert [p["number"] for p in picks] == [2], (
+        "un remplacant doit etre rendu, pas zero grain")
+    assert len(conflicts) == 1
+    assert conflicts[0][1].startswith("EN COURS")
+    assert "PR #9001" in conflicts[0][1]
+
+
+def test_controle_positif_grain_non_couvert_est_conserve(monkeypatch):
+    """Sans ce cas, un garde qui ecarterait TOUT serait vert sur le negatif."""
+    _patch_draw(monkeypatch, [1])
+    by = _by(grain=[_item(1)])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=_cover_probe())
+    assert [p["number"] for p in picks] == [1]
+    assert conflicts == []
+
+
+def test_umbrella_pas_filtree_par_la_couverture(monkeypatch):
+    """Meme protection que la surface livraison : l'urne `umbrella` n'est pas
+    filtree par la couverture -- une PR ouverte sur un VOLET d'EPIC n'epuise
+    pas le parapluie (R5 : on y pioche un autre sous-grain, on ne ferme pas
+    l'EPIC sur une livraison partielle)."""
+    _patch_draw(monkeypatch, [200])
+    by = _by(umbrella=[_item(200, klass="umbrella")])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=0, umbrellas=1), random.Random(7), None, None,
+        None, cover_probe=_cover_probe(200))
+    assert [p["number"] for p in picks] == [200]
+    assert conflicts == []
+
+
+def test_livraison_premiere_le_label_ne_paie_pas_la_couverture(monkeypatch):
+    """Le filtre de livraison reste PREMIER : un candidat labelise part en
+    LIVRAISON sans jamais atteindre la sonde de couverture (un travail deja
+    livre prime sur un travail en cours)."""
+    _patch_draw(monkeypatch, [1, 2])
+    calls = []
+
+    def probe(number):
+        calls.append(number)
+        return "PR #9001" if number == 1 else ""
+
+    by = _by(grain=[_item(1, labels=(DELIVERED_LABEL,)), _item(2)])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=probe)
+    assert [p["number"] for p in picks] == [2]
+    assert conflicts[0][1].startswith("LIVRAISON")
+    assert calls == [2], (
+        "le candidat labelise ne doit jamais atteindre la sonde de "
+        f"couverture, or appels={calls}")
+
+
+def test_sonde_couverture_en_echec_fail_open_et_dite(monkeypatch, capsys):
+    """Echec de requete != absence de PR couvrante : candidat CONSERVE,
+    echec rapporte (cover_failures), message distinct du NON SONDE."""
+    _patch_draw(monkeypatch, [1])
+    by = _by(grain=[_item(1)])
+
+    def failing(number):
+        return None
+
+    state = {"failures": [], "budget_hit": False}
+    picks, _, _ = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=failing, delivered_state=state)
+    assert [p["number"] for p in picks] == [1], "fail-OPEN : candidat garde"
+    assert state["cover_failures"] == [1]
+    print_delivered_signal_report([], state, False)
+    out = capsys.readouterr().out
+    assert "sonde de couverture NON LUE" in out
+    assert "NON SONDE" not in out
+
+
+def test_plafond_partage_entre_sondes_livraison_et_couverture(monkeypatch):
+    """« Au meme rang » (#16589) = AUSSI au meme cout : les deux sondes
+    parent le MEME budget de DELIVERED_SIGNAL_MAX_PROBES, pas un plafond
+    double. Avec un plafond de 2 et deux candidats, exactement deux sondes
+    reelles partent (livraison du 1er, couverture du 1er) -- le 2e candidat
+    n'en a plus aucune."""
+    monkeypatch.setattr(pig, "DELIVERED_SIGNAL_MAX_PROBES", 2)
+    _patch_draw(monkeypatch, [1, 2])
+    delivered_calls = []
+    cover_calls = []
+
+    def counting_delivered(number, lane=None):
+        delivered_calls.append(number)
+        return False
+
+    def counting_cover(number):
+        cover_calls.append(number)
+        return ""
+
+    state = {"failures": [], "budget_hit": False}
+    by = _by(grain=[_item(1), _item(2)])
+    picks, _, _ = draw_unclaimed(
+        by, _args(grains=2), random.Random(7), None, None, None,
+        delivered_probe=counting_delivered,
+        cover_probe=counting_cover, delivered_state=state)
+    assert delivered_calls == [1], (
+        f"plafond partage : une seule sonde livraison, or {delivered_calls}")
+    assert cover_calls == [1], (
+        f"plafond partage : une seule sonde couverture, or {cover_calls}")
+    assert state["budget_hit"] is True
+    assert len(picks) == 2, "les non sondes sont CONSERVES (fail-open)"
+
+
+def test_open_cover_signal_est_tri_etat(monkeypatch):
+    """La sonde elle-meme : descriptor / chaine vide / None. Le meme tri-etat
+    que has_delivered_signal -- un echec de requete n'est pas une absence de
+    PR couvrante."""
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    opened = json.dumps([
+        {"number": 12530, "state": "OPEN", "isDraft": False},
+        {"number": 12519, "state": "OPEN", "isDraft": True},
+        {"number": 12400, "state": "CLOSED", "isDraft": False}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(opened))
+    assert open_cover_signal(12504) == (
+        "PR #12519 [draft] (+1 autre(s) : #12530)")
+
+    clean = json.dumps([{"number": 12400, "state": "CLOSED",
+                         "isDraft": False}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(clean))
+    assert open_cover_signal(12504) == ""
+
+    def boom(*a, **kw):
+        raise OSError("403")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert open_cover_signal(12504) is None

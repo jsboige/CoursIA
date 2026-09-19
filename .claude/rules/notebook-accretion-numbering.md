@@ -90,7 +90,7 @@ Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq on
 | Liens 404 dans la doc | `scripts/check_docs_links.py` |
 | Accents perdus dans les cibles | `scripts/notebook_tools/detect_link_target_regression.py` |
 | Rendu des liens de README de serie | `scripts/notebook_tools/check_notebook_link_render.py` |
-| **Libelle qui ment sur sa cible** | `scripts/notebook_tools/check_link_label_agreement.py` — **livre par la PR #14625, pas encore sur `main`** (#14624) |
+| **Libelle qui ment sur sa cible** | `scripts/notebook_tools/check_link_label_agreement.py` — **sur `main` depuis la PR #14625** (#14624) |
 | **Referents hors depot** | **aucun organe possible** — le catalogue du depot projets etudiant `jsboigeEPF/2026-MSMIN5IN52-GenAI` (`docs/CATALOGUE.md`), consommateur connu des chemins `MyIA.AI.Notebooks/GenAI/**` (#15289) |
 
 **La cinquieme est celle que le sweep rate**, et c'est la sequelle propre a la renumerotation : les quatre premiers organes verifient que la cible **existe**, aucun ne verifie que le **libelle dit la verite**. Un `[Search-12](.../Search-03b-....ipynb)` passe les quatre. Mesure du 2026-09-04 : **32 desaccords sur 2194 fichiers**, dont la sequelle directe de #13770.
@@ -109,7 +109,7 @@ Le volet **inter-series** (meme concept dans deux series *differentes* partagean
 
 ## 8. Ce que la regle ne couvre pas
 
-- **Le padding zero** (`Search-3` vs `GameTheory-03`, ordre lexicographique casse) — chantier propre, **#14545**.
+- **Le padding zero** (`Search-3` vs `GameTheory-03`, ordre lexicographique casse) — chantier canonique **#16231**. L'ancien tracker #14545 est CLOSED et Search-only ; il ne porte plus le geste global.
 - **La numerotation des en-tetes markdown *dans* un notebook** (`## 3.`) — [notebook-conventions.md](notebook-conventions.md).
 
 ## Voir aussi

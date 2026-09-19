@@ -207,15 +207,21 @@ LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"
 #      monopoliser le disque. Mesure ai-01 2026-09-07 : dd 256 Mio oflag=direct
 #      rend 7,4 GB/s sans cap et 21,2 MB/s sous --device-write-bps 20 Mio/s --
 #      facteur 350, a 1 % de la valeur demandee. Le cap est REEL.
-#   2. AGREGE -- la slice systemd coursia-ci.slice, appliquee par defaut du
-#      daemon (/etc/docker/daemon.json "cgroup-parent"). C'est la seule borne
-#      qui somme les familles ; voir persist/coursia-ci.slice.
+#   2. AGREGE -- la slice systemd coursia-ci.slice. Entree par le drapeau
+#      --cgroup-parent que ce script pose : le defaut de daemon.json ne
+#      couvre que le daemon docker-ce, qui n'heberge AUCUN conteneur de la
+#      flotte -- le daemon reel (Docker Desktop, #15157) n'a pas de defaut.
+#      C'est la seule borne qui somme les familles ; voir
+#      persist/coursia-ci.slice.
 #   3. CPU INTER-FAMILLES -- assert_cpu_budget() ci-dessous, qui ferme le trou
 #      que cmd_lean documente depuis #14337 (« la somme des caps CPU des
 #      familles actives n'est gardee par RIEN »).
 #
-# La borne 2 est daemon-wide et donc independante de l'appelant ; ce script
-# n'a pas a la re-imposer, il a a VERIFIER qu'elle est en vigueur. La
+# La borne 2 ne depend de la memoire de l'appelant que TANT QUE l'appelant
+# passe le drapeau -- supervise.sh le fait ; un conteneur lance a la main y
+# echappe, et report_slice_membership rend cette evasion visible (#15157).
+# Ce script n'a pas a re-imposer la borne, il a a VERIFIER qu'elle est en
+# vigueur. La
 # difference n'est pas cosmetique : re-passer --cgroup-parent sur une machine
 # ou la slice n'existe pas cree un cgroup vide qui a l'air d'un garde et n'en
 # est pas -- exactement la classe de defaut ou un outil manquant rend un garde
@@ -297,6 +303,24 @@ BACKOFF_MAX_SEC="${COURSIA_RUNNER_BACKOFF_MAX_SEC:-300}"
 # meme seconde -- le backoff seul deplace la rafale sans la disperser. Le
 # jitter la disperse.
 BACKOFF_JITTER_PCT="${COURSIA_RUNNER_BACKOFF_JITTER_PCT:-25}"
+
+# #15154 : code HTTP et stderr du dernier fetch_token, lus par les boucles
+# pour discriminer 4xx-terminal (compte sans droit admin) de 5xx/reseau
+# (transitoire, retry legitime). Les boucles retentaient a l'identique sur
+# les deux branches -- un 403 sur droit manquant bouclait indefiniment.
+#
+# Passage par FICHIER (pas par variable bash) : fetch_token est toujours
+# invoque via `token="$(fetch_token)"`, donc DANS un subshell. Toute
+# affectation directe a une variable du scope parent y est silencieusement
+# perdue (la portee du subshell est isolee, les `export` aussi -- c'est
+# juste une fonction bash appelee par commande). Un fichier ecrit dans
+# STATE_DIR traverse le subshell sans encombre. Voie alternative evaluee
+# et rejetee : `eval "$(fetch_token)"` -- elle execute du code en arriere
+# plan et complique le chemin de lecture. Le fichier reste la voie
+# observable : `cat $FETCH_TOKEN_STATE_FILE` rend l'etat, comme un sentinel.
+FETCH_TOKEN_STATE_FILE="$STATE_DIR/.fetch_token_state"
+mkdir -p "$STATE_DIR"
+: > "$FETCH_TOKEN_STATE_FILE"
 
 # Seuil de packs du cache _work persistant (#15105). Au-dela, l'entrypoint du
 # conteneur repack le clone (gc.auto=0 pose par actions/checkout : rien
@@ -453,10 +477,18 @@ host_probe() {
     fi
     return 0
   fi
-  command -v powershell.exe >/dev/null 2>&1 || return 0
+  # Resolution robuste de powershell.exe : le contexte systemd n'herite pas du
+  # PATH Windows annexe (login WSL uniquement) -- wslpath fournit l'absolu.
+  # wslpath pour le -File : natif WSL ; cygpath : repli Cygwin/Git-Bash. Bash
+  # ne resout pas cygpath.exe sans suffixe sous WSL -- le repli POSIX cassait
+  # la sonde (hote NON MESURABLE) depuis #15123.
+  local psexe
+  psexe="$(command -v powershell.exe 2>/dev/null)"
+  [ -n "$psexe" ] || psexe="$(wslpath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' 2>/dev/null)"
+  [ -n "$psexe" ] || return 0
   [ -f "$PROBE_PS1" ] || return 0
-  powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
-    -File "$(cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
+  "$psexe" -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+    -File "$(wslpath -w "$PROBE_PS1" 2>/dev/null || cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
     2>/dev/null | tr -d '\r' | head -1
 }
 
@@ -1205,6 +1237,27 @@ fetch_token() {
   # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
   # compte sans droit admin) doit atteindre l'operateur. Le message de la
   # boucle resume le symptome ; il ne remplace pas la cause.
+  #
+  # #15154 : on capture le code HTTP distingue par stderr pour discriminer
+  # `gh: ... (HTTP 403)` (terminal : le compte n'a pas le droit admin,
+  # retenter ne resout rien) de `gh: ... (HTTP 5xx)` ou absence de reponse
+  # (transitoire : API momentanement indisponible, retry legitime). Avant
+  # ce changement, une cause structurelle (compte sans droit) bouclait
+  # indefiniment en se faisant passer pour une panne transitoire.
+  #
+  # IMPORTANT : le resultat est depose dans $FETCH_TOKEN_STATE_FILE (chemin
+  # absolu ecrit dans l'entete), PAS dans une variable bash. Un appel
+  # `token="$(fetch_token)"` execute la fonction dans un subshell -- les
+  # asignations de variables y sont locales et perdues au retour. Le fichier
+  # survit au subshell. Format : "HTTP=<code>\nERR=<stderr tronque>".
+  local err="" http_code="" state_tmp=""
+  err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
+  if [ -n "$err" ]; then
+    http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
+    printf 'HTTP=%s\nERR=%s\n' "${http_code:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+    return 1
+  fi
+  printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
   gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token
 }
 
@@ -1231,7 +1284,36 @@ slot_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      echo "[slot $slot] token indisponible (droit admin gh ?) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      # #15154 : 4xx (sauf 408 timeout) = terminal apres N essais -- un compte
+      # sans droit admin ne se gagne pas par la perseverance. 5xx / 0 = transitoire,
+      # retry legitime. La discrimination se fait sur le code HTTP que fetch_token
+      # a depose dans $FETCH_TOKEN_STATE_FILE (le fichier survit au subshell
+      # d'invocation `$(fetch_token)` -- une variable bash n'aurait pas traverse).
+      local http="" terminal=0
+      if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
+        http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+      fi
+      : "${http:=0}"
+      case "$http" in
+        4??) [ "$http" != "408" ] && terminal=1 ;;
+      esac
+      if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
+        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
+        # erreur. Le sentinel STOP_FILE est observe par leur test de boucle
+        # (`while [ ! -f "$STOP_FILE" ]`), donc ils sortent en arret gracieux
+        # au prochain tour. Le superviseur parent finit sur `wait` quand
+        # tous les enfants sont morts -- sans cette coordination, il
+        # attendrait indefiniment les slots sains. Le sentinel est un
+        # mecanisme deja porte par cmd_stop, on le REUTILISE ici.
+        touch "$STOP_FILE" 2>/dev/null || true
+        die "superviseur arrete -- cause structurelle, voir message precedent"
+      fi
+      if [ "$terminal" -eq 1 ]; then
+        echo "[slot $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+      else
+        echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      fi
       sleep "$wait_s"
       continue
     fi
@@ -1371,6 +1453,9 @@ utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
     echo "$!" >> "$STATE_DIR/pids"
   done
   echo "slots lances. Arret gracieux : $0 stop"
+  # #15154 : un slot qui meurt par ABANDON pose le sentinel STOP_FILE --
+  # les autres slots en tiennent compte et sortent en arret gracieux a leur
+  # prochain tour de boucle. `wait` rend quand tous les enfants sont morts.
   wait
 }
 
@@ -1522,6 +1607,51 @@ Le mur agrege serait decoratif tout en paraissant actif. Deployer :
   echo "[slice] ($CI_SLICE_PATH ; conteneurs places via --cgroup-parent=$CI_CGROUP_PARENT)"
 }
 
+# Garde d'APPARTENANCE du mur agrege (#15157).
+#
+# assert_ci_slice verifie que le mur A des plafonds ; jusqu'ici rien ne
+# prouvait que les conteneurs Y SONT. Mesure ai-01 2026-09-08 : la flotte
+# tourne sur un daemon (Docker Desktop, pilote cgroupfs) qui ne porte
+# AUCUN cgroup-parent par defaut -- le defaut de daemon.json ne vit que
+# sur le daemon docker-ce, qui heberge zero conteneur. L'entree depend
+# donc entierement du drapeau pose par ce script, et un conteneur lance
+# a la main y echappe -- en silence : hors du mur, il garde ses caps
+# propres et la lecture du mur ne le voit pas.
+#
+# Chaque conteneur place cree un sous-groupe dans la slice : on confronte
+# ce compte au nombre de conteneurs vivants label=coursia-ci=1 sur le
+# daemon vise (le meme binaire docker que slot_loop). Advisory et non
+# bloquant -- un die ici tuerait un pool sain sur un decalage transitoire
+# de creation ; la ligne est le signal, lue depuis cmd_status une fois la
+# flotte en vol (hors course de creation).
+slice_subgroup_count() {
+  local d n=0
+  for d in "$CI_SLICE_PATH"/*/; do
+    [ -d "$d" ] && n=$((n + 1))
+  done
+  echo "$n"
+}
+
+running_ci_count() {
+  docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null | grep -c .
+}
+
+report_slice_membership() {
+  # Sans mur actif, assert_ci_slice a deja parle (et neutralise le
+  # placement) : l'appartenance n'a rien a mesurer.
+  local mx
+  mx="$(slice_read_raw memory.max)"
+  case "$mx" in ""|max) return 0 ;; esac
+  local sub n
+  sub="$(slice_subgroup_count)"
+  n="$(running_ci_count)"
+  if [ "$n" -gt "$sub" ]; then
+    echo "[slice] EVASION : $((n - sub)) conteneur(s) coursia-ci HORS du mur agrege (conteneurs=$n, sous-groupes=$sub) -- un conteneur lance sans --cgroup-parent n'est pas borne par la slice (#15157)"
+  else
+    echo "[slice] appartenance OK : $n conteneur(s) coursia-ci, $sub sous-groupe(s) dans le mur"
+  fi
+}
+
 # Affiche pic / courant / plafonds de la slice, et confronte le pic au budget.
 # C'est la seule ligne de ce script qui compare une DECLARATION a une MESURE.
 cmd_peak() {
@@ -1616,6 +1746,9 @@ cmd_status() {
     echo "  plafond par conteneur : non declare (COURSIA_RUNNER_DEVICE_WRITE_BPS vide)"
   fi
   echo "  budget CPU inter-familles : ${CPU_BUDGET:-0} vCPU (0 = pas de garde)"
+  echo "== mur agrege (post-demarrage, #15157) =="
+  assert_ci_slice 2>&1 | sed 's/^/  /'
+  report_slice_membership 2>&1 | sed 's/^/  /'
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="
@@ -1668,7 +1801,27 @@ waiter_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      echo "[waiter $slot] token indisponible (droit admin gh ?) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop).
+      local http="" terminal=0
+      if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
+        http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+      fi
+      : "${http:=0}"
+      case "$http" in
+        4??) [ "$http" != "408" ] && terminal=1 ;;
+      esac
+      if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
+        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
+        # les slots et waiters sur la meme cause structurelle.
+        touch "$STOP_FILE" 2>/dev/null || true
+        die "superviseur waiter arrete -- cause structurelle, voir message precedent"
+      fi
+      if [ "$terminal" -eq 1 ]; then
+        echo "[waiter $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+      else
+        echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
+      fi
       sleep "$wait_s"
       continue
     fi

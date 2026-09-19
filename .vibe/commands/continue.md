@@ -113,7 +113,7 @@ Pas de timestamp redige dans le corps : le `createdAt` serveur fait foi. Un `[CL
    ```
    L'humain relit, pousse la branche et ouvre la PR. Le tag `Grain:` doit se retrouver dans le body de la PR : c'est lui qui rattache la PR a la lane (comptage cap, garde rouge du picker).
 3. **[DONE]** : `[DONE] myia-po-2025:Microsoft VS Code <resume> -- branche feature/<sujet> -- grade: <A/B/C>`
-4. **Bloqueurs** : tag `[ASK USER]` SEPARE du [DONE]. Repeter a CHAQUE fin de payload tant que non leve.
+4. **Bloqueurs** : inscrire l'action user dans le registre durable, puis restituer les questions ouvertes en un bloc en fin de payload ; ne pas re-poster chaque question séparément.
 5. **MEMORY.md** : MAJ si lecon durable.
 
 ---
