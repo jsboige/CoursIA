@@ -66,7 +66,9 @@ de fichier, **apres** la section « Voir aussi ».
 ### 1. La PR #15094 patche une copie qui ne tourne pas sur ai-01
 
 `persist/coursia-runner.service` et `persist/coursia-runner-start.sh` sont ceux de
-**po-2024** : depot sous `/mnt/c/dev/CoursIA`, prefixe `myia-po-2024-linux-docker`,
+**po-2024** : depot sous `/mnt/d/Dev/CoursIA` (migration du 2026-09-17 ; le
+defaut etait `/mnt/c/dev/CoursIA` avant, cf. #16578), prefixe
+`myia-po-2024-linux-docker`,
 et un wrapper qui relaie n'importe quelle sous-commande (`exec "$SUPERVISE" "$@"`).
 
 Les fichiers vivants d'ai-01 sont differents sur les trois points qui comptent :
@@ -74,6 +76,11 @@ depot sous `/mnt/d/CoursIA`, prefixe `myia-ai-01-wsl`, et un premier argument qu
 est le **nombre de slots**, pas une sous-commande. Un correctif porte sur la copie
 a plat ne touche donc pas la machine qui a gele. C'est ce que le sous-repertoire
 `ai-01/` rend desormais impossible a confondre.
+
+**Les deux chemins ne different plus que par un segment** (`/mnt/d/Dev/CoursIA`
+pour po-2024, `/mnt/d/CoursIA` pour ai-01) : les relire a la lettre avant de
+conclure un drift -- une difference d'un seul composant est exactement ce que
+l'oeil saute.
 
 ### 2. `systemctl start` ignore `disabled` -- une unite desactivee redemarre au boot
 

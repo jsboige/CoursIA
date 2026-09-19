@@ -54,6 +54,12 @@ if [ "\$1" = "run" ]; then
   esac
   exit 0
 fi
+# Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
+# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS.
+if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
+  if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -2586,6 +2592,58 @@ echo "Test 46 : start sans epingle refuse en nommant le gesture manquant (#16134
     ko "refus attendu sans epingle, rc=$rc err=$err"
   fi
   unset COURSIA_RUNNER_PINNED_CTX
+)
+echo ""
+
+# --- Test 53 : garde d'appartenance -- evasion visible (#15157) -------------
+#
+# Le defaut repare ici n'est pas un plafond manquant mais une appartenance
+# INVARIABLEMENT annoncee saine : assert_ci_slice rendait « mur ACTIF » alors
+# qu'aucun conteneur n'y etait -- le daemon de la flotte ne porte pas de
+# cgroup-parent par defaut (mesure 2026-09-08), l'entree depend du drapeau,
+# et un conteneur lance a la main echappe en silence. Deux conteneurs
+# declares par le stub docker, zero sous-groupe dans la slice : la ligne
+# EVASION doit exister, avec son compte.
+echo "Test 53 : conteneurs hors slice -> EVASION visible (#15157)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  mkdir -p "$TEST_DIR/slice-mursansloc"
+  echo "17179869184" > "$TEST_DIR/slice-mursansloc/memory.max"
+  echo "12884901888" > "$TEST_DIR/slice-mursansloc/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/slice-mursansloc"
+  # EXPORT obligatoire : le stub docker est un PROCESSUS FILS -- une variable
+  # shell nue ne franchit pas la frontiere, et le garde lirait 0 conteneur.
+  export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
+  out="$(report_slice_membership 2>&1)"
+  if echo "$out" | grep -q "EVASION" && echo "$out" | grep -q "conteneurs=2"; then
+    ok "evasion nommee avec son compte (conteneurs=2, sous-groupes=0)"
+  else
+    ko "ligne EVASION attendue, out=$out"
+  fi
+  unset STUB_CI_CONTAINER_IDS
+)
+echo ""
+
+# --- Test 54 : garde d'appartenance -- cas nominal sans faux positif --------
+echo "Test 54 : conteneurs dans la slice -> appartenance OK, pas d'EVASION (#15157)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  mkdir -p "$TEST_DIR/slice-muravecloc/id-aaa111" "$TEST_DIR/slice-muravecloc/id-bbb222"
+  echo "17179869184" > "$TEST_DIR/slice-muravecloc/memory.max"
+  echo "12884901888" > "$TEST_DIR/slice-muravecloc/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/slice-muravecloc"
+  export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
+  out="$(report_slice_membership 2>&1)"
+  if echo "$out" | grep -q "appartenance OK" && ! echo "$out" | grep -q "EVASION"; then
+    ok "appartenance nominale annoncee, pas de faux positif ($out)"
+  else
+    ko "appartenance OK attendue sans EVASION, out=$out"
+  fi
+  unset STUB_CI_CONTAINER_IDS
 )
 echo ""
 
