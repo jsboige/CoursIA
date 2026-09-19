@@ -36,7 +36,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 11 | Descendre sous budget | FIRSTHAND (A6 + c.1208) | **1 + 1 en instance** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free ; Search-11d #16392 — comptée dès merge, convention op 7) | Lean-formel + empirique | en constitution — 2ᵉ attestation livrée sur substrat indépendant (c.1208) ; promotion TABLE à statuer par A7 |
 | 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **2 directes** (GT-21 #12245 jeux 2×2 + Search-12a #16426 gridworld pondéré — comptée dès merge, convention op 7) | empirique-notebook ×2, substrats indépendants | en constitution — 2ᵉ attestation directe livrée ; promotion TABLE à statuer par la revue (witness form connu : paire incompatible exhibée, Search-12a §5) |
 | 13 | Traverser un mur | FIRSTHAND (A6) | **1** (GT-24 #12364 MERGED ; 24b = témoins impossibilité, même substrat) | empirique | en constitution — A6 : 1 attestation, famille 24/24b |
-| 14 | Agréger un collectif | FIRSTHAND (A6) | **1** (`Shapley.lean:614-634` Möbius/Harsanyi, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation ; GaleShapley n'est pas une 2ᵉ (appariement ≠ agrégation) |
+| 14 | Agréger un collectif | FIRSTHAND (A6 + ce cycle) | **2** (`Shapley.lean:614-634` Möbius/Harsanyi sorry-free + SC-06 Python exécuté, PR ce cycle) | Lean-formel + empirique | **TABLE** — promotion mesurée §Gain 3 (même pattern que l'op 9) ; GaleShapley reste exclu (appariement ≠ agrégation) |
 
 ## Les quatre tombées (décisions de la revue extérieure, appliquées)
 
@@ -52,7 +52,7 @@ La mention « mauvais recollement → déviation adversariale » (Brown-Sandholm
 **Tombée 4 — Op 3 « Quotienter / fibrer » → FILE D'ATTENTE.**
 A3 a établi firsthand que `teorth/pfr` est **externe au dépôt** (find + grep : 0). Ce cycle vérifie que la contrepartie locale est arrivée : **Lean-21b MERGED** (#12252, 2026-08-22T12:57Z, « 3 primitives PFR + tests de limite »). C'est une vraie attestation locale — mais **une seule** : parler de « primitive transversale » exige un **second substrat**. → `FIRSTHAND / 1 attestation locale / empirique-notebook`.
 
-## Deux gains de mesure (le froid fait tomber ET remonter)
+## Trois gains de mesure (le froid fait tomber ET remonter)
 
 **Gain 1 — Op 9 « Élargir l'espace » passe à 2 attestations.**
 A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Python-Coup-Ontologique** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
@@ -62,6 +62,9 @@ Le body dit : « attestée une fois » (transformation vs morphisme, swap ordina
 
 **Contrepartie — Loi I « obstruction abstraite → témoin exploitable » retombe à 1 attestation.**
 Elle citait de Finetti **et** Brown-Sandholm comme deux attestations. La Tombée 3 requalifie Brown-Sandholm en lecture structurelle → la Loi I n'a plus que de Finetti (1). Le grade §3 doit être révisé en conséquence : **Loi I : 1 · Loi II : 2 · Loi III : 2**.
+
+**Gain 3 — Op 14 « Agréger un collectif » passe à 2 attestations.**
+La 1ʳᵉ (A6) : `Shapley.lean:614-634` — `Mobius.mobiusCoeff` / `Mobius.mobiusReconstruction`, l'inversion de Möbius sur le treillis des coalitions, sorry-free (0 `sorry` réel mesuré : l'unique occurrence du mot dans le fichier est de la prose, ligne 1260). Cette livraison : **SC-06 — Möbius, agrégation, pouvoir, manipulation** (`MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb`, PR ce cycle) exécute le miroir Python exact de ces deux définitions — reconstruction vérifiée par exécution sur les 16 coalitions de `[6;4,3,2,1]` (le re-test `[8;5,4,3,2,1]` est posé en exercice, non exécuté) — puis dérive la valeur de Shapley par les dividendes **et** par énumération des 24 ordres d'entree (deux voies indépendantes, écart 5.55e-17), mesure l'écart poids/pouvoir (Banzhaf ; dummy du Luxembourg, Conseil 1958) et instancie le témoin de Gibbard-Satterthwaite sur un Borda à électeurs pondérés. Deux substrats indépendants (Lean/preuve vs Python/exécution), même loi de décomposition en dividendes de Harsanyi. L'op 14 quitte « en constitution » et rejoint l'op 9 dans les promotions par la mesure.
 
 ## Preuves de ce cycle (firsthand, reproductibles)
 
