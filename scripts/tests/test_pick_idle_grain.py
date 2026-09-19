@@ -886,8 +886,10 @@ def test_dwell_banner_is_parsed_from_the_check_run_annotation(monkeypatch):
     """
     _patch_gh_annotations(monkeypatch, [DWELL_ANN])
     dwell = pig.fetch_check_dwell(103721837941)
+    # #16092 : lift_at = premier sweep :07 STRICTEMENT posterieur au plancher
+    # brut (12:14:44 + 120 min = 14:14:44 -> 15:07), pas le plancher lui-meme.
     assert dwell == {"head_at": "2026-09-13T12:14:44Z", "dwell_min": 120,
-                     "remaining_min": 113, "lift_at": "2026-09-13T14:14:44Z"}
+                     "remaining_min": 113, "lift_at": "2026-09-13T15:07:00Z"}
 
 
 def test_dwell_banner_control_negative_fail_and_unreadable(monkeypatch):
