@@ -37,8 +37,9 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-04 (C#) | [04-Computational-Aggregation-SAT-Z3-Csharp](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-04 (agrégation SAT/Z3) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 45 min | PARITÉ |
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
+| SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
 
-**Durée totale** : ~4h35
+**Durée totale** : ~5h15
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des six notebooks d'origine dont ils sont les retranscriptions .NET.
 
