@@ -78,6 +78,109 @@
         "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml",
         "MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain"
       ]
+    },
+    {
+      "lake": "argumentation",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean",
+      "display-name": "argumentation_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "calibration",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean",
+      "display-name": "calibration_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "conwaycgt",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean",
+      "display-name": "conway_cgt_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json"
+      ]
+    },
+    {
+      "lake": "erc20",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean",
+      "display-name": "erc20_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "finiteness",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean",
+      "display-name": "finiteness_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "gamedefs",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/lean_game_defs",
+      "display-name": "lean_game_defs",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "gamedefsext",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext",
+      "display-name": "lean_game_defs_ext",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "learningtheory",
+      "project-path": "MyIA.AI.Notebooks/ML/learning_theory_lean",
+      "display-name": "learning_theory_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain"
+      ]
     }
   ]
 }

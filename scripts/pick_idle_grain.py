@@ -851,6 +851,92 @@ def delivered_signal_reason(
     return None
 
 
+def open_cover_inert(issue_number: int) -> str:
+    """Sonde inerte : aucune PR couvrante, aucun appel reseau.
+
+    Defaut de ``draw_unclaimed`` pour la sonde de couverture, meme doctrine
+    que ``delivered_probe_inert`` : un appel direct ou un test unitaire ne
+    doit pas emettre de requete `gh` par candidat tire.
+    """
+    return ""
+
+
+def open_cover_signal(issue_number: int) -> str | None:
+    """Une PR OUVERTE couvre-t-elle deja cette issue ?
+
+    TRI-ETAT, meme doctrine que ``has_delivered_signal`` : ``""`` = aucune
+    PR ouverte couvrante ; une descriptor-string (``"PR #12519 [draft]
+    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite l'issue ;
+    ``None`` = la requete a echoue (reseau, 403, payload illisible) et
+    l'appelant doit tirer quand meme EN LE DISANT.
+
+    Requete et priorite identiques a ``recent_delivery`` (#12504) : une PR
+    OUVERTE dit « quelqu'un y est en ce moment, ton claim sera void » ; une
+    PR fermee-sans-fusion n'atteste de rien et est ignoree explicitement.
+    Arbitrage #16589 (ai-01, 2026-09-17) : ce signal monte AU MEME RANG que
+    candidate-delivered -- le candidat couvert est ECARTE et remplace dans
+    son urne, pas seulement annote.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "all",
+             "--limit", "20", "--search", f"{issue_number} in:title,body",
+             "--json", "number,state,isDraft"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        prs = json.loads(out)
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+    if not opened:
+        return ""
+    first = min(opened, key=lambda pr: pr["number"])
+    others = [pr["number"] for pr in opened
+              if pr["number"] != first["number"]]
+    descriptor = f"PR #{first['number']}"
+    if first.get("isDraft"):
+        descriptor += " [draft]"
+    if others:
+        descriptor += " (+{} autre(s) : {})".format(
+            len(others), ", ".join(f"#{x}" for x in others))
+    return descriptor
+
+
+def open_cover_reason(
+    item: dict,
+    probe=None,
+    failures: list[int] | None = None,
+) -> str | None:
+    """Pourquoi ecarter ce candidat de l'urne `grain` (PR ouverte couvrante).
+
+    Portee : l'urne `grain` SEULE, et seulement APRES le filtre de
+    livraison (le label/marqueur reste premier : un travail deja livre
+    prime sur un travail en cours). Le garde ne dit pas « ne fais jamais
+    ce travail » -- il dit « ton claim serait VOID au moment ou tu le
+    poserais » : la lane qui veut malgre tout prendre le grain lit la PR
+    couvrante et reclaime en le disant (``recent_delivery`` reste le filet
+    fail-OPEN quand la sonde n'a pas pu etre faite).
+    """
+    if probe is None:
+        probe = open_cover_inert
+    verdict = probe(item["number"])
+    if verdict == DELIVERED_SIGNAL_UNPROBED:
+        return None
+    if verdict is None:
+        # Fail-OPEN, et rapporte -- meme doctrine que delivered_signal_reason.
+        if failures is not None:
+            failures.append(item["number"])
+        return None
+    if verdict:
+        return (
+            f"TRAVAIL EN COURS : {verdict} OUVERTE couvre cette issue -> "
+            "claim probablement VOID ; verifier la PR couvrante AVANT d'y "
+            "retourner (le diff peut rester incomplet)"
+        )
+    return None
+
+
 
 def print_delivered_signal_report(
     withheld: list,
@@ -879,6 +965,15 @@ def print_delivered_signal_report(
         print("   les recoit. Urne `delivered` et `--include-delivered` "
               "restent")
         print("   les deux chemins pour les traiter.")
+    inprogress = [it for it, cause in withheld
+                  if cause.startswith("EN COURS")]
+    if inprogress:
+        numbers = ", ".join(f"#{it['number']}" for it in inprogress)
+        print(f"Signal de couverture : {len(inprogress)} candidat(s) "
+              f"ECARTE(S) de l'urne grain : {numbers}.")
+        print("   Une PR OUVERTE couvre deja l'issue -- un claim dessus serait")
+        print("   probablement VOID (arbitrage #16589 : meme rang que "
+              "candidate-delivered).")
     failed = sorted(set(state.get("failures") or []))
     if failed:
         numbers = ", ".join(f"#{num}" for num in failed)
@@ -888,14 +983,25 @@ def print_delivered_signal_report(
         print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
         print("   ABOUTI n'est PAS une absence de signal. Verifier a la main")
         print("   (`gh issue view <N> --comments`) avant de produire dessus.")
+    cover_failed = sorted(set(state.get("cover_failures") or []))
+    if cover_failed:
+        numbers = ", ".join(f"#{num}" for num in cover_failed)
+        print(f"!! sonde de couverture NON LUE sur {numbers} "
+              f"({len(cover_failed)} candidat(s)) : la recherche de PR "
+              "n'a pas abouti")
+        print("   (reseau, 403, payload illisible). Le tirage est MAINTENU et")
+        print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
+        print("   ABOUTI n'est PAS une absence de PR couvrante. Verifier")
+        print("   (`gh pr list --state all --search \"<N> in:title,body\"`) "
+              "avant de produire dessus.")
     if state.get("budget_hit"):
-        print(f"!! signal de livraison NON SONDE au-dela de "
-              f"{DELIVERED_SIGNAL_MAX_PROBES} candidats : le plafond de "
-              "sondes")
-        print("   est atteint, la fin de l'urne n'a pas ete verifiee. Les "
-              "candidats")
+        print(f"!! signal de livraison/couverture NON SONDE au-dela de "
+              f"{DELIVERED_SIGNAL_MAX_PROBES} sondes : le plafond PARTAGE "
+              "(commentaire + PR couvrante) est atteint, la fin de l'urne "
+              "n'a pas ete verifiee. Les candidats")
         print("   non sondes sont CONSERVES (fail-open).")
-    if dropped or failed or state.get("budget_hit"):
+    if (dropped or failed or cover_failed or inprogress
+            or state.get("budget_hit")):
         print()
 
 
@@ -906,9 +1012,10 @@ def print_empty_draw_notice(withheld: list, picks: list,
         return
     print("FILE LOCALE EPUISEE : aucun candidat libre dans cette poignee.")
     if not include_delivered and any(
-            cause.startswith("LIVRAISON") for _, cause in withheld):
-        print("   Une partie a deja ete livree et reste reservee a l'urne de")
-        print("   fermeture ; elle ne doit pas etre reproduite.")
+            cause.startswith(("LIVRAISON", "EN COURS"))
+            for _, cause in withheld):
+        print("   Une partie a deja ete livree ou est couverte par une PR")
+        print("   ouverte ; elle ne doit pas etre reproduite.")
     print("   Claims, livraisons et urnes autorisees restent proteges. Enchainer")
     print("   immediatement sur la deep-queue ou le fallback global de la lane.")
     print("   Une poignee locale epuisee ne termine jamais la session.")
@@ -1348,10 +1455,10 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
                    fallback_by_class=None, continuity_state=None,
-                   long_visits=None):
+                   cover_probe=None, long_visits=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
-    Deux raisons de remplacer plutot que d annoter :
+    Trois raisons de remplacer plutot que d annoter :
 
     1. Un candidat annote << BLOQUE par X >> reste un candidat. La lane le
        lit, juge que son scope differe, et ecrit quand meme -- c est le
@@ -1360,6 +1467,10 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
     2. Retirer sans remplacer transformerait le garde en source d idle, ce
        que la regle 4 de coordinator-discipline interdit. On retire ET on
        retire un candidat de plus dans la meme urne.
+    3. Une PR OUVERTE couvre le candidat (#16589) : le claim serait VOID
+       au moment ou la lane le poserait. Meme rang que le signal de
+       livraison, meme remplacement -- la doctrine du signal est celle de
+       recent_delivery (#12504), la sanction est celle du delivered.
 
     Le cout est borne : N appels sur les tires (une poignee), jamais sur le
     pool. C est pourquoi le check pouvait etre par defaut sans etre lent --
@@ -1393,6 +1504,18 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return (delivered_probe or delivered_probe_inert)(number, lane_name)
+
+    def _counted_cover_probe(number):
+        # Meme plafond, meme fail-OPEN que la sonde de livraison (#16589) :
+        # « au meme rang » veut dire AUSSI au meme cout borne -- les deux
+        # sondes parent le MEME budget, pas un plafond double. Un candidat
+        # qui passe le filtre de livraison consomme donc jusqu'a deux unites
+        # (commentaire + PR couvrante).
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return (cover_probe or open_cover_inert)(number)
 
     for cls, want, prev in urnes:
         primary = list(by_class[cls])
@@ -1446,6 +1569,18 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "LIVRAISON : " + reason + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
+                        # #16589 : la sonde de PR couvrante vient APRES le
+                        # filtre de livraison (un travail deja livre prime
+                        # sur un travail en cours) et seulement sur les
+                        # candidats SURVIVANTS -- le label gratuit reste
+                        # premier, la sonde la plus chere derniere.
+                        cover = open_cover_reason(
+                            c, _counted_cover_probe,
+                            state.setdefault("cover_failures", []))
+                        if cover is not None:
+                            conflicts.append((c, "EN COURS : " + cover + (
+                                " Candidat remplace dans la meme urne.")))
+                            continue
                     got.append(c)
                     if pool_index and continuity_state is not None:
                         continuity_state["used"] = True
@@ -1482,10 +1617,17 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     est en ce moment, ton claim sera void". Une PR **fermee sans fusion** ne
     dit rien et est ignoree explicitement.
 
-    L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
-    ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
-    en dit, pas s'il est pris. Le verrou cross-lane reste
-    ``check_lane_claim.py``, que le tirage interroge desormais par defaut.
+    Arbitrage #16589 (ai-01, 2026-09-17) : le cas PR-OUVERTE-couvrante monte
+    au meme rang que ``candidate-delivered`` -- ``draw_unclaimed`` ecarte et
+    remplace desormais ce candidat dans l'urne ``grain`` (sonde
+    ``open_cover_signal``, meme budget, meme fail-OPEN). Cette fonction reste
+    le FILET fail-OPEN : quand la sonde n'a pas pu etre faite (plafond
+    atteint, requete en echec), le candidat conserve arrive ici et recoit
+    quand meme l'annotation. Pour les PRs MERGEES, l'annotation **n'ecarte
+    pas** (parite avec la doctrine ``candidate-delivered`` : signale, ne
+    ferme pas) -- une fusion dit "peut-etre deja fait", pas "quelqu'un y
+    est". Le verrou cross-lane reste ``check_lane_claim.py``, que le
+    tirage interroge desormais par defaut.
     """
     notes: dict[int, str] = {}
     for p in picks:
@@ -3607,6 +3749,13 @@ def main(argv: list[str] | None = None) -> int:
         if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
         else has_delivered_signal
     )
+    # Sonde de couverture (#16589) : meme commutateur d'inertie sous pytest --
+    # un test qui veut le signal l'injecte explicitement.
+    cover_probe = (
+        open_cover_inert
+        if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
+        else open_cover_signal
+    )
     delivered_state: dict = {"failures": [], "budget_hit": False}
 
     payload_cache = PayloadCache(args.cache_dir)
@@ -3922,6 +4071,7 @@ def main(argv: list[str] | None = None) -> int:
         by_class, args, rng, visits, series, issue_to_family,
         delivery=delivery_weights if args.delivery_boost_max > 0 else None,
         delivered_probe=delivered_probe, delivered_state=delivered_state,
+        cover_probe=cover_probe,
         fallback_by_class=fallback_by_class,
         continuity_state=continuity,
         long_visits=long_visits)
@@ -3967,6 +4117,8 @@ def main(argv: list[str] | None = None) -> int:
             "delivered_signal": {
                 "include_delivered": bool(args.include_delivered),
                 "probes_failed": sorted(set(delivered_state["failures"])),
+                "cover_probes_failed": sorted(
+                    set(delivered_state.get("cover_failures") or [])),
                 "budget_hit": delivered_state["budget_hit"],
                 "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
             },
