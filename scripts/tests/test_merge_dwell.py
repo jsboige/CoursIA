@@ -66,14 +66,55 @@ def test_message_de_refus_nomme_le_geste_de_levee():
 def test_message_de_refus_porte_lheure_de_levee_absolue():
     """#15693 : l'heure de tete ET l'heure de LEVEE. « 101 min » oblige la
     lane a refaire le calcul et l'incite a agir ; un re-push reactionnaire
-    remet le plancher a zero depuis la nouvelle tete. Tete 11:55 + plancher
-    120 min -> leve au premier balayage suivant 13:55."""
+    remet le plancher a zero depuis la nouvelle tete.
+
+    #16092 : la levee est arrondie au premier `SWEEP_MINUTE:00:00Z`
+    strictement posterieur au plancher brut. Tete 11:55 + plancher 120 min
+    -> plancher brut 13:55 ; sweep `:07` qui suit = 14:07 (13:07 est
+    anterieur a 13:55). C'est l'heure GARANTIE d'un sweep nominal, pas
+    l'heure du plancher brut (qui tait que le sweep vient de passer)."""
     ok, _, msg = merge_dwell.evaluate(
         NOW.replace(hour=11, minute=55), NOW, 120.0
     )
     assert ok is False
     assert "tete du 2026-09-07T11:55:00Z" in msg
-    assert "2026-09-07T13:55:00Z" in msg, "l'heure de levee, pas seulement les minutes"
+    assert "2026-09-07T14:07:00Z" in msg, (
+        "l'heure de levee, arrondie au sweep :07 strictement postérieur "
+        "au plancher brut (11:55+120=13:55 ; sweep suivant = 14:07)"
+    )
+
+
+def test_levee_arrondie_au_sweep_strictement_posterieur():
+    """#16092 : quand le plancher brut est juste apres un `:07`, le calcul
+    prend le `:07` suivant, pas l'anterieur (qui vient de passer et ne leve
+    plus). Tete 11:55 + 10 min -> plancher 12:05 ; sweep anterieur 12:07
+    inexistant (apres), 11:07 anterieur a 12:05, donc sweep suivant 12:07.
+    """
+    ok, _, msg = merge_dwell.evaluate(
+        NOW.replace(hour=11, minute=55), NOW, 10.0
+    )
+    assert ok is False
+    assert "2026-09-07T12:07:00Z" in msg
+
+
+def test_levee_si_plancher_brut_pile_avant_un_sweep():
+    """#16092 : tete 11:48 + 20 min -> plancher brut 12:08 ; sweep anterieur
+    11:07 (avant), sweep suivant 12:07 STRICTEMENT anterieur ; le troisieme
+    candidat suivant 13:07 est le strict-postérieur. Verifie qu'on ne
+    selectionne jamais un sweep anterieur au plancher brut, même s'il est
+    tres proche."""
+    ok, _, msg = merge_dwell.evaluate(
+        NOW.replace(hour=11, minute=48), NOW, 20.0
+    )
+    assert ok is False
+    assert "2026-09-07T13:07:00Z" in msg
+
+
+def test_sweep_minute_constant():
+    """La constante `SWEEP_MINUTE` est rattachee au cron
+    `pr-gate-stale-sweep.yml:102` (cron: '7 * * * *'). Si le cron bouge,
+    elle doit bouger -- le commentaire dans merge_dwell.py porte ce lien."""
+    assert merge_dwell.SWEEP_MINUTE == 7
 
 
 # --- 2. le futur n'est pas « tres vieux » -----------------------------------
