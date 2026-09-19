@@ -188,6 +188,84 @@ def test_zero_code_modif_patch_markdown_only():
     assert zero_code_modif(pr) is True
 
 
+# --- LIGHT classification: the census MUST agree with the CI-wired organ ------
+#
+# Background (why these exist): `build_row` classified LIGHT with a bare
+# `genre in LIGHT_GENRES` over a LOCAL copy of the set, which diverged from the
+# canonical accounting `variation_light_cap.genre_counts_light` on three axes
+# (#16168, sœur de #13475) : a surplus member (`refs`), no canonicalisation (a
+# LIGHT-declared `documentation`/`prose` aliases to `docs` but escaped the
+# count), and no fail-CLOSED clause (an unresolvable word escaped it too).
+# `light_genre` feeds `drift_candidate`, so the divergence moved the very drift
+# set this census exists to measure. These tests pin the contract by its OUTPUT
+# (`build_row(...).light_genre`), not by the set alone -- a set-only assertion
+# would pass on the buggy version, since the bug lived in the predicate.
+
+
+def _row_for(declared: str):
+    """`build_row` over a minimal PR carrying the given `Grain:` tier/genre."""
+    tier, genre = declared.split("/")
+    body = f"Grain: {tier}/{genre} -- lane myia-po-2026:CoursIA -- prev: DEEP/lean #1\n"
+    return vgr.build_row({"number": 1, "body": body, "files": [{"path": "docs/x.md"}]})
+
+
+@pytest.mark.parametrize(
+    "declared,expected",
+    [
+        # MUST count LIGHT -- canonical LIGHT genres.
+        ("LIGHT/guard", True),
+        ("LIGHT/docs", True),
+        ("LIGHT/test", True),
+        # MUST count LIGHT -- aliases the canonicaliser resolves into a LIGHT
+        # genre. These are the cases the local copy missed (axis 2).
+        ("LIGHT/documentation", True),
+        ("LIGHT/prose", True),
+        # MUST count LIGHT -- unresolvable word is fail-CLOSED at non-MED/DEEP
+        # tiers (axis 3), by design (#13475).
+        ("LIGHT/zzz-inexistant", True),
+        # NEGATIVE CONTROLS -- canonical non-LIGHT genres must not regress into
+        # LIGHT (this is what the verbatim guard protected, cf the
+        # `KeyError: 'notebook-python'` documented in variation_light_cap).
+        ("DEEP/notebook-python", False),
+        ("MED/notebook-python", False),
+        ("DEEP/training", False),
+        ("DEEP/lean", False),
+        ("DEEP/research-code", False),
+        # `refs` is off-list: LIGHT when declared LIGHT, NOT light at MED/DEEP.
+        # The local copy said LIGHT at every tier (axis 1).
+        ("LIGHT/refs", True),
+        ("MED/refs", False),
+        ("DEEP/refs", False),
+    ],
+)
+def test_light_genre_matches_the_canonical_organ(declared, expected):
+    assert _row_for(declared).light_genre is expected
+
+
+def test_light_genre_is_the_canonical_predicate_not_a_rederivation():
+    """`light_genre` MUST equal the organ's verdict, case by case."""
+    import variation_light_cap as lc
+
+    for declared in (
+        "LIGHT/docs",
+        "LIGHT/documentation",
+        "LIGHT/prose",
+        "LIGHT/zzz-inexistant",
+        "DEEP/notebook-python",
+        "LIGHT/refs",
+        "DEEP/refs",
+    ):
+        tier, genre = declared.split("/")
+        assert _row_for(declared).light_genre is lc.genre_counts_light(genre, tier)
+
+
+def test_light_genres_set_is_the_canonical_one():
+    """No second copy of the truth: the module-level set IS the organ's set."""
+    import variation_light_cap as lc
+
+    assert vgr.LIGHT_GENRES == lc.LIGHT_GENRES
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
