@@ -83,6 +83,24 @@ on:
     types: [ submitted, edited ]
   workflow_dispatch:
 
+# Moindre privilege (#16185, CodeQL `actions/missing-workflow-permissions`) :
+# ce workflow n'avait AUCUN bloc `permissions:` -- ni au niveau workflow, ni au
+# niveau job -- donc le token portait le defaut du depot. Le job ne fait que
+# LIRE : `actions/checkout` (`contents: read`) puis
+# `gh pr view --json files,body,reviews,author`, `gh pr diff` et
+# `gh repo view` (`pull-requests: read` ; les metadonnees de depot sont
+# couvertes par `contents: read`). Rien ici n'ecrit -- ni label, ni commentaire,
+# ni merge : le job se contente de `exit 1` sur assertion contredite.
+#
+# Mesure du sweep (2026-09-15) : 159 / 162 workflows declarent deja un
+# `permissions:` de premier niveau. Les 2 autres stragglers
+# (`machine-dep-timing-advisory.yml`, `notebook-link-render-check.yml`) portent
+# un `permissions:` de niveau JOB, que CodeQL compte -- ils ne sont pas des
+# positifs. Celui-ci est le seul des 162 sans aucune des deux formes.
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   perimeter:
     name: "perimeter review guard (#11268)"
