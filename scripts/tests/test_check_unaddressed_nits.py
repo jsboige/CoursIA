@@ -3805,6 +3805,163 @@ def test_15556_headrefoid_prefere_au_dernier_oid():
     assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
 
 
+# --- #16764 : deux faux positifs de blocage mesures sur ai-01 (18/09) ------
+#
+# Un gate qui force a deformer la prose pour passer entraîne a ecrire pour
+# l'organe. Classe 1 : un SHA cite pour DATER la reserve (« (review ...,
+# head <sha>) », « la reserve posee sur <sha> ») etait lu comme SHA de
+# PREUVE -> refus #13639. Classe 2 : la levee par siege qualifiant
+# (contrat #15511) n'etait pas vue -- la trappe tierce exigeait le
+# marqueur [OVERRIDE]. Fixtures = corps REELS des instances.
+
+# Verbatim fondateur r.5252462567,
+# 2026-09-18T20:46:45Z sur #16657, refuse puis reposte sans aucun SHA
+# (r.5252468566) -- la levee finale MOINS precise que la refusee.
+_LIFT_16657_ORIGINAL = """[OVERRIDE] lane myia-ai-01:CoursIA
+
+Je leve la reserve `VERDICT: CONCERNS` de NanoClaw (review 05:48:49Z, head `c3095774`) en tant qu'arbitre tiers, et voici sur quoi.
+
+**La reserve n'a plus d'objet au head courant.** Elle visait un changement de patterns. Mesure au head `ec3ac10b71a` :
+"""
+
+# Verbatim fondateur de la review Hermes r.5242448146, 2026-09-17T23:34:29Z
+# sur #16608 : elle CONCLUT elle-meme au relais (deux occurrences).
+_HERMES_REVIEW_16608 = """VERDICT: CONCERNS (fond solide et conforme à l'arbitrage — deux réserves ci-dessous ; contrat #15511 : COMMENT, relais à un siège qualifiant)
+
+**[Hermes]** Review au head exact `896075ed8d`.
+
+**Réserves :**
+1. **Le vert `Scripts Tests (CPU)` n'existe pas au head** — le job échoue « Out of memory ».
+2. **L'option explicite de visibilité demandée par l'arbitrage** n'existe pas sous ce nom.
+
+Auteur = jsboige → COMMENT-only (self-review cap #3219). Disposition de fusion : siège qualifiant.
+"""
+
+# Verbatim (intro + jambes) de la levee c.5728784093, 2026-09-18T10:34:50Z
+# sur #16608 : valide au contrat #15511, invisible pour l'organe avant fix.
+_SIEGE_LIFT_16608 = """## Siege qualifiant — les deux reserves sont levees, et je tranche la question posee
+
+La review Hermes du 2026-09-17T23:34:29Z se conclut « relais a un siege qualifiant » (contrat
+#15511 : l'auteur du post etant `jsboige`, le bot ne pouvait qu'emettre `COMMENT`). Je suis ce
+siege, tiers a la lane. Je leve, apres verification a la main des deux jambes.
+
+**Reserve 1 — vert `Scripts Tests` au head.** Levee, avec la preuve du bon genre : le rouge etait un
+**avortement de runner** (OOM, run 35286571354), relance a 00:52Z, **PASS** en 8 m 38.
+
+**Reserve 2 — l'option de visibilite.** Levee, et la reponse pose correctement le fait :
+`--include-delivered` court-circuite **le bloc entier**.
+
+Merge.
+"""
+
+
+def _concern_16657_review(at_hour=10):
+    return {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+            "submittedAt": at(at_hour),
+            "body": ("VERDICT: CONCERNS\n\n**[NanoClaw]** review structurelle : "
+                     "les deux patterns ajoutes existent deja dans main.")}
+
+
+def test_16764_classe1_sha_datation_head_exempte_levee_fondateur():
+    """Instance fondatrice #16657 : le SHA `c3095774` DATE la reserve
+    (apposition « (review 05:48:49Z, head `c3095774`) »), il ne la prouve
+    pas. Resolu cote serveur ET rattache a la PR, il doit etre EXEMPT --
+    ni refus, ni avertissement. Sous l'organe d'avant : blocked=True,
+    voided_lifts=['c3095774'] (mesure au dev)."""
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": _LIFT_16657_ORIGINAL}
+    res = run([lift], reviews=[_concern_16657_review()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"c3095774": "fix(gitignore,#0): duplique"})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert res["absent_sha_warnings"] == []
+
+
+def test_16764_classe1_sha_datation_posee_sur_exempte():
+    """Forme piste de l'issue : « la reserve posee sur <sha> est adressee
+    par <sha2> » -- le premier SHA date, le second prouve (et appartient
+    a la PR)."""
+    body = ("[OVERRIDE] lane myia-ai-01:CoursIA\n\n"
+            "Je leve la reserve de NanoClaw posee sur `c3095774`, "
+            "adressee par `ec3ac10b71`.")
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12), "body": body}
+    res = run([lift], reviews=[_concern_16657_review()],
+              commits=[{"oid": "ec3ac10b71" + "0" * 30,
+                        "committedDate": at(19)}],
+              _absent_sha_messages={"c3095774": "fix(gitignore,#0): duplique"})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert res["absent_sha_warnings"] == []
+
+
+def test_16764_classe1_sha_preuve_perime_toujours_refuse():
+    """Controle negatif OBLIGATOIRE (criteres de sortie) : « traitee en
+    <sha-perime> » gouverne le SHA par un VERBE D'ADRESSE -- c'est une
+    preuve. Absente + resolue + rattachee : refus, inchange."""
+    body = ("La reserve est traitee en `d1e2f3a4b`. Je leve la reserve.")
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, lift],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"d1e2f3a4b": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["d1e2f3a4b"]
+
+
+def test_16764_classe1_collision_traitee_sur_head_refuse():
+    """Moitie garde (residu assume documente) : « traitee sur le head
+    anterieur <sha> » gouverne le head par un VERBE D'ADRESSE -- la
+    collision retire l'exemption de datation : preuve vieillie, refus."""
+    body = ("La reserve est traitee sur le head anterieur `d1e2f3a4b`. "
+            "Je leve la reserve.")
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, lift],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"d1e2f3a4b": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["d1e2f3a4b"]
+
+
+def test_16764_classe2_siege_qualifiant_leve_la_reserve():
+    """Instance fondatrice #16608 : la review Hermes conclut « relais a un
+    siege qualifiant » (contrat #15511), la levee d'ai-01 revendique le
+    siege en tete. Valide au contrat, doit lever. Sous l'organe d'avant :
+    blocked=True, 1 BOT-CONCERN non leve (mesure au dev : gate live
+    BLOCKED, et differential main/fixe 3 nits -> 2)."""
+    hermes = {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+              "submittedAt": at(10), "body": _HERMES_REVIEW_16608}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": _SIEGE_LIFT_16608}
+    res = run([lift], reviews=[hermes])
+    assert res["blocked"] is False
+
+
+def test_16764_classe2_sans_revendication_en_tete_reste_bloque():
+    """Borne de la conjunction : la revendication du siege doit etre POSEE
+    en tete de ligne (ancre #13030, comme _OVERRIDE_LANE) -- un « siege
+    qualifiant » cite en milieu de prose ne compte pas."""
+    hermes = {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+              "submittedAt": at(10), "body": _HERMES_REVIEW_16608}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": _SIEGE_LIFT_16608.replace(
+                "## Siege qualifiant — les deux reserves sont levees",
+                "## Arbitrage — les deux reserves sont levees", 1)}
+    res = run([lift], reviews=[hermes])
+    assert res["blocked"] is True
+
+
+def test_16764_classe2_siege_par_non_siege_reste_bloque():
+    """Borne d'auteur : la revendication du siege n'ouvre que le siege
+    (LIFT_OVERRIDE_LOGINS) -- un tiers quelconque qui revendique le
+    siege ne leve rien."""
+    hermes = {"author": {"login": "clusterManager-Myia"}, "state": "COMMENTED",
+              "submittedAt": at(10), "body": _HERMES_REVIEW_16608}
+    lift = {"author": {"login": "myia-po-2025"}, "createdAt": at(12),
+            "body": _SIEGE_LIFT_16608}
+    res = run([lift], reviews=[hermes])
+    assert res["blocked"] is True
+
+
 # --- #15973 : un rebase sur une base avancee n'est pas un rembobinage ------
 #
 # Mesure fondatrice (#15902) : la levee citait 53a7998effd1, absent de
