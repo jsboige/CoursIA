@@ -604,11 +604,19 @@ def _parse_pr_body_markers(pr_body: str, notebook_path: Path) -> set[str]:
     if not pr_body:
         return set()
     NB_TAIL_RE = r"[^\s:]+"
+    # Le titre peut contenir un sous-detail numerique separe par des `:` (ex.
+    # `Duree estimee : 45 minutes`) -- le `(.+?)` non-greedy de la version
+    # precedente capturait uniquement `Duree estimee` (jusqu'au PREMIER `:`)
+    # et le titre normalise ne matchait jamais le `base_heading_normalized`
+    # `duree estimee : 45 minutes` du finding. Le passage en `(.+)` greedy +
+    # `\s+:\s+\S.*?$` force le backtrack a consommer le titre COMPLET (y
+    # compris les `:` internes) et n'isole la raison qu'au DERNIER `\s+:\s+`
+    # de la ligne. Cf. PR #16218 cycle c.615.
     PAT = re.compile(
         r"^plan-loss\s*:\s*section\s+assum[eé]+(?:e|ée)\s*(?:--|—)\s*"
         r"(?P<nb>" + NB_TAIL_RE + r")"
-        r"\s+section\s*:\s*(?P<title>.+?)"
-        r"\s*:\s*(?P<reason>\S.*?)$",
+        r"\s+section\s*:\s*(?P<title>.+)"
+        r"\s+:\s+(?P<reason>\S.*?)$",
         re.MULTILINE,
     )
     nb_name = notebook_path.name

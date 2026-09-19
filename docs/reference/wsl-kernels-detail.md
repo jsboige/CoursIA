@@ -29,15 +29,27 @@ wsl -e bash -c "source ~/coursia-wsl/bin/activate && python3 -m ipykernel instal
 ### Usage
 
 ```powershell
-# Single notebook
+# Notebook seul (cwd du kernel = répertoire du notebook)
 python scripts/notebook_tools/wsl_papermill.py execute <notebook.ipynb> [--timeout 300]
 
-# Batch directory
+# Companion Lean placé à côté de plusieurs lakes : lake explicite
+python scripts/notebook_tools/wsl_papermill.py execute <notebook.ipynb> --kernel lean4-wsl --cwd <lake-root>
+
+# Répertoire en lot
 python scripts/notebook_tools/wsl_papermill.py batch MyIA.AI.Notebooks/GameTheory/ [--timeout 300]
 
-# Check environment
+# Vérifier l'environnement
 python scripts/notebook_tools/wsl_papermill.py check-env
 ```
+
+Le mode WSL effectue un `cd` réel et transmet aussi `--cwd` à Papermill. Par
+défaut, ce répertoire est celui du notebook ; `--cwd <lake-root>` sélectionne
+explicitement le projet Lake d'un companion rangé à côté de plusieurs lakes. Sous
+Windows, la valeur de `--cwd` est un chemin hôte Windows, ensuite converti en chemin WSL.
+Pour `lean4-wsl`, le lanceur vérifie avant Papermill qu'un `lakefile.lean` ou
+`lakefile.toml` est accessible en remontant depuis ce répertoire. Le wrapper
+Windows effectue la même résolution et refuse lui aussi de démarrer sans lake :
+aucun des deux chemins ne retombe plus sur un lake stub sans rapport.
 
 ### Vérifié
 
@@ -63,7 +75,7 @@ Test : `python scripts/lean/tests/test_lean_kernel_check.py` (4 cas : ancien bas
 
 ### Wrapper-sync : la copie déployée est une cible de sync, le repo est canonique (#13180)
 
-`~/.lean4-kernel-wrapper.py` (déployé WSL) n'est **écrit par aucun script du dépôt** — les deux copies peuvent diverger silencieusement (mesuré 2026-08-26 : déployé c.126 stale vs repo c.127 avec détection `lakefile.toml`). Le check canonique couvre désormais aussi le **contenu** : `lean_kernel_check.py` compare octet-à-octet le déployé (via `\\wsl$\Ubuntu\...`) contre la copie repo (`inspect_wrapper_content_drift`, statut `warning` advisory — un hotfix machine-local reste légal, la garde rend la dérive VISIBLE sans bloquer).
+`~/.lean4-kernel-wrapper.py` (déployé WSL) doit rester byte-identique à la source canonique du dépôt. `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` copie désormais cette source lors de l'installation ; auparavant, son heredoc divergent pouvait réintroduire `os.chdir(home)` et rendre le kernel muet. Le check canonique couvre aussi le **contenu** : `lean_kernel_check.py` compare octet-à-octet le déployé (via `\\wsl$\Ubuntu\...`) contre la copie repo (`inspect_wrapper_content_drift`, statut `warning` advisory — un hotfix machine-local reste légal, la garde rend la dérive VISIBLE sans bloquer).
 
 Re-sync après un fix du wrapper dans le repo :
 
@@ -79,15 +91,16 @@ python scripts/lean/lean_kernel_check.py   # doit rendre "wrapper déployé = re
 
 ```
 Windows (Jupyter)                  WSL (Ubuntu)
-   kernel.json ──────────────────> ~/.lean4-kernel-wrapper.py (v6)
+   wsl_papermill --cwd ──────────> cwd notebook ou lake explicite
+   kernel.json ──────────────────> ~/.lean4-kernel-wrapper.py (v7)
    %APPDATA%/jupyter/                ↓
      kernels/lean4-wsl/            ~/.lean4-venv/bin/python3 -m lean4_jupyter
                                     chdir: lakefile ancêtre le plus proche
-                                          (fallback ~/lean-projects/notebook_context)
+                                    sinon: échec de démarrage visible
                                     REPL: ~/.elan/bin/repl  (via `lake env repl`)
 ```
 
-Le wrapper Python v6 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py`) gère la conversion Windows→WSL des paths, les permissions NTFS, et la détection du lake workspace. v6 = (1) regex mangled-path couvre `AppData/Roaming` (kernelspec) ET `AppData/Local/Temp` (fichiers de connexion nbconvert — le kernel ne meurt plus sous nbconvert/papermill), (2) `find_lake_root()` chdir vers le `lakefile.lean`/`.toml` ancêtre le plus proche pour que `lake env repl` détecte le lake. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-1-Setup.ipynb`.
+Le wrapper Python v7 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py`) gère la conversion Windows→WSL des paths, les permissions NTFS, et la détection du lake workspace. v7 = (1) regex mangled-path couvrant `AppData/Roaming` (kernelspec) ET `AppData/Local/Temp` (fichiers de connexion nbconvert), (2) `find_lake_root()` depuis le cwd transmis par Papermill, puis chdir vers le `lakefile.lean`/`.toml` ancêtre le plus proche, (3) échec de démarrage explicite si ce contexte ne contient aucun lake. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-1-Setup.ipynb`.
 
 ### Native import d'un lake Mathlib en kernel `lean4-wsl` — VERDICT (a) PROUVÉ (probe 2026-06, c.127)
 
@@ -102,7 +115,7 @@ Le wrapper Python v6 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyI
 - `#check Sensitivity.f_squared` → `(f n) ((f n) v) = ↑n • v`
 - `#print axioms Sensitivity.huang_degree_theorem` → **depends on axioms: [propext, Classical.choice, Quot.sound]** (0 sorry, pas de `sorryAx`)
 
-**Prérequis** : (1) le wrapper v6 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le fork `jsboige/lean4_jupyter@v0.0.1-native-import` qui intègre le patch `lean4_jupyter/repl.py` `launch()` (direct-launch REPL + `LEAN_PATH`). Le script `scripts/lean/setup_native_lean4_import.py` automatise l'install du fork + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
+**Prérequis** : (1) le wrapper v7 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le fork `jsboige/lean4_jupyter@v0.0.1-native-import` qui intègre le patch `lean4_jupyter/repl.py` `launch()` (direct-launch REPL + `LEAN_PATH`). Le script `scripts/lean/setup_native_lean4_import.py` automatise l'install du fork + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
 
 **Setup** :
 
