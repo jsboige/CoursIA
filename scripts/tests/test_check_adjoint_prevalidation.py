@@ -71,6 +71,21 @@ def _snapshot(dossier: str | None = None) -> dict:
     return snapshot
 
 
+def _snapshot_with_body(pr_body: str, **dossier_changes: str) -> dict:
+    """Snapshot whose PR body is `pr_body`, attested by a dossier over THAT body.
+
+    `surfaces-sha256` covers the body (see `surfaces_fingerprint`), so the
+    fingerprint is taken AFTER the body is set. Mutating the body afterwards
+    would perime the dossier and mask the check under test.
+    """
+    snapshot = _base_snapshot()
+    snapshot["body"] = pr_body
+    fields = dict(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"].append(_comment(_body(**fields)))
+    return snapshot
+
+
 def _errors(snapshot: dict) -> list[str]:
     """Assert the snapshot yields NO trustworthy dossier, and return why."""
     verdict, errors = mod.evaluate(snapshot)
@@ -139,8 +154,57 @@ def test_checks_and_b0_require_canonical_complete_verdicts():
         assert any(error.startswith(f"{field} must") for error in errors), field
 
 
-def test_worker_lane_cannot_satisfy_gate():
-    errors = _errors(_snapshot(_body(lane="myia-po-2027:CoursIA")))
+def test_unknown_lane_cannot_satisfy_gate():
+    """A lane outside the cluster set fails closed, as does a malformed string."""
+    for lane in ("not-a-lane", "myia-po-9999:CoursIA", ""):
+        errors = _errors(_snapshot(_body(lane=lane)))
+        assert any(error.startswith("lane must") for error in errors), lane
+
+
+def test_qualifying_third_party_lane_satisfies_gate():
+    """Any cluster lane may attest a pull request it does not carry (#16904).
+
+    The binding constraint is third-party review, not one named lane. Before
+    this, `ADJOINT_LANE` made a single lane's throughput the merge throughput of
+    the whole repository.
+    """
+    for lane in ("myia-po-2027:CoursIA", "myia-po-2023:CoursIA", "myia-ai-01:CoursIA"):
+        ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
+        assert ready, (lane, errors)
+        assert errors == [], lane
+
+
+def test_lane_carrying_the_pr_cannot_prevalidate_itself():
+    """Self-attestation is refused: the `Grain:` tag names the carrying lane."""
+    carrier = "myia-po-2027:CoursIA"
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/notebook-python -- lane %s -- prev: MED" % carrier, lane=carrier
+    )
+    errors = _errors(snapshot)
+    assert any(error.startswith("self-prevalidation refused") for error in errors)
+    # Le refus est le SEUL motif : sans cette assertion, une empreinte perimee
+    # ferait passer le test pour la mauvaise raison.
+    assert not any(error.startswith("discussion surfaces") for error in errors), errors
+
+
+def test_third_party_lane_passes_when_carrier_is_declared():
+    """A declared carrier does not block a dossier from a different lane."""
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/lean -- lane myia-po-2027:CoursIA -- prev: MED",
+        lane="myia-po-2025:CoursIA-2",
+    )
+    ready, errors = mod.evaluate(snapshot)
+    assert ready, errors
+    assert errors == []
+
+
+def test_absent_grain_tag_is_not_an_authorization():
+    """No readable tag means the self-check cannot run, not that it passed.
+
+    The qualifying-lane check still applies, so an unknown lane still fails.
+    """
+    snapshot = _snapshot_with_body("pas de tag Grain ici", lane="not-a-lane")
+    errors = _errors(snapshot)
     assert any(error.startswith("lane must") for error in errors)
 
 
@@ -423,3 +487,20 @@ def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
          "submittedAt": "2026-09-18T00:00:00Z", "body": "reserve posee AVANT le dossier"}
     )
     assert _errors(snapshot)
+
+
+def test_template_renders_the_emitting_lane_not_a_borrowed_name():
+    """A lane renders its OWN name, or the self-attestation refusal is defeated.
+
+    A template hardcoding one lane hands every other lane a dossier declaring a
+    name that is not its own. The carrying lane could then prevalidate itself
+    under a borrowed name and `validate_dossier` would see two different lanes.
+    """
+    for lane in ("myia-po-2027:CoursIA", "myia-po-2023:CoursIA"):
+        template = mod.render_template(_base_snapshot(), lane)
+        assert f"lane: {lane}" in template, lane
+
+
+def test_template_lane_defaults_to_the_adjoint():
+    """The adjoint stays the canonical emitter: the default is unchanged."""
+    assert f"lane: {mod.ADJOINT_LANE}" in mod.render_template(_base_snapshot())
