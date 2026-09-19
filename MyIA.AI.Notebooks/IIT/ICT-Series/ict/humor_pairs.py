@@ -150,6 +150,13 @@ _PAIR_EDITS: dict[str, tuple[str, str, str, str]] = {
     "joke-p28": ("Mon chat a appris Python. ", "Maintenant il chasse les exceptions au lieu des souris.", "Maintenant il connaît trois commandes.", "Maintenant il ignore les souris."),
     "joke-p29": ("Les submodules Git, c'est comme les voisins : ", "mieux vaut ne pas les déranger.", "on les voit rarement.", "ils prennent de la place."),
     "joke-p30": ("Il était une fois un UTF-8 qui ne savait pas où était la fin. ", "Il était perdu dans un BOM.", "Il attendait son dernier octet.", "Il cherchait son marqueur de fin."),
+    # Top-up a >=30 : les instances Argumentum sont TRONQUEES a ~150 c. par le
+    # banc GT-24b (punchline jamais committée) — inutilisables. Les one-liners
+    # edge-04/05 (label recadrage_sans_rire : incongruite vive, annotateur n'a
+    # pas ri) completent — heterogeneite de label documentée, l'incongruite
+    # portee par le texte est le critere du pairing.
+    "edge-04": ("'I told my wife she was drawing her eyebrows too high. ", "She seemed surprised.' (Graham Chapman)", "She looked in the mirror.' (Graham Chapman)", "She asked him why.' (Graham Chapman)"),
+    "edge-05": ("'I'm on a whiskey diet. ", "I've lost three days already.' (Tommy Cooper)", "It has been three weeks already.' (Tommy Cooper)", "I have not started yet.' (Tommy Cooper)"),
 }
 
 

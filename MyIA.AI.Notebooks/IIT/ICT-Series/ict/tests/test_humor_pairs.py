@@ -80,11 +80,11 @@ def test_validate_corpus_rejects_duplicate_ids() -> None:
 
 @_NEEDS_KEY
 def test_build_pairs_contract(corpus: list[dict]) -> None:
-    # Etat intermediaire : 28 paires (p01/p17 exclues, textes committes
-    # malformes) — le complement a >=30 vient des instances Argumentum.
+    # 28 blagues (p01/p17 exclues, textes committes malformes) + 2 one-liners
+    # edge-case = 30 paires, plancher protocolaire #14035 atteint.
     pairs = build_pairs(corpus)
-    assert len(pairs) == 28
-    validate_pairs(pairs, min_pairs=28)
+    assert len(pairs) == 30
+    validate_pairs(pairs)  # min_pairs=30 par defaut
 
 
 @_NEEDS_KEY
@@ -92,7 +92,7 @@ def test_build_prompts_json_contract(corpus: list[dict]) -> None:
     payload = build_prompts_json(build_pairs(corpus))
     assert set(payload) == {"humour", "unfun", "ctrl_edit"}
     n = len(payload["humour"])
-    assert n >= 28 and all(len(payload[s]) == n for s in payload)
+    assert n == 30 and all(len(payload[s]) == n for s in payload)
     assert all(isinstance(t, str) and t for s in payload.values() for t in s)
     # Le setup est prefixe commun exact : les variants ne different que du
     # cote de la punchline (zone d'edition disjoncte).
