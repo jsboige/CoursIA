@@ -40,6 +40,16 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 - **L'alternative merge d'abord, quand elle existe** : `git merge origin/main`, `gh pr update-branch`, cherry-pick, revert, nouveaux commits. Le force-push est le dernier recours, jamais le réflexe de rebase par défaut.
 - **`gh pr update-branch` remet le plancher DWELL à zéro** (#15859) : le plancher de merge (120 min, `scripts/ci/merge_dwell.py`) se mesure depuis le **dernier commit** de la branche, et `update-branch` en crée un (merge commit). Rafraîchir sa branche pour récupérer un fix de `main` repousse donc le merge de 120 min — et tout plancher déjà noté dans un rapport est périmé. Ce rouge n'est **pas un défaut de la PR** : le gate le nomme `DWELL -- ... leve au premier balayage suivant <ts>` et le balayage horaire (`pr-gate-stale-sweep.yml`) lève seul. Ne pas re-pusher pour « réparer » : chaque push re-arme le plancher depuis la nouvelle tête.
+- **`update-branch` tue AUSSI le dossier de prévalidation, et c'est la moitié qu'on oublie** : il change la tête, donc le contrat exact-head (`[ADJOINT PREFLIGHT]`, `surfaces-sha256`, comptes `diff-files`/`additions`) est **périmé à la seconde**, et `check_adjoint_prevalidation.py` rend `head is stale` / `discussion surfaces changed`. Les deux effets se referment l'un sur l'autre : `main` rouge → la lane doit `update-branch` (bon geste) → le dossier périt **et** le DWELL se ré-arme → l'adjoint ne peut plus attester `checks: latest-wins-green` sans mentir, donc il retient le dossier (à juste titre) → `exit 1` → pas de merge → la PR vieillit → il faut re-`update-branch`. Mesure du 2026-09-19 : **17 candidates sur 17** refusées par le gate pour ce seul motif, aucune pour un défaut de PR.
+
+  **L'ordre qui sort de la boucle — le dossier vient APRÈS la stabilisation de la branche, jamais avant :**
+
+  1. la lane `update-branch` si elle doit récupérer `main` ;
+  2. on attend l'écoulement du DWELL (120 min depuis la tête : `gh pr view N --json commits --jq '.commits[-1].committedDate'`), puis **on rejoue** le job — personne ne re-pousse ;
+  3. **alors** l'adjoint écrit le dossier, à la tête exacte ;
+  4. le coordinateur merge **immédiatement**, et **la branche est gelée entre 3 et 4**.
+
+  Le gel est la pièce qui manquait : un dossier a besoin d'une **branche silencieuse**, sinon le travail de prévalidation est détruit par le travail de réparation, indéfiniment.
 - **`--force-with-lease` plutôt que `--force`** : il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
 - **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
 - **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).
