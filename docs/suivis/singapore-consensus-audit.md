@@ -32,7 +32,7 @@
 
 **Mesuré chez nous** :
 - **Deny-list outillage** : `EnterPlanMode`/`ExitPlanMode`/`AskUserQuestion`/`NotebookEdit` refusés par `settings.json` ; mode auto-approve pour le reste (harnais serré 15/09, #3657). Les questions bloquantes sont structurellement impossibles — le registre les remplace.
-- **Verrous de lane** : un worker ne merge pas (`MergePullRequest` absent du compte), ne fait jamais `gh auth switch`, ne lance jamais `/coordinate` (leçon #1502), pas de force-push (`git-workflow.md`, incident fondateur 2026-03-13), pas de push direct sur `main`.
+- **Verrous de lane** : un worker ne merge pas (borne d'autorité opérationnelle : le coordinateur ai-01 merge, `CLAUDE.md` §A / `coordinator-discipline.md`), ne fait jamais `gh auth switch`, ne lance jamais `/coordinate` (leçon #1502), pas de force-push sur `main` ni de push direct dessus (sur une branche de PR à lane unique, `--force-with-lease` est préféré, merge d'abord quand possible — `git-workflow.md` 31-41, incident fondateur 2026-03-13).
 - **Isolation de travail** : arbre partagé sale → worktree isolé obligatoire (`git worktree add`), WIP d'autrui jamais stashé ni touché.
 - **Secrets** : uniquement en fichiers gitignored (`.secrets/master.env`), jamais inline, jamais de valeurs sur les dashboards (noms de variables seulement).
 
@@ -96,7 +96,7 @@ Le companion recommande (citant OWASP Agentic Top 10 2026) : **blast-radius caps
 - **Collisions de re-exécution (#540/#541/#542, 2026-04-25)** : trois agents re-exécutent les mêmes notebooks en parallèle → 2 collisions de PR. Réponse : C.3 (ne stage que ce qu'on a modifié) + règle collision (un seul éditeur par notebook).
 - **Catalogue silencieusement reverté (#2376/#2383/#2385)** : des branches à base stale régénèrent le catalogue → diffs massifs sans rapport, revert silencieux du curation d'autrui à chaque merge. Réponse : le catalogue appartient à l'automatisation (cron + drift CI), jamais régénéré sur branche.
 - **Reviews en double et contradictoires (2026-05-17, veille de soutenance)** : 6 reviews postées sur des PR étudiantes — fuite des questions d'oral. Défaillance de coordination entre reviewers, pas d'erreur individuelle de contenu. Réponse : un seul reviewer public par PR + règle anti-fuite.
-- **Force-push coordinateur (2026-03-13)** : la permission la plus dangereuse concentrée sur l'acteur le plus central — interdite depuis, sauf validation explicite.
+- **Force-push coordinateur (2026-03-13)** : la permission la plus dangereuse concentrée sur l'acteur le plus central — interdite sur `main` depuis (sauf validation explicite user) ; sur une branche de PR à lane unique, `--force-with-lease` est préféré et le merge d'abord quand possible.
 - Référence du coordinateur : **L898** (registre lessons ai-01, non résolu depuis cette lane — cité pour mémoire).
 
 **Mitigations systémiques en place** : `[CLAIMED]`/`[RELEASED]` (anti-double-claim avec preuve sha), un sujet par PR, guards de collision en CI, ancres disjointes pour merges commutatifs (#11690), cross-post à point de rendez-vous unique (un seul endroit fait foi), `always-pick-next` (une candidate bloquée n'arrête pas la lane), cap 3-IDLE, **un seul observateur par condition asynchrone**.
@@ -125,7 +125,7 @@ C'est exactement notre problème quotidien : un worker renaît toutes les 30 min
 - **Arrêt** : `TaskStop` (avec leçon vécue : tuer par ligne de commande pour éviter les orphelins de race) ; crons et monitors **session-only** — mourir avec la session, jamais de timer fantôme inter-session.
 - **Redirection sans arrêt** : le DWELL inverse la charge — « c'est la candidate qui attend, pas la lane » ; `always-pick-next` reprend une autre tâche pendant qu'une condition asynchrone murit.
 - **Graduation** : deny-list (interdit) → rate-limit (QC 10 appels/min flotte) → DWELL (temporisation) → re-run ciblé (`gh run rerun --failed`) → TaskStop. Équivalent vécu de la « containment ladder » d'IBM.
-- **Inversion** : interdiction de force-push = toute l'histoire reste inversiblement manipulable (cherry-pick vers branche propre en cas de leak) ; Stop & Repair : jamais maquiller une sortie de cellule, corriger la cause et re-exécuter.
+- **Inversion** : interdiction de force-push sur `main` = l'histoire partagée reste inversiblement manipulable (cherry-pick vers branche propre en cas de leak) ; Stop & Repair : jamais maquiller une sortie de cellule, corriger la cause et re-exécuter.
 - **Hors de la boucle de l'agent** : le harnais (settings, CI, cron système) réside hors du raisonnement de l'agent — l'agent ne peut pas voter pour ses propres permissions.
 
 **Écart** : pas d'**undo stack** agent (Google « agent undo stacks » : grouper les actions d'un agent en blocs inversibles d'une unité) — nos actions atomiques inversibles sont git-commits et PRs, mais un cycle de 2 h qui a side-tracké 3 dossiers ne se défait pas d'un geste. ÉTAT : **RENFORCE**.
@@ -150,7 +150,7 @@ C'est exactement notre problème quotidien : un worker renaît toutes les 30 min
 **Mesuré** :
 - **Registre user-question** (#3656) : l'utilisateur arbitre **par pull** — chaque entrée porte « ce qui est attendu du user » et « comment vérifier qu'elle est morte » ; une question répondue sort des ouvertes, sinon elle se représente au cycle suivant. Exemple vivant : arbitrage de seuil densité en attente (#16673, [ASK Emerjesse]).
 - **Gouvernance l.87** : toute règle du harnais ajoutant une obligation HARD exige PR + sign-off utilisateur avant merge — le harnais ne s'auto-durcit pas.
-- **Autonomie graduée vécue** : workers (exécutent) < coordinateur (merge via compte dédié, jamais le sien) < utilisateur (force-push, secrets, arbitrage). L'équivalent des quatre déclencheurs IMDA se lit dans nos règles : actions à enjeu (merge), irréversibles (force-push interdit), comportement aberrant (G.9 culture du doute avant verdict/close), limites définies par l'utilisateur (HARD stops, ex. Lean interdit sur po-2023).
+- **Autonomie graduée vécue** : workers (exécutent) < coordinateur (merge via compte dédié, jamais le sien) < utilisateur (force-push, secrets, arbitrage). L'équivalent des quatre déclencheurs IMDA se lit dans nos règles : actions à enjeu (merge), irréversibles (force-push interdit sur `main`), comportement aberrant (G.9 culture du doute avant verdict/close), limites définies par l'utilisateur (HARD stops, ex. Lean interdit sur po-2023).
 - **Résistance à la fatigue d'approbation** : le companion cite (DeepMind Agent Traps) l'approval-fatigue comme vecteur d'attaque de l'humain — notre registre par pull est précisément la réponse structurelle : zéro interruption, restitution groupée, questions mortes retirées.
 
 **Écart** : la charge de review humaine finale reste concentrée sur une personne (l'utilisateur) pour tout ce qui est subjectif — le batch review du registre atténue mais ne supprime pas le goulot. ÉTAT : **RENFORCE**.
@@ -182,7 +182,7 @@ C'est exactement notre problème quotidien : un worker renaît toutes les 30 min
 
 Aucune de ces recommandations n'entre en vigueur sans PR dédiée + sign-off utilisateur (gouvernance l.87). Elles sont classées par coût décroissant :
 
-1. **Cap de rayon d'explosion** (P6) : un plafond chiffré de fichiers touchés par PR existe déjà (G.4 : 15 fichiers) — l'étendre à un plafond **par cycle et par lane** (ex. 3 PRs en flight max) formaliserait ce que G.5 dit déjà en creux.
+1. **Cap de rayon d'explosion** (P6) : un plafond chiffré de fichiers touchés par PR existe déjà (G.4 : 15 fichiers) — l'étendre à un plafond **par cycle et par lane** (ex. 3 PRs en flight max) serait une **proposition nouvelle** — G.5 plafonne les deep tracks à 2 et `proactive-coordination.md` exige 2 tracks minimum, aucun texte existant ne plafonne les PRs en flight — à soumettre au sign-off user/coordinateur.
 2. **Red-team périodique des organes** (P5) : une issue récurrente mensuelle « injecter un FP connu et vérifier la détection » transformerait l'audit-reassessment post-incident en contrôle proactif.
 3. **Journal de why anti-condensation** (P9) : condenser en préservant une ligne de motif par entrée archivée.
 
