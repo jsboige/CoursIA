@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
-r"""debt_ledger.py -- the shared issue-debt ledger (local artifact half).
+r"""debt_ledger.py -- shared append-only debt ledgers (issue-debt, pr-actions).
 
 WHY
 ===
 
-The fleet re-derived its issue debt from scratch every cycle, by reading
-dashboards, inboxes and GitHub: re-deriving is what makes a 4 h cadence
-expensive, and nothing survives a session boundary except prose. This module is
-the UTILITY half of the fix: schema, reducer, CLI, tests. It knows nothing about
-GitHub and nothing about RooSync, and it never writes to the shared filesystem.
+The fleet keeps two ledgers that were, until now, re-derived from scratch every
+cycle by reading dashboards, inboxes and GitHub: one for the ISSUES that owe
+work ("issue debt"), one for the ACTIONS a PR is waiting for ("PR actions").
+Re-deriving is what makes a 4 h cadence expensive -- every cycle re-reads three
+surfaces per PR and re-learns what the previous cycle already knew -- and
+nothing survives a session boundary except prose.
+
+This module is the UTILITY half of that fix: schemas, reducer, CLI, tests. It
+knows nothing about GitHub and nothing about RooSync, and it never writes to the
+shared filesystem.
 
 TRANSPORT -- read this before wiring anything
 =============================================
@@ -18,14 +23,19 @@ mount: no locking, no compare-and-swap, so two lanes writing the same file is
 last-write-wins -- a multi-writer ledger there would silently LOSE observations,
 which is the exact class of loss the ledger exists to prevent.
 
-The transport is a DEDICATED RooSync workspace dashboard (``LEDGER_WORKSPACES``).
+The transport is two DEDICATED RooSync workspace dashboards, one per kind
+(``LEDGER_WORKSPACES``):
+
+  * ``CoursIA-issue-debt-ledger``  for ``issue-debt``
+  * ``CoursIA-pr-action-ledger``   for ``pr-actions``
+
 Each OBSERVATION is one append-only dashboard message: ``content`` is a one-line
 JSON envelope, ``[OBS] {...}``. Messages are never edited, so the journal is
 append-only by construction; a stable ``observation_id`` (content-derived, see
 ``observation_id_for``) makes a replay detectable instead of harmful.
 
-The SNAPSHOT is written by ai-01 ALONE, into the ``status`` section of that
-dashboard, through the dashboard ``update``/``replace`` action -- never by a
+The SNAPSHOT is written by ai-01 ALONE, into the ``status`` section of those two
+dashboards, through the dashboard ``update``/``replace`` action -- never by a
 second writer, and never as an append (a snapshot is a derived value, not an
 event). Reducers other than ai-01 produce snapshots locally for review.
 
@@ -54,22 +64,53 @@ compatible observation wins, provenance and history are preserved.
 
   1. the baseline (seed observations, supersedable like any other);
   2. the PRIOR SNAPSHOT, folded field by field with each field's original
-     provenance -- whatever the dashboard has since condensed out of its journal
-     is already folded here, at its ORIGINAL timestamp, so nothing is re-derived
-     and nothing is lost;
-  3. the journal, read as a FLAT message list:
-     ``{"ledger": ..., "messages": [{"id": ..., "timestamp": ..., "content":
-     "[OBS] {...}"}, ...]}``, or a bare list of such messages. Dashboard prose
-     (an ai-01 status snapshot, a human note) is IGNORED and counted -- only
-     content that declares itself an observation (``[OBS]``) and then fails to
-     parse is a rejection.
+     provenance -- this is what makes the reducer ARCHIVE-AWARE: when the
+     dashboard condenses and rotates old messages into archives, the state those
+     messages carried is already folded, so nothing is re-derived and nothing is
+     lost;
+  3. the exported journal (``roosync_dashboard read`` output) with its ``window``
+     declaration.
 
-The journal this phase reads is the SHAPE the ledger speaks. Reading a real
-``roosync_dashboard read`` export as it comes off the wire -- it nests the
-journal under ``data.intercom.messages`` and wraps the author in an object --
-and the declared-coverage (``window``) contract that governs how much of a
-condensed journal an export really carries, arrive with the shared transport.
-Until then a journal is a COMPLETE local file, and the reducer treats it as one.
+The export is read in the PRODUCER'S shape, not in a shape invented here: a
+RooSync read nests the journal (``data.intercom.messages``) and its messages are
+``{id, timestamp, author: {machineId, workspace}, content}`` -- the machine key is
+``machineId``, and the adapter normalises it into a ``machineId:workspace`` lane
+(``machine_id``/``machine``/``host`` are accepted as fallbacks). Dashboard prose
+(an ai-01 status snapshot, a human note) is IGNORED and counted -- only content
+that declares itself an observation (``[OBS]``) and then fails to parse is a
+rejection.
+
+ARCHIVE-AWARE CHECKPOINT CONTRACT
+=================================
+
+An export DECLARES what it covers::
+
+    {"window": {"kind": "full" | "incremental", "archives": [...]}}
+
+  * ``full``        -- the export claims to contain the whole journal; a prior
+                       snapshot is optional.
+  * ``incremental`` -- a tail export (the normal case once the dashboard has
+                       condensed); THE PRIOR SNAPSHOT IS MANDATORY.
+  * absent          -- treated as ``incremental``. Fail-closed: an export that
+                       does not say what it covers is not trusted to rebuild
+                       state from nothing.
+
+Folding an incremental export without a checkpoint raises ``MISSING_CHECKPOINT``
+rather than quietly emitting a snapshot built from the tail alone. An export
+OLDER than the checkpoint is not fatal (its observations lose on ``observed_at``)
+but it is surfaced as a warning -- a stale export must never regress state.
+
+PR HEAD RULE
+============
+
+A PR observation carries a full 40-hex ``head_sha``. Heads are ordered by
+``observed_at``: an observation declaring a head that was ALREADY SUPERSEDED
+cannot move the head back, and its head-bound fields (reserves, checks,
+update-branch, dossier, next action) are refused -- it is recorded as
+``stale_head`` in history instead. Head-independent fields (action class,
+review requirement, reviewer, producer) still apply, because they are properties
+of the PR, not of one commit. A genuine forced rewind is declared explicitly
+with ``head_transition: true`` and is counted as ``head_regressions``.
 
 CLI
 ===
@@ -78,7 +119,7 @@ CLI
 
     python scripts/coordination/debt_ledger.py init   [--ledger both] [--apply]
     python scripts/coordination/debt_ledger.py append --ledger issue-debt ...
-    python scripts/coordination/debt_ledger.py reduce --ledger issue-debt --events journal.json
+    python scripts/coordination/debt_ledger.py reduce --ledger issue-debt --events export.json
 
 Dry-run defaults: ``init`` writes nothing without ``--apply`` (it creates state,
 so it is opt-in); ``append`` prints the envelope and writes nothing unless
@@ -117,13 +158,15 @@ CONFIG_SCHEMA = "debt-ledger-config/v1"
 SCHEMA_DOC_VERSION = "debt-ledger-schema/v1"
 
 ISSUE_DEBT = "issue-debt"
-LEDGERS: tuple[str, ...] = (ISSUE_DEBT,)
+PR_ACTIONS = "pr-actions"
+LEDGERS: tuple[str, ...] = (ISSUE_DEBT, PR_ACTIONS)
 
-#: The DEDICATED dashboard for this ledger kind: a ledger never shares a
+#: The two DEDICATED dashboards. One per ledger kind: a ledger never shares a
 #: dashboard with another kind, so a condensation of one never truncates the
 #: other's journal.
 LEDGER_WORKSPACES: dict[str, str] = {
     ISSUE_DEBT: "CoursIA-issue-debt-ledger",
+    PR_ACTIONS: "CoursIA-pr-action-ledger",
 }
 
 #: Tag prefix of a one-line observation envelope posted as dashboard content.
@@ -150,19 +193,52 @@ CLOSEABILITY_VALUES: tuple[str, ...] = (
     "not-closeable",
     "unknown",
 )
-
-
+ACTION_CLASSES: tuple[str, ...] = (
+    "ready-to-merge",
+    "review-ready",
+    "needs-review",
+    "needs-repair",
+    "blocked-on-ci",
+    "blocked-on-author",
+    "blocked-on-reserve",
+    "merged",
+    "closed",
+    "unknown",
+)
+UPDATE_BRANCH_STATUSES: tuple[str, ...] = (
+    "up-to-date",
+    "behind",
+    "update-required",
+    "unknown",
+)
+DOSSIER_STATUSES: tuple[str, ...] = ("absent", "requested", "ready", "stale", "invalid")
+CHECK_STATUSES: tuple[str, ...] = (
+    "success",
+    "failure",
+    "pending",
+    "queued",
+    "in_progress",
+    "neutral",
+    "skipped",
+    "cancelled",
+    "timed_out",
+    "action_required",
+    "unknown",
+)
 DEPENDENCY_KINDS: tuple[str, ...] = ("issue", "pr", "external")
 FOLLOWUP_KINDS: tuple[str, ...] = ("issue", "waiver", "none")
 
 TERMINAL_ISSUE_STATE: frozenset[str] = frozenset({"closed"})
+TERMINAL_PR_ACTION: frozenset[str] = frozenset({"merged", "closed"})
 
 #: Entity fields per ledger. ``repo`` is always the first component of the key.
 ENTITY_FIELDS: dict[str, tuple[str, ...]] = {
     ISSUE_DEBT: ("repo", "issue"),
+    PR_ACTIONS: ("repo", "pr", "head_sha"),
 }
 
 _REPO_RE = re.compile(r"^[\w.-]+/[\w.-]+$")
+_HEX40_RE = re.compile(r"^[0-9a-f]{40}$")
 _ACTOR_RE = re.compile(r"^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$")
 
 
@@ -174,10 +250,16 @@ class FieldSpec:
     observation id is computed (so a re-append of the same raw file is
     byte-identical, see ``canonical_json``).
 
+    ``head_bound`` marks a field whose value describes one COMMIT's surfaces: it
+    is refused from an observation taken against a superseded PR head. Head
+    independence is a deliberate, per-field judgement -- reserves, checks,
+    update-branch, dossier and next-action are head-bound; the action class,
+    the review requirement and the producer/reviewer identities are not.
     """
 
     name: str
     kind: str
+    head_bound: bool = False
     values: tuple[str, ...] = ()
     description: str = ""
 
@@ -217,17 +299,69 @@ ISSUE_DEBT_FIELDS: tuple[FieldSpec, ...] = (
     ),
 )
 
+PR_ACTIONS_FIELDS: tuple[FieldSpec, ...] = (
+    FieldSpec(
+        "action_class",
+        "enum",
+        values=ACTION_CLASSES,
+        description="What the PR is waiting for; 'merged'/'closed' are terminal.",
+    ),
+    FieldSpec(
+        "review_required", "bool", description="Is a review still owed on this PR?"
+    ),
+    FieldSpec(
+        "reviewer",
+        "text",
+        description="Lane or bot expected to review (adjoint, Hermes, NanoClaw, ai-01).",
+    ),
+    FieldSpec("producer", "text", description="Lane that produced the PR."),
+    FieldSpec(
+        "live_reserves",
+        "reserves",
+        head_bound=True,
+        description="Reserves still open on the CURRENT head, one entry each.",
+    ),
+    FieldSpec(
+        "live_checks",
+        "checks",
+        head_bound=True,
+        description="Check name -> status on the CURRENT head.",
+    ),
+    FieldSpec(
+        "update_branch_status",
+        "enum",
+        head_bound=True,
+        values=UPDATE_BRANCH_STATUSES,
+        description="Is the branch behind main (update-branch remedy).",
+    ),
+    FieldSpec(
+        "dossier_status",
+        "enum",
+        head_bound=True,
+        values=DOSSIER_STATUSES,
+        description="Adjoint preflight dossier: absent/requested/ready/stale/invalid.",
+    ),
+    FieldSpec(
+        "next_action",
+        "text",
+        head_bound=True,
+        description="The single next gesture owed by the owning lane.",
+    ),
+)
 
 LEDGER_FIELD_SPECS: dict[str, dict[str, FieldSpec]] = {
     ISSUE_DEBT: {spec.name: spec for spec in ISSUE_DEBT_FIELDS},
+    PR_ACTIONS: {spec.name: spec for spec in PR_ACTIONS_FIELDS},
 }
 
 #: Terminal values, per ledger, keyed by the field that carries the verdict.
 TERMINAL_VALUES: dict[str, tuple[str, str]] = {
     ISSUE_DEBT: ("state_class", "closed"),
+    PR_ACTIONS: ("action_class", "merged"),
 }
 TERMINAL_SETS: dict[str, frozenset[str]] = {
     ISSUE_DEBT: TERMINAL_ISSUE_STATE,
+    PR_ACTIONS: TERMINAL_PR_ACTION,
 }
 
 #: Top-level keys allowed in an observation envelope. Anything else is a
@@ -449,10 +583,28 @@ def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
     if not isinstance(repo, str) or not _REPO_RE.match(repo.strip()):
         raise ObservationError("entity_mismatch", f"repo={repo!r} is not 'owner/name'")
     entity: dict[str, Any] = {"repo": repo.strip()}
-    number = raw["issue"]
-    if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
-        raise ObservationError("entity_mismatch", f"issue={number!r} is not a positive int")
-    entity["issue"] = number
+    if ledger == ISSUE_DEBT:
+        number = raw["issue"]
+        if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
+            raise ObservationError("entity_mismatch", f"issue={number!r} is not a positive int")
+        entity["issue"] = number
+    else:
+        number = raw["pr"]
+        if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
+            raise ObservationError("entity_mismatch", f"pr={number!r} is not a positive int")
+        entity["pr"] = number
+        head = raw["head_sha"]
+        if not isinstance(head, str) or not head.strip():
+            raise ObservationError("entity_mismatch", "head_sha must be a non-empty string")
+        head = head.strip().lower()
+        if not _HEX40_RE.match(head):
+            # An abbreviated SHA would silently create a phantom head transition
+            # against the same commit observed at full length.
+            raise ObservationError(
+                "short_head_sha",
+                f"head_sha={head!r} must be the full 40-character SHA (gh pr list --json headRefOid)",
+            )
+        entity["head_sha"] = head
     return entity
 
 
@@ -540,6 +692,53 @@ def _validate_followup(value: Any) -> dict[str, Any] | None:
     return {"kind": "none"}
 
 
+def _validate_reserves(value: Any) -> list[dict[str, Any]]:
+    """Normalise reserves to ``[{"summary": ...}, ...]``.
+
+    A bare string is the ergonomic form a lane writes; the canonical form is an
+    object, and absent optional keys are OMITTED rather than set to null, so a
+    snapshot stays readable at 40 rows.
+    """
+    if not isinstance(value, list):
+        raise ObservationError("invalid_field_value", "live_reserves must be a list")
+    out: list[dict[str, Any]] = []
+    for index, item in enumerate(value):
+        where = f"live_reserves[{index}]"
+        if isinstance(item, str):
+            out.append({"summary": _require_str(item, where)})
+            continue
+        if not isinstance(item, dict):
+            raise ObservationError(
+                "invalid_field_value", f"{where} must be a string or an object"
+            )
+        unknown = sorted(set(item) - {"summary", "url", "author"})
+        if unknown:
+            raise ObservationError(
+                "invalid_field_value", f"{where} has unknown key(s): {', '.join(unknown)}"
+            )
+        entry = {"summary": _require_str(item.get("summary"), f"{where}.summary")}
+        for optional in ("url", "author"):
+            if item.get(optional) is not None:
+                entry[optional] = _require_str(item[optional], f"{where}.{optional}")
+        out.append(entry)
+    return out
+
+
+def _validate_checks(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        raise ObservationError("invalid_field_value", "live_checks must be an object")
+    out: dict[str, str] = {}
+    for raw_name, raw_status in value.items():
+        name = _require_str(raw_name, "live_checks key")
+        if not isinstance(raw_status, str) or raw_status not in CHECK_STATUSES:
+            raise ObservationError(
+                "invalid_field_value",
+                f"live_checks[{name!r}]={raw_status!r} not in {'/'.join(CHECK_STATUSES)}",
+            )
+        out[name] = raw_status
+    return out
+
+
 def normalize_field_value(spec: FieldSpec, value: Any, entity: dict[str, Any]) -> Any:
     """Validate and normalise one field value; raise ``ObservationError``."""
     if spec.kind == "enum":
@@ -571,6 +770,10 @@ def normalize_field_value(spec: FieldSpec, value: Any, entity: dict[str, Any]) -
         return _validate_dependencies(value, entity)
     if spec.kind == "followup":
         return _validate_followup(value)
+    if spec.kind == "reserves":
+        return _validate_reserves(value)
+    if spec.kind == "checks":
+        return _validate_checks(value)
     raise LedgerError("UNKNOWN_FIELD_KIND", f"{spec.name}: {spec.kind}")  # pragma: no cover
 
 
@@ -773,6 +976,31 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
         except ObservationError:
             continue  # a corrupt row is dropped, never allowed to poison the fold
         key = entity_key(entity)
+        head = row.get("head") or {}
+        if ledger == PR_ACTIONS:
+            for entry in head.get("history", []):
+                observed = entry.get("first_seen_at") or entry.get("observed_at")
+                if not observed:
+                    continue
+                try:
+                    seen_at = parse_utc_timestamp(observed, where="snapshot.head.history")
+                except ObservationError:
+                    continue  # a corrupt head entry is dropped, never fatal
+                records.append(
+                    Record(
+                        entity=dict(entity),
+                        key=key,
+                        actor=entry.get("actor", "checkpoint"),
+                        observed_at=seen_at,
+                        confidence="medium",
+                        evidence=entry.get("evidence", "snapshot:head-history"),
+                        observation_id=entry.get("observation_id", f"head-{entry.get('head_sha')}"),
+                        message_id=None,
+                        source="checkpoint",
+                        head_sha=entry.get("head_sha"),
+                        head_transition=bool(entry.get("head_transition", True)),
+                    )
+                )
         for name, entries in (row.get("history") or {}).items():
             spec = LEDGER_FIELD_SPECS[ledger].get(name)
             if spec is None or not isinstance(entries, list):
@@ -796,6 +1024,11 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
                     "head_transition": False,
                     "fields": {name: entry["value"]},
                 }
+                head_sha = entry.get("head_sha")
+                if ledger == PR_ACTIONS and head_sha:
+                    raw_observation["entity"]["head_sha"] = head_sha
+                elif ledger == PR_ACTIONS:
+                    raw_observation["entity"]["head_sha"] = entity["head_sha"]
                 try:
                     observation = parse_observation(raw_observation, ledger)
                 except ObservationError:
@@ -853,11 +1086,16 @@ def records_from_baseline(baseline: dict[str, Any], ledger: str) -> list[Record]
 # 7. JOURNAL EXPORT -- messages in, observations out
 # ---------------------------------------------------------------------------
 
-_MESSAGE_LIST_KEYS = ("messages", "entries", "events", "items", "journal")
+_MESSAGE_LIST_KEYS = ("messages", "entries", "events", "items", "journal", "content")
 _MESSAGE_ID_KEYS = ("messageId", "message_id", "id", "uuid")
 _MESSAGE_AUTHOR_KEYS = ("author", "actor", "lane", "from", "sender")
 _MESSAGE_TIME_KEYS = ("createdAt", "created_at", "observedAt", "observed_at", "timestamp", "ts")
 _MESSAGE_CONTENT_KEYS = ("content", "body", "message", "text")
+#: How deep the adapter walks the producer envelope. A RooSync read wraps its
+#: payload (``data.intercom.messages``), so a top-level-only reader sees
+#: "no messages" on a perfectly good export -- the shape is the producer's, and
+#: the adapter's job is to find the journal in it, not to demand one shape.
+_EXPORT_WALK_DEPTH = 3
 
 
 def _first_present(source: dict[str, Any], keys: Iterable[str]) -> Any:
@@ -867,26 +1105,43 @@ def _first_present(source: dict[str, Any], keys: Iterable[str]) -> Any:
     return None
 
 
-def _message_list(raw: Any) -> tuple[list[Any], str]:
-    """``(messages, path)`` -- the journal a flat export carries.
+#: Descriptor declarations live at the DOCUMENTED paths only: the root of the
+#: export and its ``data`` envelope. A key-by-key BFS would also read any stray
+#: ``window``/``format`` nested deeper (e.g. a UI pagination window inside the
+#: payload) in place of the producer's own declaration -- more permissive than
+#: the README contract, and silent about it.
+def _declared_at(raw: Any, keys: Iterable[str]) -> Any:
+    data_envelope = raw.get("data") if isinstance(raw, dict) else None
+    for source in (raw, data_envelope):
+        if isinstance(source, dict):
+            found = _first_present(source, keys)
+            if found is not None:
+                return found
+    return None
 
-    A flat export is what this phase reads: a list of messages, or an object
-    holding one under a known list key. Walking a PRODUCER envelope (a RooSync
-    read nests its journal under ``data.intercom``) is the adapter's job and
-    lands with the shared transport, so this one does not guess -- it refuses a
-    shape it cannot read rather than reporting "no messages" on a good export.
-    """
+
+def _message_list(raw: Any) -> tuple[list[Any], str]:
+    """``(messages, path)`` -- the journal inside whatever envelope wraps it."""
     if isinstance(raw, list):
         return raw, "<list>"
-    if isinstance(raw, dict):
+    queue: list[tuple[Any, str, int]] = [(raw, "", 0)]
+    while queue:
+        node, path, level = queue.pop(0)
+        if not isinstance(node, dict):
+            continue
         for key in _MESSAGE_LIST_KEYS:
-            value = raw.get(key)
+            value = node.get(key)
             if isinstance(value, list):
-                return value, key
+                return value, f"{path}.{key}".lstrip(".")
+        if level >= _EXPORT_WALK_DEPTH:
+            continue
+        for key, value in node.items():
+            if isinstance(value, dict):
+                queue.append((value, f"{path}.{key}".lstrip("."), level + 1))
     raise LedgerError(
         "UNSUPPORTED_EXPORT_SHAPE",
-        "a flat journal must be a list of messages, or an object holding one under "
-        f"{'/'.join(_MESSAGE_LIST_KEYS)}",
+        "export must be a list of messages, or an object wrapping one under "
+        f"{'/'.join(_MESSAGE_LIST_KEYS)} (a RooSync read nests them under data.intercom)",
     )
 
 
@@ -919,7 +1174,7 @@ def _actor_from(value: Any) -> str | None:
 
 
 def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Record], list[dict]]:
-    """Parse a flat journal into ``(window, records, rejections)``."""
+    """Parse an export into ``(window, records, rejections)``."""
     window_declared: dict[str, Any] = {}
     if isinstance(raw, dict):
         declared = raw.get("schema")
@@ -934,8 +1189,32 @@ def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Re
                 "EXPORT_LEDGER_MISMATCH",
                 f"export ledger={declared_ledger!r} but target is {ledger!r}",
             )
+        declared_format = _declared_at(raw, ("format", "content_format"))
+        if declared_format is not None and declared_format != ENVELOPE_FORMAT:
+            raise LedgerError(
+                "UNSUPPORTED_EXPORT_FORMAT",
+                f"export format={declared_format!r} (this reducer reads {ENVELOPE_FORMAT!r})",
+            )
+        window_declared = _declared_at(raw, ("window",))
+        if isinstance(window_declared, dict):
+            window_declared = dict(window_declared)
+        else:
+            window_declared = {}
+    # Fail-closed: an export that does not declare what it covers is treated as a
+    # TAIL, because assuming 'full' would let a condensed journal rebuild state
+    # from a fragment and silently drop everything the archives hold. This holds
+    # for a producer-shaped export too: the adapter finds the journal, it never
+    # guesses the coverage.
+    kind = window_declared.get("kind", "incremental")
+    if kind not in ("full", "incremental"):
+        raise LedgerError("UNSUPPORTED_WINDOW_KIND", f"window.kind={kind!r}")
+    archives = window_declared.get("archives") or []
+    if not isinstance(archives, list) or any(not isinstance(item, str) for item in archives):
+        raise LedgerError("UNSUPPORTED_WINDOW_KIND", "window.archives must be a list of strings")
     messages, path = _message_list(raw)
     window = {
+        "kind": kind,
+        "archives": [str(item) for item in archives],
         "messages": len(messages),
         "path": path,
     }
@@ -995,6 +1274,76 @@ def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Re
 # ---------------------------------------------------------------------------
 
 
+def _apply_head_rule(records: Sequence[Record]) -> dict[str, Any]:
+    """Order the heads in time, mark refusals IN PLACE, return the head state.
+
+    ONE state machine, not two. The previous split (a marker pass and a summary
+    pass) let a refusal and the head history disagree about the same record,
+    which is how a stale head could be refused on one pass and re-instated on
+    the other.
+
+    A head that was already superseded cannot come back: an observation against
+    it was taken from a stale view and its head-bound fields describe a commit
+    nobody is looking at. The ONE exception is an observation that DECLARES the
+    rewind (``head_transition: true``, a force-push); a record folded from the
+    checkpoint is an observation, never a declaration, so a refusal survives the
+    fold instead of being replayed as a declared rewind.
+
+    Counters are per OBSERVATION (``observation_id``), not per record: one
+    observation carrying three head-bound fields is one stale observation, not
+    three.
+    """
+    head: str | None = None
+    superseded: set[str] = set()
+    history: list[dict[str, Any]] = []
+    regressions = 0
+    stale: set[str] = set()
+    for record in sorted(records, key=Record.sort_key):
+        observed = record.head_sha
+        if observed is None:
+            continue
+        if head is None:
+            head = observed
+            history.append(_head_history_entry(record, transition=False))
+            continue
+        if observed == head:
+            continue
+        if observed in superseded and not record.head_transition:
+            record.status = "stale_head"
+            record.reason = f"head {observed[:12]} was superseded by {head[:12]}"
+            stale.add(record.observation_id)
+            continue
+        if observed in superseded:
+            regressions += 1
+        else:
+            superseded.add(head)
+        for entry in history:
+            if entry["head_sha"] == head and entry["superseded_at"] is None:
+                entry["superseded_at"] = format_utc(record.observed_at)
+        head = observed
+        history.append(_head_history_entry(record, transition=True))
+    return {
+        "current": head,
+        "history": history,
+        "superseded_heads": sorted(superseded),
+        "stale_head_observations": len(stale),
+        "head_regressions": regressions,
+    }
+
+
+def _head_history_entry(record: Record, *, transition: bool) -> dict[str, Any]:
+    """One head as first seen, with what it takes to fold it back faithfully."""
+    return {
+        "head_sha": record.head_sha,
+        "first_seen_at": format_utc(record.observed_at),
+        "actor": record.actor,
+        "evidence": record.evidence,
+        "observation_id": record.observation_id,
+        "head_transition": transition,
+        "superseded_at": None,
+    }
+
+
 def _merge_row(
     ledger: str,
     entity: dict[str, Any],
@@ -1002,6 +1351,7 @@ def _merge_row(
     config: dict[str, Any],
 ) -> dict[str, Any]:
     specs = LEDGER_FIELD_SPECS[ledger]
+    head = _apply_head_rule(records) if ledger == PR_ACTIONS else None
     history_cap = int(config.get("history_max_entries_per_field", 25))
 
     fields: dict[str, Any] = {}
@@ -1021,7 +1371,12 @@ def _merge_row(
         if not contributions:
             continue
         contributions.sort(key=Record.sort_key)
-        winner = contributions[-1] if contributions else None
+        admissible = [
+            record
+            for record in contributions
+            if record.status == "live" or not spec.head_bound
+        ]
+        winner = admissible[-1] if admissible else None
         if winner is not None:
             fields[name] = winner.fields[name]
             provenance[name] = _provenance_entry(
@@ -1049,7 +1404,12 @@ def _merge_row(
                 head_sha=record.head_sha,
             )
             entry["applied"] = record is winner
-            entry["reason"] = "applied" if record is winner else "superseded"
+            if record is winner:
+                entry["reason"] = "applied"
+            elif record.status == "stale_head":
+                entry["reason"] = "stale_head"
+            else:
+                entry["reason"] = "superseded"
             entries.append(entry)
         if len(entries) > history_cap:
             truncated[name] = len(entries) - history_cap
@@ -1060,6 +1420,10 @@ def _merge_row(
     verdict_field, _terminal = TERMINAL_VALUES[ledger]
     verdict = fields.get(verdict_field)
     entity_out = dict(entity)
+    if head is not None and head["current"]:
+        # The row's head is the CURRENT one, not whatever the first record saw:
+        # consumers read `entity.head_sha` and `head.current` as one fact.
+        entity_out["head_sha"] = head["current"]
     row: dict[str, Any] = {
         "key": key,
         "ledger": ledger,
@@ -1072,7 +1436,10 @@ def _merge_row(
         "last_observed_at": max((format_utc(record.observed_at) for record in records), default=None),
         "contributions": len({record.observation_id for record in records}),
     }
+    if head is not None:
+        row["head"] = head
     diagnostics: dict[str, Any] = {
+        "stale_head_observations": (head or {}).get("stale_head_observations", 0),
         "rejected_observations": 0,
         # Where the CURRENT state comes from -- not every source ever folded, or
         # the field would change on a re-fold of identical observations.
@@ -1119,7 +1486,7 @@ def reduce_ledger(
                 f"prior snapshot ledger={prior_ledger!r} but target is {ledger!r}",
             )
 
-    window: dict[str, Any] = {"messages": 0}
+    window: dict[str, Any] = {"kind": "full", "archives": [], "messages": 0}
     journal_records: list[Record] = []
     rejections: list[dict[str, Any]] = []
     warnings: list[str] = []
@@ -1132,7 +1499,32 @@ def reduce_ledger(
     if baseline is not None:
         baseline_records = records_from_baseline(baseline, ledger)
 
+    # --- archive-aware checkpoint contract (fail-closed) ---------------------
+    if window["kind"] == "incremental" and prior_snapshot is None:
+        raise LedgerError(
+            "MISSING_CHECKPOINT",
+            "an incremental window does not carry the whole journal: the prior "
+            "snapshot is mandatory (pass --snapshot, or --window-full if the "
+            "export really is complete)",
+        )
     checkpoint = (prior_snapshot or {}).get("checkpoint") or {}
+    if checkpoint:
+        previous_newest = checkpoint.get("events", {}).get("newest_observed_at")
+        export_newest = max(
+            (record.observed_at for record in journal_records), default=None
+        )
+        if previous_newest and export_newest is not None:
+            try:
+                previous_dt = parse_utc_timestamp(previous_newest, where="checkpoint.newest")
+            except ObservationError:
+                previous_dt = None  # a corrupt checkpoint stamp cannot gate the fold
+                warnings.append("checkpoint_newest_unreadable: ignored for ordering")
+            if previous_dt is not None and export_newest < previous_dt:
+                warnings.append(
+                    f"export_older_than_checkpoint: newest event {format_utc(export_newest)} "
+                    f"is older than the folded checkpoint {previous_newest}; older "
+                    "observations lose on observed_at and cannot regress state"
+                )
 
     snapshot_records: list[Record] = []
     if prior_snapshot is not None:
@@ -1190,6 +1582,8 @@ def reduce_ledger(
         "ledger": ledger,
         "folded_at": format_utc(moment),
         "window": {
+            "kind": window["kind"],
+            "archives": window["archives"],
             "messages": window.get("messages", 0),
             "ignored": window.get("ignored", 0),
             "path": window.get("path"),
@@ -1237,7 +1631,7 @@ def reduce_ledger(
 
 
 # ---------------------------------------------------------------------------
-# 9. SUMMARY -- EAT metrics
+# 9. SUMMARY -- PR metrics and EAT metrics
 # ---------------------------------------------------------------------------
 
 
@@ -1338,6 +1732,72 @@ def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _summarize_pr_actions(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    live = _live_rows(rows)
+    reserves_by_class: dict[str, int] = {}
+    check_status_counts: dict[str, int] = {}
+    rows_with_failing_checks = 0
+    for row in live:
+        action_class = str(row["fields"].get("action_class", "unknown"))
+        reserves = row["fields"].get("live_reserves") or []
+        reserves_by_class[action_class] = reserves_by_class.get(action_class, 0) + len(reserves)
+        checks = row["fields"].get("live_checks") or {}
+        failing = False
+        for status in checks.values():
+            check_status_counts[status] = check_status_counts.get(status, 0) + 1
+            if status in ("failure", "timed_out", "action_required"):
+                failing = True
+        if failing:
+            rows_with_failing_checks += 1
+    stale_head = sum(
+        int(row.get("head", {}).get("stale_head_observations", 0)) for row in rows
+    )
+    regressions = sum(int(row.get("head", {}).get("head_regressions", 0)) for row in rows)
+    return {
+        "rows": {
+            "total": len(rows),
+            "live": len(live),
+            "historical": len(rows) - len(live),
+            "incomplete": sum(1 for row in live if row["missing_fields"]),
+            "stale": sum(1 for row in live if row.get("stale")),
+        },
+        "action_class": _counts(row["fields"].get("action_class") for row in live),
+        "review": {
+            "required": sum(1 for row in live if row["fields"].get("review_required") is True),
+            "not_required": sum(
+                1 for row in live if row["fields"].get("review_required") is False
+            ),
+            "unknown": sum(
+                1 for row in live if row["fields"].get("review_required") is None
+            ),
+            "by_reviewer": _counts(row["fields"].get("reviewer") for row in live),
+            "by_producer": _counts(row["fields"].get("producer") for row in live),
+        },
+        "reserves": {
+            "rows_with_live_reserves": sum(
+                1 for row in live if row["fields"].get("live_reserves")
+            ),
+            "live_total": sum(len(row["fields"].get("live_reserves") or []) for row in live),
+            "by_action_class": dict(sorted(reserves_by_class.items())),
+        },
+        "checks": {
+            "rows_with_failing_checks": rows_with_failing_checks,
+            "status_counts": dict(sorted(check_status_counts.items())),
+        },
+        "update_branch_status": _counts(
+            row["fields"].get("update_branch_status") for row in live
+        ),
+        "dossier_status": _counts(row["fields"].get("dossier_status") for row in live),
+        "review_ready": sorted(
+            row["key"] for row in live if row["fields"].get("action_class") == "review-ready"
+        ),
+        "heads": {
+            "stale_head_observations": stale_head,
+            "head_regressions": regressions,
+        },
+    }
+
+
 def _summarize(
     ledger: str,
     rows: Sequence[dict[str, Any]],
@@ -1348,13 +1808,16 @@ def _summarize(
     now: datetime,
     replayed: int,
 ) -> dict[str, Any]:
-    detail = _summarize_issue_debt(rows)
+    detail = (
+        _summarize_issue_debt(rows) if ledger == ISSUE_DEBT else _summarize_pr_actions(rows)
+    )
     summary: dict[str, Any] = {
         "schema": SUMMARY_SCHEMA,
         "ledger": ledger,
         "workspace": _workspace_of(config, ledger),
         "generated_at": format_utc(now),
         "window": {
+            "kind": window["kind"],
             "messages": window.get("messages", 0),
             "ignored": window.get("ignored", 0),
             "path": window.get("path"),
@@ -1383,7 +1846,7 @@ def _status_text(
         f"[LEDGER] {ledger} @ {snapshot['generated_at']} | "
         f"events {checkpoint['consumed_total']} (+{snapshot['checkpoint']['folded']['journal_records']}) "
         f"| rows {counts['live']} live / {counts['historical']} historical "
-        f"| messages {summary['window']['messages']}"
+        f"| window {summary['window']['kind']}"
     ]
     if ledger == ISSUE_DEBT:
         eat = summary["eat_hours"]
@@ -1414,6 +1877,37 @@ def _status_text(
                 f"eat {float(row['fields'].get('eat_hours', 0) or 0):.2f}h "
                 f"prs {int(row['fields'].get('remaining_atomic_prs', 0) or 0)} "
                 f"close {row['fields'].get('closeability', '?')}"
+            )
+    else:
+        review = summary["review"]
+        lines.append(
+            f"review_required {review['required']} | live_reserves "
+            f"{summary['reserves']['live_total']} on {summary['reserves']['rows_with_live_reserves']} rows "
+            f"| failing_checks {summary['checks']['rows_with_failing_checks']} | stale rows {counts['stale']}"
+        )
+        lines.append(
+            "action_class: "
+            + (", ".join(f"{k} {v}" for k, v in summary["action_class"].items()) or "-")
+        )
+        lines.append(
+            "update_branch: "
+            + (", ".join(f"{k} {v}" for k, v in summary["update_branch_status"].items()) or "-")
+            + " | dossier: "
+            + (", ".join(f"{k} {v}" for k, v in summary["dossier_status"].items()) or "-")
+        )
+        ranked = sorted(
+            _live_rows(snapshot["rows"]),
+            key=lambda row: (
+                (row["fields"].get("action_class") or "zzz"),
+                row["key"],
+            ),
+        )
+        for row in ranked[:max_rows]:
+            lines.append(
+                f"  {row['key']} {row['fields'].get('action_class', '?')} "
+                f"head {(row.get('head') or {}).get('current', '?')[:12]} "
+                f"reserves {len(row['fields'].get('live_reserves') or [])} "
+                f"-> {row['fields'].get('next_action', '-')}"
             )
     if len(_live_rows(snapshot["rows"])) > max_rows:
         lines.append(f"  ... {len(_live_rows(snapshot['rows'])) - max_rows} more live rows")
@@ -1640,6 +2134,11 @@ def schema_document() -> dict[str, Any]:
                 "section via update/replace; nothing is ever written to $ROOSYNC_SHARED_PATH"
             ),
             "envelope_prefix": ENVELOPE_PREFIX,
+            "windows": {
+                "full": "export claims the whole journal; prior snapshot optional",
+                "incremental": "tail export; prior snapshot MANDATORY (fail-closed if absent)",
+                "absent": "treated as incremental (fail-closed)",
+            },
         },
         "ledgers": {
             ledger: {
@@ -1651,10 +2150,13 @@ def schema_document() -> dict[str, Any]:
                     {
                         "name": spec.name,
                         "kind": spec.kind,
+                        "head_bound": spec.head_bound,
                         "values": list(spec.values),
                         "description": spec.description,
                     }
-                    for spec in ISSUE_DEBT_FIELDS
+                    for spec in (
+                        ISSUE_DEBT_FIELDS if ledger == ISSUE_DEBT else PR_ACTIONS_FIELDS
+                    )
                 ],
             }
             for ledger in LEDGERS
@@ -1668,6 +2170,7 @@ def schema_document() -> dict[str, Any]:
             "unknown_key",
             "ledger_mismatch",
             "entity_mismatch",
+            "short_head_sha",
             "unknown_field",
             "invalid_field_value",
             "invalid_confidence",
@@ -1679,6 +2182,10 @@ def schema_document() -> dict[str, Any]:
             "unparsable_envelope",
             "observation_id_mismatch",
         ],
+        "head_rule": (
+            "a superseded PR head cannot come back without head_transition:true; its "
+            "head-bound fields are refused as stale_head, head-independent fields still apply"
+        ),
     }
 
 
@@ -1785,6 +2292,32 @@ def _loads_object(text: str, *, where: str) -> dict[str, Any]:
     return parsed
 
 
+def _declare_full_window(export: Any, ledger: str) -> Any:
+    """``--window-full`` on anything an export can legitimately be.
+
+    A bare LIST is the most natural hand-made export ("here are the messages"),
+    and it used to fall through the wrapper untouched -- so the flag documented
+    as "declare this complete" silently did nothing and the fold still failed
+    closed with MISSING_CHECKPOINT.
+    """
+    if isinstance(export, list):
+        return {
+            "schema": EXPORT_SCHEMA,
+            "ledger": ledger,
+            "window": {"kind": "full", "archives": []},
+            "messages": export,
+        }
+    if isinstance(export, dict):
+        # Use the same bounded envelope walk as parse_journal_export. Looking
+        # only at export["window"] lets --window-full inject a top-level FULL
+        # declaration that shadows an explicit nested INCREMENTAL declaration
+        # (for example data.window), rebuilding state from a condensed tail.
+        declared = _declared_at(export, ("window",))
+        if not isinstance(declared, dict):
+            return {**export, "window": {"kind": "full", "archives": []}}
+    return export
+
+
 def _cli_init(args: argparse.Namespace) -> int:
     ledgers = list(LEDGERS) if args.ledger == "both" else [args.ledger]
     state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
@@ -1815,7 +2348,12 @@ def _cli_append(args: argparse.Namespace) -> int:
                 "MISSING_INPUT", "append needs --observation-file, or --entity with --fields-json"
             )
         repo, number = _parse_entity_argument(args.entity)
-        entity: dict[str, Any] = {"repo": repo, "issue": number}
+        entity: dict[str, Any] = {"repo": repo}
+        entity["issue" if args.ledger == ISSUE_DEBT else "pr"] = number
+        if args.ledger == PR_ACTIONS:
+            if not args.head_sha:
+                raise LedgerError("MISSING_INPUT", "pr-actions needs --head-sha")
+            entity["head_sha"] = args.head_sha
         raw = {
             "schema": OBSERVATION_SCHEMA,
             "ledger": args.ledger,
@@ -1824,7 +2362,7 @@ def _cli_append(args: argparse.Namespace) -> int:
             "confidence": args.confidence,
             "evidence": args.evidence,
             "entity": entity,
-            "head_transition": False,
+            "head_transition": args.head_transition,
             "fields": _loads_object(args.fields_json, where="--fields-json"),
         }
         if args.note:
@@ -1887,6 +2425,8 @@ def _cli_reduce(args: argparse.Namespace) -> int:
         export = _read_json(Path(args.events))
     elif not args.no_events:
         raise LedgerError("MISSING_INPUT", "reduce needs --events <journal export>")
+    if args.window_full:
+        export = _declare_full_window(export, args.ledger)
     baseline_path = Path(args.baseline) if args.baseline else base / "baseline.json"
     baseline = _read_json(baseline_path) if baseline_path.exists() else None
     config = None
@@ -1947,9 +2487,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="debt_ledger.py",
         description=(
-            "Reducer for the shared append-only issue-debt ledger. Observations travel "
-            "as append-only dashboard messages; this tool only ever writes LOCAL "
-            "artifacts."
+            "Generic reducer for the shared append-only debt ledgers (issue-debt, "
+            "pr-actions). Observations travel as append-only dashboard messages; this "
+            "tool only ever writes LOCAL artifacts."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1969,11 +2509,13 @@ def build_parser() -> argparse.ArgumentParser:
     append.add_argument("--ledger", choices=list(LEDGERS), required=True)
     append.add_argument("--observation-file", help="read a full observation envelope from JSON")
     append.add_argument("--entity", help="'owner/repo#N'")
+    append.add_argument("--head-sha", help="full 40-hex PR head (pr-actions only)")
     append.add_argument("--actor", default=os.environ.get("COURSIA_LEDGER_ACTOR", "ai-01"))
     append.add_argument("--observed-at", help="UTC ISO-8601; defaults to now")
     append.add_argument("--confidence", choices=list(CONFIDENCE_LEVELS), default="medium")
     append.add_argument("--evidence", default="manual append")
     append.add_argument("--fields-json", help="JSON object of field values")
+    append.add_argument("--head-transition", action="store_true")
     append.add_argument("--note")
     append.add_argument("--out", help="write the envelope to this local file")
     append.add_argument("--out-dir", help="write into this local spool dir")
@@ -1993,6 +2535,11 @@ def build_parser() -> argparse.ArgumentParser:
     reduce_.add_argument("--no-summary", action="store_true")
     reduce_.add_argument("--no-status", action="store_true")
     reduce_.add_argument("--no-events", action="store_true", help="fold the checkpoint alone")
+    reduce_.add_argument(
+        "--window-full",
+        action="store_true",
+        help="declare the export complete when it omits `window`",
+    )
     reduce_.add_argument("--dry-run", action="store_true")
     reduce_.add_argument("--stdout", action="store_true")
     reduce_.add_argument("--fail-on-rejections", action="store_true")
