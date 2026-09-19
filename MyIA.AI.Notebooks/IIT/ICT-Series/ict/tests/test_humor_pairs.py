@@ -9,10 +9,13 @@ import pytest
 
 from ict.humor_pairs import (
     LABELS,
+    build_pairs,
+    build_prompts_json,
     gt24b_path,
     label_distribution,
     load_corpus_dur,
     validate_corpus,
+    validate_pairs,
 )
 
 # Les cellules endpoint de GT-24b exigent la cle OpenRouter (presente dans
@@ -73,3 +76,27 @@ def test_validate_corpus_rejects_duplicate_ids() -> None:
     inst = {"id": "x", "texte": "t", "features": {}, "label": "rien", "justification": "", "source": "s"}
     with pytest.raises(AssertionError, match="dupliques"):
         validate_corpus([inst, dict(inst)], min_size=1)
+
+
+@_NEEDS_KEY
+def test_build_pairs_contract(corpus: list[dict]) -> None:
+    # Etat intermediaire : 28 paires (p01/p17 exclues, textes committes
+    # malformes) — le complement a >=30 vient des instances Argumentum.
+    pairs = build_pairs(corpus)
+    assert len(pairs) == 28
+    validate_pairs(pairs, min_pairs=28)
+
+
+@_NEEDS_KEY
+def test_build_prompts_json_contract(corpus: list[dict]) -> None:
+    payload = build_prompts_json(build_pairs(corpus))
+    assert set(payload) == {"humour", "unfun", "ctrl_edit"}
+    n = len(payload["humour"])
+    assert n >= 28 and all(len(payload[s]) == n for s in payload)
+    assert all(isinstance(t, str) and t for s in payload.values() for t in s)
+    # Le setup est prefixe commun exact : les variants ne different que du
+    # cote de la punchline (zone d'edition disjoncte).
+    assert all(
+        p["unfun"].startswith(p["setup"]) and p["ctrl_edit"].startswith(p["setup"])
+        for p in build_pairs(corpus)
+    )
