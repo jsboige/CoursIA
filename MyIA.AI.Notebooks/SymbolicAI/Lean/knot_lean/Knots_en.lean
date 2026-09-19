@@ -16,6 +16,8 @@
     - `Knots.Invariant` — polynomial invariants (Alexander, Jones),
       tricolourability, genus
     - `Knots.Conway` — Conway notations and conventions
+    - `Knots.Jones` — Kauffman bracket on PD codes (state sum,
+      trefoil / figure eight / unknot evaluations)
     - `Knots.Lidman` — external collaboration layer (Joshua Lidman),
       orientation of knot varieties
     - `Knots.MathlibPrerequisites` — Mathlib 4 compatibility shim
@@ -33,5 +35,6 @@ import Knots.Basic_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
 import Knots.Conway_en
+import Knots.Jones_en
 import Knots.Lidman_en
 import Knots.MathlibPrerequisites_en
