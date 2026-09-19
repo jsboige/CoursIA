@@ -110,135 +110,18 @@ fi
 # 7. Create the kernel wrapper script
 log_info "Creation du wrapper pour le kernel..."
 
-cat > "$HOME/.lean4-kernel-wrapper.py" << 'WRAPPER_EOF'
-#!/usr/bin/env python3
-# Lean 4 Jupyter Kernel Wrapper for WSL
-# Converts Windows paths to WSL paths and launches lean4_jupyter kernel.
-import sys
-import subprocess
-import os
-import re
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CANONICAL_WRAPPER="$SCRIPT_DIR/../../SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py"
+if [ ! -f "$CANONICAL_WRAPPER" ]; then
+    log_error "Source canonique du wrapper absente: $CANONICAL_WRAPPER"
+    exit 1
+fi
 
-
-def convert_windows_path(path):
-    """Convert Windows path to WSL path, handling various formats."""
-    if not path:
-        return path
-
-    # Already a Unix path
-    if path.startswith("/"):
-        return path
-
-    # Handle ~ shorthand (tilde followed by backslash or forward slash)
-    if len(path) >= 2 and path[0] == "~" and path[1] in ["/", "\\"]:
-        rest = path[2:].replace("\\", "/")
-        # Try to find WSL username
-        wsl_user = os.environ.get("USER", "jsboi")
-        return "/mnt/c/Users/{}/{}".format(wsl_user, rest)
-
-    # Check for mangled path (backslashes eaten by WSL shell)
-    # Pattern: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
-    if len(path) >= 2 and path[1] == ":":
-        # nbclient place le connection file dans %LOCALAPPDATA%\Temp (tmp*.json),
-        # pas dans le runtime dir Roaming couvert ci-dessous. Cas mangle :
-        # c:Users<u>AppDataLocalTemp<name>.json
-        m_local = re.match(
-            r"([a-zA-Z]):Users([a-zA-Z0-9_]+)AppDataLocalTemp(kernel-[a-f0-9-]+|tmp[a-z0-9_]+)\.json$",
-            path, re.IGNORECASE)
-        if m_local:
-            return "/mnt/{}/Users/{}/AppData/Local/Temp/{}.json".format(
-                m_local.group(1).lower(), m_local.group(2), m_local.group(3))
-        if "Users" in path and "\\" not in path and "/" not in path[2:]:
-            match = re.match(r"([a-zA-Z]):Users([a-z0-9_]+)AppDataRoaming(.+)", path, re.IGNORECASE)
-            if match:
-                drive = match.group(1).lower()
-                user = match.group(2)
-                rest = match.group(3)
-                rest = rest.replace("jupyter", "/jupyter").replace("runtime", "/runtime")
-                rest = rest.replace("kernel-", "/kernel-")
-                rest = rest.lstrip("/")
-                return "/mnt/{}/Users/{}/AppData/Roaming/{}".format(drive, user, rest)
-
-        # Standard Windows path - use wslpath
-        try:
-            result = subprocess.run(["wslpath", "-a", path], capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                return result.stdout.strip()
-        except:
-            pass
-        # Fallback
-        drive = path[0].lower()
-        rest = path[2:].replace("\\", "/").lstrip("/")
-        return "/mnt/{}/{}".format(drive, rest)
-
-    return path
-
-
-def main():
-    log_file = os.path.expanduser("~/.lean4-wrapper.log")
-
-    def log(msg):
-        try:
-            with open(log_file, "a") as f:
-                f.write(msg + "\n")
-        except:
-            pass
-
-    log("=== Lean4 Wrapper started ===")
-    log("sys.argv: " + str(sys.argv))
-
-    # Process arguments
-    args = sys.argv[1:]
-    for i, arg in enumerate(args):
-        if arg == "-f" and i + 1 < len(args):
-            original = args[i + 1]
-            converted = convert_windows_path(args[i + 1])
-            args[i + 1] = converted
-            log("Original: " + str(original))
-            log("Converted: " + str(converted))
-
-            if os.path.exists(converted):
-                log("Connection file EXISTS")
-            else:
-                log("Connection file MISSING - waiting...")
-                import time
-                for _ in range(20):
-                    time.sleep(0.1)
-                    if os.path.exists(converted):
-                        log("Connection file appeared")
-                        break
-            break
-
-    # Set up clean environment
-    home = os.path.expanduser("~")
-    os.environ["PATH"] = "{}/.elan/bin:{}/.lean4-venv/bin:/usr/local/bin:/usr/bin:/bin".format(home, home)
-    os.chdir(home)
-    log("PATH: " + os.environ["PATH"])
-    log("Launching kernel with args: " + str(args))
-
-    try:
-        sys.argv = ["lean4_jupyter"] + args
-        log("sys.argv set to: " + str(sys.argv))
-
-        from ipykernel.kernelapp import IPKernelApp
-        from lean4_jupyter.kernel import Lean4Kernel
-
-        log("Starting kernel...")
-        IPKernelApp.launch_instance(kernel_class=Lean4Kernel)
-        log("Kernel exited normally")
-    except SystemExit as e:
-        log("SystemExit: " + str(e))
-        sys.exit(e.code if e.code is not None else 0)
-    except Exception as e:
-        log("Exception: " + str(e))
-        import traceback
-        log(traceback.format_exc())
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-WRAPPER_EOF
+# Le wrapper est canonique : copie directe depuis le depot. Aucun heredoc
+# mort ne doit reintroduire de logique obsolete ; le source est versionne
+# et revu dans MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py.
+cp "$CANONICAL_WRAPPER" "$HOME/.lean4-kernel-wrapper.py"
+log_info "Wrapper canonique copie depuis le depot"
 
 chmod +x "$HOME/.lean4-kernel-wrapper.py"
 log_info "Wrapper cree: ~/.lean4-kernel-wrapper.py"
