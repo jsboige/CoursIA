@@ -34,5 +34,4 @@ Notebooks rétrospectifs : les outils d'avant Stable Diffusion (2021-2022) qui o
 ## Prérequis
 
 - Environnement Python du cours (torch CUDA) ;
-- Outils locaux hors repo (voir la cellule d'installation du notebook) : clone du [code officiel CLIPasso](https://github.com/yael-vinker/CLIPasso) (MIT) + compilation MSVC de [diffvg](https://github.com/BachiLi/diffvg) — les adaptations d'exécution sont documentées dans le notebook ;
-- Pour 05-1 : clone d'[openai/guided-diffusion](https://github.com/openai/guided-diffusion) (MIT, patch checkpoint torch 2.x documenté) + checkpoint `512x512_diffusion_uncond_finetune_008100.pt` (miroir HF `lowlevelware`, sha256 du manifeste DD v5.7) ; la comparaison moderne passe par le stack ComfyUI local (endpoint `qwen-image-edit.myia.io`).
+- Outils locaux hors repo (voir la cellule d'installation du notebook) : clone du [code officiel CLIPasso](https://github.com/yael-vinker/CLIPasso) (MIT) + compilation MSVC de [diffvg](https://github.com/BachiLi/diffvg) — les adaptations d'exécution sont documentées dans le notebook.

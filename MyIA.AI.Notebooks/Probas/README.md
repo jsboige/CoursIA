@@ -226,9 +226,9 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
-├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
 ├── Applications/                # Applications standalone
-│   └── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
+│   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
+│   └── Pyro_RSA_Hyperbole.ipynb # Pragmatique linguistique (Python)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco et frontières (14-19)
 │   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
 │   └── README.md                # Documentation détaillée de la série PyMC
@@ -309,7 +309,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | Notebook | Kernel | Contenu | Durée |
 |----------|--------|---------|-------|
 | [Infer-1b](Infer/Infer-1b-Premiers-Modeles.ipynb) | .NET (C#) | Premier modèle Infer.NET, Two Coins, Cyclist | 1h |
-| [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 30 min |
+| [Pyro_RSA_Hyperbole](Applications/Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 30 min |
 
 ### Infer-1b-Premiers-Modeles.ipynb
 
@@ -424,7 +424,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
 | [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
-| [ICT-5](../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
+| [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
 Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 
@@ -437,7 +437,7 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
 | [Infer-1b](Infer/Infer-1b-Premiers-Modeles.ipynb) | .NET (C#) | Premier modèle Infer.NET, Two Coins, Cyclist | 1h |
-| [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
+| [Pyro_RSA_Hyperbole](Applications/Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
 
 ### Percolation (sous-dossier [`Applications/Percolation/`](Applications/Percolation/README.md))
 
