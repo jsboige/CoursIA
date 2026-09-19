@@ -302,26 +302,29 @@ jobs:
           # -- 846 main pur + 24 = 870, collecte pytest --collect-only sur
           # l'arbre combine exact (D:/Dev/venvs/ict-py39, la forme de l'env CI).
           # Les deux apports coexistent : test_confabulation_broadcast.py
-          # (main, #15915) ET test_attention_schema_causal.py (main, #15798).
+          # (main, #15915) ET test_attention_schema_causal.py (main, #15798)
+          # ET test_confabulation_ignition.py (main, #8182 via #16512,
+          # +16 -- le floor de main porte a 886).
           #
-          # RE-MESURE post-merge (2026-09-18, lane po-2027, 4e conflit du
-          # floor) : l'arbre merge porte 53 fichiers test_*.py. Decomposition
-          # disjointe (fichiers distincts, aucun fichier commun modifie) :
-          # 846 (base commune) + 24 axes causaux (main, floor 870 cote main)
-          # + 12 battery intervention #15480 (floor 858 cote branche, run
-          # combine 36 passed verifie 2026-09-16) = 882. Arithmetique fermee
-          # sur les deux etages mesures independamment vert (CI main a 870,
-          # run combine branche a +12).
+          # RE-MESURE post-merge (2026-09-19, lane po-2027, 5e conflit du
+          # floor) : l'arbre merge porte 57 fichiers test_*.py et collecte
+          # 936 items (pytest --co -q sur l'arbre merge, env CI : py3.9-slim,
+          # pip install -e . du ICT-Series, 0 erreur de collection, RC=0).
+          # Apports identifies : 886 (floor main actuel) + 12 battery
+          # intervention #15480 (cette PR, run combine 36 passed verifie
+          # 2026-09-16) = 898 ; le surplus jusqu'a 936 vient de tests
+          # arrives sur main sans relevement du floor main (drift ascendant
+          # -- le guard n'y emet qu'un ::warning). La mesure fait foi.
           #
           # Reconcile #15762 : la jambe reste SEQUENTIELLE par
           # choix (test-parallel vide -- elle n'a pas ete mesuree par la
           # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
           # en mode prepend, cf. #9387/#14598).
-          - suite-name: "ict/tests/ (53 package)"
+          - suite-name: "ict/tests/ (57 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
-            test-floor: 882
+            test-floor: 936
 
     steps:
       - uses: actions/checkout@v4
