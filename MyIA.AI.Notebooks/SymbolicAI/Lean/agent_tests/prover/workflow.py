@@ -92,6 +92,18 @@ DELTA0_STAGNATION_HARDCAP = 6
 # for a fresh attempt instead of letting the workflow burn compute on a stuck
 # storm. Threshold 12 ≈ 18 min — same rationale as provers.py.
 FAIL_STREAK_HARDCAP = 12
+# C3 (#1453 calibration forensic, 2026-09-19): freeze-loop escalation hardcap.
+# The C617 freeze_loop_guard (below, in the agent handle) already forces a
+# Coordinator handoff when TacticAgent goes N consecutive turns without a tool
+# call — but nothing enforced a ceiling on the ESCALATION cycle itself: guard
+# fires -> Coordinator revises plan -> TacticAgent freezes again -> ... until
+# iteration_cap. Founder case (calibration pass 2, qwen2.5:7b): 6 firings over
+# 8 iterations, 0 tactic submissions. When escalations reach this hardcap while
+# tactic_history is still EMPTY, the model structurally cannot tool-call and no
+# plan revision will unstick it — yield to free the budget. Default 3 (one per
+# ~threshold-window: soft guard at 3 consecutive turns, hardcap after 3
+# separate revision cycles), env-overridable for calibration sweeps.
+FREEZE_LOOP_HARDCAP = int(os.environ.get("PROVER_FREEZE_LOOP_HARDCAP", "3"))
 
 
 def _transient_backoff_s(attempt: int) -> float:
@@ -262,6 +274,10 @@ class AgentExecutor(Executor):
         # path). Covers the case where every iteration is a BUILD-FAIL storm
         # and the Δ0 counter cannot move (gated on success=True in tools.py).
         self._fail_streak_hardcap = FAIL_STREAK_HARDCAP
+        # C3 (#1453 calibration forensic, 2026-09-19): hard ceiling on
+        # freeze-loop guard escalations while tactic_history is empty —
+        # see FREEZE_LOOP_HARDCAP.
+        self._freeze_loop_hardcap = FREEZE_LOOP_HARDCAP
         # C617 (#6790 pathology 2): consecutive "no tool_call emitted" turns
         # from TacticAgent. When TacticAgent returns text without ever calling
         # submit_tactic/submit_decomposition, tactic_history doesn't grow,
@@ -413,6 +429,41 @@ class AgentExecutor(Executor):
                     content=(f"consecutive_compile_fail={_fail_streak} >= "
                              f"hardcap={self._fail_streak_hardcap}, "
                              f"yielding to stop stuck-BUILD-FAIL storm waste"),
+                )
+            await ctx.yield_output(msg)
+            return
+
+        # C3 (#1453 calibration forensic, 2026-09-19): freeze-loop escalation
+        # hard-cap. The C617 guard forces a Coordinator handoff on a
+        # no-tool-call streak, but without a ceiling the escalation cycle
+        # itself (guard -> plan revision -> freeze again) burns to
+        # iteration_cap. When escalations reach FREEZE_LOOP_HARDCAP while
+        # tactic_history is STILL EMPTY, the model cannot tool-call at all —
+        # no plan revision can unstick that — so yield early and latch the
+        # terminal flag for _derive_result_kind. The empty-tactic_history
+        # condition is what makes this safe: a run that ever submitted a
+        # tactic reset the streak and never accumulates here with 0 attempts.
+        _freeze_escalations = (
+            getattr(self._state, "freeze_loop_escalations", 0)
+            if self._state else 0
+        )
+        if (not msg.proof_found
+                and not getattr(self._state, "tactic_history", None)
+                and _freeze_escalations >= self._freeze_loop_hardcap):
+            self._state.freeze_loop_terminal = True
+            msg.error_type = "tactic_freeze_loop"
+            msg.error = (
+                f"freeze-loop escalations={_freeze_escalations} >= "
+                f"hardcap={self._freeze_loop_hardcap} with ZERO tactic "
+                f"submissions — the model cannot tool-call; yielding to "
+                f"stop the guard/revision cycle burning iteration_cap"
+            )
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="freeze_loop_yield",
+                    content=(f"freeze_loop_escalations={_freeze_escalations} "
+                             f">= hardcap={self._freeze_loop_hardcap}, "
+                             f"tactic_history empty — yielding"),
                 )
             await ctx.yield_output(msg)
             return
@@ -749,6 +800,13 @@ class AgentExecutor(Executor):
                     f"Coordinator handoff to revise the attack plan."
                 )
                 msg.error_type = "tactic_freeze_loop"
+                # C3 (#1453 calibration forensic, 2026-09-19): count the
+                # escalation on the shared state so the executor hardcap
+                # can end a run whose plan revisions never unstick the
+                # freeze (founder case: 6 firings, 8/8 iterations, 0
+                # attempts on qwen2.5:7b).
+                if self._state is not None:
+                    self._state.freeze_loop_escalations += 1
                 if self._trace:
                     self._trace.log(
                         agent=self._agent.name, role="freeze_loop_guard",

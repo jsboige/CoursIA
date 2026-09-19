@@ -1927,7 +1927,7 @@ Le `print('Cas d'usage pédagogiques')` précédent est un **catalogue statique*
 1. API OpenRouter выставляет 26 различных моделей GPT-5 — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
 2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под alt-text WCAG, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
 3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,cba151b1841d6795,,,,,,2de15031478a994d,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,a41c34a2cee427db,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,1e846f8508a2fd5e,"***
 
 ### Exercice 3 : Synthèse — Workflow d’analyse multimodale complet
 
@@ -1945,8 +1945,7 @@ Créer un workflow d'analyse d'image personnalisé avec GPT-5 pour un cas d'usag
 4. **Implémenter une fonction d'analyse** qui combine les 3 modes (quick, detailed, educational)
 5. **Générer les questions pédagogiques** que GPT-5 suggère pour les étudiants
 
-### Indices
-
+> **Indices :**
 - Indice 1 : Utilisez la fonction `analyze_image_with_gpt5()` avec le paramètre `prompt` pour votre prompt personnalisé
 - Indice 2 : Le mode ""educational"" génère automatiquement 3 questions de réflexion pour étudiants
 - Indice 3 : Adaptez le vocabulaire du prompt au niveau (elementary, secondary, university)",,,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
@@ -1969,7 +1968,7 @@ Créer un workflow d'analyse d'image personnalisé avec GPT-5 pour un cas d'usag
 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
-- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,a41c34a2cee427db,,,,,,6b20b97c4063d231,,
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,f74550abf0939ae1,,,,,,6b20b97c4063d231,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,4af6ad01b49719ee,"# TODO: Implémentez l'analyse personnalisée pour votre domaine
 
 # 1. Sélection du domaine et configuration

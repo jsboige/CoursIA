@@ -10,7 +10,7 @@ Le Transformer canonique (attention multi-tête, PE additif) reste couvert par l
 |---|---|---|
 | `TV-00a-RoPE-from-scratch.ipynb` | livre | RoPE : rotation par paires de dimensions, invariance de position relative mesuree, contraste avec le PE additif (distance, logit, tache d'inversion entraînée) |
 | `TV-00b` — variantes d'attention | livre | MHA vs MQA vs GQA (reduction du KV-cache, facteur 4x confirme) et SWA (fenetre glissante) |
-| `TV-00c` — mixture of experts | en revue (PR #16152) | routage top-k, facteur de capacite, perte d'equilibrage |
+| `TV-00c` — mixture of experts | livre ailleurs | routage top-k, facteur de capacite, perte d'equilibrage — livre comme [3.4c-MoE-from-scratch](../../../ML/DataScienceWithAgents/03-DeepLearning/3.4c-MoE-from-scratch.ipynb) dans la serie 03-DeepLearning (accretion du 3.4, #16151 §5.2) |
 | `TV-01-Attention-Variants-SOTA.ipynb` | livre | le vrai Mistral-7B v0.1 (GQA 8/32, RoPE theta 10 000 reconstruit depuis les poids, SWA 4096) charge NF4 via `transformers` : KV-cache formule contre mesure (248 contre 256 Mio a T=2048), champ receptif 131 041 > contexte max, prefill/decodage en deux regimes, ppl 7.95 / 1.490 bpc sur WikiText-2, tableau bloc A vs bloc B (item 7) |
 | Bloc B — SOTA | en cours | TV-01 livre (attention) ; MoE-SOTA (TV-02) a venir — les memes mesures sur des modeles industriels charges via `transformers` |
 
