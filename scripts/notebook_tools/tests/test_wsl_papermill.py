@@ -13,13 +13,16 @@ from wsl_papermill import (
     _declared_venv_from_kernel_json,
     _default_mode,
     _normalize_venv,
+    _papermill_cmd,
     _validate_output,
     _venv_from_interpreter,
     _venv_mismatch_message,
+    _wsl_lake_root,
     batch_execute,
     check_env,
     check_env_native,
     check_env_wsl,
+    count_cell_errors,
     execute_notebook,
     execute_notebook_native,
     execute_notebook_wsl,
@@ -132,6 +135,123 @@ class TestValidateOutput:
         assert _validate_output(p, 1.0) == 0
 
 
+# --- Lean diagnostics are errors too (#16176, finding 1) ---
+
+
+def _lean_html(messages_json):
+    """Sortie Lean telle qu'un notebook la stocke : le JSON du REPL dans un <code>."""
+    return ["<details>\n", "    <summary>Raw output</summary>\n",
+            f"    <code>{messages_json}</code>\n", "</details>\n"]
+
+
+class TestLeanSeverityErrors:
+    """Un kernel Lean n'emet jamais `output_type: "error"` : il rend une
+    `display_data` dont le HTML porte les diagnostics du noyau. Le compteur qui
+    ne regardait que le niveau Jupyter rendait donc le meme `0 errors` sur un
+    kernel mort et sur un kernel sain."""
+
+    def _nb_with(self, html, exec_count=1):
+        return {"cells": [{"cell_type": "code", "execution_count": exec_count,
+                           "outputs": [{"output_type": "display_data",
+                                        "data": {"text/html": html,
+                                                 "text/plain": ["#eval 2+2"]},
+                                        "metadata": {}}]}]}
+
+    def test_lean_error_severity_is_counted(self, tmp_path):
+        nb = self._nb_with(_lean_html(
+            '{"messages": [{"severity": "error", "pos": {"line": 16, "column": 0},'
+            ' "endPos": {"line": 16, "column": 4},'
+            ' "data": "unexpected identifier; expected command"}], "env": 13}'))
+        p = tmp_path / "lean.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 3
+
+    def test_lean_warning_and_info_are_not_errors(self, tmp_path):
+        nb = self._nb_with(_lean_html(
+            '{"messages": [{"severity": "warning", "data": "unused variable `input`"},'
+            ' {"severity": "info", "data": "{ inFeatures := 784,"}], "env": 1}'))
+        p = tmp_path / "lean_ok.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 0
+
+    def test_lean_error_counted_despite_brackets_in_data(self, tmp_path):
+        """Le `data` porte du source Lean, donc des `]` et des `{` : l'extraction
+        doit etre un vrai parse JSON, pas un `\\[.*?\\]` qui coupe trop tot."""
+        nb = self._nb_with(_lean_html(
+            '{"messages": [{"severity": "info", "data": "def f := [1, 2] { x := 3 }"},'
+            ' {"severity": "error", "data": "failed to synthesize instance"}], "env": 7}'))
+        p = tmp_path / "lean_brackets.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 3
+
+    def test_count_cell_errors_splits_jupyter_from_lean(self, tmp_path):
+        nb = {"cells": [
+            {"cell_type": "code", "execution_count": 1,
+             "outputs": [{"output_type": "error", "ename": "ValueError", "evalue": "bad"}]},
+            {"cell_type": "code", "execution_count": 2,
+             "outputs": [{"output_type": "display_data",
+                          "data": {"text/html": _lean_html(
+                              '{"messages": [{"severity": "error", "data": "boom"}], "env": 0}')}}]},
+            {"cell_type": "code", "execution_count": 3, "outputs": []},
+        ]}
+        assert count_cell_errors(nb) == (1, 1)
+
+    def test_one_lean_error_cell_counted_once_even_with_two_outputs(self, tmp_path):
+        """Une cellule qui rend deux sorties fautives reste UNE cellule en erreur."""
+        err = {"output_type": "display_data",
+               "data": {"text/html": _lean_html(
+                   '{"messages": [{"severity": "error", "data": "boom"}], "env": 0}')}}
+        nb = {"cells": [{"cell_type": "code", "execution_count": 1, "outputs": [err, err]}]}
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_severity_mentioned_without_a_messages_block_is_not_flagged(self, tmp_path):
+        """Un texte qui PARLE de la severite, sans bloc portant la cle `messages`,
+        n'est pas un diagnostic."""
+        nb = self._nb_with(["La sortie porte \"severity\": \"error\" quand ca casse."])
+        p = tmp_path / "prose.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 0
+
+    # --- l'ancre doit viser la CLE, pas le prefixe `{"messages"` ---
+    #
+    # Le REPL Lean ne garantit pas que `messages` soit le premier champ du bloc.
+    # Mesure sur le corpus : 108 des 1030 blocs commencent par `sorries`, donc
+    # une ancre de prefixe les ratait tous en silence.
+
+    def test_lean_error_counted_when_messages_is_not_the_first_field(self):
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [], "messages": [{"severity": "error",'
+            ' "data": "failed to synthesize instance"}], "env": 11}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_counted_when_a_nested_brace_precedes_the_key(self):
+        """Le `{` le plus proche de la cle peut appartenir a un AUTRE objet : la
+        remontee doit continuer jusqu'a celui qui porte vraiment `messages`."""
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [{"pos": {"line": 9, "column": 2}}],'
+            ' "messages": [{"severity": "error", "data": "boom"}], "env": 3}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_and_sorries_count_once_per_cell(self):
+        """Un bloc a champs multiples reste UNE cellule en erreur, meme si les
+        deux champs portent de la matiere."""
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [{"pos": {"line": 1}}],'
+            ' "messages": [{"severity": "error", "data": "boom"},'
+            ' {"severity": "error", "data": "boom2"}], "env": 0}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_counted_in_a_non_enumerated_output_type(self):
+        """Aucun filtre sur `output_type` : un type non enumere qui porte le
+        diagnostic ne doit pas le perdre en silence."""
+        nb = {"cells": [{"cell_type": "code", "execution_count": 1,
+                         "outputs": [{"output_type": "some_future_kind",
+                                      "data": {"text/html": _lean_html(
+                                          '{"messages": [{"severity": "error",'
+                                          ' "data": "boom"}], "env": 0}')}}]}]}
+        assert count_cell_errors(nb) == (0, 1)
+
+
 # --- execute_notebook dispatch ---
 
 
@@ -163,6 +283,21 @@ class TestExecuteNotebookDispatch:
 
 
 class TestExecuteNotebookNative:
+    def test_explicit_cwd_reaches_papermill(self, tmp_path):
+        nb = tmp_path / "test.ipynb"
+        nb.write_text(json.dumps({"cells": [], "nbformat": 4}), encoding="utf-8")
+        execution_dir = tmp_path / "lake"
+        execution_dir.mkdir()
+        result = MagicMock(returncode=0, stderr="")
+
+        with patch("subprocess.run", return_value=result) as run, \
+             patch("wsl_papermill._validate_output", return_value=0):
+            assert execute_notebook_native(
+                str(nb), in_place=True, cwd=str(execution_dir)) == 0
+
+        command = run.call_args.args[0]
+        assert command[command.index("--cwd") + 1] == str(execution_dir.resolve())
+
     def test_missing_notebook_returns_1(self):
         result = execute_notebook_native("/nonexistent/path.ipynb")
         assert result == 1
@@ -270,12 +405,86 @@ class TestVenvMismatchMessage:
         assert _venv_mismatch_message("k", "~/coursia-wsl", None, "/home/jesse") is None
 
 
+class TestPapermillCommand:
+    def test_default_venv_keeps_home_expansion(self):
+        assert _papermill_cmd("~/coursia-wsl").startswith(
+            'source "$HOME"/coursia-wsl/bin/activate')
+
+    def test_absolute_venv_is_shell_quoted(self):
+        assert "'/home/user/my venv'" in _papermill_cmd("/home/user/my venv")
+
+
+class TestWslLakeRoot:
+    def test_returns_detected_root(self):
+        with patch("wsl_papermill.run_wsl", return_value=(0, "/lake", "")) as run:
+            assert _wsl_lake_root("/lake/notebooks") == "/lake"
+        assert 'd=/lake/notebooks' in run.call_args.args[0]
+
+    def test_returns_none_when_no_lake_exists(self):
+        with patch("wsl_papermill.run_wsl", return_value=(1, "", "")):
+            assert _wsl_lake_root("/notebooks") is None
+
+
 class TestExecuteNotebookWslVenv:
     def _write_nb(self, tmp_path):
         nb = {"cells": [], "nbformat": 4}
         p = tmp_path / "t.ipynb"
         p.write_text(json.dumps(nb), encoding="utf-8")
         return p
+
+    def test_defaults_cwd_to_notebook_directory(self, tmp_path):
+        p = self._write_nb(tmp_path)
+        commands = []
+
+        def fake_run_wsl(cmd, timeout=300):
+            commands.append(cmd)
+            return 0, "", ""
+
+        expected = win_to_wsl_path(str(p.parent.resolve()))
+        with patch("wsl_papermill._find_kernel_json_wsl", return_value=None), \
+             patch("wsl_papermill._wsl_lake_root", return_value=expected), \
+             patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            assert execute_notebook_wsl(str(p), kernel="lean4-wsl") == 0
+
+        assert f"--cwd {expected}" in commands[0]
+        assert "--start-timeout 300" in commands[0]
+        assert commands[0].startswith(f"cd {expected} &&")
+
+    def test_explicit_cwd_selects_sibling_lake(self, tmp_path):
+        p = self._write_nb(tmp_path)
+        lake = tmp_path / "conway_lean"
+        lake.mkdir()
+        commands = []
+
+        def fake_run_wsl(cmd, timeout=300):
+            commands.append(cmd)
+            return 0, "", ""
+
+        expected = win_to_wsl_path(str(lake.resolve()))
+        with patch("wsl_papermill._find_kernel_json_wsl", return_value=None), \
+             patch("wsl_papermill._wsl_lake_root", return_value=expected), \
+             patch("wsl_papermill.run_wsl", side_effect=fake_run_wsl):
+            assert execute_notebook_wsl(
+                str(p), kernel="lean4-wsl", cwd=str(lake)) == 0
+
+        assert f"--cwd {expected}" in commands[0]
+        assert "--start-timeout 300" in commands[0]
+        assert commands[0].startswith(f"cd {expected} &&")
+
+    def test_missing_cwd_fails_before_wsl_execution(self, tmp_path):
+        p = self._write_nb(tmp_path)
+        with patch("wsl_papermill.run_wsl") as run:
+            assert execute_notebook_wsl(
+                str(p), cwd=str(tmp_path / "missing")) == 1
+        run.assert_not_called()
+
+    def test_lean_kernel_without_lake_aborts_before_papermill(self, tmp_path, capsys):
+        p = self._write_nb(tmp_path)
+        with patch("wsl_papermill._wsl_lake_root", return_value=None), \
+             patch("wsl_papermill.run_wsl") as run:
+            assert execute_notebook_wsl(str(p), kernel="lean4-wsl") == 1
+        run.assert_not_called()
+        assert "Pass --cwd <lake-root>" in capsys.readouterr().out
 
     def test_warns_on_declared_mismatch(self, tmp_path, capsys):
         p = self._write_nb(tmp_path)
