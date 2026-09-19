@@ -6,7 +6,7 @@ import Astar.Optimality
 /-!
 # Astar.Consistency — consistance ⟹ admissibilité (téléscopage)
 
-Issue #4048, théorème cible `consistent_implies_admissible`. La **consistance**
+Issue #4048 (cible : l'admissibilité déduite de la consistance — théorème `consistent_implies_admissible_bound`, corollaire de `consistent_implies_path_bound`). La **consistance**
 (monotonie par arc : `h n ≤ edge n n' + h n'`) est une condition **locale** ;
 l'**admissibilité** (`h n ≤ hStar n`) est une condition **globale**. Le pont entre les
 deux est un **téléscopage** : le long des arcs d'un chemin `start = v₀ → v₁ → … → vₖ =
@@ -43,7 +43,7 @@ namespace Astar
 variable {V : Type*} (G : WeightedGraph V)
 
 /-- **Consistance ⟹ borne sur le chemin (téléscopage).** Théorème cible #4048
-    (`consistent_implies_admissible`). Une heuristique **consistante** nulle au but
+    (`consistent_implies_admissible_bound`). Une heuristique **consistante** nulle au but
     (`h goal = 0`) ne dépasse jamais le coût d'un chemin réalisé vers le but : pour
     tout chemin `p` de `start` à `goal`, `h(start) ≤ pathCost(p)`.
 

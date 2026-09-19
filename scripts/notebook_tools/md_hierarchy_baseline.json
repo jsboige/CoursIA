@@ -1,7 +1,7 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-18T10:44:03+00:00",
- "total_findings": 205,
+ "generated_at": "2026-09-19T10:55:25+00:00",
+ "total_findings": 156,
  "notebooks": {
   "MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb": {
    "HINT-AS-HEADING": 1
@@ -162,17 +162,6 @@
   "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": {
    "H1-DEEP": 1
   },
-  "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Argumentum_Cards.ipynb": {
-   "H1-DEEP": 7,
-   "HINT-AS-HEADING": 2,
-   "MULTI-H1": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb": {
    "HINT-AS-HEADING": 2
   },
@@ -182,46 +171,8 @@
   "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb": {
    "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb": {
-   "HINT-AS-HEADING": 4
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-11-Graph-Coloring.ipynb": {
-   "HINT-AS-HEADING": 4
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb": {
-   "H1-DEEP": 4,
-   "HINT-AS-HEADING": 2,
-   "MULTI-H1": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb": {
-   "HINT-AS-HEADING": 1
   }
  }
 }
