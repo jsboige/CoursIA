@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + DaysCircle), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -25,6 +25,17 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    blocs *résiduels* `h ↦ h + f h` la voit **minorée** par `(1-c) ^ n` (survie,
    ancre `3e-5 < 0,6 ^ 20`) — le raccourci identité (He et al. 2015) rend
    géométriquement improbable ce que la pile plain tue géométriquement.
+4. **Module `DaysCircle`** — tranche R10 du corpus Tegmark (#16741, claim
+   #16752) : le **cercle des jours** (*Not All Language Model Features Are
+   One-Dimensionally Linear*, Engels, Michaud, Liao, Gurnee, Tegmark,
+   arXiv:2405.14860). La feature jour-de-la-semaine n'est pas une direction 1D
+   mais un **cercle** : `zeta = exp (2πi/7)` racine primitive, les 7 jours
+   `day k = zeta ^ k` distincts (`day_distinct`) sur le cercle unité
+   (`days_on_circle`), la rotation `dayRep k` fait tourner les jours entre eux
+   (`dayRep_day`), et surtout **aucune droite réelle n'est stable**
+   (`zeta_smul_eq_real_smul_imp`) : tout sous-espace réel stable par `C₇` est
+   nul ou plein (`stable_eq_bot_or_top`, Annexe C) — la représentation est
+   **irréductible**, impossible à décomposer en deux features 1D.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -41,7 +52,7 @@ argument ERM dans `ERM`).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`)
+- **Toolchain** : `leanprover/lean4:v4.33.0` + Mathlib4 (`db584cd6d`)
 - **Sorry** : **0** sur tout le module (comptage code-only, voir § Modules).
   Côté Perceptron, la borne `novikoff_mistake_bound` (`n · γ² ≤ R²`), le Lemme A
   d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme (`‖wₖ‖² ≤ kR²`) sont
@@ -49,7 +60,7 @@ argument ERM dans `ERM`).
   sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
   phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry.
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
-  `lake build GradientFlow` (dépend de Mathlib4)
+  `lake build GradientFlow` / `lake build DaysCircle` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -161,6 +172,12 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
 | `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
 
+### Module `DaysCircle` (cercle des jours — représentation irréductible de C₇)
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `DaysCircle.lean` | 0 | Racine unique : `zeta` racine primitive 7e (`zeta_primitive`, `zeta_pow_seven`), non-réalité (`zeta_im`, `zeta_not_real`), orbite `day k` distincte (`day_distinct`) sur le cercle unité (`days_on_circle`), représentation `dayRep` + évaluation (`dayRep_apply`) + orbite homogène (`dayRep_day`), et le cœur de l'Annexe C : **`zeta_smul_eq_real_smul_imp`** (aucun vecteur propre réel) ⟹ **`stable_eq_bot_or_top`** (irréductibilité : tout sous-espace réel stable par `C₇` est nul ou plein). |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
@@ -173,7 +190,8 @@ fichiers `_en` couvrent l'intégralité des 18 modules feuilles + agrégateurs :
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
-`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`.
+`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
+`DaysCircle_en.lean` (module racine unique).
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -186,6 +204,7 @@ vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
 # Depuis ce répertoire (WSL recommandé)
 lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
+lake build DaysCircle    # cercle des jours (R10 corpus Tegmark)
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -224,6 +243,9 @@ déclaration dans un notebook :
   Recognition*, arXiv:1512.03385 (2015) — le raccourci identité.
 - A. Veit, M. Wilber & S. Belongie, *Residual Networks Behave Like Ensembles of
   Relatively Shallow Networks*, arXiv:1605.06431 (2016) — la lecture ensembliste.
+- J. Engels, E. J. Michaud, I. Liao, W. Gurnee & M. Tegmark, *Not All Language
+  Model Features Are One-Dimensionally Linear*, arXiv:2405.14860 (2024) — le
+  cercle des jours, Annexe C.
 
 ## Voir aussi
 

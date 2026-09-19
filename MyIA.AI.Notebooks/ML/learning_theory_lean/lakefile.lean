@@ -58,3 +58,12 @@ lean_lib «GradientFlow» where
   -- racine : sans le glob nu, `lake build` ne produit jamais GradientFlow.olean
   -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
   globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]
+
+/-- Module `DaysCircle` — tranche R10 du corpus Tegmark (#16741, claim
+#16752) : le cercle des jours (Engels, Michaud, Liao, Gurnee, Tegmark,
+arXiv:2405.14860) = représentation réelle 2D **irréductible** de C₇ :
+orbite des 7 jours sur le cercle unité, aucune droite réelle stable
+(Annexe C). Frère de `Perceptron`, `PacLearning` et `GradientFlow`. -/
+@[default_target]
+lean_lib «DaysCircle» where
+  globs := #[`DaysCircle, `DaysCircle_en]
