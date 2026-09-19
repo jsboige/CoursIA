@@ -223,8 +223,7 @@ flowchart TD
 | 3b | [GameTheory-03b-Chambres-et-Murs](GameTheory-03b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich) : les 576 jeux stricts comme chambres d'un arrangement, les égalités comme murs de codimension — 75 ordres faibles, incidence double-face mur/chambre, BFS connexe diamètre 6, swaps en longueurs de Coxeter, make_tie/break_tie duales (chantier 4 #12207, versant D2) | 45 min |
 | 3c | [GameTheory-03c-Le-Joueur-LLM](GameTheory-03c-Le-Joueur-LLM.ipynb) | Python | Joueur LLM placé dans le tableau périodique et confronté à des transformations ordinales | 45 min |
 | 3d | [GameTheory-03d-Plan-de-deformation](GameTheory-03d-Plan-de-deformation.ipynb) | Python | Biens publics non linéaires et plan de déformation de l'espace stratégique | 45 min |
-| 3e | [GameTheory-03e-Meta-Actions-Tarifees](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées : changer les règles comme action payante — NE/BR sur les 576 jeux (72 injouables), coût en échelons de rang avec seuil de migration 56→16→8→4 %, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe du Dilemme EST un équilibre (3,3), 4 échecs de coordination dur (chantier 4 #12207, versant D4) | 45 min |
-| 3f | [GameTheory-03f-Parcours-Complet](GameTheory-03f-Parcours-Complet.ipynb) | Python | Parcours complet du jeu nommé au coût de la méta-action | 45 min |
+| 3e | [GameTheory-03e-Meta-Actions-Tarifees](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées **+ parcours complet** (absorbe l'ex-03f, fusion #16231 chantier C) : marches 1-3 (NE/BR sur les 576 jeux, 72 injouables, coût en échelons de rang, seuil de migration 56→16→8→4 %, méta-jeu 4x4, 4 échecs de coordination dur) puis intégration §4-8 (chemin BFS vérifié, murs, tarifs, parcours complet PD→CERF — chantier 4 #12207, versants D4 + intégration) | 90 min |
 | 3h | [GameTheory-03h-Deux-Especes-de-Fleches](GameTheory-03h-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
 | 4 | [GameTheory-04-NashEquilibrium](GameTheory-04-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique, marchandage asymétrique §8 : faisceau de dépendance multi-composantes et point de désaccord — le principe du moindre intérêt réfuté comme loi, conservé comme effet partiel (#12682) ; aperçu intégré — **deep-dive autonome en 4d** (#14442) | 60 min |
 | 4 (C#) | [GameTheory-04-NashEquilibrium-Csharp](GameTheory-04-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
@@ -815,7 +814,6 @@ GameTheory/
 ├── GameTheory-03c-Le-Joueur-LLM.ipynb
 ├── GameTheory-03d-Plan-de-deformation.ipynb
 ├── GameTheory-03e-Meta-Actions-Tarifees.ipynb
-├── GameTheory-03f-Parcours-Complet.ipynb
 ├── GameTheory-04-NashEquilibrium.ipynb
 ├── GameTheory-04-NashEquilibrium-Csharp.ipynb       # Jumeau C# — NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956)
 ├── GameTheory-05-ZeroSum-Minimax.ipynb
