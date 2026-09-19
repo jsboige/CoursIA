@@ -178,7 +178,19 @@ def parse_dossier(
     author: str,
     created_at: str = "",
 ) -> tuple[Dossier | None, list[str]]:
-    """Parse one strictly delimited dossier comment without interpreting prose."""
+    """Parse one strictly delimited dossier comment without interpreting prose.
+
+    Prose FOLLOWING the closing marker is ignored, not refused. The contract is
+    the delimited block: `content` stops at `closing`, so trailing text can never
+    reach a field. Refusing it discarded dossiers whose machine-readable block
+    was complete and whose firsthand evidence was written below it for a human --
+    measured on four pull requests in one cycle (#16928).
+
+    Nothing is hidden by this. `check_unaddressed_nits.py` strips the dossier by
+    its two delimiters, so a reserve written after the closing marker still
+    reaches B.0 classification; only a reserve written INSIDE the block is
+    absorbed, which is the intended semantics of #16442/#16443.
+    """
     lines = body.strip().splitlines()
     if not lines or lines[0].strip() != START:
         return None, []
@@ -192,8 +204,6 @@ def parse_dossier(
         content = lines[1:]
     else:
         content = lines[1:closing]
-        if closing != len(lines) - 1:
-            errors.append("content after closing marker")
 
     fields: dict[str, str] = {}
     for raw in content:

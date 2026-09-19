@@ -231,11 +231,18 @@ def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
 
 
 def test_blocked_dossier_still_requires_full_structural_integrity():
-    """exit 3 is NOT a softer gate: the fingerprint stays mandatory."""
+    """exit 3 is NOT a softer gate: the fingerprint stays mandatory.
+
+    The bad `lane` must be one that is genuinely DISQUALIFYING. This case read
+    `myia-po-2023:CoursIA` while a single lane could attest; #16906 makes that a
+    qualifying lane, so it would silently stop testing anything. The assertion
+    survives by naming a lane outside `QUALIFYING_LANES`, not by narrowing the
+    set back.
+    """
     for field, value in (
         ("surfaces-sha256", "0" * 64),
         ("head", "f" * 40),
-        ("lane", "myia-po-2023:CoursIA"),
+        ("lane", "myia-po-9999:CoursIA"),
         ("complete", "false"),
         ("schema", "2"),
     ):
@@ -333,12 +340,38 @@ def test_unknown_and_duplicate_fields_fail_closed():
     assert any("duplicate field" in error for error in _errors(_snapshot(duplicate)))
 
 
-def test_truncated_or_trailed_dossier_is_reported_as_malformed():
+def test_truncated_dossier_is_reported_as_malformed():
+    """An unclosed block stays refused: its extent is undefined."""
     truncated = _body().replace("\n" + mod.END, "")
     assert "missing closing marker" in _errors(_snapshot(truncated))
 
-    trailed = _body() + "\ntext after the contract"
-    assert "content after closing marker" in _errors(_snapshot(trailed))
+
+def test_prose_after_the_closing_marker_is_ignored_not_refused():
+    """The contract is the delimited block; what follows is for a human.
+
+    Refusing it discarded four dossiers in a single cycle whose machine-readable
+    block was complete and whose firsthand evidence -- `check_unaddressed_nits`
+    rc, comment counts, exact head -- was written below the marker so a reader
+    could see it (#16928).
+    """
+    trailed = _body() + "\n\n### Verifications firsthand\n- B.0 : rc=0, 6 commentaires lus."
+    verdict, errors = mod.evaluate(_snapshot(trailed))
+    assert verdict == mod.VERDICT_READY, errors
+    assert errors == []
+
+
+def test_trailing_prose_cannot_smuggle_a_contract_field():
+    """What the old refusal actually had to protect -- and still does.
+
+    `content` stops at the closing marker, so a field written after it is never
+    parsed. Tolerating prose is therefore not tolerating a second, contradicting
+    contract: the BLOCKED verdict inside the block wins over the READY written
+    below it.
+    """
+    smuggled = _body(verdict="BLOCKED") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
+    verdict, _ = mod.evaluate(_snapshot(smuggled))
+    assert verdict == mod.VERDICT_BLOCKED
+
 
 
 def test_noncanonical_integer_and_pr_mismatch_fail_closed():
