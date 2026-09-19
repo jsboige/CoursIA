@@ -9,9 +9,11 @@ La source de verite reste le notebook GT-24b, jamais copie.
 from __future__ import annotations
 
 import json
+import os
 from collections import Counter
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 # Taxonomie de labels du banc consolide (GT-24b, verifiee sur le pilote ICT-35).
 LABELS: tuple[str, ...] = (
@@ -39,18 +41,46 @@ def gt24b_path() -> Path:
     )
 
 
+def _corpus_cwd() -> Path:
+    """Repertoire d'execution reproduisant le cwd du pilote ICT-35.
+
+    La cellule 4 de GT-24b resout son cache Argumentum en chemin RELATIF
+    (``Path("argumentum_scenarii.csv")``) : selon le cwd, elle fait un hit
+    cache ou declenche un fetch GitHub raw. Le cache du pilote vit dans le
+    dossier ICT-Series ; a defaut on retombe sur le dossier du notebook
+    (comportement natif du banc, fetch documente dans sa cellule 4).
+    """
+    for d in (Path(__file__).resolve().parent, gt24b_path().parent):
+        if (d / "argumentum_scenarii.csv").exists():
+            return d
+    return gt24b_path().parent
+
+
+@contextmanager
+def _cwd(path: Path) -> Iterator[None]:
+    prev = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev)
+
+
 def load_corpus_dur(path: Path | None = None) -> list[dict[str, Any]]:
     """Charge ``CORPUS_DUR`` en executant les cellules de GT-24b.
 
     Reproduction deterministe (``random.seed(42)`` est pose par GT-24b
     lui-meme dans la cellule 10) ; le notebook source n'est jamais modifie.
+    L'exec se fait dans le cwd portant le cache Argumentum (cf :func:`_corpus_cwd`)
+    pour ne pas dependre du repertoire appelant.
     """
     nb_path = path or gt24b_path()
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
     ns: dict[str, Any] = {}
-    for i, cell in enumerate(nb["cells"]):
-        if cell["cell_type"] == "code" and i <= _CORPUS_CELL_END:
-            exec("".join(cell["source"]), ns)  # noqa: S102 - reproduction, motif du pilote ICT-35 cell[3]
+    with _cwd(_corpus_cwd()):
+        for i, cell in enumerate(nb["cells"]):
+            if cell["cell_type"] == "code" and i <= _CORPUS_CELL_END:
+                exec("".join(cell["source"]), ns)  # noqa: S102 - reproduction, motif du pilote ICT-35 cell[3]
     corpus = ns["CORPUS_DUR"]
     validate_corpus(corpus)
     return corpus

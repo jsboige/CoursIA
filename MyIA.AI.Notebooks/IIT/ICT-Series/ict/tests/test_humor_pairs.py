@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -47,6 +48,19 @@ def test_label_distribution_sums_to_corpus(corpus: list[dict]) -> None:
     dist = label_distribution(corpus)
     assert sum(dist.values()) == len(corpus)
     assert set(dist) <= set(LABELS)
+
+
+@_NEEDS_KEY
+def test_load_corpus_dur_cwd_independent(tmp_path: Path) -> None:
+    # Regression : la cellule 4 de GT-24b resout son cache Argumentum en chemin
+    # relatif — depuis un cwd sans cache, elle declenchait un fetch reseau.
+    prev = Path.cwd()
+    os.chdir(tmp_path)
+    try:
+        corpus = load_corpus_dur()
+    finally:
+        os.chdir(prev)
+    assert len(corpus) >= 100
 
 
 def test_validate_corpus_rejects_bad_label() -> None:
