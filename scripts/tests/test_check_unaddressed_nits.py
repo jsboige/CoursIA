@@ -2308,17 +2308,30 @@ def test_12148_glyphe_narre_a_plus_d_un_mot_citer_surflagge_assume():
     que le mot precedent plus un mot d'attribution (#11044). Elargir la
     fenetre fabriquerait des faux NEGATIFS sur de vraies emissions — la
     sur-accusation coute une relecture, la sous-accusation coute un merge.
-    Autant que ce soit vu plutot que decouvert. Ce test AFFIRME le residu
-    par ecrit : si le path glyphe-precede-de-2-mots doit etre couvert un
-    jour, c'est un fix separe avec son propre scan distribution."""
-    body = (
+    Autant que ce soit vu plutot que decouvert.
+
+    #16688 — la moitie deterministe de ce residu est couverte : « un 🟡 »
+    (determinant + glyphe) est neutralise en amont par Position J (C)
+    DETERMINANT, avant meme que `_is_cited` n'entre en jeu. Le residu
+    `_is_cited` proprement dit (narration SANS determinant, a >1 mot du
+    citeur) reste assume : si ce path doit etre couvert un jour, c'est un
+    fix separe avec son propre scan distribution."""
+    body_det = (
         "## Suivi\n"
         "- la review precedente portait un 🟡 sur l'incoherence — leve "
         "par 06956bd0a. Tout est ok maintenant."
     )
-    # Sur-flag assume : le glyphe precede de 'un ' (a >1 mot du 'portait'),
-    # donc `_is_cited` ne neutralise pas et le glyphe reste vivant -> BOT-CONCERN.
-    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    # Couvert par #16688 Position J (C) : « un 🟡 » = referent, mention.
+    assert mod.classify("clusterManager-Myia", body_det) is None
+    body_nu = (
+        "## Suivi\n"
+        "- la review precedente portait 🟡 sur l'incoherence — leve "
+        "par 06956bd0a. Tout est ok maintenant."
+    )
+    # Sur-flag ASSUME (residu _is_cited vivant) : sans determinant, le
+    # glyphe n'est ni un referent (C) ni un enum (B) ni un meta-nom (A) ;
+    # `_is_cited` ne voit pas 'portait' a >1 mot -> reste vivant.
+    assert mod.classify("clusterManager-Myia", body_nu) == "BOT-CONCERN"
 
 
 # === GRAIN #12311 — REQUEST_CHANGES (verbe) complete CHANGES_REQUESTED (nom) ===
@@ -2708,6 +2721,166 @@ def test_13083_narration_pas_un_blocage_en_section_ne_declenche_pas():
             "Contexte de la veille, paragraphe de remplissage de reserve.\n\n"
             "## Ce qui reste — pas un blocage, c'est le grain suivant.")
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_16005_levee_syntaxe_inverse_ne_pose_pas():
+    """#16005 : le francais place le mot de LEVEE avant le nom. « Levée du
+    blocage » est la levée canonique elle-même — mesuré sur #15846, la phrase
+    par laquelle la lane levait le blocage était lue comme en POSANT un
+    (l'instrument lisait sa propre grammaire de levée comme une émission)."""
+    assert mod.classify(
+        "jsboige",
+        "## Levée du blocage — en forme canonique, avec les deux sorties nommées"
+    ) is None
+    assert mod.classify("jsboige", "Levé du blocage") is None
+    assert mod.classify(
+        "jsboige",
+        "## Levée du `[BLOCK]` : le rouge retenu est un check-run gelé"
+    ) is None
+
+
+def test_16005_narration_en_titre_ne_pose_pas():
+    """#16005 : le nom « blocage » complément d'un titre de narration ne pose
+    rien — 2e faux positif mesuré sur #15846 (« Chronologie du blocage »,
+    commentaire de diagnostic de la lane devenu réserve BLOCK non levable par
+    l'auteur sous #13083)."""
+    assert mod.classify(
+        "jsboige", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "jsboige", "Historique du blocage posé hier, pour mémoire."
+    ) is None
+    assert mod.classify(
+        "jsboige", "## Suite du blocage — ce qui reste en attente"
+    ) is None
+
+
+def test_16005_emissions_reelles_restent_detectees():
+    """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
+    narration liée au nom par une courte proposition — les émissions réelles
+    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01",
+        "BLOCAGE : cette PR ne merge pas tant que le run GPU n'est pas vert."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
+    ) == "BLOCK"
+
+
+# --- #16006 : la fenetre pre-marqueur etait sentence-agnostic -----------------
+# Toute la liste des mots de narration, telle que le module la porte. Servir de
+# source unique au test evite la derive : chaque forme est verifiee DANS LES
+# DEUX SENS (narration liee au nom = mention ; suivie d'un deux-points =
+# emission), et l'appartenance de la forme a la liste est prouvee sur le
+# pattern lui-meme (sinon le balayage serait vacuamente vert).
+_NARRATION_FORMS = (
+    "Levée", "Lèvement", "Je lève", "Lifted", "Retrait", "Annulation",
+    "Chronologie", "Historique", "État", "Résumé", "Récapitulatif", "Bilan",
+    "Contexte", "Suite",
+)
+
+
+def test_16006_les_deux_points_annoncent_l_emission_sur_toute_la_liste():
+    """#16006 : `Suite(?!\\s*:)` traitait UN mot sur quatorze — l'echappatoire
+    etait le symptome de l'asymetrie, pas le correctif. Le deux-points ANNONCE
+    ce qui suit (« État : BLOCAGE maintenu »), il ne relie pas le nom a sa
+    narration comme le fait la preposition (« État du blocage »). Le correctif
+    devait valoir pour la liste entiere, pas pour `suite`."""
+    # `Je lève` est le VERBE DE LEVEE canonique : `classify` le resout a
+    # l'etage superieur (branche levee) avant meme d'appeler `_block_emitted`.
+    # L'assertion qui suit prouve que ce n'est PAS la fenetre de narration qui
+    # l'ecarte -- sinon l'exception masquerait un faux negatif de plus.
+    assert mod._block_emitted("Je lève : BLOCAGE — ne pas merger.") is True
+    assert mod.classify("myia-ai-01", "Je lève : BLOCAGE — ne pas merger.") is None
+
+    for forme in _NARRATION_FORMS:
+        # Le module normalise (sans accents) avant de chercher : la preuve
+        # d'appartenance doit porter sur la meme forme que la recherche reelle.
+        assert mod._NARRATION_BEFORE_RE.search(
+            f"{mod._unaccent(forme)} du blocage"
+        ), (
+            f"« {forme} » n'est plus dans la liste des mots de narration : "
+            "le balayage ci-dessous serait vacuamente vert"
+        )
+        if forme == "Je lève":
+            continue  # resolu en amont (cf ci-dessus), pas par cette fenetre
+        assert mod.classify("myia-ai-01", f"{forme} : BLOCAGE — ne pas merger.") \
+            == "BLOCK", f"« {forme} : BLOCAGE » est une EMISSION"
+        assert mod.classify("myia-ai-01", f"{forme} du blocage") is None, (
+            f"« {forme} du blocage » est une MENTION (narration liee au nom)"
+        )
+
+
+def test_16006_le_trou_ne_franchit_pas_une_fin_de_phrase():
+    """#16006 : `[^\\n]{0,24}` laissait le mot de narration de la phrase
+    PRECEDENTE neutraliser l'emission de la suivante — deux mesures sur
+    l'arbre fusionne (« Résumé fait. BLOCAGE maintenu », « Historique court.
+    BLOCAGE »). Le trou est desormais borne a une proposition nominale."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé fait. BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court. BLOCAGE"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Contexte posé. BLOCAGE — run rouge, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "État stable. BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-epreuves : la narration reste une narration quand la ponctuation
+    # est hors du trou (avant le mot, ou apres le nom).
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Premier point. Historique du blocage, pour mémoire."
+    ) is None
+
+
+def test_16006_le_trou_ne_franchit_pas_un_separateur_de_clause():
+    """#16006 (2e frontiere, mesure ai-01 2026-09-16) : la classe intermediaire
+    excluait les bornes de PHRASE mais pas les separateurs de CLAUSE — la
+    virgule et les tirets laissaient un mot de narration d'une autre
+    proposition neutraliser l'emission. Quatre reproductions exactes rendaient
+    None au lieu de BLOCK ; les formes canoniques de narration liee au nom
+    restent None (elles ne contiennent aucun separateur dans leur trou)."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé terminé, BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court — BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court - BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Bilan fait, BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-exemples causaux a conserver : la narration liee au nom par la
+    # preposition reste une MENTION — aucun separateur de clause dans le trou.
+    assert mod.classify(
+        "myia-ai-01", "Chronologie du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Levée du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Levée du blocage — en forme canonique"
+    ) is None
 
 
 def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
@@ -5143,6 +5316,65 @@ def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
     # Le méta-nom sur la ligne PRÉCÉDENTE ne ouvre pas la mention : la
     # portée est la ligne, pas le paragraphe.
     body = "Le glyphe de severite :\n🟡 FINDING — hyperparametres contredits."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+# --- #16688 — Position J discriminateur (C) DÉTERMINANT : référent vs émission ---
+# Fondateur : levée c.5730596602 sur #16617, titre
+# « ### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, c'est donc
+#  à moi de le lever » — préfixe sans méta-nom ni séparateur, glyphe resté
+# vivant, l'organe classait la levée elle-même comme réserve neuve.
+
+
+def test_16688_determinant_referent_fondateur_neutralise():
+    body = ("## Levée des deux réserves, par leur auteur ou par issue nommée — "
+            "avant merge\n"
+            "### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, "
+            "c'est donc à moi de le lever. Vérifié firsthand : la clause "
+            "`lane` est présente au head 92b74e9e1d.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_anglais_the_this_neutralise():
+    body = ("Lifting the 🟡 I raised on the Grain tag: lane clause verified "
+            "firsthand at head 92b74e9e1d. My 🔴 on the missing numpy-only "
+            "note is carried by #16687.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_en_milieu_de_ligne_neutralise():
+    # Le déterminant doit TOUCHER le glyphe mais peut suivre toute prose
+    # de ligne (l'ancre est la fin du préfixe, pas le début de ligne).
+    body = ("Reprise de la review : je lève le 🔴 sur la cellule [7] "
+            "(indexing corrigé au head 63960fd8d1), le reste est OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_vp_emission_tete_de_ligne_reste_bloquant():
+    # L'émission Hermes ouvre la ligne : aucun déterminant ne la précède.
+    body = "🟡 FINDING — les 5 hyperparametres contredisent le run mesure."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_nom_commun_non_determinant_reste_bloquant():
+    # « Nit 🟡 » pose une réserve : « nit » est un nom commun, pas un
+    # déterminant — le set (C) est borné, il ne s'étend pas aux noms.
+    body = "Nit 🟡 — le tag `Grain:` incomplet au head courant."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suffixe_dans_mot_neutre_reste_bloquant():
+    # « sample 🟡 » / « table 🔴 » : le `le` final de ces mots n'a pas de
+    # \b devant lui — l'ancre mot-borne empêche le déterminant suffixe.
+    body = "table 🔴 — la colonne mAP50-95 contredit la prose du 4.2h."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suivi_de_prose_reste_bloquant():
+    # Le déterminant doit toucher le glyphe : « le nit 🟡 » où 🟡 suit le
+    # nom n'est PAS couvert par (C) seul (l'ancre exige déterminant + espaces
+    # immédiatement avant le glyphe) — « le » précède « nit », pas 🟡.
+    body = "le nit 🟡 posé hier reste valable : cellule [7] non corrigée."
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
 
