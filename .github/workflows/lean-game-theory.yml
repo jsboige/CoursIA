@@ -70,7 +70,6 @@ on:
       - '.github/workflows/lean-game-theory.yml'
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
