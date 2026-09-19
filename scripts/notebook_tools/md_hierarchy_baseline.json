@@ -1,15 +1,12 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-19T12:57:54+00:00",
- "total_findings": 153,
+ "generated_at": "2026-09-19T15:24:53+00:00",
+ "total_findings": 123,
  "notebooks": {
   "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb": {
@@ -72,11 +69,6 @@
    "HINT-AS-HEADING": 3,
    "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": {
-   "H1-DEEP": 15,
-   "HINT-AS-HEADING": 4,
-   "MULTI-H1": 1
-  },
   "MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb": {
    "H1-DEEP": 3,
    "HINT-AS-HEADING": 3,
@@ -93,22 +85,13 @@
   "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb": {
@@ -128,23 +111,14 @@
   "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-Csharp.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
   "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb": {
    "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb": {
-   "HEADING-IN-LIST": 3
   },
   "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": {
    "H1-DEEP": 1
   },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb": {
    "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb": {
-   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb": {
    "HINT-AS-HEADING": 1
