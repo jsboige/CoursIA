@@ -3766,6 +3766,24 @@ def _attach_absent_sha_context(data: dict) -> None:
     data["_head_blobs"] = head_blobs
 
 
+# #16780 — un corps reduit a un chemin local (l'accident `gh --body
+# "@$TEMP/x.md"` : gh poste le chemin LITERAL, --body-file etait voulu).
+# Le fichier vise vit sur UNE machine : aucun lecteur de la PR ne peut
+# l'ouvrir, et son NOM peut contenir un marqueur de levée par sous-chaine
+# (« levee_16670.md », « merged.md ») — le pointeur deviendrait une levée
+# FABRIQUEE, le defaut mesure sur #16670 (arbitrage ai-01 : corps-pointeur
+# INERTE, symetrie de la prose sans marqueur). Le garde advisory jumeau
+# check_local_path_waivers.py rend la FUITE visible sans bloquer ; ici,
+# seule l'INERTIE importe.
+_LONE_PATH_BODY_RE = re.compile(
+    r"^@?(?:"
+    r"[A-Za-z]:[\\/][^\s]+"  # C:\Users\...\Temp/a16670.md (separateurs mixtes)
+    r"|/(?:tmp|home|Users|var|opt|mnt)/[^\s]+"
+    r"|~/[^\s]+"
+    r")$"
+)
+
+
 def can_lift(comment: dict) -> bool:
     """Ce commentaire est-il capable de LEVER un nit qui le precede ?
 
@@ -3795,6 +3813,10 @@ def can_lift(comment: dict) -> bool:
     # #12908 : la phrase exigée est une levée VIVE — un tag de protocole
     # qui narre « une levée explicite » (exigence, pas geste) ne peut
     # toujours pas lever.
+    # #16780 : inertie du corps-pointeur (cf _LONE_PATH_BODY_RE). rstrip :
+    # l'ancre $ du regex ne doit pas echouer sur une newline finale.
+    if _LONE_PATH_BODY_RE.match(body.rstrip()):
+        return False
     if body.startswith(AGENT_PREFIXES) and not has_live_lift(body):
         return False
     return True
