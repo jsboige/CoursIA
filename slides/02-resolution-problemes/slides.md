@@ -299,7 +299,7 @@ fonction EXPLORER-GRAPHE(probleme) retourne une solution, ou echec
     seulement si ils ne sont ni dans la frontiere, ni dans l'ensemble explores.
 ```
 
-<img src="./images/img_008.png" alt="Regions de l'espace d'exploration : partie exploree, frontiere (en tirets) et region inconnue" style="display:block; margin:4px auto 0; max-height:100px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_008.png" alt="Regions de l'espace d'exploration : partie exploree, frontiere (en tirets) et region inconnue" style="display:block; margin:4px auto 0; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -437,6 +437,10 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 ---
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+</style>
+
 # Exploration en profondeur limitée (DLS)
 
 = Exploration en profondeur d'abord avec une profondeur limité l
@@ -463,7 +467,7 @@ fonction EPL-Recursive(noeud, probleme, limite) retourne une solution, ou echec/
     si arret_rencontre? alors retourner coupure sinon retourner echec
 ```
 
-<img src="./images/img_015.png" alt="Exploration en profondeur limitee sur un graphe : le developpement s'arrete a la limite fixee" style="display:block; margin:4px auto 0; max-height:95px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_015.png" alt="Exploration en profondeur limitee sur un graphe : le developpement s'arrete a la limite fixee" style="display:block; margin:4px auto 0; max-height:65px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -923,12 +927,16 @@ layout: section
 
 # Exploration avec observations partielles
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+</style>
+
 ## Cf. cours précédent → État pas situé précisément
 
 - Analogue à non déterministe
 - État de croyance : états physiques possibles
 
-<img src="./images/img_pptx_53_belief.png" alt="Etats de croyance : chaque croyance regroupe les etats physiques compatibles avec les observations passees" style="display:block; margin:4px auto 0; max-height:95px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_pptx_53_belief.png" alt="Etats de croyance : chaque croyance regroupe les etats physiques compatibles avec les observations passees" style="display:block; margin:4px auto 0; max-height:55px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Exploration sans observation : problème conformant
 
@@ -1269,6 +1277,10 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 
 # Classes de Jeux complexes
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+</style>
+
 ## Jeux stochastiques
 
 - Presence d'aléatoire (des, cartes)
@@ -1290,8 +1302,8 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 - Approches modernes : **CFR** (Counterfactual Regret Minimization, Libratus/Pluribus au poker)
 
 <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; margin-top:8px;">
-  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:110px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
-  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:110px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:70px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:70px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
 </div>
 
 ---
@@ -1342,13 +1354,13 @@ layout: section
 - Domaines : &#123;rouge, vert, bleu&#125;
 - Contraintes : WA != NT, NT != Q, SA != NSW, NSW != V, V != SA
 
-<img src="./images/img_046.png" alt="Coloration de carte : une assignation complete ou deux regions voisines ne partagent jamais la meme couleur" style="display:block; margin:4px auto 0; max-height:75px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_046.png" alt="Coloration de carte : une assignation complete ou deux regions voisines ne partagent jamais la meme couleur" style="display:block; margin:4px auto 0; max-height:60px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Objectif
 
 - Trouver une assignation complete satisfaisant toutes les contraintes
 
-<img src="./images/img_045.png" alt="Probleme de satisfaction de contraintes : colorier la carte d'Australie sans deux regions voisines de meme couleur" style="display:block; margin:4px auto 0; max-height:75px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_045.png" alt="Probleme de satisfaction de contraintes : colorier la carte d'Australie sans deux regions voisines de meme couleur" style="display:block; margin:4px auto 0; max-height:50px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
