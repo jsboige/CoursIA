@@ -21,11 +21,12 @@ Contenu formalisé :
      bit — le groupe d'automorphismes est trivial (`card_mulAut_eq_one` :
      un automorphisme fixe `1`, et l'unique autre élément n'a nulle part où
      aller), donc aucune symétrie : l'étiquetage d'un nœud coûte exactement
-     1 bit.
-
-Le cas cyclique `C₇` (b = log₂(5040/6), |Aut C₇| = φ(7) = 6 via les unités de
-`ZMod 7`) est le compagnon naturel du module `CircleOfDays` et attend la
-carte `Aut (ZMod p) ≃ (ZMod p)ˣ` en tranche suivante.
+     1 bit ;
+   - `infoBits_cyclicSeven` : le cyclique `C₇` (compagnon du module
+     `CircleOfDays`, dont la rotation des jours est la représentation de ce
+     groupe), `b = log₂(7!/6) = log₂ 840` — les automorphismes d'un cyclique
+     d'ordre `n` sont au nombre de φ(n) (`IsCyclic.card_mulAut`), donc les
+     6 rotations de C₇ rabattent l'étiquetage de log₂ 6 ≈ 2,58 bits.
 
 Dépendances : Mathlib uniquement (`MulAut`, `Fintype.card`, `Real.log2`).
 -/
@@ -96,5 +97,24 @@ theorem infoBits_card_two {G : Type*} [Group G] [Fintype G] [DecidableEq G]
   have hAut := card_mulAut_eq_one hG
   simp only [infoBits, hG, hAut]
   norm_num
+
+/-- **Groupe cyclique C₇** : le groupe d'automorphismes d'un cyclique d'ordre
+`n` a φ(n) éléments (`IsCyclic.card_mulAut` — les images du générateur sont
+exactement ses puissances inversibles), donc `|Aut C₇| = φ(7) = 6` et
+`b = log₂(7!/6) = log₂ 840 ≈ 9{,}71` bits : les 6 rotations rabattent
+l'étiquetage de log₂ 6 ≈ 2,58 bits. Compagnon du module `CircleOfDays`
+(la rotation des jours y est la représentation de ce C₇). -/
+theorem infoBits_cyclicSeven :
+    infoBits (Multiplicative (ZMod 7)) = Real.logb 2 840 := by
+  have hcard : Fintype.card (Multiplicative (ZMod 7)) = 7 := by norm_num
+  have h1 : Nat.card (Multiplicative (ZMod 7)) = 7 := by
+    rw [Nat.card_eq_fintype_card]; exact hcard
+  have hAut : Fintype.card (MulAut (Multiplicative (ZMod 7))) = 6 := by
+    have h := IsCyclic.card_mulAut (Multiplicative (ZMod 7))
+    rw [h1, Nat.totient_prime (by norm_num : (7 : ℕ).Prime)] at h
+    rw [Nat.card_eq_fintype_card] at h
+    exact h
+  have hd : ((7 : ℕ).factorial : ℝ) / ((6 : ℕ) : ℝ) = 840 := by norm_num
+  simp only [infoBits, hcard, hAut, hd]
 
 end LearningTheory.EffectiveTheory
