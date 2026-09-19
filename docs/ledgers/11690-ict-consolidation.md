@@ -125,6 +125,7 @@ Lecture complète (contenu ET `outputs`) des quatre notebooks, 2026-09-19, par `
 
 ---
 
+## Strand 4 — ICT-25 (rang 4)
 
 Lecture complète (contenu ET `outputs`, 44 cellules) du notebook unique du strand, 2026-08-24, par `myia-po-2027:CoursIA-2`. Le strand est « le tri des négatifs » : ICT-25 vit une série de résultats négatifs **assumée comme livrable** — la lecture sépare le négatif-par-protocole (informatif, multi-seed, pré-enregistré) du négatif-par-défaut (dette).
 
