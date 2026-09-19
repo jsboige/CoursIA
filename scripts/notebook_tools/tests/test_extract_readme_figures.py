@@ -900,6 +900,100 @@ class TestExtractFigure:
         )
         assert deep_path.exists()
 
+    def test_write_manifest_false_writes_the_same_png_as_the_default(
+            self, tmp_path: Path):
+        """L'opt-out ne doit changer QUE le MANIFEST, jamais l'image."""
+        nb = self._setup_nb(tmp_path)
+        with_manifest = tmp_path / "a" / "demo.png"
+        without_manifest = tmp_path / "b" / "demo.png"
+        extract_figure(
+            nb_path=nb, cell_index=0, output_index=0,
+            output_path=with_manifest,
+            alt_text_fr="alt", description_visuelle="desc",
+        )
+        extract_figure(
+            nb_path=nb, cell_index=0, output_index=0,
+            output_path=without_manifest,
+            alt_text_fr="alt", description_visuelle="desc",
+            write_manifest=False,
+        )
+        assert with_manifest.read_bytes() == without_manifest.read_bytes()
+
+
+# ---------------------------------------------------------------------------
+# 11bis. TestWriteManifestOptOut — #16275 : l'append MANIFEST est DESTRUCTEUR
+#        sur un MANIFEST curate (il remplace le bloc de meme nom de fichier)
+# ---------------------------------------------------------------------------
+_CURATED_MANIFEST = """# Manifeste des figures — Serie X
+
+| Figure | Fichier | Poids |
+|--------|---------|-------|
+| Demo | `demo.png` | 12 Ko |
+
+## demo.png
+
+- **Source** : notebook `demo.ipynb` (cellule 0, output 0)
+- **Description visuelle** : RGB 80x80 mean R247/G246/B246 std 21/21/21.
+- **Contenu réel vérifié** : 1 panneau, courbe rouge montant de 0.25 a 0.50.
+- **Alt-text (FR)** : figure de demonstration.
+- **Poids** : 12,1 Ko
+
+## autre.png
+
+- **Contenu réel vérifié** : bloc temoin, ne doit jamais bouger.
+"""
+
+
+class TestWriteManifestOptOut:
+    """#16275 : `write_manifest=False` ecrit le PNG sans toucher au MANIFEST.
+
+    Mesure fondatrice (GenAI/Texte, 2026-09-15) : le geste documente de
+    regeneration (`figures-extract` vers `assets/readme/`) faisait passer
+    `Contenu réel vérifié` de 6 a 5 occurrences — l'append remplace le bloc
+    `## <fichier>.png` et perd les champs mesures d'un MANIFEST curate.
+    """
+
+    def _curated_dir(self, tmp_path: Path) -> Path:
+        assets = tmp_path / "assets" / "readme"
+        assets.mkdir(parents=True)
+        (assets / "MANIFEST.md").write_text(_CURATED_MANIFEST, encoding="utf-8")
+        return assets
+
+    def test_positive_control_default_replaces_the_curated_block(
+            self, tmp_path: Path):
+        """Controle POSITIF : sans l'opt-out, le defaut detruit bien le bloc.
+
+        Sans ce test, `write_manifest=False` pourrait etre vert pour la
+        mauvaise raison (le defaut ne touchant rien dans ce corpus).
+        """
+        assets = self._curated_dir(tmp_path)
+        extract_figure(
+            nb_path=self._nb(tmp_path), cell_index=0, output_index=0,
+            output_path=assets / "demo.png",
+            alt_text_fr="alt outil", description_visuelle="desc outil",
+        )
+        body = (assets / "MANIFEST.md").read_text(encoding="utf-8")
+        assert "alt outil" in body
+        assert "Contenu réel vérifié** : 1 panneau" not in body  # champ perdu
+        assert "bloc temoin" in body  # les AUTRES figures sont intactes
+
+    def test_write_manifest_false_preserves_the_manifest_byte_for_byte(
+            self, tmp_path: Path):
+        assets = self._curated_dir(tmp_path)
+        before = (assets / "MANIFEST.md").read_bytes()
+        extract_figure(
+            nb_path=self._nb(tmp_path), cell_index=0, output_index=0,
+            output_path=assets / "demo.png",
+            alt_text_fr="alt outil", description_visuelle="desc outil",
+            write_manifest=False,
+        )
+        assert (assets / "MANIFEST.md").read_bytes() == before
+        assert (assets / "demo.png").read_bytes()[:8] == _PNG_MAGIC
+
+    def _nb(self, tmp_path: Path) -> Path:
+        return _write_nb(
+            tmp_path / "demo.ipynb", [_code_cell_with_png(PNG_100x100_B64)])
+
 
 # ---------------------------------------------------------------------------
 # 11. TestConstants — documented defaults (calibrated on EPIC #5654)
