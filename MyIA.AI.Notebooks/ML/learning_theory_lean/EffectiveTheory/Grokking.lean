@@ -34,10 +34,19 @@ propre du corpus selon l'issue) :
      (fonction quadratique homogène de degré 2) — c'est elle qui fait dériver
      `Z₀ = Σ E k²` constant le long du flot normalisé (Eq. 26).
 
-Le lien exact avec les Eq. (25)-(27) du papier (flot `dE/dt = −∂(ℓ₀/Z₀)/∂E`)
-est documenté dans les docstrings : les deux identités ci-dessus sont les
-cœurs algébriques — la partie « règle de chaîne le long d'une courbe intégrale »
-est standard et reportée à une tranche suivante.
+5. **Flot effectif et lois de conservation (App F complet)** — la règle de
+   chaîne le long d'une courbe intégrale `γ` du flot `dE/dt = −∂(ℓ₀/Z₀)/∂E`
+   (Eq. 23, forme développée Eq. 25) :
+   - `flow_deriv_sumsq0_eq_zero` / `flow_sumsq0_constant` : **`Z₀` est
+     conservé inconditionnellement** (Eq. 26) — le terme en `∇ℓ₀` se ferme
+     par l'identité d'Euler, le terme en `∇Z₀` par `Σ E k² = Z₀` ;
+   - `flow_deriv_sum_apply` : **audit de l'Eq. 27** — la règle de chaîne
+     complète donne `dC/dt = (2 ℓ₀/Z₀²) · C` : le terme
+     `(ℓ₀/Z₀²) · Σ ∂Z₀/∂E_k` omis par la dérivation imprimée du papier
+     n'est nul que sur le régime à perte nulle ;
+   - `flow_sum_constant_of_zero_loss` : sur ce régime (l'état
+     post-grokking, là où vit l'analyse effective), `C = Σ E k` est
+     conservé exactement.
 
 Dépendances : Mathlib uniquement (`HasFDerivAt`, `ContinuousLinearMap.proj`,
 `HasFDerivAt.sum`, `hasDerivAt_pow.comp_hasFDerivAt`). Aucun couplage aux
@@ -266,5 +275,217 @@ theorem loss0_grad_dot_self (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
   rfl
 
 end Conservation
+
+section Flow
+
+variable {p : ℕ}
+
+private theorem projCLM_apply (k : Fin p) (v : Fin p → ℝ) : projCLM k v = v k := by
+  simp [projCLM]
+
+/-- Composante d'une courbe dérivable : si `γ` a la vitesse `v` en `t`,
+chaque composante `s ↦ γ s k` a la vitesse `v k`. -/
+private theorem hasDerivAt_component (γ : ℝ → (Fin p → ℝ)) (k : Fin p) (t : ℝ)
+    {v : Fin p → ℝ} (h : HasDerivAt γ v t) : HasDerivAt (fun s => γ s k) (v k) t := by
+  have hc := ((projCLM k).hasFDerivAt.comp t h).hasDerivAt
+  have h₁ : Filter.EventuallyEq (nhds t) (fun s => γ s k) (↑(projCLM k) ∘ γ) :=
+    Filter.Eventually.of_forall fun s => (projCLM_apply k (γ s)).symm
+  exact (hc.congr_of_eventuallyEq h₁).congr_deriv (by simp [projCLM_apply])
+
+/-- Somme des composantes : si `γ` a la vitesse `v` en `t`, la somme
+`s ↦ Σ_k γ s k` a la vitesse `Σ_k v k`. -/
+private theorem hasDerivAt_sumC {γ : ℝ → (Fin p → ℝ)} (t : ℝ) {v : Fin p → ℝ}
+    (hv : HasDerivAt γ v t) : HasDerivAt (fun s => ∑ k, γ s k) (∑ k, v k) t := by
+  have h := HasDerivAt.sum (u := (Finset.univ : Finset (Fin p)))
+    fun k _ => hasDerivAt_component γ k t hv
+  have heq : (∑ k : Fin p, fun s => γ s k) = (fun s => ∑ k, γ s k) :=
+    funext fun s_ => Finset.sum_apply s_ Finset.univ fun k => fun s => γ s k
+  rw [heq] at h
+  exact h
+
+/-- Énergie : si `γ` a la vitesse `v` en `t`, la trajectoire d'énergie
+`s ↦ Z₀ (γ s)` a la vitesse `Σ_k 2 E_k v_k`. -/
+private theorem hasDerivAt_sumsq0_comp {γ : ℝ → (Fin p → ℝ)} (t : ℝ) {v : Fin p → ℝ}
+    (hv : HasDerivAt γ v t) :
+    HasDerivAt (fun s => sumsq0 (γ s)) (∑ k, 2 * (γ t k) * v k) t := by
+  have hfun : (fun s => sumsq0 (γ s)) = fun s => ∑ k, (γ s k) ^ 2 := rfl
+  rw [hfun]
+  have h := HasDerivAt.sum (u := (Finset.univ : Finset (Fin p))) fun k _ =>
+    (hasDerivAt_pow 2 (γ t k)).comp t (hasDerivAt_component γ k t hv)
+  have heq : (∑ k : Fin p, (fun x => x ^ 2) ∘ fun s => γ s k)
+      = (fun s => ∑ k, (γ s k) ^ 2) :=
+    funext fun s_ => Finset.sum_apply s_ Finset.univ
+      fun k => (fun x => x ^ 2) ∘ fun s => γ s k
+  rw [heq] at h
+  refine h.congr_deriv ?_
+  simp [pow_one]
+
+/-- **Gradient de `ℓ₀`** (Eq. 25 du papier) : la composante `k` du vecteur
+gradient est `∂ℓ₀/∂E_k := fderiv ℝ (loss0 P) E (e_k)`. -/
+noncomputable def gradLoss0 (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    (E : Fin p → ℝ) : Fin p → ℝ :=
+  fun k => fderiv ℝ (loss0 P) E (Pi.single k (1 : ℝ))
+
+/-- **Gradient de `Z₀`** : composante `k` = `∂Z₀/∂E_k`. -/
+noncomputable def gradSumSq0 (E : Fin p → ℝ) : Fin p → ℝ :=
+  fun k => fderiv ℝ sumsq0 E (Pi.single k (1 : ℝ))
+
+/-- Le gradient de `Z₀ = Σ E k²` est `2 • E`. -/
+theorem gradSumSq0_apply (E : Fin p → ℝ) (k : Fin p) : gradSumSq0 E k = 2 * E k := by
+  rw [gradSumSq0, (hasFDerivAt_sumsq0 E).fderiv]
+  have h1 : ∀ x : Fin p, (2 * E x) * (projCLM x) (Pi.single k (1 : ℝ))
+      = (if x = k then 2 * E x else 0) := by
+    intro x
+    rw [projCLM_apply, Pi.single_apply]
+    rcases eq_or_ne x k with rfl | hne
+    · simp
+    · simp [hne]
+  simp only [sum_apply, smul_apply, smul_eq_mul, h1]
+  simp
+
+/-- **Flot effectif (Eq. 23, forme développée Eq. 25)** : une courbe
+d'embeddings `γ` suit la descente de gradient de `ℓ_eff = ℓ₀/Z₀` lorsque sa
+vitesse en `t` vaut `−(1/Z₀) • ∇ℓ₀ + (ℓ₀/Z₀²) • ∇Z₀`, gradients évalués
+en `γ t` (règle du quotient appliquée à `∂(ℓ₀/Z₀)/∂E`). -/
+def IsEffectiveFlow (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    (γ : ℝ → (Fin p → ℝ)) : Prop :=
+  ∀ t, HasDerivAt γ
+    (-(sumsq0 (γ t))⁻¹ • gradLoss0 P (γ t)
+      + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) • gradSumSq0 (γ t)) t
+
+/-- Composante de la vitesse du flot (Eq. 25) :
+`dE_k/dt = −(1/Z₀) ∂ℓ₀/∂E_k + (ℓ₀/Z₀²) · 2 E_k`. -/
+theorem isEffectiveFlow_vel_apply (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    {γ : ℝ → (Fin p → ℝ)} (hγ : IsEffectiveFlow P γ) (t : ℝ) (k : Fin p) :
+    deriv γ t k = -(sumsq0 (γ t))⁻¹ * gradLoss0 P (γ t) k
+      + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * γ t k) := by
+  rw [(hγ t).deriv]
+  simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul, gradSumSq0_apply]
+
+private theorem vel_apply (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    {γ : ℝ → (Fin p → ℝ)} (hγ : IsEffectiveFlow P γ) (t : ℝ) (k : Fin p) :
+    (-(sumsq0 (γ t))⁻¹ • gradLoss0 P (γ t)
+      + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) • gradSumSq0 (γ t)) k
+      = -(sumsq0 (γ t))⁻¹ * gradLoss0 P (γ t) k
+        + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * γ t k) := by
+  simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul, gradSumSq0_apply]
+
+/-- **Eq. 26 — `Z₀` est conservé le long du flot effectif** :
+`d/dt (Σ_k E_k(t)²) = 0`, inconditionnellement. La règle de chaîne donne
+`dZ₀/dt = Σ_k 2 E_k · Ė_k` ; substituer la vitesse (Eq. 25) fait apparaître
+exactement les deux identités de gradient : le terme en `∇ℓ₀` se ferme par
+l'identité d'Euler (`loss0_grad_dot_self`), le terme en `∇Z₀` par
+`Σ E k² = Z₀`. C'est la conservation qui interdit à la représentation de
+s'effondrer en zéro. -/
+theorem flow_deriv_sumsq0_eq_zero (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    {γ : ℝ → (Fin p → ℝ)} (hγ : IsEffectiveFlow P γ) (t : ℝ) :
+    deriv (fun s => sumsq0 (γ s)) t = 0 := by
+  have hv := hγ t
+  rw [(hasDerivAt_sumsq0_comp t hv).deriv]
+  simp only [vel_apply P hγ t]
+  have hEuler : ∑ k, 2 * (γ t k) * gradLoss0 P (γ t) k = 2 * (2 * loss0 P (γ t)) := by
+    have h2 : ∑ k, (γ t k) * gradLoss0 P (γ t) k = 2 * loss0 P (γ t) := by
+      rw [Finset.sum_congr rfl fun k _ => mul_comm (γ t k) (gradLoss0 P (γ t) k)]
+      simpa only [gradLoss0] using loss0_grad_dot_self P (γ t)
+    have h4 : ∑ k, 2 * (γ t k) * gradLoss0 P (γ t) k
+        = 2 * ∑ k, (γ t k) * gradLoss0 P (γ t) k := by
+      rw [Finset.mul_sum]
+      exact Finset.sum_congr rfl fun k _ => by ring
+    rw [h4, h2]
+  have hZZ : ∑ k, 2 * (γ t k) * (2 * γ t k) = 2 * (2 * sumsq0 (γ t)) := by
+    have h3 : ∑ k, 2 * (γ t k) * (2 * γ t k) = ∑ k, 2 * (2 * ((γ t k) * (γ t k))) :=
+      Finset.sum_congr rfl fun k _ => by ring
+    rw [h3, ← Finset.mul_sum, ← Finset.mul_sum]
+    have hsq : ∑ i, γ t i * γ t i = sumsq0 (γ t) := by
+      simp [sumsq0, pow_two, sq]
+    rw [hsq]
+  have hsplit : ∑ k, 2 * (γ t k) * (-(sumsq0 (γ t))⁻¹ * gradLoss0 P (γ t) k
+        + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * γ t k))
+      = -(sumsq0 (γ t))⁻¹ * (2 * (2 * loss0 P (γ t)))
+        + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * (2 * sumsq0 (γ t))) := by
+    have h1 : ∑ k, 2 * (γ t k) * (-(sumsq0 (γ t))⁻¹ * gradLoss0 P (γ t) k
+          + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * γ t k))
+        = ∑ k, (-(sumsq0 (γ t))⁻¹ * (2 * (γ t k) * gradLoss0 P (γ t) k))
+          + ∑ k, ((loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * (γ t k) * (2 * γ t k))) := by
+      rw [← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun k _ => by ring
+    rw [h1, ← Finset.mul_sum, ← Finset.mul_sum, hEuler, hZZ]
+  rw [hsplit]
+  rcases eq_or_ne (sumsq0 (γ t)) 0 with h0 | h0
+  · simp [h0]
+  · have hZ2 : (sumsq0 (γ t)) ^ 2 ≠ 0 := pow_ne_zero 2 h0
+    field_simp
+    ring
+
+/-- **Eq. 27 auditée — la somme `C = Σ E_k` n'est conservée que sur le
+régime à perte nulle.** La règle de chaîne appliquée à la vitesse complète
+(Eq. 25) donne `dC/dt = −(1/Z₀) Σ_k ∂ℓ₀/∂E_k + (ℓ₀/Z₀²) · 2 C`. La
+dérivation imprimée en Eq. 27 du papier ne garde que le premier terme et
+conclut `dC/dt = 0` via `Σ_k ∂ℓ₀/∂E_k = 0` — le second terme
+`(2 ℓ₀/Z₀²) · C` n'est nul que si `ℓ₀ = 0` le long de la trajectoire
+(l'état post-grokking, là où vit l'analyse effective) ou si `C = 0`
+(repère translaté). Le théorème ci-dessous formalise la dynamique exacte ;
+la conservation inconditionnelle de `C` n'est PAS un théorème du flot. -/
+theorem flow_deriv_sum_apply (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    {γ : ℝ → (Fin p → ℝ)} (hγ : IsEffectiveFlow P γ) (t : ℝ) :
+    deriv (fun s => ∑ k, γ s k) t
+      = (2 * loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * ∑ k, γ t k := by
+  have hv := hγ t
+  rw [(hasDerivAt_sumC t hv).deriv]
+  simp only [vel_apply P hγ t]
+  have hdist : ∑ k, (-(sumsq0 (γ t))⁻¹ * gradLoss0 P (γ t) k
+        + (loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * γ t k))
+      = ∑ k, (-(sumsq0 (γ t))⁻¹ * gradLoss0 P (γ t) k)
+        + ∑ k, ((loss0 P (γ t) / (sumsq0 (γ t)) ^ 2) * (2 * γ t k)) := by
+    rw [Finset.sum_add_distrib]
+  have hsum0 : ∑ k, gradLoss0 P (γ t) k = 0 := by
+    simpa only [gradLoss0] using loss0_grad_sum_zero P (γ t)
+  have hsum2 : ∑ k, (2 * γ t k) = 2 * ∑ k, γ t k := by
+    rw [Finset.mul_sum]
+  rw [hdist, ← Finset.mul_sum, ← Finset.mul_sum, hsum0, hsum2]
+  ring
+
+private theorem constant_of_deriv_zero {f : ℝ → ℝ} (hd : Differentiable ℝ f)
+    (hf : ∀ t, deriv f t = 0) (s t : ℝ) : f s = f t := by
+  have hkey : ∀ a b : ℝ, a < b → ∀ x ∈ Set.Icc a b, f x = f a := by
+    intro a b hab x hx
+    refine constant_of_derivWithin_zero (f := f) (a := a) (b := b)
+      hd.differentiableOn ?_ x hx
+    intro y hy
+    have hmem : y ∈ Set.Icc a b := ⟨hy.1, hy.2.le⟩
+    have hyd : UniqueDiffWithinAt ℝ (Set.Icc a b) y :=
+      (uniqueDiffOn_Icc hab).uniqueDiffWithinAt hmem
+    rw [(hd y).derivWithin hyd]
+    exact hf y
+  rcases le_total s t with hle | hle
+  · rcases eq_or_lt_of_le hle with rfl | hlt
+    · rfl
+    · exact (hkey s t hlt t ⟨hle, le_rfl⟩).symm
+  · rcases eq_or_lt_of_le hle with rfl | hlt
+    · rfl
+    · exact hkey t s hlt s ⟨hle, le_rfl⟩
+
+/-- **Corollaire Eq. 26** : `Z₀` est constant le long de toute courbe
+intégrale du flot effectif — la norme d'énergie de la représentation ne
+décroît jamais, ce qui interdit l'effondrement en zéro. -/
+theorem flow_sumsq0_constant (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    {γ : ℝ → (Fin p → ℝ)} (hγ : IsEffectiveFlow P γ) (s t : ℝ) :
+    sumsq0 (γ s) = sumsq0 (γ t) :=
+  constant_of_deriv_zero (fun u => (hasDerivAt_sumsq0_comp u (hγ u)).differentiableAt)
+    (flow_deriv_sumsq0_eq_zero P hγ) s t
+
+/-- **Corollaire Eq. 27 (régime à perte nulle)** : si la trajectoire reste
+dans la variété `ℓ₀ = 0` (l'état post-grokking, contexte effectif du
+papier), alors `C = Σ E_k` y est conservé exactement. -/
+theorem flow_sum_constant_of_zero_loss (P : Finset ((Fin p × Fin p) × (Fin p × Fin p)))
+    {γ : ℝ → (Fin p → ℝ)} (hγ : IsEffectiveFlow P γ)
+    (h0 : ∀ s, loss0 P (γ s) = 0) (s t : ℝ) :
+    ∑ k, γ s k = ∑ k, γ t k := by
+  refine constant_of_deriv_zero (fun u => (hasDerivAt_sumC u (hγ u)).differentiableAt)
+    (fun u => ?_) s t
+  rw [flow_deriv_sum_apply P hγ u, h0 u]
+  simp
+
+end Flow
 
 end LearningTheory.EffectiveTheory
