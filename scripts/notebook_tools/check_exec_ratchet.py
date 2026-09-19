@@ -21,20 +21,21 @@ Usage:
 
 Head verdicts read the working tree (in CI the checkout IS the head), base
 verdicts read the blob via `git show`. Exit code 1 iff at least one
-CLEAN -> non-CLEAN regression exists.
+CLEAN -> non-CLEAN regression exists. Exit code 2 iff git could not be
+spawned at all (instrument unavailable, #16164) -- never confuse "could not
+measure" with "measured 0".
 """
 
 import argparse
-import errno
 import json
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_exec_sequence import code_exec_counts, sequence_verdict
+from fork_retry import run_with_fork_retry
 
 # Same exclusions as notebook-execution-required.yml's detect step plus the
 # checkpoints rule of the tier-1 scanner: archived, papermill-output and
@@ -42,33 +43,35 @@ from check_exec_sequence import code_exec_counts, sequence_verdict
 EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
                    "/research/")
 
-# EAGAIN au spawn (contention de processus, p.ex. pytest-xdist -n 4 sur le
-# runner) est transitoire : le `except OSError: return None` historique
-# transformait ce pic de charge en "changed notebooks : 0" -> faux vert CI
-# (flake diagnostique sur #16125, tentative 3). On retente borne avant de
-# rendre l'echec.
-_EAGAIN_ERRNOS = (errno.EAGAIN, getattr(errno, "EWOULDBLOCK", errno.EAGAIN))
-_EAGAIN_ATTEMPTS = 3
-_EAGAIN_BACKOFF = (0.05, 0.15)  # avant les 2e et 3e tentatives
 
+class InstrumentUnavailable(RuntimeError):
+    """git n'a pas pu etre lance : le ratchet n'a rien mesure (#16164).
 
-def _est_eagain(exc):
-    return isinstance(exc, OSError) and exc.errno in _EAGAIN_ERRNOS
+    Epuisement des retries EAGAIN, ou OSError non transitoire au spawn
+    (ENOENT, EACCES, ...). Distinct de ``returncode != 0`` (git A repondu :
+    l'instrument a tourne, sa reponse vaut None). Decision #16164 :
+    fail-closed sur instrument indisponible, en convergence avec le canon
+    (check_kernel_suffix_canon.py, dont l'OSError propage) -- un garde ne
+    rend jamais un verdict sur un arbre qu'il n'a pas lu.
+    """
+
+    def __init__(self, exc):
+        super().__init__(
+            f"git spawn failed ({exc.__class__.__name__}: "
+            f"errno={getattr(exc, 'errno', None)} {exc})")
 
 
 def git(*args, cwd=None):
-    """Run a git command, returning stdout (utf-8) or None on failure."""
-    for tentative in range(_EAGAIN_ATTEMPTS):
-        try:
-            out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                                 encoding="utf-8", errors="replace",
-                                 check=False)
-            return out.stdout if out.returncode == 0 else None
-        except OSError as exc:
-            if not _est_eagain(exc) or tentative == _EAGAIN_ATTEMPTS - 1:
-                return None
-            time.sleep(_EAGAIN_BACKOFF[tentative])
-    return None
+    """Run a git command, returning stdout (utf-8), None on git-level
+    failure (returncode != 0), or raising InstrumentUnavailable when the
+    spawn itself failed after bounded fork retries (#16217 primitive)."""
+    try:
+        out = run_with_fork_retry(
+            ["git", *args], cwd=cwd, capture_output=True,
+            encoding="utf-8", errors="replace", check=False)
+    except OSError as exc:
+        raise InstrumentUnavailable(exc) from exc
+    return out.stdout if out.returncode == 0 else None
 
 
 def resolve_base(base, cwd=None):
@@ -157,8 +160,20 @@ def main():
                     help="Machine-readable output")
     args = ap.parse_args()
 
-    resolved = resolve_base(args.base)
-    records = ratchet(args.base)
+    try:
+        resolved = resolve_base(args.base)
+        records = ratchet(args.base)
+    except InstrumentUnavailable as exc:
+        # #16164 : "n'a pas pu mesurer" n'est pas "a mesure 0". Le faux vert
+        # historique (changed notebooks : 0 + exit 0) confondait les deux ;
+        # exit 2 est distinct de 1 (regression) pour que CI comme humains
+        # distinguent l'instrument en panne de l'arbre propre.
+        print(f"instrument indisponible : {exc}", file=sys.stderr)
+        print("le ratchet n'a rien mesure -- contention de processus "
+              "(EAGAIN, p.ex. pytest-xdist -n 4) ou git absent du PATH ; "
+              "relancer le job, ne pas lire ceci comme « 0 changements ».",
+              file=sys.stderr)
+        sys.exit(2)
     regressions = [r for r in records if r["regression"]]
 
     if args.as_json:

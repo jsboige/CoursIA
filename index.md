@@ -8,7 +8,7 @@ Ce document sert de **portail d'entrée éditorial** vers le contenu pédagogiqu
 
 - **Entrée** (le présent fichier, [`index.md`](index.md)) — portail éditorial : thématiques + parcours. Maintenance manuelle, modifications rares.
 - **Vue d'ensemble** ([`README.md`](README.md)) — cartographie rapide du dépôt + parcours d'apprentissage par niveau. Maintenance manuelle, vue pédagogique consolidée.
-- **Parcours thématiques** ([`PARCOURS.md`](PARCOURS.md)) — cinq parcours de formation (IA classique, symbolique, GenAI, trading, recherche) dont les pages détaillées sont **générées** depuis le catalogue.
+- **Parcours d'apprentissage** ([`PARCOURS.md`](PARCOURS.md)) — trois parcours narratifs (accéléré GenAI, IA symbolique, lecture AIMA) qui indiquent public, durée et sortie concrète, et cinq pages **vues du catalogue** (IA classique, symbolique, GenAI, trading, recherche) **générées** depuis le catalogue par `catalog-cron.yml`. Les pages générées disent *ce qui existe*, pas *dans quel ordre le faire*.
 - **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : total à jour (en-tête « Total notebooks »), décompte par série, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
 
 Les quatre niveaux sont complémentaires : l'`index.md` répond à *« quelles thématiques ? »*, le `README.md` à *« par où commencer ? »*, `PARCOURS.md` à *« quel enchaînement suivre ? »*, le catalogue à *« quel notebook précis dans quelle série ? »*.
@@ -48,7 +48,7 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 
 ## 🚀 Comment choisir son point d'entrée
 
-Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine. Pour un enchaînement thématique complet trié par maturité, consultez **[`PARCOURS.md`](PARCOURS.md)**.
+Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine. Pour un parcours narratif précis (public, durée, sortie concrète), consultez la section *Parcours narratifs* de **[`PARCOURS.md`](PARCOURS.md)**. Pour un choix par contraintes d'infrastructure, voir **[`parcours.qmd`](parcours.qmd)**.
 
 Pour un inventaire technique exhaustif (notebook par notebook, statuts d'exécution, owners), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**.
 

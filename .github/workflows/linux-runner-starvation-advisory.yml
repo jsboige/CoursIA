@@ -17,15 +17,37 @@ name: Linux runner starvation advisory
 # de minter un registration-token, par design). Sans PAT, l'organe degrade
 # proprement sur le seul symptome.
 #
-# Advisory PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
-# pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
+# Advisory PAR CONSTRUCTION : schedule + workflow_dispatch + un heartbeat
+# workflow_run, jamais pull_request/push -- un run rouge ne peut jamais
+# bloquer une PR (workflow_run ne cree pas de check-run sur une PR). Le nom
 # porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
 # Le cron est a l'offset des sweeps 13,43 pour ne jamais les collider.
+#
+# #15332 : le scheduler GitHub a cesse de livrer l'evenement schedule le
+# 2026-09-09 (4 h sans AUCUN declenchement planifie, depot entier, 159
+# workflows) -- un organe porte par schedule seul meurt de la panne qu'il
+# observe. Le heartbeat workflow_run s'ancre sur DEUX workflows, par jambe :
+#   - "Secret Scan" : chaque push et pull_request, mais ses jobs tournent
+#     sur le parc self-hosted (coursia-ephemeral) -- jambe vivante quand le
+#     scheduler se tait et que le parc vit.
+#   - "Notebook outputs required (H.4 schema)" : push/PR touchant un
+#     notebook (le flux principal du depot) et jobs ubuntu-latest -- jambe
+#     GitHub-hosted de bout en bout : ce job aussi tourne sur ubuntu-latest,
+#     donc le heartbeat survit AUSSI au parc eteint tant que le flux
+#     notebook pousse (correction de la revue ai-01 du 2026-09-16 : Secret
+#     Scan seul reste en file indeterminee quand le parc est mort -- run
+#     jamais completed, workflow_run jamais emis ; un ancrage "heberge
+#     GitHub" doit l'etre de fait, pas de claim).
+# La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
+# uniquement -- les runs workflow_run ne faussent pas la mesure).
 
 on:
   schedule:
     - cron: '19,49 * * * *'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Secret Scan", "Notebook outputs required (H.4 schema)"]
+    types: [completed]
 
 permissions:
   contents: read   # checkout du script
@@ -62,7 +84,7 @@ jobs:
     # GitHub-hosted sont gratuites, l'argument de cout ne s'applique pas.
     #
     # La garde same-repo qui vivait ici a ete retiree avec le routage : ce
-    # workflow n'a que `schedule` et `workflow_dispatch`, donc
+    # workflow n'a pas de declencheur pull_request, donc
     # `github.event.pull_request` y est toujours nul et la condition etait
     # vacuously vraie. Elle etait le vestige du raisonnement qui a justifie
     # l'auto-hebergement, et la laisser invitait a le re-deriver.
@@ -76,4 +98,16 @@ jobs:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           STARVE_MINUTES: "15"
           WINDOW_MAX_MINUTES: "360"
+          # #15332 : mesurer la cadence SERVIE (runs event=schedule de CE
+          # workflow uniquement) contre la cadence declaree du cron.
+          # Seuil 360 min (revue ai-01 2026-09-16) : la bande servie
+          # observée à l'état nominal va jusqu'à ~323 min (mesure live du
+          # run de validation ; #15332 cite 168 min ; le body 2,5-5 h) --
+          # 240 était DANS la bande : fausses alertes SCHEDULER MUET en
+          # service nominal. 360 couvre la queue observée + marge ; la
+          # panne totale (arrêt complet du scheduler, 4 h mesurés le
+          # 2026-09-09) la franchit dans la demi-journée.
+          SELF_WORKFLOW: linux-runner-starvation-advisory.yml
+          DECLARED_CADENCE_MINUTES: "30"
+          CADENCE_WARN_MINUTES: "360"
         run: python scripts/ci/check_runner_starvation.py
