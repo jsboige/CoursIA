@@ -101,7 +101,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## ict40-spatialcomputing.png
 
-- **Source** : notebook `ICT-40-AnalogCognitionWaves.ipynb` (cellule 12 en numérotation 1-based, index outil 11, output 0)
+- **Source** : notebook `ICT-40b-AnalogCognitionWaves.ipynb` (cellule 12 en numérotation 1-based, index outil 11, output 0)
 - **Strate** : distillation externe — hors strates (grain [#16550](https://github.com/jsboige/CoursIA/issues/16550), Miller-Brincat-Roy 2026)
 - **Description visuelle** : Grille 2×3 de cartes de chaleur (downscale PIL 800px). Ligne 1 : « stencil — contexte 1 (premier) » en colormap **magma** (bandes diagonales claires sur fond sombre, colorbar verticale 0-1), puis « objet A — contexte 1 » et « objet B — contexte 1 » en **viridis** (blobs lisses jaune-vert sur fond violet sombre). Ligne 2 : mêmes panneaux pour le contexte 2, avec une bande diagonale nettement différente. Axes gradués 0-80 (x) / 0-40 (y) sur tous les panneaux. Vision-QA MiniMax M3 (po-2023, 2026-09-18) : aucun panneau vide, aucun texte tronqué.
 - **Contenu réel vérifié** : six panneaux rendus — deux stencils inhibiteurs (un par contexte) et, pour chaque contexte, l'expression spatiale des deux objets sous ce stencil. Les patterns d'expression diffèrent entre les deux lignes alors que les poids synaptiques sous-jacents sont identiques : c'est le gating Spatial Computing (Lundqvist et al. 2023) tel qu'opérationnalisé dans ICT-40.
@@ -111,7 +111,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## ict40-analogcombos.png
 
-- **Source** : notebook `ICT-40-AnalogCognitionWaves.ipynb` (cellule 21 en numérotation 1-based, index outil 20, output 0)
+- **Source** : notebook `ICT-40b-AnalogCognitionWaves.ipynb` (cellule 21 en numérotation 1-based, index outil 20, output 0)
 - **Strate** : distillation externe — hors strates (grain [#16550](https://github.com/jsboige/CoursIA/issues/16550), Miller-Brincat-Roy 2026)
 - **Description visuelle** : Grille 2×4 de cartes de chaleur en colormap **magma** (downscale PIL 950px). Ligne 1 : « onde d'ordre — premier » (bande diagonale claire), « onde de mode — appariement » (bande horizontale), puis les deux patrons sommes étiquetés « premier·appariement » et « premier·rappel ». Ligne 2 : onde d'ordre « second » (diagonale miroir), onde de mode « rappel », et les deux autres sommes. Pas de colorbar sur cette figure (échelle implicite magma). Vision-QA MiniMax M3 (po-2023, 2026-09-18) : aucun panneau blanc ni texte tronqué.
 - **Contenu réel vérifié** : huit panneaux — les deux ondes de contrôle de chaque type de contexte (ordre : premier/second ; mode : appariement/rappel) et les quatre patrons obtenus par sommation, tous distincts à l'œil. C'est l'opérationnalisation de la Fig. 7 du préprint : l'intersection de contraintes par superposition, une combinaison = un patron.

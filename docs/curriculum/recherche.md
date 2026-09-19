@@ -45,7 +45,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 14 | [GameTheory-03d — Biens publics non-lineaires : plan de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) | BETA | Oui |
 | 15 | [GameTheory 3e : Meta-Actions Tarifees -- l'agent qui…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) | BETA | Oui |
 | 16 | [GameTheory 3f : Le Parcours Complet -- du jeu nommé au…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Parcours-Complet.ipynb) | BETA | Oui |
-| 17 | [GameTheory-03g — De 576 à 144 : dériver le quotient,…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Derivation-Quotient.ipynb) | BETA | Oui |
+| 17 | [GameTheory-03 §9 — De 576 à 144 : dériver le quotient,…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) | BETA | Oui |
 | 18 | [GameTheory-03h — Deux espèces de flèches : quand une…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03h-Deux-Especes-de-Fleches.ipynb) | BETA | Oui |
 | 19 | [GameTheory-04-NashEquilibrium (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb) | BETA | Oui |
 | 20 | [GameTheory-04-NashEquilibrium](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb) | BETA | Oui |

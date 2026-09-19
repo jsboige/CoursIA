@@ -6,7 +6,7 @@ import Astar.Optimality
 /-!
 # Astar.Consistency — consistance ⟹ admissibilité (téléscopage)
 
-Issue #4048 (cible : théorème `consistent_implies_admissible` — prouvé dans ce lake sous le nom `consistent_implies_admissible_bound`, corollaire de `consistent_implies_path_bound`). La **consistance**
+Issue #4048 (cible : l'admissibilité déduite de la consistance — théorème `consistent_implies_admissible_bound`, corollaire de `consistent_implies_path_bound`). La **consistance**
 (monotonie par arc : `h n ≤ edge n n' + h n'`) est une condition **locale** ;
 l'**admissibilité** (`h n ≤ hStar n`) est une condition **globale**. Le pont entre les
 deux est un **téléscopage** : le long des arcs d'un chemin `start = v₀ → v₁ → … → vₖ =
