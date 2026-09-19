@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + Grokking), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -25,6 +25,14 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    blocs *résiduels* `h ↦ h + f h` la voit **minorée** par `(1-c) ^ n` (survie,
    ancre `3e-5 < 0,6 ^ 20`) — le raccourci identité (He et al. 2015) rend
    géométriquement improbable ce que la pile plain tue géométriquement.
+4. **Module `Grokking`** — théorie effective du grokking (Liu, Michaud, Tegmark ;
+   arXiv:2205.10343), tranche R02 du corpus Tegmark (#16741, #16752) :
+   parallélogrammes de représentation (Déf. 1, Props 1-2 : perte nulle ⟹
+   parallélogrammes permis ; décodeur injectif ⟹ formation) et lois de conservation
+   de la perte effective `ℓ_eff = ℓ₀/Z₀` (Appendice F) : `Z₀` conservée le long du
+   flot de `ℓ_eff`, `C` conservée le long du flot de `ℓ₀`, et — complément honnête
+   au papier — le terme résiduel `dC/dt = (2ℓ₀/Z₀²)·C` omis par la preuve de
+   l'Appendice F, d'où l'invariance de l'hyperplan centré `C = 0`.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -41,15 +49,18 @@ argument ERM dans `ERM`).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`)
+- **Toolchain** : `leanprover/lean4:v4.33.0` + Mathlib4 (`db584cd6`)
 - **Sorry** : **0** sur tout le module (comptage code-only, voir § Modules).
   Côté Perceptron, la borne `novikoff_mistake_bound` (`n · γ² ≤ R²`), le Lemme A
   d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme (`‖wₖ‖² ≤ kR²`) sont
   entièrement prouvés, ainsi que le **serrage** `novikoff_bound_is_sharp` (témoin
   sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
-  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry.
+  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry. Côté Grokking,
+  Props 1-2 (`prop1_zeroLoss`, `prop2_injectiveDecoder`) et les lois de
+  conservation (`Z0_conserved`, `C_conserved_l0`, `deriv_C_along_eff`,
+  `meanZero_invariant`) sont 0-sorry.
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
-  `lake build GradientFlow` (dépend de Mathlib4)
+  `lake build GradientFlow` / `lake build Grokking` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -161,19 +172,34 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
 | `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
 
+### Module `Grokking` (théorie effective du grokking, R02 du corpus Tegmark)
+
+Addition modulaire jouet sur `Fin p` : le modèle `M = (Dec, R)` plonge chaque
+entier `k` en `E k` ; l'entraînement à perte nulle exige `Dec (E i + E j) =
+Y (i + j)` pour toute paire. Le papier (arXiv:2205.10343) explique le grokking
+par la dynamique de ces plongements sous la perte effective `ℓ_eff = ℓ₀/Z₀`.
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `Grokking/Effective.lean` | 0 | **Déf. 1 + Props 1-2** : `IsParallelogram` (`E i + E j = E m + E n`), `prop1_zeroLoss` (perte nulle + étiquettes injectives ⟹ tout parallélogramme est permis `i + j = m + n`), `prop2_injectiveDecoder` (perte nulle + décodeur injectif + `i + j = m + n` ⟹ formation du parallélogramme), ensemble des quadruples permis `permissible`. Énoncés purement algébriques (groupe abélien `V` quelconque, aucune topologie). |
+| `Grokking/Conservation.lean` | 0 | **Appendice F, lois de conservation** : `loss0_translate`/`loss0_smul` (les deux symétries de ℓ₀ — les identités `∑ ∂ℓ₀/∂E_k = 0` et `= 2ℓ₀` sans calcul de gradient), `euler_zero_homogeneous` + `fderiv_of_translateInvariant` + `eq_of_hasDerivAt_zero` (trois lemmes généraux de calcul différentiel), `Z0_conserved` (Z₀ conservée le long du flot de ℓ_eff, via Euler : ℓ_eff est 0-homogène), `C_conserved_l0` (C conservée le long du flot de ℓ₀, la translation étant une symétrie), **`deriv_C_along_eff`** (le complément honnête : le long du flot de ℓ_eff, `dC/dt = (2ℓ₀/Z₀²)·C` — le terme `∂Z₀` de la règle du quotient, omis par la preuve de l'Appendice F), **`meanZero_invariant`** (corollaire par facteur intégrant : l'hyperplan centré `C = 0` est invariant — la forme exacte de la « conservation de C », vraie telle quelle dans le régime normalisé du texte principal). |
+| `Grokking.lean` | 0 | Imports parapluie + doc de synthèse. |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
-`PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`, imports
+`PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`,
+`Grokking` ↔ `Grokking_en`, imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
-l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 18
-fichiers `_en` couvrent l'intégralité des 18 modules feuilles + agrégateurs :
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 21
+fichiers `_en` couvrent l'intégralité des 21 modules feuilles + agrégateurs :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
-`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`.
+`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
+`Grokking_en.lean`, `Grokking/{Effective,Conservation}_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -186,6 +212,7 @@ vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
 # Depuis ce répertoire (WSL recommandé)
 lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
+lake build Grokking      # grokking : parallélogrammes + lois de conservation
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -224,11 +251,16 @@ déclaration dans un notebook :
   Recognition*, arXiv:1512.03385 (2015) — le raccourci identité.
 - A. Veit, M. Wilber & S. Belongie, *Residual Networks Behave Like Ensembles of
   Relatively Shallow Networks*, arXiv:1605.06431 (2016) — la lecture ensembliste.
+- Z. Liu, E. J. Michaud & M. Tegmark, *Towards Understanding Grokking — An
+  Effective Theory of Representation Learning*, arXiv:2205.10343 (2022) —
+  parallélogrammes de représentation (Partie 3) et lois de conservation
+  (Appendice F).
 
 ## Voir aussi
 
 - **Issue #4051** — création du lake + module Perceptron (roadmap Lean #4038, Tier 2 « first ML theorem »)
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
+- **Issue #16752 / EPIC #16741** — module `Grokking` : tranche R02 du corpus Tegmark (arc « ouverte, responsable, prouvable, explicable »)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
