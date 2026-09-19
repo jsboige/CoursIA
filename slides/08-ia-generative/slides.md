@@ -210,6 +210,8 @@ class: genai-illustrated genai-temperature
 
 <div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_010.png" alt="Effet de la température sur la distribution" /></div>
 
+<div v-click="2" class="genai-visual visual-3"><img src="./images/img_009.png" alt="Illustration de la génération de texte" /></div>
+
 ---
 layout: default
 ---
@@ -482,7 +484,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb">3_Structured_Outputs.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/03_Structured_Outputs.ipynb">03_Structured_Outputs.ipynb</a>.</p>
 
 ---
 
@@ -497,7 +499,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb">4_Function_Calling.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb">04_Function_Calling.ipynb</a>.</p>
 
 ---
 
@@ -512,7 +514,7 @@ class: genai-illustrated genai-sectors
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb">5_RAG_Modern.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb">05_RAG_Modern.ipynb</a>.</p>
 
 ---
 layout: image-overlay
@@ -586,9 +588,11 @@ class: genai-illustrated genai-ecosystem-models
 
 </v-clicks>
 
+<div v-click="1" class="genai-visual openrouter-figure"><img src="./images/img_023.png" alt="Logo OpenRouter, agrégateur d'accès aux API de modèles" /></div>
+
 <div v-click="2" class="genai-visual hf-figure"><img src="./images/img_024.png" alt="Logo Hugging Face, plateforme de diffusion et d'inférence" /></div>
 
-<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb">1_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a> · modèles : <a href="https://platform.openai.com/docs/models">OpenAI Models API Reference</a>.</p>
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb">01_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a> · modèles : <a href="https://platform.openai.com/docs/models">OpenAI Models API Reference</a>.</p>
 
 ---
 layout: image-overlay
@@ -608,7 +612,11 @@ class: genai-illustrated genai-ecosystem-hosting
 
 <div v-click="1" class="genai-visual groq-figure"><img src="./images/img_027.png" alt="Logo Groq, fournisseur d'inférence cloud" /></div>
 
+<div v-click="1" class="genai-visual vastai-figure"><img src="./images/img_026.png" alt="Logo Vast.ai, location de GPU cloud" /></div>
+
 <div v-click="2" class="genai-visual vllm-figure"><img src="./images/img_028.png" alt="Logo vLLM, moteur d'inférence local haute performance" /></div>
+
+<div v-click="2" class="genai-visual ollama-figure"><img src="./images/img_029.png" alt="Logo Ollama, exécution locale de modèles" /></div>
 
 <p v-click="3" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb">00-2-Docker-Services-Management.ipynb</a>.</p>
 
@@ -627,6 +635,10 @@ class: genai-illustrated genai-ecosystem-tools
 </v-clicks>
 
 <div v-click="1" class="genai-visual comfyui-figure"><img src="./images/img_032.png" alt="Capture d'écran d'un workflow ComfyUI" /></div>
+
+<div v-click="1" class="genai-visual stability-figure"><img src="./images/img_031.jpg" alt="Logo Stability AI, éditeur de Stable Diffusion" /></div>
+
+<div v-click="2" class="genai-visual openwebui-figure"><img src="./images/img_034.png" alt="Logo Open WebUI, interface conversationnelle self-hosted" /></div>
 
 <div v-click="2" class="genai-visual sillytavern-figure"><img src="./images/img_033.png" alt="Logo SillyTavern, interface conversationnelle self-hosted" /></div>
 
@@ -733,7 +745,52 @@ flowchart LR
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb">15_Tree_of_Thoughts_Search.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb">12_Test_Time_Scaling.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb">15_Tree_of_Thoughts_Search.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb">16_Scaling_Test_Time_Compute.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
+
+---
+
+# Test-time scaling : quatre moteurs
+
+<v-clicks at="1">
+
+- **Best-of-N** — *N* tirages indépendants, on retient celui que le vérificateur valide. Budget : *N* appels **parallèles**. Vise l'erreur **aléatoire** : les tirages fautifs ne se répètent pas identiquement, le vote les annule.
+- **Réflexion** — générateur → critique → mémoire : on remontre au modèle *quel* test échoue et *pourquoi*, pour qu'il en corrige la cause. Budget : 2 à 3× les appels. Vise l'erreur **systématique**, qu'un vote ne peut pas corriger.
+- **Tree-of-Thoughts** — recherche sur des états partiels, avec évaluation et élagage. Budget variable. Pour les problèmes **combinatoires** où un état intermédiaire peut être noté.
+- **Routeur adaptatif** — estime la difficulté, escalade vers le moteur adapté, et sait **s'arrêter**. Pour les cas où la structure d'erreur n'est pas connue à l'avance.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb">12_Test_Time_Scaling.ipynb</a>.</p>
+
+---
+
+# La structure d'erreur décide du moteur
+
+<v-clicks at="1">
+
+- **Un vote corrige l'aléatoire, pas le systématique.** Si le modèle se trompe *toujours de la même façon*, échantillonner davantage reproduit la même erreur : il n'y a rien à moyenner.
+- **Ce que le banc d'essai du notebook montre** — sur ses trois problèmes, le Best-of-N n'améliore **aucun** score : deux sont déjà résolus du premier coup, et sur le troisième l'échec est systématique. Le coût, lui, croît avec *N*.
+- **La Réflexion seule ne suffit pas non plus** — même en nommant au modèle le test qui échoue, il peut persister dans la même stratégie. Le gain dépend de la **capacité du modèle à exploiter le signal**, pas du seul calcul dépensé.
+- **Conséquence pratique** — la structure d'erreur se **mesure** sur votre tâche et votre modèle avant de choisir un moteur. Le cadre théorique oriente ; il ne dispense pas de la mesure.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb">12_Test_Time_Scaling.ipynb</a>.</p>
+
+---
+
+# La frontière compute-optimale (Snell 2024)
+
+<v-clicks at="1">
+
+- **L'idée** — le calcul d'inférence se met à l'échelle comme le calcul d'entraînement, mais la stratégie **optimale dépend du régime** : échantillonner large en parallèle sur les problèmes faciles, chercher séquentiellement avec retour du vérificateur sur les difficiles.
+- **Ce que le notebook mesure** — une suite graduée à réponse vérifiable, l'estimateur *pass@k* non biaisé par bucket, puis, **à budget égal**, Best-of-N parallèle contre Réflexion séquentielle.
+- **Plafond des buckets faciles** — quand *pass@1* est déjà haut, le scaling parallèle n'ajoute presque rien : le signal vit sur le bucket **difficile**.
+- **Limites revendiquées (G.2)** — petit *n*, petit *k*, petit modèle, et **échantillonnage non seedé** : les valeurs exactes bougent d'un run à l'autre. Ce qui est démontré et transférable est la **méthodologie**, pas un chiffre.
+
+</v-clicks>
+
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb">16_Scaling_Test_Time_Compute.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb">17_Native_Reasoning_vs_Scaling.ipynb</a>.</p>
 
 ---
 
@@ -748,7 +805,7 @@ flowchart LR
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/9b_Prompt_Security_RedTeam.ipynb">9b_Prompt_Security_RedTeam.ipynb</a>.</p>
+<p v-click="5" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb">09b_Prompt_Security_RedTeam.ipynb</a>.</p>
 
 ---
 

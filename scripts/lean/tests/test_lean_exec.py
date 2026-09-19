@@ -356,6 +356,41 @@ def test_unresumed_root_aborts_killing_the_job_before_the_verdict(monkeypatch):
     ], "le job doit mourir avant le kill des descendants, avant le rendu"
 
 
+def test_resume_restype_declaration_pinned_in_source():
+    """Pin CI-executable de la DECLARATION restype (item 2 de l'acceptance
+    #16195 : un restype remis a ``c_int`` doit faire rougir au moins un
+    organe). Les pins comportementaux (``test_resume_prev_count_discriminates``
+    et les sondes ``_WINDOWS_ONLY``) ne rougissent PAS sur ce revert : le
+    ``-1`` signe est deja rejete par ``_prev_marks_suspended``, et un runner
+    Linux n'execute jamais l'appel Win32. Seule la declaration est l'organe
+    -- ce pin source tourne sur chaque runner de ``scripts-tests.yml``."""
+    source = Path(le.__file__).read_text(encoding="utf-8")
+    assert "k32.ResumeThread.restype = ctypes.c_ulong" in source, (
+        "la declaration restype c_ulong de ResumeThread (#15940) a ete "
+        "retiree ou modifiee : un revert vers c_int lirait (DWORD)-1 en "
+        "signe et reouvrirait #15900")
+
+
+@_WINDOWS_ONLY
+def test_resume_thread_restype_declared_unsigned():
+    """Controle d'identite Windows vif (limite declaree par la review Hermes
+    de #15940 : « je n'ai pas execute la sonde Windows, aucun poste Windows
+    accessible depuis ce siege »). Apres un passage reel de ``resume_process``,
+    le kernel32 partage porte bien restype ``c_ulong`` : le revert ``c_int``
+    rend ce controle rouge meme si les threads suspendus se comptent encore."""
+    import ctypes
+
+    proc = subprocess.Popen(SLEEP_CMD)
+    try:
+        time.sleep(0.5)
+        le.resume_process(proc.pid)
+        assert ctypes.windll.kernel32.ResumeThread.restype is ctypes.c_ulong, (
+            "ResumeThread.restype doit rester c_ulong apres resume_process")
+    finally:
+        proc.kill()
+        proc.wait(timeout=30)
+
+
 @pytest.mark.skipif(
     os.name != "nt",
     reason=(
