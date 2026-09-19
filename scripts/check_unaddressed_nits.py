@@ -3499,6 +3499,13 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
 # En cas de doute : avertir (A RELIRE), jamais bloquer.
 _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 
+# #16876 : un token hex immediatement qualifie par `host` (trailer Hermes
+# « [Hermes ..., host c92df397a786] ») est un identifiant de SIEGE, pas une
+# empreinte Git. Le garde l'exclut SANS toucher aux SHAs reels cites par une
+# phrase de levee (protection #13639 intacte : seul le qualifie par `host`
+# saute).
+_HOST_QUALIFIED = re.compile(r"\bhost\s*:?\s*$")
+
 
 def _cited_shas(body: str) -> set[str]:
     """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
@@ -3515,12 +3522,20 @@ def _cited_shas(body: str) -> set[str]:
     commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
     improbable ((6/16)^7 ~ 1e-3 au format court) ;
     l'exiger chiffre supprime la classe entiere.
+
+    #16876 : le token suit immediatement le mot `host` (qualifiant de
+    siege) -> exclu. Sur #16685, le trailer « host c92df397a786 » etait
+    pris pour la preuve citee par la levee alors que la review etait
+    attachee au commit_id exact 31ac6b89 -- l'organe gardait la reserve
+    ouverte sur un SHA de machine inexistant.
     """
     out: set[str] = set()
-    for m in _SHA_CITED.finditer((body or "").lower()):
+    low = (body or "").lower()
+    for m in _SHA_CITED.finditer(low):
         tok = m.group(0)
         if (any(ch in "abcdef" for ch in tok)
-                and any(ch.isdigit() for ch in tok)):
+                and any(ch.isdigit() for ch in tok)
+                and not _HOST_QUALIFIED.search(low[:m.start()])):
             out.add(tok)
     return out
 
