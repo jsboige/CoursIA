@@ -432,6 +432,11 @@ docker-configurations/comfyui-qwen/workspace/venv/
 *.env
 *.env.backup
 *.env.backup-SECURE
+# Sauvegardes horodatees d'un .env (ex: .env.bak-20260912T1404Z) : la famille
+# .env.backup* etait couverte, la famille .env.bak* ne l'etait pas -- un
+# `git add -A` aurait commite un fichier de secrets. Cf .claude/rules/secrets-hygiene.md
+.env.bak*
+*.env.bak*
 docker-configurations/services/comfyui-qwen/workspace/
 
 # Ignore nested git repository
