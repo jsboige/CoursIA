@@ -1084,3 +1084,6 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 # outillage canonique : detect_papermill_path_leak.py (read-only),
 # scrub_papermill_paths.py (correctif), _papermill_meta.py (préventif).
 # Mesure fresh horodatée : voir commentaire GitHub sur l'issue #16633.
+
+# SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
