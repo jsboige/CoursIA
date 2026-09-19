@@ -59,6 +59,6 @@ La famille **détection d'objets** poursuit sur l'Epic #16057 (même terrain, m�
 
 - 4.2b — [Lean : le gradient qui meurt](4.2b-Lean-GradientFlow-Vanishing.ipynb), 4.2c — [la détection from scratch à la grille d'anchors](4.2c-Detection-Anchor-From-Scratch.ipynb) (livrés)
 - 4.2d (anchor-free from scratch) et 4.2e (Focal Loss dédiée) en cours de livraison sur la même issue
-- 4.2f — [la détection SOTA torchvision fine-tunée](4.2f-Detection-SOTA-Torchvision.ipynb) (livré — bloc B.1 de #16057) ; 4.2g — [YOLO sous ultralytics + tableau final bloc A vs B](4.2g-Detection-SOTA-Ultralytics.ipynb) (livré — bloc B.2) ; 4.2h — [YOLO sur scènes difficiles (occlusions + multi-échelle)](4.2h-Detection-Ultralytics-Difficult-Scenes.ipynb) (livré — bloc B.3 : extension scènes difficiles, leçon méthodologie)
+- 4.2f — [la détection SOTA torchvision fine-tunée](4.2f-Detection-SOTA-Torchvision.ipynb) (livré — bloc B.1 de #16057) ; 4.2g — [YOLO sous ultralytics + tableau final bloc A vs B](4.2g-Detection-SOTA-Ultralytics.ipynb) (livré — bloc B.2) ; [4.2h — Bench YOLOv5](4.2h-YOLOv5-Bench-Ultralytics.ipynb) (livré, #16346) ; 4.2i — [YOLO sur scènes difficiles (occlusions + multi-échelle)](4.2i-Detection-Ultralytics-Difficult-Scenes.ipynb) (bloc B.3 : extension scènes difficiles, leçon méthodologie — cette PR)
 
 Chaque notebook est atomique (1 sujet vérifiable, < 3000 lignes, ≤ 15 fichiers), avec outputs commités (C.2) et ≥ 3 exercices par notebook (C.1, jamais `raise NotImplementedError`).
