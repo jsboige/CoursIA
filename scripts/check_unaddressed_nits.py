@@ -3833,10 +3833,24 @@ def _strip_adjoint_dossier(body: str) -> str:
 # famille directe, le mot RESERVE inclus dans le discriminant. Un « levée »
 # nu (« Levée des alertes CI : ... ») est un RAPPORT, pas un geste — la
 # regex ne le matche pas (« des alertes » n'est pas « la réserve »).
+# #16799 — LEVÉE TIERCE : le registre B.0 exact (« Levée tierce de la
+# réserve X » ouvre la levée ai-01 de #16710, 2026-09-19T02:08Z). Le
+# qualificatif « tierce » entre « levée » et « de la réserve » cassait
+# l'alternance : le geste qui DÉBLOQUAIT la PR spawned un nit à son nom
+# (4 occurrences de marqueurs vivantes dans le corps — attribution
+# « a posé VERDICT: CONCERNS », citation quotée, « la CONCERNS
+# ci-dessus », timing « avant merge » — toutes narration de la levée).
+# Voie retenue : l'ancrage en OUVERTURE (mécanisme #16700), pas des
+# entrées CITERS par famille de narration — l'ancrage tuait les 4
+# occurrences d'un coup, chaque CITERS n'en tuait qu'une. Acceptance 5 :
+# ce que la voie cesse d'attraper = un corps ouvrant sur « Levée tierce
+# de la réserve X » qui ÉMETTRAIT une réserve NEUVE en corps — résidu
+# hérité de #16700 (corps mixte levée+réserve), mesuré : 0 corps pareil
+# sur 1718 corps des 200 dernières PRs mergées, delta classify = 0.
 _OPENING_LIFT_RE = re.compile(
     r"^(?:#{1,6}[ \t]+)?(?:\*\*[ \t]*)?"
     r"(?:r[ée]serve[ \t]+(?:lev[ée]e|dissip[ée]e)"
-    r"|lev[ée]e[ \t]+de[ \t]+(?:la[ \t]+)?r[ée]serve"
+    r"|lev[ée]e[ \t]+(?:tierce[ \t]+)?de[ \t]+(?:la[ \t]+)?r[ée]serve"
     r"|je[ \t]+l[eéè]v\w*[ \t]+(?:la[ \t]+)?r[ée]serve)",
     re.IGNORECASE,
 )
