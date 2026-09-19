@@ -1089,6 +1089,143 @@ def test_backends_cli_report():
 
 
 # ---------------------------------------------------------------------------
+# Review #16160 (19/09) : les 4 defauts, un test de regression par chemin
+# ---------------------------------------------------------------------------
+
+def test_tree_lease_released_when_backend_translation_fails():
+    """Defaut 1 : backend_command leve OSError quand la traduction WSL
+    echoue (wslpath). Sans relai, l'OSError fuit hors de _attempt -- la
+    boucle externe ne capte que TimeoutError -- et le tree lease reste
+    pose sans proprietaire vivant : le tree reste verrouille pour toutes
+    les lanes. Le relai doit refuser ET rendre le lease."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        sentinel = proj / "lease.sentinel"
+        released: list[Path | None] = []
+        saved = (le.acquire_tree_lease, le.release_tree_lease,
+                 le.backend_command)
+        cwd = os.getcwd()
+        try:
+            le.acquire_tree_lease = (
+                lambda root, cmd, caller, budget: (sentinel, None))
+            le.release_tree_lease = (
+                lambda p: released.append(p))
+            def _boom(cmd, backend, env):
+                raise OSError("wslpath a echoue (simulation)")
+            le.backend_command = _boom
+            os.chdir(proj)
+            with _state_env(state):
+                os.environ["LEAN_EXEC_FORCE_BACKENDS"] = "wsl"
+                rc = le.run_command(
+                    [PY, "-c", "print('never run')"],
+                    cap_override=8, budget_override=1, as_json=True)
+        finally:
+            os.chdir(cwd)
+            (le.acquire_tree_lease, le.release_tree_lease,
+             le.backend_command) = saved
+            os.environ.pop("LEAN_EXEC_FORCE_BACKENDS", None)
+        assert rc == le.EXIT_REFUSED, rc
+        assert released == [sentinel], released
+        last = _last(state)
+        assert last["reason"].startswith("backend translation failed"), \
+            last["reason"]
+
+
+def test_kill_switch_wsl_off_refuses_pinned_wsl():
+    """Defaut 2 : le kill-switch LEAN_EXEC_WSL=off doit sortir une machine
+    DEJA epinglee wsl. Avant le fix, le fast-path de preflight_backends
+    rendait [pinned] sans sonder et l'epingle court-circuitait
+    l'interrupteur."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        with _state_env(state):
+            le.save_backends({le._lake_key(proj): {
+                "backend": "wsl", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1, LEAN_EXEC_WSL="off")
+        assert rc.returncode == le.EXIT_REFUSED, (
+            rc.returncode, rc.stdout, rc.stderr)
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        reason = out["reason"] or ""
+        assert "epingle=wsl" in reason, reason
+        assert "indisponible" in reason, reason
+        # Fail-closed : l'epingle n'est ni modifiee ni detruite.
+        assert _registry(state)[le._lake_key(proj)]["backend"] == "wsl"
+
+
+def test_auto_pin_refused_with_orphan_cache():
+    """Defaut 3 : premier epinglage auto sur un lake dont .lake/build
+    existe SANS epingle connue = refus actionnable (origine du cache
+    inconnue, l'organe ne tranche pas ni ne purge). Apres purge, la
+    politique par defaut s'applique normalement."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        (proj / ".lake" / "build").mkdir(parents=True)
+        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90, **cap)
+        assert rc.returncode == le.EXIT_REFUSED, (
+            rc.returncode, rc.stdout, rc.stderr)
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        reason = out["reason"] or ""
+        assert "sans epingle connue" in reason, reason
+        assert "--backend" in reason, reason
+        # Fail-closed : aucune epingle posee par-dessus le cache orphelin.
+        assert _registry(state) == {}
+        # Purge = la porte : l'auto-epinglage redevient legal.
+        shutil.rmtree(proj / ".lake")
+        rc2 = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                   cwd=proj, timeout=90, **cap)
+        assert rc2.returncode == 0, rc2.stderr
+        out2 = json.loads(rc2.stdout[rc2.stdout.index("{"):])
+        assert out2["lean_backend"] == "native", out2
+        assert _registry(state)[le._lake_key(proj)]["origin"] == \
+            "default-policy"
+
+
+def test_unreadable_registry_fail_closed_not_overwritten():
+    """Defaut 4 : registre PRESENT mais illisible (JSON corrompu) != registre
+    vide. Le run doit refuser en nommant le registre, et le fichier doit
+    rester BYTE-IDENTIQUE (l'ancien comportement {} laissait save_backends
+    re-ecrire par-dessus un registre non lu -- patron #16281)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "t3lake")
+        state.mkdir(parents=True)
+        corrupt = '{"backend": "wsl", "pinned_at": '  # JSON tronque
+        (state / "backends.json").write_text(corrupt, encoding="utf-8")
+        # Unite : load_backends leve, absent rend {}.
+        with _state_env(state):
+            with pytest.raises(ValueError):
+                le.load_backends()
+        rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
+                  cwd=proj, timeout=90,
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                  LEAN_EXEC_FORCE_BACKENDS="native")
+        assert rc.returncode == le.EXIT_REFUSED, (
+            rc.returncode, rc.stdout, rc.stderr)
+        out = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert "registre backends illisible" in (out["reason"] or ""), \
+            out["reason"]
+        # Le registre corrompu n'a pas ete ecrase.
+        assert (state / "backends.json").read_text(
+            encoding="utf-8") == corrupt
+        # Diagnostic : backends report nomme l'erreur au lieu de compter 0.
+        rep = _run(state, ["backends", "--json"], timeout=60,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        payload = json.loads(rep.stdout[rep.stdout.index("{"):])
+        assert payload["registry_error"] is not None, payload
+        assert payload["pinned_lakes"] == 0, payload
+
+
+# ---------------------------------------------------------------------------
 # Runner direct (convention des tests scripts/lean)
 # ---------------------------------------------------------------------------
 

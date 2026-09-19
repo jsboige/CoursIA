@@ -719,12 +719,22 @@ def backends_registry_path() -> Path:
 
 
 def load_backends() -> dict:
+    """Registre d'epinglage. Fail-closed : un registre PRESENT mais
+    illisible (JSON corrompu, forme inattendue, erreur d'IO) LEVE au lieu
+    de rendre {} -- sinon l'appelant re-epingle par-dessus un registre
+    qu'il n'a pas su lire puis save_backends() l'ecrase (mesure
+    indisponible != valeur mesuree, patron #16281). Absent = {} legitime."""
+    path = backends_registry_path()
     try:
-        data = json.loads(
-            backends_registry_path().read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else {}
-    except (OSError, ValueError):
+        raw = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
         return {}
+    data = json.loads(raw)  # ValueError si corrompu : propage
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"registre backends inattendu (type {type(data).__name__}, "
+            f"dict attendu) : {path}")
+    return data
 
 
 def save_backends(registry: dict) -> None:
@@ -809,7 +819,14 @@ def preflight_backends(
     if lake_root is None:
         return ["native"]
     if pinned and requested in ("auto", pinned):
-        return [pinned]
+        # Le fast-path doit sonder quand meme : le kill-switch
+        # LEAN_EXEC_WSL=off vit dans wsl_backend_available() -- rendre
+        # [pinned] sans sonder fait qu'une machine epinglee WSL ignore
+        # l'interrupteur cense l'en sortir. La sonde est memoisee et le
+        # kill-switch est teste AVANT tout subprocess : le chemin reste
+        # immediat apres le premier appel.
+        ok, _src = _probe(pinned)
+        return [pinned] if ok else []
     if requested in BACKENDS:
         ok, src = _probe(requested)
         return [requested] if ok else []
@@ -851,7 +868,14 @@ def resolve_backend(
         else preflight_backends(requested, lake_root, None)
     )
     key = _lake_key(lake_root)
-    registry = load_backends()
+    try:
+        registry = load_backends()
+    except (OSError, ValueError) as exc:
+        return None, (
+            f"registre backends illisible ({backends_registry_path()}) : "
+            f"{exc} — aucun epinglage n'est decide ni reecrit tant que le "
+            "registre n'est pas repare (fail-closed, patron #16281)"
+        )
     entry = registry.get(key) or {}
     pinned = entry.get("backend")
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -869,6 +893,17 @@ def resolve_backend(
             return None, (
                 "aucun backend lake disponible (wsl, native) : sondez "
                 "`lean_exec backends` pour le detail"
+            )
+        if _cache_present(lake_root):
+            # Cache d'origine INCONNUE (aucune epingle ne l'a enregistre) :
+            # l'auto-epinglage ne tranche pas a sa place. La bascule coute
+            # 1-2 h de recompilation Mathlib (lean_server.py:86-89) et
+            # l'organe ne purge JAMAIS un cache lui-meme.
+            return None, (
+                "cache .lake/build present sans epingle connue : origine "
+                "inconnue, l'auto-epinglage ne tranche pas — epinglez "
+                "explicitement --backend (assume la bascule) ou purgez le "
+                "cache avant l'auto-epinglage"
             )
         backend = available[0]
         registry[key] = {"backend": backend, "pinned_at": now,
@@ -1460,8 +1495,13 @@ def run_command(
     # Preflight HORS verrou : les sondes de backend (wsl bash -lc, 10 s)
     # ne doivent jamais tenir l'AdmissionLock (timeout 10 s lui-meme). Un
     # lake epingle conforme a la demande ne sonde rien du tout (fast-path).
-    entry = load_backends().get(
-        _lake_key(lake_root)) if lake_root else None
+    # Registre illisible : pas de fast-path sur une mesure indisponible --
+    # resolve_backend sous verrou tranchera en fail-closed.
+    try:
+        entry = load_backends().get(
+            _lake_key(lake_root)) if lake_root else None
+    except (OSError, ValueError):
+        entry = None
     pinned_backend = entry.get("backend") if entry else None
     available = preflight_backends(backend, lake_root, pinned_backend)
 
@@ -1584,8 +1624,23 @@ def run_command(
             except ValueError:
                 threads = granted
             env["LEAN_NUM_THREADS"] = str(threads)
-            spawn_cmd, spawn_env = backend_command(
-                bound_command(cmd, granted), lean_backend, env)
+            try:
+                spawn_cmd, spawn_env = backend_command(
+                    bound_command(cmd, granted), lean_backend, env)
+            except OSError as exc:
+                # backend_command leve OSError quand la traduction WSL
+                # echoue (wslpath, :950) : sans ce relai, l'OSError fuit
+                # hors de _attempt -- la boucle externe ne capte que
+                # TimeoutError -- et le tree lease reste pose sans
+                # proprietaire vivant (le tree reste verrouille pour
+                # toutes les lanes).
+                release_tree_lease(tree_lease)
+                tree_lease = None
+                result.update(
+                    status="refused", exit_code=EXIT_REFUSED,
+                    reason=f"backend translation failed: {exc}",
+                )
+                return "spawn"
             result["cmd_effective"] = spawn_cmd
 
             job = None
@@ -1866,6 +1921,11 @@ def status(as_json: bool = False) -> int:
     if all(v.get("ok") for v in resources.values()):
         granted, budgets = compute_granted(cfg["jobs"], resources, native_pop)
     tree_leases = [entry for _p, entry in _tree_lease_entries()]
+    try:
+        pinned_count: int | None = len(load_backends())
+        registry_error: str | None = None
+    except (OSError, ValueError) as exc:
+        pinned_count, registry_error = None, str(exc)
     payload = {
         "state_dir": str(state_dir()),
         "config": cfg,
@@ -1875,7 +1935,8 @@ def status(as_json: bool = False) -> int:
         },
         "live_runs": live,
         "swept_stale": swept,
-        "pinned_lakes": len(load_backends()),
+        "pinned_lakes": pinned_count,
+        "registry_error": registry_error,
         "headroom": max(0, cfg["cap"] - native_pop),
         "queue": waiting,
         "tree_leases": tree_leases,
@@ -1894,7 +1955,10 @@ def status(as_json: bool = False) -> int:
             f"wsl={wsl_pop} ({wsl_src}) cap={cfg['cap']}"
         )
         print(f"live runs: {len(live)} (swept {len(swept)} stale)")
-        print(f"pinned lakes: {len(load_backends())} (backends.json)")
+        if pinned_count is None:
+            print(f"pinned lakes: ILLISIBLE ({registry_error})")
+        else:
+            print(f"pinned lakes: {pinned_count} (backends.json)")
         print(
             f"queue: {len(waiting)} waiting "
             f"(max {cfg['queue_max']}, swept {len(tree_swept)} stale leases)"
@@ -1910,7 +1974,11 @@ def status(as_json: bool = False) -> int:
 # ---------------------------------------------------------------------------
 
 def backends_report(as_json: bool = False) -> int:
-    registry = load_backends()
+    try:
+        registry = load_backends()
+        registry_error: str | None = None
+    except (OSError, ValueError) as exc:
+        registry, registry_error = {}, str(exc)
     forced = forced_backends()
     if forced is not None:
         probes = {b: (b in forced, "forced (LEAN_EXEC_FORCE_BACKENDS)")
@@ -1921,6 +1989,7 @@ def backends_report(as_json: bool = False) -> int:
         "registry_path": str(backends_registry_path()),
         "pinned_lakes": len(registry),
         "registry": registry,
+        "registry_error": registry_error,
         "probes": {
             b: {"available": ok, "source": src}
             for b, (ok, src) in probes.items()
@@ -1939,6 +2008,8 @@ def backends_report(as_json: bool = False) -> int:
         print(json.dumps(payload, indent=2))
     else:
         print(f"registry: {payload['registry_path']}")
+        if registry_error is not None:
+            print(f"registry error: ILLISIBLE ({registry_error})")
         print(f"pinned lakes: {len(registry)}")
         for key in sorted(registry):
             e = registry[key]
