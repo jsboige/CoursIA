@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 26
-breakdown: root=26
-maturity: BETA=25, DRAFT=1
+pedagogical_count: 34
+breakdown: root=34
+maturity: BETA=30, ALPHA=2, DRAFT=2
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (26 notebooks pédagogiques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 17/09/2026 :
