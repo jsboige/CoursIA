@@ -38,7 +38,7 @@ def Admissible (h hStar : V → NNReal) : Prop :=
   ∀ n : V, h n ≤ hStar n
 
 /-- **Consistent** (monotone) heuristic: relaxation of the Bellman equation along
-    each arc. Consistency implies admissibility (`consistent_implies_admissible`),
+    each arc. Consistency implies admissibility (`consistent_implies_admissible_bound`, cf `Astar/Consistency_en.lean`),
     and additionally guarantees that the function `f = g + h` is increasing along
     paths, so A* never re-expands a node. -/
 def Consistent (h : V → NNReal) : Prop :=
