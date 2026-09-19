@@ -41,6 +41,7 @@ Convention noyau `coursia-ml-training` (Python 3, kernel `.venv`).
 | **R3** | pub | Chen, Covert, Lundberg, Lee, arXiv 2207.07605 — *Algorithms to estimate Shapley value feature attributions* | 2022 | **Conditional Shapley** vs **Marginal Shapley** — distinction ↔ do/see (section 2.4, T9) |
 | **R4** | pub | Bareinboim & Pearl, PNAS 10.1073/pnas.1510507113 — *Causal Inference and the Data-Fusion Problem* | 2016 | **Jonction do-calculus ≅ conditional Shapley** (T9) — l'attribution causale sous DAG = conditional Shapley value |
 | **R5** | livre | Bareinboim, Correa, Ibeling, Icard — *On Pearl's Hierarchy and the Foundations of Causal Inference* (Causal AI 2026, ch. 2.3) | 2026 | **CHT** (Causal Hierarchy Theorem) — observabilité, intervention, contrefactuel sur 3 niveaux |
+| **R6** | pub | Heskes, Sijben, Claassen, Schünemann — *Causal Shapley Values: Exploiting Causal Knowledge to Explain Individual Predictions* (arXiv 2004.00668v2) | 2020 | **Pont Shap ↔ do-calculus opérationnel** : la Causal Shapley Value conditionne sur un sous-ensemble de variables par critère causal (parents, descendants, ascendants du Y), donnant une famille de Causal Shapley values chacune alignée sur un effet causal spécifique (ATE, ATT, CDE). §4.2 explicite la mesure empirique de l'écart marginal/conditionnel. **Référence canonique du pont Shap/do** — citée par R3 §2.4 et R4 §3.3. |
 
 Tell c.bibliography-hygiene : PDF archivés hors Git (GDrive `G:\Mon Drive\MyIA\IA\Bibliographie IA\`).
 
@@ -62,7 +63,7 @@ Ce document. Lecture first-hand Causal-Bridges/README.md + Do-Calculus-Bridge.ip
     - R² 0.4-0.5 + instabilité σ ≤ 0.05 sur 6 seeds.
   - **Section 4 — Contrefactuels DiCE** : `dice_ml.Dice` avec la même observation.
     - 3 contrefactuels : distance L1 min, distance L2 min, sparsity.
-  - **Section 5 — Jonction Shap ↔ do-calculus (T9 de R3)** : sur un DAG `X → Y ← Z`, montrer que `KernelShap(X=x_i)` ≠ `do(X=x_i)` quand Z est un confondeur, et que `ConditionalShap(X=x_i, D_obs=Z)` ≈ `do(X=x_i)` quand D respecte la consistance.
+  - **Section 5 — Jonction Shap ↔ do-calculus (T9 de R3 + R6 Heskes)** : sur un DAG **à confondeur** `Z → X → Y` avec `Z → Y` (Z est un parent commun de X et Y, donc un confondeur classique), montrer que `KernelShap(X=x_i)` (marginale) **sur-estime** `do(X=x_i)` par le chemin `Z → X`, et que `ConditionalShap(X=x_i, D_obs=Z)` ≈ `do(X=x_i)` quand D respecte la consistance (Janzing et al. 2020 §3, Heskes et al. 2020 §4.2). **Note DAG** : la spécification `X → Y ← Z` initialement envisagée faisait de Y un **collider** (deux flèches entrantes) — Z n'y est PAS un confondeur et `P(Y|X) = P(Y|do(X))` par construction, ne démontrant rien. La spécification retenue est `Z → X`, `Z → Y`, `X → Y`.
   - **Section 6 — Ponts** : renvois explicites vers `Do-Calculus-Bridge.ipynb`, `DoWhy-1-Estimand-et-Intervention.ipynb`, `DoWhy-2-Contrefactuel-Individuel.ipynb`, `Infer-5-Causal-Inference.ipynb`, `PyMC-05-Causal-Inference.ipynb`, `Tweety-11-Causal.ipynb`.
   - **Section 7 — Note explicatif ≠ causal** : 5 lignes + référence R4 §3.3 + R3 §2.4.
   - **Exercices** : 3-4 stubs conformes C.1 (pas d'erreur volontaire).
@@ -93,6 +94,7 @@ PDF R1, R2, R3, R4, R5 archivés hors Git dans `G:\Mon Drive\MyIA\IA\Bibliograph
 - R3 (Chen-Covert-Lundberg-Lee 2022) — `Chen_et_al_2022_SHAP_algorithms.pdf`
 - R4 (Bareinboim-Pearl 2016) — `Bareinboim_Pearl_2016_DataFusion.pdf`
 - R5 (Bareinboim et al 2026) — `Bareinboim_et_al_2026_Causal_AI.pdf`
+- R6 (Heskes et al 2020) — `Heskes_et_al_2020_Causal_Shapley.pdf` (premier usage c.693 — vérifier archivage GDrive)
 
 À vérifier (premier usage c.655) : existent-ils déjà sur GDrive ? Si non, archive premier cycle.
 
