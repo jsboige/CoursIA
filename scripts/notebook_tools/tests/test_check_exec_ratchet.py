@@ -5,6 +5,7 @@ sequence was CLEAN at base must stay CLEAN at head; a base-dirty notebook is
 never required to improve; added notebooks are reported, not failed. No
 network, no kernel.
 """
+import errno
 import json
 import subprocess
 import sys
@@ -242,3 +243,85 @@ class TestCli:
         assert data["changed"] == 1
         assert data["regressions"] == 1
         assert data["records"][0]["head"] == "DUPLICATE"
+
+
+class TestTransientSpawnRetry:
+    """EAGAIN au spawn = contention de processus transitoire (pytest-xdist
+    -n 4 sur le runner). Le `except OSError: return None` historique
+    transformait ce pic en "changed notebooks : 0" -> faux vert CI (flake
+    #16125).
+
+    Depuis #16164 + #16217 la reprise bornee est mutualisee dans
+    fork_retry.run_with_fork_retry (couverture propre dans
+    test_fork_retry.py). Ce qui reste specifique au ratchet : la traduction
+    de l'OSError remontee en InstrumentUnavailable, et l'absence de retry
+    sur une OSError non transitoire."""
+
+    def _fork_vers_erreur(self, monkeypatch, exc):
+        import fork_retry
+        monkeypatch.setattr(fork_retry.subprocess, "run",
+                            lambda *a, **kw: (_ for _ in ()).throw(exc))
+
+    def test_eagain_epuise_leve_instrument_indisponible(self, monkeypatch):
+        # A l'epuisement des retries, l'echec de spawn monte au CLI (exit 2)
+        # au lieu du faux vert « changed notebooks : 0 ».
+        import fork_retry
+        monkeypatch.setattr(fork_retry.time, "sleep", lambda s: None)
+        self._fork_vers_erreur(
+            monkeypatch,
+            BlockingIOError(errno.EAGAIN, "Resource temporarily unavailable"))
+        with pytest.raises(ratchet.InstrumentUnavailable):
+            ratchet.git("status")
+
+    def test_autre_oserror_leve_instrument_indisponible_sans_retry(
+            self, monkeypatch):
+        # git absent / EACCES n'est pas une reponse : un seul appel, pas de
+        # retry (le filtre etroit est couvert par test_fork_retry.py ; ici on
+        # epingle que le ratchet le respecte).
+        self._fork_vers_erreur(
+            monkeypatch, OSError(errno.ENOENT, "git introuvable"))
+        with pytest.raises(ratchet.InstrumentUnavailable):
+            ratchet.git("status")
+
+
+class TestInstrumentIndisponible:
+    """#16164 : « n'a pas pu mesurer » n'est pas « a mesure 0 ».
+
+    Le contrat lenient historique (git() -> None -> « changed notebooks :
+    0 » -> exit 0) confondait l'echec de spawn avec une mesure nulle. La
+    decision arbitree ici : fail-closed sur instrument indisponible, en
+    convergence avec le canon (check_kernel_suffix_canon.py laisse
+    l'OSError propager) ; exit 2 reste distinct de 1 (regression) et de
+    0 (mesure faite, rien a signaler).
+    """
+
+    def test_verdict_at_base_ne_dit_pas_absent_si_le_blob_est_illisible(
+            self, monkeypatch):
+        # git show en echec de SPAWN n'est pas un blob absent : avant #16164
+        # l'OSError avaldee faisait lire ABSENT (donc « ajoute par la PR »)
+        # a un notebook existant a la base.
+        def faux_git(*args, **kwargs):
+            raise ratchet.InstrumentUnavailable(
+                OSError(errno.EAGAIN, "Resource temporarily unavailable"))
+
+        monkeypatch.setattr(ratchet, "git", faux_git)
+        with pytest.raises(ratchet.InstrumentUnavailable):
+            ratchet.verdict_at_base("origin/main", "a.ipynb")
+
+    def test_cli_exit_2_instrument_indisponible(self, monkeypatch, capsys):
+        # distinct de 0 (mesure propre) et de 1 (regression) ; le message
+        # nomme l'echec de spawn et ne imprime PAS « changed notebooks ».
+        def faux_git(*args, **kwargs):
+            raise ratchet.InstrumentUnavailable(
+                OSError(errno.EAGAIN, "Resource temporarily unavailable"))
+
+        monkeypatch.setattr(ratchet, "git", faux_git)
+        monkeypatch.setattr(sys, "argv",
+                            ["check_exec_ratchet.py", "origin/main"])
+        with pytest.raises(SystemExit) as sortie:
+            ratchet.main()
+        assert sortie.value.code == 2
+        capture = capsys.readouterr()
+        assert "instrument indisponible" in capture.err
+        assert "changed notebooks" not in capture.out
+        assert "changed notebooks" not in capture.err

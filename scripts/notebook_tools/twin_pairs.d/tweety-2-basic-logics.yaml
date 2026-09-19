@@ -1,7 +1,7 @@
 - name: "Tweety-2 Basic-Logics"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (Thimm 2012) : C# branche IKVM 8.15.0 + tweety-pl.dll (tracked 0,55 Mo) + 7 refs `org.tweetyproject.*` actifs (using + classes instantiatees), bytecode Java traduit en .NET sans JVM au runtime. Python branche JPype + `from org.tweetyproject.logics.pl.* import` + `from org.tweetyproject.logics.fol.* import`. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : les deux cotes invoquent la meme bibliotheque Java TweetyProject (sat solvers FOL, parser FOPL, raisonneur), seules les idioms de pont different (bytecode .NET vs JVM runtime). DLL source-recompilee (release 8) selon pattern c.220 IKVM causal causal rebuild — pas de maven-shade bytecode 59."

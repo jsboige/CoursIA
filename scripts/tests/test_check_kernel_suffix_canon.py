@@ -84,13 +84,38 @@ def _init_repo(repo: Path) -> str:
 
 
 def _run_guard(repo: Path, cfg: Path, base: str | None = None) -> subprocess.CompletedProcess:
+    """Lance le garde, et refuse de rendre un resultat muet.
+
+    Le garde imprime TOUJOURS au moins son denominateur ("notebooks examines : N",
+    ou son equivalent JSON) avant tout verdict, y compris quand il n'a rien trouve.
+    Un stdout vide n'est donc jamais un verdict : c'est un plantage -- et son code
+    de sortie 1 est alors indiscernable d'un rouge legitime tant que le stderr
+    reste jete. Meme chose pour une trace laissee sur stderr apres une sortie
+    partielle : le contenu attendu manque, l'assertion de contenu echoue, et la
+    cause reelle est perdue.
+
+    Les deux se verifient ici, une fois, pour les treize tests du fichier : c'est
+    le point de passage unique. Cela ne repare pas la cause racine d'un plantage ;
+    cela garantit que sa prochaine occurrence la NOMME, au lieu de couter un cycle
+    de diagnostic a chaque lane qui la croise.
+    """
     args = [sys.executable, str(_SCRIPT), "--config", str(cfg)]
     if base is None:
         args += ["--scan-all"]
     else:
         args += ["--base", base, "--head", "HEAD"]
-    return subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+    r = subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if not r.stdout.strip():
+        raise AssertionError(
+            "le garde n'a rien ecrit sur stdout (rc=%s) : plantage, pas verdict.\n"
+            "--- stderr ---\n%s" % (r.returncode, r.stderr))
+    if "Traceback (most recent call last)" in r.stderr:
+        raise AssertionError(
+            "le garde a plante apres avoir commence a parler (rc=%s).\n"
+            "--- stdout ---\n%s\n--- stderr ---\n%s"
+            % (r.returncode, r.stdout, r.stderr))
+    return r
 
 
 class TestCaseCanonInAdoptedSeries(unittest.TestCase):
@@ -312,6 +337,74 @@ class TestRenameAwareness(unittest.TestCase):
                              "serie adoptee doit rougir\n" + r.stdout + r.stderr)
             self.assertIn("case_deviation", r.stdout)
             self.assertIn("App-5-Timetabling-Csharp.ipynb", r.stdout)
+
+
+class TestGitTransientSpawnRetry(unittest.TestCase):
+    """EAGAIN au spawn = contention de processus transitoire (pytest-xdist
+    -n 4 sur le runner). Sans reprise, le garde crashait en traceback : exit 1,
+    stdout vide -- le flake #16125, tentative 1. Reprise borne ; les autres
+    OSError propagent comme avant."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "cksc_retry_under_test", _SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cls.g = mod
+
+    def _faux_run_eagain(self, appels, echecs):
+        import errno
+
+        def faux_run(*args, **kwargs):
+            appels["n"] += 1
+            if appels["n"] <= echecs:
+                raise BlockingIOError(errno.EAGAIN,
+                                      "Resource temporarily unavailable")
+            return subprocess.CompletedProcess(args=(), returncode=0,
+                                                stdout="ok\n")
+        return faux_run
+
+    def test_eagain_retente_puis_passe(self):
+        from unittest import mock
+        g = self.g
+        appels, dors = {"n": 0}, []
+        with mock.patch.object(g.subprocess, "run",
+                               self._faux_run_eagain(appels, 2)), \
+             mock.patch.object(g.time, "sleep", lambda s: dors.append(s)):
+            self.assertEqual(g._git(["status"]), "ok\n")
+        self.assertEqual(appels["n"], 3)
+        self.assertEqual(dors, list(g._EAGAIN_BACKOFF))
+
+    def test_eagain_epuise_propage_apres_backoff_complet(self):
+        from unittest import mock
+        g = self.g
+        appels, dors = {"n": 0}, []
+        with mock.patch.object(g.subprocess, "run",
+                               self._faux_run_eagain(appels, 99)), \
+             mock.patch.object(g.time, "sleep", lambda s: dors.append(s)):
+            with self.assertRaises(BlockingIOError):
+                g._git(["status"])
+        self.assertEqual(appels["n"], g._EAGAIN_ATTEMPTS)
+        self.assertEqual(dors, list(g._EAGAIN_BACKOFF))
+
+    def test_autre_oserror_propage_immediatement(self):
+        import errno
+        from unittest import mock
+        g = self.g
+        appels, dors = {"n": 0}, []
+
+        def faux_run(*args, **kwargs):
+            appels["n"] += 1
+            raise OSError(errno.ENOENT, "git introuvable")
+
+        with mock.patch.object(g.subprocess, "run", faux_run), \
+             mock.patch.object(g.time, "sleep", lambda s: dors.append(s)):
+            with self.assertRaises(OSError):
+                g._git(["status"])
+        self.assertEqual(appels["n"], 1)
+        self.assertEqual(dors, [])
 
 
 if __name__ == "__main__":
