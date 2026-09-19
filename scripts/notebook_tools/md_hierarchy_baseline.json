@@ -1,12 +1,9 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-19T10:55:25+00:00",
- "total_findings": 156,
+ "generated_at": "2026-09-19T14:51:56+00:00",
+ "total_findings": 117,
  "notebooks": {
   "MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb": {
@@ -21,16 +18,10 @@
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb": {
@@ -66,11 +57,6 @@
   "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb": {
    "HINT-AS-HEADING": 3
   },
-  "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb": {
-   "H1-DEEP": 5,
-   "HINT-AS-HEADING": 1,
-   "MULTI-H1": 1
-  },
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb": {
    "H1-DEEP": 1
   },
@@ -84,9 +70,6 @@
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb": {
@@ -106,11 +89,6 @@
    "HINT-AS-HEADING": 1,
    "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb": {
-   "H1-DEEP": 15,
-   "HINT-AS-HEADING": 3,
-   "MULTI-H1": 1
-  },
   "MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb": {
    "H1-DEEP": 3,
    "HINT-AS-HEADING": 3,
@@ -124,19 +102,7 @@
    "H1-DEEP": 6,
    "MULTI-H1": 1
   },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb": {
@@ -153,9 +119,6 @@
   "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-29-Derivatives-Valuation.ipynb": {
    "H1-DEEP": 1
   },
-  "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb": {
    "HINT-AS-HEADING": 1
   },
@@ -163,12 +126,6 @@
    "H1-DEEP": 1
   },
   "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb": {
    "HINT-AS-HEADING": 2
   },
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb": {
