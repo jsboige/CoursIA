@@ -1010,7 +1010,10 @@ def scan_notebook(path: str) -> list[dict]:
                     "exercise_num": num or "?",
                     "message": f"Solution leak: Exercice {num or '?'} with 'soumis par' has complete code (not stub)",
                     "preview": next_code_source[:150],
-                    "fix": f"Relabel cell {i} from 'Exercice' to 'Exemple guide'",
+                    "fix": "Give the exercise its own stub code cell (canonical), or replace "
+                           "the code with a stub. Relabel the header to 'Exemple guide' ONLY "
+                           "if the content is genuinely a worked example -- classification is "
+                           "by CONTENT (.claude/rules/exercise-example-labeling.md).",
                 })
             continue
 
@@ -1236,7 +1239,8 @@ def main():
     if errors:
         print("=== ERRORS ===")
         for f in errors:
-            print(f"  {f['path']}: {f['message']}")
+            rel = display_path(f['path'], repo_root)
+            print(f"  {rel}: {f['message']}")
         print()
 
     if args.check and high:
