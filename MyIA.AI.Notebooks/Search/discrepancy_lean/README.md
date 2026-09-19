@@ -23,7 +23,7 @@ formalisées ici.
 | Fichier | Contenu |
 |---------|---------|
 | `Discrepancy/Basic.lean` | définitions (`IsColoring`, `discrepancy`, `degree`, `maxDegree`), 3 lemmes élémentaires, `BeckFialaConjecture` (`O(√k)`), cible `BeckFialaClassic` (`disc ≤ 2k − 1`) |
-| `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie) |
+| `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie), `komlos_oracle_imp_beck_fiala_regular` (probe #15944 **PROUVÉ** : oracle Komlós réel ⇒ Beck–Fiala cas régulier, `disc ≤ 2⌈C⌉₊√k`) |
 | `Discrepancy/Kernel.lean` | brique b1 — double comptage dimensionnel `card_dangerous_lt_card_floating` + direction de noyau `exists_dangerous_kernel_vec` |
 | `Discrepancy/Partial.lean` | brique b2 — invariant de coloration partielle `frozen_line_sum_le` (lignes figées ≤ 2k−1) |
 | `Discrepancy/Progress.lean` | brique b3 — lemme de progrès `exists_step_hits_boundary` (≥ 1 flottant se fige par phase) |
