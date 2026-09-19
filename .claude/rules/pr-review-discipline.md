@@ -69,7 +69,7 @@ Single-seed ou single-fold = **CHANGES_REQUESTED** sauf flag explicite `[POC]` d
 
 ### E. Documentation / Admin : groupement obligatoire
 
-PRs uniquement docs/README/CLAUDE.md/rules : < 50 lignes → exiger groupement ; < 20 lignes → refuser systématiquement ; multiples READMEs sans cohérence cross-series → refuser.
+PRs uniquement docs/README/CLAUDE.md/rules : quand le diff est **fin**, le reflexe n'est pas le refus mais la question « **le geste peut-il etre etendu ?** » — proposer l'elargissement qui evite le saucissonnage (les fichiers voisins de la meme serie, les occurrences sœurs du meme defaut). Le refus reste la sortie quand l'extension a ete proposee et ecartee sans motif, et pour de multiples READMEs sans coherence cross-series.
 
 **Feuille README (#3973/#3975) — audit fichier ENTIER obligatoire.** Une PR qui met à jour un compte / une statistique / un paragraphe dans un README de série DOIT prouver dans le body qu'elle a ré-audité le **fichier entier** contre le disque : (a) `ls`/`find` count par sous-dossier cité ; (b) réconciliation **disque ↔ `CATALOG-STATUS` ↔ prose** (catalogue faux : **signaler**, ne PAS s'aligner dessus) ; (c) listes, arbres de structure et breakdowns vérifiés à jour. Corriger l'intro en laissant une liste obsolète 100 lignes plus bas = `CHANGES_REQUESTED` ; le format « slim +5/−5 » ne dispense pas de l'audit, il le **plafonne à tort**.
 
