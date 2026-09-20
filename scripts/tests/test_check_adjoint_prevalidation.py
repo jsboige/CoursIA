@@ -755,3 +755,67 @@ def test_template_renders_the_emitting_lane_not_a_borrowed_name():
 def test_template_lane_defaults_to_the_adjoint():
     """The adjoint stays the canonical emitter: the default is unchanged."""
     assert f"lane: {mod.ADJOINT_LANE}" in mod.render_template(_base_snapshot())
+# --- #16931 : reecriture en place d'un bot marker-garde = fingerprint STABLE --
+
+
+def test_marker_guarded_bot_rewrite_keeps_the_fingerprint():
+    """Un bot qui re-edite son commentaire en place ne perime plus le dossier.
+
+    Mesure fondatrice (2026-09-20) : le dossier de #16907 a ete perime 26 min
+    apres sa pose par une reecriture `PR-PATH-COLLISION` du bot -- le compte
+    de commentaires etait exact, seul le hash bougeait. Le corps d'un
+    commentaire dont la premiere ligne est un marqueur HTML connu est hache
+    sur ce marqueur SEUL : la presence du commentaire compte, sa
+    re-implementation interne non.
+    """
+    base = _base_snapshot()
+    v1 = dict(base)
+    v1["comments"] = [_comment("<!-- PR-PATH-COLLISION:START -->\n"
+                               "paires fortes: #123/#456 (chevauchent)",
+                               "github-actions[bot]")]
+    v2 = dict(base)
+    v2["comments"] = [_comment("<!-- PR-PATH-COLLISION:START -->\n"
+                               "paires fortes: #123/#789 (re-scan apres push)",
+                               "github-actions[bot]")]
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+
+
+def test_marker_guarded_variation_signals_and_cap_also_stable():
+    """Les 3 marqueurs mesures sont neutralises, pas seulement le fondateur."""
+    base = _base_snapshot()
+    for marker in ("<!-- variation-genre-signals -->",
+                   "<!-- gvar2-light-cap -->",
+                   "<!-- trivial-diff-15740 -->"):
+        a = dict(base, comments=[_comment(marker + "\ncontenu v1", "github-actions[bot]")])
+        b = dict(base, comments=[_comment(marker + "\ncontenu v2 totalement different",
+                                          "github-actions[bot]")])
+        assert mod.surfaces_fingerprint(a) == mod.surfaces_fingerprint(b), marker
+
+
+def test_marker_guarded_bot_comment_presence_still_counts():
+    """Ajouter ou retirer le commentaire garde change toujours le hash."""
+    base = _base_snapshot()
+    with_bot = dict(base, comments=list(base["comments"]) + [
+        _comment("<!-- PR-PATH-COLLISION:START -->\npaires: aucune",
+                 "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(with_bot)
+
+
+def test_human_edit_of_the_same_body_still_changes_the_fingerprint():
+    """Fail-closed symetrique : un contenu qui n'est PAS un bot garde change.
+
+    Le refus « discussion surfaces changed » reste le verdict nominal quand un
+    commentaire humain est edite : l'allowlist ne couvre que les corps qui
+    COMMENCENT par le marqueur, et le marqueur seul est hache -- tout le
+    contenu humain, partout ailleurs, continue de perimer le dossier.
+    """
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment("reserve: verifier le diff", "jsboige")])
+    v2 = dict(base, comments=[_comment("reserve: verifier le diff, corrige", "jsboige")])
+    assert mod.surfaces_fingerprint(v1) != mod.surfaces_fingerprint(v2)
+    # Marqueur non plus a l'offset 0 = edition humaine d'un corps de bot :
+    v3 = dict(base, comments=[_comment("edit: <!-- PR-PATH-COLLISION:START -->\n...",
+                                       "jsboige")])
+    v4 = dict(base, comments=[_comment("edit2: <!-- PR-PATH-COLLISION:START -->\n...",
+                                       "jsboige")])
+    assert mod.surfaces_fingerprint(v3) != mod.surfaces_fingerprint(v4)

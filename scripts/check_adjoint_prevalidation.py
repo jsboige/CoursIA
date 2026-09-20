@@ -243,6 +243,40 @@ def _login(row: dict[str, Any]) -> str:
     return (row.get("author") or {}).get("login", "")
 
 
+# #16931 : bots marker-gardes qui RE-EDITENT leur commentaire en place
+# (PATCH, pas nouveau post) derriere un marqueur HTML invisible. Le compte de
+# commentaires ne bouge pas mais le corps change -> le sha256 change -> le
+# gate refuse avec "discussion surfaces changed" pour une cause qui n'a rien
+# change au fond de la PR. Mesure 2026-09-20 : dossier #16907 perime 26 min
+# apres sa pose par une reecriture PR-PATH-COLLISION. Ces commentaires sont
+# haches sur leur MARQUEUR SEUL : un humain qui edite le meme corps (le
+# marqueur ne sera plus a l'offset 0) reste detecte, et la presence/absence
+# du commentaire compte toujours -- seule la re-implementation interne du bot
+# est neutralisee. La liste vit dans le code (jamais le dossier : il pourrait
+# etre fabrique avec une allowlist elargie).
+_BOT_MARKER_GUARDS: tuple[str, ...] = (
+    "<!-- PR-PATH-COLLISION:",  # scripts/check_pr_path_collisions.py (START/END/RESOLVED)
+    "<!-- variation-genre-signals -->",  # always-on-guards.yml / variation-light-genre.yml
+    "<!-- gvar2-light-cap -->",  # always-on-guards.yml / variation-tag-guard.yml
+    "<!-- trivial-diff-15740 -->",  # workflows idempotents
+)
+
+
+def _comment_body_for_fingerprint(row: dict[str, Any]) -> str:
+    """Corps a hacher : le marqueur seul pour un commentaire de bot marker-garde.
+
+    Un corps qui COMMENCE par un marqueur connu est reduit a ce marqueur : la
+    reecriture en place (seul le contenu change) ne perime plus le dossier,
+    alors que l'apparition, la disparition ou une edition humaine (marqueur
+    deplace) continuent de le faire.
+    """
+    body = row.get("body") or ""
+    for marker in _BOT_MARKER_GUARDS:
+        if body.startswith(marker):
+            return marker
+    return body
+
+
 def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: str | None) -> bool:
     """True when the coordinator itself authored this surface after the dossier.
 
@@ -305,7 +339,7 @@ def _fingerprint_payload(
                 "id": row.get("id"),
                 "author": author(row),
                 "createdAt": row.get("createdAt"),
-                "body": row.get("body") or "",
+                "body": _comment_body_for_fingerprint(row),
             }
             for row in comments
         ],
