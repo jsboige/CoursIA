@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "notebook_tools"))
 
-from check_split_reading_cells import cell_title, detect  # noqa: E402
+from check_split_reading_cells import cell_title, detect, main  # noqa: E402
 
 
 def md(source: str) -> dict:
@@ -24,6 +24,11 @@ def md(source: str) -> dict:
 
 def code(source: str = "1 + 1") -> dict:
     return {"cell_type": "code", "source": source, "metadata": {}, "outputs": []}
+
+
+def write_nb(path, nb: dict) -> None:
+    import json
+    path.write_text(json.dumps(nb), encoding="utf-8")
 
 
 def test_named_split_user_pattern():
@@ -104,3 +109,29 @@ def test_cell_title_strips_markdown_noise():
         "Lecture chiffree — les agregats"
     assert cell_title("- `Lecture` du resultat") == "Lecture` du resultat"
     assert cell_title("") == ""
+
+
+def test_directory_mode_findings_rc2_with_fail_on_findings(tmp_path, capsys):
+    """Mode dossier : --fail-on-findings doit renvoyer 2 quand le dossier
+    contient au moins un finding (reserve adjoint #16786 : le flag etait
+    avale par scan_root, qui retournait toujours 0)."""
+    write_nb(tmp_path / "notebook_a.ipynb", {"cells": [
+        code("print(42)"),
+        md("### Lecture\nLe classifieur distingue l'age du montant."),
+        md("**Lecture chiffree** — le montant.\nL'age pese 0.37 et le montant 0.35."),
+    ]})
+    rc = main([str(tmp_path), "--fail-on-findings"])
+    capsys.readouterr()
+    assert rc == 2
+
+
+def test_directory_mode_clean_rc0(tmp_path, capsys):
+    """Mode dossier sans findings : rc 0 meme avec --fail-on-findings."""
+    write_nb(tmp_path / "notebook_clean.ipynb", {"cells": [
+        md("## Introduction\nLe contexte."),
+        code("print('ok')"),
+        md("### Lecture\nUne seule interpretation, pas de voisine."),
+    ]})
+    rc = main([str(tmp_path), "--fail-on-findings"])
+    capsys.readouterr()
+    assert rc == 0

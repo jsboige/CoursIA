@@ -159,7 +159,7 @@ def iter_notebooks(root: Path) -> list[Path]:
     )
 
 
-def scan_root(root: Path, as_json: bool) -> int:
+def scan_root(root: Path, as_json: bool, fail_on_findings: bool = False) -> int:
     total = 0
     per_kind: Counter[str] = Counter()
     rows = []
@@ -184,7 +184,7 @@ def scan_root(root: Path, as_json: bool) -> int:
                 f"rare={r['shared_rare_words']}  «{r['titles'][0]}» + «{r['titles'][1]}»"
             )
         print(f"\nTotal : {total} ({dict(per_kind)})")
-    return 0
+    return 2 if (fail_on_findings and total) else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -207,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"C={f['rare_containment']} «{f['titles'][0]}» + «{f['titles'][1]}»"
                   for f in findings) or "clean")
         return 2 if (args.fail_on_findings and findings) else 0
-    rc = scan_root(target, args.as_json)
+    rc = scan_root(target, args.as_json, args.fail_on_findings)
     return rc
 
 
