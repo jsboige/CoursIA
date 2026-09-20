@@ -488,8 +488,6 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb"
-    - "MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Parcours-Complet.ipynb"
-    - "MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Derivation-Quotient.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-03h-Deux-Especes-de-Fleches.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Csharp.ipynb"
