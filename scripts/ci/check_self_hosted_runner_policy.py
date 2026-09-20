@@ -318,6 +318,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "repeated-prose-advisory.yml",
     "scripts-tests.yml",
     "series-naming-gate.yml",
+    # registre TRANCHE12 (issue #16762, owner myia-po-2023:CoursIA) : meme
+    #   profil que repeated-prose-advisory.yml (TRANCHE7) ci-dessus --
+    #   vehicule workflow_dispatch-ONLY servant de cible d'identite au
+    #   check-run absorbe par fast-lane (registre TRANCHE12) et de re-run
+    #   manuel du recensement sur main. Detecteur de paires de cellules de
+    #   lecture scindees (check_split_reading_cells.py), advisory
+    #   pur-Python stdlib-only, jamais bloquant, aucun secret.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "split-reading-advisory.yml",
     "stale-base-warning.yml",
     # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
     #   quarto-pages-deploy `build` et `validate-pr` passent au pool — le
