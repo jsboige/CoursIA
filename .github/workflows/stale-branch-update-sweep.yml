@@ -1,0 +1,127 @@
+name: Stale branch update sweep
+
+# Cable le pilote de #16915 : le CI rattrape lui-meme les PRs en retard sur
+# leur base, au lieu d'une session de worker dediee par rebase mandate.
+# Mandat user 2026-09-19 : « il faut qu'elles soient automatiques pour la
+# plupart ».
+#
+# QUE FAIT CE SWEEP. `scripts/ci/sweep_stale_pr_branches.py` enumere les PRs
+# ouvertes, ecarte par metadonnees (brouillon, fork, non-mergeable), mesure le
+# retard reel via l'API de comparaison, prend les --max-updates plus ANCIENNES
+# candidates (les PRs quietes et agees n'ont pas d'autre voie de rattrapage --
+# lecon mesuree du pr-gate-stale-sweep, run 33169455408) et les DELEEGUE a
+# l'organe `scripts/ci/update_stale_pr_branches.py` par sous-processus. Le
+# pilote n'ecrit jamais : l'organe porte seul les neuf gardes (SHA pinnes,
+# registre en vol, jamais de force-push, jamais --rebase).
+#
+# CE QUE CE SWEEP NE SURVEND PAS. Mesure du 2026-09-19 (213 PRs ouvertes) :
+# ~12 DIRTY mises a part, la population rattrapable est les CLEAN/BLOCKED/
+# UNSTABLE a behind_by > 0. La valeur n'est pas le decompte debloque, c'est la
+# suppression des allers-retours (commentaire + session worker + dossier
+# exact-head remplaces par un run).
+#
+# CADENCE. 6 h declarees, cap 3 mises a jour par run : le gisement mesure
+# (~12) se vide en environ un jour sans vague -- chaque update perime le
+# dossier [ADJOINT PREFLIGHT] de sa PR (freshness STALE, invalidated), et une
+# rafale non bornee perimerait 12 dossiers d'un coup. Caveat mesure
+# (#15197/check_scheduler_liveness) : les crons sub-horaires de ce depot sont
+# servis 4.7-7.2x en retard ; pour un filet de rattrapage sans SLA de
+# latence, servir ~1 fois par 12-24 h reste utile et sans cout.
+#
+# PLANCHER DWELL. Un update-branch reecrit la tete : avant #16149 il
+# re-armait les 120 min que le geste sert a franchir. merge_dwell.py mesure
+# desormais last_authoritative_committed_at et EXEMPTE les fusions de base
+# prouvees content-free. Ce contrat est verrouille DANS la suite du pilote
+# (test_update_branch_shape_does_not_rearm_dwell) : si la exemption regresse,
+# la suite rougit avec le gate, et ce cron n'introduit pas la taxe en silence.
+#
+# CODE DE SORTIE. Le relais de l'organe est honnete : un run ROUGE signifie
+# « au moins un REFUSE » (conflit, tete qui a bouge, echec d'appel) -- un
+# humain doit regarder. Etouffer ce rouge pour faire joli serait le
+# « rapport vert sur un pool vide » que #16149 interdit.
+
+on:
+  schedule:
+    # Minute off-:00 (convention anti-stampede du depot).
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply the updates (default: dry-run, list only)'
+        required: false
+        type: boolean
+        default: false
+      max_updates:
+        description: 'Max branch updates this run (--max-updates)'
+        required: false
+        type: number
+        default: 3
+
+permissions:
+  contents: write       # gh pr update-branch (via l'organe) reecrit la branche
+  pull-requests: read   # enumeration + lectures de l'organe
+
+concurrency:
+  # Une classe d'evenement a la fois, JAMAIS d'annulation en cours : tuer un
+  # balayage mi-course laisserait des reservations du registre en vol posees
+  # pour rien (elles periment par TTL, mais le run suivant les lirait comme
+  # des mises a jour vivantes). Deux arrivals concurrents se coalescent.
+  group: stale-branch-update-sweep-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Delegate stale-PR updates to the organ
+    # Pool dedie (mandat : consommer les runs conteneurises). Le balayage est
+    # gh-driven et l'image coursia-linux ne ship pas gh : bootstrap toolcache.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 20
+    steps:
+      - name: Bootstrap gh into the persistent toolcache
+        env:
+          GH_BOOTSTRAP_VERSION: "2.80.0"
+        run: |
+          set -uo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            echo "[gh] preinstalled on this runner"
+            gh --version
+            exit 0
+          fi
+          GH_BIN="/opt/hostedtoolcache/bin/gh"
+          if [ ! -x "$GH_BIN" ]; then
+            VER="${GH_BOOTSTRAP_VERSION}"
+            echo "[gh] bootstrapping v${VER} into toolcache (one-time, cached)"
+            curl -fsSL "https://github.com/cli/cli/releases/download/v${VER}/gh_${VER}_linux_amd64.tar.gz" -o /tmp/gh.tgz
+            tar -xzf /tmp/gh.tgz -C /tmp
+            mkdir -p /opt/hostedtoolcache/bin
+            mv "/tmp/gh_${VER}_linux_amd64/bin/gh" "$GH_BIN"
+          fi
+          echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
+          "$GH_BIN" --version
+
+      # Sparse : le pilote importe l'organe (les DEUX fichiers doivent etre
+      # sur disque), et il n'invoque rien d'autre du depot. L'organe
+      # n'appelle pas git -- le checkout n'a pas besoin d'histoire.
+      - name: Checkout sparse (pilot + organ)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/sweep_stale_pr_branches.py
+            scripts/ci/update_stale_pr_branches.py
+          sparse-checkout-cone-mode: false
+
+      - name: Sweep and delegate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          APPLY_INPUT: ${{ github.event.inputs.apply }}
+          MAX_INPUT: ${{ github.event.inputs.max_updates }}
+        run: |
+          set -uo pipefail
+          ARGS=(--repo "$REPO" --max-updates "${MAX_INPUT:-3}")
+          # Le cron balaye en --apply ; un dispatch manuel ne l'applique que
+          # sur demande explicite (defaut : dry-run, liste seulement).
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${APPLY_INPUT:-false}" = "true" ]; then
+            ARGS+=(--apply)
+          fi
+          python3 scripts/ci/sweep_stale_pr_branches.py "${ARGS[@]}"
