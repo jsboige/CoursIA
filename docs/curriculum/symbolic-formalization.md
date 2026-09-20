@@ -132,14 +132,14 @@ dans un solveur SOTA (Microsoft Research). Sélection dans la série
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 11 | [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb) | 30 min | z3-py, premier solve/check → logique PL (étape 2) |
-| 12 | [Z3-Python-02-Sudoku](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) | 15 min | modélisation contraintes d'un puzzle → étape 11 |
-| 13 | [Z3-Python-03-Tactics](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb) | 30 min | tactiques, simplify, contrôler le solveur → étape 11 |
-| 14 | [Z3-Python-04-Strings-Regex](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) | 30 min | théorie des chaînes et regex symboliques → étape 11 |
-| 15 | [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) | 30 min | quantificateurs, **preuves** — vers le bloc 4 → étape 2 (FOL) |
-| 16 | [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) | 30 min | Optimize, soft constraints → étape 13 |
+| 11 | [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) | 30 min | z3-py, premier solve/check → logique PL (étape 2) |
+| 12 | [Z3-Python-02-Sudoku](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb) | 15 min | modélisation contraintes d'un puzzle → étape 11 |
+| 13 | [Z3-Python-03-Tactics](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb) | 30 min | tactiques, simplify, contrôler le solveur → étape 11 |
+| 14 | [Z3-Python-04-Strings-Regex](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb) | 30 min | théorie des chaînes et regex symboliques → étape 11 |
+| 15 | [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) | 30 min | quantificateurs, **preuves** — vers le bloc 4 → étape 2 (FOL) |
+| 16 | [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) | 30 min | Optimize, soft constraints → étape 13 |
 | 17 | [Z3-Python-13-UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | 30 min | cœurs insatisfaisables — écho des MUS de l'étape 4 → étape 4 |
-| 18 | [Z3-Python-16-Meal-Planner](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | 30 min | **capstone** : optimisation sous contraintes réelles → étapes 12+16 |
+| 18 | [Z3-Python-16-Meal-Planner](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | 30 min | **capstone** : optimisation sous contraintes réelles → étapes 12+16 |
 
 ### Bloc 3 — Planification (étapes 19-25, 4 h 45)
 

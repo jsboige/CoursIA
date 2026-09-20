@@ -84,6 +84,7 @@ layout: section
 
 # Qu'est-ce que l'intelligence artificielle?
 
+<div class="grid grid-cols-2 gap-x-10 -mt-1">
 
 - Définitions multiples
 - Notre angle :
@@ -92,19 +93,17 @@ layout: section
 
 **Fondements**
 
-- Philosophie
-- Maths
-- Économie
-- Biologie
-- Neurosciences
-- Psychologie
-- Informatique
-- Théorie du contrôle
-- Linguistique
+- Philosophie · Maths · Économie
+- Biologie · Neurosciences
+- Psychologie · Informatique
+- Théorie du contrôle · Linguistique
 
-<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
 
-<div class="absolute top-[395px] right-[20px] w-[460px] text-xs text-slate-500 italic text-center">
+<div class="flex justify-center mt-2">
+  <img src="./images/img_005.png" class="max-h-[190px] w-auto object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
+<div class="text-xs text-slate-500 italic text-center mt-1 px-10">
   Modèle biologique (neurone de McCulloch & Pitts, 1943) — source d'inspiration directe pour le perceptron de Rosenblatt (1958).
 </div>
 ---
@@ -125,14 +124,14 @@ layout: section
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
-<img src="./images/img_006.png" class="absolute top-[80px] right-[20px] w-[340px] max-w-full object-contain" alt="Repères historiques" />
-
-<div class="absolute top-[220px] right-[20px] w-[340px] flex gap-4 items-center justify-center">
-  <img src="./images/img_007.jpg" class="h-12 max-w-[45%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-10 max-w-[55%] object-contain" alt="Logo ImageNet" />
+<div class="flex justify-between items-end gap-6 mt-3 px-6">
+  <img src="./images/img_006.png" class="max-h-[120px] w-[52%] object-contain" alt="Repères historiques" />
+  <div class="flex gap-5 items-center pb-2">
+    <img src="./images/img_007.jpg" class="h-14 object-contain" alt="Logo DARPA" />
+    <img src="./images/img_008.jpg" class="h-12 object-contain" alt="Logo ImageNet" />
+  </div>
 </div>
-
-<div class="absolute top-[290px] right-[20px] w-[340px] text-xs text-slate-500 italic text-center">
+<div class="text-xs text-slate-500 italic text-center mt-1 px-10">
   Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
 </div>
 
@@ -160,6 +159,8 @@ layout: section
 
 # Dans la vie de tous les jours
 
+<div class="grid grid-cols-2 gap-x-10 text-xs mt-1">
+
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
 - **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
@@ -170,7 +171,11 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
-<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
+
+<div class="flex justify-center mt-1">
+  <img src="./images/img_013.jpg" class="w-[26%] max-h-[115px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
 
 
 ---
@@ -193,7 +198,9 @@ layout: section
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
+<div class="flex justify-center mt-2">
+  <img src="./images/img_009.png" class="max-h-[130px] w-auto object-contain" alt="Les agents" />
+</div>
 ---
 
 # Conception d'agents
@@ -215,6 +222,8 @@ layout: section
 
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb">13_Agentic_Orchestration.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -245,7 +254,11 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
+<div class="flex justify-center mt-4">
+  <img src="./images/img_012.png" class="max-h-[230px] w-auto object-contain" alt="Agent réflexe fondé sur un modèle" />
+</div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb">Search-01-StateSpace.ipynb</a> (agents à état interne).</p>
 ---
 
 
@@ -305,6 +318,8 @@ L'incertitude vient d'un **autre décideur**, qui optimise aussi — parfois con
 </div>
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb">DecInfer-01-Utility-Foundations.ipynb</a> (théorie de la décision), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb">GameTheory-02-NormalForm.ipynb</a> (formes normales).</p>
 ---
 
 
@@ -343,6 +358,8 @@ L'incertitude vient d'un **autre décideur**, qui optimise aussi — parfois con
 </div>
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb">GameTheory-06-EvolutionTrust.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb">GameTheory-15-CooperativeGames.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -424,6 +441,8 @@ layout: section
 
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb">Search-01-StateSpace.ipynb</a>.</p>
 ---
 
 # Arbre d'exploration
@@ -437,20 +456,22 @@ layout: section
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-<img src="./images/img_020.png" class="absolute top-[60px] right-[20px] w-[420px] max-h-[200px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
-
-
 **Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="absolute top-[280px] right-[20px] w-[280px] max-h-[140px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
-<img src="./images/img_024.png" class="absolute top-[430px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+<div class="grid grid-cols-3 gap-3 mt-2 px-6 items-center">
+  <img src="./images/img_020.png" class="max-h-[130px] w-full object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
+  <img src="./images/img_023.png" class="max-h-[130px] w-full object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
+  <img src="./images/img_024.png" class="max-h-[130px] w-full object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+</div>
 
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb">Search-02b-NetworkX.ipynb</a> (graphes d'états).</p>
 ---
 layout: section
 ---
@@ -508,11 +529,14 @@ layout: default
 </div>
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb">Search-02-Uninformed.ipynb</a>.</p>
 ---
 
 
 # Stratégies d'exploration (2/2)
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - Si seule la solution compte
   - pas le chemin
@@ -520,8 +544,6 @@ layout: default
 - Paysage de l'espace des états
   - Optimisation d'une fonction
   - Escalade, descente de gradient
-
-
 - Problèmes :
   - Bloqué sur un optimum local
 - Solutions:
@@ -532,22 +554,22 @@ layout: default
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<div class="absolute top-[130px] right-[20px] w-[560px] flex flex-col gap-2">
-<div class="flex gap-2">
-<img src="./images/img_027.png" class="w-[275px] max-h-[120px] max-w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
-<img src="./images/img_028.png" class="w-[275px] max-h-[120px] max-w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
 </div>
-<div class="img-grid-2x2">
-<img src="./images/img_030.png" class="max-h-[140px] max-w-full object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
-<img src="./images/img_031.png" class="max-h-[140px] max-w-full object-contain" />
-<img src="./images/img_032.png" class="max-h-[140px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
-<img src="./images/img_033.png" class="max-h-[140px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
-</div>
+
+<div class="grid grid-cols-6 gap-1 mt-2 px-4">
+<img src="./images/img_027.png" class="max-h-[100px] w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
+<img src="./images/img_028.png" class="max-h-[100px] w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
+<img src="./images/img_030.png" class="max-h-[100px] w-full object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
+<img src="./images/img_031.png" class="max-h-[100px] w-full object-contain" />
+<img src="./images/img_032.png" class="max-h-[100px] w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
+<img src="./images/img_033.png" class="max-h-[100px] w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
 </div>
 
 
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb">Search-03-Informed.ipynb</a> (A* et heuristiques).</p>
 ---
 
 # Jeux
@@ -558,7 +580,7 @@ layout: default
 </div>
 
 
-<div class="dense-list">
+<div class="dense-list text-sm">
 
 - Arbre de jeu
 - Environnements
@@ -582,10 +604,14 @@ layout: default
 
 </div>
 
-<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+<div class="flex justify-center mt-1">
+  <img src="./images/img_031.png" class="max-h-[100px] w-[56%] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+</div>
 
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb">Search-06-AdversarialSearch.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb">Search-07-MCTS-And-Beyond.ipynb</a>.</p>
 ---
 layout: default
 ---
@@ -628,19 +654,20 @@ layout: default
 - Structure des valeurs
   - Symétrie (rupture de)
 
-<div class="flex gap-2">
-<img src="./images/img_035.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
-<img src="./images/img_036.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
-<img src="./images/img_037.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
-
 </div>
 
 </div>
 
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_035.png" class="max-h-[105px] w-full object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
+<img src="./images/img_036.png" class="max-h-[105px] w-full object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+<img src="./images/img_037.png" class="max-h-[105px] w-full object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
 </div>
 
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb">CSP-1-Fundamentals.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb">CSP-2-Consistency.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -697,15 +724,19 @@ layout: default
 
 **Raisonnement**
 
-<img src="./images/img_035.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
-<img src="./images/img_036.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
-
 </div>
 
 </div>
 
+<div class="flex justify-center gap-10 mt-2">
+<img src="./images/img_035.png" class="max-h-[200px] w-[42%] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
+<img src="./images/img_036.png" class="max-h-[200px] w-[42%] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+</div>
 
 
+
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb">Tweety-02-Basic-Logics-Python.ipynb</a>.</p>
 ---
 
 
@@ -732,6 +763,8 @@ layout: default
 <img src="./images/img_039.png" class="max-h-[190px] w-full object-contain" alt="Diagrammes de Venn des connecteurs logiques : (P ∨ Q), (P ∧ Q), (P ⇒ Q), (P ⇔ Q)" />
 <img src="./images/img_040.png" class="max-h-[190px] w-full object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb">Z3-01-Introduction-Python.ipynb</a> (SAT/SMT).</p>
 ---
 
 
@@ -762,10 +795,14 @@ layout: default
 - Enemy(x,America) => Hostile(x)
 - Américain(x) ET Arme(y) ET Vend(x,y,z) ET Hostile(z) => Criminel(x)
 
-<img src="./images/img_040.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
+</div>
+</div>
 
+<div class="flex justify-center mt-2">
+  <img src="./images/img_040.png" class="max-h-[190px] w-auto object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
-</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb">Z3-05-Quantifiers-Proofs-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb">Tweety-02c-FOL-CSharp.ipynb</a>.</p>
 ---
 
 
@@ -812,6 +849,7 @@ layout: default
 
 </div>
 </div>
+
 ---
 
 
@@ -848,13 +886,14 @@ layout: default
   - Contre-exemple absurde
   - Fair-play
 
-<div class="img-grid">
-<img src="./images/img_041.jpg" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
-
+</div>
 </div>
 
+<div class="flex justify-center mt-1">
+  <img src="./images/img_041.jpg" class="max-h-[160px] w-auto object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
 </div>
-</div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb">Argument_Analysis_Agentic-1-informal.ipynb</a>.</p>
 ---
 
 
@@ -885,6 +924,8 @@ layout: default
 <img src="./images/img_045.png" class="max-h-[190px] w-full object-contain" alt="Plan de transport aérien en logique : Init, Goal, actions Load/Unload/Fly avec préconditions et effets" />
 <img src="./images/img_046.png" class="max-h-[190px] w-full object-contain" alt="Plan d'actions logiques : Load(C1,P1,SFO), Fly(P1,SFO,JFK), Unload (transport aérien)" />
 </div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb">Planners-2-PDDL-Basics.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb">Planners-4-Fast-Downward.ipynb</a>.</p>
 ---
 
 
@@ -902,12 +943,14 @@ layout: default
   - W3C
   - Linked Data
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_048.png" class="w-full object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
-<img src="./images/img_049.png" class="w-full object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
+<div class="flex justify-center gap-6 mt-3">
+<img src="./images/img_048.png" class="max-h-[170px] w-[45%] object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
+<img src="./images/img_049.png" class="max-h-[170px] w-[45%] object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
 </div>
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
 ---
 
 
@@ -928,6 +971,8 @@ layout: default
 <!-- Blockchain : registre distribué, consensus, exécution automatique de contrats -->
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-5-jtms.ipynb">Argument_Analysis_Agentic-5-jtms.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb">Tweety-4-Belief-Revision.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb">SC-3-Solidity-Basics.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -982,12 +1027,16 @@ layout: section
 - Alternatives
 - Niveau de succès espéré
 
-<img src="./images/img_051.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
-
 </div>
 </div>
 
+<div class="flex justify-center mt-2">
+  <img src="./images/img_051.png" class="max-h-[180px] w-auto object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
+</div>
 
+
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb">Infer-4-Bayesian-Networks.ipynb</a>.</p>
 ---
 
 
@@ -1021,15 +1070,17 @@ layout: section
   - Indépendance conditionnelle
   - Facteurs de distributions continues
 
-<div class="img-grid">
-<img src="./images/img_052.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Ajustement d'un nuage de points par une courbe bleue oscillante, une droite rouge et un segment vert" />
-<img src="./images/img_053.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surapprentissage : courbe orange très oscillante collée aux points, contre droite et segment de régression" />
-<img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
-
-</div>
 </div>
 </div>
 
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_052.png" class="max-h-[115px] w-full object-contain" alt="Ajustement d'un nuage de points par une courbe bleue oscillante, une droite rouge et un segment vert" />
+<img src="./images/img_053.png" class="max-h-[115px] w-full object-contain" alt="Surapprentissage : courbe orange très oscillante collée aux points, contre droite et segment de régression" />
+<img src="./images/img_054.png" class="max-h-[115px] w-full object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
+</div>
+
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb">Infer-1b-Premiers-Modeles.ipynb</a>.</p>
 ---
 
 
@@ -1077,6 +1128,8 @@ layout: section
 
 </div>
 </div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb">Infer-14-Sequences.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb">Infer-17-Kalman-Filter.ipynb</a>.</p>
 ---
 
 
@@ -1111,6 +1164,8 @@ layout: section
 <img src="./images/img_063.png" class="max-h-[190px] w-full object-contain" alt="Processus de décision markovien : états S0-S2, actions a0-a1, récompenses +5/-1, probabilités de transition" />
 <img src="./images/img_064.png" class="max-h-[190px] w-full object-contain" alt="Grille 3x3 de navigation avec flèches de politique, cases +1/-1, piège, et inégalité sur R(s)" />
 </div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb">DecInfer-05-Decision-Networks.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb">DecInfer-06-Value-Information.ipynb</a>.</p>
 ---
 
 
@@ -1137,14 +1192,16 @@ layout: section
 - Mixtes (probabilistes)
 - Utilité espérée
 
-<div class="img-grid mt-2 grid grid-cols-3 gap-2">
-<img src="./images/img_067.png" class="w-full max-h-[260px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
-<img src="./images/img_068.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
-<img src="./images/img_069.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
+</div>
 </div>
 
+<div class="grid grid-cols-3 gap-3 mt-2 px-6">
+<img src="./images/img_067.png" class="max-h-[150px] w-full object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
+<img src="./images/img_068.png" class="max-h-[150px] w-full object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
+<img src="./images/img_069.png" class="max-h-[150px] w-full object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
 </div>
-</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb">GameTheory-02-NormalForm.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb">GameTheory-04-NashEquilibrium.ipynb</a>.</p>
 ---
 
 
@@ -1205,6 +1262,8 @@ layout: section
 </div>
 
 <!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb">GameTheory-09-BackwardInduction.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb">GameTheory-11-BayesianGames.ipynb</a>.</p>
 ---
 
 
@@ -1238,17 +1297,16 @@ layout: section
 - Libratus
 - Deepstack
 
-<div class="img-grid">
-<img src="./images/img_072.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Composition abstraite : panneau jaune, point rouge et point bleu, bandes verticales" />
-<img src="./images/img_073.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surface 3D incurvée en selle, rendu bleu translucide sans texte" />
-<img src="./images/img_074.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
-
-</div>
-
-
-
 </div>
 </div>
+
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_072.png" class="max-h-[120px] w-full object-contain" alt="Composition abstraite : panneau jaune, point rouge et point bleu, bandes verticales" />
+<img src="./images/img_073.png" class="max-h-[120px] w-full object-contain" alt="Surface 3D incurvée en selle, rendu bleu translucide sans texte" />
+<img src="./images/img_074.png" class="max-h-[120px] w-full object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
+</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb">GameTheory-06c-RepeatedGames-FolkTheorem.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb">GameTheory-13-ImperfectInfo-CFR.ipynb</a>.</p>
 ---
 
 
@@ -1278,13 +1336,15 @@ layout: section
 - Stratégies sociétales
   - Évolution de la confiance
 
-<div class="img-grid mt-2 flex flex-col gap-2 items-center">
-<img src="./images/img_075.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
-<img src="./images/img_076.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
+</div>
 </div>
 
+<div class="flex justify-center gap-8 mt-2 px-8">
+<img src="./images/img_075.png" class="max-h-[150px] w-[44%] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
+<img src="./images/img_076.png" class="max-h-[150px] w-[44%] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
 </div>
-</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb">05-Gibbard-Satterthwaite.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb">GameTheory-09c-Stackelberg-SecurityGame.ipynb</a>.</p>
 ---
 
 
@@ -1317,12 +1377,14 @@ layout: section
   - Jugement majoritaire
   - Scrutin bipartipludique
 
-<img src="./images/img_078.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Zone d'accord de négociation salariale : salages rejetés par chacun, fourchette 0 à 50 dollars" />
-
-
-
 </div>
 </div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_078.png" class="max-h-[180px] w-auto object-contain" alt="Zone d'accord de négociation salariale : salages rejetés par chacun, fourchette 0 à 50 dollars" />
+</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb">01-Arrow-Impossibility-Theorem.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb">03-Voting-Methods.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -1365,10 +1427,7 @@ layout: section
 
 # Apprentissage
 
-
-
-<div class="grid grid-cols-2 gap-5 -mt-2">
-<div>
+<div class="grid grid-cols-2 gap-x-10 text-sm -mt-1">
 
 **Enjeux**
 
@@ -1376,12 +1435,6 @@ layout: section
 - Méthode de conception de systèmes
 - Améliorer la prise de décision
 - Les performances
-
-
-</div>
-<div>
-
-<TeachingStep placement="below" size="md">
 
 **Structure d'agent**
 
@@ -1391,14 +1444,13 @@ layout: section
   - Critique
   - Générateur de problème
 
-<template #visual>
-<img src="./images/img_080.png" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
-</template>
-
-</TeachingStep>
-
 </div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_080.png" class="max-h-[165px] w-[60%] object-contain" alt="Agent d'apprentissage : critique, composant d'apprentissage, composant de performance, générateur de problèmes" />
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb">ML-1-Introduction-Python.ipynb</a>.</p>
 ---
 
 
@@ -1432,13 +1484,12 @@ layout: section
   - Connaissance a priori / modèles
   - Feedback pour apprendre
 
-<img src="./images/img_081.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x" />
-<img src="./images/img_082.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Ajustement du nuage par une courbe bleue oscillante, une droite rouge et un segment vert" />
-
-
-
-
 </div>
+</div>
+
+<div class="flex justify-center gap-8 mt-2 px-8">
+<img src="./images/img_081.png" class="max-h-[170px] w-[44%] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x" />
+<img src="./images/img_082.png" class="max-h-[170px] w-[44%] object-contain" alt="Ajustement du nuage par une courbe bleue oscillante, une droite rouge et un segment vert" />
 </div>
 ---
 
@@ -1446,6 +1497,7 @@ layout: section
 
 # Caractéristiques (2/2)
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - On construit une hypothèse
   - h consistante avec les données
@@ -1460,9 +1512,11 @@ layout: section
   - d'ensemble
   - Boosting
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_083.png" class="w-full object-contain" alt="Surapprentissage : courbe orange oscillante collée aux points contre droite et segment de régression" />
-<img src="./images/img_084.png" class="w-full object-contain" alt="Découpage des données : échantillonnage, entraînement, validation, test avec sélection de modèle" />
+</div>
+
+<div class="flex justify-center gap-6 mt-2 px-8">
+<img src="./images/img_083.png" class="max-h-[170px] w-[45%] object-contain" alt="Surapprentissage : courbe orange oscillante collée aux points contre droite et segment de régression" />
+<img src="./images/img_084.png" class="max-h-[170px] w-[45%] object-contain" alt="Découpage des données : échantillonnage, entraînement, validation, test avec sélection de modèle" />
 </div>
 ---
 
@@ -1493,6 +1547,8 @@ layout: section
 <img src="./images/img_087.png" class="max-h-[190px] w-full object-contain" alt="Partitions d'attributs Clients? et Type? : ronds verts et rouges séparés en sous-ensembles" />
 <img src="./images/img_088.png" class="max-h-[190px] w-full object-contain" alt="Forêt aléatoire : nœud X, arbres tree1-treeB, vote (classification) ou moyenne (régression)" />
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb">2.4-Arbres-Forets-Ensembles.ipynb</a>.</p>
 ---
 
 
@@ -1504,6 +1560,8 @@ layout: section
 <img src="./images/img_089.png" class="w-[620px] max-w-full mt-6 mx-auto object-contain" alt="Astuce du noyau : données non séparables linéairement en 2D, séparables par un plan après passage en 3D" />
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb">2.3-Regression-lineaire-logistique.ipynb</a>.</p>
 ---
 
 
@@ -1523,6 +1581,8 @@ layout: section
 <img src="./images/img_092.png" class="max-h-[190px] w-full object-contain" alt="Réseau de neurones fully-connected : une entrée, quatre neurones cachés, dix sorties" />
 <img src="./images/img_093.png" class="max-h-[190px] w-full object-contain" alt="Fonctions d'activation : sigmoïde, tanh, ReLU, Leaky ReLU, Maxout, ELU — formules et courbes" />
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation.ipynb">3.1-Retropropagation.ipynb</a>.</p>
 ---
 
 
@@ -1547,6 +1607,8 @@ layout: section
 <img src="./images/img_096.png" class="max-h-[190px] w-full object-contain" alt="Transfert learning : photo de voiture, extracteur de caractéristiques, caractéristiques de haut niveau, classifieur entraînable" />
 <img src="./images/img_097.png" class="max-h-[190px] w-full object-contain" alt="RNN déroulé : cellule A récurrente, entrées x0 à xt, sorties h0 à ht" />
 </div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb">3.2-Optimisateurs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.3-Regularisation.ipynb">3.3-Regularisation.ipynb</a>.</p>
 ---
 
 
@@ -1619,6 +1681,8 @@ layout: section
 </div>
 
 <!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer et Longformer (attention lineaire ou par fenetres), puis Mamba et les State Space Models, Hyena, RWKV (2023) -- complexite lineaire sur sequences longues. -->
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb">3.4-Attention-Transformer-From-Scratch.ipynb</a>.</p>
 ---
 
 
@@ -1665,6 +1729,8 @@ layout: section
 </div>
 
 <!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : espace latent d'un VAE pre-entraine, debruitage U-Net, conditionnement texte par l'encodeur CLIP, cross-attention Q/K/V. -->
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb">3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb</a>.</p>
 ---
 
 
@@ -1718,12 +1784,15 @@ layout: section
 <img src="./images/img_116.png" class="max-h-[190px] w-full object-contain" alt="SVM : deux classes (étoiles rouges, triangles verts), hyperplan, marge, vecteurs de support" />
 <img src="./images/img_117.png" class="max-h-[190px] w-full object-contain" alt="Astuce du noyau : nuage 2D non séparable projeté en 3D où un plan sépare les classes" />
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb">2.7-Modeles-Non-Parametriques.ipynb</a>.</p>
 ---
 
 
 
 # Apprentissage et connaissances
 
+<div class="text-sm -mt-1">
 
 - Utilisation de la connaissance
   - Passé + futur
@@ -1740,16 +1809,21 @@ layout: section
   - Knowledge Based Inductive Learning
 - Programmation logique inductive (Prolog)
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_118.png" class="w-full object-contain" alt="Système d'apprentissage inductif fondé sur connaissances : exemples, connaissance du domaine, modèle induit" />
-<img src="./images/img_119.png" class="w-full object-contain" alt="Boucle agent-environnement : récompense, état, action" />
 </div>
+
+<div class="flex justify-center gap-6 mt-1 px-8">
+<img src="./images/img_118.png" class="max-h-[115px] w-[45%] object-contain" alt="Système d'apprentissage inductif fondé sur connaissances : exemples, connaissance du domaine, modèle induit" />
+<img src="./images/img_119.png" class="max-h-[115px] w-[45%] object-contain" alt="Boucle agent-environnement : récompense, état, action" />
+</div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb">SW-12-Python-GraphRAG.ipynb</a> (connaissances + apprentissage).</p>
 ---
 
 
 
 # Apprentissage par renforcement
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - Pas d'exemple
   - Feedback = bon ou mauvais
@@ -1767,10 +1841,14 @@ layout: section
   - Modèles paramétriques
   - Deep Q-learning
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_120.png" class="w-full object-contain" alt="Boucle d'apprentissage par renforcement : agent, environnement, échanges récompense/état/action" />
-<img src="./images/img_121.png" class="w-full object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
 </div>
+
+<div class="flex justify-center gap-6 mt-1 px-8">
+<img src="./images/img_120.png" class="max-h-[130px] w-[45%] object-contain" alt="Boucle d'apprentissage par renforcement : agent, environnement, échanges récompense/état/action" />
+<img src="./images/img_121.png" class="max-h-[130px] w-[45%] object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
+</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb">rl_1_intro_cartpole.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb">rl_5_mdp_dp_qlearning.ipynb</a> (MDP, TD, Q-learning).</p>
 ---
 layout: section
 ---
@@ -1834,6 +1912,8 @@ layout: section
 
 </div>
 </div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/24_NGrammes_Modeles_De_Langue.ipynb">24_NGrammes_Modeles_De_Langue.ipynb</a>.</p>
 ---
 
 
@@ -1849,6 +1929,7 @@ layout: section
 Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâches de la zone verte supposent une représentation du <em>sens</em>, celles de la zone bleue seule s'en passent.
 
 </div>
+
 
 
 
@@ -1889,15 +1970,15 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
   - Modèles sémantiques
   - Ambiguités, Modèles imbriqués
 
-<div class="img-grid">
-<img src="./images/img_125.png" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Règle de grammaire probabiliste PCFG : VP vers Verb (0,70) ou VP NP (0,30)" />
-<img src="./images/img_126.png" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Arbre syntaxique probabiliste de « Every wumpus smells » avec probabilités par nœud" />
-
-</div>
-
-
 </div>
 </div>
+
+<div class="flex justify-center gap-8 mt-1 px-8">
+<img src="./images/img_125.png" class="max-h-[160px] w-[44%] object-contain" alt="Règle de grammaire probabiliste PCFG : VP vers Verb (0,70) ou VP NP (0,30)" />
+<img src="./images/img_126.png" class="max-h-[160px] w-[44%] object-contain" alt="Arbre syntaxique probabiliste de « Every wumpus smells » avec probabilités par nœud" />
+</div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/26_PCFG_CYK_Parsing.ipynb">26_PCFG_CYK_Parsing.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/25_CRF_Etiquetage_Sequentiel.ipynb">25_CRF_Etiquetage_Sequentiel.ipynb</a>.</p>
 ---
 
 
@@ -1920,12 +2001,15 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
 <img src="./images/img_129.png" class="max-h-[190px] w-full object-contain" alt="Signal audio analogique, version échantillonnée, et découpage en trames avec caractéristiques" />
 <img src="./images/img_130.png" class="max-h-[190px] w-full object-contain" alt="Traduction par interlingua : sémantique commune puis syntaxe et mots anglais/français (John loves Mary / Jean aime Marie)" />
 </div>
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb">01-2-OpenAI-Whisper-STT.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb">01-5-Kokoro-TTS-Local.ipynb</a>.</p>
 ---
 
 
 
 # Agents conversationnels
 
+<div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
 - Agents algorithmiques couplé au NLP
   - Modèles de langage
@@ -1942,11 +2026,15 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
   - Bootstrap
   - Entraînement en ligne
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_131.png" class="w-full object-contain" alt="Architecture Microsoft Bot Framework : service bot, connecteur, canaux (Skype, Slack, Facebook...)" />
-<img src="./images/img_132.png" class="w-full object-contain" alt="Interface LUIS : énoncé utilisateur annoté avec entité reconnue (réservation de congés)" />
-<img src="./images/img_133.png" class="w-full object-contain" alt="Pipeline de dialogue : prétraitement de l'entrée, NLU, gestion de dialogue, génération, sortie" />
 </div>
+
+<div class="grid grid-cols-3 gap-3 mt-1 px-6">
+<img src="./images/img_131.png" class="max-h-[125px] w-full object-contain" alt="Architecture Microsoft Bot Framework : service bot, connecteur, canaux (Skype, Slack, Facebook...)" />
+<img src="./images/img_132.png" class="max-h-[125px] w-full object-contain" alt="Interface LUIS : énoncé utilisateur annoté avec entité reconnue (réservation de congés)" />
+<img src="./images/img_133.png" class="max-h-[125px] w-full object-contain" alt="Pipeline de dialogue : prétraitement de l'entrée, NLU, gestion de dialogue, génération, sortie" />
+</div>
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb">19_OWUI_Orchestration.ipynb</a>.</p>
 ---
 
 
@@ -1996,6 +2084,7 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
 
 </div>
 </div>
+
 ---
 
 
@@ -2090,6 +2179,8 @@ Ordre de grandeur en français : <b>1 token ≈ 4 caractères ≈ 0,75 mot</b>.
 > Conséquence de gestion : « combien de documents puis-je lui donner ? » et « combien cela coûte ? » sont **la même question**, posée en tokens.
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb">04-Tokenisation-From-Scratch.ipynb</a>.</p>
 ---
 
 
@@ -2120,6 +2211,7 @@ Le **vocabulaire** et l'**espace de sens** sont deux choses différentes — c'e
 </div>
 
 > Dans un Transformer, on part de l'embedding du token nu — sa définition de dictionnaire — puis, couche après couche, l'attention croise ces vecteurs : les homonymes se lèvent d'abord, puis sujets et verbes s'associent, et le sens du récit se construit. Il n'est **jamais** la juxtaposition des définitions.
+
 
 
 ---
@@ -2160,6 +2252,8 @@ C'est ce second point qui a tout déclenché : l'architecture a rendu l'entraîn
 </div>
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb">TV-00b-Attention-Variants-from-scratch.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb">TV-00a-RoPE-from-scratch.ipynb</a>.</p>
 ---
 
 
@@ -2182,6 +2276,8 @@ graph LR
 > ChatGPT a atteint 100 millions d'utilisateurs en 2 mois : l'IA devient un produit de masse
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb">01_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb">02_PromptEngineering.ipynb</a>.</p>
 ---
 
 
@@ -2203,14 +2299,12 @@ graph TD
 ```
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5-Qwen-Image-Edit.ipynb</a>.</p>
 ---
 
 
 # Modèles de diffusion : générer une image
-
-<div class="grid grid-cols-[1fr_1fr] gap-6 mt-2">
-
-<div>
 
 **Principe : apprendre à débruiter**
 
@@ -2225,19 +2319,13 @@ graph LR
     C --> D[- bruit<br/>retour appris] --> E[Nouvelle image]
 ```
 
-</div>
-
-<div>
-
-<img src="./images/img_112.png" class="w-full object-contain" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
-
-<img src="./images/img_113.png" class="w-[88%] mx-auto mt-3 object-contain" alt="Architecture latent diffusion : encodeur, U-Net de débruitage dans l'espace latent, décodeur" />
-
-</div>
-
+<div class="flex justify-center gap-6 mt-2 px-8">
+<img src="./images/img_112.png" class="max-h-[150px] w-[45%] object-contain" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
+<img src="./images/img_113.png" class="max-h-[150px] w-[45%] object-contain" alt="Architecture latent diffusion : encodeur, U-Net de débruitage dans l'espace latent, décodeur" />
 </div>
 
 > Les générateurs d'images (DALL-E, Stable Diffusion, Midjourney) reposent sur ce principe
+
 
 
 ---
@@ -2265,6 +2353,8 @@ graph LR
 > Notebook : `GenAI/RAG-et-Memoire-Semantique/`
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/05_RAG_Modern.ipynb">05_RAG_Modern.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb">01-Hands-On-Grounding.ipynb</a>.</p>
 ---
 
 
@@ -2289,6 +2379,8 @@ graph LR
 > Notebooks : `GenAI/SemanticKernel/` (20 notebooks)
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb">13b_Agent_Evaluation.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb">14_Persistent_Memory.ipynb</a>.</p>
 ---
 
 
@@ -2310,6 +2402,8 @@ graph LR
 > Curriculum : `GenAI/Vibe-Coding/`
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/01-Claude-CLI-Bases.ipynb">01-Claude-CLI-Bases.ipynb</a>.</p>
 ---
 
 
@@ -2358,6 +2452,8 @@ le contrôle — et ils échouent ici pour les mêmes raisons : périmètre flou
 > Curriculum : `GenAI/Vibe-Coding/Claude-Code/`
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/04-Claude-CLI-Agents.ipynb">04-Claude-CLI-Agents.ipynb</a>.</p>
 ---
 
 
@@ -2380,6 +2476,8 @@ graph LR
 > Notebooks : `GenAI/PostTraining/`, `GenAI/FineTuning/`
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb">21_LoRA_FineTuning.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb">11_Quantization.ipynb</a>.</p>
 ---
 
 
@@ -2405,6 +2503,7 @@ graph LR
 ```
 
 > Référence : `docs/genai/genai-services.md`
+
 
 
 ---
@@ -2657,6 +2756,8 @@ au vert. Le sauvetage ne pouvait qu'ajouter une façon d'échouer.
 > serait passé pour « la file d'attente est saturée », et on aurait attendu.
 
 
+
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/Roslyn-Code-Guardrails.ipynb">Roslyn-Code-Guardrails.ipynb</a>.</p>
 ---
 
 
@@ -2731,6 +2832,8 @@ d'entreprise offrent ce filet — c'est le premier critère de choix d'un pilote
 > Un outil puissant appelle une utilisation **responsable**
 
 
+
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb">22_Evaluating_Generated_Text.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb">09b_Prompt_Security_RedTeam.ipynb</a>.</p>
 ---
 
 
