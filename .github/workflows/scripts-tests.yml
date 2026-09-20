@@ -126,7 +126,38 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 20
+    # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
+    # (started_at -> completed_at du job nomme exactement "Scripts Tests
+    # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
+    # du run (file d'attente comprise, et pour un rerun les deux
+    # tentatives : c'etait la faute de grandeur de la v1).
+    #
+    # Requete a rejouer telle quelle avant de citer ou de retirer ce
+    # tableau (photographie datee, pas une verite) : runs du workflow
+    # 296034456, branch=main, status=completed, run_started_at >
+    # 2026-09-13T23:08:18Z (merge de xdist #15833) ; dans chaque run, job
+    # de nom EXACT "Scripts Tests (CPU)".
+    #
+    # Mesure du 2026-09-15T07:00Z, rejouee a 07:22Z sans derive :
+    #   70 runs conclus
+    #     - 25 sans job : jobs: [], jamais demarres (supplantation de
+    #       file) -- hors de toute discussion de plafond ;
+    #     - 45 porteurs d'un job, max par conclusion :
+    #         success    30   max 17,4 min
+    #         failure    11   max 14,3 min
+    #         cancelled   4   20,32-20,43 min
+    # Les 4 cancelled ont bien ete termines au mur de 20 min, mais les
+    # logs montrent des workers xdist morts puis 14-15 min de silence : ce
+    # sont des hangs que relever le plafond ne repare pas (suivi #16288),
+    # pas quatre cas de queue lente. Le relevement repose sur la marge
+    # preventive : le succes max a 17,4 min ne laisse que 2,6 min sous 20;
+    # 30 laisse ~12,6 min tout en restant sous les bornes 45/52 ci-dessous.
+    # (Retraction de la v1 run-level -- 26 runs, mediane 17,5 min, max
+    # 19,8 min, 16 annulations -- ecrite en tete du body de #16087.)
+    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur
+    # pr_gate.py (--timeout-min 45) et le job pr-gate.yml
+    # (timeout-minutes: 52).
+    timeout-minutes: 30
 
     steps:
       # ------------------------------------------------------------------
@@ -270,6 +301,7 @@ jobs:
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
+            tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
@@ -304,16 +336,18 @@ jobs:
         # migrating that module to tmp_path.
         #
         # `--import-mode importlib` (pytest.ini addopts) is equally load-bearing
-        # here: three test basenames are duplicated across these 13 paths
+        # here: three test basenames are duplicated across these 14 paths
         # (test_check_dataset_registry, test_check_public_anchor,
         # scan_slidev_composition), and without it pytest raises
         # `import file mismatch` -- sequentially too, not just under xdist.
         #
         # Audited for inter-module parallel safety before enabling: no shared
         # fixed-path writes outside the module above, no git mutation against
-        # the real tree (every `git init` is in tmp_path), no real sockets, no
+        # the real tree (every `git init` is in tmp_path), no real sockets (sole
+# exception: tests/integration's localhost:8768 probe, timeout 1.0,
+# self-skipping when refused), no
         # unrestored os.environ/os.chdir, no session-scoped fixtures, no
-        # conftest.py in any of the 13 paths. Residual: module-scope fixtures
+        # conftest.py in any of the 14 paths. Residual: module-scope fixtures
         # that seed the global PRNG without restoring it (e.g.
         # test_kuhn_poker_cfr.py:64-75) make module ORDER non-reproducible --
         # no test currently depends on it.

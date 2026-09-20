@@ -160,3 +160,9 @@ Aucune ignorance n'est en cause : l'auteur de la levée savait qu'il écrivait a
 ### Ce qu'un commit ne lève pas — #10761, le rebase muet
 
 Sur #10761 (récit complet ci-dessus), le « traitement » des deux nits du 2026-08-13T11:07 fut un **rebase à 19:41** qui n'adressait ni l'un ni l'autre. Un push muet est **indiscernable d'un push qui répond** : le diff ne dit pas quelle remarque il prétend traiter, et le compteur de commits postérieurs à une review ne mesure donc rien. Ce qui lève une remarque est **une phrase**, pas un SHA.
+
+### Où lève — #16780 : le waiver par pointeur vers un fichier local
+
+Sur #16670, un commentaire fut posté dont le **corps entier** était `@C:\Users\jsboi\AppData\Local\Temp/a16670.md` — la trace visible de `gh ... --body "@$TEMP/a16670.md"` là où `--body-file` était voulu (`gh` n'expande pas `@file`, il poste la chaîne littérale). Le harnais de merge lut ce corps comme un **waiver DWELL L3** et nourrit une escalade de merge avec. Mais le fichier visé vit sur **une machine tierce** : aucun lecteur de la PR — ni ai-01, ni un bot, ni un contributeur — ne peut l'ouvrir. Le signal ne porte aucun contenu vérifiable ; tout son sens tient dans le *nom du fichier*. **Une autorisation que personne ne peut relire est une autorisation fabriquée.**
+
+La convention est tranchée par écrit (#16780) : **un waiver par pointeur est interdit**. Si un waiver compte pour un merge, sa **substance** est sur la PR — une phrase qui dit ce qui est levé et pourquoi. Le scratchpad garde le détail, la PR porte la décision. Le garde `scripts/check_local_path_waivers.py` (check advisory câblé dans `local-path-waiver-guard.yml`) rougit sur tout commentaire dont le corps est un chemin seul ou contient un segment de profil Windows `[A-Za-z]:[\/]Users[\/]` — contrôle positif : le corps #16670 exact, rejoué en test unitaire (le commentaire original a été supprimé par le user).
