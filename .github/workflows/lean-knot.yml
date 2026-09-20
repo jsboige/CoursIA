@@ -26,35 +26,37 @@ name: Lean Knot CI
 # (-- line + nested /- -/ block) then count word-bounded `\bsorry\b`. This mirrors
 # the prover harness `count_real_sorries` (FX-6 #1453) — counts exactly
 # compiled-tactic sorries, immune to docstring edits.
-# Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
-#   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
-#   - Invariant.lean:           3 (tricolorable_invariant residual fox/col tactics
-#                                  DISCHARGED by #11211 [sorry 5->3] — the all-distinct
-#                                  kink mode is VACUOUS: the R1 kink C = ⟨a,b,c,c⟩ has
-#                                  e3 = e4 = c, the Path B over-strand continuity
-#                                  c2 = c4 forces col₂(b) = col₂(c) = c3, contradicting
-#                                  the Fox all-distinct requirement c2 ≠ c3 — hence
-#                                  `exact absurd _hCarc _hdist.2.1` closes both residuals;
-#                                  trefoil_not_unknot DISCHARGED by #8766 [5->4];
-#                                  tricolorable_forward_r1 wrapper front added by #9966
-#                                  [4->5] — characterized ∀c∈d₂.crossings wall,
-#                                  2/3 sub-cases PROVEN (newKink c.987, unchanged c.988),
-#                                  ai-01 multi-cycle acceptance; the Fox linearity bridge
-#                                  + num are PROVEN — see Invariant.lean docstring for
-#                                  the resolved/open split)
-#   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
+# Real-mode breakdown (instantané re-mesuré le 2026-09-19 au head a1ff7fd4b1a9 par
+# `python scripts/lean/count_code_sorry.py --json` — champ `distinct_code_sorry`,
+# déclarations nommées via `scan_file` du même script ; LA COMMANDE FAIT FOI,
+# ce commentaire est un instantané daté, pas une source : re-mesurer plutôt que
+# maintenir — un bloc dérivé à la main se re-périme, motif #15598) :
+#   - Conway.lean:              4 (IsSmoothlySlice + IsTopologicallySlice — définitions
+#                                  des propriétés de tranche — et les bornes
+#                                  conway_not_smoothly_slice / conway_topologically_slice ;
+#                                  conway_trivial_alexander et KT_trivial_alexander
+#                                  DISCHARGED, unités preuve du split #14821)
+#   - Invariant.lean:           0 (intégralement déchargé : fox/col résidus fermés
+#                                  par #11211/#11227, Knot.unknottingNumber redéfini
+#                                  par sInf par #15082 — le récit par déclaration vit
+#                                  dans `knot_lean/README.md` §sorry, il ne vit plus ici)
+#   - Lidman.lean:              2 (unknotting_11n102_upper + unknotting_11n102 —
+#                                  11n102 unknotting number = 2, Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 11 (aligné avec `LEAN_INVENTORY.md` post-#13312,
-# mesure 2026-08-28 `count_code_sorry.py` champ `distinct_code_sorry` ; lowered
-# from 14 par la mesure instrument post-#11227 — le décompte « 14 » dans les
-# commentaires/README comptait 2 sorry dans `Invariant.lean` qui n'en portent
-# qu'1 une fois stripé des commentaires, et sur-comptait Conway ; historique :
+# Total real tactic sorry = 8 (mesure `count_code_sorry.py` champ
+# `distinct_code_sorry` ; historique :
 # 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
-# (#11211/#11227 fox/col) → **11** (mesure 2026-08-28, `count_code_sorry.py`).
+# (#11211/#11227 fox/col) → 11 (mesure 2026-08-28, `count_code_sorry.py`) →
+# 10 (#15082 unknottingNumber par sInf) → 9 (conway_trivial_alexander
+# DISCHARGED, unité preuve-Conway du split de PR 14821) → **8**
+# (KT_trivial_alexander DISCHARGED par transvections, unité preuve-KT
+# du split de PR 14821).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 11² » et avec `knot_lean/README.md` table des sorries — cf. #13312).
+# | 8 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; split
+# #14821 terminé (CLOSED) : la synchronisation est à jour au 2026-09-19, elle
+# n'est plus déléguée à une PR du split (#15598).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
@@ -116,116 +118,63 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Routage #14337 tranche 2a (arbitrage (B) composite action, ai-01 DM
-  # 2026-09-04 msg-20260904T132737-02hnpi) : jambe Lean auto-hébergée sur le
-  # pool coursia-lean (image Dockerfile.lean = elan + toolchain pré-cuits,
-  # volume .lake chaud par slot #14285). Le `if:` ci-dessous est la garde
-  # anti-fork exigée par scripts/ci/check_self_hosted_runner_policy.py ; un
-  # `runs-on` STATIQUE la rend auditable (une expression dynamique lève
-  # DYNAMIC_RUNS_ON). Les PRs de fork sautent le job -- pr_gate.py compte
-  # `skipped` comme OK (le code d'un fork ne tourne jamais sur le pool).
-  # Le twin composite-action (.github/actions/lean-build/action.yml) porte
-  # les steps ; le checkout vit ICI car une action locale ne se résout
-  # qu'une fois le dépôt materialisé dans le workspace.
-  # Retour arrière = remettre `uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main`
-  # + retirer runs-on/if/steps du job, ET retirer `build-jobs:` du bloc `with:`
-  # -- dans le job `ci` COMME dans le job `proof-integrity`, les deux le portent.
-  # `build-jobs` est un input de la COMPOSITE ACTION seulement :
-  # le reusable n'en declare que quatre (`project-path`, `display-name`,
-  # `sorry-baseline`, `sorry-filter-mode`). Le laisser en place rend le fichier
-  # de workflow INVALIDE -- il n'est alors plus charge du tout, et le gate
-  # disparait en silence au lieu de tomber en erreur visible.
-  # Aucune restauration de toolchain n'est requise de ce cote : le reusable
-  # installe elan lui-meme (step `Install elan`, .github/workflows/lean-build.yml)
-  # puis `lake exe cache get`. Le toolchain pre-cuit est ce que le pool
-  # coursia-lean apporte EN PLUS, pas ce qui manque a la voie hebergee.
+  # Essai de routage hosted per arbitrage #16496 (ai-01 DM
+  # msg-20260917T224942-z8bbnm, 2026-09-17) : le pool coursia-lean OOM-kill
+  # (exit 137) le pic d'elaboration des siblings Conway/Conway_en MEME
+  # SERIALIZES (LEAN_NUM_THREADS=1, run 35175031202, instrument #14821) --
+  # le pic d'un Conway seul depasse la boite self-hosted. Cette PR est
+  # l'essai exige par l'arbitrage : retour a la forme pre-#14337 (reusable
+  # lean-build.yml = ubuntu-latest, 16 GB RAM + swap 32 G /mnt -- le pattern
+  # qui a absorbe le pic conway_lean HashlifeCorrectness avant le split
+  # #9863, PR #9798/#9840). Le routage ne devient DEFINITIF qu'apres la
+  # mesure de runtime sur cette PR (guidance ~45 min, timeout 300 min --
+  # #15698, NE PAS RESSERRER), rapportee sur le dashboard.
+  # NB cache : la cle actions/cache de la composite #14337 et celle du
+  # reusable sont IDENTIQUES (lake-<name>-${{ runner.os }}-, Linux des deux
+  # cotes) -- le premier run hosted peut restaurer les entrees sauvees par
+  # l'ere self-hosted ; verifier la ligne "Cache restored from key" dans le
+  # log avant de lire la mesure comme un regime froid.
+  # Rollback = git revert de cette PR (remet la forme composite #14337 :
+  # runs-on [self-hosted, coursia-ephemeral, coursia-lean] + garde if: +
+  # steps + `build-jobs:` dans le bloc `with:` de CHAQUE job -- le reusable
+  # n'en declare que quatre, le laisser rend le fichier INVALIDE, cf #15579).
   ci:
-    name: "Lean CI (knot_lean)"
-    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
-    #
-    # L'enlisement d'origine (knot_lean proof-integrity, run 103451688746) a
-    # retenu la moitie du pool coursia-lean 3 h 17 sans jamais conclure. La
-    # borne convertit l'enlisement en check ROUGE, visible du merge-gate.
-    #
-    # 300 et pas 60 : maximum LEGITIME mesure du job `ci` = 215 min (succes),
-    # 3 succes au-dessus de 60 min sur 23, mediane 7 min (30 runs, 2026-09-12).
-    # Le maximum legitime et la pathologie vivent dans la meme plage : aucun
-    # seuil de temps de mur ne les separe. NE PAS RESSERRER.
-    timeout-minutes: 300
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/lean-build
-        with:
-          project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
-          display-name: knot_lean
-          sorry-baseline: "10"
-          sorry-filter-mode: real
-          # #14821 : le pool coursia-lean OOM-kill (exit 137) sur le pic
-          # d'elaboration des siblings Conway/Conway_en DANS le meme job —
-          # la contention entre jobs est REFUTEE (Proof integrity mort seul,
-          # 18 min apres liberation de l'autre job, DM ai-01 2026-09-06).
-          # Serialisation d'abord comme INSTRUMENT DE MESURE (reco ai-01,
-          # msg-20260906T133912-j6rlew) : si ca passe, c'est aussi le remede
-          # court terme ; si ca OOM, le pic d'un Conway seul depasse la boite.
-          # NB: Lake 5.0 n'a pas de -j (tentative 1 = run 34037681207, mort
-          # a l'option parsing) — le cap passe par LEAN_NUM_THREADS.
-          build-jobs: "1"
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      display-name: knot_lean
+      sorry-baseline: "8"
+      sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
   # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`)
   # that the textual sorry counter cannot see. Runs after the build to
   # reuse the cached lake artifacts.
   # Opt-in per lake; knot_lean is the pilote because it has a stable
-  # sorry profile (16 real tactic sorries, all enumerated + justified).
-  # #14337 tranche 2a: routed to the coursia-lean pool via the composite
-  # twin (.github/actions/lean-axiom) -- job-level `uses:` on the local
-  # reusable replaced by a LOCAL job (runs-on/if/steps) invoking the
-  # composite. check_target_coverage.py unions BOTH wiring forms.
+  # sorry profile (8 real tactic sorries, all enumerated + justified).
+  # Essai de routage hosted per arbitrage #16496 (voir le commentaire du
+  # job `ci`) : retour au reusable lean-axiom.yml (forme pre-#14337, ref
+  # locale `./` = resolution per-PR). check_target_coverage.py unions
+  # BOTH wiring forms.
   #
-  # Serialized after `ci` (#14921): both jobs used to start at the same
-  # second, doubling the anonymous git burst from this machine's IP (2x
-  # mathlib + 2x plausible) -- the burst trips GitHub's per-IP anonymous
-  # limit and lake dies at `plausible` with `could not read Username`
-  # (exit 128). Running second, this job also restores the cache entry
-  # `ci` just saved, making the axiom pass fetch-free. This also makes
-  # the job true to its own comment above ("Runs after the build").
+  # Serialized after `ci` (#14921) : en tournant second, ce job restaure
+  # l'entree de cache que `ci` vient de sauver, ce qui rend la passe
+  # axiomatique fetch-free (la moitie IP-anonyme du motif #14921 etait
+  # specifique au pool self-hosted ; le benefice cache reste).
   proof-integrity:
-    name: "Proof integrity (knot_lean)"
     needs: ci
-    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
-    #
-    # C'est CE job qui s'est enlise 3 h 17 dans l'incident d'origine. La borne
-    # convertit l'enlisement en check ROUGE, sur lequel le merge-gate peut agir.
-    #
-    # 300 et pas 60 : maximum LEGITIME mesure de `proof-integrity` = 177 min,
-    # conclusion `success` (job 102677021168, branche
-    # feature/2874-conway-trivial-alexander, step `lean-axiom` 22:58:13Z ->
-    # 01:53:13Z = 2 h 55). Un `timeout-minutes: 60` l'aurait TUE -- exactement
-    # le faux positif que ce fichier cherche a eviter. Mediane 8 min sur
-    # 20 succes : la queue vient du cache Mathlib froid. NE PAS RESSERRER.
-    timeout-minutes: 300
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/lean-axiom
-        with:
-          project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
-          display-name: knot_lean
-          target-modules: "*"
-          allow-axioms: ""
-          # 10 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
-          # build job above; the gate tolerates them (`fail-on-sorry: false`) but
-          # still reports `has_sorry` per module and hard-fails forbidden axioms.
-          # The per-module enumeration now lives in the gate's runtime derivation
-          # (issue #10889) -- flip to `true` when the baseline reaches 0.
-          fail-on-sorry: false
-          # #14821 : meme instrument que le job ci (voir le commentaire du
-          # job ci) — ce job REBUILD le lake avec sa propre cle de cache,
-          # donc le pic des siblings se rejoue ici aussi.
-          build-jobs: "1"
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      display-name: knot_lean
+      target-modules: "*"
+      allow-axioms: ""
+      # 8 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+      # build job above; the gate tolerates them (`fail-on-sorry: false`) but
+      # still reports `has_sorry` per module and hard-fails forbidden axioms.
+      # The per-module enumeration now lives in the gate's runtime derivation
+      # (issue #10889) -- flip to `true` when the baseline reaches 0.
+      fail-on-sorry: false
 
   # Advisory proof-integrity coverage (See #8782). Same pattern as conway_lean
   # (#8787): the `target-modules` list above is hand-maintained while the

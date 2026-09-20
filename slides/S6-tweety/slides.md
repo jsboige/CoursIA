@@ -75,7 +75,7 @@ from org.tweetyproject.logics.pl.syntax import *
 from org.tweetyproject.logics.fol.syntax import *
 ```
 
-> **Notebook** : `Tweety-1-Setup.ipynb` — 20 min
+> **Notebook** : `Tweety-01-Setup-Python.ipynb` — 20 min
 
 ---
 
@@ -101,7 +101,7 @@ sig.add(Predicate("Mortal", [sig.getSort("Person")]))
 - Quantificateurs universels et existentiels
 - Unification et resolution FOL
 
-> **Notebook** : `Tweety-2-Basic-Logics.ipynb` — 45 min
+> **Notebook** : `Tweety-02-Basic-Logics-Python.ipynb` — 45 min
 
 ---
 
@@ -217,7 +217,7 @@ reasoner = SimpleAspicReasoner(PreferredSemantics())
 - **DeLP** (Defeasible Logic Programming) : integration Prolog
 - **ABA** (Assumption-Based Argumentation) : hypotheses et contrariness
 
-> **Notebook** : `Tweety-6-Structured-Argumentation.ipynb` — 60 min
+> **Notebook** : `Tweety-06-Structured-Argumentation-Python.ipynb` — 60 min
 
 ---
 
@@ -241,7 +241,7 @@ from org.tweetyproject.arg.bipolar.syntax import BipolarArgFramework
 - **SAF** (Social AF) : agregation de vote sur les attaques
 - **CF2** : sémantique pour frameworks avec cycles pairs
 
-> **Notebook** : `Tweety-7a-Extended-Frameworks.ipynb` — 50 min
+> **Notebook** : `Tweety-07a-Extended-Frameworks-Python.ipynb` — 50 min
 
 ---
 
@@ -266,7 +266,7 @@ paf = ProbabilisticArgumentationFramework()
 paf.setProbability(arg_a, 0.8)  # prob. que l'argument est present
 ```
 
-> **Notebook** : `Tweety-7b-Ranking-Probabilistic.ipynb` — 40 min
+> **Notebook** : `Tweety-07b-Ranking-Probabilistic-Python.ipynb` — 40 min
 
 ---
 layout: section
@@ -296,7 +296,7 @@ session = DialogueSession(agent1, agent2, protocol)
 session.run()
 ```
 
-> **Notebook** : `Tweety-8-Agent-Dialogues.ipynb` — 35 min
+> **Notebook** : `Tweety-08-Agent-Dialogues-Python.ipynb` — 35 min
 
 ---
 
@@ -319,7 +319,7 @@ winner = BordaAggregator().aggregate(prefs)
 - **Arrow's theorem** : impossibilite du choix social rationnel
 - Lien avec `GameTheory/social_choice_lean/` (preuves formelles en Lean 4)
 
-> **Notebook** : `Tweety-9-Preferences.ipynb` — 30 min
+> **Notebook** : `Tweety-09-Preferences-Python.ipynb` — 30 min
 
 ---
 layout: section

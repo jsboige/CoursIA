@@ -507,6 +507,38 @@ def test_check_clear_when_only_my_lane(capsys):
     assert "CLEAR" in out
 
 
+def test_delivered_marker_sentence_period_is_not_a_phantom_lane(capsys):
+    """#15864 -- a lane's own `[DELIVERED]` marker must not become a SECOND lane.
+
+    Reproduced from issue #15674 (2026-09-12). The DELIVERED body ends with
+    French prose right after the lane -- `lane myia-po-2023:CoursIA. Énoncé
+    réécrit ...` -- and the sentence period plus the accented capital word were
+    swallowed into the lane token (`myia-po-2023:CoursIA. Énoncé`, a lane that
+    matches nothing). The guard then blocked the declaring lane on its OWN
+    claim, and the refusal named a lane that does not exist. Measured
+    end-to-end on the guard's own entry point: pre-fix this returns a non-zero
+    verdict, post-fix CLEAR.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA — 2026-09-12T09:0xZ — paths: "
+            "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+            "2026-09-12T09:13:07Z",
+        ),
+        comment(
+            "[DELIVERED] PR #15733 — lane myia-po-2023:CoursIA. Énoncé réécrit en "
+            "deux gestes (chercher inchangé + recenser via "
+            "`client2.count(count_filter=...)`), le piège top-10 nommé dans "
+            "l'énoncé. Exéc complète 12.2s, validate 17 cells PASS.",
+            "2026-09-12T09:17:24Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    out = capsys.readouterr().out
+    assert "myia-po-2023:CoursIA. Énoncé" not in out
+    assert rc == 0
+
+
 def test_check_no_paths_returns_exit_2_and_not_scoped(capsys):
     # #12322 -- when the caller does NOT pass `--paths` AND has no scoped
     # active claim of their own, the call cannot prove disjointness from any
@@ -5925,6 +5957,21 @@ _CLAIMED_GUARD_PATH = "scripts/check_lane_claim.py"
 _OUTSIDE_GUARD_PATH = "scripts/check_unaddressed_nits.py"
 
 
+def _no_open_prs(monkeypatch):
+    """Neutralise the #16570 open-PR leg: these tests pin the CLAIM-scope
+    semantics of #13057, not the open-PR intersection.
+
+    Both fixture paths are REAL files of this repo, so the leg would consult
+    live `gh pr list` output and flip the verdict whenever some unrelated lane
+    happens to have an OPEN PR touching one of them -- which is exactly what
+    happened the day this leg was first wired (#16451, #16306, #16102 all
+    touched `check_unaddressed_nits.py`). A guard test must not depend on the
+    fleet's live plateau.
+    """
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
+                        lambda paths, my_lane, prs=None: ([], []))
+
+
 def _write_mixed_paths_payload(tmp_path):
     return _write_payload(
         payload(comment(
@@ -5936,7 +5983,9 @@ def _write_mixed_paths_payload(tmp_path):
     )
 
 
-def test_main_single_paths_occurrence_intersecting_blocks(tmp_path, capsys):
+def test_main_single_paths_occurrence_intersecting_blocks(
+        tmp_path, capsys, monkeypatch):
+    _no_open_prs(monkeypatch)
     source = _write_mixed_paths_payload(tmp_path)
     rc = clc.main([
         "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
@@ -5949,7 +5998,9 @@ def test_main_single_paths_occurrence_intersecting_blocks(tmp_path, capsys):
     assert summary["blocked"] is True
 
 
-def test_main_repeated_paths_mixed_intersection_still_blocks(tmp_path, capsys):
+def test_main_repeated_paths_mixed_intersection_still_blocks(
+        tmp_path, capsys, monkeypatch):
+    _no_open_prs(monkeypatch)
     source = _write_mixed_paths_payload(tmp_path)
     rc = clc.main([
         "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
@@ -5966,7 +6017,9 @@ def test_main_repeated_paths_mixed_intersection_still_blocks(tmp_path, capsys):
     assert summary["blocked"] is True
 
 
-def test_main_repeated_paths_genuinely_disjoint_clear(tmp_path, capsys):
+def test_main_repeated_paths_genuinely_disjoint_clear(
+        tmp_path, capsys, monkeypatch):
+    _no_open_prs(monkeypatch)
     source = _write_mixed_paths_payload(tmp_path)
     rc = clc.main([
         "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
@@ -5978,6 +6031,132 @@ def test_main_repeated_paths_genuinely_disjoint_clear(tmp_path, capsys):
     assert rc == 0
     assert summary["blocking_lanes"] == []
     assert summary["blocked"] is False
+
+
+# --- #16570 : la jambe PR-ouverte doit tourner AUSSI en mode issue ------------
+# Defaut mesure : `check_lane_claim.py N --paths p` -- la forme que L898
+# prescrit -- n'atteignait jamais `_run_check_paths`, gate sur
+# `args.issue is None`. Mesure A/B sur la meme PR ouverte : `--paths` seul
+# rendait rc=2 en nommant la PR, la meme commande PLUS un numero d'issue
+# rendait rc=0 avec `free_paths` = les deux fichiers. `free_paths` decrit le
+# scope du CLAIM, jamais l'espace des PRs ouvertes : le lire comme un
+# all-clear etait le piege. Cout mesure : un cycle entier de travail duplique
+# sur #16176 (PR #16280 deja ouverte sur les 4 memes fichiers).
+
+
+def _collision_pr(number, lane, files, title="t"):
+    body = f"Grain: MED/tooling — lane {lane} — prev: LIGHT/guard #1"
+    return {"number": number, "title": title, "headRefName": f"fix/{number}",
+            "body": body, "files": [{"path": p} for p in files]}
+
+
+def test_issue_mode_blocks_on_other_lane_open_pr(monkeypatch, tmp_path, capsys):
+    """CONTROLE POSITIF #16570 -- le cas de l'incident.
+
+    Issue sans marqueur bloquant + `--paths` intersectant une PR OUVERTE d'une
+    AUTRE lane -> rc 2, PR nommee. Avant ce fix, ce meme appel rendait rc 0.
+    """
+    source = _write_payload(payload(comment(
+        "[RELEASED] lane other:CoursIA", "2026-08-15T00:00:00Z",
+    ), number=16176), tmp_path)
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions", lambda paths, my_lane, prs=None: (
+        [clc.PathCollision(pr=_collision_pr(16280, "myia-po-2023:CoursIA",
+                                  ["scripts/notebook_tools/wsl_papermill.py"]),
+                           lane="myia-po-2023:CoursIA",
+                           files=["scripts/notebook_tools/wsl_papermill.py"]),
+         clc.PathCollision(pr=_collision_pr(16281, None,
+                                  ["scripts/notebook_tools/check_lean4_wsl_repl.py"]),
+                           lane=None,
+                           files=["scripts/notebook_tools/check_lean4_wsl_repl.py"])],
+        []))
+    rc = clc.main([
+        "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
+        "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\n", 1)[0])
+    assert rc == 2, captured.err
+    assert [c["number"] for c in summary["open_pr_collisions"]] == [16280, 16281]
+    assert summary["open_pr_collisions"][0]["lane"] == "myia-po-2023:CoursIA"
+    assert "16280" in captured.err and "myia-po-2023:CoursIA" in captured.err
+    # la PR sans tag lisible reste signalee comme collision potentielle
+    assert "UNREADABLE" in captured.err
+
+
+def test_issue_mode_clear_when_pr_is_own_lane(monkeypatch, tmp_path, capsys):
+    """CONTROLE NEGATIF #16570 -- reprendre son propre travail n'est pas une
+    collision : une PR de SA lane ne doit pas faire rougir l'organe."""
+    source = _write_payload(payload(comment(
+        "[RELEASED] lane other:CoursIA", "2026-08-15T00:00:00Z",
+    ), number=16176), tmp_path)
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
+                        lambda paths, my_lane, prs=None: ([], []))
+    rc = clc.main([
+        "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
+        "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
+    ])
+    summary = json.loads(capsys.readouterr().out.split("\n\n", 1)[0])
+    assert rc == 0
+    assert summary["open_pr_collisions"] == []
+
+
+def test_issue_mode_degrades_to_warn_when_gh_fails(monkeypatch, tmp_path, capsys):
+    """Une panne `gh` ne doit pas emporter le verdict principal.
+
+    La jambe est un renfort : si elle ne peut pas tourner, l'organe le DIT et
+    laisse le verdict de claim intact. Le taire serait reproduire le defaut.
+    """
+    source = _write_payload(payload(comment(
+        "[RELEASED] lane other:CoursIA", "2026-08-15T00:00:00Z",
+    ), number=16176), tmp_path)
+
+    def _boom(paths, my_lane, prs=None):
+        raise RuntimeError("gh pr list --state open failed (exit 1)")
+
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions", _boom)
+    rc = clc.main([
+        "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
+        "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
+    ])
+    err = capsys.readouterr().err
+    assert rc == 0
+    assert "jambe PR-ouverte" in err and "#16570" in err
+
+
+def test_claim_posting_does_not_run_open_pr_leg(monkeypatch, tmp_path, capsys):
+    """La jambe est reservee au chemin LECTURE.
+
+    Un `--claim` ne doit pas etre refuse par une jambe que l'auteur n'a pas
+    demandee : le verdict de post reste celui d'avant #16570.
+    """
+    source = _write_payload(payload(comment(
+        "[CLAIMED] lane 2:CoursIA -- paths: other/**",
+        "2026-08-15T00:00:00Z",
+    ), number=11064), tmp_path)
+    called = []
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
+                        lambda paths, my_lane, prs=None: called.append(1) or ([], []))
+    monkeypatch.setattr(clc, "_post_comment", lambda issue, body: None)
+    rc = clc.main(["--lane", "B:CoursIA", "--paths", "x/sub/f.ipynb",
+                   "--no-stale", "--claim", "tranche x", "11064",
+                   "--from-json", source, "--force"])
+    assert rc == 0
+    assert called == []
+
+
+def test_open_pr_leg_shares_one_reader_with_paths_mode(monkeypatch):
+    """#9485 -- les deux appelants passent par le MEME lecteur.
+
+    Si les deux divergeaient, une lane serait autorisee a produire du neuf sur
+    un chemin que la garde autonome refuse.
+    """
+    prs = [_collision_pr(42, "other:CoursIA", ["x/f.ipynb"])]
+    rc = clc._run_check_paths(["x/f.ipynb"], "me:CoursIA", prs=prs)
+    cols, own = clc._compute_open_pr_collisions(["x/f.ipynb"], "me:CoursIA", prs=prs)
+    assert rc == 2
+    assert [c.number for c in cols] == [42] and own == []
+    # attribution par lane identique des deux cotes
+    assert cols[0].lane == "other:CoursIA"
 
 
 # --- #12811 : gh/git émettent de l'UTF-8, l'encodage doit être épinglé --------

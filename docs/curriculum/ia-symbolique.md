@@ -152,34 +152,34 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Z3 (C# / .NET) — Introduction au solveur SMT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb) | BETA | Oui |
-| 2 | [Z3-Python 01 — Introduction a la resolution de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb) | BETA | Oui |
-| 3 | [Z3-Python 01b — Du style declaratif LINQ au solveur Z3…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) | BETA | Oui |
-| 4 | [Z3 (C# / .NET) — Sudoku par contraintes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb) | BETA | Oui |
-| 5 | [Z3-Python 02 — Sudoku comme problème de satisfaction de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) | BETA | Oui |
-| 6 | [Z3 (C# / .NET) — Tactiques, théories BitVec et Array](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb) | BETA | Oui |
-| 7 | [Z3-Python 03 — Tactiques et théories](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb) | BETA | Oui |
-| 8 | [Z3 (C# / .NET) — Théorie des chaînes et expressions…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb) | BETA | Oui |
-| 9 | [Z3-Python 04 — Chaînes de caractères et expressions…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) | BETA | Oui |
-| 10 | [Z3 (C# / .NET) — Quantificateurs et preuves par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | BETA | Oui |
-| 11 | [Z3-Python 05 — Quantificateurs et preuves formelles](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) | BETA | Oui |
-| 12 | [Z3-Python 06 -- Optimisation avancee (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | BETA | Oui |
-| 13 | [Z3-Python 06 — Optimisation avancee](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) | BETA | Oui |
-| 14 | [Z3-Python-08 : Ordonnancement de tâches (Job-Shop…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | BETA | Oui |
-| 15 | [Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | BETA | Oui |
-| 16 | [10. Cryptarithmes (SEND + MORE = MONEY)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | BETA | Oui |
-| 17 | [11 - Coloration de Graphe avec Z3](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-11-Graph-Coloring.ipynb) | BETA | Oui |
-| 18 | [12. Arithmetique reelle : raisonner sur les…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-12-Real-Arithmetic.ipynb) | BETA | Oui |
+| 1 | [Z3 (C# / .NET) — Introduction au solveur SMT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | BETA | Oui |
+| 2 | [Z3-Python 01 — Introduction a la resolution de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) | BETA | Oui |
+| 3 | [Z3-Python 01b — Du style declaratif LINQ au solveur Z3…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb) | BETA | Oui |
+| 4 | [Z3 (C# / .NET) — Sudoku par contraintes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb) | BETA | Oui |
+| 5 | [Z3-Python 02 — Sudoku comme problème de satisfaction de…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb) | BETA | Oui |
+| 6 | [Z3 (C# / .NET) — Tactiques, théories BitVec et Array](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb) | BETA | Oui |
+| 7 | [Z3-Python 03 — Tactiques et théories](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb) | BETA | Oui |
+| 8 | [Z3 (C# / .NET) — Théorie des chaînes et expressions…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb) | BETA | Oui |
+| 9 | [Z3-Python 04 — Chaînes de caractères et expressions…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb) | BETA | Oui |
+| 10 | [Z3 (C# / .NET) — Quantificateurs et preuves par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb) | BETA | Oui |
+| 11 | [Z3-Python 05 — Quantificateurs et preuves formelles](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) | BETA | Oui |
+| 12 | [Z3-Python 06 -- Optimisation avancee (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb) | BETA | Oui |
+| 13 | [Z3-Python 06 — Optimisation avancee](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) | BETA | Oui |
+| 14 | [Z3-Python-08 : Ordonnancement de tâches (Job-Shop…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) | BETA | Oui |
+| 15 | [Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb) | BETA | Oui |
+| 16 | [10. Cryptarithmes (SEND + MORE = MONEY)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb) | BETA | Oui |
+| 17 | [11 - Coloration de Graphe avec Z3](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb) | BETA | Oui |
+| 18 | [12. Arithmetique reelle : raisonner sur les…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb) | BETA | Oui |
 | 19 | [13. UNSAT cores : expliquer l'insatisfiabilite (le '…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | BETA | Oui |
-| 20 | [14. Bit-vectors : verifier le debordement arithmetique](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-14-BitVectors-Overflow.ipynb) | BETA | Oui |
-| 21 | [15. Tableaux imbriqués et grilles 2D : carrés latins,…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-15-Nested-Arrays-2D.ipynb) | BETA | Oui |
-| 22 | [16. Meal-Planner déclaratif : du modèle Z3 au plan…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | BETA | Oui |
-| 23 | [Z3-Python-16b — Meal-Planner : couche de données…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb) | BETA | Oui |
-| 24 | [Z3-Python-16c — Meal-Planner : capstone patient…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) | BETA | Oui |
-| 25 | [Z3-Python-16d — Convergence à l'échelle : l'encodage…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | BETA | Oui |
-| 26 | [Z3-Python-16e — Meal-Planner : l'optimisation (du SAT à…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb) | BETA | Oui |
+| 20 | [14. Bit-vectors : verifier le debordement arithmetique](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) | BETA | Oui |
+| 21 | [15. Tableaux imbriqués et grilles 2D : carrés latins,…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb) | BETA | Oui |
+| 22 | [16. Meal-Planner déclaratif : du modèle Z3 au plan…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | BETA | Oui |
+| 23 | [Z3-Python-16b — Meal-Planner : couche de données…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) | BETA | Oui |
+| 24 | [Z3-Python-16c — Meal-Planner : capstone patient…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | BETA | Oui |
+| 25 | [Z3-Python-16d — Convergence à l'échelle : l'encodage…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | BETA | Oui |
+| 26 | [Z3-Python-16e — Meal-Planner : l'optimisation (du SAT à…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | BETA | Oui |
 | 27 | [Z3-Python 17 — Théorie des tableaux : Select, Store et…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | BETA | Oui |
-| 28 | [Z3-Python 18 — Sudoku 4x4 : comparaison des modes Array…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-18-Sudoku-Modes.ipynb) | BETA | Oui |
+| 28 | [Z3-Python 18 — Sudoku 4x4 : comparaison des modes Array…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | BETA | Oui |
 | 29 | [LINQ to Z3 - Résolution de Contraintes Déclarative](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | BETA | Oui |
 | 30 | [Sudoku : Théorème Explicite vs Modèle Implicite par…](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | BETA | Oui |
 | 31 | [Sudoku 4x4 : comparaison des modes Array et Constants](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | BETA | Oui |
@@ -299,16 +299,16 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Configuration et Installation TweetyProject](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1-Setup.ipynb) | BETA | Oui |
+| 1 | [Configuration et Installation TweetyProject](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb) | BETA | Oui |
 | 2 | [Tweety-10 — Markov Logic Networks (MLN) en .NET (C# /…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb) | BETA | Oui |
 | 3 | [Tweety-10 — Markov Logic Networks (MLN)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb) | BETA | Oui |
 | 4 | [Tweety-11 — Inférence causale & do-calculus (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb) | BETA | Oui |
 | 5 | [Tweety-11 — Raisonnement Causal : du do-calculus aux…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | BETA | Oui |
 | 6 | [Argumentation Abstraite : Grounded Extension - Pont…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject.ipynb) | BETA | Oui |
-| 7 | [Tweety C# / IKVM - Logiques de Base (Port .NET du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb) | BETA | Oui |
-| 8 | [Logiques de Base - Propositionnelle et Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb) | BETA | Oui |
-| 9 | [Tweety C# / IKVM - Sémantique propositionnelle : mondes…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2b-Semantics-Csharp.ipynb) | BETA | Oui |
-| 10 | [Tweety-2c — Logique du premier ordre en C#/.NET (port…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2c-FOL-Csharp.ipynb) | BETA | Oui |
+| 7 | [Tweety C# / IKVM - Logiques de Base (Port .NET du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-CSharp.ipynb) | BETA | Oui |
+| 8 | [Logiques de Base - Propositionnelle et Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) | BETA | Oui |
+| 9 | [Tweety C# / IKVM - Sémantique propositionnelle : mondes…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02b-Semantics-CSharp.ipynb) | BETA | Oui |
+| 10 | [Tweety-2c — Logique du premier ordre en C#/.NET (port…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) | BETA | Oui |
 | 11 | [Tweety-3 — Description Logics en C#/.NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) | BETA | Oui |
 | 12 | [Logiques Avancees - DL, Modale, QBF, Conditional](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb) | BETA | Oui |
 | 13 | [Tweety-3 — Conditional Logics en C#/.NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb) | BETA | Oui |
@@ -322,14 +322,14 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 21 | [Argumentation Abstraite (Dung)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | BETA | Oui |
 | 22 | [Tweety-5b — Théorie de l'argumentation de Dung…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb) | BETA | Non |
 | 23 | [Tweety-5d — Synthèse certifiée d'extensions stables :…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | BETA | Non |
-| 24 | [Tweety-6 — Argumentation structuree (twin C# / .NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb) | BETA | Oui |
-| 25 | [Argumentation Structuree](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb) | BETA | Oui |
-| 26 | [Tweety-7a : Frameworks d'Argumentation Etendus (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb) | BETA | Oui |
-| 27 | [Frameworks d'Argumentation Étendus](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb) | BETA | Oui |
-| 28 | [Tweety-7b - Ranking Probabilistic Conditional Logic en…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | BETA | Oui |
-| 29 | [Sémantiques de Classement et Argumentation Probabiliste](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | BETA | Oui |
-| 30 | [Dialogues Multi-Agents Argumentatifs (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb) | BETA | Oui |
-| 31 | [Dialogues Multi-Agents Argumentatifs](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb) | BETA | Oui |
-| 32 | [Préférences et Théorie du Vote en C# / .NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb) | ALPHA | Oui |
-| 33 | [Préférences et Théorie du Vote](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb) | ALPHA | Oui |
+| 24 | [Tweety-6 — Argumentation structuree (twin C# / .NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb) | BETA | Oui |
+| 25 | [Argumentation Structuree](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | BETA | Oui |
+| 26 | [Tweety-7a : Frameworks d'Argumentation Etendus (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-CSharp.ipynb) | BETA | Oui |
+| 27 | [Frameworks d'Argumentation Étendus](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | BETA | Oui |
+| 28 | [Tweety-7b - Ranking Probabilistic Conditional Logic en…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-CSharp.ipynb) | BETA | Oui |
+| 29 | [Sémantiques de Classement et Argumentation Probabiliste](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | BETA | Oui |
+| 30 | [Dialogues Multi-Agents Argumentatifs (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb) | BETA | Oui |
+| 31 | [Dialogues Multi-Agents Argumentatifs](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb) | BETA | Oui |
+| 32 | [Préférences et Théorie du Vote en C# / .NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-CSharp.ipynb) | ALPHA | Oui |
+| 33 | [Préférences et Théorie du Vote](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb) | ALPHA | Oui |
 | 34 | [Tweety .NET - Probe Phase 1 axe 2 : initialisation du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes/Tweety-IKVM-Init-Probe.ipynb) | BETA | Oui |
