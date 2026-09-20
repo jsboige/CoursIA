@@ -100,9 +100,16 @@ theorem degree_le_card {α : Type*} [DecidableEq α] (F : Finset (Finset α)) (x
 such that every family of subsets of `Fin n` of degree at most `k` admits a
 `±1` coloring with discrepancy at most `C * √k`.
 
-This is the central open conjecture of the field. Bansal–Jiang (2025)
-resolve it in the large-degree regime `k ≥ (log n)²` — see
-`Discrepancy.BansalJiangLargeDegree`. -/
+Long the central open conjecture of the field. Bansal–Jiang (2025) resolve it
+in the large-degree regime `k ≥ (log n)²` — see
+`Discrepancy.BansalJiangLargeDegree`. In 2026, the preprint arXiv:2609.11189
+(Guo–Fang–Lu, 10/09/2026) announces a resolution: universal bound
+`3√(2πt)`, i.e. the `√t` dependence predicted by the conjecture.
+
+That preprint is **not yet peer-reviewed** and its proof is existential (no
+implementation claimed). The statement above therefore remains a named `Prop`:
+no formal proof is engaged here. Beware of citing the bound `√(32π)` — it
+circulates, but it is not the paper's, `3√(2π) ≈ 7.52`. -/
 def BeckFialaConjecture : Prop :=
   ∃ C : ℕ, ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ discrepancy F c ≤ C * Nat.sqrt k
@@ -113,8 +120,10 @@ at most `2k - 1`.
 
 This is the "nut" targeted by tier P1 of issue #12823: proof by *floating
 variables* and partial coloring, split into bricks `b1`–`b4` (see
-`FORMAL_STATUS.md`). Until the proof is assembled, the statement lives as a
-named `Prop`; brick `b4` will convert it into a `theorem`. -/
+`FORMAL_STATUS.md`). **PROVED**: the `b4` assembly shipped in #13427 —
+`theorem beck_fiala_classic : BeckFialaClassic` in
+`Discrepancy/BeckFiala.lean`. The target remains a named `Prop` by the
+lake's convention (statements as `Prop`, proofs as separate theorems). -/
 def BeckFialaClassic : Prop :=
   ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k) (_hk1 : 1 ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ (discrepancy F c : ℤ) ≤ 2 * (k : ℤ) - 1

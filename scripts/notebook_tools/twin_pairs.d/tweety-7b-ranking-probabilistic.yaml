@@ -1,7 +1,7 @@
 - name: "Tweety-7b Ranking-Probabilistic"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (semantiques de rangement ranking + probabilistes + division) : C# branche IKVM 8.14.0 + tweety-rpcl.dll (tracked) + 23 refs `org.tweetyproject.*` actifs (3 cellules avec using explicite, classes Dung Division, RankingSemantics Java invoquees). Python branche JPype + `from org.tweetyproject.arg.dung.divisions import Division` + meme moteur Java. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : 23 refs = la plus grosse utilisation TweetyProject parmi les paires Tweety du registre (audited individu M-XX), les deux cotes operent sur les memes semantiques ranking (Categorizer-based, Burden-based) avec les memes theorems de comparaison."

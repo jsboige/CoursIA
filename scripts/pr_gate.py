@@ -161,6 +161,7 @@ import re
 import subprocess
 import sys
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
@@ -1427,9 +1428,14 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
     if message.startswith("DWELL"):
         lines += [
             "",
-            "Plancher mecanique -- rien a reparer dans la PR. Ne pas "
-            "re-pusher (un re-push remet le plancher a zero depuis la "
-            "nouvelle tete) ; le balayage horaire leve seul.",
+            "Plancher mecanique -- rien a reparer dans la PR, et rien "
+            "a attendre : enchainer un autre grain, c'est la candidate "
+            "qui attend, pas la lane. Ne pas re-pusher (un re-push "
+            "remet le plancher a zero depuis la nouvelle tete). Une "
+            "fois le plancher ecoule, rejouer cette jambe "
+            "(`gh run rerun <run_id> --job <job_id>`) ou laisser le "
+            "balayage la reprendre -- sa cadence mesuree est de 2 h 33 "
+            "a 5 h 18, pas horaire (#15197).",
         ]
     if advisory:
         lines += ["", "Advisory (not blocking):"]
@@ -1577,7 +1583,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             "merge (mandat user 2026-09-07 : 120). 0 = desactive. Evalue "
             "APRES que les constituants ont conclu verts, hors de la boucle "
             "d'attente : aucun runner n'est tenu a dormir. Le rouge se leve "
-            "seul au balayage horaire de pr-gate-stale-sweep.yml. Voir "
+            "seul au balayage periodique de pr-gate-stale-sweep.yml "
+            "(cadence mesuree 2 h 33 - 5 h 18, pas horaire -- #15197), "
+            "ou en rejouant la jambe. Une lane n'attend jamais ce "
+            "balayage : elle enchaine un autre grain (#15726). Voir "
             "scripts/ci/merge_dwell.py."
         ),
     )
@@ -1666,7 +1675,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     # Le plancher n'entre PAS dans la boucle d'attente. `wait_and_decide`
     # tient un slot de runner tant qu'il poll ; l'y faire dormir 120 min
     # tiendrait ce slot 120 min par PR. Le rouge rendu ici est rejoue par
-    # pr-gate-stale-sweep.yml (cron horaire) des que le plancher est ecoule.
+    # pr-gate-stale-sweep.yml des que le plancher est ecoule -- a une
+    # cadence mesuree de 2 h 33 a 5 h 18, pas horaire malgre son cron
+    # (#15197) : la lane rejoue la jambe elle-meme si elle veut merger.
     if code == 0 and args.dwell_min > 0:
         if _merge_dwell is None:
             # Rule 1 ne s'applique pas a une capacite absente : le module
@@ -1805,5 +1816,92 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     )
 
 
+def _crash_fallback_publish(exc: BaseException) -> None:
+    """(#15825) A crashed gate still owes its check-run a non-empty title.
+
+    Measured 2026-09-12: 9 of 43 `PR gate` failures in the open population
+    render ``output.title = null`` -- an organ that goes red without a
+    motive. The emission tail publishes the verdict, but an unhandled
+    exception anywhere under it used to bypass publication entirely: the
+    auto check-run concluded ``failure`` carrying nothing. This fallback
+    PATCHes the crash motive from environment-derived parameters (main()
+    may have died before parsing anything), and never raises: a publication
+    failure must not mask the original crash.
+
+    ``run_attempt`` is propagated for the same reason the normal path passes
+    it: a re-run leaves the superseded attempts' jobs in the same run, and
+    without the filter the selector resolves the crash motive onto the
+    SUPERSEDED check-run -- leaving the current attempt carrying
+    ``output.title = null``, the very defect #15825 removes.
+    """
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    if not repo or not run_id:
+        return
+    try:
+        publish_check_run_output(
+            repo, run_id, DEFAULT_SELF_NAME, 1,
+            f"FAIL -- pr_gate internal error: {type(exc).__name__}: {exc}",
+            run_attempt=os.environ.get("GITHUB_RUN_ATTEMPT"),
+        )
+    except Exception as pub_exc:
+        print(
+            f"[pr-gate] WARN -- crash fallback not published: {pub_exc!r}",
+            flush=True,
+        )
+
+
+def _entry(argv: "Iterable[str] | None" = None) -> int:
+    """Mute-failure guard (#15825 criterion 1).
+
+    Any conclusion that is not ``success`` must carry a non-empty
+    ``output.title`` -- including the crash path. main()'s GateError paths
+    already fall through to the single emission tail; this wrapper closes
+    the remaining holes: a non-GateError exception, and argparse's
+    ``SystemExit`` (code 2, raised before anything is parsed). The guard
+    therefore no longer depends on the CLI site passing literals to
+    ``type=`` arguments forever -- a ``--flag ${{ inputs.x }}`` added six
+    months from now fails loudly WITH a title instead of reopening #15825
+    in silence. Exit code 0 (``--help``) propagates untouched; any other
+    exit code publishes the fallback and returns the same code. Verdict
+    semantics unchanged: an unreadable state is a failure, never a pass
+    (rule 1).
+    """
+    try:
+        return main(argv)
+    except SystemExit as exc:
+        # SystemExit derives from BaseException, not Exception: the handler
+        # below never sees argparse's exit. argparse prints its own usage
+        # diagnostic to stderr, so no traceback duplication here.
+        code = (
+            exc.code if isinstance(exc.code, int)
+            else (0 if exc.code is None else 1)
+        )
+        if code == 0:
+            raise
+        _crash_fallback_publish(exc)
+        print(f"[pr-gate] FAIL -- exit {code} before verdict: {exc!r}", flush=True)
+        print(
+            f"::error::[pr-gate] premature exit {code}: "
+            f"{_workflow_command_escape(repr(exc))}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return code
+    except Exception as exc:
+        # `repr(exc)` alone loses the causal frame -- the check-run title has
+        # to stay one line, but the log is where the crash is diagnosable.
+        traceback.print_exc()
+        _crash_fallback_publish(exc)
+        print(f"[pr-gate] FAIL -- internal error: {exc!r}", flush=True)
+        print(
+            f"::error::[pr-gate] internal error: "
+            f"{_workflow_command_escape(repr(exc))}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return 1
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_entry())

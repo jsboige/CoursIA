@@ -85,4 +85,4 @@ visuellement** (revue anti-fuite) avant de la commiter.
 
 ---
 
-*Capture — Tour de la plateforme (Epic #4433, sous #4427). FR-first. 0 secret commité.*
+*Capture — Tour de la plateforme (Epic #4433, fermée — parcours livré ; parent #4427). FR-first. 0 secret commité.*

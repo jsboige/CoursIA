@@ -1,9 +1,9 @@
 # mimo_lean — Détection MIMO par descente à flips (Lean 4)
 
 Port formel de l'algorithme de détection MIMO par flips de coordonnées
-(Papailiopoulos, 2026 — issue #10984). Le lake naît directement sur
-`v4.32.1` (Mathlib résolu à `520045ab14e26149ee970e2e617ca04b09bde5d6`,
-fin de la migration #10986) et suit la convention i18n #4980
+(Papailiopoulos, 2026 — issue #10984). Le lake cible désormais
+`v4.33.0` (Mathlib résolu à `db584cd6d46c92f209a44c0f1c829460d327499d`,
+rollout #14773) et suit la convention i18n #4980
 (docstrings FR par défaut, sibling `_en` avec namespace `Mimo_en`).
 
 ## Phases et libs compilées
@@ -40,12 +40,18 @@ autres lakes du dépôt).
 
 | Lake           | Source                                                                  | Pin                                       | Consommé par                       |
 |----------------|-------------------------------------------------------------------------|-------------------------------------------|------------------------------------|
-| **mathlib4**   | github.com/leanprover-community/mathlib4.git                            | `v4.32.1` (résolu `520045ab…`)            | Objective, Lmmse, Converse, Bridge, NormTails |
-| **slt**        | github.com/YuanheZ/lean-stat-learning-theory.git (Apache 2.0)           | `d0f506f0a695018265dccb33bcb05e2f5ca1c876` | Converse (Hanson–Wright), NormTails (Lipschitz) |
+| **mathlib4**   | github.com/leanprover-community/mathlib4.git                            | `v4.33.0` (résolu `db584cd6…`)            | Objective, Lmmse, Converse, Bridge, NormTails |
+| **slt**        | github.com/jsboige/lean-stat-learning-theory.git (fork Apache 2.0)       | `0b1020a4771037b89d0b3809913608d177c09a14` | Converse (Hanson–Wright), NormTails (Lipschitz) |
 
 Le pin SLT est **identique** à `lake-manifest.json` — la `require` ne dérive
-pas. Aucune mise à jour de SLT n'est prévue sans revue dédiée (sécurité de
-la frontière formelle).
+pas. Il ajoute à la base upstream `d0f506f0a695018265dccb33bcb05e2f5ca1c876`
+une seule adaptation : la preuve explicite de non-négativité du cas de rayon
+nul dans `SLT.HansonWright`, nécessaire sous Lean 4.33. Le lake SLT cible encore
+Lean/Mathlib 4.32 ; dans `lakefile.lean`, Mathlib est donc déclaré en dernier afin
+que Lake 5 sélectionne sa fermeture transitive 4.33 (Batteries, Qq, Cli, etc.)
+plutôt que celle héritée de SLT. Cet ordre est une contrainte de résolution
+documentée, pas un tri cosmétique. Toute autre mise à jour de SLT demande une
+revue dédiée (sécurité de la frontière formelle).
 
 ## Inventaire détaillé des phases
 
@@ -148,13 +154,13 @@ combinent ces queues par union bound sur les `N` colonnes du canal.
 
 ## Companion canonique
 
-Le compagnon natif est **[Lean-22b-MIMO-Converse-Native.ipynb](../Lean-22b-MIMO-Converse-Native.ipynb)**
+Le compagnon natif est **[Lean-21b-MIMO-Converse-Native.ipynb](../Lean-21b-MIMO-Converse-Native.ipynb)**
 (kernel `lean4-wsl`) — il visite les 35 déclarations de `NormTails` /
 `Converse` / `Bridge`, chacune interrogée par `#check` et sondée par
 `#print axioms` sur les théorèmes clés. Trois axiomes standards, zéro
 `sorry`, zéro axiome non standard.
 
-Lean-22b **distingue** le prouvé localement (les énoncés de ce lake) de
+Lean-21b **distingue** le prouvé localement (les énoncés de ce lake) de
 l'emprunté (les deux théorèmes SLT rappelés explicitement) — la lecture
 est self-contained, sans confusion de frontière.
 

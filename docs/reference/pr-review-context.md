@@ -134,3 +134,35 @@ Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry
 **Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook a été mergé en attribuant à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
 
 > **Cette attribution est corrigée depuis** — `e1ad7868a` (PR #11065, Epic #11044) : Lean-19 et Lean-20 portent désormais « preuve L. Mazur, digestion T. Tao ». Le récit ci-dessus reste le fondement de la règle — le merge fautif a bien eu lieu — mais l'état du dépôt n'est plus celui-là, et ce fichier est chargé par chaque agent à chaque session : y laisser un présent périmé, dans la règle même qui exige de vérifier ses affirmations, apprend l'inverse de ce qu'elle demande. **La classe de défaut, elle, reste vivante** (#11110 Lidman, #11127 Gill) : une citation se vérifie contre la source, et *après* avoir établi qu'une référence est fausse, il reste à lire **qui a signé** la vraie avant de conclure sur l'attribution — « l'article n'existe pas » et « l'attribution est fausse » sont deux propositions distinctes.
+
+## Levée B.0 — les instances qui fondent « un AUTEUR et une HEURE » (récits déportés de CLAUDE.md, 2026-09-13)
+
+`CLAUDE.md` §B.0 pose la prescription — *une levée porte un auteur et une heure ; sans les deux, ce n'est pas une levée* — et renvoie ici pour les faits qui l'ont fait écrire. Les deux instances ne se recouvrent pas : la première est un défaut d'**auteur**, la seconde un défaut d'**heure**.
+
+### Qui lève — #12798 : la réserve d'un tiers éteinte par l'auteur de la PR
+
+Une review `[Hermes] COMMENT_WITH_CONCERNS` a été portée comme levée par une **phrase de l'auteur de la PR lui-même**. Se lever soi-même une réserve posée par un tiers n'est pas y répondre : c'est la **déclarer** répondue — et `reviews[].state` ne distingue pas les deux cas.
+
+Ce que la réserve visait était réel : le livrable committé était un **stub rendant `Cle presente False`**, sous un body annonçant `SOTA-OK`. La phrase de levée n'a rien corrigé ni argumenté ; elle a seulement fermé le canal par lequel le défaut se voyait. D'où la clause : **l'auteur d'une PR ne lève pas la réserve d'un tiers**, quelle que soit la qualité de sa réponse. Ce qui la lève est le tiers lui-même, un thread inline résolu, ou une issue de suivi nommée avant le merge.
+
+### Quand lève — #12347 : la levée postée 32 s APRÈS le merge
+
+Chronologie mesurée, sur une seule journée :
+
+| Heure (UTC) | Événement |
+|---|---|
+| 17:03:20Z | `CHANGES_REQUESTED` posée |
+| 21:23:56Z | `gh pr merge` — la réserve est encore vivante |
+| **21:24:28Z** | levée postée — **32 s après le merge**, et annotée comme telle par son auteur |
+
+Aucune ignorance n'est en cause : l'auteur de la levée savait qu'il écrivait après le merge, et l'a écrit. Rien ne contraignait l'ordre — c'est précisément ce que la règle contraint désormais. **Un commentaire de merge est un compte-rendu, jamais une porte** : ce qui lève doit exister *avant* `gh pr merge`, sans quoi la levée documente le merge au lieu de l'autoriser.
+
+### Ce qu'un commit ne lève pas — #10761, le rebase muet
+
+Sur #10761 (récit complet ci-dessus), le « traitement » des deux nits du 2026-08-13T11:07 fut un **rebase à 19:41** qui n'adressait ni l'un ni l'autre. Un push muet est **indiscernable d'un push qui répond** : le diff ne dit pas quelle remarque il prétend traiter, et le compteur de commits postérieurs à une review ne mesure donc rien. Ce qui lève une remarque est **une phrase**, pas un SHA.
+
+### Où lève — #16780 : le waiver par pointeur vers un fichier local
+
+Sur #16670, un commentaire fut posté dont le **corps entier** était `@C:\Users\jsboi\AppData\Local\Temp/a16670.md` — la trace visible de `gh ... --body "@$TEMP/a16670.md"` là où `--body-file` était voulu (`gh` n'expande pas `@file`, il poste la chaîne littérale). Le harnais de merge lut ce corps comme un **waiver DWELL L3** et nourrit une escalade de merge avec. Mais le fichier visé vit sur **une machine tierce** : aucun lecteur de la PR — ni ai-01, ni un bot, ni un contributeur — ne peut l'ouvrir. Le signal ne porte aucun contenu vérifiable ; tout son sens tient dans le *nom du fichier*. **Une autorisation que personne ne peut relire est une autorisation fabriquée.**
+
+La convention est tranchée par écrit (#16780) : **un waiver par pointeur est interdit**. Si un waiver compte pour un merge, sa **substance** est sur la PR — une phrase qui dit ce qui est levé et pourquoi. Le scratchpad garde le détail, la PR porte la décision. Le garde `scripts/check_local_path_waivers.py` (check advisory câblé dans `local-path-waiver-guard.yml`) rougit sur tout commentaire dont le corps est un chemin seul ou contient un segment de profil Windows `[A-Za-z]:[\/]Users[\/]` — contrôle positif : le corps #16670 exact, rejoué en test unitaire (le commentaire original a été supprimé par le user).

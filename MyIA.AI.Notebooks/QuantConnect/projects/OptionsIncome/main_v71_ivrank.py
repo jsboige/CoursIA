@@ -29,11 +29,14 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
          clusterise, cette variante reprend ses bornes). Strike availability
          non implémenté — voir body PR.
 
-    SOTA verdict : RECOVERABLE-MACHINE — le moteur réel est QuantConnect Cloud,
-    joignable via le MCP, voie canonique de cette famille (cf
-    .claude/rules/sota-not-workaround.md, entrée « QC -> QC-Cloud »). L'artefact
-    n'a pas encore été compilé ni backtesté : sa sortie réelle (Sharpe/CAGR/
-    MaxDD/PSR + coûts) est l'acceptance #15532, items 4-5, encore ouverte.
+    SOTA verdict : SOTA-OK — le moteur réel est QuantConnect Cloud, joignable via
+    le MCP, voie canonique de cette famille (cf
+    .claude/rules/sota-not-workaround.md, entrée « QC -> QC-Cloud »). L'artefact a
+    été compilé et backtesté sur cette voie, sur la même fenêtre 2015-01-01 ->
+    2024-12-31 que la baseline v7.0 : le couple de résultats est publié dans le
+    corps de la PR #15801 (Sharpe 0.281 -> 0.163, CAGR 5.536 % -> 4.451 %,
+    MaxDD 17.400 % -> 17.900 %, PSR 0.294 % -> 0.069 % ; verdict NO-BEATS,
+    conservé tel quel). La sortie citée est donc la sortie du vrai moteur.
     """
 
     def initialize(self):
@@ -74,18 +77,43 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
         #   k-means k=3 sur IV-rank ATM 30-90 j donne 3 clusters
         #   (low ≈ 0-0.33, medium ≈ 0.33-0.66, high ≈ 0.66-1).
         self.ivrank_window_days = 252
-        self.ivrank_min = 0.0    # on autorise l'écriture dès IV-rank > 0 (low cluster)
         self.ivrank_max = 0.66   # skip si IV-rank ∈ bande haute (bornes article)
         self.ivrank_panic = 0.85 # force-close défensif si IV-rank > panic
 
-        # Fallback VIX si IV-rank warm-up incomplet (premiers <252 j)
+        # Fallback VIX tant que l'IV-rank n'est pas actif. Le seuil d'activation est
+        # 60 échantillons quotidiens (voir _update_ivrank), soit ~3 mois de trading
+        # après le warm-up de 30 j — ce n'est PAS la fenêtre de calcul de 252 j
+        # ci-dessus, qui borne seulement la profondeur de l'historique.
         self.vix_min = 15
         self.vix_max = 35
 
         # Historique IV ATM daily pour IV-rank.
         # On collecte un seul IV représentatif par jour (médiane des IV ATM 30-45 j).
         self.daily_atm_iv = deque(maxlen=self.ivrank_window_days)
-        self.current_ivrank = None  # None tant que warm-up incomplet
+        self.current_ivrank = None  # None tant qu'aucun IV-rank n'a pu être calculé
+
+        # Diagnostic de famine : si la version LEAN cible ne peuple pas
+        # `implied_volatility`, le buffer ne se remplit jamais et le gate VIX de
+        # repli tient tout le run sans le dire (visible seulement au rapport final,
+        # `IV-rank=N/A`). On compte les jours de trading sans échantillon et on
+        # avertit UNE fois, au même seuil que l'activation.
+        self.ivrank_starve_days = 0
+        self.ivrank_starve_warned = False
+        self.ivrank_starve_warn_after = 60
+
+        # Compteur persistant de séances en repli VIX (#16653) : chaque séance
+        # post-warm-up où `current_ivrank` est None incrémente le compteur — le
+        # repli est un ÉTAT mesuré au fil du run et rendu au rapport final
+        # (FallbackVIXSessions), pas seulement un warn volatile. Distinct de
+        # `skipped_no_ivrank` (entrées refusées en repli) : une séance en repli
+        # où le VIX est dans la bande écrit quand même.
+        self.fallback_vix_sessions = 0
+
+        # Fenêtre DTE des IV ATM échantillonnées : paramètre nommé pour la
+        # mesure comparative 30-45 vs 30-90 de #16653 (l'article #18766
+        # échantillonne 30-90 ; 30-45 est le choix canonique de la v7.1).
+        self.atm_dte_min = 30
+        self.atm_dte_max = 45
 
         # Warm-up explicite pour la médiane IV ATM (conséquence du gate IV).
         self.set_warm_up(timedelta(days=30))
@@ -123,17 +151,22 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
         pass
 
     def _update_ivrank(self):
-        """Calcule la médiane IV ATM (30-45 j DTE) et met à jour l'IV-rank."""
+        """Calcule la médiane IV ATM (fenêtre DTE paramétrée) et met à jour l'IV-rank."""
         if self.is_warming_up:
             return
+        if self.current_ivrank is None:
+            # Séance en repli VIX : comptée au passage quotidien, que le gate
+            # écrive ou non (c'est la présence du repli qui est mesurée).
+            self.fallback_vix_sessions += 1
         chain = self.current_slice.option_chains.get(self.option_symbol, None)
         if not chain:
+            self._note_iv_sample_missing()
             return
         underlying_price = self.securities[self.underlying].price
         if underlying_price <= 0:
             return
 
-        # Filtre ATM : strikes autour du spot, DTE 30-45 j
+        # Filtre ATM : strikes autour du spot, DTE dans la fenêtre paramétrée
         atm_ivs = []
         for c in chain:
             if c.right != OptionRight.CALL:
@@ -142,7 +175,7 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
             if iv is None or iv <= 0:
                 continue
             dte = (c.expiry - self.time).days
-            if dte < 30 or dte > 45:
+            if dte < self.atm_dte_min or dte > self.atm_dte_max:
                 continue
             moneyness = abs(c.strike - underlying_price) / underlying_price
             if moneyness > 0.05:  # ±5% ATM
@@ -150,6 +183,7 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
             atm_ivs.append(iv)
 
         if not atm_ivs:
+            self._note_iv_sample_missing()
             return
         atm_ivs.sort()
         n = len(atm_ivs)
@@ -161,9 +195,25 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
             mx = max(self.daily_atm_iv)
             self.current_ivrank = (median_iv - mn) / (mx - mn) if mx > mn else None
 
+    def _note_iv_sample_missing(self):
+        """Avertit une fois si le buffer IV ATM ne se remplit pas (repli VIX muet)."""
+        self.ivrank_starve_days += 1
+        if (not self.ivrank_starve_warned
+                and self.current_ivrank is None
+                and self.ivrank_starve_days >= self.ivrank_starve_warn_after):
+            self.ivrank_starve_warned = True
+            self.log(
+                f"IV-RANK STARVED: aucun echantillon IV ATM depuis "
+                f"{self.ivrank_starve_days} jours de trading — le gate VIX "
+                f"[{self.vix_min}, {self.vix_max}] assure le repli pour tout le "
+                f"run. Verifier que la version LEAN cible peuple "
+                f"`implied_volatility` (price_model Black-Scholes)."
+            )
+
     def _ivrank_gate(self):
         """Retourne True si on peut écrire (gate pass), False sinon."""
-        # Fallback VIX tant que warm-up IV-rank incomplet
+        # Fallback VIX tant qu'aucun IV-rank n'est calculable (buffer < 60
+        # échantillons, ou `implied_volatility` jamais peuplé — cf _note_iv_sample_missing)
         if self.current_ivrank is None:
             vix_price = self.securities[self.vix].price
             if vix_price <= 0:
@@ -329,6 +379,8 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
             f"DefensiveIVCloses={self.defensive_iv_closes}, "
             f"SkippedByIVRank={self.skipped_ivrank}, "
             f"SkippedNoIVRank={self.skipped_no_ivrank}, "
+            f"FallbackVIXSessions={self.fallback_vix_sessions}, "
+            f"DTEWindow={self.atm_dte_min}-{self.atm_dte_max}, "
             f"{ivrank_report}, "
             f"IVSamplesBuffered={len(self.daily_atm_iv)}"
         )

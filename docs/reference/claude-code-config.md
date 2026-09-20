@@ -56,6 +56,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `genai-config` | services, env, scripts, architecture GenAI |
 | `wsl-kernels` | kernels WSL (`GameTheory/**`, `Lean/**`) |
 | `student-pr-reviews` | anti-fuite soutenance, review bienveillante |
+| `public-contribution-triage` | accueil, triage et escalade des issues/PRs publiques |
 | `lean-merge-discipline` | gates de merge propres au Lean |
 | `secrets-hygiene` | content-based, Stop & Repair, canal RooSync privé + quorum (fusion de `secrets-roosync-policy`, #12051) |
 | `audit-reassessment` · `audit-cross-source-distillation` | protocole 4 étapes, sortie = dashboard/issue jamais un fichier |

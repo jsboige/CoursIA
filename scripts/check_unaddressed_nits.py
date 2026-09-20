@@ -108,7 +108,7 @@ BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-r
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
-    "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION",
+    "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
@@ -283,6 +283,21 @@ BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK|HOLD)\]\s+lane\s+\S+")
 #     du coordinateur l'ecrivent — « hold on, je regarde » ne pose rien.
 HOLD_HEAD = re.compile(r"^[\s*_#]*HOLD\b")
 
+# #15920 — la forme ETIQUETEE du HOLD coordinateur : `## [HOLD G-VAR-2] <titre>`
+# (commentaire reel myia-ai-01 du 2026-09-13T03:37:44Z sur #15868). Defaut mesure :
+# cette pose echappait aux TROIS voies existantes — BLOCAGE_LANE exige `] lane`
+# juste apres le crochet fermant, HOLD_HEAD exige HOLD nu (le `[` devant casse
+# l'ancre), et `[HOLD G-VAR-2]` n'est pas dans CONCERN_MARKERS — l'organe rendait
+# rc=0 pendant que le HOLD etait debout. La forme crocheted EST la pose stricte
+# (rejet des backticks herite de l'ancre : `[` n'est pas dans la classe de
+# tete) : la LEVEE reelle du meme HOLD (05:45:22Z, « Levée du HOLD G-VAR-2 »)
+# cite le label SANS crochets et ne matche pas — poser se distingue de nommer
+# par la paire de crochets, comme `[OVERRIDE]` vs « override » (#11639).
+# Le label est non contraint (`G-VAR-2`, mais tout identifiant de gate marche) :
+# ce qui pose le hold, c'est la paire `[HOLD ...]` en tete de corps, pas le
+# vocabulaire du label (mesure #14682 : pas d'elargissement a de la prose).
+HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
+
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 # #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
 # complete `CHANGES_REQUESTED` (nom) : Hermes self-bot est force a state:COMMENTED
@@ -373,6 +388,16 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
+# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
+# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
+# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
+# ne sont PAS des marqueurs de severite et ne le deviendront pas —
+# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
+# introduit un nouveau glyphe de severite doit le proposer ici avec une
+# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
+# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
+# mais le verdict litteral en narration de dissipation avec attribution
+# tell — cf `_MENTION_VERDICT_TELL` (Position K).
 # `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
 # symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
 # ciblent l'ASCII formel et ignorent les glyphes ; la Position J
@@ -1034,6 +1059,49 @@ _MENTION_VERDICT_REPORTED = re.compile(
 )
 
 
+# #15951 — Position K : attribution par reference tell du cluster. Instance
+# fondatrice (PR #15762 c.1102, po-2024:CoursIA-2, 2026-09-12T16:26Z) :
+# « dissipation CHANGES_REQUESTED c.589 leve N-1/N ET cross-base c.1063-L1 »
+# — le commentaire de DISSIPATION lui-meme etait classe BOT-CONCERN. Le
+# verdict nomme est suivi de la reference tell de SA SOURCE (« c.589 »),
+# l'idiome de citation interne du cluster (ledger Tell). L'issue #15951
+# attribuait le defaut au glyphe de nouveaute « ★ » : mesure faite, le
+# glyphe n'est PAS dans SEVERITY_GLYPHS (cf contrat en tete de ce bloc) et
+# le declencheur reel est le litteral CHANGES_REQUESTED en narration de
+# dissipation PASSEE avec attribution de source. Les positions A-H
+# echouaient toutes sur cette forme : la Position C+/D+ exige le verbe de
+# levee IMMEDIATEMENT apres le verdict (la ref tell s'intercale) et ne
+# connait que commit/#N/PR#N/pull/N comme refs pointables (pas c.NNN).
+#
+# Discrimination vs emission formelle :
+# (1) Adjacence IMMEDIATE verdict -> ref tell (`\s+c\.\d+`, forme etendue
+#     `c.NNN-LN`) : une emission ecrit le verdict nu puis son contenu
+#     (« CHANGES_REQUESTED: edge case »), jamais « VERDICT c.NNN » — la
+#     ref tell suit le verdict uniquement pour DESIGNER la source du
+#     verdict rapporte. Meme doctrine que la Position D hors parentheses
+#     (#12944) : une ref pointable designe l'evenement passe rapporte,
+#     une emission ne pointe pas.
+# (2) Verdict case-sensitive `[A-Z][A-Z_]{3,}` (memes bornes que A-H) :
+#     pas de capture d'un mot naturel de la prose dans la fenetre.
+# (3) Garde dure commune (Position E/H) : si la suite de la phrase (200
+#     chars, meme phrase) declare un blocage vivant, la position ne
+#     s'applique PAS — le verdict reste emis.
+#
+# Mesure discriminatoire :
+#   TP (doit matcher, rendre le verdict mort) :
+#     - "dissipation CHANGES_REQUESTED c.589 leve N-1/N" (c.1102 #15762)
+#     - "le REQUEST_CHANGES c.1102 est leve sur head a2bdc9789a42."
+#   FN (ne doit PAS matcher, doit rester BOT-CONCERN) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu, emission)
+#     - "CHANGES_REQUESTED c.589 reste bloquante." (garde dure (3))
+#     - "CHANGES_REQUESTED cycle c.1102" (ref non adjacente — reste vif)
+_MENTION_VERDICT_TELL = re.compile(
+    r"(?<![\w/])(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"\s+c\.\d+(?:-L\d+)?"
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
+)
+
+
 # #14199 (cf grain) — Position I : `avant merge` en position de mention (FP).
 # Le marqueur `avant merge` est dans CONCERN_MARKERS comme signal d'un nit
 # redige a la main, MAIS trois formes mesurees 2026-09-02 le portent en
@@ -1359,27 +1427,47 @@ def _strip_avant_merge_mention(body: str) -> str:
 # (VP #12083) est délibérément EXCLU du set d'énumération. Substitution
 # iso-longueur (1 char -> 1 espace) : les offsets du reste du body sont
 # préservés, comme les autres strips.
+#
+# #16688 — discriminateur (C) DÉTERMINANT : un glyphe précédé immédiatement
+# d'un déterminant ou possessif sur la même ligne est un RÉFÉRENT, pas une
+# émission. Fondateur mesuré : la levée c.5730596602 sur #16617 titrait
+# « ### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé » — le
+# préfixe « ### 1. Le » ne porte ni méta-nom (A) ni séparateur (B), le
+# glyphe restait vivant et l'organe classait la levée elle-même comme
+# réserve neuve (rc=1 auto-infligé, jamais retombable). Structure : « Le 🟡
+# sur X » parle DU glyphe ; une émission Hermes ouvre la ligne ou suit un
+# décor de liste, elle n'est jamais introduite par un article. Ancre en fin
+# de préfixe (`\s+$`), symétrique de (B) : le déterminant doit toucher le
+# glyphe, un déterminant en début de ligne suivi d'autre prose ne neutralise
+# rien. Set borné FR+EN, confronté au corpus des 200 dernières PRs mergées
+# (voir test_16688_* + scan PR body) : 0 émission réelle éteinte.
 _GLYPH_META_NOUN_RE = re.compile(
     r"(?i)\b(?:glyphes?|glyphs?|marqueurs?|markers?|badges?|symboles?|emojis?)\b"
 )
 _GLYPH_ENUM_PRECEDER_RE = re.compile(r"[,+]\s+$")
+_GLYPH_DETERMINER_PRECEDER_RE = re.compile(
+    r"(?i)\b(?:le|la|les|ce|cet|cette|mon|ma|mes|ton|ta|son|sa|ses|un|une|"
+    r"notre|votre|nos|vos|the|this|that|these|those|my|its|his|her|their)\s+$"
+)
 _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 
 
 def _strip_glyphe_mentions(body: str) -> str:
     """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
 
-    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A) ou
-    qui est un item d'énumération `,`/`+` (B) est remplacé par une espace :
-    c'est une mention, pas une émission. Le glyphe en tête de ligne
-    (en-tête de verdict Hermes) reste vivant.
+    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A),
+    qui est un item d'énumération `,`/`+` (B), ou qui est immédiatement
+    précédé d'un déterminant/possessif — un référent, (C) #16688 — est
+    remplacé par une espace : c'est une mention, pas une émission. Le glyphe
+    en tête de ligne (en-tête de verdict Hermes) reste vivant.
     """
     out = list(body)
     for m in _SEVERITY_GLYPH_CLASS_RE.finditer(body):
         line_start = body.rfind("\n", 0, m.start()) + 1
         prefix = body[line_start:m.start()]
         if (_GLYPH_META_NOUN_RE.search(prefix)
-                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)):
+                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)
+                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)):
             out[m.start()] = " "
     return "".join(out)
 
@@ -1404,7 +1492,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     """
     # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
     # negation — leur discrimination par contexte est suffisante).
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED, _MENTION_VERDICT_TELL):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     # Phase 1b : Position I — neutralise `avant [le/la/l'] merge` en position
@@ -1589,6 +1677,32 @@ CITERS = (
     # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
     "per",
     "precedent",
+    # #15837 — NARRATION RETROSPECTIVE FRANCAISE. Le depot est bilingue a
+    # l'ecriture : les listes ci-dessus ne reconnaissaient la narration qu'en
+    # anglais ("previous", "stale", "earlier"), alors que les lanes redigent en
+    # francais. « dissipation CHANGES_REQUESTED c.589 leve » (#15762) bloquait
+    # donc le merge d'un commentaire qui declare l'inverse d'une reserve.
+    #
+    # MESURE (point 1 de l'issue) : 2000 PRs mergees, tous les corps de
+    # commentaire et de review, toutes occurrences de marqueur. Un candidat
+    # n'entre ici que si AUCUNE occurrence neutralisee ne portait de reserve
+    # reelle — l'asymetrie est totale : un mot de trop ici rend une reserve
+    # invisible (#10761), la ou un mot manquant ne coute qu'un tri.
+    #   - "dissipation" : 7/7 narrations (« dissipation CHANGES_REQUESTED
+    #     c.589 leve », « ### dissipation CHANGES_REQUESTED c.1105 »).
+    #
+    # Pourquoi "dissipation" et pas "levee" (mesure pourtant 3/3 narration :
+    # « La reserve est levee avant merge », « demande re-review ... pour
+    # levee CHANGES_REQUESTED »). C'est une question de NATURE GRAMMATICALE,
+    # pas de taux : un NOM ne peut ici que signifier « dissipation DU
+    # verdict » (il est le dernier mot devant lui). Un PARTICIPE, lui, peut
+    # qualifier un AUTRE nom — « les reserves precedentes sont levees. » puis
+    # « CHANGES_REQUESTED: le split manque » sur une reserve NEUVE. Le
+    # controle negatif de #15837 le fait refuser : meme fenetre, meme liste,
+    # et une reserve vivante rendue invisible (#10761). Residu assume : la
+    # narration « reserve levee avant merge » reste flagee (2 occurrences
+    # mesurees) — un faux positif a trier, pas une reserve manquee.
+    "dissipation",
 )
 
 
@@ -1635,6 +1749,11 @@ def _arrow_precedes(normalised: str, index: int) -> bool:
     return normalised[:j].endswith(_ARROW_DERIVATIONS)
 
 
+# #15920 — ligne de heading markdown complete, pour borner la collecte des
+# verdicts d'EMISSION a la position de pose (`## [role — VERDICT] <titre>`).
+_HEADING_LINE_RE = re.compile(r"(?m)^[ \t]{0,3}#{1,6}[^\n]*")
+
+
 def _formal_concern_precedes_lift(body: str) -> bool:
     """Un verdict Hermes formel precede-t-il la narration de sa levee ?
 
@@ -1643,6 +1762,20 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     retracte pas le verdict vivant qui le precede. A l'inverse, « je leve ma
     CHANGES_REQUESTED » est une levee explicite historique : le marqueur nomme
     vient APRES le verbe et doit rester admissible.
+
+    #15920 — defaut mesure sur #15862 (commentaire myia-ai-01 du
+    2026-09-13T02:55:58Z) : le verdict ``## [ai-01 — CHANGES_REQUESTED]`` EMIS
+    en tete, puis en queue « Ma réserve précédente sur cette PR est levée par
+    celle-ci » (levée d'une réserve ANTERIEURE, ecriture B.0 legitime) — la
+    trappe de levée de `classify` lisait le ``est levée`` de la queue et
+    rendait None : la réserve s'éteignait ELLE-MEME, rc=0 sur trois surfaces
+    vertes. La comparaison positionnelle tranche : emission en tete < levée en
+    queue = la levée d'une AUTRE reserve ne retracte pas celle que le corps
+    EMET. BORNE (cf corps de la garde) : ``CHANGES_REQUESTED`` ne compte qu'en
+    heading d'emission — en prose il est l'objet des dissipations #15483 (« Le
+    nit CHANGES_REQUESTED ne concerne plus... »), dont la locution qui suit
+    decide seule. « je lève ma CHANGES_REQUESTED » reste admissible (ordre
+    inverse, lift avant marqueur).
     """
     stripped = _strip_mentioned_verdicts(_strip_quoted(body))
     normalised = _unaccent(stripped)
@@ -1652,6 +1785,33 @@ def _formal_concern_precedes_lift(body: str) -> bool:
                        "NEEDS_CHANGES", "**BLOCKED**", "BLOCKED  PR")
     ]
     concern_positions = [position for position in concern_positions if position >= 0]
+    # #15920 — CHANGES_REQUESTED ne compte qu'en POSITION D'EMISSION : une
+    # ligne de HEADING (`## [ai-01 — CHANGES_REQUESTED] <titre>`, la pose
+    # mesuree du 2026-09-13T02:55:58Z sur #15862). En PROSE, l'occurrence est
+    # l'OBJET d'une dissipation (« Le nit CHANGES_REQUESTED ne concerne plus
+    # le head courant », #15483) : la locution qui suit decide seule, la garde
+    # ne doit pas court-circuter l'instrument dedie. Sur la surface stripee,
+    # un heading NON tague agent-reviewer est deja neutralise par
+    # `_MENTION_VERDICT_HEADING` (mention) — ne survivent en heading que les
+    # emissions, exactement la classe cherchee.
+    cr = _unaccent("CHANGES_REQUESTED")
+    for m in _HEADING_LINE_RE.finditer(normalised):
+        i = m.group(0).find(cr)
+        if i >= 0:
+            concern_positions.append(m.start() + i)
+    # #15920 — la pose ETIQUETEE `[HOLD <label>]` en tete compte comme verdict
+    # formel pour cette comparaison positionnelle : le corps reel du HOLD
+    # #15868 porte l'engagement d'echeance « au plus tard le <date>, je merge
+    # #15868 ou je la ferme » — un LIFT_MARKER vivant que la trappe de levée
+    # de `classify` lisait comme une levée ACQUISE, eteignant le hold pose en
+    # tete. La position tranche : hold pose (t~0) < engagement (t~2000).
+    # Matcher sur la surface `_strip_quoted` (PAS `_strip_mentioned_verdicts`) :
+    # `_MENTION_VERDICT_HEADING` stripe le HOLD d'un heading non tague, et la
+    # pose crocheted est une EMISSION au sens de `_block_emitted` (voie d) —
+    # les offsets restent comparables, le strip est iso-longueur.
+    m_tagged = HOLD_TAGGED_HEAD.match(_unaccent(_strip_quoted(body)))
+    if m_tagged:
+        concern_positions.append(m_tagged.start())
     # #12908 : les occurrences NARRÉES de levée (« après la levée annoncée »)
     # ne sont pas des gestes — la garde compare le verdict vivant aux levées
     # VIVES uniquement.
@@ -1821,14 +1981,41 @@ def _excerpt(body: str) -> str:
     return snippet[:200] + " [...] " + snippet[-200:]
 
 
+# #15989 -- frontiere de PARAGRAPHE de la fenetre de citation. Les sites
+# d'appel passent les 30 caracteres qui precedent l'occurrence, sans borne :
+# un mot de citation place dans le paragraphe PRECEDENT neutralisait une
+# occurrence du paragraphe SUIVANT. Le declencheur mesure est le titre de
+# section nu -- l'idiome des commentaires de lane :
+#
+#     ## stale
+#     <ligne vide>
+#     CHANGES_REQUESTED: le split manque sur le head neuf.
+#
+# Sans borne, la fenetre vaut '## stale\n\n' et eteint ce verdict NEUF
+# (`classify` rend None). Le citer doit deja vivre dans CITERS pour que la
+# classe soit atteignable : c'est le cas de « stale », « previous », « sans »,
+# « aucune » sur main, et #15843 ouvre le meme chemin aux mots francais de
+# narration retrospective (« dissipation »).
+#
+# La borne est le PARAGRAPHE, pas la ligne : un citer pose sur la ligne
+# immediatement precedente, SANS ligne vide, reste une narration d'un meme
+# paragraphe et neutralise toujours (#15989, critere 2).
+_PARAGRAPH_BREAK_RE = re.compile(r"\n[ \t\r]*\n")
+
+
 def _is_cited(window: str) -> bool:
     """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
 
     Le mot doit etre delimite : le caractere qui le precede est non-alphanumerique
     (espace, newline, ponctuation) ou le debut de la fenetre. Sans frontiere,
     « xxxtechno » matcherait « no ».
+
+    #15989 -- la fenetre est bornee a la frontiere de PARAGRAPHE (derniere ligne
+    vide) : un citer du paragraphe precedent ne la franchit plus, donc n'eteint
+    plus le verdict du paragraphe suivant. Rejeu du corpus de #15843 (1936 PRs
+    mergees, 13113 corps, 2420 occurrences) : 0 verdict change.
     """
-    w = window
+    w = _PARAGRAPH_BREAK_RE.split(window)[-1]
     # Fleche immediatement devant le marqueur : derivation conditionnelle
     # (« Si X → CHANGES_REQUESTED », #1247), pas une emission de verdict.
     stripped = w.rstrip()
@@ -2206,20 +2393,61 @@ def _live_lift_positions(normalised: str) -> list[int]:
     cette zone — la levée n'est pas acquise.
     """
     out: list[int] = []
+    # #16103 (défaut n°4, mesure ai-01 sur 39 PRs ouvertes) — trois gardes
+    # manquaient à has_live_lift, de polarité INVERSE des défauts 1-3 : ils
+    # créaient des levées qui n'existent pas (faux déblocage), pas des
+    # blocages fantômes. Symétrie exacte avec `_override_scopes_reserve`,
+    # qui applique déjà ces deux pré-traitements du même fichier :
+    #   (1) les plages citées (bloc ```, « … », backticks, CAPS 'X_X') sont
+    #       neutralisées EN ISO-LONGUEUR — les offsets consommés en aval
+    #       (ordre concern/lift #12908, proximité SHA #13083) restent ceux
+    #       de la chaîne unaccentée, comme pour _unaccent ;
+    #   (2) tout hit EN AVAL d'un match de `_SCOPE_NEGATION_RE` dans sa
+    #       PHRASE (frontières .!?\n, même découpage que
+    #       `_scope_lifted_sentence`) est rejeté : « Je ne déclare pas
+    #       cette réserve levée pour autant » est un REFUS de lever, pas
+    #       une levée — la fenêtre locale 15 chars de `_lift_is_negated`
+    #       (#13622) ne voit pas un « ne … pas » à distance, la phrase
+    #       oui. L'invalidation va du match de négation vers la FIN de la
+    #       phrase uniquement : « Reserve levée il y a longtemps, mais la
+    #       réserve n'est pas levée vraiment » garde sa levée AMONT
+    #       (résiduel #13622 documenté — la négation y porte sur un AUTRE
+    #       état, pas sur le geste d'amont) ;
+    #   (3) un hit COLLÉ à un underscore (avant ou après) est un usage
+    #       technique — `py::test_15837_candidat_refuse_levee_devant_le_
+    #       marqueur` nomme le comportement qu'il vérifie, ce n'est pas
+    #       une émission (le `_` est un caractère de mot, cf #15849 : la
+    #       frontière \b ne coupe pas dessus). L'adhérence à une LETTRE
+    #       n'est PAS rejetée : les formes fléchies françaises vivent de
+    #       matchs préfixes (« Mergé » dans « **Mergée.** », « est levé »
+    #       dans « est levée ») — seul `_` distingue l'identifiant.
+    scanned = _QUOTED_RANGES.sub(
+        lambda q: " " * (q.end() - q.start()), normalised)
+    negation_zones: list[tuple[int, int]] = []
+    for neg in _SCOPE_NEGATION_RE.finditer(scanned):
+        ends = [j for j in (scanned.find(c, neg.end()) for c in ".!?\n")
+                if j != -1]
+        s1 = min(ends) if ends else len(scanned)
+        negation_zones.append((neg.start(), s1))
     for marker in LIFT_MARKERS:
         m = _unaccent(marker)
         bounded = _WORD_BOUNDED_LIFT_RE.get(m.lower())
         if bounded is not None:
-            hits = [(x.start(), x.end()) for x in bounded.finditer(normalised)]
+            hits = [(x.start(), x.end()) for x in bounded.finditer(scanned)]
         else:
             hits = []
             start = 0
-            while (i := normalised.find(m, start)) != -1:
+            while (i := scanned.find(m, start)) != -1:
                 hits.append((i, i + len(m)))
                 start = i + 1
         for i, i_end in hits:
-            window_before = normalised[max(0, i - 30):i]
-            window_after = normalised[i_end:i_end + 15]
+            # Garde (3) — collé à un underscore : usage technique
+            # (identifiant snake_case), pas une émission.
+            if (i > 0 and scanned[i - 1] == "_") \
+                    or (i_end < len(scanned) and scanned[i_end] == "_"):
+                continue
+            window_before = scanned[max(0, i - 30):i]
+            window_after = scanned[i_end:i_end + 15]
             # #15483 — fenetre etendue pour la garde de PENDING dissipation :
             # les constructions « reste à dissiper », « il faut dissiper »,
             # « sera dissipé », « doit être dissipé » peuvent avoir leurs
@@ -2227,8 +2455,8 @@ def _live_lift_positions(normalised: str) -> list[int]:
             # La fenetre `_live_lift_positions` reste à 30/15 par defaut (les
             # autres families de markers n'en profitent pas) ; on elargit
             # localement juste pour la garde `_dissipation_is_pending`.
-            window_before_25 = normalised[max(0, i - 25):i]
-            window_after_10 = normalised[i_end:i_end + 10]
+            window_before_25 = scanned[max(0, i - 25):i]
+            window_after_10 = scanned[i_end:i_end + 10]
             dissip_is_pending = m.startswith("dissip") and _dissipation_is_pending(
                 window_before_25, window_after_10, m
             )
@@ -2269,9 +2497,10 @@ def _live_lift_positions(normalised: str) -> list[int]:
             if dissip_is_pending:
                 continue
             if not _lift_is_narrated(window_before) \
-                    and not _arrow_precedes(normalised, i) \
+                    and not _arrow_precedes(scanned, i) \
                     and not _lift_is_negated(window_before, window_after) \
-                    and not intensified_marker:
+                    and not intensified_marker \
+                    and not any(z0 <= i < z1 for z0, z1 in negation_zones):
                 out.append(i)
     # #15483 — post-filtrage MIXTE. Si le body contient AU MOINS UN hit
     # dissipation en construction PENDING (infinitif/futur), TOUS les
@@ -2280,7 +2509,9 @@ def _live_lift_positions(normalised: str) -> list[int]:
     # sont dissipés, 1 point reste à dissiper » — AVANT cette garde, les
     # 2 hits `dissipés` PASS=LEVE, le `reste à dissiper` ignore → la
     # review complete classee `None` alors qu'un point VIVAIT.
-    out = _invalidate_dissipation_in_pending_zone(normalised, out)
+    # #16103 — le post-filtrage tourne sur `scanned` : iso-longueur avec
+    # `normalised`, les positions de `out` restent dans son repère.
+    out = _invalidate_dissipation_in_pending_zone(scanned, out)
     return out
 
 
@@ -2410,6 +2641,33 @@ _WORD_BOUNDED_MARKERS = {
     "no lgtm": re.compile(r"\bno\s+lgtm\b(?!\s+(?:needed|necessary|required))"),
 }
 
+# #15651 -- les marqueurs TEMPORELS (« avant merge » & co.) ne vivent que
+# POSES, pas en apposition d'une levee. Fondateur : « Le commentaire
+# precedent enregistrait une reserve ; voici sa levee, avant merge et
+# nommee. » — la phrase qui LEVE est comtee comme nouvelle reserve parce
+# qu'elle CONTIENT la chaine, et le gate ne peut alors jamais atteindre
+# rc=0 : la lane est tentee de reformuler sa levee pour verdir l'organe,
+# exactement la fabrication de vert que B.0 existe pour empecher. Classe
+# #13030 (« pose, pas cite ») transposee a la prose : l'apposition
+# levée + ponctuation est la signature du TIMING de la levee, pas d'une
+# exigence nouvelle.
+#
+# Le lexeme doit porter un PARTICIPE/NOMINAL de levee (leve/levee/levees,
+# lifted/lift) suivi d'une PONCTUATION d'apposition (, : ; -) : la
+# ponctuation est le discriminant. Sans elle, « n'est pas leve avant
+# merge » (negation) et « doit etre leve avant merge » (infinitif =
+# exigence) doivent rester VIVANTS. L'infinitif « lever » est exclu par
+# construction (\b apres le lexeme). Residu assume, sur-bloquant donc sans
+# danger : « le point est leve avant merge » (participe sans virgule)
+# reste vivant.
+_LIFT_TIMING_MARKERS = frozenset({
+    "avant merge", "avant de merger", "before merge",
+})
+_LIFT_TIMING_APPOSITION = re.compile(
+    r"\b(?:leve(?:e|es)?|lift(?:ed|es?)?)\s*[,:;-]\s*$",
+    re.IGNORECASE,
+)
+
 
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     """Marqueur present avec au moins une occurrence NON citee.
@@ -2451,7 +2709,14 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
             continue
         start = 0
         while (i := normalised.find(m, start)) != -1:
-            if not _is_cited(normalised[max(0, i - 30):i]):
+            window = normalised[max(0, i - 30):i]
+            # #15651 : un marqueur temporel en apposition d'une levee
+            # (« sa levee, avant merge et nommee ») est le TIMING de la
+            # levee, pas une reserve posee -- il meurt comme une citation.
+            if not _is_cited(window) and not (
+                m.lower() in _LIFT_TIMING_MARKERS
+                and _LIFT_TIMING_APPOSITION.search(window)
+            ):
                 return True
             start = i + 1
     return False
@@ -2516,6 +2781,67 @@ def _lift_participle_after(head: str, end: int) -> bool:
     return word.lower() in ("leve", "levee", "lifted")
 
 
+# #16005 -- le francais place le mot de LEVEE avant le nom (« Levée du
+# blocage ») ou NARRE le blocage dans un titre (« Chronologie du blocage »).
+# La boucle mot-nu de `_block_emitted` (b) ne regardait qu'APRES l'occurrence
+# (`_lift_participle_after`) : la levée canonique elle-même, postée par la
+# lane sur sa PR, était lue comme une émission de hold (mesuré sur #15846 --
+# deux réserves BLOCK auto-infligées par les commentaires de diagnostic de la
+# lane, non levables par l'auteur sous #13083). Fenêtre pré-marqueur MIRROIR
+# de celle de `_is_cited` (30 chars) : un mot de levée/narration lié au nom
+# par une courte proposition nominale (« du », « de la », « de mon », « — »)
+# est une MENTION, pas une émission. Les déterminants vides (« BLOCAGE : ne
+# pas merger ») ne matchent pas : le pattern exige le mot de narration
+# lui-même dans les 24 chars qui precedent.
+#
+# #16006 -- la premiere version de cette fenetre etait SENTENCE-AGNOSTIQUE :
+# `[^\n]{0,24}` laissait le trou ENJAMBER une fin de phrase (le mot de
+# narration de la phrase PRECEDENTE neutralisait l'emission de la suivante),
+# et l'echappatoire des deux-points ne couvrait qu'un seul mot de la liste
+# (`suite`). Deux faux NEGATIFS mesures sur l'arbre fusionne, 5 sondes :
+#   « Resume fait. BLOCAGE maintenu »   -> « fait. » appartient a la phrase
+#       precedente ; celle qui suit EMET.
+#   « Historique court. BLOCAGE »       -> idem.
+#   « Etat : BLOCAGE maintenu »         -> le deux-points ANNONCE l'emission
+#       (il ne relie pas le nom a sa narration, contrairement au « du » de
+#       « Chronologie du blocage »).
+#   « Resume : BLOCAGE — run rouge »    -> idem.
+#   « Contexte : BLOCAGE »              -> idem.
+# Le trou exclut donc les bornes de phrase et de clause (`.`, `!`, `?`, `;`,
+# `,`, tiret `—`, trait d'union `-`) ainsi que le deux-points : la fenetre ne
+# peut plus relier le nom a un mot de narration qui appartient a une AUTRE
+# phrase ni a une AUTRE proposition. Les separateurs de clause ont la meme
+# gravite que la fin de phrase sur ce point (mesure ai-01 2026-09-16 :
+# « Resume termine, BLOCAGE maintenu », « Historique court — BLOCAGE
+# maintenu », « Bilan fait, BLOCAGE maintenu » neutralisaient l'emission a
+# tort). La regle des deux-points vaut
+# des lors pour TOUTE la liste -- le `(?!\s*:)` propre a `suite` disparait, il
+# etait le symptome de l'asymetrie, pas le correctif. Le sens de l'erreur est
+# celui du protocole : une emission non reconnue est la dechirure qu'on ferme,
+# une narration sur-bloquee se leve par les formes canoniques.
+_NARRATION_BEFORE_RE = re.compile(
+    r"\b(?:levee?|levement|je\s+leve|lifted?|retrait|annulation"
+    r"|chronologie|historique|etat|resume|recap(?:itulatif)?|bilan"
+    r"|contexte|suite)\b[^\n.!?:;,—-]{0,24}$",
+    re.IGNORECASE,
+)
+
+
+def _narrated_blockage_before(head: str, i: int) -> bool:
+    """La fenêtre qui PRECEDE l'occurrence la narré-t-elle ou ne la LÈVE-t-elle pas ?
+
+    « ## Levée du blocage — en forme canonique » : la levée vient AVANT le
+    nom. « ## Chronologie du blocage » : le nom est complément d'un titre de
+    narration. Dans les deux cas rien n'est posé (mesure #16005 sur #15846).
+
+    #16006 -- la fenêtre ne franchit ni une fin de phrase ni un deux-points
+    ni un séparateur de clause (`,`, `—`, `-`) : « Résumé fait. BLOCAGE »,
+    « État : BLOCAGE » et « Bilan fait, BLOCAGE maintenu » sont des EMISSIONS
+    (le mot de narration est hors de la proposition nominale qui porte le nom).
+    """
+    return bool(_NARRATION_BEFORE_RE.search(head[:i]))
+
+
 def _block_emitted(body: str) -> bool:
     """Le coordinateur POSE-t-il un blocage (verdict, jamais une citation) ?
 
@@ -2574,6 +2900,12 @@ def _block_emitted(body: str) -> bool:
     m_hold = HOLD_HEAD.match(head)
     if m_hold and _hold_head_is_emission(head, m_hold.end()):
         return True
+    # #15920 — voie (d) : la pose ETIQUETEE `## [HOLD G-VAR-2] <titre>`. Les
+    # rejets de `_hold_head_is_emission` s'appliquent tels quels au texte qui
+    # suit le crochet fermant : « [HOLD X] levé » nomme pour clore, ne pose pas.
+    m_tagged = HOLD_TAGGED_HEAD.match(head)
+    if m_tagged and _hold_head_is_emission(head, m_tagged.end()):
+        return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
         while (i := uhead.find(marker, pos)) != -1:
@@ -2583,6 +2915,9 @@ def _block_emitted(body: str) -> bool:
                 pos = i + len(marker)
                 continue
             if _lift_participle_after(head, i + len(marker)):
+                pos = i + len(marker)
+                continue
+            if _narrated_blockage_before(head, i):
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):
@@ -3164,18 +3499,43 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
 # En cas de doute : avertir (A RELIRE), jamais bloquer.
 _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 
+# #16876 : un token hex immediatement qualifie par `host` (trailer Hermes
+# « [Hermes ..., host c92df397a786] ») est un identifiant de SIEGE, pas une
+# empreinte Git. Le garde l'exclut SANS toucher aux SHAs reels cites par une
+# phrase de levee (protection #13639 intacte : seul le qualifie par `host`
+# saute).
+_HOST_QUALIFIED = re.compile(r"\bhost\s*:?\s*$")
+
 
 def _cited_shas(body: str) -> set[str]:
-    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre.
+    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
+    MOINS un chiffre.
 
     Un token 100% numerique de 7+ chiffres (une date 20260830, un run-id)
     est hex-compatible mais n'est quasi jamais un SHA -- l'exiger lettree
     evite de partir resoudre une date cote serveur pour rien.
+
+    #16103 defaut 1 : un token 100% LETTRES de a-f est la meme classe de
+    bruit en francais -- « effacee », « effacees », « deface » satisfont
+    le motif hexa et se font lire comme des empreintes (levee d'ai-01 du
+    2026-09-14T02:45:56Z sur #16022 rendue « cite effacee ... absent des
+    commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
+    improbable ((6/16)^7 ~ 1e-3 au format court) ;
+    l'exiger chiffre supprime la classe entiere.
+
+    #16876 : le token suit immediatement le mot `host` (qualifiant de
+    siege) -> exclu. Sur #16685, le trailer « host c92df397a786 » etait
+    pris pour la preuve citee par la levee alors que la review etait
+    attachee au commit_id exact 31ac6b89 -- l'organe gardait la reserve
+    ouverte sur un SHA de machine inexistant.
     """
     out: set[str] = set()
-    for m in _SHA_CITED.finditer((body or "").lower()):
+    low = (body or "").lower()
+    for m in _SHA_CITED.finditer(low):
         tok = m.group(0)
-        if any(ch in "abcdef" for ch in tok):
+        if (any(ch in "abcdef" for ch in tok)
+                and any(ch.isdigit() for ch in tok)
+                and not _HOST_QUALIFIED.search(low[:m.start()])):
             out.add(tok)
     return out
 
@@ -3248,6 +3608,9 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
     #15556 : le MEME appel porte deja l'arbre du commit (`commit.tree.sha`)
     -- le capter ici evite un second aller-retour par SHA au moment de
     distinguer push muet (arbre identique) et push de contenu.
+    #15973 : il porte AUSSI les blobs par chemin du commit (`files[].sha`)
+    -- la moitie deja-payee de l'identite par chemin qui distingue un rebase
+    preserve d'un rembobinage destructeur.
     """
     oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
     oids.discard("")
@@ -3265,8 +3628,13 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
             continue  # non resoluble -> analyse restera en mode avertissement
         head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
         tree = ((commit.get("commit") or {}).get("tree") or {}).get("sha")
+        files = [
+            (f.get("filename") or "", f.get("sha") or "",
+             f.get("status") or "", f.get("previous_filename") or "")
+            for f in (commit.get("files") or [])
+        ]
         if head or tree:
-            state[sha] = {"message": head or "", "tree": tree}
+            state[sha] = {"message": head or "", "tree": tree, "files": files}
     return state
 
 
@@ -3300,6 +3668,57 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # blobs par chemin -- 3 appels API par SHA contre 1 -- et rouvrirait une
 # surface fail-open sur un organe de merge-gate. Le critere d'arbre suffit
 # au remede demontre (#15492) ; le rebase retombe sur le refus conservateur.
+#
+# #15973 -- le rebase ne retombe PLUS sur le refus quand son contenu est
+# prouve preserve : `tree(rembobine) == tree(tete)` est structurellement
+# incapable de voir un rebase sur une base avancee (l'arbre d'un commit
+# porte aussi les fichiers de sa base, il change NECESSAIREMENT meme si le
+# travail de la PR n'a pas bouge d'un octet -- mesure #15902 : levees
+# refusees sur un blob de notebook byte-identique). L'identite qui survit
+# au rebase est celle des BLOBS PAR CHEMIN : `files[].sha` du commit
+# rembobine est deja dans l'appel `commits/{sha}` existant (cout nul,
+# moitie de la donnee), et la carte chemin->blob de la tete se prend en UN
+# appel `git/trees/{arbre}?recursive=1`. La note « 3 appels par SHA contre
+# 1 » ci-dessus reste vraie pour une comparaison par chemin DEUX-A-DEUX ;
+# elle ne s'applique plus a cette voie. Degradation seulement : le refus
+# demeure la reponse par defaut, et toute donnee manquante (pas de files[],
+# carte vide, arbre tronque, statut non reconnu) y retombe.
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """#15973 : chaque chemin touche par le commit rembobine doit se
+    retrouver dans la tete, byte pour byte -- modification presente au meme
+    blob, deletion toujours absente, rename installe au nouveau chemin et
+    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
+    reconnu : un organe de merge-gate ne devient jamais permissif sur un
+    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    """
+    if not rewound_files or not head_blobs:
+        return False
+    # L'API commits plafonne `files` a 300 entrees sans drapeau de
+    # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
+    # -- une identite demi-prouvee est un fail-open, pas une preuve.
+    if len(rewound_files) >= 300:
+        return False
+    for filename, blob, status, previous in rewound_files:
+        if not filename or not blob:
+            return False
+        if status == "removed":
+            if filename in head_blobs:
+                return False
+            continue
+        if status == "renamed":
+            if not previous or previous in head_blobs:
+                return False
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        if status in ("added", "modified", "changed", "copied"):
+            if head_blobs.get(filename) != blob:
+                return False
+            continue
+        return False  # statut inconnu : refus conservateur
+    return True
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -3318,15 +3737,18 @@ def _pr_head_oid(data: dict) -> str:
 def _attach_absent_sha_context(data: dict) -> None:
     """Resolution serveur du contexte SHA, AVANT analyse (qui reste pure).
 
-    Assemble les deux vues que `analyse` consulte : messages (rattachement
-    #13639) et arbres des commits rembobines plus arbre de la tete
-    (#15556) -- un appel reseau par SHA, plus un pour la tete.
+    Assemble les vues que `analyse` consulte : messages (rattachement
+    #13639), arbres des commits rembobines plus arbre de la tete (#15556),
+    et blobs par chemin (#15973) -- un appel reseau par SHA, plus un pour
+    la tete, plus un pour sa carte chemin->blob quand un SHA absent existe.
     """
     state = _resolve_absent_sha_state(data)
     data["_absent_sha_messages"] = {s: v["message"] for s, v in state.items()
                                     if v.get("message")}
     data["_absent_sha_trees"] = {s: v["tree"] for s, v in state.items()
                                  if v.get("tree")}
+    data["_absent_sha_files"] = {s: v["files"] for s, v in state.items()
+                                 if v.get("files")}
     head_oid = _pr_head_oid(data)
     head_tree = ""
     if head_oid:
@@ -3337,6 +3759,44 @@ def _attach_absent_sha_context(data: dict) -> None:
         except subprocess.CalledProcessError:
             head_tree = ""
     data["_head_tree"] = head_tree
+    head_blobs: dict[str, str] = {}
+    if head_tree and data["_absent_sha_files"]:
+        # #15973 : la carte chemin->blob de la tete, en UN appel (l'arbre
+        # recursif) -- pas un appel par chemin. Inerte quand aucun SHA
+        # absent n'a ete resolu : le gate courant ne paie rien de plus.
+        # Truncated = carte partielle = non-verifiable : on rend vide et
+        # l'analyse retombe sur le refus conservateur, jamais sur une
+        # identite demi-prouvee.
+        try:
+            tree_obj = gh_json(
+                ["api", f"repos/{REPO}/git/trees/{head_tree}?recursive=1"])
+            if not tree_obj.get("truncated"):
+                head_blobs = {
+                    e["path"]: e["sha"]
+                    for e in (tree_obj.get("tree") or [])
+                    if e.get("type") == "blob" and e.get("path") and e.get("sha")
+                }
+        except subprocess.CalledProcessError:
+            head_blobs = {}
+    data["_head_blobs"] = head_blobs
+
+
+# #16780 — un corps reduit a un chemin local (l'accident `gh --body
+# "@$TEMP/x.md"` : gh poste le chemin LITERAL, --body-file etait voulu).
+# Le fichier vise vit sur UNE machine : aucun lecteur de la PR ne peut
+# l'ouvrir, et son NOM peut contenir un marqueur de levée par sous-chaine
+# (« levee_16670.md », « merged.md ») — le pointeur deviendrait une levée
+# FABRIQUEE, le defaut mesure sur #16670 (arbitrage ai-01 : corps-pointeur
+# INERTE, symetrie de la prose sans marqueur). Le garde advisory jumeau
+# check_local_path_waivers.py rend la FUITE visible sans bloquer ; ici,
+# seule l'INERTIE importe.
+_LONE_PATH_BODY_RE = re.compile(
+    r"^@?(?:"
+    r"[A-Za-z]:[\\/][^\s]+"  # C:\Users\...\Temp/a16670.md (separateurs mixtes)
+    r"|/(?:tmp|home|Users|var|opt|mnt)/[^\s]+"
+    r"|~/[^\s]+"
+    r")$"
+)
 
 
 def can_lift(comment: dict) -> bool:
@@ -3368,15 +3828,89 @@ def can_lift(comment: dict) -> bool:
     # #12908 : la phrase exigée est une levée VIVE — un tag de protocole
     # qui narre « une levée explicite » (exigence, pas geste) ne peut
     # toujours pas lever.
+    # #16780 : inertie du corps-pointeur (cf _LONE_PATH_BODY_RE). rstrip :
+    # l'ancre $ du regex ne doit pas echouer sur une newline finale.
+    if _LONE_PATH_BODY_RE.match(body.rstrip()):
+        return False
     if body.startswith(AGENT_PREFIXES) and not has_live_lift(body):
         return False
     return True
+
+
+# #16442/#16443 — un bloc [ADJOINT PREFLIGHT] est une ATTESTATION, pas une
+# remarque. Defaut mesure (#16173, 2026-09-16) : l'organe comptait le
+# `verdict: BLOCKED` d'un dossier SUPERSEDE comme un nit [HUMAN] non leve --
+# le dossier devenait son propre bloquant, et le seul remede etait un PATCH
+# manuel du commentaire (pierre tombale + neutralisation des marqueurs ;
+# reproduction partielle par le dossier interim de lane sur #16449 a
+# 23:35:02Z). La separation des organes est le principe : le VERDICT d'un
+# dossier appartient au gate `check_adjoint_prevalidation.py` (#16443), qui
+# le fail-close a l'empreinte pres ; l'organe nits lit des REMARQUES a
+# lever. Le bloc schema est retire du corps AVANT classification -- ni
+# reserve, ni (cf explicit_lifts, meme strip) levee. Deux bornes
+# fail-closed : un bloc MALFORME (delimiter ouvrant sans fermant) n'est pas
+# retire -- c'est le gate qui refuse le dossier, pas l'organe qui le
+# blanchit ; la prose HORS du bloc (tete de pierre tombale comprise) reste
+# lue normalement.
+_ADJOINT_DOSSIER_SPAN = re.compile(
+    r"^[ \t]*\[ADJOINT PREFLIGHT\][ \t]*\r?\n"
+    r".*?"
+    r"^[ \t]*\[/ADJOINT PREFLIGHT\][ \t]*\r?(?:\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _strip_adjoint_dossier(body: str) -> str:
+    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites."""
+    return _ADJOINT_DOSSIER_SPAN.sub("", body)
+
+
+# #16700 — vocabulaire de l'OUVERTURE de levée. Volontairement étroit
+# (whack-a-mole minimal) : les deux formes fondatrices de #16381 et leur
+# famille directe, le mot RESERVE inclus dans le discriminant. Un « levée »
+# nu (« Levée des alertes CI : ... ») est un RAPPORT, pas un geste — la
+# regex ne le matche pas (« des alertes » n'est pas « la réserve »).
+# #16799 — LEVÉE TIERCE : le registre B.0 exact (« Levée tierce de la
+# réserve X » ouvre la levée ai-01 de #16710, 2026-09-19T02:08Z). Le
+# qualificatif « tierce » entre « levée » et « de la réserve » cassait
+# l'alternance : le geste qui DÉBLOQUAIT la PR spawned un nit à son nom
+# (4 occurrences de marqueurs vivantes dans le corps — attribution
+# « a posé VERDICT: CONCERNS », citation quotée, « la CONCERNS
+# ci-dessus », timing « avant merge » — toutes narration de la levée).
+# Voie retenue : l'ancrage en OUVERTURE (mécanisme #16700), pas des
+# entrées CITERS par famille de narration — l'ancrage tuait les 4
+# occurrences d'un coup, chaque CITERS n'en tuait qu'une. Acceptance 5 :
+# ce que la voie cesse d'attraper = un corps ouvrant sur « Levée tierce
+# de la réserve X » qui ÉMETTRAIT une réserve NEUVE en corps — résidu
+# hérité de #16700 (corps mixte levée+réserve), mesuré : 0 corps pareil
+# sur 1718 corps des 200 dernières PRs mergées, delta classify = 0.
+_OPENING_LIFT_RE = re.compile(
+    r"^(?:#{1,6}[ \t]+)?(?:\*\*[ \t]*)?"
+    r"(?:r[ée]serve[ \t]+(?:lev[ée]e|dissip[ée]e)"
+    r"|lev[ée]e[ \t]+(?:tierce[ \t]+)?de[ \t]+(?:la[ \t]+)?r[ée]serve"
+    r"|je[ \t]+l[eéè]v\w*[ \t]+(?:la[ \t]+)?r[ée]serve)",
+    re.IGNORECASE,
+)
+
+
+def _opens_on_lift(body: str) -> bool:
+    """#16700 — le corps OUVRIT sur une annonce de levée ?
+
+    La POSITION est le discriminant : ouvrir son commentaire sur « Levée de
+    la réserve X » est un geste de résolution par construction. Le rappeler
+    plus bas dans la prose ne suffit pas — c'est l'affaire de l'étage lift
+    complet (mention-aware) plus haut dans `classify`.
+    """
+    return bool(_OPENING_LIFT_RE.match(body.lstrip("\r\n \t")))
 
 
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
         return None
+    body = _strip_adjoint_dossier(body)
+    if not body.strip():
+        return None  # attestation pure : le gate en lit le verdict, pas l'organe
     stripped = body.lstrip()
     # #12143 — Hermes severity glyphes (subordonne LIFT_MARKERS, fix concomitant
     # du PR #12148 fondateur) : un glyphe est une EMISSION, et une emission
@@ -3438,6 +3972,23 @@ def classify(author: str, body: str) -> str | None:
     # sous-chaine (cf `_block_emitted`).
     if _block_emitted(body):
         return "BLOCK"
+    # #16700 — LEVÉE EN OUVERTURE, par contenu et quel que soit l'auteur.
+    # Défaut fondateur (#16381, 2026-09-18T13:47:46Z sous `jsboige`) : la
+    # levée ouvrait sur un heading (« ## Levée de la réserve NanoClaw »)
+    # mais portait un glyphe cité (🔴) et un résidu mineur — l'étage lift
+    # complet du dessus ne l'absorbait pas, la prose sans CRLF tombait dans
+    # BOT-CONCERN : le geste qui DÉBLOQUAIT la PR créait un nit de plus à
+    # son propre nom, régime absorbant. `LIFT_OVERRIDE_LOGINS` ne rattrapait
+    # rien — l'identité est le mauvais discriminant quand le trousseau gh
+    # bascule sans geste délibéré (le coordinateur poste sous `jsboige`
+    # aussi). Placé APRÈS `_block_emitted` (fail-closed) : un blocage
+    # coordinateur émis dans le corps reste BLOCK même sous une ouverture
+    # de levée. Risque assumé et mesuré (audit 25 PRs mergées, avant/après) :
+    # le commentaire mixte qui lève X et soulève Y en corps — Y sort du
+    # recensement ; le coût du double comptage absorbant dépassait celui du
+    # résidu mineur perdu.
+    if _opens_on_lift(body):
+        return None
     # #13598 — EMISSION informelle d'un LIFT_OVERRIDE_LOGINS : le
     # coordinateur tient un hold en francais courant (« ne pas merger sur
     # les verts », « j'attends le run GPU », etc.). Avant : None. Apres :
@@ -3958,7 +4509,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if can_lift(c)
         # #12908 : levée VIVE exigée — le PREFLIGHT de #12798 qui demandait
         # « une levée explicite » était compté comme levée par le sac de mots.
-        and has_live_lift(c.get("body", ""))
+        and has_live_lift(_strip_adjoint_dossier(c.get("body", "")))
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
@@ -3976,7 +4527,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
-        and has_live_lift(r.get("body", ""))
+        and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
         and classify((r.get("author") or {}).get("login", ""),
                      r.get("body", "")) is None
@@ -4017,7 +4568,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         pr_refs.discard("")
         resolved = pr_data.get("_absent_sha_messages") or {}
         rewound_trees = pr_data.get("_absent_sha_trees") or {}
+        rewound_files_map = pr_data.get("_absent_sha_files") or {}
         head_tree = pr_data.get("_head_tree")
+        head_blobs = pr_data.get("_head_blobs") or {}
         kept_lifts = []
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
@@ -4041,6 +4594,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     if tree and head_tree and tree == head_tree:
                         if artifact is None:
                             artifact = (sha, "same_tree")
+                        continue
+                    # #15973 -- un rebase sur une base avancee change l'arbre
+                    # par construction : avant de refuser, verifier l'identite
+                    # par chemin (blobs du commit rembobine, deja captures par
+                    # l'appel commits/{sha}, contre la carte chemin->blob de
+                    # la tete). Fail-closed : sans donnees ou sans identite,
+                    # le refus #15556 reste la reponse.
+                    sha_files = rewound_files_map.get(sha) or []
+                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                        if artifact is None:
+                            artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
                     if tree and head_tree:
@@ -4472,9 +5036,12 @@ def _print_sha_notes(result: dict) -> None:
     demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
     """
     for a in result.get("rewind_artifacts") or []:
-        why = ("arbre identique à la tête"
-               if a["reason"] == "same_tree"
-               else "fichiers de la PR inchangés")
+        if a["reason"] == "same_tree":
+            why = "arbre identique à la tête"
+        elif a["reason"] == "rebase_preserved":
+            why = "rebase sur base avancée, blobs identiques par chemin"
+        else:
+            why = "fichiers de la PR inchangés"
         print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
@@ -4513,7 +5080,23 @@ def analyse_pr(pr: int) -> dict:
                    dismissed_improperly=improper_dismissals(pr))
 
 
+def _ensure_utf8_stdout() -> None:
+    """#16103 defaut 3 : le verdict ne doit jamais dependre de la page de
+    code de la console. Sous cp1252 (Windows), l'impression d'un commentaire
+    a relire portant un caractere hors page (`→` levait UnicodeEncodeError
+    dans _print_unevaluated) crashait APRES le verdict -- rc=1 faux rouge
+    pour tout consommateur scripte alors que l'analyse disait OK.
+    Idempotent ; silencieux sous un stdout non reconfigurable (buffers
+    de test).
+    """
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
+
+
 def gate(pr: int, as_json: bool) -> int:
+    _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
@@ -4548,6 +5131,7 @@ def gate(pr: int, as_json: bool) -> int:
 
 
 def audit(limit: int, search: str | None = None) -> int:
+    _ensure_utf8_stdout()
     cmd = ["pr", "list", "--repo", REPO, "--state", "merged",
            "--limit", str(limit), "--json", LIST_FIELDS]
     if search:

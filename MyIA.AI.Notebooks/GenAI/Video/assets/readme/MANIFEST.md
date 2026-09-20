@@ -17,7 +17,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 | video-creative-style.png | multi-color + blanc | (175.7, 153.4, 173.5) | 95.3 | 45.6% | grille 4×3 (Original/P./Aqu./Dessin) × 3 frames |
 | video-sora-cost.png | **matplotlib-blanc** (L778-L2) | (231.5, 229.4, 232.1) | 55.4 | **79.1%** | 2 panneaux lineplot+barplot fond blanc dominant |
 
-**Pivot post-PR #8005 (po-2025)** : Probas-racine MANIFEST déjà claim par PR #8005 OPEN (jsboige/CoursIA-2 c.784). DecisionTheory/PyMC c.779 déjà canonical. 5 defects restants EPIC #5780 ; `gh pr list --search "<file>"` montre 3 slots vraiment libres : GenAI/PostTraining (1 fig), GenAI/Texte (3 fig), **GenAI/Video racine (6 fig, retenu)**. G-VAR-3 cross-famille OK (env-repair Probas c.752 MED → docs-hygiene GenAI/Video c.753 MED, familles distinctes).
+**Pivot post-PR #8005 (po-2025)** : Probas-racine MANIFEST déjà claim par PR #8005 OPEN (jsboige/CoursIA-2 c.784). DecisionTheory/DecPyMC c.779 déjà canonical. 5 defects restants EPIC #5780 ; `gh pr list --search "<file>"` montre 3 slots vraiment libres : GenAI/PostTraining (1 fig), GenAI/Texte (3 fig), **GenAI/Video racine (6 fig, retenu)**. G-VAR-3 cross-famille OK (env-repair Probas c.752 MED → docs-hygiene GenAI/Video c.753 MED, familles distinctes).
 
 ---
 
@@ -143,6 +143,7 @@ Investigation `nbformat` Python pour identifier les cellules sources et valider 
 
 **🔁 Doublons intentionnels inter-arborescences (audit c.657, doctrine #5780, miroir de la note du MANIFEST 01-Foundation)** :
 Deux des figures de cette racine sont des **doublons exacts** (SHA1 identique) avec le dossier `01-Foundation/assets/readme/` :
+
 | Figure racine | Figure locale | SHA1 (vérifié 2026-07-19) | Statut doctrine #5780 |
 |---------------|---------------|---------------------------|------------------------|
 | `video4-esrgan.png` (racine Video) | `vid1-esrgan.png` (01-Foundation) | `620f78d33b723f8a1ddf4cf54eed79e308a66945` (byte-identique) | **Doublon intentionnel** : racine Video README illustre la figure dans le contexte narratif multi-modèles ; 01-Foundation README l'illustre dans le contexte pédagogique « Enhancement ESRGAN ». Alt-texts différents mais même binaire, doctrine #5780. |

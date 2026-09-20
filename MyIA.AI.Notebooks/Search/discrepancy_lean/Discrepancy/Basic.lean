@@ -90,9 +90,17 @@ theorem degree_le_card {α : Type*} [DecidableEq α] (F : Finset (Finset α)) (x
 `C` telle que toute famille de parties de `Fin n` de degré au plus `k` admet
 une coloration `±1` de discrépance au plus `C * √k`.
 
-C'est la conjecture ouverte centrale du domaine. Bansal–Jiang (2025) la
+Longtemps la conjecture ouverte centrale du domaine. Bansal–Jiang (2025) la
 résolvent en régime grand degré `k ≥ (log n)²` — voir
-`Discrepancy.BansalJiangLargeDegree`. -/
+`Discrepancy.BansalJiangLargeDegree`. En 2026, le preprint arXiv:2609.11189
+(Guo–Fang–Lu, 10/09/2026) annonce la résolution : borne universelle
+`3√(2πt)`, soit la dépendance en `√t` prédite par la conjecture.
+
+Ce preprint n'est **pas encore revu par les pairs** et la preuve est
+existentielle (aucune implémentation revendiquée). L'énoncé ci-dessus reste
+donc un `Prop` nommé : aucune preuve formelle n'est engagée ici. Prendre garde
+à ne pas citer la borne `√(32π)` — qui circule, mais n'est pas celle du
+papier, `3√(2π) ≈ 7,52`. -/
 def BeckFialaConjecture : Prop :=
   ∃ C : ℕ, ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ discrepancy F c ≤ C * Nat.sqrt k
@@ -103,8 +111,10 @@ discrépance au plus `2k - 1`.
 
 C'est la « noix » visée par le palier P1 de l'issue #12823 : preuve par
 *variables flottantes* et coloration partielle, découpée en boutes `b1`–`b4`
-(voir `FORMAL_STATUS.md`). Tant que la preuve n'est pas assemblée, l'énoncé
-vit comme `Prop` nommée ; la boute `b4` le convertira en `theorem`. -/
+(voir `FORMAL_STATUS.md`). **PROUVÉE** : l'assemblage `b4` est livré par
+#13427 — `theorem beck_fiala_classic : BeckFialaClassic` dans
+`Discrepancy/BeckFiala.lean`. La cible reste une `Prop` nommée par
+convention du lake (énoncés en `Prop`, preuves en théorèmes séparés). -/
 def BeckFialaClassic : Prop :=
   ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k) (_hk1 : 1 ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ (discrepancy F c : ℤ) ≤ 2 * (k : ℤ) - 1

@@ -48,7 +48,7 @@ STUB_PATTERNS = [
 ]
 
 EXERCISE_HEADER_RE = re.compile(
-    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*(?:\.\d+)*)\s*[:.]?\s*(.*)',
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d+(?:[a-z])?(?:\.\d+(?:[a-z])?)*)?\s*[:.]?\s*(.*)',
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -186,6 +186,123 @@ def _header_level(line: str) -> int:
     header line."""
     m = re.match(r'^(#{1,6})\s', line)
     return len(m.group(1)) if m else 0
+
+
+def get_parent_header_key(cells, idx, current_level=0, match_pos=None) -> str:
+    """Return a key representing the hierarchical ancestry enclosing cell at
+    ``idx``.
+
+    Walks backwards from ``idx`` and collects ALL ancestor headers, ordered
+    from outermost (lowest level number, e.g. ``#``) to innermost (highest
+    level number below ``current_level``). The key is the joined path
+    ``"<l1>:<t1>|<l2>:<t2>|..."``, with each segment ``"<level>:<text>"``.
+    Returns ``"root"`` if no ancestor header is found.
+
+    ``current_level`` is the level of the EXERCISE header that owns this
+    cell (e.g. 3 for ``### Exercice 1``). Pass it from the caller: deriving
+    it from the last arbitrary header in the cell conflates distinct parents
+    when the cell holds multiple markdown headers. If omitted, the function
+    falls back to the last header of the cell (legacy behaviour, retained
+    for callers that do not yet pass the level).
+
+    ``match_pos`` is the character offset of the exercise header match in the
+    cell source. Only headings STRICTLY BEFORE this offset can be ancestors:
+    a heading after the exercise header opens a LATER section and taking it
+    as a parent mis-attributes the exercise (causal false negative — a real
+    duplicate under the true parent gets lost). Same-level headings before
+    the match resolve to the LAST one, the closest open parent. If omitted,
+    the bound falls back to the last header of the cell (legacy behaviour).
+
+    Identity = full hierarchical path. Two ancestors that happen to share the
+    same immediate heading text but live under different grand-ancestors are
+    distinct. So ``# Partie A > ## Exercices > ### Exercice 1`` and
+    ``# Partie B > ## Exercices > ### Exercice 1`` return DIFFERENT keys and
+    are no longer flagged as duplicates.
+    """
+    # 1. Resolve the exercise header level from the cell only if the caller
+    #    did not pass it (legacy fallback).
+    if current_level == 0:
+        if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+            src = ''.join(cells[idx].get('source', []))
+            matches = HEADER_LINE_RE.findall(src)
+            if matches:
+                current_level = _header_level(matches[-1])
+
+    # 2. Ancestry opened IN THE CURRENT CELL, strictly before the exercise
+    #    header match position. The walk below only sees cells idx-1..0; a
+    #    parent heading that lives in the SAME markdown cell as the exercise
+    #    would be missed otherwise — a layout-dependent false negative where
+    #    the only difference between two notebook layouts is where the cell
+    #    boundary falls. Causality is positional: a heading at or after the
+    #    match opens a sibling or LATER section and is never an ancestor,
+    #    and within the pre-match prefix the stack keeps the LAST heading
+    #    per level (the closest open parent) — a level-l heading closes
+    #    every open section at level >= l, as markdown does.
+    ancestors = []  # open heading stack, outermost-first, one entry per level
+    if idx < len(cells) and cells[idx].get('cell_type') == 'markdown':
+        src = ''.join(cells[idx].get('source', []))
+        header_matches = list(HEADER_LINE_RE.finditer(src))
+        if match_pos is None and header_matches:
+            # Legacy fallback: bound at the last header of the cell (the
+            # presumed owning header when the caller passes no position).
+            match_pos = header_matches[-1].start()
+        for hm in header_matches:
+            if match_pos is not None and hm.start() >= match_pos:
+                break  # at/after the exercise header: sibling or later section
+            level = _header_level(hm.group(0))
+            if level <= 0:
+                continue
+            while ancestors and ancestors[-1][0] >= level:
+                ancestors.pop()  # a level-l heading closes every >=l section
+            ancestors.append((level, re.sub(r'^#+\s*', '', hm.group(0))))
+        # Siblings of the exercise opened in the same cell (level >=
+        # current_level) sit at the top of the stack; they are not ancestors.
+        while ancestors and ancestors[-1][0] >= current_level:
+            ancestors.pop()
+
+    seen_levels = {level for level, _ in ancestors}
+    found_any = bool(ancestors)
+
+    # 3. Walk backwards across preceding cells, accumulating ancestors whose
+    #    level is STRICTLY lower than the exercise header. The first header we
+    #    encounter at a given level is the innermost ancestor of that level
+    #    (closest to the exercise). We then OVERWRITE it if a closer cell at
+    #    the same level appears later in the scan (but no closer header at
+    #    strictly lower level exists, so the previous strictly-lower header
+    #    is the canonical ancestor for its level).
+    for k in range(idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue
+        # Walk headers in this cell from closest (last) to farthest (first).
+        for header_line in reversed(header_lines):
+            level = _header_level(header_line)
+            if level <= 0 or level >= current_level:
+                continue  # siblings/cousins of the exercise, not ancestors
+            if level in seen_levels:
+                continue  # already have the canonical ancestor for this level
+            text = re.sub(r'^#+\s*', '', header_line)
+            ancestors.append((level, text))
+            seen_levels.add(level)
+            found_any = True
+        # Optimization: stop scanning once we have level=1 (root) — cannot
+        # have anything outside it.
+        if 1 in seen_levels:
+            break
+
+    if not found_any:
+        return "root"
+
+    # Order outermost-first (level 1, 2, ...). The last-encountered ancestor
+    # at each level is the closest one; we walked backwards, so within a
+    # level the LAST insertion is the closest. Sort by level to make the
+    # path deterministic regardless of insertion order across levels.
+    ancestors_sorted = sorted(ancestors, key=lambda lt: lt[0])
+    return "|".join(f"{lvl}:{txt}" for lvl, txt in ancestors_sorted)
 
 
 def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
@@ -807,7 +924,7 @@ def scan_notebook(path: str) -> list[dict]:
         return [{"path": path, "severity": "ERROR", "message": "Failed to parse notebook"}]
 
     cells = nb.get('cells', [])
-    exercise_numbers = {}
+    exercise_numbers = {}  # dict[parent_key][num] = cell_idx
 
     for i, cell in enumerate(cells):
         if cell.get('cell_type') != 'markdown':
@@ -828,18 +945,39 @@ def scan_notebook(path: str) -> list[dict]:
         has_soumis = bool(SOUMIS_PAR_RE.search(source))
 
         if num:
-            if num in exercise_numbers:
+            # Build the exercise identifier for duplicate detection. The regex
+            # now captures an optional ASCII letter suffix glued to the digit
+            # directly (e.g. "Exercice 2b" -> num="2b", "Exercice 8.1a" ->
+            # num="8.1a"). No title-driven heuristic needed: title prose like
+            # "Exercice 1 : First" yields num="1" and the colon-separated
+            # title is ignored for identifier purposes. Recall tests
+            # test_duplicate_exercise_number and
+            # test_identical_subnumber_still_duplicate pass when the suffix
+            # comes from the grammar only.
+            exercise_identifier = num
+            
+            # Scope duplicate detection by parent header: two "Exercice N" under
+            # different parent sections are NOT duplicates; two "Exercice N" under
+            # the same parent ARE. Fixes FP where notebooks reset numbering in
+            # new sections (e.g., "### Exercices — Partie A" then "### Exercices — Partie B").
+            parent_key = get_parent_header_key(
+                cells, i, current_level=_header_level(m.group(0)),
+                match_pos=m.start(),
+            )
+            if parent_key not in exercise_numbers:
+                exercise_numbers[parent_key] = {}
+            if exercise_identifier in exercise_numbers[parent_key]:
                 findings.append({
                     "path": path,
                     "cell_index": i,
                     "cell_type": "markdown",
                     "severity": "MEDIUM",
-                    "exercise_num": num,
-                    "message": f"Duplicate Exercice {num} (first at cell {exercise_numbers[num]})",
+                    "exercise_num": exercise_identifier,
+                    "message": f"Duplicate Exercice {exercise_identifier} (first at cell {exercise_numbers[parent_key][exercise_identifier]})",
                     "preview": source[:100],
                 })
             else:
-                exercise_numbers[num] = i
+                exercise_numbers[parent_key][exercise_identifier] = i
 
         next_code_idx = None
         next_code_source = None
@@ -987,7 +1125,11 @@ def scan_notebook(path: str) -> list[dict]:
                     "exercise_num": num or "?",
                     "message": f"Solution leak: Exercice {num or '?'} has {len(next_code_source)} chars of code (not stub)",
                     "preview": next_code_source[:150],
-                    "fix": "Relabel header to 'Exemple guide' or replace code with stub",
+                    "fix": "Give the exercise its own stub code cell (canonical), or replace "
+                           "the resolved code with a stub. Relabel the header to 'Exemple "
+                           "guide' ONLY if the content is genuinely a worked example - "
+                           "classification is by CONTENT "
+                           "(.claude/rules/exercise-example-labeling.md).",
                 })
 
     return findings
@@ -1012,6 +1154,22 @@ def discover_notebooks(root: str) -> list[str]:
             if f.endswith('.ipynb') and not f.endswith('_output.ipynb'):
                 notebooks.append(os.path.join(dirpath, f))
     return sorted(notebooks)
+
+
+def display_path(path: str, repo_root: str) -> str:
+    """Path to print for a finding: relative to the repo when possible, absolute otherwise.
+
+    ``os.path.relpath`` raises ``ValueError`` when ``path`` and ``repo_root`` sit on
+    different Windows volumes ("path is on mount 'D:', start on mount 'C:'"). The scanner
+    accepts any ``--scan`` target, so a notebook outside the repo volume is a supported
+    input, not an error: without this fallback the scan *counts* its findings, prints the
+    "Results: N HIGH" line, then dies while formatting the detail -- the operator gets a
+    count with no way to learn *which* finding, and an rc=1 that reads as a failed scan.
+    """
+    try:
+        return os.path.relpath(path, repo_root)
+    except ValueError:
+        return path
 
 
 def main():
@@ -1060,7 +1218,7 @@ def main():
     if high:
         print("=== HIGH SEVERITY (Solution Leaks) ===")
         for f in high:
-            rel = os.path.relpath(f['path'], repo_root)
+            rel = display_path(f['path'], repo_root)
             print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
             if args.verbose and 'preview' in f:
                 print(f"    Preview: {f['preview'][:120]}...")
@@ -1071,7 +1229,7 @@ def main():
     if medium:
         print("=== MEDIUM SEVERITY (Duplicate Numbers) ===")
         for f in medium:
-            rel = os.path.relpath(f['path'], repo_root)
+            rel = display_path(f['path'], repo_root)
             print(f"  [{f['severity']}] {rel}:cell {f['cell_index']} — {f['message']}")
         print()
 

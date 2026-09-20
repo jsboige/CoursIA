@@ -15,6 +15,7 @@ name: Notebook Execution Required
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
       # Golden-set certifie sa propre reproductibilite quand le manifeste /

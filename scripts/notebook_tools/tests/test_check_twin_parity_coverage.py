@@ -47,7 +47,7 @@ UNIVERSE = {
     f"{SW}/SW-10-CSharp-RDFStar.ipynb",
     f"{SW}/SW-10-Python-RDFStar.ipynb",
     # genuinely C#-only
-    f"{TW}/Tweety-2c-FOL-Csharp.ipynb",
+    f"{TW}/Tweety-02c-FOL-CSharp.ipynb",
     f"{SUD}/Sudoku-00-Environment-Csharp.ipynb",
     f"{SW}/SW-1-CSharp-Setup.ipynb",
     f"{GT}/GameTheory-02-NormalForm-Csharp-Part2.ipynb",
@@ -76,7 +76,7 @@ def test_convention_medial_token():
 def test_csharp_only_has_no_candidate():
     """No Python sibling on disk -> legitimately C#-only, not a registry gap."""
     for cs in (
-        f"{TW}/Tweety-2c-FOL-Csharp.ipynb",
+        f"{TW}/Tweety-02c-FOL-CSharp.ipynb",
         f"{SUD}/Sudoku-00-Environment-Csharp.ipynb",
         f"{SW}/SW-1-CSharp-Setup.ipynb",
     ):

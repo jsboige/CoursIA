@@ -364,6 +364,69 @@ def test_needs_rebase_ne_flagge_pas():
     assert mod.classify("jsboige", body) is None
 
 
+# --- #15989 — la fenetre de citation s'arrete a la frontiere de PARAGRAPHE.
+# Le defaut (defaut positif) : les 30 caracteres qui precedent le marqueur
+# etaient pris sans borne, donc un citer du paragraphe PRECEDENT eteignait le
+# verdict du paragraphe SUIVANT. Idiome declencheur = le titre de section nu.
+# L'issue #15989 le mesure avec « ## dissipation » (mot que #15843 ouvre) ;
+# sur main la classe est deja atteignable avec les citers de CITERS.
+
+
+def test_titre_de_section_nu_n_eteint_pas_le_verdict_suivant():
+    """#15989, controle positif du defaut : « ## stale » seul dans son
+    paragraphe, puis un verdict NEUF. Le titre ne doit plus le neutraliser."""
+    body = "## stale\n\nCHANGES_REQUESTED: le split manque sur le head neuf."
+    assert mod._is_cited("## stale\n\n") is False
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("titre", ["## stale", "## previous", "## sans", "## aucune"])
+def test_titre_nu_quel_que_soit_le_citer(titre):
+    """La classe n'est pas specifique d'un mot : tout citer de CITERS en titre
+    nu ouvrait la meme extinction silencieuse."""
+    assert mod.classify(
+        "jsboige", f"{titre}\n\nCHANGES_REQUESTED: le split manque.") == "BOT-CONCERN"
+
+
+def test_titre_nu_sans_citer_reste_un_controle_muet():
+    """Controle negatif du controle positif : « ## dissolution » n'est pas un
+    citer, donc le verdict vit AVANT comme APRES. Sans ce temoin, le test
+    precedent passerait meme si la borne ne faisait rien."""
+    body = "## dissolution\n\nCHANGES_REQUESTED: le split manque sur le head neuf."
+    assert mod._is_cited("## dissolution\n\n") is False
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+@pytest.mark.parametrize("corps", [
+    "previous CHANGES_REQUESTED: le split manque.",
+    "Aucun CHANGES_REQUESTED de ma part sur ce head.",
+    "stale CHANGES_REQUESTED reflects pre-fix state.",
+])
+def test_citer_sur_la_ligne_du_marqueur_neutralise_toujours(corps):
+    """#15989, critere 2 : le mecanisme est conserve — un citer sur la MEME
+    ligne que le marqueur reste une citation."""
+    assert mod.classify("jsboige", corps) is None
+
+
+@pytest.mark.parametrize("corps", [
+    "stale\nCHANGES_REQUESTED: reflects pre-fix state.",
+    "previous\nCHANGES_REQUESTED: le split manque.",
+])
+def test_citer_sur_la_ligne_precedente_sans_ligne_vide_neutralise_toujours(corps):
+    """#15989, critere 2 : la borne est le PARAGRAPHE, pas la ligne. Un citer
+    sur la ligne immediatement precedente, sans ligne vide entre les deux,
+    appartient au meme paragraphe et neutralise donc toujours."""
+    assert mod.classify("jsboige", corps) is None
+
+
+def test_frontiere_de_paragraphe_ne_touche_pas_une_emission_nue():
+    """Controle negatif : un verdict emis sans citer devant, et un verdict
+    emis juste apres un titre, flagguent tous les deux."""
+    assert mod.classify("jsboige", "CHANGES_REQUESTED: le split manque.") == "BOT-CONCERN"
+    assert mod.classify(
+        "jsboige", "## Notes\n\nREQUEST_CHANGES: il faut splitter.") == "BOT-CONCERN"
+
+
 def test_verdict_conditionnel_fleche_ne_flagge_pas():
     """FP #1247 (fenetre 05-15..05-21) : « Si Static validation rouge →
     CHANGES_REQUESTED + diagnostic » — verdict CONDITIONNEL futur. La fleche
@@ -2245,17 +2308,30 @@ def test_12148_glyphe_narre_a_plus_d_un_mot_citer_surflagge_assume():
     que le mot precedent plus un mot d'attribution (#11044). Elargir la
     fenetre fabriquerait des faux NEGATIFS sur de vraies emissions — la
     sur-accusation coute une relecture, la sous-accusation coute un merge.
-    Autant que ce soit vu plutot que decouvert. Ce test AFFIRME le residu
-    par ecrit : si le path glyphe-precede-de-2-mots doit etre couvert un
-    jour, c'est un fix separe avec son propre scan distribution."""
-    body = (
+    Autant que ce soit vu plutot que decouvert.
+
+    #16688 — la moitie deterministe de ce residu est couverte : « un 🟡 »
+    (determinant + glyphe) est neutralise en amont par Position J (C)
+    DETERMINANT, avant meme que `_is_cited` n'entre en jeu. Le residu
+    `_is_cited` proprement dit (narration SANS determinant, a >1 mot du
+    citeur) reste assume : si ce path doit etre couvert un jour, c'est un
+    fix separe avec son propre scan distribution."""
+    body_det = (
         "## Suivi\n"
         "- la review precedente portait un 🟡 sur l'incoherence — leve "
         "par 06956bd0a. Tout est ok maintenant."
     )
-    # Sur-flag assume : le glyphe precede de 'un ' (a >1 mot du 'portait'),
-    # donc `_is_cited` ne neutralise pas et le glyphe reste vivant -> BOT-CONCERN.
-    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    # Couvert par #16688 Position J (C) : « un 🟡 » = referent, mention.
+    assert mod.classify("clusterManager-Myia", body_det) is None
+    body_nu = (
+        "## Suivi\n"
+        "- la review precedente portait 🟡 sur l'incoherence — leve "
+        "par 06956bd0a. Tout est ok maintenant."
+    )
+    # Sur-flag ASSUME (residu _is_cited vivant) : sans determinant, le
+    # glyphe n'est ni un referent (C) ni un enum (B) ni un meta-nom (A) ;
+    # `_is_cited` ne voit pas 'portait' a >1 mot -> reste vivant.
+    assert mod.classify("clusterManager-Myia", body_nu) == "BOT-CONCERN"
 
 
 # === GRAIN #12311 — REQUEST_CHANGES (verbe) complete CHANGES_REQUESTED (nom) ===
@@ -2645,6 +2721,166 @@ def test_13083_narration_pas_un_blocage_en_section_ne_declenche_pas():
             "Contexte de la veille, paragraphe de remplissage de reserve.\n\n"
             "## Ce qui reste — pas un blocage, c'est le grain suivant.")
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_16005_levee_syntaxe_inverse_ne_pose_pas():
+    """#16005 : le francais place le mot de LEVEE avant le nom. « Levée du
+    blocage » est la levée canonique elle-même — mesuré sur #15846, la phrase
+    par laquelle la lane levait le blocage était lue comme en POSANT un
+    (l'instrument lisait sa propre grammaire de levée comme une émission)."""
+    assert mod.classify(
+        "jsboige",
+        "## Levée du blocage — en forme canonique, avec les deux sorties nommées"
+    ) is None
+    assert mod.classify("jsboige", "Levé du blocage") is None
+    assert mod.classify(
+        "jsboige",
+        "## Levée du `[BLOCK]` : le rouge retenu est un check-run gelé"
+    ) is None
+
+
+def test_16005_narration_en_titre_ne_pose_pas():
+    """#16005 : le nom « blocage » complément d'un titre de narration ne pose
+    rien — 2e faux positif mesuré sur #15846 (« Chronologie du blocage »,
+    commentaire de diagnostic de la lane devenu réserve BLOCK non levable par
+    l'auteur sous #13083)."""
+    assert mod.classify(
+        "jsboige", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "jsboige", "Historique du blocage posé hier, pour mémoire."
+    ) is None
+    assert mod.classify(
+        "jsboige", "## Suite du blocage — ce qui reste en attente"
+    ) is None
+
+
+def test_16005_emissions_reelles_restent_detectees():
+    """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
+    narration liée au nom par une courte proposition — les émissions réelles
+    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01",
+        "BLOCAGE : cette PR ne merge pas tant que le run GPU n'est pas vert."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
+    ) == "BLOCK"
+
+
+# --- #16006 : la fenetre pre-marqueur etait sentence-agnostic -----------------
+# Toute la liste des mots de narration, telle que le module la porte. Servir de
+# source unique au test evite la derive : chaque forme est verifiee DANS LES
+# DEUX SENS (narration liee au nom = mention ; suivie d'un deux-points =
+# emission), et l'appartenance de la forme a la liste est prouvee sur le
+# pattern lui-meme (sinon le balayage serait vacuamente vert).
+_NARRATION_FORMS = (
+    "Levée", "Lèvement", "Je lève", "Lifted", "Retrait", "Annulation",
+    "Chronologie", "Historique", "État", "Résumé", "Récapitulatif", "Bilan",
+    "Contexte", "Suite",
+)
+
+
+def test_16006_les_deux_points_annoncent_l_emission_sur_toute_la_liste():
+    """#16006 : `Suite(?!\\s*:)` traitait UN mot sur quatorze — l'echappatoire
+    etait le symptome de l'asymetrie, pas le correctif. Le deux-points ANNONCE
+    ce qui suit (« État : BLOCAGE maintenu »), il ne relie pas le nom a sa
+    narration comme le fait la preposition (« État du blocage »). Le correctif
+    devait valoir pour la liste entiere, pas pour `suite`."""
+    # `Je lève` est le VERBE DE LEVEE canonique : `classify` le resout a
+    # l'etage superieur (branche levee) avant meme d'appeler `_block_emitted`.
+    # L'assertion qui suit prouve que ce n'est PAS la fenetre de narration qui
+    # l'ecarte -- sinon l'exception masquerait un faux negatif de plus.
+    assert mod._block_emitted("Je lève : BLOCAGE — ne pas merger.") is True
+    assert mod.classify("myia-ai-01", "Je lève : BLOCAGE — ne pas merger.") is None
+
+    for forme in _NARRATION_FORMS:
+        # Le module normalise (sans accents) avant de chercher : la preuve
+        # d'appartenance doit porter sur la meme forme que la recherche reelle.
+        assert mod._NARRATION_BEFORE_RE.search(
+            f"{mod._unaccent(forme)} du blocage"
+        ), (
+            f"« {forme} » n'est plus dans la liste des mots de narration : "
+            "le balayage ci-dessous serait vacuamente vert"
+        )
+        if forme == "Je lève":
+            continue  # resolu en amont (cf ci-dessus), pas par cette fenetre
+        assert mod.classify("myia-ai-01", f"{forme} : BLOCAGE — ne pas merger.") \
+            == "BLOCK", f"« {forme} : BLOCAGE » est une EMISSION"
+        assert mod.classify("myia-ai-01", f"{forme} du blocage") is None, (
+            f"« {forme} du blocage » est une MENTION (narration liee au nom)"
+        )
+
+
+def test_16006_le_trou_ne_franchit_pas_une_fin_de_phrase():
+    """#16006 : `[^\\n]{0,24}` laissait le mot de narration de la phrase
+    PRECEDENTE neutraliser l'emission de la suivante — deux mesures sur
+    l'arbre fusionne (« Résumé fait. BLOCAGE maintenu », « Historique court.
+    BLOCAGE »). Le trou est desormais borne a une proposition nominale."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé fait. BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court. BLOCAGE"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Contexte posé. BLOCAGE — run rouge, ne pas merger."
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "État stable. BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-epreuves : la narration reste une narration quand la ponctuation
+    # est hors du trou (avant le mot, ou apres le nom).
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Premier point. Historique du blocage, pour mémoire."
+    ) is None
+
+
+def test_16006_le_trou_ne_franchit_pas_un_separateur_de_clause():
+    """#16006 (2e frontiere, mesure ai-01 2026-09-16) : la classe intermediaire
+    excluait les bornes de PHRASE mais pas les separateurs de CLAUSE — la
+    virgule et les tirets laissaient un mot de narration d'une autre
+    proposition neutraliser l'emission. Quatre reproductions exactes rendaient
+    None au lieu de BLOCK ; les formes canoniques de narration liee au nom
+    restent None (elles ne contiennent aucun separateur dans leur trou)."""
+    assert mod.classify(
+        "myia-ai-01", "Résumé terminé, BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court — BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Historique court - BLOCAGE maintenu"
+    ) == "BLOCK"
+    assert mod.classify(
+        "myia-ai-01", "Bilan fait, BLOCAGE maintenu"
+    ) == "BLOCK"
+    # Contre-exemples causaux a conserver : la narration liee au nom par la
+    # preposition reste une MENTION — aucun separateur de clause dans le trou.
+    assert mod.classify(
+        "myia-ai-01", "Chronologie du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "Levée du blocage"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Chronologie du blocage — et les deux sorties"
+    ) is None
+    assert mod.classify(
+        "myia-ai-01", "## Levée du blocage — en forme canonique"
+    ) is None
 
 
 def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
@@ -3483,6 +3719,7 @@ def test_13639_sha_distant_du_marqueur_est_contexte():
 
 TREE_A = "t" + "a" * 39   # arbre du commit rembobine ET de la tete
 TREE_B = "t" + "b" * 39   # arbre d'un vrai commit de contenu
+TREE_C = "t" + "c" * 39   # second arbre de contenu (melange artefact/refus)
 
 
 def test_15556_push_muet_arbre_identique_conserve_la_levee():
@@ -3509,11 +3746,11 @@ def test_15556_controle_negatif_commit_de_contenu_invalide_toujours():
     permissif : c'est exactement le cas que B.0 existe pour attraper
     (« un push muet est indiscernable d'un push qui repond »).
 
-    #15566 : ce chemin est aussi celui d'un REBASE -- un rebase fait
-    differer l'arbre, donc il retombe ici, sur le refus conservateur.
-    L'echappatoire qui pretendait l'absoudre a ete retiree (mesuree
-    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`) : c'est ce
-    test qui pinne le comportement retenu."""
+    #15566 : l'echappatoire « rebase sans conflit » a ete retiree (mesuree
+    inerte, cf le bloc #15566 dans `check_unaddressed_nits.py`). #15973 :
+    un rebase PROUVE preserve par identite de chemin ne retombe plus ici
+    (section dediee ci-dessous) ; ce test pinne le SANS-DONNEES de chemin
+    -- ni files[] ni carte de blobs -- qui reste le refus conservateur."""
     res = run([USER_NIT, lift_citant_sha()],
               commits=[{"oid": NIT_OID, "committedDate": at(19)}],
               _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
@@ -3566,6 +3803,212 @@ def test_15556_headrefoid_prefere_au_dernier_oid():
     assert mod._pr_head_oid(data) == "f" * 40
     assert mod._pr_head_oid({"commits": [{"oid": "e" * 40}]}) == "e" * 40
     assert mod._pr_head_oid({"commits": [{"committedDate": at(19)}]}) == ""
+
+
+# --- #15973 : un rebase sur une base avancee n'est pas un rembobinage ------
+#
+# Mesure fondatrice (#15902) : la levee citait 53a7998effd1, absent de
+# commits[] parce que la branche avait ete REBASEE -- son jumeau rebasé
+# 093fb5a03849 y etait, avec le MEME blob de notebook (f066e47bb89c,
+# 86404 o). Les arbres differaient (la base avait bouge), donc le predicat
+# #15556 `tree(rembobine) == tree(tete)` refusait la levee et demandait de
+# reposer une reserve que clusterManager-Myia avait deja re-reviewee LGTM.
+
+BLOB_NB = "f066e47bb89c0000000000000000000000000000"
+BLOB_NB2 = "e120000000000000000000000000000000000000"
+
+
+def test_15973_rebase_preserve_par_identite_de_chemin():
+    """Instance fondatrice : arbres differents (base avancee) mais chaque
+    chemin touche par le commit rembobine vit au meme blob dans la tete --
+    le contenu cite par la levee est byte-identique, la levee est conservée
+    et signalee comme artefact non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [
+                      ("MyIA/Nb.ipynb", BLOB_NB, "modified", ""),
+                      ("scripts/fix.py", "a" * 40, "added", ""),
+                  ]},
+              _head_blobs={"MyIA/Nb.ipynb": BLOB_NB,
+                           "scripts/fix.py": "a" * 40,
+                           "README.md": "b" * 40})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "rebase_preserved")]
+
+
+def test_15973_blob_different_dans_la_tete_reste_refuse():
+    """Le vrai rembobinage destructeur : le chemin existe dans la tete mais
+    au meme moment le CONTENU a change -- l'identite par chemin echoue, le
+    refus #15556 s'applique (c'est le cas que B.0 existe pour attraper)."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("MyIA/Nb.ipynb", BLOB_NB, "modified", "")]},
+              _head_blobs={"MyIA/Nb.ipynb": BLOB_NB2})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["tree_differs"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15973_chemin_disparu_de_la_tete_reste_refuse():
+    """Le fichier du commit rembobine n'existe plus dans la tete : le
+    contenu cite n'y est pas, quel que soit le reste. Refus conservateur."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("MyIA/Nb.ipynb", BLOB_NB, "modified", "")]},
+              _head_blobs={"README.md": "b" * 40})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_15973_deletion_preservee_est_une_identite():
+    """Un commit rembobine qui SUPPRIMAIT un fichier est preserve par le
+    rebase si le chemin est toujours absent de la tete -- la deletion fait
+    partie du contenu cite par la levee."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("old/legacy.py", "c" * 40, "removed", "")]},
+              _head_blobs={"README.md": "b" * 40})
+    assert res["blocked"] is False
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "rebase_preserved")]
+
+
+def test_15973_deletion_ressuscitee_reste_refuse():
+    """Le commit rembobine supprimait le chemin, la tete le porte encore :
+    le contenu n'est pas preserve, refus."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("old/legacy.py", "c" * 40, "removed", "")]},
+              _head_blobs={"old/legacy.py": "c" * 40})
+    assert res["blocked"] is True
+    assert res["rewind_artifacts"] == []
+
+
+def test_15973_rename_exige_l_ancien_chemin_disparu():
+    """Rename preserve : blob au NOUVEAU chemin, ANCIEN parti. Si l'ancien
+    survit, la tete a change au-dela du rebase -- refus."""
+    preserved = run([USER_NIT, lift_citant_sha()],
+                    commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                    _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                    _absent_sha_trees={"2d6e4c3642": TREE_B},
+                    _head_tree=TREE_A,
+                    _absent_sha_files={
+                        "2d6e4c3642": [("new/mod.py", BLOB_NB, "renamed",
+                                        "old/mod.py")]},
+                    _head_blobs={"new/mod.py": BLOB_NB})
+    assert preserved["blocked"] is False
+    assert preserved["rewind_artifacts"][0]["reason"] == "rebase_preserved"
+
+    resurrected = run([USER_NIT, lift_citant_sha()],
+                      commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                      _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                      _absent_sha_trees={"2d6e4c3642": TREE_B},
+                      _head_tree=TREE_A,
+                      _absent_sha_files={
+                          "2d6e4c3642": [("new/mod.py", BLOB_NB, "renamed",
+                                          "old/mod.py")]},
+                      _head_blobs={"new/mod.py": BLOB_NB,
+                                   "old/mod.py": BLOB_NB})
+    assert resurrected["blocked"] is True
+
+
+def test_15973_sans_carte_de_blobs_refus_conservateur():
+    """Fail-closed : l'appel git/trees a echoue (carte vide) ou files[] est
+    absent de la resolution -- aucune identite demi-prouvee ne degrade le
+    refus. C'est la contrainte de merge-gate posee par l'issue."""
+    no_blobs = run([USER_NIT, lift_citant_sha()],
+                   commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                   _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                   _absent_sha_trees={"2d6e4c3642": TREE_B},
+                   _head_tree=TREE_A,
+                   _absent_sha_files={
+                       "2d6e4c3642": [("MyIA/Nb.ipynb", BLOB_NB,
+                                       "modified", "")]},
+                   _head_blobs={})
+    assert no_blobs["blocked"] is True
+    assert no_blobs["rewind_artifacts"] == []
+
+    no_files = run([USER_NIT, lift_citant_sha()],
+                   commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                   _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                   _absent_sha_trees={"2d6e4c3642": TREE_B},
+                   _head_tree=TREE_A,
+                   _head_blobs={"MyIA/Nb.ipynb": BLOB_NB})
+    assert no_files["blocked"] is True
+
+
+def test_15973_statut_inconnu_et_troncature_restent_refuses():
+    """Un statut hors du vocabulaire reconnu, ou un files[] au plafond des
+    300 entrees de l'API (troncature SANS drapeau -- la verification ne
+    porterait qu'un sous-ensemble), ne prouvent rien : refus."""
+    unknown = run([USER_NIT, lift_citant_sha()],
+                  commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                  _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                  _absent_sha_trees={"2d6e4c3642": TREE_B},
+                  _head_tree=TREE_A,
+                  _absent_sha_files={
+                      "2d6e4c3642": [("x.py", BLOB_NB, "type-inconnu", "")]},
+                  _head_blobs={"x.py": BLOB_NB})
+    assert unknown["blocked"] is True
+
+    truncated = run([USER_NIT, lift_citant_sha()],
+                    commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+                    _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+                    _absent_sha_trees={"2d6e4c3642": TREE_B},
+                    _head_tree=TREE_A,
+                    _absent_sha_files={
+                        "2d6e4c3642": [
+                            (f"f{i:03d}.py", BLOB_NB, "modified", "")
+                            for i in range(300)]},
+                    _head_blobs={
+                        f"f{i:03d}.py": BLOB_NB for i in range(300)})
+    assert truncated["blocked"] is True
+
+
+def test_15973_artefact_rebase_ne_masque_pas_un_vrai_refus():
+    """Meme regle que #15556 : une levee citant un SHA rebase-preserve ET
+    un SHA au contenu reellement perdu est refusee -- l'artefact ne sauve
+    pas une preuve morte."""
+    body = ("Les 2 nits sont adresses dans les commits 111aaaa111 et "
+            "222bbbb222.")
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, reply],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"111aaaa111": "fix(x,#0): typo",
+                                    "222bbbb222": "fix(y,#0): autre"},
+              _absent_sha_trees={"111aaaa111": TREE_B, "222bbbb222": TREE_C},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "111aaaa111": [("x.py", BLOB_NB, "modified", "")],
+                  "222bbbb222": [("y.py", BLOB_NB2, "modified", "")]},
+              _head_blobs={"x.py": BLOB_NB, "y.py": "d" * 40})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["222bbbb222"]
+    assert res["rewind_artifacts"] == []
 
 
 def test_13641_ref_par_prefixe_ne_compte_pas():
@@ -4876,6 +5319,65 @@ def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
 
+# --- #16688 — Position J discriminateur (C) DÉTERMINANT : référent vs émission ---
+# Fondateur : levée c.5730596602 sur #16617, titre
+# « ### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, c'est donc
+#  à moi de le lever » — préfixe sans méta-nom ni séparateur, glyphe resté
+# vivant, l'organe classait la levée elle-même comme réserve neuve.
+
+
+def test_16688_determinant_referent_fondateur_neutralise():
+    body = ("## Levée des deux réserves, par leur auteur ou par issue nommée — "
+            "avant merge\n"
+            "### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, "
+            "c'est donc à moi de le lever. Vérifié firsthand : la clause "
+            "`lane` est présente au head 92b74e9e1d.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_anglais_the_this_neutralise():
+    body = ("Lifting the 🟡 I raised on the Grain tag: lane clause verified "
+            "firsthand at head 92b74e9e1d. My 🔴 on the missing numpy-only "
+            "note is carried by #16687.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_determinant_en_milieu_de_ligne_neutralise():
+    # Le déterminant doit TOUCHER le glyphe mais peut suivre toute prose
+    # de ligne (l'ancre est la fin du préfixe, pas le début de ligne).
+    body = ("Reprise de la review : je lève le 🔴 sur la cellule [7] "
+            "(indexing corrigé au head 63960fd8d1), le reste est OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_16688_vp_emission_tete_de_ligne_reste_bloquant():
+    # L'émission Hermes ouvre la ligne : aucun déterminant ne la précède.
+    body = "🟡 FINDING — les 5 hyperparametres contredisent le run mesure."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_nom_commun_non_determinant_reste_bloquant():
+    # « Nit 🟡 » pose une réserve : « nit » est un nom commun, pas un
+    # déterminant — le set (C) est borné, il ne s'étend pas aux noms.
+    body = "Nit 🟡 — le tag `Grain:` incomplet au head courant."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suffixe_dans_mot_neutre_reste_bloquant():
+    # « sample 🟡 » / « table 🔴 » : le `le` final de ces mots n'a pas de
+    # \b devant lui — l'ancre mot-borne empêche le déterminant suffixe.
+    body = "table 🔴 — la colonne mAP50-95 contredit la prose du 4.2h."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_16688_vp_determinant_suivi_de_prose_reste_bloquant():
+    # Le déterminant doit toucher le glyphe : « le nit 🟡 » où 🟡 suit le
+    # nom n'est PAS couvert par (C) seul (l'ancre exige déterminant + espaces
+    # immédiatement avant le glyphe) — « le » précède « nit », pas 🟡.
+    body = "le nit 🟡 posé hier reste valable : cellule [7] non corrigée."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
 
 def test_14277_ce1_mutation_position_j_desactivee_fp1_rougit():
     # Contrôle positif : sans Position J, FP1 doit rougir (BOT-CONCERN).
@@ -6058,3 +6560,171 @@ def test_15772_faux_negatifs_documents_acceptance_point4() -> None:
     pass  # Suite vide : la justification par ecrit (commentaire du regex)
     # suffit, et ajouter des tests sur des formes rares ajouterait du bruit
     # sans valeur de protection. cf `anti-regression.md`.
+
+
+def test_16128_delivered_prefix_exempted_when_no_live_lift() -> None:
+    """#16128 -- `[DELIVERED]` est un tag de protocole de claim lie a
+    l'etat de la PR (#12386 v2, claim lie a l'etat de la PR), pas une
+    remarque adressee a l'auteur. Le prefixe doit donc etre dans
+    `AGENT_PREFIXES`, au meme titre que `[CLAIMED]` et `[RELEASED]`
+    qui appartiennent au meme protocole de cycle de vie de claim.
+
+    Le mecanisme qui releve le nit n'est pas `classify` mais
+    `can_lift` (l.3540) : un commentaire `[DELIVERED]` poste APRES un
+    nit humain NE DOIT PAS lever le nit, parce qu'il ne le nomme pas
+    (le commentaire est un etat de claim, pas une reponse a la
+    remarque). Si AGENT_PREFIXES ne contient pas `[DELIVERED`,
+    `can_lift` rend True pour le commentaire, ce qui eteint le nit
+    anterieur -- d'ou le `rc=1` au merge (cf issue #16093 mesure).
+
+    Test epinglant : le commentaire est `can_lift=False` car son
+    prefixe est dans AGENT_PREFIXES et il ne porte pas de live_lift.
+    """
+    comment = {
+        "author": {"login": "jsboige"},
+        "body": ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #16093 "
+                 "(#12386 v2: PR state-bound. Le lane garde une claim "
+                 "active tant que la PR est OUVERTE.)"),
+    }
+    assert mod.can_lift(comment) is False, (
+        "[DELIVERED] ne doit pas lever un nit anterieur : c'est un "
+        "etat de claim, pas une reponse ecrite qui nomme la remarque. "
+        "Cf #16128, mesure sur #16093 (rc=1 attendu par absence du prefixe)."
+    )
+
+
+def test_16128_delivered_prefix_keeps_live_reserve_in_classification() -> None:
+    """#16128 contre-positif -- symetrie cote reserve : un `[DELIVERED]`
+    suivi d'une vraie reserve (`-- il va falloir corriger la cellule 12
+    avant merge` -- reviewer signale quelque chose) RESTE classee comme
+    concern. L'exemption du prefixe ne blanchit pas les reserves reelles
+    emises dans le meme commentaire -- sans cette symetrie, l'exemption
+    serait indistinguable d'un trou.
+
+    L'auteur du commentaire (`jsboige`, login partage) est traite comme
+    par le code existant : le gate identifie la prose, pas l'auteur.
+    """
+    body = ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- il va falloir "
+            "corriger la cellule 12 avant merge.")
+    verdict = mod.classify("jsboige", body)
+    assert verdict in ("BOT-CONCERN", "HUMAN"), body
+    # Specifically NOT None : sans exemption du prefixe sur le body
+    # complet, le concern vit. Avec exemption, le gate joue toujours sur
+    # la prose portee par la mention qui suit le prefixe.
+    assert verdict is not None, body
+
+
+def test_16128_delivered_prefix_registered_in_agent_prefixes() -> None:
+    """#16128 acceptance -- preuve declarative : le prefixe `[DELIVERED]`
+    est dans `AGENT_PREFIXES`. Le tuple est l'instrument du gate (cf
+    `body.startswith(AGENT_PREFIXES)` l.3569 + l.3679). Si quelqu'un
+    retire l'entree par regression, ce test rougit.
+    """
+    assert "[DELIVERED" in mod.AGENT_PREFIXES, (
+        "[DELIVERED doit etre enregistre dans AGENT_PREFIXES (cf #16128)"
+    )
+
+
+def test_16128_delivered_prefix_mutation_rouge_le_test() -> None:
+    """#16128 acceptance #2 (valide par mutation) -- preuve que
+    l'exemption depend du token dans AGENT_PREFIXES : si on retire
+    `[DELIVERED` de la liste, `can_lift` re-passe a True sur le meme
+    commentaire, ce qui leve erronement un nit anterieur (le defaut
+    #16093 mesure).
+
+    Le gate est bien couvert -- le test rougit des qu'on mute, et l'etat
+    est restaure dans le finally (les tests en aval partagent l'etat du
+    module).
+    """
+    comment = {
+        "author": {"login": "jsboige"},
+        "body": ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #16093 "
+                 "(#12386 v2: PR state-bound.)"),
+    }
+    # Sanity : avec [DELIVERED dans la liste, can_lift est False
+    assert mod.can_lift(comment) is False, comment
+    # Mutation : retirer [DELIVERED de AGENT_PREFIXES, simule la
+    # regression observee sur #16093
+    original = mod.AGENT_PREFIXES
+    mod.AGENT_PREFIXES = tuple(p for p in original if not p.startswith("[DELIVERED"))
+    try:
+        # Sans le prefixe, can_lift re-passe a True -- le bug reproduce.
+        assert mod.can_lift(comment) is True, (
+            "Sans [DELIVERED dans AGENT_PREFIXES, `can_lift` accepte "
+            "le commentaire comme levee d'un nit anterieur -- c'est "
+            "le defaut mesure sur #16093."
+        )
+    finally:
+        # Restauration in-place
+        mod.AGENT_PREFIXES = original
+
+
+# --- #16780 : inertie du corps-pointeur (waiver par chemin local) ------------
+
+
+def test_16780_can_lift_rejette_le_corps_pointeur_16670() -> None:
+    """#16780, contrôle positif REJOUE -- le corps exact de l'incident
+    #16670 (commentaire supprimé depuis par le user : un test live ne
+    trouverait rien, le vert le plus dangereux qui soit). Le corps est un
+    chemin seul, séparateurs mixtes, préfixe `@` : il ne dit rien, il ne
+    peut rien lever."""
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": r"@C:\Users\jsboi\AppData\Local\Temp/a16670.md",
+    }
+    assert mod.can_lift(comment) is False, (
+        "Un corps réduit à un chemin local n'est pas une réponse écrite -- "
+        "le fichier visé est illisible pour tout lecteur de la PR (#16780, "
+        "arbitrage ai-01 : corps-pointeur INERTE)."
+    )
+
+
+def test_16780_nom_de_fichier_portant_un_marqueur_ne_leve_pas() -> None:
+    """#16780, pire cas vise par l'arbitrage : le NOM DE FICHIER contient
+    un marqueur de levée par sous-chaîne (« levee_16794.md »). Sans
+    l'inertie, le sac de mots du registre LIFT transformerait le pointeur
+    en levée fabriquée -- le mécanisme exact lu comme waiver sur #16670."""
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "@C:/Users/jsboi/AppData/Local/Temp/levee_16794.md",
+    }
+    assert mod.can_lift(comment) is False
+
+
+def test_16780_chemin_unix_seul_inerte() -> None:
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "/tmp/reply_levee.md",
+    }
+    assert mod.can_lift(comment) is False
+
+
+def test_16780_nit_survit_au_commentaire_pointeur() -> None:
+    """Intégration : le nit humain de 9h SURVIT à un commentaire-pointeur
+    de 12h -- bloqué au merge. Avant l'inertie, la sous-chaîne « levee »
+    du nom de fichier éteignait le nit."""
+    pointer = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": r"@C:\Users\jsboi\AppData\Local\Temp/levee_16670.md",
+    }
+    res = run([USER_NIT, pointer])
+    assert res["blocked"] is True, (
+        "Le corps-pointeur ne doit éteindre aucun nit (#16780) : levée "
+        "fabriquée par sous-chaîne du nom de fichier."
+    )
+
+
+def test_16780_phrase_reelle_poursuit_de_lever() -> None:
+    """Contre-positif : l'inertie ne sur-bloque pas -- une PHRASE de levée
+    réelle (corps qui dit quelque chose) lève toujours le nit."""
+    real_lift = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "Bien vu, corrigé — les deux nits sont levés.",
+    }
+    res = run([USER_NIT, real_lift])
+    assert res["blocked"] is False

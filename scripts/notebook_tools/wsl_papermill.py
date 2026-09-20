@@ -35,8 +35,8 @@ Prerequisites (native macOS/Linux):
     (plus any notebook-specific dependencies: nashpy, matplotlib, numpy, scipy, etc.)
 
 Usage:
-    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto] [--venv <path>]
-    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto] [--venv <path>]
+    python wsl_papermill.py execute <notebook.ipynb> [--output <path>] [--kernel python3] [--mode auto] [--venv <path>] [--cwd <dir>]
+    python wsl_papermill.py batch <dir> [--pattern "*.ipynb"] [--kernel python3] [--mode auto] [--venv <path>] [--cwd <dir>]
     python wsl_papermill.py check-env [--mode auto]
 
 Examples:
@@ -48,6 +48,7 @@ Examples:
 import argparse
 import json
 import platform
+import shlex
 import shutil
 import subprocess
 import sys
@@ -181,9 +182,31 @@ def _wsl_home() -> str:
     return out.strip()
 
 
+def _quote_wsl_path(path: str) -> str:
+    """Quote a WSL path while preserving ``~`` expansion."""
+    if path == "~":
+        return '"$HOME"'
+    if path.startswith("~/"):
+        return f'"$HOME"/{shlex.quote(path[2:])}'
+    return shlex.quote(path)
+
+
 def _papermill_cmd(venv: str) -> str:
     """Build the WSL papermill activation command for a venv."""
-    return f"source {venv}/bin/activate && papermill"
+    return f"source {_quote_wsl_path(venv)}/bin/activate && papermill"
+
+
+def _wsl_lake_root(execution_cwd: str) -> str | None:
+    """Return the nearest Lake root above ``execution_cwd`` inside WSL."""
+    script = (
+        f'd={shlex.quote(execution_cwd)}; '
+        'while true; do '
+        'if [ -f "$d/lakefile.lean" ] || [ -f "$d/lakefile.toml" ]; then '
+        'printf "%s" "$d"; exit 0; fi; '
+        '[ "$d" = "/" ] && exit 1; d=$(dirname "$d"); done'
+    )
+    rc, out, _ = run_wsl(script)
+    return out.strip() if rc == 0 and out.strip() else None
 
 
 def check_env_wsl() -> bool:
@@ -254,12 +277,18 @@ def check_env_wsl() -> bool:
 
 def execute_notebook_wsl(notebook: str, output: str | None = None,
                          kernel: str = "python3", timeout: int = 300,
-                         in_place: bool = False, venv: str | None = None) -> int:
+                         in_place: bool = False, venv: str | None = None,
+                         cwd: str | None = None) -> int:
     """Execute a single notebook via WSL papermill.
 
     ``venv`` overrides the execution venv (default ``~/coursia-wsl``, unchanged).
     When the kernelspec the notebook declares points to a different venv, the
     divergence is printed on stdout instead of diverging silently (#14908).
+
+    ``cwd`` selects the execution directory passed to Papermill and inherited by
+    the kernel. It defaults to the notebook directory. Lean companion notebooks
+    stored beside several Lake projects must pass their intended Lake root
+    explicitly (#16181).
     """
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
@@ -279,14 +308,33 @@ def execute_notebook_wsl(notebook: str, output: str | None = None,
     if _WIN_DRIVE_RE.match(use_venv):
         use_venv = win_to_wsl_path(use_venv)
 
+    execution_cwd = Path(cwd).resolve() if cwd else nb_path.parent
+    if not execution_cwd.is_dir():
+        print(f"ERROR: execution cwd {execution_cwd} is not a directory")
+        return 1
+    wsl_cwd = win_to_wsl_path(str(execution_cwd))
+    if kernel == "lean4-wsl":
+        lake_root = _wsl_lake_root(wsl_cwd)
+        if lake_root is None:
+            print("ERROR: Lean 4 kernel startup aborted: no lakefile.lean or "
+                  f"lakefile.toml found from {wsl_cwd}. Pass --cwd <lake-root>.")
+            return 1
+        wsl_cwd = lake_root
+
     declared = _declared_venv_from_kernel_json(_find_kernel_json_wsl(kernel))
     if declared:
         msg = _venv_mismatch_message(kernel, use_venv, declared, _wsl_home())
         if msg:
             print(msg)
     print(f"[info] venv: {use_venv}")
+    print(f"[info] cwd: {wsl_cwd}")
 
-    cmd = f'{_papermill_cmd(use_venv)} --kernel {kernel} "{wsl_input}" "{wsl_output}"'
+    cmd = (
+        f'cd {shlex.quote(wsl_cwd)} && {_papermill_cmd(use_venv)} '
+        f'--kernel {shlex.quote(kernel)} --cwd {shlex.quote(wsl_cwd)} '
+        f'--start-timeout {timeout} '
+        f'{shlex.quote(wsl_input)} {shlex.quote(wsl_output)}'
+    )
     print(f"Executing (WSL): {nb_path.name} ...")
 
     start = time.time()
@@ -368,11 +416,13 @@ def _find_papermill() -> str | None:
 
 def execute_notebook_native(notebook: str, output: str | None = None,
                             kernel: str = "python3", timeout: int = 300,
-                            in_place: bool = False, venv: str | None = None) -> int:
+                            in_place: bool = False, venv: str | None = None,
+                            cwd: str | None = None) -> int:
     """Execute a single notebook via native papermill (macOS/Linux).
 
     ``venv`` is accepted for API symmetry with the WSL path but ignored: in
     native mode the interpreter is ``sys.executable`` (the current venv).
+    ``cwd`` defaults to the notebook directory, matching WSL mode.
     """
     nb_path = Path(notebook).resolve()
     if not nb_path.exists():
@@ -386,11 +436,16 @@ def execute_notebook_native(notebook: str, output: str | None = None,
     else:
         out_path = str(nb_path.parent / f"{nb_path.stem}_output.ipynb")
 
+    execution_cwd = Path(cwd).resolve() if cwd else nb_path.parent
+    if not execution_cwd.is_dir():
+        print(f"ERROR: execution cwd {execution_cwd} is not a directory")
+        return 1
+
     cmd = [
         sys.executable, "-m", "papermill",
         str(nb_path), out_path,
         "--kernel", kernel,
-        "--cwd", str(nb_path.parent),
+        "--cwd", str(execution_cwd),
     ]
 
     print(f"Executing (native): {nb_path.name} ...")
@@ -421,6 +476,96 @@ def execute_notebook_native(notebook: str, output: str | None = None,
 # Shared validation
 # =============================================================================
 
+# Le noyau Lean n'emet jamais de sortie `output_type: "error"` : il rend une
+# `display_data` dont le HTML embarque le JSON du REPL dans un bloc
+# `<code>{"messages": [{"severity": "error", ...}]}</code>`. Compter seulement
+# `output_type == "error"` rend donc le meme `0 errors` sur un kernel mort et
+# sur un kernel sain (#16176, finding 1) -- et c'est ce verdict que cite la
+# preuve d'execution H.1 de toute PR de notebook Lean natif.
+#
+# L'ancre est la CLE `"messages"`, jamais le prefixe `{"messages"` : le REPL ne
+# garantit pas que `messages` soit le PREMIER champ du bloc. Mesure du
+# 2026-09-15 sur les 1291 notebooks du depot : 1030 blocs portent la cle
+# `messages`, et 108 d'entre eux commencent par `sorries` -- une ancre de
+# prefixe en ratait donc 108 en silence, rendant un nombre PLUS PETIT que la
+# verite sans le dire : le defaut meme que ce compteur corrige, un cran plus
+# fin.
+_LEAN_MESSAGES_KEY = '"messages"'
+
+
+def _output_texts(output: dict):
+    """Rend les chaines portees par une sortie de cellule.
+
+    Pas de filtre sur `output_type` : un type non enumere qui porte un `data` ou
+    un `text` ne doit pas faire perdre sa contribution a un diagnostic, ce qui
+    serait le silence que ce compteur corrige. Mesure du 2026-09-15 : les 1030
+    blocs `messages` du depot vivent tous dans une `display_data`.
+    """
+    data = output.get("data")
+    if isinstance(data, dict):
+        for value in data.values():
+            if isinstance(value, str):
+                yield value
+            elif isinstance(value, list):
+                yield "".join(v for v in value if isinstance(v, str))
+    text = output.get("text")
+    if isinstance(text, str):
+        yield text
+    elif isinstance(text, list):
+        yield "".join(v for v in text if isinstance(v, str))
+
+
+def _lean_payloads(text: str):
+    """Rend les objets JSON d'un texte qui portent une cle `messages`.
+
+    Du texte a la cle, puis de la cle vers le `{` englobant : le premier qui
+    parse en un objet portant cette cle. Remonter ainsi plutot que d'ancrer un
+    prefixe est ce qui rend visibles les blocs ou `messages` n'est pas le
+    premier champ (`{"sorries": [...], "messages": [...]}`).
+    """
+    decoder = json.JSONDecoder()
+    pos = text.find(_LEAN_MESSAGES_KEY)
+    while pos != -1:
+        start = text.rfind("{", 0, pos + 1)
+        while start != -1:
+            try:
+                payload, _ = decoder.raw_decode(text[start:])
+            except ValueError:
+                payload = None
+            if isinstance(payload, dict) and "messages" in payload:
+                yield payload
+                break
+            start = text.rfind("{", 0, start)
+        pos = text.find(_LEAN_MESSAGES_KEY, pos + len(_LEAN_MESSAGES_KEY))
+
+
+def count_cell_errors(nb: dict) -> tuple[int, int]:
+    """Compte les cellules en erreur : (erreurs Jupyter, cellules a diagnostic Lean `error`).
+
+    Les deux sont distinctes parce qu'elles n'ont pas la meme cause ni le meme
+    remede : une erreur Jupyter est une exception Python, un diagnostic Lean est
+    une erreur de compilation du noyau. Les separer rend le verdict lisible.
+    """
+    jupyter = 0
+    lean = 0
+    for cell in nb.get("cells", []) or []:
+        if cell.get("cell_type") != "code":
+            continue
+        cell_jupyter = False
+        cell_lean = False
+        for output in cell.get("outputs", []) or []:
+            if output.get("output_type") == "error":
+                cell_jupyter = True
+            for text in _output_texts(output):
+                if any(m.get("severity") == "error"
+                       for payload in _lean_payloads(text)
+                       for m in (payload.get("messages") or [])):
+                    cell_lean = True
+        jupyter += int(cell_jupyter)
+        lean += int(cell_lean)
+    return jupyter, lean
+
+
 def _validate_output(nb_path: Path, elapsed: float) -> int:
     """Validate executed notebook output. Returns 0 (OK), 3 (errors), 0 (warning)."""
     try:
@@ -428,11 +573,13 @@ def _validate_output(nb_path: Path, elapsed: float) -> int:
         nb = json.loads(content)
         code_cells = [c for c in nb["cells"] if c["cell_type"] == "code"]
         exec_count = sum(1 for c in code_cells if c.get("execution_count"))
-        errors = sum(
-            1 for c in code_cells
-            if any(o.get("output_type") == "error" for o in c.get("outputs", []))
-        )
-        print(f"  OK: {exec_count}/{len(code_cells)} cells executed, {errors} errors ({elapsed:.1f}s)")
+        jupyter_errors, lean_errors = count_cell_errors(nb)
+        errors = jupyter_errors + lean_errors
+        if errors:
+            print(f"  OK: {exec_count}/{len(code_cells)} cells executed, {errors} errors "
+                  f"({jupyter_errors} Jupyter, {lean_errors} Lean) ({elapsed:.1f}s)")
+        else:
+            print(f"  OK: {exec_count}/{len(code_cells)} cells executed, 0 errors ({elapsed:.1f}s)")
         return 0 if errors == 0 else 3
     except Exception as e:
         print(f"  WARNING: could not validate output: {e}")
@@ -446,15 +593,17 @@ def _validate_output(nb_path: Path, elapsed: float) -> int:
 def execute_notebook(notebook: str, output: str | None = None,
                      kernel: str = "python3", timeout: int = 300,
                      in_place: bool = False, mode: str = "auto",
-                     venv: str | None = None) -> int:
+                     venv: str | None = None, cwd: str | None = None) -> int:
     """Execute a single notebook, dispatching to native or WSL mode."""
     if mode == "auto":
         mode = _default_mode()
 
     if mode == "wsl":
-        return execute_notebook_wsl(notebook, output, kernel, timeout, in_place, venv)
+        return execute_notebook_wsl(
+            notebook, output, kernel, timeout, in_place, venv, cwd)
     elif mode == "native":
-        return execute_notebook_native(notebook, output, kernel, timeout, in_place, venv)
+        return execute_notebook_native(
+            notebook, output, kernel, timeout, in_place, venv, cwd)
     else:
         print(f"ERROR: unknown mode '{mode}' (use 'wsl', 'native', or 'auto')")
         return 1
@@ -462,7 +611,8 @@ def execute_notebook(notebook: str, output: str | None = None,
 
 def batch_execute(directory: str, pattern: str = "*.ipynb",
                   kernel: str = "python3", timeout: int = 300,
-                  mode: str = "auto", venv: str | None = None) -> int:
+                  mode: str = "auto", venv: str | None = None,
+                  cwd: str | None = None) -> int:
     """Execute all matching notebooks in a directory."""
     nb_dir = Path(directory).resolve()
     if not nb_dir.exists():
@@ -480,7 +630,7 @@ def batch_execute(directory: str, pattern: str = "*.ipynb",
     for i, nb in enumerate(notebooks, 1):
         print(f"\n[{i}/{len(notebooks)}] {nb.name}")
         rc = execute_notebook(str(nb), kernel=kernel, timeout=timeout,
-                              in_place=True, mode=mode, venv=venv)
+                              in_place=True, mode=mode, venv=venv, cwd=cwd)
         if rc == 0:
             results["ok"] += 1
         elif rc == 2:
@@ -527,6 +677,10 @@ def main():
                         help="WSL venv to execute in (default: ~/coursia-wsl). "
                              "If omitted, the venv derived from the notebook's "
                              "kernelspec is compared and a divergence is printed.")
+    p_exec.add_argument("--cwd", default=None,
+                        help="Kernel execution directory (default: notebook directory). "
+                             "On Windows, pass a Windows host path. For Lean companions "
+                             "beside multiple Lake projects, pass the intended Lake root.")
 
     # batch
     p_batch = sub.add_parser("batch", help="Execute all notebooks in directory")
@@ -541,6 +695,9 @@ def main():
                         help="WSL venv to execute in (default: ~/coursia-wsl). "
                              "If omitted, the venv derived from each notebook's "
                              "kernelspec is compared and a divergence is printed.")
+    p_batch.add_argument("--cwd", default=None,
+                         help="Kernel execution directory for every notebook "
+                              "(default: each notebook directory).")
 
     # check-env
     p_check = sub.add_parser("check-env", help="Check papermill environment")
@@ -550,11 +707,13 @@ def main():
 
     args = parser.parse_args()
     if args.command == "execute":
-        sys.exit(execute_notebook(args.notebook, args.output, args.kernel,
-                                  args.timeout, mode=args.mode, venv=args.venv))
+        sys.exit(execute_notebook(
+            args.notebook, args.output, args.kernel, args.timeout,
+            mode=args.mode, venv=args.venv, cwd=args.cwd))
     elif args.command == "batch":
-        sys.exit(batch_execute(args.directory, args.pattern, args.kernel,
-                               args.timeout, mode=args.mode, venv=args.venv))
+        sys.exit(batch_execute(
+            args.directory, args.pattern, args.kernel, args.timeout,
+            mode=args.mode, venv=args.venv, cwd=args.cwd))
     elif args.command == "check-env":
         sys.exit(0 if check_env(args.mode) else 1)
     else:

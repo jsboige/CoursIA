@@ -4,22 +4,22 @@ subtitle: "Série pédagogique niveau 2 — Nash, Lemke-Howson, Folk, Shapley, A
 description: "Série GameTheory du dépôt CoursIA — équilibre de Nash, théorème minimax, dynamiques d'apprentissage, jeux coopératifs (Shapley, Core), mécanismes (VCG, Gale-Shapley), choix social (Arrow), formalisation Lean 4."
 listing:
   - id: phase1
-    contents: "GameTheory-1-Setup.ipynb"
+    contents: "GameTheory-01-Setup.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
   - id: phase1-notebooks
-    contents: "GameTheory-[2-6]-*.ipynb"
+    contents: "GameTheory-0[2-6]-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
   - id: phase2
-    contents: "GameTheory-7-*.ipynb"
+    contents: "GameTheory-07-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
   - id: phase2-notebooks
-    contents: "GameTheory-[89]-*.ipynb"
+    contents: "GameTheory-0[89]-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -48,7 +48,7 @@ listing:
 
 ## Vue d'ensemble
 
-La série GameTheory comporte **27 notebooks racine + 4 SocialChoice** répartis en **3 phases** thématiques et une **sous-série SocialChoice** dédiée. Chaque notebook principal (Python/.NET) est exécuté et commité avec ses sorties (règle C.2). Les side tracks Lean 4 (`*-Lean-*`) requièrent WSL + elan ; les side tracks Python (`*-Python`) ajoutent des approfondissements.
+La série GameTheory comporte **96 notebooks racine + 8 SocialChoice** répartis en **3 phases** thématiques et une **sous-série SocialChoice** dédiée. Chaque notebook principal (Python/.NET) est exécuté et commité avec ses sorties (règle C.2). Les side tracks Lean 4 (`*-Lean-*`) requièrent WSL + elan ; les side tracks Python (`*-Python`) ajoutent des approfondissements.
 
 | Phase | Notebooks | Focus pédagogique |
 |-------|-----------|-------------------|

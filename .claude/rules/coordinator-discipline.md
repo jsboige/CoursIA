@@ -4,16 +4,76 @@ S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`), **chef de flotte** 
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
+## Garde d'identite — mesurer sa lane AVANT d'armer une cadence (HARD)
+
+Mandat user 2026-09-11. Cette section est **nommee, pas numerotee** : R1-R6 sont
+referencees par [lane-claim-protocol.md](lane-claim-protocol.md),
+[proactive-coordination.md](proactive-coordination.md),
+[variation-protocol.md](variation-protocol.md) et
+[submodule-maintenance.md](submodule-maintenance.md) — les renumeroter casserait
+ces renvois.
+
+**Avant tout `CronCreate` et avant tout merge**, une session qui s'apprete a
+coordonner mesure son identite. Trois mesures, dont la troisieme n'est pas
+automatisable :
+
+| # | Ce qui se mesure | Comment |
+|---|---|---|
+| 1 | **machine** | hostname normalise (`COMPUTERNAME` prime sur Windows) |
+| 2 | **workspace** | basename du **clone** (worktree principal), pas du worktree courant |
+| 3 | **unicite de session** | `ListAgents` **puis** un aller-retour `SendMessage` par pair `coursia-*` |
+
+Les deux premieres sont portees par l'organe — `exit 1` = ne pas armer :
+
+```bash
+python scripts/check_coordinator_identity.py --expect coordinator
+```
+
+**La troisieme ne l'est pas, et l'organe l'ecrit dans chacun de ses verdicts**
+(`uniqueness_measured: false`). Un `exit 0` dit « la lane est la bonne »,
+**jamais** « il est sur d'armer `/coordinate` » : les noms de session
+(`coursia-0f`) **n'encodent pas la lane**, seule une reponse du pair la qualifie.
+Deux sessions lancees du **meme** clone rendent d'ailleurs toutes deux `exit 0` et
+le role COORDINATOR — `clone_ok` ne separe que des clones *distincts*. L'organe
+porte la racine canonique et **retrograde en worker** (fail-CLOSED) une session
+lancee depuis un clone jumeau, mais il ne tranche jamais l'unicite : c'est
+l'aller-retour de la mesure 3 qui le fait.
+
+### Table de decision
+
+| Lane mesuree | Cadence a armer |
+|---|---|
+| `myia-ai-01:CoursIA`, **et** unique | `/coordinate` |
+| `myia-ai-01:CoursIA`, **une autre session active sur la meme lane** | arbitrer : **une seule** garde `/coordinate`. A defaut d'accord, elle revient a **celle qui detient deja un cron `/coordinate` arme** ; si aucune ne l'a ou si les deux l'ont, a **la session demarree le plus tot** (`ListAgents` horodate les demarrages). L'autre cede **et passe en `git worktree add`** — deux sessions d'un meme clone partagent HEAD, l'index et le stash, et aucune garde ne rougit sur cette corruption-la ([[concurrent-sessions-share-the-working-tree]]) |
+| `myia-po-2025:CoursIA-2` | `/coordinate-adjoint` |
+| toute autre lane | `/continue` (worker) |
+
+Les deux criteres de defaut sont choisis pour etre **lisibles des deux cotes** :
+chaque session peut rendre son `CronList` et son heure de demarrage.
+
+**`CronList` est session-locale** ([[session-local-view-read-as-global]]) : une
+liste vide ne prouve rien au-dela de la session courante — ni pour un autre
+workspace de la meme machine. Enchainer avec
+[[handover-must-disarm-outgoing-cron]] : **desarmer la cadence sortante d'abord**,
+armer ensuite.
+
+Incident fondateur (2026-09-11), justification des deux criteres de defaut, mesure
+`coursia-1c`/`coursia-0f` et les deux pieges que cette garde ferme :
+[§2.6](../../docs/reference/secrets-and-coord-detail.md#26-garde-didentite-de-lane--recit-arbitrage-et-pieges-2026-09-11).
+
 ## Regle 0 : production avant digestion, sans perte de qualite (HARD)
 
 La production des lanes et la digestion (CI, reviews, merges) sont **deux pipelines paralleles**. Une saturation du second est un symptome a reparer ou a capaciter ; elle ne devient jamais une politique de ralentissement du premier.
 
-- Un check rouge, un `DWELL`, une review en attente, un conflit ou un HOLD bloque **la candidate concernee**, jamais la lane. La lane traite ce qu'elle peut reparer, puis poursuit aussitot un nouveau grain DEEP/MED de contenu pendant toute attente externe.
+- Un check rouge, un `DWELL`, une review en attente, un conflit ou un HOLD bloque **la candidate concernee**, jamais la lane. La lane traite ce qu'elle peut reparer, puis poursuit aussitot un nouveau grain **DEEP de contenu** pendant toute attente externe.
 - `candidate-delivered`, forensic sans finding, body-only, attente mecanique, `HORS CAP` et backlog de review ne satisfont ni le plancher de production ni une fin de cycle.
 - Quand le debit de digestion baisse, ai-01 maintient les deep queues et ouvre **en parallele** la piste de remise en capacite : diagnostic CI, sweep de merge supplementaire, ou correction de l'organe bloque. Il ne reduit pas les dispatchs pour rendre la queue confortable.
-- ai-01 delegue agressivement la preparation verifiable : l'adjoint absorbe en file continue des lots oldest-first de preflights B.0/exact-head, relectures post-fix et recalculs ; Hermes et NanoClaw absorbent la premiere digestion specialisee. Chaque lot inventorie toutes les reserves de chaque candidate et remonte chaque READY sans attendre la fin du lot. Ces avis preparent la decision sans remplacer la lecture B.0 personnelle finale, les controles qualite ni la signature de merge d'ai-01.
+- ai-01 delegue agressivement la preparation verifiable : l'adjoint absorbe en file continue des lots oldest-first de preflights B.0/exact-head, relectures post-fix et recalculs ; Hermes et NanoClaw absorbent la premiere digestion specialisee. Chaque dossier nomme le head exact, les trois surfaces B.0, les gates, le delta depuis la derniere review et l'unique preuve decisive restante ; tout changement de head perime le dossier. **Objectif operatoire sur une fenetre de 4 h : >=20 dossiers READY oldest-first quand le plateau contient au moins 20 candidates eligibles**, remontes un par un sans attendre la fin du lot. Un dossier est un produit consommable par ai-01, pas un compte rendu d'activite. Ces avis preparent la decision sans remplacer la lecture B.0 personnelle finale, les controles qualite ni la signature de merge d'ai-01.
 - **Aucun de mes messages n'est un prealable (HARD, mandat user 2026-09-12).** Je n'ecris jamais une phrase dont l'effet est de suspendre une lane — « attends », « ne touche pas », « n'investigue pas avant que », « tiens ca jusqu'a » — sans nommer **dans la meme phrase** ce que la lane fait a la place. Une reserve, un HOLD ou un gate que je pose s'attache a la candidate et **me** revient a executer quand il exige une capacite que la lane n'a pas (#15463) ; il ne se delegue jamais en attente.
 - **La profondeur de ma file de merge n'est jamais le champ de vision d'une lane.** Mesure du 2026-09-12 : **71 des 76 PRs ouvertes (93 %) n'attendaient aucun geste de lane** — 26 pretes a merger, 45 en attente de ma review. Une flotte dont la production est garee chez moi finit par prendre la surveillance de ma file pour du travail : c'est **mon** echec de digestion, et il se repare par des merges, jamais en steerant les lanes vers leur propre file.
+- **Deux nombres AVANT la premiere lecture de fichier du depot (HARD, mandat user 2026-09-12).** Au premier geste de chaque cycle, relever (1) les non-lus d'inbox (`deep:true` — sans lui, un `0` est indiscernable d'une inbox vide) et (2) les PRs en attente de mon merge. Tant que ces deux nombres ne sont pas releves, aucune lecture de diff, de workflow ou de script n'est legitime. L'auto-interrogation « suis-je en train de micromanager ? » ne suffit pas : une investigation qui avance se ressent toujours comme du travail, et c'est precisement ce qui la rend indetectable de l'interieur.
+- **Un rouge que je rencontre est une requete a passer sur ma file, jamais une enquete a ouvrir.** Sur cette flotte, une lane a tres probablement deja livre le correctif et attend ma signature. Incident fondateur du 2026-09-12 : j'ai diagnostique moi-meme un test d'inventaire rouge (lecture du script, du test, du generateur, d'un workflow ligne a ligne) puis delegue sa correction a un sous-agent — alors que **PR #15828 portait deja ce fix, livree par po-2023 des le cycle c.507 et garee dans ma propre file**, avec 174 non-lus en inbox. Le geste correct etait `gh pr list` + la lecture de l'inbox, pas `Read` sur `build_inventory`. **Meme une crise CI se delegue** : preflight a l'adjoint, correctif aux workers, premiere digestion aux bots ; il me reste l'arbitrage, le B.0 final et le merge.
+- **Le travail des bots se consomme, ou il ne sert a rien.** Hermes et NanoClaw produisent des corps de review et des audits que je laisse non lus, puis je refais leur lecture a la main. Leur verdict vit dans le **prefixe du body** (`[Hermes] COMMENT_WITH_CONCERNS`), invisible a `reviews[].state` : les lire est la condition pour que leur travail existe. Une re-review Hermes en attente est un blocage de **ma** file, pas une lenteur du bot — c'est a moi de la demander.
 - Une candidate prete n'attend pas le cron suivant : ai-01 refait la capture B.0/exact-head/gates et merge des qu'elle est sure. Les controles B.0, H.4 et G-VAR restent inchanges ; augmenter le debit ne signifie jamais les contourner.
 
 ## Regle 1 : ai-01 merge activement sous `myia-ai-01`
@@ -78,14 +138,16 @@ Mandat user 2026-09-07 (verbatim, #15069) : « si ton travail de coordination es
 | Routable a l'adjoint | JAMAIS (reste au coordinateur) |
 |---|---|
 | Verification pre-fermeture de l'urne `delivered` (preuve firsthand, G.9) | La fermeture elle-meme (`gh issue close`) |
-| Preflight de PR (lecture body/comments/reviews + verdict `[adjoint — preflight COMMENTED]`) | Le merge (`gh auth switch` + merge reste ai-01) |
+| Preflight de PR (body/comments/reviews/threads/diff/checks + dossier `[ADJOINT PREFLIGHT]` ; objectif >=20 READY/4 h si >=20 eligibles) | Le merge (`gh auth switch` + merge reste ai-01) |
 | Recalcul firsthand d'un verdict ou d'une metrique contestee | Toute decision de perimetre/design-gate |
+
+**Organe d'entree en review ai-01** : `python scripts/check_adjoint_prevalidation.py <PR>`. Tant qu'il ne rend pas 0, ai-01 n'ouvre aucune surface detaillee de la PR : il route la candidate a l'adjoint, l'exclut de sa file personnelle et poursuit oldest-first. Le dossier est exact-head, exhaustif et auto-invalide par toute mutation observable des surfaces actuelles ; GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté ; son format canonique est genere par `--template` (hash inclus ; `--fingerprint` reste disponible). Un READY autorise seulement la lecture finale minimale d'ai-01 : il n'approuve pas et ne merge pas. Le login GitHub etant partage, `lane: myia-po-2025:CoursIA-2` est une declaration de protocole fail-closed, pas une authentification cryptographique.
 
 L'adjoint **est** la lane habilitee n°3 de `DELIVERED_URN_LANES` dans `pick_idle_grain.py` (#15069) : il tire l'urne `delivered`, verifie, poste sa preuve — et la fermeture effective reste signee coordinateur. Une lane worker qui rencontre une `candidate-delivered` poste `[INFO] candidate-delivered` avec sa preuve et rend la main (cf [proactive-coordination.md](proactive-coordination.md), urne `delivered`).
 
 ## Voir aussi
 
-- [proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup plancher, backlog pickup 8 sources, queue profonde
+- [proactive-coordination.md](proactive-coordination.md) — plancher multi-grain, backlog pickup 8 sources, queue profonde
 - [git-workflow.md](git-workflow.md) — branches feature/, no force push
 - [pr-review-discipline.md](pr-review-discipline.md) — Critere CHANGES_REQUESTED
 - CLAUDE.md section A — ai-01 review et merge, agents ne mergent pas

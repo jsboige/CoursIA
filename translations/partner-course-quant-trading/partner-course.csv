@@ -8706,7 +8706,7 @@ print(""  - L'Iteration 1 (baseline) offre un bon equilibre simplicite/performan
 print(""  - 14 features permettent une analyse d'importance informative pour l'etudiant"")
 print(""  - Le threshold 0.55 filtre suffisamment sans etre trop restrictif"")
 print(""  - Le bear filter (SPY<SMA200) reduit l'exposition en marchés baissiers"")",,,,,,,,2cd93dd5242de86b,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-b5f1fd1e,markdown,fr,7b7418fa4b9712be,"## Conclusion et Pistes d'Itération
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-b5f1fd1e,markdown,fr,ed1455dcb4562959,"## Conclusion et Pistes d'Itération
 
 ### Résultats
 
@@ -8724,7 +8724,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-M
 3. **Régime bear** : le filtre SPY<SMA200 est critique pour limiter les pertes en marchés baissiers (cf MaxDD 17.2% OOS). Sans ce filtre, le RF serait exposé à des retournements qu'il n'a pas dans ses features.
 4. **Threshold** : 0.55 est un compromis entre sélectivité et diversification. Un seuil 0.60 (testé en Iter 2) serre trop et réduit la couverture sectorielle.
 
-### Pistes pour itération N+1
+> **Pistes pour itération N+1 :**
 
 - **Features fondamentales** (P/E ratio, dividend yield via `ObjectStore`) — pourraient apporter le signal idiosyncratique qui manque actuellement.
 - **Mode 3-classes (BUY/FLAT/SELL)** — distingue les cas où l'agent doit sortir, pas seulement acheter.
@@ -8747,13 +8747,13 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-M
 3. **Bear regime**: the SPY<SMA200 filter is critical for limiting losses in bear markets
 4. **Threshold**: 0.55 is a good trade-off between selectivity and diversification
 
-### Paths for Iteration N+1
+> **Paths for Iteration N+1 :**
 
 - Add fundamental features (P/E ratio, dividend yield via ObjectStore)
 - Test a 3-class mode (BUY/FLAT/SELL) instead of binary
 - Implement a strict walk-forward OOS (train IS, evaluate OOS)
 - Add an individualized stop-loss per position (ATR-based)
-- Test XGBoost and GradientBoosting for comparison",,,,,,,7b7418fa4b9712be,ec7d6c724d56f680,,,,,,,
+- Test XGBoost and GradientBoosting for comparison",,,,,,,ed1455dcb4562959,f32cc503db9cf794,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-cd9d09f1,markdown,fr,05f7e03065a129b0,"# Partner Course Kit - Recherche ML XGBoost Sector Rotation
 
 Ce notebook explore l'approche ML XGBoost (Gradient Boosting) pour la rotation sectorielle sur 9 ETFs sectoriels americains.
@@ -9142,7 +9142,7 @@ print(""  - Plus de features (20 vs 14)"")
 print(""  - Training window plus court (3 ans vs 4 ans)"")
 print(""  - Rebalancing plus frequent (bi-weekly vs monthly)"")
 print(""  - Plus de positions (5 vs 4)"")",,,,,,,,ef2d3c7889845a5c,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-b5f1fd1e,markdown,fr,fc55d532a3e66ea1,"## Conclusion et Pistes d'Itération
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-b5f1fd1e,markdown,fr,2b598585a821c77f,"## Conclusion et Pistes d'Itération
 
 ### Résultats
 
@@ -9158,7 +9158,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 3. **Rebalancing bi-weekly** : plus reactif que le monthly du RF, capture les changements de regime plus rapidement
 4. **Training window 3 ans** : compromis entre suffisamment de données et pertinence du signal
 
-### Pistes pour itération N+1
+> **Pistes pour itération N+1 :**
 
 - Implementer un walk-forward OOS strict (train IS, evaluate OOS)
 - Ajouter des features macro (VIX, yield curve via ObjectStore)
@@ -9180,13 +9180,13 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 3. **Bi-weekly rebalancing**: more responsive than the RF monthly rebalancing, captures regime changes more quickly
 4. **3-year training window**: trade-off between sufficient data and signal relevance
 
-### Paths for iteration N+1
+> **Paths for iteration N+1 :**
 
 - Implement a strict walk-forward OOS (train IS, evaluate OOS)
 - Add macro features (VIX, yield curve via ObjectStore)
 - Test native XGBoost (xgboost library) rather than sklearn GBM
 - Add an RF + GBM ensemble for prediction diversification
-- Test an ATR-based stop-loss per position",,,,,,,fc55d532a3e66ea1,3018279f6063c167,,,,,,,
+- Test an ATR-based stop-loss per position",,,,,,,2b598585a821c77f,ebe073c12079a413,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-cd9d09f1,markdown,fr,2caf3621d0e3f8ba,"# Partner Course Kit - Recherche Framework Composite (Alpha Models)
 
 Ce notebook explore l'approche QC Framework avec un modèle composite combinant deux alpha models :
@@ -9488,11 +9488,12 @@ alloc_df = pd.DataFrame(results)
 print(""Allocation analysis (simplified proxy, not actual backtest):"")
 print(alloc_df.round(4).to_string(index=False))
 print(f""\nBest allocation (by Sharpe proxy): {alloc_df.loc[alloc_df['Sharpe'].idxmax(), 'Sector%']}/{alloc_df.loc[alloc_df['Sharpe'].idxmax(), 'Def%']}"")",,,,,,,,9ed14755cb901cc6,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-40187a37,markdown,fr,7b82648a7b5b8f70,"## 6. Calibration du MaxDrawdown Circuit Breaker
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-40187a37,markdown,fr,6ac2f7831b537974,"## 6. Calibration du MaxDrawdown Circuit Breaker
 
 L'output de la cellule [14] caractérise la **distribution des drawdowns SPY** sur 2015-2024 (proxy pour le drawdown du portfolio).
 
 **Distribution cumulée** :
+
 | Seuil DD | Temps passé sous le seuil | Lecture |
 |---|---|---|
 | > 5% | 10.6% du temps | Normal — volatilité standard |
@@ -9507,7 +9508,7 @@ Le main.py calibre le **circuit breaker à 15%**. **La cellule imprime `may trig
 
 Le composite framework (momentum + defensive) **réduit matériellement la fréquence et l'amplitude des drawdowns réels** vs SPY nu — c'est ce que le backtest main.py est censé démontrer (MaxDD attendu < 17% d'après le README du kit).","## 6. Calibration of the MaxDrawdown Circuit Breaker
 
-The main.py uses a circuit breaker at 15% maximum drawdown. Analysis of the distribution of drawdowns to validate this threshold.",,,,,,,7b82648a7b5b8f70,6759fbec512d5d2c,,,,,,,
+The main.py uses a circuit breaker at 15% maximum drawdown. Analysis of the distribution of drawdowns to validate this threshold.",,,,,,,6ac2f7831b537974,6759fbec512d5d2c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-4ee3fae2,code,fr,9dd6ac62f121ed42,"# Drawdown analysis for SPY (proxy for portfolio)
 spy_ret = returns['SPY'] if 'SPY' in returns.columns else returns.iloc[:, -1]
 cumulative = (1 + spy_ret).cumprod()
@@ -9568,7 +9569,7 @@ print(""  - L'approche Framework separe les preoccupations (alpha, risk, executi
 print(""  - Deux alpha models decorreles offrent une meilleure diversification"")
 print(""  - Le circuit breaker a 15% protege contre les crashs majeurs"")
 print(""  - L'allocation 70/30 privilegie le momentum tout en gardant une couverture defensive"")",,,,,,,,9cc784c7433388c1,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-b5f1fd1e,markdown,fr,ef07db607cda6304,"## Conclusion et Pistes d'Itération
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-b5f1fd1e,markdown,fr,586761dff16e7c74,"## Conclusion et Pistes d'Itération
 
 ### Synthèse des résultats de recherche
 
@@ -9588,7 +9589,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-F
 3. **La bascule de régime est réelle et mesurable** : `BEAR_TILT = 0.5` (70/30 nominal → 35/65 effectif en jour bear) **inverse la frontière Sharpe** (monotone décroissante → croissante saturante) et ampute la volatilité de 2.65 pts à 90/10. Le tilt dynamique se substitue au poids défensif statique ; le 70/30 du main.py reste un compromis turnover/robustesse à 0.011 de la frontière. AnnReturn reste affine **par construction** (moyenne linéaire, poids affines par régime) — la signature du régime vit dans la volatilité et le Sharpe.
 4. **Le circuit breaker à 15% est conservateur** vs standards industrie (20-25%). Il coupe sur du *bruit* 10.6% du temps (DD > 5%) mais garantit une DD structurelle basse.
 
-### Pistes pour itération N+1
+> **Pistes pour itération N+1 :**
 
 - **Réallouer le defensive universe** : remplacer XLU par IEF ou SHY (duration intermédiaire) pour corriger le talon d'Achille bear.
 - **Calibrer BEAR_TILT** : 0.5 est arbitraire — balayer 0.25/0.5/0.75 et mesurer la saturation de la frontière.
@@ -9614,13 +9615,13 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-F
 3. **The regime switch is real and measurable**: `BEAR_TILT = 0.5` (70/30 nominal → 35/65 effective on bear days) **inverts the Sharpe frontier** (monotonically decreasing → increasing and saturating) and cuts volatility by 2.65 pts at 90/10. The dynamic tilt substitutes for the static defensive weight; main.py's 70/30 remains a turnover/robustness compromise 0.011 from the frontier. AnnReturn stays affine **by construction** (linear mean, affine weights per regime) — the signature of the regime lives in volatility and Sharpe.
 4. **The 15% circuit breaker is conservative** vs industry standards (20-25%). It triggers on *noise* 10.6% of the time (DD > 5%) but guarantees a low structural DD.
 
-### Ideas for iteration N+1
+> **Ideas for iteration N+1 :**
 
 - **Reallocate the defensive universe**: replace XLU with IEF or SHY (intermediate duration) to fix the bear-market Achilles' heel.
 - **Calibrate BEAR_TILT**: 0.5 is arbitrary — sweep 0.25/0.5/0.75 and measure the saturation of the frontier.
 - **Add a 3rd alpha**: RSI<30 mean-reversion on oversold sectors — decoupled from momentum, complementary to the defensive sleeve.
 - **Adaptive circuit breaker**: dynamic threshold 15% in bull, 20% in bear (avoids false triggers in turbulent regimes).
-- **Reference OOS backtest**: compare the main.py results (QC Cloud 2015-2024) to the §5 proxy to quantify the cost of the simplification.",,,,,,,ef07db607cda6304,ddfa461d17c906fc,,,,,,,
+- **Reference OOS backtest**: compare the main.py results (QC Cloud 2015-2024) to the §5 proxy to quantify the cost of the simplification.",,,,,,,586761dff16e7c74,cd960ddad1e4e757,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-data,markdown,fr,eb7391b18e56944c,"**Lecture des sorties.** L'univers charge 9 ETF sectoriels couvrant ~15 ans de cotation (3804 jours de VIX). Les `hit` du cache confirment que la trajectoire est figée : le notebook est reproductible. Notons que `XLI` (Industrials) apparaît dans la liste de téléchargement de la prose mais pas dans l'univers final des 9 — l'univers effectif est XLK/XLF/XLV/XLY/XLP/XLE/XLB/XLU/XLRE, soit la décomposition Sector SPDR canonique. C'est un point à garder en tête pour l'interprétation : le signal momentum porte sur ces 9 rotateurs, pas sur un panier plus large.
 ",,,,,,,,eb7391b18e56944c,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-vix,markdown,fr,0d20c56000abf6d8,"**Lecture des statistiques VIX.** La distribution est **asymétrique à droite** : moyenne 18.36, médiane 16.59 — l'écart signale une longue queue de valeurs hautes (crises). Le percentile 90 à 27.02 et les jours au-dessus de 30 (6.4 % seulement) montrent que le régime extrême est rare mais marqué. Deux conséquences pour le calibrage du filtre : (1) un seuil absolu de 25 filtre ~29.2 % des jours (au-dessus de la moyenne), ce qui est **beaucoup** pour un filtre défensif ; (2) un seuil de 35 ne filtre que les ~6 % de jours de panique franche. Le grid search tranchera lequel des deux protège réellement le Sharpe — l'intuition « filtrer plus = plus sûr » n'est pas garantie, car chaque jour filtré est aussi un rebond manqué.
