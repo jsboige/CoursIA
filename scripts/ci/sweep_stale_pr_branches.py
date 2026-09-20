@@ -36,12 +36,14 @@ Ce que le pilote n'est PAS
   plafond, tout vit dans l'organe. Une garde dupliquee ici deriverait en
   silence (la lecon de la copie `is_advisory` de pr-gate-stale-sweep.yml,
   verrouillee par test AST -- ici il n'y a PAS de copie du tout).
-- Il ne survend pas son gisement : mesure du 2026-09-19 sur 213 PRs ouvertes,
-  ~12 DIRTY mises a part, la population reellement rattrapable est celle des
-  CLEAN/BLOCKED/UNSTABLE portant un `behind_by > 0`. La valeur n'est pas le
-  nombre de PRs debloquees, c'est la SUPPRESSION des allers-retours : un
-  commentaire, une session de worker dediee et un dossier exact-head remplaces
-  par un run.
+- Il ne survend pas son gisement, mais il ne le sous-estime plus non plus :
+  mesure du 2026-09-20 (dry-run integral, 214 PRs ouvertes) : 3 brouillons,
+  163 non-mergeables (CONFLICTING ou UNKNOWN, exclus nommes, remesurees a
+  chaque balayage), 1 a jour, et **47 candidates a `behind_by > 0`** --
+  l'estimation ~12 de l'issue etait basse d'un facteur 4. La valeur n'est pas
+  le decompte debloque, c'est la SUPPRESSION des allers-retours : un
+  commentaire, une session de worker dediee et un dossier exact-head
+  remplaces par un run.
 
 Selection : les plus anciennes d'abord
 --------------------------------------

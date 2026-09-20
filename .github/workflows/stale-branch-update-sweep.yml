@@ -20,13 +20,15 @@ name: Stale branch update sweep
 # suppression des allers-retours (commentaire + session worker + dossier
 # exact-head remplaces par un run).
 #
-# CADENCE. 6 h declarees, cap 3 mises a jour par run : le gisement mesure
-# (~12) se vide en environ un jour sans vague -- chaque update perime le
-# dossier [ADJOINT PREFLIGHT] de sa PR (freshness STALE, invalidated), et une
-# rafale non bornee perimerait 12 dossiers d'un coup. Caveat mesure
-# (#15197/check_scheduler_liveness) : les crons sub-horaires de ce depot sont
-# servis 4.7-7.2x en retard ; pour un filet de rattrapage sans SLA de
-# latence, servir ~1 fois par 12-24 h reste utile et sans cout.
+# CADENCE. 6 h declarees, cap 3 mises a jour par run : le gisement MESURE le
+# 2026-09-20 par le dry-run du pilote est de 47 candidates a behind_by > 0
+# (sur 214 PRs ouvertes ; l'estimation ~12 de l'issue #16915 etait basse) --
+# a cap 3, il se vide en ~16 runs (~4 jours), sans vague : chaque update
+# perime le dossier [ADJOINT PREFLIGHT] de sa PR (freshness STALE,
+# invalidated), et une rafale non bornee perimerait 47 dossiers d'un coup.
+# Caveat mesure (#15197/check_scheduler_liveness) : les crons sub-horaires de
+# ce depot sont servis 4.7-7.2x en retard ; pour un filet de rattrapage sans
+# SLA de latence, servir ~1 fois par 12-24 h reste utile et sans cout.
 #
 # PLANCHER DWELL. Un update-branch reecrit la tete : avant #16149 il
 # re-armait les 120 min que le geste sert a franchir. merge_dwell.py mesure
