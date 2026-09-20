@@ -21,7 +21,7 @@ l'ignition fausse* — la propagation n'est alors que du broadcast
 non-discriminant. Tue si |propa(faux) − propa(aléatoire)| < ε.
 
 Pré-enregistrement chiffré AVANT exécution : commentaire #8182 c.5709692119
-(2026-09-17T05:59Z), claim c.5709691931, re-scope en seconde opérationnalisation
+(2026-09-17T06:00:27Z), claim c.5709691931, re-scope en seconde opérationnalisation
 c.5709770262 (le claim initial, rédigé sur une lecture stale de la matrice,
 qualifiait la ligne à tort de « PRÉDIT » — voir l'amendement). Substrat : jouet
 CPU à générateurs factoriels — la colonne Substrat de la ligne matrice
