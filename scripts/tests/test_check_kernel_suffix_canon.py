@@ -84,13 +84,38 @@ def _init_repo(repo: Path) -> str:
 
 
 def _run_guard(repo: Path, cfg: Path, base: str | None = None) -> subprocess.CompletedProcess:
+    """Lance le garde, et refuse de rendre un resultat muet.
+
+    Le garde imprime TOUJOURS au moins son denominateur ("notebooks examines : N",
+    ou son equivalent JSON) avant tout verdict, y compris quand il n'a rien trouve.
+    Un stdout vide n'est donc jamais un verdict : c'est un plantage -- et son code
+    de sortie 1 est alors indiscernable d'un rouge legitime tant que le stderr
+    reste jete. Meme chose pour une trace laissee sur stderr apres une sortie
+    partielle : le contenu attendu manque, l'assertion de contenu echoue, et la
+    cause reelle est perdue.
+
+    Les deux se verifient ici, une fois, pour les treize tests du fichier : c'est
+    le point de passage unique. Cela ne repare pas la cause racine d'un plantage ;
+    cela garantit que sa prochaine occurrence la NOMME, au lieu de couter un cycle
+    de diagnostic a chaque lane qui la croise.
+    """
     args = [sys.executable, str(_SCRIPT), "--config", str(cfg)]
     if base is None:
         args += ["--scan-all"]
     else:
         args += ["--base", base, "--head", "HEAD"]
-    return subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+    r = subprocess.run(args, cwd=str(repo), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if not r.stdout.strip():
+        raise AssertionError(
+            "le garde n'a rien ecrit sur stdout (rc=%s) : plantage, pas verdict.\n"
+            "--- stderr ---\n%s" % (r.returncode, r.stderr))
+    if "Traceback (most recent call last)" in r.stderr:
+        raise AssertionError(
+            "le garde a plante apres avoir commence a parler (rc=%s).\n"
+            "--- stdout ---\n%s\n--- stderr ---\n%s"
+            % (r.returncode, r.stdout, r.stderr))
+    return r
 
 
 class TestCaseCanonInAdoptedSeries(unittest.TestCase):

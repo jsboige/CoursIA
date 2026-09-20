@@ -22,6 +22,7 @@ from wsl_papermill import (
     check_env,
     check_env_native,
     check_env_wsl,
+    count_cell_errors,
     execute_notebook,
     execute_notebook_native,
     execute_notebook_wsl,
@@ -132,6 +133,123 @@ class TestValidateOutput:
         p = tmp_path / "test.ipynb"
         p.write_text(json.dumps(nb), encoding="utf-8")
         assert _validate_output(p, 1.0) == 0
+
+
+# --- Lean diagnostics are errors too (#16176, finding 1) ---
+
+
+def _lean_html(messages_json):
+    """Sortie Lean telle qu'un notebook la stocke : le JSON du REPL dans un <code>."""
+    return ["<details>\n", "    <summary>Raw output</summary>\n",
+            f"    <code>{messages_json}</code>\n", "</details>\n"]
+
+
+class TestLeanSeverityErrors:
+    """Un kernel Lean n'emet jamais `output_type: "error"` : il rend une
+    `display_data` dont le HTML porte les diagnostics du noyau. Le compteur qui
+    ne regardait que le niveau Jupyter rendait donc le meme `0 errors` sur un
+    kernel mort et sur un kernel sain."""
+
+    def _nb_with(self, html, exec_count=1):
+        return {"cells": [{"cell_type": "code", "execution_count": exec_count,
+                           "outputs": [{"output_type": "display_data",
+                                        "data": {"text/html": html,
+                                                 "text/plain": ["#eval 2+2"]},
+                                        "metadata": {}}]}]}
+
+    def test_lean_error_severity_is_counted(self, tmp_path):
+        nb = self._nb_with(_lean_html(
+            '{"messages": [{"severity": "error", "pos": {"line": 16, "column": 0},'
+            ' "endPos": {"line": 16, "column": 4},'
+            ' "data": "unexpected identifier; expected command"}], "env": 13}'))
+        p = tmp_path / "lean.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 3
+
+    def test_lean_warning_and_info_are_not_errors(self, tmp_path):
+        nb = self._nb_with(_lean_html(
+            '{"messages": [{"severity": "warning", "data": "unused variable `input`"},'
+            ' {"severity": "info", "data": "{ inFeatures := 784,"}], "env": 1}'))
+        p = tmp_path / "lean_ok.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 0
+
+    def test_lean_error_counted_despite_brackets_in_data(self, tmp_path):
+        """Le `data` porte du source Lean, donc des `]` et des `{` : l'extraction
+        doit etre un vrai parse JSON, pas un `\\[.*?\\]` qui coupe trop tot."""
+        nb = self._nb_with(_lean_html(
+            '{"messages": [{"severity": "info", "data": "def f := [1, 2] { x := 3 }"},'
+            ' {"severity": "error", "data": "failed to synthesize instance"}], "env": 7}'))
+        p = tmp_path / "lean_brackets.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 3
+
+    def test_count_cell_errors_splits_jupyter_from_lean(self, tmp_path):
+        nb = {"cells": [
+            {"cell_type": "code", "execution_count": 1,
+             "outputs": [{"output_type": "error", "ename": "ValueError", "evalue": "bad"}]},
+            {"cell_type": "code", "execution_count": 2,
+             "outputs": [{"output_type": "display_data",
+                          "data": {"text/html": _lean_html(
+                              '{"messages": [{"severity": "error", "data": "boom"}], "env": 0}')}}]},
+            {"cell_type": "code", "execution_count": 3, "outputs": []},
+        ]}
+        assert count_cell_errors(nb) == (1, 1)
+
+    def test_one_lean_error_cell_counted_once_even_with_two_outputs(self, tmp_path):
+        """Une cellule qui rend deux sorties fautives reste UNE cellule en erreur."""
+        err = {"output_type": "display_data",
+               "data": {"text/html": _lean_html(
+                   '{"messages": [{"severity": "error", "data": "boom"}], "env": 0}')}}
+        nb = {"cells": [{"cell_type": "code", "execution_count": 1, "outputs": [err, err]}]}
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_severity_mentioned_without_a_messages_block_is_not_flagged(self, tmp_path):
+        """Un texte qui PARLE de la severite, sans bloc portant la cle `messages`,
+        n'est pas un diagnostic."""
+        nb = self._nb_with(["La sortie porte \"severity\": \"error\" quand ca casse."])
+        p = tmp_path / "prose.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        assert _validate_output(p, 1.0) == 0
+
+    # --- l'ancre doit viser la CLE, pas le prefixe `{"messages"` ---
+    #
+    # Le REPL Lean ne garantit pas que `messages` soit le premier champ du bloc.
+    # Mesure sur le corpus : 108 des 1030 blocs commencent par `sorries`, donc
+    # une ancre de prefixe les ratait tous en silence.
+
+    def test_lean_error_counted_when_messages_is_not_the_first_field(self):
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [], "messages": [{"severity": "error",'
+            ' "data": "failed to synthesize instance"}], "env": 11}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_counted_when_a_nested_brace_precedes_the_key(self):
+        """Le `{` le plus proche de la cle peut appartenir a un AUTRE objet : la
+        remontee doit continuer jusqu'a celui qui porte vraiment `messages`."""
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [{"pos": {"line": 9, "column": 2}}],'
+            ' "messages": [{"severity": "error", "data": "boom"}], "env": 3}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_and_sorries_count_once_per_cell(self):
+        """Un bloc a champs multiples reste UNE cellule en erreur, meme si les
+        deux champs portent de la matiere."""
+        nb = self._nb_with(_lean_html(
+            '{"sorries": [{"pos": {"line": 1}}],'
+            ' "messages": [{"severity": "error", "data": "boom"},'
+            ' {"severity": "error", "data": "boom2"}], "env": 0}'))
+        assert count_cell_errors(nb) == (0, 1)
+
+    def test_lean_error_counted_in_a_non_enumerated_output_type(self):
+        """Aucun filtre sur `output_type` : un type non enumere qui porte le
+        diagnostic ne doit pas le perdre en silence."""
+        nb = {"cells": [{"cell_type": "code", "execution_count": 1,
+                         "outputs": [{"output_type": "some_future_kind",
+                                      "data": {"text/html": _lean_html(
+                                          '{"messages": [{"severity": "error",'
+                                          ' "data": "boom"}], "env": 0}')}}]}]}
+        assert count_cell_errors(nb) == (0, 1)
 
 
 # --- execute_notebook dispatch ---

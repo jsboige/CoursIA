@@ -65,6 +65,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",
     ],
+    # genai-helpers-tests.yml : famille GenAI helpers, dir entier (tranche 2
+    # de #13746) — 138 tests (errants racine helpers/ + helpers/tests/),
+    # deps numpy/requests/python-dotenv/pillow/librosa au pip install du job.
+    ".github/workflows/genai-helpers-tests.yml": [
+        "MyIA.AI.Notebooks/GenAI/shared/helpers",
+    ],
     ".github/workflows/secret-scan.yml": [
         "scripts/secrets/tests/test_gitleaks_qwen_rule.py",
         "scripts/secrets/tests/test_gitleaks_10143_classes.py",
