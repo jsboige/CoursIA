@@ -3499,6 +3499,13 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
 # En cas de doute : avertir (A RELIRE), jamais bloquer.
 _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 
+# #16876 : un token hex immediatement qualifie par `host` (trailer Hermes
+# « [Hermes ..., host c92df397a786] ») est un identifiant de SIEGE, pas une
+# empreinte Git. Le garde l'exclut SANS toucher aux SHAs reels cites par une
+# phrase de levee (protection #13639 intacte : seul le qualifie par `host`
+# saute).
+_HOST_QUALIFIED = re.compile(r"\bhost\s*:?\s*$")
+
 
 def _cited_shas(body: str) -> set[str]:
     """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
@@ -3515,12 +3522,20 @@ def _cited_shas(body: str) -> set[str]:
     commits »). Une empreinte Git de 7+ caracteres sans AUCUN chiffre est
     improbable ((6/16)^7 ~ 1e-3 au format court) ;
     l'exiger chiffre supprime la classe entiere.
+
+    #16876 : le token suit immediatement le mot `host` (qualifiant de
+    siege) -> exclu. Sur #16685, le trailer « host c92df397a786 » etait
+    pris pour la preuve citee par la levee alors que la review etait
+    attachee au commit_id exact 31ac6b89 -- l'organe gardait la reserve
+    ouverte sur un SHA de machine inexistant.
     """
     out: set[str] = set()
-    for m in _SHA_CITED.finditer((body or "").lower()):
+    low = (body or "").lower()
+    for m in _SHA_CITED.finditer(low):
         tok = m.group(0)
         if (any(ch in "abcdef" for ch in tok)
-                and any(ch.isdigit() for ch in tok)):
+                and any(ch.isdigit() for ch in tok)
+                and not _HOST_QUALIFIED.search(low[:m.start()])):
             out.add(tok)
     return out
 
@@ -3766,6 +3781,24 @@ def _attach_absent_sha_context(data: dict) -> None:
     data["_head_blobs"] = head_blobs
 
 
+# #16780 — un corps reduit a un chemin local (l'accident `gh --body
+# "@$TEMP/x.md"` : gh poste le chemin LITERAL, --body-file etait voulu).
+# Le fichier vise vit sur UNE machine : aucun lecteur de la PR ne peut
+# l'ouvrir, et son NOM peut contenir un marqueur de levée par sous-chaine
+# (« levee_16670.md », « merged.md ») — le pointeur deviendrait une levée
+# FABRIQUEE, le defaut mesure sur #16670 (arbitrage ai-01 : corps-pointeur
+# INERTE, symetrie de la prose sans marqueur). Le garde advisory jumeau
+# check_local_path_waivers.py rend la FUITE visible sans bloquer ; ici,
+# seule l'INERTIE importe.
+_LONE_PATH_BODY_RE = re.compile(
+    r"^@?(?:"
+    r"[A-Za-z]:[\\/][^\s]+"  # C:\Users\...\Temp/a16670.md (separateurs mixtes)
+    r"|/(?:tmp|home|Users|var|opt|mnt)/[^\s]+"
+    r"|~/[^\s]+"
+    r")$"
+)
+
+
 def can_lift(comment: dict) -> bool:
     """Ce commentaire est-il capable de LEVER un nit qui le precede ?
 
@@ -3795,6 +3828,10 @@ def can_lift(comment: dict) -> bool:
     # #12908 : la phrase exigée est une levée VIVE — un tag de protocole
     # qui narre « une levée explicite » (exigence, pas geste) ne peut
     # toujours pas lever.
+    # #16780 : inertie du corps-pointeur (cf _LONE_PATH_BODY_RE). rstrip :
+    # l'ancre $ du regex ne doit pas echouer sur une newline finale.
+    if _LONE_PATH_BODY_RE.match(body.rstrip()):
+        return False
     if body.startswith(AGENT_PREFIXES) and not has_live_lift(body):
         return False
     return True

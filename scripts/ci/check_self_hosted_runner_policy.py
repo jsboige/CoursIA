@@ -446,6 +446,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (acceptance reprise #14598). Rollback = revert de la PR (l'entree
     #   disparait de l'allowlist).
     "ict-tests-profile.yml",
+    # #16081 / c.559 (owner myia-po-2023:CoursIA-2, PR #16082) : kernel-drift
+    #   guard -- detecte la re-execution d'un notebook sous un kernel Python
+    #   ou une signature float-repr differente de la base. Pure-Python, pas
+    #   de secret, pas de GITHUB_TOKEN cote job. Garde same-repo universelle
+    #   au niveau job (#13874) -- fork PRs skipped. Pull-request filtre par
+    #   paths `**.ipynb` + 3 fichiers du garde (auto-couverture) + workflow
+    #   lui-meme : declenche seulement quand un notebook est touche OU le
+    #   garde evolue. workflow_dispatch pour re-run manuel avec base_ref
+    #   parametrable. runs-on STATIQUE jambe Linux containerisee (meme
+    #   routage que notebook-papermill-ratchet.yml, tranche 1 #13378).
+    #   Concurrency cancel-in-progress (le balayage de kernel sur N notebooks
+    #   peut etre rejoue sans frais). Pas de label pose. Rollback = revert
+    #   de la PR (l'entree disparait de l'allowlist).
+    "notebook-kernel-drift-guard.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

@@ -72,8 +72,9 @@ def _snapshot(dossier: str | None = None) -> dict:
 
 
 def _errors(snapshot: dict) -> list[str]:
-    ready, errors = mod.evaluate(snapshot)
-    assert not ready
+    """Assert the snapshot yields NO trustworthy dossier, and return why."""
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
     return errors
 
 
@@ -150,9 +151,59 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     assert any(error.startswith("comment author must") for error in errors)
 
 
-def test_blocked_preflight_cannot_satisfy_gate():
-    errors = _errors(_snapshot(_body(verdict="BLOCKED")))
-    assert any(error.startswith("verdict must") for error in errors)
+def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
+    """An honest BLOCKED dossier must be distinguishable from an absent one.
+
+    Requiring verdict:READY for exit 0 made the right to READ depend on the state
+    of MERGEABILITY, so the coordinator could only open pull requests that were
+    already fine -- never the oldest ones, which are old precisely because they
+    are blocked. It also pushed the adjoint to write READY just to be visible,
+    which measurably produced a false `b0: clear` on a PR with three open HIGH
+    findings (#16160). See #16800.
+    """
+    verdict, errors = mod.evaluate(_snapshot(_body(verdict="BLOCKED")))
+    assert verdict == mod.VERDICT_BLOCKED
+    assert errors == []
+
+
+def test_blocked_dossier_still_requires_full_structural_integrity():
+    """exit 3 is NOT a softer gate: the fingerprint stays mandatory."""
+    for field, value in (
+        ("surfaces-sha256", "0" * 64),
+        ("head", "f" * 40),
+        ("lane", "myia-po-2023:CoursIA"),
+        ("complete", "false"),
+        ("schema", "2"),
+    ):
+        errors = _errors(_snapshot(_body(verdict="BLOCKED", **{field: value})))
+        assert errors, f"a BLOCKED dossier with a bad {field} must not be trusted"
+
+
+def test_blocked_dossier_tolerates_the_very_facts_that_block_it():
+    """Unresolved threads and a red B.0 refute READY, not BLOCKED.
+
+    Built in the right order on purpose: the unresolved thread is placed BEFORE
+    the fingerprint is taken, because the fingerprint covers threads. Computing
+    it first and mutating after produces a mismatch -- which is the gate working,
+    not a tolerance to test.
+    """
+    live = _base_snapshot()
+    live["threads"] = [{"isResolved": False}]
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="fail",
+        domain="fail",
+        **{"threads-unresolved": "1",
+           "surfaces-sha256": mod.surfaces_fingerprint(live)},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_noncanonical_verdict_is_not_a_dossier():
+    for bogus in ("ready", "PREFLIGHT_HOLD", "RIPE", ""):
+        errors = _errors(_snapshot(_body(verdict=bogus)))
+        assert any(error.startswith("verdict must be one of") for error in errors)
 
 
 def test_unresolved_thread_cannot_be_ready():
@@ -269,3 +320,106 @@ def test_ready_dossier_is_evidence_not_merge_authorization():
     # The result intentionally has no merge/approve decision or mutation API.
     assert not hasattr(mod, "merge")
     assert not hasattr(mod, "approve")
+
+
+# --- The coordinator's own later acts do not expire the dossier (#16800) ------
+#
+# Measured trap this closes: the gate returned exit 0 on #16072, the coordinator
+# read it as authorised, lifted its OWN CHANGES_REQUESTED -- and that very review
+# made `reviews-reviewed` stale, so the gate then refused the merge. The act the
+# gate authorised invalidated the dossier the gate required. Without this, a PR
+# whose only blocker is a coordinator reserve can never be merged without a full
+# adjoint round-trip.
+
+T0 = "2026-09-19T00:00:00Z"
+T1 = "2026-09-19T01:00:00Z"
+
+
+def _stamped_snapshot(dossier_body: str) -> dict:
+    snapshot = _base_snapshot()
+    for row in snapshot["comments"]:
+        row.setdefault("createdAt", T0)
+    for row in snapshot["reviews"]:
+        row.setdefault("submittedAt", T0)
+        row.setdefault("author", {"login": "clusterManager-Myia"})
+    comment = _comment(dossier_body)
+    comment["createdAt"] = T0
+    snapshot["comments"].append(comment)
+    return snapshot
+
+
+def _dossier_for(snapshot: dict, **changes: str) -> str:
+    """Body whose fingerprint and counts match `snapshot` as it stands."""
+    return _body(
+        **{
+            "surfaces-sha256": mod.surfaces_fingerprint(snapshot),
+            "comments-reviewed": str(len(snapshot["comments"])),
+            "reviews-reviewed": str(len(snapshot["reviews"])),
+            **changes,
+        }
+    )
+
+
+def test_coordinator_own_later_review_does_not_expire_the_dossier():
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    snapshot["reviews"].append(
+        {
+            "state": "APPROVED",
+            "author": {"login": mod.COORDINATOR_LOGIN},
+            "submittedAt": T1,
+            "body": "LIFT -- my own CHANGES_REQUESTED, re-measured at exact head.",
+        }
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_coordinator_own_later_comment_does_not_expire_the_dossier():
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.COORDINATOR_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_any_other_author_still_expires_the_dossier():
+    """The negative control: neutrality is for the coordinator ALONE."""
+    for login in ("jsboige", "clusterManager-Myia", "lcetinsoy"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        foreign = _comment("a new concern", login=login)
+        foreign["createdAt"] = T1
+        snapshot["comments"].append(foreign)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+        snapshot2 = _stamped_snapshot(_dossier_for(base))
+        snapshot2["reviews"].append(
+            {"state": "CHANGES_REQUESTED", "author": {"login": login},
+             "submittedAt": T1, "body": "new reserve"}
+        )
+        assert _errors(snapshot2), login
+
+
+def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
+    """Neutrality is bounded by time, not by identity alone.
+
+    A coordinator reserve posted before the dossier is exactly what the adjoint
+    must have read; neutralising it by author would let a dossier ignore a live
+    CHANGES_REQUESTED.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    stale_body = _dossier_for(base)
+    snapshot = _stamped_snapshot(stale_body)
+    snapshot["reviews"].append(
+        {"state": "CHANGES_REQUESTED", "author": {"login": mod.COORDINATOR_LOGIN},
+         "submittedAt": "2026-09-18T00:00:00Z", "body": "reserve posee AVANT le dossier"}
+    )
+    assert _errors(snapshot)
