@@ -1,7 +1,7 @@
 - name: "Z3-Python-05 Quantifiers & Proofs"
   family: SMT/Z3-API
-  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 quantifiers & proofs branche NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkForall/MkExists, Solver.Check() = Status.UNSATISFIABLE = preuve par refutation) et pyz3 (`from z3 import *`, ForAll/Exists, prove() par refutation, Fermat last theorem = unknown) sont les deux bindings officiels du meme coeur C++ Z3 — pas un pont intermediaire. Aucune asymetrie de machinerie a corriger."
