@@ -36,10 +36,19 @@ Canonical comment body (the marker must be the first line):
     [/ADJOINT PREFLIGHT]
 
 The comment count excludes the dossier comment itself. Any observable later
-issue comment, review, inline-thread, PR-metadata, check, or head change
-invalidates the dossier and requires a fresh one. GitHub does not expose a
-stateless audit trail for an event that is later deleted or reverted; this gate
-therefore certifies the current surfaces, not erased history.
+issue comment, review, inline-thread, PR-metadata, or head change invalidates
+the dossier and requires a fresh one. Check-runs are NOT a hashed surface
+(#16957): a check that concludes -- even in success -- must not expire a
+dossier, because anything that triggers a workflow (a review, a comment, a
+sweep) re-opens that race and the dossier writer can never win it. Instead the
+gate recomputes the latest-wins check verdicts at evaluation time and refuses
+the dossier when they contradict its `checks:` claim, naming the failing
+check. Dossiers stamped before #16957 embedded the check state in
+surfaces-sha256; their stamps remain accepted while that state is
+byte-identical, and need one mechanical re-stamp (--template) once a check
+moves. GitHub does not expose a stateless audit trail for an event that is
+later deleted or reverted; this gate therefore certifies the current
+surfaces, not erased history.
 
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
@@ -118,6 +127,10 @@ EXIT_READY = 0
 EXIT_NO_DOSSIER = 1
 EXIT_UNKNOWN = 2
 EXIT_BLOCKED_WITH_SUBSTANCE = 3
+# Conclusions that do not refute `checks: latest-wins-green`. `skipped` and
+# `neutral` are not failures; anything else completed (failure, timed_out,
+# cancelled, action_required, startup_failure, stale...) does (#16957).
+GREEN_CONCLUSIONS = {"success", "skipped", "neutral"}
 START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -265,18 +278,12 @@ def _integer(fields: dict[str, str], key: str, errors: list[str]) -> int | None:
     return int(value)
 
 
-def surfaces_fingerprint(
+def _fingerprint_payload(
     snapshot: dict[str, Any],
-    comment_limit: int | None = None,
-    neutral_after: str | None = None,
-) -> str:
-    """Hash stable content from every discussion surface plus the PR body.
-
-    ``neutral_after`` is the dossier's own timestamp. Reviews the coordinator
-    submitted after it are excluded, because the coordinator authored them; see
-    ``_is_own_later_act``. Rendering a template passes ``None``, so a fresh
-    dossier still attests every surface that exists when it is written.
-    """
+    comment_limit: int | None,
+    neutral_after: str | None,
+    include_checks: bool,
+) -> dict[str, Any]:
     comments = snapshot.get("comments") or []
     if comment_limit is not None:
         comments = comments[:comment_limit]
@@ -284,7 +291,7 @@ def surfaces_fingerprint(
 
     author = _login
 
-    payload = {
+    payload: dict[str, Any] = {
         "pr": {
             "number": snapshot.get("number"),
             "state": snapshot.get("state"),
@@ -314,17 +321,121 @@ def surfaces_fingerprint(
             for row in reviews
         ],
         "threads": snapshot.get("threads") or [],
-        "checks": sorted(
+    }
+    if include_checks:
+        payload["checks"] = sorted(
             snapshot.get("statusCheckRollup") or [],
             key=lambda row: json.dumps(
                 row, sort_keys=True, separators=(",", ":")
             ),
-        ),
-    }
+        )
+    return payload
+
+
+def _digest(payload: dict[str, Any]) -> str:
     encoded = json.dumps(
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def surfaces_fingerprint(
+    snapshot: dict[str, Any],
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+) -> str:
+    """Hash stable content from every DISCUSSION surface plus the PR body.
+
+    Certifies: PR number/state/title/draft/base/body, issue comments,
+    reviews (minus the coordinator's own later ones), review threads -- as
+    read when the fingerprint is taken. Does NOT certify check-runs (#16957):
+    a concluding check must not expire a stamp it contradicts nothing in; the
+    gate re-verifies the live latest-wins conclusions against the dossier's
+    ``checks:`` claim at evaluation time instead.
+
+    ``neutral_after`` is the dossier's own timestamp. Reviews the coordinator
+    submitted after it are excluded, because the coordinator authored them; see
+    ``_is_own_later_act``. Rendering a template passes ``None``, so a fresh
+    dossier still attests every surface that exists when it is written.
+    """
+    return _digest(
+        _fingerprint_payload(snapshot, comment_limit, neutral_after, False)
+    )
+
+
+def legacy_surfaces_fingerprint(
+    snapshot: dict[str, Any],
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+) -> str:
+    """Pre-#16957 stamp algorithm: the same payload PLUS the check rollup.
+
+    Kept so dossiers stamped before #16957 -- whose hash embedded the check
+    state -- remain verifiable for as long as that state is byte-identical.
+    Once any check concludes, a legacy stamp stops matching; recovery is one
+    mechanical re-stamp (--template recomputes every mechanical field, no
+    re-reading of surfaces), after which no check conclusion can ever expire
+    the dossier again. A SHA-256 over data that has since changed cannot be
+    re-derived, which is why zero-touch recovery of raced legacy stamps is
+    not offered. Drop this function when no open dossier carries a legacy
+    stamp.
+    """
+    return _digest(
+        _fingerprint_payload(snapshot, comment_limit, neutral_after, True)
+    )
+
+
+def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
+    """Last COMPLETED verdict per check name: group by name, latest ``started_at``
+    (``id`` as tiebreak), keep that run.
+
+    Runs still in flight have no verdict yet and are skipped; the name falls
+    back to its latest completed run, which is the last word actually said.
+    Grouping by name -- not reading the rollup twin -- is what avoids painting
+    a head red with the cancelled run of a superseded pair (#16957).
+    """
+    verdicts: dict[str, tuple[tuple, dict[str, Any]]] = {}
+    for run in check_runs or []:
+        if (run.get("status") or "").lower() != "completed":
+            continue
+        key = run.get("name") or ""
+        rank = (run.get("started_at") or "", run.get("id") or 0)
+        current = verdicts.get(key)
+        if current is None or rank > current[0]:
+            verdicts[key] = (rank, run)
+    return {name: run for name, (rank, run) in verdicts.items()}
+
+
+def check_claim_contradictions(
+    claim: str, check_runs: list[dict[str, Any]] | None
+) -> list[str]:
+    """Re-verify a dossier's ``checks:`` claim against the live latest-wins state.
+
+    Hashing check-runs certified their state at stamp time but never that the
+    claim matched it (#16957); a check concluding after the dossier expired the
+    stamp instead of being checked. The claim is now compared to what the head
+    actually carries: every latest-wins conclusion must be green, else the
+    check is named -- with the run's ``output.title`` when present (the PR-gate
+    class DWELL/FAIL lives there, as information for the reader, not in the
+    predicate).
+    """
+    if claim != "latest-wins-green":
+        return []
+    contradictions = []
+    for name, run in sorted(latest_wins_check_runs(check_runs).items()):
+        conclusion = (run.get("conclusion") or "").lower()
+        if conclusion in GREEN_CONCLUSIONS:
+            continue
+        title = ((run.get("output") or {}).get("title") or "").strip()
+        detail = f"'{name}' ({conclusion}"
+        if title:
+            detail += f"; {title}"
+        detail += ")"
+        contradictions.append(
+            "checks claim 'latest-wins-green' is contradicted by live check "
+            + detail
+        )
+    return contradictions
 
 
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
@@ -376,6 +487,14 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 errors.append(f"{key} must be {value!r} when verdict is READY")
         if f.get("domain") not in {"pass", "not-applicable"}:
             errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
+        # The claim is not taken on faith: it is checked against the live
+        # latest-wins verdicts, naming any contradicting check (#16957).
+        errors.extend(
+            check_claim_contradictions(
+                f.get("checks", ""), snapshot.get("checkRuns")
+            )
+        )
+
     dossier_lane = f.get("lane", "")
     if dossier_lane not in QUALIFYING_LANES:
         errors.append(
@@ -400,13 +519,21 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         errors.append("head must be a full lowercase 40-character SHA")
     if not re.fullmatch(r"[0-9a-f]{64}", f.get("surfaces-sha256", "")):
         errors.append("surfaces-sha256 must be a lowercase SHA-256")
+    # Dual acceptance (#16957): a stamp matches the post-fix fingerprint
+    # (discussion surfaces only) or the legacy one (which also embedded the
+    # check rollup). Both certify every discussion surface; the legacy digest
+    # is strictly more fields, so accepting either weakens nothing.
     live_fingerprint = surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
-    if f.get("surfaces-sha256") != live_fingerprint:
+    legacy_fingerprint = legacy_surfaces_fingerprint(
+        snapshot, dossier.comment_index, dossier.created_at
+    )
+    if f.get("surfaces-sha256") not in {live_fingerprint, legacy_fingerprint}:
         errors.append(
             "discussion surfaces changed or were not fully attested: "
-            f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint}"
+            f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
+            "(legacy stamps whose checks moved need one --template re-stamp)"
         )
 
     comparisons = {
@@ -568,6 +695,29 @@ def _reviews(pr: int) -> list[dict[str, Any]]:
     ]
 
 
+def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
+    """Check-runs of the exact head commit, paginated (#16957).
+
+    Read from the commit rather than the PR rollup because the rollup surfaces
+    the cancelled twin when two runs share a SHA; latest-wins per name is
+    computed downstream, never on the raw list.
+    """
+    runs: list[dict[str, Any]] = []
+    page = 1
+    while True:
+        data = gh_json([
+            "api",
+            f"repos/{REPO}/commits/{head_sha}/check-runs?per_page=100&page={page}",
+        ])
+        batch = data.get("check_runs") if isinstance(data, dict) else None
+        if batch is None:
+            raise RuntimeError("check-runs response has no 'check_runs' array")
+        runs.extend(batch)
+        if len(batch) < 100:
+            return runs
+        page += 1
+
+
 def _pr_metadata(pr: int) -> dict[str, Any]:
     fields = (
         "number,title,body,state,isDraft,baseRefName,headRefOid,updatedAt,"
@@ -598,6 +748,11 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
     snapshot["threads"] = review_threads(pr)
+    # Fetched inside the before/after bracket: a check concluding during the
+    # read bumps updatedAt and aborts the snapshot (transient UNKNOWN, the
+    # caller retries), so the claim verification below never reads a state
+    # that was already stale when captured.
+    snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
     after = _pr_metadata(pr)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
@@ -670,6 +825,19 @@ def main() -> int:
             return 0
         if args.fingerprint:
             print(surfaces_fingerprint(snapshot))
+            print(
+                "certifies: PR body/title/state/base + issue comments + reviews "
+                "+ review threads, as read just now (#16957)",
+                file=sys.stderr,
+            )
+            print(
+                "does NOT certify: check-runs. The gate re-verifies the live "
+                "latest-wins check conclusions against the dossier's "
+                "'checks:' claim at evaluation time and names any "
+                "contradicting check. Pre-#16957 stamps that embedded checks "
+                "stay acceptable only while that state is unchanged.",
+                file=sys.stderr,
+            )
             return 0
         verdict, errors = evaluate(snapshot)
     except (

@@ -38,6 +38,16 @@ def _base_snapshot() -> dict:
         "reviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}],
         "threads": [{"isResolved": True}],
         "statusCheckRollup": [{"name": "PR gate", "conclusion": "SUCCESS"}],
+        "checkRuns": [
+            {
+                "id": 1,
+                "name": "PR gate",
+                "status": "completed",
+                "conclusion": "success",
+                "started_at": "2026-09-20T10:00:00Z",
+                "output": {"title": "PR gate -- all green"},
+            }
+        ],
         "changedFiles": 3,
         "additions": 42,
         "deletions": 7,
@@ -310,6 +320,9 @@ def test_comment_after_dossier_invalidates_it():
 
 
 def test_same_count_surface_mutation_invalidates_fingerprint():
+    # "checks" is deliberately absent: check-runs are no longer a hashed
+    # surface (#16957). A conclusion change is caught by the claim
+    # verification instead -- see test_red_check_refuses_ready_naming_the_check.
     for surface, mutate in (
         ("body", lambda snapshot: snapshot.__setitem__("body", "edited body")),
         (
@@ -322,12 +335,6 @@ def test_same_count_surface_mutation_invalidates_fingerprint():
             "thread",
             lambda snapshot: snapshot["threads"][0].__setitem__(
                 "isResolved", False
-            ),
-        ),
-        (
-            "checks",
-            lambda snapshot: snapshot["statusCheckRollup"][0].__setitem__(
-                "conclusion", "FAILURE"
             ),
         ),
     ):
@@ -538,6 +545,199 @@ def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
          "submittedAt": "2026-09-18T00:00:00Z", "body": "reserve posee AVANT le dossier"}
     )
     assert _errors(snapshot)
+
+
+# --- Checks are re-verified, not hashed (#16957) --------------------------------
+#
+# Measured trap this closes: `perimeter review guard (#11268)` starts on a
+# review, the adjoint posts the dossier while the guard is in flight, the
+# guard concludes SUCCESS -- and the stamp expired on a check nobody wrote.
+# 7 of the 54 dossiers at exact head died of this, 4 of them on the same
+# guard within three seconds of each other. Hashing the check state both
+# guaranteed that race and certified nothing about the `checks:` claim.
+
+
+def test_check_completing_green_after_dossier_does_not_expire_it():
+    """Positive control: a green conclusion after the stamp must not kill it."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"].append(
+        {"id": 2, "name": "perimeter review guard (#11268)",
+         "status": "completed", "conclusion": "success",
+         "started_at": "2026-09-20T11:14:54Z",
+         "output": {"title": "perimeter review guard -- pass"}}
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_green_check_may_also_move_the_rollup_after_the_stamp():
+    """The rollup is neither hashed (new stamps) nor read for the claim: only
+    the per-name latest-wins verdicts of the head's check-runs are."""
+    snapshot = _snapshot(_body())
+    snapshot["statusCheckRollup"].append(
+        {"name": "perimeter review guard (#11268)", "conclusion": "SUCCESS"}
+    )
+    snapshot["checkRuns"].append(
+        {"id": 2, "name": "perimeter review guard (#11268)",
+         "status": "completed", "conclusion": "success",
+         "started_at": "2026-09-20T11:14:54Z", "output": {}}
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_red_check_refuses_ready_naming_the_check():
+    """A red conclusion after the stamp is caught BY NAME, not by hash drift."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 3, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T12:00:00Z",
+         "output": {"title": "FAIL -- failing checks: notebook-validate"}}
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure; FAIL -- failing checks: notebook-validate)" in error
+        for error in errors
+    )
+
+
+def test_lying_dossier_claiming_green_over_a_red_head_is_refused():
+    """Decisive negative control: the claim itself is verified.
+
+    Pre-#16957 the hash certified the check STATE at stamp time but never that
+    `checks: latest-wins-green` matched it: a dossier could claim green on a
+    red head and pass, as long as nobody posted after it. Built with the
+    fingerprint computed over the red live state, so ONLY the claim
+    verification can refuse it.
+    """
+    live = _base_snapshot()
+    live["checkRuns"] = [
+        {"id": 1, "name": "notebook-validate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z",
+         "output": {}}
+    ]
+    dossier = _body(**{"surfaces-sha256": mod.surfaces_fingerprint(live)})
+    live["comments"].append(_comment(dossier))
+    errors = _errors(live)
+    assert any(
+        "contradicted by live check 'notebook-validate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_latest_wins_picks_the_most_recent_completed_run_per_name():
+    """The rollup-twin trap: a cancelled older run must not paint the head red."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "cancelled", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_latest_wins_red_older_run_loses_to_newer_green():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_skipped_and_neutral_conclusions_are_not_red():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "codeql", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "coverage", "status": "completed",
+         "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_in_flight_rerun_has_no_verdict_and_hides_nothing():
+    """A rerun still in flight cannot veto; the last completed verdict stands --
+    green stays ready, red stays refused."""
+    green = _snapshot(_body())
+    green["checkRuns"].append(
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-20T13:00:00Z"}
+    )
+    verdict, errors = mod.evaluate(green)
+    assert verdict == mod.VERDICT_READY, errors
+
+    red = _snapshot(_body())
+    red["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-20T13:00:00Z"},
+    ]
+    assert any("'PR gate'" in error for error in _errors(red))
+
+
+def test_blocked_dossier_is_not_refuted_by_a_red_check():
+    """Claim verification targets the READY claim; a BLOCKED dossier attesting a
+    red head is honest and stays a valid dossier (exit 3 semantics, #16800)."""
+    live = _base_snapshot()
+    live["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z",
+         "output": {"title": "DWELL -- leve au premier balayage"}}
+    ]
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="pass",
+        domain="not-applicable",
+        **{"surfaces-sha256": mod.surfaces_fingerprint(live)},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_legacy_stamp_still_accepted_while_checks_unchanged():
+    """Backward acceptance: pre-#16957 stamps hashed the rollup as well; both
+    digests are valid certificates of the discussion surfaces."""
+    legacy = mod.legacy_surfaces_fingerprint(_base_snapshot())
+    snapshot = _snapshot(_body(**{"surfaces-sha256": legacy}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_legacy_stamp_whose_checks_moved_needs_a_mechanical_restamp():
+    """A legacy stamp whose checks moved matches NEITHER digest: the hash
+    embedded data that has since changed, and a SHA-256 over changed data
+    cannot be re-derived. The refusal names the recovery (--template), and the
+    re-stamped dossier can never again be expired by a check conclusion."""
+    snapshot = _snapshot(_body(**{
+        "surfaces-sha256": mod.legacy_surfaces_fingerprint(_base_snapshot())
+    }))
+    snapshot["statusCheckRollup"][0]["conclusion"] = "PENDING"
+    errors = _errors(snapshot)
+    assert any(
+        "discussion surfaces changed" in error
+        and "--template re-stamp" in error
+        for error in errors
+    )
+
+
+def test_surfaces_fingerprint_is_insensitive_to_check_state():
+    """The new digest must not move when only checks move -- that is the race
+    being closed. The legacy digest still does, which is why it is legacy."""
+    base = _base_snapshot()
+    moved = _base_snapshot()
+    moved["checkRuns"][0]["conclusion"] = "failure"
+    moved["statusCheckRollup"] = [{"name": "PR gate", "conclusion": "FAILURE"}]
+    assert mod.surfaces_fingerprint(base) == mod.surfaces_fingerprint(moved)
+    assert mod.legacy_surfaces_fingerprint(base) != mod.legacy_surfaces_fingerprint(moved)
 
 
 def test_template_renders_the_emitting_lane_not_a_borrowed_name():
