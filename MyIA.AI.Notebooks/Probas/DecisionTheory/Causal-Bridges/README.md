@@ -10,13 +10,14 @@
 
 | Notebook | Durée | Concepts |
 |----------|-------|----------|
-| [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
+| [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~65 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy` ; quatre tâches du **data-fusion** (sélection corrigée par IPW, transportabilité stratifiée), **CHT démontré machine** (deux SCM gaussiens à loi jointe identique, interventions opposées), jonction do-calculus ↔ baseline Shapley (`do` vs `voir`) ; Pearl (intervention) vs Hoel (émergence causale) |
 | [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
 | [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
 | [DoWhy-3 — Le graphe qu'on n'a pas](DoWhy-3-Decouverte-de-Structure.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; LiNGAM tranche sous non-gaussianité mais rend un DAG faux-silencieux sinon ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands dowhy) |
 | [DoWhy-4 — Le confondeur non observé](DoWhy-4-Sensibilite-Confounder-Cache.ipynb) | ~50 min | Sensibilité, pas certitude : « quelle force devrait avoir un confondeur caché pour annuler cet effet ? » — robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy` avec benchmark McGowan-Greevy, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé (`direct-simulation`) |
 | [DoWhy-5 — L'instrument faible](DoWhy-5-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `Quasi-Experimental.ipynb` |
 | [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
+| [Causal-Fairness — Décomposer la discrimination](Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
@@ -37,7 +38,7 @@ Les quatre séries **implantent le même formalisme** avec des outils différent
 | Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
 | Message passing exact | [Infer-5](../../Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
 | MCMC bayésien | [PyMC-5](../../PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC | incertitude postérieure sur l'effet, contrefactuel bayésien |
-| Émergence causale (Hoel) | [ICT-5](../../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), [ICT-6](../../../IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | PyPhi (CE 2.0) | information effective, coarse-graining, multiscale |
+| Émergence causale (Hoel) | [ICT-5](../../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), [ICT-6](../../../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | information effective, coarse-graining, multiscale |
 
 Là où Infer-5 et PyMC-5 instrumentent le `do` à la main sur leur moteur, `dowhy` **automatise l'identification** puis estime et réfute. Là où Pearl demande « quel est l'effet d'une intervention sur $X$ ? » dans un graphe **fixé**, Hoel (ICT-5/6) demande « **quelle échelle** de description porte le plus de causalité ? » — deux réponses complémentaires à la question causale.
 
@@ -48,6 +49,7 @@ Le notebook suit la convention du dépôt (stubs à compléter, sans erreur volo
 1. **Ajouter un second confondeur à la backdoor** — étendre l'ensemble d'ajustement à `{aptitude, motivation}`.
 2. **Rompre le critère front-door** — ajouter un chemin direct qui contourne le médiateur et vérifier que l'identification front-door échoue.
 3. **Comparer effet naïf et effet ajusté** — générer un nouveau jeu à effet vrai connu, mesurer l'écart dû au confondeur.
+4. **Le compromis biais-variance du transport stratifié** — refaire le transport de la tâche 4 à K ∈ {3, 20, 100} strates : biais résiduel intra-strate à petit K, variance Monte-Carlo à grand K.
 
 Exercices de DoWhy-2 :
 
@@ -72,3 +74,10 @@ Exercices de DoWhy-4 (sensibilité au confondeur non observé) :
 1. **Le rapport de forces** — renforcer le cache (`coef_u_*=1.8`) : la robustness value MONTE avec l'association observée (ça survit encore) ; affaiblir le signal (`tau=0.2, bruit_y=3.0`) : le RV passe sous le R² réel de U et le verdict bascule en ANNULABLE — c'est l'effet faible qu'on annule, pas le cache fort.
 2. **L'E-value de l'IC et la taille d'échantillon** — à `n=10000` l'IC se resserre, sa borne s'éloigne de 1 et l'E-value de l'IC monte vers celui de l'estimé ; l'estimé ponctuel (biais constant de U) bouge à peine.
 3. **Γ\* d'un effet plus faible** — reprendre le monde binaire à `b_x=0.2`, ré-apparier et recalculer Γ* : plus proche de 1 ; Γ\* mesure la solidité statistique face au pire des mondes, pas la vérité de l'effet.
+
+Exercices de Causal-Fairness (famille TV, Epic #16620) :
+
+1. **Casser l'identité linéaire** — ajouter une interaction `A × W` dans l'équation de `Y` : l'identité simple `NDE − NIE = TE` ne tient plus, mais Lem 4.1 et Thm 4.2 (algébriques) tiennent à la précision machine.
+2. **Str-DE-fair n'efface pas l'écart observé** — mettre le coefficient direct `A → Y` à zéro : NDE ≈ 0 mais la TV reste positive (canal indirect + spurieux) ; la règle des 80 % mesure l'écart, pas la discrimination directe.
+3. **La règle des 80 % sur d'autres attributs du crédit allemand** — `foreign_worker` (groupe de référence minuscule : quelle confiance au ratio ?) et l'âge binarisé à 25 ans.
+
