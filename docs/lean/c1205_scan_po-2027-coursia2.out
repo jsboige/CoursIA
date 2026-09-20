@@ -1,0 +1,48 @@
+=== Projets Lake avec dependance mathlib (28) ===
+
+--- Groupe leanprover_lean4_v4.33.0-db584cd6 [MUTUALISABLE] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
+  MyIA.AI.Notebooks/GameTheory/assignment_lean                           pas de checkout local
+  MyIA.AI.Notebooks/GameTheory/minimax_lean                              pas de checkout local
+  MyIA.AI.Notebooks/QuantConnect/kelly_lean                              JUNCTIONED
+  MyIA.AI.Notebooks/Search/search_lean                                   checkout physique (6.9 GB)
+  MyIA.AI.Notebooks/Sudoku/sudoku_lean                                   pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean                   pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean                          pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean                    pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean                           pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples                     pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean                     pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean                    pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean                 pas de checkout local
+
+--- Groupe leanprover_lean4_v4.32.1-520045ab [MUTUALISABLE] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
+  MyIA.AI.Notebooks/GameTheory/game_theory_lean                          JUNCTIONED
+  MyIA.AI.Notebooks/GameTheory/repeated_games_lean                       JUNCTIONED
+  MyIA.AI.Notebooks/ML/learning_theory_lean                              JUNCTIONED
+  MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean     JUNCTIONED
+  MyIA.AI.Notebooks/Probas/decision_theory_lean                          JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean                          JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean                            JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean                 JUNCTIONED
+
+--- Groupe leanprover_lean4_v4.25.0-1ccd71f8 [isole] : toolchain=leanprover/lean4:v4.25.0 mathlib=1ccd71f8 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream pas de checkout local
+
+--- Groupe leanprover_lean4_v4.31.0-rc2-acbd8f07 [isole] : toolchain=leanprover/lean4:v4.31.0-rc2 mathlib=acbd8f07 ---
+  MyIA.AI.Notebooks/GameTheory/conway_cgt_lean                           pas de checkout local
+
+--- Groupe leanprover_lean4_v4.32.1-520045ab [isole] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
+  MyIA.AI.Notebooks/Search/discrepancy_lean                              pas de checkout local
+
+--- Groupe leanprover_lean4_v4.32.1-520045ab [isole] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
+  MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters                 pas de checkout local
+
+--- Groupe leanprover_lean4_v4.33.0-db584cd6 [isole] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean                            checkout physique (6.63 GB)
+
+--- Groupe leanprover_lean4_v4.33.1-0df444a3 [isole] : toolchain=leanprover/lean4:v4.33.1 mathlib=0df444a3 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean                    pas de checkout local
+
+=== Economie totale potentielle (groupes en l'etat) : 0 GB ===
+Note : l'alignement des manifests (#2611 etape 2) peut elargir les groupes.
