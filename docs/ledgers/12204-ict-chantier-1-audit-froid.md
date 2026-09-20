@@ -26,7 +26,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 1 | Recoordonner | FIRSTHAND (A2, #13956) | 2+ (Sudoku-13, `conway_lean`, MGS-21) — les trois tiennent | empirique avec cause mesurée + Lean-formel kernel-décidable | **TABLE** — confirmée. Dette reformulée : les trois attestations sont des post-mortems — une théorie du « bon » changement choisirait la représentation avant de payer l'échec ([A2](12204-ict-chantier-1-a2.md)) |
 | 2 | Abstraire à dette bornée | RAPPORTE | **1** (Kroer-Sandholm externe) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 1 |
 | 3 | Quotienter / fibrer | FIRSTHAND (A3 + ce cycle) | **1 locale** (Lean-21b) | empirique-notebook | **⬇ FILE D'ATTENTE** — voir §Tombée 4 |
-| 4 | Décomposer localement | RAPPORTE | 2+ (ICT-15d jouet, Hashlife, EPITA) | empirique | **TABLE** avec dette ouverte (qui décide des bords) — grain A4 |
+| 4 | Décomposer localement | FIRSTHAND (A4, #14453) | 2+ recensées : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) + EPITA (empirique, identification restaurée) | Lean-formel + empirique | **TABLE** — confirmée. Dette reformulée en bipartition : la preuve décide des bords côté Hashlife (`padCenter2_margin_ge_jumpReach`), l'expérimentateur les choisit sans théorie côté ICT-15d ([A4](12204-ict-chantier-1-a4.md)) |
 | 5 | Recoller | RAPPORTE | **1 + 1 lecture** | Lean-formel (de Finetti) | **⬇ FILE D'ATTENTE** — voir §Tombée 3 |
 | 6 | Réparer localement sous garantie | RAPPORTE | **1** (Sandholm seul) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 2 |
 | 7 | Engendrer un témoin | FIRSTHAND (ce cycle) | 2+ (Sudoku-13, `conway_lean`, GT-16b #12259) | empirique + Lean-formel | **TABLE** — la mieux attestée du dépôt. GT-25 #12395 (translateur Life) renforcera la ligne quand elle quittera la file CI — non comptée tant qu'OPEN |
@@ -34,9 +34,9 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 9 | Élargir l'espace | FIRSTHAND (A3) | **2** (`planning_lean` Admissibility.lean:50 + SW-14 #12263) | Lean-formel + empirique | **TABLE** — promotion mesurée §Tombées (gain) |
 | 10 | Concevoir la règle | FIRSTHAND (ce cycle) | 2+ (GT-16b #12259, GT-20 #12303, SC-27 #12265) | empirique | **TABLE** — le mécanisme comme variable, trois familles |
 | 11 | Descendre sous budget | FIRSTHAND (A6 + c.1208) | **1 + 1 en instance** (`mimo_lean/Descent.lean` — thèse op 11 explicite, sorry-free ; Search-11d #16392 — comptée dès merge, convention op 7) | Lean-formel + empirique | en constitution — 2ᵉ attestation livrée sur substrat indépendant (c.1208) ; promotion TABLE à statuer par A7 |
-| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **1 directe** (GT-21 #12245) + renfort Loi III non indépendant | empirique-notebook | en constitution — **candidate forte** ; promotion A6 refusée (§Tranche A6) |
+| 12 | Composer des regards | FIRSTHAND (ce cycle + A6) | **2 directes** (GT-21 #12245 jeux 2×2 + Search-12a #16426 gridworld pondéré — comptée dès merge, convention op 7) | empirique-notebook ×2, substrats indépendants | en constitution — 2ᵉ attestation directe livrée ; promotion TABLE à statuer par la revue (witness form connu : paire incompatible exhibée, Search-12a §5) |
 | 13 | Traverser un mur | FIRSTHAND (A6) | **1** (GT-24 #12364 MERGED ; 24b = témoins impossibilité, même substrat) | empirique | en constitution — A6 : 1 attestation, famille 24/24b |
-| 14 | Agréger un collectif | FIRSTHAND (A6) | **1** (`Shapley.lean:614-634` Möbius/Harsanyi, sorry-free) | Lean-formel | en constitution — A6 : 1 attestation ; GaleShapley n'est pas une 2ᵉ (appariement ≠ agrégation) |
+| 14 | Agréger un collectif | FIRSTHAND (A6 + ce cycle) | **2** (`Shapley.lean:614-634` Möbius/Harsanyi sorry-free + SC-06 Python exécuté, PR ce cycle) | Lean-formel + empirique | **TABLE** — promotion mesurée §Gain 3 (même pattern que l'op 9) ; GaleShapley reste exclu (appariement ≠ agrégation) |
 
 ## Les quatre tombées (décisions de la revue extérieure, appliquées)
 
@@ -52,7 +52,7 @@ La mention « mauvais recollement → déviation adversariale » (Brown-Sandholm
 **Tombée 4 — Op 3 « Quotienter / fibrer » → FILE D'ATTENTE.**
 A3 a établi firsthand que `teorth/pfr` est **externe au dépôt** (find + grep : 0). Ce cycle vérifie que la contrepartie locale est arrivée : **Lean-21b MERGED** (#12252, 2026-08-22T12:57Z, « 3 primitives PFR + tests de limite »). C'est une vraie attestation locale — mais **une seule** : parler de « primitive transversale » exige un **second substrat**. → `FIRSTHAND / 1 attestation locale / empirique-notebook`.
 
-## Deux gains de mesure (le froid fait tomber ET remonter)
+## Trois gains de mesure (le froid fait tomber ET remonter)
 
 **Gain 1 — Op 9 « Élargir l'espace » passe à 2 attestations.**
 A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Python-Coup-Ontologique** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
@@ -62,6 +62,9 @@ Le body dit : « attestée une fois » (transformation vs morphisme, swap ordina
 
 **Contrepartie — Loi I « obstruction abstraite → témoin exploitable » retombe à 1 attestation.**
 Elle citait de Finetti **et** Brown-Sandholm comme deux attestations. La Tombée 3 requalifie Brown-Sandholm en lecture structurelle → la Loi I n'a plus que de Finetti (1). Le grade §3 doit être révisé en conséquence : **Loi I : 1 · Loi II : 2 · Loi III : 2**.
+
+**Gain 3 — Op 14 « Agréger un collectif » passe à 2 attestations.**
+La 1ʳᵉ (A6) : `Shapley.lean:614-634` — `Mobius.mobiusCoeff` / `Mobius.mobiusReconstruction`, l'inversion de Möbius sur le treillis des coalitions, sorry-free (0 `sorry` réel mesuré : l'unique occurrence du mot dans le fichier est de la prose, ligne 1260). Cette livraison : **SC-06 — Möbius, agrégation, pouvoir, manipulation** (`MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb`, PR ce cycle) exécute le miroir Python exact de ces deux définitions — reconstruction vérifiée par exécution sur les 16 coalitions de `[6;4,3,2,1]` (le re-test `[8;5,4,3,2,1]` est posé en exercice, non exécuté) — puis dérive la valeur de Shapley par les dividendes **et** par énumération des 24 ordres d'entree (deux voies indépendantes, écart 5.55e-17), mesure l'écart poids/pouvoir (Banzhaf ; dummy du Luxembourg, Conseil 1958) et instancie le témoin de Gibbard-Satterthwaite sur un Borda à électeurs pondérés. Deux substrats indépendants (Lean/preuve vs Python/exécution), même loi de décomposition en dividendes de Harsanyi. L'op 14 quitte « en constitution » et rejoint l'op 9 dans les promotions par la mesure.
 
 ## Preuves de ce cycle (firsthand, reproductibles)
 
@@ -87,7 +90,7 @@ lakes porteurs de sorry reel: 4/22
 
 ## Honnêteté méthodologique
 
-- Les labels `FIRSTHAND` ci-dessus renvoient aux preuves P1-P6 ou à A3 ; tout le reste est `RAPPORTE` (issu du body de l'EPIC ou de la revue, non relu ce cycle). Les tranches A2/A4 restent le chemin pour convertir les `RAPPORTE` restants.
+- Les labels `FIRSTHAND` ci-dessus renvoient aux preuves P1-P6, à A3 ou à A4 ; tout le reste est `RAPPORTE` (issu du body de l'EPIC ou de la revue, non relu ce cycle). Les conversions A2 (op 1) et A4 (op 4) sont livrées ; les `RAPPORTE` restants (ops 2, 5, 6) sont tous trois tombés en file d'attente (§Tombées 1-3) et n'ouvrent plus de tranche de conversion.
 - Cette tranche **applique** des décisions déjà tranchées par la revue extérieure pour les 4 tombées ; elle **mesure** les 2 gains et la contrepartie Loi I. Elle ne crée aucune règle nouvelle (cf `audit-cross-source-distillation` règle 2 : grain au cas par cas).
 - `RAPPORTE` n'est pas un déshonneur : c'est l'état honnête d'une table dont la fonction première (§6 du body) est précisément de distinguer le vérifié du rapporté.
 
