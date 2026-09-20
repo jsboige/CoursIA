@@ -15,7 +15,8 @@ repris tels quels ; seule la documentation et les exemples de la section
 | Fichier CoursIA | Fichier amont FLT |
 |---|---|
 | `Hecke/HeckeOperator.lean` (+ sibling `_en`) | `Definitions/Def_ModularForm_HeckeOperator.lean` |
-| `Hecke/SevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_seven_pid.lean` (tranche 1 de #16557 ; tranches suivantes : `eleven_pid`, `thirteen_pid`) |
+| `Hecke/SevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_seven_pid.lean` (tranche 1 de #16557) |
+| `Hecke/ElevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_eleven_pid.lean` (tranche 2 de #16557 ; tranche suivante : `thirteen_pid`) |
 
 ## Licence
 
