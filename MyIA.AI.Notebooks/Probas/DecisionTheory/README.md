@@ -9,7 +9,7 @@ L'arc rassemble **26 notebooks** répartis en trois traitements complémentaires
 | Composant | Notebooks | Stack | Ce qu'il apporte |
 |-----------|-----------|-------|------------------|
 | [`DecInfer/`](DecInfer/README.md) | 10 (8 C# + **2 Lean 4**) | Infer.NET (.NET 9) + kernel Lean | L'arc de référence : des axiomes vNM aux MDP et bandits, avec deux notebooks à **preuve formelle native** |
-| [`PyMC/`](PyMC/README.md) | 12 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ, puis la **jambe actuarielle** (8-12) |
+| [`DecPyMC/`](DecPyMC/README.md) | 12 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ, puis la **jambe actuarielle** (8-12) |
 | [`Causal-Bridges/`](Causal-Bridges/README.md) | 4 (Python) | `dowhy` (PyWhy) | Le **capstone causal** : l'échelle de Pearl et le do-calculus, plus les méthodes quasi-expérimentales (DiD, RDD, contrôle synthétique) |
 | [`decision_theory_lean`](../decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
 
@@ -67,9 +67,9 @@ Le parcours suit une progression unique, portée en parallèle par les deux mote
 
 Dix notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP) et **deux à kernel Lean 4** (companions natifs de preuve formelle). C'est l'arc canonique, le plus complet ; il va des axiomes vNM (notebook 1) jusqu'au Thompson Sampling (notebook 10), avec les preuves Lean de vNM (notebook 2) et de Gittins (notebook 9) intercalées à leur place pédagogique. **Détail notebook par notebook** : [`DecInfer/README.md`](DecInfer/README.md).
 
-### `PyMC/` — le miroir Python (MCMC)
+### `DecPyMC/` — le miroir Python (MCMC)
 
-Douze notebooks Python (`DecPyMC-1..12`) qui rejouent les mêmes concepts par échantillonnage NUTS et diagnostics ArviZ. Le miroir n'est pas une simple traduction : il expose des variantes propres au paradigme stochastique (diagnostic hiérarchique multi-sites, profils de risque par inférence, état latent à test imparfait). Les notebooks **8-12** forment la **jambe actuarielle** de l'arc — le passage de la décision bayésienne au métier de l'assurance : crédibilité de Bühlmann–Straub (DecPyMC-8), du risque à la prime pure et commerciale (DecPyMC-9), ruine et processus de Cramér–Lundberg (DecPyMC-10), valeur de l'information en souscription (DecPyMC-11), fréquence × sévérité hiérarchique (DecPyMC-12). **Détail** : [`PyMC/README.md`](PyMC/README.md).
+Douze notebooks Python (`DecPyMC-1..12`) qui rejouent les mêmes concepts par échantillonnage NUTS et diagnostics ArviZ. Le miroir n'est pas une simple traduction : il expose des variantes propres au paradigme stochastique (diagnostic hiérarchique multi-sites, profils de risque par inférence, état latent à test imparfait). Les notebooks **8-12** forment la **jambe actuarielle** de l'arc — le passage de la décision bayésienne au métier de l'assurance : crédibilité de Bühlmann–Straub (DecPyMC-8), du risque à la prime pure et commerciale (DecPyMC-9), ruine et processus de Cramér–Lundberg (DecPyMC-10), valeur de l'information en souscription (DecPyMC-11), fréquence × sévérité hiérarchique (DecPyMC-12). **Détail** : [`DecPyMC/README.md`](DecPyMC/README.md).
 
 ### `Causal-Bridges/` — le capstone causal (dowhy)
 
