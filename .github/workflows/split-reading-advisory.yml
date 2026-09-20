@@ -1,0 +1,63 @@
+name: Split-reading advisory
+
+# Source d'identite pour la garde absorbee par fast-lane-shadow (registre
+# TRANCHE12, issue #16762 — parapluie user « fusionner, pas empiler »).
+# Ce workflow garde seulement workflow_dispatch : cible d'identite pour
+# check_absorbed_check_run_identity (job.name == Guard.name) et re-run
+# manuel du recensement sur main.
+#
+# Detecteur : scripts/notebook_tools/check_split_reading_cells.py — recense
+# les paires consecutives de cellules d'interpretation :
+#   - named_split : « Lecture » puis « Lecture chiffree » (motif fondateur
+#     #16554, nit user 2026-09-17 : « Il aurait fallu fusionner les 2, pas
+#     rajouter une interpretation derriere une autre »)
+#   - generic_pair / separated_by_code : paires consecutives d'en-tetes
+#     d'interpretation (dette corpus, recensement PR #16786)
+# Mandat user 2026-09-20 (body #13410 section STOP) : « Une sortie de
+# cellule a UNE cellule de lecture. Si elle en a deja une, on la REECRIT.
+# On n'en ajoute jamais une seconde. »
+#
+# Advisory, jamais bloquant : la dette corpus heritee au cablage est de
+# 109 findings (98 generic_pair, 8 separated_by_code, 3 named_split — ces
+# derniers fusionnes par la PR soeur #17025). Un garde bloquant rougirait
+# chaque PR touchant un notebook porteur de dette heritee. Le passage
+# eventuel en blocking sera tranche par le coordinateur apres resorption
+# de la dette par serie (precedent : deaccent TRANCHE6 #14325,
+# repeated-prose TRANCHE7).
+#
+# Wiring : scripts/ci/fast_lane_registry.py :: TRANCHE12.
+# Identite : Guard.name == job.name (cf check_absorbed_check_run_identity.py).
+# Tests : scripts/tests/test_check_split_reading_cells.py.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: split-reading-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  split-reading-advisory:
+    name: "Split-reading-cells advisory (per-notebook, non-blocking)"
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Pas de diff a calculer en dispatch : le verdict per-PR est rendu par
+      # la voie rapide (fast-lane-shadow). Ce job sert d'identite et de
+      # recensement manuel du corpus.
+      - name: Recensement (sweep dispatch)
+        run: python scripts/notebook_tools/check_split_reading_cells.py MyIA.AI.Notebooks
