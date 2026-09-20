@@ -356,6 +356,39 @@ Deux pièges font échouer un cache écrit « au feeling » :
 
 **Résiduel honnête** : A2/A3 (contrôles positif et négatif sur un **log de job** réel) ne sont pas satisfaits par cette tranche. Ils exigent une image **reconstruite et redéployée**, puis un job réel : la preuve qu'on peut apporter sans déploiement s'arrête au contenu de l'image, et c'est ce qui est mesuré ci-dessus.
 
+### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
+
+Le superviseur hôte n'existe que parce que les runners sont `--ephemeral` : un runner éphémère traite **au plus un job** puis se désenregistre, donc un processus hôte doit reminter un token et relancer un conteneur à chaque job — et ce processus hôte est exactement le maillon qui meurt au logoff (mesure du reboot 2026-09-02 : flotte retombée à 1 runner, tous les `PR gate` gelés en STARVED). L'idée user : « un conteneur en autorestart qui fait le polling tout seul ».
+
+**Le design livré dans l'image** (`RUNNER_MODE=persistent`, `--ephemeral` reste le défaut — rétro-compatible) :
+
+- **Volume de config par slot** monté sur `/opt/runner` : il porte le layout complet du runner (`.runner` + `.credentials` + binaires). L'image extrait le tarball vers `/opt/runner-dist` (source vierge) **et** copie vers `/opt/runner` ; si le volume est créé vide, l'entrypoint restaure les binaires depuis `runner-dist` au boot — monter un volume sur `/opt/runner` ne masque donc jamais les binaires.
+- **Enregistrement une seule fois** : `token`/`url`/`name`/`labels` ne sont exigés que si `.runner` est absent (premier boot). Aux restarts suivants, l'entrypoint détecte `.runner`, journalise « reprise sans ré-enregistrement » et lance `run.sh` directement — **aucune variable requise**, le token (valable 1 h) ne sert plus jamais.
+- **Pas de teardown** : le `trap 'config.sh remove'` du mode éphémère est absent — désenregistrer au EXIT tuerait la propriété même du mode. `--replace` reste posé à l'enregistrement : un slot recréé remplace son entrée offline.
+
+Lancement type (slot N) :
+
+```
+docker run -d --restart unless-stopped \
+  -v coursia-runner-cfg-N:/opt/runner \
+  -v coursia-work-N:/home/runner/_work \
+  -e RUNNER_MODE=persistent \
+  -e ACTIONS_RUNNER_INPUT_TOKEN=... -e ACTIONS_RUNNER_INPUT_URL=https://github.com/jsboige/CoursIA \
+  -e ACTIONS_RUNNER_INPUT_NAME=myia-po-2024-linux-docker-N \
+  -e ACTIONS_RUNNER_INPUT_LABELS=self-hosted,coursia-linux \
+  coursia-linux-runner
+```
+
+Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ; le volume `_work` de #14288 se **combine** avec celui de config, il ne s'y substitue pas.
+
+**Ce que la non-éphéméralité coûte — écrit, pas supposé** :
+
+1. **État persistant entre jobs.** C'est précisément ce que `--ephemeral` achetait (#13378) : workspace, tool-cache et processus résiduels survivent d'un job au suivant. Le troc est accepté parce que la contrainte « le code des forks étudiants ne touche jamais le self-hosted » tient **par ailleurs** : aucun `pull_request_target` auto-hébergé, garde universelle fork/payload (`github.event.pull_request.head.repo.full_name == github.repository`, tranche 4), et « Require approval for all outside collaborators » côté dépôt. Retirer la persistance avant tout trigger `pull_request` reste la règle.
+2. **Sémantique des hooks entrypoint.** En éphémère, les blocs de désarmement (sparse-checkout résiduel, refs dangling) et `work_cache_health` s'exécutent **à chaque job** (conteneur `--rm` par job). En persistent, ils s'exécutent **au boot du conteneur** seulement : le runner enchaîne les jobs sans relancer l'entrypoint. Le nettoyage inter-jobs repose alors sur le `clean` par défaut du checkout ; le hook de boot reste en première ligne à chaque restart Docker. Ce n'est pas un renforcement : c'est une couverture **moins fréquente**, assumée.
+3. **Un slot offline consomme son inscription.** Un runner non-éphémère arrêté reste enregistré « idle/offline » sur GitHub jusqu'à son retour — contrairement à l'éphémère qui se désenregistre seul. Sans incident tant que le conteneur revient ; c'est le compteur GitHub à lire après un long arrêt.
+
+**Validation au déploiement (po-2024 uniquement, jamais ai-01)** : la preuve du mode est un `systemctl restart docker` qui voit les slots revenir **sans intervention** — geste destructif réservé à la machine qui ne porte ni vLLM, ni Qdrant, ni ComfyUI. La mesure avant/après du temps de checkout se prend au même moment (volumes `_work` + config combinés).
+
 ## Tranches suivantes, activation partielle
 
 La préparation complète reste découpée :
