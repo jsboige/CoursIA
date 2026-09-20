@@ -221,7 +221,7 @@ Cette série (LINQ → SMT) est l'une des deux faces d'une même idée — **dé
 
 | Ressource | Langage | Ce qu'elle enseigne | Lien |
 |-----------|---------|---------------------|------|
-| **Z3-API-04 — Chaînes et regex** | Python (z3-py) | La théorie **native** des chaînes Z3 : `Re`, `InRe`, `Star`, `Range`. Z3 ne se contente pas de vérifier — il **génère un témoin** (une chaîne satisfaisant le regex). Extraction d'extension, détection d'insatisfiabilité. | [Z3-API/04](../Z3-API/Z3-Python-04-Strings-Regex.ipynb) |
+| **Z3-API-04 — Chaînes et regex** | Python (z3-py) | La théorie **native** des chaînes Z3 : `Re`, `InRe`, `Star`, `Range`. Z3 ne se contente pas de vérifier — il **génère un témoin** (une chaîne satisfaisant le regex). Extraction d'extension, détection d'insatisfiabilité. | [Z3-API/04](../Z3-API/Z3-04-Strings-Regex-Python.ipynb) |
 | **Sudoku-13 — Automates symboliques** | C# (.NET) | L'échelle en trois barreaux : Conway (PCRE folklore) → BREX/Rex 2020 (murs documentés) → RE# 2025. RE# **reconnaît** une grille remplie en temps linéaire ; Z3 **résout** et produit la grille. Le Sudoku donne à voir la distinction. | [Sudoku/13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) |
 ### Reconnaître ≠ Résoudre
 
