@@ -22,7 +22,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 2 | Le moule 26→30 | six notebooks ~17 cellules / 8 code | non démarré |
 | 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | non démarré |
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
-| 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | non démarré |
+| 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU** (3/3 tranches, 2026-09-19) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -91,3 +91,88 @@ Lecture complète (contenu ET `outputs`, 44 cellules) du notebook unique du stra
 1. **Cap saturant ré-introduit en §5.2 sous un commentaire qui le nie** — le seul négatif-par-défaut du notebook ; localisé (comparaison N/I interne valide, cœur MAGIC_TOKEN intact), mais il affaiblit la généalogie « fix grain-2 → §5.2 » que le texte revendique. Décision : fix + re-exec, ou re-annotation.
 2. **Les renvois internes par index de cellule décalent à chaque insertion de markdown « Lecture »** — input mécanique direct pour la renumérotation #7260 : ancrer les renvois sur les sections, pas sur les indices.
 3. **Le hold sur le run 2B (#10380) est triple-sourcé dans le notebook** (§5.7 : ICT-25 0.5B, JohnEnev V3 672M GSM8K ~0, PT-11b 0.8B INCONCLUSIVE) — l'input d'arbitrage GPU de #5105 est prêt sans nouvelle mesure.
+
+---
+
+## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 3 : les non numérotés
+
+Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026-09-19, par `myia-po-2023:CoursIA`. **Avec cette tranche, le rang 5 est complet et le ledger couvre 100 % des strands** — toutes les lectures du chemin critique user (arbitrage 19/09) sont consignées. Trois des sept ont une rangée matrice dédiée (SaillancePregnance l. 74, Argumentation l. 110, p̂ auto-référent l. 208) — **toutes cohérentes avec les outputs** ; quatre n'en ont pas (Annexe, Greffe2, Greffe4, Synthese).
+
+### `ICT-Annexe-ProxyContextuality.ipynb` (non numéroté) — 21 cellules (13 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Formaliser la contextualité du zoo de proxys ICT comme un **CSP** (SAT/CP-SAT réel, pas une analogie) : un proxy est contextuel si aucune assignation cohérente ne couvre ses contextes d'usage. |
+| **Contenu réel** | Dictionnaire ; **trois crans** démontrés (boîte PR `strongly_contextual` 8/8, logique `logically_contextual` 1/5(9), non contextuel 16/0(16)) ; garde-fou « trois manières d'être vide » ; la mesure appliquée au zoo ICT ; « où l'analogie meurt — quatre points de rupture » ; 3 exercices C.1. |
+| **Résultat** | Zoo ICT (seuils = médianes du corpus) : 3 contextes, **1 seul recouvrement distinct**, les 3 proxys (`spectral_gap`, `sensitivity_mean`, `sensitivity_max`) **partagés partout** → `satisfiable: False`... et le CP-SAT tranche : `INFEASIBLE`, verdict **`degenerate_single_cover`** — le zoo n'est **pas contextuel** au sens du CSP. La lecture titrée : « l'écart entre les deux dernières lignes **est** le résultat ». |
+| **Critique** | Aucune — négatif outillé : le vrai solveur CP-SAT est appelé (outil SOTA, pas une réimplémentation), le garde-fou distingue les trois façons d'être vide avant de conclure, et la section « où l'analogie meurt » borne elle-même la portée. |
+| **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate naturelle (dissociation contextuel/non-contextuel du zoo). |
+
+### `ICT-Argumentation-BeliefTrajectories.ipynb` (non numéroté) — 45 cellules (23 md, 22 code, 22/22 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Phase B Argumentum (matrice l. 110) : trajectoire de croyance d'un débat (AF de Dung) et dette d'irréversibilité du discours, avec prédictions pré-enregistrées AVANT tout test. |
+| **Contenu réel** | Le plus riche de la tranche : setup ; substrat trajectoire ; **§3 prédictions pré-enregistrées** ; régimes discursifs structurels ; P-disc-1 à P-disc-4 (dont contrôle null à degré conservé) ; **trois spécimens littéraires codés arête par arête** (Loup et l'Agneau, Loup et le Chien — grammaire de l'englobement) ; **témoins Chaplin #7742 pré-enregistrés** ; récapitulatif ; 3 exercices C.1. |
+| **Résultat** | P-disc-1 **PARTIEL** (« une seule dimension tient : K ») ; P-disc-2 **PASS** (le spectre laplacien distingue les régimes) ; P-disc-3 **PARTIEL** (le régime populiste épuise la diversité) ; P-disc-4 contrôle **PARTIEL** (une dimension persiste vs null, l'autre expliquée par le degré). Témoins : barbier **0 extinction observée = 0 attendue** (« l'instrument sur sa première lame où l'échec était possible ») ; Hynkel **REFUS: CANAUX_CONTRADICTOIRES** — « refus ≠ zéro : le premier lève une exception codée, le second est un résultat ». |
+| **Critique** | Aucune majeure. Le geste « refus codé ≠ résultat nul » est une distinction méthodologique rare et précieuse (un instrument qui sait dire *je ne peux pas mesurer ça*). Les PARTIEL sont comptés comme PARTIEL, pas arrondis vers le haut. |
+| **Verdict + action** | **SOLIDE, mature** — candidat de tête #7260 avec la Synthese. |
+
+### `ICT-Dissociation-PhatSelfReference.ipynb` (non numéroté) — 30 cellules (19 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Case 2 / Epic #9533 : la boucle auto-référentielle `p_hat → action → p_hat` diverge-t-elle là où le délieur causal reste borné ? (rangée matrice l. 208.) |
+| **Contenu réel** | Sanity check (2 régimes, **39 ordres de grandeur d'écart**) ; mécanique de la boucle ; 4 substrats (scan de stabilité κ, délieur causal vs bouclée 5 graines, frontière observée vs prédite, sensibilité à l'horizon T) ; verdict honnête à 2 niveaux ; **verdict agrégé 5 graines** ; crédit témoin Hofstadter (grade C) ; 3 exercices C.1. |
+| **Résultat** | Frontière observée **κ_c = 0.080** vs prédite ≈ 0.053 — biais **+0.027 dans la tolérance pré-enregistrée** ; dissociation bouclée/délieur True ; sensibilité à T = preuve de non-trivialité ; **VERDICT : CONFIRMED** (5/5 graines, protocole complet). |
+| **Critique** | Aucune. La matrice (l. 208, TESTÉ CONFIRMÉ, mêmes chiffres κ 0.080 / biais +0.027 / 5 graines) est **exactement** ce que les outputs portent — cohérence parfaite rangée↔notebook. |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action. |
+
+### `ICT-Dissociation-SaillancePregnance.ipynb` (non numéroté) — 35 cellules (22 md, 13 code, 13/13 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Case `s ⟂ π` (matrice l. 74) : saillance (être vu) ≠ prégnance (compter pour agir) — prédiction falsifiée au niveau engagement total, sauvée au niveau décision. |
+| **Contenu réel** | Batterie de stimuli **décorrélation par construction** (corr(s, λ) = −0.216 ≈ 0) ; apprentissage Rescorla-Wagner (V apprend λ, pas s) ; deux animats (valence cible vs réactif null adversarial) ; mesure à 2 niveaux (engagement total vs décision|détection) ; corrélation partielle Spearman avec démonstration FWL ; null adversarial « inversion miroir » ; **robustesse multi-seed ≥ 4** ; **analyse de puissance** (Prong B SOTA, #3801) ; 3 exercices C.1. |
+| **Résultat** | **VERDICT : DISSOCIATED-AT-DECISION** (« une falsification qui localise, pas qui invalide ») ; multi-seed : 4 verdicts dont 1 affaibli (`DISSOCIATED-DECISION-NULL-WEAK`), **aucun renversement** ; puissance : ≥ 120 stimuli suffisent à résoudre la dissociation décision sur toute seed ; le null réactif inverse le motif (« sans apprentissage de la valence, la saillance reprend le contrôle de la décision »). |
+| **Critique** | Aucune — c'est le modèle du « verdict à deux niveaux » : le niveau où la prédiction meurt est nommé, le niveau où elle tient est mesuré, et l'analyse de puissance chiffre le prix statistique de la dissociation (la non-trivialité Prong B exigée par #3801 est satisfaite par construction). |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action. |
+
+### `ICT-Greffe2-EspaceAtteignable.ipynb` (non numéroté) — 32 cellules (21 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Le quadruplet (A, F, r, π) : rendre « élargir son espace » **testable** (critères #13568) — la greffe ICT sur le bras planification. |
+| **Contenu réel** | Socle STRIPS **« copie de Planners-5c », garanties du lake non re-dérivées** (la sortie organ-first #16778 utilisée à la lettre : la copie est déclarée, l'organe natif nommé) ; domaine deux rives/gouffre/radeau ; A différentiel système ; **contrôle négatif de la primitive stérile** ; F et r à budget ; le noyau (ce que la primitive rend inatteignable) ; cas 3 navigation (bras Planners-10b) ; synthèse ; limites ; 3 exercices C.1. |
+| **Résultat** | A_t : 54 états, **1/3 buts** → +raft : 60 états, **3/3 buts** → +discard : 78 états (Δ|A| décore, **Δ(buts) discrimine**) ; l'élargissement non contrôlé **contracte** la liberté résiduelle ; noyau non vide à budget fixe ; cas 3 : trois politiques π, **A et F inchangés par construction**, h* inchangé (39/33/8) — seul π bouge, l'espace ne triche pas. |
+| **Critique** | Aucune — les 4 critères de #13568 sont démontrés un à un avec leur contrôle, et la déclaration de copie pédagogique du socle STRIPS est exactement le pattern que la règle organ-first (merge #16778) exige. |
+| **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate (élargissement utile vs contractant). |
+
+### `ICT-Greffe4-VoteOnChain.ipynb` (non numéroté) — 27 cellules (17 md, 10 code, 10/10 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Fermer la boucle Argumentation → Choix social → SmartContracts : le vote argumenté exécuté et audité **sur chaîne** (critères #13570). |
+| **Contenu réel** | Trois organes nommés avec ce que chacun apporte ; AF de Dung sur 3 propositions (positions issues du graphe) ; règle Borda **nommée et justifiée** ; la manipulation (bulletin contredisant sa position) ; exécution SC-13 : **tests forge** + **fuzzing des invariants** ; « ce que la chaîne ajoute — et ce qu'elle ne résout pas » ; 3 exercices C.1. |
+| **Résultat** | Manipulation : sincere C1 gagne → vote-balle de V3 : **C0 gagne (écart strict 8-7-6)** (« enterrage, vote-balle, et le mensonge épistémique ») ; forge : **5 tests passed, 0 failed** (gas rapporté, ex. 13046) ; fuzzer BrokenInvariants : **1 failing décodé** — le contre-exemple est lu et interprété (« la borne tient sous attaque aléatoire »), pas masqué. |
+| **Critique** | Aucune — la chaîne est **réellement exécutée** (forge test + fuzz), le contre-exemple du fuzzer est décodé comme donnée pédagogique, et la section finale borne honnêtement ce que la chaîne ne résout pas. |
+| **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate (la manipulation bascule l'issue, l'audit tient). |
+
+### `ICT-Synthese-CrossSubstrat.ipynb` (non numéroté) — 40 cellules (26 md, 14 code, 14/14 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | **Le capstone** : un seul appareil de mesure, trois (puis quatre) substrats, six gates qui rejouent le fil ENTIER de la série — et un « verdict sans complaisance ». |
+| **Contenu réel** | Tableau récapitulatif du fil ; S1 tri / S2 bistable / S3 réplicateur mesurés au même appareil ; **Gate 1** (émergence vs contrôle dégénéré, 100 shuffles) ; **Gate 2** (transfert du scalaire d'intégration) ; **Gate 3** (robustesse au régime, 5 graines) ; **Gate 4** (la convergence Φ/F/K survit-elle au 4ᵉ substrat — capstone strate 5) ; **Gate 5** (irréversibilité, jambe ICT-18) ; **Gate 6** (enjeu, jambe ICT-19) ; verdict sans complaisance ; 3 exercices C.1. |
+| **Résultat** | Gate 1 : **3/3 substrats créditent** (z > 1 ; gains EC +1.0 à +2.7). Gate 2 : τ(EI, EC_gain) = −0.333 (consistent **False**) mais τ(EI, EC_réel) = **+1.000 True** — le scalaire transfère sur la grandeur réelle, pas sur le gain. Gate 3 : la graine 99 **échoue** (−0.33, False) — τ observés [−0.33, 0.33, 1.0], la robustesse au régime est **partielle et dite telle**. Gate 4 : τ(ec, fe) = +1.000 **CONSISTENT**, k divergent. Gate 5 : S2 0.0000, S3 0.0196/0.0205, **S4 0.0889/1.1774**. Gate 6 : stake_index crédite S1 +1.00, S2 +1.00, S3 +0.68 « **MAIS il ÉCHOUE sur le substrat champ Gray-Scott (I_stake = −0.51 = sous le drift)** ». |
+| **Critique** | Aucune — c'est le livre de compte de la série : chaque gate cite son origine (ICT-15, ICT-18, ICT-19), les échecs (graine 99, champ Gray-Scott) sont affichés en clair, et l'échec Gate 6 sur champ rejoint **exactement** l'artefact d'instrument documenté par ICT-19b (le scalaire sur champ 2D) — la synthèse confirme le strand 3 indépendamment. |
+| **Verdict + action** | **SOLIDE, mature — le fil de la série**. Action d'arbitrage (#7260) : candidat de tête à la renumérotation (le capstone mérite un numéro, pas un statut d'annexe). |
+
+### Findings transverses de la tranche 3 (pour l'arbitrage user)
+
+1. **Les non-numérotés portent la profondeur de la série** — le pattern du strand 1 (Life-SubstratCertifie) est la règle, pas l'exception : les deux plus gros notebooks de la tranche (Argumentation 45 cellules, Synthese 40) sont non numérotés, et la Synthese est littéralement le capstone (Gates 1-6 rejouant toute la série). Entrée majeure #7260 : **Synthese et Argumentation en tête des candidats à la renumérotation**, avec le tête-à-tête JLens (tranche 1).
+2. **La négativité assumée reste la culture dominante** : zoo non contextuel (Annexe, CP-SAT INFEASIBLE sur le vrai solveur), graine 99 qui échoue (Synthese Gate 3), stake_index qui échoue sur champ (Synthese Gate 6 — confirmation indépendante de l'artefact d'ICT-19b relevé au strand 3), refus codé ≠ résultat nul (Argumentation Hynkel).
+3. **Greffe2 est l'exemplaire organ-first** (#16778) : le socle STRIPS est déclaré « copie de Planners-5c » avec les garanties du lake non re-dérivées — exactement la sortie « copie pédagogique déclarée » que la règle exige. Greffe4 exécute la vraie chaîne (forge 5/5 + fuzzer décodé).
+4. **Matrice : 3 rangées dédiées, toutes cohérentes** (SaillancePregnance, Argumentation, p̂ — cette dernière au chiffre près : κ 0.080 / biais +0.027 / 5 graines) ; **4 notebooks sans rangée** (Annexe, Greffe2, Greffe4, Synthese) — la Synthese re-mesure le banc des rangées existantes plutôt que de claimer la sienne ; trois candidats d'ajout mineurs (contextualité du zoo, élargissement contractant, manipulation basculante).
+5. **Entrées #7260 complètes pour le rang 5** : renumeroter en priorité Synthese + Argumentation + JLens ; statuer le régime des Dissociations/Greffes/Annexe (noms fonctionnels stables vs numérotation — leur nature annexale est assumée dans les titres) ; Greffe5 reste post-rework (#16762).
+6. **Le ledger est COMPLET** : rangs 1-4 + rang 5 en 3 tranches = tous les strands du chemin critique user (arbitrage 19/09) consignés. Les inputs d'arbitrage sont prêts : chaque strand porte ses findings transverses, le tableau d'avancement est fermé.
