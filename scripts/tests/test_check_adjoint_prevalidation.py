@@ -819,3 +819,44 @@ def test_human_edit_of_the_same_body_still_changes_the_fingerprint():
     v4 = dict(base, comments=[_comment("edit2: <!-- PR-PATH-COLLISION:START -->\n...",
                                        "jsboige")])
     assert mod.surfaces_fingerprint(v3) != mod.surfaces_fingerprint(v4)
+
+
+def test_fingerprint_refusal_names_the_live_surface_landscape():
+    """Le refus d'empreinte est exploitable : il nomme OU chercher (#16931 defaut 3).
+
+    Deux hachages opaques forcent une re-fabrication en aveugle. Le refus doit
+    reporter le PAYSAGE des surfaces live (compte + dernier commentaire/review
+    + threads non resolus), pour que la lane identifie la divergence sans
+    refaire toute la lecture B.0. L'empreinte divergente reste un REFUS
+    (fail-closed preserve) — seul le diagnostic est ajoute.
+    """
+    base = _base_snapshot()
+    # Snapshot dont la fingerprint ne reproduit pas celle du dossier
+    # (un commentaire humain edite, cf test precedent).
+    live = dict(base)
+    live["comments"] = [
+        {"author": {"login": "jsboige"}, "createdAt": "2026-09-19T20:00:00Z",
+         "body": "un commentaire edite apres le dossier"}
+    ]
+    live["threads"] = [{"isResolved": True}, {"isResolved": False}]
+    # Dossier calcule sur le snapshot de base, compare au live divergent.
+    dossier_fields = {
+        "schema": "1", "lane": mod.ADJOINT_LANE, "pr": "123", "head": HEAD,
+        "complete": "true", "body": "read", "comments-reviewed": "1",
+        "reviews-reviewed": "2", "threads-reviewed": "1",
+        "threads-unresolved": "0",
+        "surfaces-sha256": mod.surfaces_fingerprint(base, 1, None),
+        "diff-files": "3", "diff-additions": "42", "diff-deletions": "7",
+        "checks": "latest-wins-green", "b0": "clear", "scope": "pass",
+        "domain": "pass", "verdict": "READY",
+    }
+    dossier = mod.Dossier(dossier_fields, 1, mod.SHARED_GITHUB_LOGIN, "2026-09-19T19:00:00Z")
+    errors = mod.validate_dossier(dossier, live)
+    fingerprint_errors = [e for e in errors if "discussion surfaces changed" in e]
+    assert fingerprint_errors, f"no fingerprint error in: {errors}"
+    msg = fingerprint_errors[0]
+    # Nomme le paysage live : dernier commentaire et sa date, threads, checks.
+    assert "dernier commentaire: jsboige 2026-09-19T20:00:00Z" in msg
+    assert "threads=2 (1 non resolus)" in msg
+    assert "checks=1" in msg
+    assert "reviews=2" in msg

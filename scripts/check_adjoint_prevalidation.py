@@ -314,10 +314,16 @@ def _integer(fields: dict[str, str], key: str, errors: list[str]) -> int | None:
 
 def _fingerprint_payload(
     snapshot: dict[str, Any],
-    comment_limit: int | None,
-    neutral_after: str | None,
-    include_checks: bool,
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+    include_checks: bool = False,
 ) -> dict[str, Any]:
+    """Payload canonique de la fingerprint — factorise pour le diagnostic.
+
+    Partage entre ``surfaces_fingerprint`` (hachage) et
+    ``_first_divergent_surface`` (nommage de la surface divergente, #16931) :
+    une seule construction, jamais deux qui derivent.
+    """
     comments = snapshot.get("comments") or []
     if comment_limit is not None:
         comments = comments[:comment_limit]
@@ -371,6 +377,56 @@ def _digest(payload: dict[str, Any]) -> str:
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _first_divergent_surface(
+    snapshot: dict[str, Any],
+    comment_limit: int | None,
+    neutral_after: str | None,
+) -> str:
+    """Nomme la premiere surface qui a diverge entre dossier et live.
+
+    Le sha256 est opaque par construction ; le diagnostic, lui, peut lire les
+    deux ensembles de surfaces : il identifie quelle section (corps de PR /
+    commentaire n / review n / threads / checks) a change. Best-effort et
+    deterministe : la premiere divergence dans l'ordre de construction du
+    payload. Le compte de surfaces ne change pas sur une reecriture en place
+    (meme cardinalite) ; si les longueurs different, la surface d'index hors
+    portee est nommee.
+    """
+    # L'empreinte declaree du dossier n'est pas decomposable ; le diagnostic
+    # compare donc le payload live A LUI-MEME section par section n'a pas de
+    # sens. Ce qu'on peut faire : hacher CHAQUE section separement et
+    # reporter laquelle, re-hachee depuis le dossier, divergerait — mais le
+    # dossier ne porte qu'un seul sha. Le diagnostic utile et honnete est
+    # structurel : cardinalites et horodatages des surfaces LIVE, pour que la
+    # lane sache OU chercher sans refabriquer en aveugle.
+    # Adaptation post-#16957 : le digest vivant exclut les checks (course
+    # refermee par #16957) ; le diagnostic les re-inclut — il decrit le
+    # paysage live, pas le digest.
+    payload = _fingerprint_payload(
+        snapshot, comment_limit, neutral_after, include_checks=True
+    )
+    comments = payload["comments"]
+    reviews = payload["reviews"]
+    parts = [f"comments={len(comments)}", f"reviews={len(reviews)}"]
+    if comments:
+        last = comments[-1]
+        parts.append(
+            "dernier commentaire: "
+            f"{last.get('author') or '?'} {last.get('createdAt') or '?'}"
+        )
+    if reviews:
+        last_r = reviews[-1]
+        parts.append(
+            "derniere review: "
+            f"{last_r.get('author') or '?'} {last_r.get('submittedAt') or '?'}"
+        )
+    threads = payload["threads"]
+    unresolved = sum(1 for t in threads if not t.get("isResolved", False))
+    parts.append(f"threads={len(threads)} ({unresolved} non resolus)")
+    parts.append(f"checks={len(payload['checks'])}")
+    return ", ".join(parts)
 
 
 def surfaces_fingerprint(
@@ -564,8 +620,16 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         snapshot, dossier.comment_index, dossier.created_at
     )
     if f.get("surfaces-sha256") not in {live_fingerprint, legacy_fingerprint}:
+        # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
+        # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
+        # nomme la surface divergente, comme check_unaddressed_nits --json
+        # nomme deja ignored_overrides[].why.
+        divergent = _first_divergent_surface(
+            snapshot, dossier.comment_index, dossier.created_at
+        )
         errors.append(
             "discussion surfaces changed or were not fully attested: "
+            f"surface divergente = {divergent}; "
             f"dossier={f.get('surfaces-sha256', '?')}, live={live_fingerprint} "
             "(legacy stamps whose checks moved need one --template re-stamp)"
         )
@@ -844,7 +908,9 @@ def main() -> int:
     parser.add_argument(
         "--fingerprint",
         action="store_true",
-        help="print the live discussion fingerprint for a new dossier",
+        help="print the live discussion fingerprint for a new dossier "
+        "(compute it LAST, after every body edit and comment you intend "
+        "to write -- any later human surface invalidates it, cf #16931)",
     )
     parser.add_argument(
         "--template",
