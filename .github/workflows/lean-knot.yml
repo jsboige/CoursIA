@@ -26,34 +26,27 @@ name: Lean Knot CI
 # (-- line + nested /- -/ block) then count word-bounded `\bsorry\b`. This mirrors
 # the prover harness `count_real_sorries` (FX-6 #1453) — counts exactly
 # compiled-tactic sorries, immune to docstring edits.
-# Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
-#   - Conway.lean:              6 (Conway knot 11n34, Kinoshita-Terasaka, mutation ;
-#                                  conway_trivial_alexander [8->7] et
-#                                  KT_trivial_alexander [7->6] DISCHARGED,
-#                                  split de PR 14821)
-#   - Invariant.lean:           3 (tricolorable_invariant residual fox/col tactics
-#                                  DISCHARGED by #11211 [sorry 5->3] — the all-distinct
-#                                  kink mode is VACUOUS: the R1 kink C = ⟨a,b,c,c⟩ has
-#                                  e3 = e4 = c, the Path B over-strand continuity
-#                                  c2 = c4 forces col₂(b) = col₂(c) = c3, contradicting
-#                                  the Fox all-distinct requirement c2 ≠ c3 — hence
-#                                  `exact absurd _hCarc _hdist.2.1` closes both residuals;
-#                                  trefoil_not_unknot DISCHARGED by #8766 [5->4];
-#                                  tricolorable_forward_r1 wrapper front added by #9966
-#                                  [4->5] — characterized ∀c∈d₂.crossings wall,
-#                                  2/3 sub-cases PROVEN (newKink c.987, unchanged c.988),
-#                                  ai-01 multi-cycle acceptance; the Fox linearity bridge
-#                                  + num are PROVEN — see Invariant.lean docstring for
-#                                  the resolved/open split)
-#   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
+# Real-mode breakdown (instantané re-mesuré le 2026-09-19 au head a1ff7fd4b1a9 par
+# `python scripts/lean/count_code_sorry.py --json` — champ `distinct_code_sorry`,
+# déclarations nommées via `scan_file` du même script ; LA COMMANDE FAIT FOI,
+# ce commentaire est un instantané daté, pas une source : re-mesurer plutôt que
+# maintenir — un bloc dérivé à la main se re-périme, motif #15598) :
+#   - Conway.lean:              4 (IsSmoothlySlice + IsTopologicallySlice — définitions
+#                                  des propriétés de tranche — et les bornes
+#                                  conway_not_smoothly_slice / conway_topologically_slice ;
+#                                  conway_trivial_alexander et KT_trivial_alexander
+#                                  DISCHARGED, unités preuve du split #14821)
+#   - Invariant.lean:           0 (intégralement déchargé : fox/col résidus fermés
+#                                  par #11211/#11227, Knot.unknottingNumber redéfini
+#                                  par sInf par #15082 — le récit par déclaration vit
+#                                  dans `knot_lean/README.md` §sorry, il ne vit plus ici)
+#   - Lidman.lean:              2 (unknotting_11n102_upper + unknotting_11n102 —
+#                                  11n102 unknotting number = 2, Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
 # Total real tactic sorry = 8 (mesure `count_code_sorry.py` champ
-# `distinct_code_sorry` ; lowered
-# from 14 par la mesure instrument post-#11227 — le décompte « 14 » dans les
-# commentaires/README comptait 2 sorry dans `Invariant.lean` qui n'en portent
-# qu'1 une fois stripé des commentaires, et sur-comptait Conway ; historique :
+# `distinct_code_sorry` ; historique :
 # 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
 # (#11211/#11227 fox/col) → 11 (mesure 2026-08-28, `count_code_sorry.py`) →
 # 10 (#15082 unknottingNumber par sInf) → 9 (conway_trivial_alexander
@@ -61,8 +54,9 @@ name: Lean Knot CI
 # (KT_trivial_alexander DISCHARGED par transvections, unité preuve-KT
 # du split de PR 14821).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 8 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; la
-# synchronisation inventaire/README est portée par la PR finale du split).
+# | 8 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; split
+# #14821 terminé (CLOSED) : la synchronisation est à jour au 2026-09-19, elle
+# n'est plus déléguée à une PR du split (#15598).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
