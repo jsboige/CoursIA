@@ -74,7 +74,7 @@ win rate 50 %, frais $1 726 (IBKR, inclus).
 |---------|---------|--------|--------|------|-------|-----|--------|-------|---------|
 | Dev (papier) | 2016-2019 | 5 min / 1000 | 0.167 | +4.10 % | 7.90 % | 2.11 % | 48 364 | $31 997 | NO BEATS (frais) |
 | OOS | 2020-2023 | 5 min / 1000 | −0.467 | −5.23 % | 24.60 % | 0.02 % | 49 444 | $32 354 | NO BEATS |
-| Communauté | 2016-2023 | 1 min / 2000 | *(en cours — run `d6545d3b…`, lancé 2026-09-20 08:53 UTC)* | | | | | | |
+| Communauté | 2016-2023 | 1 min / 2000 | *(en cours — run `3bf7776f…`, lancé 2026-09-20 12:02 UTC, params confirmés : « ~2000 symbols » au terminal)* | | | | | | |
 
 Lecture fenêtre pleine (DEV + OOS) : l'edge de l'article **ne survit pas**. Sur DEV,
 le net reste positif (+17.4 % sur 4 ans) mais les frais IBKR avalent ~32 % du capital
