@@ -88,8 +88,14 @@ def fetch_comments(repo: str, since_iso: str) -> list[dict] | None:
     path = f"repos/{repo}/issues/comments?since={quote(since_iso)}&per_page=100"
     cmd = ["gh", "api", "--paginate", path]
     try:
-        out = subprocess.run(cmd, capture_output=True, text=True, timeout=120,
-                             encoding="utf-8", errors="replace")
+# encoding="utf-8" is required on Windows: with text=True alone, the
+        # subprocess uses cp1252 by default and crashes UnicodeDecodeError on
+        # any comment body containing non-cp1252 bytes (frequent in French
+        # prose: U+2019, U+2014, U+00A0, U+00E0-U+00FF, etc.). #17032.
+        out = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=120,
+        )
     except (subprocess.TimeoutExpired, OSError):
         return None
     if out.returncode != 0:
