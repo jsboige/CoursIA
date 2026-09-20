@@ -32,12 +32,24 @@ This is what this library does. The modules:
     relations + arities/types + value table).
   - `MUH.Encoding`: encoding per Tegmark §c (`# of sets | # of relations |
     sizes... | rels...`) and complexity `H(s) = Σᵢ log₂(2 + kᵢ)` (§d).
-  - `MUH.Boolean`: 2-element Boolean algebra, with proof that the 1-generator
-    definition (Sheffer / NAND) is equivalent to the 8-generator definition
-    (Tegmark §2a).
-  - `MUH.Cyclic`: cyclic groups C₂ and C₃ (Tegmark §2b).
-  - `MUH.Decidable`: halting enumerative algorithm to decide equivalence in
-    the restricted case (arity ≤ 2, cardinality ≤ 3). -/
+  - `MUH.Boolean`: 2-element Boolean algebra — **canonical examples**
+    (F, T, NOT, AND as 4 generators + Sheffer NAND as 1 generator) per
+    Tegmark §2a. *The Sheffer ↔ 4-generator equivalence is **out of scope**
+    of this introduction*; see follow-up #16958.
+  - `MUH.Cyclic`: cyclic groups C₂ and C₃ (Tegmark §2b), with full tables and
+    `rfl` proofs line by line.
+  - `MUH.Decidable`: **enumerative skeleton** documented for the restricted case
+    (arity ≤ 2, cardinality ≤ 3, single set). The code shipped is a *stub*
+    (`decideEq` returns `nSets == nSets`, `ClosedUnderComp` is `trivial`) —
+    **not** a halting algorithm. The effective implementation is yet to come;
+    see follow-up #16958.
+
+**Actual scope** of this PR: (1) formalise the Tegmark Appendix A vocabulary
+(`Structure` / `Rel` / `Encoding`), (2) exhibit canonical examples
+(full Boolean + Sheffer, C₂, C₃), (3) prove that `Aut(S)` is a submonoid of
+`Π i, Sym(S.sizes i)`. *Not* the full decidability, *not* the Sheffer/4-gen
+equivalence — claims held open for a future PR (#16958).
+-/
 
 
 /-- Sub-libraries of MUH, exposed through a single import. -/

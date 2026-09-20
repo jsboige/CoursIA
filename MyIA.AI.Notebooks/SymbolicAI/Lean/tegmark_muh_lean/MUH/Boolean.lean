@@ -18,9 +18,10 @@ Ce module :
   - définit l'algèbre de Boole comme `Structure` (1 ensemble à 2 éléments,
     4 relations Booléennes — F, T, NOT, AND — Tegmark eq. (A1)),
   - définit la version « Sheffer » à 1 générateur NAND,
-  - vérifie que les deux encodages sont **équivalents** au sens de Tegmark
-    (même classe de structures finies, c'est-à-dire même univers de relations
-    accessibles par composition). -/
+  - **ne prouve pas** l'équivalence Sheffer ↔ 4 générateurs. Cette équivalence
+    est référencée dans le texte Tegmark (eq. (A2)) mais sa formalisation
+    constructive en Lean 4 (composition mutuelle, clôture par composition) est
+    **hors-scope** de cette introduction. Suivi #16958. -/
 
 namespace Boolean
 

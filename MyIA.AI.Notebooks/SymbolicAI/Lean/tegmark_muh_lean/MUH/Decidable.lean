@@ -7,21 +7,21 @@ Tegmark (2007, Annexe A §1 in fine) écrit :
 > *« There is a simple halting algorithm for determining whether any two
 >    finite mathematical structure definitions are equivalent. »*
 
-L'algorithme est l'**énumération des tableaux de valeurs** : deux structures
-sont équivalentes si et seulement si chaque relation de l'une est obtenue par
-composition finie des relations de l'autre (et réciproquement). Pour des
-structures finies (cardinaux bornés et arités bornées), l'espace des
-compositions est fini, donc l'algorithme termine.
+Le présent module **ne livre pas** cet algorithme. Il en expose le **squelette
+documentaire** dans le cas restreint (arité ≤ 2, cardinal ≤ 3, 1 seul
+ensemble) pour ancrer la formalisation sur le texte source. L'implémentation
+effective — énumération exhaustive des tables de valeurs, comparaison point à
+point, preuve de terminaison — est **hors-scope** de cette introduction et
+fait l'objet du suivi **#16958**. Les définitions présentes ici sont donc
+des stubs marqués comme tels, **pas** un algorithme haltant.
 
 Ce module formalise un cas restreint :
   - arité ≤ 2,
   - cardinalité de chaque ensemble ≤ 3,
   - 1 seul ensemble.
 
-L'algorithme halt est `decidable_equiv` (stub) pour les structures à 1
-ensemble, arité 0/1/2, cardinal 2 ou 3. Une preuve complète demanderait
-l'énumération exhaustive des tables de valeurs, ce qui dépasse le scope de
-cette introduction. -/
+L'algorithme halt *cible* est `decidable_equiv` (à implémenter) pour les
+structures à 1 ensemble, arité 0/1/2, cardinal 2 ou 3. -/
 
 namespace Decidable
 
@@ -34,12 +34,13 @@ def strictEq {n : Nat} {sizes : Fin n → Nat}
     (r₁ r₂ : Rel n sizes) : Prop :=
   r₁ = r₂
 
-/-- Une structure est dite *close par composition binaire* si, pour toute paire
-    de relations R(a, b) : S×S → S et R(a, b) : S×S → S, la composée
-    R(R(a, c), b) : S×S×S → S est aussi une relation Tegmark (arité 3). Cette
-    condition n'est pas vérifiée pour C₂/C₃ directement (la composition donne
-    une relation ternaire), mais elle l'est pour les structures à générateurs
-    complets. -/
+/-- **Stub.** Une structure est dite *close par composition binaire* si, pour
+    toute paire de relations R(a, b) : S×S → S et R(a, b) : S×S → S, la composée
+    R(R(a, c), b) : S×S×S → S est aussi une relation Tegmark (arité 3).
+
+    Le constructeur `trivial` est un placeholder — `ClosedUnderComp` n'est pas
+    instancié par une vraie composition dans cette introduction. Une
+    formalisation complète reste à faire (#16958). -/
 inductive ClosedUnderComp : Prop
   | trivial : ClosedUnderComp
 
@@ -54,18 +55,18 @@ def trivialStructure : Structure :=
              , table := fun _ => (0 : Fin 1) }]
   , sizes_pos := fun _ => Nat.one_pos }
 
-/-- Pour une structure à 1 ensemble de cardinal 2 et une relation binaire
-    Booléenne, l'espace des tables possibles est de taille 2⁴ = 16. La
-    décidabilité est triviale par énumération des 16 tables. -/
+/-- **Stub décoratif.** Pour une structure à 1 ensemble de cardinal 2 et une
+    relation binaire Booléenne, l'espace des tables possibles est de taille
+    `2^4 = 16`. La valeur `boolBinaryTableCount = 16` est citée pour ancrer le
+    raisonnement ; elle **n'est pas utilisée** par `decideEq` et ne démontre
+    rien par elle-même. Une implémentation effective comparerait
+    exhaustivement les 16 tables (#16958). -/
 def boolBinaryTableCount : Nat := 2 ^ (2 * 2)
 
-/-- `decideEq` : deux structures sont équivalentes si leurs tables
-    coïncident (égalité point par point). Cette décidabilité est triviale :
-    on parcourt les arguments et on compare.
-
-    Le stub actuel retourne `true` quand les deux structures ont le même
-    nombre d'ensembles — une version complète comparerait les tables de
-    valeurs une par une. -/
+/-- **Stub.** `decideEq` est l'**ébauche** d'un décideur pour l'équivalence de
+    structures. L'implémentation livrée compare uniquement `nSets` — une
+    version complète comparerait les tables de valeurs une par une (et prouverait
+    la décidabilité au sens de Tegmark). Suivi #16958. -/
 def decideEq (s₁ s₂ : Structure) : Bool :=
   s₁.nSets == s₂.nSets
 
