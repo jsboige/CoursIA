@@ -204,7 +204,7 @@ Ce livrable couvre les phases 1-3 (#4048) :
 - [x] Modèle (`WeightedGraph`, `pathCost`, `PathFrom`)
 - [x] Définitions (`Admissible`, `Consistent`, `IsTrueRemainingCost`)
 - [x] **Théorème phare `admissible_le_suffix_cost` (anciennement `admissible_implies_optimal`) — 0 `sorry`** (phase 1, PR #4090)
-- [x] **`consistent_implies_admissible` — 0 `sorry`** (phase 2, téléscopage de la consistance le long du chemin)
+- [x] **`consistent_implies_admissible_bound`** (corollaire de `consistent_implies_path_bound`) — 0 `sorry` (phase 2, téléscopage de la consistance le long du chemin)
 - [x] **`consistent_implies_f_monotone` — 0 `sorry`** (phase 3, `f = g + h` croissante ⇒ pas de ré-expansion)
 
 Phases suivantes (suivi #4048) :
