@@ -326,7 +326,20 @@ EXERCISE_NUMBER_RE = re.compile(
 # exercise); whether it is a *stub* is answered only by these patterns + the
 # code-line count.
 STUB_PATTERNS = [
-    re.compile(r'print\(["\']Exercice[s]? a completer', re.IGNORECASE),
+    # The C.1 print idiom, numberless OR numbered: ``print("Exercice a
+    # completer")`` and ``print("Exercice 2 a completer")``. The numbered form
+    # -- the dominant one in the corpus -- was missed for as long as the only
+    # fallback marker was ``# TODO``-class comments, and a SCAFFOLDED skeleton
+    # with a derived return (the fill-in blocks are comments around ``s = s2``)
+    # defeats that fallback via the ``_body_computes_result`` gate: the TODOs
+    # are "leftover comments above a body that computes" and the cell fell
+    # through as a solution. Measured (2026-09-16): exactly 5 notebooks
+    # under-counted by this blind spot (rl_8_model_based_dyna_q Ex2
+    # prioritized-sweeping skeleton, PT_11a Ex1, Search-03c Ex1, Planners-1
+    # Ex2, SL-12 Ex3), each -1 real exercise, 0 false positives.
+    re.compile(
+        r'print\(["\']Exercice[s]?\s*\d*\s*a completer', re.IGNORECASE
+    ),
     re.compile(r"^\s*pass\s*$", re.MULTILINE),
     re.compile(r"\breturn\s+None\b"),
     # TODO / Indice markers. Python/F#/Lean use `#`, C# / .NET Interactive

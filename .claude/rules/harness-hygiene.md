@@ -21,7 +21,8 @@ S'applique à **tous les agents** du cluster CoursIA (workers `po-*` + coordinat
 
 1. **Est-ce durable ?** Non → dashboard. Oui → étape 2.
 2. **Est-ce du détail ?** Oui → `docs/<theme>.md` + 1 ligne pointeur dans le harnais. Non (règle / pointeur bref) → harnais directement.
-3. **Préserver avant de réduire** (cf CLAUDE.md global « Consolider != Archiver ») : merger le contenu durable dans sa cible AVANT de trimmer la source. Citer la cible comme preuve.
+3. **Le changement est-il normatif et substantiel ?** Si oui → PR + sign-off user avant merge, conformément à CLAUDE.md §A. Un mandat user direct vaut sign-off ; une correction non normative n'en exige pas de supplémentaire, mais passe toujours par PR + review.
+4. **Préserver avant de réduire** (cf CLAUDE.md global « Consolider != Archiver ») : merger le contenu durable dans sa cible AVANT de trimmer la source. Citer la cible comme preuve.
 
 ## Voir aussi
 

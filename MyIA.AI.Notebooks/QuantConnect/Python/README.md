@@ -72,6 +72,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-27-Production-Deployment | NON EXÉCUTÉ | |
 | QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | |
 | QC-Py-28b-Macro-Cycle-Regimes | EXÉCUTÉ | cellules locales exécutées + run QC Cloud 2016-2026 (diagnostic → allocation) |
+| QC-Py-29-Derivatives-Valuation | EXÉCUTÉ | cellules locales exécutées (BS / arbre CRR / Monte-Carlo : convergence, grecques, scénario liquidité) |
 | QC-Py-30-LSTM-Training | EXÉCUTÉ | |
 | QC-Py-31-Transformer-Training | EXÉCUTÉ | |
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
@@ -92,7 +93,6 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-09-OptionWheel | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-10-RL-DQN-Trading | EXÉCUTÉ | |
-| QC-Py-Cloud-12-SectorRotation-Momentum | EXÉCUTÉ | |
 | QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | |
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
@@ -173,7 +173,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |
 
-## Phase 4 : Machine Learning (QC-Py-18 à 28)
+## Phase 4 : Machine Learning (QC-Py-18 à 29)
 
 | Notebook | Contenu |
 |----------|---------|
@@ -191,6 +191,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
+| [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
 
