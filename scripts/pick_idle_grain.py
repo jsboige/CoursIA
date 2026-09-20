@@ -851,6 +851,92 @@ def delivered_signal_reason(
     return None
 
 
+def open_cover_inert(issue_number: int) -> str:
+    """Sonde inerte : aucune PR couvrante, aucun appel reseau.
+
+    Defaut de ``draw_unclaimed`` pour la sonde de couverture, meme doctrine
+    que ``delivered_probe_inert`` : un appel direct ou un test unitaire ne
+    doit pas emettre de requete `gh` par candidat tire.
+    """
+    return ""
+
+
+def open_cover_signal(issue_number: int) -> str | None:
+    """Une PR OUVERTE couvre-t-elle deja cette issue ?
+
+    TRI-ETAT, meme doctrine que ``has_delivered_signal`` : ``""`` = aucune
+    PR ouverte couvrante ; une descriptor-string (``"PR #12519 [draft]
+    (+1 autre(s) : #12530)"``) = au moins une PR ouverte cite l'issue ;
+    ``None`` = la requete a echoue (reseau, 403, payload illisible) et
+    l'appelant doit tirer quand meme EN LE DISANT.
+
+    Requete et priorite identiques a ``recent_delivery`` (#12504) : une PR
+    OUVERTE dit « quelqu'un y est en ce moment, ton claim sera void » ; une
+    PR fermee-sans-fusion n'atteste de rien et est ignoree explicitement.
+    Arbitrage #16589 (ai-01, 2026-09-17) : ce signal monte AU MEME RANG que
+    candidate-delivered -- le candidat couvert est ECARTE et remplace dans
+    son urne, pas seulement annote.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "all",
+             "--limit", "20", "--search", f"{issue_number} in:title,body",
+             "--json", "number,state,isDraft"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        prs = json.loads(out)
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+    if not opened:
+        return ""
+    first = min(opened, key=lambda pr: pr["number"])
+    others = [pr["number"] for pr in opened
+              if pr["number"] != first["number"]]
+    descriptor = f"PR #{first['number']}"
+    if first.get("isDraft"):
+        descriptor += " [draft]"
+    if others:
+        descriptor += " (+{} autre(s) : {})".format(
+            len(others), ", ".join(f"#{x}" for x in others))
+    return descriptor
+
+
+def open_cover_reason(
+    item: dict,
+    probe=None,
+    failures: list[int] | None = None,
+) -> str | None:
+    """Pourquoi ecarter ce candidat de l'urne `grain` (PR ouverte couvrante).
+
+    Portee : l'urne `grain` SEULE, et seulement APRES le filtre de
+    livraison (le label/marqueur reste premier : un travail deja livre
+    prime sur un travail en cours). Le garde ne dit pas « ne fais jamais
+    ce travail » -- il dit « ton claim serait VOID au moment ou tu le
+    poserais » : la lane qui veut malgre tout prendre le grain lit la PR
+    couvrante et reclaime en le disant (``recent_delivery`` reste le filet
+    fail-OPEN quand la sonde n'a pas pu etre faite).
+    """
+    if probe is None:
+        probe = open_cover_inert
+    verdict = probe(item["number"])
+    if verdict == DELIVERED_SIGNAL_UNPROBED:
+        return None
+    if verdict is None:
+        # Fail-OPEN, et rapporte -- meme doctrine que delivered_signal_reason.
+        if failures is not None:
+            failures.append(item["number"])
+        return None
+    if verdict:
+        return (
+            f"TRAVAIL EN COURS : {verdict} OUVERTE couvre cette issue -> "
+            "claim probablement VOID ; verifier la PR couvrante AVANT d'y "
+            "retourner (le diff peut rester incomplet)"
+        )
+    return None
+
+
 
 def print_delivered_signal_report(
     withheld: list,
@@ -879,6 +965,15 @@ def print_delivered_signal_report(
         print("   les recoit. Urne `delivered` et `--include-delivered` "
               "restent")
         print("   les deux chemins pour les traiter.")
+    inprogress = [it for it, cause in withheld
+                  if cause.startswith("EN COURS")]
+    if inprogress:
+        numbers = ", ".join(f"#{it['number']}" for it in inprogress)
+        print(f"Signal de couverture : {len(inprogress)} candidat(s) "
+              f"ECARTE(S) de l'urne grain : {numbers}.")
+        print("   Une PR OUVERTE couvre deja l'issue -- un claim dessus serait")
+        print("   probablement VOID (arbitrage #16589 : meme rang que "
+              "candidate-delivered).")
     failed = sorted(set(state.get("failures") or []))
     if failed:
         numbers = ", ".join(f"#{num}" for num in failed)
@@ -888,14 +983,25 @@ def print_delivered_signal_report(
         print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
         print("   ABOUTI n'est PAS une absence de signal. Verifier a la main")
         print("   (`gh issue view <N> --comments`) avant de produire dessus.")
+    cover_failed = sorted(set(state.get("cover_failures") or []))
+    if cover_failed:
+        numbers = ", ".join(f"#{num}" for num in cover_failed)
+        print(f"!! sonde de couverture NON LUE sur {numbers} "
+              f"({len(cover_failed)} candidat(s)) : la recherche de PR "
+              "n'a pas abouti")
+        print("   (reseau, 403, payload illisible). Le tirage est MAINTENU et")
+        print("   ces candidats sont CONSERVES -- une lecture qui n'a pas")
+        print("   ABOUTI n'est PAS une absence de PR couvrante. Verifier")
+        print("   (`gh pr list --state all --search \"<N> in:title,body\"`) "
+              "avant de produire dessus.")
     if state.get("budget_hit"):
-        print(f"!! signal de livraison NON SONDE au-dela de "
-              f"{DELIVERED_SIGNAL_MAX_PROBES} candidats : le plafond de "
-              "sondes")
-        print("   est atteint, la fin de l'urne n'a pas ete verifiee. Les "
-              "candidats")
+        print(f"!! signal de livraison/couverture NON SONDE au-dela de "
+              f"{DELIVERED_SIGNAL_MAX_PROBES} sondes : le plafond PARTAGE "
+              "(commentaire + PR couvrante) est atteint, la fin de l'urne "
+              "n'a pas ete verifiee. Les candidats")
         print("   non sondes sont CONSERVES (fail-open).")
-    if dropped or failed or state.get("budget_hit"):
+    if (dropped or failed or cover_failed or inprogress
+            or state.get("budget_hit")):
         print()
 
 
@@ -906,9 +1012,10 @@ def print_empty_draw_notice(withheld: list, picks: list,
         return
     print("FILE LOCALE EPUISEE : aucun candidat libre dans cette poignee.")
     if not include_delivered and any(
-            cause.startswith("LIVRAISON") for _, cause in withheld):
-        print("   Une partie a deja ete livree et reste reservee a l'urne de")
-        print("   fermeture ; elle ne doit pas etre reproduite.")
+            cause.startswith(("LIVRAISON", "EN COURS"))
+            for _, cause in withheld):
+        print("   Une partie a deja ete livree ou est couverte par une PR")
+        print("   ouverte ; elle ne doit pas etre reproduite.")
     print("   Claims, livraisons et urnes autorisees restent proteges. Enchainer")
     print("   immediatement sur la deep-queue ou le fallback global de la lane.")
     print("   Une poignee locale epuisee ne termine jamais la session.")
@@ -1348,10 +1455,10 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
                    fallback_by_class=None, continuity_state=None,
-                   long_visits=None):
+                   cover_probe=None, long_visits=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
-    Deux raisons de remplacer plutot que d annoter :
+    Trois raisons de remplacer plutot que d annoter :
 
     1. Un candidat annote << BLOQUE par X >> reste un candidat. La lane le
        lit, juge que son scope differe, et ecrit quand meme -- c est le
@@ -1360,6 +1467,10 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
     2. Retirer sans remplacer transformerait le garde en source d idle, ce
        que la regle 4 de coordinator-discipline interdit. On retire ET on
        retire un candidat de plus dans la meme urne.
+    3. Une PR OUVERTE couvre le candidat (#16589) : le claim serait VOID
+       au moment ou la lane le poserait. Meme rang que le signal de
+       livraison, meme remplacement -- la doctrine du signal est celle de
+       recent_delivery (#12504), la sanction est celle du delivered.
 
     Le cout est borne : N appels sur les tires (une poignee), jamais sur le
     pool. C est pourquoi le check pouvait etre par defaut sans etre lent --
@@ -1393,6 +1504,18 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return (delivered_probe or delivered_probe_inert)(number, lane_name)
+
+    def _counted_cover_probe(number):
+        # Meme plafond, meme fail-OPEN que la sonde de livraison (#16589) :
+        # « au meme rang » veut dire AUSSI au meme cout borne -- les deux
+        # sondes parent le MEME budget, pas un plafond double. Un candidat
+        # qui passe le filtre de livraison consomme donc jusqu'a deux unites
+        # (commentaire + PR couvrante).
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return (cover_probe or open_cover_inert)(number)
 
     for cls, want, prev in urnes:
         primary = list(by_class[cls])
@@ -1446,6 +1569,18 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "LIVRAISON : " + reason + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
+                        # #16589 : la sonde de PR couvrante vient APRES le
+                        # filtre de livraison (un travail deja livre prime
+                        # sur un travail en cours) et seulement sur les
+                        # candidats SURVIVANTS -- le label gratuit reste
+                        # premier, la sonde la plus chere derniere.
+                        cover = open_cover_reason(
+                            c, _counted_cover_probe,
+                            state.setdefault("cover_failures", []))
+                        if cover is not None:
+                            conflicts.append((c, "EN COURS : " + cover + (
+                                " Candidat remplace dans la meme urne.")))
+                            continue
                     got.append(c)
                     if pool_index and continuity_state is not None:
                         continuity_state["used"] = True
@@ -1482,10 +1617,17 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     est en ce moment, ton claim sera void". Une PR **fermee sans fusion** ne
     dit rien et est ignoree explicitement.
 
-    L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
-    ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
-    en dit, pas s'il est pris. Le verrou cross-lane reste
-    ``check_lane_claim.py``, que le tirage interroge desormais par defaut.
+    Arbitrage #16589 (ai-01, 2026-09-17) : le cas PR-OUVERTE-couvrante monte
+    au meme rang que ``candidate-delivered`` -- ``draw_unclaimed`` ecarte et
+    remplace desormais ce candidat dans l'urne ``grain`` (sonde
+    ``open_cover_signal``, meme budget, meme fail-OPEN). Cette fonction reste
+    le FILET fail-OPEN : quand la sonde n'a pas pu etre faite (plafond
+    atteint, requete en echec), le candidat conserve arrive ici et recoit
+    quand meme l'annotation. Pour les PRs MERGEES, l'annotation **n'ecarte
+    pas** (parite avec la doctrine ``candidate-delivered`` : signale, ne
+    ferme pas) -- une fusion dit "peut-etre deja fait", pas "quelqu'un y
+    est". Le verrou cross-lane reste ``check_lane_claim.py``, que le
+    tirage interroge desormais par defaut.
     """
     notes: dict[int, str] = {}
     for p in picks:
@@ -1662,6 +1804,14 @@ AGGREGATOR_CHECK_NAMES = {"PR gate"}
 # Banniere finale de l'agregateur always-on-guards.yml : l'organe en echec
 # vit dans l'ANNOTATION du check-run, pas dans son nom.
 _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(?:\(|$)")
+# #15910 : un agregateur rouge **par DWELL** n'a AUCUN organe en echec -- il n'y
+# a rien a reparer, la cause est un minuteur. `pr_gate.py` dit deja le bon
+# verdict et le rend dans l'annotation du check-run ; on lit ce texte pour
+# distinguer « il n'y avait rien a lire » de « je n'ai pas pu lire ». Sans lui,
+# `fetch_check_organs` rend [] dans les deux cas et le rouge retombe sur la lane.
+# La FORME du message n'est pas re-decrite ici : elle appartient a son emetteur
+# (`scripts/ci/merge_dwell.py`), qui en expose l'inverse (cf
+# `_dwell_message_parser`). Une copie locale deriverait en silence.
 
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
@@ -1911,6 +2061,58 @@ def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
     return failed, cut
 
 
+def fetch_check_dwell(check_run_id: int) -> dict | None:
+    """Echeance d'un plancher de DWELL, ou None si l'annotation n'en porte pas.
+
+    #15910 : un agregateur rouge par DWELL n'a **aucun organe** tombe -- le
+    plancher vaut 120 min et seul l'ecoulement du temps le leve. Sans cette
+    lecture, ``fetch_check_organs`` rend ``[]`` et l'appelant confond « rien a
+    lire » (le DWELL est la cause) avec « pas pu lire » (fail-closed, rouge
+    rendu a la lane) : la lane brulait son cycle a chercher dans son diff une
+    cause inexistante, et trois PRs poussees dans la meme fenetre suffisaient a
+    declencher P0 par le seul minuteur.
+
+    Le FORMAT du message n'est pas re-decrit ici : il appartient a
+    `scripts/ci/merge_dwell.py`, qui l'emet (`evaluate`) et qui en expose
+    l'inverse (`parse_pending_message`). Une copie locale deriverait en silence.
+
+    Best-effort comme son voisin : annotation illisible -> ``None``, et
+    l'appelant retombe sur le fail-closed (le rouge reste a la lane).
+    """
+    parser = _dwell_message_parser()
+    if parser is None:
+        return None
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
+        return None
+    for ann in annotations or []:
+        parsed = parser(ann.get("message") or "")
+        if parsed:
+            return parsed
+    return None
+
+
+def _dwell_message_parser():
+    """`merge_dwell.parse_pending_message`, ou None si l'import est impossible.
+
+    Import tardif et defensif, comme `_is_adjacency_red` : l'organe est
+    optionnel, une `ImportError` ici ne doit pas casser le tirage -- elle doit
+    seulement rendre le DWELL illisible, c'est-a-dire retomber sur le
+    fail-closed d'avant #15910 (le rouge reste a la lane).
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        from merge_dwell import parse_pending_message  # noqa: PLC0415 - import tardif
+        return parse_pending_message
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
+
+
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
     """Cles de CAUSE d'un check rouge, pas de son nom de job (#14537, #14567).
 
@@ -2073,6 +2275,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
                     resolved_keys_by_name: dict[str, set[str]] | None = None,
+                    dwell_by_name: dict[str, dict] | None = None,
                     gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
                     ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
@@ -2120,6 +2323,14 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                 cause = f"check requis non conclu : {name} ({verdict})"
                 if cause not in causes:
                     causes.append(cause)
+            continue
+        if dwell_by_name and name in dwell_by_name:
+            # #15910 : ce rouge est un MINUTEUR, pas un defaut. Le gate le dit
+            # dans son texte (plancher de 120 min) ; le compter comme « check
+            # requis en echec » envoyait la lane chercher dans son diff une
+            # cause qui n'existe pas. Le seul geste correct est l'attente -- on
+            # ne fabrique donc aucune cause, et le declencheur `count` ne peut
+            # plus basculer tout le cycle sur une reparation inexistante.
             continue
         if inherited:
             # #13545/#14537 : rouge impute a la base (cause commune corroboree
@@ -2520,7 +2731,7 @@ def red_backlog(lane: str, threshold_hours: float,
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
                 "nits_unavailable": None, "base_inherited": [],
-                "base_unresolved": [],
+                "base_unresolved": [], "dwell_waiting": [],
                 "saturation_hours": sat_threshold}
 
     mine, others = [], []
@@ -2553,6 +2764,7 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    dwell_cache: dict[int, dict] = {}
     # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
     # PRs de la lane dans ce passage, comme organ_cache.
     gate_cache: dict[int, tuple[list[str], list[str]]] = {}
@@ -2566,6 +2778,7 @@ def red_backlog(lane: str, threshold_hours: float,
                                      organ_cache=organ_cache,
                                      unresolved_out=unresolved_aggregates)
     red = []
+    dwell_waiting: list[dict] = []
     for pr in mine:
         state = states.get(pr["number"])
         if state is None:
@@ -2585,9 +2798,33 @@ def red_backlog(lane: str, threshold_hours: float,
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
                 keys_by_name.setdefault(ctx_name, set()).update(
                     failed_check_keys(ctx, organ_cache))
+        # #15910 : un agregateur rouge par DWELL n'a pas d'organe a lire. On ne
+        # paie la lecture d'annotation que pour les agregateurs dont AUCUN
+        # organe n'a pu etre resolu -- exactement le cas ambigu, jamais le cas
+        # nominal (un organe nomme tranche deja la question).
+        dwell_by_name: dict[str, dict] = {}
+        for ctx in _failed_contexts(state):
+            ctx_name = ctx.get("name") or ctx.get("context") or "?"
+            if not is_aggregator_check(ctx_name):
+                continue
+            if keys_by_name and keys_by_name.get(ctx_name):
+                continue
+            ctx_run_id = ctx.get("databaseId")
+            if ctx_run_id is None:
+                continue
+            if ctx_run_id not in dwell_cache:
+                dwell_cache[ctx_run_id] = fetch_check_dwell(ctx_run_id) or {}
+            dwell = dwell_cache[ctx_run_id]
+            if dwell:
+                dwell_by_name[ctx_name] = dwell
+        for ctx_name, info in sorted(dwell_by_name.items()):
+            dwell_waiting.append({"number": pr["number"], "check": ctx_name,
+                                  "lift_at": info.get("lift_at"),
+                                  "remaining_min": info.get("remaining_min")})
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
                                  resolved_keys_by_name=keys_by_name,
+                                 dwell_by_name=dwell_by_name,
                                  gate_evidence=gate_evidence_for(state, gate_cache))
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
@@ -2624,6 +2861,19 @@ def red_backlog(lane: str, threshold_hours: float,
                         "causes": causes,
                         "is_adjacency": is_adj})
     red.sort(key=lambda r: -r["age_hours"])
+
+    # #15910 : un agregateur tranche par DWELL n'est PAS « non resolu ». Sans ce
+    # retrait, `impute_base_reds` (qui a lu l'annotation AVANT la boucle) le
+    # classe dans `base_unresolved` et la sortie annonce « organe non lisible --
+    # pas pu trancher » sur le rouge dont on vient d'etablir qu'il n'y a rien a
+    # reparer : deux lignes qui se contredisent, et la lane repart chercher.
+    # Portee volontairement limitee aux PRs de la lane : lire le DWELL d'une PR
+    # etrangere couterait jusqu'a 16 lectures d'annotation sur l'echantillon de
+    # corroboration, pour une surface qui ne decide rien pour cette lane.
+    resolved_dwell = {(item["check"], item["number"]) for item in dwell_waiting}
+    if resolved_dwell:
+        unresolved_aggregates[:] = [pair for pair in unresolved_aggregates
+                                    if pair not in resolved_dwell]
 
     triggers = []
     if any(nits_by_pr.get(r["number"]) for r in red):
@@ -2668,6 +2918,10 @@ def red_backlog(lane: str, threshold_hours: float,
             # sinon l'absence d'imputation se lirait comme une acquittement.
             "base_unresolved": [{"check": name, "prs": sorted(nums)}
                                 for name, nums in sorted(unresolved_by_name.items())],
+            # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
+            # reparer, ni un rouge impute a la base : un minuteur qu'aucune
+            # lane ne peut avancer en poussant (pousser le remet a zero).
+            "dwell_waiting": dwell_waiting,
             "nits_unavailable": nits_unavailable}
 
 
@@ -2702,6 +2956,42 @@ def print_base_inherited(backlog: dict) -> None:
         print(f"  - {item['check']} : organe non lisible sur {prs} -- pas pu")
         print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
         print(f"    l'annotation du check-run avant d'invoquer la base).")
+    print()
+
+
+def print_dwell_waiting(backlog: dict) -> None:
+    """Agregateurs rouges par DWELL : un minuteur, pas un defaut (#15910).
+
+    `pr_gate.py` n'applique le plancher d'anciennete que sur le chemin VERT
+    (`code == 0`) : quand tout est vert et que la tete est trop jeune, il rend
+    malgre tout un code non nul. Cote picker, ce rouge n'avait aucun organe a
+    lire (il n'y a rien a reparer) et retombait donc sur la lane comme un grain
+    reparable -- un cycle entier pouvait partir sur une reparation inexistante.
+    Ce rouge ne se corrige pas : il s'ecoule. Apres l'echeance, la lane peut
+    rejouer la jambe elle-meme (`gh run rerun <run_id> --job <job_id>`, sans
+    push -- un push remet le plancher a zero) ou laisser le balayage
+    `pr-gate-stale-sweep.yml` s'en charger (cadence MESUREE 2 h 33 - 5 h 18
+    entre tirs, pas horaire -- #15197).
+    """
+    items = backlog.get("dwell_waiting") or []
+    if not items:
+        return
+    print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
+    for item in items:
+        # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
+        # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
+        # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
+        # min). L'heure de levee absolue est la seule donnee qui ne vieillit
+        # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
+        reste = item.get("remaining_min")
+        reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
+        quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
+        print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
+    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+    print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
+    print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
+    print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
+    print("attend, pas la lane.")
     print()
 
 
@@ -2916,6 +3206,7 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)
+    print_dwell_waiting(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
@@ -3541,8 +3832,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="ne PAS ecarter de l'urne grain les issues "
                          "portant un signal de livraison (label "
                          "candidate-delivered ou commentaire [INFO] "
-                         "candidate-delivered) -- echappatoire nommee, "
-                         "typiquement pour une lane habilitee a fermer")
+                         "candidate-delivered), NI les grains couverts "
+                         "par une PR ouverte (#16589 : meme rang que "
+                         "candidate-delivered) -- echappatoire nommee "
+                         "pour les DEUX rangs d'exclusion, typiquement "
+                         "pour une lane habilitee a fermer")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
@@ -3606,6 +3900,13 @@ def main(argv: list[str] | None = None) -> int:
         delivered_probe_inert
         if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
         else has_delivered_signal
+    )
+    # Sonde de couverture (#16589) : meme commutateur d'inertie sous pytest --
+    # un test qui veut le signal l'injecte explicitement.
+    cover_probe = (
+        open_cover_inert
+        if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
+        else open_cover_signal
     )
     delivered_state: dict = {"failures": [], "budget_hit": False}
 
@@ -3727,6 +4028,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
+        print_dwell_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
@@ -3922,6 +4224,7 @@ def main(argv: list[str] | None = None) -> int:
         by_class, args, rng, visits, series, issue_to_family,
         delivery=delivery_weights if args.delivery_boost_max > 0 else None,
         delivered_probe=delivered_probe, delivered_state=delivered_state,
+        cover_probe=cover_probe,
         fallback_by_class=fallback_by_class,
         continuity_state=continuity,
         long_visits=long_visits)
@@ -3967,6 +4270,8 @@ def main(argv: list[str] | None = None) -> int:
             "delivered_signal": {
                 "include_delivered": bool(args.include_delivered),
                 "probes_failed": sorted(set(delivered_state["failures"])),
+                "cover_probes_failed": sorted(
+                    set(delivered_state.get("cover_failures") or [])),
                 "budget_hit": delivered_state["budget_hit"],
                 "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
             },
