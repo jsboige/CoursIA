@@ -1264,6 +1264,19 @@ class MultiAgentSorryProver:
             # (field absent) falsy -> no_progress, identical to the heartbeat
             # field's legacy-safe contract.
             "reasoning_budget_exceeded": getattr(state, "reasoning_budget_exceeded", False),
+            # C3 (#1453 calibration forensic, 2026-09-19): the freeze-loop
+            # escalation hardcap terminated the run — the C617 guard forced
+            # FREEZE_LOOP_HARDCAP Coordinator handoffs while tactic_history
+            # stayed empty (the model cannot tool-call; plan revisions cannot
+            # unstick it). Surfaced so run_prover_bg._derive_result_kind
+            # classifies the run freeze_loop (distinct from no_progress) —
+            # telling a coordinator to change model/provider, NOT more
+            # iterations. Founder case: calibration DEMOS 45/41/52 pass 2,
+            # qwen2.5:7b — 6 guard firings, 8/8 iterations, 0 attempts.
+            # (Autonomous path: always-False via getattr — the guard lives
+            # in the multi-agent workflow only; key kept for shape parity.)
+            "freeze_loop": getattr(state, "freeze_loop_terminal", False),
+            "freeze_loop_escalations": getattr(state, "freeze_loop_escalations", 0),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (a boolean
@@ -2188,6 +2201,19 @@ class AutonomousProver:
             # of the multi-agent result-dict field; getattr-default keeps
             # legacy traces falsy -> no_progress.
             "reasoning_budget_exceeded": getattr(state, "reasoning_budget_exceeded", False),
+            # C3 (#1453 calibration forensic, 2026-09-19): the freeze-loop
+            # escalation hardcap terminated the run — the C617 guard forced
+            # FREEZE_LOOP_HARDCAP Coordinator handoffs while tactic_history
+            # stayed empty (the model cannot tool-call; plan revisions cannot
+            # unstick it). Surfaced so run_prover_bg._derive_result_kind
+            # classifies the run freeze_loop (distinct from no_progress) —
+            # telling a coordinator to change model/provider, NOT more
+            # iterations. Founder case: calibration DEMOS 45/41/52 pass 2,
+            # qwen2.5:7b — 6 guard firings, 8/8 iterations, 0 attempts.
+            # (Autonomous path: always-False via getattr — the guard lives
+            # in the multi-agent workflow only; key kept for shape parity.)
+            "freeze_loop": getattr(state, "freeze_loop_terminal", False),
+            "freeze_loop_escalations": getattr(state, "freeze_loop_escalations", 0),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (boolean success
