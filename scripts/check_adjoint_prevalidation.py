@@ -2,8 +2,14 @@
 """Fail-closed gate for the coordinator's adjoint prevalidation dossier.
 
 The gate answers one narrow question: does this pull request have a complete,
-exact-head, machine-readable READY dossier from the canonical adjoint lane?
+exact-head, machine-readable READY dossier from a qualifying THIRD-PARTY lane?
 It does not approve the pull request, replace B.0, or authorize a merge.
+
+The binding constraint is third-party review, not the name of one lane. A
+dossier written by the lane that carries the pull request is self-attestation
+and is refused; a dossier written by any other qualifying lane carries the same
+evidential weight as the adjoint's. Restricting emission to a single named lane
+made that lane's throughput the merge throughput of the whole repository.
 
 Canonical comment body (the marker must be the first line):
 
@@ -87,7 +93,27 @@ from dataclasses import dataclass
 from typing import Any
 
 REPO = "jsboige/CoursIA"
+# The adjoint remains the canonical emitter: `--template` renders its lane, and
+# it is the lane the coordinator nudges first. It is no longer the only one.
 ADJOINT_LANE = "myia-po-2025:CoursIA-2"
+# A dossier is an act of third-party verification. Any cluster lane may emit one
+# for a pull request it does not carry. The set is explicit so that an unknown or
+# malformed lane string fails closed rather than passing as "some lane".
+QUALIFYING_LANES = frozenset({
+    "myia-ai-01:CoursIA",
+    "myia-po-2023:CoursIA",
+    "myia-po-2024:CoursIA",
+    "myia-po-2024:CoursIA-2",
+    "myia-po-2025:CoursIA",
+    "myia-po-2025:CoursIA-2",
+    "myia-po-2026:CoursIA",
+    "myia-po-2026:CoursIA-2",
+    "myia-po-2027:CoursIA",
+    "myia-po-2027:CoursIA-2",
+})
+# `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
+# lane that carries the work. Same grammar as scripts/check_lane_claim.py.
+GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
 SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
@@ -165,7 +191,19 @@ def parse_dossier(
     author: str,
     created_at: str = "",
 ) -> tuple[Dossier | None, list[str]]:
-    """Parse one strictly delimited dossier comment without interpreting prose."""
+    """Parse one strictly delimited dossier comment without interpreting prose.
+
+    Prose FOLLOWING the closing marker is ignored, not refused. The contract is
+    the delimited block: `content` stops at `closing`, so trailing text can never
+    reach a field. Refusing it discarded dossiers whose machine-readable block
+    was complete and whose firsthand evidence was written below it for a human --
+    measured on four pull requests in one cycle (#16928).
+
+    Nothing is hidden by this. `check_unaddressed_nits.py` strips the dossier by
+    its two delimiters, so a reserve written after the closing marker still
+    reaches B.0 classification; only a reserve written INSIDE the block is
+    absorbed, which is the intended semantics of #16442/#16443.
+    """
     lines = body.strip().splitlines()
     if not lines or lines[0].strip() != START:
         return None, []
@@ -179,8 +217,6 @@ def parse_dossier(
         content = lines[1:]
     else:
         content = lines[1:closing]
-        if closing != len(lines) - 1:
-            errors.append("content after closing marker")
 
     fields: dict[str, str] = {}
     for raw in content:
@@ -402,6 +438,21 @@ def check_claim_contradictions(
     return contradictions
 
 
+def carrying_lane(snapshot: dict[str, Any]) -> str | None:
+    """Return the lane that carries this pull request, from its `Grain:` tag.
+
+    Returns None when the body carries no readable tag. `validate_dossier` turns
+    that None into a refusal: an absent tag means the self-attestation check
+    CANNOT be made, and a check that cannot be made has not passed. Without that
+    refusal, a qualifying lane carrying an untagged PR files its own dossier and
+    clears a control that never ran -- the exact hole the third-party rule exists
+    to close. Blast radius measured 2026-09-20: 4 of 221 open PRs carry no
+    readable tag, and the escape is to add the tag, not to weaken the gate.
+    """
+    match = GRAIN_LANE_RE.search(snapshot.get("body") or "")
+    return match.group(1) if match else None
+
+
 def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     """Validate a parsed dossier against one live PR snapshot."""
     f = dossier.fields
@@ -414,7 +465,6 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     # from an absent one (#16800).
     expected = {
         "schema": "1",
-        "lane": ADJOINT_LANE,
         "complete": "true",
         "body": "read",
     }
@@ -444,6 +494,25 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 f.get("checks", ""), snapshot.get("checkRuns")
             )
         )
+
+    dossier_lane = f.get("lane", "")
+    if dossier_lane not in QUALIFYING_LANES:
+        errors.append(
+            f"lane must be one of the qualifying cluster lanes, got {dossier_lane!r}"
+        )
+    else:
+        carrier = carrying_lane(snapshot)
+        if carrier is None:
+            errors.append(
+                "carrying lane cannot be established: the body carries no readable "
+                "'Grain: ... lane <machine:workspace>' tag, so third-party "
+                "prevalidation cannot be verified"
+            )
+        elif carrier == dossier_lane:
+            errors.append(
+                "self-prevalidation refused: the dossier lane "
+                f"{dossier_lane!r} is the lane that carries this pull request"
+            )
     if dossier.author != SHARED_GITHUB_LOGIN:
         errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
     if not SHA_RE.fullmatch(f.get("head", "")):
@@ -690,11 +759,17 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     return snapshot
 
 
-def render_template(snapshot: dict[str, Any]) -> str:
-    """Render the mechanical fields; the adjoint sets the four verdict fields."""
+def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
+    """Render the mechanical fields; the emitting lane sets the verdict fields.
+
+    `lane` defaults to the adjoint because it emits most dossiers, but a template
+    that hardcoded one lane would hand every other lane a dossier declaring a
+    name that is not its own -- and a borrowed name defeats the self-attestation
+    refusal in `validate_dossier`. A lane renders its OWN name here.
+    """
     fields = (
         ("schema", "1"),
-        ("lane", ADJOINT_LANE),
+        ("lane", lane),
         ("pr", str(snapshot["number"])),
         ("head", snapshot["headRefOid"]),
         ("complete", "REPLACE_WITH_true"),
@@ -727,6 +802,12 @@ def main() -> int:
     parser.add_argument("pr", type=int, help="pull request number")
     parser.add_argument("--json", action="store_true", help="emit machine-readable output")
     parser.add_argument(
+        "--lane",
+        default=ADJOINT_LANE,
+        choices=sorted(QUALIFYING_LANES),
+        help="lane emitting the dossier, for --template (default: the adjoint)",
+    )
+    parser.add_argument(
         "--fingerprint",
         action="store_true",
         help="print the live discussion fingerprint for a new dossier",
@@ -740,7 +821,7 @@ def main() -> int:
     try:
         snapshot = load_snapshot(args.pr)
         if args.template:
-            print(render_template(snapshot))
+            print(render_template(snapshot, args.lane))
             return 0
         if args.fingerprint:
             print(surfaces_fingerprint(snapshot))
