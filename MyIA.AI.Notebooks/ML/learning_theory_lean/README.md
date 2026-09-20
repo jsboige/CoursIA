@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + GenEFT), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -25,6 +25,16 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    blocs *résiduels* `h ↦ h + f h` la voit **minorée** par `(1-c) ^ n` (survie,
    ancre `3e-5 < 0,6 ^ 20`) — le raccourci identité (He et al. 2015) rend
    géométriquement improbable ce que la pile plain tue géométriquement.
+4. **Module `GenEFT`** — tranche R06 du corpus Tegmark (*GenEFT: A Generative
+   Physics Framework for Automating Emergent Function Tracking in Learning
+   Machines*, Baek, Liu, Tegmark 2024, arXiv:2402.05916) : **longueur de
+   description par orbit-stabilizer** (le re-labellage des `n` noeuds d'un
+   graphe est l'action naturelle de `Equiv.Perm (Fin n)` sur
+   `SimpleGraph (Fin n)` ; orbit-stabilizer donne `b = log₂ (n!/|Aut G|)`),
+   **Theorem 1** (un autoencoder de classification à perte nulle et décodeur
+   injectif clusterise exactement les classes) et l'**invariant de
+   compétition** `η_x a₂² − 2 η_A c²` du système réduit, conservé le long des
+   trajectoires (cœur quantitatif du Theorem 3 — taux d'apprentissage critiques).
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -49,7 +59,7 @@ argument ERM dans `ERM`).
   sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
   phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry.
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
-  `lake build GradientFlow` (dépend de Mathlib4)
+  `lake build GradientFlow` / `lake build GenEFT` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -161,19 +171,26 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
 | `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
 
+### Module `GenEFT` (corpus Tegmark R06 — description length, clustering, compétition)
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `GenEFT.lean` | 0 | **Statics** : action de re-labellage `permSmul` (`Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)`, instance `MulAction`), pont `mem_aut_iff` (stabilisateur ↔ automorphismes : préservation de l'adjacence dans les deux sens), **`card_orbit_mul_card_aut`** (orbit-stabilizer : `\|orbite\| · \|Aut G\| = n!`), longueur de description `descLength` (b = log₂ \|orbite\|) et forme quotient **`descLength_eq`** (b = log₂ (n!/\|Aut G\|), éq. 4 du papier). **Theorem 1** : **`clustering`** — autoencoder de classification à perte nulle (`hLoss`) et décodeur injectif (`hInj`) : mêmes embeddings ↔ mêmes étiquettes (témoin `k := i`, pas de tiers). **Dynamics** : **`competition_invariant`** (éq. 10 — `η_x a₂² − 2 η_A c²` conservé sur le système réduit `da₂/dt = -2η_A c²a₂`, `dc/dt = -η_x a₂²c`) et **`rel_eqn_autonomous`** (éq. 16 — le forçage externe common-mode s'annule dans `x₁ − x₂`, ressort de Hooke autonome). |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
 `PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`, imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
-l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 18
-fichiers `_en` couvrent l'intégralité des 18 modules feuilles + agrégateurs :
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 22
+fichiers `_en` couvrent l'intégralité des modules (feuilles + agrégateurs) :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
-`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`.
+`GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
+`GenEFT_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -186,6 +203,7 @@ vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
 # Depuis ce répertoire (WSL recommandé)
 lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
+lake build GenEFT        # description length, clustering, compétition (Tegmark R06)
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -224,11 +242,15 @@ déclaration dans un notebook :
   Recognition*, arXiv:1512.03385 (2015) — le raccourci identité.
 - A. Veit, M. Wilber & S. Belongie, *Residual Networks Behave Like Ensembles of
   Relatively Shallow Networks*, arXiv:1605.06431 (2016) — la lecture ensembliste.
+- J. Baek, Z. Liu & M. Tegmark, *GenEFT: A Generative Physics Framework for
+  Automating Emergent Function Tracking in Learning Machines*,
+  arXiv:2402.05916 (2024) — description length, Theorem 1, invariant de compétition.
 
 ## Voir aussi
 
 - **Issue #4051** — création du lake + module Perceptron (roadmap Lean #4038, Tier 2 « first ML theorem »)
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
+- **EPIC #16741 / claim #16752** — corpus Tegmark : le module `GenEFT` en est la tranche R06 (orbit-stabilizer + Theorem 1 + invariant de compétition)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README

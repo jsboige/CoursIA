@@ -58,3 +58,12 @@ lean_lib «GradientFlow» where
   -- racine : sans le glob nu, `lake build` ne produit jamais GradientFlow.olean
   -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
   globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]
+
+/-- Module `GenEFT` — tranche R06 du corpus Tegmark (EPIC #16741, claim
+#16752) : description length par orbit-stabilizer (b = log₂ (n!/|Aut|)),
+Theorem 1 (clustering par décodeur injectif) et invariant de compétition
+η_x a₂² − 2 η_A c² (Baek, Liu, Tegmark, arXiv:2402.05916). Frère de
+`Perceptron`, `PacLearning` et `GradientFlow`. -/
+@[default_target]
+lean_lib «GenEFT» where
+  globs := #[`GenEFT, `GenEFT_en]
