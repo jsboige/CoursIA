@@ -101,6 +101,20 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
         self.ivrank_starve_warned = False
         self.ivrank_starve_warn_after = 60
 
+        # Compteur persistant de séances en repli VIX (#16653) : chaque séance
+        # post-warm-up où `current_ivrank` est None incrémente le compteur — le
+        # repli est un ÉTAT mesuré au fil du run et rendu au rapport final
+        # (FallbackVIXSessions), pas seulement un warn volatile. Distinct de
+        # `skipped_no_ivrank` (entrées refusées en repli) : une séance en repli
+        # où le VIX est dans la bande écrit quand même.
+        self.fallback_vix_sessions = 0
+
+        # Fenêtre DTE des IV ATM échantillonnées : paramètre nommé pour la
+        # mesure comparative 30-45 vs 30-90 de #16653 (l'article #18766
+        # échantillonne 30-90 ; 30-45 est le choix canonique de la v7.1).
+        self.atm_dte_min = 30
+        self.atm_dte_max = 45
+
         # Warm-up explicite pour la médiane IV ATM (conséquence du gate IV).
         self.set_warm_up(timedelta(days=30))
 
@@ -137,9 +151,13 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
         pass
 
     def _update_ivrank(self):
-        """Calcule la médiane IV ATM (30-45 j DTE) et met à jour l'IV-rank."""
+        """Calcule la médiane IV ATM (fenêtre DTE paramétrée) et met à jour l'IV-rank."""
         if self.is_warming_up:
             return
+        if self.current_ivrank is None:
+            # Séance en repli VIX : comptée au passage quotidien, que le gate
+            # écrive ou non (c'est la présence du repli qui est mesurée).
+            self.fallback_vix_sessions += 1
         chain = self.current_slice.option_chains.get(self.option_symbol, None)
         if not chain:
             self._note_iv_sample_missing()
@@ -148,7 +166,7 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
         if underlying_price <= 0:
             return
 
-        # Filtre ATM : strikes autour du spot, DTE 30-45 j
+        # Filtre ATM : strikes autour du spot, DTE dans la fenêtre paramétrée
         atm_ivs = []
         for c in chain:
             if c.right != OptionRight.CALL:
@@ -157,7 +175,7 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
             if iv is None or iv <= 0:
                 continue
             dte = (c.expiry - self.time).days
-            if dte < 30 or dte > 45:
+            if dte < self.atm_dte_min or dte > self.atm_dte_max:
                 continue
             moneyness = abs(c.strike - underlying_price) / underlying_price
             if moneyness > 0.05:  # ±5% ATM
@@ -361,6 +379,8 @@ class CoveredCallIvRankStrategy(QCAlgorithm):
             f"DefensiveIVCloses={self.defensive_iv_closes}, "
             f"SkippedByIVRank={self.skipped_ivrank}, "
             f"SkippedNoIVRank={self.skipped_no_ivrank}, "
+            f"FallbackVIXSessions={self.fallback_vix_sessions}, "
+            f"DTEWindow={self.atm_dte_min}-{self.atm_dte_max}, "
             f"{ivrank_report}, "
             f"IVSamplesBuffered={len(self.daily_atm_iv)}"
         )
