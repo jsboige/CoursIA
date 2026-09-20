@@ -2044,14 +2044,17 @@ def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch
     title = seen["fields"]["output[title]"]
     assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
     assert "plancher 120 min" in title
-    # L'instant que le titre annonce (ecoulement du plancher) est tete + 120 min
-    # -- lisible sans rien recalculer (acceptance 2), re-arme depuis le commit
-    # le plus recent apres tout push ou update-branch (acceptance 4). #15726 :
-    # le titre DATE l'ecoulement, il ne promet plus le balayage -- l'ancienne
-    # formule « leve au premier balayage suivant » adossait la levee a un
-    # balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ; cette cadence vit
-    # dans le summary, pas dans une promesse du titre.
-    assert "ecoule a 2026-09-13T12:00:00Z" in title
+    # L'instant que le titre annonce est le premier SWEEP_MINUTE:00:00Z (=:07)
+    # strictement posterieur au plancher brut (tete + 120 min = 12:00:00Z ->
+    # sweep suivant = 12:07:00Z). #16092 : c'est l'heure GARANTIE d'un
+    # sweep nominal post-plancher, pas l'heure du plancher brut (qui tait
+    # qu'un sweep vient de passer). Re-arme depuis le commit le plus recent
+    # apres tout push ou update-branch (acceptance 4). #15726 : le titre
+    # DATE l'instant garanti, il ne promet plus un balayage horaire --
+    # l'ancienne formule « leve au premier balayage suivant » adossait la
+    # levee a un balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ;
+    # cette cadence vit dans le summary, pas dans une promesse du titre.
+    assert "ecoule a 2026-09-13T12:07:00Z" in title
     # Garantie « rien a reparer » au niveau du TITRE aussi : la troncature
     # [:255] peut l'y couper sans que rien ne l'annonce -- le test doit tomber.
     assert "Rien a corriger dans le code" in title
@@ -2237,7 +2240,13 @@ def _decide_with_walls(checks, walls):
 def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
-    assert walls.get("Scripts Tests (CPU)") == 20
+    assert walls.get("Scripts Tests (CPU)") == 30
+    # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
+    # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
+    # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
+    # c'est l'egalite qui rend un changement de plafond visible et impossible a
+    # glisser sous une autre PR.
+    assert walls.get("ML Pipeline Tests (CPU)") == 45
 
 
 def test_declared_timeouts_tolerate_an_unreadable_state(tmp_path):
