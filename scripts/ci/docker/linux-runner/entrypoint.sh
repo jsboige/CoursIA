@@ -94,7 +94,19 @@ done
 WCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 . "$WCH_DIR/work_cache_health.sh"
-wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}"
+# `|| true` : SECONDE barriere, pas le correctif (#16643). Le correctif est
+# dans work_cache_health.sh, dont chaque mesure neutralise desormais son
+# propre rc. Mais ce fichier tourne sous `set -euo pipefail` (ligne 9) et se
+# trouve AVANT config.sh : toute fonction du garde qui laisserait remonter un
+# rc non nul tuerait le conteneur avant l'enregistrement du runner, donc sans
+# un mot dans le journal du job -- c'est la forme exacte de la panne du slot
+# myia-ai-01-wsl-8 (174 demarrages morts en rc=128, 2026-09-18). Mesure : un
+# appel NU sous ces flags meurt en rc=128 ; suivi de `|| true`, il survit,
+# parce que `set -e` est suspendu jusque DANS la fonction appelee. La regle
+# que porte ce garde -- « un garde de sante ne doit jamais etre la raison
+# pour laquelle un slot meurt avant de s'enregistrer » -- vaut aussi contre
+# les editions futures du garde lui-meme.
+wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}" || true
 # ---------------------------------------------------------------------------
 
 cd /opt/runner
