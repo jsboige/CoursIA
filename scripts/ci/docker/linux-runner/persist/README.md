@@ -32,6 +32,27 @@ Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
 
+## Le contexte d'image epingle -- un vivant sans fichier dans le depot (#16134)
+
+Le motif s'etend au **contexte de build des images runner**. Depuis #16134,
+`supervise.sh pin` copie `entrypoint.sh`, `work_cache_health.sh`,
+`seed_action_cache.py`, `Dockerfile` et `Dockerfile.lean` du checkout vers un
+repertoire epingle (defaut `$STATE_DIR/image-context`, overridable par
+`COURSIA_RUNNER_PINNED_CTX`), et le garde de fraicheur compare l'image a CETTE
+copie -- plus au checkout vivant. Ce repertoire est un vivant de la meme
+classe que la table ci-dessus : il n'a **pas** de copie dans `persist/` (il
+n'est pas un fichier unique mais un artefact reconstruit par le gesture), il
+vit hors de tout worktree, et seul `pin` le deplace.
+
+Consequence de deploiement, meme nature que la premiere correction de ce
+fichier : un `git pull` ne deploye RIEN -- apres un merge qui touche
+`entrypoint.sh` ou `work_cache_health.sh`, la sequence est `pin` puis rebuild
+depuis l'epingle (le pin publie le diff d'empreintes et la commande exacte).
+Tant que l'epingle n'est pas bougee, un checkout de branche ou une edition non
+commitee laissent le parc demarrable -- c'est l'acceptance de la tranche (a).
+La protection #14801 est conservee : epingle plus recente que l'image = refus
+`PERIMEE` au demarrage.
+
 ## Les six corrections dues sur #15091 / #15094
 
 Les trois premiers ont ete etablis firsthand sur ai-01 le 2026-09-07, les
@@ -45,7 +66,9 @@ de fichier, **apres** la section « Voir aussi ».
 ### 1. La PR #15094 patche une copie qui ne tourne pas sur ai-01
 
 `persist/coursia-runner.service` et `persist/coursia-runner-start.sh` sont ceux de
-**po-2024** : depot sous `/mnt/c/dev/CoursIA`, prefixe `myia-po-2024-linux-docker`,
+**po-2024** : depot sous `/mnt/d/Dev/CoursIA` (migration du 2026-09-17 ; le
+defaut etait `/mnt/c/dev/CoursIA` avant, cf. #16578), prefixe
+`myia-po-2024-linux-docker`,
 et un wrapper qui relaie n'importe quelle sous-commande (`exec "$SUPERVISE" "$@"`).
 
 Les fichiers vivants d'ai-01 sont differents sur les trois points qui comptent :
@@ -53,6 +76,11 @@ depot sous `/mnt/d/CoursIA`, prefixe `myia-ai-01-wsl`, et un premier argument qu
 est le **nombre de slots**, pas une sous-commande. Un correctif porte sur la copie
 a plat ne touche donc pas la machine qui a gele. C'est ce que le sous-repertoire
 `ai-01/` rend desormais impossible a confondre.
+
+**Les deux chemins ne different plus que par un segment** (`/mnt/d/Dev/CoursIA`
+pour po-2024, `/mnt/d/CoursIA` pour ai-01) : les relire a la lettre avant de
+conclure un drift -- une difference d'un seul composant est exactement ce que
+l'oeil saute.
 
 ### 2. `systemctl start` ignore `disabled` -- une unite desactivee redemarre au boot
 

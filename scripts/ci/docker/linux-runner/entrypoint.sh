@@ -6,15 +6,43 @@
 #   ACTIONS_RUNNER_INPUT_URL     https://github.com/jsboige/CoursIA
 #   ACTIONS_RUNNER_INPUT_NAME    myia-po-2024-linux-docker
 #   ACTIONS_RUNNER_INPUT_LABELS  self-hosted,coursia-ephemeral,coursia-linux
+# Sauf en mode persistent deja enregistre (RUNNER_MODE=persistent avec un
+# volume de config qui porte .runner/.credentials : aucune de ces variables
+# n'est requise au restart -- #14329).
 set -euo pipefail
 
-: "${ACTIONS_RUNNER_INPUT_TOKEN:?RUNNER token manquant}"
-: "${ACTIONS_RUNNER_INPUT_URL:?RUNNER url manquante}"
-: "${ACTIONS_RUNNER_INPUT_NAME:?RUNNER name manquant}"
-: "${ACTIONS_RUNNER_INPUT_LABELS:?RUNNER labels manquants}"
+# --- Mode persistent : enregistrement unique, restart sans token (#14329) ----
+# TEST-ENTRYPOINT-PERSISTENT-START
+# RUNNER_HOME porte le layout runner complet (binaires + .runner + .credentials)
+# et est le point de montage du volume de config PAR SLOT en mode persistent.
+# RUNNER_DIST est la copie vierge de l'image : source de restauration quand le
+# volume est cree vide (un volume nomme existant masque les binaires de l'image).
+RUNNER_HOME="${RUNNER_HOME:-/opt/runner}"
+RUNNER_DIST="${RUNNER_DIST:-/opt/runner-dist}"
+RUNNER_MODE="${RUNNER_MODE:-ephemeral}"
 
-export ACTIONS_RUNNER_INPUT_EPHEMERAL=true
-export ACTIONS_RUNNER_INPUT_REPLACE=true
+runner_mode() { printf '%s' "$RUNNER_MODE"; }
+
+runner_restore_dist() {
+  # Un volume monté vide sur RUNNER_HOME masque les binaires extraits au build :
+  # on les restaure depuis RUNNER_DIST. Idempotent (cp -a écrase sans risque,
+  # source identique a l'image epinglee).
+  if [ ! -x "$RUNNER_HOME/run.sh" ] && [ -x "$RUNNER_DIST/run.sh" ]; then
+    echo "entrypoint: $RUNNER_HOME vide -- restauration des binaires depuis $RUNNER_DIST"
+    cp -a "$RUNNER_DIST/." "$RUNNER_HOME/"
+  fi
+}
+
+runner_is_registered() { [ -f "$RUNNER_HOME/.runner" ]; }
+
+require_registration_env() {
+  : "${ACTIONS_RUNNER_INPUT_TOKEN:?RUNNER token manquant}"
+  : "${ACTIONS_RUNNER_INPUT_URL:?RUNNER url manquante}"
+  : "${ACTIONS_RUNNER_INPUT_NAME:?RUNNER name manquant}"
+  : "${ACTIONS_RUNNER_INPUT_LABELS:?RUNNER labels manquants}"
+}
+# TEST-ENTRYPOINT-PERSISTENT-END
+
 export ACTIONS_RUNNER_INPUT_WORK=/home/runner/_work
 
 # --- Desarmement de l'etat sparse-checkout residuel (slot poisoning) ---------
@@ -97,7 +125,32 @@ WCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}"
 # ---------------------------------------------------------------------------
 
-cd /opt/runner
+cd "$RUNNER_HOME"
+
+if [ "$(runner_mode)" = "persistent" ]; then
+  # Mode #14329 : le conteneur est --restart unless-stopped et le runner
+  # NON-ephemere. Enregistrement UNE fois : .runner/.credentials vivent dans
+  # le volume monte sur RUNNER_HOME, un restart (daemon, reboot machine) reprend
+  # run.sh sans token -- c'est la propriete que le mode achete. --replace couvre
+  # la recreeation du volume (l'ancien slot offline est remplace par le nouveau).
+  # Semantique des hooks _work ci-dessus en persistent : ils s'executent au BOOT
+  # du conteneur, pas a chaque job -- le runner enchaine les jobs sans relancer
+  # l'entrypoint. Le trade-off est ecrit dans docs/ci/self-hosted-runners.md.
+  runner_restore_dist
+  if runner_is_registered; then
+    echo "entrypoint: .runner present -- reprise sans re-enregistrement (token non requis)"
+  else
+    echo "entrypoint: mode persistent, premier enregistrement"
+    require_registration_env
+    # Pas d'ACTIONS_RUNNER_INPUT_EPHEMERAL : absent = runner non-ephemere.
+    export ACTIONS_RUNNER_INPUT_REPLACE=true
+    ./config.sh --unattended --disableupdate
+  fi
+  # Pas de trap 'config.sh remove' : desenregistrer au EXIT tuerait la
+  # propriete meme du mode (le restart doit retrouver le slot enregistre).
+  exec ./run.sh
+fi
+
 # --disableupdate : le conteneur est --rm et le runner --ephemeral (un seul
 # job puis mort). Un self-update n'y est donc jamais CONSERVE -- GitHub ordonne
 # la mise a jour, le runner telecharge le tarball apres le job, le conteneur
@@ -118,6 +171,11 @@ cd /opt/runner
 # La version du runner EST celle de l'image : elle se bumpe par un rebuild
 # (ARG RUNNER_VERSION du Dockerfile), jamais a chaud. Sans ce flag, la prochaine
 # exigence de version rearme exactement la meme boucle. Cf #15153, #15164.
+# (Ces mesures sont ephemeral-specific ; en persistent le self-update garde
+# le meme interdit d'image epinglee, la version se bumpe par rebuild.)
+require_registration_env
+export ACTIONS_RUNNER_INPUT_EPHEMERAL=true
+export ACTIONS_RUNNER_INPUT_REPLACE=true
 ./config.sh --unattended --ephemeral --replace --disableupdate
 
 # Teardown symetrique : --ephemeral desenregistre de lui-meme apres le job ;

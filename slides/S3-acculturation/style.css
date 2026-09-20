@@ -87,3 +87,16 @@
   min-height: 0;
   height: 100%;
 }
+
+/* Ancrages notebooks (issue #15023) : ligne de reference hors flux, eglee en bas de slide */
+.notebook-reference {
+  position: absolute;
+  left: 48px;
+  right: 48px;
+  bottom: 30px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #64748b;
+  margin: 0;
+  z-index: 30;
+}

@@ -1,7 +1,7 @@
 - name: "Z3-Python-02 Sudoku"
   family: SMT/Z3-API
-  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA SMT, branche NATIVEMENT des deux cotes : pyz3 (pip z3-solver, `from z3 import *`, API fonctionnelle Solver()/Int()/Distinct()) et Microsoft.Z3 (NuGet officiel, `#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, API Context ctx.MkSolver/MkIntConst/MkDistinct) sont les deux bindings de la meme lib C++ Z3 sous-jacente — pas un pont intermediaire type IKVM/PythonNet. Parite firsthand sur le concept central (resolution de Sudoku par encodage SMT) cellule 5 des deux notebooks : meme structure de contrainte (domaine 1-9 via `>=1,<=9`/`MkGe,MkLe`, indices figes `==`/`MkEq`, unicite `Distinct()`/`MkDistinct()` par ligne + colonne + bloc 3x3) -> meme verdict `s.check()==sat`/`s.Check()==Status.SATISFIABLE` -> 'Puzzle facile : resolu' + la meme grille 9x9 resolue. Aucune asymetrie de machinerie a corriger."
