@@ -26,7 +26,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 | 1 | Recoordonner | FIRSTHAND (A2, #13956) | 2+ (Sudoku-13, `conway_lean`, MGS-21) — les trois tiennent | empirique avec cause mesurée + Lean-formel kernel-décidable | **TABLE** — confirmée. Dette reformulée : les trois attestations sont des post-mortems — une théorie du « bon » changement choisirait la représentation avant de payer l'échec ([A2](12204-ict-chantier-1-a2.md)) |
 | 2 | Abstraire à dette bornée | RAPPORTE | **1** (Kroer-Sandholm externe) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 1 |
 | 3 | Quotienter / fibrer | FIRSTHAND (A3 + ce cycle) | **1 locale** (Lean-21b) | empirique-notebook | **⬇ FILE D'ATTENTE** — voir §Tombée 4 |
-| 4 | Décomposer localement | RAPPORTE | 2+ (ICT-15d jouet, Hashlife, EPITA) | empirique | **TABLE** avec dette ouverte (qui décide des bords) — grain A4 |
+| 4 | Décomposer localement | FIRSTHAND (A4, #14453) | 2+ recensées : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) + EPITA (empirique, identification restaurée) | Lean-formel + empirique | **TABLE** — confirmée. Dette reformulée en bipartition : la preuve décide des bords côté Hashlife (`padCenter2_margin_ge_jumpReach`), l'expérimentateur les choisit sans théorie côté ICT-15d ([A4](12204-ict-chantier-1-a4.md)) |
 | 5 | Recoller | RAPPORTE | **1 + 1 lecture** | Lean-formel (de Finetti) | **⬇ FILE D'ATTENTE** — voir §Tombée 3 |
 | 6 | Réparer localement sous garantie | RAPPORTE | **1** (Sandholm seul) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 2 |
 | 7 | Engendrer un témoin | FIRSTHAND (ce cycle) | 2+ (Sudoku-13, `conway_lean`, GT-16b #12259) | empirique + Lean-formel | **TABLE** — la mieux attestée du dépôt. GT-25 #12395 (translateur Life) renforcera la ligne quand elle quittera la file CI — non comptée tant qu'OPEN |
@@ -90,7 +90,7 @@ lakes porteurs de sorry reel: 4/22
 
 ## Honnêteté méthodologique
 
-- Les labels `FIRSTHAND` ci-dessus renvoient aux preuves P1-P6 ou à A3 ; tout le reste est `RAPPORTE` (issu du body de l'EPIC ou de la revue, non relu ce cycle). Les tranches A2/A4 restent le chemin pour convertir les `RAPPORTE` restants.
+- Les labels `FIRSTHAND` ci-dessus renvoient aux preuves P1-P6, à A3 ou à A4 ; tout le reste est `RAPPORTE` (issu du body de l'EPIC ou de la revue, non relu ce cycle). Les conversions A2 (op 1) et A4 (op 4) sont livrées ; les `RAPPORTE` restants (ops 2, 5, 6) sont tous trois tombés en file d'attente (§Tombées 1-3) et n'ouvrent plus de tranche de conversion.
 - Cette tranche **applique** des décisions déjà tranchées par la revue extérieure pour les 4 tombées ; elle **mesure** les 2 gains et la contrepartie Loi I. Elle ne crée aucune règle nouvelle (cf `audit-cross-source-distillation` règle 2 : grain au cas par cas).
 - `RAPPORTE` n'est pas un déshonneur : c'est l'état honnête d'une table dont la fonction première (§6 du body) est précisément de distinguer le vérifié du rapporté.
 

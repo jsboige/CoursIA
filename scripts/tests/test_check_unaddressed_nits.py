@@ -6657,3 +6657,74 @@ def test_16128_delivered_prefix_mutation_rouge_le_test() -> None:
     finally:
         # Restauration in-place
         mod.AGENT_PREFIXES = original
+
+
+# --- #16780 : inertie du corps-pointeur (waiver par chemin local) ------------
+
+
+def test_16780_can_lift_rejette_le_corps_pointeur_16670() -> None:
+    """#16780, contrôle positif REJOUE -- le corps exact de l'incident
+    #16670 (commentaire supprimé depuis par le user : un test live ne
+    trouverait rien, le vert le plus dangereux qui soit). Le corps est un
+    chemin seul, séparateurs mixtes, préfixe `@` : il ne dit rien, il ne
+    peut rien lever."""
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": r"@C:\Users\jsboi\AppData\Local\Temp/a16670.md",
+    }
+    assert mod.can_lift(comment) is False, (
+        "Un corps réduit à un chemin local n'est pas une réponse écrite -- "
+        "le fichier visé est illisible pour tout lecteur de la PR (#16780, "
+        "arbitrage ai-01 : corps-pointeur INERTE)."
+    )
+
+
+def test_16780_nom_de_fichier_portant_un_marqueur_ne_leve_pas() -> None:
+    """#16780, pire cas vise par l'arbitrage : le NOM DE FICHIER contient
+    un marqueur de levée par sous-chaîne (« levee_16794.md »). Sans
+    l'inertie, le sac de mots du registre LIFT transformerait le pointeur
+    en levée fabriquée -- le mécanisme exact lu comme waiver sur #16670."""
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "@C:/Users/jsboi/AppData/Local/Temp/levee_16794.md",
+    }
+    assert mod.can_lift(comment) is False
+
+
+def test_16780_chemin_unix_seul_inerte() -> None:
+    comment = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "/tmp/reply_levee.md",
+    }
+    assert mod.can_lift(comment) is False
+
+
+def test_16780_nit_survit_au_commentaire_pointeur() -> None:
+    """Intégration : le nit humain de 9h SURVIT à un commentaire-pointeur
+    de 12h -- bloqué au merge. Avant l'inertie, la sous-chaîne « levee »
+    du nom de fichier éteignait le nit."""
+    pointer = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": r"@C:\Users\jsboi\AppData\Local\Temp/levee_16670.md",
+    }
+    res = run([USER_NIT, pointer])
+    assert res["blocked"] is True, (
+        "Le corps-pointeur ne doit éteindre aucun nit (#16780) : levée "
+        "fabriquée par sous-chaîne du nom de fichier."
+    )
+
+
+def test_16780_phrase_reelle_poursuit_de_lever() -> None:
+    """Contre-positif : l'inertie ne sur-bloque pas -- une PHRASE de levée
+    réelle (corps qui dit quelque chose) lève toujours le nit."""
+    real_lift = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(12),
+        "body": "Bien vu, corrigé — les deux nits sont levés.",
+    }
+    res = run([USER_NIT, real_lift])
+    assert res["blocked"] is False
