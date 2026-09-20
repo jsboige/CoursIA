@@ -26,6 +26,7 @@ Série progressive sur le fine-tuning des modèles de langue : des bases LoRA à
 FineTuning/
 ├── FT-00a-LoRA-from-scratch.ipynb             # LoRA sans peft : décomposition, gel, fusion
 ├── FT-00b-LoRA-Hyperparams-from-scratch.ipynb # Ablation rang × alpha, sweet-spots mesurés
+├── FT-00c-LoRA-SOTA-Comparison.ipynb          # La même adaptation avec peft : la mesure coût/bénéfice
 ├── FT-01-Introduction-FineTuning.ipynb        # LoRA, full vs partial vs PEFT
 ├── FT-02-QLoRA-Quantization.ipynb             # Quantization 4-bit (NF4) + LoRA
 ├── FT-03-Supervised-FineTuning-SFT.ipynb      # SFT : contrat de format, Qwen3.5-0.8B
@@ -34,18 +35,28 @@ FineTuning/
 └── FT-06-Vision-Language-LoRA.ipynb           # LoRA vision-langage, tâche image->texte
 ```
 
+> **Numérotation et point d'entrée du parcours.** Le préfixe `00` désigne ici le **socle from-scratch** : démonter le mécanisme LoRA à la main (FT-00a), mesurer son réglage `r × alpha` (FT-00b), puis confronter l'implémentation maison à l'outil SOTA `peft` (FT-00c). Le **parcours pédagogique commence à FT-01** (introduction pratique) ; les notebooks `00` sont des compléments techniques, à faire avant ou en parallèle quand on veut voir « sous le capot ». Ailleurs dans le dépôt, le préfixe `00` signifie le plus souvent « environnement » (`GenAI/00-GenAI-Environment/`, `Sudoku-00-Environment`, `SmartContracts/00-Foundations/`) — cette série est l'exception locale ; un éventuel renumérotage des fichiers est tracé par l'issue #16231 (nomenclature).
+
 ## Progression pédagogique
+
+### Parcours principal
 
 | Notebook | Sujet | Prérequis | Durée | Niveau |
 |----------|-------|-----------|-------|--------|
-| [FT-00a](FT-00a-LoRA-from-scratch.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
-| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
 | [FT-01](FT-01-Introduction-FineTuning.ipynb) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
 | [FT-02](FT-02-QLoRA-Quantization.ipynb) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
 | [FT-03](FT-03-Supervised-FineTuning-SFT.ipynb) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
 | [FT-04](FT-04-RLHF-DPO.ipynb) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
 | [FT-05](FT-05-ModelMerging-Routing.ipynb) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
 | [FT-06](FT-06-Vision-Language-LoRA.ipynb) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
+
+### Socle from-scratch (compléments techniques, 00a → 00b → 00c)
+
+| Notebook | Sujet | Prérequis | Durée | Niveau |
+|----------|-------|-----------|-------|--------|
+| [FT-00a](FT-00a-LoRA-from-scratch.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
+| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
+| [FT-00c](FT-00c-LoRA-SOTA-Comparison.ipynb) | La même adaptation refaite avec `peft.LoraConfig` : paramètres, exactitude, lignes de code — le coût/bénéfice de l'outil SOTA mesuré | FT-00a | ~15 min | Intermédiaire |
 
 ## Technologies couvertes
 
@@ -74,6 +85,7 @@ pip install mergekit  # Pour FT-05 uniquement
 |----------|---------------|------------------|
 | FT-00a | Aucune (CPU possible) | 8 GB |
 | FT-00b | Aucune (CPU possible, ~15 min) | 8 GB |
+| FT-00c | Aucune (CPU possible, ~15 min) | 8 GB |
 | FT-01 | 4 GB (CPU possible) | 8 GB |
 | FT-02 | 6 GB (QLoRA) | 12 GB |
 | FT-03 | 8 GB | 16 GB |
@@ -84,7 +96,7 @@ pip install mergekit  # Pour FT-05 uniquement
 ## Concepts clés
 
 ### LoRA (Low-Rank Adaptation)
-Décompose les mises à jour de poids en matrices de bas rang (A, B avec rang r << dim). Réduit les paramètres entraînables de ~99%. Le mécanisme est démonté from-scratch (sans `peft`) dans [FT-00a](FT-00a-LoRA-from-scratch.ipynb) : initialisation canonique, gel, budget `r(d+k)`, fusion et sa (non-)bit-exactitude. Le **réglage** `r × alpha` est mesuré dans [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) : 18 configurations sur la même mini-tâche, trois régularités quantifiées.
+Décompose les mises à jour de poids en matrices de bas rang (A, B avec rang r << dim). Réduit les paramètres entraînables de ~99%. Le mécanisme est démonté from-scratch (sans `peft`) dans [FT-00a](FT-00a-LoRA-from-scratch.ipynb) : initialisation canonique, gel, budget `r(d+k)`, fusion et sa (non-)bit-exactitude. Le **réglage** `r × alpha` est mesuré dans [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) : 18 configurations sur la même mini-tâche, trois régularités quantifiées. La **confrontation à l'outil SOTA** est faite dans [FT-00c](FT-00c-LoRA-SOTA-Comparison.ipynb) : `peft.LoraConfig` refait la même adaptation en deux lignes — le notebook mesure ce que l'écosystème apporte et ce qu'il masque.
 
 ### QLoRA
 Combine quantization 4-bit (NF4 + double quantization) avec LoRA. Permet de fine-tuner des modèles 7B sur un GPU consumer (RTX 3090/4090).
@@ -101,10 +113,12 @@ Combine plusieurs adaptateurs LoRA fine-tunés sur des tâches différentes en u
 ## Parcours recommandé
 
 ### Découverte (1h30)
-1. **FT-00a** - Démonter LoRA à la main : la décomposition, l'initialisation, la fusion — sans `peft`
-2. **FT-00b** - Mesurer le réglage `r × alpha` : 18 configurations, trois régularités firsthand
-3. **FT-01** - Comprendre LoRA et le compromis paramètres/qualité
-4. **FT-03** - SFT pour instruction-following (sans QLoRA)
+1. **FT-01** - Comprendre LoRA et le compromis paramètres/qualité — le point d'entrée de la série
+2. **FT-03** - SFT pour instruction-following (sans QLoRA)
+3. **FT-00a** - *Pour aller plus loin* : démonter LoRA à la main — décomposition, initialisation, fusion, sans `peft`
+
+### Socle from-scratch (optionnel, ~1h)
+FT-00a → FT-00b → FT-00c dans l'ordre : le mécanisme écrit à la main, le réglage `r × alpha` mesuré sur 18 configurations, puis la même adaptation confiée à `peft` — trois regards sur le même objet.
 
 ### Standard (2-3h)
 1. FT-01 à FT-04 dans l'ordre

@@ -48,6 +48,7 @@ import sys
 WSL_DISTRO = "Ubuntu"
 WSL_PREFIX = ["wsl.exe", "-d", WSL_DISTRO, "--"]
 PROBE_TIMEOUT = 90
+TIMEOUT_RC = 124  # convention de `timeout(1)` : la commande a expire
 STUB_DIR = "~/lean-projects/notebook_context"
 BOGUS_IMPORT = "Totally.Bogus.Xyz"
 
@@ -56,11 +57,20 @@ BOGUS_IMPORT = "Totally.Bogus.Xyz"
 
 
 def wsl_bash(cmd: str, timeout: int = PROBE_TIMEOUT) -> tuple[int, str]:
-    """Execute une commande bash dans WSL, rend (exit_code, stdout+stderr)."""
-    proc = subprocess.run(
-        WSL_PREFIX + ["bash", "-lc", cmd],
-        capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace",
-    )
+    """Execute une commande bash dans WSL, rend (exit_code, stdout+stderr).
+
+    Une expiration rend ``(TIMEOUT_RC, "")`` au lieu de propager
+    ``TimeoutExpired`` : cet organe sert justement sur une machine ou le repl
+    pend, et il y mourait en traceback au lieu de rendre son verdict -- donc
+    inutilisable la ou il servirait le plus (#16176, finding 2).
+    """
+    try:
+        proc = subprocess.run(
+            WSL_PREFIX + ["bash", "-lc", cmd],
+            capture_output=True, text=True, timeout=timeout, encoding="utf-8", errors="replace",
+        )
+    except subprocess.TimeoutExpired:
+        return TIMEOUT_RC, ""
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 
 
@@ -135,9 +145,15 @@ def classify(results: list[dict]) -> tuple[str, str]:
         return "REPL_HEALTHY", "controle positif OK sur tous les chemins" + mute_note
     lake_ok = [r for r in results if r["label"] == "lake" and r["positive"] == "OK"]
     broken = [r for r in results if r["positive"] == "STDLIB_BROKEN"]
-    if lake_ok and broken and not all(r["positive"] == "STDLIB_BROKEN" for r in results):
+    # Un chemin qui EXPIRE est un chemin KO, au meme titre qu'un `Unknown
+    # constant` : la docstring range explicitement « le fallback stub et /tmp
+    # sont casses » dans l'etat REPL_LAKE_ONLY. Sans quoi une sonde qui pend sur
+    # /tmp avec un lake sain rendait REPL_UNCERTAIN (exit 2) au lieu de l'etat
+    # latent documente (#16176, finding 2).
+    ko = [r for r in results if r["positive"] in ("STDLIB_BROKEN", "TIMEOUT_OR_UNPARSEABLE")]
+    if lake_ok and ko:
         return ("REPL_LAKE_ONLY",
-                f"repl via lake OK ({lake_ok[0]['toolchain']}), repl nu casse ({', '.join(r['label'] for r in broken)}) "
+                f"repl via lake OK ({lake_ok[0]['toolchain']}), repl nu casse ({', '.join(r['label'] for r in ko)}) "
                 "— mismatch toolchain binaire/toolchain resolu (cf #11874) ; le kernel ne marche que dans un lake matchant")
     if broken:
         return ("REPL_STDLIB_BROKEN",
@@ -158,9 +174,12 @@ def main() -> int:
 
     # repl nu (PATH) depuis /tmp : le chemin d'un kernel sans lake
     rc, which = wsl_bash("which repl")
-    results = []
+    results: list[dict] = []
+    timed_out: list[str] = []
     if rc == 0 and which.strip():
         results.append(probe_path("/tmp", "repl", "bare_path_tmp", None))
+    elif rc == TIMEOUT_RC:
+        timed_out.append("which repl")
     else:
         print("WARN : binaire repl introuvable sur le PATH WSL", file=sys.stderr)
 
@@ -170,6 +189,8 @@ def main() -> int:
         if rc == 0:
             results.append(probe_path(
                 STUB_DIR, "repl", "stub_fallback", read_toolchain(STUB_DIR)))
+        elif rc == TIMEOUT_RC:
+            timed_out.append(STUB_DIR)
 
     # lakes explicites + lakes par defaut du miroir
     lakes = list(args.lake) or ["~/lean-projects/mimo_lean"]
@@ -178,10 +199,19 @@ def main() -> int:
         if rc == 0:
             results.append(probe_path(
                 lake, "lake env repl", "lake", read_toolchain(lake)))
+        elif rc == TIMEOUT_RC:
+            timed_out.append(lake)
         else:
             print(f"WARN : lake introuvable : {lake}", file=sys.stderr)
 
     verdict, detail = classify(results)
+    if not results and timed_out:
+        # Une expiration n'est pas une absence : ne pas rendre REPL_MISSING
+        # (« repl introuvable ») quand ce qui a manque est une reponse (#16176).
+        verdict = "REPL_TIMEOUT"
+        detail = "aucun chemin sondable : expiration WSL sur " + ", ".join(timed_out)
+    elif timed_out:
+        detail += " ; expiration WSL sur " + ", ".join(timed_out)
     report = {"verdict": verdict, "detail": detail, "probes": results}
 
     if args.json:
