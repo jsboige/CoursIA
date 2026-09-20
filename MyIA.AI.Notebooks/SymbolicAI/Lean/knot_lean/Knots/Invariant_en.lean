@@ -213,12 +213,39 @@ instance triColorConditionAt.decidable (d : KnotDiagram)
   unfold triColorConditionAt
   infer_instance
 
+/-- `coloring i ≠ coloring j` is decidable pointwise: the predicate form in `j`
+(for fixed `i`) is supplied **at the exact shape of the subgoal**. -/
+instance triColorDistinctAt.decidablePred (d : KnotDiagram)
+    (coloring : TriColoring d) (i : Fin d.numEdges) :
+    DecidablePred (fun j => coloring i ≠ coloring j) :=
+  fun j => by
+    haveI : Decidable (coloring i = coloring j) := inferInstance
+    infer_instance
+
 /-- A valid coloring (`IsTriColoring`) is decidable: the `∀ c ∈ crossings` relies
 on the per-crossing instance above, and "≥ 2 colors" on the finiteness of
 `Fin d.numEdges`. -/
 instance IsTriColoring.decidable (d : KnotDiagram) (coloring : TriColoring d) :
     Decidable (IsTriColoring d coloring) := by
   unfold IsTriColoring
+  -- Each layer is supplied **at the exact shape of its subgoal**, `DecidablePred`
+  -- included: since Lean 4.33 instance search no longer unifies an instance with
+  -- explicit arguments against a Pi-shaped goal, so the named instances above are
+  -- no longer reached from the global goal. Supplying them locally restores exactly
+  -- the decomposition this file aims at (cf. docstring above), without changing the
+  -- logic being decided.
+  haveI h1 : Decidable (∀ c ∈ d.crossings, triColorConditionAt d (↑coloring) c) := by
+    haveI : DecidablePred (fun c => triColorConditionAt d (↑coloring) c) :=
+      fun c => triColorConditionAt.decidable d (↑coloring) c
+    infer_instance
+  haveI h2 : Decidable (d.numEdges ≥ 2) := inferInstance
+  haveI h3 : Decidable (∃ i j, coloring i ≠ coloring j) := by
+    haveI : DecidablePred (fun i : Fin d.numEdges => ∃ j, coloring i ≠ coloring j) :=
+      fun i => by
+        haveI : DecidablePred (fun j => coloring i ≠ coloring j) :=
+          triColorDistinctAt.decidablePred d coloring i
+        infer_instance
+    infer_instance
   infer_instance
 
 /-- The coloring space `TriColoring d = Fin d.numEdges → TriColor` is finite
@@ -2098,15 +2125,18 @@ Fox forces monochrome (contradicting "≥ 2 colors"). We use `decide` (not
 whose `Decidable` instance rests on `Fintype.piFinset`. The kernel reduction of
 this enumeration exceeds the default recursion depth (failure
 `maximum recursion depth has been reached`), so the limit is raised via
-`set_option maxRecDepth 100000` — `decide` then terminates in ~33s. This is
+`set_option maxRecDepth 100000` — the option scopes the whole **command**, not
+the `decide` tactic alone: the kernel check of the proof term happens outside the
+scope of a `set_option ... in` placed inside the tactic block. `decide` then
+terminates in ~33s. This is
 strictly preferable to `native_decide`: the **kernel verifies** the result rather
 than delegating to the C compiler / runtime (the TCB stays Lean, not
 `native_decide.ax`), and `#print axioms` now reports only
 `[propext, Classical.choice, Quot.sound]`. See #8723. Path-B non-regression
 witness (#2874). -/
+set_option maxRecDepth 100000 in
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable
-  set_option maxRecDepth 100000 in
   decide
 
 /-! ## 6. Crossing number bounds
