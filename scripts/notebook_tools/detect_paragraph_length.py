@@ -299,7 +299,7 @@ FOUNDING_PARAGRAPH = (
     "Infer -- fondations, modeles classiques, inference causale, "
     "puis frontieres : sequences, reco, processus gaussien epars, "
     "filtre de Kalman, change-point, survie) et **12 miroirs de "
-    "l'arc decision** ([`DecisionTheory/PyMC/`](DecisionTheory/PyMC/"
+    "l'arc decision** ([`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/"
     "README.md), renumerotes 1-12, dont la **jambe actuarielle** "
     "8-12). L'arc decision est en outre certifie par un lake "
     "compagnon **Lean 4** ([`decision_theory_lean`]"

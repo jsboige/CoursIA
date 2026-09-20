@@ -138,8 +138,10 @@ Mandat user 2026-09-07 (verbatim, #15069) : « si ton travail de coordination es
 | Routable a l'adjoint | JAMAIS (reste au coordinateur) |
 |---|---|
 | Verification pre-fermeture de l'urne `delivered` (preuve firsthand, G.9) | La fermeture elle-meme (`gh issue close`) |
-| Preflight de PR (body/comments/reviews/diff, head exact, gates, delta, preuve decisive ; objectif >=20 READY/4 h si >=20 eligibles) | Le merge (`gh auth switch` + merge reste ai-01) |
+| Preflight de PR (body/comments/reviews/threads/diff/checks + dossier `[ADJOINT PREFLIGHT]` ; objectif >=20 READY/4 h si >=20 eligibles) | Le merge (`gh auth switch` + merge reste ai-01) |
 | Recalcul firsthand d'un verdict ou d'une metrique contestee | Toute decision de perimetre/design-gate |
+
+**Organe d'entree en review ai-01** : `python scripts/check_adjoint_prevalidation.py <PR>`. Tant qu'il ne rend pas 0, ai-01 n'ouvre aucune surface detaillee de la PR : il route la candidate a l'adjoint, l'exclut de sa file personnelle et poursuit oldest-first. Le dossier est exact-head, exhaustif et auto-invalide par toute mutation observable des surfaces actuelles ; GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté ; son format canonique est genere par `--template` (hash inclus ; `--fingerprint` reste disponible). Un READY autorise seulement la lecture finale minimale d'ai-01 : il n'approuve pas et ne merge pas. Le login GitHub etant partage, `lane: myia-po-2025:CoursIA-2` est une declaration de protocole fail-closed, pas une authentification cryptographique.
 
 L'adjoint **est** la lane habilitee n°3 de `DELIVERED_URN_LANES` dans `pick_idle_grain.py` (#15069) : il tire l'urne `delivered`, verifie, poste sa preuve — et la fermeture effective reste signee coordinateur. Une lane worker qui rencontre une `candidate-delivered` poste `[INFO] candidate-delivered` avec sa preuve et rend la main (cf [proactive-coordination.md](proactive-coordination.md), urne `delivered`).
 
