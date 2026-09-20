@@ -51,7 +51,7 @@ def trivialStructure : Structure :=
   , rels := [{ sig := { arity := 0
                        , args := fun i => i.elim0
                        , out := (0 : Fin 1) }
-             , table := fun _ _ => (0 : Fin 1) }]
+             , table := fun _ => (0 : Fin 1) }]
   , sizes_pos := fun _ => Nat.one_pos }
 
 /-- Pour une structure à 1 ensemble de cardinal 2 et une relation binaire

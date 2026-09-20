@@ -35,21 +35,21 @@ structure IsAutomorphism {n : Nat} (S : StructureOn n) where
   /-- Chaque φ_i est injective. (Bijectivité implicite sur `Fin m`,
       via `Fintype.card_fin`.) -/
   φ_inj : ∀ i, Function.Injective (φ i)
-  /-- Préservation des tables : pour chaque relation r, chaque tuple
-      args, et chaque i, la table commute avec φ. -/
+  /-- Préservation des tables : pour chaque relation r et chaque tuple
+      args, l'image par φ de la valeur de la table est la valeur de la
+      table sur le tuple transporté (composante par composante). -/
   rel_pres : ∀ (r : Rel n S.sizes),
     r ∈ S.rels →
     ∀ (args : (i : Fin r.sig.arity) → Fin (S.sizes (r.sig.args i))),
-    ∀ i : Fin r.sig.arity,
-      φ r.sig.out (r.table i (args i)) =
-        r.table i (φ (r.sig.args i) (args i))
+    φ r.sig.out (r.table args) =
+      r.table (fun i => φ (r.sig.args i) (args i))
 
 /-- L'identité est un automorphisme de toute structure Tegmark :
     `id` est injective, et la préservation des tables est `rfl`. -/
 def autId {n : Nat} (S : StructureOn n) : IsAutomorphism S where
   φ := fun _ x => x
   φ_inj := fun _ => Function.injective_id
-  rel_pres := fun _ _ _ _ => rfl
+  rel_pres := fun _ _ _ => rfl
 
 /-- La composition de deux automorphismes est un automorphisme :
     `(ψ ∘ φ)_i = ψ_i ∘ φ_i`. C'est le **cœur** de « Aut(S) est un
@@ -65,14 +65,11 @@ def autComp {n : Nat} {S : StructureOn n}
     (φ ψ : IsAutomorphism S) : IsAutomorphism S where
   φ := fun i => (ψ.φ i) ∘ (φ.φ i)
   φ_inj := fun i => (ψ.φ_inj i).comp (φ.φ_inj i)
-  rel_pres := fun r hmem args i => by
-    -- Décomposer la composition : (ψ.φ r.sig.out ∘ φ.φ r.sig.out) x = ψ (φ x)
+  rel_pres := fun r hmem args => by
+    -- Appliquer la préservation par φ, puis par ψ sur le tuple transporté
+    have hφ := φ.rel_pres r hmem args
+    have hψ := ψ.rel_pres r hmem (fun j => φ.φ (r.sig.args j) (args j))
     simp only [Function.comp_apply]
-    -- Appliquer la préservation par φ au point intérieur
-    have hφ := φ.rel_pres r hmem args i
-    rw [hφ]
-    -- Appliquer la préservation par ψ
-    have hψ := ψ.rel_pres r hmem (fun j => φ.φ (r.sig.args j) (args j)) i
-    rw [hψ]
+    rw [hφ, hψ]
 
 end Aut

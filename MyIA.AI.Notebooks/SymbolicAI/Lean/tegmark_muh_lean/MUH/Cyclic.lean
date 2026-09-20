@@ -25,17 +25,20 @@ def c3Sizes : Fin 1 → Nat := fun _ => 3
 /-- S = {0, 1} : ensemble du groupe cyclique C₂. -/
 def c2Sizes : Fin 1 → Nat := fun _ => 2
 
-/-- Multiplication modulo 3 (binaire) : `mult3(a, b) = (a + b) % 3`.
-    Signature : `Fin 2 → Fin 3 → Fin 3` — la structure `Rel.table` impose
-    l'indexation `Fin arity` pour les entrées (2 entrées pour arité 2),
-    chaque entrée étant un élément de S = {0,1,2} (donc `Fin 3`). -/
-def mult3Table : Fin 2 → Fin 3 → Fin 3 := fun
+/-- Addition modulo 3 (binaire) : `mult3(a, b) = (a + b) % 3`.
+    Vraie table 3×3 : `Fin 3 → Fin 3 → Fin 3`, une entrée par couple
+    d'éléments de S = {0,1,2} (le domaine de `Rel.table` est le produit
+    dépendant des arguments, une fonction par tuple d'arguments). -/
+def mult3Table : Fin 3 → Fin 3 → Fin 3 := fun
   | ⟨0, _⟩, ⟨0, _⟩ => ⟨0, by decide⟩     -- 0+0 mod 3 = 0
   | ⟨0, _⟩, ⟨1, _⟩ => ⟨1, by decide⟩     -- 0+1 mod 3 = 1
   | ⟨0, _⟩, ⟨2, _⟩ => ⟨2, by decide⟩     -- 0+2 mod 3 = 2
   | ⟨1, _⟩, ⟨0, _⟩ => ⟨1, by decide⟩     -- 1+0 mod 3 = 1
   | ⟨1, _⟩, ⟨1, _⟩ => ⟨2, by decide⟩     -- 1+1 mod 3 = 2
   | ⟨1, _⟩, ⟨2, _⟩ => ⟨0, by decide⟩     -- 1+2 mod 3 = 0
+  | ⟨2, _⟩, ⟨0, _⟩ => ⟨2, by decide⟩     -- 2+0 mod 3 = 2
+  | ⟨2, _⟩, ⟨1, _⟩ => ⟨0, by decide⟩     -- 2+1 mod 3 = 0
+  | ⟨2, _⟩, ⟨2, _⟩ => ⟨1, by decide⟩     -- 2+2 mod 3 = 1
 
 /-- Le groupe cyclique C₃ (1 ensemble, 1 relation binaire). L'identité et les
     inverses sont encodés dans la table. Tegmark eq. (A3). -/
@@ -45,20 +48,37 @@ def c3 : Structure :=
   , rels := [{ sig := { arity := 2
                        , args := fun _ => (0 : Fin 1)
                        , out := (0 : Fin 1) }
-             , table := fun a b => mult3Table a b }]
+             , table := fun args => mult3Table (args 0) (args 1) }]
   , sizes_pos := fun _ => Nat.succ_pos 2 }
 
-/-- Vérifie que la diagonale porte bien l'identité du groupe : `0×0 = 0`. -/
-example : mult3Table (⟨0, by decide⟩ : Fin 2) (⟨0, by decide⟩ : Fin 3) = (⟨0, by decide⟩ : Fin 3) := rfl
+/-- Vérifie que la diagonale porte bien l'identité du groupe : `0+0 = 0`. -/
+example : mult3Table (⟨0, by decide⟩ : Fin 3) (⟨0, by decide⟩ : Fin 3) = (⟨0, by decide⟩ : Fin 3) := rfl
 
-/-- Vérifie que `1×2 = 0` (mod 3) — Tegmark eq. (A5) première ligne. -/
-example : mult3Table (⟨1, by decide⟩ : Fin 2) (⟨2, by decide⟩ : Fin 3) = (⟨0, by decide⟩ : Fin 3) := rfl
+/-- Vérifie que `1+2 = 0` (mod 3) — Tegmark eq. (A5) première ligne. -/
+example : mult3Table (⟨1, by decide⟩ : Fin 3) (⟨2, by decide⟩ : Fin 3) = (⟨0, by decide⟩ : Fin 3) := rfl
 
-/-- Vérifie que `1×1 = 2` (mod 3) — Tegmark eq. (A5) diagonale non-triviale. -/
-example : mult3Table (⟨1, by decide⟩ : Fin 2) (⟨1, by decide⟩ : Fin 3) = (⟨2, by decide⟩ : Fin 3) := rfl
+/-- Vérifie que `1+1 = 2` (mod 3) — Tegmark eq. (A5) diagonale non-triviale. -/
+example : mult3Table (⟨1, by decide⟩ : Fin 3) (⟨1, by decide⟩ : Fin 3) = (⟨2, by decide⟩ : Fin 3) := rfl
 
-/-- Multiplication modulo 2 (binaire) : `mult2(a, b) = (a + b) % 2`.
-    Signature : `Fin 2 → Fin 2 → Fin 2`. -/
+/-- Vérifie que `2+2 = 1` (mod 3) — la ligne qui manquait au typing
+    curryfié dégénéré (l'index d'arité n'y discriminait que 2 valeurs). -/
+example : mult3Table (⟨2, by decide⟩ : Fin 3) (⟨2, by decide⟩ : Fin 3) = (⟨1, by decide⟩ : Fin 3) := rfl
+
+/-- Rel binaire canonique (miroir de l'addition de `c3`), servant de valeur
+    par défaut pour extraire et évaluer la table du générateur. -/
+def defaultBinary3 : Rel 1 c3Sizes :=
+  { sig := { arity := 2, args := fun _ => (0 : Fin 1), out := (0 : Fin 1) }
+    table := fun args => mult3Table (args 0) (args 1) }
+
+/-- `2+2 = 1` (mod 3) évalué sur la structure `c3` elle-même — au typing
+    curryfié d'avant le fix, la 1re composante (`Fin arity`) ne prenait que
+    2 valeurs : ce point de la table était inaccessible (Hermes concern #1,
+    #16958). -/
+example : (c3.rels[0]?.getD defaultBinary3).table
+    (fun _ => (2 : Fin 3)) = (1 : Fin 3) := rfl
+
+/-- Addition modulo 2 (binaire) : `mult2(a, b) = (a + b) % 2`.
+    Vraie table 2×2 : `Fin 2 → Fin 2 → Fin 2`. -/
 def mult2Table : Fin 2 → Fin 2 → Fin 2 := fun
   | ⟨0, _⟩, ⟨0, _⟩ => ⟨0, by decide⟩
   | ⟨0, _⟩, ⟨1, _⟩ => ⟨1, by decide⟩
@@ -73,13 +93,13 @@ def c2 : Structure :=
   , rels := [{ sig := { arity := 2
                        , args := fun _ => (0 : Fin 1)
                        , out := (0 : Fin 1) }
-             , table := fun a b => mult2Table a b }]
+             , table := fun args => mult2Table (args 0) (args 1) }]
   , sizes_pos := fun _ => Nat.succ_pos 1 }
 
-/-- Vérifie `0×0 = 0` (mod 2). -/
+/-- Vérifie `0+0 = 0` (mod 2). -/
 example : mult2Table (0 : Fin 2) (0 : Fin 2) = (0 : Fin 2) := rfl
 
-/-- Vérifie `1×1 = 0` (mod 2). -/
+/-- Vérifie `1+1 = 0` (mod 2). -/
 example : mult2Table (1 : Fin 2) (1 : Fin 2) = (0 : Fin 2) := rfl
 
 end Cyclic

@@ -44,9 +44,12 @@ structure RelSig (n : Nat) where
     rend `Bool`. Pour une relation générale, la table rend `Fin (sizes out)`. -/
 structure Rel (n : Nat) (sizes : Sizes n) where
   sig : RelSig n
-  -- Table des valeurs : `Fin (Π i, sizes (sig.args i)) → Fin (sizes sig.out)`.
-  -- Pour Tegmark Annexe A §c, c'est exactement le `value array`.
-  table : (i : Fin sig.arity) → (Fin (sizes (sig.args i))) → Fin (sizes sig.out)
+  -- Table des valeurs : le domaine est le type des tuples d'arguments
+  -- `(i : Fin sig.arity) → Fin (sizes (sig.args i))` (produit dépendant),
+  -- codomaine `Fin (sizes sig.out)`. Pour Tegmark Annexe A §c, c'est
+  -- exactement le `value array` : une entrée par tuple d'arguments.
+  table : (args : (i : Fin sig.arity) → Fin (sizes (sig.args i))) →
+    Fin (sizes sig.out)
 
 /-- Structure mathématique finie : ensembles (par leurs cardinaux) et relations
     génératrices (finies). -/

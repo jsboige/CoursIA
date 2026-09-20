@@ -48,7 +48,7 @@ def sheffer : Structure :=
   , rels := [{ sig := { arity := 2
                        , args := fun _ => (0 : Fin 1)
                        , out := (0 : Fin 1) }
-             , table := fun a b => nandTable a b }]
+             , table := fun args => nandTable (args 0) (args 1) }]
   , sizes_pos := fun _ => by simp [boolSizes] }
 
 /-- La relation NOT (unaire) : NOT(0) = 1, NOT(1) = 0. Tegmark eq. (A2) :
@@ -72,29 +72,26 @@ def fullBoolean : Structure :=
   { nSets := 1
   , sizes := boolSizes
   , rels := [
-      -- F : constant False (arity 0)
+      -- F : constant False (arity 0) — tuple vide, table constante
       { sig := { arity := 0
                , args := fun i => i.elim0
                , out := (0 : Fin 1) }
-      , table := fun _ _ => (0 : Fin 2) },
-      -- T : constant True (arity 0)
+      , table := fun _ => (0 : Fin 2) },
+      -- T : constant True (arity 0) — tuple vide, table constante
       { sig := { arity := 0
                , args := fun i => i.elim0
                , out := (0 : Fin 1) }
-      , table := fun _ _ => (1 : Fin 2) },
-      -- NOT : arity 1, args de type `Fin (sizes (sig.out)) = Fin 2`.
-      -- `a : Fin 1` est l'argument d'arité, et `notTable` prend un `Fin 2`.
-      -- Le cast `a.castSucc` (de `Fin 1` vers `Fin 2`) conserve la valeur 0.
+      , table := fun _ => (1 : Fin 2) },
+      -- NOT : arity 1, l'unique argument est `args 0 : Fin (boolSizes 0) = Fin 2`.
       { sig := { arity := 1
                , args := fun _ => (0 : Fin 1)
                , out := (0 : Fin 1) }
-      , table := fun (a : Fin 1) (_ : Fin (boolSizes (⟨0, Nat.one_pos⟩ : Fin 1))) =>
-          notTable a.castSucc },
+      , table := fun args => notTable (args 0) },
       -- AND : arity 2 (binaire), args de type `Fin 2`, sortie `Fin 2`.
       { sig := { arity := 2
                , args := fun _ => (0 : Fin 1)
                , out := (0 : Fin 1) }
-      , table := fun (a : Fin 2) (b : Fin 2) => andTable a b }
+      , table := fun args => andTable (args 0) (args 1) }
     ]
   , sizes_pos := fun _ => by simp [boolSizes] }
 
@@ -106,5 +103,21 @@ example : nandTable (1 : Fin 2) (1 : Fin 2) = (0 : Fin 2) := rfl
 
 /-- Vérifie que `NOT(0) = 1` — Tegmark eq. (A2) `¬X = X|X`, et `0|0 = 1`. -/
 example : notTable (0 : Fin 2) = (1 : Fin 2) := rfl
+
+/-- Rel unaire canonique (miroir du NOT de `fullBoolean`), servant de valeur
+    par défaut pour extraire et évaluer la table du 3e générateur. -/
+def defaultUnary : Rel 1 boolSizes :=
+  { sig := { arity := 1, args := fun _ => (0 : Fin 1), out := (0 : Fin 1) }
+    table := fun args => notTable (args 0) }
+
+/-- Contre-exemple d'Hermes levé (concern #1, #16958) : au typing tuple,
+    la relation NOT de `fullBoolean` n'est plus la constante 1 — `NOT(1) = 0`
+    et `NOT(0) = 1`, évalués sur la structure elle-même. Au typing curryfié
+    d'avant le fix, l'argument réel était ignoré (NOT(x) = 1 partout). -/
+example : (fullBoolean.rels[2]?.getD defaultUnary).table
+    (fun _ => (1 : Fin 2)) = (0 : Fin 2) := rfl
+
+example : (fullBoolean.rels[2]?.getD defaultUnary).table
+    (fun _ => (0 : Fin 2)) = (1 : Fin 2) := rfl
 
 end Boolean
