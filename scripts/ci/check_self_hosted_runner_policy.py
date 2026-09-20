@@ -228,6 +228,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "slides-build-advisory.yml",
     "slow-lane.yml",
     "stale-guard-red-sweep.yml",
+    # #16915 (owner myia-po-2026:CoursIA) : pilote de sweep des branches de
+    #   PR en retard -- delegue chaque numero a l'organe update_stale_pr_
+    #   branches.py (#16149, jamais invoque : --pr requis). Cron quotidien
+    #   (schedule + workflow_dispatch) pur-Python + gh bootstrap toolcache,
+    #   meme profil que stale-guard-red-sweep : GH_TOKEN avec pull-requests:
+    #   write (update-branch), plafond --max-updates 3, aucun trigger
+    #   pull_request -> aucune garde same-repo requise (tranche 4 #14283).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "stale-pr-branches-sweep.yml",
     "translation-parity.yml",
     "twin-parity-cron.yml",
     "twin-parity-drift-audit.yml",
