@@ -93,14 +93,14 @@ La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch
 
 | Série | Premier notebook | Commande rapide |
 |-------|-----------------|-----------------|
-| **Tweety** | `Tweety/Tweety-1-Setup.ipynb` | Ouvrir dans Jupyter, exécuter toutes les cellules |
+| **Tweety** | `Tweety/Tweety-01-Setup-Python.ipynb` | Ouvrir dans Jupyter, exécuter toutes les cellules |
 | **Lean** | `Lean/Lean-1-Setup.ipynb` | `wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"` |
 | **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
 | **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
-| **SMT / Z3** | `SMT/Z3-API/Z3-Python-01-Introduction.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
+| **SMT / Z3** | `SMT/Z3-API/Z3-01-Introduction-Python.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
 
 **Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne nécessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
 
@@ -130,8 +130,8 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
 | **Fondations** |   |   |   |   |
-| 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
-| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : prédicats, quantificateurs | 2 | Java/JPype |
+| 1 | [Tweety-1-Setup](Tweety/Tweety-01-Setup-Python.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
+| 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-02-Basic-Logics-Python.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : prédicats, quantificateurs | 2 | Java/JPype |
 | 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | Description Logic, Logique Modale (SPASS), QBF, Conditionnelle | 2 | Java/JPype, SPASS |
 | **Revision de Croyances** |   |   |   |   |
 | 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incohérence | 2 | Java/JPype |
@@ -139,12 +139,12 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, sémantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety/Tweety-5b-Lean-Argumentation.ipynb) | Companion natif (kernel Lean) : preuve formelle 0-sorry de l'argumentation de Dung (grounded = point fixe Knaster–Tarski) dans le lake `argumentation_lean` | 3 | Lean 4 / WSL |
 | 5d | [Tweety-5d-Stable-Synthesis-Lean](Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | Synthèse certifiée d'extensions stables : Z3 → Lean (Loi II) | 4 | Java/JPype, Z3 |
-| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
-| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
-| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
+| 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
+| 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
+| 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |   |   |   |   |
-| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de préférence, théorie du vote (Borda, Copeland) | 1 | Java/JPype |
+| 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-08-Agent-Dialogues-Python.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-09-Preferences-Python.ipynb) | Ordres de préférence, théorie du vote (Borda, Copeland) | 1 | Java/JPype |
 | **Raisonnement avancé** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety/Tweety-10-MLN.ipynb) | Markov Logic Networks : FOL pondérée, inférence probabiliste sur formules | 3 | Java/JPype |
 | 11 | [Tweety-11-Causal](Tweety/Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus (Pearl), interventions, contrefactuels | 3 | Java/JPype |
@@ -281,30 +281,30 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | # | Notebook | Kernel | Contenu | Exercices |
 |---|----------|--------|---------|-----------|
 | **Fondations Z3-API (Python + jumeaux C#)** |   |   |   |   |
-| 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-Python-01-Introduction.ipynb) · [C#](SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
-| 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) · [C#](SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
-| 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-Python-03-Tactics.ipynb) · [C#](SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
-| 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) · [C#](SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
-| 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
-| 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
+| 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
+| 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-02-Sudoku-Python.ipynb) · [C#](SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
+| 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-03-Tactics-Python.ipynb) · [C#](SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
+| 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb) · [C#](SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
+| 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) · [C#](SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
+| 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) · [C#](SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
 | **Z3-API patterns impératifs (Python)** |   |   |   |   |
-| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
-| 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
-| 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
-| 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
-| 11 | [Z3-Python-11-Graph-Coloring](SMT/Z3-API/Z3-Python-11-Graph-Coloring.ipynb) | Python | Coloration de graphes, k-coloriage, contraintes de différence | 3 |
-| 12 | [Z3-Python-12-Real-Arithmetic](SMT/Z3-API/Z3-Python-12-Real-Arithmetic.ipynb) | Python | Arithmétique réelle, contraintes linéaires, comparaison | 3 |
+| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
+| 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
+| 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
+| 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
+| 11 | [Z3-Python-11-Graph-Coloring](SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb) | Python | Coloration de graphes, k-coloriage, contraintes de différence | 3 |
+| 12 | [Z3-Python-12-Real-Arithmetic](SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb) | Python | Arithmétique réelle, contraintes linéaires, comparaison | 3 |
 | 13 | [Z3-Python-13-UnsatCores](SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | Python | Unsat cores, extraction de sous-ensembles incohérents | 3 |
-| 14 | [Z3-Python-14-BitVectors-Overflow](SMT/Z3-API/Z3-Python-14-BitVectors-Overflow.ipynb) | Python | Bit-vectors, overflow, unsigned/signed, wrap-around | 3 |
-| 15 | [Z3-Python-15-Nested-Arrays-2D](SMT/Z3-API/Z3-Python-15-Nested-Arrays-2D.ipynb) | Python | Tableaux imbriqués, select/store, modèles 2D | 3 |
+| 14 | [Z3-Python-14-BitVectors-Overflow](SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) | Python | Bit-vectors, overflow, unsigned/signed, wrap-around | 3 |
+| 15 | [Z3-Python-15-Nested-Arrays-2D](SMT/Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb) | Python | Tableaux imbriqués, select/store, modèles 2D | 3 |
 | **Capstone Meal Planner (16..16e)** |   |   |   |   |
-| 16 | [Z3-Python-16-Meal-Planner](SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | Python | Modélisation du problème de planification de repas | 3 |
-| 16b | [Z3-Python-16b-Meal-Planner-Data-External](SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb) | Python | Données externes (CSV, JSON), intégration | 3 |
-| 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
-| 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
-| 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
+| 16 | [Z3-Python-16-Meal-Planner](SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | Python | Modélisation du problème de planification de repas | 3 |
+| 16b | [Z3-Python-16b-Meal-Planner-Data-External](SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) | Python | Données externes (CSV, JSON), intégration | 3 |
+| 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
+| 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
+| 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
 | 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
-| 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-Python-18-Sudoku-Modes.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
+| 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
 | **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
 | 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 | 2 | [02_Sudoku_Theorem_vs_Array](SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | .NET C# | Sudoku : approche theorem vs Array via LINQ | 3 |
@@ -508,7 +508,7 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 ```
 SymbolicAI/
 ├── Tweety/                    # Serie TweetyProject (34 notebooks : 14 Python/JPype + 18 C#/IKVM — EPICs #4667 + #4956 — + 1 Lean Tweety-5b + 1 _probes)
-│   ├── Tweety-1-Setup.ipynb ... Tweety-12-Grounded-Via-TweetyProject.ipynb
+│   ├── Tweety-01-Setup-Python.ipynb ... Tweety-12-Grounded-Via-TweetyProject.ipynb
 │   ├── Tweety-*-Csharp.ipynb  # Modules .NET mergés via IKVM 8.14/8.15
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
@@ -579,7 +579,7 @@ SymbolicAI/
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
 │   ├── Z3-API/                 # Serie z3-py (API complete imperative) (28 notebooks : 22 Python [01..18 dont 16b-16e] + 6 jumeaux C# sur 01..06)
-│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-18-Sudoku-Modes.ipynb (+ *-Csharp pour 01..06)
+│   │   ├── Z3-01-Introduction-Python.ipynb ... Z3-18-Sudoku-Modes-Python.ipynb (+ *-Csharp pour 01..06)
 │   │   └── README.md
 │   ├── Z3.Linq/                # Submodule / package a part (solutions/polyglot-repro CrossSubmissionCaptureRepro.ipynb) — support
 │   ├── Automata/               # Submodule support (temoignages, generation de witnesses)
@@ -618,7 +618,7 @@ dotnet interactive jupyter install
 
 **Status exécution : 10/10 SUCCESS** (snapshot 15/08/2026 sur le périmètre Python d'alors ; la série compte désormais 14 notebooks Python — cf. marqueur `CATALOG-STATUS`)
 
-Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
+Le setup est entièrement automatisé via `Tweety-01-Setup-Python.ipynb` :
 
 1. **JDK 17 portable** : Auto-télécharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation système requise, pas de UAC.
 2. **JARs TweetyProject** : Auto-télécharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
@@ -813,7 +813,7 @@ L'IA symbolique repose sur la **manipulation explicite de symboles et de règles
 
 ### Comment installer l'environnement Tweety ?
 
-Ouvrez le notebook `Tweety-1-Setup.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python Tweety/scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+Ouvrez le notebook `Tweety-01-Setup-Python.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python Tweety/scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
 
 ### Par quelle sous-série commencer si je n'ai pas de JDK installe ?
 

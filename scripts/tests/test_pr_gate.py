@@ -1085,6 +1085,44 @@ def test_green_advisory_counts_as_a_normal_pass():
     assert ok == ["Large blob advisory (>= 10 MiB)"]
 
 
+def test_catalog_drift_job_name_carries_the_advisory_marker():
+    """#15998 -- the catalog-drift job declared itself NON-BLOCKING twice in its
+    own header (and in catalog-pr-hygiene / ci-aggregator docs), but
+    `pr_gate.py` classifies advisory by NAME (rule 6, ADVISORY_MARKER) and never
+    reads `fast_lane_registry.py`. Named "Notebook catalog drift (read-only)",
+    the job carried no marker, so any infrastructure failure (runner, pip
+    install, `generate_catalog` exit 2 on missing git metadata, cf #14831) was
+    counted as a REQUIRED check and reddened every notebook/README PR --
+    observed firsthand on #15996: "PR gate: FAIL -- failing checks: Notebook
+    catalog drift (read-only) (failure)" while every other check passed.
+
+    The repair is the marker in the job name, not a registry entry: the
+    registry is consumed by the fast lane (which would then also RUN the
+    catalog generation on every PR), whereas `is_advisory` reads the emitted
+    check-run name. Asserted over whatever the job is called today -- so a
+    future rename that keeps the marker passes, and one that drops it fails.
+    """
+    if pr_gate.yaml is None:  # pragma: no cover - PyYAML is a CI dependency
+        pytest.skip("PyYAML unavailable: cannot read the workflow")
+    wf_path = Path(pr_gate.DEFAULT_WORKFLOWS_DIR) / "catalog-drift.yml"
+    data = pr_gate.yaml.safe_load(wf_path.read_text(encoding="utf-8"))
+    job_names = pr_gate._workflow_job_names(data)
+    assert job_names, "catalog-drift.yml must declare at least one job"
+    for name in job_names:
+        assert pr_gate.is_advisory(name), (
+            "the catalog-drift job name must carry the `advisory` marker "
+            "(#15998): pr_gate.py reads the check-run name, not the header "
+            "comment, so dropping the marker silently re-arms a hard gate "
+            "against every PR touching a notebook or a series README"
+        )
+    # The defect the marker fixes must stay measurable: with the workflow name
+    # as it stands, the historical spelling is still classified BLOCKING. If
+    # this ever flips, the workflow name has absorbed the marker and the
+    # job-name invariant above stopped being the load-bearing surface.
+    wf_name = data.get("name") or ""
+    assert not pr_gate.is_advisory("Notebook catalog drift (read-only)", wf_name)
+
+
 def test_non_advisory_failure_still_blocks():
     """Guard against the fix becoming a blanket amnesty."""
     checks = [
@@ -1813,6 +1851,29 @@ def test_step_summary_dwell_guides_against_repush(tmp_path, monkeypatch):
     assert "Ne pas re-pusher" in text
 
 
+def test_verdict_body_dwell_ne_prescrit_pas_l_attente():
+    """#15726 : la consigne DWELL publiee ne doit pas fabriquer de l'attente.
+
+    Cette assertion porte sur des ABSENCES, et c'est voulu -- la regression
+    qu'elle attrape n'est pas un calcul faux mais une PHRASE. Le verdict
+    etait juste (`False`) tandis que le corps publie disait « le balayage
+    horaire leve seul » : faux sur la cadence (mesuree 2 h 33 - 5 h 18 entre
+    tirs, #15197) et, surtout, une instruction d'attente machine-emise sur
+    chaque gate rouge. Depuis #15693 ce corps est aussi le `summary` du
+    check-run : il est lu dans l'UI par chaque lane, pas seulement en log.
+    """
+    body = pr_gate.verdict_body("DWELL -- tete du 2026-09-07T11:55:00Z")
+    assert "balayage horaire" not in body
+    assert "leve seul" not in body
+    # Ce que le retrait laisse ouvert, et rien de plus : que fait la lane.
+    assert "enchainer un autre grain" in body
+    assert "rerun" in body
+    # La garde anti-re-push de #15693 survit au retrait.
+    assert "Ne pas re-pusher" in body
+    # Controle negatif : hors DWELL, aucune de ces consignes n'est ajoutee.
+    assert "enchainer un autre grain" not in pr_gate.verdict_body("FAIL -- x")
+
+
 def test_step_summary_fork_short_circuit(tmp_path, monkeypatch):
     """The fork PASS publishes too (#10072) -- a student PR's check-run
     should not be the only one whose summary stays null."""
@@ -1983,10 +2044,20 @@ def test_check_run_output_titles_a_dwell_red_as_a_floor_not_a_defect(monkeypatch
     title = seen["fields"]["output[title]"]
     assert title.startswith("PR gate: DWELL -- tete du 2026-09-13T10:00:00Z")
     assert "plancher 120 min" in title
-    # The lift the title announces is the head commit + 120 min -- readable
-    # without recomputing anything (acceptance 2), and re-armed from the
-    # newest commit after any push or update-branch (acceptance 4).
-    assert "leve au premier balayage suivant 2026-09-13T12:00:00Z" in title
+    # L'instant que le titre annonce est le premier SWEEP_MINUTE:00:00Z (=:07)
+    # strictement posterieur au plancher brut (tete + 120 min = 12:00:00Z ->
+    # sweep suivant = 12:07:00Z). #16092 : c'est l'heure GARANTIE d'un
+    # sweep nominal post-plancher, pas l'heure du plancher brut (qui tait
+    # qu'un sweep vient de passer). Re-arme depuis le commit le plus recent
+    # apres tout push ou update-branch (acceptance 4). #15726 : le titre
+    # DATE l'instant garanti, il ne promet plus un balayage horaire --
+    # l'ancienne formule « leve au premier balayage suivant » adossait la
+    # levee a un balayage de cadence mesuree 2 h 33 - 5 h 18 (#15197) ;
+    # cette cadence vit dans le summary, pas dans une promesse du titre.
+    assert "ecoule a 2026-09-13T12:07:00Z" in title
+    # Garantie « rien a reparer » au niveau du TITRE aussi : la troncature
+    # [:255] peut l'y couper sans que rien ne l'annonce -- le test doit tomber.
+    assert "Rien a corriger dans le code" in title
     assert "Plancher mecanique -- rien a reparer" in seen["fields"]["output[summary]"]
 
 
@@ -2169,7 +2240,13 @@ def _decide_with_walls(checks, walls):
 def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
-    assert walls.get("Scripts Tests (CPU)") == 20
+    assert walls.get("Scripts Tests (CPU)") == 30
+    # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
+    # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
+    # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
+    # c'est l'egalite qui rend un changement de plafond visible et impossible a
+    # glisser sous une autre PR.
+    assert walls.get("ML Pipeline Tests (CPU)") == 45
 
 
 def test_declared_timeouts_tolerate_an_unreadable_state(tmp_path):

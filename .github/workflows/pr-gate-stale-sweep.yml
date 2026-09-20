@@ -100,10 +100,27 @@ on:
     # post-routing (expected: queue collapses from ~6000-8000 s to near zero;
     # cancellations from 19/30 to ~0).
     - cron: '7 * * * *'
+  #
+  # #15770 -- role of each trigger, measured 2026-09-14T00:20Z over a 24 h
+  # window (100 runs). This hourly declaration is a best-effort BACKSTOP for
+  # quiet hours, not the cadence: GitHub served it 5 times in 24 h (gaps
+  # 178-341 min), consistent with every sub-hourly cron on this repository.
+  # The NOMINAL path is the `push` heartbeat below -- 89 of the 100 fires,
+  # 54 successful sweeps, median gap 11 min between successes (max 145 min,
+  # 4 gaps over an hour: the quiet-hours residual this backstop and the
+  # coordinator's manual dispatch exist to absorb). The queue wait that
+  # motivated #15770's re-routing piste is gone on the same window --
+  # run-created -> job-started 25-136 s on the last four successes -- so no
+  # re-route is warranted today: `coursia-waiter` stays forbidden (deadlock:
+  # the waiters are held by the aggregators this sweep must unblock),
+  # GitHub-hosted stays out (mandat: consume the containerized runs; #12728
+  # measured a 1.6-2.2 h hosted queue here), and a dedicated pool is the
+  # material lever #15770 leaves to arbitration.
   # Heartbeat independent of the `schedule` event class -- the SAME remedy
   # #15332 gave the observer (pr-gate-sweep-health-advisory.yml), which this
   # file never received. The asymmetry was backwards: the heartbeat went to the
-  # organ that only SPEAKS, not to the organ that REPAIRS.
+  # organ that only SPEAKS, not to the organ that REPAIRS. Measured nominal
+  # path since #15770: see the block above the `push` key.
   #
   # Measured 2026-09-12T08:19Z by scripts/ci/check_scheduler_liveness.py, the
   # organ #15332 built for exactly this question -- served cadence vs declared:
@@ -146,6 +163,12 @@ permissions:
   actions: write       # re-run the ORIGINAL `PR gate` run (see the note below)
   pull-requests: write # gate-absent step below: labels via `gh pr edit` (#14477)
   issues: write        # ... and remediation comments via `gh pr comment`
+  # #15825 tranche 2: the mute-leg repair PATCHes the last `[pr-gate]` log
+  # line onto the check-run's `output` -- same mechanism, same permission, as
+  # pr-gate.yml's own publication (#15693). The job's GITHUB_TOKEN is an
+  # installation token; a PAT would be refused ("You must authenticate via a
+  # GitHub App", measured 2026-09-12).
+  checks: write
 
 concurrency:
   # One sweep PER EVENT CLASS at a time, and never cancel a running one: a
@@ -264,6 +287,11 @@ jobs:
           #     what #15375 exists to stop.
           MAX_MATURE=12
           MAX_IMMATURE=4
+          # #15825: mute-leg repairs are a log fetch + one PATCH each, no
+          # runner slot held (unlike a re-run, which parks a coursia-waiter
+          # for the gate's full poll). 12 matches MAX_MATURE -- the mute
+          # class measured 9 legs on 2026-09-12, so one sweep drains it.
+          MAX_MUTE=12
 
           # Collected over REST, one small call per PR, NOT one bulk GraphQL
           # query. `gh pr list --limit 60 --json statusCheckRollup` returns
@@ -281,6 +309,7 @@ jobs:
             || { echo "[stale-sweep] PR listing failed (upstream) -- skip this sweep"; exit 0; }
 
           : > /tmp/runs.jsonl
+          : > /tmp/mute.txt
           while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
             # details_url (.../actions/runs/{run_id}/job/{job_id}) is collected
@@ -289,23 +318,105 @@ jobs:
             # (workflow_id, name) instead of per name -- three workflows emit a
             # job named "Ratchet (base vs PR)" and a name-only fold merges their
             # verdicts (#11808).
+            # `title` (#15825): the collected output.title, "" when the
+            # check-run concluded without one -- the mute-leg signal the
+            # selector routes to the repair stream instead of a re-run.
             BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url}]' 2>/dev/null) || continue
+                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>/dev/null) || continue
             # Carte run_id -> workflow_id. UN seul appel de plus par PR (pas par
             # run) : la liste des runs du SHA porte deja `workflow_id`. C'est ce
             # qui permet de replier les runs JUMEAUX d'un MEME workflow sans
             # jamais fusionner deux workflows homonymes (#11808). Si l'appel
             # echoue, la carte est vide et la cle retombe sur run_id : le
             # comportement anterieur, jamais plus permissif.
-            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null)
+            # `|| WFMAP=''`: an unguarded assignment failure would kill the
+            # step under `bash -e` BEFORE the empty-map fallback below runs
+            # (same silent death as run 35188299290, zero runtime output).
+            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
             if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
             printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
           echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
 
+          # Resolution id -> NOM de workflow : UN appel pour tout le sweep, pas
+          # un par PR. `is_advisory` porte DEUX signaux (rule 6 de pr_gate.py) :
+          # le nom du check, ET celui de son workflow parent. Le selecteur ne
+          # disposait que du premier -- `WFMAP` ne porte que des identifiants --
+          # donc son exemption etait STRICTEMENT plus etroite que la gate qu'il
+          # repare : le defaut meme de #15976, deplace d'un axe. Mesure
+          # 2026-09-13 (review de #16018) : la branche de repli de la copie
+          # etait du code mort, les deux sites d'appel ne passant qu'un argument.
+          #
+          # `pr_gate.py` resout ce signal par un SCAN du repertoire
+          # (`derive_advisory_jobs`), hors de portee d'un sweep sans checkout ;
+          # l'API repond a la MEME question -- le `name:` du workflow porte-t-il
+          # le marqueur -- pour un appel. Echec de l'appel -> carte vide -> le
+          # 2e argument retombe sur "" : le comportement anterieur (plus
+          # etroit), jamais plus permissif.
+          gh api "repos/$REPO/actions/workflows?per_page=100" \
+            --jq '[.workflows[] | {key:(.id|tostring), value:.name}] | from_entries' \
+            > /tmp/wfnames.json 2>/dev/null || echo '{}' > /tmp/wfnames.json
+
           python - <<'PY' > /tmp/candidates.txt
           import json, os, re, sys
           from datetime import datetime, timezone
+
+          # --- Exemption advisory : COPIE VERBATIM de scripts/pr_gate.py ------
+          # `is_advisory` (rule 6 de la-bas) : un check qui se declare
+          # non-bloquant par son NOM -- ou celui de son workflow -- ne compte
+          # pas comme un rouge. Ce selecteur DOIT la porter : un selecteur de
+          # REPARATION ne doit jamais etre plus STRICT que la gate qu'il
+          # repare (#15976 -- meme principe que le commentaire du fold
+          # ci-dessous). Mesure fondatrice : `scan_md_hierarchy drift
+          # (advisory)` = failure suffisait a exclure #15757 du balayage,
+          # alors que `pr_gate.py` la jugeait, elle, reparable -- le sweep
+          # retirait du champ exactement les PRs qu'il existe pour reprendre.
+          #
+          # POURQUOI UNE COPIE ET NON UN IMPORT : ce sweep tourne SANS
+          # checkout (cf. le commentaire de l'etape -- ~40 s de runner
+          # economisees par passage, toutes les 20 min, sur un depot dont le
+          # probleme mesure EST la penurie de runners). Importer pr_gate.py --
+          # le module du check REQUIS de main -- ferait en plus mourir la
+          # SELECTION sur toute panne d'import de la gate : l'organe advisory
+          # s'eteindrait SILENCIEUSEMENT, ce qui est precisement la classe de
+          # defaut la plus chere a reperer, celle que #15976 documente.
+          # La divergence copie/source est donc fermee par un test qui compare
+          # l'AST des DEUX fonctions :
+          #   scripts/tests/test_pr_gate_sweep_select.py::
+          #   test_inline_is_advisory_matches_pr_gate_source
+          # Modifier l'une sans l'autre rougit la suite : les deux copies ne
+          # peuvent pas deriver en silence.
+          ADVISORY_MARKER = "advisory"
+
+          def is_advisory(name: str, workflow_name: str = "") -> bool:
+              low = (name or "").lower()
+              if ADVISORY_MARKER in low:
+                  return True
+              return ADVISORY_MARKER in (workflow_name or "").lower()
+
+          # Le 2e argument doit etre ALIMENTE, pas seulement declare. Une copie
+          # verbatim dont le repli n'est jamais branche est un remede documente
+          # qui ne tient pas sa promesse -- la maxime que ce fichier porte
+          # lui-meme. La carte id -> nom vient de l'appel unique fait en amont.
+          # Absente ou illisible -> carte vide -> 2e argument "" : strictement
+          # le comportement d'avant, jamais plus permissif.
+          try:
+              with open(os.environ.get("SWEEP_WFNAMES_FILE",
+                                       "/tmp/wfnames.json"),
+                        encoding="utf-8") as f:
+                  WFNAMES = json.load(f)
+          except (OSError, ValueError):
+              WFNAMES = {}
+          if not isinstance(WFNAMES, dict):
+              WFNAMES = {}
+
+          def _advisory_key(k):
+              """Branchement de la copie verbatim, en UN endroit : le nom du
+              workflow parent (`WFNAMES`, resolu id -> nom) complete le nom du
+              check. Teste par test_advisory_by_workflow_name_is_not_a_blocker
+              et son controle negatif -- le verrou AST garde la fonction, ces
+              deux-la gardent son BRANCHEMENT."""
+              return is_advisory(k[1], WFNAMES.get(str(k[0]), ""))
 
           # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
           # A check counts as settled-green when it has completed with a
@@ -421,6 +532,44 @@ jobs:
                   # "Flag PRs whose PR gate never ran" step of this same
                   # sweep (#14477) -- re-aggregation has nothing to re-run.
                   continue
+
+              # (#15825) Mute gate leg: a RED conclusion carrying no
+              # output.title -- an organ that goes red without a motive
+              # (measured 2026-09-12: 9 of 43 gate failures in the open
+              # population). The re-run this sweep exists for is INERT on
+              # that class: it replays the SAME stale event payload, whose
+              # checkout predates the publication machinery (#15725), so
+              # the re-executed script renders the same mute red forever.
+              # Measured: run 34608518559 on #15440, 8 attempts x ~23 s,
+              # each identical, while the log carried the verdict from the
+              # first attempt. A mute leg is therefore NOT a re-run
+              # candidate -- it goes to the repair stream (last [pr-gate]
+              # log line PATCHed into output.title), never spending a
+              # waiter slot. The absent-key default is deliberate: data
+              # collected before #15825 has no `title` key at all and is
+              # never classified mute.
+              def _mute(c):
+                  return ((c.get("conclusion") or "") in RED
+                          and "title" in c and not c["title"].strip())
+
+              mute = [c for c in gate_legs if _mute(c)]
+              if mute:
+                  newest_mute = max(mute, key=lambda c: c.get("started_at") or "")
+                  m = re.search(r"/runs/(\d+)/job/(\d+)",
+                                newest_mute.get("details_url") or "")
+                  if m:
+                      with open(os.environ.get("SWEEP_MUTE_FILE", "/tmp/mute.txt"),
+                                "a", encoding="utf-8") as fh:
+                          fh.write(f'{p["number"]} {p["sha"]} '
+                                   f'{m.group(2)} {m.group(1)}\n')
+                  print(f'[stale-sweep] #{p["number"]}: MUTE gate leg '
+                        f'(red, output.title vide)'
+                        + (f' -- reparation depuis le log du run {m.group(1)}'
+                           if m else ' -- details_url illisible, ni re-run ni reparation')
+                        + ' (re-run inert sur snapshot stale, #15825)',
+                        file=sys.stderr)
+                  continue
+
               if not any((c.get("conclusion") or "") in RED for c in gate_legs):
                   continue
 
@@ -474,9 +623,33 @@ jobs:
               # le sweep REPARE les causes -- il relaie le constituant
               # annule (#15775), pas l'agregateur qui le re-lirait identique.
               OTHERS_NOT_BLOCKING = GREEN | {"cancelled"}
-              red_others = [(k, c) for k, c in others
-                            if (c.get("conclusion") or "")
-                            not in OTHERS_NOT_BLOCKING]
+              # #15976 -- SECONDE exemption, meme principe que le `cancelled`
+              # ci-dessus : un check ADVISORY n'est pas un rouge. La gate
+              # elle-meme range un advisory non-vert dans son seau `advisory`,
+              # jamais dans `bad` (scripts/pr_gate.py, rule 6) : un selecteur
+              # qui le compterait comme bloquant serait strictement plus strict
+              # que la gate, et exclurait la PR pour une mauvaise raison.
+              #
+              # Blanchir n'est PAS le risque ici : le sweep ne merge rien, il
+              # RELANCE la gate, qui re-lit l'etat live et conclut sur ses
+              # propres regles -- ou l'advisory ne compte pas non plus. Le
+              # cout d'un faux positif d'eligibilite reste une minute de
+              # runner ; celui du faux negatif est une PR BLOCKED a jamais.
+              reds_blocking = [(k, c) for k, c in others
+                               if (c.get("conclusion") or "")
+                               not in OTHERS_NOT_BLOCKING]
+              tolerated = [(k, c) for k, c in reds_blocking
+                           if _advisory_key(k)]
+              red_others = [(k, c) for k, c in reds_blocking
+                            if not _advisory_key(k)]
+              if tolerated:
+                  # Un blanchiment SILENCIEUX serait indistinguable d'un filtre
+                  # debranche (#11808) -- nommer ce qui a ete tolere. Sur
+                  # stderr : stdout alimente candidates.txt.
+                  print(f'[stale-sweep] #{p["number"]}: advisory red tolerated '
+                        "(not a blocker): "
+                        + ", ".join(f"{k[1]}={c.get('conclusion')}"
+                                    for k, c in tolerated), file=sys.stderr)
               if red_others:
                   _diag(p, "red", [
                       f"{k[1]}[run {k[0]}]={c.get('conclusion')}"
@@ -560,6 +733,55 @@ jobs:
           # converts to a merge), oldest verdicts first within each tier.
           sort -s -k4,4n -k1,1n -o /tmp/candidates.txt /tmp/candidates.txt
 
+          # --- #15825 : repair of mute gate legs (red, no output.title) -----
+          #
+          # The repair does NOT clear the red -- only a real fix on the branch
+          # (update-branch, new push, new gate on a fresh checkout) can. It
+          # NAMES the cause: the last [pr-gate] line of the run's log, which
+          # has carried the verdict since the first attempt while the API
+          # rendered nothing. After this, any reader -- lane, coordinator,
+          # pick_idle_grain -- sees the motive on the check-run itself.
+          #
+          # PATCH in place (job id == check-run id, measured in
+          # pr_gate.own_job_id): same mechanism as pr_gate.py's own
+          # publication, same App-authenticated token, never a POSTed twin
+          # (a twin lands in a foreign suite and the AND keeps the PR
+          # blocked, #11519).
+          MUTE_N=0
+          MUTE_TOTAL=$(wc -l < /tmp/mute.txt | tr -d ' ')
+          while read -r NUM SHA JOB_ID RUN_ID; do
+            [ -z "${NUM:-}" ] && continue
+            if [ "$MUTE_N" -ge "$MAX_MUTE" ]; then
+              echo "[stale-sweep] mute cap reached ($MAX_MUTE) -- the rest next sweep"
+              break
+            fi
+            LINE=$(gh run view "$RUN_ID" --repo "$REPO" --log 2>/dev/null \
+                     | grep '\[pr-gate\]' | tail -1 | sed 's/.*\[pr-gate\] //') || true
+            if [ -z "${LINE:-}" ] && [ "${DRY_RUN:-false}" != "true" ]; then
+              LINE="(aucune ligne [pr-gate] dans le log du run $RUN_ID -- defaut du gate lui-meme, #15825)"
+            fi
+            if [ "${DRY_RUN:-false}" = "true" ]; then
+              echo "[stale-sweep] (dry-run) would repair #$NUM mute leg from run $RUN_ID: ${LINE:-<log illisible>}"
+              MUTE_N=$((MUTE_N + 1))
+              continue
+            fi
+            if [ -z "${LINE:-}" ]; then
+              echo "[stale-sweep] #$NUM: log du run $RUN_ID illisible -- leg mute gardee pour le prochain sweep"
+              continue
+            fi
+            # Summary sur UNE ligne physique : une ligne vide litterale dans
+            # un block scalaire YAML termine le bloc (le parseur le prouve).
+            if gh api --method PATCH "repos/$REPO/check-runs/$JOB_ID" \
+                 -f "output[title]=PR gate: ${LINE:0:222}" \
+                 -f "output[summary]=${LINE} -- titre rapporte depuis le log du run $RUN_ID par le sweep (#15825 : check-run conclu sans output, re-run inert sur snapshot stale, la cause etait dans le log depuis la premiere tentative)"; then
+              echo "[stale-sweep] #$NUM: mute gate leg -- titre repare depuis le log: $LINE"
+              MUTE_N=$((MUTE_N + 1))
+            else
+              echo "[stale-sweep] #$NUM: PATCH de reparation echoue -- leg gardee pour le prochain sweep"
+            fi
+          done < /tmp/mute.txt
+          echo "[stale-sweep] mute gate legs: $MUTE_TOTAL found, $MUTE_N repaired"
+
           COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
           MATURE_N=$(awk '$4 == "0"' /tmp/candidates.txt | wc -l | tr -d ' ')
           IMMATURE_N=$(awk '$4 == "1"' /tmp/candidates.txt | wc -l | tr -d ' ')
@@ -625,8 +847,16 @@ jobs:
             # No loop risk: this sweep has no `workflow_run` trigger of its own
             # (`schedule` / manual `workflow_dispatch` only), so a re-run cannot
             # re-trigger it.
+            # `|| { ...; continue; }`: run 35188299290 (2026-09-17T06:04Z)
+            # died HERE silently -- a transient actions/runs API failure
+            # (5xx / secondary rate limit) made the assignment fail, stderr
+            # was swallowed by 2>/dev/null, and `bash -e` killed the step:
+            # exit 1 after 4m26s with ZERO runtime output, so the whole
+            # sweep no-oped. Falling through to RUN_ID-empty would mislabel
+            # the case "NO workflow run", so skip the candidate honestly.
             RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
-                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null)
+                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null) \
+              || { echo "[stale-sweep] #$NUM ($SHA): actions/runs API call failed (transient) -- deferring candidate to next sweep"; continue; }
             RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)
 
             if [ -z "${RUN_ID:-}" ]; then

@@ -43,9 +43,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 12 | [GameTheory 3b : Chambres, murs, codimension — les jeux…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-et-Murs.ipynb) | BETA | Oui |
 | 13 | [GameTheory-3c — Le joueur LLM dans le tableau…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM.ipynb) | BETA | Non |
 | 14 | [GameTheory-03d — Biens publics non-lineaires : plan de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) | BETA | Oui |
-| 15 | [GameTheory 3e : Meta-Actions Tarifees -- l'agent qui…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) | BETA | Oui |
-| 16 | [GameTheory 3f : Le Parcours Complet -- du jeu nommé au…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Parcours-Complet.ipynb) | BETA | Oui |
-| 17 | [GameTheory-03g — De 576 à 144 : dériver le quotient,…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Derivation-Quotient.ipynb) | BETA | Oui |
+| 15 | [GameTheory 3e : Meta-Actions Tarifees et Parcours Complet -- …](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) | BETA | Oui |
+| 17 | [GameTheory-03 §9 — De 576 à 144 : dériver le quotient,…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) | BETA | Oui |
 | 18 | [GameTheory-03h — Deux espèces de flèches : quand une…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03h-Deux-Especes-de-Fleches.ipynb) | BETA | Oui |
 | 19 | [GameTheory-04-NashEquilibrium (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb) | BETA | Oui |
 | 20 | [GameTheory-04-NashEquilibrium](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb) | BETA | Oui |
@@ -147,7 +146,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [ICT-1 — Trajectoires de $\Phi$](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb) | BETA | Oui |
+| 1 | [ICT-1 — Trajectoires de $\Phi$](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb) | BETA | Oui |
 | 2 | [ICT-10 — Grammaire des catastrophes : *l'obstacle qui…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) | BETA | Oui |
 | 3 | [ICT-11 — Profils d'agence causale : à quelle échelle…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles.ipynb) | BETA | Oui |
 | 4 | [ICT-12 — Champs de valence et animats : rôles mesures,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb) | BETA | Oui |
@@ -173,7 +172,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 24 | [ICT-18b — Budget de réversibilité : la jambe « fin » de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget.ipynb) | BETA | Oui |
 | 25 | [ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb) | BETA | Oui |
 | 26 | [ICT-19b — Raffinement et résolution des stubs (tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb) | BETA | Non |
-| 27 | [ICT-2 — Le tri comme morphogenèse minimale…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb) | BETA | Oui |
+| 27 | [ICT-2 — Le tri comme morphogenèse minimale…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | BETA | Oui |
 | 28 | [ICT-20 — FeatureCatastrophes : *calibration de méthode*](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes.ipynb) | BETA | Non |
 | 29 | [ICT-21 — SAETrajectoires : le substrat S4 entre au banc](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires.ipynb) | BETA | Non |
 | 30 | [ICT-21b-SAECalibration — que reconstruit réellement…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration.ipynb) | BETA | Non |
@@ -186,18 +185,18 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 37 | [ICT-27 — Invention de symboles (expérience B, strate 7)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention.ipynb) | BETA | Oui |
 | 38 | [ICT-28 — Adoption collective et seuil de performativité…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption.ipynb) | BETA | Oui |
 | 39 | [ICT-29 — Inoculation d'un concept (expérience D, strate…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-29-ConceptInoculation.ipynb) | BETA | Oui |
-| 40 | [ICT-3 — Robustesse & délai de gratification : étude…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-3-RobustnessDelayedGratification.ipynb) | BETA | Oui |
+| 40 | [ICT-3 — Robustesse & délai de gratification : étude…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb) | BETA | Oui |
 | 41 | [ICT-30 — Invention inhibée (expérience E, strate 7)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-30-InhibitedInvention.ipynb) | BETA | Oui |
 | 42 | [ICT-31 — Le contraste mesuré à trois substrats :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-31-ContrasteTroisSubstrats.ipynb) | BETA | Oui |
 | 43 | [ICT-32 — Stratification causale du Jeu de la Vie :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife.ipynb) | BETA | Oui |
 | 44 | [ICT-33 — Ensembles ouverts : soupes, collisions, et la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-33-SoupCollisions.ipynb) | BETA | Oui |
 | 45 | [ICT-34 — Le banc de recollement des lectures : quatre…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-34-BancRecollementLectures.ipynb) | BETA | Oui |
-| 46 | [ICT-4 — Tableaux chimériques & agrégation émergente («…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-4-ChimericArraysKinAggregation.ipynb) | BETA | Oui |
-| 47 | [ICT-5 : Émergence causale — quelle échelle décrit le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) | BETA | Oui |
-| 48 | [ICT-6 — Du tri a la chaîne de Markov : emergence…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | BETA | Oui |
-| 49 | [ICT-7 — Signatures *scale-free* & criticalite](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb) | BETA | Oui |
-| 50 | [ICT-8 — Paysages d'attracteurs & signaux precurseurs :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-8-AttractorLandscapesEWS.ipynb) | BETA | Oui |
-| 51 | [ICT-9 — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-9-AgencyRegeneration.ipynb) | BETA | Oui |
+| 46 | [ICT-4 — Tableaux chimériques & agrégation émergente («…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb) | BETA | Oui |
+| 47 | [ICT-5 : Émergence causale — quelle échelle décrit le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | BETA | Oui |
+| 48 | [ICT-6 — Du tri a la chaîne de Markov : emergence…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | BETA | Oui |
+| 49 | [ICT-7 — Signatures *scale-free* & criticalite](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb) | BETA | Oui |
+| 50 | [ICT-8 — Paysages d'attracteurs & signaux precurseurs :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb) | BETA | Oui |
+| 51 | [ICT-9 — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb) | BETA | Oui |
 | 52 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb) | BETA | Oui |
 | 53 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb) | BETA | Oui |
 | 54 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference.ipynb) | BETA | Oui |
@@ -211,7 +210,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
+| 1 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
 
 ## Probas/Applications (2 notebooks)
 
@@ -238,18 +237,18 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 12 | [DecInfer-08-Sequential : MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb) | BETA | Oui |
 | 13 | [DecInfer-09-Preuves formelles — Indice de Gittins](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb) | BETA | Oui |
 | 14 | [DecInfer-10-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | BETA | Oui |
-| 15 | [DecPyMC-1-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb) | BETA | Oui |
-| 16 | [DecPyMC-10 : Ruine et capital — le processus de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-10-Ruine-Lundberg.ipynb) | BETA | Oui |
-| 17 | [DecPyMC-11 — Valeur de l'Information en Souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | BETA | Oui |
-| 18 | [DecPyMC-12 — Fréquence × sévérité hiérarchique : le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb) | BETA | Oui |
-| 19 | [DecPyMC-2-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) | BETA | Oui |
-| 20 | [DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-3-Multi-Attribute.ipynb) | BETA | Oui |
-| 21 | [DecPyMC-4-Decision-Networks : Reseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-4-Decision-Networks.ipynb) | BETA | Oui |
-| 22 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-5-Value-Information.ipynb) | BETA | Oui |
-| 23 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
-| 24 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
-| 25 | [DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-8-Actuarial-Credibility.ipynb) | BETA | Oui |
-| 26 | [DecPyMC-9 : Du risque à la prime — prime pure,…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb) | BETA | Oui |
+| 15 | [DecPyMC-1-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb) | BETA | Oui |
+| 16 | [DecPyMC-10 : Ruine et capital — le processus de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-10-Ruine-Lundberg.ipynb) | BETA | Oui |
+| 17 | [DecPyMC-11 — Valeur de l'Information en Souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb) | BETA | Oui |
+| 18 | [DecPyMC-12 — Fréquence × sévérité hiérarchique : le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-12-Freq-Sev-Hierarchique.ipynb) | BETA | Oui |
+| 19 | [DecPyMC-2-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb) | BETA | Oui |
+| 20 | [DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb) | BETA | Oui |
+| 21 | [DecPyMC-4-Decision-Networks : Reseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb) | BETA | Oui |
+| 22 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | BETA | Oui |
+| 23 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
+| 24 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
+| 25 | [DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-8-Actuarial-Credibility.ipynb) | BETA | Oui |
+| 26 | [DecPyMC-9 : Du risque à la prime — prime pure,…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb) | BETA | Oui |
 
 ## Probas/Infer (21 notebooks)
 

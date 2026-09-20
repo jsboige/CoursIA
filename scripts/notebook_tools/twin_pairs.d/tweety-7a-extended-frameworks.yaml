@@ -1,7 +1,7 @@
 - name: "Tweety-7a Extended-Frameworks"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib MEME moteur Java TweetyProject, pipeline REBUILD REPRODUCTIBLE atteste sur worker le 2026-08-28 (myia-po-2024:CoursIA, Windows, JDK 17) : rebuild-7a.sh end-to-end (9 modules sources, javac --release 8, 795 classes, bytecode 100 pourcent major 52, suite de patches Java 9->8 tous appliques), shade jar 1053742 octets produit, puis dotnet build build-Tweety7aShade.csproj -c Release (IKVM 8.14, 0 erreur, 31 warnings IKVM0100 benins). DLL rebatie 1130496 octets non byte-identique a la precedente (MVID/timestamps embarques par build) mais fonctionnellement equivalente : execution fraiche du notebook contre la DLL rebatie (papermill kernel .net-csharp, cwd = dir du notebook) 17/17 cellules code, 0 erreur, valeurs attestees reproduites a l'identique -- Dung {a,c} (cell 23), Weighted {} (cell 24), Social {a=0.8571428571428571, b=0.0, c=0.0} (cell 25), sonde ADF 341 types + 8 reasoners concrets + NativeLingelingSolver NRE. La DLL commitee est REMPLACEE par la rebatie dans la meme PR : les outputs frais citent 'DLL size : 1104 KB' coherent avec le binaire commite. Historique du verdict precedent (RECOVERABLE-MACHINE, PR #10410/#10499, constat c.229 2026-08-12 po-2023:CoursIA-2) : la DLL finale n'etait pas sur disque worker, action nommee = dotnet build sur po-2023 ou po-2024 avec JAVA_HOME -- action executee. Sub-grain ADF SAT reste INTRINSIC (NativeLingelingSolver exige un IncrementalSatSolver natif, meme prerequis que le jumeau Python)."
