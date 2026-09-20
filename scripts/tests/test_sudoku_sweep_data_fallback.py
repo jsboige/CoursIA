@@ -6,6 +6,8 @@ All loaders are monkeypatched -- no disk, no network, no torch execution.
 """
 
 import importlib.util
+import sys
+import types
 from pathlib import Path
 
 import numpy as np
@@ -16,10 +18,28 @@ SWEEP_PATH = Path(__file__).resolve().parents[1] / "sudoku" / "overnight_sweep.p
 
 @pytest.fixture()
 def sweep():
-    spec = importlib.util.spec_from_file_location("overnight_sweep_under_test", SWEEP_PATH)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    """Exec overnight_sweep.py in an isolated import context.
+
+    The script imports its sibling package bare (`from core import ...`),
+    which collides with scripts/genai-stack/core when another test has
+    already imported `core` in the same worker (seen in CI: ImportError
+    'cannot import name SudokuRRN from core (genai-stack)'). Purge any
+    cached `core`, put scripts/sudoku first on sys.path, and restore both
+    sys.path and sys.modules afterwards so the suite stays order-agnostic.
+    """
+    saved_core = sys.modules.pop("core", None)
+    saved_path = sys.path[:]
+    sys.path.insert(0, str(SWEEP_PATH.parent))
+    try:
+        spec = importlib.util.spec_from_file_location("overnight_sweep_under_test", SWEEP_PATH)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    finally:
+        sys.path[:] = saved_path
+        sys.modules.pop("core", None)
+        if saved_core is not None:
+            sys.modules["core"] = saved_core
 
 
 def _arr(n=4):
@@ -85,3 +105,25 @@ def test_hf_1m_cache_miss_downloads_1m(sweep, monkeypatch):
 def test_unknown_source_raises(sweep):
     with pytest.raises(ValueError, match="Unknown data source"):
         sweep.load_experiment_data("nope")
+
+
+def test_import_survives_foreign_core_cached():
+    """Regression: a foreign `core` already in sys.modules (e.g. genai-stack's,
+    imported by an earlier test in the same worker) must not leak into the
+    sweep module's own `from core import ...` (CI run 35502987573). Validates
+    the same purge-then-exec recipe the `sweep` fixture applies.
+    """
+    foreign = types.ModuleType("core")
+    foreign.__file__ = "scripts/genai-stack/core/__init__.py"  # deliberately NOT sudoku's
+    sys.modules["core"] = foreign
+    saved_path = sys.path[:]
+    sys.path.insert(0, str(SWEEP_PATH.parent))
+    sys.modules.pop("core", None)  # the purge that neutralizes the poison
+    try:
+        spec = importlib.util.spec_from_file_location("overnight_sweep_poisoned", SWEEP_PATH)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        assert hasattr(mod, "load_experiment_data")
+    finally:
+        sys.path[:] = saved_path
+        sys.modules.pop("core", None)
