@@ -330,9 +330,13 @@ def surfaces_fingerprint(
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     """Return the lane that carries this pull request, from its `Grain:` tag.
 
-    Returns None when the body carries no readable tag. An absent tag is not an
-    authorization: it only means the self-attestation check cannot be made from
-    the body, and the qualifying-lane check still applies.
+    Returns None when the body carries no readable tag. `validate_dossier` turns
+    that None into a refusal: an absent tag means the self-attestation check
+    CANNOT be made, and a check that cannot be made has not passed. Without that
+    refusal, a qualifying lane carrying an untagged PR files its own dossier and
+    clears a control that never ran -- the exact hole the third-party rule exists
+    to close. Blast radius measured 2026-09-20: 4 of 221 open PRs carry no
+    readable tag, and the escape is to add the tag, not to weaken the gate.
     """
     match = GRAIN_LANE_RE.search(snapshot.get("body") or "")
     return match.group(1) if match else None
@@ -379,7 +383,13 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         )
     else:
         carrier = carrying_lane(snapshot)
-        if carrier is not None and carrier == dossier_lane:
+        if carrier is None:
+            errors.append(
+                "carrying lane cannot be established: the body carries no readable "
+                "'Grain: ... lane <machine:workspace>' tag, so third-party "
+                "prevalidation cannot be verified"
+            )
+        elif carrier == dossier_lane:
             errors.append(
                 "self-prevalidation refused: the dossier lane "
                 f"{dossier_lane!r} is the lane that carries this pull request"

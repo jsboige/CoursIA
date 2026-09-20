@@ -18,10 +18,17 @@ def _comment(body: str, login: str = "jsboige") -> dict:
     return {"author": {"login": login}, "body": body}
 
 
+# The carrying lane of the default fixture. It must differ from the `lane` of
+# `_body()` (the adjoint), or every nominal case would be a self-attestation.
+# It is a real tag because an absent one is now a refusal: a dossier can only be
+# trusted when the gate can see WHO carries the pull request (#16928).
+CARRIER = "myia-po-2026:CoursIA"
+
+
 def _base_snapshot() -> dict:
     return {
         "number": 123,
-        "body": "PR body",
+        "body": f"Grain: MED/harnais -- lane {CARRIER} -- prev: MED\n\nPR body",
         "headRefOid": HEAD,
         "state": "OPEN",
         "title": "PR title",
@@ -199,13 +206,24 @@ def test_third_party_lane_passes_when_carrier_is_declared():
 
 
 def test_absent_grain_tag_is_not_an_authorization():
-    """No readable tag means the self-check cannot run, not that it passed.
+    """No readable tag means the self-check CANNOT run -- so the dossier fails.
 
-    The qualifying-lane check still applies, so an unknown lane still fails.
+    The first version of this test passed `lane="not-a-lane"`, so the refusal
+    came from the allowlist and the missing tag was never exercised at all: the
+    test carried the right name and proved something else, while the code let a
+    qualifying lane carrying an untagged PR file its own dossier. A QUALIFYING
+    lane is what makes the absent tag the only thing left to refuse on -- hence
+    the second assertion, which fails if the allowlist starts doing the work
+    again.
     """
-    snapshot = _snapshot_with_body("pas de tag Grain ici", lane="not-a-lane")
+    snapshot = _snapshot_with_body(
+        "pas de tag Grain ici", lane="myia-po-2023:CoursIA"
+    )
     errors = _errors(snapshot)
-    assert any(error.startswith("lane must") for error in errors)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+    assert not any(error.startswith("lane must") for error in errors)
 
 
 def test_non_shared_github_author_cannot_satisfy_gate():
