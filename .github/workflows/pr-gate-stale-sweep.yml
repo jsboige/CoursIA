@@ -329,7 +329,10 @@ jobs:
             # jamais fusionner deux workflows homonymes (#11808). Si l'appel
             # echoue, la carte est vide et la cle retombe sur run_id : le
             # comportement anterieur, jamais plus permissif.
-            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null)
+            # `|| WFMAP=''`: an unguarded assignment failure would kill the
+            # step under `bash -e` BEFORE the empty-map fallback below runs
+            # (same silent death as run 35188299290, zero runtime output).
+            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
             if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
             printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
@@ -844,8 +847,16 @@ jobs:
             # No loop risk: this sweep has no `workflow_run` trigger of its own
             # (`schedule` / manual `workflow_dispatch` only), so a re-run cannot
             # re-trigger it.
+            # `|| { ...; continue; }`: run 35188299290 (2026-09-17T06:04Z)
+            # died HERE silently -- a transient actions/runs API failure
+            # (5xx / secondary rate limit) made the assignment fail, stderr
+            # was swallowed by 2>/dev/null, and `bash -e` killed the step:
+            # exit 1 after 4m26s with ZERO runtime output, so the whole
+            # sweep no-oped. Falling through to RUN_ID-empty would mislabel
+            # the case "NO workflow run", so skip the candidate honestly.
             RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
-                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null)
+                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null) \
+              || { echo "[stale-sweep] #$NUM ($SHA): actions/runs API call failed (transient) -- deferring candidate to next sweep"; continue; }
             RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)
 
             if [ -z "${RUN_ID:-}" ]; then

@@ -371,33 +371,35 @@ quand la cible est proche de la position actuelle.
   jambe existante quand le signe est conservé).
 - Les coûts backtestés deviennent comparables à un rebalancement réel.
 
-### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2` ; mis à jour 2026-09-13, lane `myia-po-2026:CoursIA`)
-
-- Le code **compile statiquement** (`ast.parse` PASS, 7 fonctions / 1 classe / 465
-
-  lignes, EOL LF, 0 secret literal).
-- **Backtest exécuté le 2026-09-13** (supersède l'état « Aucun backtest exécuté » de
-
-  la lane po-2027, dont le verdict `RECOVERABLE-MACHINE` — credentials QC absents,
-  vérifié firsthand `env | grep -iE "QC_|QUANTCONNECT"` = 0 hit — est désormais
-  **résolu** : la jambe QC Cloud a été portée par la lane `myia-po-2026:CoursIA`,
-  **sans transmission de secret**, sur un projet QC dédié). Résultat : compile
-  `BuildSuccess` 0 erreur, backtest `b7b7217ee540757f3d78167ab9eeea2e` `Completed`,
-  2763 séances négociables, **0 ordre** — mesure **pré-fix** du 2026-09-13. Depuis,
-  la cause du 0 ordre a été identifiée (cible canonique non négociable au lieu du
-  contrat mappé) et réparée par `#16003` / `#16051` : le bras produit désormais
-  **1447 ordres**. Détail et chronologie pré-fix / post-fix : sections « Mesure
-  historique pré-fix » et « Post-fix » ci-dessus.
-- **Verdict rendu (pré-fix, daté)** : `INCONCLUSIVE` — **non pas** parce que Carver #13
-
-  perdrait contre la baseline, mais parce que le run du 2026-09-13 n'émet **aucun ordre**
-  (0 ordre / 2763 séances) : un bras qui ne trade pas ne peut ni battre ni perdre. La
-  cause du 0 ordre est depuis **dissipée** (cible canonique → contrat mappé, `#16003` /
-  `#16051`) ; la comparaison reste **non tranchée** pour une autre raison — conditions
-  non appariées (capital, sizing, fenêtre, levier). Le verdict n'est donc plus borné par
-  un bras muet mais par l'absence d'un protocole comparable. Le Sharpe 0,944 vs 0,749 rapporté par l'article #15989 sur 2020-2023
-  n'a **pas** été présumé : il n'entre pas dans ce verdict (fenêtre favorable
-  non-représentative, et la jambe mesurée ici est muette de toute façon).
+### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2` ; mis à jour 2026-09-13, lane `myia-po-2026:CoursIA` ; verdict borné 2026-09-15, lane `myia-po-2023:CoursIA`)
+- Le code **compile et tourne sur QC Cloud** (projet dédié `36488678`
+  `FuturesTrend-Carver13`) : le verdict SOTA est `SOTA-OK` — les backtests
+  réels ont remplacé la compilation statique (historique : `RECOVERABLE-MACHINE`
+  c.1111, credentials QC alors absents sur po-2027, résolu par la lane
+  `myia-po-2026:CoursIA` **sans transmission de secret**, jambe
+  `b7b7217ee540757f3d78167ab9eeea2e` du 2026-09-13). Le chemin d'ordre a été
+  réparé par `#16003` / `#16051` (#15992 : 0 ordre → 1447 ordres / 2763
+  séances) ; chronologie pré-fix / post-fix : sections « Mesure historique
+  pré-fix » et « Post-fix » ci-dessus.
+- **Runs mesurés (2026-09-15, same-day, dataset identique, projet 36488678)** :
+  code de référence pré-cache `da92396c` — Sharpe **−0.168**, 1447 ordres ;
+  candidat fenêtres glissantes #16298 `d461d6af` — Sharpe **−0.231**,
+  CAGR −27.1 %, MaxDD 98.2 %, 1433 ordres (l'écart −14 ordres est la
+  divergence calendrier feed/bulk documentée dans #16298, sans effet sur le
+  verdict : les DEUX runs perdent en absolu).
+- **Verdict borné (acceptance #15549) : `NO BEATS` sur le seul périmètre des
+  runs Carver en absolu ; `INCONCLUSIVE` pour la comparaison contre la
+  baseline ETF v3.1.** Les deux runs ci-dessus ont un Sharpe négatif — sur
+  ce périmètre, rien ne bat quoi que ce soit. Mais la comparaison *appariée*
+  n'existe pas : capital, sizing, fenêtre et levier restent **non appariés**
+  (#15991, main) — un run Carver négatif n'établit pas à lui seul
+  l'infériorité *relative*. Le Sharpe 0.944 vs 0.749 de l'article #15989
+  (2020-2023, fenêtre favorable courte) n'est **pas confirmé** sur la décade
+  2016-2026 — exactement la précaution que la section précédente posait. La
+  sous-fenêtre 2020-2023 seule n'a pas été re-mesurée séparément : non
+  mesuré, non affirmé. Remarque d'univers : un instrument (SB) ne résout
+  jamais de contrat mappé (18/19 effectifs, #16064/#16072) — il ne trade
+  pas, le verdict porte bien sur les 18 instruments actifs.
 - **REPAIR c.1107** : deux défauts détectés par le préflight adjoint po-2025
 
   (`msg-20260911T040615-4c08xy`) avant lancement des runs QC Cloud — (a) carry

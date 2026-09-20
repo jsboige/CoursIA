@@ -334,9 +334,14 @@ IIT/
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
-│   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-30) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
-│   ├── ict/                    # Package Python autonome (simulations + mesures)
-│   ├── tests/                  # Suite pytest de validation des modules ict/
+│   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-39) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
+│   ├── ict/                    # Package Python autonome (simulations + mesures, 88 modules — pip install -e .)
+│   ├── assets/                 # Figures in-situ du README + MANIFEST de provenance
+│   ├── runs/                   # Artefacts d'exécution (ex. scale-up GRPO d'ICT-25)
+│   ├── scripts/                # Extraction des traces GPU (SAE, J-Lens) et scripts pilotes
+│   ├── tests/                  # Suite pytest principale de validation des modules ict/
+│   ├── traces/                 # Fixtures .npz pré-extraites (notebooks GPU-free de la strate 5)
+│   ├── pyproject.toml          # Installation editable du package ict/ (issue #8076)
 │   └── README.md               # Documentation de la série ICT
 ├── requirements.txt            # Dépendances Python (partagées IIT + ICT)
 ├── scripts/
@@ -365,14 +370,18 @@ La série IIT étudie des structures causales **à un instant donné**. Une exte
 **ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
 de structures causales : comment une organisation se maintient, se transforme, se répare, change
 d'échelle et traverse un espace de possibles ($C_0 \rightarrow C_1 \rightarrow \dots \rightarrow C_n$).
-Elle progresse en **sept strates** — le **tri auto-organisé** transparent (strate 1, ICT-0 à ICT-7), la
+Elle progresse en **sept strates** — le **tri auto-organisé** transparent (strate 1, ICT-1 à ICT-7), la
 **morphogenèse dynamique** à paysages d'attracteurs engendrés (strate 2, ICT-8 à ICT-10), les
 **trajectoires intégrées** régime-dépendantes (strate 3, ICT-11 à ICT-13), la jambe
-**représentationnelle** énergie libre / surprise (strate 4, ICT-14), la **théorie fondatrice**
-cross-substrat et la réversibilisation outillée (strate 5, ICT-15 à ICT-25), un **socle théorique
-transverse** distillant la sémiophysique de René Thom (strate 6), puis la **coopération comme
-opérateur** — conventions, invention de symboles, adoption collective, inoculation de concept
-(strate 7, ICT-26 à ICT-30).
+**représentationnelle** énergie libre / surprise puis la **théorie fondatrice** cross-substrat et la
+réversibilisation outillée (strate 4, ICT-14 à ICT-20, prolongée par le banc de recollement ICT-34),
+et le **LLM comme substrat** — SAE, persona, workspace, inoculation RL (strate 5, ICT-21 à ICT-25,
+prolongée par ICT-35 à ICT-39). Les strates 6 (**argumentation**) et 7 (**freebits d'ordre 2**) sont
+**cadrées et non livrées**. Deux objets relèvent de l'**axe transverse** et non de l'échelle des
+strates (arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908)) : le **socle théorique**
+distillant la sémiophysique de René Thom, et la **coopération comme opérateur** — conventions,
+invention de symboles, adoption collective, inoculation de concept (**dimension D2**, cinq
+expériences ICT-26 à ICT-30).
 
 Chaque strate est **complétée par des notebooks de raffinement / extension** (suffixes lettrés
 `b`/`c`/`d`… ou titres non-numérotés) qui approfondissent un aspect ou appliquent l'instrumentation
@@ -429,7 +438,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 | **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
 | **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
-| **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-Series/ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
+| **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence-Python](ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
 **Le pont le plus profond — ICT-5 lève le do-calculus au niveau des échelles.** Dans la théorie
 de l'émergence causale (Hoel, *Causal Emergence 2.0* ; Jansma & Hoel, *Engineering Emergence*,
@@ -447,7 +456,7 @@ causal que le micro — l'`effectiveness` monte sous coarse-graining.
 nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb)
 message passing, [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
-([ICT-5](ICT-Series/ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
+([ICT-5](ICT-Series/ICT-05-CausalEmergence-Python.ipynb)) où le même `do` mesure le travail causal **à travers les
 échelles**.
 
 **Articles d'ancrage** : Pearl, *Causality* (2009) ; Hoel, *Causal Emergence 2.0*
