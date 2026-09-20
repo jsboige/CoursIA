@@ -62,12 +62,24 @@ on:
         description: "How to count sorry: raw | prose-header | standalone-tactic | real"
         type: string
         required: true
+      lake-set:
+        description: "Mode matrice #13751 : JSON {\"include\": [entrees ci_lakes.json]} rendu par scripts/lean/lake_matrix_dispatch.py. Sentinelle 'none' (defaut) -> seul le job `ci` mono-lake tourne. JSON non vide -> seul `ci-matrix` tourne (les 4 inputs ci-dessus sont alors des valeurs de facade ignorees)."
+        type: string
+        required: false
+        default: 'none'
 
 permissions:
   contents: read
 
 jobs:
+  # Mono-lake : comportement historique, inchange pour les ~26 dispatchers
+  # lean-<lake>.yml restants. Le garde `if` n'existe que pour le mode matrice
+  # (les deux jobs ne tournent jamais ensemble). Un job garde par un `if`
+  # faux apparait comme check-run SKIPPED (inactif, jamais bloquant) : un
+  # caller mono-lake verra donc une ligne ci-matrix SKIPPED par run — bruit
+  # cosmétique, pas d'exécution.
   ci:
+    if: inputs.lake-set == 'none'
     name: "Lean CI (${{ inputs.display-name }})"
     runs-on: ubuntu-latest
     # BACKSTOP DE LIBERATION DE RUNNER -- PAS UN SEUIL DE SANTE (#15698).
@@ -290,3 +302,39 @@ jobs:
           echo "[lake-heartbeat] still running after ${_elapsed} min - last line: $(tail -1 "$RUNNER_TEMP/lake.log" 2>/dev/null | cut -c1-160)"
         done
         wait "$_lake_pipeline"
+
+  # Mode matrice #13751 : fan-out par lake, pilote par lean-ci-matrix.yml.
+  # Un job appelant (`uses:`) ne peut PAS porter `strategy:` (limite GitHub
+  # Actions) -- c'est la contrainte qui a produit les 32 dispatchers un
+  # fichier par lake. La matrice vit donc ICI, dans le workflow appele :
+  # le caller passe `lake-set` (JSON du manifeste filtre par les chemins
+  # changes), et ce job l'etale en une entree par lake.
+  # Le corps du build n'est PAS duplique : le composite jumeau
+  # .github/actions/lean-build (meme etapes, meme semantique sorry, memes
+  # cles de cache -- cf son en-tete) porte tout ; ce job n'est que le
+  # checkout prealable (un composite local ne se resout qu'apres que le
+  # depot est materialise) + l'appel parametre.
+  ci-matrix:
+    if: inputs.lake-set != 'none'
+    name: "Lean CI (${{ matrix.display-name }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.lake-set) }}
+    # Concurrency par lake, pas par workflow : une nouvelle poussee qui
+    # touche sudoku doit annuler l'encien run sudoku SANS toucher un run
+    # kelly en cours. Reprend le contrat des anciens dispatchers
+    # (cancel sur PR, jamais sur push main).
+    concurrency:
+      group: lean-matrix-${{ matrix.lake }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build + sorry gate (${{ matrix.display-name }})
+      uses: ./.github/actions/lean-build
+      with:
+        project-path: ${{ matrix.project-path }}
+        display-name: ${{ matrix.display-name }}
+        sorry-baseline: ${{ matrix.sorry-baseline }}
+        sorry-filter-mode: ${{ matrix.sorry-filter-mode }}
