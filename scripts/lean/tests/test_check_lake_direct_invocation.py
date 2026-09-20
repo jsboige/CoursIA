@@ -158,6 +158,58 @@ def test_negative_ordinary_subprocess(tmp: Path) -> None:
     """, tmp)
 
 
+def test_negative_organ_driver_payload(tmp: Path) -> None:
+    # validate_bounded_load.py reel (T5a) : default=["lake", "build"] d'un
+    # add_argument dans un fichier qui invoque l'organe -- la commande est
+    # CONFIEE a lean_exec (budget commun), pas lancee directement.
+    assert not scan_source("""
+        import argparse
+        import subprocess
+        import sys
+        from pathlib import Path
+        import lean_exec
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--cmd", nargs=argparse.REMAINDER,
+                            default=["lake", "build"])
+        organ_cli = [sys.executable,
+                     str(Path(__file__).resolve().parent / "lean_exec.py"),
+                     "run"]
+        subprocess.run(organ_cli + args.cmd)
+    """, tmp)
+
+
+def test_payload_without_organ_marker_still_flagged(tmp: Path) -> None:
+    # Le meme add_argument SANS invocation de l'organe dans le fichier : la
+    # payload ne va nulle part de prouve -- reste une voie potentielle.
+    out = scan_source("""
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--cmd", nargs="+", default=["lake", "build"])
+    """, tmp)
+    assert out and out[0][1] == "jeton lake"
+
+
+def test_organ_driver_direct_launch_still_flagged(tmp: Path) -> None:
+    # L'exemption payload ne couvre PAS la forme 1 : un appel de lancement
+    # direct dans un fichier conducteur d'organe reste rouge.
+    out = scan_source("""
+        import subprocess
+        import lean_exec
+        subprocess.run(["lake", "build"])
+    """, tmp)
+    assert out and out[0][1] == "lake build"
+
+
+def test_organ_driver_bare_list_still_flagged(tmp: Path) -> None:
+    # Exemption chirurgicale : hors add_argument, un jeton lake nu dans un
+    # fichier conducteur reste une voie de lancement (argv a distance).
+    out = scan_source("""
+        import lean_exec
+        cmd = ["lake", "build"]
+    """, tmp)
+    assert out and out[0][1] == "jeton lake"
+
+
 # --- classification chemins ------------------------------------------------
 
 def test_is_test_path() -> None:

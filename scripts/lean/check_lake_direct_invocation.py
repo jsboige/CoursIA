@@ -23,6 +23,21 @@ hors allowlist : les entrees liste'es peuvent etre migrees tranquillement,
 retrait de l'entree au moment du rebus -- une entree devenue sterile est
 signalee en WARNING (ratchet descendant), jamais en silence.
 
+Exemption « conducteur d'organe » : un fichier qui invoque l'organe
+(import ``lean_exec`` ou chemin ``... / "lean_exec.py"``) peut nommer sa
+commande de charge en payload argparse (``add_argument(...,
+default=["lake", "build"])``) -- la commande est CONFIEE au budget commun,
+pas lancee directement (``validate_bounded_load.py``, T5a). L'exemption est
+chirurgicale : elle ne couvre que les payloads ``add_argument``, jamais les
+formes 1 (appel de lancement) ni 3 (fragment), et jamais un fichier sans
+invocation de l'organe dans le fichier.
+
+Calibration assumee (menace = reintroduction ACCIDENTELLE, classe de
+l'incident 2026-09-12) : les imports aliases (``from subprocess import run
+as r``), le mot-cle ``args=`` et le drapeau avant sous-commande (``lake
+-Kjobs=N build``) echappent aux trois formes -- un adversaire determine les
+contourne, un copier-coller accidentel non.
+
 Verdict : exit 0 si toute violation est allowlistee, exit 1 si au moins une
 ne l'est pas, exit 2 sur erreur d'usage.
 """
@@ -165,6 +180,51 @@ def _non_command_list_ids(tree: ast.AST) -> set[int]:
     return ids
 
 
+def _organ_driver(tree: ast.AST) -> bool:
+    """Vrai si le fichier invoque l'organe canonique (import ou chemin).
+
+    Un conducteur de l'organe (``import lean_exec`` ou construction du
+    chemin ``... / "lean_exec.py"``) confie ses commandes lake au budget
+    commun : ses payloads argparse decrivent CE que l'organe lancera, pas
+    une voie directe.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            if any(a.name == "lean_exec" or a.name.endswith(".lean_exec")
+                   for a in node.names):
+                return True
+        elif isinstance(node, ast.ImportFrom):
+            if (node.module == "lean_exec"
+                    or (node.module or "").endswith(".lean_exec")):
+                return True
+        elif (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                and node.value.endswith("lean_exec.py")):
+            return True
+    return False
+
+
+def _argparse_payload_list_ids(tree: ast.AST) -> set[int]:
+    """Ids des List/Tuple arguments d'un ``add_argument`` (payload CLI).
+
+    ``parser.add_argument("--cmd", default=["lake", "build"])`` nomme la
+    commande que l'APPELANT choisit : ce n'est un argv que dans les mains
+    de celui qui le lance -- l'organe, si le fichier est conducteur.
+    """
+    ids: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = (func.attr if isinstance(func, ast.Attribute)
+                else func.id if isinstance(func, ast.Name) else "")
+        if name != "add_argument":
+            continue
+        for arg in list(node.args) + [kw.value for kw in node.keywords]:
+            if isinstance(arg, (ast.List, ast.Tuple)):
+                ids.add(id(arg))
+    return ids
+
+
 def scan_file(path: Path) -> list[tuple[int, str, str]]:
     """Retourne [(ligne, forme, extrait)] des invocations directes du fichier."""
     try:
@@ -173,6 +233,9 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
         return []
     findings: list[tuple[int, str, str]] = []
     non_command_ids = _non_command_list_ids(tree)
+    exempt_ids = non_command_ids
+    if _organ_driver(tree):
+        exempt_ids |= _argparse_payload_list_ids(tree)
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and _launch_like(node.func):
             constants: list[str] = []
@@ -192,7 +255,7 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
         # de ces contextes (``shutil.which("lake")``, cles de dict, prose)
         # ne comptent PAS : un jeton seul n'est une commande que structuree.
         if isinstance(node, (ast.List, ast.Tuple)):
-            if id(node) in non_command_ids:
+            if id(node) in exempt_ids:
                 continue
             for elt in node.elts:
                 if (isinstance(elt, ast.Constant)
