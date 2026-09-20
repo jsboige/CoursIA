@@ -100,7 +100,7 @@ La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
 | **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
-| **SMT / Z3** | `SMT/Z3-API/Z3-Python-01-Introduction.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
+| **SMT / Z3** | `SMT/Z3-API/Z3-01-Introduction-Python.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
 
 **Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne nécessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
 
@@ -281,30 +281,30 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | # | Notebook | Kernel | Contenu | Exercices |
 |---|----------|--------|---------|-----------|
 | **Fondations Z3-API (Python + jumeaux C#)** |   |   |   |   |
-| 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-Python-01-Introduction.ipynb) · [C#](SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
-| 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) · [C#](SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
-| 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-Python-03-Tactics.ipynb) · [C#](SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
-| 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) · [C#](SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
-| 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
-| 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
+| 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
+| 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-02-Sudoku-Python.ipynb) · [C#](SMT/Z3-API/Z3-02-Sudoku-CSharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
+| 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-03-Tactics-Python.ipynb) · [C#](SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
+| 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb) · [C#](SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
+| 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) · [C#](SMT/Z3-API/Z3-05-Quantifiers-Proofs-CSharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
+| 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) · [C#](SMT/Z3-API/Z3-06-Advanced-Optimization-CSharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
 | **Z3-API patterns impératifs (Python)** |   |   |   |   |
-| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
-| 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
-| 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
-| 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
-| 11 | [Z3-Python-11-Graph-Coloring](SMT/Z3-API/Z3-Python-11-Graph-Coloring.ipynb) | Python | Coloration de graphes, k-coloriage, contraintes de différence | 3 |
-| 12 | [Z3-Python-12-Real-Arithmetic](SMT/Z3-API/Z3-Python-12-Real-Arithmetic.ipynb) | Python | Arithmétique réelle, contraintes linéaires, comparaison | 3 |
+| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
+| 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
+| 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
+| 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
+| 11 | [Z3-Python-11-Graph-Coloring](SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb) | Python | Coloration de graphes, k-coloriage, contraintes de différence | 3 |
+| 12 | [Z3-Python-12-Real-Arithmetic](SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb) | Python | Arithmétique réelle, contraintes linéaires, comparaison | 3 |
 | 13 | [Z3-Python-13-UnsatCores](SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | Python | Unsat cores, extraction de sous-ensembles incohérents | 3 |
-| 14 | [Z3-Python-14-BitVectors-Overflow](SMT/Z3-API/Z3-Python-14-BitVectors-Overflow.ipynb) | Python | Bit-vectors, overflow, unsigned/signed, wrap-around | 3 |
-| 15 | [Z3-Python-15-Nested-Arrays-2D](SMT/Z3-API/Z3-Python-15-Nested-Arrays-2D.ipynb) | Python | Tableaux imbriqués, select/store, modèles 2D | 3 |
+| 14 | [Z3-Python-14-BitVectors-Overflow](SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) | Python | Bit-vectors, overflow, unsigned/signed, wrap-around | 3 |
+| 15 | [Z3-Python-15-Nested-Arrays-2D](SMT/Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb) | Python | Tableaux imbriqués, select/store, modèles 2D | 3 |
 | **Capstone Meal Planner (16..16e)** |   |   |   |   |
-| 16 | [Z3-Python-16-Meal-Planner](SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | Python | Modélisation du problème de planification de repas | 3 |
-| 16b | [Z3-Python-16b-Meal-Planner-Data-External](SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb) | Python | Données externes (CSV, JSON), intégration | 3 |
-| 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
-| 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
-| 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
+| 16 | [Z3-Python-16-Meal-Planner](SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | Python | Modélisation du problème de planification de repas | 3 |
+| 16b | [Z3-Python-16b-Meal-Planner-Data-External](SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) | Python | Données externes (CSV, JSON), intégration | 3 |
+| 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
+| 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
+| 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
 | 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
-| 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-Python-18-Sudoku-Modes.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
+| 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
 | **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
 | 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 | 2 | [02_Sudoku_Theorem_vs_Array](SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | .NET C# | Sudoku : approche theorem vs Array via LINQ | 3 |
@@ -579,7 +579,7 @@ SymbolicAI/
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
 │   ├── Z3-API/                 # Serie z3-py (API complete imperative) (28 notebooks : 22 Python [01..18 dont 16b-16e] + 6 jumeaux C# sur 01..06)
-│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-18-Sudoku-Modes.ipynb (+ *-Csharp pour 01..06)
+│   │   ├── Z3-01-Introduction-Python.ipynb ... Z3-18-Sudoku-Modes-Python.ipynb (+ *-Csharp pour 01..06)
 │   │   └── README.md
 │   ├── Z3.Linq/                # Submodule / package a part (solutions/polyglot-repro CrossSubmissionCaptureRepro.ipynb) — support
 │   ├── Automata/               # Submodule support (temoignages, generation de witnesses)

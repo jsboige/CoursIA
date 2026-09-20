@@ -1,7 +1,7 @@
 - name: "Z3-Python-03 Tactics"
   family: SMT/Z3-API
-  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel) et pyz3 sont les deux bindings de la meme lib C++ Z3 sous-jacente (pas un pont intermediaire type IKVM/PythonNet). Parite firsthand sur Tactic('simplify') cellule 1 des deux notebooks : meme output SMT-LIB canonique — C# '(not (<= x 0))' == Python 'Not(x <= 0)' et C# '(= y (+ 5 x))' == Python 'y == 1 + x'. Aucune asymetrie de machinerie a corriger."
