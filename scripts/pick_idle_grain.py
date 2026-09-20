@@ -3832,8 +3832,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="ne PAS ecarter de l'urne grain les issues "
                          "portant un signal de livraison (label "
                          "candidate-delivered ou commentaire [INFO] "
-                         "candidate-delivered) -- echappatoire nommee, "
-                         "typiquement pour une lane habilitee a fermer")
+                         "candidate-delivered), NI les grains couverts "
+                         "par une PR ouverte (#16589 : meme rang que "
+                         "candidate-delivered) -- echappatoire nommee "
+                         "pour les DEUX rangs d'exclusion, typiquement "
+                         "pour une lane habilitee a fermer")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "

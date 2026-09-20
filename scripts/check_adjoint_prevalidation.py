@@ -34,6 +34,36 @@ issue comment, review, inline-thread, PR-metadata, check, or head change
 invalidates the dossier and requires a fresh one. GitHub does not expose a
 stateless audit trail for an event that is later deleted or reverted; this gate
 therefore certifies the current surfaces, not erased history.
+
+Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
+conflating them is what this gate used to do (#16800):
+
+    0  intact dossier, verdict READY
+       -> the coordinator may open body, comments, reviews, threads, diff.
+    3  intact dossier, verdict BLOCKED
+       -> do NOT open the surfaces. Dispatch from the dossier's stated reason.
+          An honest BLOCKED dossier is the point: making exit 0 depend on READY
+          meant the coordinator could only ever read the pull requests that were
+          already fine, never the oldest ones -- which are old precisely because
+          they are blocked. It also pressured the adjoint into writing READY
+          merely to be visible, which measurably produced a false `b0: clear` on
+          a pull request carrying three open HIGH findings.
+    1  no dossier worth trusting (absent, malformed, stale, wrong lane/author,
+       broken fingerprint) -> route to the adjoint.
+    2  the gate could not measure (gh/network/parse failure) -> fail closed.
+
+Exit 3 is not a softer gate: a BLOCKED dossier must satisfy every structural
+requirement, `surfaces-sha256` included. What it drops are the checks that
+refute a READY *claim* (green checks, clear B.0, no unresolved thread, not a
+draft) -- those are reasons a pull request is blocked, not reasons to distrust
+the dossier that says so.
+
+One surface author is neutral: the coordinator itself, and only for rows it
+wrote AFTER the dossier. Otherwise the act the gate authorises -- reading the
+pull request, then lifting one's own reserve -- expires the dossier the gate
+required, and a pull request blocked solely by a coordinator reserve could never
+be merged without a full adjoint round-trip. A row from any other author, or a
+coordinator row predating the dossier, still expires it.
 """
 
 from __future__ import annotations
@@ -50,6 +80,18 @@ from typing import Any
 REPO = "jsboige/CoursIA"
 ADJOINT_LANE = "myia-po-2025:CoursIA-2"
 SHARED_GITHUB_LOGIN = "jsboige"
+# The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
+# login is the one surface author the coordinator can recognise as itself.
+COORDINATOR_LOGIN = "myia-ai-01"
+
+VERDICT_READY = "READY"
+VERDICT_BLOCKED = "BLOCKED"
+CANONICAL_VERDICTS = (VERDICT_READY, VERDICT_BLOCKED)
+
+EXIT_READY = 0
+EXIT_NO_DOSSIER = 1
+EXIT_UNKNOWN = 2
+EXIT_BLOCKED_WITH_SUBSTANCE = 3
 START = "[ADJOINT PREFLIGHT]"
 END = "[/ADJOINT PREFLIGHT]"
 SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -92,6 +134,7 @@ class Dossier:
     fields: dict[str, str]
     comment_index: int
     author: str
+    created_at: str = ""
 
 
 def gh_json(args: list[str]) -> Any:
@@ -103,7 +146,12 @@ def gh_json(args: list[str]) -> Any:
     return json.loads(proc.stdout)
 
 
-def parse_dossier(body: str, comment_index: int, author: str) -> tuple[Dossier | None, list[str]]:
+def parse_dossier(
+    body: str,
+    comment_index: int,
+    author: str,
+    created_at: str = "",
+) -> tuple[Dossier | None, list[str]]:
     """Parse one strictly delimited dossier comment without interpreting prose."""
     lines = body.strip().splitlines()
     if not lines or lines[0].strip() != START:
@@ -139,7 +187,38 @@ def parse_dossier(body: str, comment_index: int, author: str) -> tuple[Dossier |
         errors.append("missing fields: " + ", ".join(missing))
     if unknown:
         errors.append("unknown fields: " + ", ".join(unknown))
-    return Dossier(fields, comment_index, author), errors
+    return Dossier(fields, comment_index, author, created_at), errors
+
+
+def _login(row: dict[str, Any]) -> str:
+    return (row.get("author") or {}).get("login", "")
+
+
+def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: str | None) -> bool:
+    """True when the coordinator itself authored this surface after the dossier.
+
+    The dossier attests that the adjoint read every surface existing when it was
+    written. A row the coordinator writes afterwards cannot be a surface the
+    coordinator is unaware of -- it wrote it. Neutralising exactly those rows is
+    what lets the coordinator lift its own reserve and still merge, without
+    weakening the gate: a row from any other author still expires the dossier.
+    """
+    if not neutral_after:
+        return False
+    if _login(row) != COORDINATOR_LOGIN:
+        return False
+    stamp = row.get(timestamp_key) or ""
+    return bool(stamp) and stamp > neutral_after
+
+
+def _attested_reviews(
+    snapshot: dict[str, Any], neutral_after: str | None
+) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in snapshot.get("reviews") or []
+        if not _is_own_later_act(row, "submittedAt", neutral_after)
+    ]
 
 
 def _integer(fields: dict[str, str], key: str, errors: list[str]) -> int | None:
@@ -150,14 +229,24 @@ def _integer(fields: dict[str, str], key: str, errors: list[str]) -> int | None:
     return int(value)
 
 
-def surfaces_fingerprint(snapshot: dict[str, Any], comment_limit: int | None = None) -> str:
-    """Hash stable content from every discussion surface plus the PR body."""
+def surfaces_fingerprint(
+    snapshot: dict[str, Any],
+    comment_limit: int | None = None,
+    neutral_after: str | None = None,
+) -> str:
+    """Hash stable content from every discussion surface plus the PR body.
+
+    ``neutral_after`` is the dossier's own timestamp. Reviews the coordinator
+    submitted after it are excluded, because the coordinator authored them; see
+    ``_is_own_later_act``. Rendering a template passes ``None``, so a fresh
+    dossier still attests every surface that exists when it is written.
+    """
     comments = snapshot.get("comments") or []
     if comment_limit is not None:
         comments = comments[:comment_limit]
+    reviews = _attested_reviews(snapshot, neutral_after)
 
-    def author(row: dict[str, Any]) -> str:
-        return (row.get("author") or {}).get("login", "")
+    author = _login
 
     payload = {
         "pr": {
@@ -186,7 +275,7 @@ def surfaces_fingerprint(snapshot: dict[str, Any], comment_limit: int | None = N
                 "commit": (row.get("commit") or {}).get("oid"),
                 "body": row.get("body") or "",
             }
-            for row in snapshot.get("reviews") or []
+            for row in reviews
         ],
         "threads": snapshot.get("threads") or [],
         "checks": sorted(
@@ -208,28 +297,44 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     integers = {key: _integer(f, key, errors) for key in INTEGER_FIELDS}
 
+    # Structural integrity only: "is this a dossier I can trust?" -- NOT "is this
+    # PR mergeable?". The verdict is read separately by evaluate(), so an honest
+    # BLOCKED dossier stays a valid dossier instead of being indistinguishable
+    # from an absent one (#16800).
     expected = {
         "schema": "1",
         "lane": ADJOINT_LANE,
         "complete": "true",
         "body": "read",
-        "checks": "latest-wins-green",
-        "b0": "clear",
-        "scope": "pass",
-        "verdict": "READY",
     }
     for key, value in expected.items():
         if f.get(key) != value:
             errors.append(f"{key} must be {value!r}")
-    if f.get("domain") not in {"pass", "not-applicable"}:
-        errors.append("domain must be 'pass' or 'not-applicable'")
+    verdict = f.get("verdict", "")
+    if verdict not in CANONICAL_VERDICTS:
+        errors.append(
+            "verdict must be one of " + ", ".join(repr(v) for v in CANONICAL_VERDICTS)
+        )
+    ready_claimed = verdict == VERDICT_READY
+    if ready_claimed:
+        for key, value in (
+            ("checks", "latest-wins-green"),
+            ("b0", "clear"),
+            ("scope", "pass"),
+        ):
+            if f.get(key) != value:
+                errors.append(f"{key} must be {value!r} when verdict is READY")
+        if f.get("domain") not in {"pass", "not-applicable"}:
+            errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
     if dossier.author != SHARED_GITHUB_LOGIN:
         errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
     if not SHA_RE.fullmatch(f.get("head", "")):
         errors.append("head must be a full lowercase 40-character SHA")
     if not re.fullmatch(r"[0-9a-f]{64}", f.get("surfaces-sha256", "")):
         errors.append("surfaces-sha256 must be a lowercase SHA-256")
-    live_fingerprint = surfaces_fingerprint(snapshot, dossier.comment_index)
+    live_fingerprint = surfaces_fingerprint(
+        snapshot, dossier.comment_index, dossier.created_at
+    )
     if f.get("surfaces-sha256") != live_fingerprint:
         errors.append(
             "discussion surfaces changed or were not fully attested: "
@@ -239,7 +344,7 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     comparisons = {
         "pr": snapshot["number"],
         "comments-reviewed": dossier.comment_index,
-        "reviews-reviewed": len(snapshot.get("reviews") or []),
+        "reviews-reviewed": len(_attested_reviews(snapshot, dossier.created_at)),
         "threads-reviewed": len(snapshot.get("threads") or []),
         "threads-unresolved": sum(
             not thread.get("isResolved", False)
@@ -259,35 +364,59 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         )
     if snapshot.get("state") != "OPEN":
         errors.append(f"pull request state must be OPEN, live={snapshot.get('state')}")
-    if snapshot.get("isDraft"):
-        errors.append("draft pull request cannot be READY")
-    if integers.get("threads-unresolved") not in {None, 0}:
-        errors.append("READY requires zero unresolved threads")
+    # A draft, or an unresolved thread, is a reason a PR is NOT mergeable -- which
+    # is precisely what a BLOCKED dossier is for. Only a READY claim is refuted.
+    if ready_claimed:
+        if snapshot.get("isDraft"):
+            errors.append("draft pull request cannot be READY")
+        if integers.get("threads-unresolved") not in {None, 0}:
+            errors.append("READY requires zero unresolved threads")
     return errors
 
 
-def evaluate(snapshot: dict[str, Any]) -> tuple[bool, list[str]]:
-    """Select the newest candidate and return a fail-closed verdict."""
+def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
+    """Select the newest candidate and return a fail-closed verdict.
+
+    Returns one of ``VERDICT_READY`` (intact dossier claiming the PR is
+    mergeable), ``VERDICT_BLOCKED`` (intact dossier attesting it is not) or
+    ``""`` (no dossier worth trusting). Separating dossier integrity from PR
+    mergeability is the whole point: making the right to READ depend on the
+    state of MERGEABILITY meant the coordinator could only ever open the pull
+    requests that were already fine -- never the oldest ones, which are old
+    precisely because they are blocked.
+    """
     comments = snapshot.get("comments") or []
     candidates: list[tuple[Dossier, list[str]]] = []
     for index, comment in enumerate(comments):
-        author = (comment.get("author") or {}).get("login", "")
-        dossier, parse_errors = parse_dossier(comment.get("body") or "", index, author)
+        dossier, parse_errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
         if dossier is not None:
             candidates.append((dossier, parse_errors))
 
     if not candidates:
-        return False, ["no [ADJOINT PREFLIGHT] dossier comment found"]
+        return "", ["no [ADJOINT PREFLIGHT] dossier comment found"]
 
     dossier, errors = candidates[-1]
     errors = [*errors, *validate_dossier(dossier, snapshot)]
     # A dossier is a snapshot. Any later comment invalidates it, including a
-    # reply that claims the PR is still ready.
-    if dossier.comment_index != len(comments) - 1:
+    # reply that claims the PR is still ready -- unless the coordinator itself
+    # wrote it, which it cannot be unaware of (see _is_own_later_act).
+    foreign = [
+        row
+        for row in comments[dossier.comment_index + 1:]
+        if not _is_own_later_act(row, "createdAt", dossier.created_at)
+    ]
+    if foreign:
         errors.append(
             "discussion changed after dossier: a fresh adjoint preflight is required"
         )
-    return not errors, errors
+    if errors:
+        return "", errors
+    return dossier.fields.get("verdict", ""), []
 
 
 def review_threads(pr: int) -> list[dict[str, Any]]:
@@ -462,7 +591,7 @@ def main() -> int:
         if args.fingerprint:
             print(surfaces_fingerprint(snapshot))
             return 0
-        ready, errors = evaluate(snapshot)
+        verdict, errors = evaluate(snapshot)
     except (
         RuntimeError,
         KeyError,
@@ -472,25 +601,42 @@ def main() -> int:
         UnicodeError,
         json.JSONDecodeError,
     ) as exc:
-        result = {"pr": args.pr, "ready": False, "errors": [f"UNKNOWN: {exc}"]}
+        result = {
+            "pr": args.pr,
+            "ready": False,
+            "verdict": "UNKNOWN",
+            "errors": [f"UNKNOWN: {exc}"],
+        }
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
-        return 2
+        return EXIT_UNKNOWN
 
+    ready = verdict == VERDICT_READY
     result = {
         "pr": args.pr,
         "head": snapshot["headRefOid"],
         "ready": ready,
+        "verdict": verdict or "NO_DOSSIER",
         "errors": errors,
     }
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
+    elif verdict == VERDICT_BLOCKED:
+        print(
+            f"BLOCKED-WITH-SUBSTANCE -- PR #{args.pr} has an intact adjoint dossier at "
+            f"{snapshot['headRefOid']} attesting it is NOT mergeable."
+        )
+        print("  Do not open its surfaces: dispatch from the dossier's stated reason.")
     else:
-        print(f"BLOCKED -- PR #{args.pr} is not adjoint-prevalidated")
+        print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
-    return 0 if ready else 1
+    if ready:
+        return EXIT_READY
+    if verdict == VERDICT_BLOCKED:
+        return EXIT_BLOCKED_WITH_SUBSTANCE
+    return EXIT_NO_DOSSIER
 
 
 if __name__ == "__main__":
