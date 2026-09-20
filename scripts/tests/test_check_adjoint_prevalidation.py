@@ -324,17 +324,27 @@ def test_same_count_surface_mutation_invalidates_fingerprint():
                 "isResolved", False
             ),
         ),
-        (
-            "checks",
-            lambda snapshot: snapshot["statusCheckRollup"][0].__setitem__(
-                "conclusion", "FAILURE"
-            ),
-        ),
     ):
         snapshot = _snapshot(_body())
         mutate(snapshot)
         errors = _errors(snapshot)
         assert any("discussion surfaces changed" in error for error in errors), surface
+
+
+def test_check_rollup_mutation_does_not_invalidate_fingerprint():
+    """See issue #16957: a check-run completing after the dossier was posted
+    MUST NOT invalidate it. ``statusCheckRollup`` is intentionally absent from
+    the surfaces-fingerprint payload, and the dossier attesting CI state lives
+    in the separate ``checks: latest-wins-green`` field. This test pins that
+    carve-out so a future regression that re-adds the rollup to the payload
+    is caught at the test stage, not by pereming 151 dossiers in production.
+    """
+    snapshot = _snapshot(_body())
+    snapshot["statusCheckRollup"][0]["conclusion"] = "FAILURE"
+    snapshot["statusCheckRollup"][0]["completedAt"] = "2099-01-01T00:00:00Z"
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    assert errors == []
 
 
 def test_latest_dossier_wins_and_stale_latest_cannot_fall_back():

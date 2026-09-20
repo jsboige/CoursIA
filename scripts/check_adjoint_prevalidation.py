@@ -36,10 +36,19 @@ Canonical comment body (the marker must be the first line):
     [/ADJOINT PREFLIGHT]
 
 The comment count excludes the dossier comment itself. Any observable later
-issue comment, review, inline-thread, PR-metadata, check, or head change
-invalidates the dossier and requires a fresh one. GitHub does not expose a
-stateless audit trail for an event that is later deleted or reverted; this gate
-therefore certifies the current surfaces, not erased history.
+issue comment, review, inline-thread, PR-metadata, or head change invalidates
+the dossier and requires a fresh one. GitHub does not expose a stateless audit
+trail for an event that is later deleted or reverted; this gate therefore
+certifies the current surfaces, not erased history.
+
+Note (See #16957, fix landed c.1323): a check-run completing after the dossier
+was posted no longer invalidates the dossier. ``statusCheckRollup`` was removed
+from the ``surfaces_fingerprint`` payload: a guard such as the perimeter review
+guard can start and finish two minutes after the dossier is written, and that
+single transition ``pending -> success`` permed 151 dossiers in the open pool
+(measured 2026-09-20). CI state lives in the separate ``checks:
+latest-wins-green`` field of the dossier body and is cross-checked at merge
+time (Phase 4 gate 5).
 
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
@@ -276,6 +285,26 @@ def surfaces_fingerprint(
     submitted after it are excluded, because the coordinator authored them; see
     ``_is_own_later_act``. Rendering a template passes ``None``, so a fresh
     dossier still attests every surface that exists when it is written.
+
+    What this fingerprint certifies (See issue #16957 for the carve-out):
+
+    * PR body, title, state, draft, baseRefName
+    * Every issue comment (id, author, createdAt, body)
+    * Every review (id, author, submittedAt, state, commit, body), minus the
+      coordinator's own later reviews, by symmetry with ``_is_own_later_act``
+    * Every review thread (resolved and unresolved)
+
+    What this fingerprint does **not** certify:
+
+    * The CI check-rollup (``statusCheckRollup``). Check-runs mutate of their
+      own accord: a guard can start and finish two minutes after the dossier
+      was posted, and that single transition ``pending -> success`` permed 151
+      dossiers in the open pool (measured 2026-09-20, c.1323). The attestation
+      of CI state lives in the separate ``checks: latest-wins-green`` field of
+      the dossier body, which ai-01 cross-checks at merge time (Phase 4 gate
+      5); hashing it in addition would add a source of peremption that no one
+      controls, and would not strengthen any verification that is actually
+      performed.
     """
     comments = snapshot.get("comments") or []
     if comment_limit is not None:
@@ -314,12 +343,6 @@ def surfaces_fingerprint(
             for row in reviews
         ],
         "threads": snapshot.get("threads") or [],
-        "checks": sorted(
-            snapshot.get("statusCheckRollup") or [],
-            key=lambda row: json.dumps(
-                row, sort_keys=True, separators=(",", ":")
-            ),
-        ),
     }
     encoded = json.dumps(
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -655,7 +678,14 @@ def main() -> int:
     parser.add_argument(
         "--fingerprint",
         action="store_true",
-        help="print the live discussion fingerprint for a new dossier",
+        help=(
+            "print the live discussion fingerprint for a new dossier. "
+            "Certifies comments, reviews (minus coordinator's own later rows), "
+            "threads, and PR body/title/state/draft/baseRefName. Does NOT "
+            "certify the check-rollup: a check-run completing after the dossier "
+            "would invalidate it under the old rule and was the second plafond "
+            "that permed 151 dossiers in the open pool (See #16957, fix c.1323)."
+        ),
     )
     parser.add_argument(
         "--template",
