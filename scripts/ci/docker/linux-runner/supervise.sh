@@ -90,13 +90,30 @@ STOP_FILE="$STATE_DIR/stop"
 
 # Caps par conteneur. Volontairement conservateurs : l'hote prime sur la CI.
 CPUS="${COURSIA_RUNNER_CPUS:-3}"
-# Cap par slot. Mesure `docker stats` sur des jobs REELS (ai-01, 2026-09-08) :
-# 38 MiB et 160 MiB (ce dernier a 129 % CPU, genuinement occupe) contre un cap
-# de 3072 MiB -- soit 1,2 % et 5,2 % du cap. 1536m reste ~10x le pic mesure, et
-# c'est ce chiffre qui debloque `auto` : a 3072m la demi-part de budget_slots()
-# plafonne le pool de travail a 2 slots (0 des qu'il tourne), a 1536m elle en
-# rend 4 sur un budget vide. L'arithmetique n'avait pas besoin d'etre changee,
-# le cap si.
+# Cap par slot. Le temoin « 38/160 MiB en docker stats » (ai-01, 2026-09-08)
+# mesurait le runner OISEUX entre jobs, jamais un pic de job -- il estait le
+# cap sur une grandeur qui ne le traverse pas. Mesure du 2026-09-18 (#16643) :
+# le head mort cfb377c4b3 (job 105464047113, slot myia-ai-01-wsl-2) rejoue
+# dans un conteneur aux caps exacts du slot (--memory=3g --pids-limit=384
+# --cpus=3, 16 coeurs visibles), deps et commande pytest IDENTIQUES au
+# workflow scripts-tests.yml, echantillonnage 1 Hz + lecture cgroup host :
+#   - pids : MAX 384/384 -- saturation CAPTUREE (docker stats 367-381 en
+#     palier, puis le sampler lui-meme ne peut plus spawner). Un `docker exec`
+#     pendant la suite rend EAGAIN (runc « Resource temporarily unavailable »
+#     au spawn) : la signature exacte du job mort. Un slot REEL porte en plus
+#     l'agent runner (~40-60 taches) AU-DESSUS de ces 384.
+#   - memoire : MAX 3,0 Gio = le cap (memory.peak == memory.max, 7898 events
+#     max, oom_kill 0 -- le swap par defaut de docker, 2x memory, absorbe).
+#     Demande vraie ~3,5 Gio (profil ai-01 : python 1,15 + 4 x 0,6 ; le git
+#     1,09 vit dans la phase checkout, sequentielle, pas cumulee).
+# Pools portant la classe « Scripts Tests (CPU) » : COURSIA_RUNNER_PIDS=512
+# (384 mesures + agent ~60 + marge ~15 %) et COURSIA_RUNNER_MEMORY=4g (pic
+# 3,5 + marge). Les defauts ci-dessous restent pour les pools legers : a
+# 1536m+swap le job SURVIT en thrashant (temoin live myia-po-2024-linux-docker-2
+# du 2026-09-18, max events 5585, oom_kill 0) -- lent, pas mort. Toute
+# modification de l'un de ces nombres refait l'arithmetique budget dans le
+# meme commit : 8 x 4g + 16 waiters x 512m = 40960 Mo, que le defaut 12 ne
+# peut PAS couvrir (cf bloc BUDGET_GB et assert par famille ci-dessous).
 MEMORY="${COURSIA_RUNNER_MEMORY:-1536m}"
 PIDS="${COURSIA_RUNNER_PIDS:-384}"
 
@@ -207,15 +224,21 @@ LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"
 #      monopoliser le disque. Mesure ai-01 2026-09-07 : dd 256 Mio oflag=direct
 #      rend 7,4 GB/s sans cap et 21,2 MB/s sous --device-write-bps 20 Mio/s --
 #      facteur 350, a 1 % de la valeur demandee. Le cap est REEL.
-#   2. AGREGE -- la slice systemd coursia-ci.slice, appliquee par defaut du
-#      daemon (/etc/docker/daemon.json "cgroup-parent"). C'est la seule borne
-#      qui somme les familles ; voir persist/coursia-ci.slice.
+#   2. AGREGE -- la slice systemd coursia-ci.slice. Entree par le drapeau
+#      --cgroup-parent que ce script pose : le defaut de daemon.json ne
+#      couvre que le daemon docker-ce, qui n'heberge AUCUN conteneur de la
+#      flotte -- le daemon reel (Docker Desktop, #15157) n'a pas de defaut.
+#      C'est la seule borne qui somme les familles ; voir
+#      persist/coursia-ci.slice.
 #   3. CPU INTER-FAMILLES -- assert_cpu_budget() ci-dessous, qui ferme le trou
 #      que cmd_lean documente depuis #14337 (« la somme des caps CPU des
 #      familles actives n'est gardee par RIEN »).
 #
-# La borne 2 est daemon-wide et donc independante de l'appelant ; ce script
-# n'a pas a la re-imposer, il a a VERIFIER qu'elle est en vigueur. La
+# La borne 2 ne depend de la memoire de l'appelant que TANT QUE l'appelant
+# passe le drapeau -- supervise.sh le fait ; un conteneur lance a la main y
+# echappe, et report_slice_membership rend cette evasion visible (#15157).
+# Ce script n'a pas a re-imposer la borne, il a a VERIFIER qu'elle est en
+# vigueur. La
 # difference n'est pas cosmetique : re-passer --cgroup-parent sur une machine
 # ou la slice n'existe pas cree un cgroup vide qui a l'air d'un garde et n'en
 # est pas -- exactement la classe de defaut ou un outil manquant rend un garde
@@ -1601,6 +1624,51 @@ Le mur agrege serait decoratif tout en paraissant actif. Deployer :
   echo "[slice] ($CI_SLICE_PATH ; conteneurs places via --cgroup-parent=$CI_CGROUP_PARENT)"
 }
 
+# Garde d'APPARTENANCE du mur agrege (#15157).
+#
+# assert_ci_slice verifie que le mur A des plafonds ; jusqu'ici rien ne
+# prouvait que les conteneurs Y SONT. Mesure ai-01 2026-09-08 : la flotte
+# tourne sur un daemon (Docker Desktop, pilote cgroupfs) qui ne porte
+# AUCUN cgroup-parent par defaut -- le defaut de daemon.json ne vit que
+# sur le daemon docker-ce, qui heberge zero conteneur. L'entree depend
+# donc entierement du drapeau pose par ce script, et un conteneur lance
+# a la main y echappe -- en silence : hors du mur, il garde ses caps
+# propres et la lecture du mur ne le voit pas.
+#
+# Chaque conteneur place cree un sous-groupe dans la slice : on confronte
+# ce compte au nombre de conteneurs vivants label=coursia-ci=1 sur le
+# daemon vise (le meme binaire docker que slot_loop). Advisory et non
+# bloquant -- un die ici tuerait un pool sain sur un decalage transitoire
+# de creation ; la ligne est le signal, lue depuis cmd_status une fois la
+# flotte en vol (hors course de creation).
+slice_subgroup_count() {
+  local d n=0
+  for d in "$CI_SLICE_PATH"/*/; do
+    [ -d "$d" ] && n=$((n + 1))
+  done
+  echo "$n"
+}
+
+running_ci_count() {
+  docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null | grep -c .
+}
+
+report_slice_membership() {
+  # Sans mur actif, assert_ci_slice a deja parle (et neutralise le
+  # placement) : l'appartenance n'a rien a mesurer.
+  local mx
+  mx="$(slice_read_raw memory.max)"
+  case "$mx" in ""|max) return 0 ;; esac
+  local sub n
+  sub="$(slice_subgroup_count)"
+  n="$(running_ci_count)"
+  if [ "$n" -gt "$sub" ]; then
+    echo "[slice] EVASION : $((n - sub)) conteneur(s) coursia-ci HORS du mur agrege (conteneurs=$n, sous-groupes=$sub) -- un conteneur lance sans --cgroup-parent n'est pas borne par la slice (#15157)"
+  else
+    echo "[slice] appartenance OK : $n conteneur(s) coursia-ci, $sub sous-groupe(s) dans le mur"
+  fi
+}
+
 # Affiche pic / courant / plafonds de la slice, et confronte le pic au budget.
 # C'est la seule ligne de ce script qui compare une DECLARATION a une MESURE.
 cmd_peak() {
@@ -1695,6 +1763,9 @@ cmd_status() {
     echo "  plafond par conteneur : non declare (COURSIA_RUNNER_DEVICE_WRITE_BPS vide)"
   fi
   echo "  budget CPU inter-familles : ${CPU_BUDGET:-0} vCPU (0 = pas de garde)"
+  echo "== mur agrege (post-demarrage, #15157) =="
+  assert_ci_slice 2>&1 | sed 's/^/  /'
+  report_slice_membership 2>&1 | sed 's/^/  /'
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="

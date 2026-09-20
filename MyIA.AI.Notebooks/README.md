@@ -1,10 +1,10 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers onze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
+CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers douze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
 
 Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les onze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les douze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 > **À propos des nombres cités dans ce hub** : les **volumes** (notebooks par série, maturité, breakdown) sont *uniquement* ceux du marqueur `CATALOG-STATUS` ci-dessous — c'est lui qui fait foi, pas la prose (leçon #2572 : un compte en dur qui dérive avec le temps est une source de désalignement silencieux). En revanche, les **claims techniques précis** — exemples du livre *Hands-On AI Trading* implémentés, nombre d'architectures testées dans le Ladder ML-Training-Pipeline, lake phare par famille, volumétrie Lean — restent *dans la prose* parce qu'ils sont **spécifiques et stables**, vérifiés à la main dans les README de série correspondants ; un renvoi explicite est ajouté quand c'est utile.
 
@@ -33,6 +33,8 @@ Dernière mise à jour : 2026-08-05
 
 **[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
 
+**[Complexity](Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
+
 **[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
 
 **[ML](ML/README.md)** — Le machine learning classique, sans folklore : tutoriels ML.NET (classification, régression, clustering) côté C#, agents Python pour la data science côté Python — et des **jumeaux de parité** notebook par notebook (évaluation sklearn ⇄ ML.NET, export ONNX skl2onnx ⇄ OnnxTransformer) qui font toucher du doigt ce que les deux écosystèmes partagent et ce qui les distingue. C'est le socle de méthode sur lequel GenAI et QuantConnect construisent.
@@ -43,7 +45,7 @@ Dernière mise à jour : 2026-08-05
 
 **[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Le banc cross-substrat de l'ICT atteint désormais un **transformer réel** : les activations d'un LLM, lues à travers un autoencodeur parcimonieux (SAE), deviennent un quatrième substrat mesurable aux côtés du tri, de la réaction-diffusion (Gray-Scott) et de la morphodynamique stratégique (Axelrod). Le **Jeu de la Vie** les a rejoints comme cinquième substrat — 2-D discret à information localisée transportée, et le **seul au moteur de calcul prouvé** : le pont Lean `hashlife_correct` (track `conway_lean`, 0 sorry) garantit que l'évaluation Hashlife calcule la même chose que la simulation naïve, avant calibration certifiée, contraste mesuré à trois substrats et stratification causale ([#5726](https://github.com/jsboige/CoursIA/issues/5726)). Un axe *Global Workspace* (broadcast, ignition — module `ict/workspace.py`) confronte désormais empiriquement IIT et GWT sur ces mêmes traces, faisant du pont entre les deux grandes théories de la conscience une question **falsifiable** plutôt qu'un débat d'école. La série rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
-**[cross-series](cross-series/README.md)** (projets-capstones) — Annexe transversale, distincte des onze domaines ci-dessus : non pas une famille de notebooks supplémentaire, mais des **projets capstones** qui rejouent plusieurs séries sur une même application de bout en bout (ex. [`matching-cv`](cross-series/matching-cv/) : appariement CV ↔ poste par mots-clés, embeddings sémantiques et appariement stable de Gale-Shapley, mobilisant ML, GenAI et GameTheory).
+**[cross-series](cross-series/README.md)** (projets-capstones) — Annexe transversale, distincte des douze domaines ci-dessus : non pas une famille de notebooks supplémentaire, mais des **projets capstones** qui rejouent plusieurs séries sur une même application de bout en bout (ex. [`matching-cv`](cross-series/matching-cv/) : appariement CV ↔ poste par mots-clés, embeddings sémantiques et appariement stable de Gale-Shapley, mobilisant ML, GenAI et GameTheory).
 
 ### Progression pédagogique
 
@@ -96,6 +98,9 @@ Sudoku
     ├── 1..9 méthodologies (Python + C# jumeaux)
     └── 10..19 spécialisations (Z3, OR-Tools, Choco, Lean, LLM, NN)
 
+Complexity
+└── (à plat) - hommages fondateurs exécutés : Hartmanis-Stearns (hiérarchie temps, machines comptées), conjectures online (secrétaire matroïdal, k-server), Aaronson-Arkhipov (permanente/BosonSampling, Ryser réemployé de Sudoku-15)
+
 GameTheory
 ├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
@@ -123,7 +128,7 @@ cross-series/
 
 ## Galerie de rendus — un aperçu visuel du dépôt
 
-Les onze familles ci-dessus ne sont pas seulement des collections de notebooks : elles produisent des **sorties vérifiables** (figures matplotlib, heatmaps, schémas). Cette galerie en présente quatre emblématiques — choisies pour couvrir quatre paradigmes distincts (choix social formel, morphogenèse, équilibre coopératif, apprentissage multi-agent) et pour montrer ce que la **dualité simulation / preuve** produit concrètement : chaque figure est issue d'un notebook exécuté, et celles qui correspondent à un *théorème-phare* (Arrow, Shapley) ont leur **contrepartie formelle** dans un *lake* Lean 4 de la même famille.
+Les douze familles ci-dessus ne sont pas seulement des collections de notebooks : elles produisent des **sorties vérifiables** (figures matplotlib, heatmaps, schémas). Cette galerie en présente quatre emblématiques — choisies pour couvrir quatre paradigmes distincts (choix social formel, morphogenèse, équilibre coopératif, apprentissage multi-agent) et pour montrer ce que la **dualité simulation / preuve** produit concrètement : chaque figure est issue d'un notebook exécuté, et celles qui correspondent à un *théorème-phare* (Arrow, Shapley) ont leur **contrepartie formelle** dans un *lake* Lean 4 de la même famille.
 
 | Famille | Figure | Ce qu'elle montre | Contrepartie formelle |
 |---|---|---|---|
@@ -146,6 +151,7 @@ Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Di
 | Search | ● | ● | ◐ | Parité CSP livrée — marathon jumeaux accompli (EPIC #4956) |
 | Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (VNM + Gittins) |
 | Sudoku | ● | ● | ◐ | Backtracking/DLX Python + propagation C# + lake exact-cover |
+| Complexity | ● | — | — | Machines comptées pas à pas, Ryser réemployé de Sudoku ; verdict Mathlib mesuré par notebook |
 | GameTheory | ● | ◐ | ● | OpenSpiel Python + jumeau C# (MARL) ; `game_theory_lean` (Arrow + Bondareva-Shapley) |
 | ML | ● | ● | ◐ | ML.NET (tutoriels) + jumeaux Python (sklearn, ONNX) + `learning_theory_lean` |
 | RL | ● | — | — | Stable-Baselines3 / Gym |
