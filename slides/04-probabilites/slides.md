@@ -1396,7 +1396,7 @@ layout: section
   - Tutoriels (en anglais)
   - Guide utilisateur
 
-*Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (Infer.NET prise en main) · [PyMC-01-Setup](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb) (PyMC) · [Pyro_RSA_Hyperbole](../../MyIA.AI.Notebooks/Probas/Pyro_RSA_Hyperbole.ipynb) (Pyro, bases bayésiennes).*
+*Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (Infer.NET prise en main) · [PyMC-01-Setup](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb) (PyMC) · [Pyro_RSA_Hyperbole](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) (Pyro, bases bayésiennes).*
 
 <!-- Voir notebooks Probas/Infer/ pour exemples de code Infer.NET -->
 

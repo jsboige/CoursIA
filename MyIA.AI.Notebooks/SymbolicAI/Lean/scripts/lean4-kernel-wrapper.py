@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 r"""
-Lean 4 Jupyter Kernel Wrapper for WSL (v6)
+Lean 4 Jupyter Kernel Wrapper for WSL (v7)
 
 This script converts Windows paths to WSL paths and launches the lean4_jupyter kernel.
 It handles various path formats that VSCode/Jupyter might pass:
@@ -8,14 +8,14 @@ It handles various path formats that VSCode/Jupyter might pass:
 - Tilde shorthand: ~\AppData\... or ~/AppData/...
 - Mangled paths (backslashes eaten): c:UsersjsboiAppData...
 
-v6 changes:
-1. Mangled-path regex now covers BOTH AppData/Roaming (jupyter kernelspec) AND
-   AppData/Local/Temp (nbconvert connection files) — the kernel no longer dies
-   with PermissionError under nbconvert/papermill execution.
-2. find_lake_root(): chdir to the nearest lakefile.lean/.toml ancestor so that
-   `lake env repl` (lean4_jupyter.repl:52) detects the real lake workspace and
-   picks up its LEAN_PATH, enabling in-kernel imports of lake modules. Falls
-   back to ~/lean-projects/notebook_context (stub lake) when none is found.
+v7 changes:
+1. Mangled-path regex covers BOTH AppData/Roaming (jupyter kernelspec) AND
+   AppData/Local/Temp (nbconvert connection files).
+2. find_lake_root() starts from the execution directory inherited from Jupyter.
+   wsl_papermill passes the notebook directory by default and accepts an explicit
+   Lake root for companion notebooks stored beside several projects.
+3. Missing Lake context aborts kernel startup visibly instead of falling back to
+   the unrelated ~/lean-projects/notebook_context stub (#16181).
 
 NOTE (native-import probe, 2026-06, c.126→c.127): this wrapper detects the lake
 workspace cwd, which is necessary but NOT sufficient for native Mathlib import —
@@ -106,7 +106,7 @@ def find_lake_root(start_dir):
     pick up its LEAN_PATH, so in-kernel imports can resolve lake modules.
     """
     d = os.path.abspath(start_dir)
-    for _ in range(12):
+    while True:
         try:
             if os.path.isfile(os.path.join(d, 'lakefile.lean')) or \
                os.path.isfile(os.path.join(d, 'lakefile.toml')):
@@ -163,19 +163,24 @@ def main():
     # The Windows PATH causes issues because it contains spaces and special chars
     os.environ['PATH'] = '/home/jesse/.elan/bin:/home/jesse/.lean4-venv/bin:/usr/local/bin:/usr/bin:/bin'
 
-    # chdir to the lake workspace root (detected from the inherited cwd) so that
-    # `lake env repl` (lean4_jupyter.repl:52) detects the lake and picks up its
-    # LEAN_PATH, enabling in-kernel imports of lake modules. Falls back to the
-    # stub notebook_context lake when no lakefile is found nearby.
+    # Jupyter inherits Papermill's execution cwd. wsl_papermill sets it to the
+    # notebook directory by default, or to an explicit --cwd for companions that
+    # live beside several Lake projects. Resolve upward from that real origin.
     inherited_cwd = os.getcwd()
     lake_root = find_lake_root(inherited_cwd)
-    if lake_root:
-        target_cwd = lake_root
-        log(f"Lake detected: chdir {inherited_cwd} -> {target_cwd}")
-    else:
-        target_cwd = os.path.expanduser('~/lean-projects/notebook_context')
-        log(f"No lakefile near {inherited_cwd} -> stub cwd {target_cwd}")
-    os.chdir(target_cwd)
+    if lake_root is None:
+        message = (
+            "Lean 4 kernel startup failed: no lakefile.lean or lakefile.toml "
+            f"found from execution directory {inherited_cwd}. Open the notebook "
+            "inside a Lake project, or run wsl_papermill.py with "
+            "--cwd <lake-root> for a companion notebook."
+        )
+        log(message)
+        print(message, file=sys.stderr)
+        return 2
+
+    log(f"Lake detected: chdir {inherited_cwd} -> {lake_root}")
+    os.chdir(lake_root)
     log(f"PATH set (clean): {os.environ['PATH']}")
     log(f"cwd: {os.getcwd()}")
     log(f"About to launch kernel with args: {args}")
@@ -208,4 +213,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
