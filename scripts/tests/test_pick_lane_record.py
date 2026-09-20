@@ -325,7 +325,12 @@ def test_main_repair_path_prints_the_record(monkeypatch, capsys):
     """Le chemin reparation porte AUSSI l'ardoise : une lane en cycles de
     reparation est precisement celle qui peut ecrire « rien livre » -- la
     mesure doit etre sous ses yeux sur TOUT chemin de sortie du picker,
-    apres l'assignation (l'en-tete FILE DE REPARATION reste la premiere ligne)."""
+    apres l'assignation (l'en-tete FILE DE REPARATION reste la premiere ligne).
+    NOW est fige a NOW_FIXED, comme le chemin TIRAGE : les fenetres de
+    l'ardoise se ferment sur l'horloge REELLE du module, la fixture est
+    relative a NOW_FIXED (bombe a horloge : la fenetre 7j de la PR fondatrice
+    s'est fermee le 2026-09-19T12:00Z, rougissant Scripts Tests sur main)."""
+    monkeypatch.setattr(pig, "NOW", NOW_FIXED)
     _patch_repair(monkeypatch, FOUNDING)
     rc = pig.main(["--lane", LANE])
     out = capsys.readouterr().out
