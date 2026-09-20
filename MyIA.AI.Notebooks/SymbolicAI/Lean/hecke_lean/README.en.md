@@ -14,15 +14,21 @@ formalized by `coeffHeckeT` with its two reading lemmas
 `coeffHeckeT_of_dvd` / `coeffHeckeT_of_not_dvd`, plus computable examples
 (weight 12, `p ∈ {2, 3}`).
 
+The lake also carries the theorem **`seven_pid`**: the ring of integers
+`𝓞 ℚ(ζ₇) = ℤ[ζ₇]` of the 7th cyclotomic field is a principal ideal ring —
+the first step beyond Mathlib's `three_pid` / `five_pid`, via Marcus'
+criterion (every prime ideal `P` above a `p` with `p ^ f ≤ ⌊M K⌋₊` is
+principal).
+
 ## Origin
 
 Sub-grain of #14771 (mapping of the `anthropics/fermats-last-theorem`
-repository for CoursIA), delivered under #14784. The module is a
-pedagogical port of the upstream file
-`Definitions/Def_ModularForm_HeckeOperator.lean` (commit `aa2d8b34692b`):
-statements and proofs carried over unchanged, FR docstrings + EN sibling
-(`ModularForm_en`), computable examples added — see `NOTICE.md` for the
-Apache-2.0 attribution.
+repository for CoursIA), delivered under #14784. The modules are
+pedagogical ports of the upstream files (commit `aa2d8b34692b`):
+statements and proofs carried over unchanged, FR docstrings + EN siblings
+(`ModularForm_en`, `CyclotomicPID_en`), computable examples added — see
+`NOTICE.md` for the Apache-2.0 attribution. `seven_pid`: installment 1 of
+#16557 (`eleven_pid` and `thirteen_pid` in later installments).
 
 ## Building
 
@@ -40,6 +46,8 @@ No `sorry`, no `native_decide`; axioms of the flagship declarations:
 |------|---------|
 | `Hecke/HeckeOperator.lean` | Main module (FR docstrings) |
 | `Hecke/HeckeOperator_en.lean` | English sibling, namespace `ModularForm_en` |
+| `Hecke/SevenPid.lean` | `ℤ[ζ₇]` is a PID (FR docstrings) |
+| `Hecke/SevenPid_en.lean` | English sibling, namespace `CyclotomicPID_en` |
 | `Hecke.lean` / `Hecke_en.lean` | Root aggregators |
 
 ## Follow-ups
@@ -47,4 +55,5 @@ No `sorry`, no `native_decide`; axioms of the flagship declarations:
 The Petersson product and cusp forms form a downstream grain (see #14784).
 The other FLT sub-grains (adic completions #14783, ramification groups
 #14786…) live in `galois_lean` after the #14773 migration — this lake is
-autonomous and does not depend on it.
+autonomous and does not depend on it. Later installments of #16557:
+`eleven_pid`, `thirteen_pid`.

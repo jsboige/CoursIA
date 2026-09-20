@@ -2,16 +2,20 @@
 
 Formalisation pédagogique des opérateurs de Hecke classiques `T_p` / `U_p`
 sur le demi-plan supérieur, avec la formule induite sur les coefficients
-de Fourier.
+de Fourier, et du théorème « l'anneau des entiers de `ℚ(ζ₇)` est principal ».
 
-## Source
+## Sources
 
 Port pédagogique (docstrings FR + sibling EN + exemples calculables ajoutés)
 du dépôt [`anthropics/fermats-last-theorem`](https://github.com/anthropics/fermats-last-theorem),
-fichier `Definitions/Def_ModularForm_HeckeOperator.lean`, commit
-`aa2d8b34692b16c70f699536de0d8e75b9a3e9ef`. Les énoncés et preuves sont
+commit `aa2d8b34692b16c70f699536de0d8e75b9a3e9ef`. Les énoncés et preuves sont
 repris tels quels ; seule la documentation et les exemples de la section
 `Examples` sont des additions CoursIA.
+
+| Fichier CoursIA | Fichier amont FLT |
+|---|---|
+| `Hecke/HeckeOperator.lean` (+ sibling `_en`) | `Definitions/Def_ModularForm_HeckeOperator.lean` |
+| `Hecke/SevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_seven_pid.lean` (tranche 1 de #16557 ; tranches suivantes : `eleven_pid`, `thirteen_pid`) |
 
 ## Licence
 
