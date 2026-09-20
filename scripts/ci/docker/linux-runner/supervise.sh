@@ -99,13 +99,30 @@ STOP_FILE="$STATE_DIR/stop"
 
 # Caps par conteneur. Volontairement conservateurs : l'hote prime sur la CI.
 CPUS="${COURSIA_RUNNER_CPUS:-3}"
-# Cap par slot. Mesure `docker stats` sur des jobs REELS (ai-01, 2026-09-08) :
-# 38 MiB et 160 MiB (ce dernier a 129 % CPU, genuinement occupe) contre un cap
-# de 3072 MiB -- soit 1,2 % et 5,2 % du cap. 1536m reste ~10x le pic mesure, et
-# c'est ce chiffre qui debloque `auto` : a 3072m la demi-part de budget_slots()
-# plafonne le pool de travail a 2 slots (0 des qu'il tourne), a 1536m elle en
-# rend 4 sur un budget vide. L'arithmetique n'avait pas besoin d'etre changee,
-# le cap si.
+# Cap par slot. Le temoin « 38/160 MiB en docker stats » (ai-01, 2026-09-08)
+# mesurait le runner OISEUX entre jobs, jamais un pic de job -- il estait le
+# cap sur une grandeur qui ne le traverse pas. Mesure du 2026-09-18 (#16643) :
+# le head mort cfb377c4b3 (job 105464047113, slot myia-ai-01-wsl-2) rejoue
+# dans un conteneur aux caps exacts du slot (--memory=3g --pids-limit=384
+# --cpus=3, 16 coeurs visibles), deps et commande pytest IDENTIQUES au
+# workflow scripts-tests.yml, echantillonnage 1 Hz + lecture cgroup host :
+#   - pids : MAX 384/384 -- saturation CAPTUREE (docker stats 367-381 en
+#     palier, puis le sampler lui-meme ne peut plus spawner). Un `docker exec`
+#     pendant la suite rend EAGAIN (runc « Resource temporarily unavailable »
+#     au spawn) : la signature exacte du job mort. Un slot REEL porte en plus
+#     l'agent runner (~40-60 taches) AU-DESSUS de ces 384.
+#   - memoire : MAX 3,0 Gio = le cap (memory.peak == memory.max, 7898 events
+#     max, oom_kill 0 -- le swap par defaut de docker, 2x memory, absorbe).
+#     Demande vraie ~3,5 Gio (profil ai-01 : python 1,15 + 4 x 0,6 ; le git
+#     1,09 vit dans la phase checkout, sequentielle, pas cumulee).
+# Pools portant la classe « Scripts Tests (CPU) » : COURSIA_RUNNER_PIDS=512
+# (384 mesures + agent ~60 + marge ~15 %) et COURSIA_RUNNER_MEMORY=4g (pic
+# 3,5 + marge). Les defauts ci-dessous restent pour les pools legers : a
+# 1536m+swap le job SURVIT en thrashant (temoin live myia-po-2024-linux-docker-2
+# du 2026-09-18, max events 5585, oom_kill 0) -- lent, pas mort. Toute
+# modification de l'un de ces nombres refait l'arithmetique budget dans le
+# meme commit : 8 x 4g + 16 waiters x 512m = 40960 Mo, que le defaut 12 ne
+# peut PAS couvrir (cf bloc BUDGET_GB et assert par famille ci-dessous).
 MEMORY="${COURSIA_RUNNER_MEMORY:-1536m}"
 PIDS="${COURSIA_RUNNER_PIDS:-384}"
 
