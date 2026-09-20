@@ -21,6 +21,12 @@ Three generations of pins live in this file:
     5. the docstring describes what the code does (the obsolete
        `./nodejs/...` promise is gone).
 
+  - #15747: `%20` is an encoded SPACE, not a separator. Decoded to a
+    space on both sides of the comparison, and the emitted in-root tail
+    keeps its original encoding (`%20` in, `%20` out -- the pre-#15747
+    `%20 -> /` decode produced a silent 404). A build root with a
+    literal space now bakes successfully.
+
 Each test materializes a fake `dist/` tree under a `tmp_path` (or calls
 the pure functions directly) and asserts on byte-exact content, the
 reported counters, and the process exit code. The tests are positive
@@ -74,9 +80,10 @@ def test_rewrite_replaces_build_root_prefix_byte_exact() -> None:
         (b'x "D:/deck/dist"', b'x "."'),
         # deep rest preserved verbatim
         (b'"D:/deck/dist/a/b/c.js"', b'"./a/b/c.js"'),
-        # %20 INSIDE the path context is normalized (bounded, acceptance 4)
+        # %20 is an encoded SPACE: decoded for comparison, PRESERVED in
+        # the emission (#15747 supersedes the old %20->/ normalization)
         (b'href="D:/deck/dist/Program%20Files/x.js"',
-         b'href="./Program/Files/x.js"'),
+         b'href="./Program%20Files/x.js"'),
     ]
     for src, expected in cases:
         out = _rewrite(src, DECK_ROOT)
@@ -168,6 +175,53 @@ def test_rewrite_does_not_eat_markup() -> None:
 
 # --- acceptance 4: %20 bounded to the path context -------------------------
 
+# --- #15747: %20 is an encoded SPACE, not a separator ----------------------
+
+def test_15747_pct20_decodes_as_space_and_emission_preserves_encoding() -> None:
+    """#15747 acceptance: `_canonical` decodes `%20` to a SPACE (it is the
+    URL encoding of one, never a path separator), and the emitted in-root
+    tail keeps its ORIGINAL encoding -- a `%20` coming in goes out as
+    `%20`, so the reference still resolves to the on-disk spaced
+    filename. The pre-#15747 code rewrote `mon%20image.png` to
+    `mon/image.png`: a silent 404."""
+    from scripts.post_bake_slides import _rewrite
+
+    assert (
+        _rewrite(b'<img src="D:/deck/dist/images/mon%20image.png">', DECK_ROOT)
+        == b'<img src="./images/mon%20image.png">'
+    )
+
+
+def test_15747_bake_with_spaced_root_succeeds(tmp_path: Path) -> None:
+    """#15747 acceptance: a build root containing a literal space bakes
+    successfully -- the `%20`-encoded token matches the spaced root once
+    `%20` decodes to a space -- and the emitted path resolves on disk
+    (`./images/mon%20image.png` -> `images/mon image.png`)."""
+    base = tmp_path / "Jean Dupont" / "deck"
+    dist = base / "dist"
+    # the realistic baked form: a bundler URL-encodes EVERY space of the
+    # machine path, the on-disk build root keeps its literal spaces
+    base_posix = str(base).replace(os.sep, "/").replace(" ", "%20")
+    _write(
+        dist / "index.html",
+        f'<img src="{base_posix}/dist/images/mon%20image.png">'.encode(),
+    )
+    _write(dist / "images" / "mon image.png", b"PNGDATA")
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        cwd=base,
+        capture_output=True,
+    )
+    assert result.returncode == 0, (
+        f"exit={result.returncode} stdout={result.stdout!r} stderr={result.stderr!r}"
+    )
+    out = (dist / "index.html").read_bytes()
+    assert b'src="./images/mon%20image.png"' in out, out
+    # the emitted relative reference resolves against the on-disk spaced name
+    assert (dist / "images" / "mon image.png").is_file()
+
+
 def test_prose_percent20_survives() -> None:
     """#15703 acceptance 4 (unit): `Program%20Files` in prose (no
     drive-letter context) survives the rewrite byte-identically. The
@@ -210,8 +264,9 @@ def test_check_residue_reads_each_file_once(tmp_path: Path) -> None:
     out_a = (tmp_path / "dist" / "a.html").read_bytes()
     out_b = (tmp_path / "dist" / "b.html").read_bytes()
     assert b"./lib/app.js" in out_a, out_a
-    # %20 normalized INSIDE the path context (bounded), never in prose.
-    assert b"./Program/Files/lib/app.js" in out_b, out_b
+    # %20 = encoded space: PRESERVED in the emission, never touched in
+    # prose (#15747).
+    assert b"./Program%20Files/lib/app.js" in out_b, out_b
 
 
 def test_map_files_are_rewritten(tmp_path: Path) -> None:
