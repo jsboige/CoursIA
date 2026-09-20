@@ -406,11 +406,11 @@ layout: dense
 ## Deformations et quotient
 
 - [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) : chemins continus entre classes
-- [GameTheory-03g-Derivation-Quotient](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Derivation-Quotient.ipynb) : deriver la structure quotient
+- [GameTheory-03-Topology2x2 (§9)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
 
 ## Parcours et extensions
 
-- [GameTheory-03f-Parcours-Complet](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Parcours-Complet.ipynb) : versant d'integration
+- [GameTheory-03e-Meta-Actions-Tarifees (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
   - [GameTheory-03e-Meta-Actions-Tarifees](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) · [GameTheory-03h-Deux-Especes-de-Fleches](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03h-Deux-Especes-de-Fleches.ipynb) · [GameTheory-03c-Le-Joueur-LLM](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM.ipynb)
 
 ---

@@ -34,9 +34,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 3 | [App-11b : Picross (Nonogrammes) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb) | BETA | Oui |
 | 4 | [App-15 : Planification de Calendrier Sportif (CSP)](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb) | BETA | Oui |
 | 5 | [App-15b : Planification de Calendrier Sportif -- Jumeau…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-15b-SportsScheduling-CSharp.ipynb) | BETA | Oui |
-| 6 | [App-16-Crossword-CSP (C#)](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb) | BETA | Oui |
+| 6 | [App-16-Crossword-CSP (C#)](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb) | BETA | Oui |
 | 7 | [App-16 : Générateur de Mots Croises (CSP)](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb) | BETA | Oui |
-| 8 | [App-19 (C#) — Génération procédurale par Wave Function…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | BETA | Oui |
+| 8 | [App-19 (C#) — Génération procédurale par Wave Function…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | BETA | Oui |
 | 9 | [App-19 — Génération procédurale de niveaux via WFC +…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb) | BETA | Oui |
 | 10 | [App-1b : Le problème des N-Reines — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb) | BETA | Oui |
 | 11 | [Coloration de graphes — validité statistique d'une…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring-Statistical-Validity-Python.ipynb) | BETA | Oui |
@@ -57,7 +57,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 26 | [App-6 - Demineur : CSP, Probabilites et NP-completude](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper.ipynb) | BETA | Oui |
 | 27 | [App-7 : Wordle Solver -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-7-Wordle.ipynb) | BETA | Oui |
 | 28 | [App-7b : Solveur Wordle -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb) | BETA | Oui |
-| 29 | [App-8 : Modelisation declarative par contraintes (twin…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb) | BETA | Oui |
+| 29 | [App-8 : Modelisation declarative par contraintes (twin…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb) | BETA | Oui |
 | 30 | [App-8-MiniZinc : Modelisation declarative par…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb) | BETA | Oui |
 | 31 | [App-10 : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10-Portfolio.ipynb) | BETA | Oui |
 | 32 | [App-10b : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | BETA | Oui |
