@@ -48,6 +48,27 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 ---
 
+### `update-branch` et le dossier de prévalidation — l'ordre qui débloque la boucle (#16878)
+
+Un dossier de prévalidation atteste une **TÊTE**, pas une PR : il épingle `head` **et** les comptes `diff-files` / `diff-additions` / `diff-deletions` mesurés au moment où il a été écrit. `gh pr update-branch` change la tête — donc **tout dossier écrit avant est périmé**, et le gate le refuse : `head is stale: dossier=…, live=…`. Ce refus est **correct** ; il refuse un dossier qui atteste une tête qui n'existe plus.
+
+C'est la seconde moitié du mécanisme `update-branch`. Elle est **opérationnelle** dans [`coordinate/SKILL.md`](../skills/coordinate/SKILL.md) (« un changement de head ou de surface le perime ») : elle n'est **pas reformulée** ici, pour la raison déjà donnée pour la moitié DWELL ci-dessus — deux surfaces qui redécrivent la même règle finissent par diverger (#16962).
+
+**L'ordre, qui est la livraison.** Mesure fondatrice : le 2026-09-19, le gate a rendu `exit 1` sur **17 candidates sur 17**, **aucune** pour un défaut de PR.
+
+1. la lane fait `update-branch` **si** elle doit récupérer `main` ;
+2. on attend l'écoulement du plancher, puis on **rejoue la jambe** (`gh run rerun <run_id> --job <job_id>`) — **personne ne re-pousse** ;
+3. **alors seulement** l'adjoint écrit le dossier, à la tête exacte ;
+4. le coordinateur merge aussitôt, et la branche reste **gelée de 3 à 4**.
+
+**Le gel de branche est la pièce qui manquait.** Un dossier a besoin d'une branche **silencieuse** : sans gel, le travail de prévalidation est détruit par le travail de réparation — chaque `update-branch` supplémentaire périme ce que l'adjoint vient d'attester, et la boucle se referme indéfiniment. Chacun y fait pourtant exactement ce que son rôle prescrit : c'est pourquoi ni la lane, ni l'adjoint, ni le coordinateur ne peuvent en sortir seuls.
+
+**Correction de prémisse (#16878 → #16962)** : l'issue justifiait la boucle par « `update-branch` ré-arme le DWELL pour 120 min ». Depuis **#16149** c'est **faux dans le cas courant** — un rafraîchissement content-free laisse le plancher **inchangé** (cf. la puce correspondante dans cette section). La boucle ne se referme donc **pas** par le DWELL : elle se referme par la **péremption du dossier**, moitié intacte. Le DWELL reste une raison d'**attendre** — jamais une raison de re-écrire un dossier.
+
+Détail, verbatim de l'organe et réconciliation : [prevalidation-dossier-order-detail.md](../../docs/reference/prevalidation-dossier-order-detail.md).
+
+---
+
 ### Other Safety Rules
 
 - If secrets are accidentally committed, create a new clean branch with cherry-pick rather than rewriting history
