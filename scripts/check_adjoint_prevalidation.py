@@ -108,6 +108,7 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2025:CoursIA-2",
     "myia-po-2026:CoursIA",
     "myia-po-2026:CoursIA-2",
+    "myia-po-2026:CoursIA-3",
     "myia-po-2027:CoursIA",
     "myia-po-2027:CoursIA-2",
 })
