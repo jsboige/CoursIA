@@ -72,6 +72,11 @@ def _matches_target(text):
       - Normalize curly apostrophe U+2019 to straight U+0027 (L925-C ★).
       - Match exact or space-prefixed variants for "Étapes".
       - Match apostrophe-bound variants for "Pistes d'...".
+
+    Issue #17143: also match ``Indice : <body>`` and ``Etape N : <body>``
+    forms — singular heading-style asides common in pedagogical notebooks
+    (often spanning multiple contiguous lines; the demoter now collapses
+    those into a single blockquote, see ``_demote_all_headings``).
     """
     stem = re.sub(r'\s*\(.*\)\s*$', '', text).strip()
     stem_norm = stem.replace('’', "'")
@@ -94,6 +99,18 @@ def _matches_target(text):
 
     # 6. "Notes techniques" with optional parenthetical already stripped.
     if stem == 'Notes techniques':
+        return True
+
+    # 7. "Indice : <body>" — issue #17143. Match the singular form when
+    # followed by a colon (signals an aside with body content).
+    if stem.startswith('Indice :') or stem.startswith('Indice:'):
+        return True
+
+    # 8. "Etape N : <body>" — issue #17143. Match singular "Etape" followed
+    # by digits/colon (e.g. "Etape 1 : preparer").
+    if re.match(r'^Etape\s+\d+\s*:', stem):
+        return True
+    if re.match(r'^Étape\s+\d+\s*:', stem):
         return True
 
     return False
@@ -151,6 +168,13 @@ def _demote_all_headings(source_lines):
     cells have BOTH ``### Étapes`` AND ``### Indices`` in the same cell).
     We demote all occurrences and preserve the body untouched.
 
+    **Multi-line contiguous heading blocks** (issue #17143): consecutive
+    ``# <text>`` lines (no blank line in between) are treated as a single
+    heading entity. The first line becomes ``> **<text> :**`` and the
+    remaining lines become plain ``> <text>`` continuation lines. This
+    avoids the bug where line-by-line demotion produced one callout per
+    line, each with its own `` :`` suffix.
+
     nbformat quirk (L983 ★★): source can be character-split (each char
     its own line). We detect headings in the JOINED source, then locate
     their line ranges in the original split source.
@@ -180,27 +204,60 @@ def _demote_all_headings(source_lines):
         line_offsets.append((off, off + len(line)))
         off += len(line)
 
-    # For each heading, find which line(s) it spans and replace them with
-    # the blockquote. If a heading spans multiple lines (character-split
-    # source), collapse them into a single blockquote line.
+    # Helper: find the source_lines index of the line containing a joined
+    # offset `pos`. Returns None if pos falls on a line boundary (no such
+    # line in practice given our inputs).
+    def _line_idx_for_pos(pos):
+        for i, (lo, hi) in enumerate(line_offsets):
+            if lo <= pos < hi:
+                return i
+        return None
+
+    # Group consecutive headings (no blank line between them) into single
+    # "heading-block" entities. Consecutive means: the next heading starts
+    # on the line immediately following the previous heading's last line
+    # (no blank separator line in between). Bug #17143 pattern.
+    # Each block carries: (first_start, last_end, [texts]).
+    blocks = []  # list of (first_start, last_end, [texts])
+    for start, end, text in headings:
+        if blocks:
+            prev_first, prev_last, prev_texts = blocks[-1]
+            prev_last_line = _line_idx_for_pos(prev_last - 1)
+            this_first_line = _line_idx_for_pos(start)
+            if (prev_last_line is not None and this_first_line is not None
+                    and this_first_line == prev_last_line + 1):
+                # Consecutive: extend the previous block.
+                blocks[-1] = (prev_first, end, prev_texts + [text])
+                continue
+        blocks.append((start, end, [text]))
+
+    # For each heading-block, find which line(s) it spans and replace
+    # them with a multi-line blockquote (one `> **` line for the first,
+    # then `> <text>` continuation lines).
     new_lines = list(source_lines)
     # Process from end to start to keep indices valid.
-    for start, end, text in reversed(headings):
+    for first_start, last_end, texts in reversed(blocks):
         first_line = None
         last_line = None
         for i, (lo, hi) in enumerate(line_offsets):
-            if hi > start and first_line is None:
+            if hi > first_start and first_line is None:
                 first_line = i
-            if lo < end:
+            if lo < last_end:
                 last_line = i
         if first_line is None or last_line is None:
             continue
-        # Preserve newline on the demoted line. Blockquote format:
-        # `> **<text> :**\n`.
-        replacement = [f'> **{text} :**\n']
+        # Build the blockquote replacement:
+        # - First line: "> **<text> :**"
+        # - Continuation lines: "> <text>" (no bold, no colon)
+        replacement = []
+        for i, text in enumerate(texts):
+            if i == 0:
+                replacement.append(f'> **{text} :**\n')
+            else:
+                replacement.append(f'> {text}\n')
         new_lines[first_line:last_line + 1] = replacement
 
-    changed_count = len(headings)
+    changed_count = len(blocks)
     return new_lines, changed_count
 
 

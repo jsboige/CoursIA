@@ -50,6 +50,11 @@ class TestMatchesTarget:
         "Pistes d'amelioration",  # legacy no-accent
         'Notes techniques',
         'Notes techniques (Tweety 1.30)',
+        # Issue #17143 — singular pedagogical asides:
+        'Indice : from torch import quantize_fx',
+        'Indice:',
+        'Etape 1 : preparer le modele',
+        'Étape 2 : convertir',
     ])
     def test_target_matches(self, text):
         assert _matches_target(text) is True
@@ -65,6 +70,9 @@ class TestMatchesTarget:
         'Aide-mémoire des commandes',  # compound — not bare aside
         'Remarques finales',  # bare aside but NOT in our scope
         'Important à retenir',  # bare aside but NOT in our scope
+        'Indice',  # bare aside without colon — NOT in scope (would be too broad)
+        'Indice quelconque',  # bare aside without colon — NOT in scope
+        'Étape alpha',  # "Étape" without digit/colon — NOT in scope
     ])
     def test_non_targets_no_match(self, text):
         assert _matches_target(text) is False
@@ -176,6 +184,70 @@ class TestDemoteAllHeadings:
         assert count == 2
         assert new[0] == "> **Étapes :**\n"
         assert new[4] == "> **Indices :**\n"
+
+    def test_multiline_block_2_lines(self):
+        """Issue #17143 — 2 consecutive target headings form a single block."""
+        src = [
+            "### Indice : from torch.ao.quantization.quantize_fx import prepare_qat_fx — la calibration\n",
+            "### Etape 1 : preparer le modele (meme QConfigMapping).\n",
+        ]
+        new, count = _demote_all_headings(src)
+        assert count == 1  # one block, not two
+        assert new[0] == "> **Indice : from torch.ao.quantization.quantize_fx import prepare_qat_fx — la calibration :**\n"
+        assert new[1] == "> Etape 1 : preparer le modele (meme QConfigMapping).\n"
+
+    def test_multiline_block_3_lines(self):
+        """3 consecutive target headings = one block with 2 continuations."""
+        src = [
+            "### Indice : from torch.ao.quantization import prepare_qat_fx — la calibration\n",
+            "### Etape 1 : preparer le modele (meme QConfigMapping).\n",
+            "### Etape 2 : 1 epoch de SGD (lr faible, 1e-2).\n",
+        ]
+        new, count = _demote_all_headings(src)
+        assert count == 1
+        assert new[0] == "> **Indice : from torch.ao.quantization import prepare_qat_fx — la calibration :**\n"
+        assert new[1] == "> Etape 1 : preparer le modele (meme QConfigMapping).\n"
+        assert new[2] == "> Etape 2 : 1 epoch de SGD (lr faible, 1e-2).\n"
+
+    def test_multiline_block_separated_by_blank_line_stays_two_blocks(self):
+        """Two target headings separated by a blank line = two distinct blocks."""
+        src = [
+            "### Indices\n",
+            "\n",  # blank line = separator
+            "### Indices\n",
+        ]
+        new, count = _demote_all_headings(src)
+        assert count == 2
+        assert new[0] == "> **Indices :**\n"
+        assert new[1] == "\n"
+        assert new[2] == "> **Indices :**\n"
+
+    def test_multiline_block_mixed_with_non_heading_body(self):
+        """Multi-line block at start, then non-heading body below."""
+        src = [
+            "### Indice : from torch import quantize_fx.\n",
+            "### Etape 1 : brancher via QConfigMapping.\n",
+            "\n",
+            "Voici le corps apres les indices.\n",
+        ]
+        new, count = _demote_all_headings(src)
+        assert count == 1
+        assert new[0] == "> **Indice : from torch import quantize_fx. :**\n"
+        assert new[1] == "> Etape 1 : brancher via QConfigMapping.\n"
+        assert new[2] == "\n"
+        assert new[3] == "Voici le corps apres les indices.\n"
+
+    def test_multiline_block_only_first_matches_target(self):
+        """If only the FIRST line of a block matches, rest stay as body."""
+        src = [
+            "### Indices\n",
+            "Le premier paragraphe apres Indices.\n",
+        ]
+        new, count = _demote_all_headings(src)
+        # Only the heading matches; the body line is not a heading.
+        assert count == 1
+        assert new[0] == "> **Indices :**\n"
+        assert new[1] == "Le premier paragraphe apres Indices.\n"
 
     def test_no_match_no_change(self):
         """No matching heading -> empty demote, no count change."""
