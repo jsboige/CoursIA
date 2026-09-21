@@ -87,9 +87,52 @@ Le prototype [`strates-as-adjunctions-prototype.md`](strates-as-adjunctions-prot
 
 4. **P2 v2 — précision de la perturbation.** La perturbation d'énergie ±10 % s'applique aux **amplitudes initiales de couplage effectif** (a_i ∈ {1 ± 0.1}), le couplage restant `K_c·a_i·a_j/N` — l'énergie modifie la force de couplage ressentie par paire sans toucher aux fréquences : c'est le test « l'énergie porte-t-elle la valence ? » rendu mécanique.
 
+## 6ter. Amendement pré-exécution v2 → v3 (scellé AVANT tout run sur graines de test — 2026-09-21, sondes de calibration graine 11 uniquement, zéro donnée de graine de test)
+
+**Raison : trois défauts de l'instrument v2, constatés en calibration (graines 11, disjointes des graines de test) — les graines de test n'ont jamais été exécutées à ce stade.** Motif des amendements case 15/16 : un critère insatisfaisable **par construction d'instrument** n'est pas une prédiction. **Bandes P1/P2/P3, graines, portes, nulls, verdicts et critères d'appariement restent inchangés** — seule l'opérationnalisation est re-spécifiée, une seconde fois.
+
+### 6ter.1 — Sonde de calibration (graine 11, K_c balayé de 8 à 128, échelle octave vs 4 configurations dissidentes)
+
+| K_c | v_H (v2 stationnarité) | v_diss (v2) | r̄_H | r̄_diss |
+|---|---|---|---|---|
+| 8 | 0.771 | **0.828** | 0.319 | 0.996 |
+| 16 | 0.712 | **0.780** | 0.332 | 0.937 |
+| 32 | 0.999 | 0.856 | 0.659 | 0.937 |
+
+**Deux régimes, deux défauts, aucun recouvrement exploitable.**
+
+### 6ter.2 — Défaut A : la stationnarité (v2) compte aussi les paires LIBRES
+
+Une paire d'oscillateurs libres a une fréquence instantanée **constante** (ω̂ = ω) : son rapport est parfaitement stationnaire. La « qualité d'attracteur » v2 ne distingue donc pas un verrouillage d'une absence de couplage — d'où v_diss > v_H à faible couplage (tableau ci-dessus), **l'instrument discrimine à l'envers** exactement là où il devait discriminer.
+
+**v3 (observable)** — `v = fraction de paires verrouillées m:n`. Une paire est lock s'il existe un couple d'entiers `(m, n) ≤ LOCK_MAX = 4` — **aligné sur le contenu harmonique du couplage** (1/h, h ≤ 4), non accordé — tel que la phase combinée `m·θᵢ − n·θⱼ` satisfasse **deux** critères sur la seconde moitié : concentration circulaire (écart-type circulaire < 1.5 rad) **et** dérive nulle (|dψ/dt| < 0.03 rad/unité). Le second critère est nécessaire : une dérive lente (< 1 tour par fenêtre) échappe à la concentration seule — les décalages inharmoniques de 3 à 8 % imposent une dérive ≥ 0.06 rad/unité sur le meilleur couple, un verrouillage réel l'annule. **La valeur du ratio n'est jamais lue** : un lock 2:1 compte exactement autant qu'un lock 3:2 (vérifié par test synthétique), et une paire libre stationnaire (rapport √2, aucun (m, n) ≤ 4 disponible) n'est **pas** comptée.
+
+**Plafond structurel déclaré** : seuls les couples dont le rapport s'écrit m/n avec m, n ≤ 4 peuvent verrouiller — **20 des 28 couples** de l'échelle octave. v_H est donc borné par 0.714 au régime m:n (il atteint 1.0 seulement au régime de collapse, cf. 6ter.4) ; P1 corrèle des **rangs**, jamais des niveaux.
+
+### 6ter.3 — Défaut B : le pôle dissident v2 est un quasi-unisson qui collapse en 1:1
+
+Le pôle dissident v2 (ratios uniformes dans [1, 2]) place toutes les fréquences **à moins d'une octave** les unes des autres : leur détuning est petit, et elles s'entraînent **1:1** à un couplage bien plus faible que celui requis par les langues m:n. Mesuré : r̄_diss ≥ 0.937 dès K_c = 8, à tout point de fonctionnement — la cible de calibration r̄(H) ∈ [0.5, 0.8] (K_c ≈ 32) laisse le pôle dissident **entièrement collapsé**. P1 est alors **insatisfaisable par construction** : le pôle « dissonant » est toujours plus verrouillé que le pôle harmonique.
+
+**v3 (pôle dissident)** — les deux pôles partagent la **même permutation de l'échelle octave** ; chaque membre est soit **exact** (prob u), soit **décalé** de ±3 à 8 % en log. L'étallement de fréquences est **apparié par construction** entre les pôles — seule l'harmonicité varie, plus le détuning. Le paramètre u balaie l'échelle de consonance.
+
+**Conséquence honnête, déclarée** : le lien harmonicité → verrouillage est la physique des langues d'Arnold (une configuration dont les rapports tombent sur des résonances disponibles se verrouille ; une configuration décalée non). P1 reste donc **partiellement vraie par la physique du substrat**, exactement comme §6.2 l'annonçait déjà — **la jambe de substance reste la conjonction P2 + P3**.
+
+### 6ter.4 — Défaut C : σ Sethares mesure la roughness de proximité, anti-corrélée à la facilité de verrouillage
+
+Sethares/Plomp-Levelt attribue la dissonance maximale aux fréquences **proches** (bande critique) — précisément la région où le couplage verrouille le plus facilement (1:1). σ_v2 et v_v3 sont donc anti-corrélés par construction sur ce substrat, indépendamment de la thèse.
+
+**v3 (σ)** — `σ = harmonicité octave-repliée` : chaque rapport de paire est replié dans [1, 2) par octaves (2.0 ≡ 1.0), puis scoré `exp(−d/τ)` avec `d` = distance logarithmique **circulaire** au point de repliement `p/q` le plus proche du jeu `p, q ≤ 4` (= `LOCK_MAX` : les résonances que le couplage possède réellement) et `τ = 0.03` gelé. C'est la formalisation directe du construct de la source (« symétrie de l'objet formel ») : l'unison et l'octave sont maximalement harmoniques, un rapport 21:20 ne l'est pas.
+
+**Pourquoi p, q ≤ 4 et non ≤ 8 ou ≤ 16** : un jeu de Farey d'ordre supérieur est **plus dense que les décalages eux-mêmes** — à p, q ≤ 8 l'écart minimal entre points est 0.014 en log, inférieur à `SHIFT_LO = 0.03`, si bien qu'un membre décalé de 5 % retombe près de 6/5 ou 7/6 et demeure « harmonique ». Mesuré : σ(échelle décalée uniformément de e) = 0.878 (e = 0.02), 0.843 (e = 0.05), 0.886 (e = 0.10) — **non monotone**, l'échelle ne discrimine plus. C'est la dégénérescence de la forme v1 (p, q ≤ 16) qui réapparaît à l'ordre 8. Au jeu p, q ≤ 4, σ est strictement décroissante en e (1.0 → 0.878 → 0.797 → 0.759) et vaut 1.0 sur l'échelle octave complète. La VALEUR de σ n'est utilisée par aucune autre observable.
+
+### 6ter.5 — Ce qui n'est PAS amendé
+
+- **P3 et son bras N** (6 fréquences proches + 2 irrationnelles) : conservés tels quels. Le collapse 1:1 de ce bras — cohérence brute élevée **sans** structure harmonique — est l'analogue « crise » de la source ; qu'il soit ou non distinguable du bras H par `CV(r)` est **le résultat empirique attendu**, pas un défaut d'instrument à réparer. Le réparer (par exemple en pondérant la richesse des locks) serait ajuster l'observable à la thèse.
+- Le couplage `H(φ) = Σ_{h≤4} sin(hφ)/h`, la perturbation P2, les nulls, les portes, le contrôle mécanique, les graines, les bandes, les verdicts bornés.
+
 ## 7. Ce qui suit
 
 1. **Ce document, committé, est le scellé.** L'antériorité repose sur la relation de parenté des commits (leçon case 8c) : scellé d'abord, banc ensuite.
 2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/stv_valence_symmetry.py` + tests + artefact de résultats vivront dans une PR **séparée** (ou un second commit de la même PR, pattern case 16), avec la ligne matrice case 17 passée de `PRÉDIT` à `TESTÉ (verdict)`.
 3. Verdict rapporté sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) avec les mesures brutes par graine.
-4. **Statut au scellé : `PRÉDIT` — banc non écrit, amendement v2 §6bis posé avant toute exécution** (couplage harmonique fixe, observable v = stationnarité des rapports, σ Sethares, perturbation P2 mécanisée — bandes inchangées).
+4. **Statut au scellé : `PRÉDIT` — banc non écrit ; amendements v2 §6bis et v3 §6ter posés avant toute exécution sur graines de test** (couplage harmonique fixe ; v = verrouillage m:n détecté par concentration **et** dérive nulle ; pôle dissident à étallement apparié ; σ = harmonicité octave-repliée p, q ≤ 4 ; perturbation P2 mécanisée — **bandes, graines, nulls, portes et verdicts inchangés**).
