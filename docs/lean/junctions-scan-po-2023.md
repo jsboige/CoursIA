@@ -7,13 +7,13 @@
 
 ## TL;DR
 
-Economie potentielle sur **myia-po-2023** : **0,64 GB** (le plus gros des 3 checkouts physiques du cluster `v4.32.1-520045ab` reste comme donneur, les 2 autres passent en jonction). **27 projets Lake avec dépendance mathlib** sur cette machine, 3 groupes mutualisables + 4 isolés.
+Economie potentielle sur **myia-po-2023** : **0,64 GB** (le plus gros des 3 checkouts physiques du cluster `v4.32.1-520045ab` reste comme donneur, les 2 autres passent en jonction). **27 projets Lake avec dépendance mathlib** sur cette machine, 2 groupes mutualisables + 5 isolés.
 
 | Mesure | Valeur |
 |---|---|
 | Projets Lake total avec mathlib | **27** |
 | Groupes MUTUALISABLE | **2** (`v4.32.1-520045ab`, `v4.33.0-db584cd6`) |
-| Groupes isolés | **4** (`v4.25.0`, `v4.31.0-rc2`, `v4.32.1` × 3) |
+| Groupes isolés | **5** (`v4.25.0`, `v4.31.0-rc2`, `v4.32.1` × 3) |
 | Projets avec checkout physique local | **3** |
 | Empreinte cumulee des checkouts physiques | **1,28 GB** |
 | **Economie potentielle** | **0,64 GB** |
@@ -74,10 +74,10 @@ Economie potentielle sur **myia-po-2023** : **0,64 GB** (le plus gros des 3 chec
 
 **Cluster `v4.33.0-db584cd6`** : 9 projets pinnes sur v4.33.0, **0 avec checkout physique**. L'alignement de manifests est plus avance ici (les 9 sont sur la meme rev transitive), mais aucun n'a de `.lake/packages/mathlib` reel — donc l'economie est nulle **en l'etat**. L'effet prospectif de la mesure de ai-01 (8 lakes pinnes mais pas encore construits) ne s'applique pas a cette machine : aucun n'est encore dans l'etat "checkout physique" qui serait jonctionnable.
 
-**4 groupes isoles** : 4 projets avec rev Mathlib uniques :
+**5 groupes isoles** : 5 projets avec rev Mathlib uniques :
 - `agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` : v4.25.0 (fixture tierce, hors scope body).
 - `conway_cgt_lean` : v4.31.0-rc2 transitif via vihdzp/combinatorial-games (pin non choisi par nous, exclusion explicite du body #13962 — #6116/#6432).
-- `discrepancy_lean` : v4.32.1 isole (1 seul membre, pas de mutualisation possible).
+- `discrepancy_lean` : v4.32.1 isole (1 seul membre, pas de mutualisation possible — voir réserve NanoClaw c.749 sur la taxonomie des 3 v4.32.1).
 - `mimo_lean` : v4.32.1 isole (1 seul membre).
 - `social_choice_lean_peters` : v4.32.1 isole (1 seul membre, _peters).
 
@@ -119,8 +119,17 @@ Acceptance #13962 step 1 (Scan) est **accomplie pour myia-po-2023**. Steps 2-3-4
 
 ## L898 / L1356 / G.9
 
-- L898 : `gh pr list --state all --search '13962 in:body'` = 2 PRs MERGED (po-2026 #14038, po-2024 #14296). Aucune PR OUVERTE.
+- L898 (mesure au 2026-09-07) : `gh pr list --state all --search '13962 in:body'` = 2 PRs MERGED (po-2026 #14038, po-2024 #14296). Aucune PR OUVERTE à la date du scan.
 - L1356 : aucune PR merged sur ce numero n'a couvert myia-po-2023 (machine distincte de po-2026/po-2024/ai-01). Grain pas livre pour cette machine.
 - G.9 : scan execute localement, sortie verbatim citee, mesures premieres (taille checkouts via script, pas d'estimation). Position ecrite avant Apply — prudence anti-irreversible honoree.
 
-— myia-po-2023:CoursIA-2, c.297 phase 2 (post REPAIR P0 #15057).
+## Amendement c.749 (REPAIR suite revue NanoClaw)
+
+Suite à la review structurelle NanoClaw du 2026-09-21 sur PR #17178 (CONCERNS state=COMMENTED), 2 corrections factuelles appliquées :
+
+1. **Compte groupes isolés** : 4 → **5**. La verbatim du Scan rend bien 5 en-têtes `[isole]` (v4.25.0, v4.31.0-rc2, et **trois** v4.32.1 distincts : discrepancy_lean, mimo_lean, social_choice_lean_peters). Total 27 = 13 + 9 + **5** ✓.
+2. **L898 datée** : la mesure « 2 PRs MERGED, aucune OUVERTE » était exacte au 2026-09-07 — ajoutée la date dans le libellé pour qu'un lecteur ultérieur ne la lise pas comme l'état courant du dépôt.
+
+Réserve NanoClaw #2 (taxonomie des 3 v4.32.1 isolés qui partagent toolchain+mathlib avec le cluster mutualisable) **non corrigée dans ce doc** : la sortie verbatim du script `setup_shared_mathlib.ps1 -Mode Scan` ne porte **pas** le discriminant qui justifie le bucketing séparé. Les hypothèses sont (a) manifest pin différent dans `lake-manifest.json`, (b) résolution transitive via une dépendance tierce qui change la rev effective, (c) portée worktree bornée par #15577. Le script Scan ne lève pas cette information — elle vit dans `lake-manifest.json` de chaque projet, qui n'a pas été inspecté (hors scope d'un Scan). L'EPIC #4362 phase « regroupements » (#4365) **consomme** cette taxonomie pour prioriser Apply : si discrimination (a)-(c) confirme le bucketing, Apply peut procéder sur le cluster 13+3=16 sans risque ; sinon, les 3 rejoignent le cluster mutualisable et l'économie grimpe à 1,28-0,64 = 0,64 GB (les 3 sont « pas de checkout local », pas d'impact direct). Le suivi reste à coordonner avec le porteur de l'EPIC.
+
+— myia-po-2023:CoursIA-2, c.297 phase 2 (post REPAIR P0 #15057) + c.749 REPAIR NanoClaw.
