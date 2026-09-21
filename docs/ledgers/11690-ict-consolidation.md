@@ -22,7 +22,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 2 | Le moule 26→30 | six notebooks ~17 cellules / 8 code | non démarré |
 | 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | non démarré |
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
-| 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | non démarré |
+| 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 2/3 tranches** (1 SAE + 3 non-numérotés, 2026-09-19 ; tranche 2 GWT en revue #16821) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -91,3 +91,141 @@ Lecture complète (contenu ET `outputs`, 44 cellules) du notebook unique du stra
 1. **Cap saturant ré-introduit en §5.2 sous un commentaire qui le nie** — le seul négatif-par-défaut du notebook ; localisé (comparaison N/I interne valide, cœur MAGIC_TOKEN intact), mais il affaiblit la généalogie « fix grain-2 → §5.2 » que le texte revendique. Décision : fix + re-exec, ou re-annotation.
 2. **Les renvois internes par index de cellule décalent à chaque insertion de markdown « Lecture »** — input mécanique direct pour la renumérotation #7260 : ancrer les renvois sur les sections, pas sur les indices.
 3. **Le hold sur le run 2B (#10380) est triple-sourcé dans le notebook** (§5.7 : ICT-25 0.5B, JohnEnev V3 672M GSM8K ~0, PT-11b 0.8B INCONCLUSIVE) — l'input d'arbitrage GPU de #5105 est prêt sans nouvelle mesure.
+
+---
+
+## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 1 : la famille SAE
+
+Le rang 5 (~15 notebooks) se livre en tranches comme le strand 4. **Tranche 1 = famille SAE** (ICT-21, 21b, 21c + le non-numéroté tête-à-tête), lecture complète (contenu ET `outputs`) du 2026-09-19 par `myia-po-2023:CoursIA`. `ICT-Greffe5` est volontairement **exclu** de la planification SAE/GWT/non-numérotés : son rework actif (PR #16787 / issue #16762) rendrait toute lecture périmée à vue (réserve n°2) — il sera lu dans une tranche ultérieure ou par le fil fusion. Rangées matrice concernées : ligne 107 (ICT-21, « Établi (jalon) ») et ligne 113 (ICT-SAE-JLens, « Établi ») — toutes deux **confirmées sur les outputs committés**.
+
+### `ICT-21-SAETrajectoires.ipynb` (numéroté) — 41 cellules (25 md, 16 code, 16/16 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Faire entrer le substrat S4 (SAE Qwen-Scope sur LLM) au banc ICT : extraire des traces features, sélectionner un panel différentiel, certifier le substrat — le verdict multi-jeux étant explicitement différé à ICT-22 (Gate 12). |
+| **Contenu réel** | Garde-fous d'honnêteté en tête ; architecture « GPU confiné, banc numpy-only » (extraction via `scripts/extract_sae_traces.py`, idempotente, traces datées 2026-07-07) ; smoke GPU ; sanité L0/volumes ; sélection différentielle par variance inter-jeux ; **Gate 10** (reproduction held-out du panel) ; **Gate 11** (substrat S4 valide : contrasts shuffle non dégénérés, 20 shuffles) ; **échelle 2** (Qwen3.5-2B + W32K) ; **échelle 3** (paire de génération Qwen3-1.7B) ; **échelle 4** (Qwen3-8B) ; décroisement génération×taille ; ablation du dictionnaire ; contrôle indépendant du n=4 ; verdict amendé ; 3 exercices C.1 (dont 1 GPU-requis). |
+| **Résultat** | **Gate 10 : PASS** — 9/10 features reproduites held-out (précision par feature affichée), panel final 9 features, les non-reproductibles sorties et documentées. **Gate 11 : PASS** — S4 prêt pour le banc, verdict différé à ICT-22 en toutes lettres. Échelle 4-échelles : 8B-Qwen3/W64K FVU 0.8469, overlap 46/64 **(importé — dit tel quel)**, mortes 98.9 % ; 2B-Qwen3.5/W32K FVU 0.2849, overlap 3/64 (rejoué) ; 9B-Qwen3.5/W64K FVU 0.3519, overlap 4/64. Décroisement : ordre FVU 2B < 9B < 1.7B < 8B ; l'ablation du dictionnaire (30/20/15 % conservés → FVU 0.6449/0.7459/0.8217, overlap 2-3/64 stable) montre que le niveau du 1.7B (FVU ≥ 0.6855) est atteint en ne gardant que 20 % du dictionnaire. Verdict amendé : « la génération tient, l'instrument est contrôlé ». |
+| **Critique** | (1) Le smoke GPU est **sauté dans l'exécution committée** (« GPU indisponible dans cet environnement ») — documenté en clair, et le banc est numpy-only sur traces pré-extraites, donc la preuve d'exécution réelle vit dans les traces datées ; mais le titre de section dit « en direct ». (2) La matrice (ligne 107) scope le jalon à 9B et renvoie le panneau cross-échelle complet (700M→120B) au chantier #5105/#7396 : le notebook livre **plus** que le scope matrice (échelle 4-échelles) mais **moins** que le chantier — la rangée est conservatrice, pas périmée ; nuance à garder pour #5105. |
+| **Verdict + action** | **SOLIDE, mature** — gates multi-échelles + décroisement + ablation = l'appareil critique le plus complet de la famille. Action d'arbitrage (mineure) : retitrer la section smoke (« en direct » vs sauté dans ce run) ou re-exécuter le smoke sur machine GPU. |
+
+### `ICT-21b-SAECalibration.ipynb` (numéroté) — 27 cellules (17 md, 10 code, 10/10 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | La jambe calibration : que reconstruit **réellement** chaque SAE (par échelle, par registre, par profondeur), et la sonde J-lens prédit-elle les logits finaux ? |
+| **Contenu réel** | Garde-fous ; tableau croisé fidélité×échelle ; loi d'usage des activations ; axe profondeur ; axe J-lens par taille ; couverture de la collection ; 4 exercices C.1. Convention de stub notable : la partie mécanique est **calculée réellement** (étendues, meilleurs/pires) et l'interprétation laissée à l'étudiant (`Interpretation : None`). |
+| **Résultat** | Qwen3-1.7B FVU 0.6855 (variance expliquée 31.4 %) vs Qwen3.5-2B FVU 0.2849 (71.5 %) ; par registre : math le mieux reconstruit aux deux échelles, étendue 0.0120 (1.7B) vs 0.0655 (2B) ; axe profondeur et sondes J-lens mesurés ; l'exercice 1 rend honnêtement (« traces frac 0.75 absentes ») ; couverture : 30B/27B/35B **GPU-gated, ni exécutées ni simulées** — dit en toutes lettres. |
+| **Critique** | (1) L'axe J-lens (sondes par taille) vit en partie dans des cellules dont la sortie committée est le stub (`J-lens : None` × 4) : la partie mécanique du tableau croisé est réelle, mais la comparaison sondes-vs-SDA des classements attend l'exercice 4 — le titre de section promet « la sonde prédit-elle les logits » alors que la réponse chiffrée n'est pas dans les outputs committés. (2) Aucune rangée matrice dédiée (lignes 107/113 couvrent 21 et JLens, pas 21b) — la calibration alimente la lecture des deux autres sans son propre verdict. |
+| **Verdict + action** | **À COMPLÉTER (léger)** — le socle est sain (garde-fous, couverture honnête, stubs bien conçus), mais l'axe J-lens titre une question que les outputs ne répondent pas. Action : exécuter la partie sonde (traces déjà présentes, CPU) ou retitrer la section vers l'exercice. |
+
+### `ICT-21c-SAECatastrophes.ipynb` (numéroté) — 28 cellules (17 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Forme et dynamique des perturbations du dictionnaire : que se passe-t-il quand on détruit (une partie de) le dictionnaire SAE — catastrophes, entropies, inoculation ? |
+| **Contenu réel** | Garde-fous ; contrastes trained/control sur 3 échelles (1.7B L14, 2B L12, 9B L16) — features actives, gini, entropies par registre ; cascade d'ablation frac_gardee ∈ {1.0, 0.5, 0.3, 0.2, 0.15} sur le 2B (témoin control_seed=42, mask_seed=42) ; lectures interprétées sous chaque résultat ; 3 exercices C.1 (dont 1 « GPU locale : RTX 3070 suffit pour 2B »). |
+| **Résultat** | Trained vs control (3 échelles) : features actives 14966/16636/20786 (trained) vs 8191/6589/6925 (control) ; gini trained 0.847/0.687/0.684 vs control 0.921/0.866/0.873 ; entropies par registre trained 0.27-0.51 vs control 0.74-0.86 — le SAE entraîné active plus de features, moins inégalitairement, plus spécifiquement par registre. Cascade d'ablation : FVU 0.2849 (100 %) → 0.4692 (50 %) → 0.6449 (30 %) → 0.7459 (20 %) → 0.8217 (15 %) tandis que **overlap_diff64 reste 2-3/64 à tous les niveaux** : la signature différentielle survit à la destruction du dictionnaire — « **l'inoculation est absente** » : le signal n'est pas porté par les features conservées. |
+| **Critique** | (1) Les chiffres d'ablation 30/20/15 % sont **identiques au millième** à ceux d'ICT-21 (0.6449/0.7459/0.8217) : cohérence inter-notebooks réelle, mais c'est le **même jeu de mesures** partagé, pas une réplique indépendante — à dire pour ne pas créditer deux fois la même preuve. (2) La lecture « contraste d'échelle qui ne concerne que le trained » mériterait son entrée matrice (dissociation scale-dépendante) — pas de rangée dédiée pour 21c non plus. |
+| **Verdict + action** | **SOLIDE** — le négatif « inoculation absente » est un résultat propre, mesuré à trois échelles avec témoin. Action d'arbitrage : une rangée matrice 21c (le signal différentiel survit à l'ablation — charge du panneau vs charge du dictionnaire). |
+
+### `ICT-SAE-JLens-TeteATete.ipynb` (non numéroté) — 31 cellules (20 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Confronter les **deux lentilles** du workspace global sur le même modèle (Qwen3.5-9B-Base, couche 16) : features SAE vs jacobien J-Lens — rangée matrice dédiée (ligne 113) sur l'opérateur `W_t` (ligne 17). |
+| **Contenu réel** | Garde-fous ; 4 traces pré-extraites (sae/jlens × trained/control), vérification des métadonnées (jacobienne 248320 dims, couche 16) ; **alignement token-à-token vérifié True sur les 20 prompts** ; activation moyenne par jeu + 64 features différentielles par lentille ; lecture qualitative ; comparaison croisée dans l'espace partagé (positions/token) ; séparation des jeux ; ablation contrôle ; **discussion honnête de la divergence sémantique** ; 3 exercices C.1. |
+| **Résultat** | Concentration différentielle : SAE trained mean 0.2739 (±0.0567) vs J-Lens trained 0.0526 (±0.0147) ; **Pearson(SAE, J-Lens) trained = +0.0846, control = +0.0164** — les deux lentilles, parfaitement alignées token-à-token, voient des concentrations quasi **non corrélées** ; matrices de séparation : Pearson +0.3273 (faible) ; ablation contrôle mesurée (les deux lentilles se dégradent différemment). La divergence est le livrable assumé : reconstruire le résidu (SAE) et prédire les logits (J-Lens) capturent des propriétés différentes du même workspace. |
+| **Critique** | C'est un **non-numéroté porteur de substance** — même pattern que `ICT-Life-SubstratCertifie` au strand 1 : il porte une rangée matrice dédiée (l. 113) sur l'opérateur `W_t`, une discussion de divergence que les numérotés 21/21b/21c n'ont pas, et 31 cellules bien tenu. Le problème #7260 incarné une fois de plus. |
+| **Verdict + action** | **SOLIDE, mature**. Action d'arbitrage (#7260) : candidat de tête à la renumérotation — le tête-à-tête est le complément naturel d'ICT-21 (même substrat 9B, l'un sélectionne le panel, l'autre le confronte à la lentille jacobienne). |
+
+### Findings transverses de la tranche 1 (pour l'arbitrage user)
+
+1. **Une famille, un substrat, une discipline** : les quatre notebooks partagent le même appareil (garde-fous d'honnêteté en tête, GPU confiné / banc numpy-only sur traces datées et témoins `control_seed`) — la culture méthodologique relevée aux strands 1, 3 et 4 est ici **institutionnalisée** (c'est la seule sous-famille où le garde-fou est une section titrée dans chaque notebook).
+2. **Preuve partagée ≠ preuve répliquée** : l'ablation du dictionnaire (30/20/15 %) porte des chiffres identiques au millième dans ICT-21 et ICT-21c — un seul jeu de mesures cité deux fois. Cohérent, mais l'arbitrage ne doit pas le créditer comme réplication indépendante (le dire une fois, ici).
+3. **Le tête-à-tête JLens est le finding d'instrument du strand** : deux lentilles parfaitement alignées token-à-token (vérifié True) voient des concentrations quasi orthogonales (+0.08) — c'est la *divergence sémantique des instruments* démontrée sur le même objet, réponse directe au programme « déclarer ses aveugles » des strands 1/4.
+4. **Négatif propre à préserver** : « l'inoculation est absente » (21c) — la signature différentielle survit à l'ablation de 85 % du dictionnaire (overlap 2-3/64 stable, FVU 0.28→0.82). Action proposée : rangée matrice dédiée (le signal vit dans la charge du panneau, pas dans le dictionnaire).
+5. **Entrées pour #7260 (renumérotation)** : (a) le non-numéroté tête-à-tête porte une rangée matrice `W_t` et 31 cellules — candidat de tête à numéroter, naturellement adjacent à ICT-21 ; (b) l'ordre 21→21b→21c est correct (substrat → calibration → perturbations) ; (c) ICT-21b est le seul de la famille avec un titre de section (axe J-lens) que ses outputs committés ne répondent pas — complété ou retitré à l'arbitrage.
+6. **Tranches restantes du rang 5** : GWT (ICT-22, 22b, 23, 24), puis les non-numérotés restants (Annexe-ProxyContextuality, Argumentation-BeliefTrajectories, Dissociation-PhatSelfReference, Dissociation-SaillancePregnance, Greffe2, Greffe4, Synthese-CrossSubstrat ; Greffe5 après son rework #16762).
+
+## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 3 : les non numérotés
+
+Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026-09-19, par `myia-po-2023:CoursIA`. **Avec cette tranche, le rang 5 est complet et le ledger couvre 100 % des strands** — toutes les lectures du chemin critique user (arbitrage 19/09) sont consignées. Trois des sept ont une rangée matrice dédiée (SaillancePregnance l. 74, Argumentation l. 110, p̂ auto-référent l. 208) — **toutes cohérentes avec les outputs** ; quatre n'en ont pas (Annexe, Greffe2, Greffe4, Synthese).
+
+### `ICT-Annexe-ProxyContextuality.ipynb` (non numéroté) — 21 cellules (13 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Formaliser la contextualité du zoo de proxys ICT comme un **CSP** (SAT/CP-SAT réel, pas une analogie) : un proxy est contextuel si aucune assignation cohérente ne couvre ses contextes d'usage. |
+| **Contenu réel** | Dictionnaire ; **trois crans** démontrés (boîte PR `strongly_contextual` 8/8, logique `logically_contextual` 1/5(9), non contextuel 16/0(16)) ; garde-fou « trois manières d'être vide » ; la mesure appliquée au zoo ICT ; « où l'analogie meurt — quatre points de rupture » ; 3 exercices C.1. |
+| **Résultat** | Zoo ICT (seuils = médianes du corpus) : 3 contextes, **1 seul recouvrement distinct**, les 3 proxys (`spectral_gap`, `sensitivity_mean`, `sensitivity_max`) **partagés partout** → `satisfiable: False`... et le CP-SAT tranche : `INFEASIBLE`, verdict **`degenerate_single_cover`** — le zoo n'est **pas contextuel** au sens du CSP. La lecture titrée : « l'écart entre les deux dernières lignes **est** le résultat ». |
+| **Critique** | Aucune — négatif outillé : le vrai solveur CP-SAT est appelé (outil SOTA, pas une réimplémentation), le garde-fou distingue les trois façons d'être vide avant de conclure, et la section « où l'analogie meurt » borne elle-même la portée. |
+| **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate naturelle (dissociation contextuel/non-contextuel du zoo). |
+
+### `ICT-Argumentation-BeliefTrajectories.ipynb` (non numéroté) — 45 cellules (23 md, 22 code, 22/22 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Phase B Argumentum (matrice l. 110) : trajectoire de croyance d'un débat (AF de Dung) et dette d'irréversibilité du discours, avec prédictions pré-enregistrées AVANT tout test. |
+| **Contenu réel** | Le plus riche de la tranche : setup ; substrat trajectoire ; **§3 prédictions pré-enregistrées** ; régimes discursifs structurels ; P-disc-1 à P-disc-4 (dont contrôle null à degré conservé) ; **trois spécimens littéraires codés arête par arête** (Loup et l'Agneau, Loup et le Chien — grammaire de l'englobement) ; **témoins Chaplin #7742 pré-enregistrés** ; récapitulatif ; 3 exercices C.1. |
+| **Résultat** | P-disc-1 **PARTIEL** (« une seule dimension tient : K ») ; P-disc-2 **PASS** (le spectre laplacien distingue les régimes) ; P-disc-3 **PARTIEL** (le régime populiste épuise la diversité) ; P-disc-4 contrôle **PARTIEL** (une dimension persiste vs null, l'autre expliquée par le degré). Témoins : barbier **0 extinction observée = 0 attendue** (« l'instrument sur sa première lame où l'échec était possible ») ; Hynkel **REFUS: CANAUX_CONTRADICTOIRES** — « refus ≠ zéro : le premier lève une exception codée, le second est un résultat ». |
+| **Critique** | Aucune majeure. Le geste « refus codé ≠ résultat nul » est une distinction méthodologique rare et précieuse (un instrument qui sait dire *je ne peux pas mesurer ça*). Les PARTIEL sont comptés comme PARTIEL, pas arrondis vers le haut. |
+| **Verdict + action** | **SOLIDE, mature** — candidat de tête #7260 avec la Synthese. |
+
+### `ICT-Dissociation-PhatSelfReference.ipynb` (non numéroté) — 30 cellules (19 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Case 2 / Epic #9533 : la boucle auto-référentielle `p_hat → action → p_hat` diverge-t-elle là où le délieur causal reste borné ? (rangée matrice l. 208.) |
+| **Contenu réel** | Sanity check (2 régimes, **39 ordres de grandeur d'écart**) ; mécanique de la boucle ; 4 substrats (scan de stabilité κ, délieur causal vs bouclée 5 graines, frontière observée vs prédite, sensibilité à l'horizon T) ; verdict honnête à 2 niveaux ; **verdict agrégé 5 graines** ; crédit témoin Hofstadter (grade C) ; 3 exercices C.1. |
+| **Résultat** | Frontière observée **κ_c = 0.080** vs prédite ≈ 0.053 — biais **+0.027 dans la tolérance pré-enregistrée** ; dissociation bouclée/délieur True ; sensibilité à T = preuve de non-trivialité ; **VERDICT : CONFIRMED** (5/5 graines, protocole complet). |
+| **Critique** | Aucune. La matrice (l. 208, TESTÉ CONFIRMÉ, mêmes chiffres κ 0.080 / biais +0.027 / 5 graines) est **exactement** ce que les outputs portent — cohérence parfaite rangée↔notebook. |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action. |
+
+### `ICT-Dissociation-SaillancePregnance.ipynb` (non numéroté) — 35 cellules (22 md, 13 code, 13/13 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Case `s ⟂ π` (matrice l. 74) : saillance (être vu) ≠ prégnance (compter pour agir) — prédiction falsifiée au niveau engagement total, sauvée au niveau décision. |
+| **Contenu réel** | Batterie de stimuli **décorrélation par construction** (corr(s, λ) = −0.216 ≈ 0) ; apprentissage Rescorla-Wagner (V apprend λ, pas s) ; deux animats (valence cible vs réactif null adversarial) ; mesure à 2 niveaux (engagement total vs décision|détection) ; corrélation partielle Spearman avec démonstration FWL ; null adversarial « inversion miroir » ; **robustesse multi-seed ≥ 4** ; **analyse de puissance** (Prong B SOTA, #3801) ; 3 exercices C.1. |
+| **Résultat** | **VERDICT : DISSOCIATED-AT-DECISION** (« une falsification qui localise, pas qui invalide ») ; multi-seed : 4 verdicts dont 1 affaibli (`DISSOCIATED-DECISION-NULL-WEAK`), **aucun renversement** ; puissance : ≥ 120 stimuli suffisent à résoudre la dissociation décision sur toute seed ; le null réactif inverse le motif (« sans apprentissage de la valence, la saillance reprend le contrôle de la décision »). |
+| **Critique** | Aucune — c'est le modèle du « verdict à deux niveaux » : le niveau où la prédiction meurt est nommé, le niveau où elle tient est mesuré, et l'analyse de puissance chiffre le prix statistique de la dissociation (la non-trivialité Prong B exigée par #3801 est satisfaite par construction). |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action. |
+
+### `ICT-Greffe2-EspaceAtteignable.ipynb` (non numéroté) — 32 cellules (21 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Le quadruplet (A, F, r, π) : rendre « élargir son espace » **testable** (critères #13568) — la greffe ICT sur le bras planification. |
+| **Contenu réel** | Socle STRIPS **« copie de Planners-5c », garanties du lake non re-dérivées** (la sortie organ-first #16778 utilisée à la lettre : la copie est déclarée, l'organe natif nommé) ; domaine deux rives/gouffre/radeau ; A différentiel système ; **contrôle négatif de la primitive stérile** ; F et r à budget ; le noyau (ce que la primitive rend inatteignable) ; cas 3 navigation (bras Planners-10b) ; synthèse ; limites ; 3 exercices C.1. |
+| **Résultat** | A_t : 54 états, **1/3 buts** → +raft : 60 états, **3/3 buts** → +discard : 78 états (Δ|A| décore, **Δ(buts) discrimine**) ; l'élargissement non contrôlé **contracte** la liberté résiduelle ; noyau non vide à budget fixe ; cas 3 : trois politiques π, **A et F inchangés par construction**, h* inchangé (39/33/8) — seul π bouge, l'espace ne triche pas. |
+| **Critique** | Aucune — les 4 critères de #13568 sont démontrés un à un avec leur contrôle, et la déclaration de copie pédagogique du socle STRIPS est exactement le pattern que la règle organ-first (merge #16778) exige. |
+| **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate (élargissement utile vs contractant). |
+
+### `ICT-Greffe4-VoteOnChain.ipynb` (non numéroté) — 27 cellules (17 md, 10 code, 10/10 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Fermer la boucle Argumentation → Choix social → SmartContracts : le vote argumenté exécuté et audité **sur chaîne** (critères #13570). |
+| **Contenu réel** | Trois organes nommés avec ce que chacun apporte ; AF de Dung sur 3 propositions (positions issues du graphe) ; règle Borda **nommée et justifiée** ; la manipulation (bulletin contredisant sa position) ; exécution SC-13 : **tests forge** + **fuzzing des invariants** ; « ce que la chaîne ajoute — et ce qu'elle ne résout pas » ; 3 exercices C.1. |
+| **Résultat** | Manipulation : sincere C1 gagne → vote-balle de V3 : **C0 gagne (écart strict 8-7-6)** (« enterrage, vote-balle, et le mensonge épistémique ») ; forge : **5 tests passed, 0 failed** (gas rapporté, ex. 13046) ; fuzzer BrokenInvariants : **1 failing décodé** — le contre-exemple est lu et interprété (« la borne tient sous attaque aléatoire »), pas masqué. |
+| **Critique** | Aucune — la chaîne est **réellement exécutée** (forge test + fuzz), le contre-exemple du fuzzer est décodé comme donnée pédagogique, et la section finale borne honnêtement ce que la chaîne ne résout pas. |
+| **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate (la manipulation bascule l'issue, l'audit tient). |
+
+### `ICT-Synthese-CrossSubstrat.ipynb` (non numéroté) — 40 cellules (26 md, 14 code, 14/14 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | **Le capstone** : un seul appareil de mesure, trois (puis quatre) substrats, six gates qui rejouent le fil ENTIER de la série — et un « verdict sans complaisance ». |
+| **Contenu réel** | Tableau récapitulatif du fil ; S1 tri / S2 bistable / S3 réplicateur mesurés au même appareil ; **Gate 1** (émergence vs contrôle dégénéré, 100 shuffles) ; **Gate 2** (transfert du scalaire d'intégration) ; **Gate 3** (robustesse au régime, 5 graines) ; **Gate 4** (la convergence Φ/F/K survit-elle au 4ᵉ substrat — capstone strate 5) ; **Gate 5** (irréversibilité, jambe ICT-18) ; **Gate 6** (enjeu, jambe ICT-19) ; verdict sans complaisance ; 3 exercices C.1. |
+| **Résultat** | Gate 1 : **3/3 substrats créditent** (z > 1 ; gains EC +1.0 à +2.7). Gate 2 : τ(EI, EC_gain) = −0.333 (consistent **False**) mais τ(EI, EC_réel) = **+1.000 True** — le scalaire transfère sur la grandeur réelle, pas sur le gain. Gate 3 : la graine 99 **échoue** (−0.33, False) — τ observés [−0.33, 0.33, 1.0], la robustesse au régime est **partielle et dite telle**. Gate 4 : τ(ec, fe) = +1.000 **CONSISTENT**, k divergent. Gate 5 : S2 0.0000, S3 0.0196/0.0205, **S4 0.0889/1.1774**. Gate 6 : stake_index crédite S1 +1.00, S2 +1.00, S3 +0.68 « **MAIS il ÉCHOUE sur le substrat champ Gray-Scott (I_stake = −0.51 = sous le drift)** ». |
+| **Critique** | Aucune — c'est le livre de compte de la série : chaque gate cite son origine (ICT-15, ICT-18, ICT-19), les échecs (graine 99, champ Gray-Scott) sont affichés en clair, et l'échec Gate 6 sur champ rejoint **exactement** l'artefact d'instrument documenté par ICT-19b (le scalaire sur champ 2D) — la synthèse confirme le strand 3 indépendamment. |
+| **Verdict + action** | **SOLIDE, mature — le fil de la série**. Action d'arbitrage (#7260) : candidat de tête à la renumérotation (le capstone mérite un numéro, pas un statut d'annexe). |
+
+### Findings transverses de la tranche 3 (pour l'arbitrage user)
+
+1. **Les non-numérotés portent la profondeur de la série** — le pattern du strand 1 (Life-SubstratCertifie) est la règle, pas l'exception : les deux plus gros notebooks de la tranche (Argumentation 45 cellules, Synthese 40) sont non numérotés, et la Synthese est littéralement le capstone (Gates 1-6 rejouant toute la série). Entrée majeure #7260 : **Synthese et Argumentation en tête des candidats à la renumérotation**, avec le tête-à-tête JLens (tranche 1).
+2. **La négativité assumée reste la culture dominante** : zoo non contextuel (Annexe, CP-SAT INFEASIBLE sur le vrai solveur), graine 99 qui échoue (Synthese Gate 3), stake_index qui échoue sur champ (Synthese Gate 6 — confirmation indépendante de l'artefact d'ICT-19b relevé au strand 3), refus codé ≠ résultat nul (Argumentation Hynkel).
+3. **Greffe2 est l'exemplaire organ-first** (#16778) : le socle STRIPS est déclaré « copie de Planners-5c » avec les garanties du lake non re-dérivées — exactement la sortie « copie pédagogique déclarée » que la règle exige. Greffe4 exécute la vraie chaîne (forge 5/5 + fuzzer décodé).
+4. **Matrice : 3 rangées dédiées, toutes cohérentes** (SaillancePregnance, Argumentation, p̂ — cette dernière au chiffre près : κ 0.080 / biais +0.027 / 5 graines) ; **4 notebooks sans rangée** (Annexe, Greffe2, Greffe4, Synthese) — la Synthese re-mesure le banc des rangées existantes plutôt que de claimer la sienne ; trois candidats d'ajout mineurs (contextualité du zoo, élargissement contractant, manipulation basculante).
+5. **Entrées #7260 complètes pour le rang 5** : renumeroter en priorité Synthese + Argumentation + JLens ; statuer le régime des Dissociations/Greffes/Annexe (noms fonctionnels stables vs numérotation — leur nature annexale est assumée dans les titres) ; Greffe5 reste post-rework (#16762).
+6. **Le ledger est COMPLET** : rangs 1-4 + rang 5 en 3 tranches = tous les strands du chemin critique user (arbitrage 19/09) consignés. Les inputs d'arbitrage sont prêts : chaque strand porte ses findings transverses, le tableau d'avancement est fermé.

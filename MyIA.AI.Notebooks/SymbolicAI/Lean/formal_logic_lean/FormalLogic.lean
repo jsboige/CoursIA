@@ -13,7 +13,12 @@ Modules consommateurs :
 - `FormalLogic.GLBridge` — pilote Tranche F (#15916) : schéma de Löb, contrôle
   négatif par contre-modèle fini, point fixe de de Jongh–Sambin et interprétation
   arithmétique sous les conditions de Hilbert–Bernays–Löb.
+- `FormalLogic.ModalBridge` — pilote Tranche C (#15066) : logiques modales via
+  `ModalLogic` (fork compat 4.33.1) — `K` valide sur tout cadre, contre-modèles
+  finis de `T`/`4`/`5` sur cadres témoins génériques, duaux diamant de `T`/`4`
+  sur les cadres S4 de Fin74.
 -/
 
 import FormalLogic.Bridge
 import FormalLogic.GLBridge
+import FormalLogic.ModalBridge
