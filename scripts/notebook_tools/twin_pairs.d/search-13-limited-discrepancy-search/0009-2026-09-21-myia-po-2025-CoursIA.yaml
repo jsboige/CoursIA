@@ -1,0 +1,16 @@
+date: '2026-09-21'
+by: myia-po-2025:CoursIA
+python_sha: cf372b03e4ddb8e8081263d393638af24fd2b0bc
+csharp_sha: 09c839ff55add3a5c3f56672cc0807faf8917d48
+content_python_sha: 8345b4d32e630758a486d9e8e60d5aada73ebb46c9b8c34ee051c223d7db934f
+content_csharp_sha: 026a2f850e8446d9a13e36f5f75edcc3787f1293f3aa34573c5283f7935def3f
+reason: >-
+  Re-attestation de parite -- fournee densite g81-search-6 (#13410, PR #17212), markdown-only.
+  Le cote Python (Search-03c-LimitedDiscrepancySearch.ipynb) recoit 3 cellules markdown de
+  lecture ancrees sur ses sorties DEJA committces ; le jumeau C# n'est pas touche par cette PR
+  (verifie : 0 cellule markdown ajoutee cote C#). Diff Python = +24/-0, insertions pures.
+  Cellules code 8 -> 8 byte-identiques, outputs 8 -> 8 et execution_count intacts, metadata et
+  nbformat 4.5 inchanges. Aucune re-execution, aucun strip outille posterieur : le blob atteste
+  ici est celui du HEAD de la PR. parity_level semantic : la parite de cette paire est
+  CONCEPTUELLE (sac a dos 0/1, LDS/k), pas cellule-par-cellule -- cf known_differences, qui
+  documente deja une asymetrie d'instance assumee (7 objets Python A-G contre 5 C# A-E).

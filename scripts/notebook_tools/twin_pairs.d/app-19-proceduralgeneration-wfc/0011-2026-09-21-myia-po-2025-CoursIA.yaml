@@ -1,0 +1,16 @@
+date: '2026-09-21'
+by: myia-po-2025:CoursIA
+python_sha: ec22ee294374e598b529676470fcbf91bf81bc95
+csharp_sha: 5162ccad8d87ed1ea20d39a129c5c62b2c070e1a
+content_python_sha: a95f577d08f1ad36ba88bfd943e0eb87bd96677002a8f491d352496c7cb6effd
+content_csharp_sha: 995a2d09e0ba791ced5f362c492cb36d111e52b7bc185710cf051271846848ef
+reason: >-
+  Re-attestation de parite -- fournee densite g81-search-6 (#13410, PR #17212), markdown-only.
+  Le cote C# (App-19-ProceduralGeneration-WFC-CSharp.ipynb) recoit 15 cellules markdown de
+  lecture ancrees sur ses sorties DEJA committces ; le jumeau Python n'est pas touche par cette
+  PR (verifie : aucun ajout markdown cote Python). Diff C# = +120/-0, insertions pures.
+  Cellules code 12 -> 12 byte-identiques, outputs et execution_count intacts, metadata et
+  nbformat 4.5 inchanges. Aucune re-execution, aucun strip outille posterieur : le blob atteste
+  ici est celui du HEAD de la PR. parity_level native-both intacte (les deux cotes atteignent
+  toujours OR-Tools CP-SAT) ; la derive est une asymetrie de contenu PEDAGOGIQUE unilaterale,
+  meme classe que l'attestation 0006 du 2026-09-11 (separateur hr cote C# seul).
