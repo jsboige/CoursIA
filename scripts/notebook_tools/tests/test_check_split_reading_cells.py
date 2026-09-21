@@ -3,10 +3,20 @@
 
 Contexte : #17077. L'organe `check_split_reading_cells.py` (merge #16786) est la
 **base de preuve** de la campagne densite (#13410 / #16762) et du cliquet #17044 ;
-il est livre sans suite de tests. Une retouche de l'heuristique (Jaccard +
-containment sur mots rares) peut donc changer silencieusement un verdict
-`generic_pair` / `separated_by_code` / `named_split` dans les bodies deja postes.
-Cette suite epingle les verdicts ET les seuils.
+il est livre sans suite de tests. Deux retouches y sont dangereuses, et pas de la
+meme facon :
+
+  - les **regexes de titre** (`is_interpretation_title` / `is_named_second` /
+    `NAMED_FIRST_RE`) decident du **verdict** : les toucher change quelles paires
+    sont vues, donc le type (`generic_pair` / `separated_by_code` / `named_split`)
+    et le nombre de findings ;
+  - les **chiffres** (Jaccard, containment sur mots rares sous `MAX_DF`) ne
+    decident **rien** -- ils sont rapportes dans le finding -- mais ce sont eux
+    que citent les bodies deja postes (#17040) : les toucher change des mesures
+    publiees **sans** changer un verdict, donc sans qu'aucun test de verdict ne
+    bronche.
+
+Cette suite epingle les deux : les verdicts ET les chiffres.
 
 Trois blocs :
 
@@ -193,6 +203,30 @@ def test_seuil_max_df_ecarte_un_mot_devenu_repandu():
     assert repandu["jaccard"] == 0.333
 
 
+def test_index_absolus_sur_carnet_mixte_md_et_code():
+    """Un carnet mixte : les index restent ABSOLUS, pas relatifs aux cellules markdown.
+
+    Tous les autres tests de metriques mesurent des carnets **entierement
+    markdown**, ou index absolu == index markdown-relatif : une regression qui
+    rendrait des index relatifs y resterait invisible (le couple demeure
+    auto-coherent) et ne casserait que les carnets **mixtes** -- c'est-a-dire le
+    corpus reel. Ici la premiere cellule est du CODE, donc les lectures sont en
+    1 et 2 et les chiffres du meme couple doivent etre identiques a ceux mesures
+    en 0 et 1 sur un carnet 100 % markdown.
+    """
+    findings = detect(nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nConvergence."),
+        md("### Analyse des resultats\nLe score atteint 0.94."),
+    ))
+    assert [f["cells"] for f in findings] == [[1, 2]]
+
+    pair = [md("alpha zalgo"), md("beta zalgo")]
+    tout_markdown = overlap_metrics({"cells": pair}, 0, 1)
+    assert overlap_metrics({"cells": [code("print(1)"), *pair]}, 1, 2) == tout_markdown
+    assert tout_markdown["rare_containment"] == 0.5
+
+
 def test_recouvrement_nul_sur_vocabulaires_disjoints():
     metrics = overlap_metrics({"cells": [md("alpha zalgo"), md("beta quux")]}, 0, 1)
     assert metrics["jaccard"] == 0.0
@@ -255,12 +289,22 @@ def test_borne_connue_interpretation_nue_est_invisible():
     Ce test ECHOUE aujourd'hui. Il rend le defaut visible sans rougir la suite, et
     passera en XPASS (donc en echec) le jour du fix #17134 : retirer le marqueur
     alors, pas l'ajuster.
+
+    L'assertion sur `detect` doit etre une **esperance reelle**, pas un
+    placeholder : c'est elle qui portera le XPASS. Deux titres consecutifs tous
+    deux d'interpretation donnent exactement UN finding, de type `generic_pair`
+    (« Interpretation » ne matche pas `NAMED_FIRST_RE`, qui exige `lecture`) --
+    et rien de plus : la variante a deux pas n'est pas atteinte, il n'y a aucune
+    cellule de code ici.
     """
     assert is_interpretation_title(cell_title("### Interpretation\nconvergence nette."))
-    assert detect(nb(
+    findings = detect(nb(
         md("### Interpretation\nConvergence nette vers l'optimum."),
         md("### Interpretation\nLe score atteint 0.94."),
-    )) == [{"placeholder": True}]
+    ))
+    assert len(findings) == 1
+    assert findings[0]["type"] == "generic_pair"
+    assert findings[0]["cells"] == [0, 1]
 
 
 @pytest.mark.xfail(
