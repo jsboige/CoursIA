@@ -128,7 +128,12 @@ jobs:
             cat census.md
             if [ -s census-warn.txt ]; then
               echo
-              echo "### Avertissements de l'instrument"
+              # Le bloc porte TOUT le stderr de l'instrument, pas seulement ses
+              # avertissements : c'est ce qui dispense de trier sa sortie.
+              # Trier reviendrait a choisir ce que le lecteur a le droit de
+              # voir ; un rapport tronque se lit comme tronque, il ne se
+              # maquille pas en rapport complet.
+              echo "### Sortie stderr de l'instrument"
               echo
               echo '```'
               cat census-warn.txt
