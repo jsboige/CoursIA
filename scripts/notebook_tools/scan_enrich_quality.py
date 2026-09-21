@@ -128,6 +128,34 @@ _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 _HTML_HREF_RE = re.compile(r"<a\s[^>]*href=\"([^\"]+)\"", re.I)
 _SKIP_TARGET_PREFIXES = ("http://", "https://", "mailto:", "#", "data:", "/")
 
+# #17187 -- a markdown cell whose source contains CommonMark inline code spans
+# (`` `...` ``) renders the span content verbatim: a syntax like
+# `` `[]((p => q))` `` in a table cell is NOT a link -- it is modal formula
+# notation that a markdown parser hands to the renderer as-is. The scanner was
+# matching `[x](y)` on the RAW cell source, so code-spans with `[](...)`
+# patterns produced HREF_MISSING false positives on synthetic "paths" like
+# `(p`, `[]((p`, `p=>q`. Founding instance: PR #17122 cells 4/6 in
+# Tweety-3b-Modal-Lab-Lean, tables of modal axioms K/T/4/5 -- review Hermes
+# po-2026 named this explicitly. Fix: replace inline code-span content with
+# spaces of the same length so line offsets (consumed by downstream line-based
+# rules) stay stable AND the neutralised text cannot match `_MD_LINK_RE`.
+# Single-backtick spans are the only form observed in #17187; the double-
+# backtick form is OUT OF SCOPE -- widening the pattern set requires
+# re-measuring FPs (Tell c.handrolled-pattern-set-undercounts-silently) and
+# no observed defect exists for `` ``...`` `` on this corpus.
+_INLINE_CODE_RE = re.compile(r"`+([^`]+)`+")
+
+
+def _strip_inline_code(text: str) -> str:
+    """Replace CommonMark inline code spans with same-length spaces (#17187).
+
+    Code-span content is rendered verbatim by markdown -- a `[x](y)` pattern
+    inside backticks is literal syntax, not a link. The scanner must therefore
+    NOT see it. Substitution preserves length so line offsets (consumed by
+    downstream line-based rules) stay stable.
+    """
+    return _INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), text)
+
 # --- accents (class c) ------------------------------------------------------
 
 _ACCENT_RE = re.compile(r"[À-ÖØ-öø-ÿĀ-žŒœ]")
@@ -362,7 +390,14 @@ def scan_href(notebook: Path, cells: list[dict], repo_root: Path) -> list[dict]:
     findings = []
     nb_dir = notebook.parent
     for i, cell in _md_cells(cells):
-        targets = _MD_LINK_RE.findall(_src(cell)) + _HTML_HREF_RE.findall(_src(cell))
+        # #17187 -- neutralise inline code spans before matching links: a
+        # `[x](y)` pattern inside backticks is literal syntax (e.g. modal
+        # formula `` `[]((p => q))` ``), not a link the scanner should care
+        # about. CommonMark renders the span content verbatim. HTML hrefs are
+        # already rare in markdown cells and not subject to this false
+        # positive class, so they remain unfiltered.
+        src_neutral = _strip_inline_code(_src(cell))
+        targets = _MD_LINK_RE.findall(src_neutral) + _HTML_HREF_RE.findall(_src(cell))
         seen = set()
         for t in targets:
             t = unquote(t).strip()

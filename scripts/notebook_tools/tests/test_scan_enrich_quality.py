@@ -163,6 +163,38 @@ class TestHrefs:
         cells = [_md("[site](https://example.com/x.ipynb) et [section](#ancre)")]
         assert scan_href(nb, cells, tmp_path) == []
 
+    # #17187 -- inline code spans like `` `[]((p => q))` `` are modal
+    # formula notation, not links. The scanner must neutralise them before
+    # matching `[x](y)` to avoid HREF_MISSING false positives on synthetic
+    # "paths" (`(p`, `(q`, `[]((p`, `p=>q`, etc.) that came from code-span
+    # content. Founding instance: PR #17122 cells 4/6 in
+    # Tweety-3b-Modal-Lab-Lean.
+    def test_code_span_with_link_pattern_is_silent(self, tmp_path):
+        """`` `[]((p => q))` `` inside a table cell must NOT fire HREF_MISSING (#17187)."""
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        # Modal formula in a code-span: markdown renders the span verbatim,
+        # so `[]((p => q))` is literal syntax, not a link.
+        cells = [_md("| Schéma | Syntaxe |\n|---|---|\n| K | `[]((p => q))` |")]
+        assert scan_href(nb, cells, tmp_path) == []
+
+    def test_real_link_alongside_code_span_fires(self, tmp_path):
+        """A real `[x](y)` next to a code-span must still fire; only the code-span content is neutralised."""
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        cells = [_md("Voir `[]((p => q))` puis [l'annexe](../Other/target.ipynb).")]
+        f = scan_href(nb, cells, tmp_path)
+        # One finding for the real relative href, zero for the code-span.
+        assert len(f) == 1 and f[0]["category"] == "HREF_MISSING"
+        assert "../Other/target.ipynb" in f[0]["evidence"]
+
+    def test_real_link_inside_code_span_is_silent(self, tmp_path):
+        """A `[x](y)` literal inside backticks must NOT fire (it is not a link)."""
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        cells = [_md("L'API : `[link](https://example.com)` doit être lue littéralement.")]
+        assert scan_href(nb, cells, tmp_path) == []
+
 
 # ---------------------------------------------------------------------------
 # Class (h): solution leaks
