@@ -127,6 +127,49 @@ _ARITH_RE = re.compile(
 _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 _HTML_HREF_RE = re.compile(r"<a\s[^>]*href=\"([^\"]+)\"", re.I)
 _SKIP_TARGET_PREFIXES = ("http://", "https://", "mailto:", "#", "data:", "/")
+# Inline code spans (CommonMark: `text`, `` `text with ` `` , etc.) -- markdown
+# does NOT interpret their content as links. We must neutralize them before
+# _MD_LINK_RE / _HTML_HREF_RE run, else a formula like `` `[]((p => q))` ``
+# inside a table row is misread as a markdown link with target `(p => q)` and
+# triggers HREF_MISSING (#17187). The pattern uses a non-greedy match for the
+# span content and tolerates backtick runs longer than one.
+_INLINE_CODE_RE = re.compile(r"(`+)(?:(?!\1).)*?\1", re.DOTALL)
+
+
+def _strip_code(text: str) -> str:
+    """Replace inline code spans (and fenced blocks) with whitespace of the
+    same length, so character indices of the surrounding prose are preserved
+    and downstream offsets/lengths remain stable.
+
+    Per #17187: scan_enrich_quality was flagging formulas like `` `[]((p=>q))` ``
+    as HREF_MISSING because the regex matched the markdown link pattern inside
+    a code-span. Markdown never renders code-span content as a link; the fix
+    is to neutralise code spans BEFORE running link regexes.
+
+    Fenced code blocks (``` ... ```) are handled by the same substitution --
+    they are already code and their content cannot be markdown links either.
+    We do not use the existing `_fenced_blocks` because that helper returns a
+    list of (info, body) tuples, while we want to keep the rest of the cell
+    text intact for downstream passes (accents, phantoms, etc.).
+    """
+    out = _INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), text)
+    # Walk lines and blank out fenced-block contents (``` and ~~~ toggles).
+    lines = out.split("\n")
+    in_fence, cur_info = False, ""
+    for i, ln in enumerate(lines):
+        stripped = ln.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            if not in_fence:
+                in_fence, cur_info = True, stripped[:3]
+                lines[i] = " " * len(ln)
+            else:
+                if stripped.startswith(cur_info):
+                    in_fence, cur_info = False, ""
+                    lines[i] = " " * len(ln)
+            continue
+        if in_fence:
+            lines[i] = " " * len(ln)
+    return "\n".join(lines)
 
 # --- accents (class c) ------------------------------------------------------
 
@@ -362,7 +405,11 @@ def scan_href(notebook: Path, cells: list[dict], repo_root: Path) -> list[dict]:
     findings = []
     nb_dir = notebook.parent
     for i, cell in _md_cells(cells):
-        targets = _MD_LINK_RE.findall(_src(cell)) + _HTML_HREF_RE.findall(_src(cell))
+        # Strip code spans + fenced blocks BEFORE matching -- markdown does not
+        # render their content as links (#17187). Whitespace substitution keeps
+        # character positions stable for any downstream index-based logic.
+        text = _strip_code(_src(cell))
+        targets = _MD_LINK_RE.findall(text) + _HTML_HREF_RE.findall(text)
         seen = set()
         for t in targets:
             t = unquote(t).strip()
