@@ -1,0 +1,21 @@
+date: '2026-09-21'
+by: myia-po-2025:CoursIA
+python_sha: 6a677af7c01085c81ba6f5c6d4ee8add39f5e335
+csharp_sha: 080ceb6f0b2cf947b8616062fa95a98b5a0973d4
+content_python_sha: 69180bbec4f4df58bb559a7789eee077bb8fba5067bea5f640ce7f2bc79e080e
+content_csharp_sha: c5048e008063cfe9669ad7f6482bffc5362f34d9a34b70bd52a3d5cd824dece8
+reason: 'Fusion de la regle 2 du STOP #13410 sur cette PR de la lane : `check_split_reading_cells.py`
+  mesurait 14 violations -- 41 cellules de lecture ajoutees pour 14 sorties de code, la base n''en portant
+  AUCUNE (80 -> 53 cellules, 27 supprimees, 13 reecrites). AUDIT DE PARITE, et non re-attestation aveugle
+  : trois mesures. (1) Le jumeau C# n''est PAS touche -- `csharp_sha` et `content_csharp_sha` sont IDENTIQUES
+  a ceux de l''audit 0005 du 2026-09-09 ; la derive est donc unilaterale. (2) Le contenu Python ne bouge
+  qu''en MARKDOWN : le multiset de SHA (JSON canonique) des 17 cellules de code et celui de leurs 17 `outputs`
+  sont identiques base/head (assertion du script de fusion, re-verifiee apres coup), et les 22 cellules
+  markdown de la base sont intactes -- aucun modele, aucune sortie, aucun claim de l''axe partage (socle
+  pedagogique commun : modeles de sequences / HMM modelises dans les deux stacks) n''est modifie. (3)
+  `parity_level: native-both` -- le schema du registre rappelle que ce niveau ne dit RIEN de la correspondance
+  structurelle cellule-par-cellule ; le jumeau C# porte 63 cellules (21 code, 42 markdown) et aucun empilement
+  de lecture (organe `clean` de son cote), donc aucune edition en lockstep n''est due. Controle de non-perte
+  : `detect_md_content_loss.py --base 984c4e5d` rend findings=0 (md_cells base=22 head=36), le head portant
+  PLUS de markdown que la base (20051 contre 11552 caracteres normalises) ; densite pedagogique 1401 contre
+  799 a la base.'
