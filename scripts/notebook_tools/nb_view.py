@@ -14,12 +14,17 @@ Usage :
     gh api repos/OWNER/REPO/contents/PATH.ipynb --jq .content | base64 -d > nb.ipynb
     python3 nb_view.py nb.ipynb [--max-src 600] [--max-out 300]
 
-Sortie : une cellule par bloc — index, type, header/1re ligne, source (tronquée),
-outputs (stream tronqué, images = marqueur, texte tronqué). Fin : résumé des
-headers markdown + DOUBLONS détectés + gates #17040 (lectures successives).
+Sortie : une cellule par bloc — index, type, header/1re ligne, source (tronquée
+avec marqueur explicite), outputs (stream tronqué, images = marqueur, texte
+tronqué). Fin : analyse structurelle (doublons de headers normalisés, lectures
+empilées). Cette analyse ASSISTE les gates #17040, elle ne les remplace pas —
+les critères 3 (narration d'exercice) et 4 (seuil de densité 1200) et la
+vérification « valeurs citées présentes dans les outputs » restent à la lecture
+humaine (protocole FULL READ).
 """
 import json
 import sys
+import re
 import base64
 import argparse
 
@@ -38,6 +43,18 @@ def first_header(src: str) -> str | None:
         if s.startswith("#"):
             return s
     return None
+
+
+def norm_header(h: str) -> str:
+    """Clé de dédoublonnage : retire marquage markdown + numérotation de tête.
+
+    « ## 3. Interprétation » et « ## 4. Interprétation » → même clé
+    « interprétation » (motif mesuré #17078 : sections répétées numérotées).
+    """
+    s = h.strip().lower()
+    s = re.sub(r"^#+\s*", "", s)
+    s = re.sub(r"^[\d\s\.\-\)\]\—–:;·]+", "", s)
+    return s.strip()
 
 
 def out_summary(out: dict, max_out: int) -> str:
@@ -82,16 +99,24 @@ def main():
     ap.add_argument("--max-out", type=int, default=300, help="caractères max d'output texte")
     args = ap.parse_args()
 
-    raw = open(args.path, "rb").read()
-    nb = json.loads(raw)
+    try:
+        with open(args.path, "rb") as f:
+            raw = f.read()
+    except OSError as e:
+        sys.exit(f"erreur : impossible de lire {args.path} : {e}")
+    try:
+        nb = json.loads(raw)
+    except json.JSONDecodeError:
+        sys.exit(f"erreur : {args.path} n'est pas un JSON valide (404/HTML de gh api, base64 non décodé ?)")
+    if not isinstance(nb, dict) or "cells" not in nb or not isinstance(nb["cells"], list):
+        sys.exit(f"erreur : {args.path} est un JSON valide mais pas un notebook (clé 'cells' absente)")
 
     print(f"=== VUE NOTEBOOK {args.path} ({fmt_bytes(len(raw))} JSON brut, {len(nb['cells'])} cellules) ===")
     headers = []          # (index, header markdown)
-    md_lectures = []      # cellules markdown dont le 1er mot ressemble à une « lecture »
-    last_code_with_out = None
+    code_with_out = set() # index des cellules code avec un output réel non vide
 
     for i, c in enumerate(nb["cells"]):
-        ct = c["cell_type"]
+        ct = c.get("cell_type", "?")
         src = "".join(c.get("source", []))
         tag = f"[{i:02d} {ct.upper()[:4]}]"
         if ct == "markdown":
@@ -102,7 +127,8 @@ def main():
             if len(body) > args.max_src:
                 body = body[:args.max_src] + f"…(+{len(src)-args.max_src}c)"
             if body and body != h:
-                for line in body.split("\n")[:8]:
+                # corps intégral : unique point de troncature = max_src, TOUJOURS marqué
+                for line in body.split("\n"):
                     print(f"       | {line[:100]}")
         elif ct == "code":
             ec = c.get("execution_count")
@@ -113,40 +139,44 @@ def main():
                 body = body[:args.max_src] + f"…(+{len(src)-args.max_src}c)"
                 print(f"       | {body[:args.max_src]}")
             outs = c.get("outputs", [])
-            has_real_out = False
+            # output réel = non-stream, ou stream dont le texte agrégé est non vide
+            # (pas de test de sous-chaîne sur le rendu : « [0c] » littéral serait mal classé)
+            has_real_out = any(
+                o.get("output_type") != "stream" or "".join(o.get("text", [])).strip()
+                for o in outs
+            )
+            if has_real_out:
+                code_with_out.add(i)
             for o in outs:
-                s = out_summary(o, args.max_out)
-                if not s.startswith(("stream[0c]", "stream[") ) or "[0c]" not in s:
-                    has_real_out = True
-                print(f"       OUT {s}")
-            if outs and has_real_out:
-                last_code_with_out = i
+                print(f"       OUT {out_summary(o, args.max_out)}")
         else:
             print(f"{tag} {ct.upper()}: {src.strip()[:70]}")
 
-    # --- Gates #17040 (assistés) ---
-    print("\n=== SYNTHÈSE GATES #17040 ===")
+    # --- Analyse structurelle (assiste les gates #17040, ne les remplace pas) ---
+    print("\n=== ANALYSE STRUCTURELLE (assiste gates #17040 — ne les remplace pas) ===")
     seen = {}
     dups = []
     for i, h in headers:
-        key = h.strip().lower().rstrip("# ").strip()
+        key = norm_header(h)
         if len(key) > 4:
             if key in seen:
                 dups.append((seen[key], i, h))
             else:
                 seen[key] = i
     if dups:
-        print(f"⚠️ HEADERS DOUBLÉS ({len(dups)}) :")
+        print(f"⚠️ HEADERS DOUBLÉS après normalisation ({len(dups)}) — numérotation retirée :")
         for a, b, h in dups:
             print(f"   cellules {a} et {b} : « {h[:80]} »")
     else:
-        print("✓ aucun header markdown dupliqué à l'identique")
+        print("✓ aucun header dupliqué (après retrait de la numérotation)")
 
-    # lectures successives (2+ markdown non-header qui se suivent) — heuristique
+    # séquences de 2+ cellules markdown de prose consécutives ;
+    # si la 1re suit une cellule code POURVUE d'output réel → candidat « lectures
+    # empilées » : critère 1 #17040 (max UNE lecture par output, immédiatement après)
     run = []
     runs = []
     for i, c in enumerate(nb["cells"]):
-        if c["cell_type"] == "markdown":
+        if c.get("cell_type") == "markdown":
             src = "".join(c.get("source", [])).strip()
             if src and not src.startswith("#"):
                 run.append(i)
@@ -156,10 +186,24 @@ def main():
         run = []
     if len(run) >= 2:
         runs.append(run)
-    if runs:
-        print(f"⚠️ SÉQUENCES de 2+ cellules markdown de prose consécutives (candidats lectures empilées, à consolider) : {[r for r in runs]}")
-    else:
+    stacked = []
+    plain = []
+    for r in runs:
+        prev = r[0] - 1
+        if prev >= 0 and prev in code_with_out:
+            stacked.append(r)
+        else:
+            plain.append(r)
+    if stacked:
+        print(f"⚠️ LECTURES EMPI LÉES (critère 1 #17040) : 2+ cellules de prose consécutives juste après l'output de la cellule code : {stacked}")
+    if plain:
+        print(f"⚠️ séquences de 2+ cellules de prose consécutives (hors output, à consolider) : {plain}")
+    if not stacked and not plain:
         print("✓ pas de séquence de 2+ cellules de prose consécutives")
+
+    print("non vérifié ici : critère 1 placement exact (seules les empilées sont détectées), "
+          "critère 2 valeurs citées présentes dans les outputs, critère 3 narration d'exercice, "
+          "critère 4 seuil de densité 1200 — lecture humaine requise (FULL READ).")
 
 
 if __name__ == "__main__":
