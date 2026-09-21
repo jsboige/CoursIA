@@ -564,6 +564,15 @@ def _git_version_supported():
     return (major, minor) >= (2, 38)
 
 
+# Resolution git FIGEE au module (#17172) : resoudre "git" via le PATH a
+# chaque appel rend la suite sensible a toute pollution ulterieure de
+# os.environ["PATH"] par un test anterieur -- le discriminateur observe
+# (git qui interprete file:///C:/ en /C:/, POSIX) disparait des qu'on
+# fige le binaire. Le module est importe (collected) avant toute
+# execution de test : la resolution est faite sur un PATH propre.
+_GIT = shutil.which("git") or "git"
+
+
 def _git(cwd, *args, env=None):
     e = {
         "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@local",
@@ -572,7 +581,7 @@ def _git(cwd, *args, env=None):
     if env:
         e.update(env)
     return subprocess.run(
-        ["git", *args], cwd=str(cwd), env={**os.environ, **e},
+        [_GIT, *args], cwd=str(cwd), env={**os.environ, **e},
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
 
@@ -759,3 +768,28 @@ def test_cr_20260916_repo_complet_sans_merge_base_reste_fail_closed():
     )
     assert ok is False
     assert "fetch" not in calls, "un depot complet sans merge-base ne fetch pas"
+
+
+def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
+    """#17172 -- non-regression : le helper _git doit utiliser le binaire
+    resolu a l'import (_GIT, chemin absolu), pas re-resoudre ``git`` dans le
+    PATH courant. Un test anterieur qui pollue ``os.environ["PATH"]`` avec un
+    bin/ factice en tete ne doit pas detourner les topologies reelles (le
+    discriminateur observe : un git qui interprete ``file:///C:/`` en
+    ``/C:/``). Preuve : le fake ecrit un marqueur s'il est appele -- il doit
+    rester absent ET le vrai git doit repondre."""
+    marker = tmp_path / "fake_git_called"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    if os.name == "nt":
+        fake = bindir / "git.bat"
+        fake.write_text('@echo off\r\ntype nul > "' + str(marker) + '"\r\nexit /b 1\r\n', encoding="utf-8")
+    else:
+        fake = bindir / "git"
+        fake.write_text("#!/bin/sh\ntouch '" + str(marker) + "'\nexit 1\n", encoding="utf-8")
+        fake.chmod(fake.stat().st_mode | 0o111)
+    monkeypatch.setenv("PATH", str(bindir) + os.pathsep + os.environ.get("PATH", ""))
+    r = _git(tmp_path, "--version")
+    assert r.returncode == 0, r.stderr
+    assert not marker.exists(), "le git factice du PATH pollue a ete appele"
+    assert Path(_GIT).name.lower().startswith("git"), _GIT
