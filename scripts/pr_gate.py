@@ -930,6 +930,66 @@ def _gh_api(path: str) -> object:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
 
 
+# --- transient vs permanent API failures (#17262) ---------------------------
+#
+# `_gh_api` is fatal on any failure, and rule 1 says an unreadable state is a
+# failure, never a pass. That stays. What #17262 measured is a narrower defect:
+# the wait loop's whole design is to NOT conclude too early -- 90 polls of 30 s,
+# a delivery canary, and even a re-read at the deadline added by #11751 because
+# a timeout falling between two polls fabricated a false FAIL -- yet a SINGLE
+# transient API error abandoned all 90 polls. `fetch_checks` calls `_gh_api`
+# once per page plus once for `/status`, so any one of them returning a 403
+# killed the entire wait. Four PRs carried that red on 2026-09-21 with no
+# content defect: the gate could not read, and rendered a FAIL
+# indistinguishable from a red check.
+#
+# The classification is deliberately asymmetric. Only a *recognised* transient
+# signature is retried; every permanent signature -- and anything unrecognised
+# -- fails immediately, exactly as before. The default direction of an unknown
+# error is therefore "fatal", which is the rule-1-preserving side.
+PERMANENT_API_MARKERS = (
+    " 404",
+    "not found",
+    "no commit found",
+)
+TRANSIENT_API_MARKERS = (
+    "rate limit",
+    " 403",
+    " 429",
+    " 500",
+    " 502",
+    " 503",
+    " 504",
+    "timed out",
+    "timeout",
+    "non-json",
+    "connection reset",
+    "connection refused",
+    "could not resolve host",
+    "tls handshake",
+    "unexpected eof",
+    "server error",
+)
+
+# Consecutive retries, not a total: the counter is reset by a successful read.
+# A single hiccup is what was measured -- all four PRs died on the first error.
+# A run of this many in a row is an exhausted quota rather than a hiccup, and
+# the gate should stop spending its budget on it.
+MAX_CONSECUTIVE_TRANSIENT_RETRIES = 5
+
+
+def _is_transient_api_error(exc: BaseException) -> bool:
+    """True when re-reading could plausibly succeed.
+
+    Permanent signatures win over transient ones, and an unrecognised error is
+    NOT transient: an unknown failure keeps the historical fatal behaviour.
+    """
+    text = str(exc).lower()
+    if any(marker in text for marker in PERMANENT_API_MARKERS):
+        return False
+    return any(marker in text for marker in TRANSIENT_API_MARKERS)
+
+
 def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
     """Call `gh api -X POST <path>` with one `-f key=value` per field.
 
@@ -1295,9 +1355,41 @@ def wait_and_decide(
     bad: list[str] = []
     adv_jobs = advisory_jobs or frozenset()
     timeouts = declared_timeouts or {}
+    transient_reads = 0
 
     while True:
-        checks = fetch(repo, sha)
+        try:
+            checks = fetch(repo, sha)
+        except GateError as exc:
+            # #17262 -- a transient hiccup must not cost the gate its remaining
+            # budget. The retry is bounded by the SAME absolute deadline, so
+            # `--timeout-min` is never extended, and by a consecutive-attempt
+            # cap so a persistent outage cannot spend the whole window on
+            # re-reads. A state still unreadable when either bound is reached
+            # re-raises: `main` then renders the rule-1 FAIL, with the cause
+            # and the retry count named instead of a bare API string.
+            if not _is_transient_api_error(exc):
+                raise
+            transient_reads += 1
+            if (
+                transient_reads > MAX_CONSECUTIVE_TRANSIENT_RETRIES
+                or now() >= deadline
+            ):
+                raise GateError(
+                    f"{exc} -- {transient_reads} transient read failure(s) in a "
+                    "row: the check state stayed unreadable (rule 1)"
+                ) from exc
+            print(
+                f"[pr-gate] transient API error, retry {transient_reads}/"
+                f"{MAX_CONSECUTIVE_TRANSIENT_RETRIES} in {poll_sec:.0f}s: {exc}",
+                flush=True,
+            )
+            sleep(poll_sec)
+            # Deliberately NOT touching quiet_streak: a failed read is not a
+            # quiet poll, and counting it as one would let an outage settle the
+            # wait into a PASS -- the one direction rule 1 forbids.
+            continue
+        transient_reads = 0
         pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
         if detail is not None:
             detail["advisory"] = list(advisory)
@@ -1334,6 +1426,12 @@ def wait_and_decide(
             # even though the set is fully green. Re-read the state once more
             # before deciding -- a timeout is a signal to look again, not a
             # verdict in itself (same shape as `select()` with a deadline).
+            # #17262 -- this re-read is deliberately NOT retried, unlike the
+            # loop's own read above. We are at the deadline by construction, so
+            # a retry here could only extend `--timeout-min` (acceptance 3), and
+            # falling back to the previous read is not available either: that
+            # read is exactly the one #11751 proved misleading. A failure here
+            # therefore propagates and `main` renders the rule-1 FAIL.
             final_checks = fetch(repo, sha)
             final_pending, final_bad, final_ok, final_advisory = classify(
                 final_checks, self_name, adv_jobs
