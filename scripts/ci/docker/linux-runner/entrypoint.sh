@@ -122,7 +122,16 @@ done
 WCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 . "$WCH_DIR/work_cache_health.sh"
-wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}"
+# SECONDE BARRIERE (#16938). Le garde neutralise le rc de ses propres mesures
+# (wch_read, work_cache_health.sh) ; ce point d'appel porte la meme garantie, au
+# cas ou une mesure future l'oublierait. Sans elle, un rc qui fuit ici tue le
+# conteneur AVANT l'enregistrement du runner : aucun job ne tourne, et rien au
+# journal du job ne l'explique -- c'est ainsi que le slot 8 est reste mort.
+# L'echec est journalise, jamais avale en silence : la cause reste
+# diagnosticable, le slot reste vivant.
+if ! wch_check_workdir "$ACTIONS_RUNNER_INPUT_WORK" "${RUNNER_WORK_CACHE_PACK_THRESHOLD:-16}"; then
+  echo "work_cache: garde en echec -- enregistrement POURSUIVI (un garde de sante n'est jamais fatal, #16938)" >&2
+fi
 # ---------------------------------------------------------------------------
 
 cd "$RUNNER_HOME"

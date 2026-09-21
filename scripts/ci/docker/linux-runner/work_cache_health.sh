@@ -55,6 +55,37 @@ wch_git() {
   git -c safe.directory='*' "$@"
 }
 
+# NEUTRALISATION DU CODE DE RETOUR DES MESURES (#16938).
+#
+# Le banc porte `set -o pipefail` sans `-e` ; l'entrypoint, lui, porte
+# `set -euo pipefail` (entrypoint.sh:12). Sous ce shell, une LECTURE qui
+# echoue remonte son rc et TUE l'appelant :
+#
+#   - git sur un depot illisible (HEAD detruit, ownership refuse) -> rc=128
+#   - ls sur un glob sans correspondance (depot sans pack -- etat NOMINAL
+#     d'un cache frais) -> rc=2, qui traverse le `| wc -l` sous pipefail
+#
+# Mesure du 2026-09-21, seuil 16 (la valeur de production), sentinelle posee
+# apres l'appel : `wch_check_workdir` rend 128 sur un depot illisible et 2 sur
+# un depot sain sans pack ; dans les deux cas la sentinelle n'est JAMAIS
+# atteinte, donc l'entrypoint meurt avant d'enregistrer le runner -- aucun job
+# ne tourne, aucun journal ne l'explique (174 demarrages morts consecutifs sur
+# le slot 8). Sur le depot illisible la mort survient a la PREMIERE ligne de
+# wch_integrity_pass, donc AVANT la branche de purge qui est precisement le
+# geste de reparation de ce cas.
+#
+# C'est ce que le contrat de wch_integrity_pass interdit : un garde de sante ne
+# doit JAMAIS etre la raison pour laquelle un slot meurt. La consequence de
+# fond : le rc d'une lecture n'est pas une mesure. wch_broken_refs mesure sur
+# stderr, wch_ref_count et wch_pack_count sur stdout -- aucun des trois n'a
+# d'autorite sur le sort du conteneur. Neutralise A LA SOURCE, une fois, ici ;
+# le point d'appel porte une seconde barriere (entrypoint.sh).
+wch_read() {
+  # `"$@"` en position gauche d'un `||` : le rc de la lecture est consomme ici.
+  # Rendre 0 est le SEUL contrat de cette fonction -- sa sortie est la mesure.
+  "$@" || true
+}
+
 # Refs cassees du depot, une par ligne -- lues sur le CANAL stderr de
 # for-each-ref (rc=0 avec une ref cassee : le code de retour ne dit rien).
 # Sortie vide = aucune ref cassee detectee. Un depot illisible (fatal:
@@ -63,7 +94,7 @@ wch_git() {
 # conclut "sain" que sur un compte > 0.
 wch_broken_refs() {
   local repo="$1"
-  wch_git -C "$repo" for-each-ref 2>&1 >/dev/null \
+  wch_read wch_git -C "$repo" for-each-ref 2>&1 >/dev/null \
     | sed -n 's/^warning: ignoring broken ref //p'
 }
 
@@ -72,7 +103,7 @@ wch_broken_refs() {
 # ownership ou d'un .git muet -- on ne conclut jamais "sain" dessus.
 wch_ref_count() {
   local repo="$1"
-  wch_git -C "$repo" for-each-ref --format 'x' 2>/dev/null | wc -l | tr -d ' '
+  wch_read wch_git -C "$repo" for-each-ref --format 'x' 2>/dev/null | wc -l | tr -d ' '
 }
 
 # Retire les fichiers de ref/reflog de ZERO octet, dans .git/refs et
@@ -95,9 +126,12 @@ wch_drop_empty_refs() {
 }
 
 # Compte de packs du depot -- la grandeur que la maintenance borne.
+# Le glob sans correspondance est le cas NOMINAL d'un cache frais (aucun pack
+# tant qu'aucun fetch n'a eu lieu) : `ls` rend alors rc=2, neutralise par
+# wch_read -- sans quoi la maintenance tuait un slot SAIN.
 wch_pack_count() {
   local repo="$1"
-  ls "$repo"/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d ' '
+  wch_read ls "$repo"/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d ' '
 }
 
 # Precondition d'integrite AVANT qu'un slot n'accepte un job : detecte les
