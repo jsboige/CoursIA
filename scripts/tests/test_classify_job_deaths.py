@@ -81,6 +81,56 @@ def test_timeout():
     assert classify_job(_job("failure", steps), ANN_TIMEOUT) == "TIMEOUT"
 
 
+def test_oom_annotation_is_classified():
+    """Mesure 2026-09-21 (job 106270875399, runner myia-ai-01-wsl-8) : le job
+    meurt d'un manque de memoire du parc, GitHub pose "Out of memory." sur le
+    check-run, et l'etape courante reste en `null` (jamais resolue). Avant
+    l'ajout de la classe, ce cas tombait en UNCATEGORIZED_FAILURE."""
+    steps = [
+        {"number": 1, "name": "Set up job", "conclusion": "success"},
+        {"number": 2, "name": "Install dependencies", "conclusion": "success"},
+        {"number": 3, "name": "Run tests", "conclusion": None},
+        {"number": 4, "name": "Post Run actions/checkout@v4", "conclusion": None},
+    ]
+    ann = [
+        {"message": "Node.js 20 is deprecated. The following actions target "
+                    "Node.js 20 but are being forced to run on Node.js 24"},
+        {"message": "Out of memory."},
+    ]
+    assert classify_job(_job("failure", steps), ann) == "OOM"
+
+
+def test_real_step_failure_wins_over_oom_annotation():
+    """Contrat de priorite preserve : une famine memoire peut se manifester en
+    exit 1 sur un teardown qui echoue, mais une etape REELLEMENT en echec reste
+    un rouge de contenu. Ajouter OOM ne doit pas offrir de blanchiment."""
+    steps = [
+        {"number": 1, "name": "Checkout", "conclusion": "success"},
+        {"number": 2, "name": "Run tests", "conclusion": "failure"},
+    ]
+    ann = [{"message": "Out of memory."}]
+    assert classify_job(_job("failure", steps), ann) == "REAL_STEP_FAILURE"
+
+
+def test_oom_is_counted_as_infrastructural():
+    """Le demi-correctif a mesurer : classer OOM sans le compter laisse le
+    rapport annoncer "morts infrastructurelles : 0" sur une mort du parc --
+    l'instrument resterait menteur. La somme `infra` ET son detail derivent de
+    INFRA_DEATH_CLASSES, donc les deux sites ne peuvent plus diverger."""
+    import classify_job_deaths as mod
+
+    payload = {
+        "counts": {"OOM": 2, "REAL_STEP_FAILURE": 1},
+        "rows": [],
+    }
+    text = mod.render_markdown(payload)
+    assert "morts infrastructurelles : **2**" in text
+    assert "AUTRES=0" in text, "3 morts, 2 infra, 1 contenu -> 0 autre"
+    for klass in mod.INFRA_DEATH_CLASSES:
+        assert f"{klass}=" in text, f"{klass} absent du detail infra"
+    assert "OOM=2" in text
+
+
 def test_cancelled_without_annotation_is_other():
     """Quarto (cancel-in-progress inconditionnel) : cancelled sans annotation
     d'acquisition -> classe distincte de NO_RUNNER_ACQUIRED."""

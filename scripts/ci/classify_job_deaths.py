@@ -20,6 +20,15 @@ lit et rend le motif comptable sans intervention manuelle :
     suivantes en ``null`` : l'agent a perdu la connexion en cours de route.
   * ``TIMEOUT``              -- "has exceeded the maximum execution time"
     (``timeout-minutes`` du workflow).
+  * ``OOM``                  -- "Out of memory." Job failure, runner assigne,
+    etape courante en ``null`` (jamais resolue), aucune etape en ``failure`` :
+    le parc a manque de memoire et le job est mort en cours d'execution. La
+    cause est le PARC, pas le diff -- mais la classe est un PLANCHER, pas une
+    partition : une famine memoire peut aussi se manifester en
+    ``REAL_STEP_FAILURE`` (exit 1 sur un teardown qui echoue, ex.
+    ``RuntimeError: can't start new thread``) sans qu'aucune annotation OOM ne
+    soit posee ; ce cas reste indistinguable par API et exige la lecture du
+    log -- absent justement quand le job est tue (mesure 2026-09-21).
   * ``REAL_STEP_FAILURE``    -- au moins une etape en ``failure`` : le vrai
     rouge de contenu, le seul qui exige une correction du code.
   * ``CANCELLED_OTHER``      -- cancelled sans annotation d'acquisition :
@@ -58,8 +67,28 @@ ANNOTATION_CLASSES: list[tuple[str, str]] = [
     ("not acquired by Runner", "NO_RUNNER_ACQUIRED"),
     ("lost communication with the server", "RUNNER_LOST_COMM"),
     ("exceeded the maximum execution time", "TIMEOUT"),
+    # Mesure 2026-09-21 (job 106270875399, runner myia-ai-01-wsl-8) : GitHub
+    # pose l'annotation "Out of memory." sur un job tue par le parc. Sans
+    # cette entree la classe tombait en UNCATEGORIZED_FAILURE et le rapport
+    # annoncait "morts infrastructurelles : 0" -- l'instrument rendait la mort
+    # indistinguable d'un rouge de contenu, soit exactement ce qu'il existe
+    # pour supprimer.
+    ("Out of memory", "OOM"),
     ("The runner has received a shutdown signal", "RUNNER_LOST_COMM"),
 ]
+
+# Classes dont la cause est le PARC et non le diff. Source unique : la somme
+# ``infra`` et son detail sont tous deux derives de cette constante, pour
+# qu'une classe ajoutee ici ne puisse pas rester hors du total. La forme
+# precedente nommait ces classes DEUX fois -- la somme dans un tuple, le
+# detail dans une f-string -- et une troisieme classe n'aurait ete comptee
+# que si les deux sites etaient edites (c'est par la que OOM est passe :
+# classable, mais hors somme).
+INFRA_DEATH_CLASSES: tuple[str, ...] = (
+    "NO_RUNNER_ACQUIRED",
+    "RUNNER_LOST_COMM",
+    "OOM",
+)
 
 
 def gh_api(path: str, params: str = "") -> dict | list:
@@ -245,16 +274,16 @@ def analyse_runs(runs: list[dict]) -> dict:
 def render_markdown(payload: dict) -> str:
     counts = payload["counts"]
     total = sum(counts.values())
-    infra = sum(
-        counts.get(k, 0) for k in ("NO_RUNNER_ACQUIRED", "RUNNER_LOST_COMM")
+    infra = sum(counts.get(k, 0) for k in INFRA_DEATH_CLASSES)
+    breakdown = ", ".join(
+        f"{k}={counts.get(k, 0)}" for k in INFRA_DEATH_CLASSES
     )
     out = ["# Audit job deaths (issue #15055)", ""]
     timeout = counts.get("TIMEOUT", 0)
     out.append(
         f"Jobs morts non-skips analyses : **{total}** | "
         f"morts infrastructurelles : **{infra}** "
-        f"(NO_RUNNER_ACQUIRED={counts.get('NO_RUNNER_ACQUIRED', 0)}, "
-        f"RUNNER_LOST_COMM={counts.get('RUNNER_LOST_COMM', 0)}) | "
+        f"({breakdown}) | "
         f"REAL_STEP_FAILURE={counts.get('REAL_STEP_FAILURE', 0)} | "
         f"TIMEOUT={timeout} (config timeout-minutes, hors sante du parc) | "
         f"AUTRES={total - infra - counts.get('REAL_STEP_FAILURE', 0) - timeout}"
