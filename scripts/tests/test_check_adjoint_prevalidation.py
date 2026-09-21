@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -755,3 +756,132 @@ def test_template_renders_the_emitting_lane_not_a_borrowed_name():
 def test_template_lane_defaults_to_the_adjoint():
     """The adjoint stays the canonical emitter: the default is unchanged."""
     assert f"lane: {mod.ADJOINT_LANE}" in mod.render_template(_base_snapshot())
+
+
+# ------------------------------------------- the attested reason, exposed (#17290)
+#
+# On exit 3 the dossier is INTACT -- that is what the code means -- so `errors`
+# is [] by construction. The rule then tells the coordinator to "dispatch from
+# the dossier's stated reason" while publishing none of it, and re-parsing the
+# dossier comment by hand is the only way out. Measured cost: 13 PRs at rc=3 in
+# one cycle, 6 of them with a reason that was already dead.
+#
+# Exposing it must not weaken the gate: a REFUSED dossier is not a fainter
+# dossier, and must publish nothing at all.
+
+
+def test_blocking_fields_name_checks_on_a_checks_blocked_dossier():
+    """Controle positif 1 : `checks: BLOCKED`, `b0: clear` -> ["checks"]."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", checks="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == ["checks"]
+
+
+def test_blocking_fields_name_b0_on_a_b0_blocked_dossier():
+    """Controle positif 2 : `b0: blocked`, `checks: latest-wins-green` -> ["b0"].
+
+    The two reasons send the work to DIFFERENT places -- a dead `checks` goes to
+    the adjoint for a `--template`, a real `b0` goes to the carrying lane for a
+    lift sentence. Telling them apart is the whole point of the exposure.
+    """
+    snapshot = _snapshot(_body(verdict="BLOCKED", b0="blocked"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == ["b0"]
+
+
+def test_blocking_fields_are_listed_in_the_contract_order():
+    """A dossier blocked on every field orders them the way the contract does."""
+    snapshot = _snapshot(
+        _body(verdict="BLOCKED", checks="BLOCKED", b0="blocked", scope="fail",
+              domain="fail")
+    )
+    _, _, dossier = mod.evaluate_with_dossier(snapshot)
+    assert mod.blocking_fields(dossier) == ["checks", "b0", "scope", "domain"]
+
+
+def test_a_blocked_dossier_can_name_no_blocking_field():
+    """Honesty edge: the contract ALLOWS a blocked dossier with clear fields.
+
+    `validate_dossier` constrains `checks`/`b0`/`scope`/`domain` only when the
+    dossier claims READY. An honest blocked dossier may therefore declare them
+    all at their READY value and carry its reason in prose. Reporting [] then is
+    the true answer -- inventing a field to fill the silence would fabricate the
+    very reason this issue exists to publish.
+    """
+    snapshot = _snapshot(_body(verdict="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert (verdict, errors) == (mod.VERDICT_BLOCKED, [])
+    assert mod.blocking_fields(dossier) == []
+
+
+def test_ready_result_publishes_the_dossier_with_no_blocker():
+    """Acceptance: rc=0 carries the same block, with `blocking_fields: []`."""
+    snapshot = _snapshot(_body())
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == mod.VERDICT_READY
+    assert result["ready"] is True
+    assert result["blocking_fields"] == []
+    assert result["dossier"]["checks"] == "latest-wins-green"
+
+
+def test_blocked_result_publishes_the_dossier_and_its_blocker():
+    """Acceptance: rc=3 exposes the parsed dossier and a non-empty blocker."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", checks="BLOCKED"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == mod.VERDICT_BLOCKED
+    assert result["blocking_fields"] == ["checks"]
+    assert result["dossier"]["lane"] == "myia-po-2025:CoursIA-2"
+    assert result["dossier"]["head"] == HEAD
+    assert result["dossier"]["comment_index"] == 1
+
+
+def test_a_refused_dossier_is_not_published_at_all():
+    """Controle NEGATIF -- the exposure must not launder a refused dossier.
+
+    A dossier whose fingerprint no longer covers the live surfaces is refused
+    (rc=1). If the payload published its parsed fields anyway, a referee reading
+    the JSON would see a lane, a head and a verdict for a PR the gate just
+    rejected -- exactly the confusion the refusal exists to prevent.
+    """
+    snapshot = _snapshot(_body())
+    snapshot["title"] = "mutated after the stamp"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "" and dossier is None
+    assert errors, "a perimed fingerprint must still be refused"
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    assert result["verdict"] == "NO_DOSSIER"
+    assert "dossier" not in result
+    assert "blocking_fields" not in result
+
+
+def test_dossier_payload_publishes_every_read_field():
+    """Acceptance: "tous les champs lus" -- the whole contract, not a subset.
+
+    Publishing a curated handful would leave the next consumer re-parsing the
+    comment for the field that was left out, which is the defect itself.
+    """
+    dossier, parse_errors = mod.parse_dossier(_body(), 1, "jsboige", T0)
+    assert parse_errors == []
+    payload = mod.dossier_payload(dossier)
+    assert mod.REQUIRED_FIELDS <= set(payload)
+    assert payload["author"] == "jsboige"
+    assert payload["created_at"] == T0
+
+
+def test_result_is_json_serializable():
+    """`--json` must actually serialize: a Dossier is not a dict."""
+    snapshot = _snapshot(_body(verdict="BLOCKED", b0="blocked"))
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    result = mod.build_result(123, snapshot, verdict, errors, dossier)
+    decoded = json.loads(json.dumps(result, ensure_ascii=False))
+    assert decoded["dossier"]["b0"] == "blocked"
+
+
+def test_evaluate_keeps_its_two_tuple_shape():
+    """The gate's historical view is unchanged: no caller moves under it."""
+    verdict, errors = mod.evaluate(_snapshot(_body()))
+    assert (verdict, errors) == (mod.VERDICT_READY, [])
