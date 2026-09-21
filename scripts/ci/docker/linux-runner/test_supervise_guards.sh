@@ -132,6 +132,13 @@ echo 17179869184 > "$COURSIA_CI_SLICE_PATH/memory.max"
 echo 12884901888 > "$COURSIA_CI_SLICE_PATH/memory.high"
 export COURSIA_CI_SLICE_PATH
 
+# Meme raison encore : BUDGET_GB est la SEULE borne de ressource qui n'est pas
+# inerte par defaut, et supervise.sh la SIGNALE desormais quand aucun wrapper ne
+# la declare. Les tests qui suivent ne portent pas sur cet avertissement : on
+# declare donc le budget d'une machine nominale, pour que leur `last.err` reste
+# le journal de LEUR garde. Le test 58 le retire expres -- c'est son objet.
+export COURSIA_RUNNER_BUDGET_GB=12
+
 # Helper : executer supervise.sh avec env detourne. Timeout pour eviter le
 # hang de wait() -- cmd_start lance wait() qui attend les slot_loop infinis.
 # La fenetre (8 s) est large : elle borne execute() sans dependre d'une
@@ -2647,6 +2654,59 @@ echo "Test 54 : conteneurs dans la slice -> appartenance OK, pas d'EVASION (#151
 )
 echo ""
 
+
+# --- Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce -
+#
+# BUDGET_GB est la SEULE borne de ressource qui n'est pas inerte par defaut : le
+# garde de memoire compare une somme EN VOL a ce budget, donc un defaut a 0
+# refuserait tous les slots de toutes les machines. Elle ne peut pas etre
+# neutre -- mais elle ne doit pas non plus gouverner en SILENCE. C'est ce
+# silence qui a fait refaire a la main l'enquete « effectifs declares vs budget
+# memoire » sur po-2024, ou le 12 n'etait ecrit dans aucun fichier lisible :
+# il ne vivait que dans le `${VAR:-12}` du script.
+#
+# La jambe (b) est le CONTROLE NEGATIF, et c'est elle qui donne sa valeur au
+# test : sans elle, un avertissement INCONDITIONNEL passerait la jambe (a) en
+# ne disant rien d'utile.
+echo "Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/state-58a" "$TEST_DIR/state-58b"
+
+  # (a) NON DECLARE -- l'implicite est signale ET nomme.
+  unset COURSIA_RUNNER_BUDGET_GB
+  run_supervise 'status' 'test-prefix-58a' "$TEST_DIR/state-58a" >/dev/null 2>&1
+  err="$(cat "$TEST_DIR/last.err")"
+  if echo "$err" | grep -q "COURSIA_RUNNER_BUDGET_GB n'est declare"; then
+    ok "budget non declare : l'implicite est signale et nomme"
+  else
+    ko "aucun avertissement sur budget non declare, err=$err"
+  fi
+
+  # (b) DECLARE -- la valeur declaree GOUVERNE, et elle est silencieuse.
+  #
+  #     L'observable n'est pas `status` : `assert_memory_budget` n'est appelee
+  #     que par `start` / `waiters` / `lean`, jamais par le rapport d'etat. On
+  #     declenche donc un REFUS, qui est a la fois deterministe, immediat, et
+  #     sans slot a tuer -- le garde refuse AVANT de lancer quoi que ce soit.
+  #     Un budget declare a 0 rend `used + want > 0` vrai des qu'un slot est
+  #     demande : le message de refus nomme alors la valeur, en Mo et en Go.
+  #     Avec le defaut 12, `start 1` passerait et le message n'existerait pas.
+  out="$(COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" 2>&1)"
+  if echo "$out" | grep -q "COURSIA_RUNNER_BUDGET_GB=0"; then
+    ok "budget declare : il gouverne -- un budget a 0 fait REFUSER le slot, et le refus nomme la valeur declaree"
+  else
+    ko "le budget declare n'a pas gouverne, out=$out"
+  fi
+  if echo "$out" | grep -q "n'est declare par aucun"; then
+    ko "budget declare mais l'avertissement tombe quand meme"
+  else
+    ok "budget declare : aucun avertissement d'implicite"
+  fi
+  unset COURSIA_RUNNER_BUDGET_GB
+)
+echo ""
 
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
