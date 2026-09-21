@@ -304,9 +304,35 @@ jobs:
           # runs only, not legacy commit statuses. Every check involved here
           # (`PR gate`, CodeQL, the guards) is a check run, so the selection is
           # exact for this repository's setup.
+          #
+          # Un balayage qui n'a rien balaye ne doit PAS conclure `success`.
+          # Mesure 2026-09-21 (lane po-2026, datapoint d'`hermes-agent`) : le
+          # run 35609182069 (schedule 13:59:54Z) a conclu `success` en 33 s
+          # sans rien reparer -- log = cette branche, puis exit 0. Or
+          # `pr-gate-sweep-health-advisory.yml` mesure la fraicheur par
+          # `gh run list --status success --limit 1` : un no-op PASSE pour un
+          # service rendu, l'age reste < 60 min, et l'alarme reste verte
+          # pendant que la jambe reelle ne repare rien. Sur 84 succes mesures,
+          # 82 avaient un vrai passage (353-601 s) ; le no-op etait le SEUL
+          # succes depuis 02:23:36Z -- donc la sonde lisait un run qui n'avait
+          # pas travaille.
+          #
+          # L'`exit 0` etait un choix de quietude (« blip upstream, le
+          # prochain sweep est proche »). Sous le regime mesure (concurrence
+          # du groupe + plafond), le prochain sweep n'est PAS proche : la
+          # quietude lavait la sonde au vert. Le filtre `--status success` de
+          # l'advisory continue de tolerer un echec isole (il faut que le
+          # dernier succes SORTE de la fenetre de 60 min pour que l'alarme
+          # tire) : un blip transitoire reste donc silencieux, mais un no-op
+          # REPETE fait enfin vieillir l'age et nomme l'absence de secours.
+          #
+          # L'annotation `::error::` n'est pas decorative : la run concluant
+          # desormais `failure`, elle doit etre triable comme « le balayage
+          # n'a pas eu lieu » et non comme un rouge de contenu (cf
+          # `scripts/ci/classify_job_deaths.py`, qui classe par annotation).
           gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --paginate \
             --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork)"' > /tmp/openprs.txt \
-            || { echo "[stale-sweep] PR listing failed (upstream) -- skip this sweep"; exit 0; }
+            || { echo "::error::[stale-sweep] NO-OP -- PR listing failed (upstream); NOTHING was swept this run (no repair pass, no rescue)"; exit 1; }
 
           : > /tmp/runs.jsonl
           : > /tmp/mute.txt

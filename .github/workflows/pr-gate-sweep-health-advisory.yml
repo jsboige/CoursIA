@@ -109,6 +109,14 @@ jobs:
           # Most recent *successful* run of the sweep, with its creation time.
           # Filtering to conclusion=success keeps a transient failure from
           # tripping the alarm as long as a success happened inside the window.
+          #
+          # Ce filtre ne vaut que parce qu'un sweep qui n'a RIEN balaye ne
+          # conclut plus `success` (fix 2026-09-21, #17230) : le no-op
+          # `[stale-sweep] PR listing failed (upstream)` sortait en 0 et
+          # passait pour un service rendu -- l'age restait sous les 60 min et
+          # cette sonde restait verte pendant que la jambe ne reparait rien.
+          # `success` signifie donc desormais « un passage de reparation a
+          # abouti », et non « le workflow a tourne ».
           RUN=$(gh run list --workflow pr-gate-stale-sweep.yml --status success --limit 1 \
                 --json createdAt,conclusion 2>/dev/null) \
             || { echo "[sweep-health] gh run list failed (upstream) -- skip this check"; exit 0; }
