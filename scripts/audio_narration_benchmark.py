@@ -28,9 +28,13 @@ l'implementation necessite un echantillon audio de référence (RECOVERABLE-USER
 **Pourquoi ce benchmark plutot qu'une narration reelle ?** Le verdict SOTA
 de la tranche 2 est : "Qwen3-TTS CustomVoice est le candidat SOTA si on dispose
 d'un echantillon de voix, sinon TADA 3B pour l'expressivité pure, sinon Kokoro
-pour la latence". Ce verdict est pose sur des **métriques mesurées**, pas sur
-un pitch marketing. La tranche 3 (TTS expressif couplé a la composition
-Strudel de la tranche 1) s'appuiera sur ce verdict pour fixer le moteur.
+pour la latence". Le verdict est pose sur des **metriques mesurees** quand le gateway est
+joignable (mode live : `latency_s` = temps observe), ou sur des **metriques
+documentees** en mode `--dry-run` (la table "Recommandation" derive alors
+`min(results, key=latency_s)` des `expected_latency_s` EngineSpec, le reste
+des lignes reste un verdict SOTA pre-benche qui sera renseigne par la
+tranche 3). La tranche 3 (TTS expressif couple a la composition Strudel de
+la tranche 1) s'appuiera sur ce verdict pour fixer le moteur.
 """
 from __future__ import annotations
 
@@ -212,12 +216,30 @@ def _render_verdict_md(text: str, results: list[BenchmarkResult]) -> str:
             f"| `{r.engine}` ({r.label}) | `{r.voice}` | "
             f"{r.latency_s:.2f}s | {r.wav_bytes}o | {r.status} |"
         )
+    # Table "Recommandation par cas d'usage" :
+    # - La ligne "Latence minimale" est DERIVÉE des résultats mesurés (`latency_s`
+    #   = observé en live, ou `expected_latency_s` EngineSpec en dry-run).
+    # - Les autres lignes sont un verdict SOTA PRÉ-BENCHÉ documenté ; la tranche
+    #   3 les renseignera avec les résultats live.
+    live_results = [r for r in results if r.status in ("ok", "dry-run")]
+    if live_results:
+        fastest = min(live_results, key=lambda r: r.latency_s)
+        latency_str = f"{fastest.latency_s:.2f}s"
+    else:
+        fastest = None
+        latency_str = "indisponible"
     lines.append("")
     lines.append("## Recommandation par cas d'usage")
     lines.append("")
     lines.append("| Cas d'usage | Moteur recommandé | Justification |")
     lines.append("|-------------|-------------------|---------------|")
-    lines.append("| Latence minimale | `kokoro` | ~0.8s, voix 6, VRAM 2GB |")
+    if fastest is not None:
+        lines.append(
+            f"| Latence minimale | `{fastest.engine}` | {latency_str} (derive des resultats "
+            f"{'live' if any(r.status == 'ok' for r in results) else 'dry-run'}) |"
+        )
+    else:
+        lines.append("| Latence minimale | (indisponible) | Aucun resultat exploitable |")
     lines.append("| Expressivité maximale (sans clonage) | `tada` | Prosodie + émotion HumeAI |")
     lines.append("| Clonage de voix (voie SwitchAngel) | `qwen3` (custom1-3) | Slot dédié, échantillon requis |")
     lines.append("| Mix des trois | Pipeline composite | Kokoro narration + TADA emphasis + Qwen3 refrain |")
