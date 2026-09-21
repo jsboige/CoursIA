@@ -27,10 +27,17 @@ LIMITE, ecrite ici pour ne pas etre surinterpretee : ces controles sont
 `isinstance`, API 3.10+, dependance tierce absente). Il couvre les **deux mecanismes
 qui ont effectivement casse**, pas l'importabilite 3.9 en general.
 
-Perimetre volontairement etroit : les autres modules de `scripts/notebook_tools/`
-qui portent une annotation PEP 604 sans future-import ne sont **pas** des hooks et
-tournent sous le `python` de la CI — hors scope. La mesure est jointe au body de la
-PR (#17264) : 19 modules sur 191 dans ce cas, dont aucun n'est un hook.
+Perimetre volontairement etroit : les autres modules qui portent une annotation
+PEP 604 sans future-import ne sont **pas** des hooks et tournent sous le `python`
+de la CI — hors scope. La mesure est jointe au body de la PR (#17264) :
+
+    scripts/** hors tests   32 offender(s) / 478 module(s), dont 0 dans la cloture
+    scripts/** tests inclus 55 offender(s) / 969 module(s), dont 0 dans la cloture
+
+**Zero dans la cloture** est le resultat qui compte : le garde couvre exactement
+la ou le defaut casse en production, et n'impose rien ailleurs. Reproduire cette
+mesure avec les deux helpers de ce fichier (`_has_future_annotations`,
+`_pep604_annotation_lines`) sur un `rglob("*.py")`.
 """
 
 import ast
