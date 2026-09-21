@@ -174,7 +174,9 @@ def test_cmd_report_via_subprocess(tmp_path: Path):
 
 
 def test_cmd_backfill_via_subprocess(tmp_path: Path):
-    """Le mode --backfill ajoute markForBackfill: true au frontmatter."""
+    """Le mode --backfill ajoute markForBackfill: true au frontmatter,
+    sur sa propre ligne avant le fermant (pas colle au delimiteur ---)."""
+    import re
     root = tmp_path / "archive"
     target = _make_archive(root, "workspace-z-2026-09-01T10-00-00-fallback.md", messages=5)
     result = subprocess.run(
@@ -183,7 +185,16 @@ def test_cmd_backfill_via_subprocess(tmp_path: Path):
     )
     assert result.returncode == 0, f"stderr={result.stderr}"
     text = target.read_text(encoding="utf-8")
-    assert "markForBackfill: true" in text
+    # Position stricte : le marqueur precede le fermant --- sur sa propre ligne.
+    # Sans ce pattern, un YAML strict voit `---markForBackfill` (garbage) comme
+    # une cle, cf. finding Hermes #17261.
+    assert re.search(r"markForBackfill: true\n---\n", text), (
+        f"markForBackfill doit etre sur sa propre ligne avant --- ; got:\n{text!r}"
+    )
+    # Garde anti-regression : pas de cle polluee `---markForBackfill`.
+    assert "---markForBackfill" not in text, (
+        f"Marqueur colle au fermant --- detecte (regression Hermes #17261) ; got:\n{text!r}"
+    )
 
 
 def test_cmd_backfill_idempotent(tmp_path: Path):

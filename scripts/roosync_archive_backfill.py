@@ -250,9 +250,11 @@ def cmd_backfill(target: Path, archives: list[ArchiveInfo]) -> int:
     if "markForBackfill:" in text:
         print(f"[backfill] DEJA MARQUEE : {info.path}")
         return 0
-    # Insertion juste apres le frontmatter fermant (---) : ajoute markForBackfill: true
+    # Insertion en fin du frontmatter, avant le fermant (---) : on reconstruit
+    # proprement via m.group('body') au lieu de slicer m.group(0) (sinon le
+    # marqueur colle au fermant et casse un parseur YAML strict).
     new_text = FRONTMATTER_RE.sub(
-        lambda m: m.group(0)[:-1] + "markForBackfill: true\n---\n",
+        lambda m: f"---\n{m.group('body')}\nmarkForBackfill: true\n---\n",
         text,
         count=1,
     )
