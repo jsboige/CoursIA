@@ -4342,12 +4342,12 @@ print(f""x@W0 + (alpha/r)*x@(BA)^T == x@(W0 + (alpha/r)*BA)^T : {torch.allclose(
 print(f""écart max entre les deux chemins : {ecart_max:.2e} (arrondi float32)"")
 print(f""rang de delta_W : {torch.linalg.matrix_rank(lora_demo.delta_W().detach()).item()} <= r={lora_demo.r}"")
 ",,,,,,,,47d85d2184dc39dd,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_merge,markdown,fr,3143f4252379ec11,"### Lecture : l'inference « zero-overhead »
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_lect_merge,markdown,fr,5f942e97bcba55fd,"### Lecture : l'inference « zero-overhead »
 
-Les deux chemins de calcul coïncident (`allclose → True`, écart max ~1e-06 = arrondi float32) : additionner la mise à jour dans les poids (`W₀ + (α/r)·BA`) produit **le même réseau** que de garder deux branches séparées. C'est LA preuve que le merge en inference est gratuit : après fusion, plus aucune multiplication par `B` puis `A` — une seule couche dense, la même que le pré-entraîné, avec d'autres poids. C'est l'argument central que le notebook [FT-05 (ModelMerging)](FT-05-ModelMerging-Routing.ipynb) exploite en aval : fusionner n'adaptateurs revient à additionner leurs deltas.
+Les deux chemins de calcul coïncident (`allclose → True`, écart max ~1e-06 = arrondi float32) : additionner la mise à jour dans les poids (`W₀ + (α/r)·BA`) produit **le même réseau** que de garder deux branches séparées. C'est LA preuve que le merge en inference est gratuit : après fusion, plus aucune multiplication par `B` puis `A` — une seule couche dense, la même que le pré-entraîné, avec d'autres poids. C'est l'argument central que le notebook [FT-05 (ModelMerging)](FT-05-ModelMerging-Routing-Python.ipynb) exploite en aval : fusionner n'adaptateurs revient à additionner leurs deltas.
 
 Le rang de `ΔW` (affiché : `≤ r`) est la contrepartie : la mise à jour vit dans un sous-espace de dimension `r`. Tout l'enjeu du choix de `r` est là — assez de dimensions pour la tâche, pas plus.
-",,,,,,,,3143f4252379ec11,,,,,,,,
+",,,,,,,,5f942e97bcba55fd,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,lora_grid,code,fr,9da2bf88a39e41bf,"# Grille rank x alpha : combien de paramètres entraînables, et quelle amplitude
 # Dimensions réelles d'OPT-1.3b (le modèle des sections 5-8) : d_model=2048, 24 couches
 D_MODEL, N_COUCHES, N_CIBLES = 2048, 24, 2
