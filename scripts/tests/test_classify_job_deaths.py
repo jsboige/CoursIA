@@ -170,6 +170,99 @@ def test_run_cancelled_no_jobs_is_a_distinct_signature():
     assert payload["rows"][0]["class"] == "RUN_CANCELLED_NO_JOBS"
 
 
+def test_window_from_hours_is_a_rolling_window():
+    """--hours est un raccourci CALCULE de --created : la borne haute est
+    l'instant present, la basse son decalage exact. Deterministe par `now`
+    injecte — sans horloge reelle dans le test."""
+    from datetime import datetime, timedelta, timezone
+
+    from classify_job_deaths import window_from_hours
+
+    now = datetime(2026, 9, 21, 9, 40, 0, tzinfo=timezone.utc)
+    assert window_from_hours(24, now) == "2026-09-20T09:40:00Z..2026-09-21T09:40:00Z"
+    assert window_from_hours(6, now) == "2026-09-21T03:40:00Z..2026-09-21T09:40:00Z"
+    # Le franchissement d'un mois n'est pas un cas special : c'est le meme
+    # `timedelta`, et un census mensuel (`--hours 720`) y passe.
+    assert window_from_hours(720, now) == (
+        "2026-08-22T09:40:00Z..2026-09-21T09:40:00Z"
+    )
+    assert timedelta(hours=24) == timedelta(days=1)
+
+
+def test_window_from_hours_rejects_non_positive():
+    """0 ou negatif rendrait `START..END` a l'envers : l'API repondrait 0 run,
+    un zero propre indiscernable d'une absence reelle (meme piege que --sha
+    tronque). Fail bruyant plutot que silence."""
+    from classify_job_deaths import window_from_hours
+
+    for bad in (0, -1):
+        try:
+            window_from_hours(bad)
+            raise AssertionError(f"--hours {bad} doit refuser")
+        except SystemExit:
+            pass
+
+
+def test_hours_reaches_the_api_window(monkeypatch, capsys):
+    """Cablage de bout en bout : `--hours 24` doit arriver a l'appel API en
+    fenetre START..END de 24 h. Tester le helper seul laisserait passer la
+    regression qui compte ici — un `--hours` accepte puis IGNORE (l'appelant
+    retombant sur sa valeur par defaut) rendrait un census silencieusement
+    faux, non un crash."""
+    import re as _re
+
+    import classify_job_deaths as mod
+
+    captured: dict[str, str] = {}
+
+    def fake_iter_red_runs(branch, event, created, max_runs):
+        captured["created"] = created
+        return []
+
+    monkeypatch.setattr(mod, "iter_red_runs", fake_iter_red_runs)
+    monkeypatch.setattr(
+        sys, "argv", ["classify_job_deaths.py", "--hours", "24"]
+    )
+    assert mod.main() == 0
+
+    window = captured["created"]
+    match = _re.fullmatch(
+        r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\.\."
+        r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)",
+        window,
+    )
+    assert match, f"fenetre non conforme : {window!r}"
+    from datetime import datetime
+
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    span = datetime.strptime(match.group(2), fmt) - datetime.strptime(
+        match.group(1), fmt
+    )
+    assert span.total_seconds() == 24 * 3600
+
+
+def test_hours_and_created_are_mutually_exclusive():
+    """Deux fenetres contradictoires dans le meme appel : argparse doit
+    refuser (rc 2) plutot que d'en privilegier une en silence."""
+    import subprocess
+
+    script = REPO_ROOT / "scripts" / "ci" / "classify_job_deaths.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--hours",
+            "24",
+            "--created",
+            "2026-09-06..2026-09-07",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert "not allowed with" in result.stderr
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
