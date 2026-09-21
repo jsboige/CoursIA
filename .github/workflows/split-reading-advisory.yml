@@ -1,7 +1,7 @@
 name: Split-reading advisory
 
 # Source d'identite pour la garde absorbee par fast-lane-shadow (registre
-# TRANCHE12, issue #16762 — parapluie user « fusionner, pas empiler »).
+# TRANCHE13, issue #16762 — parapluie user « fusionner, pas empiler »).
 # Ce workflow garde seulement workflow_dispatch : cible d'identite pour
 # check_absorbed_check_run_identity (job.name == Guard.name) et re-run
 # manuel du recensement sur main.
@@ -25,7 +25,7 @@ name: Split-reading advisory
 # de la dette par serie (precedent : deaccent TRANCHE6 #14325,
 # repeated-prose TRANCHE7).
 #
-# Wiring : scripts/ci/fast_lane_registry.py :: TRANCHE12.
+# Wiring : scripts/ci/fast_lane_registry.py :: TRANCHE13.
 # Identite : Guard.name == job.name (cf check_absorbed_check_run_identity.py).
 # Tests : scripts/tests/test_check_split_reading_cells.py.
 
