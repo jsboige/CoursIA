@@ -2,7 +2,8 @@
 
 Formalisation pédagogique des opérateurs de Hecke classiques `T_p` / `U_p`
 sur le demi-plan supérieur, avec la formule induite sur les coefficients
-de Fourier, et du théorème « l'anneau des entiers de `ℚ(ζ₇)` est principal ».
+de Fourier, et des théorèmes « l'anneau des entiers de `ℚ(ζₚ)` est
+principal » pour `p ∈ {7, 11, 13}`.
 
 ## Sources
 
@@ -16,7 +17,8 @@ repris tels quels ; seule la documentation et les exemples de la section
 |---|---|
 | `Hecke/HeckeOperator.lean` (+ sibling `_en`) | `Definitions/Def_ModularForm_HeckeOperator.lean` |
 | `Hecke/SevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_seven_pid.lean` (tranche 1 de #16557) |
-| `Hecke/ElevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_eleven_pid.lean` (tranche 2 de #16557 ; tranche suivante : `thirteen_pid`) |
+| `Hecke/ElevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_eleven_pid.lean` (tranche 2 de #16557) |
+| `Hecke/ThirteenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_thirteen_pid.lean` (tranche 3 de #16557) |
 
 ## Licence
 
@@ -37,6 +39,10 @@ additions CoursIA suivent la même licence.
 |---------|---------|
 | `Hecke/HeckeOperator.lean` | Représentants `heckeMatrix`/`heckeDiagMatrix`, opérateurs `heckeU`/`heckeT`, linéarité, `coeffHeckeT` (p ∣ n / p ∤ n), exemples calculables |
 | `Hecke/HeckeOperator_en.lean` | Sibling anglais (namespace `ModularForm_en`), signatures et preuves identiques |
+| `Hecke/SevenPid.lean` / `Hecke/ElevenPid.lean` | `ℤ[ζ₇]` / `ℤ[ζ₁₁]` principaux (critère de Marcus, docstrings FR) |
+| `Hecke/SevenPid_en.lean` / `Hecke/ElevenPid_en.lean` | Siblings anglais (namespace `CyclotomicPID_en`), preuves identiques |
+| `Hecke/ThirteenPid.lean` | `ℤ[ζ₁₃]` principal : lemme `F₂₇`, certificats 13/53/79/131/157, dispatch A-D (docstrings FR) |
+| `Hecke/ThirteenPid_en.lean` | Sibling anglais, preuves identiques |
 | `Hecke.lean` / `Hecke_en.lean` | Agrégateurs racines |
 
 Hors périmètre (grains aval) : produit de Petersson, cusp forms.
