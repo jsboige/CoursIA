@@ -2673,3 +2673,58 @@ def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     notes = pig.recent_delivery(picks)
     assert 14373 in notes
     assert picks[0]["klass"] == "delivered"
+
+
+# --- #15910 (port #16025) : falsifications additionnelles sur le fix #15981 --
+#
+# #16025 (concurrente de #15981 sur le meme axe) portait sa propre
+# implementation ; resolue contre main post-#15981, seule l'implementation du
+# twin (deja live) survit. Ne sont portees que les deux falsifications que la
+# suite du twin n'a pas : la reproduction du SEUIL `count` sur trois PRs
+# simultanees (le coeur de l'incident du 2026-09-13), et le bout en bout
+# banniere-FAIL (le negative du twin s'arrete au niveau du fetch).
+
+
+def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
+    """La reproduction de l'incident : 3 PRs en DWELL ne declenchent plus le P0.
+
+    #15888/#15895/#15902, toutes vertes hors gate, toutes en DWELL : sur le
+    picker d'avant, `triggers == ["count"]` et le cycle basculait sur une
+    reparation inexistante. Le twin couvre la PR isolee ; ce test couvre le
+    seuil -- c'est lui qui a fait basculer le P0 ce jour-la.
+    """
+    _patch_organs(monkeypatch, {})
+    runs = {424242 + n: {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"} for n in (1, 2, 3)}
+    _patch_dwell(monkeypatch, runs)
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["triggers"] == []
+    assert [d["number"] for d in out["dwell_waiting"]] == [1, 2, 3]
+    for item in out["dwell_waiting"]:
+        assert item["check"] == "PR gate"
+        assert item["lift_at"] == "2026-09-13T14:14:44Z"
+
+
+def test_organs_banner_still_blocks_end_to_end(monkeypatch):
+    """Banniere-FAIL != DWELL : bout en bout, le rouge d'organe reste reparable.
+
+    Le negative du twin (`fetch_check_dwell` rend None sur une annotation
+    d'organe) s'arrete au niveau du fetch. Ici le chemin ENTIER, depuis le
+    message REEL du gate (banniere FAIL nommant un check tombant) : un
+    agregateur rouge PARCE QU'un organe est tombe doit rester un grain a
+    reparer -- cause emise, declencheur `count` arme, AUCUNE dispense DWELL.
+    Si un detecteur trop large prenait la banniere FAIL pour un plancher, la
+    reparation du vrai rouge serait annulee par un minuteur sans rapport.
+    """
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert "count" in out["triggers"]
+    assert out["dwell_waiting"] == []
