@@ -345,6 +345,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: chore/catalog-refresh-pending
+          # Delai entre deux approbations. Mesure du 2026-09-21 : 16 runs
+          # approuves en rafale sur un pool de runners deja sature ont tenu les
+          # checks en `queued` 19 minutes, pendant lesquelles le job "PR gate"
+          # a sonde l'API toutes les ~31 s jusqu'a epuiser le quota du jeton
+          # d'installation (HTTP 403) -- et il echoue fail-closed. Le debit
+          # total ne change pas ; ce qui change est le taux d'ARRIVEE, donc le
+          # nombre de runs simultanement en file pendant que le gate sonde.
+          RELEASE_STAGGER_SECONDS: "15"
+          # Soupape, pas un plafond de debit : au-dela, c'est que quelque chose
+          # d'autre est casse (runs qui s'empilent sans jamais s'executer), et
+          # approuver 200 runs n'y repondrait pas. Le depassement est ECRIT.
+          RELEASE_CEILING: "40"
         run: |
           set -u
           head_sha="$(git rev-parse HEAD)"
@@ -359,9 +371,17 @@ jobs:
             echo "::notice title=Catalog::no parked run at this head -- nothing to release."
             exit 0
           fi
-          released=0; refused=0
+          total="$(printf '%s\n' "$parked" | grep -c . || true)"
+          echo "::notice title=Catalog::$total run(s) parked at this head, staggering ${RELEASE_STAGGER_SECONDS}s apart"
+          released=0; refused=0; deferred=0; seen=0
           while IFS="$(printf '\t')" read -r rid name; do
             [ -z "$rid" ] && continue
+            seen=$((seen + 1))
+            if [ "$seen" -gt "$RELEASE_CEILING" ]; then
+              deferred=$((deferred + 1))
+              continue
+            fi
+            [ "$released" -gt 0 ] && sleep "$RELEASE_STAGGER_SECONDS"
             if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$rid/approve" >/dev/null 2>&1; then
               released=$((released + 1))
             else
@@ -371,7 +391,10 @@ jobs:
           done <<EOF
           $parked
           EOF
-          echo "::notice title=Catalog::released $released run(s), refused $refused"
+          echo "::notice title=Catalog::released $released run(s), refused $refused, deferred $deferred"
+          if [ "$deferred" -gt 0 ]; then
+            echo "::warning title=Catalog::$deferred run(s) left parked by the ceiling of $RELEASE_CEILING -- this is NOT normal throughput. Runs are piling up at one head; investigate before raising the ceiling."
+          fi
           if [ "$refused" -gt 0 ]; then
             echo "::warning title=Catalog::$refused run(s) still parked -- the delivery PR will stay BLOCKED. Approve them by hand, or grant a token that may approve workflow runs. check_catalog_freshness.py --delivery reports this state."
           fi
