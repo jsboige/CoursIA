@@ -1,0 +1,15 @@
+date: '2026-09-21'
+by: myia-po-2025:CoursIA
+python_sha: 6f35e416f1ca53ce298a990b860a126462f1c2dd
+csharp_sha: 1d4d749862371b3da745bb563a3ccd70384e4572
+content_python_sha: f837f7cb59f13e86a2ac8a8473ace36ab0cc3497771a7e43bec29ba8acebfe87
+content_csharp_sha: 8cbaecbd6318b12d7d0c102cf77853ce9929770ea3a384a1cae1233381eff966
+reason: >-
+  Mouvement unilateral du cote C# (tranche densite #13410, branche
+  wt/vibe-g6-gametheory-5) : +8 cellules markdown `lecture-*` ancrees sur les sorties
+  deja committees, 0 retiree, 0 modifiee. Controle mesure des DEUX cotes
+  (base origin/main -> tete) : 14 cellules de code a la base comme a la tete,
+  0 ajoutee, 0 retiree, 0 modifiee ; le cote Python est byte-identique a origin/main.
+  Le contenu algorithmique est donc intact et `parity_level: semantic` tient — la
+  parite n'a pas ete reparee, elle a ete RE-ATTESTEE. Aucune re-execution, aucun
+  strip outile en attente.
