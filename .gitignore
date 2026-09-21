@@ -1091,6 +1091,11 @@ MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/cuda-detect-probe/
 
 # Claude Code machine-local state (registre arbitrations user - coordinator-discipline Regle 7, roo-extensions#3677)
 .claude/local/
-
 # SL-14 aifeynman run artifacts (results/, train/test splits, NN models -- regenerable, local only)
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_sl14_runs/
+
+# Claude Code session scratchpads (per-machine, per-cycle dashboard drafts, PR body drafts, notebook backups)
+/.claude/scratchpad/
+
+# Lane-local runtime artefacts (forge validation, image outputs, intermediate probes)
+/_runtime/
