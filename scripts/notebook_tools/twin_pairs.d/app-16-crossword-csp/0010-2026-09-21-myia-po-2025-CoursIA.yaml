@@ -1,0 +1,15 @@
+date: '2026-09-21'
+by: myia-po-2025:CoursIA
+python_sha: 31610a1a8cc2be4f8d3e82b7f38327ad05e2a692
+csharp_sha: cc7fdb34189ea0a34be0dd8adb5af7243e0c9714
+content_python_sha: 205d4cc7c2024f6de21848d1672b499b339e408c371a1163cbfaa8c7c499907c
+content_csharp_sha: ec47b7ca8594bec335458865fc1a448f5e89c6af38ab08df52752c9cddd22191
+reason: >-
+  Mouvement unilateral du cote C# (tranche densite #13410) : +32 cellules
+  markdown d'un cote, l'autre cote inchange. Controle mesure des DEUX cotes
+  (base origin/main -> tete) : cellules de code python 12->12 et c# 12->12,
+  aucune ajoutee, aucune retiree, aucune modifiee de part et d'autre. Le
+  contenu algorithmique est donc intact et `parity_level: semantic` tient — la
+  parite n'a pas ete reparee, elle a ete RE-ATTESTEE (cf precedent
+  app-14-connectfour-adversarial/0005). Aucune re-execution, aucun strip
+  outile en attente.
