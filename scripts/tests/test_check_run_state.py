@@ -6,9 +6,18 @@ dans l'ordre FAILURE / CANCELLED / SUCCESS -- non chronologique. Un fold
 premiere-occurrence retient le FAILURE perime : c'est le defaut mesure par
 ai-01. Le fold latest-wins retient le SUCCESS : #16232 est MERGED.
 """
+import sys
+from pathlib import Path
+
 import pytest
 
-from scripts.check_run_state import (
+# scripts/ n'est pas un package (pas de __init__.py) et pytest.ini ne met pas
+# la racine sur sys.path : preamble obligatoire, meme forme que
+# test_check_umbrella_freshness.py (sinon ModuleNotFoundError en CI -- Hermes
+# CONCERNS 18/09, run 35404554399).
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.check_run_state import (  # noqa: E402
     RED, GREEN, fold_latest, main, normalize_leg, render, residual_reds,
 )
 
