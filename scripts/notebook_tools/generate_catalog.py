@@ -843,38 +843,118 @@ def classify_reproducibility(
 # Axe 3 — revue scientifique. Heuristique pauvre par defaut (UNREVIEWED) :
 # la promotion necessite un signal catalogue (PR label, peer-review attache, etc.)
 # Cette fonction est un placeholder stable qui ne pretend pas deviner la revue.
+# --- Axe 3 : confiance scientifique (#14831, sign-off user 2026-09-21) -------
+#
+# L'ancienne echelle (UNREVIEWED / AUTHOR_REVIEWED / PEER_REVIEWED /
+# FORMALLY_VERIFIED) mesurait la PROVENANCE d'une relecture : qui a relu, et
+# avec quelle rigueur formelle. Elle etait *inversee* dans ses effets — une
+# serie de recherche active relue par des pairs atteignait le haut de l'echelle,
+# pendant qu'un notebook de cours classique, universellement admis et sans
+# aucun risque, restait UNREVIEWED faute de reviewer nomme.
+#
+# La nouvelle echelle mesure autre chose : **notre propre appreciation du
+# niveau de confiance scientifique dans le contenu**. Elle ne classe pas les
+# relecteurs, elle classe le RISQUE de ce qui est enonce.
+SCIENTIFIC_CONFIDENCE = {
+    # Rien n'a ete apprecie. Ce n'est PAS un mauvais score : c'est l'absence de
+    # jugement, et c'est le defaut honnete.
+    "UNASSESSED": 0,
+    # Contenu communement admis et universellement pratique. Le notebook ne
+    # prend aucun risque sur ce qu'il affirme.
+    "ESTABLISHED": 1,
+    # Protocoles plus avances, executions moins controlees, theories recentes,
+    # interpretations discutables. Le contenu tient, mais il engage.
+    "ADVANCED": 2,
+    # Recherche active — ICT au premier chef. Le contenu est explicitement en
+    # cours d'elaboration, et le dire est la seule position honnete.
+    "RESEARCH": 3,
+}
+
+# Ce que le registre ecrit (minuscules) -> ce que le catalogue emet.
+_CONFIDENCE_FROM_REGISTRY = {
+    "established": "ESTABLISHED",
+    "advanced": "ADVANCED",
+    "research": "RESEARCH",
+}
+
+
+def code_source_sha(notebook: dict) -> str:
+    """Empreinte du CODE d'un notebook — source des cellules code, rien d'autre.
+
+    C'est l'ancre de la retrogradation : une appreciation scientifique porte sur
+    ce que le notebook CALCULE et AFFIRME, donc elle survit a l'enrichissement
+    markdown et meurt au changement de code.
+
+    **Trois exclusions deliberees, chacune pour une raison mesuree :**
+
+    - **le markdown** — la campagne de densification a modifie 178 notebooks en
+      trois semaines sans toucher une ligne de code. Une projection qui
+      l'inclurait retrograderait tout le corpus au premier passage, et une
+      retrogradation qui frappe tout ne signale plus rien.
+    - **les sorties** — une re-execution change les sorties sans changer ce que
+      le notebook affirme. Les inclure ferait de chaque passage kernel une
+      retrogradation.
+    - **`execution_count`** — pur artefact d'ordre d'execution.
+
+    **Empreinte de CONTENU, jamais un blob SHA git** : un squash-merge reecrit
+    les blobs et tuerait l'ancre a chaque merge (#11919). Le contenu, lui,
+    traverse le squash.
+    """
+    import hashlib
+
+    h = hashlib.sha256()
+    for cell in notebook.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        source = cell.get("source", "")
+        if isinstance(source, list):
+            source = "".join(source)
+        h.update(source.encode("utf-8"))
+        h.update(bytes([0]))  # separateur sans echappement
+    return h.hexdigest()
+
+
 def classify_scientific_review(
     notebook: dict,
     *,
+    confidence: str | None = None,
+    reviewed_code_sha: str | None = None,
     scientific_reviewed_by: str | None = None,
     last_validator: str | None = None,
     sorry_free: bool = False,
-) -> str:
-    """Axe 3 — revue scientifique (UNREVIEWED/AUTHOR_REVIEWED/PEER_REVIEWED/FORMALLY_VERIFIED).
+) -> dict:
+    """Axe 3 — confiance scientifique. Rend un DICT, plus une chaine.
 
-    Cf docs/PARCOURS.md. Sans signal explicite, on retombe sur UNREVIEWED.
+    Sign-off user 2026-09-21 (#14831). Deux changements de nature :
 
-    **Contrat honnete pour FORMALLY_VERIFIED** (issue #8051). La promotion vers
-    FORMALLY_VERIFIED exige une PREUVE, pas une simple presence :
-      - un compagnon `.lean` EXISTANT n'est PAS une preuve — un lake compagnon
-        peut porter sa propre sorry-debt (9/18 notebooks lean4-wsl ont du sorry
-        cell-level, cf scripts/audit/check_lean_notebook_sorry.py #8351).
-        Detecter le compagnon et emettre FORMALLY_VERIFIED = faux claim.
-      - un benchmark multi-seed est une rigueur EMPIRIQUE, pas une preuve
-        formelle (formelle = mathematique, sans axiome admis).
-    Le seul signal honnete est ``sorry_free`` : un lake Lean dont le build
-    reussit SANS aucun ``sorry`` (artifact Lean-CI a brancher ; absent pour
-    l'instant, donc ``sorry_free`` default False -> FORMALLY_VERIFIED reste
-    inatteignable tant que l'artifact n'est pas cable). Le catalog-gen ne peut
-    PAS deviner la sorry-freedom ; il consomme un artifact produit en amont.
+    1. **L'echelle mesure le risque, pas la provenance** — cf SCIENTIFIC_CONFIDENCE.
+    2. **L'appreciation se perime quand le CODE bouge.** Elle porte sur ce que le
+       notebook calcule ; si le calcul change, l'appreciation ne porte plus sur
+       ce qui est la. La grade est CONSERVEE et `stale` passe a True : perdre la
+       grade effacerait l'information (« personne n'a jamais apprecie ») alors
+       que le fait est autre (« quelqu'un a apprecie, puis le code a bouge »).
+       C'est ce qui rend l'audit permanent, et c'est voulu.
+
+    `sorry_free` et `scientific_reviewed_by` ne PILOTENT plus la grade — ils sont
+    rendus comme **preuves a cote**. Le compte de `sorry` ne concerne qu'une
+    poignee de notebooks : en faire l'indicateur unique d'un axe qui couvre tout
+    le corpus etait un defaut d'echelle.
     """
-    if sorry_free:
-        return "FORMALLY_VERIFIED"
-    if scientific_reviewed_by and last_validator and scientific_reviewed_by != last_validator:
-        return "PEER_REVIEWED"
-    if scientific_reviewed_by and scientific_reviewed_by == last_validator:
-        return "AUTHOR_REVIEWED"
-    return "UNREVIEWED"
+    grade = _CONFIDENCE_FROM_REGISTRY.get((confidence or "").strip().lower(), "UNASSESSED")
+    current_sha = code_source_sha(notebook)
+    stale = bool(grade != "UNASSESSED" and reviewed_code_sha and reviewed_code_sha != current_sha)
+    return {
+        "grade": grade,
+        "stale": stale,
+        "code_sha": current_sha,
+        "reviewed_code_sha": reviewed_code_sha or "",
+        # Preuves conservees, sans effet sur la grade.
+        "reviewed_by": scientific_reviewed_by or "",
+        "peer": bool(
+            scientific_reviewed_by and last_validator and scientific_reviewed_by != last_validator
+        ),
+        "sorry_free": bool(sorry_free),
+    }
 
 
 # Agregat retro-compatible : ancien label monolithique `maturity` derive des 3 axes.
@@ -885,18 +965,29 @@ def aggregate_maturity(
     scientific_review: str,
     *,
     is_template: bool = False,
+    production_signed: bool = False,
 ) -> str:
-    """Calcule l'ancien label `maturity` (TEMPLATE/PRODUCTION/BETA/ALPHA/DRAFT)
-    a partir des 3 nouveaux axes. Permet de preserver la retro-compatibilite avec
-    tous les consommateurs qui lisent `maturity` directement.
+    """Calcule le label `maturity` (TEMPLATE/PRODUCTION/BETA/ALPHA/DRAFT).
+
+    **PRODUCTION n'est plus derive** (sign-off user 2026-09-21, #14831).
+
+    PRODUCTION ne decrit pas une propriete mesurable du fichier : il dit que le
+    responsable pedagogique a appose son tampon, et juge le notebook finalise
+    pour etre utilise en cours **par d'autres**. Aucune combinaison d'axes ne
+    peut produire ce fait — le calculer revenait a fabriquer une signature.
+
+    Le signal vient donc de `docs/notebook-metadata/production-scope.md`, dont la
+    colonne « Verdict » est la surface de decision. Un notebook non tranche reste
+    BETA, ce qui est le verdict correct : l'auteur enseigne lui-meme sur les beta
+    et les beta-teste avec ses etudiants.
+
+    `scientific_review` reste **necessaire mais pas suffisant** : il est exige
+    par le validateur de perimetre (`check_production_scope.py`), pas par cet
+    agregat — un axe qui gate ne doit pas etre le meme objet que l'axe qui decrit.
     """
     if is_template:
         return "TEMPLATE"
-    if (
-        editorial == "FINAL"
-        and reproducibility in ("EXECUTED", "REPRODUCED")
-        and scientific_review in ("PEER_REVIEWED", "FORMALLY_VERIFIED")
-    ):
+    if production_signed:
         return "PRODUCTION"
     if editorial in ("BETA", "FINAL") and reproducibility in ("EXECUTED", "REPRODUCED"):
         return "BETA"
@@ -963,20 +1054,23 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     # git-derived, same convention as _merge_curated_fields).
     rel_str_for_registry = str(rel) if hasattr(rel, "__fspath__") else str(rel)
     sr_registry = _load_scientific_review_registry()
-    sr_curated = sr_registry.get(rel_str_for_registry) or sr_registry.get(rel_str_for_registry.replace("\\", "/"))
+    sr_curated = sr_registry.get(rel_str_for_registry) or sr_registry.get(rel_str_for_registry.replace("\\", "/")) or {}
+    # `sorry_free` reste rendu comme PREUVE A COTE, il ne pilote plus la grade :
+    # le compte de sorry ne concerne qu'une poignee de notebooks, et en faire
+    # l'indicateur d'un axe qui couvre tout le corpus etait un defaut d'echelle.
     scientific_review = classify_scientific_review(
         notebook,
-        scientific_reviewed_by=sr_curated or gm.get("scientific_reviewed_by"),
+        confidence=sr_curated.get("confidence"),
+        reviewed_code_sha=sr_curated.get("reviewed_code_sha"),
+        scientific_reviewed_by=sr_curated.get("reviewer") or gm.get("scientific_reviewed_by"),
         last_validator=gm.get("last_validator"),
-        # FORMALLY_VERIFIED exige un lake Lean sorry-free PROUVE (artifact Lean-CI),
-        # pas une simple presence de compagnon (cf #8051, #8351). Le champ
-        # git_meta 'sorry_free' n'est pas encore cable -> default False honnete :
-        # aucun notebook ne peut etre faussement claim FORMALLY_VERIFIED.
         sorry_free=gm.get("sorry_free", False),
     )
+    production_signed = production_is_signed(_production_scope(), rel_str_for_registry)
     maturity = aggregate_maturity(
-        editorial, reproducibility, scientific_review,
+        editorial, reproducibility, scientific_review["grade"],
         is_template=is_template,
+        production_signed=production_signed,
     )
 
     return {
@@ -989,7 +1083,13 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "maturity": maturity,
         "editorial": editorial,
         "reproducibility": reproducibility,
-        "scientific_review": scientific_review,
+        # La grade reste une CHAINE : tous les consommateurs lisent ce champ
+        # tel quel. Le detail (peremption, empreintes, preuves) vit a cote,
+        # pour que l'ajout n'oblige personne a changer sa lecture.
+        "scientific_review": scientific_review["grade"],
+        "scientific_review_stale": scientific_review["stale"],
+        "scientific_review_detail": scientific_review,
+        "production_signed": production_signed,
         "last_success_sha": gm.get("last_success_sha", ""),
         "executed_at": gm.get("executed_at", ""),
         "forensic_category": gm.get("forensic_category", ""),
@@ -1051,12 +1151,36 @@ def _load_main_catalog() -> dict[str, dict]:
 # YAML pose le signal canonique : sans signal, classify_scientific_review retombe
 # sur UNREVIEWED (design délibéré cf #8051). Le champ est dans CURATED_GIT_FIELDS
 # (l.949) donc préservable par _merge_curated_fields.
-def _load_scientific_review_registry() -> dict[str, str]:
+def _registry_entry_is_usable(entry) -> bool:
+    """Une entree de registre porte-t-elle un signal exploitable ?
+
+    Depuis #14831, **`confidence` suffit** : une appreciation de risque n'est pas
+    une relecture, et les entrees qui en portent une n'ont pas de `reviewer` par
+    conception. Exiger `reviewer` jetait 77 entrees sur 80 (mesure du
+    2026-09-21) sans rien signaler -- le registre paraissait simplement vide.
+
+    `reviewer` reste accepte seul : les entrees anterieures a #14831 continuent
+    d'etre lues, et leur relecteur est rendu comme preuve a cote.
+
+    Les entrees gabarit (`<chemin ...>`) sont ecartees dans tous les cas.
+    """
+    if not entry or not entry.get("notebook_path"):
+        return False
+    for champ in ("notebook_path", "reviewer", "evidence_pr", "confidence"):
+        if "<" in (entry.get(champ) or ""):
+            return False
+    return bool(entry.get("confidence") or entry.get("reviewer"))
+
+
+def _load_scientific_review_registry() -> dict[str, dict]:
     """Load the curated scientific review registry (cf scientific-review-registry.md).
 
-    Returns a dict keyed by notebook_path with reviewer as value. Empty dict if
-    the registry file is missing or malformed (fail-OPEN : ne lève pas, retombe
-    sur UNREVIEWED comme avant le câblage c.997).
+    Returns a dict keyed by notebook_path with the FULL entry as value (#14831,
+    sign-off user 2026-09-21) : l'axe a besoin de `confidence` et de
+    `reviewed_code_sha`, plus seulement du nom du relecteur.
+
+    Empty dict si le registre est absent ou malforme (fail-OPEN : ne lève pas,
+    retombe sur UNASSESSED — l'absence d'appreciation, pas un mauvais score).
     """
     registry_path = REPO_ROOT / "docs" / "notebook-metadata" / "scientific-review-registry.md"
     if not registry_path.exists():
@@ -1074,35 +1198,158 @@ def _load_scientific_review_registry() -> dict[str, str]:
                 if not stripped or stripped.startswith("#"):
                     continue
                 if stripped.startswith("- "):
-                    if (
-                        current
-                        and current.get("notebook_path")
-                        and current.get("reviewer")
-                        # Skip template/example entries (placeholders in angle brackets)
-                        and "<" not in current.get("notebook_path", "")
-                        and "<" not in current.get("reviewer", "")
-                        and "<" not in current.get("evidence_pr", "")
-                    ):
-                        registry[current["notebook_path"]] = current["reviewer"]
+                    if _registry_entry_is_usable(current):
+                        registry[current["notebook_path"]] = dict(current)
                     kv = stripped[2:]
                     key, _, value = kv.partition(":")
                     current = {key.strip(): value.strip().strip('"').strip("'")}
                 elif current is not None and ":" in stripped:
                     key, _, value = stripped.partition(":")
                     current[key.strip()] = value.strip().strip('"').strip("'")
-            if (
-                current
-                and current.get("notebook_path")
-                and current.get("reviewer")
-                # Skip template/example entries (placeholders in angle brackets)
-                and "<" not in current.get("notebook_path", "")
-                and "<" not in current.get("reviewer", "")
-                and "<" not in current.get("evidence_pr", "")
-            ):
-                registry[current["notebook_path"]] = current["reviewer"]
+            if _registry_entry_is_usable(current):
+                registry[current["notebook_path"]] = dict(current)
         return registry
     except (UnicodeDecodeError, ValueError):
         return {}
+
+
+# --- Tampon PRODUCTION (#14831, sign-off user 2026-09-21) --------------------
+#
+# PRODUCTION n'est pas une propriete du fichier : c'est la signature du
+# responsable pedagogique, qui juge le notebook finalise pour etre utilise en
+# cours PAR D'AUTRES. L'auteur enseigne lui-meme sur les beta et les beta-teste
+# avec ses etudiants -- « ca n'est pas forcement un probleme ». Un notebook non
+# tranche reste donc BETA, et c'est le verdict correct, pas un manque.
+#
+# La surface de decision est la colonne « Verdict » du tableau « La passe par
+# serie » de production-scope.md : 13 lignes, une reponse par ligne. La strate A
+# en dessous ENUMERE les 99 chemins signes par ces reponses.
+#
+# **Le join ligne -> chemins passe par le commentaire de groupe** de la strate A
+# (`<!-- MyIA.AI.Notebooks/... -->`), resolu via le notebook « Tete de serie ».
+# Deux autres joins ont ete mesures sur le document reel et rejetes :
+#   - par LIBELLE de serie : aucune correspondance dans le catalogue, devine ;
+#   - par REPERTOIRE de la tete : sous-signe (90/99) -- SmartContracts s'etale
+#     sur `00-Foundations` et `01-Solidity-Foundation`.
+# Le join retenu rend 13 groupes / 99 chemins, et resout 12 des 13 lignes avec
+# un N conforme a la table.
+PRODUCTION_SCOPE_PATH = REPO_ROOT / "docs" / "notebook-metadata" / "production-scope.md"
+
+# Ce qui vaut signature dans la colonne Verdict. Fail-CLOSED : tout ce qui n'est
+# pas reconnu laisse la serie NON signee. Une colonne vide -- l'etat actuel des
+# 13 lignes -- ne signe rien, et c'est l'etat correct tant que le user n'a pas
+# repondu.
+_PRODUCTION_YES = ("oui", "yes", "o")
+
+_SCOPE_STRATE_RE = re.compile(r"^##\s+Strate\s+([ABC])\b")
+_SCOPE_GROUP_RE = re.compile(r"^<!--\s*(\S+)\s*-->$")
+_SCOPE_ITEM_RE = re.compile(r"^- \[([ xX])\]\s*`([^`]+)`")
+
+
+_PRODUCTION_SCOPE_CACHE: dict = {}
+
+
+def _production_scope() -> dict:
+    """Scope memoise : sans ca le document serait relu 1124 fois."""
+    if "v" not in _PRODUCTION_SCOPE_CACHE:
+        scope = _load_production_scope()
+        for warn in scope.get("unresolved", []):
+            print("WARN production-scope: %s" % warn, file=sys.stderr)
+        _PRODUCTION_SCOPE_CACHE["v"] = scope
+    return _PRODUCTION_SCOPE_CACHE["v"]
+
+
+def _load_production_scope(scope_path=None) -> dict:
+    """Lit le tampon de production. Fail-CLOSED, et silencieux si le doc est absent.
+
+    Rend ``{"signed": set[str], "unresolved": list[str]}`` ou ``signed`` porte des
+    chemins de notebook **exacts**, tels qu'ecrits dans la strate A.
+
+    ``unresolved`` nomme les lignes qui signent mais dont la tete de serie ne
+    resout aucun groupe : elles ne signent alors RIEN, et l'appelant le dit. Une
+    ligne qui signe zero notebook en silence est la panne que ce champ existe
+    pour rendre impossible.
+    """
+    path = Path(scope_path) if scope_path else PRODUCTION_SCOPE_PATH
+    out: dict = {"signed": set(), "unresolved": []}
+    if not path.exists():
+        return out
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return out
+
+    strate = group = None
+    groups: dict = {}
+    rows = []
+    for line in text.splitlines():
+        s = line.strip()
+        m = _SCOPE_STRATE_RE.match(s)
+        if m:
+            strate, group = m.group(1), None
+            continue
+        if s.startswith("## "):
+            strate, group = None, None
+            continue
+        m = _SCOPE_GROUP_RE.match(s)
+        if m:
+            group = m.group(1)
+            continue
+        m = _SCOPE_ITEM_RE.match(s)
+        if m and strate == "A":
+            ticked, nb = m.group(1).lower() == "x", m.group(2)
+            groups.setdefault(group, []).append(nb)
+            # Une case cochee vaut signature par elle-meme : c'est le meme geste,
+            # pose notebook par notebook au lieu de serie par serie.
+            if ticked:
+                out["signed"].add(nb)
+            continue
+        if s.startswith("|") and not s.startswith("|--"):
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if len(cells) == 5 and cells[0].lower() not in ("serie", "série"):
+                rows.append(cells)
+
+    for serie, _cours, tete, _n, verdict in rows:
+        low = verdict.lower()
+        head = low.split("sauf")[0].strip().strip("*` ")
+        if head not in _PRODUCTION_YES:
+            continue
+        base = tete.strip("` ")
+        hits = [g for g, paths in groups.items()
+                if any(nb.endswith("/" + base) for nb in paths)]
+        if len(hits) != 1:
+            out["unresolved"].append(
+                "%s -- tete de serie %r resout %d groupe(s) de strate A"
+                % (serie, base, len(hits))
+            )
+            continue
+        # « oui sauf X » : une exclusion nommee l'emporte toujours sur la
+        # signature de sa serie -- l'inverse transformerait une reserve en
+        # approbation.
+        excluded = []
+        if "sauf" in low:
+            rest = verdict.split("sauf", 1)[1]
+            excluded = [n.strip().strip("`*, ") for n in rest.replace(";", ",").split(",")]
+            excluded = [n for n in excluded if n]
+        for nb in groups[hits[0]]:
+            if any(nb.endswith("/" + n) or Path(nb).name == n for n in excluded):
+                continue
+            out["signed"].add(nb)
+    return out
+
+
+def production_is_signed(scope: dict, notebook_path: str) -> bool:
+    """Le tampon couvre-t-il CE notebook ? Comparaison de chemins exacts.
+
+    Le document ecrit ses chemins en separateurs POSIX ; l'appelant peut porter
+    des separateurs Windows. La normalisation est la seule tolerance accordee --
+    aucune correspondance approximative, aucun repli sur le nom de fichier seul,
+    qui signerait des homonymes d'autres series.
+    """
+    if not scope or not scope.get("signed"):
+        return False
+    norm = str(notebook_path).replace("\\", "/").lstrip("./")
+    return norm in scope["signed"]
 
 
 def _merge_curated_fields(
@@ -1273,8 +1520,9 @@ def _apply_editorial_review_promotion(entries, registry=None):
         entry["maturity"] = aggregate_maturity(
             entry["editorial"],
             entry.get("reproducibility", "UNTESTED"),
-            entry.get("scientific_review", "UNREVIEWED"),
+            entry.get("scientific_review", "UNASSESSED"),
             is_template=False,
+            production_signed=bool(entry.get("production_signed")),
         )
         promoted += 1
 

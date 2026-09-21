@@ -620,56 +620,193 @@ class TestClassifyMaturity:
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
 
 
-# --- classify_scientific_review (axe 3, #8051) ---
+# --- classify_scientific_review (axe 3, #8051 puis #14831) ---
 
 class TestClassifyScientificReview:
-    """Axe 3 — revue scientifique. FORMALLY_VERIFIED exige une PREUVE sorry-free,
-    pas une simple presence de compagnon (cf #8051, #8351)."""
+    """Axe 3 — confiance scientifique, nouvelle echelle (sign-off user 2026-09-21).
 
-    def test_default_is_unreviewed(self):
-        # Sans aucun signal -> UNREVIEWED (jamais de claim auto).
-        assert classify_scientific_review({}) == "UNREVIEWED"
+    Ces tests epinglaient l'ancienne echelle de PROVENANCE (qui a relu, avec
+    quelle rigueur formelle). Ils epinglent maintenant l'echelle de RISQUE
+    (UNASSESSED / ESTABLISHED / ADVANCED / RESEARCH), et la peremption sur
+    changement de code. Aucun n'a ete supprime : chacun dit ce qui a change et
+    pourquoi, pour qu'une regression ne puisse pas se faire passer pour la
+    migration.
+    """
 
-    def test_author_reviewed_self_validates(self):
-        # reviewed_by == last_validator = auteur se valide lui-meme.
-        assert classify_scientific_review(
-            {}, scientific_reviewed_by="a@b.c", last_validator="a@b.c"
-        ) == "AUTHOR_REVIEWED"
+    def test_sans_appreciation_c_est_unassessed(self):
+        # L'absence de jugement n'est PAS un mauvais score, et c'est le defaut.
+        assert classify_scientific_review({})["grade"] == "UNASSESSED"
 
-    def test_peer_reviewed_distinct_validator(self):
-        # reviewed_by != last_validator = peer review effective.
-        assert classify_scientific_review(
-            {}, scientific_reviewed_by="a@b.c", last_validator="c@d.e"
-        ) == "PEER_REVIEWED"
+    def test_les_trois_grades_viennent_du_registre(self):
+        for declared, attendu in (("established", "ESTABLISHED"),
+                                  ("advanced", "ADVANCED"),
+                                  ("research", "RESEARCH")):
+            got = classify_scientific_review({}, confidence=declared)["grade"]
+            assert got == attendu, "%s -> %s (attendu %s)" % (declared, got, attendu)
 
-    def test_sorry_free_yields_formally_verified(self):
-        # Le SEUL chemin honnete vers FORMALLY_VERIFIED = preuve sorry-free.
-        assert classify_scientific_review({}, sorry_free=True) == "FORMALLY_VERIFIED"
+    def test_une_valeur_inconnue_ne_promeut_rien(self):
+        """Fail-CLOSED : un registre qui ecrit n'importe quoi ne signe rien.
 
-    def test_sorry_free_dominates_peer(self):
-        # sorry_free (preuve formelle) > peer review.
-        assert classify_scientific_review(
-            {}, sorry_free=True,
-            scientific_reviewed_by="a@b.c", last_validator="c@d.e",
-        ) == "FORMALLY_VERIFIED"
+        C'est la propriete qui empeche le label-gaming — une valeur non reconnue
+        retombe sur l'absence d'appreciation, jamais sur une grade par defaut.
+        """
+        for bidon in ("PEER_REVIEWED", "formally_verified", "excellent", "", "  "):
+            assert classify_scientific_review({}, confidence=bidon)["grade"] == "UNASSESSED"
 
-    def test_companion_presence_alone_does_not_verify(self):
-        # REGRESSION GUARD (#8051): l'ancien code emettait FORMALLY_VERIFIED des
-        # qu un compagnon .lean existait (signal mort, mais piege si active).
-        # Un lake compagnon peut porter sa sorry-debt -> presence != preuve.
-        # On verifie que rien dans l'API ne permet de claim FORMALLY_VERIFIED
-        # sans sorry_free=True (pas de param has_lean_companion).
+    def test_le_relecteur_ne_pilote_plus_la_grade(self):
+        """REGRESSION GUARD (#14831) : l'ancienne echelle promouvait sur le seul
+        fait qu'un relecteur soit nomme et distinct de l'auteur. C'etait mesurer
+        la provenance, pas la confiance — et ca laissait tout le cours classique
+        a UNREVIEWED faute de reviewer nomme."""
+        out = classify_scientific_review(
+            {}, scientific_reviewed_by="a@b.c", last_validator="c@d.e")
+        assert out["grade"] == "UNASSESSED", "un relecteur nomme ne vaut pas une appreciation"
+        assert out["peer"] is True, "mais le fait reste rendu comme preuve a cote"
+
+    def test_sorry_free_est_une_preuve_pas_une_grade(self):
+        """REGRESSION GUARD (#14831) : `sorry_free` emettait FORMALLY_VERIFIED,
+        c.-a-d. qu'un indicateur ne concernant qu'une poignee de notebooks Lean
+        pilotait un axe couvrant tout le corpus. Il est conserve, a cote."""
+        out = classify_scientific_review({}, sorry_free=True)
+        assert out["grade"] == "UNASSESSED"
+        assert out["sorry_free"] is True
+
+    def test_la_presence_d_un_compagnon_ne_verifie_toujours_rien(self):
+        # REGRESSION GUARD (#8051), conserve : l'API ne doit offrir AUCUN chemin
+        # ou la simple presence d'un compagnon .lean ou d'un benchmark promeut.
         import inspect
         sig = inspect.signature(classify_scientific_review)
-        assert "sorry_free" in sig.parameters
-        assert "has_lean_companion" not in sig.parameters, (
-            "has_lean_companion retiré : presence de compagnon != preuve sorry-free (#8051)"
+        assert "has_lean_companion" not in sig.parameters
+        assert "has_multi_seed_benchmark" not in sig.parameters
+        assert "confidence" in sig.parameters, "la grade vient du registre, declaree"
+
+    # --- peremption : l'audit permanent -------------------------------------
+
+    def _nb(self, code_src, md="du markdown"):
+        return {"cells": [
+            {"cell_type": "markdown", "source": md},
+            {"cell_type": "code", "source": code_src, "execution_count": 1,
+             "outputs": [{"output_type": "stream", "text": "sortie"}]},
+        ]}
+
+    def test_le_markdown_ne_perime_pas_une_appreciation(self):
+        """LA propriete qui rend la retrogradation utilisable.
+
+        La campagne de densification a modifie 178 notebooks en trois semaines
+        sans toucher une ligne de code. Une projection incluant le markdown
+        retrograderait tout le corpus au premier passage — et une retrogradation
+        qui frappe tout ne signale plus rien.
+        """
+        a = self._nb("x = 1", md="intro")
+        b = self._nb("x = 1", md="intro tres enrichie, lectures chiffrees, etc.")
+        from generate_catalog import code_source_sha
+        assert code_source_sha(a) == code_source_sha(b)
+        sha = code_source_sha(a)
+        out = classify_scientific_review(b, confidence="established", reviewed_code_sha=sha)
+        assert out["stale"] is False
+        assert out["grade"] == "ESTABLISHED"
+
+    def test_une_re_execution_ne_perime_pas_une_appreciation(self):
+        """Les sorties changent a chaque passage kernel ; les inclure ferait de
+        toute re-execution une retrogradation."""
+        from generate_catalog import code_source_sha
+        a = self._nb("x = 1")
+        b = self._nb("x = 1")
+        b["cells"][1]["outputs"] = [{"output_type": "stream", "text": "AUTRE sortie"}]
+        b["cells"][1]["execution_count"] = 42
+        assert code_source_sha(a) == code_source_sha(b)
+
+    def test_un_changement_de_code_perime_l_appreciation(self):
+        """Le controle positif : sans lui, les trois tests ci-dessus seraient
+        satisfaits par une fonction qui ne perime JAMAIS rien."""
+        from generate_catalog import code_source_sha
+        ancien = code_source_sha(self._nb("x = 1"))
+        out = classify_scientific_review(
+            self._nb("x = 2"), confidence="research", reviewed_code_sha=ancien)
+        assert out["stale"] is True
+        assert out["grade"] == "RESEARCH", "la grade est CONSERVEE, seule `stale` bascule"
+
+    def test_une_grade_absente_n_est_jamais_perimee(self):
+        """UNASSESSED + stale n'aurait aucun sens : il n'y a rien a perimer."""
+        from generate_catalog import code_source_sha
+        out = classify_scientific_review(
+            self._nb("x = 2"), reviewed_code_sha=code_source_sha(self._nb("x = 1")))
+        assert out["grade"] == "UNASSESSED"
+        assert out["stale"] is False
+
+    def test_sans_ancre_enregistree_rien_ne_se_perime(self):
+        """Les entrees de registre anterieures a #14831 n'ont pas d'ancre : elles
+        ne doivent pas toutes basculer perimees au premier passage."""
+        out = classify_scientific_review(self._nb("x = 2"), confidence="advanced")
+        assert out["grade"] == "ADVANCED"
+        assert out["stale"] is False
+
+
+# --- _registry_entry_is_usable (#14831) ---
+
+class TestRegistryEntryIsUsable:
+    """Quelle entree de registre porte un signal exploitable.
+
+    **Le defaut que ces tests epinglent a reellement eu lieu**, le 2026-09-21 :
+    le loader exigeait `reviewer`, herite de l'ancienne semantique ou la grade
+    venait du relecteur. Les 77 entrees `confidence: research` de la serie ICT,
+    qui n'ont pas de relecteur *par conception*, etaient jetees en silence --
+    3 entrees lues sur 80, et un registre qui paraissait simplement vide.
+
+    C'est la forme canonique du zero d'instrument aveugle : rien n'echoue, et le
+    resultat se lit comme « personne n'a encore apprecie ».
+    """
+
+    def test_une_confidence_suffit_sans_relecteur(self):
+        from generate_catalog import _registry_entry_is_usable
+        assert _registry_entry_is_usable(
+            {"notebook_path": "IIT/ICT-Series/ICT-01.ipynb", "confidence": "research"}
+        ) is True
+
+    def test_un_relecteur_suffit_sans_confidence(self):
+        """Les entrees anterieures a #14831 continuent d'etre lues."""
+        from generate_catalog import _registry_entry_is_usable
+        assert _registry_entry_is_usable(
+            {"notebook_path": "Sudoku/nb.ipynb", "reviewer": "a@b.c"}
+        ) is True
+
+    def test_sans_signal_l_entree_est_ecartee(self):
+        from generate_catalog import _registry_entry_is_usable
+        assert _registry_entry_is_usable({"notebook_path": "S/nb.ipynb"}) is False
+        assert _registry_entry_is_usable({"confidence": "research"}) is False
+        assert _registry_entry_is_usable({}) is False
+        assert _registry_entry_is_usable(None) is False
+
+    def test_les_gabarits_restent_ecartes(self):
+        """Le bloc YAML du schema est dans le meme fichier que les entrees : sans
+        ce filtre, `<chemin relatif depuis ...>` deviendrait une entree."""
+        from generate_catalog import _registry_entry_is_usable
+        assert _registry_entry_is_usable(
+            {"notebook_path": "<chemin relatif>", "confidence": "research"}) is False
+        assert _registry_entry_is_usable(
+            {"notebook_path": "S/nb.ipynb", "confidence": "<established|advanced|research>"}) is False
+        assert _registry_entry_is_usable(
+            {"notebook_path": "S/nb.ipynb", "reviewer": "<login GitHub>"}) is False
+
+    def test_le_registre_reel_porte_les_deux_familles(self):
+        """Controle positif sur le fichier reel : sans lui, tout ce qui precede
+        serait satisfait par un loader qui ne lit aucun bloc.
+
+        Le registre porte deux familles depuis #14831 -- des appreciations sans
+        relecteur, et des entrees historiques avec relecteur. Le loader doit
+        rendre les deux.
+        """
+        from generate_catalog import _load_scientific_review_registry
+        reg = _load_scientific_review_registry()
+        if not reg:
+            import pytest
+            pytest.skip("registre absent de cet arbre")
+        avec_confidence = [v for v in reg.values() if v.get("confidence")]
+        assert avec_confidence, "aucune appreciation lue : le filtre les jette a nouveau"
+        assert any(not v.get("reviewer") for v in avec_confidence), (
+            "aucune entree sans relecteur : c'est precisement la famille que le "
+            "filtre historique jetait"
         )
-        assert "has_multi_seed_benchmark" not in sig.parameters, (
-            "has_multi_seed_benchmark retiré : rigueur empirique != preuve formelle"
-        )
-        # Et sans sorry_free, on retombe sur UNREVIEWED meme si on essaye.
-        assert classify_scientific_review({}) == "UNREVIEWED"
 
 
 # --- _is_exercise_stub ---
@@ -1501,16 +1638,35 @@ class TestEditorialReviewPromotion:
         # maturity recomputed from FINAL (BETA -> PRODUCTION needs peer review,
         # so with scientific_review=UNREVIEWED it stays BETA — aggregate logic)
         assert result[0]["maturity"] == aggregate_maturity(
-            "FINAL", "EXECUTED", "UNREVIEWED")
+            "FINAL", "EXECUTED", "UNASSESSED")
 
-    def test_maturity_propagates_to_production_when_peer_reviewed(self):
-        """FINAL + EXECUTED + PEER_REVIEWED -> maturity PRODUCTION."""
-        entries = [self._entry(
-            "S/nb.ipynb", scientific_review="PEER_REVIEWED")]
+    def test_aucune_combinaison_d_axes_ne_fabrique_production(self):
+        """REGRESSION GUARD (#14831, sign-off user 2026-09-21).
+
+        Ce test epinglait `FINAL + EXECUTED + PEER_REVIEWED -> PRODUCTION`.
+        PRODUCTION ne decrit pas une propriete du fichier : il dit que le
+        responsable pedagogique a appose son tampon et juge le notebook
+        finalise pour etre utilise en cours PAR D'AUTRES. Le deriver d'axes
+        mesures revenait a fabriquer une signature.
+
+        Le meilleur etat atteignable sans tampon est donc BETA — et c'est le
+        verdict correct : l'auteur enseigne lui-meme sur les beta.
+        """
+        entries = [self._entry("S/nb.ipynb", scientific_review="RESEARCH")]
         registry = {"S/nb.ipynb": {
             "reviewer": "reviewer-x", "review_scope": "full"}}
         result = _apply_editorial_review_promotion(entries, registry=registry)
         assert result[0]["editorial"] == "FINAL"
+        assert result[0]["maturity"] == "BETA"
+
+    def test_le_tampon_signe_produit_production(self):
+        """Le controle positif du test precedent : sans lui, PRODUCTION pourrait
+        etre devenu inatteignable au lieu d'etre devenu signe."""
+        entries = [self._entry("S/nb.ipynb", scientific_review="ESTABLISHED")]
+        entries[0]["production_signed"] = True
+        registry = {"S/nb.ipynb": {
+            "reviewer": "reviewer-x", "review_scope": "full"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
         assert result[0]["maturity"] == "PRODUCTION"
 
     def test_skips_self_review(self):
