@@ -4345,6 +4345,14 @@ def main(argv: list[str] | None = None) -> int:
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
+    # Calcule AVANT la branche --json : sans ca, l'avertissement de cache
+    # disparaissait sur la surface que les lanes utilisent reellement (`.vibe/
+    # commands/continue.md` documente `--json` comme premier geste de
+    # selection). Un hit non verifie serait reste visible en structure
+    # (`cache.pool.verified == false`) mais muet en clair -- or c'est
+    # precisement le silence que #17096 designe comme le defaut.
+    notice = cache_notice_lines(cache_status, show_all=args.cache_status)
+
     if args.json:
         print(json.dumps({
             "lane": args.lane, "seed_src": seed_src,
@@ -4400,9 +4408,14 @@ def main(argv: list[str] | None = None) -> int:
                 "fallback_after_claims": continuity["used"],
             },
         }, ensure_ascii=False, indent=2))
+        # STDERR : la sortie machine reste du JSON pur (stdout), mais l'humain
+        # qui lit la console -- et tout log qui capture stderr -- voit
+        # l'avertissement. Le rendre seulement en structure laissait le doute
+        # lisible par la machine et invisible pour l'operateur.
+        for line in notice:
+            print(line, file=sys.stderr)
         return 0
 
-    notice = cache_notice_lines(cache_status, show_all=args.cache_status)
     if notice:
         for line in notice:
             print(line)
