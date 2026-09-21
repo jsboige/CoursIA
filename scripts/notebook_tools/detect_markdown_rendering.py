@@ -186,6 +186,22 @@ RULE_SEVERITY = {
     # heading + a paragraph. Tell c.1158-L1 fondateur (the guard was a faux
     # negatif on this class -- the cell LOOKS fine structurally).
     "repr_quoted_source_entries": ERROR,
+    # #17005: ERROR (bloquant) -- ligne de continuation de puce/blockquote
+    # (indentee 2+ espaces) commencant par "#" + non-espace : le renderer
+    # Jupyter la traite comme un atx heading (Jupyter / VSCode / nbviewer
+    # sont NON-CommonMark-strict sur ce point : CommonMark refuse ce format,
+    # les renderers l'acceptent et le rendent comme heading). Fondeur :
+    # PR #16888 cell-015 (avant-fix commit c34d5e88d, apres-fix la cellule
+    # a ete rewrap, base e17f600a). Le pattern est disjoint de _HEADING_RE
+    # (qui exige un espace apres le "#", donc catch deja les "  ## Heading"
+    # indente ou pas) et de _CONTAINER_HEADING_RE (qui exige un marqueur
+    # de conteneur "-"/"*"/"+"/"1."/">" sur la MEME ligne que le "#",
+    # donc catch deja les "- # Indice", "1. # Heading" etc.). Classe de
+    # pattern : ligne de CONTINUATION de puce (2+ espaces d'indentation
+    # sans marqueur de conteneur) qui commence par "#" + non-espace
+    # (reference d'issue "#15520", mot "#libelle" etc.). ERROR parce que
+    # le rendu est incoherent avec la prose que la ligne veut dire.
+    "heading_continuation": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
     # precision is what buys blocking status; a wider pattern set would need
@@ -313,6 +329,16 @@ _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
 # drift gate on new hits is #11829 sous-issue #2. See #11829.
 _CONTAINER_HEADING_RE = re.compile(
     r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
+# #17005: continuation line of a list item / blockquote (2+ spaces indent, NO
+# container marker on the same line) starting with "#" + non-space character.
+# CommonMark refuses this as a heading (the indent is too deep, no container
+# opener), but Jupyter / VSCode / nbviewer all render it as a giant H1-H6 --
+# the same renderer gap as `_CONTAINER_HEADING_RE` (#11829), on a continuation
+# line instead of an opener line. Disjoint of both `_HEADING_RE` (which
+# requires a space after the "#") and `_CONTAINER_HEADING_RE` (which requires
+# a `-`/`*`/`+`/`1.`/`>` on the same line). Fondeur: PR #16888 cell-015
+# (base e17f600a, fix c34d5e88d rewrapped the cell to drop the indent).
+_CONTINUATION_HEADING_RE = re.compile(r"^\s{2,}(#{1,6})[^\s#]")
 
 # #12110 -- a CJK (Chinese-Japanese-Korean) character in a markdown cell whose
 # source is otherwise French prose. The defect pattern: a model-generated cell
@@ -1211,6 +1237,31 @@ def scan_cell(cell) -> list[dict]:
             "rule": rule,
             "severity": RULE_SEVERITY[rule],
             "message": f"heading nested in a list/blockquote (renders as giant H{level})",
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- continuation line starting with '#' (#17005) ----------------------------
+    # Sibling of the heading_in_list loop above: a list-item / blockquote
+    # CONTINUATION line (2+ spaces indent, NO container marker on the same
+    # line) that begins with `#` + non-space is rendered as a giant H1-H6 by
+    # Jupyter / VSCode / nbviewer (CommonMark refuses it; the renderers do
+    # not). Same fence-awareness / one-finding-per-cell discipline.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        m = _CONTINUATION_HEADING_RE.match(ln)
+        if not m:
+            continue
+        rule = "heading_continuation"
+        level = len(m.group(1))
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": (f"list/blockquote continuation line starts with '#' "
+                        f"(renders as giant H{level}); drop the leading indent or "
+                        f"escape the '#' so the line stays prose"),
             "evidence": ln.strip()[:100],
             "hash": _cell_hash(rule, text),
         })

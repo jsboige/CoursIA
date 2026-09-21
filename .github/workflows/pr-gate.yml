@@ -45,6 +45,36 @@ name: PR gate
 on:
   pull_request:
     branches: [main]
+    # #16624 (rev. ai-01 CHANGES_REQUESTED 2026-09-18T06:33Z): `edited` is
+    # deliberately NOT listened to. The original defect stands -- a PR
+    # retargeted onto main after living on a stack link emits `edited`, which
+    # the default types exclude, so the required gate NEVER fired (BLOCKED
+    # forever with zero red, 14 checks green + APPROVED, measured firsthand on
+    # #16574) -- but listening to `edited` cannot be made safe HERE, because
+    # this job IS the required check (`name: PR gate`, job-managed check-run):
+    # every in-workflow form of "ignore title/body edits" still emits a verdict-
+    # shaped check-run on the head SHA. A job-level guard yields a SKIPPED
+    # same-named check-run -- under latest-wins that is the newest verdict for
+    # the name, and a required check concluded `skipped` counts as passing, so
+    # editing the body of a red PR would unblock it; an in-job early exit
+    # concludes SUCCESS (clears the red outright). The only semantics that
+    # cannot mutate a verdict on a title/body edit is NO RUN AT ALL, hence
+    # `edited` stays out of the types.
+    #
+    # The retarget population is instead caught from the OUTSIDE by the
+    # pr-gate-stale-sweep.yml gate-absent leg (hourly cron backstop + push
+    # heartbeat, median 11 min between successful sweeps, #15770): it labels
+    # the PR, comments the remedy, and auto-dispatches pr-gate-rerun.yml
+    # `aggregate_absent` for the head (capped MAX_AUTO_REMEDIATE per pass) --
+    # the verdict is computed by the same pr_gate.py, never asserted. Manual
+    # immediacy when wanted: `gh pr close N && gh pr reopen N` from a USER
+    # token (`reopened` IS a default type; bot tokens are inert, #16624).
+    #
+    # `ready_for_review` stays: draft -> ready emits no push, hence no
+    # synchronize, so without it the draft's `opened` verdict would be the
+    # last one the PR ever gets. It carries no skip path: the gate always
+    # runs, computes a real verdict.
+    types: [opened, synchronize, reopened, ready_for_review]
   # No inputs. This leg aggregates the ref it runs on, nothing else.
   #
   # It carried a `sha` input ('Head SHA to aggregate') that the run step never
@@ -94,6 +124,14 @@ jobs:
     # references a check nobody produces -- pending forever, the very deadlock
     # this workflow exists to avoid.
     name: PR gate
+    # No `if:` guard here, on purpose (#16624 rev., ai-01 2026-09-18T06:33Z):
+    # a guard discriminating on `github.event.action == 'edited'` would skip
+    # the job on title/body edits and emit a SKIPPED check-run under this very
+    # name -- the newest verdict for the required check, and a `skipped`
+    # required check counts as passing (a red PR would unblock on a body
+    # edit). An in-job early exit is worse still (SUCCESS clears the red).
+    # The edited population is handled entirely outside this workflow by the
+    # stale-sweep gate-absent leg -- see the trigger comment above.
     # #13363 (arbitrage ai-01 2026-09-02, jambes A+B): under load this
     # aggregator held 11/14 self-hosted runners just waiting (famine #11405),
     # while a short timeout made it FAIL below the Quarto duration it waited

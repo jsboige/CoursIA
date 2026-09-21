@@ -25,7 +25,8 @@ Output format (parseable by harvest scripts):
     [BG] EXIT code=<rc>            (always printed, even on exception path)
 
 Exit codes: 0 success, 2 bad demo_id, 3 tree locked (#6790), 4 target refused
-(DO NOT TARGET, #7477 P2b), 130 died before returning (#6790).
+(DO NOT TARGET, #7477 P2b), 5 provider credential gate (#1453, 2026-09-19),
+130 died before returning (#6790).
 
 Launch WITHOUT piping through `tail`/`head`: `... | tee log | tail -30`
 makes the task exit code tail's (0) and loses python's real one (run-6
@@ -47,6 +48,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
 # run-6-style silent death leaves a signature in the log (#6790).
@@ -68,7 +70,8 @@ from target_guard import (  # noqa: E402
     DO_NOT_TARGET_EXIT,
     resolve_target_line,
 )
-from prover.config import DEMOS  # noqa: E402
+from prover.config import DEMOS, PROVIDERS  # noqa: E402
+from prover.p6_routing import _expected_provider  # noqa: E402
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
@@ -97,6 +100,76 @@ def _peek_sorry_count(filepath: str) -> int:
         return count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     except OSError:
         return -1
+
+
+def _effective_agent_providers(args: argparse.Namespace) -> dict:
+    """Resolve the per-role provider map exactly as the prover will.
+
+    Mirrors ``MultiAgentSorryProver.__init__`` (provers.py: openrouter
+    defaults for coordinator/tactic) and p6_routing's ``_expected_provider``
+    (zai for Search/Critic) so the gate below can never drift from what
+    the workflow actually dials.
+    """
+    eff = {
+        "reasoning": args.provider,
+        "fast": args.local_provider,
+        "coordinator": getattr(args, "coordinator_provider", None) or "openrouter",
+        "tactic": getattr(args, "tactic_provider", None) or "openrouter",
+        "search": getattr(args, "search_provider", None)
+        or _expected_provider("SearchAgent")
+        or "local",
+        "critic": getattr(args, "critic_provider", None)
+        or _expected_provider("CriticAgent")
+        or "local",
+    }
+    if getattr(args, "director_provider", None):
+        eff["director"] = args.director_provider
+    return eff
+
+
+PROVIDER_ENV_KEYS = {
+    "zai": "ZAI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+    "mistral": "MISTRAL_API_KEY",
+    "local": "LOCAL_LLM_API_KEY",
+}
+
+
+def _validate_provider_credentials(eff: dict) -> list:
+    """#1453 forensic (2026-09-19): fail-fast credential gate.
+
+    Founder case (measured firsthand, calibration DEMOS 45/41/52 pass 1 on a
+    keyless lane): ``--provider local`` alone leaves Coordinator/Tactic on
+    their ``openrouter`` default and Search/Critic on the p6_routing ``zai``
+    default. The run stubs the calibration target, takes the tree lock, then
+    dies 3x401 -> ``provider_outage_breaker`` without a single attempt.
+    Refusing to launch names the missing keys instead of burning a run.
+
+    Keyless by design: localhost endpoints (Ollama/vLLM). An empty base_url
+    on provider ``local`` (LOCAL_LLM_BASE_URL unset) targets the OpenAI
+    default endpoint with an empty key and is equally refused.
+    """
+    problems = []
+    for role, name in eff.items():
+        cfg = PROVIDERS.get(name)
+        if cfg is None:
+            problems.append(f"{role}: unknown provider '{name}'")
+            continue
+        base = (cfg.get("base_url") or "").strip()
+        key = (cfg.get("api_key") or "").strip()
+        host = urlparse(base).hostname or ""
+        if host in ("localhost", "127.0.0.1", "::1"):
+            continue
+        env = PROVIDER_ENV_KEYS.get(name, f"{name.upper()}_API_KEY")
+        if not base:
+            problems.append(
+                f"{role} -> '{name}': base_url vide ({env} / base non configurés)"
+            )
+        elif not key:
+            problems.append(
+                f"{role} -> '{name}': {env} absent/vide pour {base}"
+            )
+    return problems
 
 
 async def main(args: argparse.Namespace) -> int:
@@ -148,6 +221,21 @@ async def main(args: argparse.Namespace) -> int:
         f"director={args.director_provider or 'none'} "
         f"max_iter={args.max_iter} workflow_timeout={args.workflow_timeout}s"
     )
+
+    # #1453 fail-fast: refuse to launch when a routed provider has no
+    # credentials, BEFORE stubbing the target or taking the tree lock.
+    _gate_problems = _validate_provider_credentials(
+        _effective_agent_providers(args)
+    )
+    if _gate_problems:
+        for _p in _gate_problems:
+            _bg(f"PROVIDER_GATE {_p}")
+        _bg(
+            "PROVIDER_GATE refusing to launch — set the listed keys or pass "
+            "explicit --coordinator-provider/--tactic-provider/"
+            "--search-provider/--critic-provider overrides"
+        )
+        return 5
 
     # One prover per tree (#6790): lock the lake root the run will mutate.
     tree_root = None

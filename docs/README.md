@@ -266,6 +266,7 @@ Notes de suivi de cycle par série (transitions architecturales et narratives).
 | Fichier | Description |
 |---------|-------------|
 | [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
+| [suivis/singapore-consensus-audit.md](suivis/singapore-consensus-audit.md) | Audit du cluster selon les 10 principes agentic du Singapore Consensus (R11 companion, P1-P10, #16757) |
 
 ## CI & workflows (docs/ci/)
 
