@@ -163,6 +163,24 @@ Trois conséquences, à ne pas séparer :
 
 **Instrument à ne pas surinterpréter.** Le repr NumPy 2 des scalaires (`np.float64(0.1)` au lieu de `0.1`) n'apparaît dans les **outputs** que de 3 notebooks (75 occurrences : 56 sur un notebook à 3.13.14, 19 sur deux à 3.13.7) et **jamais** dans les 19 notebooks à 3.13.3. L'instrument est **unilatéral** : sa *présence* prouve NumPy 2, son *absence* ne prouve rien (aucun contrôle positif — ces notebooks n'impriment simplement pas de repr de scalaire). La génération NumPy des 74 autres **n'est pas établie** par l'inspection des outputs : ne pas conclure « NumPy 1 » d'une absence.
 
+**La seconde moitié de l'acceptance de #17185 est mesurée (2026-09-21) — et le geste de mesure porte deux pièges.**
+
+`ICT-01-PhiTrajectories-Python` (kernelspec `pyphi`, outputs committés sous Python **3.9.25** — donc un notebook *déjà conforme* à l'env pinné) a été ré-exécuté sous le kernel `pyphi39` de cette machine (Python 3.9.25, NumPy 1.26.4, PyPhi 1.2.0), puis comparé aux outputs committés **dans les unités du garde** (import de `check_kernel_drift.float_signatures` / `diff_signatures`, pas une comparaison réécrite) :
+
+| Instrument | Verdict |
+|---|---|
+| Contrôle positif (`sha256sum`, `cmp`) | le fichier **a bien été réécrit** (240 052 o écrits, empreinte différente) |
+| `diff_signatures` (unités du garde) | **AUCUNE DÉRIVE** — 0/10 cellules à signature modifiée, 4 tokens float identiques |
+| `check_kernel_drift.py origin/main`, état **commité** | `OK: 0 kernel-drift regression across **1** changed notebooks` |
+
+**Conclusion pour la strate Φ** : sous l'env canonique, la ré-exécution d'un notebook déjà conforme **ne produit pas de drift**. C'est la seconde moitié de l'acceptance, et elle est vérifiée — pour cette strate seulement (cf. « Reste ouvert » ci-dessous).
+
+**Piège 1 — `nbconvert --inplace` n'écrit le fichier qu'en cas de succès.** La toute première tentative a « rendu » `AUCUNE DÉRIVE`, 0 cellule modifiée, compteurs d'exécution tous présents : un vert parfait, et **vide**. Elle avait échoué sur `ModuleNotFoundError: No module named 'matplotlib'`, et l'artefact sur disque était resté **byte-identique** à la version committée — la comparaison confrontait le notebook **avec lui-même**. Le contrôle positif (`sha256sum` avant/après) est ce qui l'a attrapé. **Règle : avant d'interpréter une comparaison de drift comme une mesure, prouver que l'artefact a effectivement changé.**
+
+**Piège 2 — le garde ne voit que le travail COMMITÉ.** `check_kernel_drift.changed_notebooks()` fait `git diff <base> HEAD -- *.ipynb` : sur une ré-exécution encore dans l'arbre de travail, il rend `OK ... across 0 changed notebooks` — il n'a **rien regardé**. Ce `OK` n'est pas une preuve de non-drift, c'est une preuve de non-commit. Committer la ré-exécution dans un worktree jetable, ou lire les deux fichiers explicitement, avant de citer le garde.
+
+**Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
+
 **Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
