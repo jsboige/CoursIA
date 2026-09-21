@@ -101,9 +101,13 @@ Quand le user formule une demande concrete et realisable :
 
 ## Regle 3 : coordonner CHAQUE lane independamment (HARD)
 
-**Deux dashboards workspace co-egaux** : `workspace-CoursIA` et `workspace-CoursIA-2`. **Aucun n'est "le dashboard du coordinateur"**. Un `lane` = **machine x workspace** ; chaque worker avec une lane CoursIA-2 a **AUSSI** une lane CoursIA.
+**Trois dashboards workspace co-egaux** : `workspace-CoursIA`, `workspace-CoursIA-2` et `workspace-CoursIA-3`. **Aucun n'est "le dashboard du coordinateur"**. Un `lane` = **machine x workspace** ; chaque worker avec une lane CoursIA-2 a **AUSSI** une lane CoursIA.
 
-Chaque cycle `/coordinate` : **LIRE `section:"all"` sur LES DEUX** (sinon les ASKs/blockers d'une lane restent invisibles) **et POSTER un contenu lane-specific sur LES DEUX** — **jamais de broadcast miroir** (copier-coller identique), jamais traiter l'un comme « le mien » et l'autre comme « celui des workers ». Surveiller la **duplication cross-lane** (un worker peut dedoubler une livraison sur ses deux lanes → reconcilier : 1 canonique mergee, l'autre disposee).
+`workspace-CoursIA-3` est tenu par le **secretaire** (`myia-po-2026:CoursIA-3`), troisieme role du dispositif aux cotes du coordinateur (`myia-ai-01:CoursIA`) et du titulaire (`myia-po-2025:CoursIA-2`).
+
+Chaque cycle `/coordinate` : **LIRE `section:"all"` sur LES TROIS** (sinon les ASKs/blockers d'une lane restent invisibles) **et POSTER un contenu lane-specific sur LES TROIS** — **jamais de broadcast miroir** (copier-coller identique), jamais traiter l'un comme « le mien » et l'autre comme « celui des workers ». Surveiller la **duplication cross-lane** (un worker peut dedoubler une livraison sur ses deux lanes → reconcilier : 1 canonique mergee, l'autre disposee).
+
+**Ce compte n'est pas une constante — il a deja ete faux.** Le 2026-09-21, un troisieme dashboard existait depuis des cycles pendant que cette regle et le skill `coordinate` en nommaient deux : le secretaire est reste muet **cinq heures**, a envoye **trois DM gradues** non lus, et n'a pu poser **aucun** des 22 dossiers qu'il avait prepares — sa lane etant aussi absente de `QUALIFYING_LANES`, la **meme enumeration recopiee dans un second organe**. Un zero d'une lane qui travaille est un defaut d'organe, jamais un defaut de zele : verifier qu'elle **peut** produire avant de lire son silence comme une absence de travail.
 
 Mapping lanes + incident fondateur (mandat 2026-06-14) : [§2.3](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 

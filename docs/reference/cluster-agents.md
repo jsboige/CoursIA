@@ -96,9 +96,25 @@ Cluster simplifie depuis 2026-05-15 : **un workspace `CoursIA` par machine**, sa
 
 **Workspace `myia-po-2023:GenAI_Series` est DEPRECATED** depuis 2026-05-15. Tout dispatch GenAI va sur `myia-po-2023:CoursIA` uniquement.
 
+## Les trois roles du dispositif de merge — coordinateur, titulaire, secretaire
+
+Le debit de merge du depot ne tient pas a une lane qui lirait plus vite : il tient a **trois roles distincts**, dont deux produisent les dossiers de prevalidation que le troisieme consomme.
+
+| Role | Lane | Dashboard | Ce qu'il fait | Ce qu'il ne fait PAS |
+|---|---|---|---|---|
+| **Coordinateur** | `myia-ai-01:CoursIA` | `workspace-CoursIA` | lit les trois dashboards, dispatche, **merge et close** (seul) | re-fabriquer un dossier, re-auditer une READY, entrer dans le corps d'une PR de contenu |
+| **Titulaire** (coordinateur adjoint) | `myia-po-2025:CoursIA-2` | `workspace-CoursIA-2` | emet des dossiers `[ADJOINT PREFLIGHT]`, re-delegue au secretaire | merger, closer, arbitrer a la place du coordinateur |
+| **Secretaire** | `myia-po-2026:CoursIA-3` | **`workspace-CoursIA-3`** | emet des dossiers, draine l'inbox, ferme les issues resolues, tient le ledger | merger, pousser sur une branche, contourner le gate |
+
+**Cible de debit (mandat user 2026-09-21)** : **~20 merges par cycle**. Elle se tient par **>=20 dossiers frais oldest-first par fenetre de 4 h**, emis **conjointement** par le titulaire et le secretaire — jamais par un emetteur unique, qui est un plafond mecanique. Toute lane de `QUALIFYING_LANES` peut attester une PR **qu'elle ne porte pas** ([#16906](https://github.com/jsboige/CoursIA/issues/16906)) ; l'auto-attestation est refusee par le gate.
+
+**Pourquoi le secretaire est structurellement necessaire** : les PRs portees par `myia-po-2026:CoursIA` — **15 des 50 plus vieilles**, mesure 2026-09-21 — ne peuvent etre attestees ni par leur propre lane (auto-attestation) ni, en pratique, par personne d'autre qui les suive. Le secretaire est leur attestataire designe.
+
+**Incident fondateur (2026-09-21)** : `myia-po-2026:CoursIA-3` etait absent **a la fois** de `QUALIFYING_LANES` dans `scripts/check_adjoint_prevalidation.py` **et** de toute prose du harnais. Consequence : tous ses dossiers rejetes `NO-DOSSIER`, donc aucune production, donc un silence lu comme « rien a faire ». Cinq heures, trois DM gradues non lus, 22 dossiers prets et non postables, 27 `NO_DOSSIER` sur 30 PRs scannees. **Une enumeration recopiee dans deux organes se corrige dans les deux, ou elle ne se corrige pas.**
+
 ## Second workspace par machine — lanes `CoursIA-2` (depuis ~2026-06)
 
-Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machine x workspace) : sa lane `CoursIA` historique **et** une lane `CoursIA-2` sur un second workspace, coordonnee via un **second dashboard** `workspace-CoursIA-2` co-egal. **Aucun des deux dashboards n'est « celui du coordinateur »** : ai-01 **lit ET poste un contenu lane-specific sur CHACUN** chaque cycle, jamais de broadcast miroir (cf [CLAUDE.md](../../CLAUDE.md) section A + [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) règle 3).
+Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machine x workspace) : sa lane `CoursIA` historique **et** une lane `CoursIA-2` sur un second workspace, coordonnee via un **second dashboard** `workspace-CoursIA-2` co-egal. Un **troisieme** dashboard, `workspace-CoursIA-3`, est tenu par le secretaire (section precedente). **Aucun des trois dashboards n'est « celui du coordinateur »** : ai-01 **lit ET poste un contenu lane-specific sur CHACUN** chaque cycle, jamais de broadcast miroir (cf [CLAUDE.md](../../CLAUDE.md) section A + [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) règle 3).
 
 **Toutes les machines worker portent les deux lanes**, `po-2023` incluse. La phrase que ces lignes remplacent affirmait l'inverse (« `po-2023` et `ai-01` n'ont qu'une lane `CoursIA` ») : mesure du 2026-09-12 sur les 150 derniers merges, `myia-po-2023:CoursIA-2` a livré **28 des 39** PRs `CoursIA-2` de l'échantillon — c'est *la* lane `CoursIA-2` dominante du dépôt. Seul `ai-01` (coord) n'a qu'une lane `CoursIA`. po-2025 ajoute par ailleurs ses 2 workspaces EPITA (cf section "po-2025 - 3 agents distincts").
 
