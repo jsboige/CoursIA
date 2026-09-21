@@ -18,10 +18,17 @@ def _comment(body: str, login: str = "jsboige") -> dict:
     return {"author": {"login": login}, "body": body}
 
 
+# The carrying lane of the default fixture. It must differ from the `lane` of
+# `_body()` (the adjoint), or every nominal case would be a self-attestation.
+# It is a real tag because an absent one is now a refusal: a dossier can only be
+# trusted when the gate can see WHO carries the pull request (#16928).
+CARRIER = "myia-po-2026:CoursIA"
+
+
 def _base_snapshot() -> dict:
     return {
         "number": 123,
-        "body": "PR body",
+        "body": f"Grain: MED/harnais -- lane {CARRIER} -- prev: MED\n\nPR body",
         "headRefOid": HEAD,
         "state": "OPEN",
         "title": "PR title",
@@ -31,6 +38,16 @@ def _base_snapshot() -> dict:
         "reviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}],
         "threads": [{"isResolved": True}],
         "statusCheckRollup": [{"name": "PR gate", "conclusion": "SUCCESS"}],
+        "checkRuns": [
+            {
+                "id": 1,
+                "name": "PR gate",
+                "status": "completed",
+                "conclusion": "success",
+                "started_at": "2026-09-20T10:00:00Z",
+                "output": {"title": "PR gate -- all green"},
+            }
+        ],
         "changedFiles": 3,
         "additions": 42,
         "deletions": 7,
@@ -68,6 +85,21 @@ def _snapshot(dossier: str | None = None) -> dict:
     snapshot = _base_snapshot()
     if dossier is not None:
         snapshot["comments"].append(_comment(dossier))
+    return snapshot
+
+
+def _snapshot_with_body(pr_body: str, **dossier_changes: str) -> dict:
+    """Snapshot whose PR body is `pr_body`, attested by a dossier over THAT body.
+
+    `surfaces-sha256` covers the body (see `surfaces_fingerprint`), so the
+    fingerprint is taken AFTER the body is set. Mutating the body afterwards
+    would perime the dossier and mask the check under test.
+    """
+    snapshot = _base_snapshot()
+    snapshot["body"] = pr_body
+    fields = dict(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"].append(_comment(_body(**fields)))
     return snapshot
 
 
@@ -139,9 +171,69 @@ def test_checks_and_b0_require_canonical_complete_verdicts():
         assert any(error.startswith(f"{field} must") for error in errors), field
 
 
-def test_worker_lane_cannot_satisfy_gate():
-    errors = _errors(_snapshot(_body(lane="myia-po-2027:CoursIA")))
-    assert any(error.startswith("lane must") for error in errors)
+def test_unknown_lane_cannot_satisfy_gate():
+    """A lane outside the cluster set fails closed, as does a malformed string."""
+    for lane in ("not-a-lane", "myia-po-9999:CoursIA", ""):
+        errors = _errors(_snapshot(_body(lane=lane)))
+        assert any(error.startswith("lane must") for error in errors), lane
+
+
+def test_qualifying_third_party_lane_satisfies_gate():
+    """Any cluster lane may attest a pull request it does not carry (#16904).
+
+    The binding constraint is third-party review, not one named lane. Before
+    this, `ADJOINT_LANE` made a single lane's throughput the merge throughput of
+    the whole repository.
+    """
+    for lane in ("myia-po-2027:CoursIA", "myia-po-2023:CoursIA", "myia-ai-01:CoursIA"):
+        ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
+        assert ready, (lane, errors)
+        assert errors == [], lane
+
+
+def test_lane_carrying_the_pr_cannot_prevalidate_itself():
+    """Self-attestation is refused: the `Grain:` tag names the carrying lane."""
+    carrier = "myia-po-2027:CoursIA"
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/notebook-python -- lane %s -- prev: MED" % carrier, lane=carrier
+    )
+    errors = _errors(snapshot)
+    assert any(error.startswith("self-prevalidation refused") for error in errors)
+    # Le refus est le SEUL motif : sans cette assertion, une empreinte perimee
+    # ferait passer le test pour la mauvaise raison.
+    assert not any(error.startswith("discussion surfaces") for error in errors), errors
+
+
+def test_third_party_lane_passes_when_carrier_is_declared():
+    """A declared carrier does not block a dossier from a different lane."""
+    snapshot = _snapshot_with_body(
+        "Grain: DEEP/lean -- lane myia-po-2027:CoursIA -- prev: MED",
+        lane="myia-po-2025:CoursIA-2",
+    )
+    ready, errors = mod.evaluate(snapshot)
+    assert ready, errors
+    assert errors == []
+
+
+def test_absent_grain_tag_is_not_an_authorization():
+    """No readable tag means the self-check CANNOT run -- so the dossier fails.
+
+    The first version of this test passed `lane="not-a-lane"`, so the refusal
+    came from the allowlist and the missing tag was never exercised at all: the
+    test carried the right name and proved something else, while the code let a
+    qualifying lane carrying an untagged PR file its own dossier. A QUALIFYING
+    lane is what makes the absent tag the only thing left to refuse on -- hence
+    the second assertion, which fails if the allowlist starts doing the work
+    again.
+    """
+    snapshot = _snapshot_with_body(
+        "pas de tag Grain ici", lane="myia-po-2023:CoursIA"
+    )
+    errors = _errors(snapshot)
+    assert any(
+        error.startswith("carrying lane cannot be established") for error in errors
+    )
+    assert not any(error.startswith("lane must") for error in errors)
 
 
 def test_non_shared_github_author_cannot_satisfy_gate():
@@ -167,11 +259,18 @@ def test_blocked_preflight_is_a_valid_dossier_but_never_ready():
 
 
 def test_blocked_dossier_still_requires_full_structural_integrity():
-    """exit 3 is NOT a softer gate: the fingerprint stays mandatory."""
+    """exit 3 is NOT a softer gate: the fingerprint stays mandatory.
+
+    The bad `lane` must be one that is genuinely DISQUALIFYING. This case read
+    `myia-po-2023:CoursIA` while a single lane could attest; #16906 makes that a
+    qualifying lane, so it would silently stop testing anything. The assertion
+    survives by naming a lane outside `QUALIFYING_LANES`, not by narrowing the
+    set back.
+    """
     for field, value in (
         ("surfaces-sha256", "0" * 64),
         ("head", "f" * 40),
-        ("lane", "myia-po-2023:CoursIA"),
+        ("lane", "myia-po-9999:CoursIA"),
         ("complete", "false"),
         ("schema", "2"),
     ):
@@ -221,6 +320,9 @@ def test_comment_after_dossier_invalidates_it():
 
 
 def test_same_count_surface_mutation_invalidates_fingerprint():
+    # "checks" is deliberately absent: check-runs are no longer a hashed
+    # surface (#16957). A conclusion change is caught by the claim
+    # verification instead -- see test_red_check_refuses_ready_naming_the_check.
     for surface, mutate in (
         ("body", lambda snapshot: snapshot.__setitem__("body", "edited body")),
         (
@@ -233,12 +335,6 @@ def test_same_count_surface_mutation_invalidates_fingerprint():
             "thread",
             lambda snapshot: snapshot["threads"][0].__setitem__(
                 "isResolved", False
-            ),
-        ),
-        (
-            "checks",
-            lambda snapshot: snapshot["statusCheckRollup"][0].__setitem__(
-                "conclusion", "FAILURE"
             ),
         ),
     ):
@@ -269,12 +365,38 @@ def test_unknown_and_duplicate_fields_fail_closed():
     assert any("duplicate field" in error for error in _errors(_snapshot(duplicate)))
 
 
-def test_truncated_or_trailed_dossier_is_reported_as_malformed():
+def test_truncated_dossier_is_reported_as_malformed():
+    """An unclosed block stays refused: its extent is undefined."""
     truncated = _body().replace("\n" + mod.END, "")
     assert "missing closing marker" in _errors(_snapshot(truncated))
 
-    trailed = _body() + "\ntext after the contract"
-    assert "content after closing marker" in _errors(_snapshot(trailed))
+
+def test_prose_after_the_closing_marker_is_ignored_not_refused():
+    """The contract is the delimited block; what follows is for a human.
+
+    Refusing it discarded four dossiers in a single cycle whose machine-readable
+    block was complete and whose firsthand evidence -- `check_unaddressed_nits`
+    rc, comment counts, exact head -- was written below the marker so a reader
+    could see it (#16928).
+    """
+    trailed = _body() + "\n\n### Verifications firsthand\n- B.0 : rc=0, 6 commentaires lus."
+    verdict, errors = mod.evaluate(_snapshot(trailed))
+    assert verdict == mod.VERDICT_READY, errors
+    assert errors == []
+
+
+def test_trailing_prose_cannot_smuggle_a_contract_field():
+    """What the old refusal actually had to protect -- and still does.
+
+    `content` stops at the closing marker, so a field written after it is never
+    parsed. Tolerating prose is therefore not tolerating a second, contradicting
+    contract: the BLOCKED verdict inside the block wins over the READY written
+    below it.
+    """
+    smuggled = _body(verdict="BLOCKED") + "\nverdict: READY\nb0: clear\nchecks: latest-wins-green"
+    verdict, _ = mod.evaluate(_snapshot(smuggled))
+    assert verdict == mod.VERDICT_BLOCKED
+
 
 
 def test_noncanonical_integer_and_pr_mismatch_fail_closed():
@@ -423,3 +545,213 @@ def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
          "submittedAt": "2026-09-18T00:00:00Z", "body": "reserve posee AVANT le dossier"}
     )
     assert _errors(snapshot)
+
+
+# --- Checks are re-verified, not hashed (#16957) --------------------------------
+#
+# Measured trap this closes: `perimeter review guard (#11268)` starts on a
+# review, the adjoint posts the dossier while the guard is in flight, the
+# guard concludes SUCCESS -- and the stamp expired on a check nobody wrote.
+# 7 of the 54 dossiers at exact head died of this, 4 of them on the same
+# guard within three seconds of each other. Hashing the check state both
+# guaranteed that race and certified nothing about the `checks:` claim.
+
+
+def test_check_completing_green_after_dossier_does_not_expire_it():
+    """Positive control: a green conclusion after the stamp must not kill it."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"].append(
+        {"id": 2, "name": "perimeter review guard (#11268)",
+         "status": "completed", "conclusion": "success",
+         "started_at": "2026-09-20T11:14:54Z",
+         "output": {"title": "perimeter review guard -- pass"}}
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_green_check_may_also_move_the_rollup_after_the_stamp():
+    """The rollup is neither hashed (new stamps) nor read for the claim: only
+    the per-name latest-wins verdicts of the head's check-runs are."""
+    snapshot = _snapshot(_body())
+    snapshot["statusCheckRollup"].append(
+        {"name": "perimeter review guard (#11268)", "conclusion": "SUCCESS"}
+    )
+    snapshot["checkRuns"].append(
+        {"id": 2, "name": "perimeter review guard (#11268)",
+         "status": "completed", "conclusion": "success",
+         "started_at": "2026-09-20T11:14:54Z", "output": {}}
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_red_check_refuses_ready_naming_the_check():
+    """A red conclusion after the stamp is caught BY NAME, not by hash drift."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 3, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T12:00:00Z",
+         "output": {"title": "FAIL -- failing checks: notebook-validate"}}
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure; FAIL -- failing checks: notebook-validate)" in error
+        for error in errors
+    )
+
+
+def test_lying_dossier_claiming_green_over_a_red_head_is_refused():
+    """Decisive negative control: the claim itself is verified.
+
+    Pre-#16957 the hash certified the check STATE at stamp time but never that
+    `checks: latest-wins-green` matched it: a dossier could claim green on a
+    red head and pass, as long as nobody posted after it. Built with the
+    fingerprint computed over the red live state, so ONLY the claim
+    verification can refuse it.
+    """
+    live = _base_snapshot()
+    live["checkRuns"] = [
+        {"id": 1, "name": "notebook-validate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z",
+         "output": {}}
+    ]
+    dossier = _body(**{"surfaces-sha256": mod.surfaces_fingerprint(live)})
+    live["comments"].append(_comment(dossier))
+    errors = _errors(live)
+    assert any(
+        "contradicted by live check 'notebook-validate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_latest_wins_picks_the_most_recent_completed_run_per_name():
+    """The rollup-twin trap: a cancelled older run must not paint the head red."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "cancelled", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_latest_wins_red_older_run_loses_to_newer_green():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_skipped_and_neutral_conclusions_are_not_red():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "codeql", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "coverage", "status": "completed",
+         "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_in_flight_rerun_has_no_verdict_and_hides_nothing():
+    """A rerun still in flight cannot veto; the last completed verdict stands --
+    green stays ready, red stays refused."""
+    green = _snapshot(_body())
+    green["checkRuns"].append(
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-20T13:00:00Z"}
+    )
+    verdict, errors = mod.evaluate(green)
+    assert verdict == mod.VERDICT_READY, errors
+
+    red = _snapshot(_body())
+    red["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-20T13:00:00Z"},
+    ]
+    assert any("'PR gate'" in error for error in _errors(red))
+
+
+def test_blocked_dossier_is_not_refuted_by_a_red_check():
+    """Claim verification targets the READY claim; a BLOCKED dossier attesting a
+    red head is honest and stays a valid dossier (exit 3 semantics, #16800)."""
+    live = _base_snapshot()
+    live["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z",
+         "output": {"title": "DWELL -- leve au premier balayage"}}
+    ]
+    dossier = _body(
+        verdict="BLOCKED", b0="blocked", checks="BLOCKED", scope="pass",
+        domain="not-applicable",
+        **{"surfaces-sha256": mod.surfaces_fingerprint(live)},
+    )
+    live["comments"].append(_comment(dossier))
+    verdict, errors = mod.evaluate(live)
+    assert verdict == mod.VERDICT_BLOCKED, errors
+
+
+def test_legacy_stamp_still_accepted_while_checks_unchanged():
+    """Backward acceptance: pre-#16957 stamps hashed the rollup as well; both
+    digests are valid certificates of the discussion surfaces."""
+    legacy = mod.legacy_surfaces_fingerprint(_base_snapshot())
+    snapshot = _snapshot(_body(**{"surfaces-sha256": legacy}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_legacy_stamp_whose_checks_moved_needs_a_mechanical_restamp():
+    """A legacy stamp whose checks moved matches NEITHER digest: the hash
+    embedded data that has since changed, and a SHA-256 over changed data
+    cannot be re-derived. The refusal names the recovery (--template), and the
+    re-stamped dossier can never again be expired by a check conclusion."""
+    snapshot = _snapshot(_body(**{
+        "surfaces-sha256": mod.legacy_surfaces_fingerprint(_base_snapshot())
+    }))
+    snapshot["statusCheckRollup"][0]["conclusion"] = "PENDING"
+    errors = _errors(snapshot)
+    assert any(
+        "discussion surfaces changed" in error
+        and "--template re-stamp" in error
+        for error in errors
+    )
+
+
+def test_surfaces_fingerprint_is_insensitive_to_check_state():
+    """The new digest must not move when only checks move -- that is the race
+    being closed. The legacy digest still does, which is why it is legacy."""
+    base = _base_snapshot()
+    moved = _base_snapshot()
+    moved["checkRuns"][0]["conclusion"] = "failure"
+    moved["statusCheckRollup"] = [{"name": "PR gate", "conclusion": "FAILURE"}]
+    assert mod.surfaces_fingerprint(base) == mod.surfaces_fingerprint(moved)
+    assert mod.legacy_surfaces_fingerprint(base) != mod.legacy_surfaces_fingerprint(moved)
+
+
+def test_template_renders_the_emitting_lane_not_a_borrowed_name():
+    """A lane renders its OWN name, or the self-attestation refusal is defeated.
+
+    A template hardcoding one lane hands every other lane a dossier declaring a
+    name that is not its own. The carrying lane could then prevalidate itself
+    under a borrowed name and `validate_dossier` would see two different lanes.
+    """
+    for lane in ("myia-po-2027:CoursIA", "myia-po-2023:CoursIA"):
+        template = mod.render_template(_base_snapshot(), lane)
+        assert f"lane: {lane}" in template, lane
+
+
+def test_template_lane_defaults_to_the_adjoint():
+    """The adjoint stays the canonical emitter: the default is unchanged."""
+    assert f"lane: {mod.ADJOINT_LANE}" in mod.render_template(_base_snapshot())
