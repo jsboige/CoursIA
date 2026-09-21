@@ -21,6 +21,14 @@ des embeddings, semantique detruite.
 Hook de clamp (Gate 24 de #5635, phase 2 — NON exECUTE dans cette issue) :
 `--clamp-ids` force un sous-ensemble de features SAE a zero en soustrayant leur
 contribution decodeur du residual stream (necessite W_dec dans le checkpoint).
+`--clamp-scale` (pilote #8236, jalon 3) parametre l'intensite du clamp :
+h' = h - alpha * delta avec alpha dans [0, 1]. alpha=1 (defaut, comportement
+historique) supprime exactement la contribution decodee des features visees ;
+alpha<1 realise une inoculation partielle, dont le balayage (alpha croissant)
+expose la bifurcation representationnelle de l'EPIC — seuil critique, nettete,
+comparaison cross-echelle. Le suffixe `_s{alpha}` dans le nom de trace ne
+s'insere que si alpha != 1 : les traces a intensite unitaire restent nommees
+comme avant.
 
 Deux echelles (#5105 / #7396) : le couple de reference est 9B-Base x W64K, mais
 l'arc post-training PT-12 lit aussi Qwen3.5-2B(-Base) x W32K. Les deux profondeurs
@@ -48,6 +56,13 @@ Usage (GPU 2 d'ai-01 STRICT — vLLM tient GPU 0-1) :
     # echelle 2B, SAE L0_100 (meme modele, top-k=100 detecte auto) :
     ... --model Qwen/Qwen3.5-2B-Base --layer-frac 0.5 \
         --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_100 --stage full
+    # pilote inoculation #8236 (jalon 3) : clamp partiel a mi-reseau, lecture
+    # au resid final, deux SAE (couche d'inoculation pour le hook, derniere
+    # couche pour l'encodage de la trace) :
+    ... --model Qwen/Qwen3.5-2B-Base \
+        --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50 --stage full \
+        --clamp-ids 12,34,56 --clamp-scale 0.5 --clamp-frac 0.5
+    # (le suffixe _s{alpha} du nom de trace n'apparait que si alpha != 1)
 """
 from __future__ import annotations
 
@@ -341,6 +356,24 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--clamp-ids", default="",
                    help="ids de features SAE a forcer a zero dans le residual stream "
                         "(Gate 24 #5635, phase 2) — liste separee par des virgules")
+    p.add_argument("--clamp-scale", type=float, default=1.0,
+                   help="intensite alpha du clamp, h' = h - alpha*delta (pilote "
+                        "#8236). Defaut 1.0 = comportement historique (features "
+                        "exactement annulees). Exige --clamp-ids ; bornes [0, 1] : "
+                        "alpha=0 ne clampe rien, alpha>1 sur-clampe (signe inverse) "
+                        "et sort du protocole d'inoculation.")
+    p.add_argument("--clamp-frac", type=float, default=None,
+                   help="profondeur RELATIVE de la couche D'INOCULATION dans "
+                        "[0, 1] (pilote #8236 ; defaut 0.5 = mi-reseau). Le SAE "
+                        "de cette couche definit les features du panel et fournit "
+                        "W_enc/W_dec du hook.")
+    p.add_argument("--read-frac", type=float, default=None,
+                   help="profondeur RELATIVE de la couche de LECTURE dans [0, 1]. "
+                        "Defaut (omis) : derniere couche (resid final, resid_post "
+                        "de la couche n-1 — la representation qui conditionne la "
+                        "tete lm_head). Le SAE charge et l'encodage top-k se font "
+                        "a CETTE couche : c'est la que la propagation de "
+                        "l'inoculation est mesuree.")
     p.add_argument("--attn", default=None,
                    help="attn_implementation a forcer (ex: eager) si le defaut echoue")
     p.add_argument("--allow-quantized-readout", action="store_true",
@@ -544,11 +577,14 @@ def apply_control_permutation(model: torch.nn.Module, seed: int) -> None:
 class ResidCapture:
     """Hook forward sur une couche decodeur : capture le resid_post et,
     optionnellement, clampe des features SAE (Gate 24) en soustrayant leur
-    contribution decodeur du residual stream."""
+    contribution decodeur du residual stream, a intensite parametree
+    ``clamp_scale`` (pilote #8236)."""
 
-    def __init__(self, sae: dict | None = None, clamp_ids: list[int] | None = None):
+    def __init__(self, sae: dict | None = None, clamp_ids: list[int] | None = None,
+                 clamp_scale: float = 1.0):
         self.hidden: torch.Tensor | None = None
         self.clamp_ids = clamp_ids or []
+        self.clamp_scale = clamp_scale
         self.sae = sae
         if self.clamp_ids and (sae is None or sae["W_dec"] is None):
             sys.exit("ERREUR: --clamp-ids exige W_dec dans le checkpoint SAE.")
@@ -558,19 +594,71 @@ class ResidCapture:
         self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
         if not self.clamp_ids:
             return output
-        # Clamp causal : h' = h - somme_i acts_i * W_dec[i]  (features forcees a 0).
-        # W_dec est garanti [d_sae, d_model] par load_sae/normalize_w_dec
-        # (#12940) : indexer par clamp_ids (features) y designe les directions
-        # decodees, pas des lignes du residual stream.
+        # Clamp causal : h' = h - alpha * somme_i acts_i * W_dec[i]. alpha=1
+        # annule exactement les features visees (comportement Gate 24
+        # historique) ; alpha<1 = inoculation partielle dont le balayage
+        # expose la bifurcation (#8236). W_dec est garanti [d_sae, d_model]
+        # par load_sae/normalize_w_dec (#12940) : indexer par clamp_ids
+        # (features) y designe les directions decodees, pas des lignes du
+        # residual stream.
         h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
         w_enc = self.sae["W_enc"][self.clamp_ids]                  # [C, d]
         b_enc = self.sae["b_enc"][self.clamp_ids]                  # [C]
         acts = torch.relu(h32 @ w_enc.T + b_enc)                   # [B, T, C]
         delta = acts @ self.sae["W_dec"][self.clamp_ids]           # [B, T, d]
-        h_new = (h32 - delta).to(out.dtype).to(out.device)
+        h_new = (h32 - self.clamp_scale * delta).to(out.dtype).to(out.device)
         if isinstance(output, tuple):
             return (h_new,) + tuple(output[1:])
         return h_new
+
+
+class ClampHook:
+    """Hook d'INOCULATION seule (pilote #8236, jalon 3) : modifie le residual
+    stream a la couche d'inoculation sans rien capturer.
+
+    Separe de :class:`ResidCapture` parce que la mesure de bifurcation vit en
+    AVAL de l'inoculation : capturer la couche du clamp ne montrerait que la
+    perturbation injectee elle-meme (alpha * delta), pas sa propagation
+    non-lineaire par les couches suivantes. Le protocole pilote inocule a
+    ``--clamp-frac`` (defaut mi-reseau) et lit a ``--read-frac`` (defaut
+    resid final) via :class:`CaptureHook`."""
+
+    def __init__(self, sae: dict, clamp_ids: list[int], clamp_scale: float):
+        if sae["W_dec"] is None:
+            sys.exit("ERREUR: --clamp-ids exige W_dec dans le checkpoint SAE.")
+        self.clamp_scale = clamp_scale
+        # Tranche du panel memoisee une fois (le hook tourne par prompt) :
+        # W_enc/W_dec du SAE de la couche D'INOCULATION, indexes par feature.
+        self.w_enc = sae["W_enc"][clamp_ids]          # [C, d]
+        self.b_enc = sae["b_enc"][clamp_ids]          # [C]
+        self.w_dec = sae["W_dec"][clamp_ids]          # [C, d]
+
+    def __call__(self, module, inputs, output):
+        out = output[0] if isinstance(output, tuple) else output   # [B, T, d]
+        if self.clamp_scale == 0.0:
+            return output                    # controle de plomberie : hook muet
+        h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
+        acts = torch.relu(h32 @ self.w_enc.T + self.b_enc)         # [B, T, C]
+        delta = acts @ self.w_dec                                  # [B, T, d]
+        h_new = (h32 - self.clamp_scale * delta).to(out.dtype).to(out.device)
+        if isinstance(output, tuple):
+            return (h_new,) + tuple(output[1:])
+        return h_new
+
+
+class CaptureHook:
+    """Hook de LECTURE seule : capture le resid_post sans le modifier.
+
+    Utilise a la couche de lecture du protocole d'inoculation (#8236) — la
+    capture et l'inoculation vivent sur des couches distinctes."""
+
+    def __init__(self):
+        self.hidden: torch.Tensor | None = None
+
+    def __call__(self, module, inputs, output):
+        out = output[0] if isinstance(output, tuple) else output   # [B, T, d]
+        self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
+        return output
 
 
 def main() -> None:
@@ -579,6 +667,13 @@ def main() -> None:
     torch.manual_seed(args.seed)
     device = guard_single_gpu()
     clamp_ids = [int(x) for x in args.clamp_ids.split(",") if x.strip()]
+    if args.clamp_scale != 1.0 and not clamp_ids:
+        sys.exit("ERREUR: --clamp-scale exige --clamp-ids : une intensite de "
+                 "clamp n'a de sens que pour un clamp.")
+    if not 0.0 <= args.clamp_scale <= 1.0:
+        sys.exit(f"ERREUR: --clamp-scale={args.clamp_scale} hors bornes [0, 1] "
+                 "(protocole d'inoculation #8236 : alpha>1 sur-clampe, signe "
+                 "inverse de la contribution decodee).")
 
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -593,12 +688,47 @@ def main() -> None:
     # Toutes echouent sur la seule config (quelques Ko) : un mauvais couple
     # couche/echelle, un checkpoint quantifie ou une trace deja presente sont
     # detectes en secondes, pas apres 20 GiB de poids et une passe complete.
-    depth = _guard(resolve_capture_layer, n_layers, args.layer, args.layer_frac) \
-        if (args.layer is not None or args.layer_frac is not None) \
-        else _guard(resolve_capture_layer, n_layers, DEFAULT_LAYER, None)
+    # Mode INOCULATION (#8236, jalon 3) : deux couches distinctes — celle ou
+    # on inocule (clamp) et celle ou on lit (read). Capturer la couche du
+    # clamp ne montrerait que la perturbation injectee ; la bifurcation vit
+    # dans la propagation non lineaire clamp->read.
+    inoculation = bool(clamp_ids) and (args.clamp_frac is not None
+                                       or args.read_frac is not None)
+    if inoculation and (args.layer is not None or args.layer_frac is not None):
+        sys.exit("ERREUR: mode inoculation (--clamp-frac/--read-frac) : la "
+                 "couche de capture est la couche de LECTURE (--read-frac), "
+                 "pas --layer/--layer-frac.")
+    if args.clamp_frac is not None and not clamp_ids:
+        sys.exit("ERREUR: --clamp-frac exige --clamp-ids.")
+    if args.read_frac is not None and not clamp_ids:
+        sys.exit("ERREUR: --read-frac exige --clamp-ids (mode inoculation).")
+    if inoculation:
+        clamp_depth = _guard(resolve_capture_layer, n_layers, None,
+                             args.clamp_frac if args.clamp_frac is not None
+                             else 0.5)
+        if args.read_frac is not None:
+            read_depth = _guard(resolve_capture_layer, n_layers, None,
+                                args.read_frac)
+        else:
+            read_depth = _guard(resolve_capture_layer, n_layers,
+                                n_layers - 1, None)
+        if read_depth["layer"] <= clamp_depth["layer"]:
+            sys.exit(f"ERREUR: couche de lecture ({read_depth['layer']}) "
+                     f"<= couche d'inoculation ({clamp_depth['layer']}) : la "
+                     "mesure de propagation exige read STRICTEMENT apres clamp.")
+        depth = read_depth
+        print(f"[inoc] inoculation couche {clamp_depth['layer']}/{n_layers - 1} "
+              f"(frac {clamp_depth['layer_frac']:.3f}), lecture couche "
+              f"{read_depth['layer']}/{n_layers - 1} "
+              f"(frac {read_depth['layer_frac']:.3f})")
+    else:
+        depth = _guard(resolve_capture_layer, n_layers, args.layer, args.layer_frac) \
+            if (args.layer is not None or args.layer_frac is not None) \
+            else _guard(resolve_capture_layer, n_layers, DEFAULT_LAYER, None)
     layer = depth["layer"]
-    print(f"[depth] couche {layer}/{n_layers - 1} "
-          f"(profondeur relative {depth['layer_frac']:.3f})")
+    if not inoculation:
+        print(f"[depth] couche {layer}/{n_layers - 1} "
+              f"(profondeur relative {depth['layer_frac']:.3f})")
 
     _guard(assert_bf16_readout,
            getattr(cfg, "quantization_config", None),
@@ -628,7 +758,8 @@ def main() -> None:
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / trace_filename(
             args.variant, layer, model=args.model, default_model=DEFAULT_MODEL,
-            n_layers=n_layers, n_clamp=len(clamp_ids), prefix=args.prefix)
+            n_layers=n_layers, n_clamp=len(clamp_ids),
+            clamp_scale=args.clamp_scale, prefix=args.prefix)
         if out_path.exists() and not args.overwrite:
             sys.exit(f"ERREUR: {out_path} existe deja. Deux runs d'echelles "
                      "differentes ne doivent jamais partager un nom : verifier "
@@ -656,8 +787,24 @@ def main() -> None:
            args.sae_repo, args.model)
 
     layers = find_decoder_layers(model, n_layers)
-    capture = ResidCapture(sae=sae, clamp_ids=clamp_ids)
-    handle = layers[layer].register_forward_hook(capture)
+    handles = []
+    if inoculation:
+        # Deux SAE (eventuellement le meme checkpoint si clamp == read, ce que
+        # la garde read > clamp interdit ici) : les features du panel et le
+        # hook vivent a la couche d'inoculation, l'encodage top-k de la trace
+        # vit a la couche de lecture.
+        clamp_layer = clamp_depth["layer"]
+        sae_clamp = load_sae(args.sae_repo, clamp_layer, device)
+        _guard(check_sae_model_match, int(sae_clamp["W_enc"].shape[1]),
+               int(d_model), args.sae_repo, args.model)
+        handles.append(layers[clamp_layer].register_forward_hook(
+            ClampHook(sae_clamp, clamp_ids, args.clamp_scale)))
+        capture = CaptureHook()
+        handles.append(layers[layer].register_forward_hook(capture))
+    else:
+        capture = ResidCapture(sae=sae, clamp_ids=clamp_ids,
+                               clamp_scale=args.clamp_scale)
+        handles.append(layers[layer].register_forward_hook(capture))
 
     sets = PROMPT_SETS
     if args.prompts_json:
@@ -726,16 +873,20 @@ def main() -> None:
                 top5 = [(int(a), float(b)) for a, b in zip(ids[-1, :5], vals[-1, :5])]
                 print(f"        top-5 features (dernier token) : {top5}")
 
-    handle.remove()
-
-    if args.stage == "smoke" and args.variant == "trained" and not clamp_ids:
+    if args.stage == "smoke" and args.variant == "trained":
         # Sanity semantique : une generation greedy courte attrape un chargement
         # de poids errone (mapping de classe, shards manquants) que les stats
-        # d'activation seules ne detecteraient pas.
+        # d'activation seules ne detecteraient pas. Sous inoculation, elle
+        # documente AUSSI la degradation visible du texte (diagnostic gratuit
+        # de catastrophe au niveau de la sortie) — d'ou sa place AVANT le
+        # retrait des hooks : le clamp reste actif pendant la generation.
         probe = tokenizer("La capitale de la France est", return_tensors="pt").to(device)
         with torch.no_grad():
             gen = model.generate(**probe, max_new_tokens=12, do_sample=False)
         print(f"[sanity] greedy: {tokenizer.decode(gen[0], skip_special_tokens=True)!r}")
+
+    for h in handles:
+        h.remove()
 
     l0_cat = torch.cat(l0_all)
     print(f"\n[sanity] {tok_total} tokens, L0 moyen={l0_cat.mean():.2f} "
@@ -756,6 +907,15 @@ def main() -> None:
             "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
             "quantized_readout": bool(args.allow_quantized_readout),
             "variant": args.variant, "seed": args.seed, "clamp_ids": clamp_ids,
+            # Intensite du clamp (pilote #8236) : alpha=1.0 = annulation
+            # exacte (Gate 24 historique) ; alpha<1 = inoculation partielle.
+            "clamp_scale": float(args.clamp_scale),
+            # Mode inoculation : couche d'inoculation (SAE du hook) DISTINCTE
+            # de la couche de lecture — "layer"/"layer_frac" ci-dessus
+            # designent la lecture (SAE + encodage top-k de la trace). Null
+            # hors mode inoculation.
+            "clamp_layer": int(clamp_depth["layer"]) if inoculation else None,
+            "read_layer": int(layer) if inoculation else None,
             "encode_convention": f"pre = h @ W_enc.T + b_enc ; relu ; topk({k}) "
                                  "(app.py officiel Qwen-Scope, pas de b_dec a l'encode)",
             "control_convention": "permutation seedee des lignes d'input embeddings",
