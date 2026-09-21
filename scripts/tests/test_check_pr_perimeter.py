@@ -267,6 +267,38 @@ def test_extract_skips_scope_word_inside_a_longer_word():
     assert not _has_strong_scope(changer.lower())
 
 
+def test_issue_15950_strong_scope_word_boundary_control():
+    """Issue #15950: validation par les faux negatifs.
+
+    Corpus de controle passe sous les deux portes (5 doivent firer, 3 doivent
+    se taire) pour verifier que _has_strong_scope() teste bien les mots en
+    entier et non en sous-chaine.
+
+    See #15950, #15833, #15846, #12718, #11800.
+    """
+    # Cas positifs: doivent etre detectes comme assertions de perimetre
+    positive_cases = [
+        "Aucune autre modification.",
+        "Perimetre : uniquement 3 fichiers modifies.",
+        "Le scope est uniquement ce fichier.",
+        "**Perimetre** : aucune autre modification que celles listees.",
+        "Only the workflow changed -- no other modification.",
+    ]
+    for line in positive_cases:
+        result = extract_perimeter_assertions(line)
+        assert result, f"Expected assertion, got none for: {line!r}"
+
+    # Cas negatifs: ne doivent PAS etre detectes (faux positifs a eviter)
+    negative_cases = [
+        "--dist loadscope sur uniquement grace a ce groupement",
+        "permissions read-only inchangees, uniquement",
+        "Ce point est out-of-scope, traite uniquement dans l'issue fille.",
+    ]
+    for line in negative_cases:
+        result = extract_perimeter_assertions(line)
+        assert result == [], f"Unexpected assertion for: {line!r}"
+
+
 def test_whole_word_scope_still_extracts_real_declarations():
     """Positive control for the guard above: it must not silence the real
     thing. Each line carries a STANDALONE scope word and stays a perimeter

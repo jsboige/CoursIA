@@ -39,6 +39,8 @@ import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
 import Grothendieck.Flasque
+import Grothendieck.FlasqueStability
+import Grothendieck.FlasqueRetract
 import Grothendieck.Fppf
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney

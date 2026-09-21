@@ -110,6 +110,8 @@ fonction Agent-Simple-Resolution-Probleme(percept) retourne une action
   retourner action
 ```
 
+<img src="./images/img_002.png" alt="Schema de la boucle de l'agent de resolution de problemes : les percepts alimentent la formulation du but et du probleme, puis l'exploration, dont la sequence produite est consommee action par action" style="display:block; margin:4px auto 0; max-height:110px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # Exemple: Itineraire
@@ -270,6 +272,8 @@ A=Arad, F=Fagaras, O=Oradea, Rv=Rimnicu Vilcea, L=Lugoj
 </div>
 </div>
 
+<img src="./images/img_007.png" alt="Arbre d'exploration depuis Arad : successeurs developpes en trait plein, frontiere en tirets, etats repetes non reexplores" style="display:block; margin:4px auto 0; max-height:150px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # Exploration de graphe
@@ -295,6 +299,8 @@ fonction EXPLORER-GRAPHE(probleme) retourne une solution, ou echec
     seulement si ils ne sont ni dans la frontiere, ni dans l'ensemble explores.
 ```
 
+<img src="./images/img_008.png" alt="Regions de l'espace d'exploration : partie exploree, frontiere (en tirets) et region inconnue" style="display:block; margin:4px auto 0; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # Infrastructure: États vs Noeuds
@@ -317,6 +323,8 @@ fonction NOEUD-FILS(probleme, parent, action) retourne un noeud
     COUT-CHEMIN = parent.COUT-CHEMIN
                 + probleme.COUT-ETAPE(parent.Etat, action)
 ```
+
+<img src="./images/img_009.png" alt="Anatomie d'un noeud d'exploration : etat, parent, action, cout de chemin g et profondeur" style="display:block; margin:4px auto 0; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -429,6 +437,10 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 ---
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+</style>
+
 # Exploration en profondeur limitée (DLS)
 
 = Exploration en profondeur d'abord avec une profondeur limité l
@@ -454,6 +466,8 @@ fonction EPL-Recursive(noeud, probleme, limite) retourne une solution, ou echec/
       sinon si resultat != echec alors retourner resultat
     si arret_rencontre? alors retourner coupure sinon retourner echec
 ```
+
+<img src="./images/img_015.png" alt="Exploration en profondeur limitee sur un graphe : le developpement s'arrete a la limite fixee" style="display:block; margin:4px auto 0; max-height:65px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -484,6 +498,8 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 - Complet: Oui | Temps: O(b^d) | Espace: O(b*d) | Optimale: Oui si coût d'étape = 1
 
 **Analogue :** Exploration iterative par allongement (ILS) pour coût uniforme
+
+<img src="./images/img_016.png" alt="Approfondissement iteratif : l'exploration est relancee avec des limites croissantes, etage par etage" style="display:block; margin:4px auto 0; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -532,6 +548,8 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 | Espace | O(b^(d+1)) | O(b^(1+C*/epsilon)) | O(b^m) | O(b^l) | O(b^d) | O(b^(d/2)) |
 | Optimal? | Oui (coût=1) | Oui | Non | Non | Oui (coût=1) | Oui |
 
+<img src="./images/img_018.png" alt="Diagramme de regions de l'espace d'exploration : resume compare des strategies non informees" style="display:block; margin:4px auto 0; max-height:60px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # Les missionnaires et cannibales
@@ -567,6 +585,8 @@ layout: section
 - Temps? O(b^m) mais un bon heuristique donne des bons résultats
 - Espace? O(b^m)
 - Optimal? Non
+
+<img src="./images/img_021.png" alt="Fonction d'evaluation f(n) = g(n) + h(n) illustree sur la carte de Roumanie" style="display:block; margin:4px auto 0; max-height:85px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -707,6 +727,8 @@ layout: section
 
 ## Exemple: 8 reines
 
+<img src="./images/img_024.png" alt="Exploration locale sur le probleme des 8 reines : une solution et ses voisines" style="display:block; margin:4px auto 0; max-height:60px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # Paysage de l'espace des états
@@ -749,6 +771,8 @@ retourne maximum local
 
 ## Escalade reprise aléatoire (complet)
 
+<img src="./images/img_026.png" alt="Escalade : l'amelioration locale peut se bloquer sur un maximum local du paysage" style="display:block; margin:4px auto 0; max-height:85px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 
 # Exploration par recuit simulé (SA)
@@ -774,6 +798,8 @@ boucle t -> infini
 
 - T diminue doucement -> proba optimum global -> 1
 - Utilise dans circuits, ordonnancement (ex: carton de babioles)
+
+<img src="./images/img_029.png" alt="Un carton de babioles : exemple d'ordonnancement traite par recuit simule" style="display:block; margin:4px auto 0; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -811,6 +837,8 @@ boucle t -> infini
 ```
 algorithme génétique (selection, reproduction, mutation, retour meilleur individu)
 ```
+
+<img src="./images/img_030.png" alt="Figure illustrant les algorithmes genetiques : population d'individus et generations successives" style="display:block; margin:4px auto 0; max-height:100px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -891,16 +919,24 @@ layout: section
 
 - Où l'action de déplacement peut échouer
 
+<img src="./images/img_pptx_52_aspirateur.png" alt="Monde de l'aspirateur a deux pieces : les emplacements et la salete forment les etats accessibles a l'agent" style="display:block; margin:4px auto 0; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
+
 <img src="./images/img_034.png" style="position:absolute; bottom:20px; right:20px; max-height:45vh;" alt="Arbre ET-OU aspirateur glissant" />
 
 ---
 
 # Exploration avec observations partielles
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+</style>
+
 ## Cf. cours précédent → État pas situé précisément
 
 - Analogue à non déterministe
 - État de croyance : états physiques possibles
+
+<img src="./images/img_pptx_53_belief.png" alt="Etats de croyance : chaque croyance regroupe les etats physiques compatibles avec les observations passees" style="display:block; margin:4px auto 0; max-height:55px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Exploration sans observation : problème conformant
 
@@ -1241,6 +1277,10 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 
 # Classes de Jeux complexes
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+</style>
+
 ## Jeux stochastiques
 
 - Presence d'aléatoire (des, cartes)
@@ -1260,6 +1300,11 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 
 - **Explosion combinatoire** des états de croyance
 - Approches modernes : **CFR** (Counterfactual Regret Minimization, Libratus/Pluribus au poker)
+
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; margin-top:8px;">
+  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:70px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:70px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+</div>
 
 ---
 
@@ -1309,9 +1354,13 @@ layout: section
 - Domaines : &#123;rouge, vert, bleu&#125;
 - Contraintes : WA != NT, NT != Q, SA != NSW, NSW != V, V != SA
 
+<img src="./images/img_046.png" alt="Coloration de carte : une assignation complete ou deux regions voisines ne partagent jamais la meme couleur" style="display:block; margin:4px auto 0; max-height:60px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Objectif
 
 - Trouver une assignation complete satisfaisant toutes les contraintes
+
+<img src="./images/img_045.png" alt="Probleme de satisfaction de contraintes : colorier la carte d'Australie sans deux regions voisines de meme couleur" style="display:block; margin:4px auto 0; max-height:50px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -1420,6 +1469,11 @@ layout: section
 - Choisir la valeur qui laisse le plus d'options aux voisins
 - Maximise les chances de succes
 
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; margin-top:8px;">
+  <img src="./images/img_051.png" alt="Heuristique MRV : developper en priorite la variable au domaine le plus petit" style="max-height:110px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_052.png" alt="Heuristique des degres : privilegier la variable qui contraint le plus de voisins" style="max-height:110px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+</div>
+
 ---
 
 # CSPs: Structure des problèmes
@@ -1454,6 +1508,8 @@ layout: section
 
 - Ex: coloration $\rightarrow$ $n!$ permutations équivalentes
 - $\rightarrow$ Contrainte de rupture de symétrie<br>(ex: ordre alphabétique NT<SA<WA)
+
+<img src="./images/img_056.png" alt="Coupe-cycle : retirer un petit ensemble de sommets rend le graphe de contraintes acyclique" style="display:block; margin:4px auto 0; max-height:110px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
