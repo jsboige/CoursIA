@@ -2003,10 +2003,59 @@ def _run_gh_rc(args: list[str]) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
+# Signatures of a TRANSIENT, positively recognised `gh` transport failure.
+#
+# The budget is shared by account, so a fleet burst exhausts it for every
+# caller at once (measured 2026-09-21: four `perimeter review guard` runs on
+# four distinct heads in three hours, all refused). `#17229` measured the
+# `user ID` spelling and the `installation` one, this file's runs the
+# `site ID installation` one -- one regex covers the three.
+#
+# NARROW ON PURPOSE. Only a recognised signature downgrades; any other `gh`
+# failure stays fail-closed (exit 2). A guard that downgrades on "something
+# went wrong" is indistinguishable from a disarmed guard.
+_TRANSIENT_GH_SIGNATURES = (
+    re.compile(r"API rate limit (?:already )?exceeded", re.IGNORECASE),
+)
+
+
+def _is_transient_gh_failure(stderr: str) -> bool:
+    """True when ``stderr`` PROVES a transient transport failure.
+
+    Proves, not suspects: an unrecognised failure must not downgrade, or the
+    fail-closed contract documented on ``_run_gh_rc`` silently disappears.
+    """
+    return any(p.search(stderr or "") for p in _TRANSIENT_GH_SIGNATURES)
+
+
+def _exit_unmeasurable(reason: str) -> None:
+    """Exit with the non-measurable verdict, mirroring ``#14292``.
+
+    An unreadable PR is the ABSENCE of measurement, not a measurement of
+    zero: confronting a body count against a read that never happened can
+    only fabricate a verdict. ``#14576`` ratified exactly this consequence
+    for the EMPTY-list cause (verdict named, exit 0, detection kept visible);
+    a refused read is the same absence by a different cause, so it takes the
+    same consequence. Printing it as "your assertion contradicts your files"
+    (what the workflow wrapper used to do with any non-zero code) sends the
+    author to debug a defect that was never measured.
+    """
+    print("")
+    print(f"PERIMETRE NON MESURABLE: {reason}")
+    print("  -> verdict UNKNOWN, pas une contradiction de perimetre ;")
+    print("     aucune assertion n'a ete confrontee (lecture refusee).")
+    sys.exit(0)
+
+
 def _run_gh(args: list[str]) -> str:
     rc, stdout, stderr = _run_gh_rc(args)
     if rc != 0:
         print(f"gh error: {stderr.strip()[:400]}", file=sys.stderr)
+        if _is_transient_gh_failure(stderr):
+            _exit_unmeasurable(
+                "le budget d'API GitHub est epuise (lecture refusee, "
+                "aucune mesure effectuee)"
+            )
         sys.exit(2)
     return stdout
 
@@ -2035,6 +2084,11 @@ def _pr_diff_text(pr: int) -> str:
         )
         return ""
     print(f"gh error: {(stderr or '').strip()[:400]}", file=sys.stderr)
+    if _is_transient_gh_failure(stderr):
+        _exit_unmeasurable(
+            "le budget d'API GitHub est epuise pendant la lecture du diff "
+            "(aucune mesure effectuee)"
+        )
     sys.exit(2)
 
 
