@@ -29,10 +29,11 @@ Agent orchestrateur pour iterer sur les 110 notebooks GenAI (`MyIA.AI.Notebooks/
 
 ## Pratiques d'auth (verifie via genai-stack/commands/auth.py)
 
-- ComfyUI : **Bearer token** (hash bcrypt cote serveur) — credential par fichier bind-mounte `.secrets/qwen-api-user.token`, env `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`) ; cf [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md) (#14382).
+- ComfyUI : **Bearer token** (hash bcrypt côté serveur, `bcrypt_hash` dans la config). Env canonique `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`, deux noms pour le même secret, gérés par `render_envs.py`). Le bearer vit dans `.secrets/qwen-api-user.token`. `COMFYUI_BEARER_TOKEN`/`COMFYUI_RAW_TOKEN` ne sont plus gérés (cf #14382).
 - Forge : **Basic auth** — env `FORGE_USER` / `FORGE_PASSWORD`.
 - vLLM (z-image) : pas d'auth.
 - Verifier l'auth de chaque service : `python genai.py auth`.
+- **FLAG inventaire (résolu par #16647)** : `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` (alias canonique). `COMFYUI_BEARER_TOKEN` n'est plus géré — éviter le nom dans les nouveaux notebooks/docs.
 
 ## Quantization (recommandations verifiees via commands/quant.py)
 

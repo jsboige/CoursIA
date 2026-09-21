@@ -54,6 +54,12 @@ if [ "\$1" = "run" ]; then
   esac
   exit 0
 fi
+# Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
+# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS.
+if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
+  if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -183,6 +189,21 @@ wait_until() {
   done
   return 1
 }
+
+# #16134 : le garde de fraicheur ne lit plus le checkout vivant, il lit la
+# COPIE EPOINGLEE (cmd_pin). La suite entiere tourne contre une epingle creee
+# UNE fois par le VRAI gesture depuis ce checkout : les stubs docker bakes
+# plus haut rendent les empreintes du checkout, donc l'image stub est
+# « construite depuis l'epingle ». Les tests 9/10/41 gardent ainsi leur
+# semantique (vert quand image==epingle, rouge sur ecart force) ; les tests
+# 44-46 eprouvent le contrat lui-meme (byte-identite, independance du
+# checkout, fail-closed sans epingle).
+export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pinned-ctx"
+(
+  cd "$SCRIPT_DIR"
+  PATH="$TEST_DIR/bin:$PATH" bash "$SCRIPT_DIR/supervise.sh" pin >/dev/null 2>&1 \
+    || { echo "FAIL setup pin (#16134) -- le gesture de deploiement doit marcher depuis un checkout propre"; exit 1; }
+)
 
 # --- Test 1 : start quand un superviseur est deja actif refuse -----
 echo "Test 1 : start quand un superviseur est deja actif (Defaut 1)"
@@ -2459,6 +2480,170 @@ STUB
     ko "ABANDON inattendu sur 5xx, err=$(head -5 "$TEST_DIR/err39.log")"
   fi
   unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+)
+echo ""
+
+# --- Test 44 : pin -- le gesture de deploiement epingle une copie byte-identique (#16134) -----
+echo "Test 44 : pin copie le contexte byte-identique et publie le diff d'empreintes (#16134)"
+(
+  cd "$SCRIPT_DIR"
+  rm -rf "$TEST_DIR/pin-44" "$TEST_DIR"/pin-44.staging.* 2>/dev/null
+  export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pin-44"
+  out="$(PATH="$TEST_DIR/bin:$PATH" bash "$SCRIPT_DIR/supervise.sh" pin 2>&1)"
+  good=1
+  for f in entrypoint.sh work_cache_health.sh seed_action_cache.py Dockerfile Dockerfile.lean; do
+    cmp -s "$SCRIPT_DIR/$f" "$TEST_DIR/pin-44/$f" || good=0
+  done
+  leftovers="$(ls -d "$TEST_DIR"/pin-44.staging.* "$TEST_DIR"/pin-44.old.* 2>/dev/null | wc -l)"
+  if [ "$good" = "1" ] && [ "$leftovers" = "0" ] \
+     && echo "$out" | grep -q "CHANGE" && echo "$out" | grep -q "docker build -t"; then
+    ok "epingle byte-identique, diff publie, pas de staging residuel"
+  else
+    ko "pin incorrect, good=$good leftovers=$leftovers out=$out"
+  fi
+  # Controle anti-faux-positif : sur un checkout propre et suivi, le bloc
+  # d'avertissements git doit se TAIRE. Deux defauts mesures l'y faisaient
+  # crier « n'est pas suivi » sur chaque fichier : le pathspec doublé
+  # (relatif au CWD post-`git -C`), et `git -C /c/...` muet en rc=128 sous
+  # MSYS_NO_PATHCONV=1 (le bloc entier se taisait alors -- l'inverse, mais
+  # la meme classe). Un checkout propre = zero ligne ATTENTION.
+  if ! echo "$out" | grep -q "ATTENTION"; then
+    ok "checkout propre : aucune fausse mise en garde git au pin"
+  else
+    ko "faux positif git au pin sur checkout propre, out=$out"
+  fi
+  # Re-pin : idempotent, chaque empreinte est declaree inchangee.
+  out2="$(PATH="$TEST_DIR/bin:$PATH" bash "$SCRIPT_DIR/supervise.sh" pin 2>&1)"
+  if echo "$out2" | grep -q "(inchange)" && ! echo "$out2" | grep -q "CHANGE"; then
+    ok "re-pin idempotent : les 5 empreintes declarees inchangees"
+  else
+    ko "re-pin attendu inchange partout, out=$out2"
+  fi
+  unset COURSIA_RUNNER_PINNED_CTX
+)
+echo ""
+
+# --- Test 45 : le garde lit l'EPOINGLE, pas le checkout (#16134 tranche a) -----
+#
+# Test DIFFERENTIEL : l'epingle porte un contenu volontairement != checkout,
+# le stub docker rend les empreintes de L'EPOINGLE (image « construite depuis
+# l'epingle »). Si le garde lisait encore le checkout vivant -- l'ancien
+# comportement, celui qui a laisse le parc 1 h 15 mort le 2026-09-14 -- le
+# demarrage refuserait PERIMEE. Acceptance de l'issue : un etat quelconque du
+# disque (checkout de branche, edition) n'invalide plus le parc.
+echo "Test 45 : epingle != checkout -- le start passe quand meme (#16134)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin-43" "$TEST_DIR/state-43"
+  rm -rf "$TEST_DIR/pin-43"; mkdir -p "$TEST_DIR/pin-43"
+  printf '# epingle de test 43 -- contenu volontairement different du checkout\nexit 0\n' > "$TEST_DIR/pin-43/entrypoint.sh"
+  printf '# health de test 43\nexit 0\n' > "$TEST_DIR/pin-43/work_cache_health.sh"
+  cp "$SCRIPT_DIR/Dockerfile" "$TEST_DIR/pin-43/Dockerfile"
+  cp "$SCRIPT_DIR/Dockerfile.lean" "$TEST_DIR/pin-43/Dockerfile.lean"
+  cp "$SCRIPT_DIR/seed_action_cache.py" "$TEST_DIR/pin-43/seed_action_cache.py"
+  PIN_EP_SHA="$(sha256sum "$TEST_DIR/pin-43/entrypoint.sh" | awk '{print $1}')"
+  PIN_HL_SHA="$(sha256sum "$TEST_DIR/pin-43/work_cache_health.sh" | awk '{print $1}')"
+  cat > "$TEST_DIR/bin-43/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "run" ]; then
+  case "\$*" in
+    *work_cache_health.sh*) echo "$PIN_HL_SHA  /opt/runner/work_cache_health.sh" ;;
+    *) echo "$PIN_EP_SHA  /opt/runner/entrypoint.sh" ;;
+  esac
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin-43/docker"
+  export PATH="$TEST_DIR/bin-43:$TEST_DIR/bin:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-43"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-43"
+  export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pin-43"
+  timeout --kill-after=1 8 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out-43.log" 2>"$TEST_DIR/err-43.log" &
+  TPID=$!
+  slots=0
+  for _ in $(seq 1 24); do
+    [ -s "$TEST_DIR/state-43/pids" ] && { slots=1; break; }
+    "$REAL_SLEEP" 0.5
+  done
+  if [ "$slots" = "1" ] && ! grep -q "PERIMEE" "$TEST_DIR/err-43.log"; then
+    ok "epingle != checkout : garde passe, slots lances -- le vivant n'est plus lu"
+  else
+    ko "le garde a lu le checkout ou a refuse, out=$(cat "$TEST_DIR/out-43.log") err=$(cat "$TEST_DIR/err-43.log")"
+  fi
+  kill_test_supervisor "$TPID" "$COURSIA_RUNNER_STATE_DIR"
+)
+echo ""
+
+# --- Test 46 : sans epingle, refus fail-closed qui nomme le gesture (#16134) -----
+echo "Test 46 : start sans epingle refuse en nommant le gesture manquant (#16134)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/state-44"
+  rm -rf "$TEST_DIR/pin-44-absente"
+  export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pin-44-absente"
+  rc="$(run_supervise 'start 1' 'test-prefix-44' "$TEST_DIR/state-44" 2>&1 | head -1 | sed 's/rc=//')"
+  err="$(cat "$TEST_DIR/last.err")"
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "absent du contexte epingle" && echo "$err" | grep -q "supervise.sh pin"; then
+    ok "refus fail-closed, gesture nomme (rc=$rc)"
+  else
+    ko "refus attendu sans epingle, rc=$rc err=$err"
+  fi
+  unset COURSIA_RUNNER_PINNED_CTX
+)
+echo ""
+
+# --- Test 53 : garde d'appartenance -- evasion visible (#15157) -------------
+#
+# Le defaut repare ici n'est pas un plafond manquant mais une appartenance
+# INVARIABLEMENT annoncee saine : assert_ci_slice rendait « mur ACTIF » alors
+# qu'aucun conteneur n'y etait -- le daemon de la flotte ne porte pas de
+# cgroup-parent par defaut (mesure 2026-09-08), l'entree depend du drapeau,
+# et un conteneur lance a la main echappe en silence. Deux conteneurs
+# declares par le stub docker, zero sous-groupe dans la slice : la ligne
+# EVASION doit exister, avec son compte.
+echo "Test 53 : conteneurs hors slice -> EVASION visible (#15157)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  mkdir -p "$TEST_DIR/slice-mursansloc"
+  echo "17179869184" > "$TEST_DIR/slice-mursansloc/memory.max"
+  echo "12884901888" > "$TEST_DIR/slice-mursansloc/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/slice-mursansloc"
+  # EXPORT obligatoire : le stub docker est un PROCESSUS FILS -- une variable
+  # shell nue ne franchit pas la frontiere, et le garde lirait 0 conteneur.
+  export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
+  out="$(report_slice_membership 2>&1)"
+  if echo "$out" | grep -q "EVASION" && echo "$out" | grep -q "conteneurs=2"; then
+    ok "evasion nommee avec son compte (conteneurs=2, sous-groupes=0)"
+  else
+    ko "ligne EVASION attendue, out=$out"
+  fi
+  unset STUB_CI_CONTAINER_IDS
+)
+echo ""
+
+# --- Test 54 : garde d'appartenance -- cas nominal sans faux positif --------
+echo "Test 54 : conteneurs dans la slice -> appartenance OK, pas d'EVASION (#15157)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  mkdir -p "$TEST_DIR/slice-muravecloc/id-aaa111" "$TEST_DIR/slice-muravecloc/id-bbb222"
+  echo "17179869184" > "$TEST_DIR/slice-muravecloc/memory.max"
+  echo "12884901888" > "$TEST_DIR/slice-muravecloc/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/slice-muravecloc"
+  export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
+  out="$(report_slice_membership 2>&1)"
+  if echo "$out" | grep -q "appartenance OK" && ! echo "$out" | grep -q "EVASION"; then
+    ok "appartenance nominale annoncee, pas de faux positif ($out)"
+  else
+    ko "appartenance OK attendue sans EVASION, out=$out"
+  fi
+  unset STUB_CI_CONTAINER_IDS
 )
 echo ""
 

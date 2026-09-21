@@ -157,10 +157,12 @@ Fichier : `MyIA.AI.Notebooks/GenAI/.env`
 
 | Variable | Description |
 |----------|-------------|
-| `COMFYUI_API_TOKEN` | Credential API ComfyUI (source : fichier bind-mounte, cf #14382) |
-| `COMFYUI_AUTH_TOKEN` | Alias notebooks de `COMFYUI_API_TOKEN` (meme valeur) |
+| `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`) | Token canonique pour auth ComfyUI (alias gérés par `render_envs.py`) |
+| `COMFYUI_PASSWORD` | Mot de passe login UI (formulaire ComfyUI-Login) |
 | `HF_TOKEN` | Token HuggingFace (telechargement modeles) |
 | `FORGE_USER` / `FORGE_PASSWORD` | Auth Forge-Turbo |
+
+Note : `COMFYUI_BEARER_TOKEN` et `COMFYUI_RAW_TOKEN` étaient utilisés pré-#14382 et ne sont plus gérés — `render_envs.py` ne les propage pas. Le bearer bcrypt côté serveur vit dans `.secrets/qwen-api-user.token`.
 | `LOCAL_MODE` | `true` pour Docker local, `false` pour myia.io |
 
 ---

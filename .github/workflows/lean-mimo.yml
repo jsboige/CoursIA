@@ -36,7 +36,6 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean'

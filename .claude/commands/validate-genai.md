@@ -15,4 +15,5 @@ python scripts/genai-stack/docker_manager.py       # Docker management
 ```
 
 Configuration: `MyIA.AI.Notebooks/GenAI/.env` (template: `.env.example`)
-Required: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_API_TOKEN`, `HUGGINGFACE_TOKEN`
+Required: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`), `HUGGINGFACE_TOKEN`
+Note: `COMFYUI_BEARER_TOKEN` (ancien nom pré-#14382) n'est plus géré par `render_envs.py` — ne pas l'utiliser.

@@ -9,7 +9,8 @@ paths: MyIA.AI.Notebooks/GenAI/**/*
 ## Règles HARD
 
 - API keys dans `MyIA.AI.Notebooks/GenAI/.env` (template `.env.example`)
-- Variables requises : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_API_TOKEN`, `HUGGINGFACE_TOKEN`
+- Variables requises : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_API_TOKEN` (alias `COMFYUI_AUTH_TOKEN`), `HUGGINGFACE_TOKEN`
+  - Note historique : `COMFYUI_BEARER_TOKEN` est l'ancien nom pré-#14382, **non géré** par `render_envs.py` (résout vide). Ne plus l'utiliser. Le bearer bcrypt côté serveur vit dans `.secrets/qwen-api-user.token`, voir [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md).
 - Lancer `/validate-genai` ou `python scripts/genai-stack/genai.py validate --full` AVANT exécution de notebooks GenAI
 - Hook `block-secrets.py` bloque les `.env` — demander au user d'éditer manuellement
 - Sécurisation des services exposés (audit + plan, #16) : [docs/genai/service-security-audit.md](../../docs/genai/service-security-audit.md)
