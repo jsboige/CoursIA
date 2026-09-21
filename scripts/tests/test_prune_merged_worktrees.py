@@ -49,10 +49,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import prune_merged_worktrees as pmw  # noqa: E402
+from _gh_availability import (  # noqa: E402
+    skip_if_gh_exhausted,
+    skip_if_output_rate_limited,
+)
 
 
 # CWD cible pour les tests subprocess (Windows path natif)
@@ -1349,7 +1356,16 @@ class TestToleratedCleanup14619:
 class TestEndToEnd:
     """Tests subprocess reels. Aucun mock : on execute le script sur
     le worktree de test, et on vérifie que le verdict correspond a ce
-    qu'on sait du repo."""
+    qu'on sait du repo.
+
+    Ces tests invoquent le vrai `gh` (resolution PR des worktrees) : quand le
+    budget GraphQL du compte est epuise, la sortie est vide et le verdict
+    n'est PAS mesurable — skip honnete plutot que rouge trompeur (#17201).
+    """
+
+    @pytest.fixture(autouse=True)
+    def _require_gh_budget(self):
+        skip_if_gh_exhausted()
 
     def test_dry_run_exits_1_when_refusals(self):
         """po-2027 a 4 worktrees refuses (main + 3 PR open). Exit 1.
@@ -1357,13 +1373,13 @@ class TestEndToEnd:
         CI : skip si scanned=0 OU si aucun worktree main n'est présent
         (checkout shallow sans worktree main séparé, refs/remotes/pull/N/merge).
         """
-        import pytest
         proc = subprocess.run(
             [sys.executable, "scripts/ci/prune_merged_worktrees.py",
              "--path", TEST_CWD, "--json"],
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         # Exit 0 ou 1 (selon qu'il y a des refus observes)
         assert proc.returncode in (0, 1), f"unexpected exit: {proc.returncode}"
         out = json.loads(proc.stdout)
@@ -1389,9 +1405,9 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         out = json.loads(proc.stdout)
         if out["scanned"] == 0:
-            import pytest
             pytest.skip("no worktree present (CI checkout shallow)")
         for s in out["statuses"]:
             if s["branch"] == "main":
@@ -1406,6 +1422,7 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         out = json.loads(proc.stdout)
         for key in ("scanned", "removable", "refused", "skipped_current",
                     "dry_run", "statuses"):
@@ -1426,6 +1443,7 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         text = proc.stdout
+        skip_if_output_rate_limited(text + proc.stderr)
         assert "total=" in text, "text output must include total counter"
         assert "removable=" in text
         assert "refused=" in text
@@ -1442,7 +1460,6 @@ class TestEndToEnd:
         """
         import os
         if os.environ.get("RUN_DESTRUCTIVE_TESTS") != "1":
-            import pytest
             pytest.skip("destructive test (--apply) skipped unless RUN_DESTRUCTIVE_TESTS=1")
         proc = subprocess.run(
             [sys.executable, "scripts/ci/prune_merged_worktrees.py",
@@ -1450,6 +1467,7 @@ class TestEndToEnd:
             capture_output=True, text=True, encoding="utf-8",
             cwd=TEST_CWD,
         )
+        skip_if_output_rate_limited(proc.stdout + proc.stderr)
         # pas d'erreur gh/git -> exit != 2
         assert proc.returncode != 2, f"stderr: {proc.stderr}"
         # Au moins 1 ligne REFUSE dans la sortie (le run reel)
