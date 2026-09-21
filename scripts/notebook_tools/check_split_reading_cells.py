@@ -53,8 +53,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MAX_DF = 4  # un mot "rare" apparait dans <= 4 cellules du notebook
 
 TITLE_STRIP_RE = re.compile(r"^[#*\-\s`>]+|[#*\s`>:]+$")
+# Pas de `\b` apres la racine : ces racines sont des PREFIXES, pas des mots
+# entiers. Avec `\b`, `interpre` suivi de `t` (« Interpretation ») n'a pas de
+# frontiere de mot, le match echoue, et la forme de titre d'interpretation
+# DOMINANTE du corpus etait invisible a l'organe (#17134 : 133 paires
+# `generic_pair` dans 78 carnets, plus 3 `separated_by_code`). Le match reste
+# ancre en `^` : « une analyse de X » n'est toujours pas un en-tete de lecture.
 INTERPRETATION_RE = re.compile(
-    r"^(lecture|interpre|interpret|analyse)\b", re.IGNORECASE
+    r"^(lecture|interpre|interpret|analyse)", re.IGNORECASE
 )
 NAMED_SECOND_RE = re.compile(r"^lecture\s+chiffr", re.IGNORECASE)
 NAMED_FIRST_RE = re.compile(r"^lecture\b", re.IGNORECASE)
@@ -67,12 +73,22 @@ def deaccent(s: str) -> str:
 
 
 def cell_title(src: str) -> str:
-    """Premiere ligne non vide, nettoyee des marques markdown."""
+    """Premiere ligne qui PORTE un titre, nettoyee des marques markdown.
+
+    Ce n'est deliberement pas « premiere ligne non vide » : une ligne de
+    separation (`***`, `---`) est non vide et ne porte aucun titre. S'y arreter
+    rendait un titre VIDE -- donc la cellule entiere invisible au detecteur,
+    meme quand son en-tete etait bien une lecture (#17134, seconde borne de la
+    meme famille que le `\\b` de INTERPRETATION_RE). Le cas se rencontre a chaque
+    repli de conclusion qui ouvre la cellule sur un separateur.
+    """
     for line in src.splitlines():
         line = line.strip()
         if not line:
             continue
-        return TITLE_STRIP_RE.sub("", line).strip()
+        title = TITLE_STRIP_RE.sub("", line).strip()
+        if title:
+            return title
     return ""
 
 
