@@ -16,7 +16,14 @@ Trois mesures, dans cet ordre :
    au titre du *self-cover* (un changement du gate doit relancer la CI du
    lake) sans jamais l'appeler comme job. Un ``grep -l 'lean-axiom'`` seul
    confond les deux et **sur-declare** la couverture ; c'est pourquoi ce
-   script apparie l'appel avec le ``project-path:`` qu'il passe.
+   script apparie l'appel avec le ``project-path:`` qu'il passe -- et cette
+   paire est **scopee au job**, pas au fichier. La distinction n'est pas
+   theorique : ``lean-knot.yml`` passe un ``project-path:`` a ``lean-build.yml``
+   (job ``ci``) **et** un a ``lean-axiom.yml`` (job ``proof-integrity``). Une
+   lecture fichier-entier collecte les deux et credite le gate d'un lake qu'il
+   n'a jamais vu ; elle ne mesurait juste que parce que les deux jobs
+   declaraient le **meme** lake. Mesure du 2026-09-21 sur ``origin/main`` :
+   **11 des 12** appelants sur-declaraient ainsi.
    ``--from-workflow`` de ``scripts/lean/check_target_coverage.py`` applique
    deja cette distinction cote cibles de modules ; ici elle porte sur les
    *lakes*.
@@ -71,6 +78,8 @@ MANIFEST = "scripts/lean/ci_lakes.json"
 # ligne commentee commence par `#` et ne matche donc pas.
 _GATE_CALL_RE = re.compile(r"^\s*uses:\s*\S*" + re.escape(GATE_FILENAME), re.M)
 _PROJECT_PATH_RE = re.compile(r"^\s*project-path:\s*(\S+)", re.M)
+_JOBS_KEY_RE = re.compile(r"^jobs:\s*(?:#.*)?$")
+_JOB_KEY_RE = re.compile(r"^([A-Za-z0-9_.-]+):")
 
 
 def _git(*args: str) -> str:
@@ -87,34 +96,128 @@ def _git(*args: str) -> str:
 # go stale. Callers must NOT mutate what these return -- the objects are shared.
 
 
+def iter_jobs(workflow_text: str):
+    """Yield ``(job_name, job_body)`` for every job of the ``jobs:`` mapping.
+
+    Indentation-based rather than PyYAML-based: the same reader must serve
+    *historical* revisions (``git show <sha>^:<path>``) exactly as it serves the
+    working tree, and it must not add a dependency to a CI helper.
+    """
+    in_jobs = False
+    job_indent: int | None = None
+    name: str | None = None
+    buf: list[str] = []
+    for line in workflow_text.splitlines():
+        if not in_jobs:
+            if _JOBS_KEY_RE.match(line):
+                in_jobs = True
+            continue
+        if line.strip() and not line.lstrip().startswith("#"):
+            indent = len(line) - len(line.lstrip())
+            if indent == 0:
+                break  # a new top-level key closes the jobs mapping
+            if job_indent is None:
+                job_indent = indent
+            if indent == job_indent:
+                match = _JOB_KEY_RE.match(line.strip())
+                if match:
+                    if name is not None:
+                        yield name, "\n".join(buf)
+                    name, buf = match.group(1), []
+                    continue
+        if name is not None:
+            buf.append(line)
+    if name is not None:
+        yield name, "\n".join(buf)
+
+
+def gate_calls(workflow_text: str) -> list[tuple[str, list[str]]]:
+    """``(job_name, project-paths)`` for every job that CALLS the gate.
+
+    Single source of truth: ``calls_gate`` and ``gate_project_paths`` are both
+    derived from this scan, so the call-vs-mention predicate and the pairing
+    cannot drift apart.
+    """
+    out = []
+    for job_name, body in iter_jobs(workflow_text):
+        if _GATE_CALL_RE.search(body):
+            out.append((job_name, _PROJECT_PATH_RE.findall(body)))
+    return out
+
+
 def calls_gate(workflow_text: str) -> bool:
     """True if the workflow CALLS lean-axiom.yml as a job (not a bare mention)."""
-    return bool(_GATE_CALL_RE.search(workflow_text))
+    return bool(gate_calls(workflow_text))
 
 
 def gate_project_paths(workflow_text: str) -> list[str]:
-    """The ``project-path:`` values of a workflow that calls the gate."""
-    return _PROJECT_PATH_RE.findall(workflow_text)
+    """The ``project-path:`` values passed by the job(s) that call the gate.
+
+    Scoped to the calling **job**, never to the file. A file-wide scan credits
+    the gate with a lake passed to a *different* reusable workflow: in
+    ``lean-knot.yml`` the ``ci`` job hands ``project-path:`` to
+    ``lean-build.yml``, and only ``proof-integrity`` hands one to
+    ``lean-axiom.yml``. The file-wide form measured correctly on
+    ``origin/main`` (2026-09-21) only by accident -- 11 of the 12 callers
+    passed the same lake to both jobs, so the surplus was a duplicate rather
+    than a wrong answer. The first lake whose build job and gate job diverge
+    would have been credited to the gate silently.
+    """
+    return [p for _, paths in gate_calls(workflow_text) for p in paths]
 
 
 @functools.lru_cache(maxsize=None)
-def covered_lakes(ref: str) -> dict[str, list[str]]:
-    """Map workflow filename -> lake project-paths it gates, at ``ref``.
+def _workflow_bodies(ref: str) -> dict[str, str]:
+    """Text of every ``.github/workflows/*.yml`` at ``ref`` (memoized per ref).
 
-    Only workflows that actually call the gate are returned, so the result is
-    the *coverage* set, not the set of files that merely mention it.
+    Memoized *with the bodies in memory* so the two readers below (coverage and
+    the file-wide counterfactual) pay the ~40 ``git show`` calls once between
+    them, not once each.
     """
     names = [p for p in _git("ls-tree", "-r", "--name-only", ref,
                              "--", f"{WORKFLOWS_DIR}/").split("\n")
              if p.endswith(".yml")]
-    out: dict[str, list[str]] = {}
-    for path in names:
-        if path.endswith(GATE_FILENAME):
+    return {Path(p).name: _git("show", f"{ref}:{p}") for p in names}
+
+
+@functools.lru_cache(maxsize=None)
+def covered_lakes_by_job(ref: str) -> dict[str, dict[str, list[str]]]:
+    """Map workflow filename -> ``{job: project-paths gated}``, at ``ref``.
+
+    Only workflows that actually call the gate are returned, so the result is
+    the *coverage* set, not the set of files that merely mention it. The job
+    dimension is kept (rather than flattened immediately) because it is what
+    makes the pairing auditable in the report.
+    """
+    out: dict[str, dict[str, list[str]]] = {}
+    for name, body in _workflow_bodies(ref).items():
+        if name.endswith(GATE_FILENAME):
             continue  # the gate itself is not a caller
-        body = _git("show", f"{ref}:{path}")
-        if calls_gate(body):
-            out[Path(path).name] = gate_project_paths(body)
+        calls = gate_calls(body)
+        if calls:
+            out[name] = {job: paths for job, paths in calls}
     return out
+
+
+@functools.lru_cache(maxsize=None)
+def filewide_project_paths(ref: str) -> dict[str, list[str]]:
+    """Counterfactual: what a file-wide ``project-path:`` scan would credit.
+
+    Kept in the report as a **measure of the defect** -- ``filewide_only_paths``
+    is non-empty exactly when the file-wide form over-declares a lake. Without
+    this number the fix would be unfalsifiable: a scoped scan that agrees with
+    the file-wide one looks identical to a scoped scan that is never exercised.
+    """
+    bodies = _workflow_bodies(ref)
+    return {name: _PROJECT_PATH_RE.findall(bodies[name])
+            for name in covered_lakes_by_job(ref)}
+
+
+@functools.lru_cache(maxsize=None)
+def covered_lakes(ref: str) -> dict[str, list[str]]:
+    """Map workflow filename -> lake project-paths it gates, at ``ref``."""
+    return {wf: [p for paths in jobs.values() for p in paths]
+            for wf, jobs in covered_lakes_by_job(ref).items()}
 
 
 @functools.lru_cache(maxsize=None)
@@ -158,6 +261,7 @@ def deleted_dispatchers(ref: str) -> list[dict]:
 def measure(ref: str) -> dict:
     """Full coverage report at ``ref``."""
     covered = covered_lakes(ref)
+    by_job = covered_lakes_by_job(ref)
     lakes = matrix_lakes(ref)
     deleted = deleted_dispatchers(ref)
 
@@ -168,9 +272,19 @@ def measure(ref: str) -> dict:
     lost = [d for d in deleted if d["had_gate"]]
     never = [d for d in deleted if not d["had_gate"]]
 
+    # What the file-wide scan would have credited *beyond* the job-scoped one:
+    # the measure of the defect the scoping closes. Empty is the good news, not
+    # the norm -- 11 of the 12 callers over-declared on origin/main (2026-09-21).
+    filewide_only = sorted(
+        {p for paths in filewide_project_paths(ref).values() for p in paths}
+        - set(gated_paths))
+
     return {
         "ref": ref,
         "gate_callers": {k: sorted(set(v)) for k, v in sorted(covered.items())},
+        "gate_calls_by_job": {wf: {job: sorted(paths) for job, paths in jobs.items()}
+                              for wf, jobs in sorted(by_job.items())},
+        "filewide_only_paths": filewide_only,
         "gated_lakes": gated_paths,
         "matrix_lakes": sorted(p for p in manifest_paths if p),
         "matrix_lakes_without_gate": ungated,
@@ -189,9 +303,13 @@ def measure(ref: str) -> dict:
 def _print_human(r: dict) -> None:
     print(f"=== Couverture du gate d'axiomes ({GATE_FILENAME}) sur {r['ref']}")
     print(f"\n1. Workflows qui APPELLENT le gate : {len(r['gate_callers'])}")
-    for wf, paths in r["gate_callers"].items():
-        print(f"   {wf:42} -> {', '.join(paths)}")
+    for wf, jobs in r["gate_calls_by_job"].items():
+        detail = " + ".join(f"{job}: {', '.join(paths)}" for job, paths in jobs.items())
+        print(f"   {wf:42} -> {detail}")
     print(f"\n   lakes distincts couverts : {len(r['gated_lakes'])}")
+    surplus = r["filewide_only_paths"]
+    print(f"   (une lecture fichier-entier crediterait en plus : "
+          f"{surplus if surplus else 'rien'})")
 
     print(f"\n2. Lakes du manifeste ({MANIFEST}) : {len(r['matrix_lakes'])}")
     sans = r["matrix_lakes_without_gate"]
