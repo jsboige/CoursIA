@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import glob
 import json
 import pathlib
 import re
@@ -79,10 +80,18 @@ def census(paths: list[pathlib.Path]) -> dict:
 
 
 def _expand(target: str) -> list[pathlib.Path]:
+    """Resout `target` (repertoire, fichier, ou motif) en liste de notebooks.
+
+    On passe par `glob.glob` (stdlib) et non `pathlib.Path().glob` : ce dernier leve
+    `NotImplementedError: Non-relative patterns are unsupported` des que le motif est
+    **absolu** -- precisement la forme qu'un lecteur de doc tape naturellement.
+    """
     p = pathlib.Path(target)
     if p.is_dir():
         return sorted(p.glob("*.ipynb"))
-    return sorted(pathlib.Path().glob(target)) if any(c in target for c in "*?[") else [p]
+    if any(c in target for c in "*?["):
+        return sorted(pathlib.Path(g) for g in glob.glob(target, recursive=True))
+    return [p]
 
 
 def main(argv: list[str] | None = None) -> int:
