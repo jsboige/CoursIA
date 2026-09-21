@@ -3861,7 +3861,33 @@ _ADJOINT_DOSSIER_SPAN = re.compile(
 
 
 def _strip_adjoint_dossier(body: str) -> str:
-    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites."""
+    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites.
+
+    #17065 -- deux formes d'inertie, l'une ancienne, l'une nouvelle :
+
+    1. (depuis #16442) tout bloc bien delimite est retire du corps, ou qu'il
+       soit ; la prose autour reste lue.
+    2. (nouveau) un commentaire qui OUVRE sur un bloc bien delimite est un
+       dossier DANS SON INTEGRALITE : la prose qui suit le marqueur fermant
+       est la NARRATIVE du dossier (verifications firsthand, disposition),
+       pas des remarques. Le gate `check_adjoint_prevalidation.py` lit le
+       bloc et ignore expressement cette queue (« Prose FOLLOWING the
+       closing marker is ignored, not refused ») : le dossier communique
+       par le gate, pas par les marqueurs B.0. Defaut mesure (#16862,
+       2026-09-19) : la phrase d'attestation obligatoire « Aucun merge,
+       APPROVED ou CHANGES_REQUESTED effectue ici » de la queue narrative
+       etait comptee comme une reserve POSEE -- le dossier qui portait
+       `b0: clear` devenait son propre bloquant, et via la delegation du
+       picker (4e cause de repair -> ce meme organe), 8 lanes sur 8 se
+       retrouvaient en mode repair pendant que 313 issues sur 390
+       restaient admissibles.
+
+    Fail-closed inchange : un bloc MALFORME (ouvrant sans fermant) n'est pas
+    retire ni n'inertit rien ; la prose PRECEDANT le bloc (tete de pierre
+    tombale comprise) reste lue normalement.
+    """
+    if _ADJOINT_DOSSIER_SPAN.match(body.lstrip("\r\n \t")):
+        return ""  # dossier ouvrant : attestation entiere, queue comprise
     return _ADJOINT_DOSSIER_SPAN.sub("", body)
 
 
