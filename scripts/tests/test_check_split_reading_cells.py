@@ -135,3 +135,67 @@ def test_directory_mode_clean_rc0(tmp_path, capsys):
     rc = main([str(tmp_path), "--fail-on-findings"])
     capsys.readouterr()
     assert rc == 0
+
+
+# --- #17044 : un carnet illisible ne doit pas annuler le recensement ---------
+
+
+def test_scan_dossier_ne_avorte_pas_sur_carnet_illisible(tmp_path, capsys):
+    """#17044 : `scan_root` faisait `return 1` sur le premier carnet illisible.
+
+    Un seul carnet corrompu annulait TOUT le recensement (rc=1, zero finding --
+    pas seulement un recensement degrade), donc l'organe etait incablable en
+    cliquet : n'importe quel carnet corrompu du depot rougissait toute PR, pour
+    une raison sans rapport avec elle. Il doit desormais le rapporter et
+    continuer.
+
+    Le carnet illisible est place ENTRE deux carnets sains : la preuve que le
+    scan continue est que celui qui le SUIT est quand meme recense.
+    """
+    write_nb(tmp_path / "a_sain.ipynb", {"cells": [
+        md("## Introduction\nRien a signaler ici."),
+        code("print('ok')"),
+    ]})
+    (tmp_path / "b_corrompu.ipynb").write_text(
+        "{ ceci n'est pas du JSON", encoding="utf-8")
+    write_nb(tmp_path / "c_scinde.ipynb", {"cells": [
+        code("print(42)"),
+        md("### Lecture\nLe classifieur distingue l'age du montant."),
+        md("**Lecture chiffree** -- le montant.\nL'age pese 0.37."),
+    ]})
+
+    rc = main([str(tmp_path)])
+    out, err = capsys.readouterr()
+
+    assert rc == 0, "un carnet illisible ne doit pas faire rougir le recensement"
+    assert "c_scinde" in out, "le carnet sain APRES le corrompu doit etre recense"
+    assert "b_corrompu" in err, "le carnet saute doit etre nomme sur stderr"
+    assert "illisible" in err, "le recensement doit se declarer PARTIEL"
+
+
+def test_carnet_illisible_ne_masque_pas_un_finding(tmp_path, capsys):
+    """Le carnet illisible ne doit ni avorter ni masquer un finding reel :
+    avec --fail-on-findings, un vrai finding reste rc=2 (et non rc=1)."""
+    (tmp_path / "a_corrompu.ipynb").write_text("not json at all", encoding="utf-8")
+    write_nb(tmp_path / "b_scinde.ipynb", {"cells": [
+        code("print(42)"),
+        md("### Lecture\nLe classifieur distingue l'age du montant."),
+        md("**Lecture chiffree** -- le montant.\nL'age pese 0.37."),
+    ]})
+
+    rc = main([str(tmp_path), "--fail-on-findings"])
+    capsys.readouterr()
+    assert rc == 2, "le cliquet doit encore mordre malgre un carnet illisible"
+
+
+def test_fichier_illisible_rc1_sans_traceback(tmp_path, capsys):
+    """Contrat documente : un fichier DESIGNE illisible rend rc=1. Il etait
+    rendu par une JSONDecodeError non rattrapee (traceback jusqu'a
+    l'interpreteur) : meme code, rendu proprement."""
+    p = tmp_path / "corrompu.ipynb"
+    p.write_text("{ pas du json", encoding="utf-8")
+
+    rc = main([str(p)])
+    out, err = capsys.readouterr()
+    assert rc == 1
+    assert "ERREUR lecture" in err
