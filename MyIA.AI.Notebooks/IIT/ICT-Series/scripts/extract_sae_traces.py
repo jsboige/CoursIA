@@ -69,6 +69,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import random
 import sys
 import time
 from pathlib import Path
@@ -374,6 +375,11 @@ def parse_args() -> argparse.Namespace:
                         "tete lm_head). Le SAE charge et l'encodage top-k se font "
                         "a CETTE couche : c'est la que la propagation de "
                         "l'inoculation est mesuree.")
+    p.add_argument("--random-panel", type=int, default=None, metavar="SEED",
+                   help="controle permute du panel (phase 6 #8236) : remplace le "
+                        "panel par un tirage seede de MEME TAILLE hors du panel "
+                        "differentiel. Exige --clamp-ids (fournit la taille et les "
+                        "exclusions). Distinguer les traces via --prefix.")
     p.add_argument("--attn", default=None,
                    help="attn_implementation a forcer (ex: eager) si le defaut echoue")
     p.add_argument("--allow-quantized-readout", action="store_true",
@@ -574,6 +580,27 @@ def apply_control_permutation(model: torch.nn.Module, seed: int) -> None:
     print(f"[control] input embeddings permutes ({emb.weight.shape[0]} lignes, seed={seed})")
 
 
+def random_panel_control(panel_ids: list[int], d_sae: int, seed: int) -> list[int]:
+    """Controle permute du panel (phase 6 #8236) : meme NOMBRE de features,
+    tire uniformement hors du panel differentiel, seed reproductible.
+
+    La question : la reponse super-lineaire mesuree au 2B est-elle portee par
+    CE panel (features differentielles code/prose) ou par n'importe quel
+    ensemble de meme taille ? Permuter la liste elle-meme serait un no-op (la
+    somme acts @ W_dec est invariante a l'ordre) — le controle exige un
+    TIRAGE, pas une permutation. La norme effective du clamp n'est PAS
+    appariee (features inactives contribuent 0) : c'est mesure et rapporte en
+    aval, pas masque."""
+    if len(panel_ids) >= d_sae:
+        raise ValueError(
+            f"panel ({len(panel_ids)} features) >= d_sae ({d_sae}) : "
+            "aucun candidat pour le tirage de controle.")
+    excluded = set(panel_ids)
+    pool = [i for i in range(d_sae) if i not in excluded]
+    rng = random.Random(seed)
+    return sorted(rng.sample(pool, len(panel_ids)))
+
+
 class ResidCapture:
     """Hook forward sur une couche decodeur : capture le resid_post et,
     optionnellement, clampe des features SAE (Gate 24) en soustrayant leur
@@ -702,6 +729,9 @@ def main() -> None:
         sys.exit("ERREUR: --clamp-frac exige --clamp-ids.")
     if args.read_frac is not None and not clamp_ids:
         sys.exit("ERREUR: --read-frac exige --clamp-ids (mode inoculation).")
+    if args.random_panel is not None and not clamp_ids:
+        sys.exit("ERREUR: --random-panel exige --clamp-ids : le panel fournit la "
+                 "taille du tirage et les ids a exclure.")
     if inoculation:
         clamp_depth = _guard(resolve_capture_layer, n_layers, None,
                              args.clamp_frac if args.clamp_frac is not None
@@ -785,6 +815,18 @@ def main() -> None:
     # message ne disait pas quoi apparier.
     _guard(check_sae_model_match, int(sae["W_enc"].shape[1]), int(d_model),
            args.sae_repo, args.model)
+
+    if args.random_panel is not None:
+        # Controle permute (phase 6 #8236) : remplace le panel AVANT la
+        # construction du hook et du nom de trace (n_clamp inchange, la
+        # distinction de nom passe par --prefix). Les ids remplaces finissent
+        # dans la meta "clamp_ids" ; le seed de controle est trace ci-dessous.
+        panel_original = list(clamp_ids)
+        clamp_ids = random_panel_control(clamp_ids, int(sae["W_enc"].shape[0]),
+                                         args.random_panel)
+        print(f"[panel-controle] {len(clamp_ids)} features tirees hors du panel "
+              f"differentiel (seed {args.random_panel}) ; panel d'origine "
+              f"conserve dans la meta 'random_panel_excluded'.")
 
     layers = find_decoder_layers(model, n_layers)
     handles = []
@@ -907,6 +949,13 @@ def main() -> None:
             "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
             "quantized_readout": bool(args.allow_quantized_readout),
             "variant": args.variant, "seed": args.seed, "clamp_ids": clamp_ids,
+            # Controle permute (phase 6 #8236) : null par defaut ; sinon seed
+            # du tirage + panel differentiel remplace (les clamp_ids ci-dessus
+            # sont deja le panel de controle).
+            "random_panel": (None if args.random_panel is None
+                             else int(args.random_panel)),
+            "random_panel_excluded": (None if args.random_panel is None
+                                      else panel_original),
             # Intensite du clamp (pilote #8236) : alpha=1.0 = annulation
             # exacte (Gate 24 historique) ; alpha<1 = inoculation partielle.
             "clamp_scale": float(args.clamp_scale),

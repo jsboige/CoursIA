@@ -157,3 +157,32 @@ def test_capture_hook_ne_modifie_pas_la_sortie():
     assert cap.hidden is not None
     assert cap.hidden.shape == (7, 8)
     assert torch.allclose(cap.hidden, out[0])
+
+
+# --- random_panel_control : controle permute du panel (phase 6) -------------
+
+def test_random_panel_meme_taille_hors_panel():
+    mod = _load_script_module()
+    panel = [7, 101, 4096, 21004]
+    drawn = mod.random_panel_control(panel, d_sae=32768, seed=42)
+    assert len(drawn) == len(panel)
+    assert set(drawn).isdisjoint(panel)      # aucun id du panel differentiel
+    assert all(0 <= i < 32768 for i in drawn)
+
+
+def test_random_panel_seed_reproductible():
+    mod = _load_script_module()
+    panel = [7, 101, 4096, 21004]
+    a = mod.random_panel_control(panel, 32768, seed=7)
+    b = mod.random_panel_control(panel, 32768, seed=7)
+    c = mod.random_panel_control(panel, 32768, seed=8)
+    assert a == b                            # seed => tirage identique
+    assert a != c                            # un autre seed deplace le tirage
+
+
+def test_random_panel_refuse_panel_saturant():
+    # Le tirage exige des candidats hors panel : un panel de la taille de
+    # d_sae doit etre refuse explicitement, pas silencieusement vide.
+    mod = _load_script_module()
+    with pytest.raises(ValueError):
+        mod.random_panel_control(list(range(10)), d_sae=10, seed=1)
