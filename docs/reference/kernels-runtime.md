@@ -139,7 +139,7 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 
 **Ce que la mesure réfute (2026-09-21, #17185).** Sur 77 notebooks `ICT-Series/`, le kernelspec stocké se répartit ainsi : `python3` **72**, `pyphi` **2**, absent 2, `coursia-ml-training` 1. Le kernelspec stocké **n'est pas** la cause du drift `Kernel drift guard` : les **2 seuls** notebooks qui importent `pyphi` (`ICT-01-PhiTrajectories`, `ICT-05-CausalEmergence`) sont **exactement ceux** qui portent déjà `kernelspec.name = pyphi`. Normaliser les 72 autres n'aurait aucun effet — ils n'importent pas PyPhi.
 
-**Ce que la mesure établit (2026-09-21, #17185) — le corpus n'a pas UN env, il en a neuf.** Le champ `metadata.language_info.version` de chaque notebook enregistre l'interpréteur qui a produit les outputs **committés**. C'est exactement la variable que compare le `Kernel drift guard`, et elle est donc lisible dans le dépôt, notebook par notebook.
+**Ce que la mesure établit (2026-09-21, #17185) — le corpus n'a pas UN env, il en a neuf.** Le champ `metadata.language_info.version` de chaque notebook enregistre l'interpréteur qui a produit les outputs **committés**. C'est exactement la variable que compare le `Kernel drift guard`, et elle est donc lisible dans le dépôt, notebook par notebook. La table ci-dessous est **reproductible** : `python scripts/notebook_tools/notebook_env_census.py MyIA.AI.Notebooks/IIT/ICT-Series`.
 
 | `language_info.version` | notebooks | kernelspec stocké |
 |---|---:|---|
