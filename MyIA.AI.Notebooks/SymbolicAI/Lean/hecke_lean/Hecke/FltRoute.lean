@@ -150,10 +150,10 @@ dans Mathlib : il est **admis** dans la route — c'est l'étape 2. -/
 section FreyCurve
 
 /-- La courbe de Frey, comme `WeierstrassCurve` sur `ℚ` : coefficients
-`a₁ = 1`, `a₂ = b ^ p − a ^ p`, `a₃ = 0`, `a₄ = −(ab) ^ p`, `a₆ = 0`,
+`a₁ = 0`, `a₂ = b ^ p − a ^ p`, `a₃ = 0`, `a₄ = −(ab) ^ p`, `a₆ = 0`,
 autrement dit `y² = x³ + (b^p − a^p)x² − (ab)^p x`. -/
 def freyCurve (a b p : ℕ) : WeierstrassCurve ℚ where
-  a₁ := 1
+  a₁ := 0
   a₂ := (b : ℚ) ^ p - (a : ℚ) ^ p
   a₃ := 0
   a₄ := -((a : ℚ) * (b : ℚ)) ^ p

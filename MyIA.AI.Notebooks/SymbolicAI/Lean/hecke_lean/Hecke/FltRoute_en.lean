@@ -153,10 +153,10 @@ Tate's theorem ("the Frey curve is not modular") is not in Mathlib: it is
 section FreyCurve
 
 /-- The Frey curve, as a `WeierstrassCurve` over `ℚ`: coefficients
-`a₁ = 1`, `a₂ = b ^ p − a ^ p`, `a₃ = 0`, `a₄ = −(ab) ^ p`, `a₆ = 0`,
+`a₁ = 0`, `a₂ = b ^ p − a ^ p`, `a₃ = 0`, `a₄ = −(ab) ^ p`, `a₆ = 0`,
 in other words `y² = x³ + (b^p − a^p)x² − (ab)^p x`. -/
 def freyCurve (a b p : ℕ) : WeierstrassCurve ℚ where
-  a₁ := 1
+  a₁ := 0
   a₂ := (b : ℚ) ^ p - (a : ℚ) ^ p
   a₃ := 0
   a₄ := -((a : ℚ) * (b : ℚ)) ^ p
