@@ -13,7 +13,11 @@ from breadth_multiplier import breadth_multiplier as _breadth_multiplier_pure
 # the stub below and tests/test_carry_forecast.py share the canonical
 # annualised-carry formula (article #16001) without AlgorithmImports.
 from carry_forecast import annualized_raw_carry as _annualized_raw_carry_pure
+from carry_forecast import blend_forecasts as _blend_forecasts_pure
+from carry_forecast import CARRY_HISTORY_MAX
+from carry_forecast import CARRY_SMOOTHING_SPANS
 from carry_forecast import carry_forecasts as _carry_forecasts_pure
+from carry_forecast import risk_adjusted_carry as _risk_adjusted_carry_pure
 # endregion
 
 
@@ -30,12 +34,13 @@ from carry_forecast import carry_forecasts as _carry_forecasts_pure
 # - True continuous futures (18 instruments) instead of 6 ETF proxies.
 # - Six EWMAC horizons (Carver pairs: 8/32, 16/64, 32/128, 64/256, 16/48, 32/96)
 #   with per-horizon scalar normalisation (c.1063), not a single Donchian 20/10.
-# - Carry factor: DISABLED in the blend (c.1107 REPAIR ADJOINT; trend-only,
-#   `CARVER_CARRY_WEIGHT = 0.0`), but the Carver #11 formula now EXISTS as a
-#   pure-numpy module (`carry_forecast.py`, semis #17320 tranche 2): the
-#   c.1107 proxy is replaced by the exact article #16001 annualised
-#   near/further formula, unit-tested on CPU. Tranche 3 activates it in
-#   `_rebalance` via the QC Cloud `Future` chain API (acceptance #17320).
+# - Carry factor: ACTIVE since semis #17320 tranche 3 (`CARVER_CARRY_WEIGHT
+#   = 0.4`, the article #16001 60/40 blend). The c.1107 front-only proxy
+#   (trend-duplicate, disabled) is replaced by the exact Carver #11 formula:
+#   annualised near/further term-structure carry, risk-adjusted, EWMA-smoothed
+#   (spans 5/20/60/120, scalar 30, cap 20) — accumulated daily in `on_data`
+#   from the QC Cloud `Future` chain (near + further contracts), pure-numpy
+#   canon in `carry_forecast.py`, unit-tested on CPU.
 # - Volatility regime multiplier cap in [0.5, 2].
 # - Breadth multiplier (formerly labelled FDM, c.1109 + c.1111 REPAIR-5 +
 #   c.1113 REPAIR-7): we apply the Carver-style gross-leverage adjustment
@@ -85,14 +90,13 @@ def _carver_scalar(slow: int) -> float:
     )
 
 
-# Blend weights (Carver rule 60/40 trend + carry).
-# c.1063 increment over the c.1107 REPAIR: neutralise CARRY_WEIGHT too so
-# the constant matches the inline blend (`blended = trend_component`).
-# The substitution point is in `_carry_forecast` — the chain-API hook on
-# the QC-equipped lane (po-2026) re-introduces 0.4 with a real
-# front/deferred ratio.
+# Blend weights (Carver rule 60/40 trend + carry). Tranche 3 (semis #17320)
+# re-introduces the 0.4 carry weight on the REAL term-structure signal
+# (article #16001 formula in carry_forecast.py) — not the c.1107 proxy,
+# which duplicated the EWMAC(8,32) trend and is gone. When no carry span
+# has enough history, blend_forecasts renormalises onto the trend leg.
 CARVER_TREND_WEIGHT = 0.6
-CARVER_CARRY_WEIGHT = 0.0
+CARVER_CARRY_WEIGHT = 0.4
 CARRY_PROXY_FALLBACK_USED = False  # set True only if a non-zero proxy is reintroduced
 
 # Per-forecast cap (Carver rule): raw forecasts bounded at +/-20 before
@@ -251,7 +255,11 @@ class CarverThirteen(QCAlgorithm):
                 data_mapping_mode=DataMappingMode.OPEN_INTEREST,
                 contract_depth_offset=0,
             )
-            future.set_filter(timedelta(days=0), timedelta(days=90))
+            # 0-200 days (was 0-90 pre-tranche-3): the carry leg needs BOTH
+            # the near contract AND the next one after it subscribed. On
+            # quarterly schedules (ES/ZB/GC-style) consecutive expiries sit
+            # ~90 days apart, so a 90-day filter excludes the further leg.
+            future.set_filter(timedelta(days=0), timedelta(days=200))
             self.symbols[ticker] = future.symbol
 
         # EWMAC parameters as 6 (fast, slow) Carver pairs.
@@ -269,6 +277,29 @@ class CarverThirteen(QCAlgorithm):
 
         # Per-instrument state: latest forecast, latest scaled weight.
         self.forecasts = {t: 0.0 for t in self.futures_universe}
+
+        # Carry leg state (semis #17320, tranche 3). One bounded history of
+        # daily risk-adjusted carry observations per ticker, fed by on_data
+        # from the future chains (near/further closes + expiries), consumed
+        # by _rebalance via _carry_forecast. CARRY_HISTORY_MAX = 130 lets
+        # the slowest smoothing span (120) reach min_periods with margin.
+        self._carry_history = {
+            t: deque(maxlen=CARRY_HISTORY_MAX) for t in self.futures_universe
+        }
+        # Instrumentation (REPAIR-9 idiom): every on_data chain pass counts
+        # its outcome so the post-backtest log discriminates "chains never
+        # populate at daily resolution" (no_chain dominating) from "chains
+        # fine but bars/pairs missing" (no_pair/no_bars) from the healthy
+        # path (updates). This is the diagnostic that validates or kills
+        # the daily-resolution chain design without a second backtest.
+        self._carry_stats = {
+            "chain_passes": 0,
+            "no_chain": 0,
+            "no_pair": 0,
+            "no_bars": 0,
+            "updates": 0,
+            "formula_none": 0,
+        }
 
         # 16076 rollover-aware sliding windows. Under BACKWARDS_RATIO the
         # WHOLE past of a continuous series is re-scaled when the mapped
@@ -348,22 +379,23 @@ class CarverThirteen(QCAlgorithm):
     def _carry_forecast(self, carry_forecast_history):
         """Carver #11 carry forecast — annualised term-structure carry, smoothed.
 
-        NOT CALLED yet on this port (tranche 3 of semis #17320 activates it
-        with the QC Cloud `Future` chain API): `_rebalance` still blends
-        trend-only (`CARVER_CARRY_WEIGHT = 0.0`). The c.1107 proxy
-        (front/deferred ratio, x4 "mild annualisation") is REPLACED by the
-        exact article #16001 formula, implemented and unit-tested in
-        `carry_forecast.py`: annualise the near/further price gap by the
-        expiry distance, risk-adjust, EWMA-smooth over spans 5/20/60/120,
-        scale by the Carver scalar 30 (p.216), cap at +/-20.
+        Called from `_rebalance` since tranche 3 (semis #17320) on the
+        history accumulated by `_update_carry_histories` (daily
+        risk-adjusted near/further observations from the `Future` chains).
+        The c.1107 proxy (front/deferred ratio, x4 "mild annualisation")
+        is REPLACED by the exact article #16001 formula, implemented and
+        unit-tested in `carry_forecast.py`: annualise the near/further
+        price gap by the expiry distance, risk-adjust, EWMA-smooth over
+        spans 5/20/60/120, scale by the Carver scalar 30 (p.216), cap at
+        +/-20.
 
         Parameters
         ----------
         carry_forecast_history : sequence of float
             Daily risk-adjusted carry values (annualised raw carry divided
-            by daily risk in price terms), oldest first — to be accumulated
-            by the consolidation handler once the chain API feeds real
-            near/further closes and expiries.
+            by annualised price risk), oldest first — accumulated by
+            `_update_carry_histories` from the chain near/further closes
+            and expiries.
 
         Returns
         -------
@@ -467,6 +499,13 @@ class CarverThirteen(QCAlgorithm):
     # ----- 16076 sliding windows -------------------------------------------
 
     def on_data(self, data):
+        # Carry leg first (semis #17320, tranche 3): one risk-adjusted
+        # near/further observation per ticker per slice, from the chains.
+        # Deliberately BEFORE the 16076 warmup guard: if the engine does
+        # serve warmup slices, every warmup observation shortens the
+        # post-warmup wait for the slowest carry span (120 days), and the
+        # roll-cache guard below keeps its own semantics untouched.
+        self._update_carry_histories(data)
         # 16076: extend each window with the closed daily bar of its
         # continuous canonical series. Only runs once the cache is seeded:
         # bars received before the seed are covered by the seed fetch
@@ -480,6 +519,67 @@ class CarverThirteen(QCAlgorithm):
                 self._roll_cache[ticker]["closes"].append(
                     float(data.bars[sym].close)
                 )
+
+    def _update_carry_histories(self, data):
+        """One daily risk-adjusted carry observation per ticker (tranche 3).
+
+        For each continuous symbol: read the future chain from the slice,
+        order the contracts by expiry, take the near/further pair, price
+        both from the daily bars, annualise the term-structure gap (pure
+        `annualized_raw_carry`), risk-adjust against the ticker's
+        continuous close window (`risk_adjusted_carry`), append to
+        `_carry_history`. Any missing piece skips the ticker for the day
+        (the EWMA history simply continues from the previous observation)
+        and tallies a reason in `_carry_stats` so the post-backtest log
+        discriminates a daily-resolution chain failure (no_chain
+        dominating) from missing pairs/bars from the healthy path.
+        """
+        for ticker, sym in self.symbols.items():
+            self._carry_stats["chain_passes"] += 1
+            try:
+                if not data.future_chains.contains_key(sym):
+                    self._carry_stats["no_chain"] += 1
+                    continue
+                chain = data.future_chains[sym]
+            except Exception:
+                # Defensive by design: the chains accessor raising at daily
+                # resolution is exactly what this instrumentation surfaces.
+                self._carry_stats["no_chain"] += 1
+                continue
+            contracts = sorted(chain, key=lambda s: s.id.date)
+            if len(contracts) < 2:
+                self._carry_stats["no_pair"] += 1
+                continue
+            near, further = contracts[0], contracts[1]
+            if not (
+                data.bars.contains_key(near)
+                and data.bars.contains_key(further)
+            ):
+                self._carry_stats["no_bars"] += 1
+                continue
+            raw_carry = self._annualized_carry(
+                float(data.bars[near].close),
+                float(data.bars[further].close),
+                float(near.id.date.toordinal()),
+                float(further.id.date.toordinal()),
+            )
+            closes = (
+                list(self._roll_cache[ticker]["closes"])
+                if self._roll_cache is not None
+                else []
+            )
+            # Include today's continuous close when the slice carries it, so
+            # the risk estimate sees the same bar the roll cache will keep.
+            # Throwaway list: the 16076 cache append happens under its own
+            # guard below, never here.
+            if data.bars.contains_key(sym):
+                closes.append(float(data.bars[sym].close))
+            adjusted = _risk_adjusted_carry_pure(raw_carry, closes)
+            if adjusted is None:
+                self._carry_stats["formula_none"] += 1
+                continue
+            self._carry_history[ticker].append(adjusted)
+            self._carry_stats["updates"] += 1
 
     def _stale_tickers(self):
         """Tickers whose window is not guaranteed identical to history().
@@ -611,22 +711,23 @@ class CarverThirteen(QCAlgorithm):
             if len(closes) < self.max_slow + 2:
                 continue
 
-            # Carry disabled in this implementation (issue #15549 cycle
-            # c.1107, REPAIR ADJOINT po-2025 `msg-20260911T040615-4c08xy`):
-            # the front-only proxy previously used here reduced to the
-            # EWMA(8,32) slope on the same close series, which is
-            # bit-identical to the EWMAC(8,32) signal already in the trend
-            # mean, producing a 100%-trend forecast weighted 0.4 on a
-            # duplicate. Rather than ship that, this port ships trend-only
-            # (six EWMAC horizons, vol-regime multiplier, breadth bonus, cap).
-            #
-            # `_carry_forecast(front, deferred)` is preserved as a callable
-            # awaiting the QC Cloud `Future` chain API for a real
-            # front/deferred ratio. The Carver 2023 chap. 8 carry signal is
-            # distinct from any EWMAC slope on a single contract and must
-            # not be approximated by it. See the deferred follow-up in
-            # issue #15549 acceptance.
-            carry_val = 0.0
+            # Carry leg (semis #17320, tranche 3). The c.1107 REPAIR
+            # disabled a front-only proxy that reduced to the EWMAC(8,32)
+            # slope — a trend duplicate (history in carry_forecast.py's
+            # header). Tranche 3 replaces it with the real Carver #11
+            # term-structure signal: the daily risk-adjusted near/further
+            # observations accumulated by _update_carry_histories. The leg
+            # contributes only once at least one smoothing span has
+            # min_periods of history; before that, blend_forecasts
+            # renormalises onto the trend leg (documented renormalisation,
+            # not a silent 0.6x dampening of the trend).
+            carry_hist = self._carry_history.get(ticker)
+            carry_val = (
+                self._carry_forecast(list(carry_hist))
+                if carry_hist is not None
+                and len(carry_hist) >= min(CARRY_SMOOTHING_SPANS)
+                else None
+            )
 
             # EWMAC forecasts across all six Carver pairs.
             ewmac_vals = [
@@ -635,11 +736,10 @@ class CarverThirteen(QCAlgorithm):
             ]
             trend_component = float(np.mean(ewmac_vals)) if ewmac_vals else 0.0
 
-            # Trend-only blend on this implementation (carry disabled,
-            # CARVER_CARRY_WEIGHT = 0.0). The 60/40 trend+carry Carver
-            # blend is documented but not applied — see the carry stub
-            # above for the chain-API hook.
-            blended = trend_component
+            # Carver #11 60/40 trend+carry blend (pure, unit-tested helper).
+            blended = _blend_forecasts_pure(
+                trend_component, carry_val, CARVER_CARRY_WEIGHT
+            )
             raw_forecasts[ticker] = float(
                 np.clip(blended, -CARVER_FORECAST_CAP, CARVER_FORECAST_CAP)
             )
@@ -781,5 +881,12 @@ class CarverThirteen(QCAlgorithm):
             f"| 16076 CLOCKS: hist={self._hist_s:.1f}s fc={self._fc_s:.1f}s "
             f"wall={self._wall_s:.1f}s "
             f"history_calls={self._history_calls} "
-            f"cache_served={self._cache_served}"
+            f"cache_served={self._cache_served} "
+            f"| 17320 CARRY-LEG: updates={self._carry_stats['updates']} "
+            f"no_chain={self._carry_stats['no_chain']} "
+            f"no_pair={self._carry_stats['no_pair']} "
+            f"no_bars={self._carry_stats['no_bars']} "
+            f"formula_none={self._carry_stats['formula_none']} "
+            f"chain_passes={self._carry_stats['chain_passes']} "
+            f"histories_filled={sum(1 for h in self._carry_history.values() if len(h) >= min(CARRY_SMOOTHING_SPANS))}"
         )
