@@ -190,7 +190,15 @@ def _download_qwen_docker(container: str, token: Optional[str]) -> bool:
         print(f"Container '{container}' non trouve")
         return False
 
-    temp_dir = Path("./temp_qwen_models")
+    # Ancre sur la RACINE du depot, jamais sur le cwd (#17268, meme classe que
+    # `_get_hf_token` juste au-dessus). Ce repertoire est un scratch de
+    # telechargements de plusieurs Go : resolu contre le cwd, il atterrissait
+    # sous `scripts/genai-stack/temp_qwen_models/` quand la CLI est invoquee
+    # depuis son repertoire canonique (`cd scripts/genai-stack && python
+    # genai.py ...`) -- exactement la forme que le mode d'emploi prescrit.
+    # Il ne figurait dans aucun `.gitignore` a cet emplacement, donc le
+    # scratch apparaissait en plus comme bruit untracked.
+    temp_dir = _repo_root() / "temp_qwen_models"
     temp_dir.mkdir(exist_ok=True)
 
     from huggingface_hub import hf_hub_download
