@@ -31,6 +31,11 @@ _SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "extract_sae_trac
 
 
 def _load_script_module():
+    # Convention de la serie (cf test_causal_hooks.py) : le script importe
+    # torch au niveau module ; sans torch (job CI "ICT tests/"), ces tests
+    # sautent au lieu d'echouer -- ils courent integres partout ou torch
+    # existe (16/16 verifies localement avant commit).
+    pytest.importorskip("torch")
     spec = importlib.util.spec_from_file_location("extract_sae_traces_pilot", _SCRIPT)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
