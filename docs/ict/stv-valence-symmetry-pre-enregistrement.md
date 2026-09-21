@@ -130,9 +130,42 @@ Sethares/Plomp-Levelt attribue la dissonance maximale aux fréquences **proches*
 - **P3 et son bras N** (6 fréquences proches + 2 irrationnelles) : conservés tels quels. Le collapse 1:1 de ce bras — cohérence brute élevée **sans** structure harmonique — est l'analogue « crise » de la source ; qu'il soit ou non distinguable du bras H par `CV(r)` est **le résultat empirique attendu**, pas un défaut d'instrument à réparer. Le réparer (par exemple en pondérant la richesse des locks) serait ajuster l'observable à la thèse.
 - Le couplage `H(φ) = Σ_{h≤4} sin(hφ)/h`, la perturbation P2, les nulls, les portes, le contrôle mécanique, les graines, les bandes, les verdicts bornés.
 
+## 6quater. Gel de K_c (après les amendements, avant toute graine de test)
+
+Protocole scellé (§4) : cible `r̄(H) ∈ [0.5, 0.8]`, atteinte par balayage de K_c sur les graines **disjointes** 11/22/33 ; repli déclaré si la fenêtre est inatteignable — K_c à **variance de `v` maximale sur l'échelle** (sensibilité d'instrument, neutre en signe).
+
+**Produit gelé : `K_c = 32.0`, par la FENÊTRE SCELLÉE (pas le repli)** — `r̄(H)` médiane sur les trois graines de calibration = **0.6587**, au milieu de [0.5, 0.8].
+
+Grille balayée : `[4, 8, 16, 24, 32, 48, 64, 96, 128]` ; seule la valeur retenue est consignée par `--calibrate` (re-exécution déterministe). Les **bornes de régime** sont situées par la sonde pré-exécution §6ter.1 (graine 11) : `r̄(H)` = 0.319 (K_c = 8) et 0.332 (K_c = 16), **sous** la fenêtre — les paires libres dérivent encore à ces couplages ; à K_c ≥ 48 le collapse 1:1 des deux pôles rend la discrimination entre bras impossible.
+
+Ce gel a lieu **après** les amendements v2/v3 et **avant** toute lecture d'une graine de test : les graines 11/22/33 ne portent aucune mesure du run principal, et aucun paramètre d'instrument n'a été ajusté après avoir vu une graine de test.
+
 ## 7. Ce qui suit
 
+**Statut au 2026-09-21 : EXÉCUTÉ — verdict `NON CONCLUSIF_INSTRUMENT (null b)`, P1/P2/P3 à 0/5.** Après les amendements pré-exécution v2 (§6bis) et v3 (§6ter) et le gel de K_c (§6quater), le run principal a exécuté les 5 graines de test en parallèle (6 jobs, 16,8 min, CPU-only).
+
+Mesures par graine (0/1/7/42/99) :
+
+| Observable | Mesures | Bande scellée | Bilan |
+|---|---|---|---|
+| P1 — ρ(v, σ) | 0.081 / 0.122 / −0.037 / 0.125 / 0.020 | ≥ 0.6 (≥ 4/5) | **0/5** — indiscernable du null permuté (médiane \|ρ\| 0.067) |
+| P2 — \|ρ(v, E)\| | 0.315 / 0.419 / 0.310 / 0.418 / 0.359 | ≤ 0.2 (≥ 4/5) | **0/5** — v n'est pas indépendant de l'énergie sur ce substrat (amplitudes dans `a_i a_j`) |
+| P3 — CV(r\|N)/CV(r\|H) | ≈ 1e−15 (5/5) | ≥ 2.0 (≥ 4/5) | **0/5** — le bras N collapse en lock 1:1 parfait (r̄(N) 0.9999 ; graine 0 : 0.750) |
+| Porte r̄(H) | 0.6588 (5/5) | hors [0.3, 0.95] sur ≥ 3/5 | aucune porte déclenchée |
+| Null (a) — σ permuté | 0.067 | ≤ 0.2 | vert |
+| Null (b) — K_c × 8 | \|ρ\| = 0.113 | < 0.2 ⇒ `NON CONCLUSIF_INSTRUMENT` | **branche tirée** |
+| Contrôle mécanique | exact 5/5 | K_c = 0 | vert |
+
+**Ce que le verdict dit, et ce qu'il ne dit pas.** La branche tirée est celle que le scellé prévoyait pour ce cas : l'instrument ne peut pas arbitrer la thèse — il ne la réfute pas, il ne la soutient pas. Une précision est due, parce qu'elle contredit la lecture littérale de la branche : le libellé « saturation — tout entraîne » **ne décrit pas** ce qui est mesuré. Au point de travail, `v` garde son étendue (0.214–0.536, moyenne 0.355, écart-type 0.086 sur 120 configurations, **aucune** à `v = 1`) et σ couvre 0.23–1.00 : ce qui se reproduit d'un couplage à l'autre est la **décorrélation**, pas la saturation. Autrement dit, la jambe null (b) a tiré pour la bonne raison formelle (ρ < 0.2) mais pour une raison mécanique différente de celle qui l'avait motivée.
+
+**Deux limites d'instrument mesurées, à porter dans une seconde opérationnalisation** (pattern case 6 → case 14, jamais un amendement post-hoc) :
+
+1. **L'observable de P3 est aveugle au contraste qu'elle vise.** `r` mesure la cohérence brute ; le bras N y atteint la cohérence **maximale** (lock 1:1 parfait) au lieu de la cohérence « sans structure » attendue. Le ratio des CV s'effondre donc vers 0 au lieu de dépasser 2 — P3, telle que scellée, ne peut pas distinguer « cohérent trivialement » de « cohérent avec structure ». Un observable de P3 doit lire la **structure** du lock, pas sa seule existence.
+2. **Le régime de couplage gelé laisse l'hétérogénéité d'amplitude piloter le verrouillage** : c'est le mécanisme le plus direct de l'échec de P2 (`|ρ(v, E)|` = 0.31–0.42). La dissociation « attracteur ⟂ énergie » exige un point de travail où `a_i` ne décide pas de la structure de verrouillage.
+
+Ces deux limites sont des **résultats**, pas des défauts à réparer en silence : elles sont rapportées telles quelles, et le verdict reste celui du scellé.
+
 1. **Ce document, committé, est le scellé.** L'antériorité repose sur la relation de parenté des commits (leçon case 8c) : scellé d'abord, banc ensuite.
-2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/stv_valence_symmetry.py` + tests + artefact de résultats vivront dans une PR **séparée** (ou un second commit de la même PR, pattern case 16), avec la ligne matrice case 17 passée de `PRÉDIT` à `TESTÉ (verdict)`.
+2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/stv_valence_symmetry.py` + tests + artefact de résultats vivront dans une PR **séparée** (ou un second commit de la même PR, pattern case 16), avec la ligne matrice case 17 passée de `PRÉDIT` à `TESTÉ (verdict)`. *(Fait — second commit de #17164, la relation de parenté des commits portant l'antériorité, leçon case 8c.)*
 3. Verdict rapporté sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) avec les mesures brutes par graine.
-4. **Statut au scellé : `PRÉDIT` — banc non écrit ; amendements v2 §6bis et v3 §6ter posés avant toute exécution sur graines de test** (couplage harmonique fixe ; v = verrouillage m:n détecté par concentration **et** dérive nulle ; pôle dissident à étallement apparié ; σ = harmonicité octave-repliée p, q ≤ 4 ; perturbation P2 mécanisée — **bandes, graines, nulls, portes et verdicts inchangés**).
+4. **Statut au scellé : `PRÉDIT` — banc non écrit ; amendements v2 §6bis et v3 §6ter posés avant toute exécution sur graines de test** (couplage harmonique fixe ; v = verrouillage m:n détecté par concentration **et** dérive nulle ; pôle dissident à étallement apparié ; σ = harmonicité octave-repliée p, q ≤ 4 ; perturbation P2 mécanisée — **bandes, graines, nulls, portes et verdicts inchangés**). *(§6quater : gel K_c = 32.0 posé après les amendements et avant toute graine de test. Statut d'exécution au §7.)*
