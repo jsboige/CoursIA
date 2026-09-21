@@ -78,7 +78,7 @@ attributions:
 
   - arxiv_id: "2102.09544"
     notebook: "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb"
-    cell_index: 51
+    cell_index: 52
     expected_citation: "[Cappart et al. (2021) : Combinatorial optimization and reasoning with graph neural networks](https://arxiv.org/abs/2102.09544)"
     source_pr: "#12838"
     correction: "Référence GNN+combinatorial: placeholder 'Graph Neural Networks for combinatorial optimization' (arxiv:2012.01806, lien mort) -> Cappart et al. 2021 (Combinatorial Optimization and Reasoning with Graph Neural Networks, arXiv:2102.09544, référence canonique)"
