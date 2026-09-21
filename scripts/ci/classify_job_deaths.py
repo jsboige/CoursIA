@@ -34,8 +34,14 @@ Acceptance #15055 couverte par cette tranche :
 
 Usage :
   python scripts/ci/classify_job_deaths.py --created 2026-09-06..2026-09-07
+  python scripts/ci/classify_job_deaths.py --hours 24 --report census.md
   python scripts/ci/classify_job_deaths.py --sha <SHA complet 40 chars> --json
   python scripts/ci/classify_job_deaths.py --run 34066220916
+
+``--hours N`` est la forme periodique (fenetre glissante des N dernieres
+heures) : c'est celle que porte le census planifie
+(``.github/workflows/job-deaths-census-advisory.yml``). Elle est exclusive de
+``--created``, dont elle est le raccourci calcule.
 
 Note : ``actions/runs?head_sha=`` exige le SHA complet -- un prefixe de 12
 caracteres rend 0 run, zero propre indiscernable d'une absence reelle
@@ -48,7 +54,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 REPO_SLUG = "jsboige/CoursIA"
 
@@ -142,6 +148,26 @@ def parse_created(created: str) -> str:
     if ".." not in created:
         raise SystemExit("--created exige une fenetre START..END (dates ISO)")
     return created
+
+
+def window_from_hours(hours: int, now: datetime | None = None) -> str:
+    """Fenetre glissante START..END sur les ``hours`` dernieres heures.
+
+    Le census est un rapport PERIODIQUE : exiger de l'appelant qu'il calcule
+    deux bornes ISO a chaque execution est ce qui a laisse l'instrument
+    dormir (rien ne l'invoquait). ``--hours 24`` est la forme qu'un cron peut
+    porter tel quel.
+
+    ``now`` est injectable pour que la borne soit testable sans horloge
+    reelle — le calcul est la seule chose que ce helper fait, il doit etre
+    deterministic dans un test.
+    """
+    if hours <= 0:
+        raise SystemExit("--hours exige un entier strictement positif")
+    end = now or datetime.now(timezone.utc)
+    start = end - timedelta(hours=hours)
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    return f"{start.strftime(fmt)}..{end.strftime(fmt)}"
 
 
 def iter_red_runs(
@@ -282,10 +308,17 @@ def main() -> int:
     parser.add_argument(
         "--event", default="push", help="evenement (defaut push)"
     )
-    parser.add_argument(
+    window = parser.add_mutually_exclusive_group()
+    window.add_argument(
         "--created",
         type=parse_created,
         help="fenetre ISO START..END, ex. 2026-09-06..2026-09-07",
+    )
+    window.add_argument(
+        "--hours",
+        type=int,
+        help="fenetre glissante des N dernieres heures (ex. 24), "
+        "exclusif de --created",
     )
     parser.add_argument(
         "--sha",
@@ -330,10 +363,11 @@ def main() -> int:
             for r in data.get("workflow_runs", [])
             if r.get("conclusion") not in ("success", "skipped")
         ]
-    elif args.created:
-        runs = iter_red_runs(args.branch, args.event, args.created, args.max_runs)
+    elif args.created or args.hours:
+        created = args.created or window_from_hours(args.hours)
+        runs = iter_red_runs(args.branch, args.event, created, args.max_runs)
     else:
-        parser.error("--created, --sha ou --run requis")
+        parser.error("--created, --hours, --sha ou --run requis")
         return 2
 
     payload = analyse_runs(runs)
