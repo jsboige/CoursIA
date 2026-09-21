@@ -139,7 +139,31 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 
 **Ce que la mesure réfute (2026-09-21, #17185).** Sur 77 notebooks `ICT-Series/`, le kernelspec stocké se répartit ainsi : `python3` **72**, `pyphi` **2**, absent 2, `coursia-ml-training` 1. Le kernelspec stocké **n'est pas** la cause du drift `Kernel drift guard` : les **2 seuls** notebooks qui importent `pyphi` (`ICT-01-PhiTrajectories`, `ICT-05-CausalEmergence`) sont **exactement ceux** qui portent déjà `kernelspec.name = pyphi`. Normaliser les 72 autres n'aurait aucun effet — ils n'importent pas PyPhi.
 
-**Reste ouvert (#17185).** Le drift de repr float-array à 1 ULP signalé par le garde porte sur les notebooks **NumPy** (75 des 77), dont l'env canonique **n'est pas** `pyphi` : aligner l'interpréteur/NumPy de cette population est un sujet distinct, non tranché ici.
+**Ce que la mesure établit (2026-09-21, #17185) — le corpus n'a pas UN env, il en a neuf.** Le champ `metadata.language_info.version` de chaque notebook enregistre l'interpréteur qui a produit les outputs **committés**. C'est exactement la variable que compare le `Kernel drift guard`, et elle est donc lisible dans le dépôt, notebook par notebook.
+
+| `language_info.version` | notebooks | kernelspec stocké |
+|---|---:|---|
+| 3.13.3 | 19 | `python3` |
+| 3.13.14 | 18 | `python3` |
+| 3.13.7 | 12 | `python3` |
+| 3.12.13 | 9 | `python3` 8 · `coursia-ml-training` 1 |
+| 3.13.15 | 6 | `python3` |
+| 3.9.25 | 4 | `pyphi` 2 · `python3` 2 |
+| 3.11.15 | 4 | `python3` |
+| 3.11.9 | 2 | `python3` |
+| 3.10.11 | 1 | `python3` |
+| 3.10.19 | 1 | `python3` |
+| (absent) | 1 | `python3` |
+
+Trois conséquences, à ne pas séparer :
+
+1. **L'artefact pinné ne décrit qu'une strate.** `ICT-Series/pyproject.toml` épingle `requires-python = ">=3.9,<3.10"` (l.26) et `numpy>=1.21,<2.0` (l.36), or **4 notebooks sur 77 seulement** portent des outputs venus de Python 3.9. Les 73 autres sont au-dessus (55 en 3.13.x, 9 en 3.12.13) : une re-exécution sous l'env pinné **produira** du drift contre leurs outputs committés, par construction. Ce n'est pas un accident d'exécution, c'est le pin qui ne couvre pas la population.
+2. **« notebook déjà conforme » n'a donc pas de sens absolu** : il n'y a de conformité que *relativement à un env nommé*. Le critère d'acceptation de #17185 — « une re-exécution sous cet env ne produit plus de drift sur les notebooks déjà conformes » — ne se lit donc que restreint à la **strate Φ (3.9)** sous `pyphi`, jamais pour la série entière.
+3. **Corollaire opératoire** : re-exécuter un notebook ICT **change sa provenance**. Une PR qui ré-exécute sous 3.13 un notebook dont les outputs viennent de 3.9 fabrique le drift qu'elle prétend corriger — et l'inverse aussi. C'est la lecture qui rend compte des 6 cellules de #16675.
+
+**Instrument à ne pas surinterpréter.** Le repr NumPy 2 des scalaires (`np.float64(0.1)` au lieu de `0.1`) n'apparaît dans les **outputs** que de 3 notebooks (75 occurrences : 56 sur un notebook à 3.13.14, 19 sur deux à 3.13.7) et **jamais** dans les 19 notebooks à 3.13.3. L'instrument est **unilatéral** : sa *présence* prouve NumPy 2, son *absence* ne prouve rien (aucun contrôle positif — ces notebooks n'impriment simplement pas de repr de scalaire). La génération NumPy des 74 autres **n'est pas établie** par l'inspection des outputs : ne pas conclure « NumPy 1 » d'une absence.
+
+**Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
