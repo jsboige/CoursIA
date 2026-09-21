@@ -297,6 +297,25 @@ def test_body_has_derive_exemption_unaccented():
     assert ckd.body_has_derive_exemption(body) is True
 
 
+def test_body_has_derive_exemption_c4_suffix():
+    """Fix v3 (c.1367): regex tolerates an optional trailing token on the
+    header line, such as ``(C.4)``. EPIC #16638 PRs REACCENT use this form
+    systematically; the v2 regex rejected it silently.
+    """
+    body = "## Diagnostic dérive (C.4)\nblah\n"
+    assert ckd.body_has_derive_exemption(body) is True
+    # Same with unaccented derive and parenthetical
+    body = "## Diagnostic derive (C.4)\nblah\n"
+    assert ckd.body_has_derive_exemption(body) is True
+    # Trailing token after a longer annotation must also pass
+    body = "## Diagnostic dérive — racine upstream connue\nblah\n"
+    assert ckd.body_has_derive_exemption(body) is True
+    # Header MUST begin with '## Diagnostic dérive' — a body that only
+    # contains 'dérive' in prose should not match.
+    body = "Some prose mentioning Diagnostic dérive (C.4) inline\n"
+    assert ckd.body_has_derive_exemption(body) is False
+
+
 # === Defect 1 v2: end-to-end branchement test (PR_BODY_FILE -> _run() -> exit 0) ===
 
 def test_run_reads_pr_body_file_and_exempts(tmp_path, monkeypatch, capsys):

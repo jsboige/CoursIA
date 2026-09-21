@@ -198,12 +198,19 @@ def body_has_derive_exemption(body):
     tolerates the unaccented 'derive' (covers authors who type the header
     without the accent, a common shortcut when reviewing on a non-French
     keyboard layout).
+
+    Fix v3 (c.1367): regex tolerates an optional trailing token on the
+    header line (e.g. ``(C.4)``). The convention adopted in EPIC #16638 PRs
+    REACCENT was ``## Diagnostic dérive (C.4)`` — the v2 regex required
+    end-of-line after the word, silently rejecting the suffix as a non-match
+    despite carrying the same C.4 acknowledgement intent.
     """
     if not body:
         return False
-    # Case-insensitive header, optional whitespace, optional accent on 'e'.
+    # Case-insensitive header, optional whitespace, optional accent on 'e',
+    # optional trailing token (e.g. "(C.4)") on the same line.
     pattern = re.compile(
-        r"^##\s*Diagnostic\s*d[ée]rive\s*$",
+        r"^##\s*Diagnostic\s*d[ée]rive\b[^\n]*$",
         re.MULTILINE | re.IGNORECASE,
     )
     return bool(pattern.search(body))
