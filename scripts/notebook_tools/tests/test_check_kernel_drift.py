@@ -134,3 +134,90 @@ def test_diff_signatures_complex_float_with_exponent():
     a = (("[-1.5e+00, 2.5e-01, 3.14159]",),)
     b = (("[-1.5e+00, 2.5000000000000004e-01, 3.14159]",),)
     assert ckd.diff_signatures(a, b) == [0]
+
+
+def _nb_cells(cells):
+    """Build a notebook from (id, outputs) code-cell tuples."""
+    return {
+        "cells": [
+            {
+                "cell_type": "code",
+                "id": cid,
+                "execution_count": 1,
+                "outputs": outputs,
+            }
+            for cid, outputs in cells
+        ],
+        "metadata": {"kernelspec": {}, "language_info": {}},
+    }
+
+
+def _stream_out(text):
+    return [{"output_type": "stream", "name": "stdout", "text": text}]
+
+
+def test_added_cell_without_signature_is_not_drift():
+    # Founding instance of #17232: papermill replaces the
+    # injected-parameters cell under a fresh nbformat id. The added
+    # cell carries no float output, so it cannot be float-repr drift.
+    # The common cell keeps the id-aligned branch active (a notebook
+    # with zero common ids would fall back to ordinal alignment).
+    common_out = _stream_out("v = [1.0, 1.0]\n")
+    base = _nb_cells([
+        ("2a6a4d49", _stream_out("params set\n")),
+        ("keep", common_out),
+    ])
+    head = _nb_cells([
+        ("bec0f46c", _stream_out("params set\n")),
+        ("keep", common_out),
+    ])
+    base_sig = ckd.float_signatures(base)
+    head_sig = ckd.float_signatures(head)
+    assert ckd.diff_signatures(base_sig, head_sig, base_nb=base,
+                               head_nb=head) == []
+
+
+def test_added_cell_with_float_output_still_flagged():
+    # Positive control: an added code cell that produces a tabular
+    # float output keeps being reported.
+    base = _nb_cells([("a", _stream_out("x = [1.0, 1.0]\n"))])
+    head = _nb_cells([
+        ("a", _stream_out("x = [1.0, 1.0]\n")),
+        ("b", _stream_out("y = [2.0, 3.0]\n")),
+    ])
+    base_sig = ckd.float_signatures(base)
+    head_sig = ckd.float_signatures(head)
+    assert ckd.diff_signatures(base_sig, head_sig, base_nb=base,
+                               head_nb=head) == ["b"]
+
+
+def test_added_empty_cell_does_not_shift_common_alignment():
+    # An added no-output cell inserted BEFORE a common cell must not
+    # misalign the common cell: comparison stays id-driven, and the
+    # common cell's own signature is looked up at its own ordinal.
+    base = _nb_cells([("keep", _stream_out("v = [1.0, 1.0]\n"))])
+    head = _nb_cells([
+        ("new-empty", []),
+        ("keep", _stream_out("v = [1.0, 1.0]\n")),
+    ])
+    base_sig = ckd.float_signatures(base)
+    head_sig = ckd.float_signatures(head)
+    # Drift on "keep" would signal an ordinal shift; the correct
+    # result flags nothing.
+    assert ckd.diff_signatures(base_sig, head_sig, base_nb=base,
+                               head_nb=head) == []
+
+
+def test_removed_injected_parameters_not_reported_either():
+    # The removal side of the papermill replacement: the base-only id
+    # disappears from the id maps entirely, so it contributes no diff
+    # (removals were already silent; this pins the invariant).
+    base = _nb_cells([
+        ("2a6a4d49", _stream_out("params set\n")),
+        ("keep", _stream_out("v = [1.0, 1.0]\n")),
+    ])
+    head = _nb_cells([("keep", _stream_out("v = [1.0, 1.0]\n"))])
+    base_sig = ckd.float_signatures(base)
+    head_sig = ckd.float_signatures(head)
+    assert ckd.diff_signatures(base_sig, head_sig, base_nb=base,
+                               head_nb=head) == []

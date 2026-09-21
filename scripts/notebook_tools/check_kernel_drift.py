@@ -284,9 +284,18 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h:
                 diffs.append(cid)
-        # Added code cells (only in head)
+        # Added code cells (only in head): only a cell that actually
+        # carries a non-empty float signature can be float-repr drift.
+        # A cell added with an empty signature -- e.g. papermill's fresh
+        # injected-parameters cell, which replaces the base one under a
+        # new nbformat 4.5 id on every re-execution -- is execution
+        # plumbing, not drift (#17232). This also matches the ordinal
+        # fallback's semantics, where an added empty cell compares
+        # () == () and is not flagged.
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
-            diffs.append(cid)
+            h_idx = head_ids[cid]
+            if h_idx < len(head_sig) and head_sig[h_idx]:
+                diffs.append(cid)
         return diffs
     return _diff_signatures_ordinal(base_sig, head_sig)
 
