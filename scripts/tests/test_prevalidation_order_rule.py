@@ -61,14 +61,18 @@ def _rule_text() -> str:
 def _order_section() -> str:
     """La sous-section « dossier de prevalidation », bornee a sa fin de bloc.
 
-    Sans borne haute, une assertion « tel mot est absent » pourrait etre
+    L'ancrage est le **titre de section**, pas la phrase nue : un `find` sur
+    « dossier de prevalidation » attraperait la premiere occurrence du texte, et
+    une mention de la phrase dans une section anterieure ferait deriver la borne
+    -- l'epingle testerait alors un voisinage sans rapport en le declarant vert.
+
+    Sans borne haute, une assertion « tel mot est absent » pourrait de meme etre
     satisfaite (ou cassee) par du texte sans rapport.
     """
     text = _rule_text()
-    start = text.find("dossier de prévalidation")
-    assert start >= 0, "la regle ne porte plus la sous-section : epingle a reancrer"
-    head = text.rfind("\n### ", 0, start)
-    rest = text[head if head >= 0 else start:]
+    heading = re.search(r"\n### [^\n]*dossier de prévalidation", text)
+    assert heading, "la regle ne porte plus la sous-section : epingle a reancrer"
+    rest = text[heading.start():]
     bounds = [m.start() for m in re.finditer(r"\n(?:### |---)", rest[1:])]
     return rest[: bounds[0] + 1] if bounds else rest
 
