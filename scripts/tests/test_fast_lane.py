@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE13, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, Guard,
 )
 
 
@@ -1201,6 +1201,57 @@ def test_tranche5_identity_byte_check_passes():
         f"identity byte-check a echoue (rc={r.returncode}) : \n"
         f"stdout={r.stdout}\nstderr={r.stderr}"
     )
+
+
+def test_tranche12_link_label_agreement_advisory():
+    """#16645 : link-label agreement (le libelle nomme un notebook different de
+    la cible, incident fondateur #13645 + extension scope decks #15867).
+    Advisory jamais bloquant : la dette repo-wide mesuree au cablage est de 0
+    finding sur main (scan 2198 fichiers), promouvoir blocking serait strict
+    sur du vide -- on demarre en advisory pour calibration avant promotion."""
+    assert len(TRANCHE12) == 1
+    guard = TRANCHE12[0]
+    # Identite et clause de surface : check-run advisory (le nom porte
+    # `advisory` pour que `pr_gate.is_advisory` matche, voir TRANCHE6/11).
+    assert guard.name == "Link-label agreement (per-notebook, advisory)"
+    assert "advisory" in guard.name
+    # Garde natif : aucun workflow d'origine a absorber (issue #16645 precise
+    # que le script n'avait aucun workflow dedie -- d'ou la tranche de
+    # cablage plutot qu'une absorption).
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed is True
+    # ADVISORY : la voie rapide ne rougit JAMAIS sur ce garde. Le caractere
+    # report-only doit survivre a l'absorption (cf TRANCHE3 test pattern).
+    assert guard.blocking is False
+    # Pas de base : le script compare libelle a cible dans chaque document,
+    # pas a une version de reference. Meme contrat que check-links (TRANCHE1
+    # forme 1).
+    assert guard.needs_base is False
+    # Pas iteratif : le script scanne tous les globs en une seule invocation
+    # (SCAN_GLOBS + DECK_GLOB), il n'accepte pas de path unique en argument.
+    # La voie rapide lance argv tel quel, sans {changed_paths}.
+    assert guard.iterates_paths is False
+    assert "{changed_paths}" not in guard.argv
+    # --fail pour transformer le verdict "0 desaccord" en rc=0 / N desaccord
+    # en rc=1. Le moteur agrege en neutral via blocking=False.
+    assert "--fail" in guard.argv
+    # Le scanner lui-meme + ses tests + le registre figurent dans paths, sinon
+    # une revision qui touche le script ou le registre ne rejouerait pas le
+    # garde dont elle change la portee (clause #15489, voir TRANCHE4 et 11).
+    expected_paths = {
+        "scripts/notebook_tools/check_link_label_agreement.py",
+        "scripts/notebook_tools/tests/test_check_link_label_agreement.py",
+        "scripts/ci/fast_lane_registry.py",
+    }
+    for needle in expected_paths:
+        assert needle in guard.paths, (
+            f"{needle} absent des paths : une edition ne rejouerait pas le "
+            f"garde dont elle change la portee"
+        )
+    # Le scope inclut decks (l'extension #15867) : sans `slides/**/slides.md`
+    # dans paths, un deck-only PR comme #15865 (17 liens morts) ne lancerait
+    # jamais le garde.
+    assert "slides/**/slides.md" in guard.paths
 
 
 def test_tranche13_reading_anchor_advisory_guard_is_wired():

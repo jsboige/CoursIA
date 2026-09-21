@@ -1254,6 +1254,12 @@ TRANCHE11: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 13 -- reading-anchor advisory (#16695).
+#
+# Garde NATIF absorbant le workflow d'origine (needs_base=True, delta vs base,
+# self-test pre-control #11685). Advisory non bloquant a zero FP mesure.
+# ---------------------------------------------------------------------------
 TRANCHE13: list[Guard] = [
     Guard(
         name="Reading-anchor advisory (lecture sans output, #16695)",
@@ -1277,6 +1283,55 @@ TRANCHE13: list[Guard] = [
         ],
         blocking=False,
         needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 12 -- link-label agreement advisory (#16645).
+#
+# Garde NATIF : comme TRANCHE6/9/11, il n'absorbe aucun workflow d'origine --
+# il ferme une classe de defaut (le predicat "le LIBELLE nomme un notebook
+# different de la CIBLE", cf incident fondateur #13645 et la discussion
+# #15867 sur le scope decks). Aucune absorption possible parce qu'aucun
+# workflow dedie n'existait pour ce script au moment de l'issue #16645.
+#
+# Pourquoi advisory, pas bloquant : la dette repo-wide mesuree au cablage
+# est de 0 finding sur main (scan 2198 fichiers, cf body #16645 "0 desaccord
+# / 2182 fichiers"). Demarrer en blocking serait strict sur du vide ; un
+# garde qui protege un invariant deja tenu demarre ADVISORY pour calibration
+# avant promotion (cf TRANCHE11 source-collapse qui suivait la meme voie).
+# Cout CI : ~5 s par scan global (`scripts/notebook_tools/check_link_label_agreement.py
+# --fail` rend 0 en 4-5 s sur 2198 fichiers mesures le 2026-09-20) -- dans
+# le budget de la voie rapide.
+#
+# Forme moteur : scan global simple, sans base (le script compare libelle a
+# cible dans chaque document, ne confronte pas a une base). Meme contrat
+# que TRANCHE1 forme 1 (check-links), en advisory.
+#
+# Le nom porte `advisory` pour que le filtre pr_gate (`is_advisory` matche
+# le mot-cle dans le nom de check-run) le traite comme tel et ne le compte
+# jamais comme defaut bloquant. Le check-run apparait en `neutral` sur la
+# PR -- signal visible, jamais rougissant.
+# ---------------------------------------------------------------------------
+TRANCHE12: list[Guard] = [
+    Guard(
+        name="Link-label agreement (per-notebook, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "MyIA.AI.Notebooks/**/README.md",
+            "docs/**/*.md",
+            "slides/**/slides.md",
+            "scripts/notebook_tools/check_link_label_agreement.py",
+            "scripts/notebook_tools/tests/test_check_link_label_agreement.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_link_label_agreement.py",
+            "--fail",
+        ],
+        blocking=False,  # advisory : signale le desaccord label/cible, ne rougit jamais
         absorbed=True,
     ),
 ]
