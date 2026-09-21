@@ -408,6 +408,55 @@ def test_notice_stale_reste_annonce_et_distingue_du_hit_non_verifie():
     assert not any("CACHE HIT NON RE-VERIFIE" in line for line in lines)
 
 
+def test_sonde_interroge_le_bon_champ_rest(monkeypatch):
+    """`gh api` rend le REST v3 en SNAKE_CASE ; `gh issue list --json` en camelCase.
+
+    Demander `updatedAt` a `gh api` rend une chaine vide (champ absent) : la sonde
+    devient muette a chaque appel et la verification cesse de fonctionner SANS que
+    rien ne plante -- une degradation silencieuse, exactement ce que #17096
+    corrige. Ce test epingle le nom de champ sur la commande CONSTRUITE (aucun
+    appel reseau) ; il a ete ecrit apres qu'une passe end-to-end l'ait attrape --
+    les fakes, eux, rendaient ce qu'on leur demandait quel que soit le champ.
+    """
+    seen = {}
+
+    def run(command, **kwargs):
+        seen["command"] = command
+        return _Raw(_iso(FETCHED_AT))
+
+    monkeypatch.setattr(pig.subprocess, "run", run)
+    assert pig._newest_remote_issue_update() == FETCHED_AT
+
+    jq = seen["command"][seen["command"].index("--jq") + 1]
+    assert "updated_at" in jq
+    assert "updatedAt" not in jq
+    assert "pull_request == null" in jq, "les PR partagent l'endpoint /issues"
+
+
+def test_sonde_rend_un_timestamp_ou_none(monkeypatch):
+    """Contrat de la sonde : un flottant exploitable, ou None -- jamais une exception."""
+    monkeypatch.setattr(
+        pig.subprocess, "run",
+        lambda command, **kwargs: _Raw("2026-09-21T03:18:17Z"),
+    )
+    value = pig._newest_remote_issue_update()
+    assert value == dt.datetime(
+        2026, 9, 21, 3, 18, 17, tzinfo=dt.timezone.utc
+    ).timestamp()
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda command, **kwargs: _Raw(""))
+    assert pig._newest_remote_issue_update() is None
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda command, **kwargs: _Raw("null"))
+    assert pig._newest_remote_issue_update() is None
+
+    def boom(command, **kwargs):
+        raise OSError("gh absent")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert pig._newest_remote_issue_update() is None
+
+
 def test_pool_gele_depuis_24h_n_est_pas_perime_s_il_n_a_pas_bouge(tmp_path, monkeypatch):
     """Acceptance #17096 : 5 issues gelees >24 h sans mutation -> candidat servi, etat FACTUEL.
 

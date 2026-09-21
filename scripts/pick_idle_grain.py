@@ -443,7 +443,12 @@ def _newest_remote_issue_update() -> float | None:
     command = [
         "gh", "api",
         f"repos/{REPO}/issues?state=open&sort=updated&direction=desc&per_page=30",
-        "--jq", "[.[] | select(.pull_request == null)][0].updatedAt",
+        # `updated_at` en SNAKE_CASE : `gh api` rend le REST v3 tel quel, alors que
+        # `gh issue list --json` rend du camelCase (`updatedAt`). Demander
+        # `updatedAt` ici rend une chaine vide (champ absent), donc une sonde
+        # muette a chaque appel -- la verification ne fonctionne plus sans que
+        # rien ne plante. Attrape par la passe end-to-end, pas par les fakes.
+        "--jq", "[.[] | select(.pull_request == null)][0].updated_at",
     ]
     try:
         out = subprocess.run(
