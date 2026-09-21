@@ -77,15 +77,32 @@ ZIMAGE_VAE_CONFIG = {
 }
 
 
+def _repo_root() -> Path:
+    """Racine du depot, independante du repertoire courant (#17268).
+
+    `commands/models.py` vit a `<racine>/scripts/genai-stack/commands/`, donc
+    trois `parents` au-dessus du fichier.
+    """
+    return Path(__file__).resolve().parents[3]
+
+
 def _get_hf_token() -> Optional[str]:
-    """Recupere le token HuggingFace."""
+    """Recupere le token HuggingFace.
+
+    Les chemins sont ancres sur la RACINE DU DEPOT, jamais sur le cwd. La CLI
+    s'invoque naturellement depuis `scripts/genai-stack` -- exactement le
+    repertoire ou un `.secrets/` relatif ne resout plus, ce qui faisait perdre
+    le jeton en silence (`huggingface_hub` retombait alors en requetes
+    anonymes, sans autre signal qu'un WARNING dans le log applicatif).
+    """
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
     if token:
         return token
 
+    root = _repo_root()
     secrets_paths = [
-        Path(".secrets/.env.huggingface"),
-        Path("docker-configurations/.secrets/.env.huggingface"),
+        root / ".secrets" / ".env.huggingface",
+        root / "docker-configurations" / ".secrets" / ".env.huggingface",
         Path.home() / ".huggingface" / "token",
     ]
     for path in secrets_paths:

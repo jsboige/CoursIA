@@ -13,6 +13,7 @@ Dispatch #2149, item 6.
 import json
 import os
 import sys
+import tempfile
 import unittest
 from io import StringIO
 from pathlib import Path
@@ -127,6 +128,41 @@ class TestGetHfToken(unittest.TestCase):
     def test_hf_token_none_when_no_env_no_files(self, mock_home, mock_exists):
         from commands.models import _get_hf_token
         self.assertIsNone(_get_hf_token())
+
+    @patch.dict(os.environ, {}, clear=True)
+    @patch.object(Path, "home", return_value=Path("C:/Users/test"))
+    def test_hf_token_survives_cwd_change(self, mock_home):
+        """Le jeton doit rester trouvable depuis N'IMPORTE QUEL repertoire.
+
+        Defaut mesure (#17268) : `.secrets/.env.huggingface` etait cherche en
+        chemin RELATIF. L'invocation canonique de la CLI --
+        `cd scripts/genai-stack && python genai.py models download-qwen` --
+        perdait donc le jeton et retombait en requetes anonymes, sans autre
+        signal qu'un WARNING noye dans le log. Les trois tests precedents ne
+        l'ont pas vu : deux retournent AVANT la boucle de fichiers, le
+        troisieme mocke `Path.exists` a False, donc la branche fautive n'etait
+        jamais executee.
+
+        Le test s'auto-ecarte la ou l'artefact n'existe pas (CI, checkout
+        frais : `.secrets/` est gitignore), pour ne pas fabriquer un faux rouge.
+        """
+        from commands import models
+
+        candidate = (Path(models.__file__).resolve().parents[3]
+                     / ".secrets" / ".env.huggingface")
+        if not candidate.exists():
+            self.skipTest(f"pas de {candidate} sur cette machine")
+
+        previous = os.getcwd()
+        os.chdir(tempfile.gettempdir())
+        try:
+            self.assertIsNotNone(
+                models._get_hf_token(),
+                "le jeton doit etre resolu depuis la racine du depot, "
+                "pas depuis le repertoire courant (#17268)",
+            )
+        finally:
+            os.chdir(previous)
 
 
 # ============================================================================
