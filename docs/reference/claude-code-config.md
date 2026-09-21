@@ -61,7 +61,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `secrets-hygiene` | content-based, Stop & Repair, canal RooSync privé + quorum (fusion de `secrets-roosync-policy`, #12051) |
 | `audit-reassessment` · `audit-cross-source-distillation` | protocole 4 étapes, sortie = dashboard/issue jamais un fichier |
 | `verify-before-claiming` | G.1, firsthand avant tout claim |
-| `coordinator-discipline` | R1-R5 ai-01 (merge actif, no languishing, lanes indépendantes, jamais sanctionner l'idle, steer qui atteint) |
+| `coordinator-discipline` | R1-R7 ai-01 (merge actif, no languishing, lanes indépendantes, jamais sanctionner l'idle, steer qui atteint, adjoint, registre re-parcouru des arbitrages user) |
 | `proactive-coordination` | plancher 1 PR/wakeup, pool global, picker, never-idle, L721/L740/L898 |
 | `user-blocker-signaling` | anti-dilution des bloqueurs user |
 | `harness-hygiene` | 3 tiers harnais / docs / dashboard |

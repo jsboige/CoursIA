@@ -17,11 +17,14 @@ la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
+from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 class _FakeCompleted:
@@ -836,6 +839,178 @@ def test_partial_inheritance_keeps_the_lane_cause():
     assert causes == ["check requis en echec : " + AGG]
     assert pig.blocking_causes(state, inherited=both,
                                resolved_keys_by_name={AGG: both}) == []
+
+
+# --- #15910 : un agregateur rouge par DWELL est un MINUTEUR, pas un defaut ---
+
+DWELL_ANN = "[pr-gate] DWELL -- " + _md_evaluate(
+    datetime(2026, 9, 13, 12, 14, 44, tzinfo=timezone.utc),
+    datetime(2026, 9, 13, 12, 21, 44, tzinfo=timezone.utc),
+    120.0,
+)[2]
+# Regeneré depuis evaluate() (repair #15981) : la fixture ne peut plus deriver
+# du message reel du gate -- un changement de forme casse le round-trip ICI,
+# dans le fichier qui le consomme, au lieu de matcher en silence.
+FAIL_ANN = "[pr-gate] FAIL -- failing checks: Static validation (H.1/H.3/C.1) (failure)"
+
+
+def _dwell_state(run_id):
+    """Etat rouge dont l'agregateur porte un check-run id (annotation lisible)."""
+    st = _state(checks=[("PR gate", "FAILURE", True)])
+    st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+        "nodes"][0]["databaseId"] = run_id
+    return st
+
+
+def _patch_dwell(monkeypatch, dwell_by_run):
+    """Remplace la lecture d'annotation : id -> dict de plancher, ou None."""
+    monkeypatch.setattr(pig, "fetch_check_dwell",
+                        lambda rid: dwell_by_run.get(rid))
+
+
+def _patch_gh_annotations(monkeypatch, messages):
+    """Fait rendre a `gh api .../annotations` une liste de messages donnes."""
+    def fake_run(cmd, **kwargs):
+        return _FakeCompleted(json.dumps([{"message": m} for m in messages]))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_dwell_banner_is_parsed_from_the_check_run_annotation(monkeypatch):
+    """La surface existe et porte les trois champs : plancher, reste, levee.
+
+    Le fragment GraphQL des etats de PR ne porte PAS `title`/`summary` d'un
+    check-run : la seule surface qui dit le DWELL est l'annotation. Sans cette
+    lecture, « il n'y a rien a reparer » et « je n'ai pas pu lire » rendent le
+    meme `[]` (cf `fetch_check_organs`) -- et c'est le second que la lane subit.
+    Texte de reference = annotation reelle du check-run 103721837941 (#15956).
+    """
+    _patch_gh_annotations(monkeypatch, [DWELL_ANN])
+    dwell = pig.fetch_check_dwell(103721837941)
+    # #16092 : lift_at = premier sweep :07 STRICTEMENT posterieur au plancher
+    # brut (12:14:44 + 120 min = 14:14:44 -> 15:07), pas le plancher lui-meme.
+    assert dwell == {"head_at": "2026-09-13T12:14:44Z", "dwell_min": 120,
+                     "remaining_min": 113, "lift_at": "2026-09-13T15:07:00Z"}
+
+
+def test_dwell_banner_control_negative_fail_and_unreadable(monkeypatch):
+    """Controle NEGATIF : un FAIL nomme et une panne ne sont pas des DWELL.
+
+    Sans ce controle, un detecteur qui rendrait un dict sur n'importe quelle
+    annotation ferait passer le test precedent avec un motif faux -- et
+    l'annulation de cause emporterait les vrais rouges avec elle.
+    """
+    # FAIL nomme : ce n'est pas un plancher.
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    assert pig.fetch_check_dwell(1) is None
+    # Annotation d'organe : ce n'est pas un plancher non plus (le cas NOMINAL,
+    # celui ou un organe est nomme et ou l'appelant ne paie meme pas la lecture).
+    _patch_gh_annotations(monkeypatch, ["Organes bloquants en echec : perimeter"])
+    assert pig.fetch_check_dwell(2) is None
+    # Lecture impossible : None, et l'appelant retombe sur le fail-closed.
+    def _raise_gh(cmd, **kwargs):
+        raise OSError("gh indisponible")
+    monkeypatch.setattr(pig.subprocess, "run", _raise_gh)
+    assert pig.fetch_check_dwell(3) is None
+
+
+def test_dwell_red_is_not_a_repairable_cause():
+    """Le fond de #15910 : la lane ne recoit PLUS de cause a reparer.
+
+    `pr_gate.py` n'emet le plancher que sur le chemin VERT (`code == 0`) :
+    tous les checks sont verts, seule l'anciennete de la tete manque. En
+    faire un « check requis en echec » envoyait la lane chercher dans son diff
+    une cause inexistante -- et trois PRs poussees dans la meme fenetre
+    suffisaient a declencher P0 par le seul minuteur.
+    """
+    state = _dwell_state(103721837941)
+    dwell = {"PR gate": {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"}}
+    assert pig.blocking_causes(state, dwell_by_name=dwell) == []
+    # Controle POSITIF : sans la lecture, le meme etat est bien un rouge --
+    # sinon le test precedent passerait sur un etat qui n'est pas rouge du tout.
+    assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+def test_dwell_does_not_swallow_the_other_reds_of_the_same_pr():
+    """Un DWELL n'absout pas les vrais rouges qui l'accompagnent.
+
+    La PR peut porter un agregateur en attente de plancher ET un check direct
+    en echec substance : la cause du second doit survivre, sinon la reparation
+    du rouge reel serait annulee par un minuteur sans rapport.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", True)])
+    causes = pig.blocking_causes(
+        state, dwell_by_name={"PR gate": {"dwell_min": 120,
+                                          "remaining_min": 10,
+                                          "lift_at": "2026-09-13T14:14:44Z"}})
+    assert causes == ["check requis en echec : Scripts Tests (CPU)"]
+
+
+def test_dwell_pr_leaves_the_red_backlog_and_is_reported(monkeypatch):
+    """Bout en bout : la PR au seul rouge DWELL sort du refus, et est DITE.
+
+    Deux exigences opposees : ne plus la compter comme un grain a reparer
+    (sinon le cycle part sur une reparation inexistante), mais ne pas la taire
+    non plus (sinon la lane croit son ardoise propre et ignore qu'une PR est
+    en attente de plancher).
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
+                                     "lift_at": "2026-09-13T14:14:44Z"}})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _dwell_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["aged"] == []
+    assert out["triggers"] == []
+    assert out["base_inherited"] == []
+    assert out["base_unresolved"] == []          # rien d'illisible : pas un fail-closed
+    assert out["dwell_waiting"] == [{"number": 1, "check": "PR gate",
+                                     "lift_at": "2026-09-13T14:14:44Z",
+                                     "remaining_min": 113}]
+
+
+def test_unreadable_aggregate_still_falls_back_to_the_lane(monkeypatch):
+    """Controle negatif du precedent : sans DWELL lisible, le rouge RESTE.
+
+    Le fail-closed #14567 ne doit pas etre court-circuite par la lecture du
+    DWELL : une panne reseau n'est pas un plancher, et la confondre
+    acquitterait la lane d'un rouge qu'elle doit reparer.
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: None})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _dwell_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["dwell_waiting"] == []
+    assert {i["check"] for i in out["base_unresolved"]} == {"PR gate"}
+
+
+def test_print_dwell_waiting_says_the_only_gesture_is_waiting(capsys):
+    """La sortie humaine doit porter l'INTERDIT : ne pas repousser.
+
+    Un push remet le plancher a zero (pr_gate.py l.~1421) : la lane qui
+    « repare » un DWELL en poussant repart pour 120 min. C'est le geste
+    reflexe de cette lane, donc c'est ce qu'il faut dire a voix haute.
+    """
+    pig.print_dwell_waiting({"dwell_waiting": [
+        {"number": 15956, "check": "PR gate", "lift_at": "2026-09-13T14:14:44Z",
+         "remaining_min": 113}]})
+    out = capsys.readouterr().out
+    assert "#15956" in out
+    assert "14:14:44Z" in out
+    assert "NE PAS repousser" in out
+    # #15748 : la guidance courante dit comment rejouer, pas d'attendre.
+    assert "gh run rerun" in out
+    assert "aucun geste" not in out
+    assert "balayage horaire" not in out
+    # Silence total quand il n'y a rien : pas de section vide a lire.
+    assert pig.print_dwell_waiting({"dwell_waiting": []}) is None
+    assert capsys.readouterr().out == ""
 
 
 def test_required_failure_links_advisory_as_its_probable_cause():
@@ -2498,3 +2673,58 @@ def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     notes = pig.recent_delivery(picks)
     assert 14373 in notes
     assert picks[0]["klass"] == "delivered"
+
+
+# --- #15910 (port #16025) : falsifications additionnelles sur le fix #15981 --
+#
+# #16025 (concurrente de #15981 sur le meme axe) portait sa propre
+# implementation ; resolue contre main post-#15981, seule l'implementation du
+# twin (deja live) survit. Ne sont portees que les deux falsifications que la
+# suite du twin n'a pas : la reproduction du SEUIL `count` sur trois PRs
+# simultanees (le coeur de l'incident du 2026-09-13), et le bout en bout
+# banniere-FAIL (le negative du twin s'arrete au niveau du fetch).
+
+
+def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
+    """La reproduction de l'incident : 3 PRs en DWELL ne declenchent plus le P0.
+
+    #15888/#15895/#15902, toutes vertes hors gate, toutes en DWELL : sur le
+    picker d'avant, `triggers == ["count"]` et le cycle basculait sur une
+    reparation inexistante. Le twin couvre la PR isolee ; ce test couvre le
+    seuil -- c'est lui qui a fait basculer le P0 ce jour-la.
+    """
+    _patch_organs(monkeypatch, {})
+    runs = {424242 + n: {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"} for n in (1, 2, 3)}
+    _patch_dwell(monkeypatch, runs)
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["triggers"] == []
+    assert [d["number"] for d in out["dwell_waiting"]] == [1, 2, 3]
+    for item in out["dwell_waiting"]:
+        assert item["check"] == "PR gate"
+        assert item["lift_at"] == "2026-09-13T14:14:44Z"
+
+
+def test_organs_banner_still_blocks_end_to_end(monkeypatch):
+    """Banniere-FAIL != DWELL : bout en bout, le rouge d'organe reste reparable.
+
+    Le negative du twin (`fetch_check_dwell` rend None sur une annotation
+    d'organe) s'arrete au niveau du fetch. Ici le chemin ENTIER, depuis le
+    message REEL du gate (banniere FAIL nommant un check tombant) : un
+    agregateur rouge PARCE QU'un organe est tombe doit rester un grain a
+    reparer -- cause emise, declencheur `count` arme, AUCUNE dispense DWELL.
+    Si un detecteur trop large prenait la banniere FAIL pour un plancher, la
+    reparation du vrai rouge serait annulee par un minuteur sans rapport.
+    """
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert "count" in out["triggers"]
+    assert out["dwell_waiting"] == []

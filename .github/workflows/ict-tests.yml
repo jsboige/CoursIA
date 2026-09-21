@@ -7,16 +7,18 @@ name: ICT-Series Tests
 #   - ict/tests/  -> rootdir = ict/tests/   (pytest.ini, mode prepend)
 #
 # DEUX conventions de compte, ne pas confondre (post-#9478) :
-#   - suite-name (matrix) compte les STRATES (classes/modules de test) :
-#       tests/ = 55 strates (34 originales + 21 edge-cases spectral/bistable/
-#       sensitivity consolides depuis ict/tests/, #9478).
-#       ict/tests/ = 42 strates package.
+#   - suite-name (matrix) porte le nombre de FICHIERS test_*.py du package :
+#       tests/ = 57, ict/tests/ = 52 -- recopies tels quels du matrix, qui
+#       fait foi (les "55/42" puis "57/50" anterieurs etaient de la prose
+#       heritee qui a derive des comptes reels).
 #   - test-floor compte la COLLECTION parametree (items developpes par
-#     @pytest.mark.parametrize) : tests/ = 1156 items, ict/tests/ = 846 items.
+#     @pytest.mark.parametrize) : tests/ = 1156 items, ict/tests/ = 858 items.
+#     (re-mesures 2026-09-16 : tests/ = jambe main la plus recente ; ict/tests/
+#     = arbre merge #15480, bloc de provenance ci-dessous).
 #     58 != 1156 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
 #     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
-#     floor garde la collection (1156/846), le label garde les strates (58/51).
-#     Les strates 58 (tests/) et 51 (ict/tests/) sont les MODULES COLLECTES a
+#     floor garde la collection (1156/858), le label garde les strates (58/52).
+#     Les strates 58 (tests/) et 52 (ict/tests/) sont les MODULES COLLECTES a
 #     la mesure du 2026-09-16 (bloc RE-MESURE ci-dessous) ; le "55/42" des
 #     lignes ci-dessus est la prose d'origine heritee -- le label du matrix
 #     fait foi.
@@ -276,7 +278,7 @@ jobs:
           # porte par MAIN egalement, posterieurement.
           # Floor cumulatif : 728 (base commune) -> 744 (+16 bench_factorise
           # Floor 752 -> 763 (lens_gates #15660, MERGED sur main, floor courant
-          # de main -- lui-meme perime de +20, voir NOTA ci-dessus) -> 811
+          # de main -- lui-meme perime de +20, voir NOTA ci-dessus) -> 822
           # (cette PR, sur l'arbre merge) : +27 POC S-Lens (test_slens.py,
           # en trois paliers mesures sur la branche : 23 bancs copy_offset /
           # variable_binding / oracles / probes / agregation multi-runs,
@@ -289,39 +291,40 @@ jobs:
           # 783 (main pur, mesure) + 28 = 811 ferme l'arithmetique, et 811
           # EST la collection mesuree sur l'arbre merge (py3.9.25 +
           # numpy 1.26.4, SANS torch -- la forme de l'env CI).
-          # Floor 822 -> 846 (cette PR) : +24 items case 3 confabulation
+          # Floor 822 -> 846 (main, #8182) : +24 items case 3 confabulation
           # broadcast #8182 (ict/tests/test_confabulation_broadcast.py) --
           # 822 main pur + 24 = 846, mesure sur l'arbre MERGE (py3.9-slim,
           # numpy 1.26.4 + scipy 1.13.1 + matplotlib 3.9.4 + pandas 2.3.3,
           # SANS torch -- la forme de l'env CI) ; decomposition verifiee
           # par collecte isolee du fichier (24).
-          # Floor 846 -> 870 (cette PR, RE-mesure sur l'arbre COMBINE
-          # post-#15762) : +24 items case 5bis axes causaux #15798
-          # (ict/tests/test_attention_schema_causal.py, 52e package du
-          # combine) -- 846 main pur + 24 = 870, collecte pytest
-          # --collect-only sur l'arbre merge exact : 870 collected
-          # (D:/Dev/venvs/ict-py39, 1.36s, la forme de l'env CI).
+          # Floor 846 -> 870 (main, RE-mesure post-#15762) : +24 items case
+          # 5bis axes causaux #15798 (ict/tests/test_attention_schema_causal.py)
+          # -- 846 main pur + 24 = 870, collecte pytest --collect-only sur
+          # l'arbre combine exact (D:/Dev/venvs/ict-py39, la forme de l'env CI).
           # Les deux apports coexistent : test_confabulation_broadcast.py
-          # (main, #15915) ET test_attention_schema_causal.py (main,
-          # #15798). Reconcile #15762 : la jambe reste SEQUENTIELLE par
+          # (main, #15915) ET test_attention_schema_causal.py (main, #15798)
+          # ET test_confabulation_ignition.py (main, #8182 via #16512,
+          # +16 -- le floor de main porte a 886).
+          #
+          # RE-MESURE post-merge (2026-09-19, lane po-2027, 5e conflit du
+          # floor) : l'arbre merge porte 57 fichiers test_*.py et collecte
+          # 936 items (pytest --co -q sur l'arbre merge, env CI : py3.9-slim,
+          # pip install -e . du ICT-Series, 0 erreur de collection, RC=0).
+          # Apports identifies : 886 (floor main actuel) + 12 battery
+          # intervention #15480 (cette PR, run combine 36 passed verifie
+          # 2026-09-16) = 898 ; le surplus jusqu'a 936 vient de tests
+          # arrives sur main sans relevement du floor main (drift ascendant
+          # -- le guard n'y emet qu'un ::warning). La mesure fait foi.
+          #
+          # Reconcile #15762 : la jambe reste SEQUENTIELLE par
           # choix (test-parallel vide -- elle n'a pas ete mesuree par la
           # sonde, 6,85-8,35 min en CI, conftest.py + pytest.ini propres
           # en mode prepend, cf. #9387/#14598).
-          # ET test_confabulation_ignition.py (cette PR, #8182,
-          # +16 -- floor porte a 886, derivation au test-floor ci-dessous).
-          - suite-name: "ict/tests/ (52 package)"
+          - suite-name: "ict/tests/ (57 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
-            # Floor 846 -> 870 -> 886 : +24 items case 5bis #15798 (main,
-            # ict/tests/test_attention_schema_causal.py) PUIS +16 items
-            # case 15 confabulation ignition #8182 (cette PR,
-            # ict/tests/test_confabulation_ignition.py) -- 870 main pur
-            # + 16 = 886 ; decomposition verifiee par run isole du fichier
-            # (16 passed, aucun parametrize -- collection == run).
-            # Fichier sans parametrize, imports numpy+stdlib uniquement,
-            # py3.9-safe (typing.Dict, pas de PEP 604 ni walrus).
-            test-floor: 886
+            test-floor: 936
 
     steps:
       - uses: actions/checkout@v4
