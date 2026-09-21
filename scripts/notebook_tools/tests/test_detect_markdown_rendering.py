@@ -895,7 +895,8 @@ class TestQuartoClosureDependency:
         r = subprocess.run(
             [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
              str(tmp_path)],
-            capture_output=True, text=True, env=env, cwd=tmp_path,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env=env, cwd=tmp_path,
         )
         assert r.returncode == 2, (r.stdout, r.stderr)
         assert "pyyaml" in r.stderr
@@ -909,10 +910,117 @@ class TestQuartoClosureDependency:
         r = subprocess.run(
             [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
              str(tmp_path)],
-            capture_output=True, text=True, cwd=tmp_path,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=tmp_path,
         )
         assert r.returncode == 0, (r.stdout, r.stderr)
         assert "--closure: render-list=1" in r.stderr
+
+
+# --- heading_continuation_in_list (#17005) ----------------------------------
+
+
+class TestHeadingContinuationInList:
+    """A `#N` or `#Name` at the start of a list-item continuation line (2-3
+    space indent) renders as a giant H1-H6 in Jupyter despite CommonMark
+    reading it as paragraph. Founding witness: cell-015 pre-fix of #16888,
+    where ``pilote #15520, mathlib...`` was manually wrapped so that
+    ``#15520`` landed at the start of a 2-space-indented continuation line.
+    The detector must catch it; the 1325-pre-existing corpus of ``heading_in_list``
+    hits shows the same class pre-dates the rule (parity with #11829)."""
+
+    def _rules(self, cell):
+        return [f["rule"] for f in scan_cell(cell)]
+
+    def test_bug_case_cell_015_pre_fix(self):
+        # Exact founding shape (per #17005 acceptance criterion 1).
+        cell = _md([
+            "- Premier point : pilote\n",
+            "  #15520, mathlib...\n",
+            "  suite du texte\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" in rules, rules
+
+    def test_hash_name_continuation(self):
+        cell = _md([
+            "- bullet\n",
+            "  #Indice sur la sortie\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" in rules, rules
+
+    def test_three_space_indent_still_caught(self):
+        cell = _md([
+            "- bullet\n",
+            "   #12345 reference\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" in rules, rules
+
+    def test_top_level_heading_not_caught(self):
+        # 0-3 space indent + heading -- top-level heading, not continuation.
+        cell = _md(["## Top level heading\n"])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" not in rules, rules
+
+    def test_indented_code_block_not_caught(self):
+        # 4+ space indent is an indented code block -- `#` is code comment,
+        # not heading.
+        cell = _md([
+            "- bullet\n",
+            "    # python comment\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" not in rules, rules
+
+    def test_fenced_code_block_not_caught(self):
+        cell = _md([
+            "- bullet\n",
+            "  ```python\n",
+            "  # python comment in fence\n",
+            "  ```\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" not in rules, rules
+
+    def test_legitimate_continuation_line_not_caught(self):
+        # Continuation with NO leading `#` -- legitimate wrapped paragraph.
+        cell = _md([
+            "- bullet\n",
+            "  suite du paragraphe sans heading\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" not in rules, rules
+
+    def test_prose_with_inline_reference_not_caught(self):
+        # `#15520` mid-line on a non-indented paragraph -- not continuation,
+        # plain prose with an issue reference. Should NOT flag.
+        cell = _md(["Reference inline: pilote #15520, mathlib...\n"])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" not in rules, rules
+
+    def test_legitimate_hash_with_space_not_caught(self):
+        # `# Indice : truc` is a LEGITIMATE heading pattern (CommonMark
+        # requires `#` at start + space). With continuation indent (2-3
+        # spaces), CommonMark reads it as paragraph, NOT heading. The
+        # detector must not flag this -- the user wrote a heading-shaped
+        # continuation, that's the user's call.
+        cell = _md([
+            "- bullet\n",
+            "  # Indice : legitimate section heading\n",
+        ])
+        rules = self._rules(cell)
+        assert "heading_continuation_in_list" not in rules, rules
+
+    def test_nested_in_list_already_caught_by_heading_in_list(self):
+        # `- # Indice` on a single line is `heading_in_list`, NOT this rule.
+        # We assert the new rule does NOT also fire -- one finding per cell
+        # for this class (parity with oversized_hint / heading_in_list).
+        cell = _md(["- # Indice : nested\n"])
+        rules = self._rules(cell)
+        assert "heading_in_list" in rules
+        assert "heading_continuation_in_list" not in rules
 
 
 if __name__ == "__main__":

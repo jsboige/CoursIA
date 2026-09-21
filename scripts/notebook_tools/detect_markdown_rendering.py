@@ -138,6 +138,14 @@ RULE_SEVERITY = {
     "frontmatter_rawyaml": ERROR,
     "yaml_block_open_no_close": ERROR,
     "setext_oversized": ERROR,
+    # #17005 : ERROR (bloquant, parite avec heading_in_list). Une continuat
+    # ion de puce qui debute par `#N` ou `#Name` (1-6 #) n'a aucun usage le
+    # gitime ; le renderer Jupyter la rend en H1-H6, et le wrapping manuel
+    # qui l'a produite est un accident de formatage. Cout de la promotion
+    # : a mesurer post-fix (le filet vide precedent laissait passer ces lig
+    # nes sans alerte ; 0 faux positif connu en l'absence d'inventaire init
+    # ial).
+    "heading_continuation_in_list": ERROR,
     # Reste WARN : la regle matche aussi des titres de section LEGITIMES.
     # `### Indices` dans QC-Py-02-Platform-Fundamentals est une vraie section
     # (Principe / Objectif / Indices), pas un commentaire fuite -- la promouvoir
@@ -246,6 +254,16 @@ RULE_REPAIR = {
     "heading_in_list": (
         "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
     ),
+    # #17005 : pas de fixer outille pour l'instant. La reparation est
+    # manuelle -- retirer l'indent de 2-3 espaces (pour que la ligne redevie
+    # nne un paragraphe normal) ou prefixer d'un caractere non-`#` (typiqu
+    # ement backtick pour les refs d'issue : `` `#15520`` ``). Le wrap manu
+    # el qui produit le defaut est identifiable en lisant la cellule -- le
+    # fixer automatique risquerait de toucher des continuations legitimes
+    # (voir tests de non-regression).
+    "heading_continuation_in_list": (
+        "(no automated fixer -- edit the affected cells directly)"
+    ),
     # #16221 / Tell c.1158-L1 fondateur : un entry JSON-dumped (forme
     # `    "# 4.2e -- section heading\\n",`) doit etre decode puis reinsere
     # comme entree(s) de liste markdown distinctes (chaque '\n' du contenu
@@ -313,6 +331,14 @@ _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
 # drift gate on new hits is #11829 sous-issue #2. See #11829.
 _CONTAINER_HEADING_RE = re.compile(
     r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
+# #17005 : a `#N` (or `#Name`) at the start of a list-item continuation line --
+# indented 2-3 spaces so it's NOT a code block (4+) and NOT a top-level heading
+# (0-3) and NOT carrying the list marker itself (which heading_in_list above
+# catches). Jupyter renders this as a giant H<N> anyway -- see cell-015 of
+# #16888 pre-fix where `pilote #15520, mathlib...` wrapped onto its own line at
+# 2-space indent rendered as H1 in the saved HTML. CommonMark says paragraph;
+# Jupyter says heading; the gap is the defect.
+_HEADING_CONTINUATION_RE = re.compile(r"^[ ]{2,3}#{1,6}[^ \n]")
 
 # #12110 -- a CJK (Chinese-Japanese-Korean) character in a markdown cell whose
 # source is otherwise French prose. The defect pattern: a model-generated cell
@@ -1211,6 +1237,34 @@ def scan_cell(cell) -> list[dict]:
             "rule": rule,
             "severity": RULE_SEVERITY[rule],
             "message": f"heading nested in a list/blockquote (renders as giant H{level})",
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- heading on a list-item continuation line (#17005) -----------------------
+    # Fence-aware (parity with the two heading rules above): `#` inside a fenced
+    # code block is literal code, not a heading. The pattern requires 2-3 space
+    # indent so it does NOT match top-level headings (0-3), NOT match indented
+    # code blocks (4+), and NOT match list-marker-prefixed headings (already
+    # caught by `heading_in_list` above). What it DOES catch: a `#N` or `#Name`
+    # that wraps onto its own line at 2-space continuation indent, which Jupyter
+    # renders as H1-H6 despite CommonMark reading it as paragraph -- the cell-015
+    # pre-fix of #16888, where `pilote #15520, mathlib...` was manually wrapped
+    # such that `#15520` landed at the start of a 2-space-indented line. One
+    # finding per cell.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if not _HEADING_CONTINUATION_RE.match(ln):
+            continue
+        rule = "heading_continuation_in_list"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("heading at start of list-item continuation line "
+                        "(Jupyter renders as giant H; CommonMark reads as "
+                        "paragraph -- wrap the reference inside the line)"),
             "evidence": ln.strip()[:100],
             "hash": _cell_hash(rule, text),
         })
