@@ -39,8 +39,9 @@ name: Markdown table syntax advisory
 #   - `paths` fires ONLY for the file trees this guard scans (*.ipynb /
 #     *.md / *README*), plus its own wiring and the two scripts it runs;
 #   - the checkout materializes the scan toolbox ONLY (blob:none partial
-#     clone), then the changed files' blobs on demand via
-#     `git sparse-checkout add --no-cone` -- never the full working tree.
+#     clone), then the changed files' blobs on demand (`git show HEAD:<path>`,
+#     materialization from the object store -- see the panic note in the run
+#     step) -- never the full working tree.
 # Marginal cost per PR: one metadata clone + the changed files' blobs + a
 # pure-Python scan, on the self-hosted ephemeral leg. The nocturne is
 # unchanged (it also scans only the last-24h window's changed files).
@@ -104,7 +105,8 @@ jobs:
           # #16207 : le cout qui a tue le trigger etait l'arbre de travail
           # complet (2.22 Go). Ici on ne materialise QUE la boite a outils du
           # scan ; les blobs des fichiers modifies arrivent plus bas, a la
-          # demande, via `git sparse-checkout add --no-cone` sur changed.txt.
+          # demande, depuis la base d'objets (`git show HEAD:<path>` sur
+          # changed.txt -- cf la note de panne mesuree a cet endroit).
           # fetch-depth: 0 reste requis : le diff 3-points BASE...HEAD lit le
           # merge-base, et le nocturne resout la fenetre 24 h par rev-list.
           sparse-checkout: |
@@ -222,12 +224,36 @@ jobs:
           # checkout d'entree est sparse (boite a outils uniquement) ; le diff
           # --name-only ci-dessus n'a lu que les arbres (blob:none suffit) ;
           # les blobs des fichiers modifies arrivent ici via le promissor du
-          # clone partiel. add (pas set) : le pattern outils pose par
-          # actions/checkout doit survivre a l'ajout. Les PATHS sont les argv
-          # OCTETS-EXACTS du fichier NUL-separe (mapfile -d ''), jamais une
-          # resubstitution shell (CR #16207).
+          # clone partiel. Les PATHS sont les argv OCTETS-EXACTS du fichier
+          # NUL-separe (mapfile -d ''), jamais une resubstitution shell
+          # (CR #16207).
+          #
+          # PANNE MESUREE (#16936, run 35552078192, git 2.43) : cette
+          # materialisation passait par `git sparse-checkout add --no-cone`,
+          # qui rend `fatal: 'docs/reference/scripts-reference.md' is not a
+          # directory`, exit 128 -- des qu'une PR modifie un simple fichier
+          # `.md`. Deux causes cumulees : (1) le mode sparse du runner reste
+          # CONE a l'execution -- le log du run ne montre aucun
+          # `git config core.sparseCheckoutCone` (le defaut de git est cone),
+          # et en cone un FICHIER est refuse (reproduit localement a
+          # l'identique) ; (2) `--no-cone` n'est pas une option de `add` sur
+          # toutes les versions (rejetee en « unknown option » sur git < 2.44).
+          # Materialiser depuis la base d'objets (`git show HEAD:<path>`) ne
+          # depend NI du mode sparse NI de la version : la boite a outils
+          # sparse posee par actions/checkout reste intacte, et seules les
+          # cibles du scan sont ecrites. Ecriture via temp + mv : une
+          # redirection directe creerait un fichier VIDE quand `git show`
+          # echoue, et le scanner le lirait comme un fichier legitime.
           mapfile -d '' PATHS < changed.txt
-          git sparse-checkout add --no-cone "${PATHS[@]}"
+          for p in "${PATHS[@]}"; do
+            mkdir -p "$(dirname "$p")"
+            if git show "HEAD:$p" > "$p.materialize.$$" 2>/dev/null; then
+              mv "$p.materialize.$$" "$p"
+            else
+              rm -f "$p.materialize.$$"
+              echo "::warning::cannot materialize '$p' from HEAD"
+            fi
+          done
 
           # CR #16207 : le scanner rend exit 2 ("rien a scanner") quand aucun
           # path argv ne nomme un fichier existant -- ce qui arrivait en
