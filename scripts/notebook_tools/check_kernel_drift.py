@@ -303,6 +303,56 @@ def _diff_signatures_ordinal(base_sig, head_sig):
     return diffs
 
 
+# Artefacts qui portent un environnement EPINGLE pour une serie. pyproject.toml
+# d'abord : il porte l'intention (requires-python, dependances) la ou un
+# requirements.txt peut n'etre qu'une liste d'install.
+_ENV_ARTIFACT_NAMES = ("pyproject.toml", "requirements.txt")
+
+# Niveaux remontes depuis le dossier du notebook. Borne volontaire : au-dela on
+# nommerait un artefact qui ne couvre plus la serie (racine du depot), c'est-a-
+# dire un chemin qui a l'apparence d'une reponse et n'en est pas une.
+_ENV_WALK_LEVELS = 3
+
+_REQUIRES_PYTHON_RE = re.compile(r"""requires-python\s*=\s*["']([^"']+)["']""")
+_NUMPY_PIN_RE = re.compile(r"numpy\s*([<>=!~][0-9A-Za-z.,<>=!~*]*)")
+
+
+def canonical_env_hint(nb_path, root="."):
+    """Nomme l'environnement epingle qui couvre ce notebook, s'il existe (#17185).
+
+    Le garde nommait les CAUSES du drift (« un autre interpreteur, 3.11 ->
+    3.13 », « NumPy 1.x -> 2.x ») sans jamais dire OU est l'environnement a
+    rejouer. Pour une serie qui epingle le sien, le verdict renvoyait donc la
+    lane a sa propre introspection : elle re-executait avec son env local, ce
+    qui reproduisait exactement le drift signale. Le constat de #17185 impute
+    ce drift a une absence d'env canonique -- la serie ICT en a un, epingle et
+    documente (cf `IIT/ICT-Series/pyproject.toml`) ; ce qui manquait est le
+    POINTEUR vers lui au moment ou la lane lit le verdict.
+
+    Rend un dict ``{artifact, requires_python?, numpy_pin?}``, ou None quand
+    aucun artefact n'est trouve : l'absence est une information, pas un silence
+    a combler par un chemin suppose.
+    """
+    parents = [p for p in Path(nb_path).parents if p.as_posix() != "."]
+    for parent in parents[:_ENV_WALK_LEVELS]:
+        for name in _ENV_ARTIFACT_NAMES:
+            rel = parent / name
+            try:
+                text = (Path(root) / rel).read_text(encoding="utf-8",
+                                                    errors="replace")
+            except OSError:
+                continue
+            hint = {"artifact": rel.as_posix()}
+            requires_python = _REQUIRES_PYTHON_RE.search(text)
+            if requires_python:
+                hint["requires_python"] = requires_python.group(1)
+            numpy_pin = _NUMPY_PIN_RE.search(text)
+            if numpy_pin:
+                hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
+            return hint
+    return None
+
+
 def _run(args_obj):
     """Core logic shared between CLI and tests. Returns dict or prints."""
     base = resolve_base(args_obj.base_ref)
@@ -365,6 +415,26 @@ def _run(args_obj):
                         "drift consistent with a NumPy 1.x -> 2.x upgrade or "
                         "a cmath precision change; values are within 1 ULP "
                         "but byte-text differs"
+                    )
+                # #17185 : les deux causes ci-dessus nomment le MECANISME du
+                # drift, aucune ne dit OU est l'environnement a rejouer. Une
+                # serie qui epingle le sien obtient ici le pointeur vers son
+                # artefact, pour que « aligner l'env » ne se lise pas comme une
+                # introspection a faire soi-meme.
+                env_hint = canonical_env_hint(nb_path)
+                if env_hint:
+                    detail = [f"the series pins a canonical environment at "
+                              f"`{env_hint['artifact']}`"]
+                    if env_hint.get("requires_python"):
+                        detail.append(
+                            f"requires-python {env_hint['requires_python']}")
+                    if env_hint.get("numpy_pin"):
+                        detail.append(env_hint["numpy_pin"])
+                    causes.append(
+                        " / ".join(detail)
+                        + "; re-executing under that environment keeps the "
+                          "committed repr stable, whereas a local interpreter "
+                          "reproduces this drift"
                     )
                 finding["probable_causes"] = causes
             findings.append(finding)
