@@ -163,21 +163,26 @@ Trois conséquences, à ne pas séparer :
 
 **Instrument à ne pas surinterpréter.** Le repr NumPy 2 des scalaires (`np.float64(0.1)` au lieu de `0.1`) n'apparaît dans les **outputs** que de 3 notebooks (75 occurrences : 56 sur un notebook à 3.13.14, 19 sur deux à 3.13.7) et **jamais** dans les 19 notebooks à 3.13.3. L'instrument est **unilatéral** : sa *présence* prouve NumPy 2, son *absence* ne prouve rien (aucun contrôle positif — ces notebooks n'impriment simplement pas de repr de scalaire). La génération NumPy des 74 autres **n'est pas établie** par l'inspection des outputs : ne pas conclure « NumPy 1 » d'une absence.
 
-**La seconde moitié de l'acceptance de #17185 est mesurée (2026-09-21) — et le geste de mesure porte deux pièges.**
+**La seconde moitié de l'acceptance de #17185 est mesurée sur la strate entière (2026-09-21).**
 
-`ICT-01-PhiTrajectories-Python` (kernelspec `pyphi`, outputs committés sous Python **3.9.25** — donc un notebook *déjà conforme* à l'env pinné) a été ré-exécuté sous le kernel `pyphi39` de cette machine (Python 3.9.25, NumPy 1.26.4, PyPhi 1.2.0), puis comparé aux outputs committés **dans les unités du garde** (import de `check_kernel_drift.float_signatures` / `diff_signatures`, pas une comparaison réécrite) :
+Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** viennent de Python 3.9.25, donc les seuls *déjà conformes* à l'env pinné — ont été ré-exécutés sous le kernel `pyphi39` de cette machine (Python 3.9.25, NumPy 1.26.4, PyPhi 1.2.0), puis comparés aux outputs committés **dans les unités du garde** (import de `check_kernel_drift.float_signatures` / `diff_signatures` / `kernel_info` / `diff_kernel`, jamais une comparaison réécrite) :
 
-| Instrument | Verdict |
-|---|---|
-| Contrôle positif (`sha256sum`, `cmp`) | le fichier **a bien été réécrit** (240 052 o écrits, empreinte différente) |
-| `diff_signatures` (unités du garde) | **AUCUNE DÉRIVE** — 0/10 cellules à signature modifiée, 4 tokens float identiques |
-| `check_kernel_drift.py origin/main`, état **commité** | `OK: 0 kernel-drift regression across **1** changed notebooks` |
+| Notebook (strate Φ) | cellules · tokens float | `diff_signatures` | `diff_kernel` | santé | durée |
+|---|---|---:|---|---|---|
+| `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
+| `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
+| `ICT-18-ArrowOfTimeReversibilization` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
+| `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 
-**Conclusion pour la strate Φ** : sous l'env canonique, la ré-exécution d'un notebook déjà conforme **ne produit pas de drift**. C'est la seconde moitié de l'acceptance, et elle est vérifiée — pour cette strate seulement (cf. « Reste ouvert » ci-dessous).
+Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
 
-**Piège 1 — `nbconvert --inplace` n'écrit le fichier qu'en cas de succès.** La toute première tentative a « rendu » `AUCUNE DÉRIVE`, 0 cellule modifiée, compteurs d'exécution tous présents : un vert parfait, et **vide**. Elle avait échoué sur `ModuleNotFoundError: No module named 'matplotlib'`, et l'artefact sur disque était resté **byte-identique** à la version committée — la comparaison confrontait le notebook **avec lui-même**. Le contrôle positif (`sha256sum` avant/après) est ce qui l'a attrapé. **Règle : avant d'interpréter une comparaison de drift comme une mesure, prouver que l'artefact a effectivement changé.**
+**Conclusion.** Sous l'env canonique, la ré-exécution des notebooks déjà conformes ne produit **aucun** drift — ni de noyau, ni de signature float. C'est la seconde moitié de l'acceptance de #17185, et elle est vérifiée sur la **population entière** que cette acceptance nomme (4/4), pas par échantillon. Elle ne dit **rien** des 73 notebooks au-dessus de 3.9 (cf. « Reste ouvert »).
 
-**Piège 2 — le garde ne voit que le travail COMMITÉ.** `check_kernel_drift.changed_notebooks()` fait `git diff <base> HEAD -- *.ipynb` : sur une ré-exécution encore dans l'arbre de travail, il rend `OK ... across 0 changed notebooks` — il n'a **rien regardé**. Ce `OK` n'est pas une preuve de non-drift, c'est une preuve de non-commit. Committer la ré-exécution dans un worktree jetable, ou lire les deux fichiers explicitement, avant de citer le garde.
+**Le contrôle positif est obligatoire, et ce n'est pas une précaution de style.** `nbconvert --inplace` **n'écrit le fichier qu'en cas de succès** : une exécution qui échoue laisse l'artefact **byte-identique** à la version committée, et toute comparaison rend alors « aucune dérive » — **vacuement**, en confrontant le notebook **avec lui-même**. C'est arrivé au premier passage : `ModuleNotFoundError: No module named 'matplotlib'`, artefact intact, verdict vert. Chaque notebook ci-dessus n'entre donc dans la mesure **qu'après** vérification que son empreinte `sha256` a changé (`sha256sum` avant/après) ; sinon la ligne est déclarée vacue et **non comptée**. **Règle : avant d'interpréter une comparaison de drift comme une mesure, prouver que l'artefact a effectivement changé.**
+
+**Et le garde ne voit que le travail COMMITÉ.** `check_kernel_drift.changed_notebooks()` fait `git diff <base> HEAD -- *.ipynb` : sur une ré-exécution encore dans l'arbre de travail, il rend `OK ... across 0 changed notebooks` — il n'a **rien regardé**. Ce `OK` n'est pas une preuve de non-drift, c'est une preuve de non-commit. Les 4 ré-exécutions ont donc été commitées dans un **worktree jetable** (jamais poussé : les notebooks ICT ne sont pas le livrable de cette PR) avant de citer le garde.
+
+**Piège d'outillage, rencontré en commitant ces mesures.** Le hook pré-commit H.3 (`check_null_exec.py`) **crashe** quand le `python` du shell est celui de l'env ICT : `validate_pr_notebooks.py:128` annote `paths: list[str] | None`, une union PEP 604 évaluée à l'import, qui lève `TypeError: unsupported operand type(s) for |` sur Python 3.9. Or c'est **exactement** la situation de la re-exécution ICT — l'env qui exécute le notebook est py3.9 et se retrouve en tête de `PATH`. Le hook sort en échec (fail-closed, donc rien de dangereux) mais **sans rapport avec le notebook** : committer depuis un shell où py3.9 est actif ne dit rien de la validité de la mesure. Committer avec un `python` ≥ 3.10.
 
 **Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
 
