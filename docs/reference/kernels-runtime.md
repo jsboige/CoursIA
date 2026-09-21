@@ -121,7 +121,25 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `epita_symbolic_ai_sherlock` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
 | `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
+| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
+
+### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
+
+**Exception au « 3.10+ » de ce titre** : la série `MyIA.AI.Notebooks/IIT/ICT-Series/` a besoin d'un env en **Python 3.9**. PyPhi 1.2.0 utilise `collections.Iterable`, retiré en 3.10, et tire `pyemd` dont la sdist se compile contre NumPy 2.x (« numpy.dtype size changed » à l'import).
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `pyphi`, Python **3.9** — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_pyphi_env.ps1` (ou `.sh`), `-c conda-forge --override-channels` |
+| Kernelspec | `pyphi` (« Python 3 (PyPhi/IIT) »). **Nom machine-dépendant** : mesuré `pyphi39` sur po-2026, env **et** kernelspec. Résoudre par `jupyter kernelspec list`, jamais par supposition |
+| Artefacts exécutables (source de vérité) | `MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml` (`requires-python = ">=3.9,<3.10"`, `pyphi==1.2.0`, `numpy>=1.21,<2.0`) · `MyIA.AI.Notebooks/IIT/requirements.txt` (install manuel complet, dont `pyemd==0.5.1` = wheel cp39 known-good avec numpy 1.26) |
+| Usage | Strates **cœur Φ** (PyPhi). Les strates LLM/SAE (ICT-21+) utilisent `coursia-sae` (py3.12), **pas** cet env |
+
+**Re-exécution : passer le kernel explicitement** — `timeout 600 jupyter nbconvert --execute --inplace --ExecutePreprocessor.kernel_name=pyphi <nb>` (chemin canonique timeout-wrappé, cf. § « MCP jupyter-papermill HANG (bug #835) » plus bas). Le MCP async ignore `kernel_name` et lit le kernelspec **stocké** dans le notebook : sans ce paramètre, la re-exécution tourne sous le kernel du notebook, pas sous `pyphi`.
+
+**Ce que la mesure réfute (2026-09-21, #17185).** Sur 77 notebooks `ICT-Series/`, le kernelspec stocké se répartit ainsi : `python3` **72**, `pyphi` **2**, absent 2, `coursia-ml-training` 1. Le kernelspec stocké **n'est pas** la cause du drift `Kernel drift guard` : les **2 seuls** notebooks qui importent `pyphi` (`ICT-01-PhiTrajectories`, `ICT-05-CausalEmergence`) sont **exactement ceux** qui portent déjà `kernelspec.name = pyphi`. Normaliser les 72 autres n'aurait aucun effet — ils n'importent pas PyPhi.
+
+**Reste ouvert (#17185).** Le drift de repr float-array à 1 ULP signalé par le garde porte sur les notebooks **NumPy** (75 des 77), dont l'env canonique **n'est pas** `pyphi` : aligner l'interpréteur/NumPy de cette population est un sujet distinct, non tranché ici.
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
