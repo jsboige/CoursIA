@@ -251,10 +251,18 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     coordinator is unaware of -- it wrote it. Neutralising exactly those rows is
     what lets the coordinator lift its own reserve and still merge, without
     weakening the gate: a row from any other author still expires the dossier.
+
+    Note (#16883): the coordinator account ``myia-ai-01`` and the shared worker
+    sign-in ``jsboige`` both author coordinator-side actions on this gate's
+    only consumer (cf. lane-claim protocol and the merged-account mandate).
+    A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
+    coordinator action posted under the shared sign-in -- the very loop
+    measured on #16840. We accept either login as the coordinator's voice.
     """
     if not neutral_after:
         return False
-    if _login(row) != COORDINATOR_LOGIN:
+    author = _login(row)
+    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after

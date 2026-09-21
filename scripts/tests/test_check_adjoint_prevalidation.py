@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -510,8 +511,16 @@ def test_coordinator_own_later_comment_does_not_expire_the_dossier():
 
 
 def test_any_other_author_still_expires_the_dossier():
-    """The negative control: neutrality is for the coordinator ALONE."""
-    for login in ("jsboige", "clusterManager-Myia", "lcetinsoy"):
+    """The negative control: neutrality is for the coordinator ALONE.
+
+    Since #16883 the coordinator voice is recognised under BOTH
+    ``COORDINATOR_LOGIN`` (``myia-ai-01``) and ``SHARED_GITHUB_LOGIN``
+    (``jsboige``) -- the merged-account mandate means every coordinator
+    action reaches the API under ``jsboige``. A genuinely foreign author
+    (a worker lane that did NOT carry the dossier, or a bot) must still
+    expire the dossier.
+    """
+    for login in ("clusterManager-Myia", "lcetinsoy", "myia-po-2024", "dependabot"):
         base = _stamped_snapshot("")
         base["comments"].pop()
         snapshot = _stamped_snapshot(_dossier_for(base))
@@ -521,12 +530,59 @@ def test_any_other_author_still_expires_the_dossier():
         errors = _errors(snapshot)
         assert any("discussion changed after dossier" in e for e in errors), login
 
-        snapshot2 = _stamped_snapshot(_dossier_for(base))
-        snapshot2["reviews"].append(
-            {"state": "CHANGES_REQUESTED", "author": {"login": login},
-             "submittedAt": T1, "body": "new reserve"}
-        )
-        assert _errors(snapshot2), login
+
+def test_shared_login_lift_does_not_expire_dossier():
+    """#16883 CN4-bis: a coordinator lift posted under SHARED_GITHUB_LOGIN
+    (the merged-account mandate, every lane signs ``jsboige``) is
+    recognised as the coordinator's voice. The dossier stays intact and
+    its READY verdict still passes the gate.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.SHARED_GITHUB_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_shared_login_anterior_comment_does_not_neutralise():
+    """#16883 CN2-bis: a SHARED_GITHUB_LOGIN comment written BEFORE the
+    dossier is part of the surfaces the dossier attested. The adjoint
+    already saw it; the dossier stays intact. (The neutrality only fires
+    on later rows, never on attested ones.)
+    """
+    snapshot = _base_snapshot()
+    anterior = _comment("pre-dossier coordinator remark", login=mod.SHARED_GITHUB_LOGIN)
+    anterior["createdAt"] = T0
+    snapshot["comments"].insert(0, anterior)
+    dossier_body = _dossier_for(snapshot)
+    dossier = _comment(dossier_body)
+    dossier["createdAt"] = T0
+    snapshot["comments"].append(dossier)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_fingerprint_includes_lift_surface():
+    """The fingerprint (#16957) covers every comment -- coordinator or not.
+    A lift that lands between the dossier and the gate re-evaluation
+    changes the hash; that is the dossier attesting the new surface.
+    Neutralisation is only at evaluate time, never at stamp time.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot_at_stamp = _stamped_snapshot(_dossier_for(base))
+    fp_at_stamp = mod.surfaces_fingerprint(snapshot_at_stamp)
+
+    snapshot_after_lift = json.loads(json.dumps(snapshot_at_stamp))
+    lift = _comment("LIFT -- shared login", login=mod.SHARED_GITHUB_LOGIN)
+    lift["createdAt"] = T1
+    snapshot_after_lift["comments"].append(lift)
+
+    fp_after_lift = mod.surfaces_fingerprint(snapshot_after_lift)
+    assert fp_after_lift != fp_at_stamp
 
 
 def test_coordinator_review_BEFORE_the_dossier_must_still_be_attested():
