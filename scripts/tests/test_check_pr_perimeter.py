@@ -4120,3 +4120,53 @@ def test_diff_rate_limit_also_unmeasurable(monkeypatch, capsys):
         cpp._pr_diff_text(17269)
     assert exc.value.code == 0
     assert "PERIMETRE NON MESURABLE" in capsys.readouterr().out
+
+
+def test_no_workflow_collapses_the_three_outcomes():
+    """#17273, controle de regression DURABLE.
+
+    Le defaut vivait au niveau du WRAPPER shell, pas du script : un
+    `cmd || { echo <conclusion>; exit 1; }` ecrase les trois issues (0 mesure
+    faite, 1 contradiction, 2 mesure impossible) dans le message de
+    contradiction. Deux sites le portaient (perimeter-review-guard.yml et
+    always-on-guards.yml) ; le second, sur la surface `pull_request`, se
+    declenche le plus souvent et avait ete manque au premier passage.
+
+    Une relecture a la main ne tient pas ce controle d'un cycle a l'autre :
+    on le rend executables. Le troisieme site (fast_lane_registry.py) lit le
+    rc via `conclusion_for`, qui mappe deja 2 -> failure et 0 -> success ;
+    il n'a donc pas de wrapper a corriger.
+    """
+    import re as _re
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    offenders = []
+    for wf in sorted((root / ".github" / "workflows").glob("*.yml")):
+        text = wf.read_text(encoding="utf-8")
+        for i, line in enumerate(text.splitlines(), 1):
+            if "check_pr_perimeter.py" not in line:
+                continue
+            # Le `||` sur la MEME ligne, ou l'amorce d'un bloc `|| {` qui suit.
+            if "||" in line:
+                offenders.append(f"{wf.name}:{i}: {line.strip()[:120]}")
+    assert not offenders, (
+        "un `||` sur l'invocation du garde ecrase ses trois issues dans le "
+        "message de contradiction (#17273) :\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_both_invoking_workflows_branch_on_rc():
+    """Controle positif : les DEUX sites qui portent le garde distinguent
+    rc=1 (contradiction) de rc=2 (mesure impossible). Sans ce controle, un
+    troisieme site pourrait reapparaitre sans que rien ne le remarque."""
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    for name in ("perimeter-review-guard.yml", "always-on-guards.yml"):
+        text = (root / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        assert "check_pr_perimeter.py" in text, f"{name} ne porte plus le garde ?"
+        assert '"$rc" -eq 1' in text, (
+            f"{name} ne distingue plus rc=1 : le message de contradiction "
+            "serait rendu pour un echec de mesure (#17273)"
+        )

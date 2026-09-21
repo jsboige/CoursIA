@@ -1169,10 +1169,32 @@ jobs:
         continue-on-error: true
         run: |
           PR="${{ github.event.pull_request.number }}"
-          python scripts/check_pr_perimeter.py "$PR" --scan-thread || {
+          # Meme correctif que perimeter-review-guard.yml (#17273) : le script
+          # a TROIS issues, et `||` les ecrasait toutes dans le message de
+          # contradiction. Un `exit 2` (« je n'ai pas pu mesurer ») etait donc
+          # rendu comme un verdict de contenu -- quatre runs, quatre tetes,
+          # tous refuses par `API rate limit exceeded`, le 2026-09-21. Une
+          # lecture refusee est une NON-MESURE (#14292), pas une contradiction.
+          #
+          #   0 -> mesure faite (ou PERIMETRE NON MESURABLE nomme)
+          #   1 -> contradiction reelle : message et rouge inchanges
+          #   2 -> mesure impossible (echec non reconnu) : fail-closed conserve,
+          #        mais on dit ce qui s'est passe. Une signature transitoire
+          #        RECONNUE sort en 0 depuis l'organe et n'arrive pas ici.
+          #
+          # `continue-on-error: true` absorbe le code, PAS l'annotation : le
+          # message reste ce que lisent le picker et les humains.
+          if python scripts/check_pr_perimeter.py "$PR" --scan-thread; then
+            exit 0
+          else
+            rc=$?
+          fi
+          if [ "$rc" -eq 1 ]; then
             echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
             exit 1
-          }
+          fi
+          echo "::error::le garde n'a PAS pu mesurer le perimetre de la PR $PR (rc=$rc) -- verdict UNKNOWN, ce n'est PAS une contradiction de perimetre. Aucune assertion n'a ete confrontee. Relancer ce job ; si l'echec se repete, la cause est amont (quota d'API partage par compte, cf #17229)."
+          exit 1
 
       # Porte de fast-lane-shadow.yml :: fast-lane. Le moteur emet un
       # check-run nomme par garde absorbe (API Checks) : la granularite
