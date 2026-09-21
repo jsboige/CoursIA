@@ -5,11 +5,10 @@ csharp_sha: 9256f1534ff48ae3a723dae12f588a7dc825453e
 content_python_sha: 8cb89e4a6471d3c4a208ab2883f4bc6e495d3f3be73c432bb3799bbb00d34532
 content_csharp_sha: b4719f39ad3172acdc85438424082af9eb583fc073348d6648a2280f363fa023
 reason: >-
-  Mouvement unilateral du cote cote non identifie (tranche densite #13410) :
-  +0 cellules markdown d'un cote, l'autre cote inchange. Controle mesure des
-  DEUX cotes (base origin/main -> tete) : cellules de code python 13->13 et c#
-  13->13, aucune ajoutee, aucune retiree, aucune modifiee de part et d'autre.
-  Le contenu algorithmique est donc intact et `parity_level: semantic` tient —
-  la parite n'a pas ete reparee, elle a ete RE-ATTESTEE (cf precedent
-  app-14-connectfour-adversarial/0005). Aucune re-execution, aucun strip
-  outile en attente.
+  Mouvement unilateral du cote python (tranche densite #13410) : +21 cellules markdown
+  de ce cote, l'autre cote inchange. Controle mesure des DEUX cotes (base origin/main
+  -> tete) : cellules de code python 13->13 et c# 13->13, aucune ajoutee, aucune
+  retiree, aucune modifiee de part et d'autre. Le contenu algorithmique est donc
+  intact et `parity_level: semantic` tient — la parite n'a pas ete reparee, elle a ete
+  RE-ATTESTEE (cf precedent app-14-connectfour-adversarial/0005). Aucune re-execution,
+  aucun strip outile en attente.
