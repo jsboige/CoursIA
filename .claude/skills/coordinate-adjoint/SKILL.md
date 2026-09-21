@@ -40,7 +40,7 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 ## Ledger de dette — journalisation des observations (mandat ai-01 2026-09-18)
 
-**Référence canonique** : `scripts/coordination/debt_ledger.py` + `scripts/coordination/README.md` sur la branche `fix/16563-a-issue-debt-ledger` (`a7211c2c12`) — relire le source AVANT tout append, le schéma vit dans le code.
+**Référence canonique** : `scripts/coordination/debt_ledger.py` + `scripts/coordination/README.md` sur `main` (phase A mergée) — relire le source AVANT tout append, le schéma vit dans le code.
 
 Chaque `[ADJOINT PREFLIGHT]`, `[ADJOINT VERIFIED]` et `[ADJOINT CLOSE]` publié est AUSSI journalisé comme observation `[OBS]` via le CLI — jamais dérivé à la main (l'`observation_id` dérive du contenu par le CLI ; une dérivation maison casse l'idempotence silencieusement).
 
@@ -96,11 +96,16 @@ La proposition `act_kind` est donc **mise en attente mesurée**, pas ajoutée au
 
 ## Émission de dossiers — garde-fous obligatoires (tells c.12-c.15)
 
-- **Tie-break des runs jumeaux** : `group_by(.name)|map(max_by(.createdAt))` est **instable** quand deux runs d'un même workflow partagent le même `createdAt` (attempt 1 vs 2) — mesuré c.15 : lecture « tout vert » puis 3 rouges au re-jeu. Toujours `max_by(.databaseId)` (monotone).
+- **Instrument de mesure des checks (arbitrage ai-01 2026-09-21 + RECTIF 12:09Z)** : lire `commits/<sha>/check-runs` — **jamais** `actions/runs` (un `attempt=2` y garde l'ancien id plus petit : organe `dedupe_latest`, `scripts/pr_gate.py` l.537, mesure #11416). Dédup **obligatoire** (17 noms dupliqués mesurés sur #16263) par clé canonique `(started_at, id)` dans cet ordre — jamais `created_at`, jamais `id` seul — et **paginer** (`--paginate` : total_count 101 > per_page 100 mesuré sur #16263).
+- **DWELL = minuteur, pas un défaut de contenu** : un rouge `PR gate: DWELL -- ... ecoule a <HH:MM>Z. Rien a corriger dans le code` ne se répare PAS par push (chaque push ré-arme le plancher 120 min depuis la nouvelle tête) ; un dossier BLOCKED qui le nomme est un livrable valide, le merge suit l'échéance. `gh pr update-branch` ne ré-arme PAS le plancher depuis #16149. Corollaire : `statusCheckRollup` ment sur ~20 % des candidates (mesuré ai-01 2026-09-21) — ne jamais en faire un verdict.
 - **Le gate en échec imprime sur STDOUT** : sans `--json`, l'échec de `check_adjoint_prevalidation.py` rend `UNKNOWN -- {erreur}` sur stdout — une redirection `--template > file.md` capture cette ligne comme template. Avant tout post : (1) rc=0 du template, (2) `head -1` du fichier = `[ADJOINT PREFLIGHT]`, (3) placeholders `REPLACE_WITH` présents dans le template source. `grep -c REPLACE_WITH = 0` est un **faux-OK** sur une ligne d'erreur.
 - **Le gate ne lit pas l'état de merge** : un dossier READY exige la vérification `mergeable` côté attestant (CONFLICTING → BLOCKED conflit ; UNKNOWN → HOLD re-mesure).
-- **Fenêtre rate-limited** : après un refus GraphQL (`rate limit already exceeded` avec buckets pleins = limite secondaire), le fallback REST `gh api repos/.../issues/N/comments -f body=...` passe — mais le template doit être **régénéré après** la fenêtre, jamais réutilisé.
+- **Fenêtre rate-limited** : après un refus GraphQL (`rate limit already exceeded` avec buckets pleins = limite secondaire), le fallback REST `gh api repos/.../issues/N/comments --input payload.json` passe (payload `{"body": "..."}` construit hors shell — la forme `-f body=` est interdite, `gh-posting-hygiene` HARD 1) — mais le template doit être **régénéré après** la fenêtre, jamais réutilisé.
 - **Dossier posé EN DERNIER** : toute prose postée après le dossier le périmé (surfaces-sha256).
+
+## Amélioration continue (mandat user 2026-09-21)
+
+« Gardez sous le coude l'amélioration continue, et mettez à jour vos skills régulièrement. » Chaque tell fondateur mesuré en cycle (garde-fou manquant, anti-pattern, instrument faux) est consigné sur le dashboard **puis** reporté dans cette skill par PR dédiée — pas d'édition directe de `main`. Trois défauts muets à chercher en priorité : un instrument qui réimplémente un organe existant (`git grep` le geste dans `scripts/` avant d'écrire du jq de verdict), une absence observée sur un échantillon prise pour une propriété de l'API, une forme d'appel gh non canonique (`-f body=` interdit, `gh-posting-hygiene` HARD 1).
 
 ## Cron
 
