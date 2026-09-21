@@ -380,6 +380,17 @@ def parse_args() -> argparse.Namespace:
                         "panel par un tirage seede de MEME TAILLE hors du panel "
                         "differentiel. Exige --clamp-ids (fournit la taille et les "
                         "exclusions). Distinguer les traces via --prefix.")
+    p.add_argument("--matched-panel", type=int, default=None, metavar="SEED",
+                   help="controle apparie en norme (phase 6b #8236) : tire le "
+                        "panel de controle dans la bande d'activite du panel "
+                        "differentiel (cf --matched-band). Exige --clamp-ids "
+                        "ET --activity-from ; exclusif de --random-panel.")
+    p.add_argument("--activity-from", default=None, metavar="NPZ",
+                   help="trace de reference mi-reseau (couche d'inoculation) "
+                        "fournissant l'activite par feature du tirage apparie.")
+    p.add_argument("--matched-band", type=float, default=2.0, metavar="FACTOR",
+                   help="demi-largeur multiplicative de la bande d'activite du "
+                        "tirage apparie (defaut 2.0 : [m/2, 2m]).")
     p.add_argument("--attn", default=None,
                    help="attn_implementation a forcer (ex: eager) si le defaut echoue")
     p.add_argument("--allow-quantized-readout", action="store_true",
@@ -601,6 +612,62 @@ def random_panel_control(panel_ids: list[int], d_sae: int, seed: int) -> list[in
     return sorted(rng.sample(pool, len(panel_ids)))
 
 
+def ref_activity(path: Path) -> tuple[np.ndarray, dict]:
+    """Activite moyenne par feature depuis une trace de reference mi-reseau.
+
+    MEME statistique que la derivation du panel (notebook ICT-42, cellule de
+    re-derivation) : moyenne des jeux ``code_python`` et ``prose_fr``, |act|
+    accumulee par token sur tous les prompts du jeu. Retourne (activite
+    dense [d_sae], meta de la trace) — la meta porte ``layer``, verifiee par
+    l'appelant contre la couche d'inoculation."""
+    z = np.load(path, allow_pickle=False)
+    meta = json.loads(str(z["__meta__"]))
+    d_sae = int(meta["d_sae"])
+    act = np.zeros(d_sae, dtype=np.float64)
+    for set_name in ("code_python", "prose_fr"):
+        keys = sorted(k for k in z.files
+                      if k.startswith(set_name + "__") and k.endswith("__topk_ids"))
+        if not keys:
+            raise ValueError(f"{path.name} ne contient aucun prompt du jeu "
+                             f"{set_name} : pas d'activite derivable.")
+        n_tok, hits = 0, np.zeros(d_sae, dtype=np.float64)
+        for k in keys:
+            ids = z[k].astype(np.int64).ravel()
+            vals = z[k.rsplit("ids", 1)[0] + "vals"].astype(np.float64).ravel()
+            np.add.at(hits, ids, vals)
+            n_tok += ids.shape[0]
+        act += hits / max(n_tok, 1)
+    return act / 2.0, meta
+
+
+def matched_activity_panel(panel_ids: list[int], activity: np.ndarray, seed: int,
+                           band: float = 2.0) -> tuple[list[int], dict]:
+    """Controle apparie en norme (phase 6b #8236) : tire le panel de controle
+    dans la bande d'activite [m/band, m*band] autour de la moyenne m du panel
+    differentiel, hors du panel, seed reproductible.
+
+    Repond au confondant MESURE en phase 6 (tirage uniforme 80x-770x moins
+    actif que le panel a la couche d'inoculation) : ici la norme effective du
+    clamp est appariee PAR CONSTRUCTION, pas seulement mesuree en aval. Le
+    facteur de bande garde un pool assez large pour ne pas echantillonner un
+    quasi-clone du panel par accident statistique."""
+    m = float(np.mean(activity[panel_ids]))
+    lo, hi = m / band, m * band
+    excluded = set(panel_ids)
+    pool = [i for i in range(len(activity))
+            if i not in excluded and lo <= float(activity[i]) <= hi]
+    if len(pool) < len(panel_ids):
+        raise ValueError(
+            f"pool apparie insuffisant ({len(pool)} candidats dans la bande "
+            f"[{lo:.3g}, {hi:.3g}] pour {len(panel_ids)} features) : elargir "
+            "le facteur de bande.")
+    rng = random.Random(seed)
+    draw = sorted(rng.sample(pool, len(panel_ids)))
+    stats = {"band": (lo, hi), "pool": len(pool), "act_panel": m,
+             "act_draw": float(np.mean(activity[draw]))}
+    return draw, stats
+
+
 class ResidCapture:
     """Hook forward sur une couche decodeur : capture le resid_post et,
     optionnellement, clampe des features SAE (Gate 24) en soustrayant leur
@@ -732,6 +799,17 @@ def main() -> None:
     if args.random_panel is not None and not clamp_ids:
         sys.exit("ERREUR: --random-panel exige --clamp-ids : le panel fournit la "
                  "taille du tirage et les ids a exclure.")
+    if args.matched_panel is not None and not clamp_ids:
+        sys.exit("ERREUR: --matched-panel exige --clamp-ids : le panel fournit la "
+                 "taille du tirage, les ids exclus et l'activite cible.")
+    if args.matched_panel is not None and not args.activity_from:
+        sys.exit("ERREUR: --matched-panel exige --activity-from : la bande "
+                 "d'activite se construit depuis une trace de reference.")
+    if args.activity_from and args.matched_panel is None:
+        sys.exit("ERREUR: --activity-from n'a de sens qu'avec --matched-panel.")
+    if args.random_panel is not None and args.matched_panel is not None:
+        sys.exit("ERREUR: --random-panel et --matched-panel sont deux controles "
+                 "distincts : un seul tirage par trace.")
     if inoculation:
         clamp_depth = _guard(resolve_capture_layer, n_layers, None,
                              args.clamp_frac if args.clamp_frac is not None
@@ -827,6 +905,34 @@ def main() -> None:
         print(f"[panel-controle] {len(clamp_ids)} features tirees hors du panel "
               f"differentiel (seed {args.random_panel}) ; panel d'origine "
               f"conserve dans la meta 'random_panel_excluded'.")
+
+    mstats: dict | None = None
+    if args.matched_panel is not None:
+        # Controle apparie en norme (phase 6b #8236) : la bande d'activite se
+        # construit depuis la reference mi-reseau, qui DOIT etre a la couche
+        # d'inoculation — sinon l'appariement s'annonce sur une autre echelle.
+        ref_path = Path(args.activity_from)
+        if not ref_path.exists():
+            sys.exit(f"ERREUR: --activity-from introuvable : {ref_path}")
+        activity, ref_meta = ref_activity(ref_path)
+        clamp_layer_now = clamp_depth["layer"] if inoculation else layer
+        if int(ref_meta.get("layer", -1)) != int(clamp_layer_now):
+            sys.exit(f"ERREUR: la reference {ref_path.name} est a la couche "
+                     f"{ref_meta.get('layer')} != couche d'inoculation "
+                     f"{clamp_layer_now} : l'activite doit etre mesuree la ou "
+                     "le clamp s'applique.")
+        d_sae_now = int(sae["W_enc"].shape[0])
+        if int(ref_meta["d_sae"]) != d_sae_now:
+            sys.exit(f"ERREUR: d_sae de la reference ({ref_meta['d_sae']}) != "
+                     f"d_sae du SAE ({d_sae_now}).")
+        panel_original = list(clamp_ids)
+        clamp_ids, mstats = matched_activity_panel(
+            clamp_ids, activity, args.matched_panel, band=args.matched_band)
+        print(f"[panel-apparie] {len(clamp_ids)} features tirees dans la bande "
+              f"d'activite [{mstats['band'][0]:.4g}, {mstats['band'][1]:.4g}] "
+              f"(pool {mstats['pool']}, seed {args.matched_panel}) ; activite "
+              f"moyenne panel {mstats['act_panel']:.4g} -> tirage "
+              f"{mstats['act_draw']:.4g}.")
 
     layers = find_decoder_layers(model, n_layers)
     handles = []
@@ -956,6 +1062,18 @@ def main() -> None:
                              else int(args.random_panel)),
             "random_panel_excluded": (None if args.random_panel is None
                                       else panel_original),
+            # Controle apparie en norme (phase 6b #8236) : null par defaut ;
+            # sinon seed du tirage, panel differentiel remplace, bande et
+            # taille du pool candidat (les clamp_ids ci-dessus sont deja le
+            # panel de controle apparie).
+            "matched_panel": (None if args.matched_panel is None
+                              else int(args.matched_panel)),
+            "matched_panel_excluded": (None if args.matched_panel is None
+                                       else panel_original),
+            "matched_panel_band": (None if args.matched_panel is None
+                                   else float(args.matched_band)),
+            "matched_panel_pool": (None if args.matched_panel is None or mstats is None
+                                   else int(mstats["pool"])),
             # Intensite du clamp (pilote #8236) : alpha=1.0 = annulation
             # exacte (Gate 24 historique) ; alpha<1 = inoculation partielle.
             "clamp_scale": float(args.clamp_scale),

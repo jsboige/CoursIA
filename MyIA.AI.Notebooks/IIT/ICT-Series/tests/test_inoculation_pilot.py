@@ -186,3 +186,75 @@ def test_random_panel_refuse_panel_saturant():
     mod = _load_script_module()
     with pytest.raises(ValueError):
         mod.random_panel_control(list(range(10)), d_sae=10, seed=1)
+
+
+# --- controle apparie en norme (phase 6b #8236) ------------------------------
+
+def test_matched_panel_bande_et_exclusion():
+    # Le tirage doit rester dans la bande d'activite du panel ET hors du
+    # panel : c'est l'appariement en norme qui distingue ce controle du
+    # tirage uniforme de la phase 6.
+    mod = _load_script_module()
+    import numpy as np
+    activity = np.full(50, 0.1)          # hors bande par defaut
+    activity[[20, 21, 22, 23, 24, 25]] = 2.5   # dans [m/2, 2m]
+    panel = [5, 10]
+    activity[panel] = [1.0, 3.0]         # m = 2.0 -> bande [1.0, 4.0]
+    drawn, stats = mod.matched_activity_panel(panel, activity, seed=42, band=2.0)
+    assert len(drawn) == len(panel)
+    assert set(drawn).isdisjoint(panel)
+    assert all(1.0 <= activity[i] <= 4.0 for i in drawn)
+    assert stats["pool"] == 6
+
+
+def test_matched_panel_seed_reproductible():
+    mod = _load_script_module()
+    import numpy as np
+    activity = np.linspace(0.5, 2.0, 64)
+    panel = [0, 63]
+    a, _ = mod.matched_activity_panel(panel, activity, seed=7)
+    b, _ = mod.matched_activity_panel(panel, activity, seed=7)
+    c, _ = mod.matched_activity_panel(panel, activity, seed=8)
+    assert a == b                            # seed => tirage identique
+    assert a != c                            # un autre seed deplace le tirage
+
+
+def test_matched_panel_refuse_pool_insuffisant():
+    # Si seules les features du panel vivent dans la bande, le tirage doit
+    # echouer explicitement (jamais revenir au tirage uniforme non apparie).
+    mod = _load_script_module()
+    import numpy as np
+    activity = np.zeros(30)
+    panel = [4, 9, 14]
+    activity[panel] = 1.0                    # bande [0.5, 2.0] : pool vide
+    with pytest.raises(ValueError):
+        mod.matched_activity_panel(panel, activity, seed=1)
+
+
+def test_ref_activity_aggregate_les_deux_jeux(tmp_path):
+    # Verite connue par construction : moyenne des moyennes par jeu, |act|
+    # accumulee par token. Un jeu absent doit etre refuse (pas d'appariement
+    # sur une activite silencieusement moitie moins informee).
+    mod = _load_script_module()
+    import json
+    import numpy as np
+    arrays = {
+        "__meta__": np.array(json.dumps({"d_sae": 6, "layer": 3})),
+        "code_python__0__topk_ids": np.array([[0, 1]]),
+        "code_python__0__topk_vals": np.array([[2.0, 4.0]]),
+        "prose_fr__0__topk_ids": np.array([[2, 2]]),
+        "prose_fr__0__topk_vals": np.array([[3.0, 5.0]]),
+    }
+    p = tmp_path / "ref.npz"
+    np.savez(p, **arrays)
+    act, meta = mod.ref_activity(p)
+    assert meta["d_sae"] == 6 and meta["layer"] == 3
+    # mean_code = [1, 2, 0, ...] (2 tokens), mean_prose = [0, 0, 4, ...]
+    expected = np.array([0.5, 1.0, 2.0, 0.0, 0.0, 0.0])
+    assert np.allclose(act, expected)
+    # Un jeu manquant : refus explicite.
+    np.savez(p, __meta__=arrays["__meta__"],
+             code_python__0__topk_ids=arrays["code_python__0__topk_ids"],
+             code_python__0__topk_vals=arrays["code_python__0__topk_vals"])
+    with pytest.raises(ValueError):
+        mod.ref_activity(p)
