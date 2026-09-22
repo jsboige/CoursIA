@@ -129,9 +129,9 @@ mieux c'est). Un modèle triviale (uniforme) donne une perplexité ≈ taille du
 
 **Modèle bigramme** : P("the cat") = P("the") × P("cat" | "the").
 
-> **Gap du dépôt** : aucun notebook n'implémente les modèles n-grammes, la
-> perplexité ni le lissage — les notebooks de tokenisation s'arrêtent au token,
-> pas à la distribution sur les séquences. Piste de notebook atomique.
+> **Notebook d'appui** : [02_NGrammes_Modeles_De_Langue](../../MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb)
+> implémente les modèles n-grammes, la perplexité et le lissage (gap comblé
+> #16235/#16246).
 
 ---
 
