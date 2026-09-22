@@ -382,6 +382,13 @@ MigrationBackup/
 # Tokens API backup (SÉCURITÉ CRITIQUE)
 .secrets/qwen-api-user.token.backup
 
+# Répertoire de secrets à la racine — RÈGLE DE RÉPERTOIRE (SÉCURITÉ CRITIQUE).
+# Les entrées nominatives ci-dessus ne couvrent que les fichiers déjà connus au moment
+# où on les a ajoutées. master.env et les clés privées d'App GitHub n'étaient masqués
+# que par .git/info/exclude — local, non versionné — donc protégés sur UN clone, pas
+# sur le dépôt. Garde : scripts/ci/check_secret_paths_ignored.py
+.secrets/
+
 # Scripts secrets directory (SÉCURITÉ CRITIQUE)
 scripts/.secrets/
 scripts/docker-configurations/comfyui-qwen/.secrets/
