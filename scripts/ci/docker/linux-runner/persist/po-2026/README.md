@@ -180,7 +180,7 @@ Ce que ca implique pour une procedure de redemarrage :
   couper un job CI reel. Tuer le superviseur seul est sur -- les slots lui
   survivent et terminent leur job.
 
-## Ce que le pool doit fournir dans le PATH -- deux binaires, deux pannes silencieuses
+## Ce que le pool doit fournir -- le contrat de l'image, pas la liste des pannes observees
 
 Le PATH du **process runner** (lu dans `/proc/<pid>/environ`, pas deduit d'un shell) commence par
 `/home/jesse/.cargo/bin:/home/jesse/.elan/bin:/home/jesse/.local/bin:...` : `~/.local/bin` est donc
@@ -217,6 +217,58 @@ pas seulement pour celle de cette machine.
 la reconstruction du 21/09 (apres la purge `C:\dev` du 17/09) a reproduit `pool.sh` et le lanceur, mais
 pas les binaires -- c'est exactement ainsi que les deux pannes sont nees. Toute reconstruction doit
 rejouer les deux commandes de pose.
+
+### Le contrat se lit dans le Dockerfile, et la table ci-dessus etait pilotee par les symptomes
+
+Les deux lignes precedentes ont ete ecrites **apres** deux pannes observees. C'est une methode qui
+**retarde structurellement** : un item du contrat qui n'a pas encore mordu n'y figure pas, donc le
+prochain defaut est necessairement une decouverte. Le contrat reel est celui que l'image
+`scripts/ci/docker/linux-runner/Dockerfile` pose, avec sa rationale -- la source, pas la trace.
+
+Mesure du **2026-09-22** sur les slots natifs (`myia-po-2026-wsl-1/-2`, hors image), item par item,
+depuis le PATH du process runner :
+
+| Item du contrat d'image | Source | Etat mesure sur les slots natifs | Symptome s'il manque |
+|---|---|---|---|
+| `python` (nom nu) | Dockerfile l.23-26 `python-is-python3` | **present** -- `~/.local/bin/python -> /usr/bin/python3` (3.12.3) | `python: command not found`, exit 127 |
+| `gh` | Dockerfile l.70-78, epingle `2.99.0` + SHA-256 | **present, mais 2.90.0** -- divergence de version, impact non mesure | `FileNotFoundError: 'gh'`, `check_exit: 127`, gardes qui sortent **sans poster** |
+| `lsb_release` | Dockerfile l.30-33, pour `setup-python` + `cache: pip` | **present** | `Unable to locate executable file: lsb_release` |
+| `zstd` | Dockerfile l.34-35, pour `actions/cache` / `upload-artifact` | **present** | repli gzip (fonctionne, plus lent) -- non bloquant |
+| `python3-yaml` | Dockerfile l.36-38 | **present** (`yaml 6.0.1`) | `import yaml` echoue, puis le `pip install` de repli echoue aussi |
+| **`PIP_BREAK_SYSTEM_PACKAGES=1`** | Dockerfile l.14-21 + `ENV` l.40 | **ABSENT -- lacune reelle** | le `pip install` de repli est **refuse** par PEP 668, et le workflow meurt sur son propre repli |
+
+**La sixieme ligne est la lecon de la section.** Les cinq premieres sont des **binaires**, et une table
+de binaires ne peut pas attraper la sixieme : c'est une **variable d'environnement**. Le contrat de
+l'image n'est donc pas "des outils dans le PATH", c'est "l'environnement que les workflows supposent".
+
+Mesure de la lacune, firsthand, sur l'hote (2026-09-22) :
+
+```bash
+printf '%s\n' "${PIP_BREAK_SYSTEM_PACKAGES:-<non posee>}"   # -> <non posee>
+ls /usr/lib/python3*/EXTERNALLY-MANAGED                      # -> /usr/lib/python3.12/EXTERNALLY-MANAGED
+python3 -m pip install --dry-run pyyaml                      # -> refuse : "See PEP 668"
+```
+
+L'image documente le cas exact, verbatim (Dockerfile l.14-21) : « Debian marque son Python systeme
+`externally-managed`, donc `pip install <x>` est REFUSE la ou il passe sur ubuntu-latest -- un workflow
+qui fait `import yaml || pip install pyyaml` meurt sur le pip (run 33651913220, Unique Check-Run Names
+Guard). » Un slot natif ne peut pas heriter d'un `ENV` d'image : **le pool doit le poser lui-meme**.
+C'est fait dans `pool.sh` (`export PIP_BREAK_SYSTEM_PACKAGES=1`, avant la boucle de spawn), donc la
+variable est heritee par `run.sh` -> `Runner.Worker` -> les etapes du job, par le meme canal que le
+PATH (mesure : le PATH de `pool.sh` est bien retrouve dans `/proc/<pid>/environ` des listeners).
+
+**Divergence de version sur `gh` : nommee, non corrigee.** L'image epingle `2.99.0` + SHA-256 ; le slot
+natif porte `2.90.0`, pose a la main le 2026-09-22 a **09:40:45Z** (mtime de `~/.local/bin/gh`). Je ne
+pretends pas que cet ecart casse quoi que ce soit -- je ne l'ai pas mesure -- mais il est reel, et il
+est **invisible** tant que la sonde se contente de `command -v gh` : "present" n'est pas "conforme".
+Le corriger = reposer la version epinglee du Dockerfile, avec sa somme ; c'est un geste de parc, pas un
+correctif de cette PR.
+
+**Ce qui reste sans temoin apres cette PR.** Les deux binaires sont presents sur l'hote mais poses **a la
+main**, et aucun run n'a atterri sur `myia-po-2026-wsl-*` depuis leur pose : les runs verts de
+`quarto-pages-deploy` posterieurs (11:18Z, 11:17Z, 11:03Z) ont tous ete pris par `myia-ai-01-wsl-*`,
+donc ils **ne prouvent rien** sur ce parc. L'etat honnete est "reparable et mesure conforme, pas
+observe conforme".
 
 ## Le tool-cache est detruit a chaque respawn -- et ce que cela coute aux autres lanes
 

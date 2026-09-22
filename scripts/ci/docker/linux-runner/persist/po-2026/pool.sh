@@ -15,7 +15,33 @@ exec >>"$BASE/pool.log" 2>&1
 exec 9>"$LOCK" || exit 1
 flock -n 9 || { echo "$(date -Is) pool deja actif ($LOCK)"; exit 0; }
 
+# Contrat de l'image (scripts/ci/docker/linux-runner/Dockerfile), volet ENV — qu'un slot natif ne peut
+# PAS heriter, faute de conteneur. Mesure du 2026-09-22 sur cet hote : le python systeme est marque
+# EXTERNALLY-MANAGED (/usr/lib/python3.12/EXTERNALLY-MANAGED) et `python3 -m pip install --dry-run
+# pyyaml` est REFUSE (PEP 668). C'est le cas exact que le Dockerfile l.14-21 documente : « un workflow
+# qui fait `import yaml || pip install pyyaml` meurt sur le pip ». Le pool pose donc lui-meme la
+# variable ; elle est heritee par run.sh -> Runner.Worker -> etapes du job, par le meme canal que le
+# PATH (mesure : le PATH de pool.sh se retrouve dans /proc/<pid>/environ des listeners).
+export PIP_BREAK_SYSTEM_PACKAGES=1
+
 mint_token() { gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token; }
+
+# Contrat de l'image, volet BINAIRES. Le pool ne telecharge PAS `gh` (l'image l'epingle par SHA-256 :
+# un telechargement non verifie serait un maillon de supply chain pour rien) — il cree le seul lien
+# localement sur (`python` -> python3, idempotent) et CRIE si `gh` manque. Non bloquant a dessein :
+# couper le pool priverait la flotte de capacite pour un defaut qui, lui, produit surtout des verts
+# suspects (les gardes sortent en exit 0 SANS poster, cf. README) — un log qu'on ne peut pas manquer
+# vaut mieux qu'un pool a l'arret. `~/.local/bin` est le 3e repertoire du PATH du runner.
+ensure_host_contract() {
+  local bin="$HOME/.local/bin" rc=0
+  mkdir -p "$bin"
+  [ -x "$bin/python" ] || ln -sf "$(command -v python3)" "$bin/python"
+  [ -x "$bin/python" ] || { echo "$(date -Is) CONTRAT: python nu ABSENT de $bin"; rc=1; }
+  [ -x "$bin/gh" ]     || { echo "$(date -Is) CONTRAT: gh ABSENT de $bin — poser la release Linux officielle (l'image epingle 2.99.0+SHA256) ; sans lui des gardes sortent en exit 0 SANS poster"; rc=1; }
+  [ -n "${PIP_BREAK_SYSTEM_PACKAGES:-}" ] || { echo "$(date -Is) CONTRAT: PIP_BREAK_SYSTEM_PACKAGES non pose"; rc=1; }
+  [ "$rc" -eq 0 ] && echo "$(date -Is) contrat d'image: bins/python OK ($( "$bin/gh" --version 2>/dev/null | head -1 ))"
+  return $rc
+}
 
 ensure_bundle() {
   [ -s "$BUNDLE" ] && return 0
@@ -43,6 +69,9 @@ spawn_slot() { # $1 = slot — bloque jusqu'a la fin du job (ephemere = 1 job)
 }
 
 ensure_bundle || { echo "$(date -Is) telechargement bundle echoue"; exit 1; }
+# Verifie le contrat AVANT d'ouvrir des slots : un contrat incomplet se lit dans pool.log au demarrage,
+# pas trois heures plus tard dans le rouge d'une PR d'une autre lane.
+ensure_host_contract || echo "$(date -Is) contrat d'image INCOMPLET — les jobs servis par ce pool peuvent rendre des faux rouges ou des verts fabriques"
 
 declare -A PIDS
 echo "$(date -Is) pool demarre (POOL_SIZE=$POOL_SIZE)"
