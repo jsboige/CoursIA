@@ -108,6 +108,11 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain'
+      # tegmark_muh_lean (#16753)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
       # self-cover du gate (#8712) : un changement du gate lance le gate
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
@@ -192,6 +197,11 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain'
+      # tegmark_muh_lean (#16753)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
       - '.github/workflows/lean-ci-matrix.yml'
       - '.github/workflows/lean-build.yml'
       - '.github/actions/lean-build/action.yml'

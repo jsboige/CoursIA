@@ -121,7 +121,72 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `epita_symbolic_ai_sherlock` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
 | `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
+| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
+
+### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
+
+**Exception au « 3.10+ » de ce titre** : la série `MyIA.AI.Notebooks/IIT/ICT-Series/` a besoin d'un env en **Python 3.9**. PyPhi 1.2.0 utilise `collections.Iterable`, retiré en 3.10, et tire `pyemd` dont la sdist se compile contre NumPy 2.x (« numpy.dtype size changed » à l'import).
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `pyphi`, Python **3.9** — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_pyphi_env.ps1` (ou `.sh`), `-c conda-forge --override-channels` |
+| Kernelspec | `pyphi` (« Python 3 (PyPhi/IIT) »). **Nom machine-dépendant** : mesuré `pyphi39` sur po-2026, env **et** kernelspec. Résoudre par `jupyter kernelspec list`, jamais par supposition |
+| Artefacts exécutables (source de vérité) | `MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml` (`requires-python = ">=3.9,<3.10"`, `pyphi==1.2.0`, `numpy>=1.21,<2.0`) · `MyIA.AI.Notebooks/IIT/requirements.txt` (install manuel complet, dont `pyemd==0.5.1` = wheel cp39 known-good avec numpy 1.26) |
+| Usage | Strates **cœur Φ** (PyPhi). Les strates LLM/SAE (ICT-21+) utilisent `coursia-sae` (py3.12), **pas** cet env |
+
+**Re-exécution : passer le kernel explicitement** — `timeout 600 jupyter nbconvert --execute --inplace --ExecutePreprocessor.kernel_name=pyphi <nb>` (chemin canonique timeout-wrappé, cf. § « MCP jupyter-papermill HANG (bug #835) » plus bas). Le MCP async ignore `kernel_name` et lit le kernelspec **stocké** dans le notebook : sans ce paramètre, la re-exécution tourne sous le kernel du notebook, pas sous `pyphi`.
+
+**Ce que la mesure réfute (2026-09-21, #17185).** Sur 77 notebooks `ICT-Series/`, le kernelspec stocké se répartit ainsi : `python3` **72**, `pyphi` **2**, absent 2, `coursia-ml-training` 1. Le kernelspec stocké **n'est pas** la cause du drift `Kernel drift guard` : les **2 seuls** notebooks qui importent `pyphi` (`ICT-01-PhiTrajectories`, `ICT-05-CausalEmergence`) sont **exactement ceux** qui portent déjà `kernelspec.name = pyphi`. Normaliser les 72 autres n'aurait aucun effet — ils n'importent pas PyPhi.
+
+**Ce que la mesure établit (2026-09-21, #17185) — le corpus n'a pas UN env, il en a neuf.** Le champ `metadata.language_info.version` de chaque notebook enregistre l'interpréteur qui a produit les outputs **committés**. C'est exactement la variable que compare le `Kernel drift guard`, et elle est donc lisible dans le dépôt, notebook par notebook. La table ci-dessous est **reproductible** : `python scripts/notebook_tools/notebook_env_census.py MyIA.AI.Notebooks/IIT/ICT-Series`.
+
+| `language_info.version` | notebooks | kernelspec stocké |
+|---|---:|---|
+| 3.13.3 | 19 | `python3` |
+| 3.13.14 | 18 | `python3` |
+| 3.13.7 | 12 | `python3` |
+| 3.12.13 | 9 | `python3` 8 · `coursia-ml-training` 1 |
+| 3.13.15 | 6 | `python3` |
+| 3.9.25 | 4 | `pyphi` 2 · `python3` 2 |
+| 3.11.15 | 4 | `python3` |
+| 3.11.9 | 2 | `python3` |
+| 3.10.11 | 1 | `python3` |
+| 3.10.19 | 1 | `python3` |
+| (absent) | 1 | `python3` |
+
+Trois conséquences, à ne pas séparer :
+
+1. **L'artefact pinné ne décrit qu'une strate.** `ICT-Series/pyproject.toml` épingle `requires-python = ">=3.9,<3.10"` (l.26) et `numpy>=1.21,<2.0` (l.36), or **4 notebooks sur 77 seulement** portent des outputs venus de Python 3.9. Les 73 autres sont au-dessus (55 en 3.13.x, 9 en 3.12.13) : une re-exécution sous l'env pinné **produira** du drift contre leurs outputs committés, par construction. Ce n'est pas un accident d'exécution, c'est le pin qui ne couvre pas la population.
+2. **« notebook déjà conforme » n'a donc pas de sens absolu** : il n'y a de conformité que *relativement à un env nommé*. Le critère d'acceptation de #17185 — « une re-exécution sous cet env ne produit plus de drift sur les notebooks déjà conformes » — ne se lit donc que restreint à la **strate Φ (3.9)** sous `pyphi`, jamais pour la série entière.
+3. **Corollaire opératoire** : re-exécuter un notebook ICT **change sa provenance**. Une PR qui ré-exécute sous 3.13 un notebook dont les outputs viennent de 3.9 fabrique le drift qu'elle prétend corriger — et l'inverse aussi. C'est la lecture qui rend compte des 6 cellules de #16675.
+
+**Instrument à ne pas surinterpréter.** Le repr NumPy 2 des scalaires (`np.float64(0.1)` au lieu de `0.1`) n'apparaît dans les **outputs** que de 3 notebooks (75 occurrences : 56 sur un notebook à 3.13.14, 19 sur deux à 3.13.7) et **jamais** dans les 19 notebooks à 3.13.3. L'instrument est **unilatéral** : sa *présence* prouve NumPy 2, son *absence* ne prouve rien (aucun contrôle positif — ces notebooks n'impriment simplement pas de repr de scalaire). La génération NumPy des 74 autres **n'est pas établie** par l'inspection des outputs : ne pas conclure « NumPy 1 » d'une absence.
+
+**La seconde moitié de l'acceptance de #17185 est mesurée sur la strate entière (2026-09-21).**
+
+Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** viennent de Python 3.9.25, donc les seuls *déjà conformes* à l'env pinné — ont été ré-exécutés sous le kernel `pyphi39` de cette machine (Python 3.9.25, NumPy 1.26.4, PyPhi 1.2.0), puis comparés aux outputs committés **dans les unités du garde** (import de `check_kernel_drift.float_signatures` / `diff_signatures` / `kernel_info` / `diff_kernel`, jamais une comparaison réécrite) :
+
+| Notebook (strate Φ) | cellules · tokens float | `diff_signatures` | `diff_kernel` | santé | durée |
+|---|---|---:|---|---|---|
+| `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
+| `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
+| `ICT-18-ArrowOfTimeReversibilization` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
+| `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
+
+Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
+
+**Conclusion.** Sous l'env canonique, la ré-exécution des notebooks déjà conformes ne produit **aucun** drift — ni de noyau, ni de signature float. C'est la seconde moitié de l'acceptance de #17185, et elle est vérifiée sur la **population entière** que cette acceptance nomme (4/4), pas par échantillon. Elle ne dit **rien** des 73 notebooks au-dessus de 3.9 (cf. « Reste ouvert »).
+
+**Le contrôle positif est obligatoire, et ce n'est pas une précaution de style.** `nbconvert --inplace` **n'écrit le fichier qu'en cas de succès** : une exécution qui échoue laisse l'artefact **byte-identique** à la version committée, et toute comparaison rend alors « aucune dérive » — **vacuement**, en confrontant le notebook **avec lui-même**. C'est arrivé au premier passage : `ModuleNotFoundError: No module named 'matplotlib'`, artefact intact, verdict vert. Chaque notebook ci-dessus n'entre donc dans la mesure **qu'après** vérification que son empreinte `sha256` a changé (`sha256sum` avant/après) ; sinon la ligne est déclarée vacue et **non comptée**. **Règle : avant d'interpréter une comparaison de drift comme une mesure, prouver que l'artefact a effectivement changé.**
+
+**Et le garde ne voit que le travail COMMITÉ.** `check_kernel_drift.changed_notebooks()` fait `git diff <base> HEAD -- *.ipynb` : sur une ré-exécution encore dans l'arbre de travail, il rend `OK ... across 0 changed notebooks` — il n'a **rien regardé**. Ce `OK` n'est pas une preuve de non-drift, c'est une preuve de non-commit. Les 4 ré-exécutions ont donc été commitées dans un **worktree jetable** (jamais poussé : les notebooks ICT ne sont pas le livrable de cette PR) avant de citer le garde.
+
+**Piège d'outillage, rencontré en commitant ces mesures.** Le hook pré-commit H.3 (`check_null_exec.py`) **crashe** quand le `python` du shell est celui de l'env ICT : `validate_pr_notebooks.py:128` annote `paths: list[str] | None`, une union PEP 604 évaluée à l'import, qui lève `TypeError: unsupported operand type(s) for |` sur Python 3.9. Or c'est **exactement** la situation de la re-exécution ICT — l'env qui exécute le notebook est py3.9 et se retrouve en tête de `PATH`. Le hook sort en échec (fail-closed, donc rien de dangereux) mais **sans rapport avec le notebook** : committer depuis un shell où py3.9 est actif ne dit rien de la validité de la mesure. Committer avec un `python` ≥ 3.10.
+
+**Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
+
+**Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 

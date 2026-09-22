@@ -173,11 +173,42 @@ REPO = "jsboige/CoursIA"
 # si label `candidate-delivered` OU marqueur `[INFO] candidate-delivered` en
 # commentaire. Le sweep quotidien retracte le label sur activite de commentaire
 # (le marqueur lui-meme en fait partie), donc certaines LIVRE-urn restent
-# invisibles au seul filtre labels. Le pattern matche les deux formes
-# employees par les lanes : `[INFO] candidate-delivered` et `[INFO
-# candidate-delivered]` (espace au lieu de `]`).
+# invisibles au seul filtre labels. Trois formes employees par les lanes
+# (mesure #17263 c.754, Tell c.534 L1 ★★ fondateur, Tell c.488 ★★★
+# audit-reassessment) :
+#   - `[INFO] candidate-delivered`        (canonique, fermante `]`)
+#   - `[INFO candidate-delivered]`        (espace au lieu de `]`)
+#   - `[INFO] lane <machine:workspace> -- <sujet> -- candidate-delivered <suite>`
+#                                       (annonce, le mot n'est pas immediatement
+#                                       apres `[INFO` mais sur la meme ligne)
+# Forme etroite Tell c.488 ★★★ : la 3e alternative exige `candidate-delivered`
+# borne par `\b` (mot complet) sur la MEME ligne qu'un `[INFO]` en tete, pour
+# eviter qu'une mention discursive du mecanisme (n'importe ou dans un
+# commentaire) fausse l'exclusion. La 1re et 2e formes restent matchees par la
+# regex d'origine (espace apres `[INFO`). La 3e forme (annonce) exige la
+# mention explicite d'un discriminant de klasse (`lane <m:w>`, `signal`,
+# `livré(e)`, ou `verification first-hand`) SUR LA MEME LIGNE que
+# `[INFO]` et avant `candidate-delivered` -- sinon une mention discursive du
+# mecanisme (cf. test anti-FP `test_marker_no_match_discursive_mention`)
+# serait classee a tort comme marqueur de livraison. Forme etroite Tell
+# c.488 ★★★ fondateur.
+#
+# Ancrage en debut de ligne (`^\s*` + MULTILINE) : evite les mentions
+# incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
+# dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
+# mais n'est pas l'en-tête du commentaire. Tell c.488 ★★★ fondateur du
+# pattern anti-FP.
 _DELIVERED_MARKER_RE = re.compile(
-    r"\[INFO[\s_]candidate-delivered", re.IGNORECASE)
+    r"(?:"
+    r"^\s*\[INFO\]\s+candidate-delivered"
+    r"|"
+    r"^\s*\[INFO\s+candidate-delivered\]"
+    r"|"
+    r"^\s*\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
+    r"verification first-hand)[^\n]*\bcandidate-delivered\b"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def _has_delivered_marker(issue_number: int) -> bool | None:

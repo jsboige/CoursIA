@@ -97,8 +97,9 @@ public sealed class AgentSessionGrain : Grain, IAgentSessionGrain
     public async Task RouteTokensAsync(string modelKey, int tokens)
     {
         // Exercice 3 : cumuler dans la session ET router vers le compteur du modele.
-        // Indice : GetGrainFactory().GetGrain<ITokenCounterGrain>(modelKey) donne le
-        // compteur du modele ; RecordUsage y cumule.
+        // Indice : la propriete protegee GrainFactory (heritee de Grain) donne le
+        // compteur du modele : GrainFactory.GetGrain<ITokenCounterGrain>(modelKey) ;
+        // RecordUsage y cumule.
         // Etape 1 : cumuler tokens dans _tokenTotal.
         // Etape 2 : recuperer le grain compteur du modele via la cle modelKey.
         // Etape 3 : lui deleguer RecordUsage(tokens) avec await.

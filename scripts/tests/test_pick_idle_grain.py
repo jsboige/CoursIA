@@ -2673,3 +2673,129 @@ def test_marker_regex_matches_both_bracket_forms(monkeypatch):
     notes = pig.recent_delivery(picks)
     assert 14373 in notes
     assert picks[0]["klass"] == "delivered"
+
+
+# --- #15910 (port #16025) : falsifications additionnelles sur le fix #15981 --
+#
+# #16025 (concurrente de #15981 sur le meme axe) portait sa propre
+# implementation ; resolue contre main post-#15981, seule l'implementation du
+# twin (deja live) survit. Ne sont portees que les deux falsifications que la
+# suite du twin n'a pas : la reproduction du SEUIL `count` sur trois PRs
+# simultanees (le coeur de l'incident du 2026-09-13), et le bout en bout
+# banniere-FAIL (le negative du twin s'arrete au niveau du fetch).
+
+
+def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
+    """La reproduction de l'incident : 3 PRs en DWELL ne declenchent plus le P0.
+
+    #15888/#15895/#15902, toutes vertes hors gate, toutes en DWELL : sur le
+    picker d'avant, `triggers == ["count"]` et le cycle basculait sur une
+    reparation inexistante. Le twin couvre la PR isolee ; ce test couvre le
+    seuil -- c'est lui qui a fait basculer le P0 ce jour-la.
+    """
+    _patch_organs(monkeypatch, {})
+    runs = {424242 + n: {"dwell_min": 120, "remaining_min": 113,
+                         "lift_at": "2026-09-13T14:14:44Z"} for n in (1, 2, 3)}
+    _patch_dwell(monkeypatch, runs)
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["triggers"] == []
+    assert [d["number"] for d in out["dwell_waiting"]] == [1, 2, 3]
+    for item in out["dwell_waiting"]:
+        assert item["check"] == "PR gate"
+        assert item["lift_at"] == "2026-09-13T14:14:44Z"
+
+
+def test_organs_banner_still_blocks_end_to_end(monkeypatch):
+    """Banniere-FAIL != DWELL : bout en bout, le rouge d'organe reste reparable.
+
+    Le negative du twin (`fetch_check_dwell` rend None sur une annotation
+    d'organe) s'arrete au niveau du fetch. Ici le chemin ENTIER, depuis le
+    message REEL du gate (banniere FAIL nommant un check tombant) : un
+    agregateur rouge PARCE QU'un organe est tombe doit rester un grain a
+    reparer -- cause emise, declencheur `count` arme, AUCUNE dispense DWELL.
+    Si un detecteur trop large prenait la banniere FAIL pour un plancher, la
+    reparation du vrai rouge serait annulee par un minuteur sans rapport.
+    """
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert "count" in out["triggers"]
+    assert out["dwell_waiting"] == []
+
+
+# --- LIVRÉ-urn : variantes du marqueur (issue #17263, c.754) --------------
+# Mesure first-hand : 3 formes employees par les lanes, dont la forme
+# canonique `[INFO] candidate-delivered` (avec fermante `]`) n'etait PAS
+# detectee par le motif `\[INFO[\s_]candidate-delivered` parce que la
+# fermante `]` cassait la continuite apres `[INFO`. Verifie Tell c.1086 §B
+# strict et Tell c.488 ★★★ audit-reassessment (LP fondateur : le test
+# `test_marker_only_surfaces_delivered_urn` ne couvrait que la forme 2).
+
+
+def test_marker_form_1_canonical_with_bracket(monkeypatch):
+    """Forme 1 (canonique, fermante `]`) : `[INFO] candidate-delivered` --
+    la plus naturelle, employee par les lanes recemment ; doit etre
+    detectee par le motif elargi."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(),
+            _delivered_marker_comment(
+                body="[INFO] candidate-delivered — verification first-hand "
+                     "du geste 1 sur origin/main, MERGE 6d0bd02093."),
+        ]})
+    picks = [_pick(n=14373)]
+    notes = pig.recent_delivery(picks)
+    assert 14373 in notes
+    assert "[INFO]" in notes[14373]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_marker_form_3_announcement_lane(monkeypatch):
+    """Forme 3 (annonce lane) : `[INFO] lane <machine:workspace> -- <sujet>
+    -- candidate-delivered <suite>` -- le mot n'est pas immediatement apres
+    `[INFO` mais sur la meme ligne. Tell c.534 L1 ★★ fondateur."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(
+                body="[INFO] lane myia-po-2026:CoursIA-2 — c.678 reprise "
+                     "(tick 4) — candidate-delivered signal pour issue #16053"),
+        ]})
+    picks = [_pick(n=16053)]
+    notes = pig.recent_delivery(picks)
+    assert 16053 in notes
+    assert "[INFO]" in notes[16053]
+    assert picks[0]["klass"] == "delivered"
+
+
+def test_marker_no_match_discursive_mention(monkeypatch):
+    """Anti-FP Tell c.488 ★★★ : un commentaire qui MENTIONNE le mecanisme
+    `candidate-delivered` sans etre un marqueur de livraison ne doit PAS
+    declencher la klasse `delivered`. La forme etroite exige `candidate-
+    delivered` comme mot complet (`\b`) sur la MEME ligne qu'un `[INFO]`
+    en tete."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            {"body": "[INFO] voici une analyse du mecanisme candidate-delivered "
+                     "et de ses variantes."},
+            {"body": "[INFO] diagnostic general, pas de signal livraison."},
+        ]})
+    picks = [_pick(n=14374)]
+    notes = pig.recent_delivery(picks)
+    # PAS de signal car la 1re forme est une mention discursive ([INFO] n'est
+    # PAS en tete de ligne pour la 2e variante, et la 1ere n'a pas le mot
+    # sur la meme ligne que [INFO]).
+    assert notes == {}
+    assert picks[0]["klass"] == "grain"
