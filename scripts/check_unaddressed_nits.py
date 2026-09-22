@@ -3861,7 +3861,33 @@ _ADJOINT_DOSSIER_SPAN = re.compile(
 
 
 def _strip_adjoint_dossier(body: str) -> str:
-    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites."""
+    """Retirer les spans d'attestation [ADJOINT PREFLIGHT] bien delimites.
+
+    #17065 -- deux formes d'inertie, l'une ancienne, l'une nouvelle :
+
+    1. (depuis #16442) tout bloc bien delimite est retire du corps, ou qu'il
+       soit ; la prose autour reste lue.
+    2. (nouveau) un commentaire qui OUVRE sur un bloc bien delimite est un
+       dossier DANS SON INTEGRALITE : la prose qui suit le marqueur fermant
+       est la NARRATIVE du dossier (verifications firsthand, disposition),
+       pas des remarques. Le gate `check_adjoint_prevalidation.py` lit le
+       bloc et ignore expressement cette queue (« Prose FOLLOWING the
+       closing marker is ignored, not refused ») : le dossier communique
+       par le gate, pas par les marqueurs B.0. Defaut mesure (#16862,
+       2026-09-19) : la phrase d'attestation obligatoire « Aucun merge,
+       APPROVED ou CHANGES_REQUESTED effectue ici » de la queue narrative
+       etait comptee comme une reserve POSEE -- le dossier qui portait
+       `b0: clear` devenait son propre bloquant, et via la delegation du
+       picker (4e cause de repair -> ce meme organe), 8 lanes sur 8 se
+       retrouvaient en mode repair pendant que 313 issues sur 390
+       restaient admissibles.
+
+    Fail-closed inchange : un bloc MALFORME (ouvrant sans fermant) n'est pas
+    retire ni n'inertit rien ; la prose PRECEDANT le bloc (tete de pierre
+    tombale comprise) reste lue normalement.
+    """
+    if _ADJOINT_DOSSIER_SPAN.match(body.lstrip("\r\n \t")):
+        return ""  # dossier ouvrant : attestation entiere, queue comprise
     return _ADJOINT_DOSSIER_SPAN.sub("", body)
 
 
@@ -3884,10 +3910,20 @@ def _strip_adjoint_dossier(body: str) -> str:
 # de la réserve X » qui ÉMETTRAIT une réserve NEUVE en corps — résidu
 # hérité de #16700 (corps mixte levée+réserve), mesuré : 0 corps pareil
 # sur 1718 corps des 200 dernières PRs mergées, delta classify = 0.
+# #16700-bis (mesuré #16098, jsboige 2026-09-20) : « **Levée formelle de
+# la réserve clusterManager (...).** Le fix `62d791c` livre ... » —
+# l'adjectif interposé entre « Levée » et « de la réserve » faisait rater
+# l'ouverture, et le corps (attestation d'un fix, aucun résidu vivant)
+# tombait en BOT-CONCERN : la levée de l'autorité comptée comme réserve
+# (régime absorbant #16381). Ensemble FERMÉ d'adjectifs mesurés
+# {tierce, formelle} — pas de classe ouverte [\w]+ : une négation
+# interposée (« Levée impossible de la réserve ») ne doit pas matcher.
+# Near-miss documenté : « officielle », « expresse » hors ensemble
+# jusqu'à mesure réelle.
 _OPENING_LIFT_RE = re.compile(
     r"^(?:#{1,6}[ \t]+)?(?:\*\*[ \t]*)?"
     r"(?:r[ée]serve[ \t]+(?:lev[ée]e|dissip[ée]e)"
-    r"|lev[ée]e[ \t]+(?:tierce[ \t]+)?de[ \t]+(?:la[ \t]+)?r[ée]serve"
+    r"|lev[ée]e[ \t]+(?:(?:tierce|formelle)[ \t]+)?de[ \t]+(?:la[ \t]+)?r[ée]serve"
     r"|je[ \t]+l[eéè]v\w*[ \t]+(?:la[ \t]+)?r[ée]serve)",
     re.IGNORECASE,
 )

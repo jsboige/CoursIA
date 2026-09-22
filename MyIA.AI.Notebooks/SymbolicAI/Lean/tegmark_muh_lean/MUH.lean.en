@@ -1,0 +1,48 @@
+/-!
+
+# Library on finite mathematical structures (Appendix A, Tegmark R16)
+
+Constructive **Lean 4 library** illustrating the definition of a *finite
+mathematical structure* as given in Appendix A of Tegmark (2007), *The
+Mathematical Universe* ([arXiv:0704.0646](https://arxiv.org/abs/0704.0646)).
+
+This root module is an **import aggregator**. It plays the role of a
+**bilingual entry point** for the i18n convention of EPIC #4980, i.e. it
+carries the documentation of the library in its two reference languages. The
+goal is to facilitate reading by French-speaking and English-speaking
+audiences from a single entry point, without duplicating the tactical
+substance: the scientific modules (`MUH.Structure`, `MUH.Encoding`,
+`MUH.Boolean`, `MUH.Cyclic`, `MUH.Decidable`) stay monolingual.
+
+## Why reintroduce the MUH in Lean?
+
+Tegmark (Appendix A §1) states that **the equivalence of two finite structures
+is decidable by a halting algorithm** — this is the foundation of the **CUH**
+(Computable Universe Hypothesis) in §VII.E. Formalising this decidability
+constructively in Lean 4:
+
+  - **secures** the bridge between "mathematical structure" (concept) and
+    "program that generates it" (artefact),
+  - **isolates** the general definition from its examples (Boolean, C₂, C₃),
+  - **illustrates** the composition of relations (rule (3) of §1) without
+    depending on Mathlib.
+
+This is what this library does. The modules:
+  - `MUH.Structure`: signature of a finite structure (sets + generating
+    relations + arities/types + value table).
+  - `MUH.Encoding`: encoding per Tegmark §c (`# of sets | # of relations |
+    sizes... | rels...`) and complexity `H(s) = Σᵢ log₂(2 + kᵢ)` (§d).
+  - `MUH.Boolean`: 2-element Boolean algebra, with proof that the 1-generator
+    definition (Sheffer / NAND) is equivalent to the 8-generator definition
+    (Tegmark §2a).
+  - `MUH.Cyclic`: cyclic groups C₂ and C₃ (Tegmark §2b).
+  - `MUH.Decidable`: halting enumerative algorithm to decide equivalence in
+    the restricted case (arity ≤ 2, cardinality ≤ 3). -/
+
+
+/-- Sub-libraries of MUH, exposed through a single import. -/
+import MUH.Structure
+import MUH.Encoding
+import MUH.Boolean
+import MUH.Cyclic
+import MUH.Decidable
