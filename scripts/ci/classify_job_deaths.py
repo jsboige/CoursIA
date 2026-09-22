@@ -20,8 +20,24 @@ lit et rend le motif comptable sans intervention manuelle :
     suivantes en ``null`` : l'agent a perdu la connexion en cours de route.
   * ``TIMEOUT``              -- "has exceeded the maximum execution time"
     (``timeout-minutes`` du workflow).
-  * ``REAL_STEP_FAILURE``    -- au moins une etape en ``failure`` : le vrai
-    rouge de contenu, le seul qui exige une correction du code.
+  * ``OOM``                  -- "Out of memory." Job failure, runner assigne,
+    etape courante en ``null`` (jamais resolue), aucune etape en ``failure`` :
+    le parc a manque de memoire et le job est mort en cours d'execution. La
+    cause est le PARC, pas le diff.
+  * ``WORKER_DEATH``         -- mort du parc qui se manifeste en ``failure``
+    d'ETAPE : le worker xdist meurt (famine de ressources), le pool se detruit,
+    pytest sort en ``INTERNALERROR`` ou laisse une exception de teardown ;
+    l'etape conclud ``failure`` et l'annotation reste **generique**
+    ("Process completed with exit code 1."). RIEN, cote check-run, ne distingue
+    ce cas d'un rouge de contenu -- le LOG est la seule surface qui les separe,
+    et il faut l'avoir pour trancher. Mesure 2026-09-21 sur trois jobs de la
+    meme suite, trois runners du meme hote : deux morts de worker (aucun test
+    nomme au log, signature de mort presente) et un vrai rouge de contenu
+    (``short test summary`` avec le test nomme). Classe deliberement
+    **conservatrice** : ``short test summary`` present -> jamais reclasse.
+  * ``REAL_STEP_FAILURE``    -- au moins une etape en ``failure`` ET aucun
+    signe de mort de session au log : le vrai rouge de contenu, le seul qui
+    exige une correction du code.
   * ``CANCELLED_OTHER``      -- cancelled sans annotation d'acquisition :
     concurrence (``cancel-in-progress`` inconditionnel, ex. quarto), annulation
     manuelle ou supersession.
@@ -64,8 +80,55 @@ ANNOTATION_CLASSES: list[tuple[str, str]] = [
     ("not acquired by Runner", "NO_RUNNER_ACQUIRED"),
     ("lost communication with the server", "RUNNER_LOST_COMM"),
     ("exceeded the maximum execution time", "TIMEOUT"),
+    # Mesure 2026-09-21 (job 106270875399, runner myia-ai-01-wsl-8) : GitHub
+    # pose l'annotation "Out of memory." sur un job tue par le parc. Sans
+    # cette entree la classe tombait en UNCATEGORIZED_FAILURE et le rapport
+    # annoncait "morts infrastructurelles : 0" -- l'instrument rendait la mort
+    # indistinguable d'un rouge de contenu, soit exactement ce qu'il existe
+    # pour supprimer.
+    ("Out of memory", "OOM"),
     ("The runner has received a shutdown signal", "RUNNER_LOST_COMM"),
 ]
+
+# Classes dont la cause est le PARC et non le diff. Source unique : la somme
+# ``infra`` et son detail sont tous deux derives de cette constante, pour
+# qu'une classe ajoutee ici ne puisse pas rester hors du total. La forme
+# precedente nommait ces classes DEUX fois -- la somme dans un tuple, le
+# detail dans une f-string -- et une troisieme classe n'aurait ete comptee
+# que si les deux sites etaient edites (c'est par la que OOM est passe :
+# classable, mais hors somme).
+INFRA_DEATH_CLASSES: tuple[str, ...] = (
+    "NO_RUNNER_ACQUIRED",
+    "RUNNER_LOST_COMM",
+    "OOM",
+    "WORKER_DEATH",
+)
+
+# Signatures de mort de SESSION, lues au LOG (pas a l'annotation). Deux sont
+# mesurees firsthand le 2026-09-21 sur des jobs de la meme suite, meme hote :
+#   * "can't start new thread"        -- job 106268236606 (runner wsl-7) :
+#     `pthread_create` rend EAGAIN, stack dans le teardown d'execnet
+#     (multi.py termkill -> gateway_base.py _thread.start_new_thread).
+#   * "KeyError: <WorkerController"   -- job 106253882998 (runner wsl-8) :
+#     le worker `gw5` meurt en cours de session, le scheduleur loadscope
+#     d'xdist leve sur un worker encore enregistre (loadscope.py _assign_work_unit).
+# La troisieme est RAPPORTEE (triage po-2025, job 106258931264) et non relue
+# par moi : abort natif de la roue Linux de HiGHS.
+WORKER_DEATH_SIGNATURES: tuple[str, ...] = (
+    "can't start new thread",
+    "KeyError: <WorkerController",
+    "Fatal Python error: Aborted",
+)
+
+# Marqueur du bloc que pytest imprime quand il a NOMME des tests en echec. Sa
+# presence est ce qui rend une reclassification impossible : si pytest a
+# nomme un test, c'est un rouge de contenu, meme si un teardown echoue ensuite.
+TEST_SUMMARY_MARKER = "short test summary"
+
+# Cap de lecture du log : les logs mesures font 74-467 Ko ; au-dela de cette
+# borne on lit quand meme (le motif chercher est court) mais on garde une
+# limite pour ne pas charger un log aberrant en memoire.
+LOG_CAP_BYTES = 8_000_000
 
 
 def gh_api(path: str, params: str = "") -> dict | list:
@@ -132,6 +195,54 @@ def fetch_annotations(job_id: int) -> list[dict]:
             raise
         return []
     return data if isinstance(data, list) else []
+
+
+def fetch_job_log(job_id: int) -> str:
+    """Log brut d'un job, ou "" quand le blob est absent.
+
+    Le log est la SEULE surface qui separe une mort de worker d'un rouge de
+    contenu des lors que l'etape conclud ``failure`` avec une annotation
+    generique. Un job tue avant l'upload rend ``BlobNotFound`` : c'est un
+    resultat legitime (la mort est alors deja nommee par l'annotation), pas
+    une erreur -- mais tout autre echec doit remonter bruyamment, sinon
+    l'instrument perdrait precisement la cause qu'il doit nommer.
+    """
+    url = f"repos/{REPO_SLUG}/actions/jobs/{job_id}/logs"
+    result = subprocess.run(
+        ["gh", "api", url],
+        capture_output=True,
+        timeout=120,
+        encoding="utf-8",
+        errors="replace",
+    )
+    body = result.stdout or ""
+    if result.returncode != 0:
+        if "BlobNotFound" in body or "BlobNotFound" in (result.stderr or ""):
+            return ""
+        raise RuntimeError(
+            f"gh api {url} failed: {(result.stderr or '').strip()[:200]}"
+        )
+    if "BlobNotFound" in body:
+        return ""
+    return body[:LOG_CAP_BYTES]
+
+
+def worker_death_from_log(log_text: str) -> bool:
+    """Le log montre-t-il une mort de session plutot qu'un rouge de test ?
+
+    Conservateur PAR CONSTRUCTION, sur deux conditions mesurees le 2026-09-21 :
+      * une SIGNATURE de mort de session est presente ; ET
+      * pytest n'a NOMME aucun test en echec (pas de bloc
+        ``short test summary``).
+    Le second point est le garde-fou : un rouge de contenu peut preceder un
+    teardown qui echoue, et ce cas doit RESTER un rouge de contenu. Un log
+    absent ne reclasse rien (on garde le verdict de l'etape).
+    """
+    if not log_text:
+        return False
+    if TEST_SUMMARY_MARKER in log_text:
+        return False
+    return any(sig in log_text for sig in WORKER_DEATH_SIGNATURES)
 
 
 SHA_RE = re.compile(r"[0-9a-fA-F]{40}")
@@ -242,6 +353,15 @@ def analyse_runs(runs: list[dict]) -> dict:
             continue
         for job in jobs:
             klass = classify_job(job, fetch_annotations(job["id"]))
+            if klass == "REAL_STEP_FAILURE" and worker_death_from_log(
+                fetch_job_log(job["id"])
+            ):
+                # Le fetch du log est borne a cette SEULE classe ambigue : une
+                # etape a conclu `failure`, mais le log ne nomme aucun test et
+                # porte une signature de mort de session -- c'est le parc, pas
+                # le contenu. Les autres classes sont tranchees par
+                # l'annotation, sans cout reseau supplementaire.
+                klass = "WORKER_DEATH"
             if klass in ("SUCCESS", "SKIPPED"):
                 continue
             steps = job.get("steps") or []
@@ -271,16 +391,16 @@ def analyse_runs(runs: list[dict]) -> dict:
 def render_markdown(payload: dict) -> str:
     counts = payload["counts"]
     total = sum(counts.values())
-    infra = sum(
-        counts.get(k, 0) for k in ("NO_RUNNER_ACQUIRED", "RUNNER_LOST_COMM")
+    infra = sum(counts.get(k, 0) for k in INFRA_DEATH_CLASSES)
+    breakdown = ", ".join(
+        f"{k}={counts.get(k, 0)}" for k in INFRA_DEATH_CLASSES
     )
     out = ["# Audit job deaths (issue #15055)", ""]
     timeout = counts.get("TIMEOUT", 0)
     out.append(
         f"Jobs morts non-skips analyses : **{total}** | "
         f"morts infrastructurelles : **{infra}** "
-        f"(NO_RUNNER_ACQUIRED={counts.get('NO_RUNNER_ACQUIRED', 0)}, "
-        f"RUNNER_LOST_COMM={counts.get('RUNNER_LOST_COMM', 0)}) | "
+        f"({breakdown}) | "
         f"REAL_STEP_FAILURE={counts.get('REAL_STEP_FAILURE', 0)} | "
         f"TIMEOUT={timeout} (config timeout-minutes, hors sante du parc) | "
         f"AUTRES={total - infra - counts.get('REAL_STEP_FAILURE', 0) - timeout}"
