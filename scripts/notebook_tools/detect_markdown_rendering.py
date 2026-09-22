@@ -79,6 +79,20 @@ Rules
   missing-newlines rule is silent and only this rule sees the split. Corpus measure
   2026-08-25: 0 hits repo-wide — a pure cliquet, ERROR is safe because ``--check``
   only blocks NEW violations.
+- ``repr_quoted_source_entries`` (ERROR, #16221): a markdown cell whose source
+  contains lines that are themselves JSON-encoded list elements (the literal
+  output of ``json.dumps(["..."])`` or the canonical nbformat ``repr`` of
+  ``cell.source``). Such a line starts with a 4-space indent, a single quote
+  char (NOT a Python triple-quoted string opening), ends with the JSON-quote
+  closer followed by optional comma/newline, and the last content character
+  (before the closer) is not a sentence-ending punctuation mark. The founding
+  incident (Tell c.1158-L1): the 4.2e Focal-Loss notebook had cells 19/20
+  whose ``source`` was JSON-dumped list entries pasted verbatim, rendering as
+  literal escaped JSON (e.g. ``"# 4.2e -- section heading\\n"``) instead of
+  as proper markdown. The earlier ``markdown-rendering guard`` was a faux
+  negatif on this class (the source-list structure was intact; only the
+  content is wrong on render). Fence-aware: a repr-quoted line inside a
+  Python/markdown fenced code block is a legitimate example, not a defect.
 
 The correct fix for frontmatter cells is to move the metadata into the notebook
 ``metadata`` (invisible, machine-readable) OR render it inside a fenced ```yaml block
@@ -162,6 +176,32 @@ RULE_SEVERITY = {
     # block, which is exactly the cliquet the issue asks for ("la prochaine
     # tranche ne puisse pas l'introduire sans rougir").
     "source_list_broken_words": ERROR,
+    # #16221 (Tell c.1158-L1): ERROR (bloquant) -- a markdown cell whose source
+    # line starts with 4-space + JSON-quote opener and ends with the JSON-quote
+    # closer + optional comma + optional newline is a repr-quoted Python-list
+    # entry (a string from a JSON-dumped nbformat `source`). Such a line is a
+    # SINGLE-LINE representation of what should be NORMAL MARKDOWN PROSE: pasted
+    # verbatim into a markdown cell, the line renders as a literal escaped
+    # JSON-encoded string ("# 4.2e -- section heading\\n") instead of an H2
+    # heading + a paragraph. Tell c.1158-L1 fondateur (the guard was a faux
+    # negatif on this class -- the cell LOOKS fine structurally).
+    "repr_quoted_source_entries": ERROR,
+    # #17005: ERROR (bloquant) -- ligne de continuation de puce/blockquote
+    # (indentee 2+ espaces) commencant par "#" + non-espace : le renderer
+    # Jupyter la traite comme un atx heading (Jupyter / VSCode / nbviewer
+    # sont NON-CommonMark-strict sur ce point : CommonMark refuse ce format,
+    # les renderers l'acceptent et le rendent comme heading). Fondeur :
+    # PR #16888 cell-015 (avant-fix commit c34d5e88d, apres-fix la cellule
+    # a ete rewrap, base e17f600a). Le pattern est disjoint de _HEADING_RE
+    # (qui exige un espace apres le "#", donc catch deja les "  ## Heading"
+    # indente ou pas) et de _CONTAINER_HEADING_RE (qui exige un marqueur
+    # de conteneur "-"/"*"/"+"/"1."/">" sur la MEME ligne que le "#",
+    # donc catch deja les "- # Indice", "1. # Heading" etc.). Classe de
+    # pattern : ligne de CONTINUATION de puce (2+ espaces d'indentation
+    # sans marqueur de conteneur) qui commence par "#" + non-espace
+    # (reference d'issue "#15520", mot "#libelle" etc.). ERROR parce que
+    # le rendu est incoherent avec la prose que la ligne veut dire.
+    "heading_continuation": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
     # precision is what buys blocking status; a wider pattern set would need
@@ -222,6 +262,22 @@ RULE_REPAIR = {
     "heading_in_list": (
         "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
     ),
+    # #16221 / Tell c.1158-L1 fondateur : un entry JSON-dumped (forme
+    # `    "# 4.2e -- section heading\\n",`) doit etre decode puis reinsere
+    # comme entree(s) de liste markdown distinctes (chaque '\n' du contenu
+    # redevient une ligne, chaque '","' redevient une entree separee). Voir
+    # c1158_focal_repair.py si present, sinon l'edition directe du
+    # source-list via scripts/notebook_tools/json_source_render.py.
+    "repr_quoted_source_entries": (
+        # Pas de fixer outille specifique pour cette regle : la reparation
+        # exige de decoder le contenu JSON et de re-decouper la liste
+        # manuellement (chaque cellule peut avoir 1+ repr-quoted entries
+        # intercalees avec des entries normales, le decoupage automatique
+        # perdrait la structure). Voir c1158_focal_repair.py si developpe
+        # ulterieurement ; en attendant, edition manuelle des cellules
+        # signalees par le detector.
+        "(no automated fixer -- edit the affected cells directly)"
+    ),
 }
 
 # Le gating par hash de baseline rend ce rappel necessaire : le garde ne rougit
@@ -273,6 +329,16 @@ _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
 # drift gate on new hits is #11829 sous-issue #2. See #11829.
 _CONTAINER_HEADING_RE = re.compile(
     r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
+# #17005: continuation line of a list item / blockquote (2+ spaces indent, NO
+# container marker on the same line) starting with "#" + non-space character.
+# CommonMark refuses this as a heading (the indent is too deep, no container
+# opener), but Jupyter / VSCode / nbviewer all render it as a giant H1-H6 --
+# the same renderer gap as `_CONTAINER_HEADING_RE` (#11829), on a continuation
+# line instead of an opener line. Disjoint of both `_HEADING_RE` (which
+# requires a space after the "#") and `_CONTAINER_HEADING_RE` (which requires
+# a `-`/`*`/`+`/`1.`/`>` on the same line). Fondeur: PR #16888 cell-015
+# (base e17f600a, fix c34d5e88d rewrapped the cell to drop the indent).
+_CONTINUATION_HEADING_RE = re.compile(r"^\s{2,}(#{1,6})[^\s#]")
 
 # #12110 -- a CJK (Chinese-Japanese-Korean) character in a markdown cell whose
 # source is otherwise French prose. The defect pattern: a model-generated cell
@@ -316,6 +382,71 @@ _STMT_LINE_RE = re.compile(
 # single-element case, exemplar PR #10399.
 _COLLAPSED_HEADING_START_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
 _COLLAPSED_SINGLE_MIN_LEN = 80
+
+# #16221 / Tell c.1158-L1: a repr-quoted source entry -- a single source-list
+# element of the JSON-dumped nbformat form `    "content\\n",`. Cell-renders
+# literally as escaped JSON (`"# 4.2e -- section heading\n",`) instead of as
+# proper markdown heading + paragraph. The signature is:
+#   4-space indent + SINGLE JSON-quote opener (not """ triple-quote)
+#   + content (with optional JSON-escapes like \\n, \\", \\\\)
+#   + last-char-or-escape (non-quote, non-backslash, non-sentence-end char,
+#     OR a 2-char escape pair like \\n)
+#   + JSON-quote closer
+#   + optional comma (list separator)
+#   + optional newline
+#   + END-OF-LINE.
+# Length floor: 20 chars (real repr-quoted entries are typically 30-200 chars;
+# a 5-char "string" entry is too short to be reliable). Excludes legitimate
+# config lines / blockquotes ending with sentence-end punctuation (. ! ?),
+# Python triple-quotes, JSON-like dict literals, and prose containing
+# quoted phrases mid-line.
+_REPR_QUOTED_ENTRY_RE = re.compile(
+    r'^    "'                                  # 4-space + SINGLE JSON opener
+    r'(?:[^"\\]|\\.)*'                          # content body with optional JSON-escapes
+    r'(?:[^"\\.!?]|\\.)'                        # last char or escape pair: non-sentence-end
+    r'",?\n?$'                                  # JSON closer + optional , + optional newline + end
+)
+_REPR_QUOTED_ENTRY_MIN_LEN = 20
+
+
+def _is_repr_quoted_entry(line: str) -> bool:
+    """True if `line` is a repr-quoted JSON-encoded source-list entry (#16221).
+
+    A line is repr-quoted when it appears as the literal JSON-dumped
+    representation of a string-list element (the kind produced by
+    `python -c "import json; print(json.dumps(['...']))"` or by reading the
+    nbformat `source` field of a notebook cell into Python's `repr`). Such
+    lines render as **literal escaped text** ("\\n", "\\"", etc.) instead of
+    as markdown -- a paragraph that should be an H2 + body comes out as a
+    one-line JSON-encoded blob.
+
+    Legitimate markdown that starts with 4-space + quote -- Python
+    triple-quoted docstrings, JSON-like config lines in narrative markdown,
+    short model identifiers -- is excluded by the combination of:
+      - single quote opener (not a Python triple-quoted string opener)
+      - structural closer (quote + comma, or quote + newline, at end-of-line)
+      - non-sentence-punctuation char just before the closer
+      - minimum length 20
+    """
+    if len(line) < _REPR_QUOTED_ENTRY_MIN_LEN:
+        return False
+    return bool(_REPR_QUOTED_ENTRY_RE.match(line))
+
+
+def _repr_quoted_entries(lines, fenced: set[int]) -> list[tuple[int, str]]:
+    """Return [(line_index, line)] for each repr-quoted entry in non-fenced lines.
+
+    `fenced` is the set of line indices belonging to a fenced code block (which
+    render verbatim -- a `    "..."` line inside a ```python fence is a
+    legitimate example, not a defect). Returns the list in document order.
+    """
+    hits = []
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if _is_repr_quoted_entry(ln):
+            hits.append((idx, ln.rstrip("\n")))
+    return hits
 
 
 def _as_text(source) -> str:
@@ -691,6 +822,51 @@ def _selfcheck() -> int:
     print("selfcheck OK: source_list_broken_words fires on the post-repair "
           "mid-word boundary and the verbatim #12363 witness (helper level); "
           "silent on newline-terminated and space-preserved joins")
+    # ---- repr_quoted_source_entries (#16221 / Tell c.1158-L1) -----------------
+    # Positive: the canonical founding-incident line shape (JSON-dumped list
+    # entry pasted into a markdown cell -- renders as escaped JSON, not
+    # markdown). Negatives: (a) the same line inside a ```python fenced code
+    # block (legit example, MUST be silent); (b) short narrative markdown that
+    # incidentally starts with 4-space + " (legit config line / prose, MUST be
+    # silent). Without these controls, the rule would over-fire on the corpus
+    # of 25+ markdown cells containing `    "..."`,` config-style lines.
+    repr_fixtures: list[tuple[str, str, bool]] = [
+        ("c.1158-L1 canonical: heading + escape + closer",
+         '    "# 4.2e -- section heading\\n",\n',
+         True),
+        ("plain ASCII repr-quoted entry",
+         '    "no escape at all still quoted"\n',
+         True),
+        ("fenced Python example (legit)",
+         "Voici l'exemple :\n\n```python\n"
+         '    "# 4.2e -- section heading\\n",\n'
+         "```\n",
+         False),
+        ("narrative with config-style line (legit)",
+         '    "seed": -1,  # aleatoire, valeur fixe\n',
+         False),
+        ("short line below 20-char floor (silent)",
+         '    "x",\n',
+         False),
+    ]
+    for name, src, expected in repr_fixtures:
+        lines = src.split("\n")
+        fired = any(f["rule"] == "repr_quoted_source_entries"
+                    for f in scan_cell({
+                        "cell_type": "markdown",
+                        "source": [ln + "\n" for ln in lines if ln != ""],
+                    }))
+        if fired != expected:
+            failed.append(f"{name}: repr_quoted_source_entries fired={fired}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: repr_quoted_source_entries fires on the canonical "
+          "c.1158-L1 shape (heading + JSON-escape + list-separator) and on "
+          "plain-ASCII entries; silent on fenced code block examples, narrative "
+          "config-style lines, and short non-repr-quoted lines")
     return 0
 
 
@@ -901,10 +1077,48 @@ def scan_cell(cell) -> list[dict]:
                 "evidence": text.strip()[:100],
                 "hash": _cell_hash(rule, text),
             }]
+    # ---- repr-quoted source entries (#16221 / Tell c.1158-L1) -------------------
+    # A markdown cell whose `source` line(s) carry JSON-dumped list entries
+    # (repr-quoted form `    "content\\n",`) renders those lines as literal
+    # escaped JSON, not as markdown prose. Concrete failure mode (the founding
+    # incident on c.1158-L1): a paste of nbformat `cell.source` (as a Python list
+    # of strings, which is the canonical on-disk representation) into a markdown
+    # cell produced lines like `    "# 4.2e -- section heading\\n",` -- the
+    # rendered cell shows `    "# 4.2e -- section heading\n",` instead of an H2
+    # heading + paragraph. The guard described in #1158 is a faux negatif on this
+    # class: the cell's structure LOOKS fine (a list of multi-element strings,
+    # adequate newlines) but content is wrong on render.
+    #
+    # Detection runs AFTER the source-list-structural rules (which target list-
+    # integrity defects) and BEFORE the line-based rules (which don't have a way
+    # to see the JSON-encoded nature of an individual line). Fence-aware: a line
+    # inside a fenced code block renders verbatim and is NOT a defect.
+    #
+    # Returns ONE finding per offending cell (the hash is per-cell, multi-finding
+    # on the same cell would inflate the baseline with redundant entries);
+    # evidence names the first repr-quoted line so the editor can locate it.
     lines = text.split("\n")
-    # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
-    # text, not a setext underline. Computed once, reused by both setext rules.
     fenced = _inside_fence_lines(lines)
+    repr_hits = _repr_quoted_entries(lines, fenced)
+    if repr_hits:
+        first_idx, first_line = repr_hits[0]
+        rule = "repr_quoted_source_entries"
+        return [{
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": (f"{len(repr_hits)} repr-quoted JSON-encoded source entry(ies) found in "
+                        f"this markdown cell (lines {first_idx}+): each line is the literal "
+                        f"JSON-dumped representation of a string-list element (e.g. "
+                        f"`\"# 4.2e -- section heading\\\\n\",`), which renders as escaped "
+                        f"text instead of as markdown prose. Decode the JSON and replace "
+                        f"each such line with its actual content split back into the "
+                        f"source list"),
+            "evidence": first_line[:100],
+            "hash": _cell_hash(rule, text),
+        }]
+    # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
+    # text, not a setext underline. `fenced` already computed above for the
+    # repr-quoted-source-entries rule.
     findings: list[dict] = []
 
     # ---- yaml-block-open-no-close (#11630) --------------------------------------
@@ -1023,6 +1237,31 @@ def scan_cell(cell) -> list[dict]:
             "rule": rule,
             "severity": RULE_SEVERITY[rule],
             "message": f"heading nested in a list/blockquote (renders as giant H{level})",
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- continuation line starting with '#' (#17005) ----------------------------
+    # Sibling of the heading_in_list loop above: a list-item / blockquote
+    # CONTINUATION line (2+ spaces indent, NO container marker on the same
+    # line) that begins with `#` + non-space is rendered as a giant H1-H6 by
+    # Jupyter / VSCode / nbviewer (CommonMark refuses it; the renderers do
+    # not). Same fence-awareness / one-finding-per-cell discipline.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        m = _CONTINUATION_HEADING_RE.match(ln)
+        if not m:
+            continue
+        rule = "heading_continuation"
+        level = len(m.group(1))
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": (f"list/blockquote continuation line starts with '#' "
+                        f"(renders as giant H{level}); drop the leading indent or "
+                        f"escape the '#' so the line stays prose"),
             "evidence": ln.strip()[:100],
             "hash": _cell_hash(rule, text),
         })

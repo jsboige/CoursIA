@@ -12,6 +12,14 @@ S'applique à **tous les reviewers**, humains et bots (clusterManager-Myia, jsbo
 
 Toute review (bot ou humaine) formulant **un point tenant le merge** porte un **marqueur reconnu** : préfixe de verdict (`[Hermes] COMMENT_WITH_CONCERNS`, `CHANGES_REQUESTED`) ou glyphe de sévérité (🟡, 🔴). L'organe B.0 (`scripts/check_unaddressed_nits.py`, `CONCERN_MARKERS`) ne lit **que** ces marqueurs : une réserve bloquante posée en prose libre **sans** marqueur lui est invisible et rend `rc=0`. **Ne pas élargir** le filet à des mots de prose : il sur-accuse d'un facteur 5 (mesure #14682) — le contrat est côté émission, pas côté filet. Instance #14658 + scan 80 PRs : [pr-review-context.md](../../docs/reference/pr-review-context.md).
 
+### Répondre à une réserve — la forme sûre (HARD, #17071)
+
+Le contrat ci-dessus dit comment **poser** un verdict ; il faut aussi savoir y **répondre** sans en **créer** un. Une réponse d'auteur qui **cite** le token redevient elle-même une réserve B.0 (régime absorbant) : la PR reste bloquée **à fond réparé**, et la lane ne peut pas se dé-bloquer en répondant.
+
+Formes **muettes** (mesurées : `classify()` rend `None`) — le token **encagé** (backticks, `« »`, apostrophes, bloc de code), ou nommé en position de **mention** (`suite à ta réserve`, `verdict X` **sans** deux-points). Formes **émettrices** — le token **nu** en prose, et **le gras** : la forme en gras est la forme d'**émission** (`BLOCK_VERDICTS`), **pas** une cage. Encager un mot **voisin** ne protège rien.
+
+Ne pas compter sur le token de blocage **nu** : c'est un **résidu assumé** de l'organe (il éviterait le tag de protocole de lane et la négation « n'est plus … »). Table de vérité complète, mécanique et instance fondatrice : [pr-review-context.md](../../docs/reference/pr-review-context.md).
+
 ## Critères CHANGES_REQUESTED obligatoires (HARD)
 
 Un reviewer **DOIT** poster `state: CHANGES_REQUESTED` (pas COMMENTED, pas APPROVED) si **un seul** point est violé. APPROVED malgré violation = **complicité de complaisance**.
@@ -69,7 +77,7 @@ Single-seed ou single-fold = **CHANGES_REQUESTED** sauf flag explicite `[POC]` d
 
 ### E. Documentation / Admin : groupement obligatoire
 
-PRs uniquement docs/README/CLAUDE.md/rules : < 50 lignes → exiger groupement ; < 20 lignes → refuser systématiquement ; multiples READMEs sans cohérence cross-series → refuser.
+PRs uniquement docs/README/CLAUDE.md/rules : quand le diff est **fin**, le reflexe n'est pas le refus mais la question « **le geste peut-il etre etendu ?** » — proposer l'elargissement qui evite le saucissonnage (les fichiers voisins de la meme serie, les occurrences sœurs du meme defaut). Le refus reste la sortie quand l'extension a ete proposee et ecartee sans motif, et pour de multiples READMEs sans coherence cross-series.
 
 **Feuille README (#3973/#3975) — audit fichier ENTIER obligatoire.** Une PR qui met à jour un compte / une statistique / un paragraphe dans un README de série DOIT prouver dans le body qu'elle a ré-audité le **fichier entier** contre le disque : (a) `ls`/`find` count par sous-dossier cité ; (b) réconciliation **disque ↔ `CATALOG-STATUS` ↔ prose** (catalogue faux : **signaler**, ne PAS s'aligner dessus) ; (c) listes, arbres de structure et breakdowns vérifiés à jour. Corriger l'intro en laissant une liste obsolète 100 lignes plus bas = `CHANGES_REQUESTED` ; le format « slim +5/−5 » ne dispense pas de l'audit, il le **plafonne à tort**.
 

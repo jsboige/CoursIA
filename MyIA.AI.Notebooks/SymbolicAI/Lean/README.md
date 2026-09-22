@@ -88,6 +88,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 7 | [Lean-7-LLM-Intégration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
+| 8b | [Lean-8b-Erdos-Formal-Conjectures-Native](Lean-8b-Erdos-Formal-Conjectures-Native.ipynb) | Companion **natif** (kernel Lean) : le programme Erdős et le pattern conjecture-as-sorry — EGZ importé de Mathlib (`#print axioms` = `[propext, Classical.choice, Quot.sound]`), équation d'Erdős–Moser restatée (`[sorryAx]` visible), témoin calculé dans `ZMod 3` - pilote narratif Epic #13106 | 25 min |
 | 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
@@ -101,6 +102,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
 | 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | Companion **natif** du lake `conway_lean` : la borne de Tsirelson exécutée in-kernel — `#check` de la signature exacte (7 classes de types + `IsCHSHTuple`, conclusion `≤ (2 * √2) • 1`), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, frontière classique mesurée (score `2` atteint, mélange équilibré → `0`), contrôle positif de kernel contre le REPL muet (#11874) et 3 exercices - Epic #13106 | 30 min |
+| 13c | [Lean-13c-CHSH-Landau-Saturation](Lean-13c-CHSH-Landau-Saturation.ipynb) | Companion **natif** du lake `conway_lean` : la saturation de Tsirelson exécutée in-kernel — `#check` de l'égalité centrale `chshOperator A₀ A₁ B₀ B₁ = (2 * √2) • 1` (égalité exacte, pas un majorant : la borne de Lean-13b devient un maximum démontré), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, témoin de Pauli (`sigmaZ`, `sigmaX`, `B₀`, `B₁` en `Matrix (Fin 2) (Fin 2) ℝ`), forme spectrale bilatérale (`2√2` sur la diagonale), anticommutateur, critère de Landau vérifié sur le témoin (spectre ±1) et 3 exercices - Epic #13106 | 25 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | Companion **natif** (kernel Lean) : les 7 déclarations du lake `finiteness_lean` (`Regex`, `nullable`, `deriv`, `derivWord`, `accepts`, `aStar`, `abWord`) re-déclarées fidèlement (kernel sans oleans), vérifiées et exécutées in-kernel, finitude observée sur une regex à union (6 préfixes → 4 dérivées distinctes) | 20 min |
 
@@ -157,8 +159,9 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 28 | [Lean-28-Complex-Structure-S6](Lean-28-Complex-Structure-S6.ipynb) | Le problème de Hopf résolu : une structure complexe intégrable sur S⁶ (énoncé `Mathoverflow1973` de Formal Conjectures) — digestion du fil constructif (triangle (3,4,∞), accouplement de Shioda ⟨P,P⟩=1/6 calculé, transformations logarithmiques 3 et 4, remplissage de Mumford dP₆, reconnaissance Hurewicz→Smale→Kervaire–Milnor) avec deux invariants **calculés** (\|π₁\| = \|4m+3n\| par forme normale de Smith, χ = 2), reproduction **réelle** du dépôt piné `plby/HopfProblem` via `hopf_s6_reproduction.py` (248 818 lignes compilées en 1154 s, 0 sorry/0 axiom, comparator double kernel Lean+nanoda : *« Your solution is okay! »*, axiomes [propext, Classical.choice, Quot.sound]) et attribution différenciée (manuscrit écrit par Claude/communiqué par Alpöge, exposition Engel avec caveat, code Lean majoritairement Codex) | 45 min |
 | 29 | [Lean-29-Hecke-Operators-Native](Lean-29-Hecke-Operators-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `hecke_lean` (port pédagogique de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les opérateurs de Hecke T_p et U_p sur le demi-plan supérieur — représentants γ_{p,j} et partie diagonale, action de slash et ses deux comportements opposés, formule des coefficients a(np) + p^{k−1}·a(n/p) portée par `coeffHeckeT` — chaque déclaration interrogée par `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
 | 30 | [Lean-30-FormalGroups-Native](Lean-30-FormalGroups-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
-| 31 | [Lean-31-Euler-Navier-Stokes](Lean-31-Euler-Navier-Stokes.ipynb) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict — kernel `python3`, 10 cellules code exécutées sans erreur, 3 exercices | 45 min |
+| 31 | [Lean-31-Euler-Navier-Stokes](Lean-31-Euler-Navier-Stokes.ipynb) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict. **Enrichi (#16569)** : chronologie sourcée de la lignée et de la course (Córdoba–Martínez-Zoroa → Buckmaster–Alpöge → OpenAI, les deux récits du 6 septembre, réponses EMS/Clay/AMS/Tao, lecture à la lumière de la Déclaration de Leiden) et **GIFs animés** de l'écoulement (vortex 3D « spaghetti » orange/teal, plan méridien en vecteurs colorés à norme fixée, cascade infinie de couches Córdoba–Martínez-Zoroa, annulation fine des termes reliée au critère BKM), inspirés de l'exploration Wolfram Community citée et au-delà — kernel `python3`, 17 cellules code exécutées sans erreur, 3 exercices | 60 min |
 | 34 | [Lean-34-Calculabilite-et-Limites](Lean-34-Calculabilite-et-Limites.ipynb) | **Tranche E** de l'Epic #15066 : calculabilité, diagonalisation et limites — témoins exécutables (diagonale de l'arrêt bornée, point fixe diagonal sur chaînes) puis certification au noyau via le lake `formal_logic_lean` (Foundation piné `81810b9f` + ProvabilityLogic `01628c51`, `CONSUMER_PINNÉ`) : Church (`undecidability_first_order_logic`), arrêt→incomplétude (`incomplete_of_halting_problem`), Gödel I/II, Rosser, Tarski (`undefinability_of_truth`) et Löb — 4 énoncés soigneusement séparés, `#check`/`#print axioms` audités, prérequis L2/L3 de #15062 — kernel `python3`, 11 cellules code exécutées sans erreur, 3 exercices | 45 min |
+
 **Durée totale** : ~40h10min
 
 ## Acquis d'apprentissage
@@ -209,6 +212,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 7 | LLM-Intégration | ~50 | 2 | 2 | **COMPLET** |
 | 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
+| 8b | Erdos-Formal-Conjectures (natif) | ~4 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-groth16200`, Epic #13106) |
 | 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
 | 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
@@ -254,6 +258,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
 | 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 | 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean`, Tranche E Epic #15066) |
+
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
 - Plan de ce Notebook avec liens ancres (notebooks 2-4)
@@ -417,6 +422,7 @@ Lean/
 ├── Lean-7-LLM-Integration.ipynb    # Python kernel - APIs LLM
 ├── Lean-7b-Examples.ipynb          # Python kernel - benchmarks
 ├── Lean-8-Agentic-Proving.ipynb    # Python kernel - orchestration
+├── Lean-8b-Erdos-Formal-Conjectures-Native.ipynb # Lean4 (WSL, grothendieck-16200) kernel - pattern conjecture-as-sorry : EGZ Mathlib + Erdős-Moser restatée (Epic #13106)
 ├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
@@ -436,6 +442,7 @@ Lean/
 ├── Lean-16j-Conway-Hashlife-Correctness-Native.ipynb # Lean4 (WSL) kernel - compagnon Hashlife correctness (cône, MacroCell, 4 murs, marge, batterie adverse, Epic #11703)
 ├── Lean-13-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
 ├── Lean-13b-CHSH-Tsirelson-Native.ipynb # Lean4 (WSL, conway-build) kernel - borne de Tsirelson : signature, axiomes, frontière classique (Epic #13106)
+├── Lean-13c-CHSH-Landau-Saturation.ipynb # Lean4 (WSL) kernel - saturation de Tsirelson : témoin de Pauli, égalité centrale 2√2, forme spectrale (Epic #13106)
 ├── Lean-14-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
 ├── Lean-16f-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
@@ -460,7 +467,7 @@ Lean/
 ├── Lean-28-Complex-Structure-S6.ipynb # Python kernel - problème de Hopf sur S⁶ (digestion Engel + reproduction plby/HopfProblem piné, comparator double kernel)
 ├── Lean-29-Hecke-Operators-Native.ipynb # Lean4 (WSL) kernel - opérateurs de Hecke T_p/U_p natifs (lake hecke_lean, #check/#print axioms in-kernel)
 ├── Lean-30-FormalGroups-Native.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
-├── Lean-31-Euler-Navier-Stokes.ipynb # Python kernel - reproduction pinée Euler/Navier–Stokes, double noyau, confinement et re-dérivation fail-closed
+├── Lean-31-Euler-Navier-Stokes.ipynb # Python kernel - reproduction pinée Euler/Navier–Stokes, double noyau, confinement, re-dérivation fail-closed, chronologie sourcée de la course Navier–Stokes et GIFs animés de l'écoulement
 ├── Lean-34-Calculabilite-et-Limites.ipynb # Python kernel - Tranche E Epic #15066 : arrêt, point fixe, Gödel I/II, Rosser, Tarski, Löb (lake formal_logic_lean CONSUMER_PINNÉ)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend

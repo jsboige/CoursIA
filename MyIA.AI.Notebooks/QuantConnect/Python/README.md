@@ -46,6 +46,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-04-Research-Workflow | NON EXÉCUTÉ | |
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
+| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
 | QC-Py-08-Multi-Asset-Strategies | NON EXÉCUTÉ | |
 | QC-Py-09-Order-Types | NON EXÉCUTÉ | |
@@ -72,6 +73,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-27-Production-Deployment | NON EXÉCUTÉ | |
 | QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | |
 | QC-Py-28b-Macro-Cycle-Regimes | EXÉCUTÉ | cellules locales exécutées + run QC Cloud 2016-2026 (diagnostic → allocation) |
+| QC-Py-29-Derivatives-Valuation | EXÉCUTÉ | cellules locales exécutées (BS / arbre CRR / Monte-Carlo : convergence, grecques, scénario liquidité) |
 | QC-Py-30-LSTM-Training | EXÉCUTÉ | |
 | QC-Py-31-Transformer-Training | EXÉCUTÉ | |
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
@@ -92,7 +94,6 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-09-OptionWheel | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-10-RL-DQN-Trading | EXÉCUTÉ | |
-| QC-Py-Cloud-12-SectorRotation-Momentum | EXÉCUTÉ | |
 | QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | |
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
@@ -155,6 +156,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 |----------|---------|
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
+| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |
@@ -173,7 +175,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |
 
-## Phase 4 : Machine Learning (QC-Py-18 à 28)
+## Phase 4 : Machine Learning (QC-Py-18 à 29)
 
 | Notebook | Contenu |
 |----------|---------|
@@ -191,6 +193,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
+| [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
 

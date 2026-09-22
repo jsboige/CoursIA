@@ -266,6 +266,11 @@ jobs:
               'drift reopens it under the same branch.',
               '',
               'See `.claude/rules/catalog-pr-hygiene.md` and #2433, #10136.',
+              '',
+              // Third-party prevalidation (check_adjoint_prevalidation.py) resolves the
+              // carrying lane from this tag. Without it the gate answers NO_DOSSIER with
+              // "carrying lane cannot be established" and no lane can prevalidate the PR.
+              'Grain: MED/refactor -- lane myia-ai-01:CoursIA',
             ].join('\n');
 
             // Look for an existing open PR on this branch (HEAD_REF exact).
