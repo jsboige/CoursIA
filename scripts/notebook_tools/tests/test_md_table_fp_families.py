@@ -102,9 +102,22 @@ WHOLE_FILE_CASE = (
 )
 
 WHOLE_FILE_CASE_FINDINGS = (
-    3,
-    ("NO_BLANK_AFTER", "NO_BLANK_BEFORE", "NO_SEP"),
+    0,
+    (),
 )
+# Re-epingle le 2026-09-20 (fournee #15719, PR #17035) : le pin neutre a force
+# le regard, la mesure a tranche. Les 3 findings (NO_SEP + NO_BLANK_BEFORE/
+# AFTER sur le JS `||` de L792/793 et L838-840) etaient des faux positifs du
+# toggleur lineaire one-shift-out documente dans le skip Family B ci-dessous.
+# Le pairing same-char bare-closer de #17035 (FENCE_CLOSE_RE + meme caractere)
+# reparie l'appariement : sonde independante le 2026-09-20, ces lignes sont
+# desormais in-fence (paires fermees), le fichier rend 0 findings. Controle
+# de non-cecite : une table cassee injectee hors fence en fin de fichier
+# rend bien COL_MISMATCH. Residu du document, hors scope scanner : la fence
+# ```javascript ouverte L144 n'est jamais fermee (121 delimiteurs = impair,
+# compte CommonMark length-aware du skip) -- l'appariement se resynchronise
+# en dessous au lieu de classer a l'envers ; l'arbitrage document reste
+# ouvert et nomme dans le skip Family B.
 
 
 def test_whole_file_case_finding_count_is_unchanged():

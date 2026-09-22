@@ -35,12 +35,28 @@ name: PR gate (re-aggregate)
 # suite, where latest-wins holds and there is exactly one instance of the
 # required name. The aggregation logic reads check state live via the API, so
 # the rerun verdict is fresh even though the pull_request payload is frozen.
+#
+# #16624 -- the ONE population where POST is not just legal but the only path:
+# the gate-absent head. A PR retargeted onto main before the `edited` trigger
+# existed (pr-gate.yml now listens to it) has NO `pull_request` run for its
+# head SHA -- there is nothing to re-run, and nothing bearing the required
+# name on the SHA to AND against, so the #11519 twin hazard cannot arise. The
+# `aggregate_absent` job below runs the SAME aggregation script against live
+# check state and POSTs the verdict onto the PR head. Two structural guards
+# keep it honest: (a) the resolve step refuses the route when ANY "PR gate"
+# check-run already exists on the SHA (never create a twin, even this way);
+# (b) the POST is the script's own `--post-check-run`, the same mechanism the
+# retired event path used, verdict computed -- never asserted. This dispatch
+# is also the machine-readable exception to GITHUB_TOKEN anti-recursion
+# (events created with GITHUB_TOKEN trigger nothing, EXCEPT workflow_dispatch
+# and repository_dispatch), which is why the stale-sweep's gate-absent organ
+# can drive it autonomously where a bot close+reopen would be inert.
 
 on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number whose head SHA to re-aggregate (testing only)'
+        description: 'PR number whose head SHA to re-aggregate (gate-absent legs set this)'
         required: false
         default: ''
       head_sha:
@@ -51,24 +67,30 @@ on:
 permissions:
   contents: read
   actions: write  # re-run the original pr-gate.yml run for the PR head SHA (#11519)
+  checks: write   # #16624: POST the aggregated verdict onto a gate-absent PR head
 
 concurrency:
   group: pr-gate-rerun-${{ github.event.inputs.pr_number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  reaggregate:
-    name: Re-aggregate a PR gate verdict (manual)
+  resolve:
+    name: Resolve the re-aggregation route (manual)
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      action: ${{ steps.resolve.outputs.action }}
+      run_id: ${{ steps.resolve.outputs.run_id }}
     steps:
-      - name: Re-run the original PR gate for the PR head
+      - name: Resolve route
+        id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.inputs.pr_number }}
           HEAD_SHA: ${{ github.event.inputs.head_sha }}
         run: |
@@ -76,6 +98,7 @@ jobs:
           # Manual dispatch without both inputs -> nothing to unblock.
           if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_SHA" ]; then
             echo "[pr-gate] dispatch without PR_NUMBER/HEAD_SHA -- nothing to re-aggregate, skip"
+            echo "action=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           # Find the original pr-gate.yml run for THIS head SHA. event=pull_request
@@ -84,33 +107,119 @@ jobs:
           # a rerun replays the frozen payload of its original event, so an older
           # run for the same SHA is fine (same SHA, fresh API reads) but a run
           # for an older SHA would re-aggregate a stale head.
-          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100" \
+          RUN_JSON=$(gh api "repos/${REPO}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100" \
             --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last')
           if [ -z "$RUN_JSON" ] || [ "$RUN_JSON" = "null" ]; then
-            echo "[pr-gate] no pull_request PR gate run yet for ${HEAD_SHA} -- the gate will run on its own, skip"
+            # #16624: the OLD message here claimed "the gate will run on its
+            # own" -- FALSE for the retarget population. A PR retargeted onto
+            # main (edited, not in the pre-#16624 default types) never fired
+            # the gate and NOTHING will fire it: no push, no synchronize, and
+            # a close/reopen performed by a bot token triggers no run
+            # (GITHUB_TOKEN anti-recursion). The two honest paths are below.
+            EXISTING=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name == "PR gate")] | length' 2>/dev/null || echo 1)
+            if [ "$EXISTING" != "0" ]; then
+              echo "[pr-gate] a 'PR gate' check-run already exists on ${HEAD_SHA} though no pull_request run does -- refusing to POST beside it (#11519 twin), skip"
+              echo "action=skip" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "[pr-gate] no pull_request PR gate run and no 'PR gate' check-run for ${HEAD_SHA} -- gate ABSENT (#16624): aggregating the head and POSTing the verdict"
+            echo "action=aggregate_absent" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           RUN_ID=$(echo "$RUN_JSON" | jq -r '.id')
           STATUS=$(echo "$RUN_JSON" | jq -r '.status')
           CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
           echo "[pr-gate] target run ${RUN_ID}: status=${STATUS} conclusion=${CONCLUSION}"
+          echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
           # Already running/queued: it will aggregate the current check state
           # by itself -- rerunning now is impossible (API rejects it) and
           # useless. This is also the loop bound for near-simultaneous guard
           # completions (#11519: "borner la boucle").
           if [ "$STATUS" != "completed" ]; then
             echo "[pr-gate] run in flight (${STATUS}) -- it will see the fresh guard verdict, skip"
+            echo "action=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           # Green already: this leg is not what blocks the PR. No rerun.
           if [ "$CONCLUSION" = "success" ]; then
             echo "[pr-gate] run already green -- nothing to rescue, skip"
+            echo "action=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           # Full rerun (NOT --failed): the gate is a single job, and a full
           # rerun replays the aggregation end-to-end against live check state.
-          if gh run rerun "$RUN_ID" --repo "${{ github.repository }}"; then
+          echo "action=rerun" >> "$GITHUB_OUTPUT"
+
+  rerun:
+    name: Re-run the original PR gate (manual)
+    needs: resolve
+    if: needs.resolve.outputs.action == 'rerun'
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 10
+    steps:
+      - name: Re-run the original run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ needs.resolve.outputs.run_id }}
+        run: |
+          set -eu
+          if gh run rerun "$RUN_ID" --repo "$REPO"; then
             echo "[pr-gate] rerun ${RUN_ID} issued -- fresh verdict lands in the original check suite (latest-wins, no duplicate name)"
           else
             echo "[pr-gate] rerun rejected (likely flipped to in_progress between read and rerun) -- ok"
           fi
+
+  aggregate_absent:
+    name: Aggregate a gate-absent PR head (manual)
+    needs: resolve
+    if: needs.resolve.outputs.action == 'aggregate_absent'
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 15
+    steps:
+      # The aggregation script + the delivery canary both read the repo:
+      # pr_gate.py globs DEFAULT_WORKFLOWS_DIR (.github/workflows) for
+      # rule-8 always-on jobs. Same sparse cone as pr-gate.yml's own leg.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts
+            .github/workflows
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install canary dependency
+        run: pip install pyyaml
+      - name: Aggregate and POST the verdict onto the absent head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          HEAD_SHA: ${{ github.event.inputs.head_sha }}
+        run: |
+          set -eu
+          # --post-check-run: this job's own check-run lands on the
+          # default-branch commit (dispatch payload has no PR head), so the
+          # POST is what makes the verdict visible to the PR's mergeState.
+          # --no-self-cancel: a STARVED self-cancel would mark the harness
+          # leg cancelled for a reason the log already names. --timeout-min 5:
+          # the gate-absent population is classified with settled checks
+          # (pr_gate_missing flags PRs whose rollup lacks the gate), so the
+          # bounded wait is short by construction; a PR with pending
+          # constituents yields STARVED -> skip, and the next dispatch (or a
+          # real push) re-aggregates.
+          # A non-PASS exit is a REAL verdict (FAIL / STARVED posted on the
+          # head) -- it must not redden this harness job.
+          python scripts/pr_gate.py \
+            --repo "$REPO" \
+            --sha "$HEAD_SHA" \
+            --self-name "PR gate" \
+            --pr "$PR_NUMBER" \
+            --post-check-run \
+            --timeout-min 5 \
+            --poll-sec 30 \
+            --settle-polls 2 \
+            --dwell-min 120 \
+            --no-self-cancel \
+            || echo "[pr-gate] verdict non-PASS posted on the absent head -- a real verdict, not a harness failure"

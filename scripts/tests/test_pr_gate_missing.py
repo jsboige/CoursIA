@@ -509,3 +509,126 @@ def test_retraction_is_idempotent():
     assert remove.call_count == 0
     assert retract.call_count == 0
     assert apply_l.call_count == 0 and post.call_count == 0
+
+
+# ---------------------------------------------------------------------------
+# (#16624) rattrapage automatique de la cause retarget + remediation VEridique
+#
+# Mesure fondatrice (issue #16624, 2026-09-18T01:28Z sur #16574) : une PR de
+# stack retargetee sur main ne declenche JAMAIS le gate (edited absent des
+# types par defaut) et reste BLOCKEE sans rouge. Le texte de remediation
+# affirmait alors « close/reopen ne relance rien » et prescrivait le commit
+# vide -- l'inverse du mesure : close+reopen depuis un token UTILISATEUR est
+# le geste gratuit (reopened EST un type par defaut), le commit vide reset le
+# DWELL et invalide l'APPROVED exact-head. Et un close/reopen fait par le
+# GITHUB_TOKEN de l'organe serait INERT (anti-recursion) : le rattrapage
+# automatique passe donc par un workflow_dispatch de pr-gate-rerun.yml, la
+# seule exception documentee.
+# ---------------------------------------------------------------------------
+
+def test_retarget_remedy_is_truthful_about_close_reopen():
+    pr = _candidate(16574, base_changed_at="2026-09-18T01:00:00Z",
+                    last_pr_run_at=None)
+    cause, detail = prescribe(pr)
+    assert cause == "retarget"
+    remedy = remediation_for(cause, detail)
+    # Le geste gratuit, avec sa mesure -- et la mise en garde bot-token.
+    assert "gh pr close" in remedy
+    assert "reopened` EST un type" in remedy
+    assert "DWELL non reset" in remedy
+    assert "GITHUB_TOKEN) est INERT" in remedy
+    # L'ancienne contre-verite est partie.
+    assert "ne relance rien" not in remedy
+    # Le commit vide reste documente (avec son cout), pas efface en pendule.
+    assert "commit-tree" in remedy
+    assert "RESET le DWELL" in remedy
+
+
+def _run_main_auto(pr_rows, extra, argv=()):
+    """main() en mode apply, enrich_candidate et _gh_write pilotes.
+
+    Retourne (rc, writes) ou writes liste les appels recus par _gh_write --
+    le recorder est le SEUL temoin du dispatch (aucun reseau).
+    """
+    rows = list(pr_rows)
+    with mock.patch("pr_gate_missing.ensure_label", lambda *a, **k: None), \
+         mock.patch("pr_gate_missing.list_open_prs", lambda repo: rows), \
+         mock.patch("pr_gate_missing.labeled_prs", lambda repo, label: {}), \
+         mock.patch("pr_gate_missing.enrich_candidate", lambda repo, n: extra), \
+         mock.patch("pr_gate_missing.existing_comment", lambda repo, n: None), \
+         mock.patch("pr_gate_missing.apply_label"), \
+         mock.patch("pr_gate_missing.post_comment"), \
+         mock.patch("pr_gate_missing._gh_write",
+                    side_effect=lambda args, what: True) as write:
+        rc = main(["--repo", "jsboige/CoursIA", *argv])
+    return rc, write
+
+
+def _retarget_extra(sha="a" * 40):
+    return {"mergeable_state": "clean", "head_sha": sha, "head_subject": "x",
+            "base_changed_at": "2026-09-18T01:00:00Z", "last_pr_run_at": None}
+
+
+def test_retarget_cause_dispatches_the_absent_aggregation():
+    row = classify_input(16574, "main", False, "jsboige", _codeql_only_rollup())
+    rc, write = _run_main_auto([row], _retarget_extra("b" * 40))
+    assert rc == 0
+    dispatched = [a for a, _ in write.call_args_list
+                  if a[0][:2] == ["workflow", "run"]]
+    assert len(dispatched) == 1, write.call_args_list
+    assert dispatched[0][0][2] == "pr-gate-rerun.yml"
+    flat = " ".join(dispatched[0][0])
+    assert "pr_number=16574" in flat and "head_sha=" + "b" * 40 in flat
+
+
+def test_non_retarget_causes_never_dispatch():
+    # skip_ci : le remede exige un NOUVEAU commit utilisateur -- jamais un
+    # dispatch automatique.
+    row = classify_input(10898, "main", False, "jsboige", _codeql_only_rollup())
+    extra = {"mergeable_state": "clean", "head_sha": "c" * 40,
+             "head_subject": "chore: [skip ci] bump",
+             "base_changed_at": None, "last_pr_run_at": None}
+    rc, write = _run_main_auto([row], extra)
+    assert rc == 0
+    assert not [a for a, _ in write.call_args_list
+                if a[0][:2] == ["workflow", "run"]]
+
+
+def test_dry_run_never_dispatches():
+    row = classify_input(16574, "main", False, "jsboige", _codeql_only_rollup())
+    rc, write = _run_main_auto([row], _retarget_extra(), argv=("--dry-run",))
+    assert rc == 0
+    assert write.call_count == 0
+
+
+def test_no_auto_remediate_flag_disables_the_dispatch():
+    row = classify_input(16574, "main", False, "jsboige", _codeql_only_rollup())
+    rc, write = _run_main_auto([row], _retarget_extra(),
+                               argv=("--no-auto-remediate",))
+    assert rc == 0
+    assert not [a for a, _ in write.call_args_list
+                if a[0][:2] == ["workflow", "run"]]
+
+
+def test_missing_head_sha_never_dispatches():
+    # enrich_candidate sans sha lisible (API degradee) : repli conservateur,
+    # le commentaire de remediation reste le seul geste.
+    row = classify_input(16574, "main", False, "jsboige", _codeql_only_rollup())
+    extra = _retarget_extra()
+    extra["head_sha"] = None
+    rc, write = _run_main_auto([row], extra)
+    assert rc == 0
+    assert not [a for a, _ in write.call_args_list
+                if a[0][:2] == ["workflow", "run"]]
+
+
+def test_auto_remediation_is_capped_per_pass():
+    from pr_gate_missing import MAX_AUTO_REMEDIATE
+    rows = [classify_input(16000 + i, "main", False, "jsboige",
+                           _codeql_only_rollup())
+            for i in range(MAX_AUTO_REMEDIATE + 3)]
+    rc, write = _run_main_auto(rows, _retarget_extra())
+    assert rc == 0
+    dispatched = [a for a, _ in write.call_args_list
+                  if a[0][:2] == ["workflow", "run"]]
+    assert len(dispatched) == MAX_AUTO_REMEDIATE
