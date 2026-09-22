@@ -1,8 +1,11 @@
-"""Offline tests for the `gh -f body=@file` trap detector (#16866).
+"""Offline tests for the gh posting-trap detector (#16866 member 1, #17326 member 2).
 
-The three positive fixtures are the REAL trapped bodies measured in #16866
-(redacted to their path shapes); negatives cover @mentions, real bodies with
-paths inside prose, and long path-like bodies above the length floor.
+Member 1 positives are the REAL trapped bodies measured in #16866 (redacted to
+their path shapes); member 2 positive is the #17270 payload shape with the real
+body escaped inside the JSON envelope. Negatives cover @mentions, real bodies
+with paths inside prose, fenced JSON snippets in prose (the structural
+predicate must require the WHOLE body to be the object), and both members on
+PR bodies.
 """
 from __future__ import annotations
 
@@ -72,3 +75,80 @@ def test_scan_reports_id_user_and_url():
     assert trapped[0]["id"] == 2
     assert trapped[0]["user"] == "b"
     assert trapped[0]["url"] == "u2"
+    assert trapped[0]["kind"] == "literal-path"
+
+
+# --- member 2: the whole payload JSON published as the body (#17326, #17270) ---
+
+def _payload_body() -> str:
+    # The #17270 shape: long, plausible, and the real body is ESCAPED inside
+    # the "body" value of the JSON envelope -- no published line is a body line.
+    import json
+    return json.dumps({
+        "title": "feat(ci,#17097): mesure stable de la couverture proof-integrity",
+        "body": "Grain: MED/guard -- lane myia-po-2023:CoursIA-2 -- prev: MED/docs #17228\n\n## Resume\n\n...",
+    })
+
+
+def test_payload_body_is_trapped_and_inner_extracted():
+    inner = mod.classify_payload_body(_payload_body())
+    assert inner is not None
+    assert inner.startswith("Grain: MED/guard -- lane myia-po-2023:CoursIA-2")
+
+
+def test_scan_flags_payload_comment_with_inner_first_line():
+    comments = [
+        {"id": 7, "body": _payload_body(), "user": {"login": "c"}, "html_url": "u7"},
+    ]
+    trapped = mod.scan(comments)
+    assert len(trapped) == 1
+    assert trapped[0]["kind"] == "json-payload"
+    assert trapped[0]["inner_first_line"].startswith("Grain: MED/guard")
+    assert trapped[0]["inner_len"] > 50  # a real body, not a stub (instance: 3695)
+
+
+# --- member 2 negatives: a body that merely CONTAINS JSON is not the trap ---
+def test_fenced_json_snippet_in_prose_is_not_the_trap():
+    body = (
+        "Diagnostic : le corps publie etait\n\n```json\n"
+        '{"body": "Grain: ..."}\n'
+        "```\n\nmais le corps source etait correct."
+    )
+    assert mod.classify_payload_body(body) is None
+
+
+def test_json_without_string_body_key_is_not_the_trap():
+    assert mod.classify_payload_body('{"title": "x", "body": null}') is None
+    assert mod.classify_payload_body('{"title": "x"}') is None
+
+
+def test_json_array_or_scalar_is_not_the_trap():
+    assert mod.classify_payload_body('["body", "title"]') is None
+    assert mod.classify_payload_body('42') is None
+
+
+def test_plain_body_and_empty_stay_clean():
+    assert mod.classify_payload_body("Grain: MED/guard -- a perfectly normal body") is None
+    assert mod.classify_payload_body("") is None
+    assert mod.classify_payload_body(None) is None
+
+
+# --- PR body scan: both members, keyed by number ---
+def test_scan_prs_flags_payload_body():
+    prs = [
+        {"number": 17270, "title": "t", "body": _payload_body(), "html_url": "p1"},
+        {"number": 1, "title": "healthy", "body": "Grain: MED/guard -- ok", "html_url": "p2"},
+    ]
+    trapped = mod.scan_prs(prs)
+    assert len(trapped) == 1
+    assert trapped[0]["number"] == 17270
+    assert trapped[0]["kind"] == "json-payload"
+    assert trapped[0]["inner_first_line"].startswith("Grain:")
+
+
+def test_scan_prs_flags_literal_path_body():
+    # gh pr create -b @f.md lands the same literal-path member on a PR body
+    prs = [{"number": 5, "title": "t", "body": "@/tmp/body.md", "html_url": "p"}]
+    trapped = mod.scan_prs(prs)
+    assert len(trapped) == 1
+    assert trapped[0]["kind"] == "literal-path"
