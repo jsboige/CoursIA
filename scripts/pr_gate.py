@@ -582,6 +582,49 @@ def _pending_label(name: str, status: str, conclusion: str) -> str:
     return f"{name} [{status or 'none'}/{conclusion or 'none'}]"
 
 
+def _is_advisory_name(name: str, advisory_jobs: frozenset[str]) -> bool:
+    """Whether `name` is routed to the advisory bucket by `classify`.
+
+    Extracted so `classify` and `unconcluded_with_inflight_successor` cannot
+    drift: the advisory test consults the job name (conventional path) AND,
+    when the job name alone does not match, the workflow-name roster. A second
+    copy of this rule would eventually disagree with the first, and the
+    disagreement would show up as an advisory check holding the gate open.
+    """
+    workflow_label = "advisory" if name in advisory_jobs else ""
+    return bool(is_advisory(name, workflow_label) or workflow_label)
+
+
+def unconcluded_with_inflight_successor(
+    checks: Sequence[dict],
+    self_name: str = DEFAULT_SELF_NAME,
+    advisory_jobs: frozenset[str] = frozenset(),
+) -> list[str]:
+    """Blocking check names that never concluded AND whose successor is coming.
+
+    These are the records that must NOT be read as settled. `wait_and_decide`
+    calls this before its fail-fast branch: a name here is a supersession in
+    progress, not a verdict about the code, so the loop keeps polling (bounded
+    by the existing deadline) until the replacement check-run surfaces.
+
+    Reads the `successor_run_inflight` marker attached by
+    `mark_inflight_successors`; the `dedupe_latest` call mirrors `classify` so
+    both functions judge the SAME entry per name.
+    """
+    names: list[str] = []
+    for check in dedupe_latest(checks):
+        name = check.get("name") or "<unnamed>"
+        if name == self_name or name.startswith(f"{self_name} /"):
+            continue
+        if _is_advisory_name(name, advisory_jobs):
+            continue
+        if (check.get("conclusion") or "").lower() not in CONCLUSION_UNCONCLUDED:
+            continue
+        if check.get("successor_run_inflight"):
+            names.append(name)
+    return sorted(names)
+
+
 def classify(
     checks: Sequence[dict],
     self_name: str = DEFAULT_SELF_NAME,
@@ -648,10 +691,7 @@ def classify(
         # three workflows whose job name does not carry the marker even though
         # the workflow does). Both signals are substring checks against the
         # ADVISORY_MARKER -- case-insensitive.
-        workflow_label = ""
-        if name in advisory_jobs:
-            workflow_label = "advisory"
-        if is_advisory(name, workflow_label) or workflow_label:
+        if _is_advisory_name(name, advisory_jobs):
             if conclusion not in CONCLUSION_OK:
                 state = conclusion or status or "no verdict"
                 advisory.append(f"{name} ({state})")
@@ -1219,6 +1259,13 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                     # the field but this projection dropped it.
                     "completed_at": run.get("completed_at"),
                     "id": run.get("id"),
+                    # #17031: the check-run's `details_url` is the ONLY way to
+                    # trace a check back to the workflow run that produced it
+                    # (`/actions/runs/<run_id>/job/<job_id>`). Without it the
+                    # gate cannot ask the single question that separates a
+                    # cancelled-from-famine check from a cancelled-because-
+                    # superseded one -- see `mark_inflight_successors`.
+                    "details_url": run.get("details_url"),
                 }
             )
         if not page_runs:
@@ -1249,7 +1296,112 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                 }
             )
 
+    # #17031: a `cancelled` conclusion is in CONCLUSION_BAD on the premise that
+    # "after de-duplication it can no longer mean superseded". That premise has
+    # one hole, and it is the whole of this fix: `dedupe_latest` compares
+    # CHECK-RUNS, so a supersession whose replacement run has not created its
+    # check-run YET is invisible to it. Measured on PR #17031 -- two
+    # `pull_request` deliveries 2 s apart, the first wave cancelled by the
+    # per-PR `cancel-in-progress` group, and the gate settled at 07:20:46: 26 s
+    # after the second wave was created and 59 s BEFORE the successor check-run
+    # of `Scripts Tests (CPU)` even started. It published a permanent FAIL
+    # naming two cancelled checks whose successors both went green, and that
+    # verdict could only be cleared by a hand re-run.
+    #
+    # The runs list is fetched ONLY when an unconcluded record is present (the
+    # common PR has none), so the extra call is not paid on the happy path.
+    if any(
+        (check.get("conclusion") or "").lower() in CONCLUSION_UNCONCLUDED
+        for check in checks
+    ):
+        mark_inflight_successors(checks, _fetch_workflow_runs(repo, sha))
+
     return checks
+
+
+def _fetch_workflow_runs(repo: str, sha: str) -> list[dict]:
+    """All workflow runs of one head SHA (`actions/runs`, paginated).
+
+    Distinct from `fetch_checks`: `actions/runs` is the WORKFLOW-level view, and
+    it is the only surface that shows a run which exists but whose check-run has
+    not been created yet. Paginated for the same reason as `fetch_checks`: this
+    repository routinely carries >100 runs per head.
+    """
+    runs: list[dict] = []
+    page = 1
+    while True:
+        payload = _gh_api(
+            f"repos/{repo}/actions/runs?head_sha={sha}"
+            f"&per_page=100&page={page}"
+        )
+        if not isinstance(payload, dict):
+            break
+        page_runs = payload.get("workflow_runs", [])
+        runs.extend(page_runs)
+        total = payload.get("total_count")
+        if not page_runs or (total is not None and len(runs) >= total):
+            break
+        page += 1
+    return runs
+
+
+# `/actions/runs/<run_id>/job/<job_id>` -- the trailing `/job/<id>` is optional
+# because the same URL is served without it for a whole-run check.
+_DETAILS_RUN_RE = re.compile(r"/actions/runs/(?P<run_id>\d+)(?:/job/\d+)?")
+
+
+def _run_id_of(check: Mapping) -> str | None:
+    """The workflow run id carried by a check-run's `details_url`, or None.
+
+    Legacy commit statuses have no `details_url`; they yield None and keep the
+    historical behaviour (no successor question asked).
+    """
+    match = _DETAILS_RUN_RE.search(check.get("details_url") or "")
+    return match.group("run_id") if match else None
+
+
+def mark_inflight_successors(checks: list[dict], runs: Sequence[Mapping]) -> None:
+    """Attach `successor_run_inflight` to every unconcluded check that has one.
+
+    Pure (no network) so the decision is unit-testable: `fetch_checks` supplies
+    the two observations and this function derives the marker.
+
+    A check gets the marker when the SAME workflow has a STRICTLY NEWER run on
+    the same head SHA. The comparison is on `created_at`, not on run id: the
+    module docstring of `dedupe_latest` already records that `actions/runs` ids
+    are NOT monotonic across attempts (an attempt=2 of an old run keeps a smaller
+    id while starting later), so id ordering would be exactly the wrong
+    instrument here.
+    """
+    by_id: dict[str, Mapping] = {}
+    newest_by_workflow: dict[object, str] = {}
+    for run in runs:
+        run_id = str(run.get("id") or "")
+        if run_id:
+            by_id[run_id] = run
+        workflow_id = run.get("workflow_id")
+        if workflow_id is None:
+            continue
+        created = str(run.get("created_at") or "")
+        if workflow_id not in newest_by_workflow or (
+            created > newest_by_workflow[workflow_id]
+        ):
+            newest_by_workflow[workflow_id] = created
+
+    for check in checks:
+        check["successor_run_inflight"] = False
+        if (check.get("conclusion") or "").lower() not in CONCLUSION_UNCONCLUDED:
+            continue
+        owner = by_id.get(_run_id_of(check) or "")
+        if owner is None:
+            continue
+        workflow_id = owner.get("workflow_id")
+        if workflow_id is None:
+            continue
+        if newest_by_workflow.get(workflow_id, "") > str(
+            owner.get("created_at") or ""
+        ):
+            check["successor_run_inflight"] = True
 
 
 def wait_and_decide(
@@ -1303,9 +1455,39 @@ def wait_and_decide(
             detail["advisory"] = list(advisory)
 
         if bad:
-            # Fail fast: a failure cannot be undone by waiting longer.
-            _report_advisory(advisory)
-            return verdict(pending, bad, settled=True, declared_timeouts=timeouts)
+            # #17031: the fail-fast premise -- "a failure cannot be undone by
+            # waiting longer" -- holds for a REAL red and fails for a check that
+            # never concluded. A supersession cancel is undone by waiting
+            # exactly as long as the replacement run needs to create its
+            # check-run, and that is the one case where the successor is
+            # provably already on its way (see `mark_inflight_successors`).
+            #
+            # This cannot leak a pass: `verdict` exits 1 on EVERY branch (rule
+            # 1, documented on the function itself), and the deadline path
+            # re-reads the check set before deciding. Waiting can only convert
+            # this into a pass when a NEWER check-run for the same job is
+            # genuinely green -- which is precisely what `dedupe_latest` already
+            # treats as the job's verdict.
+            inflight = unconcluded_with_inflight_successor(
+                checks, self_name, adv_jobs
+            )
+            if not inflight:
+                # Fail fast: a failure cannot be undone by waiting longer.
+                _report_advisory(advisory)
+                return verdict(
+                    pending, bad, settled=True, declared_timeouts=timeouts
+                )
+            print(
+                f"[pr-gate] holding: {len(inflight)} cancelled check(s) whose "
+                "replacement run already exists -- waiting for its check-run: "
+                f"{', '.join(inflight[:6])}"
+                f"{' ...' if len(inflight) > 6 else ''}",
+                flush=True,
+            )
+            # Join them to `pending` so the EXISTING settle/deadline machinery
+            # treats them as "not yet decided" rather than as a verdict. No new
+            # branch is introduced: this reuses the wait path verbatim.
+            pending = sorted(set(pending) | set(inflight))
 
         if pending:
             quiet_streak = 0

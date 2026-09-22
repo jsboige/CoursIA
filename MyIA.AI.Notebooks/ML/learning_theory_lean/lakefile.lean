@@ -58,3 +58,14 @@ lean_lib «GradientFlow» where
   -- racine : sans le glob nu, `lake build` ne produit jamais GradientFlow.olean
   -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
   globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]
+
+/-- Module `EffectiveTheory` — digestion #16741/arc B (issue #16752) :
+théorie effective de la représentation (Tegmark & co) — R02 parallélogrammes
+du grokking + identités de conservation (App. F), R06 clustering par classe
+(décodeur injectif) + quantité conservée hyperbolique `dC/dt = 0` + contenu
+informationnel `b = log₂(n!/|Aut G|)`, R10 cercle des jours =
+représentation irréductible 2D de `C₇`. Frère de `Perceptron`, `PacLearning`
+et `GradientFlow`. -/
+@[default_target]
+lean_lib «EffectiveTheory» where
+  globs := #[.submodules `EffectiveTheory, `EffectiveTheory]

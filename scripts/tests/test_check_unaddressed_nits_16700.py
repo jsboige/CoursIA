@@ -185,3 +185,59 @@ def test_blocage_precede_ouverture_de_levee():
             "before any merge.")
     assert mod._opens_on_lift(body)
     assert mod.classify("myia-ai-01", body) == "BLOCK"
+
+
+# ── #16700-bis : adjectif interposé entre « Levée » et « de la réserve » ──
+# Mesuré sur #16098 (jsboige, 2026-09-20) : b0 comptait ce commentaire comme
+# nit n°1 alors qu'il EST la levée — l'adjectif « formelle » cassait
+# l'ouverture, le corps tombait en BOT-CONCERN (régime absorbant #16381).
+
+# VERBATIM — commentaire jsboige de #16098 (récupéré via REST). Corps
+# complet = loi de la famille : la citation de la CONCERNS dans la
+# parenthèse d'ouverture fait partie du cas mesuré.
+FOUNDING_16098 = """**Levee formelle de la reserve clusterManager (review CONCERNS du 14/09, `strict = _overcommit_mode() == 2` rendant le mode `None` illisible advisory au lieu de contraignant).**
+
+Le fix `62d791c` livre l'invariant fail-closed demande : `_commit_binding(mode)` a trois etats, `None` (telemetrie illisible) = **contraignant** -- l'organe serre precisement quand il ne peut pas savoir. Verifie firsthand dans la reponse auteur du 14/09 (table de verite par mode + chemin integral + tests).
+
+Disposition tierce deja posee par ai-01 le 16/09 (head `4c283831a`) : *la CONCERN anterieure est reparee ; WAIT uniquement sur l'infrastructure CI*. La branche a ete rafraichie sur main aujourd'hui (head `7495cbfad`, update-branch sans conflit) ; le diff du fix est inchange dans le merge. Il ne reste au gate que les checks infra -- rein de substantiel a corriger cote reserve."""
+
+
+def test_fondateur_16098_levee_formelle_nest_plus_un_nit():
+    """Mesure pre-fix (b0, worktree main d412b5a13c) : nit n°1 de #16098.
+    Apres : None — l'ouverture « **Levée formelle de la réserve » est un
+    geste de résolution par construction."""
+    assert mod.classify("jsboige", FOUNDING_16098) is None
+
+
+def test_fondateur_16098_adjectif_interpose_reconnu():
+    assert mod._opens_on_lift(FOUNDING_16098)
+
+
+def test_adjectif_interpose_variantes():
+    for body in (
+        "**Levée formelle de la réserve Hermes.** Vérifié au head.",  # gras
+        "Levee formelle de la reserve NanoClaw — sans accents",
+        "## Levée formelle de la réserve Hermes",  # heading + adjectif
+        "Levée tierce de la réserve X reste admise.",  # forme existante
+    ):
+        assert mod._opens_on_lift(body), body
+
+
+def test_adjectif_interpose_ensemble_ferme():
+    """Ensemble FERME {tierce, formelle} — pas de classe ouverte [\\w]+ :
+    un adjectif non mesuré ne matche pas, une négation interposée
+    (« Levée impossible de la réserve » = jambe de dissension) non plus.
+    Near-miss documentés dans le body de la PR, style #16617."""
+    for body in (
+        "Levée officielle de la réserve X.",
+        "Levée expresse de la réserve X.",
+        "Levée impossible de la réserve X.",
+        "Levée annulée de la réserve X.",
+    ):
+        assert not mod._opens_on_lift(body), body
+
+
+def test_adjectif_interpose_pas_en_tete():
+    """Position inchangée : l'ancre ^ reste le discriminant."""
+    body = ("D'abord le contexte. Levée formelle de la réserve X plus bas.")
+    assert not mod._opens_on_lift(body)
