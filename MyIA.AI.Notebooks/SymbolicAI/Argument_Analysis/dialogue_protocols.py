@@ -36,6 +36,13 @@ Divergences documentées (mesurées sur le source) :
 4. La terminaison « limite de longueur » (25 pour inquiry, 30 pour
    persuasion) est asymétrique dans le source sans justification — porté
    fidèle.
+5. `_term_double_retract` du source teste deux RETRACT consécutifs — un état
+   que sa propre table de transitions interdit : seul CHALLENGE mène à
+   RETRACT, et RETRACT ne mène pas à RETRACT. La condition est vivante dans
+   le code mais inatteignable par tout dialogue légal (code mort DANS le
+   source) — découverte en écrivant les traces de démonstration du notebook,
+   même nature que la simulation 2.1.6 qui n'appelait jamais ses méthodes
+   de vote (cf governance_methods.py, divergence 1).
 
 Module pur : stdlib uniquement, déterministe par construction (aucun
 aléatoire dans le source porté).

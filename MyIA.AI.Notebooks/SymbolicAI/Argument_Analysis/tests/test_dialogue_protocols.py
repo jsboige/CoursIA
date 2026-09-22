@@ -74,6 +74,23 @@ class TestMachineEtats(unittest.TestCase):
                  self.mv("A", s.RETRACT)]
         self.assertTrue(self.per.is_terminal_state(trace))
 
+    def test_double_retract_inatteignable_par_transitions(self):
+        # Divergence 5 (docstring) : seul CHALLENGE mene a RETRACT, et
+        # RETRACT ne mene pas a RETRACT — deux RETRACT consecutifs sont un
+        # etat que la table interdit : _term_double_retract est inatteignable
+        # par tout dialogue legal.
+        s = self.S
+        menent = [a for a in s if s.RETRACT in self.per.allowed_transitions.get(a, [])]
+        self.assertEqual(menent, [s.CHALLENGE])
+        self.assertNotIn(s.RETRACT, self.per.allowed_transitions[s.RETRACT])
+        trace = [self.mv("A", s.CHALLENGE), self.mv("B", s.RETRACT),
+                 self.mv("A", s.RETRACT)]
+        r = self.per.validate_trace(trace)
+        self.assertFalse(r["valid"])
+        self.assertEqual(r["first_invalid"], 2)
+        # la condition reste vive sur la trace interdite (code mort, pas code absent)
+        self.assertTrue(self.per.is_terminal_state(trace))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
