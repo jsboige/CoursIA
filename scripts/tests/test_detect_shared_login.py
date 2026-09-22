@@ -52,7 +52,8 @@ def test_classify_insensible_a_la_casse():
 def test_controle_positif_sonde_non_epinglee_est_vue():
     """La detection DOIT voir l'appel volontairement non epingle.
 
-    Echoue si la sonde casse (None indu) ou si la classification refuse de
+    Saute (skip) si la sonde est muette (gh absent, non authentifie ou
+    machine sans compte machine) ; echoue si la classification refuse de
     nommer SHARED un login etranger au compte machine.
     """
     try:

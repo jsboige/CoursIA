@@ -2313,6 +2313,12 @@ def test_14704_cli_accepts_repeated_and_csv_prev_genres(monkeypatch, capsys) -> 
     """Les deux formes CLI alimentent le meme ensemble de genres de session."""
     class _R:
         stdout = "[]"
+        stderr = ""
+        # #17418 : main() epingle le jeton AVANT argparse -- le fake doit
+        # impersonifier un CompletedProcess complet (returncode requis) pour
+        # que pin_gh_token() suive son chemin d'echec propre (GhIdentityError
+        # attrapee par main, WARN stderr) au lieu d'un AttributeError.
+        returncode = 1
 
     monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: _R())
     rc = pig.main([
@@ -2342,6 +2348,9 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     # toucher au pool reel.
     class _R:
         stdout = "[]"
+        stderr = ""
+        # #17418 : cf. test_14704 -- returncode requis par pin_gh_token().
+        returncode = 1
     def fake_run(cmd, **kw):
         return _R()
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
