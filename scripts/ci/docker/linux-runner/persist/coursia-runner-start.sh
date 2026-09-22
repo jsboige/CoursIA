@@ -6,12 +6,20 @@
 # Design :
 #   - le token admin GitHub ne vit JAMAIS dans la distro ni dans un argv :
 #     il est relu a CHAQUE invocation depuis master.env cote Windows
-#     (/mnt/c/... via sed + tr -d '\r' -- CRLF tuerait la valeur) ;
+#     (sous /mnt/... via sed + tr -d '\r' -- CRLF tuerait la valeur) ;
 #   - DOCKER_HOST epingle le socket docker-ce, pas le Docker Desktop ;
 #   - l'etat superviseur (sentinel, logs slots) vit sous /var/lib/coursia-runner.
 set -euo pipefail
 
-TOKEN_FILE="/mnt/c/dev/CoursIA/.secrets/master.env"
+# Racine du depot. Le defaut a DEJA demenage : la migration du 2026-09-17 a
+# deplace `C:\dev\CoursIA` -> `D:\Dev\CoursIA`, et ce wrapper pointait encore
+# l'arborescence purgee. Consequence, mesuree (#16578) : `TOKEN_FILE` illisible
+# -> `FATAL` AVANT tout demarrage de slot, donc le pool d'execution reste a ZERO
+# jusqu'a intervention. Les deux surcharges sont celles de la jambe lean, pour
+# que les deux lanceurs po-2024 se reglent de la meme facon.
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
+
+TOKEN_FILE="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 TOKEN="$(sed -n 's/^GH_RUNNERS_ADMIN_TOKEN=//p' "$TOKEN_FILE" | tr -d '\r')"
 if [ -z "$TOKEN" ]; then
     echo "FATAL: GH_RUNNERS_ADMIN_TOKEN absent de $TOKEN_FILE" >&2
@@ -25,6 +33,23 @@ export COURSIA_RUNNER_NAME_PREFIX="myia-po-2024-linux-docker"
 export COURSIA_RUNNER_STATE_DIR="/var/lib/coursia-runner"
 export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 
+# BUDGET MEMOIRE AGREGE DE LA CI SUR CETTE MACHINE, en Go -- declare, pas subi.
+# supervise.sh le lit dans l'environnement ; faute de declaration il retombe sur
+# 12 en le SIGNALANT desormais a chaque demarrage. Le declarer ici est ce qui le
+# rend auditable : la valeur effective vit dans un fichier que l'operateur ouvre,
+# pas dans un defaut de shell que personne ne lit.
+#
+# 12 POUR po-2024 : la VM WSL plafonne a 24 032 Mo, et 12 288 Mo est la moitie
+# que la CI s'autorise -- l'hote garde l'autre moitie. C'est le meme nombre que
+# `MemoryHigh` de coursia-ci.slice sur les machines qui deployent la slice
+# (po-2024 ne la deploie pas : ici le budget n'a pas de mur kernel derriere lui).
+#
+# LES TROIS JAMBES DOIVENT ANNONCER LE MEME NOMBRE. `assert_memory_budget`
+# somme les conteneurs label `coursia-ci=1` de TOUTES les familles : deux jambes
+# qui divergeraient refuseraient leurs slots l'une contre l'autre, et le message
+# d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
+export COURSIA_RUNNER_BUDGET_GB=12
+
 # #15095 : echec immediat si le demon du socket epingle ne repond pas --
 # AVANT tout demarrage de slot et tout fetch de registration token (gh).
 # Sans cette garde, un daemon arrete + Restart=always = le superviseur
@@ -37,7 +62,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-SUPERVISE="/mnt/c/dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh"
+SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------

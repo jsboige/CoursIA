@@ -32,6 +32,27 @@ Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
 
+## Le contexte d'image epingle -- un vivant sans fichier dans le depot (#16134)
+
+Le motif s'etend au **contexte de build des images runner**. Depuis #16134,
+`supervise.sh pin` copie `entrypoint.sh`, `work_cache_health.sh`,
+`seed_action_cache.py`, `Dockerfile` et `Dockerfile.lean` du checkout vers un
+repertoire epingle (defaut `$STATE_DIR/image-context`, overridable par
+`COURSIA_RUNNER_PINNED_CTX`), et le garde de fraicheur compare l'image a CETTE
+copie -- plus au checkout vivant. Ce repertoire est un vivant de la meme
+classe que la table ci-dessus : il n'a **pas** de copie dans `persist/` (il
+n'est pas un fichier unique mais un artefact reconstruit par le gesture), il
+vit hors de tout worktree, et seul `pin` le deplace.
+
+Consequence de deploiement, meme nature que la premiere correction de ce
+fichier : un `git pull` ne deploye RIEN -- apres un merge qui touche
+`entrypoint.sh` ou `work_cache_health.sh`, la sequence est `pin` puis rebuild
+depuis l'epingle (le pin publie le diff d'empreintes et la commande exacte).
+Tant que l'epingle n'est pas bougee, un checkout de branche ou une edition non
+commitee laissent le parc demarrable -- c'est l'acceptance de la tranche (a).
+La protection #14801 est conservee : epingle plus recente que l'image = refus
+`PERIMEE` au demarrage.
+
 ## Les six corrections dues sur #15091 / #15094
 
 Les trois premiers ont ete etablis firsthand sur ai-01 le 2026-09-07, les
@@ -45,7 +66,9 @@ de fichier, **apres** la section « Voir aussi ».
 ### 1. La PR #15094 patche une copie qui ne tourne pas sur ai-01
 
 `persist/coursia-runner.service` et `persist/coursia-runner-start.sh` sont ceux de
-**po-2024** : depot sous `/mnt/c/dev/CoursIA`, prefixe `myia-po-2024-linux-docker`,
+**po-2024** : depot sous `/mnt/d/Dev/CoursIA` (migration du 2026-09-17 ; le
+defaut etait `/mnt/c/dev/CoursIA` avant, cf. #16578), prefixe
+`myia-po-2024-linux-docker`,
 et un wrapper qui relaie n'importe quelle sous-commande (`exec "$SUPERVISE" "$@"`).
 
 Les fichiers vivants d'ai-01 sont differents sur les trois points qui comptent :
@@ -53,6 +76,11 @@ depot sous `/mnt/d/CoursIA`, prefixe `myia-ai-01-wsl`, et un premier argument qu
 est le **nombre de slots**, pas une sous-commande. Un correctif porte sur la copie
 a plat ne touche donc pas la machine qui a gele. C'est ce que le sous-repertoire
 `ai-01/` rend desormais impossible a confondre.
+
+**Les deux chemins ne different plus que par un segment** (`/mnt/d/Dev/CoursIA`
+pour po-2024, `/mnt/d/CoursIA` pour ai-01) : les relire a la lettre avant de
+conclure un drift -- une difference d'un seul composant est exactement ce que
+l'oeil saute.
 
 ### 2. `systemctl start` ignore `disabled` -- une unite desactivee redemarre au boot
 
@@ -120,16 +148,27 @@ premiere ligne de CI -- sans aucun plafond, sur le meme disque que l'interactif.
 C'est la raison d'etre des bornes ci-dessous, et la raison pour laquelle elles sont
 posees **avant** le redemarrage du parc, pas apres.
 
-## Les trois bornes, et laquelle borne quoi
+## Les quatre bornes, et laquelle borne quoi
 
 Elles ne sont pas redondantes : chacune couvre ce que les autres ne peuvent pas
 voir.
 
 | Borne | Ou elle vit | Ce qu'elle borne | Ce qu'elle ne peut pas borner |
 |---|---|---|---|
-| `coursia-ci.slice` | `/etc/systemd/system/` + `cgroup-parent` du daemon | la **somme** de tous les conteneurs : `CPUQuota=800%`, `IOWriteBandwidthMax` | rien en dessous : elle ne distingue pas un slot glouton d'une famille entiere |
+| `coursia-ci.slice` | `/etc/systemd/system/` + `cgroup-parent` du daemon | la **somme** de tous les conteneurs : `CPUQuota=800%`, `MemoryHigh`/`MemoryMax`/`MemorySwapMax`, `IOWriteBandwidthMax` | rien en dessous : elle ne distingue pas un slot glouton d'une famille entiere |
 | `--device-write-bps` / `--device-read-bps` | drapeaux passes par `supervise.sh` a chaque `docker run` | **un** conteneur | la somme : 12 conteneurs conformes un a un saturent quand meme le disque |
 | `COURSIA_RUNNER_CPU_BUDGET` | verification dans `supervise.sh` au demarrage | la **somme des demandes** de vCPU entre familles, **avant** de lancer quoi que ce soit | l'usage reel : c'est un refus de demarrage, pas un plafond kernel |
+| `COURSIA_RUNNER_BUDGET_GB` | **declare par le wrapper de CHAQUE machine** (les trois jambes, meme nombre) | la **somme des memoires** en vol **plus** la demande, toutes familles, avant de lancer un slot | la memoire reellement consommee ensuite, et le page cache de la VM : c'est un refus de demarrage, pas un plafond kernel |
+
+**`COURSIA_RUNNER_BUDGET_GB` est la seule borne de ressource qui n'est PAS inerte
+par defaut**, et c'est pour cela qu'elle doit etre ecrite : elle ne peut pas valoir
+0 (le garde compare une somme EN VOL a ce budget -- 0 refuserait tous les slots de
+toutes les machines), donc son defaut 12 **gouverne**. Tant qu'aucun wrapper ne
+l'ecrit, la valeur effective n'existe dans aucun fichier que l'operateur ouvre.
+Le superviseur la **signale** desormais a chaque demarrage quand elle manque ; un
+avertissement `[budget] AVERTISSEMENT` dans le journal du service veut dire que
+cette machine n'a pas declare son budget, pas que quelque chose est casse.
+
 
 Le budget agrege est **applique par defaut du daemon** (`cgroup-parent` dans
 `daemon.json`), pas par un drapeau du superviseur -- et le superviseur le
@@ -417,7 +456,7 @@ de succes du garde (l.444, `budget CPU inter-familles : N / M vCPU`) est
 
 **Ce que « sans un mot » ne veut PAS dire -- et je l'avais d'abord ecrit trop
 fort.** Declaration n'est pas consommation, et il y a **deux** bornes, pas une :
-la table « Les trois bornes » ci-dessus le dit deja de `COURSIA_RUNNER_CPU_BUDGET`
+la table « Les quatre bornes » ci-dessus le dit deja de `COURSIA_RUNNER_CPU_BUDGET`
 -- « c'est un refus de demarrage, pas un plafond kernel ». Le plafond kernel,
 lui, c'est `coursia-ci.slice` (`CPUQuota=800%`, soit `cpu.max 800000 100000`),
 et il etait **arme et actif tout du long** : mesure du 2026-09-08, la slice

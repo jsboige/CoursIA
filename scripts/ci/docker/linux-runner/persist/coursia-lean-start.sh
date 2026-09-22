@@ -28,8 +28,14 @@
 # jamais en argv).
 set -uo pipefail
 
-MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/c/dev/CoursIA/.secrets/master.env}"
-REPO_DIR="${COURSIA_REPO_DIR:-/mnt/c/dev/CoursIA}"
+# Le defaut de chemin a DEJA demenage : la migration du 2026-09-17 a deplace le
+# depot `C:\dev\CoursIA` -> `D:\Dev\CoursIA`, et ce fichier pointait encore
+# l'arborescence purgee. Ce n'etait pas cosmetique : `[ -r "$MASTER_ENV" ]`
+# echoue AVANT la lecture du token, donc le lanceur sortait en `exit 1` et le
+# pool lean restait a ZERO jusqu'a intervention -- exactement l'incident du
+# 2026-09-09 que ce fichier existe pour fermer (#16578).
+MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
 ARG="${1:-2}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
@@ -45,6 +51,16 @@ export DOCKER_HOST="${DOCKER_HOST:-unix:///var/run/docker-ce.sock}"
 export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
+
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 12 Go, la moitie
+# de la VM WSL (24 032 Mo). Cette jambe est celle qui a rendu l'ecart visible :
+# ses 2 slots a 6 Go demandent 12 288 Mo, et le garde les refuse tant que les
+# 18 432 Mo des deux autres familles sont en vol (18 432 + 12 288 > 12 288).
+# Le refus etait correct ; ce qui manquait etait que le budget soit ECRIT.
+# Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
+# somme les familles entre elles, une divergence refuserait des slots sans
+# nommer sa cause.
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-12}"
 
 cd "$REPO_DIR" || exit 1
 

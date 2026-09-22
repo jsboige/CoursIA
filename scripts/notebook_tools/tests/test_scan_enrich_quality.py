@@ -149,6 +149,33 @@ class TestHrefs:
         f = scan_href(nb, cells, tmp_path)
         assert _cats(f) == {"HREF_MISSING"} and f[0]["severity"] == "HIGH"
 
+    # #17187 : une formule modale dans un code-span n'est pas un lien markdown
+    # -- mesure sur #17122 (8 FP HREF_MISSING, verdict Hermes po-2026).
+    def test_modal_formula_in_codespan_is_silent(self, tmp_path):
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        table = ("| Formule | Lecture |\n"
+                 "|---|---|\n"
+                 "| `[]((p => q)) => []((q))` | ce qui est necessaire est suffisant |\n"
+                 "| `<>(p` | possible en p |\n"
+                 "| `[](p => q) => <>((p` | combine |")
+        f = scan_href(nb, [_md(table)], tmp_path)
+        assert f == []
+
+    def test_link_inside_fence_is_silent(self, tmp_path):
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        fenced = "Exemple :\n```lean\n-- voir [annexe](../Other/target.ipynb)\n```"
+        f = scan_href(nb, [_md(fenced)], tmp_path)
+        assert f == []
+
+    def test_real_link_beside_codespan_still_fires(self, tmp_path):
+        (tmp_path / "Series").mkdir()
+        nb = tmp_path / "Series" / "nb.ipynb"
+        cells = [_md("Formule `[]((p => q))` et lien casse [annexe](../Other/target.ipynb).")]
+        f = scan_href(nb, cells, tmp_path)
+        assert _cats(f) == {"HREF_MISSING"} and f[0]["evidence"] == "../Other/target.ipynb"
+
     def test_existing_relative_href_is_silent(self, tmp_path):
         (tmp_path / "Series").mkdir()
         (tmp_path / "Other").mkdir()
