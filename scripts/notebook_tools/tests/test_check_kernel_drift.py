@@ -134,3 +134,81 @@ def test_diff_signatures_complex_float_with_exponent():
     a = (("[-1.5e+00, 2.5e-01, 3.14159]",),)
     b = (("[-1.5e+00, 2.5000000000000004e-01, 3.14159]",),)
     assert ckd.diff_signatures(a, b) == [0]
+
+
+def _nb_ids(cells):
+    """Build a notebook from (cell_id, output_text) code cells.
+
+    ``output_text`` None means "the cell has no output at all" (the shape of
+    papermill's `injected-parameters` cell, and of a parameters cell).
+    """
+    return {
+        "cells": [
+            {
+                "cell_type": "code",
+                "id": cid,
+                "execution_count": 1,
+                "outputs": ([] if text is None else
+                            [{"output_type": "stream", "name": "stdout",
+                              "text": text}]),
+            }
+            for cid, text in cells
+        ],
+        "metadata": {
+            "kernelspec": {"name": "python3", "display_name": "Python 3"},
+            "language_info": {"version": "3.13.3"},
+        },
+    }
+
+
+def _id_aligned_diffs(base_cells, head_cells):
+    """Run diff_signatures through the id-aligned branch (notebooks given)."""
+    base = _nb_ids(base_cells)
+    head = _nb_ids(head_cells)
+    return ckd.diff_signatures(ckd.float_signatures(base),
+                               ckd.float_signatures(head),
+                               base_nb=base, head_nb=head)
+
+
+def test_diff_signatures_added_empty_cell_not_reported():
+    """#17232 founding instance (PR #17145).
+
+    Papermill replaces its `injected-parameters` cell on every re-execution,
+    and nbformat 4.5 hands the replacement a fresh cell id. The added cell
+    carries no output at all, so it cannot be a float-repr drift: the pair
+    (one id removed, one id added) is the normal fingerprint of a
+    re-execution, not a regression.
+    """
+    assert _id_aligned_diffs(
+        [("params", None), ("c-work", "ok\n")],
+        [("params-new", None), ("c-work", "ok\n")],
+    ) == []
+
+
+def test_diff_signatures_added_cell_with_float_still_reported():
+    """Positive control: the fix must not blind the gate.
+
+    An added cell that really produces a float array is still a drift.
+    """
+    assert _id_aligned_diffs(
+        [("c1", "[1.0, 1.0]\n")],
+        [("c1", "[1.0, 1.0]\n"), ("c2", "[2.0, 2.0]\n")],
+    ) == ["c2"]
+
+
+def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
+    """An empty added cell must not mask drift on a common cell."""
+    assert _id_aligned_diffs(
+        [("c1", "[1.0, 1.0]\n"), ("c2", "[2.0, 2.0]\n")],
+        [("params-new", None), ("c1", "[1.0, 0.9999999999999999]\n"),
+         ("c2", "[2.0, 2.0]\n")],
+    ) == ["c1"]
+
+
+def test_diff_signatures_added_mixed_only_float_ones_reported():
+    """Among several added cells, only those carrying a signature report."""
+    assert _id_aligned_diffs(
+        [("c1", "ok\n")],
+        [("c1", "ok\n"), ("injected", None), ("c3", "[3.0, 3.0]\n")],
+    ) == ["c3"]
+
