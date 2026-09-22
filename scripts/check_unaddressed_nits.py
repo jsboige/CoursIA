@@ -3910,10 +3910,20 @@ def _strip_adjoint_dossier(body: str) -> str:
 # de la réserve X » qui ÉMETTRAIT une réserve NEUVE en corps — résidu
 # hérité de #16700 (corps mixte levée+réserve), mesuré : 0 corps pareil
 # sur 1718 corps des 200 dernières PRs mergées, delta classify = 0.
+# #16700-bis (mesuré #16098, jsboige 2026-09-20) : « **Levée formelle de
+# la réserve clusterManager (...).** Le fix `62d791c` livre ... » —
+# l'adjectif interposé entre « Levée » et « de la réserve » faisait rater
+# l'ouverture, et le corps (attestation d'un fix, aucun résidu vivant)
+# tombait en BOT-CONCERN : la levée de l'autorité comptée comme réserve
+# (régime absorbant #16381). Ensemble FERMÉ d'adjectifs mesurés
+# {tierce, formelle} — pas de classe ouverte [\w]+ : une négation
+# interposée (« Levée impossible de la réserve ») ne doit pas matcher.
+# Near-miss documenté : « officielle », « expresse » hors ensemble
+# jusqu'à mesure réelle.
 _OPENING_LIFT_RE = re.compile(
     r"^(?:#{1,6}[ \t]+)?(?:\*\*[ \t]*)?"
     r"(?:r[ée]serve[ \t]+(?:lev[ée]e|dissip[ée]e)"
-    r"|lev[ée]e[ \t]+(?:tierce[ \t]+)?de[ \t]+(?:la[ \t]+)?r[ée]serve"
+    r"|lev[ée]e[ \t]+(?:(?:tierce|formelle)[ \t]+)?de[ \t]+(?:la[ \t]+)?r[ée]serve"
     r"|je[ \t]+l[eéè]v\w*[ \t]+(?:la[ \t]+)?r[ée]serve)",
     re.IGNORECASE,
 )
