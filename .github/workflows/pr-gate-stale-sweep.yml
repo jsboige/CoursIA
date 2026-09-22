@@ -113,9 +113,24 @@ on:
   # run-created -> job-started 25-136 s on the last four successes -- so no
   # re-route is warranted today: `coursia-waiter` stays forbidden (deadlock:
   # the waiters are held by the aggregators this sweep must unblock),
-  # GitHub-hosted stays out (mandat: consume the containerized runs; #12728
-  # measured a 1.6-2.2 h hosted queue here), and a dedicated pool is the
-  # material lever #15770 leaves to arbitration.
+  # GitHub-hosted was ruled out because #12728 measured a 1.6-2.2 h hosted
+  # queue HERE in 2026-08, and a dedicated pool is the material lever #15770
+  # leaves to arbitration.
+  #
+  # #17397 -- that clause used to read "mandat: consume the containerized
+  # runs". FABRICATED ATTRIBUTION: across the body and every comment of
+  # #12728, "mandat" and "containerized" each occur ZERO times, and all 10
+  # occurrences of "hosted" read "SELF-hosted" -- the pool it routes TOWARD
+  # (verified firsthand 2026-09-22). It argues the opposite in spirit: route
+  # THIS workflow to self-hosted to ESCAPE the then-contended GitHub queue. The
+  # user disowned the supposed mandate in as many words the same day: "Ca
+  # n'est pas mon mandat. Mon mandat, c'est d'equilibrer pour l'efficacite
+  # maximale". The 1.6-2.2 h figure is KEPT because it IS measured in #12728;
+  # what is removed is the standing rule invented on top of it. And the
+  # premise has since INVERTED -- the saturated pool today is ours, not
+  # GitHub's -- so #12728's own reasoning, applied to current conditions,
+  # concludes the other way. Routing decisions belong to a fresh measurement
+  # (#17397), never to this comment.
   # Heartbeat independent of the `schedule` event class -- the SAME remedy
   # #15332 gave the observer (pr-gate-sweep-health-advisory.yml), which this
   # file never received. The asymmetry was backwards: the heartbeat went to the
