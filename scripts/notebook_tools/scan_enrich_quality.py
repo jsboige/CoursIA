@@ -127,6 +127,10 @@ _ARITH_RE = re.compile(
 _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 _HTML_HREF_RE = re.compile(r"<a\s[^>]*href=\"([^\"]+)\"", re.I)
 _SKIP_TARGET_PREFIXES = ("http://", "https://", "mailto:", "#", "data:", "/")
+# Code-span inline : markdown n'interpette PAS son contenu comme des liens --
+# une formule modale `[]((p => q))` dans une table n'est pas un href (#17187,
+# 8 FP HREF_MISSING mesures sur #17122, verdict Hermes po-2026).
+_CODESPAN_RE = re.compile(r"`+[^`\n]*`+")
 
 # --- accents (class c) ------------------------------------------------------
 
@@ -220,6 +224,20 @@ def _fenced_blocks(text: str) -> list[tuple[str, str]]:
         if in_fence:
             cur.append(ln)
     return blocks
+
+
+def _md_link_surface(text: str) -> str:
+    """Surface du texte markdown INTERPRETEE comme liens : blocs fences
+    retires, code-spans neutralises. Markdown ne lie pas le contenu d'un
+    code-span -- le scanner ne doit pas non plus (#17187)."""
+    out, in_fence = [], False
+    for ln in text.splitlines():
+        if _FENCE_RE.match(ln):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            out.append(ln)
+    return _CODESPAN_RE.sub(" ", "\n".join(out))
 
 
 def scan_anchors(cells: list[dict]) -> list[dict]:
@@ -362,7 +380,8 @@ def scan_href(notebook: Path, cells: list[dict], repo_root: Path) -> list[dict]:
     findings = []
     nb_dir = notebook.parent
     for i, cell in _md_cells(cells):
-        targets = _MD_LINK_RE.findall(_src(cell)) + _HTML_HREF_RE.findall(_src(cell))
+        surface = _md_link_surface(_src(cell))
+        targets = _MD_LINK_RE.findall(surface) + _HTML_HREF_RE.findall(surface)
         seen = set()
         for t in targets:
             t = unquote(t).strip()

@@ -191,6 +191,43 @@ def test_qualifying_third_party_lane_satisfies_gate():
         assert errors == [], lane
 
 
+def test_secretary_lane_can_attest_although_it_carries_nothing():
+    """The secretary lane emits dossiers and carries no pull request.
+
+    That asymmetry is exactly why its absence from `QUALIFYING_LANES` was
+    invisible: a carrying lane left out of the set still shows up as a stalled
+    author, while a pure emitter left out simply produces nothing, and the
+    fleet reads the silence as "no dossier was prepared". Measured 2026-09-21:
+    `myia-po-2026:CoursIA-3` had written its dashboard one minute earlier,
+    carried 0 of the last 60 pull requests, and appeared in 0 files under
+    `scripts/` -- while the repository held 0 dossiers and 307 open PRs.
+
+    `myia-po-2023:CoursIA-2` is the mirror case: it carries #16259 but could
+    not attest for anyone.
+    """
+    for lane in ("myia-po-2026:CoursIA-3", "myia-po-2023:CoursIA-2"):
+        ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
+        assert ready, (lane, errors)
+        assert errors == [], lane
+
+
+def test_every_qualifying_lane_is_accepted_end_to_end():
+    """No entry of the set may be accepted by name yet rejected in practice.
+
+    Guards against a lane added to the frozenset while some other check keeps
+    refusing it -- the set would claim a capability the gate does not grant.
+    The fixture's own carrying lane is excluded and asserted refused instead:
+    that refusal is the self-attestation guard doing its job, not a gap.
+    """
+    carrier = "myia-po-2026:CoursIA"
+    assert carrier in mod.QUALIFYING_LANES
+    for lane in sorted(mod.QUALIFYING_LANES - {carrier}):
+        ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
+        assert ready, (lane, errors)
+    _, errors = mod.evaluate(_snapshot(_body(lane=carrier)))
+    assert any(e.startswith("self-prevalidation refused") for e in errors), errors
+
+
 def test_lane_carrying_the_pr_cannot_prevalidate_itself():
     """Self-attestation is refused: the `Grain:` tag names the carrying lane."""
     carrier = "myia-po-2027:CoursIA"

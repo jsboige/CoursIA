@@ -274,6 +274,99 @@ echo "Test 7 : passe complete sur un _work -- layout <workdir>/<repo>/<repo> (gl
 )
 echo ""
 
+# --- Le contrat sous le shell REEL de l'entrypoint (#16643) -----------------
+# Tout ce banc source work_cache_health.sh sous `set -o pipefail` SANS
+# `set -e` -- plus laxiste que entrypoint.sh, qui porte `set -euo pipefail`
+# (ligne 9). C'est la raison pour laquelle l'assertion
+# « wch_check_workdir rend toujours 0 » ci-dessus passait pendant que la
+# production mourait : elle mesurait le CODE DE RETOUR d'une fonction qui,
+# sous set -e, ne REVENAIT pas. Un `if cmd; then` desarme en plus set -e
+# pendant la condition, donc meme un banc qui le porterait ne verrait rien.
+#
+# Ces cas rejouent le shell reel et verifient que l'appelant CONTINUE : le
+# sentinel n'est imprime que si la ligne qui SUIT l'appel s'est executee.
+# Le troisieme cas est le controle NEGATIF exige par l'en-tete de ce
+# fichier -- sans lui, rien ne prouve que les deux premiers ont des dents.
+SENTINEL="LAPPELANT-A-SURVECU"
+
+run_under_entrypoint_shell() {
+  local workdir="$1" child="$TEST_DIR/child.$$.sh"
+  {
+    echo "set -euo pipefail"
+    echo ". '$SCRIPT_DIR/work_cache_health.sh'"
+    cat                       # corps optionnel (redefinitions du controle negatif)
+    echo "wch_check_workdir \"\$WCHT_DIR\" 16"
+    echo "echo '$SENTINEL'"
+  } > "$child"
+  WCHT_DIR="$workdir" bash "$child" 2>&1
+}
+
+# Depot ILLISIBLE : .git present, HEAD reduit a des octets NUL, aucune ref.
+# Signature mesuree firsthand sur le slot myia-ai-01-wsl-8 le 2026-09-18
+# (174 demarrages consecutifs morts en rc=128, zero ligne de journal).
+(
+  D="$TEST_DIR/euo_illisible"
+  R="$D/CoursIA/CoursIA"
+  mkdir -p "$R/.git"
+  printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' > "$R/.git/HEAD"
+  out="$(run_under_entrypoint_shell "$D" < /dev/null)"
+  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+    ok "set -euo pipefail : depot illisible -- l'appelant SURVIT a la passe"
+  else
+    ko "set -euo pipefail : depot illisible -- l'appelant est MORT [$out]"
+  fi
+  if [ ! -d "$R" ]; then
+    ok "set -euo pipefail : depot illisible PURGE (la branche de reparation est atteinte)"
+  else
+    ko "set -euo pipefail : depot illisible conserve -- la purge n'a pas eu lieu"
+  fi
+)
+
+# Depot SAIN mais SANS AUCUN PACK : etat banal d'un clone interrompu, pas une
+# corruption. `ls <glob sans match>` rend rc=2 et tuait wch_maintenance_pass.
+(
+  D="$TEST_DIR/euo_nopack"
+  R="$D/CoursIA/CoursIA"
+  mkdir -p "$R"
+  git -c init.defaultBranch=main init -q "$R"
+  git -C "$R" -c user.email=t@t -c user.name=t commit -q --allow-empty -m seed
+  out="$(run_under_entrypoint_shell "$D" < /dev/null)"
+  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+    ok "set -euo pipefail : depot sans pack -- l'appelant SURVIT"
+  else
+    ko "set -euo pipefail : depot sans pack -- l'appelant est MORT [$out]"
+  fi
+  if [ -d "$R/.git" ]; then
+    ok "set -euo pipefail : depot sain sans pack CONSERVE (non-regression)"
+  else
+    ko "set -euo pipefail : depot sain sans pack purge a tort"
+  fi
+)
+
+# CONTROLE NEGATIF -- le seul cas qui prouve que les deux precedents mesurent
+# quelque chose. On redefinit wch_broken_refs dans sa forme d'AVANT #16643
+# (sans `|| true`) et on exige que l'appelant MEURE. Si le sentinel sort
+# quand meme, c'est le banc qui est creux, pas le code qui est sain.
+(
+  D="$TEST_DIR/euo_negatif"
+  R="$D/CoursIA/CoursIA"
+  mkdir -p "$R/.git"
+  printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' > "$R/.git/HEAD"
+  out="$(run_under_entrypoint_shell "$D" <<'UNGUARDED'
+wch_broken_refs() {
+  wch_git -C "$1" for-each-ref 2>&1 >/dev/null \
+    | sed -n 's/^warning: ignoring broken ref //p'
+}
+UNGUARDED
+)"
+  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+    ko "controle NEGATIF CREUX : la forme non gardee survit -- le banc ne prouve rien"
+  else
+    ok "controle NEGATIF : la forme non gardee TUE l'appelant (le banc a des dents)"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 n_pass="$(grep -c '^PASS ' "$RESULTS" 2>/dev/null)"; n_pass="${n_pass:-0}"
 n_fail="$(grep -c '^FAIL ' "$RESULTS" 2>/dev/null)"; n_fail="${n_fail:-0}"
