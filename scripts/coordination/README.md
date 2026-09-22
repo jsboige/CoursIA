@@ -132,3 +132,37 @@ proprietes dont chacune est un mode d'echec reel : observations concurrentes
 distinctes, idempotence (re-append et re-pliage), schema invalide refuse avec sa
 raison, metriques EAT, suivi des follow-ups, atomicite et verrouillage des
 ecritures locales.
+
+## Organe `merge_ready` (Q40, 2026-09-22)
+
+Fusion hors cycle coordinateur : un organe deterministe (identite myia-ai-01,
+cadence ~20 min) qui merge UNIQUEMENT ce qui passe exactement les controles du
+coordinateur lui-meme, en perimetre (b) uniquement -- hors harnais (`.claude/`,
+`CLAUDE.md` a tout niveau, `.github/`) et hors grains `DEEP`. Motivation
+mesuree : 97 merges en 24 h sur 4 creneaux, 12 heures vides, lead time median
+28,5 h ; un dossier d'adjoint perit en attendant le cycle.
+
+Par PR (la plus ancienne d'abord), TOUT doit tenir sinon skip avec raison
+nommee au journal : pas un brouillon + un commentaire `[ADJOINT PREFLIGHT]`
+(prefiltre), perimetre fail-closed (tier du tag `Grain:` lu par le parseur
+partage `scripts/grain_tag.py`), gate `check_adjoint_prevalidation.py` a
+`ready: true`, champ `b0:` du dossier accepte relu via la grammaire du gate
+(`parse_dossier` importe), organe B.0 `check_unaddressed_nits.py` a exit 0,
+`mergeable_state` REST a `clean` (retry sur `unknown` -- apres un merge les
+soeurs passent `unknown`) et tete identique a celle evaluee, puis
+`gh pr merge --squash --match-head-commit <sha>` (jamais `--delete-branch`,
+jamais `--admin`).
+
+DRY-RUN par defaut (`--apply` pour merger), `--max N` disjoncteur (defaut 15),
+arret sur la premiere erreur inattendue (rc d'un outil hors codes documents),
+`GH_TOKEN` epingle depuis `gh auth token --user myia-ai-01` resolu une fois
+(jamais `gh auth switch`). Journal : une ligne JSON par PR evaluee dans
+`%LOCALAPPDATA%\CoursIA\merge_ready\journal.jsonl`. Codes de sortie : 0
+termine, 1 arret sur erreur inattendue, 2 impossible de demarrer.
+
+Cablage local : `install_merge_ready_task.py --dry-run` imprime la commande
+schtasks exacte (discipline UAC : la sortie precede toute inscription), puis
+`--install` -- tache toutes les 20 minutes qui lance l'organe en `--apply`
+(journaux sous `%LOCALAPPDATA%\CoursIA\merge_ready\logs\`). Tests hermetiques :
+`python -m pytest scripts/tests/test_merge_ready.py
+scripts/tests/test_install_merge_ready_task.py`.
