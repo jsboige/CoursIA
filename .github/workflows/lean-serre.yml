@@ -1,0 +1,76 @@
+name: Lean CI (serre100_lean)
+
+# CI for serre100_lean (SymbolicAI/Lean/Serre100/serre100_lean). Companion lake of the
+# Serre 100 series (EPIC #16334, grain 6 delivered by #16416): "tour des cinq
+# Serre de Mathlib" -- formal echoes of Serre's themes in Mathlib. 0 sorry by
+# construction (measured: distinct_code_sorry=0 over 5 files, count_code_sorry
+# --json). i18n sibling pair Serre100/Tour.lean + Tour_en.lean (convention
+# #4980); FR-only axiom measurement, byte-parity covers the EN side
+# structurally (cf #10997).
+# NOTE (#16734): the migration (Math/Serre100 -> SymbolicAI/Lean/Serre100) is
+# MERGED -- paths below track the post-migration location (fixed here, was
+# wiring-time stale: the gate would never have triggered on the dead path,
+# cf Hermes review #16804).
+# Consolidated per ai-01 DRY decision (option 2: matrix). See lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run the gate
+      # (same rationale as lean-hecke.yml, cf #8951).
+      - '.github/workflows/lean-serre.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it (cf #8712).
+      - '.github/workflows/lean-serre.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-serre-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean
+      display-name: serre100_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # The lake is fully proven (0 sorry): fail-on-sorry: true and allow-axioms: ""
+  # -- the measured footprint must stay within the reusable-workflow defaults;
+  # a NEW axiom (native_decide, sorryAx) = red.
+  # target-modules: "*" (issue #10889) -- module list derived at runtime from
+  # the lake walk; the `_en` i18n sibling is excluded by default (FR-only
+  # measurement, byte-parity covers the EN side structurally, cf #10997).
+  proof-integrity:
+    needs: ci
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean
+      display-name: serre100_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true
