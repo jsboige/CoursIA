@@ -415,7 +415,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)
 
-## Ordre partiel et prérequis — mapping exhaustif (30/30, version consolidée)
+## Ordre partiel et prérequis — mapping exhaustif (29/29, version consolidée)
 
 Cette section pose un **ordre partiel** sur l'ensemble des notebooks du
 répertoire, fondé sur les déclarations de prérequis et les chaînes de
