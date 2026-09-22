@@ -321,7 +321,7 @@ class TestRenameAwareness(unittest.TestCase):
             cfg = _write_config(repo, [ADOPTED + "/**"])
             _git(repo, "mv",
                  ADOPTED + "/CSP/App-5-Timetabling-CSharp.ipynb",
-                 ADOPTED + "/CSP/App-5-Timetabling-CSharp.ipynb")
+                 ADOPTED + "/CSP/App-5-Timetabling-Csharp.ipynb")
             _git(repo, "commit", "-qm", "rename vers une casse hors canon")
 
             # Sans rename classe par Git, le test ne reproduirait plus le defaut
@@ -336,7 +336,7 @@ class TestRenameAwareness(unittest.TestCase):
                              "un rename vers une casse non canonique dans une "
                              "serie adoptee doit rougir\n" + r.stdout + r.stderr)
             self.assertIn("case_deviation", r.stdout)
-            self.assertIn("App-5-Timetabling-CSharp.ipynb", r.stdout)
+            self.assertIn("App-5-Timetabling-Csharp.ipynb", r.stdout)
 
 
 class TestGitTransientSpawnRetry(unittest.TestCase):
