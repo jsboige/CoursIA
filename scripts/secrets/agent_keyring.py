@@ -101,35 +101,33 @@ def entry_key(entry) -> tuple[str, str]:
 
 
 def fingerprint(value: str) -> str:
-    """Empreinte NON reversible, pour la passphrase du coffre.
+    """Empreinte NON reversible d'un secret : longueur + sha256 tronque.
 
-    `mask()` montre les 4 derniers caracteres : c'est la convention utile pour
-    un jeton, qu'on recoupe a l'oeil avec l'interface du fournisseur. Ce n'est
-    PAS la bonne pour une passphrase maitre -- une phrase memorisable dont on
-    publie la fin perd une part de son entropie, et cette sortie-la finit dans
-    un journal, un scrollback, ou le contexte d'un agent.
+    Une version anterieure publiait les **4 derniers caracteres** -- convention
+    courante pour un jeton, qu'on recoupe a l'oeil avec l'interface de son
+    fournisseur. Elle est abandonnee ici, pour deux raisons qui se cumulent :
+
+    1. **Le benefice est nul dans ce contexte.** Un coffre KeePass n'expose
+       aucune interface ou recouper une queue de valeur -- contrairement a un
+       fournisseur d'API. On payait une fuite sans rien acheter.
+    2. **Le cout est reel.** Publier la fin d'une phrase maitre memorisable en
+       retire une part d'entropie, et cette sortie-la finit dans un journal, un
+       scrollback, ou le contexte d'un agent.
+
+    CodeQL l'a signale (`py/clear-text-logging-sensitive-data`, 4 alertes high).
+    Sur le principe du flux il sur-accusait -- une longueur et 4 caracteres ne
+    sont pas un secret en clair -- mais sur le fond il visait juste, et c'est
+    la raison du changement : ce n'est pas une mise en conformite, c'est une
+    correction.
 
     Un sha256 tronque repond a la seule question qu'on se pose vraiment : deux
-    machines portent-elles la MEME passphrase ?
+    machines portent-elles le MEME secret ?
     """
     import hashlib
 
     if not value:
         return "<vide>"
     return f"<{len(value)} car.> sha256:{hashlib.sha256(value.encode('utf-8')).hexdigest()[:12]}"
-
-
-def mask(value: str) -> str:
-    """Empreinte non reversible d'un secret : longueur + 4 derniers caracteres.
-
-    Assez pour comparer deux provisionnements ou reperer une troncature ;
-    inutilisable pour s'authentifier.
-    """
-    if not value:
-        return "<vide>"
-    if len(value) <= 8:
-        return f"<{len(value)} car., trop court pour etre masque sans fuir>"
-    return f"<{len(value)} car.>...{value[-4:]}"
 
 
 # --------------------------------------------------------------------------
@@ -391,7 +389,7 @@ def cmd_show(args) -> int:
     print(f"groupe    : {entry.group.name if entry.group else '-'}")
     print(f"user      : {entry.username or '-'}")
     print(f"url       : {entry.url or '-'}")
-    print(f"password  : {mask(entry.password or '')}")
+    print(f"password  : {fingerprint(entry.password or '')}")
     if entry.mtime:
         print(f"modifiee  : {entry.mtime.isoformat()}")
     return EXIT_OK
@@ -581,7 +579,7 @@ def cmd_verify(args) -> int:
         kind = secret_kind(entry.password)
         if kind != "jeton":
             unusable.append((name, kind))
-        print(f"  {name:<16} present   entree='{entry.title}'  secret={kind}  {mask(entry.password or '')}")
+        print(f"  {name:<16} present   entree='{entry.title}'  secret={kind}  {fingerprint(entry.password or '')}")
     for name in missing:
         print(f"  {name:<16} ABSENT du coffre")
 
