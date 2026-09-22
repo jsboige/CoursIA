@@ -48,8 +48,8 @@ Une PR d'enrichissement peut **toujours** :
 
 ## Détection
 
-- `git diff` filtré sur `^[-+](---|\*\*\*)$` dans les fichiers `.ipynb` montre les substitutions brutes.
-- Le label `reecriture-non-annoncee` (workflow `reecriture-non-annoncee.yml`) se déclenche quand une PR touche un notebook sans déclarer la modification.
+- `git diff` filtré sur `^[-+](---|\*\*\*|___|\* \* \*)$` dans les fichiers `.ipynb` montre les substitutions brutes (les quatre notations CommonMark de `<hr>` couvertes — une substitution `* * *` → `***` passerait un filtre qui ne couvre que les deux premières).
+- Le label `reecriture-non-annoncee` est documenté dans le ticket (#14113/#14119) mais **n'a pas de workflow dédié** dans `.github/workflows/` au commit de cette PR. Les agents qui s'y fient doivent considérer qu'il documente un comportement souhaité, pas une garde automatisée active : la détection reste à la diligence du reviewer (NanoClaw trace les substitutions non déclarées dans les commentaires de review).
 
 ## Interdits
 
