@@ -87,9 +87,11 @@ C'est ce que fait `run-pool-po2026.sh`. Trois raisons, chacune mesuree :
 2. **systemd tourne en PID 1 dans la distro** (255), donc `systemd-run --user`
    dispose d'un gestionnaire pour creer et borner le scope. Le scope est nomme,
    donc verifiable : `systemctl --user status coursia-pool-po2026.scope`.
-3. **Le mecanisme est verifiable par le cgroup du processus**, pas par sa presence :
-   `cat /proc/<pid>/cgroup` doit rendre `.../coursia-pool-po2026.scope`. Un
-   superviseur nu rend `/init.scope` -- c'est exactement le tell du defaut.
+3. **Le mecanisme est verifiable par le cgroup du processus.** Mesures du
+   2026-09-22 : superviseur nu `0::/init.scope` ; processus dans un scope utilisateur
+   nomme `0::/user.slice/user-1000.slice/user@1000.service/app.slice/<nom>.scope`.
+   C'est le tell du defaut, et il ne demande aucune hypothese sur la facon dont le
+   processus a ete lance.
 
 ### Le piege du transport `wsl.exe` -- un `$` dans la commande, et la borne disparait
 
@@ -203,11 +205,14 @@ gh api repos/jsboige/CoursIA/actions/runners --paginate \
   --jq '.runners[] | select(.name|test("myia-po-2026-wsl-")) | .name'
 ```
 
-Les etapes 4 et 5 sont les deux oracles : `systemd-run` qui rend « Running as unit »
-ne prouve **pas** que le superviseur a ete atteint (cf. le piege du transport
-ci-dessus), et `systemctl --user list-units 'coursia*'` peut rendre 0 unite alors
-qu'un scope transitoire est actif. La preuve de la borne est le **cgroup du
-processus**, la preuve de la relance est une **ligne du jour** dans `pool.log`.
+Les etapes 4 et 5 sont les deux oracles. `systemd-run` qui rend « Running as unit »
+ne prouve **pas** que le superviseur a ete atteint -- il l'a rendu pendant des
+heures alors que `pool.sh` n'etait jamais lance (cf. le piege du transport
+ci-dessus). La preuve de la **relance** est une ligne du jour dans `pool.log` ; la
+preuve de la **borne** est le cgroup du processus. La liste des unites n'est qu'un
+indice : elle rendait 0 unite sur le superviseur nu, et elle rend le scope nomme
+seulement tant qu'il est vivant -- deux etats tres differents que la meme sortie
+vide confond.
 
 ## Ce que cette PR ne tranche pas
 
