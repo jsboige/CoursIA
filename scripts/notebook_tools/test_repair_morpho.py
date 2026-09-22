@@ -153,9 +153,17 @@ class TestScanCellSource(unittest.TestCase):
         self.assertEqual(findings[0].suggested, "donne")
 
     def test_decide_jamais_signale(self):
-        """Invariant map REACCENT upstream : 'decide' ne doit JAMAIS etre signale."""
+        """Invariant : 'decide' (forme non-accentuee, convention main) n'est JAMAIS signale."""
         findings = _scan_cell_source(0, "Si vous etes un agent qui decide du mode.")
-        self.assertEqual(findings, [])
+        self.assertEqual(findings, [],
+                         "'decide' (sans accent) n'est JAMAIS signale -- convention main c.1350-L3")
+
+    def test_decide_accentue_signale(self):
+        """c.1369 (issue #17323) : 'décide' accentue fautif en markdown prose -> 1 finding."""
+        findings = _scan_cell_source(0, "Si vous etes un agent qui décide du mode.")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].word, "décide")
+        self.assertEqual(findings[0].suggested, "decide")
 
     def test_multiples_occurrences(self):
         """3 'prouve' fautifs (defaut REACCENT upstream) + 1 legitime = 3 findings."""
@@ -277,9 +285,11 @@ class TestControlePositifReaccentUpstream(unittest.TestCase):
                           "le prouvé fautif (verbe 3e pers.) doit etre signale")
             self.assertIn("donné", words_found,
                           "le sup donné fautif doit etre signale")
-            # 'décide' ne doit JAMAIS etre signale (invariant map upstream)
-            self.assertNotIn("décide", words_found,
-                             "décide ne doit jamais etre signale (map upstream)")
+            # 'décide' en cellule markdown prose / reference typographique
+            # EST signale fautif (c.1369, issue #17323, Tell c.1350-L3 ★★★
+            # fondateur : convention main non-accentué).
+            self.assertIn("décide", words_found,
+                          "décide en markdown prose doit etre signale (c.1369)")
 
             # Repair : on verifie que les corrections sont appliquees
             r = repair_notebook(path, dry_run=False)
@@ -297,6 +307,93 @@ class TestControlePositifReaccentUpstream(unittest.TestCase):
             # 'Le sup donné' doit etre corrige -> 'Le sup donne'
             self.assertIn("Le sup donne", repaired,
                           "'Le sup donné' doit etre corrige (accent retire)")
+
+
+# --- Tests c.1369 -- extension decide class ---------------------------------
+
+
+class TestDecideClass(unittest.TestCase):
+    """Extension c.1369 (issue #17323) : decide en markdown prose.
+
+    Tell c.1350-L3 ★★★ fondateur : convention main non-accentué.
+    Cellules code (tactiques by decide, Decidable) = JAMAIS touchees (filtre
+    cell_type == 'markdown' ligne 195 de repair_morpho.py).
+    """
+
+    def test_decide_markdown_prose_signale(self):
+        """décide en markdown prose francaise = fautif -> decide."""
+        cell = _md_str("La tactique decide est preservee.\nLa tactique décide est fautive.\n")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "test.ipynb"
+            _write_nb(_make_nb([cell]), path)
+            report = scan_notebook(path)
+            decide_findings = [f for f in report.findings if f.word == "décide"]
+            self.assertEqual(len(decide_findings), 1,
+                             "1 decide fautif en prose markdown doit etre signale")
+            self.assertEqual(decide_findings[0].suggested, "decide")
+
+    def test_decide_reference_typographique_signale(self):
+        """``[décide]`` ou ``décide`` en reference typographique = fautif."""
+        cell = _md_str("Voir la reference `décide` dans le pipeline.\n")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "test.ipynb"
+            _write_nb(_make_nb([cell]), path)
+            report = scan_notebook(path)
+            decide_findings = [f for f in report.findings if f.word == "décide"]
+            self.assertEqual(len(decide_findings), 1,
+                             "decide en backtick markdown = fautif (c.1369)")
+
+    def test_decide_code_cell_INTACT(self):
+        """décide en cellule code = INTACT (filtre cell_type)."""
+        cell_code = {
+            "cell_type": "code",
+            "metadata": {},
+            "source": ["-- decide est preserve en code\n", "by decide\n"],
+        }
+        cell_md_fautif = _md_str("La tactique décide est fautive.\n")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "test.ipynb"
+            _write_nb(_make_nb([cell_md_fautif, cell_code]), path)
+            report = scan_notebook(path)
+            # Le seul finding est dans la cellule markdown (index 0)
+            decide_findings = [f for f in report.findings if f.word == "décide"]
+            self.assertEqual(len(decide_findings), 1)
+            self.assertEqual(decide_findings[0].cell_index, 0,
+                             "le seul decide fautif est en cellule 0 (markdown)")
+            # Aucun finding en cellule 1 (code)
+            code_findings = [f for f in report.findings if f.cell_index == 1]
+            self.assertEqual(len(code_findings), 0,
+                             "cellule code = JAMAIS scannee (invariant anti-faux-positif)")
+
+    def test_decide_non_accentue_preserve(self):
+        """decide sans accent (forme legitime) = JAMAIS signale fautif."""
+        cell = _md_str("La tactique decide est implementee en Lean 4.\n")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "test.ipynb"
+            _write_nb(_make_nb([cell]), path)
+            report = scan_notebook(path)
+            decide_findings = [f for f in report.findings if f.word in ("décide", "decide")]
+            self.assertEqual(len(decide_findings), 0,
+                             "decide sans accent n'est JAMAIS signale (convention main)")
+
+    def test_decide_repair_corrige_atomicite(self):
+        """Le repair doit corriger decide -> decide SANS toucher au reste."""
+        cell = _md_str("La tactique decide est preservee.\nLa tactique décide est fautive.\n")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "test.ipynb"
+            _write_nb(_make_nb([cell]), path)
+            r = repair_notebook(path, dry_run=False)
+            self.assertEqual(r.cells_modified, 1)
+            # Verifier : la 1re occurrence reste 'decide', la 2e devient 'decide'
+            repaired = path.read_bytes().decode("utf-8")
+            self.assertIn("La tactique decide est preservee", repaired,
+                          "1re occurrence preservee")
+            self.assertIn("La tactique decide est fautive", repaired,
+                          "2e occurrence corrigee")
+            # Re-scan : 0 finding residuel
+            final = scan_notebook(path)
+            self.assertEqual(len(final.findings), 0,
+                             "0 finding residuel apres repair")
 
 
 # --- Integration : notebook reel --------------------------------------------

@@ -17,7 +17,11 @@ Correctifs implementes :
 2. ``donne -> donné`` uniquement dans locution ``étant donné`` / ``tant donné``
    (jusqu'a 30 chars avant -- autorise mots intercalés type ``qui est tant
    donné``).
-3. ``decide`` **jamais accentue** : pas de map upstream fautive.
+3. ``decide`` **jamais accentue** dans les cellules CODE (tactiques Lean).
+4. **c.1369 / issue #17323** : ``décide`` (accentue) **toujours fautif** en
+   cellule MARKDOWN prose OU référence typographique en backticks. Tell
+   c.1350-L3 ★★★ fondateur : convention main = non-accentué. Les cellules
+   code ne sont pas scannées (filtre ``cell_type == 'markdown'`` ligne 195).
 
 Contraintes structurelles (cf tells c.1343 fondateurs) :
 - ``source[]`` est preservee (list-edit par item, JAMAIS split('\n')) -- evite
@@ -65,6 +69,25 @@ AUXILIAIRES_2CHARS_PLUS = frozenset({
 
 # Locutions figees avec "donne" -- 30 chars de fenetre (mots intercalés OK)
 LOCUTIONS_DONNE = ("etant donne", "tant donne")
+
+
+# --- Discrimination 'decide' (issue #17323 / c.1369) ------------------------
+#
+# Tell c.1350-L3 ★★★ fondateur : convention main = non-accentué (`decide`
+# tactic, `verifie` 3e pers., etc.). Le verbe 3e pers. francais `decide`
+# n'est JAMAIS accentué en prose markdown.
+#
+# Cas particulier : référence typographique à la tactique en backticks
+# (`` `[décide]` `` ou `` `[décide]` ``). Meme traitement : la convention main
+# prime, le mot-clé Lean est `decide` non-accentué. Les références
+# typographiques Markdown doivent s'aligner.
+#
+# Invariant préservé (Tell c.1345-L1 ★★★★★ fondateur) : les cellules CODE
+# ne sont JAMAIS scannées (filtre `cell_type == 'markdown'` ligne 195).
+# Donc `by decide` dans une cellule code = intact.
+
+DECIDE_ACCENTUE = "décide"
+DECIDE_NON_ACCENTUE = "decide"
 
 
 # --- Modele de rapport -------------------------------------------------------
@@ -179,6 +202,19 @@ def _scan_cell_source(cell_index: int, src_text: str) -> List[MorphoFinding]:
                 position=m.start(),
                 context=src_text[max(0, m.start() - 30):m.end() + 15].replace("\n", " "),
             ))
+    # Pattern 3 (c.1369 / issue #17323) : forme ACCENTUEE "décide" fautive
+    # en cellule markdown prose OU référence typographique en backticks.
+    # Tell c.1350-L3 ★★★ fondateur : convention main non-accentué.
+    # Filtre cell_type == 'markdown' assure que les cellules CODE (tactiques
+    # `by decide`, `decide instance`) ne sont pas scannées.
+    for m in re.finditer(r"\bdécide\b", src_text):
+        findings.append(MorphoFinding(
+            cell_index=cell_index,
+            word=m.group(0),
+            suggested="decide",
+            position=m.start(),
+            context=src_text[max(0, m.start() - 30):m.end() + 15].replace("\n", " "),
+        ))
     return findings
 
 
@@ -252,6 +288,9 @@ def repair_notebook(path: Path, dry_run: bool = False) -> MorphoReport:
                             new_item = new_item[:m.start()] + f.suggested + new_item[m.end():]
                         elif f.word == "donné" and not is_donne_legitimate(ctx):
                             new_item = new_item[:m.start()] + f.suggested + new_item[m.end():]
+                        elif f.word == "décide":
+                            # Toujours fautif en cellule markdown prose (c.1369)
+                            new_item = new_item[:m.start()] + f.suggested + new_item[m.end():]
                 if new_item != item_text:
                     if new_src is None:
                         new_src = list(src)
@@ -274,6 +313,9 @@ def repair_notebook(path: Path, dry_run: bool = False) -> MorphoReport:
                         if f.word == "prouvé" and not is_prouve_legitimate(ctx):
                             new_src = new_src[:m.start()] + f.suggested + new_src[m.end():]
                         elif f.word == "donné" and not is_donne_legitimate(ctx):
+                            new_src = new_src[:m.start()] + f.suggested + new_src[m.end():]
+                        elif f.word == "décide":
+                            # Toujours fautif en cellule markdown prose (c.1369)
                             new_src = new_src[:m.start()] + f.suggested + new_src[m.end():]
                 if new_src != src:
                     cell["source"] = new_src
