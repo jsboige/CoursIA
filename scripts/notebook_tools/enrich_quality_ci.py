@@ -44,6 +44,36 @@ def high_signatures(nb_path: str | None, base_path: str | None, repo_root: Path)
     return {(f["category"], f["message"]) for f in rep["findings"] if f["severity"] == "HIGH"}
 
 
+class BaseNotResolvedError(RuntimeError):
+    """Raised when --base was provided but its content could not be located.
+
+    Distinguishes the silent-empty-base case (which fabricates new REGRESSION
+    verdicts) from the legitimate NONE case (brand-new notebook, no baseline).
+    The CI workflow (enrich-quality-gate.yml) already extracts `git show` to a
+    temp file before invoking this script, so it is immune; the bug bites the
+    worktree CLI invocation `--base HEAD`. See issue #17424.
+    """
+
+
+def resolve_base(base_arg: str | None, head_path: str, repo_root: Path) -> str | None:
+    """Return a path-like string usable by ``high_signatures``, or raise.
+
+    Accepts ``None`` (no baseline), ``NONE`` (literal brand-new notebook), or
+    a filesystem path that exists. Anything else (a git ref like ``HEAD`` or
+    ``HEAD~1``) raises :class:`BaseNotResolvedError` so the caller fails loudly
+    instead of rendering the base silently empty.
+    """
+    if base_arg is None or base_arg == "" or base_arg == "NONE":
+        return base_arg
+    if Path(base_arg).exists():
+        return base_arg
+    raise BaseNotResolvedError(
+        f"--base {base_arg!r} is neither a readable path nor the literal NONE. "
+        f"Pass an extracted notebook file (e.g. `git show {base_arg}:<head_path> > /tmp/base.ipynb`), "
+        f"or use --base NONE for a brand-new notebook. See issue #17424."
+    )
+
+
 def regressions(base_path: str | None, head_path: str | None, repo_root: Path) -> list[tuple[str, str]]:
     """HIGH findings present in head but not in base (sorted, deterministic)."""
     # The base is scanned STANDALONE (no base-of-base): head-only checks run
@@ -55,7 +85,7 @@ def regressions(base_path: str | None, head_path: str | None, repo_root: Path) -
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Enrich-quality per-PR regression gate.")
-    ap.add_argument("--base", help="base revision of the notebook, or NONE for a new file")
+    ap.add_argument("--base", help="path to the base notebook (already extracted to disk), or NONE for a new file. Issue #17424: --base does NOT resolve git revs.")
     ap.add_argument("--head", required=True, help="head (PR) revision of the notebook, at its repo path")
     ap.add_argument("--repo-root", default=None,
                     help="tree against which hrefs resolve (default: the repo containing this script)")
@@ -63,7 +93,13 @@ def main(argv=None) -> int:
 
     repo_root = Path(args.repo_root).resolve() if args.repo_root else Path(__file__).resolve().parent.parent.parent
 
-    new = regressions(args.base, args.head, repo_root)
+    try:
+        resolved_base = resolve_base(args.base, args.head, repo_root)
+    except BaseNotResolvedError as exc:
+        print(f"enrich_quality_ci: {exc}", file=sys.stderr)
+        return 2  # distinct from REGRESSION=1 and OK=0 so CI can branch on it.
+
+    new = regressions(resolved_base, args.head, repo_root)
     if not new:
         return 0
 
