@@ -2498,7 +2498,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,b414a521-
 
 Le twin Python **appelle** CP-SAT et constate un speedup de plusieurs millions ; ce twin **déroule** l'algorithme de propagation qui produit ce speedup, rendant la mécanique explicite.
 
-**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb) (CSP).
+**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) (CSP).
 ",,,,,,,,f44c0c4cd3d169e9,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,3c1f79a3-614d-4c4c-86fa-7cf65caae1b1,markdown,fr,dd9e23a2820d5d05,"## 1. Représentation et énumération des motifs d'une ligne
 
@@ -2828,7 +2828,7 @@ Ce twin C# a **déroulé from-scratch** la mécanique de résolution des nonogra
 
 ★ **Leçon** : la propagation de contraintes (déduction locale itérée) transforme un problème exponentiel en problème polynomial — c'est exactement ce que CP-SAT industrialise, et dont le « speedup spectaculaire » du twin Python n'est que la manifestation mesurée.
 
-**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), propagation ⇄ [`CSP-1` §consistance arc](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), CP-SAT ⇄ [`App-11-Picross`](App-11-Picross.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), propagation ⇄ [`CSP-1` §consistance arc](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), CP-SAT ⇄ [`App-11-Picross`](App-11-Picross.ipynb) (twin Python, solveur industriel).
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications, tranche Picross / nonogrammes. See #4956, #3801.*
@@ -3871,7 +3871,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-15b-SportsScheduling-CSharp.ipynb,
 > **Twin C#** de [`App-15-SportsScheduling`](App-15-SportsScheduling.ipynb) (Python + OR-Tools CP-SAT + numpy + matplotlib).
 > Marathon **.NET / Python** (#4956), volet **Search / Applications / CSP**.
 
-**Navigation** : [<< App-15 Python](App-15-SportsScheduling.ipynb) | [Index](../../README.md) | [App-16 Crossword >>](App-16-Crossword-CSP-Csharp.ipynb)
+**Navigation** : [<< App-15 Python](App-15-SportsScheduling.ipynb) | [Index](../../README.md) | [App-16 Crossword >>](App-16-Crossword-CSP-CSharp.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -4707,7 +4707,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-15b-SportsScheduling-CSharp.ipynb,
 *Marathon .NET / Python #4956 -- Search/Applications/CSP, tranche planification sportive. See #4956, #3801.*
 
 ",,,,,,,,bbb59b67539945ec,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,3da136da-a583-444f-8cd6-8fbfb8f817d0,markdown,fr,e36adb44f169cfc0,"# App-16-Crossword-CSP (C#)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,3da136da-a583-444f-8cd6-8fbfb8f817d0,markdown,fr,e36adb44f169cfc0,"# App-16-Crossword-CSP (C#)
 
 **Navigation** : [<< App-15-SportsScheduling](App-15b-SportsScheduling-CSharp.ipynb) | [Index](../README.md) | [App-17-VRP >>](../Hybrid/App-17-VRP-Logistics.ipynb)
 
@@ -4725,10 +4725,10 @@ La generation de mots croises est un **CSP** (Constraint Satisfaction Problem) c
 
 > **Parite #4956** : la version Python s'appuie sur OR-Tools CP-SAT (solveur boite noire) et implemente aussi backtracking + propagation from-scratch. Ce twin C# (BCL .NET 9, **0 NuGet**) deroule le backtracking + forward-checking from-scratch (les internes pedagogiques que masque OR-Tools). La viz matplotlib devient un rendu ASCII de la grille (convention GT-4c).
 ",,,,,,,,e36adb44f169cfc0,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,36a0f74a-d4e5-4180-a2ef-ff83557b6d84,markdown,fr,1e6a1a7cf126f1bb,"## 1. Modelisation du problème
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,36a0f74a-d4e5-4180-a2ef-ff83557b6d84,markdown,fr,1e6a1a7cf126f1bb,"## 1. Modelisation du problème
 
 Une **grille** de mots croises est une matrice de cases, chacune **blanche** (lettre a placer) ou **noire** (bloque). Un **slot** est une suite maximale de cases blanches consecutives (longueur >= 2), horizontalement ou verticalement. Chaque slot recoit un mot du dictionnaire de la bonne longueur. Deux slots qui se croisent a une case partagent une lettre : la position de cette lettre dans le mot horizontal doit egaler celle dans le mot vertical.",,,,,,,,1e6a1a7cf126f1bb,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,fdfe3cb3-d35c-4361-a3f3-839403af0db1,code,fr,a4b39eec2be1d4d8,"using System.Linq;
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,fdfe3cb3-d35c-4361-a3f3-839403af0db1,code,fr,a4b39eec2be1d4d8,"using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 
@@ -4804,10 +4804,10 @@ foreach (var s in slots)
     sb.AppendLine($""  ({s.Row},{s.Col}) {s.Dir} longueur {s.Length}"");
 Show(sb.ToString());
 ",,,,,,,,a4b39eec2be1d4d8,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,babea4d9-fcba-4de9-a453-59d4c610d188,markdown,fr,87b7aa5033293ac6,"### 1.1 Intersections entre slots
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,babea4d9-fcba-4de9-a453-59d4c610d188,markdown,fr,87b7aa5033293ac6,"### 1.1 Intersections entre slots
 
 Deux slots se croisent ssi l'un est horizontal, l'autre vertical, et la case de croisement appartient aux deux. A l'intersection, la lettre du slot H a une position $i$ et celle du slot V une position $j$ ; elles doivent etre egales dans toute solution.",,,,,,,,87b7aa5033293ac6,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,8194c326-1ee5-41ce-9fb9-dba6b464e1e6,code,fr,8d29df16b769dbaf,"// Intersection de deux slots : (position dans slot1, position dans slot2) ou null.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,8194c326-1ee5-41ce-9fb9-dba6b464e1e6,code,fr,8d29df16b769dbaf,"// Intersection de deux slots : (position dans slot1, position dans slot2) ou null.
 static (int i1, int i2)? Intersect(Slot a, Slot b)
 {
     // Un horizontal, l'autre vertical.
@@ -4848,12 +4848,12 @@ $""Intersections detectees : {inter.Count} (paires de slots se croisant)"".Displ
 foreach (var kv in inter.Take(5))
     $""  slots[{kv.Key.Item1}] x slots[{kv.Key.Item2}] : pos {kv.Value.Item1} = pos {kv.Value.Item2}"".Display();
 ",,,,,,,,8d29df16b769dbaf,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,9d612d59-fcfc-4a3a-ae87-874f27e9aada,markdown,fr,02ec1d056cac077d,"## 2. Solveur Backtracking (from-scratch)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,9d612d59-fcfc-4a3a-ae87-874f27e9aada,markdown,fr,02ec1d056cac077d,"## 2. Solveur Backtracking (from-scratch)
 
 On assigne les slots un par un. Pour chaque slot, on essaie chaque mot du dictionnaire de la bonne longueur ; on accepte le mot s'il est **compatible** avec les slots déjà assignes qui le croisent (même lettre a l'intersection). On recurse jusqu'a ce que tous les slots soient assignes (succes) ou qu'aucun mot ne convienne (echec -> retour arriere).
 
 **Heuristique MRV (Minimum Remaining Values)** : on choisit a chaque étape le slot non-assigne avec le **moins** de candidats restants, ce qui reduit drastiquement la taille de l'arbre de recherche.",,,,,,,,02ec1d056cac077d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,0ecfbc07-3964-4050-bdd2-a21fad23254d,code,fr,5622d37231b8fe39,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,0ecfbc07-3964-4050-bdd2-a21fad23254d,code,fr,5622d37231b8fe39,"#nullable enable
 // Compatible : un mot candidat pour slot 'i' respecte-t-il les intersections avec les slots deja assignes ?
 static bool Compatible(int i, string word, List<Slot> slots, Dictionary<(int,int),(int,int)> inter, Dictionary<int,string> assignment)
 {
@@ -4900,10 +4900,10 @@ static Dictionary<int,string>? SolveBacktrack(List<Slot> slots, Dictionary<int,L
 }
 ""Solver pret (backtracking + MRV + verification intersections)."".Display();
 ",,,,,,,,5622d37231b8fe39,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,8d2613b6-0149-4151-a7af-6cc99740bdc3,markdown,fr,fb1dd3c40eb09762,"### 2.1 Resolution sur la grille exemple
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,8d2613b6-0149-4151-a7af-6cc99740bdc3,markdown,fr,fb1dd3c40eb09762,"### 2.1 Resolution sur la grille exemple
 
 On construit un dictionnaire reduit indexe par longueur, puis on lance le backtracking.",,,,,,,,fb1dd3c40eb09762,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,07a5b9bb-c318-4424-a9a3-27c179a5be13,code,fr,9b148753f557d1c3,"// Dictionnaire reduit indexe par longueur (mots majuscules sans accents).
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,07a5b9bb-c318-4424-a9a3-27c179a5be13,code,fr,9b148753f557d1c3,"// Dictionnaire reduit indexe par longueur (mots majuscules sans accents).
 var dictionary = new Dictionary<int,List<string>> {
     [2] = new(){ ""AI"", ""OK"", ""GO"", ""NO"", ""OR"", ""AN"", ""AT"", ""IN"", ""IS"", ""IT"", ""ON"", ""UP"", ""US"" },
     [3] = new(){ ""CAT"", ""DOG"", ""RUN"", ""SUN"", ""TOP"", ""KEY"", ""ICE"", ""OLD"", ""NEW"", ""BAR"", ""FOR"", ""OUT"", ""TWO"", ""ONE"", ""SIX"", ""TEN"", ""AGE"", ""AIR"", ""ART"", ""BAD"", ""BAG"", ""BED"", ""BIG"", ""BIT"", ""BOX"", ""BOY"", ""BUS"", ""BUY"", ""CAR"", ""CUP"", ""CUT"", ""DAY"", ""DRY"", ""EAT"", ""END"", ""EYE"", ""FAR"", ""FEW"", ""FLY"", ""FUN"" },
@@ -4923,10 +4923,10 @@ else
     ""Aucune solution (dictionnaire trop petit ou grille trop contrainte)."".Display();
 }
 ",,,,,,,,9b148753f557d1c3,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,a6b7755a-5e5e-47d0-916c-e56f3200efd0,markdown,fr,77efebd15dd1360c,"### 2.2 Affichage de la grille remplie
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,a6b7755a-5e5e-47d0-916c-e56f3200efd0,markdown,fr,77efebd15dd1360c,"### 2.2 Affichage de la grille remplie
 
 On reconstruit la grille de lettres depuis l'assignation des slots et on l'affiche en ASCII.",,,,,,,,77efebd15dd1360c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,0d46b66a-511e-4c60-81b7-1ffa3d3b0d5e,code,fr,f45cb3ede441a6c9,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,0d46b66a-511e-4c60-81b7-1ffa3d3b0d5e,code,fr,f45cb3ede441a6c9,"#nullable enable
 // Affiche la grille remplie : '#' = case noire, '.' = case blanche isolee, sinon la lettre.
 static string RenderFilled(CrosswordGrid g, List<Slot> slots, Dictionary<int,string>? assignment)
 {
@@ -4958,12 +4958,12 @@ static string RenderFilled(CrosswordGrid g, List<Slot> slots, Dictionary<int,str
 Show(""Grille remplie :"");
 Show(RenderFilled(grid, slots, solution));
 ",,,,,,,,f45cb3ede441a6c9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,6f55eef4-e0c6-4aa3-ab67-91e898850730,markdown,fr,c4642b42887e95d6,"## 3. Propagation de contraintes (forward-checking)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,6f55eef4-e0c6-4aa3-ab67-91e898850730,markdown,fr,c4642b42887e95d6,"## 3. Propagation de contraintes (forward-checking)
 
 Le backtracking pur verifie la compatibilite seulement avec les slots **déjà assignes**. Le **forward-checking** va plus loin : après chaque assignation, on filtre les candidats des slots **non encore assignes** qui croisent le slot courant, et on detecte les **domaines vides** (un slot sans candidat restant) pour couper la recherche plus tot.
 
 On instrumente le solveur pour compter les **noeuds explores** et comparer les deux stratégies.",,,,,,,,c4642b42887e95d6,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,f59d02b3-431b-4f8e-b4cb-c19b4b34c66e,code,fr,5d1a74bbd1118aa2,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,f59d02b3-431b-4f8e-b4cb-c19b4b34c66e,code,fr,5d1a74bbd1118aa2,"#nullable enable
 // Backtracking + forward-checking : apres chaque assignation, on elimine des candidats
 // des slots non-assignes croisant le slot courant. Coupe si un domaine devient vide.
 static (Dictionary<int,string>? sol, int nodes) SolveForwardCheck(List<Slot> slots, Dictionary<int,List<string>> dictByLen, Dictionary<(int,int),(int,int)> inter)
@@ -5018,10 +5018,10 @@ $""Forward-checking : {(solFC != null ? ""solution trouvee"" : ""echec"")} en {n
 // Backtracking simple instrumente (meme MRV, sans FC) pour comparaison.
 int nodesBT = 0; // on relance un comptage leger via SolveBacktrack instrumente ci-dessous.
 ",,,,,,,,5d1a74bbd1118aa2,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,d9435603-22df-4b68-88f2-e1129dfebf61,markdown,fr,86c6e7403acbce9c,"### 3.1 Comparaison backtracking vs forward-checking
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,d9435603-22df-4b68-88f2-e1129dfebf61,markdown,fr,86c6e7403acbce9c,"### 3.1 Comparaison backtracking vs forward-checking
 
 Sur des grilles plus grandes ou des dictionnaires plus pauvres, le forward-checking explore beaucoup moins de noeuds : il detecte tôt les culs-de-sac.",,,,,,,,86c6e7403acbce9c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,e161d4a3-7c8c-4b6b-aa9d-04811e127d74,code,fr,d5a02fd672125ef8,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,e161d4a3-7c8c-4b6b-aa9d-04811e127d74,code,fr,d5a02fd672125ef8,"#nullable enable
 // Backtracking simple re-instrumente pour compter les noeuds (sans forward-checking).
 static (Dictionary<int,string>? sol, int nodes) SolveBacktrackCounted(List<Slot> slots, Dictionary<int,List<string>> dictByLen, Dictionary<(int,int),(int,int)> inter)
 {
@@ -5054,10 +5054,10 @@ sb2.AppendLine($"" Forward-checking   | {nodesFC,15} | {(solFC != null ? ""oui""
 Show(sb2.ToString());
 $""Verdict : forward-checking explore {nodesFC} noeuds vs {nodesBT2} pour le backtracking simple (MRV deja actif dans les deux)."".Display();
 ",,,,,,,,d5a02fd672125ef8,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,f90f0adc-7028-4879-8879-c782f9c2e323,markdown,fr,7489904fa4ec14a2,"## 5. Generation de grille aleatoire
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,f90f0adc-7028-4879-8879-c782f9c2e323,markdown,fr,7489904fa4ec14a2,"## 5. Generation de grille aleatoire
 
 On genere une grille en placant des cases noires avec une probabilite donnee, puis on verifie qu'elle admet des slots (sinon on regenere). La **densite** de cases noires contrôle la difficulte.",,,,,,,,7489904fa4ec14a2,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,8d8f1773-aef4-42a1-8ad6-1b19894587bf,code,fr,c690ddc3c213ad7a,"// Generation aleatoire d'une grille avec densite de cases noires.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,8d8f1773-aef4-42a1-8ad6-1b19894587bf,code,fr,c690ddc3c213ad7a,"// Generation aleatoire d'une grille avec densite de cases noires.
 static CrosswordGrid GenerateRandomGrid(int rows, int cols, double blackDensity)
 {
     var rng = new Random(42);
@@ -5078,7 +5078,7 @@ $""Grille aleatoire 6x6 (densite noire ~0.20) : {slots2.Count} slots"".Display()
 Show(""Grille vide (# = noire, . = blanche) :"");
 Show(RenderFilled(g2, slots2, null));
 ",,,,,,,,c690ddc3c213ad7a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,2de7a56f-d85a-4a3f-8ca7-a25b31157b03,markdown,fr,4696f7fa4915f2f1,"## 6. Exercices
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,2de7a56f-d85a-4a3f-8ca7-a25b31157b03,markdown,fr,4696f7fa4915f2f1,"## 6. Exercices
 
 > **Convention C.1** : les stubs s'executent sans erreur (jamais `throw`). Remplir le corps, re-executer, verifier.
 
@@ -5087,7 +5087,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,2de7
 Etant donne une grille et un dictionnaire, pour chaque slot, compter combien de mots du dictionnaire (de la bonne longueur) sont **elimines** par les intersections avec les slots déjà assignes.
 
 **Indice** : pour chaque slot non-assigne, filtrer les mots compatibles avec l'assignation courante et soustraire du total.",,,,,,,,4696f7fa4915f2f1,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,9cd6b723-875d-4c31-9d4f-d0ed5d948ebd,code,fr,0bac73a0aae43ea4,"// Exercice 1 : nombre total de mots elimines par propagation apres une assignation partielle.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,9cd6b723-875d-4c31-9d4f-d0ed5d948ebd,code,fr,0bac73a0aae43ea4,"// Exercice 1 : nombre total de mots elimines par propagation apres une assignation partielle.
 // TODO etudiant : retourner le compte total sur tous les slots non-assignes.
 static int CountEliminatedWords(CrosswordGrid g, Dictionary<int,List<string>> dictByLen, List<Slot> slots, Dictionary<(int,int),(int,int)> inter, Dictionary<int,string> assignment)
 {
@@ -5098,12 +5098,12 @@ static int CountEliminatedWords(CrosswordGrid g, Dictionary<int,List<string>> di
 
 ""Exercice a completer"".Display();
 ",,,,,,,,0bac73a0aae43ea4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,3c699955-eec7-4e76-8266-226548931d15,markdown,fr,f4f8694dd0404a6e,"### Exercice 2 — Generation de grille optimisee (maximiser les intersections)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,3c699955-eec7-4e76-8266-226548931d15,markdown,fr,f4f8694dd0404a6e,"### Exercice 2 — Generation de grille optimisee (maximiser les intersections)
 
 Generer une grille qui maximise le nombre d'intersections entre slots (grille plus riche, mots croises plus serres).
 
 **Indice** : balayer plusieurs grilles aleatoires et garder celle avec le plus d'intersections via `AllIntersections`.",,,,,,,,f4f8694dd0404a6e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,c558989c-c547-49e3-92e0-c85491e5b61d,code,fr,79fe45f191771c25,"// Exercice 2 : grille maximisant le nombre d'intersections parmi N tirages.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,c558989c-c547-49e3-92e0-c85491e5b61d,code,fr,79fe45f191771c25,"// Exercice 2 : grille maximisant le nombre d'intersections parmi N tirages.
 // TODO etudiant : retourner la meilleure grille et son compte d'intersections.
 static (CrosswordGrid best, int interCount) GenerateOptimizedGrid(int rows, int cols, int trials = 20)
 {
@@ -5113,12 +5113,12 @@ static (CrosswordGrid best, int interCount) GenerateOptimizedGrid(int rows, int 
 
 ""Exercice a completer"".Display();
 ",,,,,,,,79fe45f191771c25,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,990976dc-afa9-4ba9-8f23-0f1119a7d11d,markdown,fr,094fbb6dda7fb4df,"### Exercice 3 — Contraintes de thème (reflexion)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,990976dc-afa9-4ba9-8f23-0f1119a7d11d,markdown,fr,094fbb6dda7fb4df,"### Exercice 3 — Contraintes de thème (reflexion)
 
 Etendre le solveur pour n'utiliser que des mots d'un **thème** donne (ex : informatique). Quelle structure de dictionnaire permet de filtrer efficacement par thème sans parcourir toute la liste ?
 
 **Indice** : indexer le dictionnaire par `(thème, longueur)` plutot que par `longueur` seule.",,,,,,,,094fbb6dda7fb4df,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,feed2ae5-54b8-442b-b7e3-73b7c8afe25a,code,fr,cea32759b0d1cf58,"// Exercice 3 (reflexion) : structure de dictionnaire par theme.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,feed2ae5-54b8-442b-b7e3-73b7c8afe25a,code,fr,cea32759b0d1cf58,"// Exercice 3 (reflexion) : structure de dictionnaire par theme.
 // TODO etudiant : proposer une signature et un stub de filtrage par theme.
 // Indice : Dictionary<(string theme, int length), List<string>>
 static List<string> WordsByTheme(Dictionary<(string,int),List<string>> themedDict, string theme, int length)
@@ -5129,7 +5129,7 @@ static List<string> WordsByTheme(Dictionary<(string,int),List<string>> themedDic
 
 ""Exercice a completer"".Display();
 ",,,,,,,,cea32759b0d1cf58,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,b628e519-a080-4b6b-b003-694f41c1f3ea,markdown,fr,b70fa70e8abe11ce,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,b628e519-a080-4b6b-b003-694f41c1f3ea,markdown,fr,b70fa70e8abe11ce,"## Conclusion
 
 ### Ce que vous avez appris
 
@@ -5985,7 +5985,7 @@ Le contraste est saisissant : le même problème est **trivial pour CP-SAT** et 
 La modelisation est elegante : les **variables** sont les emplacements (slots), les **domaines** sont les mots du dictionnaire, et les **contraintes** sont les intersections de lettres entre mots horizontaux et verticaux.
 
 **Suite** : [App-15 - Planification sportive](App-15-SportsScheduling.ipynb) | [Retour au sommaire](../../README.md)",,,,,,,,f9790d3a333dbf93,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,92a84793,markdown,fr,7aca7012b98cd607,"# App-19 (C#) — Génération procédurale par Wave Function Collapse (WFC) from-scratch
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,92a84793,markdown,fr,7aca7012b98cd607,"# App-19 (C#) — Génération procédurale par Wave Function Collapse (WFC) from-scratch
 
 **Twin C# (.NET Interactive)** de [App-19-ProceduralGeneration-WFC.ipynb](App-19-ProceduralGeneration-WFC.ipynb) — marathon de parité .NET ⇄ Python (#4956).
 
@@ -5997,10 +5997,10 @@ La version Python déroule **deux** approches : (1) un solveur **WFC pur from-sc
 
 **Parité #4956** : OR-Tools CP-SAT n'a pas d'équivalent .NET mature en une lib — le from-scratch WFC EST la substance pédagogique. La comparaison CP-SAT est documentée honnêtement comme **RECOVERABLE-MACHINE** (voir conclusion).
 ",,,,,,,,7aca7012b98cd607,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,91fca924,markdown,fr,860662a3f2eb48d4,"## 1. Modèle de tuiles (tileset)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,91fca924,markdown,fr,860662a3f2eb48d4,"## 1. Modèle de tuiles (tileset)
 
 On travaille avec un tileset de 5 tuiles (murs, sol, eau, porte, herbe) et des **règles d'adjacence symétriques** : `rules[a][b] = true` signifie que la tuile `a` peut être adjacente à la tuile `b`. Des **poids** pondèrent l'échantillonnage (le sol est plus fréquent que les portes).",,,,,,,,860662a3f2eb48d4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,5e1dbb10,code,fr,7ca47d0950f3f4ae,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,5e1dbb10,code,fr,7ca47d0950f3f4ae,"#nullable enable
 using System.Collections.Generic;
 
 // Tuile : identifiant, nom, glyphe d'affichage ASCII.
@@ -6047,7 +6047,7 @@ foreach (var t in ts.Tiles)
     $""{t.Id,-4}{t.Name,-7}{t.Char,-7}{ts.Weights[t.Id],-6}{allowed}"".Display();
 }
 ",,,,,,,,7ca47d0950f3f4ae,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,309646f2,markdown,fr,e8aa0760fbc39400,"## 2. Entropie de Shannon pondérée
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,309646f2,markdown,fr,e8aa0760fbc39400,"## 2. Entropie de Shannon pondérée
 
 Chaque cellule a un **domaine** (ensemble de tuiles encore possibles). L'incertitude d'une cellule se mesure par l'**entropie de Shannon** pondérée par les poids des tuiles :
 
@@ -6057,7 +6057,7 @@ $$H = -\sum_i p_i \log_2 p_i \quad\text{où}\quad p_i = \frac{w_i}{\sum_j w_j}$$
 - Domaine uniforme (toutes tuiles équiprobables) ⟹ entropie maximale.
 
 La **stratégie MRV** (Minimum Remaining-Values) effondre en priorité la cellule **d'entropie minimale** — celle qui est la plus contrainte — afin de détecter tôt les contradictions et limiter le backtracking.",,,,,,,,e8aa0760fbc39400,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,b64f9a72,code,fr,f3bc65b76165ad80,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,b64f9a72,code,fr,f3bc65b76165ad80,"#nullable enable
 // Entropie de Shannon pondérée d'un domaine (en bits).
 public static double Entropy(IReadOnlyList<int> domain, double[] weights)
 {
@@ -6085,7 +6085,7 @@ $""{""Domaine"",-26}{""H (bits)"",-10}"".Display();
 foreach (var (label, dom) in demos)
     $""{label,-26}{Entropy(dom.ToList(), weights),-10:F3}"".Display();
 ",,,,,,,,f3bc65b76165ad80,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,5fc0676c,markdown,fr,13ff9bfea5c9ab36,"## 3. Moteur WFC (algorithme de Gumin)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,5fc0676c,markdown,fr,13ff9bfea5c9ab36,"## 3. Moteur WFC (algorithme de Gumin)
 
 Le moteur maintient un domaine par cellule (`HashSet<int>[,]`) et répète le cycle :
 
@@ -6093,7 +6093,7 @@ Le moteur maintient un domaine par cellule (`HashSet<int>[,]`) et répète le cy
 2. **Collapse** : effondrer cette cellule en échantillonnant une tuile selon les poids.
 3. **Propagate** : propager la contrainte aux voisines (élimination AC-3 des tuiles sans support).
 4. **Backtrack** : si une cellule devient vide (contradiction), restaurer le dernier instantané et retirer la tuile qui a causé l'échec.",,,,,,,,13ff9bfea5c9ab36,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,3ac23047,code,fr,bac6c367e002cf93,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,3ac23047,code,fr,bac6c367e002cf93,"#nullable enable
 using System.Collections.Generic;
 
 public class PureWFC
@@ -6229,10 +6229,10 @@ public class PureWFC
 
 ""PureWFC engine prêt (entropie pondérée + propagation AC-3 + MRV + backtracking)."".Display();
 ",,,,,,,,bac6c367e002cf93,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,578f95e3,markdown,fr,9e57f53c9ab8a608,"## 4. Génération d'un niveau
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,578f95e3,markdown,fr,9e57f53c9ab8a608,"## 4. Génération d'un niveau
 
 On génère une grille 12×12 avec une graine fixée (reproductibilité). L'affichage ASCII montre le niveau produit : chaque tuile est représentée par son glyphe.",,,,,,,,9e57f53c9ab8a608,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,14fc4c87,code,fr,8a67eca72e75083a,"using System.Text;
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,14fc4c87,code,fr,8a67eca72e75083a,"using System.Text;
 
 public static string RenderGrid(int[,] grid, Tileset ts)
 {
@@ -6263,14 +6263,14 @@ else
     RenderGrid(grid, ts).Display();
 }
 ",,,,,,,,8a67eca72e75083a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,f98f3261,markdown,fr,1a0779e33b91aa98,"## 5. Validation : métriques de qualité
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,f98f3261,markdown,fr,1a0779e33b91aa98,"## 5. Validation : métriques de qualité
 
 Trois métriques vérifient la cohérence du niveau généré :
 
 - **Violations d'adjacence** : nombre de paires de voisins incompatibles selon les règles. **Doit valoir 0** (le propagateur le garantit).
 - **Variété de tuiles** : nombre de tuiles distinctes utilisées (un niveau mono-tone est pauvre).
 - **Connectivité du sol** : fraction du sol accessible depuis le premier `floor` rencontré (BFS sur les tuiles `floor`/`door`/`grass` traversables).",,,,,,,,1a0779e33b91aa98,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,8aa8d1de,code,fr,7f0d21261e440957,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,8aa8d1de,code,fr,7f0d21261e440957,"#nullable enable
 // (1) Violations d'adjacence : compte les paires de voisins incompatibles (doit être 0).
 public static int AdjacencyViolations(int[,] grid, Tileset ts)
 {
@@ -6330,10 +6330,10 @@ if (grid is not null)
     $""  Sol accessible (BFS)   : {reach:P1}"".Display();
 }
 ",,,,,,,,7f0d21261e440957,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,b1b1eba2,markdown,fr,f776f46927612561,"## 6. Déterminisme et variété inter-graines
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,b1b1eba2,markdown,fr,f776f46927612561,"## 6. Déterminisme et variété inter-graines
 
 WFC est **déterministe** pour une graine fixée (même grille générée). En faisant varier la graine, on obtient des niveaux **différents mais structurellement cohérents** (mêmes règles d'adjacence).",,,,,,,,f776f46927612561,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,c82c8153,code,fr,8ba62b9d092f7cdf,"var seeds = new[] { 1, 7, 42, 99, 2024 };
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,c82c8153,code,fr,8ba62b9d092f7cdf,"var seeds = new[] { 1, 7, 42, 99, 2024 };
 var lines = new List<string>{ $""{""Graine"",-7}{""Backtracks"",-12}{""Variété"",-9}{""Sol %"",-8}"" };
 foreach (var s in seeds)
 {
@@ -6345,10 +6345,10 @@ foreach (var s in seeds)
 $""Variété inter-graines (grille {R}x{C}) :"".Display();
 string.Join(""\n"", lines).Display();
 ",,,,,,,,8ba62b9d092f7cdf,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,84650915,markdown,fr,a423bdaed25776d9,"## 7. Backtracking sur tileset contraint (maze)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,84650915,markdown,fr,a423bdaed25776d9,"## 7. Backtracking sur tileset contraint (maze)
 
 Sur un tileset **permissif** (floor/grass acceptent tout), la propagation AC-3 suffit et le backtracking ne se déclenche quasiment jamais (`backtracks = 0`). Sur un tileset **contraint** (règles restrictives de type labyrinthe, où le mur n'accepte que mur/porte), les contradictions deviennent inévitables : le moteur s'en remet en restaurant le dernier instantané et en retirant la tuile coupable.",,,,,,,,a423bdaed25776d9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,c30d4500,code,fr,0784afbc2a0702ff,"// Tileset « maze » contraint : règles restrictives pour forcer des contradictions.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,c30d4500,code,fr,0784afbc2a0702ff,"// Tileset « maze » contraint : règles restrictives pour forcer des contradictions.
 var mazeRules = new Dictionary<int, bool[]> {
     [0] = new[]{ true,  false, false, true,  false },   // wall  : wall, door uniquement
     [1] = new[]{ false, true,  true,  true,  true  },   // floor : floor, water, door, grass
@@ -6381,11 +6381,11 @@ if (maxBt > 0)
 else
     ""Sur ces graines, la propagation a suffi (backtracks = 0). Le mécanisme de backtracking reste armé pour les cas où une cellule deviendrait vide."".Display();
 ",,,,,,,,0784afbc2a0702ff,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,24dc05c5,markdown,fr,edd589afdac9bf21,"## 8. Exercices
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,24dc05c5,markdown,fr,edd589afdac9bf21,"## 8. Exercices
 
 ### Exercice 1 — Ajouter une nouvelle tuile
 Ajoutez une tuile `bridge` (pont, glyphe `=`) qui connecte `water` et `floor`. Mettez à jour les règles d'adjacence et générez un niveau avec un pont traversant l'eau.",,,,,,,,edd589afdac9bf21,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,4044b930,code,fr,58f646a5cb916a04,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,4044b930,code,fr,58f646a5cb916a04,"#nullable enable
 // Exercice 1 : ajouter une tuile 'bridge' reliant water et floor.
 // TODO étudiant : construire le nouveau tileset (6 tuiles) avec les règles appropriées,
 // puis générer une grille 12x12 et vérifier qu'au moins un pont apparaît près de l'eau.
@@ -6403,9 +6403,9 @@ var ex1 = BuildBridgeTilesetAndGenerate();
 if (ex1 is null) ""Exercice 1 non complété (retourne null)."".Display();
 else RenderGrid(ex1, /* nouveau tileset étudiant */ ts).Display();
 ",,,,,,,,58f646a5cb916a04,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,67187d67,markdown,fr,48b92ec5654fb11c,"### Exercice 2 — Règles d'adjacence directionnelles
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,67187d67,markdown,fr,48b92ec5654fb11c,"### Exercice 2 — Règles d'adjacence directionnelles
 L'algorithme actuel utilise des règles **symétriques** (une tuile accepte une autre indépendamment de la direction). Modifiez le moteur pour des règles **directionnelles** (haut/bas/gauche/droite distinctes) afin de modéliser des tuiles avec un sens (ex. pente, rivière coulante).",,,,,,,,48b92ec5654fb11c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,3079775e,code,fr,094ff5dfae118ef9,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,3079775e,code,fr,094ff5dfae118ef9,"#nullable enable
 // Exercice 2 : règles d'adjacence directionnelles (N/S/E/W distinctes).
 // TODO étudiant : remplacer Rules[a][b] par RulesDir[a][dir][b] où dir ∈ {N,S,E,W}.
 // Indice : modifier CanAdjoin(a, b, dir) et Propagate pour passer la direction.
@@ -6420,9 +6420,9 @@ public static int DirectionalAdjacencySkeletton()
 
 $""Exercice 2 : {DirectionalAdjacencySkeletton()} tuile(s) directionnelle(s) définie(s)."".Display();
 ",,,,,,,,094ff5dfae118ef9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,7f467489,markdown,fr,0f750b874bf0d5d4,"### Exercice 3 — Contrainte globale de nombre de pièces
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,7f467489,markdown,fr,0f750b874bf0d5d4,"### Exercice 3 — Contrainte globale de nombre de pièces
 WFC ne garantit pas un **nombre de pièces** (régions de sol délimitées par des murs). Ajoutez un **compteur de pièces** (union-find ou BFS étiqueté) comme métrique post-génération, puis un rejet-échantillonnage : régénérer jusqu'à obtenir entre `kMin` et `kMax` pièces.",,,,,,,,0f750b874bf0d5d4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,ec9dc982,code,fr,993defb95223aee3,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,ec9dc982,code,fr,993defb95223aee3,"#nullable enable
 // Exercice 3 : compter les pièces (composantes connexes de sol) et rejet-échantillonnage.
 // TODO étudiant : implémenter CountRooms(grid) via BFS étiqueté sur les tuiles floor/door/grass,
 // puis une boucle CountRoomsUntil(min, max, maxAttempts).
@@ -6437,7 +6437,7 @@ public static int CountRooms(int[,] grid)
 
 $""Exercice 3 : nombre de pièces détectées = {CountRooms(grid ?? new int[0,0])}."".Display();
 ",,,,,,,,993defb95223aee3,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,35f34af8,markdown,fr,e2851a92f146658b,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,35f34af8,markdown,fr,e2851a92f146658b,"## Conclusion
 
 ### Ce que démontre ce twin
 
@@ -7098,7 +7098,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,b6601688-9
 
 Le twin Python **appelle** un solveur ; ce twin **déroule** les algorithmes. Les deux se complètent : on voit ici *ce que fait* CP-SAT sous le capot (propagation, énumération, brisure de symétrie).
 
-**Durée estimée : 35 min.** Prérequis : [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb), [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb) (CSP).
+**Durée estimée : 35 min.** Prérequis : [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb), [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) (CSP).
 ",,,,,,,,7572feb3792245cd,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,2dbf824b-edff-40bc-b080-e8615eae95ab,markdown,fr,89397304a4f6f2c9,"## 1. Représentation du problème
 
@@ -7291,7 +7291,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,bce02a5c-0
 
 idée radicalement différente : on part d'une affectation **aléatoire** (une reine par colonne, ligne aléatoire), puis on **répare**. À chaque itération, on choisit une colonne en conflit et on déplace sa reine vers la ligne qui **minimise** le nombre de conflits. Pas de retour arrière : c'est une **marche** dans l'espace des configurations.
 
-C'est l'ancêtre des métaheuristiques (proche du hill-climbing stochastique, cf [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb)).",,,,,,,,d08d5a757d4ea40a,,,,,,,,
+C'est l'ancêtre des métaheuristiques (proche du hill-climbing stochastique, cf [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb)).",,,,,,,,d08d5a757d4ea40a,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,ad3526c7-24b4-44bd-b71a-932a8d9b6872,code,fr,76acc9713055b0c5,"// Conflits maintenus incrémentalement via compteurs par ligne / diagonale (O(1) par requête)
 //  - rowConf[r]      = nombre de reines dans la ligne r
 //  - diag1Conf[r-c+n]= nombre de reines sur la diagonale NO-SE (différence r-c constante)
@@ -7489,7 +7489,7 @@ Ce twin C# a **déroulé à la main** ce que le solveur industriel OR-Tools CP-S
 - **Min-Conflicts** = la recherche locale qui passe à l'échelle (le « miracle » N = 1000) ;
 - **Énumération + brisure de symétrie D4** = le comptage exact des solutions fondamentales (12 pour N = 8).
 
-**Lien avec les Foundations** : backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb) (DFS), CSP ⇄ [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), Min-Conflicts ⇄ [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb) (métaheuristiques), CP-SAT ⇄ [`App-1-NQueens`](App-1-NQueens.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb) (DFS), CSP ⇄ [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), Min-Conflicts ⇄ [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) (métaheuristiques), CP-SAT ⇄ [`App-1-NQueens`](App-1-NQueens.ipynb) (twin Python, solveur industriel).
 
 ### Pour aller plus loin
 - Ajouter la **propagation AC-3** (arc-consistency) avant le backtracking.
@@ -9944,7 +9944,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,e3f8
 
 Le twin Python **appelle** networkx (graphes) et CP-SAT (optimum) ; ce twin **déroule** les heuristiques et le branch-and-bound. ★ **Amélioration pédagogique** : utilisation de **graphes canoniques à χ connu** (Petersen=3, K4=4, Mycielski-4 triangle-free χ=4) plutôt qu'un graphe ad hoc — on peut **vérifier** que chaque heuristique atteint (ou non) l'optimum.
 
-**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb) (CSP).
+**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) (CSP).
 ",,,,,,,,902dde753216d749,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,88f85eca-0022-4692-8f6b-bb3343d50953,markdown,fr,0272b12c2c418745,"## 1. Représentation du graphe
 
@@ -10271,7 +10271,7 @@ Ce twin C# a **déroulé from-scratch** les heuristiques de coloration et la rec
 
 ★ **Leçon paradoxe** : les graphes de **Mycielski** (triangle-free, χ arbitrairement grand) montrent que la complexité chromatique **ne se réduit pas** à la densité de triangles — un résultat fondamental que la sortie du notebook rend tangible.
 
-**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb), CP-SAT ⇄ [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb), CP-SAT ⇄ [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (twin Python, solveur industriel).
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications, tranche coloration de graphes. See #4956, #3801.*
@@ -15473,7 +15473,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling.ipynb,cell-conclusio
 - Schaerf, A. *A Survey of Automated Timetabling*, Artificial Intelligence Review, 1999
 - Google OR-Tools : https://developers.google.com/optimization
 - MiniZinc : https://www.minizinc.org/",,,,,,,,9464904d1cf2f691,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,f9b04a05,markdown,fr,53ee8adf9c25200d,"# App-6 - Demineur (C#) : CSP, probabilites et NP-completude
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,f9b04a05,markdown,fr,53ee8adf9c25200d,"# App-6 - Demineur (C#) : CSP, probabilites et NP-completude
 
 > **Jumeau C#** du notebook [App-6-Minesweeper.ipynb](App-6-Minesweeper.ipynb).
 > Marathon parite .NET ⇄ Python (#4956), EPIC #3801 Prong B.
@@ -15527,13 +15527,13 @@ raisonnement-contraint / recherche exhaustive / décision probabiliste sous ince
 - Kaye, R. *Minesweeper is NP-complete* (Mathematical Intelligencer, 2000).
 - Twin Python : [App-6-Minesweeper.ipynb](App-6-Minesweeper.ipynb).
 ",,,,,,,,53ee8adf9c25200d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,e249b6fe,markdown,fr,145b315751c81477,"## 1. Representation du plateau
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,e249b6fe,markdown,fr,145b315751c81477,"## 1. Representation du plateau
 
 `MinesweeperBoard` : grille `rows x cols` avec un ensemble de mines, un tableau
 d'indices (`numbers[r,c]` = nombre de mines voisines), un ensemble de cellules
 révélées et un ensemble de cellules marquées (drapeaux). La révélation d'un 0
 propage en cascade (flood-fill) aux voisins.",,,,,,,,145b315751c81477,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,22b109cc,code,fr,5d1e36b0daa02746,"using System;
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,22b109cc,code,fr,5d1e36b0daa02746,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15624,12 +15624,12 @@ Console.WriteLine($""Cellules revelees apres le premier clic : {board0.Revealed.
 Console.WriteLine($""Cellules restantes (inconnues)          : {board0.Rows*board0.Cols - board0.Revealed.Count}"");
 Console.WriteLine($""Mines a trouver                          : {board0.RemainingMines}"");
 ",,,,,,,,5d1e36b0daa02746,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,e0fe922a,markdown,fr,0abc32c8c0a4d51c,"## 2. Visualisation ASCII du plateau
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,e0fe922a,markdown,fr,0abc32c8c0a4d51c,"## 2. Visualisation ASCII du plateau
 
 Le twin Python trace le plateau en couleurs avec `matplotlib`. En C# pur (sans
 lib de plot), on visualise avec une grille ASCII : `.` pour inconnu, chiffre pour
 révélé, `F` pour drapeau, `*` pour mine (en mode debug).",,,,,,,,0abc32c8c0a4d51c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,7464a302,code,fr,c739cd98c9ee3f60,"// Visualisation ASCII d'un plateau de Demineur.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,7464a302,code,fr,c739cd98c9ee3f60,"// Visualisation ASCII d'un plateau de Demineur.
 void DrawBoard(MinesweeperBoard b, string title, bool showMines = false) {
     Console.WriteLine($""--- {title} ---"");
     Console.Write(""   "");
@@ -15653,7 +15653,7 @@ void DrawBoard(MinesweeperBoard b, string title, bool showMines = false) {
 DrawBoard(board0, ""Etat apres le premier clic (4,4)"");
 DrawBoard(board0, ""Plateau complet (mines revelees)"", showMines: true);
 ",,,,,,,,c739cd98c9ee3f60,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,b3a4aecd,markdown,fr,f719a1542480aa5c,"## 3. Solveur par règles simples
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,b3a4aecd,markdown,fr,f719a1542480aa5c,"## 3. Solveur par règles simples
 
 Deux règles locales suffisantes pour de nombreuses situations :
 
@@ -15661,7 +15661,7 @@ Deux règles locales suffisantes pour de nombreuses situations :
   égale le nombre de voisins inconnus, alors **tous les inconnus sont des mines**.
 - **Règle 2** : s'il ne reste aucune mine à placer autour d'une cellule révélée,
   alors **tous les inconnus sont sûrs**.",,,,,,,,f719a1542480aa5c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,d46939ae,code,fr,2aef6876724b4933,"public class RuleBasedSolver
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,d46939ae,code,fr,2aef6876724b4933,"public class RuleBasedSolver
 {
     public MinesweeperBoard Board;
     public List<(string kind, (int r,int c) cell, (int r,int c) src)> MovesLog = new();
@@ -15709,7 +15709,7 @@ Console.WriteLine($""Drapeaux poses    : {boardRules.Flagged.Count}/{boardRules.
 Console.WriteLine($""Partie gagnee ?   : {boardRules.Won}"");
 DrawBoard(boardRules, ""Apres solveur par regles"");
 ",,,,,,,,2aef6876724b4933,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,6a354ce4,markdown,fr,2be7137f300ff360,"## 4. Solveur CSP — enumeration backtracking from-scratch
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,6a354ce4,markdown,fr,2be7137f300ff360,"## 4. Solveur CSP — enumeration backtracking from-scratch
 
 C'est le coeur du **Prong B**. Le twin Python construit un `Problem` via la lib
 `python-constraint`, ajoute des `ExactSumConstraint(remaining)` et appelle
@@ -15729,7 +15729,7 @@ C'est le coeur du **Prong B**. Le twin Python construit un `Problem` via la lib
 La complexité est `O(2^k)` pour une frontière de taille k ; on plafonne k pour
 garder un runtime pédagogique (le twin Python bénéficie de la propagation de la
 lib, ici on voit la recherche brute).",,,,,,,,2be7137f300ff360,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,2a7c756d,code,fr,a63bff609e7c57bf,"public class CSPSolver
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,2a7c756d,code,fr,a63bff609e7c57bf,"public class CSPSolver
 {
     public MinesweeperBoard Board;
     public CSPSolver(MinesweeperBoard board) { Board = board; }
@@ -15843,7 +15843,7 @@ if (frontier.Count > 0 && frontier.Count <= 12) {
     Console.WriteLine();
 }
 ",,,,,,,,a63bff609e7c57bf,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,3d618f42,markdown,fr,6102f7b5ecaf2d51,"## 5. Solveur probabiliste — combiner règles, CSP et choix min-risk
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,3d618f42,markdown,fr,6102f7b5ecaf2d51,"## 5. Solveur probabiliste — combiner règles, CSP et choix min-risk
 
 Quand ni les règles ni le CSP ne forcent de cellule, on choisit la cellule à
 **plus faible probabilité de mine**. Le solveur probabiliste orchestre :
@@ -15853,7 +15853,7 @@ Quand ni les règles ni le CSP ne forcent de cellule, on choisit la cellule à
 3. Si toujours bloqué, calculer P(mine) de chaque cellule (frontière via CSP,
    hors-frontière via ratio mines-restantes / cellules-hors-frontière) et
    révéler la cellule la moins risquée.",,,,,,,,6102f7b5ecaf2d51,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,7e15d5b4,code,fr,2bb40f57e1ef0b76,"public class ProbabilisticSolver
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,7e15d5b4,code,fr,2bb40f57e1ef0b76,"public class ProbabilisticSolver
 {
     public MinesweeperBoard Board;
     public Dictionary<string, int> Decisions = new() { [""rules""]=0, [""csp""]=0, [""guess""]=0 };
@@ -15920,14 +15920,14 @@ Console.WriteLine($""Partie probabiliste : gagne={won}"");
 Console.WriteLine($""Decisions : rules={pSolver.Decisions[""rules""]}, csp={pSolver.Decisions[""csp""]}, guess={pSolver.Decisions[""guess""]}"");
 Console.WriteLine($""Devinettes faites : {pSolver.Guesses.Count}"");
 ",,,,,,,,2bb40f57e1ef0b76,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,ec8421d6,markdown,fr,dd10c32a584f65b4,"## 6. Stratégies pures pour le benchmark
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,ec8421d6,markdown,fr,dd10c32a584f65b4,"## 6. Stratégies pures pour le benchmark
 
 Trois stratégies isolées pour mesurer chaque contribution :
 
 - **play_rule_only** : règles + tirage aléatoire quand bloqué.
 - **play_csp_only** : règles + CSP + tirage aléatoire quand bloqué.
 - **play_probabilistic** : règles + CSP + choix min-risk quand bloqué.",,,,,,,,dd10c32a584f65b4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,73c294ad,code,fr,b9d7381354f28f9c,"// Strategie 1 : regles + aleatoire quand bloque.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,73c294ad,code,fr,b9d7381354f28f9c,"// Strategie 1 : regles + aleatoire quand bloque.
 (string, Dictionary<string,int>) PlayRuleOnly(MinesweeperBoard b, Random rng) {
     var dec = new Dictionary<string,int> { [""rules""]=0, [""random""]=0 };
     while (!b.GameOver && !b.Won) {
@@ -16023,12 +16023,12 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,73c294a
 
 Console.WriteLine(""Trois strategies definies : PlayRuleOnly, PlayCspOnly, PlayProbabilistic."");
 ",,,,,,,,b9d7381354f28f9c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,4420e431,markdown,fr,69c9a406ebed8755,"## 7. Benchmark — comparer les trois approches
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,4420e431,markdown,fr,69c9a406ebed8755,"## 7. Benchmark — comparer les trois approches
 
 On joue N parties (graines reproductibles) avec chaque stratégie et on mesure le
 taux de victoire. Le twin Python utilise les mêmes graines (`random.seed(1000+game_id)`
 pour le plateau, `random.seed(2000+game_id)` pour le solveur).",,,,,,,,69c9a406ebed8755,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,1b4322d4,code,fr,46e01aacdf090e3c,"// Benchmark sur N parties (meme graines que le twin Python).
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,1b4322d4,code,fr,46e01aacdf090e3c,"// Benchmark sur N parties (meme graines que le twin Python).
 int N_GAMES = 50;
 int ROWS = 8, COLS = 8, NMINES = 10;
 
@@ -16064,7 +16064,7 @@ foreach (var (name, play) in approaches) {
     Console.WriteLine();
 }
 ",,,,,,,,46e01aacdf090e3c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,865d5176,markdown,fr,69e5fb8aaf1fa05d,"## Exercice 1 : solveur global (contrainte du total de mines)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,865d5176,markdown,fr,69e5fb8aaf1fa05d,"## Exercice 1 : solveur global (contrainte du total de mines)
 
 Le solveur CSP ci-dessus n'utilise que les contraintes **locales** (une par cellule
 révélée). Une amélioration : ajouter la **contrainte globale** « le nombre total de
@@ -16078,17 +16078,17 @@ mines marquées dans la frontière ne dépasse pas `remaining_mines` ».
 **Indice** : ajoutez `(frontier.ToList(), Board.RemainingMines)` comme contrainte
 `ExactSum` (pas juste `<=`) quand `frontier.Count` est petit et que les mines
 hors-frontière sont connues.",,,,,,,,69e5fb8aaf1fa05d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,112f7ffd,code,fr,e61684b3126044aa,"// EXERCICE 1 : contrainte globale sur le total de mines
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,112f7ffd,code,fr,e61684b3126044aa,"// EXERCICE 1 : contrainte globale sur le total de mines
 // TODO etudiant : modifier CSPSolver.Constraints pour ajouter une contrainte
 //   globale (somme de toutes les vars de frontiere <= Board.RemainingMines),
 //   puis relancer le benchmark pour mesurer l'impact sur le taux de victoire.
 Console.WriteLine(""Exercice contrainte globale a completer (voir indice ci-dessus)."");
 ",,,,,,,,e61684b3126044aa,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,b50da0b6,markdown,fr,35926ca488bc9378,"## Exercice 2 : Révéler une cellule garantie safe (probabilité 0 sur toutes les solutions CSP)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,b50da0b6,markdown,fr,35926ca488bc9378,"## Exercice 2 : Révéler une cellule garantie safe (probabilité 0 sur toutes les solutions CSP)
 
 Le solveur probabiliste (section 5) choisit la cellule de **risque minimal**, mais peut encore deviner. L'énumération CSP exhaustive offre une garantie plus forte : si une cellule de frontière est **safe dans 100 % des solutions valides** (probabilité de mine = 0), on peut la révéler **sans aucun risque**. Cet exercice fait la différence entre *minimiser* le risque (heuristique) et *l'éliminer* totalement sur une cellule donnée (garantie logique).
 ",,,,,,,,35926ca488bc9378,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,5c3a7770,code,fr,e1f1fb88cf42598d,"// EXERCICE 2 : identifier une cellule garantie safe (proba de mine = 0 sur toutes les solutions CSP)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,5c3a7770,code,fr,e1f1fb88cf42598d,"// EXERCICE 2 : identifier une cellule garantie safe (proba de mine = 0 sur toutes les solutions CSP)
 // TODO etudiant :
 //   1. Pour un plateau donné, énumérer toutes les solutions valides du CSP via CSPSolver.
 //   2. Pour chaque cellule de frontiere, calculer P(mine) = (#solutions où la cellule est une mine) / (#solutions total).
@@ -16098,11 +16098,11 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,5c3a777
 //          Comparer le nombre de révélations garantie-safe vs le solveur min-risk sur le benchmark.
 Console.WriteLine(""Exercice 2 (cellule garantie safe) à compléter : filtrez les probas == 0 et révélez sans risque."");
 ",,,,,,,,e1f1fb88cf42598d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,fd47fea5,markdown,fr,9253160053619a4c,"## Exercice 3 : Décomposition de la frontière en composantes connectées
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,fd47fea5,markdown,fr,9253160053619a4c,"## Exercice 3 : Décomposition de la frontière en composantes connectées
 
 Sur un grand plateau, la frontière (cellules inconnues adjacentes à une cellule révélée) peut former plusieurs **blocs indépendants** séparés par des zones sûres. Énumérer le CSP sur toute la frontière d'un coup devient prohibitif (explosion combinatoire). La technique standard des solveurs de démineur performants consiste à **décomposer la frontière en composantes connectées** (deux cellules sont connectées si elles partagent une contrainte commune via un voisin révélé) et à résoudre chaque composante séparément — le produit des complexités est bien moindre que la complexité de l'ensemble.
 ",,,,,,,,9253160053619a4c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,2c26c775,code,fr,fdfb48ec6fe83ca1,"// EXERCICE 3 : décomposer la frontière en composantes connectées et résoudre chaque bloc séparément
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,2c26c775,code,fr,fdfb48ec6fe83ca1,"// EXERCICE 3 : décomposer la frontière en composantes connectées et résoudre chaque bloc séparément
 // TODO etudiant :
 //   1. Construire le graphe d'adjacence de la frontière : deux cellules (r1,c1) et (r2,c2) sont
 //      connectées si elles apparaissent ensemble dans au moins une contrainte (même cellule révélée voisine).
@@ -16113,7 +16113,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,2c26c77
 //          à frontière disjointe (ex. 2 îlots séparés) vs énumération globale naive.
 Console.WriteLine(""Exercice 3 (décomposition composantes connectées) à compléter : factorisez le CSP par bloc indépendant."");
 ",,,,,,,,fdfb48ec6fe83ca1,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,661476af,markdown,fr,104a9e46e8e5d2b0,"## Bilan
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,661476af,markdown,fr,104a9e46e8e5d2b0,"## Bilan
 
 Ce notebook C# a présenté le **Démineur comme CSP**, jumeau C# du notebook Python :
 
@@ -19860,7 +19860,7 @@ Les quantites **aleatoires** (simple filtrage, solveur CSP avec tirage) différe
 
 *Marathon #4956 -- parite .NET / Python, volet Search / Applications / CSP.*
 ",,,,,,,,90e104dfa488b136,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,94cce746,markdown,fr,c2792b433b4a0121,"# App-8 : Modelisation declarative par contraintes (twin C# .NET)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,94cce746,markdown,fr,c2792b433b4a0121,"# App-8 : Modelisation declarative par contraintes (twin C# .NET)
 
 > **Twin C# .NET de `App-8-MiniZinc.ipynb`** (marathon parite #4956). Kernel `.net-csharp`. Ce notebook utilise **Google.OrTools CP-SAT** (Prong A, EPIC #3801) -- le vrai moteur industriel de programmation par contraintes, accessible en .NET via NuGet. MiniZinc etant un langage de modelisation indépendant sans binding .NET officiel, ce twin exprime les mêmes modèles declaratifs via OR-Tools CP-SAT, qui partage le paradigme : **declarer les contraintes, laisser le solveur chercher**. Les graphiques matplotlib du twin Python sont remplacés par un rendu ASCII autonome.
 
@@ -19871,7 +19871,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,94cce746,m
 3. **Resolver** problemes classiques (equations, monnaie, N-Reines, emploi du temps, Sudoku)
 4. **Comparer** la concision CP-SAT vs MiniZinc (du twin Python)
 5. **Optimiser** : minimiser un objectif (monnaie, makespan, distance)",,,,,,,,c2792b433b4a0121,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,31951426,code,fr,6c50c8e023f06313,"// App-8 : Modelisation declarative par contraintes -- twin C# de App-8-MiniZinc
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,31951426,code,fr,6c50c8e023f06313,"// App-8 : Modelisation declarative par contraintes -- twin C# de App-8-MiniZinc
 // Prong A (#3801) : Google.OrTools CP-SAT, le vrai moteur industriel de programmation
 // par contraintes. MiniZinc est un LANGAGE de modelisation independant (multi-solveur)
 // sans binding .NET officiel ; ce twin exprime donc les memes modeles declaratifs via
@@ -19897,7 +19897,7 @@ Console.WriteLine(""Environnement charge."");
 Console.WriteLine(""  .NET "" + Environment.Version);
 Console.WriteLine(""  Google.OrTools CP-SAT importe (vrai moteur industriel, Prong A #3801)"");
 ",,,,,,,,6c50c8e023f06313,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,b5194aaf,code,fr,641ad88412115b71,"// Utilitaire d'affichage d'un modele declare (numerotation des lignes), comme
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,b5194aaf,code,fr,641ad88412115b71,"// Utilitaire d'affichage d'un modele declare (numerotation des lignes), comme
 // display_model() du twin Python. Permet de montrer la syntaxe MiniZinc cote-a-cote
 // avec le code CP-SAT C# executable correspondant.
 static void DisplayModel(string modelStr, string title = ""Modele MiniZinc"")
@@ -19912,7 +19912,7 @@ static void DisplayModel(string modelStr, string title = ""Modele MiniZinc"")
 
 Console.WriteLine(""Fonctions utilitaires definies."");
 ",,,,,,,,641ad88412115b71,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,05c19703,markdown,fr,84ed775292abdfd7,"## 1. Introduction : pourquoi la programmation par contraintes ?
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,05c19703,markdown,fr,84ed775292abdfd7,"## 1. Introduction : pourquoi la programmation par contraintes ?
 
 La **programmation par contraintes (CP)** renverse le paradigme imperatif : au lieu decrire *comment* resoudre (algorithme pas-a-pas), on decrit *quoi* resoudre (les contraintes que la solution doit satisfaire), et un **solveur** cherche. MiniZinc est un langage dedie (concis, multi-solveur) ; OR-Tools CP-SAT est un moteur industriel accessible via une API .NET. Ce twin utilise CP-SAT ; le twin Python montre MiniZinc cote-a-cote.
 
@@ -19922,7 +19922,7 @@ La **programmation par contraintes (CP)** renverse le paradigme imperatif : au l
 Modèle (variables + contraintes)  -->  Solveur CP-SAT  -->  Solution
    (ce qu'on veut)                      (le moteur)        (ce qu'on obtient)
 ```",,,,,,,,84ed775292abdfd7,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,05487dc2,code,fr,ccd1f00b3bc02cf0,"// === Section 2 : Premier modele -- systeme d'equations ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,05487dc2,code,fr,ccd1f00b3bc02cf0,"// === Section 2 : Premier modele -- systeme d'equations ===
 // x + y = 10 ET x * y = 21 (x, y dans 1..10). Solution : x = 7, y = 3 (ou x = 3, y = 7).
 //
 // Equivalent MiniZinc (modele declare puis resolu par le twin Python) :
@@ -19952,14 +19952,14 @@ var status = solver.Solve(model);
 Console.WriteLine($""Solution CP-SAT : x = {solver.Value(x)}, y = {solver.Value(y)}  (status: {status})"");
 Console.WriteLine($""Verification : x + y = {solver.Value(x) + solver.Value(y)}, x * y = {solver.Value(x) * solver.Value(y)}"");
 ",,,,,,,,ccd1f00b3bc02cf0,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,59264935,markdown,fr,f5d26cf4d43e4e43,"## 2. Syntaxe de base : premier modèle
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,59264935,markdown,fr,f5d26cf4d43e4e43,"## 2. Syntaxe de base : premier modèle
 
 On commence par un **système d'équations** simple : deux inconnues `x` et `y` dans `[1..10]` telles que `x + y = 10` ET `x * y = 21`. C'est l'exemple le plus minimal du paradigme déclaratif : on **décrit** les contraintes (la somme et le produit), on n'écrit **aucun** algorithme de résolution.
 
 Deux points de syntaxe méritent d'être soulignés :
 - **MiniZinc** (twin Python) l'exprime en **5 lignes** : déclaration des variables (`var 1..10: x`), des contraintes (`constraint x + y = 10`), puis `solve satisfy`. Laconique et mathématique.
 - **CP-SAT C#** ajoute la **création explicite** des variables (`model.NewIntVar(1, 10, ""x"")`) et, pour le produit non-linéaire, une **variable intermédiaire** `produit` liée par `AddMultiplicationEquality`. C'est plus verbeux mais donne le contrôle fin typique d'une API procédurale.",,,,,,,,f5d26cf4d43e4e43,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,54d9a8d6,code,fr,58a019525ad11677,"// === Section 2 (suite) : Optimisation -- probleme de monnaie ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,54d9a8d6,code,fr,58a019525ad11677,"// === Section 2 (suite) : Optimisation -- probleme de monnaie ===
 // Rendre 99 centimes avec le MINIMUM de pieces (1c, 5c, 10c, 25c).
 // Solution optimale : 3x25c + 2x10c + 0x5c + 4x1c = 9 pieces.
 //
@@ -19988,12 +19988,12 @@ Console.WriteLine(""Solution optimale CP-SAT :"");
 Console.WriteLine($""  {sCoins.Value(p25)}x25c + {sCoins.Value(p10)}x10c + {sCoins.Value(p5)}x5c + {sCoins.Value(p1)}x1c"");
 Console.WriteLine($""  Total = {sCoins.ObjectiveValue} pieces (minimum prouve par le solveur)"");
 ",,,,,,,,58a019525ad11677,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,92e37664,markdown,fr,f178f8d525b23c6d,"### Optimisation : problème de monnaie
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,92e37664,markdown,fr,f178f8d525b23c6d,"### Optimisation : problème de monnaie
 
 On passe de `solve satisfy` (trouver **UNE** solution quelconque) à `solve minimize` (trouver la **MEILLEURE**). Le problème : rendre 99 centimes avec le **minimum de pièces** (1c, 5c, 10c, 25c).
 
 En CP-SAT, l'optimisation s'exprime par `model.Minimize(total)` où `total` est le nombre de pièces. La différence cruciale avec une approche gloutonne : le solveur **prouve l'optimalité** — il ne se contente pas de trouver une bonne solution, il démontre qu'**aucune solution à moins de pièces n'existe**. C'est la garantie de complétude qui distingue un solveur exact (CP-SAT, branch-and-bound) d'une heuristique (glouton, métaheuristique). Un algorithme glouton « toujours prendre la plus grosse pièce » marcherait ici, mais échouerait sur des systèmes de pièces non « canoniques » — le solveur, lui, est universel.",,,,,,,,f178f8d525b23c6d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,de6d8ffa,code,fr,e62310d53f1187b3,"// === Section 3 : Contraintes globales -- N-Reines ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,de6d8ffa,code,fr,e62310d53f1187b3,"// === Section 3 : Contraintes globales -- N-Reines ===
 // MiniZinc exprime N-Reines en ~5 lignes grace a la contrainte globale alldifferent.
 // On presente la concision MiniZinc, puis l'equivalent CP-SAT C# executable.
 
@@ -20008,7 +20008,7 @@ solve satisfy;"";
 DisplayModel(mznNQueens, ""N-Reines (syntaxe MiniZinc, ~5 lignes)"");
 Console.WriteLine(""Comparaison de concision : MiniZinc ~5 lignes vs CP-SAT ~12 lignes (ratio ~2.4x)."");
 ",,,,,,,,e62310d53f1187b3,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,81096937,code,fr,ed973eb2142ac0b2,"// N-Reines en CP-SAT C# (executable). q[i] = ligne de la reine en colonne i (0-indexe).
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,81096937,code,fr,ed973eb2142ac0b2,"// N-Reines en CP-SAT C# (executable). q[i] = ligne de la reine en colonne i (0-indexe).
 static (int[] solution, double ms) SolveNQueensCpsat(int n)
 {
     var m = new CpModel();
@@ -20051,12 +20051,12 @@ for (int row = 0; row < 8; row++)
     Console.WriteLine(""  "" + line);
 }
 ",,,,,,,,ed973eb2142ac0b2,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,ed1f7883,markdown,fr,ba3d4d7dfd394059,"## 3. Contraintes globales
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,ed1f7883,markdown,fr,ba3d4d7dfd394059,"## 3. Contraintes globales
 
 Les contraintes **globales** (`alldifferent`, `cumulative`, `circuit`, `element`) capturent des structures récurrentes qui apparaissent dans une grande variété de problèmes. Plutôt que d'écrire une à une les contraintes binaires élémentaires, on invoque une contrainte globale qui **encode la structure entière** en une ligne — et, crucial, que le solveur sait **propager** efficacement grâce à des algorithmes dédiés (filtres de bornes, cohérence d'arc).
 
 `alldifferent` est la plus utile : elle exprime en **une ligne** ce qui demanderait O(n²) contraintes binaires « différentes deux à deux ». Sur le N-Reines, trois `alldifferent` suffisent à coder tout le problème (lignes, diagonale montante, diagonale descendante). C'est ce gain de concision — et surtout de **vitesse de propagation** — qui rend la CP si efficace sur les problèmes structurés.",,,,,,,,ba3d4d7dfd394059,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,fc818cb1,code,fr,2b68f47f8aef2911,"// === Section 4 : Emploi du temps (timetabling) ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,fc818cb1,code,fr,2b68f47f8aef2911,"// === Section 4 : Emploi du temps (timetabling) ===
 // 6 cours, 5 creneaux, 3 salles, 3 enseignants. Contraintes C1/C2/C3.
 // C1 : un enseignant ne donne pas 2 cours au meme creneau.
 // C2 : une salle n'accueille qu'un cours par creneau (slot[i]!=slot[j] OU room[i]!=room[j]).
@@ -20109,13 +20109,13 @@ Console.WriteLine($""Emploi du temps -- status: {stTt}"");
 for (int i = 0; i < nCourses; i++)
     Console.WriteLine($""  Cours {i + 1} -> creneau {sTt.Value(slot[i]) + 1}, salle {sTt.Value(room[i]) + 1} (prof={teacher[i]}, {students[i]} eleves)"");
 ",,,,,,,,2b68f47f8aef2911,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,365ce6d6,markdown,fr,c17fd58137c117da,"### N-Reines en CP-SAT C#
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,365ce6d6,markdown,fr,c17fd58137c117da,"### N-Reines en CP-SAT C#
 
 Le solveur trouve une solution valide en quelques millisecondes. Deux observations pédagogiques :
 
 - **Concision moindre qu'en MiniZinc** (~12 vs ~5 lignes) : CP-SAT exige la création **explicite** des variables de diagonale intermédiaires (`d1[i] = q[i]+i`, `d2[i] = q[i]-i`) avant de pouvoir appliquer `AddAllDifferent` dessus. MiniZinc abstrait ces calculs via la **compréhension de liste** `[q[i] + i | i in 1..n]`. C'est le coût documenté du contrôle fin : on échange de la concision contre de la transparence sur ce que le solveur fait réellement.
 - **Symétrie des solutions** : pour 8 reines, il existe 92 solutions distinctes (12 à symétrie près). Le solveur en renvoie **une** arbitrairement — la première trouvée. L'énumération complète demanderait une boucle de recherche (« solution suivante »), hors scope de cette démonstration.",,,,,,,,c17fd58137c117da,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,bb87de86,code,fr,f66ca1f63e6025e7,"// === Section 5 : Sudoku 4x4 pilote depuis le code ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,bb87de86,code,fr,f66ca1f63e6025e7,"// === Section 5 : Sudoku 4x4 pilote depuis le code ===
 // Le twin Python pilote MiniZinc depuis Python (model + data .dzn).
 // En CP-SAT C#, le modele et les donnees vivent dans le meme code : on fixe les
 // cases initiales par des contraintes d'egalite, puis alldifferent sur lignes/colonnes/blocs.
@@ -20149,10 +20149,10 @@ for (int i = 0; i < 4; i++)
     Console.WriteLine(""  "" + string.Join("" "", Enumerable.Range(0, 4).Select(j => sSk.Value(g[i, j]).ToString())));
 Console.WriteLine(""\nVoir la serie Sudoku pour des solveurs CSP complets -> ../../Sudoku/README.md"");
 ",,,,,,,,f66ca1f63e6025e7,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,e42ecc73,markdown,fr,f46a3491ef59a3ef,"## 4. Emploi du temps (timetabling)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,e42ecc73,markdown,fr,f46a3491ef59a3ef,"## 4. Emploi du temps (timetabling)
 
 Un problème reel : assigner creneaux et salles a 6 cours sans conflit (enseignant, salle, capacite). La contrainte C2 est une **disjonction** (OU) -- modelisee en CP-SAT avec des booléens et `OnlyEnforceIf` / `AddBoolOr`. C'est l'apport pedagogique cles : la logique disjonctive se traduit en variables booleennes de reification.",,,,,,,,f46a3491ef59a3ef,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,f52f1650,code,fr,e2272b53d076f6e2,"// === Section 6 : Comparaison imperatif vs declaratif ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,f52f1650,code,fr,e2272b53d076f6e2,"// === Section 6 : Comparaison imperatif vs declaratif ===
 // N-Reines resolu de 2 facons : (1) backtracking pur (imperatif), (2) CP-SAT (declaratif).
 // (MiniZinc, 3e approche du twin Python, est remplace par CP-SAT ici -- meme paradigme declaratif.)
 
@@ -20185,7 +20185,7 @@ var (solCpsat12, msCpsat12) = SolveNQueensCpsat(nBench);
 Console.WriteLine($""CP-SAT declaratif: {msCpsat12,8:F2} ms  -> solution trouvee: {solCpsat12 != null}"");
 Console.WriteLine($""\n{nBench}-Reines : les deux approches trouvent une solution valide."");
 ",,,,,,,,e2272b53d076f6e2,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,3fecd579,code,fr,322e5e3151648b05,"// Tableau comparatif des 3 paradigmes (Python pur / CP-SAT / MiniZinc).
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,3fecd579,code,fr,322e5e3151648b05,"// Tableau comparatif des 3 paradigmes (Python pur / CP-SAT / MiniZinc).
 // Repris du twin Python, avec la colonne MiniZinc (high-level, multi-solveur).
 var rows = new[]
 {
@@ -20205,14 +20205,14 @@ foreach (var r in rows)
     Console.WriteLine($""{r.Crit,-30} {r.Py,-18} {r.Cp,-18} {r.Mz,-18}"");
 Console.WriteLine(new string('=', 86));
 ",,,,,,,,322e5e3151648b05,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,0cccf684,markdown,fr,7780f80bbe18ec58,"## 5. Sudoku 4x4
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,0cccf684,markdown,fr,7780f80bbe18ec58,"## 5. Sudoku 4x4
 
 Le Sudoku est l'archétype du problème de satisfaction de contraintes : une grille partiellement remplie qu'il faut compléter en respectant des règles locales. Le twin Python **pilote MiniZinc depuis Python** (modèle `.mzn` + données `.dzn` séparés), tandis qu'ici en CP-SAT C#, **le modèle et les données vivent dans le même code**. C'est une différence de style importante :
 - On **fixe les cases initiales** par des contraintes d'égalité `Add(g[i,j] == valeur)`.
 - On pose `AddAllDifferent` sur chaque **ligne**, chaque **colonne**, et chaque **bloc 2x2**.
 
 Le bloc 2x2 est la structure spécifique du Sudoku (absente du N-Reines) : il faut indexer soigneusement les coordonnées de sous-grille. C'est un bon exercice de traduction d'une règle « naturelle » (les chiffres 1-4 sans répétition dans chaque carré) en contraintes formelles que le solveur peut propager.",,,,,,,,7780f80bbe18ec58,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,c5217853,code,fr,db2e602003f87481,"#load ""../../../Probas/Infer/SvgChartHelper.cs""
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,c5217853,code,fr,db2e602003f87481,"#load ""../../../Probas/Infer/SvgChartHelper.cs""
 // Visualisation SVG statique (remplace Plotly-CDN qui rend BLANC en consultation statique --
 // GitHub sandbox les <script>; EPIC #3801 Prong A + EPIC #6927). Technique #6942 : <svg> inline
 // via SvgChartHelper (zero-dependance, rend sur GitHub/nbviewer/offline, aucun CDN ni <script>).
@@ -20234,12 +20234,12 @@ display(SvgChartHelper.GroupedBar(
     new double[][] { new double[]{2,2,1,5,2}, new double[]{3,3,2,5,5}, new double[]{5,5,5,3,4} },
     new[] { ""Python pur"", ""CP-SAT"", ""MiniZinc"" },
     width: 720, height: 340))",,,,,,,,db2e602003f87481,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,1f289c86,markdown,fr,cac1fac7af00e007,"## 6. Comparaison : imperatif vs declaratif
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,1f289c86,markdown,fr,cac1fac7af00e007,"## 6. Comparaison : imperatif vs declaratif
 
 On resout N-Reines des deux facons pour comparer. Le backtracking pur (imperatif) est plus lent et moins declaratif ; CP-SAT (declaratif) delegue au solveur. La troisieme approche du twin Python (MiniZinc) est omise ici (pas de binding .NET) -- CP-SAT la represente dans le paradigme declaratif.
 
 ### Tableau comparatif",,,,,,,,cac1fac7af00e007,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,684a4095,code,fr,ea532a8b17c59838,"// === Section 7 : Exercices (stubs C.1 -- a completer par l'etudiant) ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,684a4095,code,fr,ea532a8b17c59838,"// === Section 7 : Exercices (stubs C.1 -- a completer par l'etudiant) ===
 // Exercice 1 : Carre magique 3x3. Les entiers 1..9 tous differents, chaque ligne/colonne/
 // diagonale sommant a magic_sum = n*(n*n+1)/2 = 15 pour n=3. modele CP-SAT a completer.
 static int[][] MagicSquareCpsat()   // TODO etudiant
@@ -20254,7 +20254,7 @@ static int[][] MagicSquareCpsat()   // TODO etudiant
 }
 MagicSquareCpsat();
 ",,,,,,,,ea532a8b17c59838,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,8c0cffd2,code,fr,b54a773196461364,"// Exercice 2 : Coloration de graphe. Graphe A-B-C, A-D, B-E, C-F, D-E, E-F.
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,8c0cffd2,code,fr,b54a773196461364,"// Exercice 2 : Coloration de graphe. Graphe A-B-C, A-D, B-E, C-F, D-E, E-F.
 // Minimiser le nombre de couleurs (chromatique). modele CP-SAT a completer.
 static int[] GraphColoringCpsat()   // TODO etudiant
 {
@@ -20267,7 +20267,7 @@ static int[] GraphColoringCpsat()   // TODO etudiant
 }
 GraphColoringCpsat();
 ",,,,,,,,b54a773196461364,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,a96a4857,code,fr,9125d37437c309df,"// Exercice 3 : VRP simplifie (6 noeuds, 1 depot). Minimiser la distance totale
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,a96a4857,code,fr,9125d37437c309df,"// Exercice 3 : VRP simplifie (6 noeuds, 1 depot). Minimiser la distance totale
 // d'une tournee passant par tous les clients. modele CP-SAT a completer.
 static int[] VrpCpsat()   // TODO etudiant
 {
@@ -20288,7 +20288,7 @@ Console.WriteLine(""avec une API imperative. MiniZinc reste superieur pour la co
 Console.WriteLine(""multi-solveur (Gecode, Chuffed, CBC...). Les deux partagent le paradigme :"");
 Console.WriteLine(""declarer les contraintes, laisser le solveur chercher -- l'oppose du backtracking."");
 ",,,,,,,,9125d37437c309df,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,5cee591e,markdown,fr,2a90f8c08142c4ec,"### Visualisation ASCII (concision et score multi-critères)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,5cee591e,markdown,fr,2a90f8c08142c4ec,"### Visualisation ASCII (concision et score multi-critères)
 
 Les graphiques matplotlib du twin Python (qui dispose d'une bibliothèque graphique native) sont remplacés ici par un **rendu SVG statique** autonome via `SvgChartHelper` — technique zero-dépendance qui rend correctement sur GitHub, nbviewer et en consultation offline (les CDN Plotly rendent **blanc** en sandbox statique, EPIC #3801/#6927). Deux axes de comparaison entre les trois paradigmes (Python pur / CP-SAT / MiniZinc) :
 - **Concision** du modèle (lignes de code estimées) par famille de problème.
@@ -24272,7 +24272,7 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.i
 
 ★ Le twin Python **appelle** OR-Tools ; les autres twins C# appellent **GeneticSharp**. Ce twin **déroule les heuristiques à la main** (2-opt = inversion de segment, recuit simulé = move 2-opt + critère de Metropolis) — la mécanique que les librairies cachent.
 
-**Durée estimée : 45 min.** Prérequis : [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb) (recherche locale), [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb) (recuit simulé).
+**Durée estimée : 45 min.** Prérequis : [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb) (recherche locale), [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) (recuit simulé).
 ",,,,,,,,2a770b06dd8df2df,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb,1f6f5a78-1d31-41ad-829a-305804699c6f,markdown,fr,e90c27606cc35397,"## 1. Représentation du problème
 
@@ -24533,7 +24533,7 @@ Ce twin C# a **déroulé from-scratch** les piliers de la résolution approchée
 
 ★ **Leçon** : le TSP cristallise le basculement exact ↔ approché. Les solveurs industriels (OR-Tools, twin Python ; GeneticSharp, autres twins C#) combinent ces briques à grande échelle ; ce twin les **expose individuellement** pour qu'on saisisse la mécanique de chaque heuristique.
 
-**Lien avec les Foundations** : recherche locale ⇄ [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb), recuit simulé ⇄ [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb), solveur industriel ⇄ [`App-13-TSP-Metaheuristics`](App-13-TSP-Metaheuristics.ipynb) (twin Python).
+**Lien avec les Foundations** : recherche locale ⇄ [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb), recuit simulé ⇄ [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb), solveur industriel ⇄ [`App-13-TSP-Metaheuristics`](App-13-TSP-Metaheuristics.ipynb) (twin Python).
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications/Hybrid, tranche TSP / voyageur de commerce. See #4956, #3801.*
@@ -25090,7 +25090,7 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17-VRP-Logistics.ipynb,6e957eb4
 - Toth, P., & Vigo, D. (2014). *The Vehicle Routing Problem*
 - Cordeau, J. F., et al. (2002). *A guide to vehicle routing heuristics*
 - Russell, S., & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach* - Chapitre 10",,,,,,,,2eeec93ccfb9b27b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,75cc3e8c,markdown,fr,61721111c9f42195,"# App-17b : Vehicle Routing Problem (VRP) — Twin C# (métaheuristiques from-scratch)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,75cc3e8c,markdown,fr,61721111c9f42195,"# App-17b : Vehicle Routing Problem (VRP) — Twin C# (métaheuristiques from-scratch)
 
 **Twin C# (.NET Interactive)** de [App-17-VRP-Logistics](App-17-VRP-Logistics.ipynb) — marathon **#4956** (parité .NET ⇄ Python), volet **Search/Applications/Hybrid routing**, axe-2 SOTA **#3801** Prong B.
 
@@ -25104,7 +25104,7 @@ Le notebook Python invoque **OR-Tools `RoutingModel`** (solveur SOTA industriel)
 4. Optimiser globalement par **recuit simulé** (acceptation Metropolis de mouvements défavorables).
 5. Comparer les compromis **qualité / temps / contrôle** vs le solveur OR-Tools du twin Python.
 ",,,,,,,,61721111c9f42195,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,f5aebca8,markdown,fr,14849af7ae6f406e,"## Introduction
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,f5aebca8,markdown,fr,14849af7ae6f406e,"## Introduction
 
 ### Définition
 
@@ -25133,11 +25133,11 @@ Le VRP est **NP-difficile** (généralise le TSP). Sur $n$ clients et $k$ véhic
 
 Le twin C# rend **visibles** les briques que `RoutingModel` orchestre (construction, voisinage, critère d'acceptation, schéma de refroidissement) — **Tranche 1** from-scratch (BCL seule, 0 NuGet). La **Tranche 2** ajoute le moteur industriel OR-Tools lui-même (binding C# `Google.OrTools.ConstraintSolver`, §8) : chaque côté atteint le **même** moteur de production — parity **native-both** (#10382).
 ",,,,,,,,14849af7ae6f406e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,4b2d0ea0,markdown,fr,ecd072da3bec5b96,"## 1. Modélisation — `VRPInstance`
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,4b2d0ea0,markdown,fr,ecd072da3bec5b96,"## 1. Modélisation — `VRPInstance`
 
 On représente l'instance par le dépôt, la liste des clients (positions 2D), les demandes, la capacité véhicule et le nombre de véhicules. La **matrice de distance euclidienne** est précalculée (index 0 = dépôt, index $i+1$ = client $i$).
 ",,,,,,,,ecd072da3bec5b96,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,5b8af902,code,fr,4f85858c588ac9f3,"// Cellule 1 — Définition de l'instance VRP (persistante cross-cell via le kernel .net-csharp)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,5b8af902,code,fr,4f85858c588ac9f3,"// Cellule 1 — Définition de l'instance VRP (persistante cross-cell via le kernel .net-csharp)
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25184,11 +25184,11 @@ public class VRPInstance
 
 display(""VRPInstance definie. Distance matrix precalculee (index 0 = depot)."");
 ",,,,,,,,4f85858c588ac9f3,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,aee19329,markdown,fr,f6eae6ba02ac2f5f,"### Création de l'instance
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,aee19329,markdown,fr,f6eae6ba02ac2f5f,"### Création de l'instance
 
 On reprend l'instance canonique du twin Python : 15 clients, capacité 60, 6 véhicules. La demande totale (328) dépasse $4 \times 60 = 240$ : **5 véhicules minimum** sont nécessaires, d'où $k=6$ pour marge de manœuvre.
 ",,,,,,,,f6eae6ba02ac2f5f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,464b9326,code,fr,45c266a25734175b,"// Cellule 2 — Instance canonique (15 clients, capacite 60, 6 vehicules)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,464b9326,code,fr,45c266a25734175b,"// Cellule 2 — Instance canonique (15 clients, capacite 60, 6 vehicules)
 var depot = (50.0, 50.0);
 var clients = new List<(double X, double Y)>
 {
@@ -25206,11 +25206,11 @@ display($""Demande totale: {instance.Demands.Sum()}"");
 display($""Capacite vehicule: {instance.VehicleCapacity}"");
 display($""Vehicules: {instance.NumVehicles} (min theorique = ceil(328/60) = 6)"");
 ",,,,,,,,45c266a25734175b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,4c9d3336,markdown,fr,7a6d17b53821f3f7,"## 2. Représentation d'une solution — `VRPSolution`
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,4c9d3336,markdown,fr,7a6d17b53821f3f7,"## 2. Représentation d'une solution — `VRPSolution`
 
 Une solution = une liste de tournées (chaque tournée = liste d'indices de clients, 0-based). Deux méthodes clés : `TotalDistance()` (coût objectif) et `IsValid()` (tous les clients visités une seule fois + capacité respectée).
 ",,,,,,,,7a6d17b53821f3f7,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,7b022db8,code,fr,8ddb33369694905f,"// Cellule 3 — Solution VRP + validateur
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,7b022db8,code,fr,8ddb33369694905f,"// Cellule 3 — Solution VRP + validateur
 public class VRPSolution
 {
     public List<List<int>> Routes { get; }
@@ -25257,13 +25257,13 @@ public class VRPSolution
 
 display(""VRPSolution definie. Methods: TotalDistance, IsValid, RouteDistance, RouteLoad."");
 ",,,,,,,,8ddb33369694905f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,dbc7db14,markdown,fr,ff5baeb2162788a4,"## 3. Heuristique constructive — Plus Proche Voisin (Nearest-Neighbor)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,dbc7db14,markdown,fr,ff5baeb2162788a4,"## 3. Heuristique constructive — Plus Proche Voisin (Nearest-Neighbor)
 
 **Principe** : depuis la position courante (dépôt au départ), on va au client non visité le plus proche dont la demande entre dans la capacité restante. Quand plus aucun client ne tient, on retourne au dépôt et on entame une nouvelle tournée.
 
 C'est l'heuristique la plus rapide ($O(n^2)$) mais aussi la plus myope : elle entasse les clients sans vision globale.
 ",,,,,,,,ff5baeb2162788a4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,41f4813a,code,fr,d6e5213fa930a814,"// Cellule 4 — Nearest-Neighbor greedy
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,41f4813a,code,fr,d6e5213fa930a814,"// Cellule 4 — Nearest-Neighbor greedy
 public VRPSolution NearestNeighbor(VRPInstance inst)
 {
     var remaining = new HashSet<int>(Enumerable.Range(0, inst.NumClients));
@@ -25302,11 +25302,11 @@ display($""NN — valide: {nnSolution.IsValid()}"");
 display($""NN — distance totale: {nnSolution.TotalDistance():F2}"");
 display($""NN — nb tournees: {nnSolution.Routes.Count}"");
 ",,,,,,,,d6e5213fa930a814,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,bd2a0fe5,markdown,fr,07847878cbd9fc42,"### Heuristique d'insertion au moindre coût (Cheapest-Insertion)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,bd2a0fe5,markdown,fr,07847878cbd9fc42,"### Heuristique d'insertion au moindre coût (Cheapest-Insertion)
 
 Variante constructive : on insère chaque client là où l'**augmentation marginale de distance** est minimale. Moins myope que le NN car elle évalue le coût d'insertion dans toutes les tournées existantes. C'est l'heuristique implémentée dans le twin Python (`greedy_insertion`).
 ",,,,,,,,07847878cbd9fc42,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,a40019f0,code,fr,5efd6c3acb247f52,"// Cellule 5 — Cheapest-Insertion greedy (augmentation marginale minimale)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,a40019f0,code,fr,5efd6c3acb247f52,"// Cellule 5 — Cheapest-Insertion greedy (augmentation marginale minimale)
 public VRPSolution CheapestInsertion(VRPInstance inst)
 {
     var remaining = new Queue<int>(Enumerable.Range(0, inst.NumClients));
@@ -25352,7 +25352,7 @@ display($""Cheapest-Insertion — valide: {greedySolution.IsValid()}"");
 display($""Cheapest-Insertion — distance totale: {greedySolution.TotalDistance():F2}"");
 display($""Cheapest-Insertion — nb tournees: {greedySolution.Routes.Count}"");
 ",,,,,,,,5efd6c3acb247f52,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,a2fff88e,markdown,fr,9b6b8f11fe087749,"## 4. Recherche locale — 2-opt intra-route
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,a2fff88e,markdown,fr,9b6b8f11fe087749,"## 4. Recherche locale — 2-opt intra-route
 
 **Principe** : sur une même tournée, on inverse un segment $[i+1, j]$ et on garde la modification si elle réduit la distance. Le 2-opt élimine les **croisements** d'arcs (sous-optimalité locale typique des heuristiques constructives). On répète jusqu'à ne plus pouvoir améliorer (optimum local).
 
@@ -25360,7 +25360,7 @@ L'opérateur 2-opt est le cœur des métaheuristiques VRP : il définit le **voi
 
 
 Les heuristiques constructives diffèrent face au 2-opt : le **Plus Proche Voisin** (NN) enchaîne les clients au plus près et produit typiquement des **croisements d'arêtes** que le 2-opt répare ; l'**Insertion au moindre coût** (CI) insère chaque client à la position de *coût marginal minimal* — elle est donc **insertion-optimale** et le 2-opt n'y gagne rien par construction. Le 2-opt démontre donc son apport sur le tour **NN**.",,,,,,,,9b6b8f11fe087749,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,1987720f,code,fr,04375e71062a4270,"// Cellule 6 — 2-opt local search (intra-route, optimum local)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,1987720f,code,fr,04375e71062a4270,"// Cellule 6 — 2-opt local search (intra-route, optimum local)
 public List<int> TwoOptRoute(List<int> route, VRPInstance inst)
 {
     if (route.Count < 3) return new List<int>(route);
@@ -25412,7 +25412,7 @@ display($""NN + 2-opt              — distance: {twoOptSolution.TotalDistance()
 display($""Amelioration 2-opt      — {nnSolution.TotalDistance() - twoOptSolution.TotalDistance():F2}"");
 display($""2-opt valide: {twoOptSolution.IsValid()}"");
 ",,,,,,,,04375e71062a4270,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,47e21d86,markdown,fr,e4ce728c66767b5a,"## 5. Métaheuristique — Recuit Simulé (Simulated Annealing)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,47e21d86,markdown,fr,e4ce728c66767b5a,"## 5. Métaheuristique — Recuit Simulé (Simulated Annealing)
 
 Le 2-opt converge vers un **optimum local** dont il ne peut plus sortir. Le **recuit simulé** (Kirkpatrick 1983) lève ce verrou en acceptant, avec une probabilité décroissante, des mouvements qui **dégradent** la solution — autorisant l'exploration de l'espace au-delà de l'optimum local.
 
@@ -25426,7 +25426,7 @@ Le 2-opt converge vers un **optimum local** dont il ne peut plus sortir. Le **re
 
 $T$ décroît → l'algorithme passe d'une phase **d'exploration** (accepte beaucoup de dégradations) à une phase **d'exploitation** (devient quasi-glouton). C'est l'analogue exact, from-scratch, de ce que OR-Tools `GUIDED_LOCAL_SEARCH` fait dans le twin Python.
 ",,,,,,,,e4ce728c66767b5a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,beb05672,code,fr,474ca984e1e3d19e,"// Cellule 7 — Recuit simule (relocate + 2-opt aleatoire, critere de Metropolis)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,beb05672,code,fr,474ca984e1e3d19e,"// Cellule 7 — Recuit simule (relocate + 2-opt aleatoire, critere de Metropolis)
 public VRPSolution SimulatedAnnealing(VRPInstance inst, VRPSolution initial,
                                        double T0 = 50.0, double TMin = 0.01,
                                        double cooling = 0.9995, int itersPerT = 30,
@@ -25500,13 +25500,13 @@ display($""+ Recuit simule         — distance: {saSolution.TotalDistance():F2}
 display($""Amelioration SA         — {twoOptSolution.TotalDistance() - saSolution.TotalDistance():F2}"");
 display($""SA valide: {saSolution.IsValid()}"");
 ",,,,,,,,474ca984e1e3d19e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,a7c9c074,markdown,fr,d678d8c92d20446b,"## 6. Comparaison des méthodes
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,a7c9c074,markdown,fr,d678d8c92d20446b,"## 6. Comparaison des méthodes
 
 Tableau récapitulatif sur la **même instance** (15 clients, capacité 60). La qualité augmente avec la sophistication de la méthode, mais aussi le temps de calcul. Le solveur OR-Tools (twin Python) reste la référence SOTA : il combine construction + recherche locale guidée (GLS) avec des heuristiques de coupes avancées.
 
 
 **Parité C#/Python sur le recuit simulé.** Les deux jumeaux implémentent le *même* algorithme (mêmes paramètres : $T_0=50$, refroidissement $0{,}9995$, 30 itérations/palier, `seed=42`), mais chacun utilise le générateur aléatoire **natif de son langage** — `System.Random` en C#, `numpy.random.default_rng` (PCG64) en Python. `seed=42` ne produit **pas la même suite** entre ces deux algorithmes : les trajectoires de recherche diffèrent donc. Sur **cette instance**, les deux recuits convergent néanmoins vers le **même optimum** (569,24) — le bassin est assez marqué pour que des trajectoires divergentes s'y rejoignent. Sur l'instance précédente du notebook, les flux RNG distincts menaient à des optima locaux différents (403,45 en C# vs 410,59 en Python) : la divergence est donc **pilotée par le RNG et dépendante du paysage**, non un bug de câblage. Ce que les jumeaux démontrent est la qualité de convergence vers un même bassin, pas une identité bit-à-bit des trajectoires — objectif hors de portée d'une parité croisée-language (RNG différents).",,,,,,,,d678d8c92d20446b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,8ede6649,code,fr,cbd2e5f266ba5706,"// Cellule 8 — Tableau comparatif des 4 methodes from-scratch
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,8ede6649,code,fr,cbd2e5f266ba5706,"// Cellule 8 — Tableau comparatif des 4 methodes from-scratch
 double dNN = nnSolution.TotalDistance();
 double dGreedy = greedySolution.TotalDistance();
 double d2opt = twoOptSolution.TotalDistance();   // NN + 2-opt
@@ -25533,11 +25533,11 @@ display(monotone ? ""[OK] Mono: SA <= 2-opt <= NN (amelioration monotone).""
 display($""Validite NN={nnSolution.IsValid()}, Greedy={greedySolution.IsValid()}, "" +
         $""2-opt={twoOptSolution.IsValid()}, SA={saSolution.IsValid()}"");
 ",,,,,,,,cbd2e5f266ba5706,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,df3abd08,markdown,fr,28f438a888922641,"## 7. Visualisation ASCII de la meilleure tournée
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,df3abd08,markdown,fr,28f438a888922641,"## 7. Visualisation ASCII de la meilleure tournée
 
 Le twin Python utilise `matplotlib` pour dessiner les tournées. En C# BCL (0 NuGet), on visualise en **ASCII** : coordonnées (X croissant vers la droite, Y vers le haut) avec le dépôt marqué `D`, chaque tournée par un chiffre distinctif. C'est la convention de visualisation des twins C# Search (cf App-3b/4b).
 ",,,,,,,,28f438a888922641,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,bc206b3f,code,fr,1e4c5931a8d7876a,"// Cellule 9 — Carte ASCII de la meilleure solution (recuit simule)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,bc206b3f,code,fr,1e4c5931a8d7876a,"// Cellule 9 — Carte ASCII de la meilleure solution (recuit simule)
 public string DrawAsciiMap(VRPInstance inst, VRPSolution sol, int width = 52, int height = 22)
 {
     double minX = Math.Min(inst.Depot.X, inst.Clients.Min(c => c.X));
@@ -25579,11 +25579,11 @@ display(""X: "" + new string('-', 52));
 display(DrawAsciiMap(instance, saSolution));
 display(""Legende: D=depot, chaque chiffre = client servi par la tournee N"");
 ",,,,,,,,1e4c5931a8d7876a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,c9b21025,markdown,fr,58d0528b6a84f642,"### Détail des tournées optimales (recuit simulé)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,c9b21025,markdown,fr,58d0528b6a84f642,"### Détail des tournées optimales (recuit simulé)
 
 Pour chaque tournée : séquence des clients (indice 1-based), charge totale vs capacité, distance de la tournée.
 ",,,,,,,,58d0528b6a84f642,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,9fa6aca0,code,fr,7c3e74cd90f0a960,"// Cellule 10 — Detail des tournees (recuit simule)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,9fa6aca0,code,fr,7c3e74cd90f0a960,"// Cellule 10 — Detail des tournees (recuit simule)
 display($""Solution SA — distance totale: {saSolution.TotalDistance():F2}"");
 display("""");
 for (int r = 0; r < saSolution.Routes.Count; r++)
@@ -25599,11 +25599,11 @@ display("""");
 display($""Total demande couverte: {saSolution.Routes.SelectMany(r => r).Sum(c => instance.Demands[c])} "" +
         $""/ {instance.Demands.Sum()} (attendu: egalite)"");
 ",,,,,,,,7c3e74cd90f0a960,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,5fc64dcb,markdown,fr,69250d59a8f67014,"## 8. Exercices
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,5fc64dcb,markdown,fr,69250d59a8f67014,"## 8. Exercices
 
 Trois extensions à compléter (stubs sans erreur — le notebook s'exécute de bout en bout même non complété, cf règle C.1). Chaque exercice précède d'un indice.
 ",,,,,,,,69250d59a8f67014,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,7e209ed3,markdown,fr,44b3d3b09e694399,"### Exercice 1 — Épargne de Clarke-Wright (Clarke-Wright Savings)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,7e209ed3,markdown,fr,44b3d3b09e694399,"### Exercice 1 — Épargne de Clarke-Wright (Clarke-Wright Savings)
 
 L'heuristique **savings** part de $n$ tournées individuelles (dépôt → client $i$ → dépôt) et fusionne itérativement les paires qui maximisent le gain $s_{ij} = d_{0i} + d_{0j} - d_{ij}$. C'est l'heuristique constructive la plus efficace pour le CVRP en pratique.
 
@@ -25611,7 +25611,7 @@ L'heuristique **savings** part de $n$ tournées individuelles (dépôt → clien
 
 > **Indice :** calculer la liste triée des savings décroissants, puis fusionner en respectant la capacité et la contrainte « un client n'appartient qu'à une tournée ».
 ",,,,,,,,44b3d3b09e694399,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,7d7a9f7a,code,fr,1b54ebc2a335a8d5,"// Cellule 11 — Exercice 1 (a completer) : Clarke-Wright Savings
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,7d7a9f7a,code,fr,1b54ebc2a335a8d5,"// Cellule 11 — Exercice 1 (a completer) : Clarke-Wright Savings
 // TODO etudiant : implementer ClarkeWright(instance) -> VRPSolution
 // Etape 1 : partir de n tournees individuelles (1 client chacune).
 // Etape 2 : calculer s(i,j) = Dist[0,i+1] + Dist[0,j+1] - Dist[i+1,j+1] pour tout i<j.
@@ -25628,7 +25628,7 @@ public VRPSolution ClarkeWright(VRPInstance inst)
 // display($""Clarke-Wright distance: {(cwSolution?.TotalDistance() ?? 0):F2}"");
 display(""Exercice 1 (Clarke-Wright) : stub a completer."");
 ",,,,,,,,1b54ebc2a335a8d5,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,183a54c7,markdown,fr,c72171252da76a56,"### Exercice 2 — Mouvement OR-opt
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,183a54c7,markdown,fr,c72171252da76a56,"### Exercice 2 — Mouvement OR-opt
 
 Le **OR-opt** déplace un segment de 1 à 3 clients consécutifs vers une autre position d'une tournée (même tournée ou autre). Combiné au 2-opt, il forme le voisinage standard des métaheuristiques VRP.
 
@@ -25636,7 +25636,7 @@ Le **OR-opt** déplace un segment de 1 à 3 clients consécutifs vers une autre 
 
 > **Indice :** dans `SimulatedAnnealing`, ajouter un 3e type de mouvement (extraire segment length 1-3, réinsérer à une position aléatoire faisable).
 ",,,,,,,,c72171252da76a56,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,eb81dafb,code,fr,395c9dc8356785d9,"// Cellule 12 — Exercice 2 (a completer) : OR-opt dans le recuit simule
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,eb81dafb,code,fr,395c9dc8356785d9,"// Cellule 12 — Exercice 2 (a completer) : OR-opt dans le recuit simule
 // TODO etudiant : etendre SimulatedAnnealing avec un mouvement OR-opt
 // Etape 1 : extraire un segment de longueur 1..3 d'une tournee source.
 // Etape 2 : le reinserer a une position (autre tournee ou meme) en gardant la capacite.
@@ -25649,7 +25649,7 @@ public double SolveSA_WithOrOpt(VRPInstance inst, VRPSolution initial)
 
 display(""Exercice 2 (OR-opt) : stub a completer. Comparer distance finale avec/sans OR-opt."");
 ",,,,,,,,395c9dc8356785d9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,71501a92,markdown,fr,57ed15920d80f87a,"### Exercice 3 — VRP avec fenêtres de temps (VRPTW)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,71501a92,markdown,fr,57ed15920d80f87a,"### Exercice 3 — VRP avec fenêtres de temps (VRPTW)
 
 Le **VRPTW** ajoute : chaque client $i$ a une fenêtre de temps $[e_i, l_i]$ durant laquelle il doit être servi, et un temps de service $s_i$. Le véhicule quitte le dépôt à $t=0$ et voyage à vitesse unitaire (distance = temps).
 
@@ -25657,7 +25657,7 @@ Le **VRPTW** ajoute : chaque client $i$ a une fenêtre de temps $[e_i, l_i]$ dur
 
 > **Indice :** calculer le temps d'arrivée à chaque client (somme cumulée des distances + service), vérifier $e_i \le t_i \le l_i$.
 ",,,,,,,,57ed15920d80f87a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,852cc113,code,fr,8b9c337201d884a6,"// Cellule 13 — Exercice 3 (a completer) : VRPTW
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,852cc113,code,fr,8b9c337201d884a6,"// Cellule 13 — Exercice 3 (a completer) : VRPTW
 // TODO etudiant : etendre VRPInstance avec time windows et valider
 // Etape 1 : ajouter TimeWindows (e_i, l_i) et ServiceTimes par client.
 // Etape 2 : dans IsValid(), verifier que l'heure d'arrivee a chaque client est dans [e_i, l_i].
@@ -25679,7 +25679,7 @@ public class VRPTWInstance
 
 display(""Exercice 3 (VRPTW) : stub a completer."");
 ",,,,,,,,8b9c337201d884a6,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,e168ff24,markdown,fr,67fbce9f375fd0d0,"## 9. Résumé
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,e168ff24,markdown,fr,67fbce9f375fd0d0,"## 9. Résumé
 
 Ce twin C# a déroulé **toutes les briques** d'un solveur VRP, from-scratch (BCL .NET 9, 0 NuGet) :
 
@@ -26592,7 +26592,7 @@ Dans ce notebook, nous avons explore cinq méthodes d'optimisation d'hyperparame
 - Il n'y a pas de méthode universelle: **adapter au problème**",,,,,,,,51ada953e84df4fb,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb,47e4092d,markdown,fr,1792d10d8b0cdbe1,"# App-18b : Optimisation d'Hyperparametres - Jumeau C#
 
-> **Twin C#** de [`App-18-HyperparameterTuning`](App-18-HyperparameterTuning.ipynb) (Python / scikit-learn + Optuna). Navigation : [<< App-17b VRP](App-17b-VRP-Logistics-Csharp.ipynb) | [Index](../../README.md) | [App-19 WFC >>](../CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb)
+> **Twin C#** de [`App-18-HyperparameterTuning`](App-18-HyperparameterTuning.ipynb) (Python / scikit-learn + Optuna). Navigation : [<< App-17b VRP](App-17b-VRP-Logistics-CSharp.ipynb) | [Index](../../README.md) | [App-19 WFC >>](../CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb)
 
 ## Objectif pedagogique
 
@@ -33108,7 +33108,7 @@ Le naïf cartésien — qui choisit un motif par ligne puis valide les colonnes 
 La propagation from-scratch reste **excellente** ici (0,26 ms, plus rapide que CP-SAT) : c'est la puissance d'un algorithme *spécialisé*. Mais la propagation est un code dédié au nonogram qu'il a fallu concevoir ; CP-SAT est l'outil *général* qui atteint la même solution en écrivant le problème une fois. Ce sont deux leviers complémentaires, et le cahier des charges du jumeau Python les couvre tous deux — la Tranche 2 donne au C# la même généralité.
 
 **Verdict `SOTA-OK` (#3801).** Le moteur réel Google.OrTools CP-SAT est invoqué (`statut=Optimal`), produit la vraie solution. Aucune sortie dégradée. La Tranche 1 from-scratch (énumération, propagation, naïf) est préservée intacte. Niveau de parité `native-both` : le jumeau Python invoque `ortools.sat.python.cp_model`, le jumeau C# invoque le même engine 9.11 via `#r ""nuget:""`.",,,,,,,,3ce6483b68d0ce82,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,tr2-app16-intro,markdown,fr,d53e34e85ca6a0ef,"## 4. Solveur industriel CP-SAT (lib-vs-lib, #10382)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,tr2-app16-intro,markdown,fr,d53e34e85ca6a0ef,"## 4. Solveur industriel CP-SAT (lib-vs-lib, #10382)
 
 Le twin Python `App-16-Crossword-CSP.ipynb` résout le mots-croisés avec le **moteur industriel
 OR-Tools CP-SAT** (`ortools.sat.python.cp_model`). Le C# ci-dessus (backtracking, forward-checking)
@@ -33126,7 +33126,7 @@ backtracking from-scratch explore l'arbre nœud par nœud, CP-SAT apprend des cl
 Sur les instances crossword de cette échelle, les méthodes from-scratch spécialisées restent
 compétitives ; l'atout de CP-SAT ici est la **généralité** (même moteur pour coloration, planning,
 nonogram, mots-croisés sans code ad-hoc), mesuré honnètement en §4.2.",,,,,,,,d53e34e85ca6a0ef,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,tr2-app16-code,code,fr,2f38d646a296524c,"#r ""nuget: Google.OrTools, 9.11.4210""
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,tr2-app16-code,code,fr,2f38d646a296524c,"#r ""nuget: Google.OrTools, 9.11.4210""
 using Google.OrTools.Sat;
 using System.Diagnostics;
 
@@ -33233,7 +33233,7 @@ Show(""de vitesse -- son atout est la GENERALITE : le meme moteur resout colorat
 Show(""planning, nonogram, TSP et mots-croises sans aucun code ad-hoc par probleme. Le backtracking"");
 Show(""reste valuable pedagogiquement (rend visible la mecanique de l'arbre nœud par nœud)."");
 ",,,,,,,,2f38d646a296524c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb,tr2-app16-interp,markdown,fr,9e7d428eb4642c3a,"**Verdict SOTA-OK.** CP-SAT remplit la grille exemple (parité avec backtracking et forward-checking
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-CSharp.ipynb,tr2-app16-interp,markdown,fr,9e7d428eb4642c3a,"**Verdict SOTA-OK.** CP-SAT remplit la grille exemple (parité avec backtracking et forward-checking
 from-scratch) et résout la grille 7x7 plus contrainte.
 
 **Hiérarchie honnête des trois approches** (mesuré firsthand) :
@@ -33380,7 +33380,7 @@ notre backtracking pur peinait.
 implicites plus subtiles (par exemple, trois slots forcés à des mots
 distincts) : c'est le rôle des propagateurs de plus haut niveau (consistance
 de bornes, de chemin…) qu'utilisent les solveurs industriels.",,,,,,,,29f1e5740d7c3a6a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,de4a75cd,markdown,fr,7ed4d9c73cbae270,"## Tranche 2 : contraintes globales via CP-SAT (Google.OrTools) — lib-vs-lib (#10382)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,de4a75cd,markdown,fr,7ed4d9c73cbae270,"## Tranche 2 : contraintes globales via CP-SAT (Google.OrTools) — lib-vs-lib (#10382)
 
 Le moteur WFC from-scratch des sections 1-8 propage des contraintes **locales** (adjacence entre tuiles voisines) ; il ne peut pas exprimer des contraintes **globales** — ratio de sol, densité d'ennemis, comptes exacts d'objets, connectivité. Le jumeau Python les encode en **CP-SAT exact** via OR-Tools (`wfc_cpsat.py`) ; cette tranche porte le même modèle en C# avec le binding .NET officiel **Google.OrTools** — même moteur, mêmes contraintes, mêmes paramètres (12×12, seed 42).
 
@@ -33396,7 +33396,7 @@ Le moteur WFC from-scratch des sections 1-8 propage des contraintes **locales** 
 
 **Honnêteté (parité avec le jumeau Python)** : la contrainte 6 est une **relaxation flow** — elle impose une cascade d'arcs entrants, pas un chemin unique vers la source. La validation BFS en fin de tranche vérifie le résultat réel, exactement comme `validate_level` côté Python.
 ",,,,,,,,7ed4d9c73cbae270,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,4a9831ae,code,fr,9123bf2c50d53f9d,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,4a9831ae,code,fr,9123bf2c50d53f9d,"#nullable enable
 // Portage C# de solve_cpsat (wfc_cpsat.py) : meme modele CP-SAT que le jumeau Python.
 // Reutilise Tileset / Tile / ts definis en section 1. Les contraintes globales qui
 // manquent au WFC pur (section 3) sont exprimees directement sur les variables CP-SAT.
@@ -33589,7 +33589,7 @@ public static class WfcCpsat
     }
 }
 ",,,,,,,,9123bf2c50d53f9d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,be597530,code,fr,af960dc1335219b0,"#nullable enable
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,be597530,code,fr,af960dc1335219b0,"#nullable enable
 using System.Text;
 using System.Collections.Generic;
 
@@ -33645,7 +33645,7 @@ int seenFloor = BfsConnected(res.Grid, 1);
 bool fullyConnected = seenFloor == res.FloorCells;
 $""Validation : sol connecte depuis (0,0) = {100.0 * seenFloor / res.FloorCells:F0} % des {res.FloorCells} cases sol (connectivite complete : {fullyConnected})  |  ratio ennemis/sol = {100.0 * res.EnemyCount / res.FloorCells:F1} % (attendu 5-20 %)  |  cles = {res.KeyCount}  |  coffres = {res.ChestCount}"".Display();
 ",,,,,,,,af960dc1335219b0,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb,40749467,markdown,fr,759ec4dd46683b19,"### Verdict Tranche 2 — SOTA-OK (#3801)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb,40749467,markdown,fr,759ec4dd46683b19,"### Verdict Tranche 2 — SOTA-OK (#3801)
 
 Le binding .NET **Google.OrTools** (NuGet, CP-SAT) est le même moteur que `wfc_cpsat.py` côté Python : les deux côtés de la paire atteignent un **moteur de production** — parité **native-both** (#10382). Résultat 12×12, seed 42, timeout 20 s : **43 cases sol** (30 %), **3 ennemis** (7 % du sol, attendu 5-20 %), 1 clé, 1 coffre, connectivité BFS **7 % des 43 cases** (relaxation flow — même ordre de grandeur que le « ~7 % observé » du jumeau Python), résolu en **~1,5 s** (OPTIMAL). Les contraintes globales impossibles en WFC pur (ratio sol, densité ennemis, comptes exacts, connectivité) sont exprimées par des sommes BoolVar, une disjonction d'adjacence et une relaxation flow, puis résolues par le solveur.
 
@@ -34431,7 +34431,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,t2-inte
 **Prong-B — la discrimination (pourquoi CP-SAT compte).** Le glouton MRV et le Branch-and-Bound §3 trouvent des affectations **réalisables** (contraintes dures), mais **n'optimisent aucun objectif souple** : le glouton compacte les 8 cours sur Lundi, plaçant **2 cours en après-midi** (BDD 14h, IA 16h). **CP-SAT, lui, minimise** la pénalité d'après-midi et prouve l'**optimal à 0** : il répartit les cours sur deux matinées pour qu'aucun ne soit en après-midi. C'est exactement la différence entre *satisfaire les contraintes* (from-scratch) et *optimiser une préférence* (solveur exact) — le cœur pédagogique du timetabling.
 
 **Verdict `SOTA-OK` (#3801).** Le moteur réel Google.OrTools CP-SAT est invoqué (`statut=Optimal`), produit le vrai minimum de l'objectif. Aucune sortie dégradée. La Tranche 1 from-scratch (MRV + B&B) est préservée intacte. Niveau de parité `native-both` : le jumeau Python invoque `ortools.sat.python.cp_model`, le jumeau C# invoque le même engine 9.11 via `#r ""nuget:""`.",,,,,,,,60c8a5d1add60a7f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,a1t2ranche2md,markdown,fr,46fb874d60d144bd,"## 4bis. Tranche 2 — solveur CSP via OR-Tools CP-SAT
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,a1t2ranche2md,markdown,fr,46fb874d60d144bd,"## 4bis. Tranche 2 — solveur CSP via OR-Tools CP-SAT
 
 La §4 ci-dessus implémente le solveur CSP **à la main** : énumération backtracking
 des `2^k` affectations d'une frontière de taille *k*. C'est fidèle au concept, mais
@@ -34465,7 +34465,7 @@ backtracking manuel ne sait pas faire.
 > reste pour enseigner la mécanique de la recherche ; cette tranche montre le
 > moteur réel qui propage et qui passe à l'échelle. `bridge_verdict: RECOVERABLE-LOCAL`
 > — l'écart était comblable par un NuGet first-class, c'est fait.",,,,,,,,46fb874d60d144bd,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb,a1t2ranche2code,code,fr,3faf0eaadf9eb9f5,"// === Tranche 2 : solveur CSP via OR-Tools CP-SAT (pont moteur de production) ===
+MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb,a1t2ranche2code,code,fr,3faf0eaadf9eb9f5,"// === Tranche 2 : solveur CSP via OR-Tools CP-SAT (pont moteur de production) ===
 // Reprend le modele CSP de la §4 (variables binaires frontieres, contraintes
 // ExactSum) et delegue la deduction a Google.OrTools CP-SAT.
 #r ""nuget: Google.OrTools""
@@ -34559,25 +34559,25 @@ Console.WriteLine($""Cellules forcées sûres  : {safeG.Count}  (avec contrainte
 Console.WriteLine($""Cellules forcées mines  : {minesG.Count}  (avec contrainte globale)"");
 Console.WriteLine($""Temps                   : {swG.Elapsed.TotalMilliseconds:F1} ms"");
 Console.WriteLine(""(La contrainte globale restreint l'espace : le compte de forcées peut augmenter.)"");",,,,,,,,3faf0eaadf9eb9f5,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,interp-05487dc2,markdown,fr,b8d1d92d569c8846,"### Lecture du résultat : x = 7, y = 3
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,interp-05487dc2,markdown,fr,b8d1d92d569c8846,"### Lecture du résultat : x = 7, y = 3
 
 Le solveur trouve la solution **x = 7, y = 3** (status `Optimal` — le solveur a prouvé qu'elle satisfait toutes les contraintes). La vérification confirme : `x + y = 10` et `x * y = 21`. Notez qu'il existe une seconde solution symétrique (x = 3, y = 7) que le solveur ne retourne pas car on lui a demandé `solve satisfy` (une solution suffit), pas l'énumération complète. C'est un premier exemple du **découplage modélisation/résolution** : on a décrit *quoi* chercher, le solveur a décidé *comment* — sans qu'on écrivions la moindre boucle de recherche.",,,,,,,,b8d1d92d569c8846,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,interp-54d9a8d6,markdown,fr,a4e52637cabcc6f0,"### Lecture du résultat : 9 pièces, optimum prouvé
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,interp-54d9a8d6,markdown,fr,a4e52637cabcc6f0,"### Lecture du résultat : 9 pièces, optimum prouvé
 
 La solution optimale est **3×25c + 2×10c + 0×5c + 4×1c = 9 pièces** pour rendre 99 centimes. Deux enseignements :
 - **L'objectif est prouvé optimal** : le solveur ne s'arrête pas à la première solution trouvée, il continue jusqu'à démontrer qu'aucune combinaison à **moins de 9 pièces** ne peut sommer à 99c. C'est la différence avec un simple backtracking sans borne.
 - **Pourquoi 0 pièce de 5c ?** Parce que 25c et 10c couvrent déjà 95c (3×25 + 2×10), il reste 4c à combler exclusivement en pièces de 1c. Le solveur a « compris » que la pièce de 5c n'aidait pas ici — illustration de la **propagation** : les contraintes réduisent les domaines avant même la recherche.",,,,,,,,a4e52637cabcc6f0,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,app8-nqueens-transition,markdown,fr,1371a2bec1314657,"Le modèle MiniZinc ci-dessus tient en quelques lignes : la contrainte globale
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,app8-nqueens-transition,markdown,fr,1371a2bec1314657,"Le modèle MiniZinc ci-dessus tient en quelques lignes : la contrainte globale
 `alldifferent` capture la structure « pas deux reines sur la même ligne/diagonale »
 de façon déclarative. L'équivalent CP-SAT en C# sera **moins concis** : l'API
 procédurale d'OR-Tools exige de créer explicitement les variables de diagonale
 intermédiaires (`q[i]+i`, `q[i]-i`) puis d'y appliquer `AddAllDifferent`. C'est le
 coût du contrôle fin : MiniZinc abstrait, CP-SAT expose. La cellule suivante
 implémente ce port et le résout pour 8 reines.",,,,,,,,1371a2bec1314657,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,interp-81096937,markdown,fr,3c2e9ce33ab68e81,"### Lecture du résultat : [7, 3, 0, 2, 5, 1, 6, 4] en ~20 ms
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,interp-81096937,markdown,fr,3c2e9ce33ab68e81,"### Lecture du résultat : [7, 3, 0, 2, 5, 1, 6, 4] en ~20 ms
 
 La solution renvoyée place les 8 reines sans conflit (aucune paire ne partage une ligne ou une diagonale), résolue en **~20 ms** (précision consignée par la cellule CP-SAT ci-dessus, source unique). La notation `q[i]` = ligne de la reine en **colonne i** (indexée depuis 0) : colonne 0 → ligne 7, colonne 1 → ligne 3, etc. L'échiquier ASCII permet de **vérifier visuellement** la validité — chaque Q est seul sur sa ligne, sa colonne et ses deux diagonales. C'est l'avantage pédagogique du rendu texte : la solution n'est pas juste un tableau de nombres abstrait, elle est **relisible** comme une position d'échecs.",,,,,,,,3c2e9ce33ab68e81,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,interp-fc818cb1,markdown,fr,73e61d7e9a91e3bc,"### Lecture du résultat : emploi du temps valide (status Optimal)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,interp-fc818cb1,markdown,fr,73e61d7e9a91e3bc,"### Lecture du résultat : emploi du temps valide (status Optimal)
 
 Le solveur assigne les 6 cours aux créneaux et salles en respectant les **trois familles de contraintes** simultanément :
 - **C1 (enseignants)** : les cours 1 et 2 (même prof 1) sont sur des créneaux distincts (1 et 4) ; idem pour 3/4 (prof 2) et 5/6 (prof 3).
@@ -34585,19 +34585,19 @@ Le solveur assigne les 6 cours aux créneaux et salles en respectant les **trois
 - **C3 (capacités)** : le cours 3 (40 élèves) est en salle 2 (cap 45), pas en salle 1 (cap 35) ni salle 3 (cap 25) — la contrainte de capacité a été respectée.
 
 La leçon clé : les contraintes **disjonctives** (OU logique), qui sont pénibles à coder impérativement, se modélisent naturellement en CP via des variables booléennes de réification. C'est l'apport spécifique de ce paradigme sur les problèmes d'ordonnancement.",,,,,,,,73e61d7e9a91e3bc,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,interp-f52f1650,markdown,fr,26bae06f87faa567,"### Lecture du résultat : surprise — le backtracking gagne sur 12 reines
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,interp-f52f1650,markdown,fr,26bae06f87faa567,"### Lecture du résultat : surprise — le backtracking gagne sur 12 reines
 
 Résultat **contre-intuitif** : sur 12 reines, le **backtracking pur (~0,4 ms) bat CP-SAT (~20 ms)** — par un facteur ~50 (runtimes précis consignés par la cellule de comparaison ci-dessus, source unique) ! Pourquoi le moteur « industriel » perd-il ici ? Parce que le solveur déclaratif paie un **coût de setup constant** : construction du modèle, création des variables intermédiaires, initialisation de la recherche CP. Sur une instance **petite et peu contrainte**, ce surcoût n'est pas rentabilisé.
 
 C'est une leçon d'humilité importante : **CP-SAT n'est pas magiquement plus rapide**. Son avantage émerge sur des instances plus **larges** ou plus **contraintes**, là où le backtracking naïf souffre de son manque de propagation (il explore des branches que la cohérence d'arc coupe immédiatement en CP). Le choix entre paradigmes n'est pas une question de dogme mais de **régime** : petit/proche de la racine → backtracking ; grand/fortement contraint → solveur déclaratif. Le tableau comparatif ci-après généralise cette analyse sur sept critères.",,,,,,,,26bae06f87faa567,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,app8-benchmark-transition,markdown,fr,a97858a3dbc23d65,"Sur cette petite instance (12 reines), le **backtracking pur** est plus rapide
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,app8-benchmark-transition,markdown,fr,a97858a3dbc23d65,"Sur cette petite instance (12 reines), le **backtracking pur** est plus rapide
 que CP-SAT : le solveur déclaratif paie un **coût de setup constant** (construction
 du modèle, variables intermédiaires, initialisation de la recherche CP). Ce coût
 est rentabilisé sur des instances plus **contraintes** ou plus **larges**, là où le
 backtracking naïf souffre de son manque de propagation (il explore des branches
 que la cohérence d'arc coupe immédiatement en CP). Le tableau ci-dessous compare
 les trois paradigmes — Python pur, CP-SAT, MiniZinc — sur sept critères.",,,,,,,,a97858a3dbc23d65,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,synthese-conclusion-c1151,markdown,fr,4e7226baef8a53e0,"***
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,synthese-conclusion-c1151,markdown,fr,4e7226baef8a53e0,"***
 
 ## Synthèse : ce qu'il faut retenir
 
@@ -34625,7 +34625,7 @@ La section comparative l'a montré empiriquement : le backtracking pur (impérat
 
 Le coût de cette puissance : CP-SAT C# est plus verbeux que MiniZinc (création explicite des variables intermédiaires, des diagonales de N-Reines, des booléens de réification). C'est le ** compromis documenté** de ce twin : MiniZinc privilégie la concision déclarative, CP-SAT C# le contrôle fin et l'intégration .NET native. Les deux convergent vers la même idée — **séparer la modélisation de la résolution**.
 ",,,,,,,,4e7226baef8a53e0,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,references-citations,markdown,fr,1d04d45f3640b44e,"***
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb,references-citations,markdown,fr,1d04d45f3640b44e,"***
 
 ## Références
 
@@ -35415,12 +35415,12 @@ contrairement à CP-SAT) mais sa **qualité robuste sur grandes instances** grâ
 locale guidée et ses opérateurs multi-renversements. La Tranche 1 from-scratch reste **valable** :
 elle rend tangible le *fonctionnement intime* de chaque méthode. Ce sont deux leviers
 complémentaires — la Tranche 2 donne au C# le même outillage industriel que le jumeau Python.",,,,,,,,5e4458ed6570a6dc,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,dff98496,markdown,fr,175e1cf2672be5ef,"## Tranche 2 : moteur industriel OR-Tools (lib-vs-lib, #10382)
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,dff98496,markdown,fr,175e1cf2672be5ef,"## Tranche 2 : moteur industriel OR-Tools (lib-vs-lib, #10382)
 
 Le twin Python [App-17-VRP-Logistics](App-17-VRP-Logistics.ipynb) appelle le **moteur industriel OR-Tools** (`ortools.constraint_solver.routing`, `RoutingModel`) comme **solveur SOTA** du VRP capacitaire sur la meme instance canonique. La Tranche 1 from-scratch ci-dessus (plus proche voisin, insertion au moindre cout, 2-opt, recuit simule) est **preservee intacte** : on lui confronte maintenant le **meme moteur de production** que le jumeau Python — **Google.OrTools 9.11** (Perron & Furney ; solveur de routage avec recherche locale guidee GLS et contrainte de capacite).
 
 **Honnêteté cruciale** : le solveur de routage est une **metaheuristique** (recherche locale guidee), PAS un solveur exact — il ne delivre **aucun certificat d'optimalite** (contrairement a CP-SAT). Sa valeur est la **qualite industrielle**, pas la garantie ; c'est le meme paradigme que le twin Python.",,,,,,,,175e1cf2672be5ef,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,dc1881ab,code,fr,1b40af0cab11c32f,"#r ""nuget: Google.OrTools, 9.11.4210""
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,dc1881ab,code,fr,1b40af0cab11c32f,"#r ""nuget: Google.OrTools, 9.11.4210""
 using Google.OrTools.ConstraintSolver;
 
 // SolveVrpOrtools : miroir C# de solve_vrp_ortools (Python pywrapcp.RoutingModel).
@@ -35495,7 +35495,7 @@ display($""| + Recuit simule      | {dSA,8:F2} | {(dSA - baseline) / baseline * 
 display($""| OR-Tools (GLS)       | {dOT,8:F2} | {(dOT - baseline) / baseline * 100,+9:F1}% | {otSolution.Routes.Count,8} |"");
 display(""+----------------------+----------+-----------+----------+"");
 display($""Validite OR-Tools = {otSolution.IsValid()} (contrainte de capacite {instance.VehicleCapacity} respectee)."");",,,,,,,,1b40af0cab11c32f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,d9be6870,markdown,fr,8330d99b853bba30,"**Verdict SOTA-OK (mesure ci-dessus).** Le routing solver OR-Tools (contrainte de capacite `Capacity`) trouve sur l'instance canonique une solution **valide** dont la distance se compare honnêtement aux 4 methodes from-scratch de la Tranche 1.
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb,d9be6870,markdown,fr,8330d99b853bba30,"**Verdict SOTA-OK (mesure ci-dessus).** Le routing solver OR-Tools (contrainte de capacite `Capacity`) trouve sur l'instance canonique une solution **valide** dont la distance se compare honnêtement aux 4 methodes from-scratch de la Tranche 1.
 
 **Hierarchie des methodes** (mesuree sur l'instance canonique, 15 clients) :
 
@@ -35510,9 +35510,9 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb,
 La force de `RoutingModel` n'est pas un certificat d'optimalite (metaheuristique, contrairement a CP-SAT) mais sa **qualite robuste** via la recherche locale guidee — et surtout l'identite **exacte** du moteur invoque par le jumeau Python (meme lib C++ OR-Tools). La Tranche 1 from-scratch reste **valable** : elle rend tangible le *fonctionnement intime* de chaque methode. Deux leviers complementaires.",,,,,,,,8330d99b853bba30,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb,vrp17b-00,markdown,fr,41a7d5e6dc26dbcb,"# App-17b : Vehicle Routing Problem (VRP) — Twin Python (métaheuristiques from-scratch)
 
-**Navigation** : [App-17 VRP (OR-Tools)](App-17-VRP-Logistics.ipynb) | [Twin C#](App-17b-VRP-Logistics-Csharp.ipynb) | [Index](../../README.md)
+**Navigation** : [App-17 VRP (OR-Tools)](App-17-VRP-Logistics.ipynb) | [Twin C#](App-17b-VRP-Logistics-CSharp.ipynb) | [Index](../../README.md)
 
-Ce notebook est le **twin Python** du notebook C# `App-17b-VRP-Logistics-Csharp.ipynb`. Là où [App-17](App-17-VRP-Logistics.ipynb) résout le VRP via **OR-Tools** (la bibliothèque SOTA, un appel), ce twin **réimplémente les métaheuristiques from-scratch** (numpy seul) pour comprendre chaque algorithme — puis **vérifie** le résultat contre OR-Tools.
+Ce notebook est le **twin Python** du notebook C# `App-17b-VRP-Logistics-CSharp.ipynb`. Là où [App-17](App-17-VRP-Logistics.ipynb) résout le VRP via **OR-Tools** (la bibliothèque SOTA, un appel), ce twin **réimplémente les métaheuristiques from-scratch** (numpy seul) pour comprendre chaque algorithme — puis **vérifie** le résultat contre OR-Tools.
 
 ## Complémentarité (#3801 Prong A + B), pas workaround
 
@@ -35968,7 +35968,7 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb,
 ### Référence SOTA
 
 - OR-Tools : [Google Optimization Tools](https://developers.google.com/optimization/routing) — la bibliothèque de référence pour le VRP industriel.
-- Twin C# : [App-17b-VRP-Logistics-Csharp](App-17b-VRP-Logistics-Csharp.ipynb) — même algorithme en BCL .NET.
+- Twin C# : [App-17b-VRP-Logistics-CSharp](App-17b-VRP-Logistics-CSharp.ipynb) — même algorithme en BCL .NET.
 - App-17 (OR-Tools) : [App-17-VRP-Logistics](App-17-VRP-Logistics.ipynb) — résolution directe par la bibliothèque.
 
 ---
