@@ -23,7 +23,7 @@ whisper:
   word_timestamps: false
   prepend_punctuations: '"''¿([{-'
   append_punctuations: '"''.。,，!！?？:：")]}、'
-  max_new_tokens: 3
+  max_new_tokens: null
   chunk_length: 30
   hallucination_silence_threshold: 3.0
   hotwords: null
