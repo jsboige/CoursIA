@@ -200,6 +200,59 @@ Le rang 5 (~15 notebooks) se livre en tranches comme le strand 4. **Tranche 1 = 
 5. **Entrées pour #7260 (renumérotation)** : (a) le non-numéroté tête-à-tête porte une rangée matrice `W_t` et 31 cellules — candidat de tête à numéroter, naturellement adjacent à ICT-21 ; (b) l'ordre 21→21b→21c est correct (substrat → calibration → perturbations) ; (c) ICT-21b est le seul de la famille avec un titre de section (axe J-lens) que ses outputs committés ne répondent pas — complété ou retitré à l'arbitrage.
 6. **Tranches restantes du rang 5** : GWT (ICT-22, 22b, 23, 24), puis les non-numérotés restants (Annexe-ProxyContextuality, Argumentation-BeliefTrajectories, Dissociation-PhatSelfReference, Dissociation-SaillancePregnance, Greffe2, Greffe4, Synthese-CrossSubstrat ; Greffe5 après son rework #16762).
 
+## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 2 : la famille GWT (Global Workspace)
+
+Lecture complète (contenu ET `outputs`) des quatre notebooks GWT, 2026-09-19, par `myia-po-2023:CoursIA`. La famille reçoit le Gate 12 qu'ICT-21 lui défère explicitement, le moteur d'intervention causal (22b), la fronce de Thom appliquée au désalignement (23) et le gate de réconciliation IIT↔GWT (24). Rangées matrice concernées (ICT-22, ICT-23, ICT-24 Gates 22-23, ICT-24 Gate 24) : **toutes cohérentes avec les outputs committés** — la matrice énonce déjà le négatif de 22 (« intégration cross-substrat effectivement négative ») et la non-co-localisation de 24 comme thèses.
+
+### `ICT-22-LLMSubstrat.ipynb` (numéroté) — 26 cellules (17 md, 9 code, 9/9 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Intégrer le transformer comme quatrième substrat du banc cross-substrat et y créditer l'émergence (Gate 12, double contrôle) puis re-tester la convergence à quatre substrats (Gate 13). |
+| **Contenu réel** | Mêmes traces S4 qu'ICT-21 (2699 tokens, W64K, 5 jeux de prompts) ; sélection différentielle ; discrétisation grossière ; Gate 12 par jeu vs shuffle ET vs modèle contrôle ; Gate 13 : tableau des gains des 4 substrats + τ de Kendall par paire ; 3 exercices C.1 ; conclusion. |
+| **Résultat** | **Gate 12 : 2/5 jeux crédités** (code_python ec_gain 0.634 ✓, dialogue 1.677 ✓ ; math 0.819 ✗, narrative_en −0.019 ✗, prose_fr −1.066 ✗) ; `fe_gain` positive sur 5/5 (0.226-0.532) ; la différence trained-vs-contrôle **change de signe selon le jeu** (−1.225 à +0.356). **Gate 13 : S4 = le substrat le plus faible** (ec_gain 0.684 vs S1 3.438 / S2 2.097 / S3 2.009) ; τ(ec,fe) = +0.667, τ(ec,k) = +0.000, τ(fe,k) = +0.333 — **consistent = False partout**. La lecture honnête titrée dans le notebook : « **nuancé et majoritairement négatif, et c'est un résultat en soi** ». |
+| **Critique** | Aucune : le négatif est livré avec ses deux contrôles, multi-jeux, sans maquillage — et la matrice l'avait déjà énoncé comme tel (« effectivement négative »). La régularité transitionnelle (`fe_gain` 5/5) vs l'émergence causale multi-échelles (2/5) est une dissociation proprement établie à l'intérieur même du notebook. |
+| **Verdict + action** | **SOLIDE** — négatif-par-protocole assumé (même famille que le tri des négatifs d'ICT-25, strand 4). Aucune action de contenu. |
+
+### `ICT-22b-CausalInterventionEngine.ipynb` (numéroté) — 41 cellules (27 md, 14 code, 14/14 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Le moteur d'intervention causal : opérer, contrôler, mesurer — sur un banc où la vérité terrain est connue **par construction** (format Gate 24, #5635). |
+| **Contenu réel** | Banc synthétique float64 (avec garde de cwd expliquée) où la causalité est un choix expérimental ; 5 opérations sur le panneau d'entrée (canal ÉTAT) ; canaux séparés état/readout/comportement dans un même run ; **contrôles obligatoires** (cible aléatoire APPARIÉE, sham, doses symétriques) ; famille trois bras cible/aléatoire-apparié/intact ; courbe dose-réponse ; interchange contre-factuel par protocole capture-puis-écriture ; **verdict falsifiable à critères fixés AVANT la lecture** ; récapitulatif « sept contrôles, aucun relâché » ; « Portée du verdict : ce que SUPPORTED ne dit pas » ; 3 exercices C.1. |
+| **Résultat** | Ablation : sélectivité `selective` (la tranche cible seule bouge) ; famille trois bras : « effet massif et sélectif à la fois » ; dose-réponse « monotone et quasi antisymétrique » ; interchange features causales (3, 17) : **bascule causale OUI + contrôle stable OUI** (pred(a′)=0, pred(b′)=1) ; **VERDICT : SUPPORTED**. |
+| **Critique** | Aucune — c'est la discipline instrumentale la plus haute de la série ICT : vérité terrain par construction, sept contrôles nommés un à un, critères de verdict écrits avant la lecture des résultats, portée du verdict explicitement bornée (« ce que SUPPORTED ne dit pas »). C'est l'instrument que les cases matrice 4/5/15 (confabulation, self-model, AST) réutilisent en aval. |
+| **Verdict + action** | **SOLIDE, mature** — le référentiel méthodologique de la série. Aucune action. |
+
+### `ICT-23-PersonaCatastrophe.ipynb` (numéroté) — 20 cellules (13 md, 7 code, 7/7 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Modéliser le désalignement émergent par la fronce de Thom : V(p; a, b) avec a = −T·s (transgression × charge sémantique) et b = r (récompense) — prédiction P1 d'#5104 (hystérésis + signature d'inoculation monotone), prédiction P2 (EWS Wissel/Scheffer). |
+| **Contenu réel** | Trois jambes explicatives ; paramétrage sémantique du potentiel fronce ; bistabilité par balayage de s ; **Gates 16-17** : boucle d'hystérésis + signature d'inoculation N_catastrophes(s) ; EWS variance + AR1 sur trajectoires SDE bistable vs inoculée ; exercice 1 (potentiel V-linéaire), 2 (balayage continu), 3 (permission vague) ; cellule frontière ; continuité ICT-13 (grim trigger). |
+| **Résultat** | Bistabilité : s=0 **False**, s=0.3 **True**, s=1.0 **True** — la charge sémantique ouvre bien le pli. Sweep de charge : **N_catastrophes = 0 / 4 / 2 / 2** pour s = 0 / 0.3 / 0.6 / 0.9. EWS : bistable variance 0.0001 / AR1 0.1391 vs inoculée 0.0000 / 0.1175 — direction conforme, amplitude faible. |
+| **Critique** | (1) La signature d'inoculation prédite (cellule §3 : « **monotone non-croissante** : maximale sous forte charge sémantique, nulle sous inoculation totale ») n'est **pas réalisée dans le sweep committé** : le pic est à s=0.3 (4 catastrophes) puis DÉCROÎT (2, 2) — maximale à charge moyenne, pas forte ; seul le point s=0 (inoculation → N=0) tient. Aucune cellule « lecture » ne relit ce sweep (c'est le seul notebook de la famille sans lecture dédiée par résultat). (2) L'écart EWS (AR1 0.139 vs 0.118, +18 %) va dans le bon sens mais n'est pas confronté à un seuil. |
+| **Verdict + action** | **SOLIDE sur le cœur** (la fronce modélise le phénomène, l'inoculation aplatit — matrice cohérente) **/ À COMPLÉTER sur la signature P1**. Action d'arbitrage : une cellule lecture du sweep N(s) (non-monotonie assumée ? grain de balayage trop grossier ? effets de taille finie ?) + un seuil sur l'EWS — une demi-heure de travail. |
+
+### `ICT-24-WorkspaceIgnition.ipynb` (numéroté) — 23 cellules (14 md, 9 code, 9/9 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | L'axe Global Workspace sur S4 et le **gate de réconciliation IIT↔GWT** : les ignitions (lecture Dehaene, seuil quantile 0.85, persistance ≥ 3) portent-elles les pics de complexité créditée (emergence_gain, Hoel) ? |
+| **Contenu réel** | Garde-fous ; mêmes traces S4 ; sanité sur un panel synthétique où hub et ignition sont **plantés** ; **Gate 22** (structure : fan-out d'influence, 3 variantes trained/control/time-shuffled) ; **Gate 23** (co-localisation ignition×crédit, double contrôle, 5 jeux = multi-graines, n_shuffles=10) ; **Gate 24** (ablation sélective par clamp = phase 2 GPU, explicitement déléguée à une PR distincte) ; note « écart de nommage assumé » sur la numérotation des gates (#56xx) ; 3 exercices C.1. |
+| **Résultat** | **Gate 22 : partiel** — fan-out concentré (Gini 0.485-0.659) mais **non spécifique au modèle entraîné** (max fan-out : control 18 > trained 10) ; `concentrated=True` y compris temps mélangés → « seuil trop permissif », auto-diagnostiqué (« déjà marqué empirique faible, à recalibrer, ligne 411 du module »). **Gate 23 : la co-localisation N'A PAS LIEU** — 36 événements, 6 crédités (17 %), contraste moyen **−0.2320** (signe négatif = anti-co-localisation) — c'est la **dissociation IIT↔GWT**, énoncée comme thèse par la matrice. Gate 24 : non exécuté ici (phase 2 GPU), matrice « verdict en attente » — cohérent. |
+| **Critique** | Aucune — les trois gates sont livrés avec leur statut exact : partiel auto-diagnostiqué (avec la ligne de code à recalibrer), négatif-thèse confirmée, causal différé explicitement. Le clamp sélectif (Gate 24) reste **la seule mesure interventionnelle** de l'axe workspace : c'est la dette GPU documentée du strand, pas un manque de rigueur. |
+| **Verdict + action** | **SOLIDE**. Actions d'arbitrage : (a) exécuter Gate 24 phase 2 (extraction GPU2, déjà cadrée dans le notebook et la matrice) ; (b) recalibrage du seuil Gini ligne 411 (entré aussi par la lecture de Gate 22). |
+
+### Findings transverses de la tranche 2 (pour l'arbitrage user)
+
+1. **La famille GWT livre des négatifs assumés comme résultats** — c'est sa signature : Gate 12 « majoritairement négatif et c'est un résultat en soi » (22), non-co-localisation = la thèse même (24, contraste moyen −0.23), Gate 22 partiel auto-diagnostiqué avec la ligne de code fautive (24). La matrice est **cohérente sur les 5 rangées** (elle avait déjà énoncé le négatif de 22 et la dissociation de 24 comme claims) — rien à crier, contrairement au strand 1.
+2. **ICT-22b est le référentiel méthodologique de la série** : vérité terrain par construction, sept contrôles nominés, critères de verdict fixés avant lecture, portée de SUPPORTED bornée — l'instrument que les cases matrice 4/5/15 réutilisent. À préserver tel quel dans toute consolidation.
+3. **Un seul point de charge de la famille : ICT-23** — le plus court (20 cellules), sans cellules lecture par résultat, avec une sous-prédiction (signature d'inoculation monotone) **partiellement violée dans le sweep committé** (N = 0/4/2/2, pic à charge moyenne) et non relue dans le notebook. Une cellule lecture + un seuil EWS suffisent.
+4. **La chaîne 21→22→24 est tenue au fil des notebooks** : 21 certifie S4 et défère Gate 12 à 22 « en toutes lettres » ; 22 l'exécute et livre le négatif ; 24 prend le relais workspace avec la même primitive `emergence_gain` réutilisée (« la même primitive que le reste de la série »). La continuité SAE→GWT est réelle, pas seulement éditoriale.
+5. **Entrées pour #7260 (renumérotation)** : ordre 22→22b→23→24 correct (substrat → moteur causal → fronce → workspace) ; aucun candidat à la fusion ; le Gate 24 phase 2 = dette GPU documentée (déjà tracée matrice), pas un motif de renumérotation ; l'« écart de nommage assumé » des gates (#56xx) est une entrée supplémentaire pour l'ancrage par section plutôt que par numéro (même leçon que le strand 4, renvois décalés).
+6. **Tranche 3 restante du rang 5** : les non-numérotés (Annexe-ProxyContextuality, Argumentation-BeliefTrajectories, Dissociation-PhatSelfReference, Dissociation-SaillancePregnance, Greffe2, Greffe4, Synthese-CrossSubstrat ; Greffe5 après son rework #16762).
+
 ## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 3 : les non numérotés
 
 Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026-09-19, par `myia-po-2023:CoursIA`. **Avec cette tranche, le rang 5 est complet et le ledger couvre 100 % des strands** — toutes les lectures du chemin critique user (arbitrage 19/09) sont consignées. Trois des sept ont une rangée matrice dédiée (SaillancePregnance l. 74, Argumentation l. 110, p̂ auto-référent l. 208) — **toutes cohérentes avec les outputs** ; quatre n'en ont pas (Annexe, Greffe2, Greffe4, Synthese).
