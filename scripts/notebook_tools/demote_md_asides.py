@@ -123,6 +123,22 @@ def _matches_target(text):
     return False
 
 
+def _is_singular_target(text):
+    """Return True iff ``text`` is a singular target (issue #17146 narrow scope).
+
+    Singulars (``Indice :``, ``Etape N :``, etc.) are absorbed as continuations
+    of a preceding plural heading; they don't trigger their own callout in a
+    contiguous run.
+    """
+    if text.startswith('Indice :') or text.startswith('Indice:'):
+        return True
+    if re.match(r'^Etape\s+\d+\s*:', text):
+        return True
+    if re.match(r'^Étape\s+\d+\s*:', text):
+        return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Split-callout detection (#17143)
 # ---------------------------------------------------------------------------
@@ -317,30 +333,32 @@ def _demote_all_headings(source_lines):
                 return i
         return None
 
-    # Group consecutive headings (no blank line between them) into single
-    # "heading-block" entities. Consecutive means: the next heading starts
-    # on the line immediately following the previous heading's last line
-    # (no blank separator line in between). Bug #17143 pattern.
-    # Each block carries: (first_start, last_end, [texts]).
-    blocks = []  # list of (first_start, last_end, [texts])
-    for start, end, text in headings:
-        if blocks:
-            prev_first, prev_last, prev_texts = blocks[-1]
+    # Group consecutive headings into "heading-block" entities ONLY when the
+    # following heading is a singular target (issue #17146 narrow scope)
+    # that should absorb into the preceding target's callout. Plural targets
+    # always get their own callout (issue #17147). `changed_count` reflects
+    # the number of callouts produced (one per block).
+    # Each block carries: (first_start, last_end, prefix, [texts]).
+    blocks = []  # list of (first_start, last_end, prefix, [texts])
+    for start, end, prefix, text in headings:
+        if blocks and _is_singular_target(text):
+            prev_first, prev_last, prev_prefix, prev_texts = blocks[-1]
             prev_last_line = _line_idx_for_pos(prev_last - 1)
             this_first_line = _line_idx_for_pos(start)
             if (prev_last_line is not None and this_first_line is not None
-                    and this_first_line == prev_last_line + 1):
-                # Consecutive: extend the previous block.
-                blocks[-1] = (prev_first, end, prev_texts + [text])
+                    and this_first_line == prev_last_line + 1
+                    and prefix == prev_prefix):
+                # Singular continuation: absorb into preceding block.
+                blocks[-1] = (prev_first, end, prev_prefix, prev_texts + [text])
                 continue
-        blocks.append((start, end, [text]))
+        blocks.append((start, end, prefix, [text]))
 
-    # For each heading-block, find which line(s) it spans and replace
-    # them with a multi-line blockquote (one `> **` line for the first,
-    # then `> <text>` continuation lines).
+    # For each block, find which line(s) it spans and replace them with
+    # the multi-line blockquote (one `> **` line for the first, then
+    # `> <text>` continuation lines for absorbed singulars).
     new_lines = list(source_lines)
     # Process from end to start to keep indices valid.
-    for start, end, prefix, text in reversed(headings):
+    for first_start, last_end, prefix, texts in reversed(blocks):
         first_line = None
         last_line = None
         for i, (lo, hi) in enumerate(line_offsets):
@@ -352,28 +370,38 @@ def _demote_all_headings(source_lines):
             continue
 
         # Absorb the contiguous run of SAME-prefix lines that follows the
-        # matched heading (#17143). Stop on anything else.
+        # matched heading (#17143). Stop on a different prefix, a plural
+        # target heading (it gets its own callout), or any non-heading
+        # line. Singular headings (e.g. "Indice :", "Etape 1 :") introduced
+        # in #17146 narrow-scope are absorbed as continuations of a matched
+        # plural heading above them, NOT as standalone callouts.
         run_last = last_line
+        follow_texts = list(texts[1:])  # accumulated continuation texts
         while run_last + 1 < len(source_lines):
             follow = re.match(r'^(#{1,6})\s+(\S.*?)\s*$', source_lines[run_last + 1])
             if not follow or follow.group(1) != prefix:
                 break
-            if _matches_target(follow.group(2).strip()):
+            follow_text = follow.group(2).strip()
+            # Plural targets get their own callout — break the run.
+            # Singular targets (with `:` and/or `N :`) absorb as continuation.
+            # Non-target headings (e.g. "Corps de la note") also absorb as
+            # continuation — original #17143 behaviour preserved.
+            if _matches_target(follow_text) and not _is_singular_target(follow_text):
                 break
+            follow_texts.append(follow_text)
             run_last += 1
 
-        # Blockquote format: `> **<text> :**` for the head, plain `> <body>`
-        # for the continuations -- no bold, no appended ` :` (a continuation
-        # is mid-sentence by construction; that is the whole defect).
-        consumed = source_lines[last_line:run_last + 1]
-        replacement = [f'> **{text} :**\n']
-        for line in source_lines[last_line + 1:run_last + 1]:
-            body = re.sub(r'^' + re.escape(prefix) + r'\s+', '', line).rstrip('\n')
+        # Build replacement lines: first line bolded with colon, subsequent
+        # continuations plain (no bold, no colon). Continuations come from
+        # both the block's absorbed texts (singulars joined at grouping time)
+        # AND any non-target same-prefix headings walked below.
+        head_text = texts[0]
+        replacement = [f'> **{head_text} :**\n']
+        for body in follow_texts:
             replacement.append(f'> {body}\n')
-        # Preserve the original terminator of the consumed range: a block
-        # that ended without a newline (last line of the cell) must not gain
-        # one.
-        if consumed and not consumed[-1].endswith('\n'):
+        # Preserve trailing-newline status of the LAST consumed line.
+        last_consumed_line = source_lines[run_last] if run_last < len(source_lines) else ''
+        if last_consumed_line and not last_consumed_line.endswith('\n'):
             replacement[-1] = replacement[-1].rstrip('\n')
         new_lines[first_line:run_last + 1] = replacement
 
