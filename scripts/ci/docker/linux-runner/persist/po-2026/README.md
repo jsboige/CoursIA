@@ -218,6 +218,58 @@ la reconstruction du 21/09 (apres la purge `C:\dev` du 17/09) a reproduit `pool.
 pas les binaires -- c'est exactement ainsi que les deux pannes sont nees. Toute reconstruction doit
 rejouer les deux commandes de pose.
 
+## Le tool-cache est detruit a chaque respawn -- et ce que cela coute aux autres lanes
+
+Meme classe que la section precedente (le pool ne fournit pas ce que les jobs attendent, et le rouge
+accuse ensuite le contenu d'une PR), mais **un cran plus bas** : ce n'est pas un binaire en nom nu, c'est
+l'**interpreteur lui-meme**, qui est re-telecharge a chaque job.
+
+Mesure firsthand le 2026-09-22 :
+
+| Fait | Preuve |
+|---|---|
+| Le repertoire du slot est **efface** a chaque respawn | `pool.sh` : `rm -rf "$dir"; mkdir -p "$dir"` avant `config.sh` |
+| Aucun cache partage n'est declare | `grep -c RUNNER_TOOL_CACHE pool.sh` -> **0** |
+| Le pool respawn beaucoup | `pool.log` -> **383** `spawn slot` |
+| Aucun stamp de completude | aucun `_work/_tool/Python/*/x64.complete` (les slots sont vides entre deux jobs) |
+| `setup-python` **re-telecharge** donc l'interpreteur a chaque job | log de job : `Version 3.12 was not found in the local cache` -> `Download from .../python-3.12.14-linux-24.04-x64.tar.gz` |
+
+Deux consequences mesurees, et deux corrections de nature differente :
+
+1. **L'interpreteur frais est nu.** Un job qui lance `python -m pytest` **sans installer pytest** depend
+   donc d'un prerequis non declare : il passe ou rougit **selon le slot qui le prend**, pas selon la PR.
+   Mesure : le **meme** workflow conclut `success` sur `myia-ai-01-wsl-1` pour une branche et
+   `No module named pytest` (`exit 1`) sur `myia-po-2026-wsl-5` pour une autre ; et le **meme** slot
+   rougit une branche d'une **autre lane** (`feature/math-delims-detector`). Cinq workflows etaient dans
+   ce cas (les quatre ratchets + `translation-hot-drift-advisory`) : corriges **cote depot** en
+   declarant la dependance (`python -m pip install --quiet pytest`, PR #17414) -- c'est l'option (b)
+   ci-dessous, et elle est preferable a l'option (a) tant qu'on ne veut pas toucher un pool en service.
+
+2. **Mismatch d'interpreteur.** L'etape d'install du golden-set reussit et l'execution Papermill echoue
+   quand meme : `Requirement already satisfied: numpy==2.4.4 in /home/jesse/.local/lib/python3.12/site-packages`
+   puis `ModuleNotFoundError: No module named 'numpy'`. Le notebook en echec etait un **GameTheory**,
+   sans aucun rapport avec le diff de la PR qui le portait. pip installe dans un interpreteur, le kernel
+   en execute un autre -- defaut **ouvert**, non tranche ici.
+
+**Un troisieme cas, meme signature, cause encore differente** : l'env minimal de
+`guard_gauntlet.run_check` gardait `PATH` mais omettait `LD_LIBRARY_PATH`. Le *loader* s'execute avant la
+premiere instruction du check : sur un interpreteur du tool-cache (sans rpath), le check ne demarrait pas
+-> `exit 127`, stdout vide -> `BASELINE_FAILED`, **indiscernable** de « le garde n'a rien detecte ».
+Corrige en PR #17415 (8 echecs de `scripts/tests/test_guard_gauntlet.py` sur les slots po-2026, verts
+ailleurs).
+
+**Consequence de diagnostic, et c'est le point a retenir** : `BASELINE_FAILED` avec `check_exit: 127` a
+desormais **trois** causes documentees -- binaire en nom nu absent (tableau ci-dessus), variable du loader
+retiree par un env minimal, et crash de l'interpreteur sur chemin introuvable. Un `127` n'oriente donc
+vers aucune des trois a lui seul ; la sonde qui discrimine est celle de la section precedente (adopter
+le PATH du runner) completee par le `stderr` du check, jamais le seul code de sortie.
+
+**Option (a), non appliquee et volontairement non appliquee** : partager le tool-cache entre respawns
+(`export RUNNER_TOOL_CACHE="$BASE/toolcache"`, hors du repertoire efface) rendrait le cache hit
+permanent, supprimerait le re-telechargement par job et rendrait le provisionnement a2 utilisable. Elle
+n'est **pas** posee ici parce qu'elle exige un **redemarrage du pool**, qui tue les jobs en vol des autres
+lanes : c'est un effet de bord a annoncer, pas un changement a glisser dans une PR de documentation.
+
 ## Sequence de deploiement
 
 ```bash
