@@ -268,7 +268,7 @@ def check_stash(root: Path) -> list[Check]:
 # plutot que de laisser croire qu'un vert ici vaut hygiene complete.
 MANUAL_REMINDERS = [
     ("inbox", 'roosync_messages(action:"inbox", status:"unread")'),
-    ("dashboards", 'roosync_dashboard(action:"read", type:"workspace", section:"all") — LES DEUX'),
+    ("dashboards", 'roosync_dashboard(action:"list") PUIS read section:"all" sur chaque cle pertinente — ENUMERER, jamais une liste apprise'),
     ("memoires", "MEMORY.md + coordinator-handover.md : remplacer ce qui est consomme"),
     ("ledgers", "scripts/coordination/debt_ledger.py — etat des ledgers partages"),
 ]
