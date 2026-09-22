@@ -13,19 +13,26 @@ partout.
 
 La reparation
 -------------
-Convertir chaque ``\\(`` et ``\\)`` en ``$``, uniquement dans les segments de
-PROSE : hors fences (le contenu d'un bloc ``` verbatim est du code affiche,
-pas du markdown) et hors code spans inline (``\\(x\\)`` entre backticks est
-un exemple qui EXPLIQUE le delimiteur, pas un defaut). La parite
-detector/fixer est exacte : les deux exclusions sont celles de la regle.
+Convertir chaque paire `\\( ... \\)` delimitante (ouvreur `\\(` ancre, contenu
+sans newline ni delimiteur interne, fermeur `\\)`) en `$...$`, uniquement dans
+les segments de PROSE : hors fences (le contenu d'un bloc ``` verbatim est du
+code affiche, pas du markdown) et hors code spans inline (``\\(x\\)`` entre
+backticks est un exemple qui EXPLIQUE le delimiteur, pas un defaut). La parite
+detector/fixer est exacte sur les fences et les code spans ; le fixer ajoute
+une borne de FORME (le regex de paire) qui l'empeche de convertir un `\\)`
+isole -- cas fondateur mesure le 2026-09-22 (attrape par le twin-parity audit
+de PR #17395) : « les separateurs (/ ou \\) selon l'OS », prose avec backslash
+litteral, n'est PAS un span math et reste intact.
 
     \\(S = \\mathbb{F}_p^n\\)      ->      $S = \\mathbb{F}_p^n$
 
-**Invariant de round-trip** : la transformation ne fait que remplacer les
-sequences 2-caracteres ``\\(`` / ``\\)`` par ``$``, a l'identique elsewhere.
-Verifie systematiquement par segment (nombre de ``$`` inseres == nombre de
-delimiteurs retires, et le contenu prive de ces tokens est byte-identique) --
-le script refuse d'ecrire si l'invariant est viole.
+**Invariant de round-trip** : la transformation ne fait que remplacer des
+paires `\\(` / `\\)` par des `$`, a l'identique elsewhere. Verifie
+systematiquement par element (tokens retires == $ inseres == conversions, et
+le contenu prive de ces tokens est byte-identique) -- le script refuse
+d'ecrire si l'invariant est viole. Remplacement PAR ELEMENT de la liste
+`source` : les lignes non touchees restent byte-identiques, le decoupage est
+preserve (zero churn structurel).
 
 Ce que le script NE fait PAS
 ----------------------------
@@ -41,6 +48,8 @@ Usage
 """
 from __future__ import annotations
 
+import re
+
 import argparse
 import json
 import sys
@@ -53,9 +62,42 @@ from notebook_walk import iter_notebooks  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from detect_markdown_rendering import _inside_fence_lines  # noqa: E402
 
+# Une PAIRE delimitante \( ... \) avec contenu math entre les deux. La borne
+# est fondee sur un faux-fix mesure le 2026-09-22 (attrape par le twin-parity
+# audit de PR #17395) : « les separateurs (/ ou \\) selon l'OS » porte un
+# backslash litteral suivi d'une vraie parenthese fermante -- ce n'est PAS un
+# delimiteur math, et le convertir en $ cassait le rendu (parenthese jamais
+# fermee, $ orphelin). Le detector signale la ligne (WARN l'auteur); le fixer,
+# lui, ne touche que ce qui a la FORME d'un span math :
+#   \( + contenu sans \n, sans `\), sans delimiteur $/$$ interne + \)
+# Le contenu ne doit pas finir par une lettre accentuee d'un mot francais
+# suivi d'une parenthese de prose -- la garde minimale est l'absence de
+# delimiteurs internes, qui exclut le cas fondateur (contenu = « / ou \\ »,
+# 1 mot + backslash litteral, pas de math).
+_MATH_SPAN_RE = re.compile(r"\\\((?P<body>[^\n$]*?)\\\)")
+
+
+def _looks_like_math(body: str) -> bool:
+    r"""Heuristique borne-le-fixer : le contenu d'un \( ... \) est-il du math ?
+
+    Le cas fondateur du faux-fix (mesure 2026-09-22, attrape par le twin-parity
+    audit de PR #17395) : « les separateurs (/ ou \\) selon l'OS » — le body
+    se termine par un BACKSLASH LITTERAL echappant une VRAIE parenthese de
+    prose (`\` + `)`), signature du chemin Windows, jamais d'une macro LaTeX.
+    A l'inverse, les vrais spans math du corpus portent des `\{`, `\}`, `\,`
+    (accolades et espacement LaTeX) et des variables nues (`\(M\)`, `\(p\)`,
+    `\((A, B)\)`) : il ne faut exclure ni les uns ni les autres. Borne unique
+    et decidable : un `\` suivi de `)` a l'INTERIEUR du body (le `\)` de
+    fermeture est consomme par le motif et n'y figure pas) -> prose.
+    """
+    return "\\)" not in body
+
 
 def _convert_outside_code(line: str) -> tuple[str, int]:
-    """Convertit `\\(` / `\\)` en `$` hors code spans ; rend (ligne, n_converted).
+    """Convertit les paires `\\(...\\)` delimitantes en `$...$` hors code spans ;
+    rend (ligne, n_converted). Les `\\(`/\\)` isoles qui ne forment pas un span
+    math reconnaissable sont laisses intacts (borne fondee sur le faux-fix
+    « / ou \\) » mesure le 2026-09-22).
 
     Le toggle backtick reproduit `_strip_inline_code` : un run de N backticks
     ouvre/ferme un code span, un run non ferme s'etend jusqu'a la fin de la
@@ -78,34 +120,41 @@ def _convert_outside_code(line: str) -> tuple[str, int]:
             out.append(line[i])
             i += 1
             continue
-        if line.startswith("\\(", i) or line.startswith("\\)", i):
-            out.append("$")
-            converted += 1
-            i += 2
-            continue
+        if line.startswith("\\(", i):
+            m = _MATH_SPAN_RE.match(line, i)
+            if m and _looks_like_math(m.group("body")):
+                out.append("$" + m.group("body") + "$")
+                converted += 2
+                i = m.end()
+                continue
         out.append(line[i])
         i += 1
     return "".join(out), converted
 
 
 def _check_invariant(before: str, after: str, converted: int) -> None:
-    """Le contenu hors tokens convertis est byte-identique (refuse d'ecrire sinon).
+    r"""Le contenu hors tokens convertis est byte-identique (refuse d'ecrire sinon).
 
-    La transformation declaree n'insere que des `$` et ne retire que les
-    sequences `\\(` / `\\)`, en nombre egal. Toute autre difference est une
-    corruption, pas une reparation.
+    La transformation declaree ne fait que remplacer des paires `\(` / `\)`
+    par des `$`. Verifie a parite : le nombre de tokens `\(` + `\)` retires
+    doit egaler `converted`, et le nombre de `$` inseres doit lui egaler le
+    meme compte. Les `\(`/`\)` restants (spans non convertis, ex. prose avec
+    backslash litteral) ne comptent ni d'un cote ni de l'autre.
     """
     stripped_before = before.replace("$", "").replace("\\(", "").replace("\\)", "")
-    stripped_after = after.replace("$", "")
+    stripped_after = after.replace("$", "").replace("\\(", "").replace("\\)", "")
     if stripped_before != stripped_after:
         raise SystemExit(
             "INVARIANT VIOLE : le contenu a change au-dela de la conversion "
             f"\\( -> $ ({before!r} -> {after!r})"
         )
-    if after.count("$") - before.count("$") != converted:
+    tokens_removed = (before.count("\\(") + before.count("\\)")
+                      - after.count("\\(") - after.count("\\)"))
+    dollars_added = after.count("$") - before.count("$")
+    if tokens_removed != converted or dollars_added != converted:
         raise SystemExit(
-            "INVARIANT VIOLE : nombre de $ inseres != nombre de delimiteurs "
-            f"retires ({before!r} -> {after!r}, {converted} conversions)"
+            "INVARIANT VIOLE : tokens retires / $ inseres != conversions "
+            f"({before!r} -> {after!r}, {converted} conversions)"
         )
 
 
@@ -181,6 +230,14 @@ assert _fixed == _ctrl_ok and _n == 2, "CONTROLE: conversion incorrecte"
 _fixed2, _n2 = _convert_outside_code(r"La syntaxe `\(x\)` n'est pas rendue.")
 assert _n2 == 0 and _fixed2 == "La syntaxe `\\(x\\)` n'est pas rendue.", (
     "CONTROLE: conversion a l'interieur d'un code span"
+)
+# Controle du faux-fix fondateur (mesure 2026-09-22, twin-parity PR #17395) :
+# « les separateurs (/ ou \\) selon l'OS » n'est PAS un span math -- le fixer
+# ne doit PAS convertir la \) fermante en $.
+_ctrl_falsefix = "les separateurs (/ ou \\\\) selon l'OS."
+_fixed3, _n3 = _convert_outside_code(_ctrl_falsefix)
+assert _n3 == 0 and _fixed3 == _ctrl_falsefix, (
+    "CONTROLE: faux-fix sur prose avec backslash litteral (bornage paire+contenu perdu)"
 )
 
 
