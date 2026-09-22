@@ -52,11 +52,11 @@ class TestMachineEtats(unittest.TestCase):
         self.assertFalse(self.inq.is_valid_move(self.S.REFUTE, self.S.CONCEDE))
 
     def test_boucle_detectee(self):
-        # QUESTION -> CLAIM -> SUPPORT repete 3 fois
+        # La MEME paire d'actes repetee 3 fois : (QUESTION, CLAIM) x 3
         s = self.S
         trace = [self.mv("A", s.QUESTION), self.mv("B", s.CLAIM),
-                 self.mv("A", s.SUPPORT), self.mv("B", s.QUESTION),
-                 self.mv("A", s.CLAIM), self.mv("B", s.SUPPORT)]
+                 self.mv("A", s.QUESTION), self.mv("B", s.CLAIM),
+                 self.mv("A", s.QUESTION), self.mv("B", s.CLAIM)]
         self.assertTrue(self.inq.is_terminal_state(trace))
 
     def test_boucle_periode_3_non_detectee(self):
