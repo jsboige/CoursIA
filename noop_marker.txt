@@ -1,0 +1,8 @@
+# noop retrigger post-body-amend c.1136 (myia-po-2026:CoursIA-2)
+
+Les 2 concerns Hermes sur PR #17310 sont levées :
+- Concern 1 (No markdown content loss) : SUCCESS run 106623980246 (05:11:32Z)
+- Concern 2 (Kernel drift guard)    : SUCCESS run 35689534920 (05:08:33Z) -- body_exemption: true via bare `## Diagnostic dérive` (Tell c.679 strict)
+
+Le PR gate aggregator reste à l'ancienne passe (04:57:26Z FAILURE). Noop commit
+ici pour forcer le SHA-bump et ré-agréger le verdict, comme dans c.1131.
