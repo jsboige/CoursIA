@@ -2116,6 +2116,24 @@ def _base_age_hours(base_ref: str, head: str) -> Optional[int]:
     return max(0, (int(time.time()) - ts)) // 3600
 
 
+def _decode_nul_paths(raw: bytes) -> set[str]:
+    """Decode ``git ... --name-only -z`` output without quotePath escaping.
+
+    Git's line-oriented output quotes non-ASCII paths when ``core.quotePath`` is
+    enabled (the Linux default). Comparing those escaped lines with UTF-8 paths
+    returned by the GitHub API wrongly classifies the files as carried from
+    main. NUL-delimited output preserves the path bytes; invalid UTF-8 is an
+    error so the caller can retain every API path via its fail-safe.
+    """
+    if not raw:
+        return set()
+    return {
+        item.decode("utf-8")
+        for item in raw.split(b"\0")
+        if item
+    }
+
+
 def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     """#13637: partition ``files`` (the API list) into the PR's own contribution
     and the carried files.
@@ -2139,12 +2157,15 @@ def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     if not api_paths:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
     proc = subprocess.run(
-        ["git", "diff", "--name-only", base_ref, head, "--"] + api_paths,
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        ["git", "diff", "--name-only", "-z", base_ref, head, "--"] + api_paths,
+        capture_output=True,
     )
     if proc.returncode != 0:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
-    changed = set(proc.stdout.splitlines())
+    try:
+        changed = _decode_nul_paths(proc.stdout)
+    except UnicodeDecodeError:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
     carried = set(api_paths) - changed
     propres, charries = partition_propres(files, carried)
     return CarriedNote(

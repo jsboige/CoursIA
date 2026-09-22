@@ -28,7 +28,6 @@ on:
       - 'scripts/lean/count_code_sorry.py'
       - 'scripts/tests/test_check_certified_sorry.py'
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
