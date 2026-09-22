@@ -60,3 +60,55 @@ def test_install_refuse_organe_absent(tmp_path, capsys, monkeypatch):
     rc = imod.main(["--install", "--repo", str(repo)])
     assert rc == 2
     assert "REFUSE" in capsys.readouterr().err
+
+
+class _Res:
+    def __init__(self, rc=0, out="", err=""):
+        self.returncode, self.stdout, self.stderr = rc, out, err
+
+
+def _scripted(answers):
+    calls = []
+
+    def fake(cmd, **kw):
+        calls.append(cmd)
+        for key, res in answers:
+            if key in cmd:
+                return res
+        return _Res()
+
+    return fake, calls
+
+
+def test_sync_repo_refuse_hors_main(tmp_path, monkeypatch):
+    fake, calls = _scripted([("rev-parse", _Res(out="feat/x"))])
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, msg = imod.sync_repo(tmp_path)
+    assert not ok and "pas sur main" in msg
+    assert not any("fetch" in c or "merge" in c for c in calls)
+
+
+def test_sync_repo_refuse_depot_modifie(tmp_path, monkeypatch):
+    fake, calls = _scripted(
+        [("rev-parse", _Res(out="main")), ("status", _Res(out=" M scripts/x.py"))]
+    )
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, msg = imod.sync_repo(tmp_path)
+    assert not ok and "modifications" in msg
+    assert not any("merge" in c for c in calls)
+
+
+def test_sync_repo_fast_forward_sur_main(tmp_path, monkeypatch):
+    fake, calls = _scripted([("rev-parse", _Res(out="main"))])
+    monkeypatch.setattr(imod, "_run", fake)
+    ok, _ = imod.sync_repo(tmp_path)
+    assert ok
+    assert any("fetch" in c for c in calls)
+    assert any("--ff-only" in c for c in calls)
+
+
+def test_tache_lance_l_installateur_du_depot_cible(tmp_path):
+    # La tache doit executer le wrapper du depot synchronise, pas celui du
+    # checkout d'ou l'installation a ete lancee.
+    cmd = imod.task_command(tmp_path)
+    assert cmd[1] == str(tmp_path / "scripts" / "coordination" / "install_merge_ready_task.py")

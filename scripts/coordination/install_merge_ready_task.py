@@ -44,9 +44,12 @@ LOG_DIR = (
     / "merge_ready"
     / "logs"
 )
-# Siege coordinateur (ai-01) : son checkout principal. Les autres machines
-# passent --repo explicitement.
-DEFAULT_REPO = Path(r"D:\CoursIA")
+# Siege coordinateur (ai-01) : un worktree DEDIE sur `main`, pas le checkout
+# principal. D:\CoursIA est le siege interactif, souvent sur une branche de
+# travail : l'organe y executerait le gate et B.0 de CETTE branche, pas ceux
+# de `main`. Le worktree dedie est ramene sur origin/main avant chaque tour
+# (voir sync_repo). Les autres machines passent --repo explicitement.
+DEFAULT_REPO = Path(r"D:\CoursIA-wt-merge-ready")
 INTERVAL_MINUTES = 20
 
 
@@ -72,7 +75,11 @@ def check_organ_present(repo: Path) -> tuple[bool, str]:
 def task_command(repo: Path) -> list[str]:
     """Commande enregistree dans le planificateur : ce script --run, qui
     journalise et appelle l'organe en --apply."""
-    return [sys.executable, str(THIS_FILE), "--run", "--repo", str(repo)]
+    return [
+        sys.executable,
+        str(repo / "scripts" / "coordination" / "install_merge_ready_task.py"),
+        "--run", "--repo", str(repo),
+    ]
 
 
 def build_schtasks_install(cmd: list[str], interval_minutes: int) -> list[str]:
@@ -153,6 +160,31 @@ def cmd_uninstall() -> int:
     return 0
 
 
+def sync_repo(repo: Path) -> tuple[bool, str]:
+    """Ramene le depot de l'organe sur origin/main, ou refuse le tour.
+
+    Refuse (sans rien toucher) si le depot n'est pas sur `main` ou porte des
+    modifications suivies : un tour ne doit jamais executer un gate ou un B.0
+    de branche, ni ecraser un travail local. Sinon fetch + fast-forward.
+    """
+    branch = _run(["git", "-C", str(repo), "rev-parse", "--abbrev-ref", "HEAD"])
+    if branch.returncode != 0:
+        return False, f"git rev-parse rc={branch.returncode} : {branch.stderr.strip()[:200]}"
+    if branch.stdout.strip() != "main":
+        return False, f"le depot {repo} est sur '{branch.stdout.strip()}', pas sur main"
+    dirty = _run(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"])
+    if dirty.returncode != 0 or dirty.stdout.strip():
+        return False, f"le depot {repo} porte des modifications suivies : tour refuse"
+    for cmd in (
+        ["git", "-C", str(repo), "fetch", "-q", "origin", "main"],
+        ["git", "-C", str(repo), "merge", "--ff-only", "-q", "origin/main"],
+    ):
+        res = _run(cmd)
+        if res.returncode != 0:
+            return False, f"{' '.join(cmd[3:])} rc={res.returncode} : {res.stderr.strip()[:200]}"
+    return True, "origin/main"
+
+
 def cmd_run(repo: Path) -> int:
     """Invoque par la tache planifiee : journal horodate, pas de TTY.
 
@@ -165,6 +197,11 @@ def cmd_run(repo: Path) -> int:
     stamp = _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     with log.open("a", encoding="utf-8") as fh:
         fh.write(f"\n=== {stamp} run start ===\n")
+        ok, msg = sync_repo(repo)
+        if not ok:
+            fh.write(f"=== tour REFUSE : {msg} ===\n")
+            return 2
+        fh.write(f"depot synchronise sur {msg}\n")
         fh.flush()
         proc = subprocess.run(
             [sys.executable, str(organ_path(repo)), "--apply"],

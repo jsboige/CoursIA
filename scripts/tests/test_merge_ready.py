@@ -73,6 +73,7 @@ def default_view(
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": HEAD,
         "files": [{"path": p} for p in files],
+        "changedFiles": len(files),
         "comments": comments
         if comments is not None
         else [{"body": dossier_body()}],
@@ -444,3 +445,58 @@ def test_jeton_irresolu_exit_2(tmp_path):
     assert not journal.is_file()
     # aucune commande au-dela de la resolution du jeton
     assert len(runner.calls) == 1
+
+
+# --- garde de troncature et pre-controle du dossier (revue ai-01) -------------
+
+
+def test_skip_files_truncated_fail_closed(tmp_path):
+    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
+    # que la vue montre pourrait cacher un fichier hors perimetre.
+    view = default_view(files=("src/a.py",))
+    view["changedFiles"] = 150
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "files-truncated:1/150"
+    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+
+
+def test_skip_changed_files_absent_fail_closed(tmp_path):
+    view = default_view()
+    del view["changedFiles"]
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"].startswith("files-truncated:")
+
+
+def test_precheck_dossier_tete_perimee_sans_gate(tmp_path):
+    # Le dernier dossier vise HEAD, la PR a ete poussee depuis : le gate
+    # refuserait ; le pre-controle le dit sans payer le gate.
+    view = default_view()
+    view["headRefOid"] = HEAD_MOVED
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "dossier-head-stale"
+    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+
+
+def test_precheck_dossier_b0_blocked_sans_gate(tmp_path):
+    runner = ScriptedRunner(
+        views={123: default_view(comments=[{"body": dossier_body(b0="blocked")}])}
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "dossier-b0-not-clear:blocked"
+    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+
+
+def test_precheck_dossier_illisible_laisse_decider_le_gate(tmp_path):
+    # Un dossier que le pre-controle ne sait pas lire n'est PAS refuse ici :
+    # la decision reste au gate (qui, dans ce scenario, rend ready).
+    runner = ScriptedRunner(
+        views={123: default_view(comments=[{"body": "[ADJOINT PREFLIGHT]"}])}
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    assert lines[-1]["verdict"] == "merged"

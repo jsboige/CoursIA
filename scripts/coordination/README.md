@@ -144,8 +144,11 @@ mesuree : 97 merges en 24 h sur 4 creneaux, 12 heures vides, lead time median
 
 Par PR (la plus ancienne d'abord), TOUT doit tenir sinon skip avec raison
 nommee au journal : pas un brouillon + un commentaire `[ADJOINT PREFLIGHT]`
-(prefiltre), perimetre fail-closed (tier du tag `Grain:` lu par le parseur
-partage `scripts/grain_tag.py`), gate `check_adjoint_prevalidation.py` a
+(prefiltre), perimetre fail-closed (liste de fichiers complete -- `changedFiles`
+superieur aux fichiers listes = skip -- et tier du tag `Grain:` lu par le parseur
+partage `scripts/grain_tag.py`), pre-controle bon marche du dernier dossier
+(tete perimee ou `b0:` non clear = skip sans payer le gate ; illisible = decision
+laissee au gate), gate `check_adjoint_prevalidation.py` a
 `ready: true`, champ `b0:` du dossier accepte relu via la grammaire du gate
 (`parse_dossier` importe), organe B.0 `check_unaddressed_nits.py` a exit 0,
 `mergeable_state` REST a `clean` (retry sur `unknown` -- apres un merge les
@@ -163,6 +166,9 @@ termine, 1 arret sur erreur inattendue, 2 impossible de demarrer.
 Cablage local : `install_merge_ready_task.py --dry-run` imprime la commande
 schtasks exacte (discipline UAC : la sortie precede toute inscription), puis
 `--install` -- tache toutes les 20 minutes qui lance l'organe en `--apply`
+depuis un worktree DEDIE sur `main` (defaut `D:/CoursIA-wt-merge-ready`),
+ramene sur `origin/main` avant chaque tour ; un tour est refuse si ce depot
+n'est pas sur `main` ou porte des modifications suivies
 (journaux sous `%LOCALAPPDATA%\CoursIA\merge_ready\logs\`). Tests hermetiques :
 `python -m pytest scripts/tests/test_merge_ready.py
 scripts/tests/test_install_merge_ready_task.py`.

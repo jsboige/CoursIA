@@ -292,7 +292,7 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
     return numbers
 
 
-PR_VIEW_FIELDS = "number,isDraft,body,headRefOid,files,comments"
+PR_VIEW_FIELDS = "number,isDraft,body,headRefOid,files,changedFiles,comments"
 
 
 def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
@@ -309,6 +309,41 @@ def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
     if not isinstance(view, dict):
         raise UnexpectedError(f"gh pr view {pr} : la reponse n'est pas un objet")
     return view
+
+
+def precheck_dossier(view: dict) -> str | None:
+    """Pre-controle bon marche, AVANT le gate : le dernier dossier visible dans la
+    vue est-il a la tete courante, et declare-t-il ``b0: clear`` ?
+
+    Ne fait que retrancher des appels : il ne rend un skip que sur une
+    condition que le gate (tete perimee) ou l'etape 4 (``b0`` non clear)
+    refuseraient de toute facon. Un dossier illisible ici n'est PAS refuse --
+    la decision reste au gate. Mesure du 2026-09-22 : sur 20 PRs a dossier
+    refuse, 14 avaient une tete perimee ; sans ce pre-controle, chaque tour
+    paierait un gate complet pour chacune.
+    """
+    candidates = [
+        row for row in view.get("comments") or []
+        if _first_line(row.get("body") or "") == gate.START
+    ]
+    if not candidates:
+        return None
+    last = candidates[-1]
+    dossier, _errors = gate.parse_dossier(
+        last.get("body") or "",
+        0,
+        ((last.get("author") or {}).get("login")) or "",
+        last.get("createdAt") or "",
+    )
+    if dossier is None:
+        return None
+    head = dossier.fields.get("head", "")
+    if head and head != str(view.get("headRefOid") or ""):
+        return "dossier-head-stale"
+    b0 = dossier.fields.get("b0", "")
+    if b0 and b0 != "clear":
+        return f"dossier-b0-not-clear:{b0}"
+    return None
 
 
 def run_gate(runner: Runner, pr: int, gh_env: dict[str, str]) -> tuple[bool, str, str]:
@@ -468,7 +503,16 @@ def evaluate_pr(
         reason = scope_exclusion(str((file_row or {}).get("path") or ""))
         if reason is not None:
             return skip(reason)
+    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
+    # plafond cacherait peut-etre un fichier hors perimetre -> fail-closed.
+    changed = view.get("changedFiles")
+    listed = len(view.get("files") or [])
+    if not isinstance(changed, int) or changed > listed:
+        return skip(f"files-truncated:{listed}/{changed}")
     reason = grain_exclusion(view.get("body"))
+    if reason is not None:
+        return skip(reason)
+    reason = precheck_dossier(view)
     if reason is not None:
         return skip(reason)
     # 3. gate d'entree.
