@@ -41,6 +41,13 @@ Divergences mesurees sur les sources (contrat de fidelite) :
    distribution mesuree (degeneree) et non une constante structurelle.
 4. **Les emoji du tableau source ne sont pas portes** (regle E : pas d'emoji
    dans le code) : les verdicts sont du texte plein.
+5. **Le pivot ``terminates`` / ``decides`` de la source est porte mais pas
+   lu.** Dans le carnet source, la colonne « Terminates 7/7 » etait le
+   pivot du piege (« un succes n'est pas un compte d'achevement »). Les deux
+   champs restent sur ``ModeRun``, fideles au banc (vrais sur les 14
+   records), mais le port change d'angle : il decompose la meme lecon en
+   trois registres d'arret (filet du harnais / declaration du mode /
+   phases reellement faites) plutot qu'en une colonne a relativiser.
 """
 
 from __future__ import annotations
@@ -281,11 +288,14 @@ def depth_parity_verdict(rows=DEPTH_PARITY) -> str:
 def project_full_duration(run: ModeRun) -> Optional[float]:
     """Projection lineaire de la duree complete d'un mode tue en cours.
 
-    ``duree * phases_total / phases_completed`` — une HEURISTIQUE borne
-    superieure : elle suppose que les phases restantes coutent comme celles
-    deja faites, ce que la mesure reelle derait (les premieres phases
-    portent des couts fixes de mise en route). ``None`` si aucune phase
-    n'est faite (rien a extrapoler).
+    ``duree * phases_total / phases_completed`` — une HEURISTIQUE, ni borne
+    superieure ni borne inferieure : elle suppose que les phases restantes
+    coutent comme celles deja faites. Sur le sas, elle surestime
+    massivement les deux modes hierarchiques (x4,1 et x1,5 — compatible
+    avec un cout fixe concentre en tete de run) et sous-estime d'environ
+    2,5 % les deux pipelines, ecart plus petit que la variation d'un run a
+    l'autre (``pipeline_light`` : 148,76 s puis 178,80 s). ``None`` si
+    aucune phase n'est faite (rien a extrapoler).
     """
     if run.phases_completed <= 0:
         return None

@@ -67,10 +67,10 @@ class TestRegistresArret(unittest.TestCase):
 
     def test_verdict_tue_avant_tout(self):
         # Ordre des tests : le filet prime la declaration du mode.
-        tue_en_declquant = ModeRun(
+        tue_en_declarant = ModeRun(
             mode="x", success=True, duration_seconds=10.0,
             phases_completed=1, phases_total=9, terminated_by_budget=True)
-        self.assertEqual(verdict_text(tue_en_declquant), "tue par le filet du harnais")
+        self.assertEqual(verdict_text(tue_en_declarant), "tue par le filet du harnais")
 
     def test_verdict_complet_au_calibre(self):
         ps = next(r for r in CALIBRATED if r.mode == "pipeline_standard")
