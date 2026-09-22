@@ -168,9 +168,16 @@ décomposition `MSE = biais² + variance`, l'écart contre une baseline **dé-bi
 **erreurs recentrées** (`e − mean(e)` de chaque côté — le centrage annule le biais, le DM ne
 compare plus que les variances). La machine à quatre états est **partagée** avec M5 et M6
 (`_aggregate_state` dans `scripts/bias_metrics.py`, extraite pour ce run). Aucune valeur publiée
-ci-dessus n'a été modifiée : les jambes brutes sont recalculées à l'identique (ancre M5 vérifiée
-au 6e chiffre : BTC h=1 `mean_har_bias_oos = −0,226587` reproduit à l'identique par le keeper
-run) et les colonnes ci-dessous s'y ajoutent.
+ci-dessus n'a été modifiée : les jambes brutes sont recalculées à l'identique pour BTC (Bitstamp,
+2278 jours de RV) et ETH (Binance, 1495 jours) — ancre M5 vérifiée au 6e chiffre : BTC h=1
+`mean_har_bias_oos = −0,226587` reproduit à l'identique par le keeper run — et les colonnes
+ci-dessous s'y ajoutent. **SOL fait exception** : seule ligne tirée de yfinance (source non
+épinglée, fenêtre glissante au jour du run), son échantillon a dérivé — 724 jours de RV contre
+~725 dans la table de provenance ci-dessus, MSE DLinear 0,5534 → 0,5796 (h=1) et 0,2324 → 0,2787
+(h=10), et l'horizon 10 **change de signe** : 2,2 % d'amélioration publiée ci-dessus, 10,2 % de
+dégradation mesurée par ce run. Les lignes SOL ci-dessous sont donc le verdict d'un échantillon
+légèrement différent de celui du doc — dérive **déclarée** et non alignée à la main, ce qui
+figerait un nombre non reproductible au lieu de dire qu'il a bougé.
 
 Keeper run 2026-09-22 (BTC+ETH+SOL, 4 seeds 0/7/42/99, h=1/5/10, 6060 s,
 `scripts/results/m4_dlinear_vol_debiased_3coin.json` ; séries par observation régénérables par
@@ -184,13 +191,13 @@ Keeper run 2026-09-22 (BTC+ETH+SOL, 4 seeds 0/7/42/99, h=1/5/10, 6060 s,
 | ETH-USD | 1  | −0,0810 | +0,0300 | **+2,49 %**  | 0/4 | 1,27e-01 | BEATS (doc) | **refuted-de-biased** |
 | ETH-USD | 5  | −0,1290 | +0,0588 | +0,40 %  | 0/4 | 8,68e-01 | INCONCLUSIVE | INCONCLUSIVE |
 | ETH-USD | 10 | −0,1727 | +0,0765 | −0,39 %  | 0/4 | 8,94e-01 | INCONCLUSIVE | INCONCLUSIVE |
-| SOL-USD | 1  | +0,0659 | +0,1045 | **+5,82 %**  | 1/4 | 9,80e-02 | BEATS | **INCONCLUSIVE** |
+| SOL-USD | 1  | +0,0659 | +0,1045 | **+5,82 %**  | 1/4 | 9,80e-02 | INCONCLUSIVE | **INCONCLUSIVE** |
 | SOL-USD | 5  | +0,0951 | +0,1603 | +1,65 %  | 0/4 | 6,72e-01 | INCONCLUSIVE | INCONCLUSIVE |
 | SOL-USD | 10 | +0,1113 | +0,1897 | −0,93 %  | 0/4 | 8,39e-01 | INCONCLUSIVE | INCONCLUSIVE |
 
 La colonne « Verdict hors biais » **est** le champ `aggregate_verdict_debiased` de l'artefact JSON,
 et non une lecture faite à la main par-dessus : les neuf lignes ci-dessus sont rejouées depuis
-`_aggregate_state` dans `scripts/tests/test_m4_dlinear_bias_replay.py` (16 tests, verts), qui
+`_aggregate_state` dans `scripts/tests/test_m4_dlinear_bias_replay.py` (23 tests, verts), qui
 rejoue chaque ligne à la fois depuis l'artefact et depuis les nombres recopiés ici. La machine à
 quatre états est celle de M5 (`BEATS` / `NO BEATS` / `refuted-de-biased` / `INCONCLUSIVE`,
 `NO BEATS` l'emporte sur `refuted-de-biased` quand les deux s'appliquent).
@@ -211,10 +218,12 @@ quatre états est celle de M5 (`BEATS` / `NO BEATS` / `refuted-de-biased` / `INC
    Le « l'effet croît avec l'horizon » du finding 1 ci-dessus était en réalité « **le biais HAR
    croît avec l'horizon** » — et DLinear n'y est pour rien.
 3. **ETH h=1 : la signature doc « BEATS » ne survit pas non plus** (`refuted-de-biased` : 0/4
-   graine gagnante sur la jambe recentrée, edge dé-biaisé +2,5 % non significatif). Et
-   **SOL h=1**, brut BEATS dans ce keeper run comme dans le doc, tombe à `INCONCLUSIVE` une
-   fois le biais de HAR (+0,0659, de signe opposé à BTC — HAR *sur*-estime la vol SOL)
-   neutralisé. Aucune conclusion des sections précédentes n'est modifiée rétroactivement :
+   graine gagnante sur la jambe recentrée, edge dé-biaisé +2,5 % non significatif). **SOL h=1**
+   est `INCONCLUSIVE` **déjà sur la jambe brute** de ce run (0/4 graine gagnante, DM brut
+   p = 0,158) : le « BEATS » de la table brute ci-dessus provenait du champ `verdict` hérité,
+   calculé contre la baseline **calibrée** — un verdict dé-biaisé présenté sous un en-tête brut.
+   Une fois le biais de HAR (+0,0659, de signe opposé à BTC — HAR *sur*-estime la vol SOL)
+   neutralisé, elle le reste. Aucune conclusion des sections précédentes n'est modifiée rétroactivement :
    elles sont le verdict de la jambe brute, et cette section est le verdict de la jambe de
    précision — les deux sont publiées côte à côte, comme sur M5.
 
