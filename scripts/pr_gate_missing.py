@@ -72,6 +72,12 @@ LABEL_BOT_DESC = ("PR du bot sans PR gate: un push GITHUB_TOKEN ne cree pas "
 # 1/3/4, y est INERTE (mesuree : un commit vide sous identite humaine n'a cree
 # aucun run). Label distinct : le remede n'est pas un push, c'est un conflit.
 LABEL_CONFLICT_DEFAULT = "pr-gate-conflict"
+
+# #16624 -- cap on automatic retarget remediations per pass. Each dispatch
+# parks an ephemeral runner for a short aggregation and posts one comment's
+# worth of notification; the measured population was 1 PR, and a burst of
+# retargets arriving together would otherwise fire them all in one sweep.
+MAX_AUTO_REMEDIATE = 5
 LABEL_CONFLICT_COLOR = "fdd0a2"  # saumon -- "PR dirty, remede = resoudre le conflit"
 LABEL_CONFLICT_DESC = ("PR gate absent: PR en conflit avec main, aucun run "
                        "pull_request tant que le conflit dure (#14477)")
@@ -145,16 +151,32 @@ REMEDIATION_RETARGET = (
     "`PR gate` est absent du rollup de cette PR : sa base a change apres son "
     "dernier run `pull_request` (issue #14477 cause 4). Le retarget emet "
     "l'action `edited`, que pr-gate.yml n'ecoute pas (types par defaut "
-    "`opened` / `synchronize` / `reopened`) : aucune fenetre n'a rerendu le "
-    "check.\n\n"
-    "- Remede : **commit vide a arbre identique** (declenche un `synchronize` "
-    "sans toucher au contenu) -- mesure efficace sur #14441 : 7 runs -> 31 "
-    "runs, le `PR gate` et `Secret Scan` sont re-dispatchs.\n"
+    "`opened` / `synchronize` / `reopened`, et `edited` y est tenu hors types "
+    "de facon deliberee -- #16624 rev. ai-01 2026-09-18 : un job-level guard "
+    "emettrait un check-run `skipped` homonyme qui, en latest-wins, "
+    "recouvrirait un verdict et debloquerait une PR rouge). Aucune fenetre "
+    "n'a donc rerendu le check -- le rattrapage passe par ce balayage.\n\n"
+    "- **Rattrapage automatique** : ce balayage dispatch desormais une "
+    "agregation pour la tete (`gh workflow run pr-gate-rerun.yml -f "
+    "pr_number=... -f head_sha=...`) -- un `workflow_dispatch` est l'exception "
+    "documentee a l'anti-recursion GITHUB_TOKEN, et le verdict POSTE sur la "
+    "tete est calcule par le meme `pr_gate.py` que le gate reel (jamais "
+    "asserte).\n"
+    "- Remede manuel (harnais indisponible) : **`gh pr close N && gh pr reopen "
+    "N` depuis un token UTILISATEUR** -- `reopened` EST un type de "
+    "declenchement par defaut ; mesure sur #16574 (2026-09-18, issue #16624) : "
+    "tete inchangee, `reviewDecision` conserve, DWELL non reset, run du gate "
+    "parti dans la minute. NB : le meme geste fait par un token bot "
+    "(GITHUB_TOKEN) est INERT -- l'anti-recursion GitHub ne cree aucun run.\n"
+    "- Remede lourd (valide mais cher) : **commit vide a arbre identique** "
+    "(declenche un `synchronize` sans toucher au contenu) -- la nouvelle tete "
+    "RESET le DWELL et invalide un `APPROVED` exact-head (re-review due, "
+    "#16624) : ne le preferer que si le close/reopen utilisateur est "
+    "impossible. Mesure d'efficacite sur #14441 : 7 runs -> 31 runs, le `PR "
+    "gate` et `Secret Scan` sont re-dispatchs.\n"
     "  TREE=$(git rev-parse HEAD^{tree}); PARENT=$(git rev-parse HEAD)\n"
     "  NEW=$(git commit-tree \"$TREE\" -p \"$PARENT\" -m \"chore: wake pull_request workflows after base retarget\")\n"
     "  git push origin \"$NEW:<branche>\"\n"
-    "- `close` / `reopen` ne relance rien : seul un `synchronize` refait "
-    "partir les workflows `pull_request`."
 )
 
 REMEDIATION_UNKNOWN = (
@@ -465,6 +487,7 @@ def enrich_candidate(repo: str, number: int) -> dict:
     ])
     return {
         "mergeable_state": (pull or {}).get("ms"),
+        "head_sha": (pull or {}).get("sha"),
         "head_subject": head_subject,
         "base_changed_at": changed_rows[0] if changed_rows else None,
         "last_pr_run_at": gate_run_rows[0] if gate_run_rows else None,
@@ -537,6 +560,13 @@ def _remediate_for(repo: str, number: int, extra: dict, verdict: str,
     ``counters`` aggregates per-cause prints so the sweep log shows how the
     pool actually split (a "1 candidate" that is all ``unknown`` reads
     differently from one that is ``conflict``).
+
+    #16624 -- cause ``retarget`` only: after the label/comment, DISPATCH the
+    re-aggregation harness for the head. A close/reopen done by this organ's
+    GITHUB_TOKEN would be inert (anti-recursion), and the empty-commit recipe
+    resets the DWELL -- the dispatch is the one gesture that is both automatic
+    and free. Every other cause keeps advice-only: a bot cannot resolve a
+    conflict, and ``skip_ci`` / ``bot`` need a NEW commit from a user token.
     """
     cause, detail = prescribe({**enriched, **extra})
     counters["cause_" + cause] = counters.get("cause_" + cause, 0) + 1
@@ -558,6 +588,19 @@ def _remediate_for(repo: str, number: int, extra: dict, verdict: str,
         # The PR was flagged under the generic label by an earlier pass; the
         # conflict label now carries the accurate, choice-determining cause.
         remove_label(repo, number, args.label, args.dry_run)
+    if (cause == "retarget" and not args.dry_run
+            and not getattr(args, "no_auto_remediate", False)
+            and extra.get("head_sha")):
+        if counters.get("auto_remediated", 0) >= MAX_AUTO_REMEDIATE:
+            print(f"  #{number:<6} retarget auto-remediation capped at "
+                  f"{MAX_AUTO_REMEDIATE} this pass -- next sweep takes it")
+        elif _gh_write(
+            ["workflow", "run", "pr-gate-rerun.yml", "--repo", repo,
+             "-f", f"pr_number={number}", "-f", f"head_sha={extra['head_sha']}"],
+            f"dispatch pr-gate-rerun.yml for #{number}"):
+            counters["auto_remediated"] = counters.get("auto_remediated", 0) + 1
+            print(f"  #{number:<6} RETARGET  dispatch pr-gate-rerun.yml "
+                  f"(head {extra['head_sha'][:10]}) -- verdict POSTe sous ~1 h")
     print(f"  #{number:<6} {verdict.upper():<8} cause={cause:<8} {detail}")
 
 
@@ -608,6 +651,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--label-conflict", default=LABEL_CONFLICT_DEFAULT,
                     help=f"conflict label name (default: {LABEL_CONFLICT_DEFAULT})")
     ap.add_argument("--limit", type=int, default=0, help="cap PRs processed (0 = all)")
+    ap.add_argument("--no-auto-remediate", action="store_true",
+                    help="#16624: label/comment only -- never dispatch pr-gate-rerun.yml "
+                         f"for retarget causes (cap when on: {MAX_AUTO_REMEDIATE}/pass)")
     args = ap.parse_args(argv)
 
     repo = args.repo or (subprocess.run(
@@ -667,7 +713,8 @@ def main(argv: list[str] | None = None) -> int:
             _retract_reclassified(repo, number, verdict, why, args,
                                   labeled, labeled_bot, labeled_conflict)
 
-    print(f"[pr-gate-missing] done: {counts} causes={causes}")
+    print(f"[pr-gate-missing] done: {counts} causes={causes} "
+          f"auto_remediated={causes.get('auto_remediated', 0)}")
     return 0
 
 
