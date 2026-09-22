@@ -215,6 +215,38 @@ RULE_SEVERITY = {
     # (unclosed_bold): promouvoir ERROR seulement après mesure du taux de FP
     # sur le corpus, jamais a priori.
     "cjk_in_prose": WARN,
+    # #17380: ERROR (bloquant) -- un delimiteur inline \( ... \) hors code span
+    # ne rend NULLE PART par defaut : le tex2jax de MathJax 2 (export nbconvert
+    # classique) ne le typesette pas (mesure Playwright sur IIT-06 avant fix :
+    # seul le $$ central rendait), et les configs MathJax 3 de JupyterLab/VS
+    # Code ne declarent que $ et $$. Le LaTeX inline reste du texte brut dans
+    # les DEUX familles de visionneuses. Hors code (fence/span), \( n'a AUCUNE
+    # signification markdown legitime -- le precedent de promotion est
+    # heading_continuation (#17005) : "ERROR parce que le rendu est incoherent
+    # avec la prose que la ligne veut dire". Mesure corpus 2026-09-22 : 10 hits
+    # sur 4 notebooks (IIT-01 7, GameTheory-15e 1, MGS-07d 1, Sudoku-05 1) --
+    # meme ordre que le precedent #12110 (14 hits / 7 notebooks), reparables
+    # par fix_math_delims.py (controle differentiel sur IIT-06 : 118 conversions,
+    # byte-identique au commit manuel 5242d81907 au texte joint). Grandfathered
+    # dans la meme PR ; le cliquet delta bloque toute nouvelle occurrence.
+    # \[ ... \] (display) EST typesette par les deux defauts : hors classe de
+    # defaut, volontairement non detecte.
+    "math_paren_delims": ERROR,
+    # #17380: WARN-first -- une macro LaTeX nue (backslash + lettres) hors
+    # tout span math rend en texte brut partout. Mesure corpus 2026-09-22 :
+    # 40 hits sur 30 notebooks. FP mesures dans l'echantillon : sequences
+    # code-like en prose nue (xt1\n xt2\n, \dev\...\scripts). Discipline
+    # #12107/#12110/#12112 : promouvoir ERROR seulement apres mesure du taux
+    # de FP, jamais a priori.
+    "math_bare_macro": WARN,
+    # #17380: WARN-first -- compte de $ impair par cellule apres retrait des
+    # paires $$, des spans $...$ et des echappements \$ : au moins un
+    # delimiteur inline ne se ferme pas et le LaTeX suivant fuit hors span.
+    # Mesure corpus 2026-09-22 : 239 hits sur 95 notebooks, domines par de
+    # VRAIS math non fermes (\min(2,3) - r = 0 ... (2,2) r > 1$) ; FP assumes :
+    # la monnaie en prose ("~100 $", "$1,139,577.97"). WARN, jamais bloquant,
+    # pour cette raison.
+    "math_odd_dollars": WARN,
 }
 
 # #12110 -- allowlist (fichier, cellule) des cas CJK LEGITIMES (classe B du
@@ -261,6 +293,12 @@ RULE_REPAIR = {
     # auteur qui tombe dessus (c'est le constat qui a fonde cette table).
     "heading_in_list": (
         "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
+    ),
+    # #17380 : promue ERROR dans la meme PR que son fixer (precedent #12109) --
+    # la conversion \( -> $ / \) -> $ est deterministe sur les cellules
+    # markdown, et le fixer porte l'invariant de round-trip qui la prouve.
+    "math_paren_delims": (
+        "python scripts/notebook_tools/fix_math_delims.py --apply <notebook>"
     ),
     # #16221 / Tell c.1158-L1 fondateur : un entry JSON-dumped (forme
     # `    "# 4.2e -- section heading\\n",`) doit etre decode puis reinsere
@@ -374,6 +412,40 @@ _STMT_LINE_RE = re.compile(
     r"Console\.WriteLine\(|print\(|return\s+\S|import\s+\w|"
     r"using\s+\w+;|def\s+\w+\(|var\s+\w+\s*=|#r\s+\"nuget)"
 )
+
+# #17380 -- delimiteur inline math \( ... \) dans une cellule markdown. Mesure
+# Playwright avant/apres sur IIT-06 (commit 5242d81907) : le tex2jax par defaut
+# de MathJax 2 (export HTML nbconvert classique) ne typesette PAS \( \), et les
+# configs MathJax 3 de JupyterLab / VS Code ne declarent que $ et $$ -- le
+# LaTeX inline rend en texte brut dans les deux familles. \[ ... \] (display)
+# EST typesette par les deux defauts et n'est volontairement PAS detecte.
+_MATH_PAREN_RE = re.compile(r"\\[()]")
+# Une macro LaTeX nue (backslash + lettres) hors de tout span math : rien ne
+# typesette la prose hors delimiteurs, elle rend en texte brut. Le motif
+# exige au moins une lettre apres l'antislash : `\\` (saut de table) et
+# `\$` (dollar echappe) ne sont pas des macros et ne tirent pas.
+_MATH_MACRO_RE = re.compile(r"\\[A-Za-z]+")
+# Decomposition du texte de prose pour les regles math : on retire d'abord les
+# echappements \$, puis les blocs display $$...$$ (ils peuvent s'etendre sur
+# plusieurs lignes -- d'ou re.S), puis les spans inline $...$ (bornes sur une
+# seule ligne : `[^$\n]` empeche un $ orphelin d'avaler la cellule entiere).
+_DISPLAY_MATH_RE = re.compile(r"\$\$.*?\$\$", re.S)
+_INLINE_MATH_RE = re.compile(r"\$[^$\n]+\$")
+_ESCAPED_DOLLAR_RE = re.compile(r"\\\$")
+
+
+def _math_prose_text(lines, fenced: set[int]) -> str:
+    r"""Texte hors fences et hors code spans, pour les regles math (#17380).
+
+    Les fences rendent verbatim (exclusion commune aux autres regles
+    fence-aware) ; les code spans inline portent leur propre contenu literal
+    (`\(` dans un backtick est un exemple affiche, pas un defaut -- la
+    separation exacte du cas fondateur IIT-06, ou les cellules saines
+    montraient le delimiteur entre backticks pour l'EXPLIQUER).
+    """
+    return "\n".join(
+        _strip_inline_code(ln) for idx, ln in enumerate(lines) if idx not in fenced
+    )
 
 # single-element newline-stripping artifact: a markdown cell whose `source` is a
 # one-element list whose string has 0 '\n', starts with an ATX heading, and is long.
@@ -867,6 +939,82 @@ def _selfcheck() -> int:
           "c.1158-L1 shape (heading + JSON-escape + list-separator) and on "
           "plain-ASCII entries; silent on fenced code block examples, narrative "
           "config-style lines, and short non-repr-quoted lines")
+
+    # ---- math delimiters (#17380) -----------------------------------------------
+    # Positives = la forme fondateure IIT-06 (avant commit 5242d81907) et les
+    # deux classes WARN ; negatives = la forme CONVERTIE saine ($...$), le
+    # delimiteur explique entre backticks, le bloc $$ multi-lignes, la macro
+    # DANS un span math, le chemin Windows entre backticks, et les dollars
+    # pairs. Valide a travers scan_cell (le vrai point d'entree).
+    def _fired(rule: str, src: str) -> bool:
+        return any(f["rule"] == rule
+                   for f in scan_cell({"cell_type": "markdown", "source": src}))
+
+    math_fixtures: list[tuple[str, str, str, bool]] = [
+        # (name, rule, cell source, expected)
+        ("IIT-06 founding form \\(S = \\mathbb{F}_p^n\\)",
+         "math_paren_delims",
+         "Soit $S$ l'ensemble défini par \\(S = \\mathbb{F}_p^n\\) dans le corps fini.\n",
+         True),
+        ("converted form $...$ is silent",
+         "math_paren_delims",
+         "Soit $S = \\mathbb{F}_p^n$ l'ensemble du corps fini.\n",
+         False),
+        ("delimiter explained inside backticks is silent",
+         "math_paren_delims",
+         "La syntaxe `\\(x\\)` n'est pas rendue par MathJax 3.\n",
+         False),
+        ("delimiter inside a fenced block is silent",
+         "math_paren_delims",
+         "Exemple :\n\n```latex\n\\(S = \\mathbb{F}_p^n\\)\n```\n",
+         False),
+        ("bare macro in prose",
+         "math_bare_macro",
+         "La norme du vecteur v se note \\|v\\| et le saut \\Delta t.\n",
+         True),
+        ("macro inside $$ display span is silent (multi-line)",
+         "math_bare_macro",
+         "Le modèle :\n\n$$\n\\alpha + \\beta x = y\n$$\n\ndonne la droite.\n",
+         False),
+        ("macro inside $ inline span is silent",
+         "math_bare_macro",
+         "Le gain $\\alpha_i$ par acteur est sommé.\n",
+         False),
+        ("Windows path inside backticks is silent",
+         "math_bare_macro",
+         "Le log pointe `C:\\Users\\jsboi\\dev` comme racine.\n",
+         False),
+        ("odd dollar count (3 currency $)",
+         "math_odd_dollars",
+         "Les paliers sont $5, $10 et $20 selon la formule.\n",
+         True),
+        ("odd dollar count (unclosed inline math)",
+         "math_odd_dollars",
+         "La volatilité vaut $\\sigma_t ici, non fermée.\n",
+         True),
+        ("even dollar count is silent",
+         "math_odd_dollars",
+         "Comparer $x$ et $y$ puis conclure.\n",
+         False),
+        ("$$ display pair + inline pair is silent",
+         "math_odd_dollars",
+         "$$\na + b\n$$\n\net l'inline $c$ ferme la parite.\n",
+         False),
+    ]
+    for name, rule, src, expected in math_fixtures:
+        got = _fired(rule, src)
+        if got != expected:
+            failed.append(f"{name}: {rule} fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: math rules fire on the IIT-06 \\(...\\) form, the bare "
+          "macro and the odd-$ cell; silent on the converted $...$ form, "
+          "backtick-quoted delimiters, fenced latex, $$-span macros and even-$ "
+          "cells")
+
     return 0
 
 
@@ -1342,6 +1490,70 @@ def scan_cell(cell) -> list[dict]:
             "hash": _cell_hash(rule, text),
         })
         break  # one finding per cell is enough
+
+    # ---- inline math \( \) delimiters (#17380) -----------------------------------
+    # Seule classe ERROR des regles math : \( hors code n'a aucune signification
+    # markdown legitime et ne rend nulle part par defaut (regex en tete de
+    # _MATH_PAREN_RE). Fence-aware + code-span-aware : les deux exclusions sont
+    # celles de la cellule saine qui EXPLIQUE le delimiteur entre backticks.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if _MATH_PAREN_RE.search(_strip_inline_code(ln)):
+            rule = "math_paren_delims"
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": ("inline math delimiter \\( ... \\) outside a code span: "
+                            "MathJax 2 (nbconvert) tex2jax and the MathJax 3 configs "
+                            "of JupyterLab/VS Code do not typeset it, so the inline "
+                            "LaTeX renders as raw source text. Convert to $ ... $ "
+                            "(the only inline delimiter rendered everywhere)"),
+                "evidence": ln.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            })
+            break  # one finding per cell is enough
+
+    # ---- bare LaTeX macro / odd $ count (#17380) ---------------------------------
+    # Les deux regles WARN raisonnent sur le meme residu de prose (hors fences,
+    # hors code spans, hors $$ display, hors $...$ inline, hors \$ echappes) :
+    # ce qui reste n'est configure nulle part comme math, donc une macro ou un
+    # dollar orphelin y rend en texte brut.
+    prose = _math_prose_text(lines, fenced)
+    if prose:
+        residue = _INLINE_MATH_RE.sub(
+            " ", _DISPLAY_MATH_RE.sub(" ", _ESCAPED_DOLLAR_RE.sub(" ", prose))
+        )
+        m_macro = _MATH_MACRO_RE.search(residue)
+        if m_macro:
+            rule = "math_bare_macro"
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": (f"bare LaTeX macro {m_macro.group(0)!r} outside any "
+                            f"$ / $$ math span: nothing typesets prose outside "
+                            f"math delimiters, so the macro renders as raw text. "
+                            f"Wrap the expression in $ ... $ (or move the macro "
+                            f"inside an existing math span)"),
+                "evidence": m_macro.group(0)[:100],
+                "hash": _cell_hash(rule, text),
+            })
+        if residue.count("$") % 2 == 1:
+            rule = "math_odd_dollars"
+            dollars = [m.start() for m in re.finditer(r"\$", residue)]
+            pos = dollars[-1]
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": ("odd number of '$' delimiters in this cell after "
+                            "removing $$ pairs, $...$ spans and \\$ escapes: at "
+                            "least one inline math delimiter never closes, and "
+                            "the LaTeX after it leaks outside the span (or the "
+                            "'$' is literal currency, which the WARN severity "
+                            "assumes)"),
+                "evidence": residue[max(0, pos - 60):pos + 60].replace("\n", " ").strip()[:100],
+                "hash": _cell_hash(rule, text),
+            })
 
     return findings
 
