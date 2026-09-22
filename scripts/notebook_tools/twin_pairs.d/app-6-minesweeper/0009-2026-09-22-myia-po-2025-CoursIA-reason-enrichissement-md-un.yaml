@@ -1,0 +1,9 @@
+date: '2026-09-22'
+by: 'myia-po-2025:CoursIA -- reason: enrichissement md unilateral cote python (14
+  LECTURE ANCREE, +102/-1, 0 ligne touchant execution_count/outputs) ; cote CSharp
+  byte-identique a origin/main ; asymetrie de contenu voulue (campagne densite #13410,
+  PR #17091)'
+python_sha: f84b44f2de528dfffa7f9c558c4c32087f5c52a0
+csharp_sha: 18ec0686159c0bf633a2316a751361ae636923d7
+content_python_sha: 24e1eebf34b91871d70d903ba933d9cb2ccca988797269ac600b12c22f5c3ec7
+content_csharp_sha: 8b9139cedc5c510bad63bb0fea725ce58a385a1b9acb03be1bdb16b45a781c91
