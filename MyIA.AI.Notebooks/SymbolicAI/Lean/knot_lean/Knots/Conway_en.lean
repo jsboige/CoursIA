@@ -358,6 +358,16 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-- Class merging is symmetric: folding on `(x, y)` or `(y, x)` yields the
+    same partition. First building block of R3 invariance (issue #16650):
+    the surgery rewrites the over-crossing pairs of the triangle with
+    orientations that differ between the two diagrams, and the reindexing
+    argument requires that the orientation of a pair leaves the resulting
+    partition unchanged. -/
+theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y = mergePair P y x := by
+  simp [mergePair, Bool.and_comm, Bool.or_comm]
+
 /-! #### The Fox fact: the over-strand pair shares one arc class
 
 The docstring of `alexanderEntry` claims that "every row sums to zero".

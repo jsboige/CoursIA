@@ -352,6 +352,16 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
 
+/-- La fusion de classes est symétrique : fusionner selon `(x, y)` ou `(y, x)`
+    produit la même partition. Première brique de l'invariance R3
+    (issue #16650) : la chirurgie réécrit les paires de passage-dessus du
+    triangle avec des orientations qui diffèrent d'un diagramme à l'autre,
+    et l'argument de réindexation exige que l'orientation d'une paire ne
+    change pas la partition obtenue. -/
+theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y = mergePair P y x := by
+  simp [mergePair, Bool.and_comm, Bool.or_comm]
+
 /-! #### Le fait de Fox : la paire de dessus partage une classe d'arcs
 
 La docstring d'`alexanderEntry` avance que « chaque ligne somme à zéro ».
