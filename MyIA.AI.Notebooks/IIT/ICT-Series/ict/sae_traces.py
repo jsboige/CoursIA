@@ -406,7 +406,8 @@ def assert_sae_topk_compatible(k_sae: int, k_requested: int) -> None:
 
 def trace_filename(variant: str, layer: int, *, model: str = "",
                    default_model: str = "", n_layers: int | None = None,
-                   n_clamp: int = 0, prefix: str = "ict21_sae") -> str:
+                   n_clamp: int = 0, clamp_scale: float | None = None,
+                   prefix: str = "ict21_sae") -> str:
     """Nom de fichier de trace **discriminant par echelle**.
 
     Defaut historique conserve a l'octet pour le modele de reference (les
@@ -416,8 +417,16 @@ def trace_filename(variant: str, layer: int, *, model: str = "",
     sans lui, un run 2B et un run 9B a la meme couche 16 ecrivent **le meme
     nom** et le second efface le premier en silence — perte de donnees, pas
     seulement confusion.
+
+    ``clamp_scale`` (experience pilote #8236) : intensite alpha du clamp,
+    h' = h - alpha * delta. Le suffixe ``_s{alpha}`` n'est insere **que si**
+    alpha s'ecarte de 1.0 — a intensite unitaire le nom reste byte-identique
+    au defaut historique, et les traces existantes a clamp plein ne se
+    retrouvent pas dupliquees sous deux noms.
     """
     clamp = f"_clamp{n_clamp}" if n_clamp else ""
+    if clamp_scale is not None and n_clamp and abs(clamp_scale - 1.0) > 1e-9:
+        clamp += f"_s{clamp_scale:g}"
     if model and default_model and model != default_model:
         slug = model.rstrip("/").split("/")[-1].lower().replace(".", "")
         depth = f"layer{layer}of{n_layers}" if n_layers else f"layer{layer}"
