@@ -2053,6 +2053,76 @@ def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
     return states
 
 
+_MAIN_HEAD_FRAGMENT = """
+  repository(owner:"jsboige", name:"CoursIA") {
+    defaultBranchRef { target { ... on Commit { oid
+      statusCheckRollup { contexts(first:100) { nodes {
+      ... on CheckRun      { name databaseId conclusion completedAt startedAt }
+      ... on StatusContext { context state       createdAt }
+    } } } } } }
+  }
+"""
+
+
+def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
+    """Etat des checks sur la branche par defaut, par son rollup (#17154).
+
+    Le predicat de #13545 est « ce rouge existe-t-il AUSSI sur la base ? », et
+    il etait teste par la seule corroboration inter-lanes. Celle-ci prouve une
+    cause COMMUNE, pas une cause SUR `main` : une instabilite d'execution (mort
+    de runner, kill `xdist-watchdog`) tombe sur plusieurs lanes sans que `main`
+    la porte. Mesure firsthand du 2026-09-21 (#17154) : `Scripts Tests (CPU)`
+    rouge sur #16612 / #17136 / #17141 / #16971 et **`success` sur `main`**
+    (run 35548767997, `push`, sha `bf212573c0`).
+
+    L'instrument est le rollup de `defaultBranchRef` -- et il faut dire ce
+    qu'il est, mesure a l'appui : ce n'est PAS l'ensemble des check-runs
+    attaches au sha de tete. Meme commit, meme instant : GraphQL rend 11 noms
+    dont `Scripts Tests (CPU)`, l'endpoint REST `commits/<sha>/check-runs` en
+    rend 10 **disjoints**, et `commits/<sha>/status` rend 0. Le rollup est une
+    vue de BRANCHE (dernier etat par nom), ce qui est exactement la question
+    posee -- « le meme check est-il rouge sur la branche par defaut ? » -- et
+    non la vue du commit, qui appartient aux checks de la PR fusionnee. Les
+    deux instruments de branche concordent : rollup vert, run `push` vert.
+
+    Rend ``{"sha": str, "red_keys": set, "names": set}`` ou ``None`` si la
+    mesure n'a PAS pu etre prise (panne reseau, `defaultBranchRef` absent,
+    rollup vide). ``None`` ne veut pas dire « main est vert » : c'est « on n'a
+    pas mesure », et l'appelant retombe alors sur le comportement d'avant
+    #17154 (tout impute a la base), jamais sur la classe « infra » --
+    fail-closed.
+
+    ``names`` porte le troisieme etat, decisif : un check ABSENT du rollup de
+    `main` n'est pas un check vert. Les agregateurs (`PR gate`, `Lane Claim
+    Guard`, `Variation Tag Guard`) ne tournent que sur `pull_request` : les
+    confondre avec des verts classerait en infra d'execution exactement les
+    checks sur lesquels #13545 a construit sa protection. Mesure du
+    2026-09-21 : **10 des 11** cles corrobores de l'ouvert sont dans ce cas.
+    """
+    if organ_cache is None:
+        organ_cache = {}
+    try:
+        raw = subprocess.run(
+            ["gh", "api", "graphql", "-f", "query=query { " + _MAIN_HEAD_FRAGMENT + " }"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=90,
+        ).stdout
+        repo = json.loads(raw)["data"]["repository"]
+    except Exception:  # noqa: BLE001 - une panne de mesure ne decide pas a la place de la mesure
+        return None
+    target = ((repo.get("defaultBranchRef") or {}).get("target") or {})
+    contexts = ((((target.get("statusCheckRollup") or {}).get("contexts") or {})
+                 .get("nodes")) or [])
+    if not contexts:
+        return None
+    state = {"commits": {"nodes": [{"commit": {"statusCheckRollup": {
+        "contexts": {"nodes": contexts}}}}]}}
+    red_keys: set[str] = set()
+    for ctx in _failed_contexts(state):
+        red_keys.update(failed_check_keys(ctx, organ_cache))
+    return {"sha": target.get("oid") or "", "red_keys": red_keys,
+            "names": {(c.get("name") or c.get("context") or "?") for c in contexts}}
+
+
 def _ctx_stamp(ctx: dict) -> str:
     """Horodatage comparable d'un contexte. Chaine vide si le run n'a rien rendu."""
     return ctx.get("completedAt") or ctx.get("createdAt") or ctx.get("startedAt") or ""
@@ -2294,6 +2364,7 @@ def impute_base_reds(states_by_number: dict[int, dict],
                      lane_by_number: dict[int, str | None],
                      organ_cache: dict | None = None,
                      unresolved_out: list[tuple[str, int]] | None = None,
+                     names_out: dict[str, set[str]] | None = None,
                      ) -> dict[str, list[int]]:
     """Checks rouges de meme CAUSE chez >=2 LANES distinctes : imputes a la base (#13545, #14537).
 
@@ -2319,6 +2390,9 @@ def impute_base_reds(states_by_number: dict[int, dict],
     seul cote qui peut le reparer (#14567).
 
     Renvoie {cle de cause: [numeros de PRs corroborantes]} (numerotes uniques).
+    ``names_out`` recoit {cle de cause: noms de check} -- necessaire depuis
+    #17154 pour interroger la PRESENCE de chaque check sur `main`, une cle de
+    cause d'agregateur etant « nom :: organe » et non un nom.
     """
     if organ_cache is None:
         organ_cache = {}
@@ -2334,11 +2408,76 @@ def impute_base_reds(states_by_number: dict[int, dict],
                     unresolved_out.append(
                         (ctx.get("name") or ctx.get("context") or "?", number))
                 continue
+            ctx_name = ctx.get("name") or ctx.get("context") or "?"
             for key in keys:
                 failures.setdefault(key, {}).setdefault(lane, []).append(number)
+                if names_out is not None:
+                    names_out.setdefault(key, set()).add(ctx_name)
     return {key: sorted({n for nums in lanes.values() for n in nums})
             for key, lanes in failures.items()
             if len(lanes) >= 2}
+
+
+def split_base_corroboration(corroborated: dict[str, list[int]],
+                             names_by_key: dict[str, set[str]],
+                             probe: dict | None,
+                             ) -> tuple[dict[str, list[int]], dict[str, list[int]],
+                                        dict[str, list[int]]]:
+    """Trie la corroboration inter-lanes selon l'etat du MEME check sur `main` (#17154).
+
+    Trois sorties, parce qu'il y a trois etats mesures -- pas deux :
+
+    - ``base`` : le check est ROUGE sur la tete de `main` -> cause de base,
+      comportement d'avant #17154, inchange (regle #13545/#14537 intacte) ;
+    - ``infra`` : le check est PRESENT sur `main` et VERT -> la corroboration
+      porte sur une instabilite d'execution, pas sur la base ; le geste est le
+      rejeu (`infra_rerun_cause`), pas une reparation ni un routage coordinateur ;
+    - ``undecided`` : le check est ABSENT du rollup de `main` -- un agregateur
+      qui ne tourne que sur `pull_request` n'y figure jamais, et « absent »
+      n'est pas « vert ». On ne tranche pas, et on retombe sur le comportement
+      d'avant #17154 (impute a la base), en le DISANT : c'est la philosophie
+      de #14567, ou l'echec de mesure ne doit jamais passer pour un acquittement.
+      Les cles ``undecided`` sont donc AUSSI dans ``base``.
+
+    ``probe`` a ``None`` (mesure non prise) vaut pour la totalite du tri :
+    tout part en ``base``. Une sonde indisponible ne doit jamais elargir la
+    nouvelle classe -- c'est le sens fail-closed du defaut.
+    """
+    if not corroborated or probe is None:
+        return dict(corroborated), {}, {}
+    base: dict[str, list[int]] = {}
+    infra: dict[str, list[int]] = {}
+    undecided: dict[str, list[int]] = {}
+    for key, nums in corroborated.items():
+        names = names_by_key.get(key) or set()
+        if key in probe["red_keys"]:
+            base[key] = nums
+        elif names and names <= probe["names"]:
+            infra[key] = nums
+        else:
+            undecided[key] = nums
+            base[key] = nums  # fail-closed : jamais un acquittement par defaut
+    return base, infra, undecided
+
+
+def infra_rerun_cause(name: str) -> str:
+    """Geste pour un rouge vert sur `main` : le REJEU, pas une reparation (#17154).
+
+    L'issue fondatrice : `base_inherited` disait a la lane « pas le votre, pas
+    reparable par la lane -- tache COORDINATEUR », donc **aucune action** --
+    alors qu'un rejeu a tete constante leve le rouge (verifie le 2026-09-21 sur
+    #17144 : apres rejeu, `PR gate` rend `settled: 81 check(s) green`). La lane
+    etait dissuadee du SEUL geste qui repare ; le rouge s'installait, la PR
+    restait bloquee, et le cycle suivant repartait sur un grain de reparation
+    inexistant.
+
+    Le geste est donne SANS id : le picker ne connait pas l'id du *workflow
+    run*, et l'id du check-run n'en est pas un -- l'y confondre produirait une
+    commande fausse. La lane le resout par `gh run list --branch <branche>`.
+    """
+    return (f"infra d'execution (vert sur main) : {name} -- rejeu de la jambe a "
+            f"tete constante (`gh run list --branch <branche>` puis "
+            f"`gh run rerun <run_id> --failed`), sans re-armer DWELL")
 
 
 def _has_failed_check(state: dict | None) -> bool:
@@ -2419,6 +2558,7 @@ def gate_evidence_for(state: dict, cache: dict[int, tuple[list[str], list[str]]]
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None,
+                    infra_rerun: set[str] | None = None,
                     resolved_keys_by_name: dict[str, set[str]] | None = None,
                     dwell_by_name: dict[str, dict] | None = None,
                     gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
@@ -2477,6 +2617,20 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             # ne fabrique donc aucune cause, et le declencheur `count` ne peut
             # plus basculer tout le cycle sur une reparation inexistante.
             continue
+        if infra_rerun:
+            # #17154 : rouge corrobore par >=2 lanes mais VERT sur la tete de
+            # `main` -- une instabilite d'execution, pas une cause de base. La
+            # cause est rendue, avec le geste qui la leve, parce que la lane
+            # PEUT la lever : c'est l'inverse exact de `inherited` ci-dessous,
+            # qui retire la cause faute de geste possible. Position : APRES le
+            # filtre DWELL -- un minuteur reste un minuteur, et un rejeu ne
+            # l'avance pas (rejouer le remet a zero).
+            keys = (resolved_keys_by_name or {}).get(name) or {name}
+            if keys <= infra_rerun:
+                cause = infra_rerun_cause(name)
+                if cause not in causes:
+                    causes.append(cause)
+                continue
         if inherited:
             # #13545/#14537 : rouge impute a la base (cause commune corroboree
             # chez >=2 lanes distinctes) -- pas reparable par cette lane. Pour
@@ -2876,6 +3030,7 @@ def red_backlog(lane: str, threshold_hours: float,
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
                 "nits_unavailable": None, "base_inherited": [],
+                "infra_rerun": [], "base_undecided": [],
                 "base_unresolved": [], "dwell_waiting": [],
                 "saturation_hours": sat_threshold}
 
@@ -2915,13 +3070,22 @@ def red_backlog(lane: str, threshold_hours: float,
     gate_cache: dict[int, tuple[list[str], list[str]]] = {}
     unresolved_aggregates: list[tuple[str, int]] = []
     inherited: dict[str, list[int]] = {}
+    # #17154 : la corroboration inter-lanes est mesuree CONTRE l'etat du meme
+    # check sur la tete de `main`. Sonde unique par passage (une requete), et
+    # son echec vaut « non mesure », jamais « main est vert ».
+    infra_rerun: dict[str, list[int]] = {}
+    base_undecided: dict[str, list[int]] = {}
     if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
         sample = sorted(others, key=lambda p: p.get("createdAt") or "",
                         reverse=True)[:16]
         foreign_states = fetch_pr_states([p["number"] for p in sample])
-        inherited = impute_base_reds({**states, **foreign_states}, lane_by,
-                                     organ_cache=organ_cache,
-                                     unresolved_out=unresolved_aggregates)
+        names_by_key: dict[str, set[str]] = {}
+        corroborated = impute_base_reds({**states, **foreign_states}, lane_by,
+                                        organ_cache=organ_cache,
+                                        unresolved_out=unresolved_aggregates,
+                                        names_out=names_by_key)
+        inherited, infra_rerun, base_undecided = split_base_corroboration(
+            corroborated, names_by_key, fetch_main_head_probe(organ_cache))
     red = []
     dwell_waiting: list[dict] = []
     for pr in mine:
@@ -2937,7 +3101,7 @@ def red_backlog(lane: str, threshold_hours: float,
         # si quelque chose est herite : sans heritage l'appartenance n'est
         # jamais testee, et on ne paie aucune resolution d'annotation.
         keys_by_name: dict[str, set[str]] | None = None
-        if inherited:
+        if inherited or infra_rerun:
             keys_by_name = {}
             for ctx in _failed_contexts(state):
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
@@ -2968,6 +3132,7 @@ def red_backlog(lane: str, threshold_hours: float,
                                   "remaining_min": info.get("remaining_min")})
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
+                                 infra_rerun=set(infra_rerun),
                                  resolved_keys_by_name=keys_by_name,
                                  dwell_by_name=dwell_by_name,
                                  gate_evidence=gate_evidence_for(state, gate_cache))
@@ -3059,6 +3224,17 @@ def red_backlog(lane: str, threshold_hours: float,
             "unattributed_blocked": unattributed,
             "base_inherited": [{"check": name, "corroborated_by": nums}
                                for name, nums in sorted(inherited.items())],
+            # #17154 : meme corroboration, mais le check est VERT sur `main` --
+            # instabilite d'execution, geste = rejeu. Classe distincte de
+            # `base_inherited` : la lane PEUT la lever (cf infra_rerun_cause).
+            "infra_rerun": [{"check": name, "corroborated_by": nums}
+                            for name, nums in sorted(infra_rerun.items())],
+            # #17154 : corrobore, mais ABSENT du rollup de `main` -- on n'a pas
+            # tranche (un agregateur PR-only n'y figure jamais). Impute a la
+            # base par defaut, et DIT, pour que l'absence de mesure ne se lise
+            # pas comme un acquittement (#14567).
+            "base_undecided": [{"check": name, "corroborated_by": nums}
+                               for name, nums in sorted(base_undecided.items())],
             # #14567 : quand un agregateur n'a pas pu etre tranche, le dire --
             # sinon l'absence d'imputation se lirait comme une acquittement.
             "base_unresolved": [{"check": name, "prs": sorted(nums)}
@@ -3102,6 +3278,44 @@ def print_base_inherited(backlog: dict) -> None:
         print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
         print(f"    l'annotation du check-run avant d'invoquer la base).")
     print()
+
+
+def print_infra_rerun(backlog: dict) -> None:
+    """Rouges verts sur `main`, rouges chez >=2 lanes : le geste est le REJEU (#17154).
+
+    `base_inherited` etait le seul sort : « pas le votre, pas reparable par la
+    lane -- tache COORDINATEUR ». Sur une instabilite d'execution (mort de
+    runner, kill `xdist-watchdog`) les deux affirmations sont fausses, et la
+    seconde est le defaut : un rejeu a tete constante leve le rouge. La lane
+    etait donc dissuadee du SEUL geste qui repare -- le rouge s'installait, la
+    PR restait bloquee, et le cycle suivant repartait sur une reparation
+    inexistante. Ce qui est dit ici, c'est le geste.
+
+    `base_undecided` (check absent du rollup de `main`) est dit separement :
+    l'imputation a la base y est un DEFAUT faute de mesure, pas un verdict.
+    """
+    items = backlog.get("infra_rerun") or []
+    undecided = backlog.get("base_undecided") or []
+    if not items and not undecided:
+        return
+    if items:
+        print("INFRA D'EXECUTION -- rouge ici, VERT sur main : le geste est le REJEU :")
+        for item in items:
+            wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
+            more = "" if len(item["corroborated_by"]) <= 6 else ", ..."
+            print(f"  - {item['check']} : corrobore par {wits}{more}")
+        print("Ce n'est ni un defaut de votre diff ni une cause sur main : la jambe")
+        print("est tombee en execution. `gh run list --branch <votre branche>` puis")
+        print("`gh run rerun <run_id> --failed`, a tete constante, sans re-armer")
+        print("DWELL. Ce rouge COMPTE dans le refus tant qu'il est la, et il est")
+        print("levable par la lane -- ne pas le router au coordinateur.")
+    for item in undecided:
+        wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
+        print(f"  - {item['check']} : corrobore par {wits} mais ABSENT du rollup de")
+        print("    main (agregateur qui ne tourne que sur pull_request) -- pas pu")
+        print("    trancher : impute a la base par defaut, jamais un acquittement.")
+    print()
+
 
 
 def print_dwell_waiting(backlog: dict) -> None:
@@ -3351,6 +3565,7 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)
+    print_infra_rerun(backlog)
     print_dwell_waiting(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
@@ -4173,6 +4388,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
+        print_infra_rerun(backlog)
         print_dwell_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
