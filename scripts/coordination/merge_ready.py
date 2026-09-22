@@ -40,7 +40,7 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
 6. REST ``repos/jsboige/CoursIA/pulls/<N>`` : ``mergeable_state`` ==
-   ``clean`` (jusqu'a 3 retry avec court sommeil pendant ``unknown`` --
+   ``clean`` (jusqu'a 12 relectures a 10 s d'intervalle pendant ``unknown`` --
    apres un merge les PRs soeurs passent ``unknown``), et ``head.sha``
    identique a la tete evaluee par le gate ;
 7. merge ``gh pr merge <N> --repo jsboige/CoursIA --squash
@@ -106,8 +106,13 @@ NITS_DOCUMENTED_RC = frozenset({0, 1})  # clear / blocked
 
 MAX_MERGES_DEFAULT = 15
 PR_LIST_LIMIT = 500  # le pool ouvert mesure ~220 PRs ; au-dela, ordre ancien d'abord
-MERGEABLE_RETRIES = 3
-MERGEABLE_RETRY_SLEEP_S = 2.0
+# Mesure du 2026-09-22 (22:15Z-22:45Z), merges en rafale sur la file vivante :
+# avec 3 relectures espacees de 5 s, 5 PRs sur 20 restaient `unknown` et
+# etaient sautees ; avec 12 relectures espacees de 10 s, les 11 suivantes
+# (dont ces 5) sont toutes passees `clean` et ont ete mergees. Le plafond
+# d'attente par PR (~2 min) reste petit devant le tour de 20 min.
+MERGEABLE_RETRIES = 12
+MERGEABLE_RETRY_SLEEP_S = 10.0
 
 
 class CannotRunError(Exception):
