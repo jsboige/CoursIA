@@ -26,6 +26,14 @@ litteral, n'est PAS un span math et reste intact.
 
     \\(S = \\mathbb{F}_p^n\\)      ->      $S = \\mathbb{F}_p^n$
 
+La forme ECHAPPEE `\\\\( ... \\\\)` (un backslash litteral en tete de chaque
+delimiteur, mesuree sur IIT-01 cellules 14/26/37) est traitee par la meme
+conversion : le backslash appartient au delimiteur, donc `\\\\(\\Phi\\\\)`
+se repare en `$\\Phi$`. Laisser le backslash produirait `\\$\\Phi\\$` -- un
+dollar ECHAPPE, qui rend toujours du texte : c'est le faux-fix qu'a produit
+la premiere version du script, et la raison pour laquelle l'invariant est
+desormais defini sur un squelette qui retire les deux formes de delimiteur.
+
 **Invariant de round-trip** : la transformation ne fait que remplacer des
 paires `\\(` / `\\)` par des `$`, a l'identique elsewhere. Verifie
 systematiquement par element (tokens retires == $ inseres == conversions, et
@@ -70,34 +78,46 @@ from detect_markdown_rendering import _inside_fence_lines  # noqa: E402
 # fermee, $ orphelin). Le detector signale la ligne (WARN l'auteur); le fixer,
 # lui, ne touche que ce qui a la FORME d'un span math :
 #   \( + contenu sans \n, sans `\), sans delimiteur $/$$ interne + \)
-# Le contenu ne doit pas finir par une lettre accentuee d'un mot francais
-# suivi d'une parenthese de prose -- la garde minimale est l'absence de
-# delimiteurs internes, qui exclut le cas fondateur (contenu = « / ou \\ »,
-# 1 mot + backslash litteral, pas de math).
-_MATH_SPAN_RE = re.compile(r"\\\((?P<body>[^\n$]*?)\\\)")
+#
+# Les deux delimiteurs acceptent UN backslash litteral en tete (`\\(` / `\\)`) :
+# c'est la forme ECHAPPEE, que le corpus porte reellement (IIT-01 cellules
+# 14/26/37, mesure 2026-09-22). Son rendu est le meme defaut que la forme
+# simple -- CommonMark consomme `\\` en un backslash litteral, la ligne affiche
+# donc `\(\Phi\)` en TEXTE, jamais typesette. Le backslash appartient au
+# delimiteur : `\\(\Phi\\)` se repare en `$\Phi$`, pas en `$\Phi$` precede d'un
+# backslash (qui donnerait `\$\Phi\$`, un dollar ECHAPPE donc toujours du
+# texte -- c'est le faux-fix que la premiere version du script a produit).
+_MATH_SPAN_RE = re.compile(
+    r"(?P<open>\\)?\\\((?P<body>[^\n$]*?)(?P<close>\\)?\\\)"
+)
 
 
 def _looks_like_math(body: str) -> bool:
-    r"""Heuristique borne-le-fixer : le contenu d'un \( ... \) est-il du math ?
+    r"""Garde defensive : le body ne doit pas porter un `\` suivi de `)`.
 
-    Le cas fondateur du faux-fix (mesure 2026-09-22, attrape par le twin-parity
-    audit de PR #17395) : « les separateurs (/ ou \\) selon l'OS » — le body
-    se termine par un BACKSLASH LITTERAL echappant une VRAIE parenthese de
-    prose (`\` + `)`), signature du chemin Windows, jamais d'une macro LaTeX.
-    A l'inverse, les vrais spans math du corpus portent des `\{`, `\}`, `\,`
-    (accolades et espacement LaTeX) et des variables nues (`\(M\)`, `\(p\)`,
-    `\((A, B)\)`) : il ne faut exclure ni les uns ni les autres. Borne unique
-    et decidable : un `\` suivi de `)` a l'INTERIEUR du body (le `\)` de
-    fermeture est consomme par le motif et n'y figure pas) -> prose.
+    Convention : un backslash litteral echappant une VRAIE parenthese de prose
+    (`\` + `)`) est la signature d'un chemin Windows ou d'une parenthese
+    echappee, jamais d'une macro LaTeX. Le cas fondateur mesure le 2026-09-22
+    (faux-fix « / ou \\) » de Sudoku-05) portait cette signature.
+
+    **Cette garde est aujourd'hui INATTEIGNABLE, et c'est le motif de forme
+    qui la remplace** : `_MATH_SPAN_RE` borne le body par un groupe
+    non-greedy qui s'arrete au PREMIER `\)`, donc aucun body atteignable ne
+    peut contenir `\)`. La garde est conservee comme filet : elle redeviendrait
+    la seule borne si le motif etait un jour relache (recherche non ancree,
+    fermeur optionnel, `.` en place de `[^\n$]`). Sa valeur est de rendre ce
+    relachement visible plutot que silencieux -- pas de filtrer le corpus
+    actuel, qu'elle ne filtre pas.
     """
     return "\\)" not in body
 
 
 def _convert_outside_code(line: str) -> tuple[str, int]:
-    """Convertit les paires `\\(...\\)` delimitantes en `$...$` hors code spans ;
-    rend (ligne, n_converted). Les `\\(`/\\)` isoles qui ne forment pas un span
-    math reconnaissable sont laisses intacts (borne fondee sur le faux-fix
-    « / ou \\) » mesure le 2026-09-22).
+    """Convertit les paires `\\(...\\)` (et leur forme echappee `\\\\(...\\\\)`)
+    delimitantes en `$...$` hors code spans ; rend (ligne, n_converted). Les
+    `\\(`/`\\)` isoles qui ne forment pas un span math reconnaissable sont
+    laisses intacts (borne fondee sur le faux-fix « / ou \\) » mesure le
+    2026-09-22).
 
     Le toggle backtick reproduit `_strip_inline_code` : un run de N backticks
     ouvre/ferme un code span, un run non ferme s'etend jusqu'a la fin de la
@@ -120,7 +140,7 @@ def _convert_outside_code(line: str) -> tuple[str, int]:
             out.append(line[i])
             i += 1
             continue
-        if line.startswith("\\(", i):
+        if line[i] == "\\":
             m = _MATH_SPAN_RE.match(line, i)
             if m and _looks_like_math(m.group("body")):
                 out.append("$" + m.group("body") + "$")
@@ -132,18 +152,33 @@ def _convert_outside_code(line: str) -> tuple[str, int]:
     return "".join(out), converted
 
 
+def _skeleton(text: str) -> str:
+    r"""Texte prive de TOUT token de delimiteur math, quelle que soit sa forme.
+
+    Les deux formes comptent pour zero caractere : `\(` / `\)` et leur variante
+    echappee `\\(` / `\\)` (le backslash d'echappement appartient au
+    delimiteur), plus les `$` inseres. C'est la definition sur laquelle
+    l'invariant compare avant/apres -- la premiere version comparait avec un
+    retrait des seuls `\(`/`\)`, ce qui faisait echouer a tort la conversion de
+    la forme echappee (`\\(\Phi\\)` a un backslash de reste apres retrait des
+    paires) et refusait donc d'ecrire une conversion correcte.
+    """
+    for token in ("\\\\(", "\\\\)", "\\(", "\\)", "$"):
+        text = text.replace(token, "")
+    return text
+
+
 def _check_invariant(before: str, after: str, converted: int) -> None:
     r"""Le contenu hors tokens convertis est byte-identique (refuse d'ecrire sinon).
 
     La transformation declaree ne fait que remplacer des paires `\(` / `\)`
-    par des `$`. Verifie a parite : le nombre de tokens `\(` + `\)` retires
-    doit egaler `converted`, et le nombre de `$` inseres doit lui egaler le
-    meme compte. Les `\(`/`\)` restants (spans non convertis, ex. prose avec
-    backslash litteral) ne comptent ni d'un cote ni de l'autre.
+    (eventuellement echappees) par des `$`. Verifie a parite : le nombre de
+    tokens `\(` + `\)` retires doit egaler `converted`, et le nombre de `$`
+    inseres doit lui egaler le meme compte. Les `\(`/`\)` restants (spans non
+    convertis, ex. prose avec backslash litteral) ne comptent ni d'un cote ni
+    de l'autre.
     """
-    stripped_before = before.replace("$", "").replace("\\(", "").replace("\\)", "")
-    stripped_after = after.replace("$", "").replace("\\(", "").replace("\\)", "")
-    if stripped_before != stripped_after:
+    if _skeleton(before) != _skeleton(after):
         raise SystemExit(
             "INVARIANT VIOLE : le contenu a change au-dela de la conversion "
             f"\\( -> $ ({before!r} -> {after!r})"
@@ -238,6 +273,23 @@ _ctrl_falsefix = "les separateurs (/ ou \\\\) selon l'OS."
 _fixed3, _n3 = _convert_outside_code(_ctrl_falsefix)
 assert _n3 == 0 and _fixed3 == _ctrl_falsefix, (
     "CONTROLE: faux-fix sur prose avec backslash litteral (bornage paire+contenu perdu)"
+)
+# Controle de la forme ECHAPPEE (mesure 2026-09-22, IIT-01 cellules 14/26/37) :
+# le backslash de tete appartient au delimiteur -- `\\(\Phi\\)` se repare en
+# `$\Phi$`, JAMAIS en `\$\Phi\$` (dollar echappe = toujours du texte).
+_ctrl_esc = r"On peut egalement calculer \\(\Phi\\) pour d'autres etats."
+_ctrl_esc_ok = r"On peut egalement calculer $\Phi$ pour d'autres etats."
+_fixed4, _n4 = _convert_outside_code(_ctrl_esc)
+assert _fixed4 == _ctrl_esc_ok and _n4 == 2, (
+    "CONTROLE: forme echappee mal convertie (attendu $\\Phi$, refuse \\$\\Phi\\$)"
+)
+assert "\\$" not in _fixed4, "CONTROLE: dollar ECHAPPE introduit (faux-fix d'origine)"
+# La forme echappee ne doit pas rouvrir le faux-fix fondateur : sans \( ouvrant
+# apparie, rien n'est converti (prose Windows, mesure Sudoku-05).
+_ctrl_esc_false = "les separateurs (/ ou \\\\) selon l'OS."
+_fixed5, _n5 = _convert_outside_code(_ctrl_esc_false)
+assert _n5 == 0 and _fixed5 == _ctrl_esc_false, (
+    "CONTROLE: la forme echappee rouvre le faux-fix fondateur"
 )
 
 
