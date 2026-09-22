@@ -50,20 +50,18 @@ c'est le cas ou le mineur designe change reellement de forme.
 L'argument de reindexation (`i ≥ 1`) repose sur une premiere que le cadrage
 **suppose sans la prouver** : `arcPartition` est preservee par la chirurgie.
 
-L'obstacle est reel : la chirurgie R3 connectee reecrit les paires `(e2, e4)`
-des trois croisements du triangle, et ces paires **different** entre X et Y —
+L'enonce general demande : la chirurgie R3 connectee reecrit les paires
+`(e2, e4)` des trois croisements du triangle (cf `Conway.lean:350-354`,
+`pairs := d.crossings.map (fun c => (c.e2, c.e4))`). Sur le temoin du lake
+(`reidemeister3Connected_satisfiable`), ces paires, prises comme multi-ensemble
+non ordonne (`mergePair` est symetrique en ses deux arguments), **coincident**
+entre X et Y — la partition est donc preservee trivialement, et `decide` au
+kernel suffit a etablir le theoreme.
 
-    X : (a₁,g₁), (g₁,g₃), (g₂,b₂)      Y : (b₃,g₃), (a₁,b₂), (g₂,a₂)
-
-— donc la relation de passage-dessus engendree change. Ce qui est preserve est
-le **multi-ensemble des etiquettes** (docstring de `Reidemeister3Connected`),
-d'ou `wf` ; la partition, elle, n'est preservee que si la **cloture** des deux
-relations coincde, ce qui n'est pas un fait gratuit.
-
-Le controle de la section 3 verifie ce point sur le temoin du lake
-(`reidemeister3Connected_satisfiable`) : la cloture y est identique alors que
-les paires generatees diffèrent. La forme generale reste a etablir — c'est le
-premier verrou de la tranche, avant tout argument de reindexation.
+Ce temoin ne suffit donc pas, a lui seul, a fonder la preservation generale :
+un contre-exemple minimal ou les paires `(e2, e4)` du triangle different entre
+X et Y reste a exhiber. C'est le premier verrou de la tranche, avant tout
+argument de reindexation.
 -/
 
 /-! ## 3. Controle : la partition d'arcs du temoin R3 est preservee
@@ -71,15 +69,17 @@ premier verrou de la tranche, avant tout argument de reindexation.
 Le temoin est celui de `reidemeister3Connected_satisfiable` (litteraux repris
 tels quels) : les deux diagrammes sont bien formes (`decide` sur `wf` au lake),
 et leur partition d'arcs — 5 classes pour 10 aretes — est **la meme** de part et
-d'autre de la chirurgie. C'est le controle positif de la section 2 : les paires
-`(e2,e4)` reecrites sont differentes, leur cloture non.
+d'autre de la chirurgie. C'est le **controle trivial** de la section 2 : sur ce
+temoin, les paires `(e2, e4)` du triangle, prises comme multi-ensemble, sont les
+memes des deux cotes — la preservation est vide. Un contre-exemple ou elles
+different reste a exhiber pour etablir la preservation generale.
 -/
 
 /-- Controle de la tranche 3 (etape 1) : sur la paire temoin du move R3
-    connecte, la chirurgie preserve `arcPartition` — la cloture des paires de
-    passage-dessus est inchangee bien que les trois paires du triangle soient
-    reecrites. C'est la premiere que l'argument de reindexation (cas `i ≥ 1`)
-    suppose ; la forme generale reste a prouver. -/
+    connecte, la chirurgie preserve `arcPartition`. Sur ce temoin, les paires
+    `(e2, e4)` du triangle coincident comme multi-ensemble entre X et Y, donc la
+    preservation est triviale ; la forme generale (sur des diagrammes ou les
+    paires du triangle different) reste a prouver. -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,

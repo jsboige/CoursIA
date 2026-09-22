@@ -53,20 +53,18 @@ the case where the designated minor genuinely changes shape.
 The reindexation argument (`i ≥ 1`) rests on a premise the strategy **assumes
 without proving**: `arcPartition` is preserved by the surgery.
 
-The obstacle is real: the connected R3 surgery rewrites the `(e2, e4)` pairs of
-the triangle's three crossings, and those pairs **differ** between X and Y —
+The general statement requires: the connected R3 surgery rewrites the
+`(e2, e4)` pairs of the triangle's three crossings (cf `Conway_en.lean:350-354`,
+`pairs := d.crossings.map (fun c => (c.e2, c.e4))`). On the lake's witness
+(`reidemeister3Connected_satisfiable`), those pairs, taken as an unordered
+multiset (`mergePair` is symmetric in its two arguments), **coincide** between
+X and Y — the partition is therefore preserved trivially, and `decide` at the
+kernel suffices to discharge the theorem.
 
-    X : (a₁,g₁), (g₁,g₃), (g₂,b₂)      Y : (b₃,g₃), (a₁,b₂), (g₂,a₂)
-
-— so the generated over-strand relation changes. What is preserved is the
-**multiset of labels** (docstring of `Reidemeister3Connected`), whence `wf`; the
-partition itself is preserved only if the **closure** of the two relations
-coincides, which is not a free fact.
-
-The control in section 3 checks this point on the lake's witness
-(`reidemeister3Connected_satisfiable`): the closure there is identical although
-the generated pairs differ. The general form remains to be established — it is
-the first lock of the tranche, before any reindexation argument.
+This witness alone does not, however, ground the general preservation: a
+minimal counterexample where the triangle's `(e2, e4)` pairs genuinely differ
+between X and Y remains to be exhibited. This is the first lock of the
+tranche, before any reindexation argument.
 -/
 
 /-! ## 3. Control: the R3 witness's arc partition is preserved
@@ -74,15 +72,17 @@ the first lock of the tranche, before any reindexation argument.
 The witness is that of `reidemeister3Connected_satisfiable` (literals copied
 verbatim): both diagrams are well formed (`decide` on `wf` in the lake), and
 their arc partition — 5 classes for 10 edges — is **the same** on both sides of
-the surgery. This is the positive control of section 2: the rewritten `(e2,e4)`
-pairs differ, their closure does not.
+the surgery. This is the **trivial control** of section 2: on this witness,
+the triangle's `(e2, e4)` pairs coincide as a multiset between X and Y — the
+preservation is vacuous. A counterexample where they differ remains to be
+exhibited to ground the general preservation.
 -/
 
 /-- Control of tranche 3 (step 1): on the witness pair of the connected R3 move,
-    the surgery preserves `arcPartition` — the closure of the over-strand pairs
-    is unchanged although the triangle's three pairs are rewritten. This is the
-    first premise the reindexation argument (case `i ≥ 1`) assumes; the general
-    form remains to be proved. -/
+    the surgery preserves `arcPartition`. On this witness, the triangle's
+    `(e2, e4)` pairs coincide as a multiset between X and Y, so the preservation
+    is trivial; the general form (on diagrams where the triangle's pairs differ)
+    remains to be proved. -/
 theorem reidemeister3Connected_arcPartition_witness :
     arcPartition
         { crossings := [⟨1, 2, 7, 8⟩, ⟨3, 7, 9, 4⟩, ⟨9, 8, 5, 6⟩,
