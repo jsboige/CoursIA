@@ -375,6 +375,13 @@ MigrationBackup/
 .env.*.local
 .env.docker
 
+# Répertoire de secrets à la racine — LE RÉPERTOIRE ENTIER (SÉCURITÉ CRITIQUE)
+# Les lignes ci-dessous énuméraient des fichiers un par un, et `.secrets/master.env`
+# — la source unique de `secrets-hygiene.md` — n'y figurait pas : il ne devait son
+# exclusion qu'à `.git/info/exclude`, qui est LOCAL au clone et non versionné.
+# Donc protégé ici, et stageable par `git add -A` sur toute autre machine.
+/.secrets/
+
 # HuggingFace tokens (Phase 29 - ÉTAPE 24F)
 .secrets/.env.huggingface
 .secrets/.env.huggingface.backup
