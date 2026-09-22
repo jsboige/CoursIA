@@ -1,0 +1,18 @@
+date: '2026-09-23'
+by: myia-po-2025:CoursIA
+python_sha: 5d92554c363bd916f194f6b2302908859a606ce9
+csharp_sha: 79f3b6038332aa421e2fbddfa8d8d40ea852eb44
+content_python_sha: a736dbb4ead26c01deab145e570d10ebcda0796d4cadcb0d8c5b52f844a31732
+content_csharp_sha: 83068b8fb5473e1a4b5abf183f6fecd034a9c15e5147b447413a01178edef591
+reason: >-
+  Re-attestation apres merge d'origin/main dans la branche de #17227 : main
+  portait deja une attestation 0011 (tranche #17028, cote Python) de meme nom
+  que celle de la branche, d'ou le conflit add/add. La version de main est
+  conservee et cette entree atteste la tete fusionnee. Mouvement unilateral du
+  cote C# : python_sha identique a celui de main (5d92554c), seul le carnet C#
+  bouge. Mesure base origin/main -> tete : 13 cellules de code C#, sources et
+  sorties identiques ; markdown 16 -> 24 (8 lectures ajoutees) ; une seule
+  cellule de base modifiee, la synthese, dont le bloc « Exercices » redondant
+  est retire (les trois exercices restent dans leurs cellules dediees).
+  check_split_reading_cells.py : clean (une sortie, une lecture, regle 2 du
+  STOP #13410). Contenu algorithmique inchange des deux cotes.
