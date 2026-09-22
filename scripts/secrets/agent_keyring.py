@@ -424,7 +424,7 @@ def cmd_show(args) -> int:
     print(f"groupe    : {entry.group.name if entry.group else '-'}")
     print(f"user      : {entry.username or '-'}")
     print(f"url       : {entry.url or '-'}")
-    print(f"password  : {secret_kind(entry.password)}, {len(entry.password or '')} car.")
+    print(f"password  : {secret_kind(entry.password)}")
     if entry.mtime:
         print(f"modifiee  : {entry.mtime.isoformat()}")
     return EXIT_OK
@@ -641,7 +641,7 @@ def cmd_verify(args) -> int:
         kind = secret_kind(entry.password)
         if kind != "jeton":
             unusable.append((name, kind))
-        print(f"  {name:<16} present   entree='{entry.title}'  secret={kind}, {len(entry.password or '')} car.")
+        print(f"  {name:<16} present   entree='{entry.title}'  secret={kind}")
     for name in missing:
         print(f"  {name:<16} ABSENT du coffre")
 
