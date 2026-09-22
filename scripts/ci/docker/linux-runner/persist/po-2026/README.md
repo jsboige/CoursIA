@@ -180,6 +180,44 @@ Ce que ca implique pour une procedure de redemarrage :
   couper un job CI reel. Tuer le superviseur seul est sur -- les slots lui
   survivent et terminent leur job.
 
+## Ce que le pool doit fournir dans le PATH -- deux binaires, deux pannes silencieuses
+
+Le PATH du **process runner** (lu dans `/proc/<pid>/environ`, pas deduit d'un shell) commence par
+`/home/jesse/.cargo/bin:/home/jesse/.elan/bin:/home/jesse/.local/bin:...` : `~/.local/bin` est donc
+visible des jobs. C'est ce repertoire qui doit porter les binaires que les workflows appellent en
+**nom nu** -- et c'est ce qui rend la panne discrete : un binaire absent ne casse pas le runner, il
+fait echouer **les jobs d'une seule famille**, en accusant leur contenu.
+
+| Binaire | Pourquoi il est requis | Symptome quand il manque | Etat au 2026-09-22 |
+|---|---|---|---|
+| `gh` | gardes de perimetre et suites de tests lisent `gh pr view --json files` | `FileNotFoundError: 'gh'`, `check_exit: 127` -> `BASELINE_FAILED` ; le garde de perimetre sort en fail-loud **sans citer de contradiction reelle** | installe dans `~/.local/bin` (2.90.0, release Linux) |
+| `python` | des workflows appellent `python script.py` en nom nu ; Ubuntu ne fournit que `python3` | `line 1: python: command not found`, `exit 127` (rendu Quarto : `python scripts/regen_quarto_render.py`) | lien `~/.local/bin/python -> /usr/bin/python3` (3.12.3) |
+
+**Le piege de la sonde, mesure le 2026-09-22.** `command -v python` depuis un shell WSL ordinaire rend
+**ABSENT avant comme apres** la pose du lien -- parce que ce shell n'a pas `~/.local/bin` dans son PATH.
+La sonde qui compte est celle qui **adopte le PATH du runner** :
+
+```bash
+PID=$(pgrep -f "Runner.Listener" | head -1)
+export PATH=$(tr '\0' '\n' < /proc/$PID/environ | sed -n 's/^PATH=//p')
+command -v python   # -> /home/jesse/.local/bin/python
+command -v gh       # -> /home/jesse/.local/bin/gh
+```
+
+Sonder avec son propre PATH conclut a tort que le correctif n'a pas pris : les deux PATH different, et
+seul celui du runner decide de ce que les jobs voient.
+
+**Consequence a connaitre de toutes les lanes.** Tant qu'un de ces deux binaires manque, un rouge sur
+les checks concernes **ne dit rien du contenu de la PR** -- il atteste un binaire absent. Inversement :
+ne pas "reparer" un body ni skipper un test en reponse a ce rouge. Ce pool sert des runners
+`coursia-linux` **partages** : la panne produit des faux rouges pour **toutes** les lanes qui y tournent,
+pas seulement pour celle de cette machine.
+
+**Un rebuild du pool perd ces deux binaires.** Ils ne sont ni dans le depot ni dans un paquet systeme :
+la reconstruction du 21/09 (apres la purge `C:\dev` du 17/09) a reproduit `pool.sh` et le lanceur, mais
+pas les binaires -- c'est exactement ainsi que les deux pannes sont nees. Toute reconstruction doit
+rejouer les deux commandes de pose.
+
 ## Sequence de deploiement
 
 ```bash
@@ -189,6 +227,11 @@ install -m 0755 run-pool-po2026.sh /c/dev/CoursIA-runners-p0/run-pool-po2026.sh
 
 # 2. cote WSL, le superviseur (copie LF, PAS de CRLF) -- chemin litteral, sans $ :
 wsl.exe -d Ubuntu -- bash -lc 'install -m 0755 /mnt/d/Dev/CoursIA-runners-p0/pool.sh /home/jesse/CoursIA-runners-p0/pool.sh'
+
+# 2b. les DEUX binaires que les jobs appellent en nom nu -- sans eux, des faux rouges
+#     pour TOUTES les lanes (cf. section precedente). Aucun sudo requis :
+wsl.exe -d Ubuntu -- bash -lc 'ln -sf /usr/bin/python3 /home/jesse/.local/bin/python'
+wsl.exe -d Ubuntu -- bash -lc 'test -x /home/jesse/.local/bin/gh || echo "gh MANQUANT : poser la release Linux officielle dans ~/.local/bin"'
 
 # 3. relancer par le chemin de production (la tache planifiee) :
 schtasks /Run /TN "CoursIA-LinuxRunners-po2026"
