@@ -195,8 +195,22 @@ class CarverThirteen(QCAlgorithm):
         # Window: 2016-01-01 -> 2026-12-31 per issue #15549 acceptance. The
         # v3.1 baseline ran 2015-2024; we re-anchor the window to 2016-2026
         # to match Carver's request for >= 2016 OOS.
-        self.set_start_date(2016, 1, 1)
-        self.set_end_date(2026, 12, 31)
+        # Tranche 4 (semis #17320): the window is parameter-aware so the
+        # dev/OOS split backtests run from the SAME compiled code — pass
+        # parameters {"start": "YYYYMMDD", "end": "YYYYMMDD"} at backtest
+        # creation (QC Cloud), defaults keep the acceptance window intact.
+        start_param = self.get_parameter("start")
+        end_param = self.get_parameter("end")
+
+        def _as_date(value, fallback):
+            if not value:
+                return fallback
+            return (int(value[0:4]), int(value[4:6]), int(value[6:8]))
+
+        start_y, start_m, start_d = _as_date(start_param, (2016, 1, 1))
+        end_y, end_m, end_d = _as_date(end_param, (2026, 12, 31))
+        self.set_start_date(start_y, start_m, start_d)
+        self.set_end_date(end_y, end_m, end_d)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
