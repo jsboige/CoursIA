@@ -20,7 +20,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 |---|---|---|---|
 | 1 | **Life + Čech** | `ICT-15d`, `ICT-31`, `ICT-Life-SubstratCertifie` | **LU** (tranche 1, 2026-08-21) |
 | 2 | Le moule 26→30 | six notebooks ~17 cellules / 8 code | non démarré |
-| 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | non démarré |
+| 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | **LU** (strand 3, 2026-09-19) |
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 2/3 tranches** (1 SAE + 3 non-numérotés, 2026-09-19 ; tranche 2 GWT en revue #16821) |
 
@@ -69,6 +69,59 @@ Lecture complète (contenu ET `outputs`) des trois notebooks, 2026-08-21, par `m
 1. **Matrice périmée sur 15d, à deux endroits** (rangée 96 + note case 6 ligne 399, vs re-exec #9792) — la colonne Résultat de ce ledger ne la cite pas silencieusement ; correction des deux emplacements = décision d'arbitrage, pas une retouche de lecture.
 2. **Inversion de charge** : le non-numéroté (`ICT-Life-SubstratCertifie`) porte la substance du strand (calibration, pont Lean, EI), les numérotés portent l'application (31 : solide) et le maillon faible (15d : à muscler). Entrée directe pour #7260.
 3. **Deux instruments déclarant leurs aveugles** (ICT-31 axe S, écho Gate 21 ICT-25) : la série a une culture méthodologique saine de l'instrument qui ne voit pas — à préserver dans les consolidations.
+
+---
+
+## Strand 3 — 18 / 18b / 19 / 19b (rang 3)
+
+Lecture complète (contenu ET `outputs`) des quatre notebooks, 2026-09-19, par `myia-po-2023:CoursIA`. Le strand porte l'hypothèse « asymétrie qui s'inverse entre paires » : la lecture la vérifie sur **deux axes** (rôle du principal dans chaque paire ; statut des substrats S2/S4 entre paires).
+
+### `ICT-18-ArrowOfTimeReversibilization.ipynb` (numéroté) — 33 cellules (19 md, 14 code, 14/14 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Strate 5, Epic #4588 : forcer une trajectoire ICT à devenir réversible pour **mesurer** sa production d'entropie (σ de Schnakenberg), sur 5 substrats dont un contrôle faux-positif dédié. |
+| **Contenu réel** | 9 sections : primitives (gate 1 detailed balance) ; S1 tri auto-organisé (ICT-2, « *competency for free* ») ; S2 bistable May (ICT-8) ; S3 Axelrod (ICT-13) ; S4 Gray-Scott (ICT-9) ; **S5 contrôle faux-positif** (S5a marche linéaire vs S5b oscillateur pilote) ; visualisation comparative ; 3 exemples guidés + 3 exercices (C.1, stubs propres). |
+| **Résultat** | Sorties committées : Gate 1 OK (dist real↔reversibilized 0.0263, real↔reversed 0.0526) ; S1 Gate 3 **OK** (ratio σ/iid = 150.57) ; **S2 Gate 4 : KO** (ratio 0.00, dist 0.0000) ; S3 Gate 5 **AMBIGU** (coopération émergente, dist 14.0149) ; S4 Gate 6 **OK** (ratio 4285.72) ; Gate 7 **FAUX-POSITIF CONFIRMÉ** (S5b σ=4.6227 allume l'indice, S5a σ=0.0014 non). |
+| **Critique** | (1) Le KO de S2 n'est **pas relié** au PASS de 18b P1 sur le même substrat : un lecteur de 18 seul retient « le bistable n'a pas de flèche », verdict que 18b nuance (le budget s'épuise au pli). Le pont n'est écrit nulle part. (2) Le Gate 5 AMBIGU assume son ambigüité mais sans renvoi vers la dette P3 de 18b qui donne au S3 sa lecture culturelle. |
+| **Verdict + action** | **SOLIDE** — l'instrument discriminate ET attrape son propre faux-positif (S5b) : c'est la culture méthodologique saine relevée au strand 1. Action d'arbitrage : un pont d'une phrase 18↔18b sur S2 (le KO du Gate 4 et le PASS P1 mesurent deux choses différentes — la flèche vs l'épuisement au pli). |
+
+### `ICT-18b-ReversibilityBudget.ipynb` (numéroté) — 25 cellules (17 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | La jambe « fin » de la réversibilisation : définir un budget B(t) et pré-enregistrer trois prédictions (P1/P2/P3) AVANT tout test (§3 explicite). |
+| **Contenu réel** | §2 définitions (`B_state` primaire, `B_work` témoin) ; §3 pré-enregistrement ; P1 sur S2 au pli ; P2 sur S4 σ vs B_state ; P3 sur S3 monoculture Axelrod ; récapitulatif des verdicts ; 3 exercices (C.1). |
+| **Résultat** | P1 **PASS** (tau_Kendall(c,budget) = −0.917, p=0.001, co-varie avec les EWS d'ICT-8 ; témoin `B_work` = 0.0000 sur chaîne réversible) ; P2 **DISSOCIATION** (dissipateur σ=0.0909, B_state=0.950 — dissiper plus ne régénère pas plus : « cadre ressource affaibli sur S4 ») ; P3 **PASS** (monoculture = état absorbant, dette d'irréversibilité culturelle mesurée). Matrice : les trois rangées **Établi**. |
+| **Critique** | Aucune majeure. Le pré-enregistrement §3 est exemplaire (le même geste que ICT-25 §5★). P2 porte le verdict de dissociation moyen/fin que la matrice cite mot pour mot. |
+| **Verdict + action** | **SOLIDE, mature**. Aucune action de contenu — candidat tel quel pour la consolidation finale de la paire. |
+
+### `ICT-19-EnjeuBattery.ipynb` (numéroté) — 33 cellules (22 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | La triade *moyen / fin / enjeu* : pourquoi ICT-18 ne suffit pas (§1 explicite) — introduire `I_stake` (récupérabilité Levin) distinct du moyen `I_thermo` (σ), jamais agrégés. |
+| **Contenu réel** | Théorie ; smoke test discriminant ; application S2/S4/S5 avec Lectures 1-4 ; paire (I_thermo, I_stake) ; gates falsifiables ENJEU-1/2 ; 3 exercices stubs C.1 (S1/S3 renvoyés aux exercices). |
+| **Résultat** | Smoke test : I_stake(marche biaisée) = −1.0000, Δ = +1.9894 (la batterie discrimine) ; S2 revient à 0.9999 (Lecture 2) ; **Gate ENJEU-1 : FAIL** (I_stake(S4) = −0.5083 vs I_stake(S5) = −0.4651, delta −0.0431 — indiscernables, alors que I_thermo(S4) = +5.6249 vs 0.0000) ; **Gate ENJEU-2 : FAIL**. Verdict nul assumé (« un verdict nul honnête », Lecture 6). |
+| **Critique** | Le verdict nul est un **artefact d'instrument démontré par 19b** : `stake_index` scalaire appliqué à un champ 2D. Le notebook l'affiche comme FAIL sans le drapeau « instrument-mismatch » — l'annexe de 19b le documente rétroactivement, mais le lecteur de 19 seul retient « gates FAIL ». C'est le défaut de charge du strand : le principal porte le négatif, le raffinement porte la preuve. |
+| **Verdict + action** | **STRUCTURELLEMENT SAIN, localement PÉRIMÉ PAR CONSTRUCTION**. Action d'arbitrage (unique, documentée par 19b §13 « incrément de consolidation ultérieur ») : ré-exprimer le Gate ENJEU-1 sur l'instrument de champ (`repair_gain`) pour la ligne S4, en gardant le FAIL scalaire comme note pédagogique d'instrument. Rien d'autre à toucher. |
+
+### `ICT-19b-EnjeuBattery-Raffinement.ipynb` (numéroté) — 24 cellules (15 md, 9 code, 9/9 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Tranche 3 : raffiner (§8 `repair_gain` champ, `time_to_recover`), résoudre les stubs S1/S3 de 19, calibrer sur substrat-jouet, réconcilier les tranches 2 et 3. |
+| **Contenu réel** | §8 deux observables + exercices ; §9-§11 résolutions S1/S3/custom ; §12 verdict final avec **récapitulatif de l'enjeu mesuré** (tableau à valeurs) ; §13 annexe limites et suites (rédigée en « résolu / limites restantes / suites »). |
+| **Résultat** | S1 stake_index **+1.0000** ; S3 **+0.6780** (ESS asymptotique oscillante) ; S4 `repair_gain` champ **+0.82 ± 0.27**, reconstruction locale 313–489 pas ; Custom A (ressort+bruit) **+0.9940** vs Custom B (marche biaisée ≈S5) **−1.0000**. Le verdict nul de 19 est **réparé** : artefact d'instrument (scalaire sur champ 2D) + câblage (`ablated` vs champ relaxé) + régime de Pearson (F=0.0367, k=0.0649, n=64). |
+| **Critique** | Les exercices 1–3 restent à compléter (C.1, stubs propres — conforme). La note d'instrument du §12 (S4 mesuré en espace de champ, pas scalaire) est exactement le drapeau qui manque au gate de 19. |
+| **Verdict + action** | **SOLIDE** — c'est le réparateur du strand. Action : aucune propre ; porte la correction à reporter sur 19 (cf. ci-dessus). |
+
+### Findings transverses du strand 3 (pour l'arbitrage user)
+
+1. **L'asymétrie s'inverse, vérifiée sur deux axes.** Axe rôle : dans la paire 18/18b le **principal porte la démonstration** (gates discriminants + faux-positif attrapé) et le `-b` affine (3/3 verdicts) ; dans la paire 19/19b le **principal porte le verdict nul** et le `-b` porte la preuve (gate réparé par changement d'instrument). Axe substrat : **S2 est KO dans 18 (pas de flèche) mais PASS dans 18b** (budget épuisé au pli) ; **S4 est OK dans 18 (σ×4285) mais dissocié dans 18b** (dissiper ≠ régénérer). Ces croisements ne sont pas des contradictions : ils SONT la thèse moyen/fin — mais aucun des quatre notebooks n'écrit le croisement, chacun ne voit que sa paire.
+2. **Un seul point de consolidation de contenu** (le reste est sain) : le Gate ENJEU-1 d'ICT-19 exprimé sur le mauvais instrument pour S4, FAIL affiché, alors que 19b démontre l'artefact et documente lui-même la correction comme « incrément de consolidation ultérieur ». Chirurgie d'une cellule, pas une refonte.
+3. **Contrôles négatifs : trois témoins, zéro redondance.** S5a/S5b (18, faux-positif), S5 (19), Custom B (19b, ≈S5) : chaque notebook porte son propre témoin, calibrated à son instrument — à préserver tel quel dans toute consolidation.
+4. **Entrées pour #7260 (renumérotation)** : l'ordre 18→18b→19→19b est pédagogiquement correct (instrument → fin → enjeu → réparation) ; aucun notebook du strand n'est candidat à la fusion — 19 et 19b restent distincts par conception (verdict nul pédagogique vs réparation), mais leur **artificial split de charge** justifie que 19b soit lu immédiatement après 19 dans toute navigation.
 
 ---
 
