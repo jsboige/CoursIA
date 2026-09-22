@@ -187,8 +187,44 @@ def read_passphrase() -> str | None:
         raise SystemExit(EXIT_UNKNOWN)
 
 
-def write_passphrase(value: str) -> None:
+# Backends acceptables pour DEPOSER la passphrase. `keyring` bascule
+# silencieusement sur un backend de repli quand le coffre natif est
+# indisponible -- et certains replis ecrivent EN CLAIR sur disque
+# (`keyrings.alt.file.PlaintextKeyring`, ou `EncryptedKeyring` a mot de passe
+# faible). Deposer la passphrase du coffre partage dans un fichier clair
+# annulerait tout l'interet de l'organe, et le ferait sans rien dire.
+_ACCEPTED_BACKENDS = (
+    "WinVaultKeyring",        # Windows -- gestionnaire d'identifiants (DPAPI)
+    "SecretServiceKeyring",   # Linux -- libsecret / gnome-keyring
+    "Keyring",                # macOS -- Keychain (keyring.backends.macOS.Keyring)
+)
+
+
+def assert_backend_is_native() -> str:
+    """Refuse d'ECRIRE tant que le backend n'est pas un coffre natif.
+
+    La LECTURE reste permise sur n'importe quel backend : lire depuis un repli
+    ne cree pas de nouvelle exposition, alors qu'ecrire dedans en cree une. La
+    fonction rend le nom du backend, pour qu'un rapport puisse l'attester au
+    lieu de l'affirmer.
+    """
+    kr = _keyring()
+    name = type(kr).__name__
+    module = type(kr).__module__
+    if name not in _ACCEPTED_BACKENDS or module.startswith("keyrings.alt"):
+        print(f"DEFECT: backend `keyring` non natif : {module}.{name}", file=sys.stderr)
+        print("  Un repli peut ecrire la passphrase EN CLAIR sur disque.", file=sys.stderr)
+        print("  Attendu : WinVaultKeyring (Windows/DPAPI), SecretServiceKeyring", file=sys.stderr)
+        print("  (Linux/libsecret) ou Keyring (macOS/Keychain). Aucune ecriture faite.", file=sys.stderr)
+        raise SystemExit(EXIT_DEFECT)
+    return f"{module}.{name}"
+
+
+def write_passphrase(value: str) -> str:
+    """Depose la passphrase. Rend le nom du backend atteste, pour le journal."""
+    backend = assert_backend_is_native()
     _keyring().set_password(SERVICE, machine_id(), value)
+    return backend
 
 
 # --------------------------------------------------------------------------
@@ -380,11 +416,11 @@ def cmd_bootstrap(args) -> int:
             open_vault(cand, quiet=True)
         except SystemExit:
             continue
-        write_passphrase(cand)
+        backend = write_passphrase(cand)
         print(f"OK  passphrase validee contre le coffre et posee pour '{machine_id()}'.")
         print(f"    source    : {source}")
         print(f"    empreinte : {fingerprint(cand)}")
-        print(f"    stockage  : gestionnaire d'identifiants Windows, service '{SERVICE}'")
+        print(f"    stockage  : {backend}, service '{SERVICE}'")
         print("    la valeur n'a ete ni imprimee, ni ecrite sur disque, ni mise en variable d'environnement.")
         return EXIT_OK
 
@@ -521,6 +557,60 @@ def cmd_gh_login(args) -> int:
         return EXIT_DEFECT
 
 
+    # Resolution de l'identite ATTENDUE -- avant tout appel reseau, et avant
+    # toute persistance. Par titre OU username : le coffre titre 'github ai-01'
+    # quand la clef attendue est 'myia-ai-01'. Chercher par le seul titre
+    # rendait la verification MUETTE (expected=None -> aucun controle).
+    #
+    # La variable de boucle s'appelle `mapped`, PAS `login` : nommer la variable
+    # de boucle comme la variable d'identite l'ECRASE, et la comparaison finale
+    # confronte alors deux valeurs ATTENDUES -- elle ne peut plus echouer, donc
+    # elle ne verifie plus rien. C'est le defaut principal que corrige ce bloc.
+    expected = args.account
+    if not expected:
+        for key in entry_key(entry):
+            for name, mapped in EXPECTED_GH.items():
+                if key == name.lower():
+                    expected = mapped
+                    break
+            if expected:
+                break
+
+    # ---- VALIDER D'ABORD, PERSISTER ENSUITE -------------------------------
+    # `gh auth login` ECRIT le jeton dans la configuration de `gh`, partagee par
+    # toutes les lanes de la machine. Le faire avant de savoir a QUI appartient
+    # le jeton, c'est installer une mauvaise identite puis la constater : le
+    # degat est deja fait, et il frappe les sessions voisines. On interroge donc
+    # l'API avec le jeton passe par l'ENVIRONNEMENT (aucune persistance), et on
+    # ne persiste qu'une fois l'identite confirmee.
+    who = subprocess.run(["gh", "api", "user", "--jq", ".login"],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+                         env={**os.environ, "GH_TOKEN": token, "GH_HOST": "github.com"})
+    if who.returncode != 0:
+        print(f"DEFECT: le jeton de '{entry.title}' n'ouvre pas `gh api user`.", file=sys.stderr)
+        print(f"  {who.stderr.strip()[:300]}", file=sys.stderr)
+        return EXIT_DEFECT
+
+    login = who.stdout.strip()
+    if not login:
+        # Un rc=0 avec une sortie vide n'est pas une identite. Sans ce refus, le
+        # `if expected and login` de la version precedente SAUTAIT le controle
+        # en silence : une reponse vide se lisait comme un succes.
+        print(f"DEFECT: `gh api user` rend un login VIDE pour '{entry.title}'.", file=sys.stderr)
+        print("  rc=0 sans identite n'est pas une validation -- refus.", file=sys.stderr)
+        return EXIT_DEFECT
+
+    if expected and login.lower() != expected.lower():
+        print(f"DEFECT: login attendu '{expected}', obtenu '{login}'.", file=sys.stderr)
+        print("  aucune ecriture n'a ete faite dans la configuration de `gh`.", file=sys.stderr)
+        return EXIT_DEFECT
+    if not expected:
+        print(f"UNKNOWN: aucune identite attendue connue pour '{entry.title}'.", file=sys.stderr)
+        print(f"  `gh api user` rend '{login}', mais rien ne permet de la confirmer.", file=sys.stderr)
+        print("  Passer --account <login> pour declarer l'identite attendue.", file=sys.stderr)
+        return EXIT_UNKNOWN
+
+    # ---- l'identite est confirmee : on peut persister ----------------------
     res = subprocess.run(["gh", "auth", "login", "--hostname", "github.com", "--with-token"],
                          input=token, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90)
     if res.returncode != 0:
@@ -528,27 +618,7 @@ def cmd_gh_login(args) -> int:
         print(f"  {res.stderr.strip()[:300]}", file=sys.stderr)
         return EXIT_DEFECT
 
-    who = subprocess.run(["gh", "api", "user", "--jq", ".login"],
-                         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
-                         env={**os.environ, "GH_TOKEN": token})
-    login = who.stdout.strip()
-    print(f"OK  jeton de '{entry.title}' accepte -- `gh api user` rend : {login or '?'}")
-    # Resolution par titre OU username : le coffre titre 'github ai-01'
-    # quand la clef attendue est 'myia-ai-01'. Chercher par le seul titre
-    # rendait la verification de login MUETTE (expected=None -> aucun
-    # controle), soit le meme defaut que celui corrige dans `verify`.
-    expected = args.account
-    if not expected:
-        for key in entry_key(entry):
-            for name, login in EXPECTED_GH.items():
-                if key == name.lower():
-                    expected = login
-                    break
-            if expected:
-                break
-    if expected and login and login.lower() != expected.lower():
-        print(f"DEFECT: login attendu '{expected}', obtenu '{login}'.", file=sys.stderr)
-        return EXIT_DEFECT
+    print(f"OK  jeton de '{entry.title}' valide AVANT persistance -- identite : {login}")
     return EXIT_OK
 
 
