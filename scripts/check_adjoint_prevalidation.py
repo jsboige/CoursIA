@@ -102,12 +102,20 @@ ADJOINT_LANE = "myia-po-2025:CoursIA-2"
 QUALIFYING_LANES = frozenset({
     "myia-ai-01:CoursIA",
     "myia-po-2023:CoursIA",
+    "myia-po-2023:CoursIA-2",
     "myia-po-2024:CoursIA",
     "myia-po-2024:CoursIA-2",
     "myia-po-2025:CoursIA",
     "myia-po-2025:CoursIA-2",
     "myia-po-2026:CoursIA",
     "myia-po-2026:CoursIA-2",
+    # The secretary lane. It carries no pull request of its own -- its whole
+    # function is to emit dossiers for the lanes that do -- so its absence from
+    # this set silenced it entirely: every dossier it filed failed closed as an
+    # unknown lane. Measured 2026-09-21: `CoursIA-3` occurred in zero files
+    # under scripts/ and .claude/ while its dashboard had been written a minute
+    # earlier, and zero [ADJOINT PREFLIGHT] dossiers existed fleet-wide.
+    "myia-po-2026:CoursIA-3",
     "myia-po-2027:CoursIA",
     "myia-po-2027:CoursIA-2",
 })
