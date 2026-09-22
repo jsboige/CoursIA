@@ -51,8 +51,15 @@ DEFAULT_VAULT = r"G:\Mon Drive\Synchronisation\RooSync\.shared-state\MyIA-Keys.k
 DEFAULT_EMERGENCY_PDF = r"G:\Mon Drive\MyIA\IA\Emergency MyIA Keys.pdf"
 DEFAULT_GROUP = "Agents"
 
-# Entrees attendues par lane. La valeur est le login GitHub que le jeton DOIT
-# rendre -- c'est ce qui distingue un jeton provisionne d'un jeton qui marche.
+# Entrees attendues, par login GitHub. La valeur est le login que le jeton DOIT
+# rendre -- c'est ce qui distingue un jeton provisionne d'un jeton qui MARCHE.
+#
+# `MyIA-Web1` figure ici bien que `docs/reference/cluster-agents.md` ne le liste
+# pas : ce document decrit les machines qui portent des grains **CoursIA**, et
+# web1 travaille sur `roo-extensions`. Ce n'est pas la bonne population pour ce
+# trousseau -- la population pertinente est « les machines qui doivent ouvrir le
+# coffre », et web1 en est une (compte GitHub cree le 2026-04-17, entree
+# `github web1` dans le coffre, dashboard machine actif).
 EXPECTED_GH = {
     "myia-ai-01": "myia-ai-01",
     "myia-po-2023": "myia-po-2023",
@@ -60,7 +67,26 @@ EXPECTED_GH = {
     "myia-po-2025": "myia-po-2025",
     "myia-po-2026": "myia-po-2026",
     "myia-po-2027": "myia-po-2027",
+    "MyIA-Web1": "MyIA-Web1",
 }
+
+# Les machines qui doivent BOOTSTRAPPER, c'est-a-dire detenir la passphrase dans
+# leur propre gestionnaire d'identifiants. Distinct de EXPECTED_GH : une machine
+# doit ouvrir le coffre meme si son compte GitHub n'existe pas encore.
+#
+# C'est le denominateur du critere de retrait du PDF de secours : tant que les
+# N machines n'ont pas bootstrappe, le PDF est leur SEULE source -- le supprimer
+# rendrait le coffre inouvrable chez elles (DPAPI n'est ni exportable, ni
+# transferable d'une machine a l'autre).
+FLEET_MACHINES = (
+    "myia-ai-01",
+    "myia-po-2023",
+    "myia-po-2024",
+    "myia-po-2025",
+    "myia-po-2026",
+    "myia-po-2027",
+    "myia-web1",
+)
 
 
 def machine_id() -> str:
@@ -498,7 +524,19 @@ def cmd_gh_login(args) -> int:
                          env={**os.environ, "GH_TOKEN": token})
     login = who.stdout.strip()
     print(f"OK  jeton de '{entry.title}' accepte -- `gh api user` rend : {login or '?'}")
-    expected = args.account or EXPECTED_GH.get(entry.title)
+    # Resolution par titre OU username : le coffre titre 'github ai-01'
+    # quand la clef attendue est 'myia-ai-01'. Chercher par le seul titre
+    # rendait la verification de login MUETTE (expected=None -> aucun
+    # controle), soit le meme defaut que celui corrige dans `verify`.
+    expected = args.account
+    if not expected:
+        for key in entry_key(entry):
+            for name, login in EXPECTED_GH.items():
+                if key == name.lower():
+                    expected = login
+                    break
+            if expected:
+                break
     if expected and login and login.lower() != expected.lower():
         print(f"DEFECT: login attendu '{expected}', obtenu '{login}'.", file=sys.stderr)
         return EXIT_DEFECT
