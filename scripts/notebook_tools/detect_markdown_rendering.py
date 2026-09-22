@@ -225,10 +225,11 @@ RULE_SEVERITY = {
     # heading_continuation (#17005) : "ERROR parce que le rendu est incoherent
     # avec la prose que la ligne veut dire". Mesure corpus 2026-09-22 : 10 hits
     # sur 4 notebooks (IIT-01 7, GameTheory-15e 1, MGS-07d 1, Sudoku-05 1) --
-    # meme ordre que le precedent #12110 (14 hits / 7 notebooks), reparables
-    # par fix_math_delims.py (controle differentiel sur IIT-06 : 118 conversions,
-    # byte-identique au commit manuel 5242d81907 au texte joint). Grandfathered
-    # dans la meme PR ; le cliquet delta bloque toute nouvelle occurrence.
+    # tranche reparee dans la meme PR par fix_math_delims.py (controle
+    # differentiel sur IIT-06 : 118 conversions, byte-identique au commit
+    # manuel 5242d81907 au texte joint). Borne PAIRE ajoutee apres le faux
+    # positif Sudoku-05 (« (/ ou \\) selon l'OS », prose Windows) : la regle
+    # matche \( ... \) comme le fixer, jamais un \) isole.
     # \[ ... \] (display) EST typesette par les deux defauts : hors classe de
     # defaut, volontairement non detecte.
     "math_paren_delims": ERROR,
@@ -419,7 +420,13 @@ _STMT_LINE_RE = re.compile(
 # configs MathJax 3 de JupyterLab / VS Code ne declarent que $ et $$ -- le
 # LaTeX inline rend en texte brut dans les deux familles. \[ ... \] (display)
 # EST typesette par les deux defauts et n'est volontairement PAS detecte.
-_MATH_PAREN_RE = re.compile(r"\\[()]")
+# Borne PAIRE (meme regex que le fixer) : un \( ouvreur suivi d'un contenu sans
+# newline ni delimiteur interne et d'un \) fermeur. Fondee sur le FAUX POSITIF
+# fondateur mesure le 2026-09-22 (PR #17395) : « les separateurs (/ ou \\)
+# selon l'OS » (Sudoku-05 cell 5) porte un backslash litteral + vraie
+# parenthese de prose -- sans la borne paire, la regle bloquait a vie cette
+# prose legitime (le fixer, borne, ne pouvait jamais la convertir).
+_MATH_PAREN_RE = re.compile(r"\\\([^\n$]*?\\\)")
 # Une macro LaTeX nue (backslash + lettres) hors de tout span math : rien ne
 # typesette la prose hors delimiteurs, elle rend en texte brut. Le motif
 # exige au moins une lettre apres l'antislash : `\\` (saut de table) et
@@ -967,6 +974,10 @@ def _selfcheck() -> int:
         ("delimiter inside a fenced block is silent",
          "math_paren_delims",
          "Exemple :\n\n```latex\n\\(S = \\mathbb{F}_p^n\\)\n```\n",
+         False),
+        ("Sudoku-05 false positive: prose backslash + real paren is silent",
+         "math_paren_delims",
+         "Elle gere automatiquement les separateurs (/ ou \\\\) selon l'OS.\n",
          False),
         ("bare macro in prose",
          "math_bare_macro",

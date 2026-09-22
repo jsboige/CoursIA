@@ -60,6 +60,14 @@ def test_fenced_latex_block_is_silent():
     assert "math_paren_delims" not in _rules(src)
 
 
+def test_sudoku05_prose_backslash_paren_is_silent():
+    """Le FAUX POSITIF fondateur (mesure 2026-09-22, PR #17395) : « (/ ou \\\\)
+    selon l'OS » est de la prose Windows, PAS un span math -- la regle se
+    borne a la paire \\( ... \\) comme le fixer, jamais a un \\) isole."""
+    src = "Elle gere automatiquement les separateurs (/ ou \\\\) selon l'OS.\n"
+    assert "math_paren_delims" not in _rules(src)
+
+
 # ---------------------------------------------------------------------------
 # math_bare_macro (WARN) -- bare LaTeX macro outside any math span
 # ---------------------------------------------------------------------------
