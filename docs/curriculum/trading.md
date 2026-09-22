@@ -132,10 +132,10 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Du graphe causal au do-calculus — le pont entre les…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb) | BETA | Oui |
-| 2 | [DoWhy-1 — Exiger un estimand : l'identification causale…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-1-Estimand-et-Intervention.ipynb) | BETA | Oui |
-| 3 | [DoWhy-2 — Le contrefactuel individuel : quand l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/DoWhy-2-Contrefactuel-Individuel.ipynb) | BETA | Oui |
-| 4 | [Méthodes quasi-expérimentales — identifier l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb) | BETA | Oui |
+| 1 | [Du graphe causal au do-calculus — le pont entre les…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) | BETA | Oui |
+| 2 | [CausalBridges-02 — Exiger un estimand : l'identification causale…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb) | BETA | Oui |
+| 3 | [CausalBridges-03 — Le contrefactuel individuel : quand l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) | BETA | Oui |
+| 4 | [Méthodes quasi-expérimentales — identifier l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | BETA | Oui |
 | 5 | [DecInfer-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) | BETA | Oui |
 | 6 | [DecInfer-02-Théorème de représentation de von…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb) | BETA | Oui |
 | 7 | [DecInfer-03-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb) | BETA | Oui |
