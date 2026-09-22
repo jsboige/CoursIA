@@ -254,8 +254,29 @@ def deleted_dispatchers(ref: str) -> list[dict]:
             continue  # the parent did not have it (add/delete in one commit)
         out.append({"dispatcher": Path(path).name,
                     "deleted_by": sha[:10],
-                    "had_gate": calls_gate(last)})
+                    "had_gate": calls_gate(last),
+                    "gated_paths": gate_project_paths(last)})
     return out
+
+
+def classify_deleted(deleted: list[dict], gated_now: set[str]) -> dict:
+    """Partition deleted dispatchers into lost / relocated / never.
+
+    "Perdu" means lost COVERAGE, not lost FILE: a dispatcher that had the
+    gate and whose every former project-path is gated by a live caller
+    today moved its coverage rather than dropping it. Fail-closed on the
+    unreadable cases: a dispatcher that called the gate without passing a
+    project-path cannot prove its coverage moved, so it stays "lost".
+    """
+    lost, relocated, never = [], [], []
+    for d in deleted:
+        if not d["had_gate"]:
+            never.append(d)
+        elif d["gated_paths"] and set(d["gated_paths"]) <= gated_now:
+            relocated.append(d)
+        else:
+            lost.append(d)
+    return {"lost": lost, "relocated": relocated, "never": never}
 
 
 def measure(ref: str) -> dict:
@@ -269,8 +290,9 @@ def measure(ref: str) -> dict:
     manifest_paths = {lk.get("project-path") for lk in lakes}
     ungated = sorted(p for p in manifest_paths
                      if p and p not in set(gated_paths))
-    lost = [d for d in deleted if d["had_gate"]]
-    never = [d for d in deleted if not d["had_gate"]]
+    parts = classify_deleted(deleted, set(gated_paths))
+    lost, relocated = parts["lost"], parts["relocated"]
+    never = parts["never"]
 
     # What the file-wide scan would have credited *beyond* the job-scoped one:
     # the measure of the defect the scoping closes. Empty is the good news, not
@@ -290,12 +312,14 @@ def measure(ref: str) -> dict:
         "matrix_lakes_without_gate": ungated,
         "deleted_dispatchers": len(deleted),
         "lost_gate": sorted(lost, key=lambda d: d["dispatcher"]),
+        "gate_relocated": sorted(relocated, key=lambda d: d["dispatcher"]),
         "never_had_gate": sorted(never, key=lambda d: d["dispatcher"]),
         "not_an_acceptance_criterion": (
             "Cette couverture est une MESURE, pas un verdict de surete : un lake "
             "sans gate d'axiomes n'est pas illicite, il doit seulement etre CONNU "
-            "comme tel (#17097 critere 3). Aucun lake n'a perdu le gate en entrant "
-            "dans la matrice : le trou est preexistant."
+            "comme tel (#17097 critere 3). La perte ne se declare que si aucun "
+            "appel vivant ne reprend les project-paths de l'ancien dispatcher : "
+            "deplacer le gate n'est pas le perdre."
         ),
     }
 
@@ -321,6 +345,9 @@ def _print_human(r: dict) -> None:
     print(f"   AVAIENT le gate -> PERDU : {len(r['lost_gate'])}")
     for d in r["lost_gate"]:
         print(f"      PERDU  {d['dispatcher']:42} (supprime par {d['deleted_by']})")
+    print(f"   gate DEPLACE (couverture reprise ailleurs) : {len(r['gate_relocated'])}")
+    for d in r["gate_relocated"]:
+        print(f"      deplace {d['dispatcher']:42} (supprime par {d['deleted_by']})")
     print(f"   n'avaient pas le gate   : {len(r['never_had_gate'])}")
     for d in r["never_had_gate"]:
         print(f"      jamais {d['dispatcher']:42} (supprime par {d['deleted_by']})")
