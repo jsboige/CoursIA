@@ -86,11 +86,18 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from typing import Any
+
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
 
 REPO = "jsboige/CoursIA"
 # The adjoint remains the canonical emitter: `--template` renders its lane, and
@@ -806,6 +813,14 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
 
 
 def main() -> int:
+    # Warn-fort + poursuite (pas d'abort) : l'echec BRUYANT est porte par le
+    # helper, gh_identity --whoami et detect_shared_login.py ; fermer l'organe
+    # sur une lane sans compte machine (#17418 Phase B/C) arreterait les
+    # dossiers pendant la transition.
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pr", type=int, help="pull request number")
     parser.add_argument("--json", action="store_true", help="emit machine-readable output")
@@ -857,11 +872,19 @@ def main() -> int:
         UnicodeError,
         json.JSONDecodeError,
     ) as exc:
+        errors = [f"UNKNOWN: {exc}"]
+        # #17418 Phase A : un rc=2 par rate-limit ne doit plus se lire comme
+        # « pas de dossier » (rc=1). La banniere nomme la cause et la
+        # remediation — c'est la confusion des deux qui a coute ~3 h de merge.
+        if gh_identity.is_rate_limit_error(str(exc)):
+            banner = gh_identity.rate_limit_banner(str(exc))
+            print(banner, file=sys.stderr)
+            errors.append(banner)
         result = {
             "pr": args.pr,
             "ready": False,
             "verdict": "UNKNOWN",
-            "errors": [f"UNKNOWN: {exc}"],
+            "errors": errors,
         }
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
         return EXIT_UNKNOWN

@@ -94,11 +94,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import unicodedata
 from datetime import datetime, timezone
+
+try:
+    import gh_identity
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_identity
 
 REPO = "jsboige/CoursIA"
 
@@ -5218,6 +5225,12 @@ def audit(limit: int, search: str | None = None) -> int:
 
 
 def main() -> int:
+    # Warn-fort + poursuite : le FAIL bruyant est porte par gh_identity
+    # --whoami et detect_shared_login.py (#17418 Phase A, transition B/C).
+    try:
+        gh_identity.pin_gh_token()
+    except gh_identity.GhIdentityError as exc:
+        print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pr", nargs="?", type=int, help="numero de PR (mode gate)")
