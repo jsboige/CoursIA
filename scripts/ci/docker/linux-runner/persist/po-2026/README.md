@@ -224,6 +224,32 @@ vide confond.
 - **`#16646` demande de trancher la conteneurisation du superviseur ou de la refuser
   par ecrit.** Le scope livre ici est une troisieme voie (borner sans conteneuriser) ;
   il apporte une piece au dossier, il ne repond pas a l'issue.
-- **Le cap de 20 Go est un backstop, pas un dimensionnement mesure.** Le pic reel
-  d'un pool de 8 jobs n'a pas ete echantillonne. Tant qu'il ne l'est pas, ce chiffre
-  ne doit pas etre cite comme une mesure.
+- **Le cap de 20 Go est un backstop, pas un dimensionnement mesure** -- mais il a
+  desormais un **premier echantillon**, et il faut le lire correctement.
+
+  Mesure dans l'heure qui suit la montee a 8 slots, **6 jobs concurrents** :
+
+  | Grandeur du scope | Valeur |
+  |---|---|
+  | `MemoryCurrent` | 16,6 Gio |
+  | `MemoryPeak` | **18,98 Gio** (cap 20 Gio) |
+  | `anon` | **0,73 Gio** |
+  | `file` (dont `inactive_file` 14,13) | 15,18 Gio |
+  | `memory.events` | `max 0`, `oom 0`, `oom_kill 0` |
+
+  **Le piege de lecture, et il faut le dire parce qu'il est tentant :** un
+  `MemoryPeak` a 18,98 Gio pour un cap a 20 Gio se lit « la borne est saturee ».
+  C'est faux. L'essentiel est du **cache de pages** (`file`, dont 14,13 Gio
+  inactifs donc reclamables) ; la memoire reellement demandee par les jobs est
+  `anon` = **0,73 Gio**, soit ~120 Mo par job. Et `memory.events` rend
+  `max 0 / oom 0 / oom_kill 0` : **le cap n'a jamais mordu**. La proximite
+  apparente mesure la generosite du cache, pas une pression.
+
+  Ce que ca dit du dimensionnement -- et ce que ca ne dit pas : un pool de
+  8 jobs tient dans une empreinte anonyme de l'ordre du gigaoctet, ce qui laisse
+  penser que 16 Go auraient suffi ; mais cet echantillon porte sur la phase de
+  checkout/test et **un** pic, pas sur le job le plus lourd du depot (le rendu
+  Quarto que le README parent documente comme fauteur d'OOM n'a pas ete rejoue
+  ici). Le cap reste donc un backstop choisi haut, pas une mesure -- et la
+  lecture correcte d'un `MemoryPeak` passe par `memory.stat`, jamais par le
+  rapport peak/cap seul.
