@@ -12,7 +12,8 @@ Controles pins ici, par le meme principe que la suite rouge (un detecteur se
 valide par ses faux negatifs) : brouillons comptes (convertir en draft
 n'echappe pas au plafond), PRs d'autres lanes et PRs sans tag NON comptees,
 plafond desactivable, echappatoire auditee (--ignore-wip exige
---admit-reason), et composition avec le garde rouge -- aucun des deux gardes
+--wip-reason, distincte de --admit-reason qui leverait aussi le garde
+d'admission), et composition avec le garde rouge -- aucun des deux gardes
 ne masque l'autre.
 """
 
@@ -263,22 +264,42 @@ def test_wip_cap_is_overridable_downward(monkeypatch, capsys):
     assert "plafond de WIP = 3" in out
 
 
-def test_ignore_wip_without_admit_reason_is_an_error(monkeypatch, capsys):
-    """L'echappatoire du plafond est AUDITEE : --admit-reason exigee.
+def test_ignore_wip_without_wip_reason_is_an_error(monkeypatch, capsys):
+    """L'echappatoire du plafond est AUDITEE : --wip-reason exigee.
 
     Contrairement a --ignore-red (justification ECRITE sur la PR concernee,
     verifiee par le merge-gate), le plafond n'a pas de PR particuliere ou
-    poser la justification : elle vit dans --admit-reason ou ne se prend
+    poser la justification : elle vit dans --wip-reason ou ne se prend
     pas. argparse ap.error = sortie 2, meme convention que --lane requis.
     """
     with pytest.raises(SystemExit) as excinfo:
         pig.main(["--lane", LANE, "--ignore-wip"])
     assert excinfo.value.code == 2
-    assert "--admit-reason" in capsys.readouterr().err
+    assert "--wip-reason" in capsys.readouterr().err
 
 
-def test_ignore_wip_with_admit_reason_lets_the_draw_proceed(monkeypatch, capsys):
-    """--ignore-wip --admit-reason passe le plafond -- et le dit en epilogue.
+def test_admit_reason_does_not_satisfy_ignore_wip(monkeypatch, capsys):
+    """--admit-reason ne vaut PAS justification du plafond.
+
+    --admit-reason leve le garde d'admission (claims, DWELL) : l'accepter
+    pour --ignore-wip ouvrirait en silence les issues retenues, alors que
+    la lane n'a demande qu'a passer le plafond.
+    """
+    with pytest.raises(SystemExit) as excinfo:
+        pig.main(["--lane", LANE, "--ignore-wip", "--admit-reason", "x"])
+    assert excinfo.value.code == 2
+    assert "--wip-reason" in capsys.readouterr().err
+
+
+def test_wip_reason_without_ignore_wip_is_an_error(monkeypatch, capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        pig.main(["--lane", LANE, "--wip-reason", "x"])
+    assert excinfo.value.code == 2
+    assert "--ignore-wip" in capsys.readouterr().err
+
+
+def test_ignore_wip_with_wip_reason_lets_the_draw_proceed(monkeypatch, capsys):
+    """--ignore-wip --wip-reason passe le plafond -- et le dit en epilogue.
 
     Le passage outre ne se prend pas en silence : l'epilogue du tirage
     doit nommer le compte qui reste au-dessus du plafond.
@@ -286,12 +307,15 @@ def test_ignore_wip_with_admit_reason_lets_the_draw_proceed(monkeypatch, capsys)
     _patch_guard(monkeypatch, _fleet(pig.WIP_CAP_DEFAULT))
     _patch_draw(monkeypatch)
     rc = pig.main(["--lane", LANE, "--ignore-wip",
-                   "--admit-reason", "gel coordinateur, file entiere tenue"])
+                   "--wip-reason", "gel coordinateur, file entiere tenue"])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
     assert "!! --ignore-wip" in out
     assert f"plafond {pig.WIP_CAP_DEFAULT}" in out
+    assert "gel coordinateur, file entiere tenue" in out
+    # le garde d'admission n'est PAS leve par le passage outre du plafond
+    assert "!! --admit-reason" not in out
 
 
 # --- composition avec le garde rouge ----------------------------------------

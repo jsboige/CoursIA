@@ -136,7 +136,9 @@ plafond), la lane ne recoit pas de grain neuf : elle recoit sa file, la plus
 ancienne d'abord, memes convention de sortie et code de retour que le garde
 rouge. Les deux gardes se composent : quand les deux declenchent, les deux
 motifs sont rendus, aucun ne masque l'autre. `--wip-cap N` ajuste le plafond
-(0 le desactive) ; `--ignore-wip` exige `--admit-reason` ecrite.
+(0 le desactive) ; `--ignore-wip` exige `--wip-reason` ecrite -- une
+justification PROPRE au plafond : reutiliser `--admit-reason` leverait du
+meme geste le garde d'admission (claims, DWELL), qu'on n'a pas demande.
 
 Ardoise de lane : la mesure qui rend un faux "rien livre" impossible (L721)
 --------------------------------------------------------------------------
@@ -160,7 +162,7 @@ Usage
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
     python scripts/pick_idle_grain.py --lane <l> --ignore-red      # rouge non reparable
                                                                    # par cette lane, ECRIT sur la PR
-    python scripts/pick_idle_grain.py --lane <l> --ignore-wip --admit-reason '<motif>'
+    python scripts/pick_idle_grain.py --lane <l> --ignore-wip --wip-reason '<motif>'
                                                                    # plafond de WIP passe outre,
                                                                    # justification ECRITE exigee (Q41)
 
@@ -3719,7 +3721,7 @@ def print_wip_assignment(lane: str, backlog: dict, *, standalone: bool = True) -
     print()
     print("Le plafond ne se leve pas en silence : si un gel coordinateur tient la")
     print("file ENTIERE (et non une PR isolee), l'ECRIRE puis relancer avec")
-    print("--ignore-wip --admit-reason '<justification>'.")
+    print("--ignore-wip --wip-reason '<justification>'.")
 
 
 # --- Secheresse de substance : G-VAR-1 recoit son organe (#13086) ----------
@@ -4316,9 +4318,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--ignore-wip", action="store_true",
                     help="passer outre le plafond de WIP (Q41) -- exige "
-                         "--admit-reason '<justification ECRITE>' : contrairement "
+                         "--wip-reason '<justification ECRITE>' : contrairement "
                          "a --ignore-red, le plafond n'a pas de PR particuliere "
                          "ou poser la justification")
+    ap.add_argument("--wip-reason", default=None, metavar="TEXTE",
+                    help="justification ECRITE de --ignore-wip, a reporter sur "
+                         "l'issue retenue. Distincte de --admit-reason, qui "
+                         "leverait aussi le garde d'admission")
     ap.add_argument("--drought-run", type=int, default=DROUGHT_RUN_DEFAULT,
                     metavar="N",
                     help="merges consecutifs sans genre CONTENU a partir "
@@ -4371,9 +4377,13 @@ def main(argv: list[str] | None = None) -> int:
     # Q41 : l'echappatoire du plafond de WIP est AUDITEE a la difference de
     # --ignore-red (dont la justification vit sur la PR concernee) : le
     # plafond n'a pas de PR particuliere ou ecrire, donc la justification
-    # passe --admit-reason ou ne se prend pas.
-    if args.ignore_wip and not args.admit_reason:
-        ap.error("--ignore-wip exige --admit-reason '<justification ECRITE>'")
+    # passe --wip-reason ou ne se prend pas. Pas --admit-reason : elle leve
+    # aussi le garde d'admission, et passer le plafond ne doit pas ouvrir en
+    # silence les issues retenues par un claim ou un DWELL.
+    if args.ignore_wip and not args.wip_reason:
+        ap.error("--ignore-wip exige --wip-reason '<justification ECRITE>'")
+    if args.wip_reason and not args.ignore_wip:
+        ap.error("--wip-reason n'a de sens qu'avec --ignore-wip")
     if args.wip_cap < 0:
         ap.error("--wip-cap doit etre positif ou nul (0 desactive le garde)")
     if not args.lane and not args.orphans_report and args.admissible is None:
@@ -4800,6 +4810,7 @@ def main(argv: list[str] | None = None) -> int:
                           "cause": c} for it, c in withheld],
             "dwell_hours": args.dwell_hours,
             "admit_reason": args.admit_reason,
+            "wip_reason": args.wip_reason,
             "series_measured": series_err is None,
             "series_error": series_err,
             "series_zones": sorted(
@@ -4966,8 +4977,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.ignore_wip and backlog.get("wip_triggered"):
         print(f"!! --ignore-wip : {backlog.get('wip_count')} PR(s) ouverte(s) "
               f"(plafond {backlog.get('wip_cap')}) restent au-dessus du plafond.")
-        print("   La justification passee a --admit-reason doit etre reportee sur")
-        print("   l'issue retenue -- le passage outre ne se prend pas en silence.")
+        print(f"   Justification ({args.wip_reason!r}) a reporter sur l'issue")
+        print("   retenue -- le passage outre ne se prend pas en silence.")
     penalized = ", ".join(args.prev_genre)
     print(f"Lane {args.lane} | graine {stamp}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
