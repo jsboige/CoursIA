@@ -6,6 +6,17 @@ header: 'IA 101'
 footer: 'S4 - Trading Algorithmique'
 ---
 
+<!-- Archive header (standard _archive convention, 2026-09-21)
+     - Date archived : 2026-08-06 (LastWriteTime filesystem)
+     - Superseded by : deck-1-fondamentaux.md (meme contenu, frontmatter Slidev remplace Marp)
+     - Verdict recorded in : frontmatter `marp: true` (vs Slidev `theme: ../theme-ia101`) ; cf README.md section "table des fichiers archives"
+     -
+     Per-section disposition :
+     - Frontmatter Marp (lignes 1-7) : remplacee par frontmatter Slidev dans deck-1+
+     - Slides 1-N (frontmatter delimites par ---) : contenu preserve dans deck-1-fondamentaux.md (split en 3)
+     - Theme `ia101` : theme Sliderule d'origine, remplace par `../theme-ia101` (theme de la serie)
+-->
+
 <!-- _class: title -->
 
 # Trading Algorithmique
