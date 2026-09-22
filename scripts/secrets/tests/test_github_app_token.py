@@ -127,21 +127,95 @@ def test_le_module_n_appelle_jamais_gh_auth_login():
     ], "le module ne doit pas toucher `gh auth`"
 
 
-def test_le_jeton_passe_par_l_environnement(mod, monkeypatch):
-    """Preuve positive : GH_TOKEN est pose dans env, pas ecrit ailleurs."""
+class _FausseReponse:
+    """Substitut minimal du context manager rendu par `urlopen`."""
+
+    def __init__(self, charge): self._charge = charge
+    def read(self): return self._charge
+    def __enter__(self): return self
+    def __exit__(self, *_): return False
+
+
+def _intercepte(mod, monkeypatch, charge=b'{"id": 42}'):
+    """Capture la Request emise, sans qu'aucun octet ne parte sur le reseau."""
     vu = {}
 
-    class Faux:
-        returncode = 0
-        stdout = '{"id": 42}'
-        stderr = ""
+    def faux_urlopen(req, timeout=None):
+        vu["req"] = req
+        return _FausseReponse(charge)
 
-    def faux_run(cmd, **kw):
-        vu["cmd"] = cmd
-        vu["env"] = kw.get("env", {})
-        return Faux()
+    monkeypatch.setattr(mod.urllib.request, "urlopen", faux_urlopen)
+    return vu
 
-    monkeypatch.setattr(mod.subprocess, "run", faux_run)
+
+def test_le_credential_part_en_bearer_pas_en_token(mod, monkeypatch):
+    """REGRESSION -- c'est le defaut mesure le 2026-09-22 sur l'App pilote.
+
+    La forge passait par `gh api`, qui emet `Authorization: token <...>`.
+    GitHub n'accepte un JWT d'App qu'en `Bearer` et repond, sous l'autre
+    schema, `401 A JSON web token could not be decoded`. Meme JWT, deux
+    schemas, mesure directe : `Bearer` -> 200, `token` -> 401. Le JWT etait
+    valide ; c'est le TRANSPORT qui etait faux, et aucun test ne le regardait.
+    """
+    vu = _intercepte(mod, monkeypatch)
     mod._api("repos/o/r/installation", "le-jwt")
-    assert vu["env"]["GH_TOKEN"] == "le-jwt"
-    assert "login" not in vu["cmd"]
+    autorisation = vu["req"].get_header("Authorization")
+    assert autorisation == "Bearer le-jwt"
+    assert not autorisation.startswith("token "), "schema `token` : GitHub refuse le JWT"
+
+
+def test_l_appel_vise_bien_l_api_github(mod, monkeypatch):
+    """CONTROLE POSITIF : sans lui, un organe qui n'appellerait rien passerait."""
+    vu = _intercepte(mod, monkeypatch)
+    mod._api("app/installations/7/access_tokens", "le-jwt", method="POST")
+    assert vu["req"].full_url == "https://api.github.com/app/installations/7/access_tokens"
+    assert vu["req"].get_method() == "POST"
+
+
+def test_le_credential_ne_touche_jamais_argv(mod):
+    """Le credential vit dans un en-tete, jamais dans une ligne de commande.
+
+    C'etait la raison d'etre du detour initial par `gh` (`ps` expose `argv`).
+    Ne plus lancer AUCUN sous-processus rend la propriete structurelle : il
+    n'y a plus de ligne de commande ou le jeton pourrait fuir.
+    """
+    import ast
+
+    arbre = ast.parse(pathlib.Path(mod.__file__).read_text(encoding="utf-8"))
+    importes = {
+        alias.name.split(".")[0]
+        for n in ast.walk(arbre)
+        if isinstance(n, (ast.Import, ast.ImportFrom))
+        for alias in getattr(n, "names", [])
+    }
+    assert "subprocess" not in importes
+    assert "os" not in importes, "plus besoin de l'environnement : plus de sous-processus"
+
+
+def test_une_panne_reseau_rend_unreachable_pas_defect(mod, monkeypatch):
+    """« je n'ai pas pu mesurer » ne se confond pas avec « le credential est mauvais »."""
+    import urllib.error
+
+    def faux_urlopen(req, timeout=None):
+        raise urllib.error.URLError("dns")
+
+    monkeypatch.setattr(mod.urllib.request, "urlopen", faux_urlopen)
+    with pytest.raises(mod.ForgeUnreachable):
+        mod._api("repos/o/r/installation", "le-jwt")
+
+
+def test_un_401_est_un_defaut_pas_une_panne(mod, monkeypatch):
+    """Le pendant du precedent : un credential refuse n'est PAS une panne."""
+    import io
+    import urllib.error
+
+    def faux_urlopen(req, timeout=None):
+        raise urllib.error.HTTPError(
+            req.full_url, 401, "Unauthorized", {},
+            io.BytesIO(b'{"message": "A JSON web token could not be decoded"}'))
+
+    monkeypatch.setattr(mod.urllib.request, "urlopen", faux_urlopen)
+    with pytest.raises(mod.ForgeError) as exc:
+        mod._api("repos/o/r/installation", "le-jwt")
+    assert not isinstance(exc.value, mod.ForgeUnreachable)
+    assert "401" in str(exc.value)

@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 EXIT_OK = 0
@@ -37,6 +38,16 @@ JWT_TTL_SECONDS = 540  # GitHub refuses a JWT whose exp is more than 10 min out.
 
 class ForgeError(RuntimeError):
     """The organ cannot prove the token it would return is the right one."""
+
+
+class ForgeUnreachable(ForgeError):
+    """Panne de transport -- jamais confondue avec un defaut de credential.
+
+    Sans cette separation, une coupure reseau sortirait avec le meme code
+    qu'un JWT refuse, et l'appelant lirait « la cle est mauvaise » la ou il
+    fallait lire « reessaie ». C'est la meme lame que `exit 2` ailleurs dans
+    le depot : ne pas savoir n'est pas un verdict.
+    """
 
 
 def _read_private_key(path: Path) -> str:
@@ -67,26 +78,55 @@ def build_jwt(app_id: str, pem: str, now: int) -> str:
 
 
 def _api(endpoint: str, bearer: str, method: str = "GET") -> object:
-    """One call through `gh api`, with the credential passed in the ENVIRONMENT.
+    """Un appel a l'API GitHub, credential en en-tete `Authorization: Bearer`.
 
-    Never `gh auth login`: that writes into a configuration shared by every
-    lane on the machine, so a wrong identity installed there outlives the
-    mistake and hits the neighbouring sessions (#17425).
+    **Le schema n'est pas un detail de style.** Un JWT d'App n'est accepte
+    QU'EN `Bearer` : sous `token <jwt>` -- le schema qu'emploie `gh api` --
+    GitHub repond `401 A JSON web token could not be decoded`. Mesure du
+    2026-09-22, meme JWT, deux schemas : `Bearer` -> 200, `token` -> 401.
+    C'est pourquoi cette forge n'passe PAS par `gh`, alors meme que le reste
+    du depot le fait : les trois appels qu'elle emet sont authentifies par le
+    JWT, donc aucun ne peut transiter par `gh api`.
+
+    Deux proprietes conservees au passage, et la premiere etait la raison
+    d'etre du detour par `gh` :
+
+    * le credential ne touche JAMAIS `argv` -- il vit dans un en-tete, en
+      memoire du processus, pas dans une ligne de commande que `ps` expose ;
+    * aucun `gh auth login`, donc aucune ecriture dans la configuration `gh`
+      partagee par toutes les lanes de la machine (#17425). Ne plus dependre
+      de `gh` du tout rend la propriete structurelle et non plus disciplinee.
     """
-    import os
-
-    cmd = ["gh", "api", endpoint, "-X", method,
-           "-H", "Accept: application/vnd.github+json"]
-    env = {**os.environ, "GH_TOKEN": bearer, "GH_HOST": "github.com"}
-    proc = subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace",
-                          timeout=60, env=env)
-    if proc.returncode != 0:
-        raise ForgeError(f"`gh api {endpoint}` failed: {proc.stderr.strip()[:300]}")
+    req = urllib.request.Request(
+        f"https://api.github.com/{endpoint.lstrip('/')}",
+        method=method,
+        headers={
+            "Authorization": f"Bearer {bearer}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "coursia-github-app-token",
+        },
+    )
     try:
-        return json.loads(proc.stdout)
+        with urllib.request.urlopen(req, timeout=60) as reponse:
+            brut = reponse.read()
+    except urllib.error.HTTPError as exc:
+        detail = ""
+        try:
+            detail = json.loads(exc.read() or b"{}").get("message", "")
+        except (ValueError, OSError):
+            pass
+        # Le corps d'erreur de GitHub ne contient jamais le credential ;
+        # l'echo est donc sur, et c'est lui qui nomme la cause reelle.
+        raise ForgeError(f"{method} {endpoint} -> HTTP {exc.code} {detail}".strip()) from exc
+    except urllib.error.URLError as exc:
+        raise ForgeUnreachable(f"{method} {endpoint} injoignable : {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise ForgeUnreachable(f"{method} {endpoint} : pas de reponse dans le delai") from exc
+    try:
+        return json.loads(brut)
     except json.JSONDecodeError as exc:
-        raise ForgeError(f"`gh api {endpoint}` returned non-JSON") from exc
+        raise ForgeError(f"{method} {endpoint} a rendu du non-JSON") from exc
 
 
 def resolve_installation(jwt_token: str, repo: str | None, owner: str | None) -> int:
@@ -127,12 +167,13 @@ def main(argv: list[str] | None = None) -> int:
         installation_id = args.installation_id or resolve_installation(
             jwt_token, args.repo, args.owner)
         data = mint(jwt_token, installation_id)
+    except ForgeUnreachable as exc:
+        # AVANT ForgeError : c'est une sous-classe, l'ordre des `except` decide.
+        print(f"UNREACHABLE: {exc}", file=sys.stderr)
+        return EXIT_UNREACHABLE
     except ForgeError as exc:
         print(f"DEFECT: {exc}", file=sys.stderr)
         return EXIT_DEFECT
-    except subprocess.TimeoutExpired:
-        print("UNREACHABLE: GitHub did not answer in time.", file=sys.stderr)
-        return EXIT_UNREACHABLE
 
     token = data["token"]
     if args.quiet:
