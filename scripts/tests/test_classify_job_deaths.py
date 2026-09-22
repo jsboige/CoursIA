@@ -81,6 +81,266 @@ def test_timeout():
     assert classify_job(_job("failure", steps), ANN_TIMEOUT) == "TIMEOUT"
 
 
+def test_oom_annotation_is_classified():
+    """Mesure 2026-09-21 (job 106270875399, runner myia-ai-01-wsl-8) : le job
+    meurt d'un manque de memoire du parc, GitHub pose "Out of memory." sur le
+    check-run, et l'etape courante reste en `null` (jamais resolue). Avant
+    l'ajout de la classe, ce cas tombait en UNCATEGORIZED_FAILURE."""
+    steps = [
+        {"number": 1, "name": "Set up job", "conclusion": "success"},
+        {"number": 2, "name": "Install dependencies", "conclusion": "success"},
+        {"number": 3, "name": "Run tests", "conclusion": None},
+        {"number": 4, "name": "Post Run actions/checkout@v4", "conclusion": None},
+    ]
+    ann = [
+        {"message": "Node.js 20 is deprecated. The following actions target "
+                    "Node.js 20 but are being forced to run on Node.js 24"},
+        {"message": "Out of memory."},
+    ]
+    assert classify_job(_job("failure", steps), ann) == "OOM"
+
+
+def test_real_step_failure_wins_over_oom_annotation():
+    """Contrat de priorite preserve : une famine memoire peut se manifester en
+    exit 1 sur un teardown qui echoue, mais une etape REELLEMENT en echec reste
+    un rouge de contenu. Ajouter OOM ne doit pas offrir de blanchiment."""
+    steps = [
+        {"number": 1, "name": "Checkout", "conclusion": "success"},
+        {"number": 2, "name": "Run tests", "conclusion": "failure"},
+    ]
+    ann = [{"message": "Out of memory."}]
+    assert classify_job(_job("failure", steps), ann) == "REAL_STEP_FAILURE"
+
+
+def test_oom_is_counted_as_infrastructural():
+    """Le demi-correctif a mesurer : classer OOM sans le compter laisse le
+    rapport annoncer "morts infrastructurelles : 0" sur une mort du parc --
+    l'instrument resterait menteur. La somme `infra` ET son detail derivent de
+    INFRA_DEATH_CLASSES, donc les deux sites ne peuvent plus diverger."""
+    import classify_job_deaths as mod
+
+    payload = {
+        "counts": {"OOM": 2, "REAL_STEP_FAILURE": 1},
+        "rows": [],
+    }
+    text = mod.render_markdown(payload)
+    assert "morts infrastructurelles : **2**" in text
+    assert "AUTRES=0" in text, "3 morts, 2 infra, 1 contenu -> 0 autre"
+    for klass in mod.INFRA_DEATH_CLASSES:
+        assert f"{klass}=" in text, f"{klass} absent du detail infra"
+    assert "OOM=2" in text
+
+
+# --------------------------------------------------------------------------
+# Mort de WORKER : l'etape conclud `failure` avec une annotation generique
+# --------------------------------------------------------------------------
+# Extraits reels des logs mesures le 2026-09-21 sur le workflow
+# "Scripts Tests (CPU)", trois runners du meme hote. Le job 106268236606
+# (wsl-7) meurt dans le TEARDOWN xdist -- pytest avait fini sa session
+# (`pytest_sessionfinish` -> `dsession.teardown_nodes`) quand le pool explose.
+LOG_TEARDOWN_DEATH = (
+    '  File ".../_pytest/terminal.py", line 961, in pytest_sessionfinish\n'
+    '  File ".../xdist/dsession.py", line 99, in pytest_sessionfinish\n'
+    '    nm.teardown_nodes()\n'
+    '  File ".../execnet/multi.py", line 337, in termkill\n'
+    '    termreply = workerpool.spawn(termfunc)\n'
+    '  File ".../execnet/gateway_base.py", line 155, in start\n'
+    '    _thread.start_new_thread(func, args)\n'
+    "RuntimeError: can't start new thread\n"
+)
+# Variante du 106253882998 (wsl-8) : le worker meurt EN PLEINE session et le
+# planificateur loadscope tombe sur un worker deja disparu.
+LOG_XDIST_INTERNALERROR = (
+    'INTERNALERROR>   File ".../xdist/scheduler/loadscope.py", line 98, '
+    'in _assign_work_unit\n'
+    'INTERNALERROR> KeyError: <WorkerController gw5>\n'
+)
+# Controle positif du 106261152819 (wsl-5) : pytest NOMME son echec.
+LOG_CONTENT_RED = (
+    '======================= short test summary info '
+    '========================\n'
+    'FAILED scripts/audit/tests/test_scan_duplicate_test_pairs.py::'
+    'test_retroactive_control_sees_third_pair_pre_consolidation\n'
+    '= 1 failed, 14430 passed, 97 skipped, 8 xfailed, 3 warnings '
+    'in 244.69s (0:04:04) =\n'
+)
+
+ANN_EXIT_1 = [
+    {"message": "Node.js 20 is deprecated. The following actions target "
+                "Node.js 20 but are being forced to run on Node.js 24"},
+    {"message": "Process completed with exit code 1."},
+]
+
+
+def _step_failure_job() -> dict:
+    """Forme mesuree : `Run tests` conclut `failure`, annotation generique."""
+    steps = [
+        {"number": 1, "name": "Set up job", "conclusion": "success"},
+        {"number": 2, "name": "Checkout", "conclusion": "success"},
+        {"number": 3, "name": "Run tests", "conclusion": "failure"},
+        {"number": 4, "name": "Post Run actions/checkout@v4",
+         "conclusion": "success"},
+    ]
+    return {
+        "id": 106268236606,
+        "name": "Scripts Tests (CPU)",
+        "conclusion": "failure",
+        "runner_name": "myia-ai-01-wsl-7",
+        "steps": steps,
+    }
+
+
+def test_worker_death_predicate_on_measured_logs():
+    """Le predicat, sur les logs reels : signature + aucun test nomme."""
+    import classify_job_deaths as mod
+
+    assert mod.worker_death_from_log(LOG_TEARDOWN_DEATH) is True
+    assert mod.worker_death_from_log(LOG_XDIST_INTERNALERROR) is True
+    assert mod.worker_death_from_log(LOG_CONTENT_RED) is False
+
+
+def test_named_failures_are_never_reclassified():
+    """Garde-fou : un rouge de contenu peut mourir ensuite (teardown qui
+    echoue). Des que pytest a NOMME un test, la classe de contenu est
+    conservee -- le predicat est conservateur par construction, sinon
+    l'organe offrirait un blanchiment a tout rouge suivi d'une mort."""
+    import classify_job_deaths as mod
+
+    mixed = LOG_TEARDOWN_DEATH + LOG_CONTENT_RED
+    assert mod.worker_death_from_log(mixed) is False
+
+
+def test_worker_death_signature_beats_a_step_failure():
+    """Le defaut mesure : `Run tests` = failure + annotation "Process
+    completed with exit code 1." classait le job en REAL_STEP_FAILURE, donc
+    l'organe designait le DIFF alors que le log ne nomme aucun test et porte
+    la signature de mort du pool. Deux des quatre rouges de la suite ce
+    jour-la (jobs 106268236606 wsl-7 et 106253882998 wsl-8) basculent."""
+    import classify_job_deaths as mod
+
+    run = {
+        "id": 7,
+        "name": "Scripts Tests (CPU)",
+        "conclusion": "failure",
+        "created_at": "2026-09-21T08:40:00Z",
+        "updated_at": "2026-09-21T08:47:00Z",
+        "head_sha": "f" * 40,
+    }
+    orig = (mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log)
+    mod.fetch_run_jobs = lambda run_id: [_step_failure_job()]
+    mod.fetch_annotations = lambda job_id: ANN_EXIT_1
+    mod.fetch_job_log = lambda job_id: LOG_TEARDOWN_DEATH
+    try:
+        payload = mod.analyse_runs([run])
+    finally:
+        mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log = orig
+    assert payload["rows"][0]["class"] == "WORKER_DEATH"
+
+
+def test_log_absent_keeps_the_step_verdict():
+    """Un log absent (blob jamais uploade, cf job OOM 106270875399) ne
+    reclasse RIEN : la classe de l'etape est conservee. Fail-closed, sinon
+    la moindre expiration de log blanchirait un vrai rouge de contenu."""
+    import classify_job_deaths as mod
+
+    assert mod.worker_death_from_log("") is False
+
+    run = {
+        "id": 8,
+        "name": "Scripts Tests (CPU)",
+        "conclusion": "failure",
+        "created_at": "2026-09-21T08:40:00Z",
+        "updated_at": "2026-09-21T08:47:00Z",
+        "head_sha": "f" * 40,
+    }
+    orig = (mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log)
+    mod.fetch_run_jobs = lambda run_id: [_step_failure_job()]
+    mod.fetch_annotations = lambda job_id: ANN_EXIT_1
+    mod.fetch_job_log = lambda job_id: ""
+    try:
+        payload = mod.analyse_runs([run])
+    finally:
+        mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log = orig
+    assert payload["rows"][0]["class"] == "REAL_STEP_FAILURE"
+
+
+def test_the_log_is_fetched_only_for_the_ambiguous_class():
+    """Cout borne : le fetch du log ne doit se declencher QUE sur
+    REAL_STEP_FAILURE. Une classe tranchee par l'annotation (OOM) ne doit pas
+    payer un appel reseau supplementaire -- sinon un scan de N jobs rouges
+    couterait N fetchs de plusieurs centaines de Ko."""
+    import classify_job_deaths as mod
+
+    run = {
+        "id": 9,
+        "name": "Scripts Tests (CPU)",
+        "conclusion": "failure",
+        "created_at": "2026-09-21T08:40:00Z",
+        "updated_at": "2026-09-21T08:47:00Z",
+        "head_sha": "f" * 40,
+    }
+    oom_job = _step_failure_job()
+    for step in oom_job["steps"]:
+        step["conclusion"] = None
+    calls: list[int] = []
+    orig = (mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log)
+    mod.fetch_run_jobs = lambda run_id: [oom_job]
+    mod.fetch_annotations = lambda job_id: [{"message": "Out of memory."}]
+    mod.fetch_job_log = lambda job_id: calls.append(job_id) or ""
+    try:
+        payload = mod.analyse_runs([run])
+    finally:
+        mod.fetch_run_jobs, mod.fetch_annotations, mod.fetch_job_log = orig
+    assert payload["rows"][0]["class"] == "OOM"
+    assert calls == [], "le log a ete fetch pour une classe deja tranchee"
+
+
+def test_worker_death_is_counted_as_infrastructural():
+    """Meme exigence que pour OOM : la classe doit entrer dans la SOMME infra
+    et dans son detail, sinon le rapport annonce une mort du parc comme un
+    rouge de contenu."""
+    import classify_job_deaths as mod
+
+    assert "WORKER_DEATH" in mod.INFRA_DEATH_CLASSES
+    payload = {"counts": {"WORKER_DEATH": 2, "REAL_STEP_FAILURE": 1}, "rows": []}
+    text = mod.render_markdown(payload)
+    assert "morts infrastructurelles : **2**" in text
+    assert "WORKER_DEATH=2" in text
+    assert "AUTRES=0" in text
+
+
+def test_fetch_job_log_tolerates_blob_not_found_only():
+    """Un blob absent (job tue avant l'upload) rend "" ; toute autre panne
+    (auth, reseau) doit remonter bruyamment -- sinon l'instrument perdrait
+    silencieusement la seule surface qui separe une mort du parc d'un rouge
+    de contenu."""
+    import subprocess
+
+    import classify_job_deaths as mod
+
+    class _R:
+        def __init__(self, rc, out, err):
+            self.returncode, self.stdout, self.stderr = rc, out, err
+
+    orig = mod.subprocess.run
+    try:
+        mod.subprocess.run = lambda *a, **k: _R(
+            1, "<Error><Code>BlobNotFound</Code></Error>", ""
+        )
+        assert mod.fetch_job_log(1) == ""
+        mod.subprocess.run = lambda *a, **k: _R(1, "", "gh: HTTP 401: Bad credentials")
+        try:
+            mod.fetch_job_log(1)
+            raise AssertionError("401 doit propager, pas rendre \"\"")
+        except RuntimeError:
+            pass
+        mod.subprocess.run = lambda *a, **k: _R(0, "some log text", "")
+        assert mod.fetch_job_log(1) == "some log text"
+    finally:
+        mod.subprocess.run = orig
+    assert orig is subprocess.run
+
+
 def test_cancelled_without_annotation_is_other():
     """Quarto (cancel-in-progress inconditionnel) : cancelled sans annotation
     d'acquisition -> classe distincte de NO_RUNNER_ACQUIRED."""
@@ -168,6 +428,99 @@ def test_run_cancelled_no_jobs_is_a_distinct_signature():
         mod.fetch_annotations = orig_ann
     assert len(payload["rows"]) == 1
     assert payload["rows"][0]["class"] == "RUN_CANCELLED_NO_JOBS"
+
+
+def test_window_from_hours_is_a_rolling_window():
+    """--hours est un raccourci CALCULE de --created : la borne haute est
+    l'instant present, la basse son decalage exact. Deterministe par `now`
+    injecte — sans horloge reelle dans le test."""
+    from datetime import datetime, timedelta, timezone
+
+    from classify_job_deaths import window_from_hours
+
+    now = datetime(2026, 9, 21, 9, 40, 0, tzinfo=timezone.utc)
+    assert window_from_hours(24, now) == "2026-09-20T09:40:00Z..2026-09-21T09:40:00Z"
+    assert window_from_hours(6, now) == "2026-09-21T03:40:00Z..2026-09-21T09:40:00Z"
+    # Le franchissement d'un mois n'est pas un cas special : c'est le meme
+    # `timedelta`, et un census mensuel (`--hours 720`) y passe.
+    assert window_from_hours(720, now) == (
+        "2026-08-22T09:40:00Z..2026-09-21T09:40:00Z"
+    )
+    assert timedelta(hours=24) == timedelta(days=1)
+
+
+def test_window_from_hours_rejects_non_positive():
+    """0 ou negatif rendrait `START..END` a l'envers : l'API repondrait 0 run,
+    un zero propre indiscernable d'une absence reelle (meme piege que --sha
+    tronque). Fail bruyant plutot que silence."""
+    from classify_job_deaths import window_from_hours
+
+    for bad in (0, -1):
+        try:
+            window_from_hours(bad)
+            raise AssertionError(f"--hours {bad} doit refuser")
+        except SystemExit:
+            pass
+
+
+def test_hours_reaches_the_api_window(monkeypatch, capsys):
+    """Cablage de bout en bout : `--hours 24` doit arriver a l'appel API en
+    fenetre START..END de 24 h. Tester le helper seul laisserait passer la
+    regression qui compte ici — un `--hours` accepte puis IGNORE (l'appelant
+    retombant sur sa valeur par defaut) rendrait un census silencieusement
+    faux, non un crash."""
+    import re as _re
+
+    import classify_job_deaths as mod
+
+    captured: dict[str, str] = {}
+
+    def fake_iter_red_runs(branch, event, created, max_runs):
+        captured["created"] = created
+        return []
+
+    monkeypatch.setattr(mod, "iter_red_runs", fake_iter_red_runs)
+    monkeypatch.setattr(
+        sys, "argv", ["classify_job_deaths.py", "--hours", "24"]
+    )
+    assert mod.main() == 0
+
+    window = captured["created"]
+    match = _re.fullmatch(
+        r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\.\."
+        r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)",
+        window,
+    )
+    assert match, f"fenetre non conforme : {window!r}"
+    from datetime import datetime
+
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    span = datetime.strptime(match.group(2), fmt) - datetime.strptime(
+        match.group(1), fmt
+    )
+    assert span.total_seconds() == 24 * 3600
+
+
+def test_hours_and_created_are_mutually_exclusive():
+    """Deux fenetres contradictoires dans le meme appel : argparse doit
+    refuser (rc 2) plutot que d'en privilegier une en silence."""
+    import subprocess
+
+    script = REPO_ROOT / "scripts" / "ci" / "classify_job_deaths.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--hours",
+            "24",
+            "--created",
+            "2026-09-06..2026-09-07",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert "not allowed with" in result.stderr
 
 
 if __name__ == "__main__":
