@@ -227,15 +227,21 @@ RULE_SEVERITY = {
     # sur 4 notebooks (IIT-01 7, GameTheory-15e 1, MGS-07d 1, Sudoku-05 1) --
     # tranche reparee dans la meme PR par fix_math_delims.py (controle
     # differentiel sur IIT-06 : 118 conversions, byte-identique au commit
-    # manuel 5242d81907 au texte joint). Borne PAIRE ajoutee apres le faux
-    # positif Sudoku-05 (« (/ ou \\) selon l'OS », prose Windows) : la regle
-    # matche \( ... \) comme le fixer, jamais un \) isole.
+    # manuel 5242d81907 au texte joint). La borne est l'OUVREUR : un \( hors
+    # code est un defaut ferme ou non, un \) isole ne l'est pas. Un bornage
+    # PAIRE avait d'abord ete pose apres le faux positif Sudoku-05
+    # (« (/ ou \\) selon l'OS », prose Windows, aucun \( ouvrant) -- il fermait
+    # le faux positif en ouvrant un faux NEGATIF sur les \( non fermes, que
+    # seul l'ouvreur ferme (detail et delta corpus en tete de _MATH_PAREN_RE).
     # \[ ... \] (display) EST typesette par les deux defauts : hors classe de
     # defaut, volontairement non detecte.
     "math_paren_delims": ERROR,
     # #17380: WARN-first -- une macro LaTeX nue (backslash + lettres) hors
     # tout span math rend en texte brut partout. Mesure corpus 2026-09-22 :
-    # 40 hits sur 30 notebooks. FP mesures dans l'echantillon : sequences
+    # 40 hits sur 30 notebooks a l'ouverture, 32 sur 28 apres la tranche ERROR
+    # -- les 3 macros d'IIT-01 sont passees DANS un span $...$ avec la forme
+    # echappee, confirmation independante que la conversion est juste.
+    # FP mesures dans l'echantillon : sequences
     # code-like en prose nue (xt1\n xt2\n, \dev\...\scripts). Discipline
     # #12107/#12110/#12112 : promouvoir ERROR seulement apres mesure du taux
     # de FP, jamais a priori.
@@ -298,6 +304,11 @@ RULE_REPAIR = {
     # #17380 : promue ERROR dans la meme PR que son fixer (precedent #12109) --
     # la conversion \( -> $ / \) -> $ est deterministe sur les cellules
     # markdown, et le fixer porte l'invariant de round-trip qui la prouve.
+    # La regle borne sur l'OUVREUR, le fixer sur la PAIRE : la regle nomme la
+    # CLASSE (tout \( hors code, ferme ou non), le fixer repare le sous-ensemble
+    # deterministe. Un \( non ferme reste donc signale pour reparation humaine
+    # -- il n'existe aucune instance dans le corpus (delta mesure 2026-09-22),
+    # et il n'y a pas d'intention a deviner sur un span dont on ignore la fin.
     "math_paren_delims": (
         "python scripts/notebook_tools/fix_math_delims.py --apply <notebook>"
     ),
@@ -420,13 +431,26 @@ _STMT_LINE_RE = re.compile(
 # configs MathJax 3 de JupyterLab / VS Code ne declarent que $ et $$ -- le
 # LaTeX inline rend en texte brut dans les deux familles. \[ ... \] (display)
 # EST typesette par les deux defauts et n'est volontairement PAS detecte.
-# Borne PAIRE (meme regex que le fixer) : un \( ouvreur suivi d'un contenu sans
-# newline ni delimiteur interne et d'un \) fermeur. Fondee sur le FAUX POSITIF
-# fondateur mesure le 2026-09-22 (PR #17395) : « les separateurs (/ ou \\)
-# selon l'OS » (Sudoku-05 cell 5) porte un backslash litteral + vraie
-# parenthese de prose -- sans la borne paire, la regle bloquait a vie cette
-# prose legitime (le fixer, borne, ne pouvait jamais la convertir).
-_MATH_PAREN_RE = re.compile(r"\\\([^\n$]*?\\\)")
+# La borne est l'OUVREUR, pas la paire -- et c'est le resultat de trois etats
+# successifs, tous mesures le 2026-09-22 sur cette PR :
+#
+#   1. `\\[()]` (forme d'origine) : flaguait tout `\(` **et** tout `\)`. Faux
+#      POSITIF fondeur : « les separateurs (/ ou \\) selon l'OS » (Sudoku-05
+#      cell 5) porte un backslash litteral + une VRAIE parenthese de prose, et
+#      etait bloque a vie par une regle que le fixer ne pouvait pas convertir.
+#   2. la PAIRE `\\\([^\n$]*?\\\)` : ferme le faux positif, mais introduit un
+#      faux NEGATIF -- un `\(` **non ferme** ne rend pas moins en texte brut
+#      qu'une paire, et devenait invisible a la seule regle ERROR des maths
+#      (delta corpus mesure : 0 cellule aujourd'hui, donc latent, jamais
+#      silencieusement faux le jour ou il apparait).
+#   3. l'OUVREUR seul, ci-dessous : un `\(` hors code n'a aucune signification
+#      markdown legitime, ferme ou non -- c'est l'argument meme qui fonde la
+#      severite ERROR. Un `\)` isole reste ignore, donc le faux positif
+#      fondateur reste ferme : la classe `\(` est un SURENSEMBLE de la paire,
+#      et l'ecart entre les deux est mesure a 0 sur le corpus.
+# Le backslash de tete est litteral : `\\\(` matche `\(` et la forme ECHAPPEE
+# `\\(` (le match demarre au second backslash).
+_MATH_PAREN_RE = re.compile(r"\\\(")
 # Une macro LaTeX nue (backslash + lettres) hors de tout span math : rien ne
 # typesette la prose hors delimiteurs, elle rend en texte brut. Le motif
 # exige au moins une lettre apres l'antislash : `\\` (saut de table) et
@@ -979,6 +1003,18 @@ def _selfcheck() -> int:
          "math_paren_delims",
          "Elle gere automatiquement les separateurs (/ ou \\\\) selon l'OS.\n",
          False),
+        ("lone closer with no opener is silent (same FP class as Sudoku-05)",
+         "math_paren_delims",
+         "Le resultat \\) est affiche brut.\n",
+         False),
+        ("UNCLOSED opener fires (the pair bound lost it -- residual of 65c3f8a4)",
+         "math_paren_delims",
+         "Soit \\(S = \\mathbb{F}_p^n fini.\n",
+         True),
+        ("UNCLOSED ESCAPED opener fires too",
+         "math_paren_delims",
+         "On calcule \\\\(\\Phi ici.\n",
+         True),
         ("bare macro in prose",
          "math_bare_macro",
          "La norme du vecteur v se note \\|v\\| et le saut \\Delta t.\n",
@@ -1505,8 +1541,10 @@ def scan_cell(cell) -> list[dict]:
     # ---- inline math \( \) delimiters (#17380) -----------------------------------
     # Seule classe ERROR des regles math : \( hors code n'a aucune signification
     # markdown legitime et ne rend nulle part par defaut (regex en tete de
-    # _MATH_PAREN_RE). Fence-aware + code-span-aware : les deux exclusions sont
-    # celles de la cellule saine qui EXPLIQUE le delimiteur entre backticks.
+    # _MATH_PAREN_RE -- la borne est l'OUVREUR, donc un \( non ferme tire aussi).
+    # Fence-aware + code-span-aware : les deux exclusions sont celles de la
+    # cellule saine qui EXPLIQUE le delimiteur entre backticks, et celle de la
+    # prose a backslash litteral (`(/ ou \)`), qui ne porte aucun \(.
     for idx, ln in enumerate(lines):
         if idx in fenced:
             continue
@@ -1515,11 +1553,12 @@ def scan_cell(cell) -> list[dict]:
             findings.append({
                 "rule": rule,
                 "severity": RULE_SEVERITY[rule],
-                "message": ("inline math delimiter \\( ... \\) outside a code span: "
-                            "MathJax 2 (nbconvert) tex2jax and the MathJax 3 configs "
-                            "of JupyterLab/VS Code do not typeset it, so the inline "
-                            "LaTeX renders as raw source text. Convert to $ ... $ "
-                            "(the only inline delimiter rendered everywhere)"),
+                "message": ("inline math opener \\( outside a code span: MathJax 2 "
+                            "(nbconvert) tex2jax and the MathJax 3 configs of "
+                            "JupyterLab/VS Code do not typeset it, so the inline "
+                            "LaTeX renders as raw source text -- whether or not a "
+                            "\\) closes it. Convert to $ ... $ (the only inline "
+                            "delimiter rendered everywhere)"),
                 "evidence": ln.strip()[:100],
                 "hash": _cell_hash(rule, text),
             })

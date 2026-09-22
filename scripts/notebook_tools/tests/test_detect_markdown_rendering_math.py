@@ -63,9 +63,31 @@ def test_fenced_latex_block_is_silent():
 def test_sudoku05_prose_backslash_paren_is_silent():
     """Le FAUX POSITIF fondateur (mesure 2026-09-22, PR #17395) : « (/ ou \\\\)
     selon l'OS » est de la prose Windows, PAS un span math -- la regle se
-    borne a la paire \\( ... \\) comme le fixer, jamais a un \\) isole."""
+    borne a l'OUVREUR \\(, jamais a un \\) isole."""
     src = "Elle gere automatiquement les separateurs (/ ou \\\\) selon l'OS.\n"
     assert "math_paren_delims" not in _rules(src)
+
+
+def test_lone_closer_without_any_opener_is_silent():
+    """Meme classe que Sudoku-05 : un \\) sans \\( n'ouvre rien, il n'y a pas
+    de span a reparer -- c'est la borne qui tient le faux positif ferme."""
+    src = "Le resultat \\) est affiche brut.\n"
+    assert "math_paren_delims" not in _rules(src)
+
+
+def test_unclosed_opener_fires():
+    """Le FAUX NEGATIF qu'a ouvert le bornage PAIRE de 65c3f8a4 : un \\( non
+    ferme rend en texte brut exactement comme la paire, et etait devenu
+    invisible a la seule regle ERROR des maths. Delta corpus mesure : 0
+    cellule -- le defaut etait latent, pas absent."""
+    src = "Soit \\(S = \\mathbb{F}_p^n fini, sans fermeur.\n"
+    assert "math_paren_delims" in _rules(src)
+
+
+def test_unclosed_escaped_opener_fires_too():
+    """Meme forme ECHAPPEE (IIT-01 cellules 14/26/37), non fermee."""
+    src = "On calcule \\\\(\\Phi ici, sans fermeur.\n"
+    assert "math_paren_delims" in _rules(src)
 
 
 # ---------------------------------------------------------------------------

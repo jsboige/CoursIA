@@ -24,6 +24,14 @@ isole -- cas fondateur mesure le 2026-09-22 (attrape par le twin-parity audit
 de PR #17395) : « les separateurs (/ ou \\) selon l'OS », prose avec backslash
 litteral, n'est PAS un span math et reste intact.
 
+**La regle et le fixer ne bornent pas au meme endroit, et c'est volontaire.**
+La regle ERROR matche l'OUVREUR `\\(` -- la classe du defaut, ferme ou non :
+un `\\(` hors code ne rend pas mieux sans son fermeur. Le fixer, lui, ne
+convertit que la PAIRE : sur un span dont on ignore ou il se termine, il n'y a
+pas d'intention a deviner, et une conversion devinee serait un faux correctif.
+Un `\\(` non ferme reste donc signale pour reparation humaine ; le corpus n'en
+porte aucune instance (delta mesure : 0 cellule, 2026-09-22).
+
     \\(S = \\mathbb{F}_p^n\\)      ->      $S = \\mathbb{F}_p^n$
 
 La forme ECHAPPEE `\\\\( ... \\\\)` (un backslash litteral en tete de chaque
