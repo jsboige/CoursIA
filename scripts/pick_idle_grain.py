@@ -165,7 +165,7 @@ import random
 import re
 import subprocess
 import sys
-from typing import Any
+from typing import Any, Callable
 
 REPO = "jsboige/CoursIA"
 
@@ -457,6 +457,44 @@ VISITS_CACHE_TTL_SECONDS = 15 * 60
 SERIES_CACHE_TTL_SECONDS = 60 * 60
 
 
+def _newest_remote_issue_update() -> float | None:
+    """Sonde de fraicheur : date de modification la plus recente du pool distant.
+
+    Une requete, une trentaine d'enregistrements -- contre le payload complet
+    (jusqu'a 2000 issues avec leur body) : c'est ce qui rend la sonde moins
+    chere que ce qu'elle protege. La population visee est celle du pool
+    (`gh issue list` rend les issues, PAS les PR) : les entrees `pull_request`
+    sont donc filtrees, sinon chaque commentaire de PR forcerait un refresh du
+    pool et la cache ne servirait plus a rien.
+
+    Renvoie None quand la mesure echoue (reseau, `gh` absent, page de PR) :
+    l'appelant retombe alors sur un hit NON verifie, qu'il doit annoncer. Une
+    sonde muette ne doit jamais se lire comme une sonde rassurante.
+    """
+    command = [
+        "gh", "api",
+        f"repos/{REPO}/issues?state=open&sort=updated&direction=desc&per_page=30",
+        # `updated_at` en SNAKE_CASE : `gh api` rend le REST v3 tel quel, alors que
+        # `gh issue list --json` rend du camelCase (`updatedAt`). Demander
+        # `updatedAt` ici rend une chaine vide (champ absent), donc une sonde
+        # muette a chaque appel -- la verification ne fonctionne plus sans que
+        # rien ne plante. Attrape par la passe end-to-end, pas par les fakes.
+        "--jq", "[.[] | select(.pull_request == null)][0].updated_at",
+    ]
+    try:
+        out = subprocess.run(
+            command, capture_output=True, text=True, encoding="utf-8", check=True,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+    if not out or out == "null":
+        return None
+    try:
+        return dt.datetime.fromisoformat(out.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
 def _cached_payload(
     name: str,
     identity: list[str],
@@ -466,6 +504,7 @@ def _cached_payload(
     cache_mode: str,
     ttl_seconds: float,
     cache_status: dict[str, dict[str, Any]] | None,
+    probe: Callable[[], float | None] | None = None,
 ) -> Any:
     """Fetch raw JSON, optionally recording an observable cache decision."""
     if cache is None:
@@ -475,10 +514,83 @@ def _cached_payload(
         ttl_seconds,
         fetch,
         mode=cache_mode,
+        probe=probe,
     )
     if cache_status is not None:
         cache_status[name] = result.as_dict()
     return result.payload
+
+
+def cache_notice_lines(
+    cache_status: dict[str, dict[str, Any]],
+    *,
+    show_all: bool = False,
+) -> list[str]:
+    """Lignes a imprimer sur l'etat de la cache -- jamais vides s'il reste un doute.
+
+    Trois regimes, et c'est le deuxieme qui manquait (#17096) :
+
+    - ``stale`` : payload ancien servi APRES echec du refresh -- deja annonce ;
+    - ``hit`` **non verifie** : entree TTL-valide que l'on n'a PAS confrontee au
+      distant. La servir en silence laissait circuler des candidats possiblement
+      deja pris comme s'ils avaient ete verifies : annonce des qu'il en existe,
+      meme sans ``--cache-status``. Le silence EST le defaut ;
+    - tout le reste : seulement sous ``--cache-status`` (bavard sur demande).
+
+    Le fait rendu est verifiable : l'age du cache, l'ecart mesure par la sonde,
+    et l'aveu explicite quand aucune sonde n'a parle.
+    """
+    if not cache_status:
+        return []
+    stale_entries = {
+        name: entry
+        for name, entry in cache_status.items()
+        if entry.get("status") == "stale"
+    }
+    unverified_entries = {
+        name: entry
+        for name, entry in cache_status.items()
+        if entry.get("status") == "hit" and not entry.get("verified")
+    }
+    if not (show_all or stale_entries or unverified_entries):
+        return []
+    states = ", ".join(
+        f"{name}={entry.get('status')}"
+        + (
+            f" age={entry['age_seconds']:.0f}s"
+            if isinstance(entry.get("age_seconds"), (int, float))
+            else ""
+        )
+        + (f" ({entry.get('error')})" if entry.get("error") else "")
+        for name, entry in sorted(cache_status.items())
+    )
+    lines = [
+        f"Cache payloads : {states or 'aucune mesure partageable lue'} "
+        "| age = ecart a la lecture du cache, PAS a la modification distante"
+    ]
+    if stale_entries:
+        lines.append(
+            "!! STALE explicite : payload ancien utilise seulement apres "
+            "echec du refresh ; ce n'est pas une mesure fraiche."
+        )
+    if unverified_entries:
+        details = ", ".join(
+            f"{name} (servi apres "
+            f"{(entry.get('age_seconds') or 0):.0f} s de cache"
+            + (
+                ", sonde distante muette"
+                if entry.get("probe_delta_seconds") is None
+                else f", sonde a {entry['probe_delta_seconds']:+.0f} s"
+            )
+            + ")"
+            for name, entry in sorted(unverified_entries.items())
+        )
+        lines.append(
+            f"!! CACHE HIT NON RE-VERIFIE : {details} -- ces payloads n'ont PAS "
+            "ete confrontes au distant ; un candidat affiche libre peut y avoir "
+            "ete pris entre-temps. Relancer avec --cache refresh pour lever le doute."
+        )
+    return lines
 
 
 def fetch_pool(
@@ -486,6 +598,7 @@ def fetch_pool(
     cache: PayloadCache | None = None,
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
+    probe: Callable[[], float | None] | None = _newest_remote_issue_update,
 ) -> list[dict]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature.
 
@@ -513,6 +626,7 @@ def fetch_pool(
         cache_mode=cache_mode,
         ttl_seconds=POOL_CACHE_TTL_SECONDS,
         cache_status=cache_status,
+        probe=probe,
     )
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
@@ -4262,6 +4376,14 @@ def main(argv: list[str] | None = None) -> int:
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
+    # Calcule AVANT la branche --json : sans ca, l'avertissement de cache
+    # disparaissait sur la surface que les lanes utilisent reellement (`.vibe/
+    # commands/continue.md` documente `--json` comme premier geste de
+    # selection). Un hit non verifie serait reste visible en structure
+    # (`cache.pool.verified == false`) mais muet en clair -- or c'est
+    # precisement le silence que #17096 designe comme le defaut.
+    notice = cache_notice_lines(cache_status, show_all=args.cache_status)
+
     if args.json:
         print(json.dumps({
             "lane": args.lane, "seed_src": seed_src,
@@ -4317,23 +4439,17 @@ def main(argv: list[str] | None = None) -> int:
                 "fallback_after_claims": continuity["used"],
             },
         }, ensure_ascii=False, indent=2))
+        # STDERR : la sortie machine reste du JSON pur (stdout), mais l'humain
+        # qui lit la console -- et tout log qui capture stderr -- voit
+        # l'avertissement. Le rendre seulement en structure laissait le doute
+        # lisible par la machine et invisible pour l'operateur.
+        for line in notice:
+            print(line, file=sys.stderr)
         return 0
 
-    stale_entries = {
-        name: entry
-        for name, entry in cache_status.items()
-        if entry.get("status") == "stale"
-    }
-    if args.cache_status or stale_entries:
-        states = ", ".join(
-            f"{name}={entry.get('status')}"
-            + (f" ({entry.get('error')})" if entry.get("error") else "")
-            for name, entry in sorted(cache_status.items())
-        )
-        print(f"Cache payloads : {states or 'aucune mesure partageable lue'}")
-        if stale_entries:
-            print("!! STALE explicite : payload ancien utilise seulement apres "
-                  "echec du refresh ; ce n'est pas une mesure fraiche.")
+    if notice:
+        for line in notice:
+            print(line)
         print()
     non_default_filters = {
         key: value
