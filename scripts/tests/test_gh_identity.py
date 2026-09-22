@@ -80,6 +80,10 @@ def test_pin_pinning_off_avertit_et_ne_epingle_pas(monkeypatch, capsys):
 
 def test_resolve_echoue_bruyament_sans_compte_tresor(monkeypatch):
     monkeypatch.delenv("GH_TOKEN", raising=False)
+    # Hermetique : sans compte explicite, machine_account() leve AVANT le
+    # sous-processus sur tout hostname non mappe (le runner GA), et le
+    # message n'est alors pas celui de l'echec de trousseau.
+    monkeypatch.setenv("COURSIA_GH_ACCOUNT", "myia-po-test")
 
     class FakeProc:
         returncode = 1
@@ -90,7 +94,11 @@ def test_resolve_echoue_bruyament_sans_compte_tresor(monkeypatch):
     with pytest.raises(gh_identity.GhIdentityError) as exc:
         gh_identity.resolve_gh_token()
     msg = str(exc.value)
-    assert "gh auth token" in msg and "Phase C" in msg
+    # Parties stables du message : commande nommee, compte attendu, rc --
+    # pas la reformulation de la remediation (re-review Hermes, 0393a1d1).
+    assert "gh auth token" in msg
+    assert "myia-po-test" in msg
+    assert "rc=1" in msg
 
 
 # --- classification rate-limit (rc=2 != rc=1) ------------------------------
