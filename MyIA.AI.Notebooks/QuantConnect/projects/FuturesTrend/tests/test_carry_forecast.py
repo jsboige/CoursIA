@@ -34,8 +34,12 @@ from carry_forecast import (  # noqa: E402
     CARRY_FORECAST_CAP,
     CARRY_FORECAST_SCALAR,
     CARRY_SMOOTHING_SPANS,
+    TRADING_DAYS_PER_YEAR,
     annualized_raw_carry,
+    blend_forecasts,
     carry_forecasts,
+    daily_price_risk,
+    risk_adjusted_carry,
 )
 from carry_forecast import _ewma_adjusted  # noqa: E402  (invariant interne: constantes)
 
@@ -151,6 +155,75 @@ class TestEwmaInvariant(unittest.TestCase):
 
     def test_serie_vide_none(self):
         self.assertIsNone(_ewma_adjusted([], 5))
+
+
+class TestDailyPriceRisk(unittest.TestCase):
+    """daily_price_risk : EWMA(|retours daily|) * dernier prix."""
+
+    def test_retours_constants(self):
+        # Croissance monotone de +1% par bar : |retour| constant 0.01,
+        # EWMA d'une constante = la constante -> risque = 0.01 * dernier prix.
+        prices = [100.0 * 1.01 ** k for k in range(41)]
+        expected = 0.01 * prices[-1]
+        self.assertAlmostEqual(daily_price_risk(prices), expected, places=9)
+
+    def test_risque_nul_none(self):
+        # Prix parfaitement plat -> risque nul -> None (garde division).
+        self.assertIsNone(daily_price_risk([50.0] * 50))
+
+    def test_historique_trop_court_none(self):
+        self.assertIsNone(daily_price_risk([100.0]))
+        self.assertIsNone(daily_price_risk([]))
+
+    def test_prix_invalide_none(self):
+        self.assertIsNone(daily_price_risk([100.0, 0.0, 101.0]))
+
+
+class TestRiskAdjustedCarry(unittest.TestCase):
+    """risk_adjusted_carry : (near-further) annualise / risque annualise."""
+
+    def test_ratio_dimensionless(self):
+        # Prix alternant autour de 100 (|retour| ~1%) : risque quotidien
+        # en price terms ~= 0.01*100 = 1 $ ; annualise ~ sqrt(256)=16 $/an.
+        # raw_carry = 16 $/an -> ratio ~ 1.0 (aux variations de l'alternance).
+        prices = [100.0]
+        for _ in range(40):
+            prices.append(prices[-1] * 1.01)
+            prices.append(prices[-1] / 1.01)
+        annual_risk = daily_price_risk(prices) * np.sqrt(TRADING_DAYS_PER_YEAR)
+        raw = 2.0 * annual_risk
+        self.assertAlmostEqual(
+            risk_adjusted_carry(raw, prices), 2.0, places=9
+        )
+
+    def test_none_se_propage(self):
+        prices = [100.0, 101.0, 100.5, 102.0] * 10
+        self.assertIsNone(risk_adjusted_carry(None, prices))
+        self.assertIsNone(risk_adjusted_carry(12.0, [100.0]))
+
+
+class TestBlendForecasts(unittest.TestCase):
+    """blend_forecasts : 60/40 Carver avec renormalisation de jambe."""
+
+    def test_blend_60_40(self):
+        self.assertAlmostEqual(blend_forecasts(10.0, 5.0, 0.4), 8.0, places=12)
+        self.assertAlmostEqual(blend_forecasts(-10.0, 10.0, 0.4), -2.0, places=12)
+
+    def test_carry_absent_renormalise_sur_trend(self):
+        # Aucun span pret -> la jambe carry ne contribue pas ; le poids
+        # se renormalise sur la jambe disponible (article #16001, fenetre
+        # pre-min_periods), PAS un trend affaibli a 0.6x.
+        self.assertEqual(blend_forecasts(10.0, None, 0.4), 10.0)
+
+    def test_poids_aux_bornes(self):
+        self.assertAlmostEqual(blend_forecasts(10.0, 5.0, 0.0), 10.0, places=12)
+        self.assertAlmostEqual(blend_forecasts(10.0, 5.0, 1.0), 5.0, places=12)
+
+    def test_poids_invalide_leve(self):
+        with self.assertRaises(ValueError):
+            blend_forecasts(10.0, 5.0, 1.5)
+        with self.assertRaises(ValueError):
+            blend_forecasts(10.0, 5.0, -0.1)
 
 
 if __name__ == "__main__":

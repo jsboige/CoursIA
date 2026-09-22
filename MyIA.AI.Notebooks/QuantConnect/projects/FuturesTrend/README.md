@@ -310,6 +310,71 @@ et l'harmonisation des scalaires trend (approximation sqrt du #13 vs
 Table 29) sont explicitement reportés à la tranche 3, à trancher sur
 mesure (acceptance #17320).
 
+**Addendum 2026-09-22 (semis #17320, tranche 3) — le blend 60/40 est ACTIF.**
+`CARVER_CARRY_WEIGHT = 0.4`. Câblage livré :
+
+- `on_data` accumule par ticker une historique bornée (`CARRY_HISTORY_MAX =
+  130` barres) d'observations carry **risk-ajustées** : pour chaque symbole
+  continu, la chaîne (`data.future_chains`) est triée par expiry, la paire
+  near/further est pricée sur les bars daily, et l'observation est
+  `risk_adjusted_carry(near−further annualisé, closes du continu)` — le
+  dénominateur étant le risque quotidien en price terms (EWMA_32 des
+  |retours| × dernier prix, × √256), les deux jambes du ratio en $/an ;
+- le filtre d'univers passe de 0-90 à **0-200 jours** : les contrats
+  trimestriels ont leurs expiries successives à ~90 jours d'écart, un
+  filtre à 90 jours exclut le contrat further que la jambe carry doit
+  pricer ;
+- `_rebalance` appelle `_carry_forecast(history)` puis `blend_forecasts`
+  (helper pur) : `(1−w)·trend + w·carry` avec `w = 0.4`, et
+  **renormalisation de jambe** — tant qu'aucun span de lissage (5/20/60/120)
+  n'a son `min_periods`, la jambe carry est `None` et le poids se reporte
+  sur la trend (pas d'affaiblissement silencieux à 0.6×) ;
+- trois fonctions joined au module pur (`daily_price_risk`,
+  `risk_adjusted_carry`, `blend_forecasts`) + 10 tests CPU (total 25) ;
+- instrumentation REPAIR-9 : chaque passe de chaîne compte son issue
+  (`no_chain`/`no_pair`/`no_bars`/`formula_none`/`updates`) et le log de fin
+  porte `histories_filled` — le nombre de tickers dont la jambe carry
+  contribue réellement (18 attendus). C'est le diagnostic qui tranche le
+  risque résiduel du design (des chaînes daily qui ne se peuplent pas)
+  sans second backtest.
+
+Restent la tranche 4 : backtests QC Cloud dev/OOS ≥ 2016-2026 (annoncés sur
+le dashboard, projet dédié 36488678) et verdict BEATS/NO BEATS/INCONCLUSIVE
+sur les deux fenêtres — plus les arbitrages reportés (FDM-Table-52 vs
+breadth, harmonisation des scalaires trend) à trancher sur mesure.
+
+**Addendum 2026-09-22 (semis #17320, tranche 4) — verdict : NO BEATS sur les
+trois fenêtres.** Dates paramétrables (`$start`/`$end` YYYYMMDD, défauts
+2016-2026 inchangés) ; trois runs depuis le même compile (projet 36488678) :
+
+| Fenêtre | Run | Sharpe | CAR | PnL | Ordres |
+|---|---|---|---|---|---|
+| Full 2016-2026 | `b35d302d` | **−0.19** | −31.9 % | −$98 382 | 3 104 |
+| Dev 2016-2021 | `27d2de09` | **−0.311** | −59.7 % | −$98 381 | 3 098 |
+| OOS 2021-2026 | `2f590dcd` | **−0.128** | −54.3 % | −$98 874 | 1 269 |
+
+Verdict conforme à la règle C (multi-fenêtres, jamais « promising ») :
+**NO BEATS**, cohérent avec le verdict de la famille #13 (trend-only,
+Sharpe −0.168/−0.231) et avec le retour communauté de l'article #16001
+(Sharpe ~0,1 depuis 2015). L'ajout de la jambe carry **n'inverse pas** la
+pente — il l'aggrave sur la fenêtre full.
+
+**Finding diagnostique ouvert** (le + important pour la suite) : la perte
+~99 % du capital sur CHAQUE fenêtre est un régime de ruine, pas une mauvaise
+année — un portfolio trend+carry à 18 futurs ne perd pas 99 % partout par
+hasard. Hypothèse principale, non confirmée faute de logs (qc-mcp-lite n'expose
+pas le log du run) : **saturation de la jambe carry** — des ratios
+gap-annualisé/risque-annualisé grands font toucher le cap ±20 en permanence,
+40 % du blend devient un pari directionnel maximal par instrument, amplifié
+par le multiplicateur de vol (jusqu'à ×2) et le breadth (jusqu'à ×2) sur
+marge IBKR d'un compte de $100k. Le scalaire carry 30 (p.216) suppose une
+échelle de carry risk-ajusté typique ~0,3 ; l'instrumentation livrée en
+tranche 3 (`histories_filled`, compteurs par issue de chaîne) est l'organe
+qui confirmera — sa lecture exige les logs complets du run (UI web ou MCP
+full), repoussée au suivi #17320. Les arbitrages reportés (scalaires sqrt vs
+Table 29, FDM-Table-52 vs breadth) restent ouverts et sont désormais
+motivés par ce finding.
+
 ### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
 
 Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g` pour c.1109,
