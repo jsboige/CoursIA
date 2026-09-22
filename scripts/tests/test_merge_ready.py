@@ -66,9 +66,11 @@ def default_view(
     files: tuple[str, ...] = ("src/a.py",),
     body: str | None = None,
     comments: list[dict] | None = None,
+    title: str = "fix(x): une PR ordinaire",
 ) -> dict:
     return {
         "number": pr,
+        "title": title,
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": HEAD,
@@ -215,6 +217,30 @@ def test_skip_file_under_github_dir(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"].startswith("scope:.github:")
+
+
+def test_skip_frozen_umbrella_in_title(tmp_path):
+    # #17021 : mergee sous le veto densite #17040 sur un dossier READY.
+    view = default_view(title="fix(pedagogy,#13410): g59-search-1 — 9 lectures")
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "frozen:#13410(veto #17040)"
+    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
+    assert not any(" merge " in f" {flat} " for flat in runner.flat())
+
+
+def test_skip_frozen_umbrella_in_body(tmp_path):
+    view = default_view(body=GRAIN_MED + "\n\nSee #13410 (densite).")
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "frozen:#13410(veto #17040)"
+
+
+def test_frozen_umbrella_prefix_number_not_matched():
+    assert mr.frozen_umbrella_exclusion("fix: #134100", "voir #134101") is None
+    assert mr.frozen_umbrella_exclusion("fix: #13410.", None) is not None
 
 
 def test_skip_grain_deep(tmp_path):

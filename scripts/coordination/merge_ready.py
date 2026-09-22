@@ -25,7 +25,9 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
    ``scripts/grain_tag.py`` (#9485, meme lecteur que variation_light_cap
    et le guard CI), jamais une regex locale ; liste de fichiers TRONQUEE
    (``changedFiles`` > fichiers listes, ou absent) -> skip fail-closed,
-   un fichier harnais non liste ne doit pas passer ;
+   un fichier harnais non liste ne doit pas passer ; PR qui se reclame
+   (titre ou body) d'un parapluie GELE par un veto user
+   (``FROZEN_UMBRELLAS``) -> skip, quel que soit son dossier ;
 2bis. pre-controle du dernier dossier ``[ADJOINT PREFLIGHT]`` : tete
    perimee ou ``b0:`` different de ``clear`` -> skip SANS payer le gate
    (un dossier illisible est laisse au gate, qui tranche) ;
@@ -74,6 +76,7 @@ import argparse
 import datetime as _dt
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -97,6 +100,14 @@ REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
+
+# Parapluies GELES par un veto user : une PR qui s'en reclame (titre ou body)
+# sort du perimetre (b), quel que soit son dossier. Ni le gate d'entree ni B.0
+# ne lisent un veto pose sur une issue : l'organe le lit ici, fail-closed.
+# 13410 = campagne densite, gelee par le veto #17040 (mandat user 2026-09-20).
+# #17021 y a ete mergee le 2026-09-22 sur un dossier READY et un B.0 vert :
+# c'est l'incident qui fonde cette liste.
+FROZEN_UMBRELLAS = {"13410": "17040"}
 
 # Codes de retour DOCUMENTES des organes appeles. Tout autre rc est une
 # erreur inattendue -> arret du run, jamais de merge en aveugle.
@@ -228,6 +239,20 @@ def scope_exclusion(path: str) -> str | None:
     return None
 
 
+def frozen_umbrella_exclusion(title: str | None, body: str | None) -> str | None:
+    """Raison d'exclusion si la PR se reclame d'un parapluie gele, sinon None.
+
+    Une reference ``#<numero>`` dans le titre ou le body suffit (fail-closed :
+    une PR de redressement qui cite le parapluie sort aussi du perimetre et se
+    merge a la main). ``#134100`` ne vaut pas ``#13410``.
+    """
+    text = " ".join((title or "", body or ""))
+    for umbrella, veto in FROZEN_UMBRELLAS.items():
+        if re.search(rf"#{umbrella}(?!\d)", text):
+            return f"frozen:#{umbrella}(veto #{veto})"
+    return None
+
+
 def grain_exclusion(body: str | None) -> str | None:
     """Raison d'exclusion du tag Grain, sinon None.
 
@@ -302,7 +327,7 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
     return numbers
 
 
-PR_VIEW_FIELDS = "number,isDraft,body,headRefOid,files,changedFiles,comments"
+PR_VIEW_FIELDS = "number,title,isDraft,body,headRefOid,files,changedFiles,comments"
 
 
 def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
@@ -520,6 +545,9 @@ def evaluate_pr(
     if not isinstance(changed, int) or changed > listed:
         return skip(f"files-truncated:{listed}/{changed}")
     reason = grain_exclusion(view.get("body"))
+    if reason is not None:
+        return skip(reason)
+    reason = frozen_umbrella_exclusion(view.get("title"), view.get("body"))
     if reason is not None:
         return skip(reason)
     reason = precheck_dossier(view)
