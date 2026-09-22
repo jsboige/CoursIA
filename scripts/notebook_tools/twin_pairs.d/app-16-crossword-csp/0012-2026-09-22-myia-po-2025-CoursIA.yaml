@@ -1,0 +1,16 @@
+date: '2026-09-22'
+by: myia-po-2025:CoursIA
+python_sha: dd78b5a7411aaf9cbd67793058cb8bcb5d9ead1b
+csharp_sha: 169cc9a6111579b638618f0677658ff1910de1c6
+content_python_sha: 973bb4fb7cfc28ca13625fc561d49484883a945c7ffe8fa8289c715557485f2c
+content_csharp_sha: 9588375f3e44ce00e33e6a8db07a785d6e7a813c947913a9fede2296bd75421b
+reason: >-
+  Re-attestation apres fusion de origin/main dans la branche (repair #17204,
+  reserve Hermes du 2026-09-21). La derive au merge ref provenait du cote
+  PYTHON : main a fait evoluer le jumeau python (#16796 fusion de lecture)
+  apres le fork de la branche, l'attestation 0011 couvrait l'ancien sha.
+  Controle mesure au head fusionne : cellules de code C# 12/12 byte-identiques
+  a origin/main, chirurgie markdown de la branche conservee (5 fragments
+  supprimes verifies absents, 0 resurgence), cote python = version main.
+  La parite n'a pas ete reparee, elle a ete RE-ATTESTEE. Aucune re-execution,
+  aucun strip outille en attente.
