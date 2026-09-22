@@ -493,6 +493,7 @@ en référence.
 | `Argument_Analysis_Dung_AF_Semantics.ipynb` | **fondationnel** — sémantiques grounded/preferred/stable de Dung (1995) | aucun (point d'entrée de l'arc 3) |
 | `Argument_Analysis_Value_Based_AF.ipynb` | VAF de Bench-Capon (2003) — Dung enrichi par les valeurs | `Dung_AF_Semantics` |
 | `Argument_Analysis_Toulmin_Model.ipynb` | Modèle structurel informel de Toulmin (1958) — 6 composants | aucun (indépendant, pont computationnel vers Dung en fin de parcours) |
+| `Argument_Analysis_Knowledge_Base.ipynb` | Mémoire d'un débat : population transitive des propositions, requêtes support/attaque par négation lexicale `¬` | aucun (indépendant ; complète `Toulmin_Model`, `Schemes_Walton` et `Dialogues_Protocolises`, cités en contexte) |
 | `Argument_Analysis_Dialogues_Protocolises.ipynb` | Protocoles Walton–Krabbe : inquiry/persuasion comme machines à états sur actes de parole | aucun (indépendant ; voisin de Toulmin_Model par la structure de l'échange, des Agentic par la multi-agentique) |
 | `Argument_Analysis_Ranking_Semantics.ipynb` | Sémantiques graduées (h-Categoriser, fardeau) | `Dung_AF_Semantics` |
 | `Argument_Analysis_Dated_Graphs.ipynb` | Instrument $G_t^{arg} \to G_{t+1}^{arg}$ (Epic #13303, issue #13310) | `Dung_AF_Semantics` |
