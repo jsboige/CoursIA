@@ -63,8 +63,20 @@ wch_git() {
 # conclut "sain" que sur un compte > 0.
 wch_broken_refs() {
   local repo="$1"
-  wch_git -C "$repo" for-each-ref 2>&1 >/dev/null \
-    | sed -n 's/^warning: ignoring broken ref //p'
+  # `|| true` : le rc de git n'est PAS le signal ici (rc=0 avec une ref
+  # cassee -- cf le controle positif "stderr, pas le code de retour"
+  # ci-dessus), mais il vaut 128 sur un depot illisible. Sous le
+  # `set -euo pipefail` de entrypoint.sh, ce 128 traverse le pipe (pipefail)
+  # puis la substitution de commande, et TUE le conteneur a la ligne
+  # `broken="$(wch_broken_refs ...)"` de wch_integrity_pass -- donc AVANT la
+  # branche de purge, le seul cas pour lequel cette fonction existe.
+  # Mesure firsthand 2026-09-18 (slot myia-ai-01-wsl-8) : .git/HEAD reduit a
+  # 16 octets NUL, aucune ref lisible, 174 demarrages consecutifs morts en
+  # rc=128 sans une ligne de journal. La sortie VIDE est la reponse correcte
+  # pour un depot illisible : l'appelant la croise avec wch_ref_count et ne
+  # conclut "sain" que sur un compte > 0.
+  { wch_git -C "$repo" for-each-ref 2>&1 >/dev/null \
+      | sed -n 's/^warning: ignoring broken ref //p'; } || true
 }
 
 # Nombre de refs lisibles. Le controle positif du detecteur : un depot
@@ -72,7 +84,11 @@ wch_broken_refs() {
 # ownership ou d'un .git muet -- on ne conclut jamais "sain" dessus.
 wch_ref_count() {
   local repo="$1"
-  wch_git -C "$repo" for-each-ref --format 'x' 2>/dev/null | wc -l | tr -d ' '
+  # Meme garde que wch_broken_refs, et pour la meme raison. La SORTIE etait
+  # deja correcte sans lui (`wc -l` rend 0 quand git n'ecrit rien) : seul le
+  # rc devait etre neutralise, pour que la mesure ne tue pas son mesureur.
+  { wch_git -C "$repo" for-each-ref --format 'x' 2>/dev/null \
+      | wc -l | tr -d ' '; } || true
 }
 
 # Retire les fichiers de ref/reflog de ZERO octet, dans .git/refs et
@@ -97,7 +113,19 @@ wch_drop_empty_refs() {
 # Compte de packs du depot -- la grandeur que la maintenance borne.
 wch_pack_count() {
   local repo="$1"
-  ls "$repo"/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d ' '
+  # Troisieme instance du meme defaut, et la plus large : quand le glob ne
+  # matche AUCUN pack, `ls` rend rc=2 -- ce qui n'est pas une corruption mais
+  # l'etat banal d'un clone interrompu en cours d'ecriture. Sans ce garde,
+  # wch_maintenance_pass tuait le conteneur sur un depot sain mais sans pack.
+  { ls "$repo"/.git/objects/pack/*.pack 2>/dev/null \
+      | wc -l | tr -d ' '; } || true
+}
+
+# Compte de lignes non vides d'un bloc de texte. `grep -c` rend rc=1 quand le
+# compte est ZERO -- exactement le cas de la ligne de purge, ou `broken` est
+# vide (depot illisible) alors que le compte de refs est nul.
+wch_count_lines() {
+  printf '%s\n' "$1" | grep -c . || true
 }
 
 # Precondition d'integrite AVANT qu'un slot n'accepte un job : detecte les
@@ -111,7 +139,7 @@ wch_integrity_pass() {
 
   broken="$(wch_broken_refs "$repo")"
   if [ -n "$broken" ]; then
-    n="$(printf '%s\n' "$broken" | grep -c .)"
+    n="$(wch_count_lines "$broken")"
     echo "work_cache: $n ref(s) cassee(s) dans $repo -- reparation (refs/logs vides retires, objects/ hors perimetre)"
     refs_purged="$(wch_drop_empty_refs "$repo")"
     echo "work_cache: $refs_purged fichier(s) de zero octet retire(s) sous .git/refs et .git/logs"
@@ -124,8 +152,10 @@ wch_integrity_pass() {
   # le seul etat honnete est le clone frais, pas un "sain" non prouve.
   broken="$(wch_broken_refs "$repo")"
   n="$(wch_ref_count "$repo")"
-  if [ -n "$broken" ] || [ "$n" -eq 0 ]; then
-    echo "work_cache: $repo IRRECUPERABLE (${n} refs lisibles, encore $(printf '%s\n' "$broken" | grep -c .) cassees) -- purge du clone, le job suivant reclonera"
+  # ${n:-0} : un compte vide ferait echouer `[ -eq ]` en rc=2, et le garde
+  # mourrait une derniere fois juste avant de prononcer la purge.
+  if [ -n "$broken" ] || [ "${n:-0}" -eq 0 ]; then
+    echo "work_cache: $repo IRRECUPERABLE (${n} refs lisibles, encore $(wch_count_lines "$broken") cassees) -- purge du clone, le job suivant reclonera"
     rm -rf -- "$repo"
     return 0
   fi
