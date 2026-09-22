@@ -776,14 +776,26 @@ def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
     PATH courant. Un test anterieur qui pollue ``os.environ["PATH"]`` avec un
     bin/ factice en tete ne doit pas detourner les topologies reelles (le
     discriminateur observe : un git qui interprete ``file:///C:/`` en
-    ``/C:/``). Preuve : le fake ecrit un marqueur s'il est appele -- il doit
-    rester absent ET le vrai git doit repondre."""
+    ``/C:/``).
+
+    Windows (reserve B.0, mesure sur poste natif) : CreateProcess n'appende
+    que ``.exe`` pour un nom nu -- un ``git.bat`` factice est INVISIBLE pour
+    ``subprocess(["git", ...])`` et le test restait vert pre-fix. Le faux
+    mesurable est une copie de ``where.exe`` nommee ``git.exe`` : vrai ``.exe``
+    en tete du PATH, il EST choisi par l'appel nu (la recherche CreateProcess
+    lit le PATH du processus APPELANT, que monkeypatch.setenv mute -- pas
+    celui de ``env=`` passe a l'enfant) et echoue (rc!=0, stdout vide).
+    Pre-fix : rouge. Post-fix : _GIT fige a l'import sous PATH propre, le
+    vrai git repond."""
     marker = tmp_path / "fake_git_called"
     bindir = tmp_path / "bin"
     bindir.mkdir()
     if os.name == "nt":
-        fake = bindir / "git.bat"
-        fake.write_text('@echo off\r\ntype nul > "' + str(marker) + '"\r\nexit /b 1\r\n', encoding="utf-8")
+        fake = bindir / "git.exe"
+        shutil.copy(
+            Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "where.exe",
+            fake,
+        )
     else:
         fake = bindir / "git"
         fake.write_text("#!/bin/sh\ntouch '" + str(marker) + "'\nexit 1\n", encoding="utf-8")
@@ -791,5 +803,8 @@ def test_git_helper_immune_to_path_pollution(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", str(bindir) + os.pathsep + os.environ.get("PATH", ""))
     r = _git(tmp_path, "--version")
     assert r.returncode == 0, r.stderr
+    # Windows : le faux (where.exe copie) repond rc!=0 avec stdout vide --
+    # la signature du VRAI git fait foi. POSIX : le faux ecrit un marqueur.
+    assert "git version" in r.stdout, "stdout != vrai git : {!r}".format(r.stdout[:80])
     assert not marker.exists(), "le git factice du PATH pollue a ete appele"
     assert Path(_GIT).name.lower().startswith("git"), _GIT
