@@ -1,6 +1,6 @@
 # Protocole de variation — anti-monoculture, tag déclaré + merge-gate coordinateur
 
-S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Source : mandat user 2026-07-21. Les concepts (tiers DEEP/MED/LIGHT, rotation des genres, never-idle) vivent dans [proactive-coordination.md](proactive-coordination.md) R6/R7 — la monoculture a persisté parce qu'ils étaient auto-évalués et invisibles ; ce fichier ajoute la mécanique qui les fait mordre : **tag auditable**, **merge-gate**, **obligation de provisionnement**.
+S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`** — à une exception nommée : **G-VAR-2 et G-VAR-3 ne s'appliquent pas aux PRs propres d'`ai-01`** (arbitrage user 2026-09-22, voir §2). Source : mandat user 2026-07-21. Les concepts (tiers DEEP/MED/LIGHT, rotation des genres, never-idle) vivent dans [proactive-coordination.md](proactive-coordination.md) R6/R7 — la monoculture a persisté parce qu'ils étaient auto-évalués et invisibles ; ce fichier ajoute la mécanique qui les fait mordre : **tag auditable**, **merge-gate**, **obligation de provisionnement**.
 
 **Détail (justifications mesurées, incidents fondateurs, verbatims)** : [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md).
 
@@ -69,9 +69,15 @@ Le raisonnement : G-VAR-1 demande « qu'est-ce qui atteint `main` quand ce trava
 
 - **G-VAR-2 — Budget LIGHT proportionnel : `max(1, grains_mergés_du_jour // 3)`**, par lane et par jour, **toutes catégories LIGHT confondues**. Une lane à 1-5 grains garde le plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six. Au-delà : la LIGHT attend demain ou cède la place à du DEEP/MED. Le budget se **calcule** — [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — il ne se déclare pas.
 
+  **Le coordinateur n'a pas de budget LIGHT (arbitrage user 2026-09-22).** Verbatim : « *tu es le coordinateur, tu n'as pas de budget light, la coordination prime avant tout* ». G-VAR-2 encadre la **monoculture d'une lane de production** — une lane qui enchaînerait le facile au lieu de piocher du contenu dans le pool. Le CI et le harnais sont le **rôle** d'`ai-01`, pas sa facilité : lui appliquer le cap revient à bloquer la coordination avec un garde conçu pour autre chose. Ses PRs propres se mergent sans délai de cap, sous les gates de merge ordinaires (B.0, dossier tiers, checks).
+
+  **L'organe n'est PAS modifié, et c'est délibéré** : `variation_light_cap.py` continue de rendre `cap_reached` pour `myia-ai-01`. Il **mesure**, il ne prescrit pas — et sa mesure reste le signal juste de G-VAR-1 : un `light_genre` élevé sur le coordinateur dit que son cycle est intégralement META et qu'il doit un grain DEEP de CONTENU au binôme. Exempter de la **prescription** n'autorise pas à aveugler la **mesure**.
+
   Note d'arbitrage (#11154) : les PRs `DEFECT-ALIVE` (dette #11044) **consomment le budget LIGHT**, avec exception écrite + mesure de la dette résiduelle à chaque merge au cap.
 
 - **G-VAR-3 — Pas deux fois le même GENRE LIGHT consécutif.** Sur les genres LIGHT (`guard` · `ledger` · `docs` · `readme` · `test`) : bloqué dès 2 grains consécutifs de même genre, **sauf** exception mécanique. Les genres de CONTENU ne relèvent pas de G-VAR-3 — un spécialiste Lean qui enchaîne deux preuves DEEP distinctes n'est **pas** la monoculture visée.
+
+  **Même périmètre que G-VAR-2** : ne s'applique pas aux PRs propres d'`ai-01` (arbitrage user 2026-09-22).
 
   **Exception MED/DEEP mesurable (#14357)** : deux grains consécutifs d'un même genre LIGHT sont autorisés **ssi** (i) le **second** est MED ou DEEP et (ii) les deux PRs ne partagent **aucun fichier**. Le critère est mécanique — rendu par l'organe (`variation_light_cap.py`, clé `exempt_runs`) et consommé par le gate (`variation_adjacency_guard.py`, verdict `exempted`), jamais jugé à la main ; un run de ≥3 ne s'exempte que si **chaque paire adjacente** satisfait (i) et (ii) ; ce que l'organe ne peut pas lire ne s'exempte pas — fail-CLOSED. Tell décisif : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
 
