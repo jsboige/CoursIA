@@ -567,10 +567,25 @@ def cmd_doctor(args) -> int:
             defects += 1
 
     try:
-        has = bool(read_passphrase())
+        stored = read_passphrase()
     except SystemExit:
-        has = False
+        stored = None
+    has = bool(stored)
     print(f"passphrase: {'OK  posee dans le gestionnaire d identifiants' if has else 'ABSENTE  -- lancer `bootstrap`'}")
+    if has:
+        # L'empreinte EST l'organe du critere de retrait du PDF de secours.
+        # DPAPI n'etant ni exportable ni interrogeable a distance, aucune
+        # machine ne peut verifier qu'une AUTRE a bootstrappe. Ce qui circule,
+        # c'est ce sha256 tronque : non reversible, donc publiable sur un
+        # dashboard, et suffisant pour repondre a la seule question qui compte
+        # -- les N machines portent-elles la MEME passphrase ?
+        #
+        # Sans cette ligne, le critere « toutes les machines ont bootstrappe »
+        # ne serait pas mesurable, et « tout le monde est enregistre » resterait
+        # une affirmation invérifiable.
+        print(f"empreinte : {fingerprint(stored)}")
+        print(f"            a comparer aux {len(FLEET_MACHINES)} machines : "
+              + ", ".join(FLEET_MACHINES))
     if not has:
         defects += 1
 
