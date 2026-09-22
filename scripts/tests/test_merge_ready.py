@@ -199,7 +199,7 @@ def test_skip_file_under_claude_dir(tmp_path):
     runner = ScriptedRunner(views={123: default_view(files=(".claude/rules/x.md",))})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"].startswith("scope:.claude/")
+    assert lines[-1]["reason"].startswith("scope:.claude:")
 
 
 def test_skip_file_claude_md_any_dir(tmp_path):
@@ -214,7 +214,7 @@ def test_skip_file_under_github_dir(tmp_path):
     runner = ScriptedRunner(views={123: default_view(files=(".github/workflows/a.yml",))})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"].startswith("scope:.github/")
+    assert lines[-1]["reason"].startswith("scope:.github:")
 
 
 def test_skip_grain_deep(tmp_path):

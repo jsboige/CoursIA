@@ -23,7 +23,12 @@ PR, TOUT doit tenir sinon skip avec raison nommee :
    ``.github/`` ; tier du tag ``Grain:`` MED ou LIGHT (DEEP refuse, tier
    illisible refuse) -- lecture par le parseur PARTAGE
    ``scripts/grain_tag.py`` (#9485, meme lecteur que variation_light_cap
-   et le guard CI), jamais une regex locale ;
+   et le guard CI), jamais une regex locale ; liste de fichiers TRONQUEE
+   (``changedFiles`` > fichiers listes, ou absent) -> skip fail-closed,
+   un fichier harnais non liste ne doit pas passer ;
+2bis. pre-controle du dernier dossier ``[ADJOINT PREFLIGHT]`` : tete
+   perimee ou ``b0:`` different de ``clear`` -> skip SANS payer le gate
+   (un dossier illisible est laisse au gate, qui tranche) ;
 3. gate d'entree ``check_adjoint_prevalidation.py <PR> --json`` ->
    ``"ready": true`` (exit 0). Les rc documents du gate (1 no-dossier,
    2 unknown, 3 blocked) sont des SKIPS nommes, pas des erreurs ;
@@ -210,9 +215,9 @@ def scope_exclusion(path: str) -> str | None:
     """
     p = (path or "").replace("\\", "/")
     if p == ".claude" or p.startswith(".claude/"):
-        return f"scope:.claude/{path}"
+        return f"scope:.claude:{path}"
     if p == ".github" or p.startswith(".github/"):
-        return f"scope:.github/{path}"
+        return f"scope:.github:{path}"
     if p == "CLAUDE.md" or p.endswith("/CLAUDE.md"):
         return f"scope:CLAUDE.md:{path}"
     return None
