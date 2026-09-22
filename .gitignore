@@ -375,6 +375,10 @@ MigrationBackup/
 .env.*.local
 .env.docker
 
+# Coffre local de secrets : master.env, cles privees des GitHub Apps de lane (#17437).
+# Ignore en entier par la regle versionnee, pas seulement par un .git/info/exclude local.
+.secrets/
+
 # HuggingFace tokens (Phase 29 - ÉTAPE 24F)
 .secrets/.env.huggingface
 .secrets/.env.huggingface.backup
