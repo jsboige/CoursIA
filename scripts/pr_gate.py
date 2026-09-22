@@ -1258,6 +1258,13 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                     # measured on #15778/#15836/#15877, where the API returns
                     # the field but this projection dropped it.
                     "completed_at": run.get("completed_at"),
+                    # #17364: `details_url` points at the Actions job behind
+                    # the check-run. The runner-death annotation reads the
+                    # job's steps through it; dropping it here would make that
+                    # enrichment inert in production while synthetic fixtures
+                    # (which set it by hand) stay green -- the exact #15905
+                    # shape, twice.
+                    "details_url": run.get("details_url"),
                     "id": run.get("id"),
                     # #17031: the check-run's `details_url` is the ONLY way to
                     # trace a check back to the workflow run that produced it
@@ -1404,6 +1411,81 @@ def mark_inflight_successors(checks: list[dict], runs: Sequence[Mapping]) -> Non
             check["successor_run_inflight"] = True
 
 
+# A real-red bad entry ("name (failure)" / "name (action_required)", the two
+# CONCLUSION_BAD conclusions classify suffixes) -- the only entries whose
+# runner-death annotation makes sense. Unconcluded entries already carry their
+# own clause and repair gesture in `verdict` (#15693).
+_REAL_RED_ENTRY_RE = re.compile(r"^(?P<name>.+) \((?:failure|action_required)\)$")
+
+# An Actions-managed check-run points at its job via details_url; the job id is
+# the tail of the path. Legacy statuses and external checks point elsewhere (or
+# nowhere) and are skipped -- there is no job to read steps from.
+_JOB_URL_RE = re.compile(r"/actions/runs/\d+/job/(\d+)")
+
+
+def _annotate_runner_deaths(
+    repo: str,
+    bad: "Sequence[str]",
+    checks: "Sequence[dict]",
+    fetch_job=None,
+) -> list[str]:
+    """Carry the runner-lost observation into real-red bad entries (#17364).
+
+    Measured 2026-09-22 on the 16 blocked PRs of #17364: a self-hosted runner
+    that vanishes mid-step (`myia-ai-01-wsl-2`) force-concludes its job
+    ``failure`` with the running step left at ``conclusion: null`` and the logs
+    never uploaded. That check-run is *byte-identical* to a code failure from
+    the check-runs API the gate reads, so the FAIL line told twelve lanes
+    their code was broken when the code had never been measured.
+
+    This changes NO verdict: the entry stays in ``bad``, still routes to the
+    ``failing checks`` clause (the annotation's parenthesised group is not an
+    unconcluded suffix, so ``_split_bad`` is unaffected), and the exit code is
+    untouched. It only reads one more current thing -- the job's steps -- and
+    appends the observation, the same posture as ``_pending_label`` (#14976:
+    name what was actually observed instead of letting the reader guess).
+
+    Purely diagnostic: any failure to enrich (non-Actions check, fetch error,
+    job without steps) leaves the entry unchanged. Never raises.
+    """
+    fetch = fetch_job or _gh_api
+    # Name -> latest check-run, the same de-duplication classify applied, so
+    # the job read is the one whose conclusion the entry carries (an older
+    # same-name job would annotate from the wrong attempt).
+    latest: dict[str, dict] = {}
+    for check in dedupe_latest(checks):
+        latest[check.get("name") or ""] = check
+
+    annotated: list[str] = []
+    for entry in bad:
+        match = _REAL_RED_ENTRY_RE.match(entry)
+        check = latest.get(match.group("name")) if match else None
+        job_url = (check or {}).get("details_url") or ""
+        job_match = _JOB_URL_RE.search(job_url)
+        if job_match is None:
+            annotated.append(entry)
+            continue
+        try:
+            job = fetch(f"repos/{repo}/actions/jobs/{job_match.group(1)}")
+        except Exception:
+            # GateError (gh failure), JSON noise, anything: the verdict does
+            # not depend on this enrichment. Report the unannotated red.
+            annotated.append(entry)
+            continue
+        steps = (job or {}).get("steps") or []
+        unconcluded = [s.get("name") for s in steps if s.get("conclusion") is None]
+        if not unconcluded or (job or {}).get("conclusion") != "failure":
+            annotated.append(entry)
+            continue
+        step_name = unconcluded[0] or "<unnamed step>"
+        annotated.append(
+            f'{entry[:-1]}, runner lost mid-step at "{step_name}"'
+            " -- the code was never measured: rerun the CHILD run"
+            " that owns the job, not the gate)"
+        )
+    return annotated
+
+
 def wait_and_decide(
     repo: str,
     sha: str,
@@ -1418,6 +1500,7 @@ def wait_and_decide(
     fetch=fetch_checks,
     now=time.monotonic,
     detail: "dict | None" = None,
+    fetch_job=None,
 ) -> tuple[int, str]:
     """Poll until the check set is stable, then decide.
 
@@ -1475,7 +1558,10 @@ def wait_and_decide(
                 # Fail fast: a failure cannot be undone by waiting longer.
                 _report_advisory(advisory)
                 return verdict(
-                    pending, bad, settled=True, declared_timeouts=timeouts
+                    pending,
+                    _annotate_runner_deaths(repo, bad, checks, fetch_job=fetch_job),
+                    settled=True,
+                    declared_timeouts=timeouts,
                 )
             print(
                 f"[pr-gate] holding: {len(inflight)} cancelled check(s) whose "
@@ -1550,7 +1636,11 @@ def wait_and_decide(
             if final_bad:
                 _report_advisory(final_advisory)
                 return verdict(
-                    final_pending, final_bad, settled=True,
+                    final_pending,
+                    _annotate_runner_deaths(
+                        repo, final_bad, final_checks, fetch_job=fetch_job
+                    ),
+                    settled=True,
                     declared_timeouts=timeouts,
                 )
             if not final_pending:
