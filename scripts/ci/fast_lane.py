@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
-    TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12,
+    TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12, TRANCHE13, TRANCHE14,
     Guard,
 )
 
@@ -366,7 +366,7 @@ def main(argv: list[str] | None = None) -> int:
 
     guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
-              + TRANCHE10 + TRANCHE11 + TRANCHE12
+              + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
