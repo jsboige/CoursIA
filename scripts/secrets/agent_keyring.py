@@ -126,34 +126,43 @@ def entry_key(entry) -> tuple[str, str]:
     return ((entry.title or "").strip().lower(), (entry.username or "").strip().lower())
 
 
+# Sel public et fixe : il n'apporte PAS de secret (il est dans le source), il
+# separe les domaines. Ce qui protege ici, c'est le cout par essai.
+_FP_SALT = b"MyIA-Keys/agent_keyring/fingerprint/v1"
+_FP_ROUNDS = 600_000  # recommandation OWASP 2023 pour PBKDF2-HMAC-SHA256
+
+
 def fingerprint(value: str) -> str:
-    """Empreinte NON reversible d'un secret : longueur + sha256 tronque.
+    """Empreinte NON reversible et COUTEUSE a forcer, pour la passphrase.
 
-    Une version anterieure publiait les **4 derniers caracteres** -- convention
-    courante pour un jeton, qu'on recoupe a l'oeil avec l'interface de son
-    fournisseur. Elle est abandonnee ici, pour deux raisons qui se cumulent :
+    Deux decisions, prises contre deux alertes CodeQL distinctes, et dans les
+    deux cas parce que l'outil visait juste sur le fond :
 
-    1. **Le benefice est nul dans ce contexte.** Un coffre KeePass n'expose
-       aucune interface ou recouper une queue de valeur -- contrairement a un
-       fournisseur d'API. On payait une fuite sans rien acheter.
-    2. **Le cout est reel.** Publier la fin d'une phrase maitre memorisable en
-       retire une part d'entropie, et cette sortie-la finit dans un journal, un
-       scrollback, ou le contexte d'un agent.
+    **1. Pas de queue de valeur.** Une version anterieure publiait les 4
+    derniers caracteres -- convention des fournisseurs d'API, ou l'on recoupe
+    une queue avec leur interface. Un coffre KeePass n'expose rien de tel : on
+    payait une fuite sans rien acheter.
 
-    CodeQL l'a signale (`py/clear-text-logging-sensitive-data`, 4 alertes high).
-    Sur le principe du flux il sur-accusait -- une longueur et 4 caracteres ne
-    sont pas un secret en clair -- mais sur le fond il visait juste, et c'est
-    la raison du changement : ce n'est pas une mise en conformite, c'est une
-    correction.
+    **2. Pas de sha256 nu.** `py/weak-sensitive-data-hashing` a signale qu'un
+    hash rapide est inadapte a un secret -- et cette empreinte est **publiee sur
+    un dashboard**, donc elle offre a un attaquant un oracle hors-ligne : il
+    devine, il hache, il compare. Sur une passphrase a haute entropie le risque
+    est theorique ; sur un secret faible il ne l'est pas, et un outil generique
+    ne choisit pas ce qu'on lui donne.
 
-    Un sha256 tronque repond a la seule question qu'on se pose vraiment : deux
-    machines portent-elles le MEME secret ?
+    PBKDF2-HMAC-SHA256, 600 000 tours : deterministe (donc deux machines
+    peuvent comparer), mais ~0,3 s par essai -- ce qui rend l'oracle inutile
+    sans rien couter a l'usage, puisqu'on l'appelle une fois par `doctor`.
+
+    Le sel est public et fixe : il DOIT l'etre pour que la comparaison
+    cross-machine fonctionne. Il ne cache rien, il separe les domaines.
     """
     import hashlib
 
     if not value:
         return "<vide>"
-    return f"<{len(value)} car.> sha256:{hashlib.sha256(value.encode('utf-8')).hexdigest()[:12]}"
+    digest = hashlib.pbkdf2_hmac("sha256", value.encode("utf-8"), _FP_SALT, _FP_ROUNDS)
+    return f"<{len(value)} car.> pbkdf2:{digest.hex()[:12]}"
 
 
 # --------------------------------------------------------------------------
@@ -415,7 +424,7 @@ def cmd_show(args) -> int:
     print(f"groupe    : {entry.group.name if entry.group else '-'}")
     print(f"user      : {entry.username or '-'}")
     print(f"url       : {entry.url or '-'}")
-    print(f"password  : {fingerprint(entry.password or '')}")
+    print(f"password  : {secret_kind(entry.password)}, {len(entry.password or '')} car.")
     if entry.mtime:
         print(f"modifiee  : {entry.mtime.isoformat()}")
     return EXIT_OK
@@ -632,7 +641,7 @@ def cmd_verify(args) -> int:
         kind = secret_kind(entry.password)
         if kind != "jeton":
             unusable.append((name, kind))
-        print(f"  {name:<16} present   entree='{entry.title}'  secret={kind}  {fingerprint(entry.password or '')}")
+        print(f"  {name:<16} present   entree='{entry.title}'  secret={kind}, {len(entry.password or '')} car.")
     for name in missing:
         print(f"  {name:<16} ABSENT du coffre")
 
