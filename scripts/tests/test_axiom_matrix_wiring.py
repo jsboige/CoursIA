@@ -23,6 +23,10 @@ SERRE_PATHS = [
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean",
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean",
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain",
+    # Self-cover B.3 herite du wrapper supprime : le moteur d'axiomes
+    # (lean_server.py / lean_utils.py) change -> le gate axiom rejoue.
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py",
 ]
 AXIOM_SELF_COVER = [
     ".github/actions/lean-axiom/action.yml",
@@ -100,3 +104,14 @@ def test_extracted_script_compiles():
     import py_compile
     py_compile.compile(
         str(REPO / "scripts/lean/axiom_check_step.py"), doraise=True)
+
+
+def test_serre100_historical_wrapper_is_gone():
+    """lean-serre.yml was the lake's PRE-migration gate (filename does not
+    derive from the lake name -- the exact shape the filename check of the
+    guard missed). With serre100 in the manifest it is a DOUBLE trigger: the
+    witness PR built the lake twice (wrapper via lean-build.yml@main + matrix
+    leg). The migration contract: a manifest lake keeps no wrapper (#17336).
+    """
+    assert not (REPO / ".github/workflows/lean-serre.yml").exists(), (
+        "le wrapper historique de serre100 est revenu -- double build")

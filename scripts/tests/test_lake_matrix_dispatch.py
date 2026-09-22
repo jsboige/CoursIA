@@ -205,6 +205,56 @@ def test_guard_red_when_legacy_dispatcher_still_present(tmp_path, manifest):
     assert rc == 1
 
 
+def test_guard_red_on_path_overlap_with_foreign_filename(tmp_path, manifest):
+    """Lecon #17336 : le check par nom rate les wrappers dont le nom ne
+    derive PAS du lake (lean-serre.yml couvrait serre100_lean). Le critere
+    effectif = recroisement des on.paths, independant du nom de fichier."""
+    all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
+    serre_path = next(p for l in manifest["lakes"]
+                      if l["lake"] == "serre100" for p in l["paths"])
+    # Nom de fichier volontairement ETANGER au lake : "lean-serre.yml" != serre100
+    wrapper = tmp_path / ".github" / "workflows" / "lean-serre.yml"
+    wrapper.parent.mkdir(parents=True, exist_ok=True)
+    wrapper.write_text(
+        "name: Lean CI (serre100_lean)\n"
+        "on:\n"
+        "  push:\n"
+        f"    paths: ['{serre_path}']\n"
+        "  pull_request:\n"
+        f"    paths: ['{serre_path}']\n",
+        encoding="utf-8")
+    rc = subprocess.call(
+        [sys.executable, str(GUARD),
+         "--manifest", str(REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"),
+         "--workflow", str(wf), "--repo-root", str(tmp_path)])
+    assert rc == 1
+
+
+def test_guard_green_on_allowlisted_known_pair(tmp_path, manifest):
+    """Les dettes preexistantes (#17374) ne rougissent pas main : la paire
+    allowlistee passe, le garde reste actionnable sur le reste."""
+    all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
+    wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
+    gamedefsext = next(l for l in manifest["lakes"]
+                       if l["lake"] == "gamedefsext")
+    wrapper = tmp_path / ".github" / "workflows" / "lean-asymmetric-information.yml"
+    wrapper.parent.mkdir(parents=True, exist_ok=True)
+    wrapper.write_text(
+        "name: Lean Asymmetric Information CI\n"
+        "on:\n"
+        "  push:\n"
+        f"    paths: ['{gamedefsext['paths'][0]}']\n"
+        "  pull_request:\n"
+        f"    paths: ['{gamedefsext['paths'][0]}']\n",
+        encoding="utf-8")
+    rc = subprocess.call(
+        [sys.executable, str(GUARD),
+         "--manifest", str(REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"),
+         "--workflow", str(wf), "--repo-root", str(tmp_path)])
+    assert rc == 0
+
+
 def test_guard_green_on_full_coverage_with_fake_repo(tmp_path, manifest):
     all_paths = [p for l in manifest["lakes"] for p in l["paths"]]
     wf = _write_workflow(tmp_path / "wf.yml", all_paths, all_paths)
