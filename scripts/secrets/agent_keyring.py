@@ -419,7 +419,11 @@ def cmd_bootstrap(args) -> int:
         backend = write_passphrase(cand)
         print(f"OK  passphrase validee contre le coffre et posee pour '{machine_id()}'.")
         print(f"    source    : {source}")
-        print(f"    empreinte : {fingerprint(cand)}")
+        # Pas d'empreinte ici : le candidat vient du PDF (source « password »
+        # pour CodeQL, py/clear-text-logging-sensitive-data). Elle se lit
+        # apres coup par `doctor`, depuis la valeur STOCKEE -- c'est celle-la
+        # que le critere de retrait du PDF compare entre machines.
+        print("    empreinte : `python scripts/secrets/agent_keyring.py doctor`")
         print(f"    stockage  : {backend}, service '{SERVICE}'")
         print("    la valeur n'a ete ni imprimee, ni ecrite sur disque, ni mise en variable d'environnement.")
         return EXIT_OK
