@@ -1,70 +1,16 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-19T10:55:25+00:00",
- "total_findings": 156,
+ "generated_at": "2026-09-21T13:36:36+00:00",
+ "total_findings": 113,
  "notebooks": {
-  "MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb": {
    "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb": {
    "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb": {
-   "HINT-AS-HEADING": 4
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb": {
-   "HINT-AS-HEADING": 5
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb": {
-   "HINT-AS-HEADING": 4
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb": {
-   "HINT-AS-HEADING": 3
-  },
-  "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb": {
-   "HINT-AS-HEADING": 3
   },
   "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb": {
    "H1-DEEP": 5,
@@ -130,9 +76,6 @@
   "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb": {
    "HINT-AS-HEADING": 1
   },
-  "MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
   "MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb": {
    "HINT-AS-HEADING": 1
   },
@@ -171,7 +114,7 @@
   "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb": {
    "HINT-AS-HEADING": 2
   },
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb": {
+  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb": {
    "HINT-AS-HEADING": 3
   }
  }

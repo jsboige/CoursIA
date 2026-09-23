@@ -21,6 +21,7 @@ import argparse
 import os
 import pathlib
 import platform
+import re
 import shutil
 import stat
 import sys
@@ -90,6 +91,10 @@ EXTERNAL_DEPENDENCIES = {
     "commons-math-2.2.jar":
         "https://repo1.maven.org/maven2/org/apache/commons/commons-math/2.2/commons-math-2.2.jar",
 }
+
+# Modules dont le dernier segment collide avec un module de premier niveau :
+# ils recoivent un nom local prefixe (logics.commons -> logics-commons-<v>.jar).
+COLLISION_MODULES = {"logics.commons"}
 
 # Modules conditionnels par version
 if TWEETY_VERSION >= "1.29":
@@ -206,6 +211,18 @@ def download_with_requests(url: str, dest: pathlib.Path, desc: str) -> bool:
     return True
 
 
+def local_jar_name(module_name: str, version: str) -> str:
+    """Nom du fichier JAR local d'un module pour une version donnée.
+
+    Source unique : ``download_jar`` écrit ce nom et ``expected_jar_names``
+    le prédit, les deux ne peuvent donc pas diverger.
+    """
+    if module_name in COLLISION_MODULES:
+        return f"{module_name.replace('.', '-')}-{version}.jar"
+    # Maven artifact name: use last segment only (arg.dung -> dung)
+    return f"{module_name.split('.')[-1]}-{version}.jar"
+
+
 def download_jar(module_name: str, dest_dir: pathlib.Path, version: str) -> bool:
     """Télécharge un JAR Tweety depuis Maven Central."""
     # Maven artifact path: dots become slashes in the URL path
@@ -213,12 +230,7 @@ def download_jar(module_name: str, dest_dir: pathlib.Path, version: str) -> bool
     # Maven artifact name: use last segment only (arg.dung -> dung)
     artifact_name = module_name.split('.')[-1]
 
-    # Modules whose last segment collides with a top-level module get a prefixed name
-    COLLISION_MODULES = {"logics.commons"}  # shares "commons" with top-level commons
-    if module_name in COLLISION_MODULES:
-        local_jar_name = f"{module_name.replace('.', '-')}-{version}.jar"
-    else:
-        local_jar_name = f"{artifact_name}-{version}.jar"
+    jar_name = local_jar_name(module_name, version)
 
     # v1.28 and earlier: -with-dependencies.jar
     # v1.29+: plain .jar (no fat jar published)
@@ -231,26 +243,81 @@ def download_jar(module_name: str, dest_dir: pathlib.Path, version: str) -> bool
          f"{TWEETY_MAVEN_BASE}{maven_path}/{version}/{artifact_name}-{version}.jar"),
     ]
 
-    local_path = dest_dir / local_jar_name
+    local_path = dest_dir / jar_name
     if local_path.exists():
-        print(f"  Already exists: {local_jar_name}")
+        print(f"  Already exists: {jar_name}")
         return True
 
     for _, url in candidates:
         if download_with_progress(url, local_path, desc=f"{module_name}"):
-            print(f"  Downloaded: {local_jar_name}")
+            print(f"  Downloaded: {jar_name}")
             return True
 
     print(f"  Failed: {module_name}")
     return False
 
 
+# Forme d'un nom de JAR Tweety local : un prefixe (<module>, <groupe>-<module>, ou
+# le groupId Maven org.tweetyproject.<module>), la version, puis l'ancien suffixe
+# fat-jar publie jusqu'en 1.28.
+_TWEETY_JAR_RE = re.compile(
+    r"^(?P<stem>[a-z][a-z0-9.-]*)-(?P<version>\d+\.\d+(?:\.\d+)?)"
+    r"(?:-with-dependencies)?\.jar$"
+)
+
+
+def expected_jar_names(version: str) -> set:
+    """Noms de JAR attendus dans ``libs/`` pour cette version."""
+    names = set(EXTERNAL_DEPENDENCIES)
+    names.update(local_jar_name(module, version) for module in REQUIRED_MODULES)
+    return names
+
+
+def superseded_tweety_jars(lib_dir: pathlib.Path, version: str) -> List[pathlib.Path]:
+    """JARs Tweety d'une génération ANTÉRIEURE restés dans ``lib_dir``.
+
+    ``download_jar`` sort tôt dès que ``local_path.exists()``, et le nom local
+    embarque la version : changer ``TWEETY_VERSION`` ne nettoie donc jamais la
+    génération précédente. Or ``tweety_init`` construit le classpath avec
+    ``lib_dir.glob("*.jar")`` — les deux générations montent sur la JVM, et les
+    anciens fat-JARs portent la quasi-totalité des classes de la version
+    courante, à la merci de l'ordre de résolution du classpath.
+
+    Seuls les artefacts Tweety sont candidats : les dépendances externes
+    (``EXTERNAL_DEPENDENCIES``) sont versionnées indépendamment du projet et
+    restent en place.
+    """
+    expected = expected_jar_names(version)
+    stems = set()
+    for module in REQUIRED_MODULES:
+        stems.add(module.split('.')[-1])
+        stems.add(module.replace('.', '-'))
+
+    stale = []
+    for jar in sorted(lib_dir.glob("*.jar")):
+        if jar.name in expected:
+            continue
+        match = _TWEETY_JAR_RE.match(jar.name)
+        if match is None or match.group("version") == version:
+            continue
+        stem = match.group("stem")
+        if stem.startswith("org.tweetyproject.") or stem in stems:
+            stale.append(jar)
+    return stale
+
+
 # ============================================================================
 # TÉLÉCHARGEMENT JARs TWEETY
 # ============================================================================
 
-def download_tweety_jars(lib_dir: Optional[pathlib.Path] = None) -> bool:
-    """Télécharge tous les JARs TweetyProject requis."""
+def download_tweety_jars(lib_dir: Optional[pathlib.Path] = None,
+                         keep_old_generations: bool = False) -> bool:
+    """Télécharge tous les JARs TweetyProject requis.
+
+    ``keep_old_generations`` conserve les JARs Tweety des versions antérieures ;
+    par défaut ils sont retirés, faute de quoi ils restent sur le classpath à
+    côté de la version courante.
+    """
     print("\n" + "=" * 70)
     print("DOWNLOADING TWEETYPROJECT JARS")
     print("=" * 70)
@@ -262,6 +329,19 @@ def download_tweety_jars(lib_dir: Optional[pathlib.Path] = None) -> bool:
     print(f"Target directory: {lib_dir}")
     print(f"Tweety version: {TWEETY_VERSION}")
     print(f"Required modules: {len(REQUIRED_MODULES)}")
+
+    stale = superseded_tweety_jars(lib_dir, TWEETY_VERSION)
+    if stale:
+        freed_mb = sum(jar.stat().st_size for jar in stale) / 1e6
+        print(f"\nSuperseded Tweety generations: {len(stale)} JAR(s), {freed_mb:.1f} MB")
+        for jar in stale:
+            if keep_old_generations:
+                print(f"  kept: {jar.name}")
+            else:
+                print(f"  removing: {jar.name}")
+                jar.unlink()
+        if not keep_old_generations:
+            print("  -> pass --keep-old-generations to retain them")
 
     success_count = 0
     failed_modules = []
@@ -649,6 +729,8 @@ Examples:
     parser.add_argument("--version", type=str, default=None,
                         help="Tweety version to download (default: 1.30)")
     parser.add_argument("--no-interactive", action="store_true", help="Disable progress bars")
+    parser.add_argument("--keep-old-generations", action="store_true",
+                        help="Keep Tweety JARs from previous versions in the lib dir")
 
     args = parser.parse_args()
 
@@ -674,7 +756,7 @@ Examples:
 
     # Exécuter les téléchargements demandés
     if args.all:
-        results.append(("JARs", download_tweety_jars(lib_dir)))
+        results.append(("JARs", download_tweety_jars(lib_dir, args.keep_old_generations)))
         results.append(("Resources", download_resource_files()))
         results.append(("Clingo", download_clingo()))
         results.append(("SPASS", download_spass()))
@@ -682,7 +764,7 @@ Examples:
         results.append(("Native SAT", download_native_sat_libs()))
     else:
         if args.jars:
-            results.append(("JARs", download_tweety_jars(lib_dir)))
+            results.append(("JARs", download_tweety_jars(lib_dir, args.keep_old_generations)))
         if args.resources:
             results.append(("Resources", download_resource_files()))
         if args.clingo:

@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + Grokking), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -33,6 +33,22 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    flot de `ℓ_eff`, `C` conservée le long du flot de `ℓ₀`, et — complément honnête
    au papier — le terme résiduel `dC/dt = (2ℓ₀/Z₀²)·C` omis par la preuve de
    l'Appendice F, d'où l'invariance de l'hyperplan centré `C = 0`.
+
+
+4. **Module `EffectiveTheory`** — digestion #16741/arc B (issue #16752) :
+   théorie effective de la représentation (corpus Tegmark R02/R06/R10) —
+   R02 *Grokking* : δ-parallélogrammes (Déf. 1), Prop. 1 (perte nulle ⟹
+   `i + j = m + n`), Prop. 2 (décodeur injectif ⟹ formation) et les deux
+   identités de l'appendice F portant les lois de conservation
+   `C = Σ E k` / `Z₀ = Σ E k²` ; R06 *GenEFT* : Théorème 1 (décodeur
+   injectif ⟹ clustering par classe) + quantité conservée hyperbolique
+   `C = a₂²/(2η_A) − c²/η_x` (`dC/dt = 0`, preuve calculatoire) +
+   contenu informationnel `b = log₂(n!/|Aut G|)` (ancres : groupe trivial
+   `b = 0`, groupe à deux éléments `b = 1`) ; R10 *circle of days* : la
+   représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) est
+   **irréductible** (`circleOfDays_irreducible` — aucune droite stable, le
+   discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre
+   réelle).
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :

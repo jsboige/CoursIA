@@ -59,12 +59,13 @@ lean_lib «GradientFlow» where
   -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
   globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]
 
-/-- Module `Grokking` — corpus Tegmark #16741, arc « ouverte, responsable, prouvable,
-explicable » (#16752, tranche R02) : théorie effective du grokking (Liu, Michaud,
-Tegmark, arXiv:2205.10343). Parallélogrammes de représentation (Déf. 1, Props 1-2)
-et lois de conservation de la perte effective `ℓ₀/Z₀` (Appendice F), avec le terme
-résiduel `dC/dt = (2ℓ₀/Z₀²)·C` que la preuve du papier omet. Frère de `Perceptron`,
-`PacLearning` et `GradientFlow`. -/
+/-- Module `EffectiveTheory` — digestion #16741/arc B (issue #16752) :
+théorie effective de la représentation (Tegmark & co) — R02 parallélogrammes
+du grokking + identités de conservation (App. F), R06 clustering par classe
+(décodeur injectif) + quantité conservée hyperbolique `dC/dt = 0` + contenu
+informationnel `b = log₂(n!/|Aut G|)`, R10 cercle des jours =
+représentation irréductible 2D de `C₇`. Frère de `Perceptron`, `PacLearning`
+et `GradientFlow`. -/
 @[default_target]
-lean_lib «Grokking» where
-  globs := #[.submodules `Grokking, `Grokking, `Grokking_en]
+lean_lib «EffectiveTheory» where
+  globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
