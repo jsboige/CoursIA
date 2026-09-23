@@ -161,8 +161,9 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 30 | [Lean-30-FormalGroups-Native](Lean-30-FormalGroups-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
 | 31 | [Lean-31-Euler-Navier-Stokes](Lean-31-Euler-Navier-Stokes.ipynb) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict. **Enrichi (#16569)** : chronologie sourcée de la lignée et de la course (Córdoba–Martínez-Zoroa → Buckmaster–Alpöge → OpenAI, les deux récits du 6 septembre, réponses EMS/Clay/AMS/Tao, lecture à la lumière de la Déclaration de Leiden) et **GIFs animés** de l'écoulement (vortex 3D « spaghetti » orange/teal, plan méridien en vecteurs colorés à norme fixée, cascade infinie de couches Córdoba–Martínez-Zoroa, annulation fine des termes reliée au critère BKM), inspirés de l'exploration Wolfram Community citée et au-delà — kernel `python3`, 17 cellules code exécutées sans erreur, 3 exercices | 60 min |
 | 34 | [Lean-34-Calculabilite-et-Limites](Lean-34-Calculabilite-et-Limites.ipynb) | **Tranche E** de l'Epic #15066 : calculabilité, diagonalisation et limites — témoins exécutables (diagonale de l'arrêt bornée, point fixe diagonal sur chaînes) puis certification au noyau via le lake `formal_logic_lean` (Foundation piné `81810b9f` + ProvabilityLogic `01628c51`, `CONSUMER_PINNÉ`) : Church (`undecidability_first_order_logic`), arrêt→incomplétude (`incomplete_of_halting_problem`), Gödel I/II, Rosser, Tarski (`undefinability_of_truth`) et Löb — 4 énoncés soigneusement séparés, `#check`/`#print axioms` audités, prérequis L2/L3 de #15062 — kernel `python3`, 11 cellules code exécutées sans erreur, 3 exercices | 45 min |
+| 35 | [Lean-35-Confiance-Preuves-Native](Lean-35-Confiance-Preuves-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`, lake `mathlib_examples`) sur la fiabilité d'un certificat formel, piste Dougherty/von Hippel 2026 (*Lies, Damned Lies, and Proofs* — « ce qui rend une preuve formelle fiable ») : mis-définition rendant la preuve trivialement vraie (`DivPar` → `True` vs la vraie divisibilité avec témoin), axiomes de secours mesurés par `#print axioms` (`sorryAx` transitif, `native_decide`, `Classical.choice` whitelisté par nom), implosion depuis `False` (0 axiome), et orthogonalité certificat-vs-headline (mêmes axiomes, fidélités opposées) — 10 cellules code exécutées sans erreur, 3 exercices | 30 min |
 
-**Durée totale** : ~40h10min
+**Durée totale** : ~40h40min
 
 ## Acquis d'apprentissage
 
@@ -258,6 +259,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
 | 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 | 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean`, Tranche E Epic #15066) |
+| 35 | Confiance-Preuves-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `mathlib_examples`, piste Dougherty/von Hippel #14468) |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
@@ -469,6 +471,7 @@ Lean/
 ├── Lean-30-FormalGroups-Native.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
 ├── Lean-31-Euler-Navier-Stokes.ipynb # Python kernel - reproduction pinée Euler/Navier–Stokes, double noyau, confinement, re-dérivation fail-closed, chronologie sourcée de la course Navier–Stokes et GIFs animés de l'écoulement
 ├── Lean-34-Calculabilite-et-Limites.ipynb # Python kernel - Tranche E Epic #15066 : arrêt, point fixe, Gödel I/II, Rosser, Tarski, Löb (lake formal_logic_lean CONSUMER_PINNÉ)
+├── Lean-35-Confiance-Preuves-Native.ipynb # Lean4 (WSL) kernel - fiabilité d'un certificat : mis-définition, axiomes de secours (#print axioms), certificat vs headline (lake mathlib_examples)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
