@@ -20,10 +20,12 @@ followed by a digit is currency ("costs $5"), not a math delimiter:
   1. LATEX-PURE-DELIMS -- `\\(...\\)` or `\\[...\\]` in markdown prose.
      Jupyter, GitHub and VS Code render `$...$` / `$$...$$`; the pure LaTeX
      delimiters are left as literal text. Detected outside code spans.
-  2. ODD-DOLLARS -- a paragraph (blank-line-separated block) whose count of
-     single `$` is odd after removing paired `$$`, code and currency: one
-     unmatched dollar silently breaks MathJax pairing for the WHOLE
+  2. ODD-DOLLARS -- a paragraph (blank-line-separated block) that still has
+     `$` after removing paired `$$`/`$...$` scopes and currency `$<digit>`:
+     an unmatched dollar silently breaks MathJax pairing for the WHOLE
      paragraph, so valid formulas elsewhere in it stop rendering too.
+     Scopes are removed BEFORE the currency discriminant -- `$2^n$` starts
+     with a digit and would otherwise lose its opening dollar.
   3. NUDE-LATEX -- a known LaTeX command (`\\Phi`, `\\mathbb`, `\\frac`, ...)
      outside any math scope and outside code: prose that was meant to be
      math but lost its delimiters renders as raw backslash soup.
@@ -155,11 +157,13 @@ def find_defects(source, with_katex: bool) -> tuple[list[dict], list[dict]]:
 
     for para in re.split(r"\n\s*\n", masked):
         without_display = re.sub(r"\$\$[\s\S]*?\$\$", "", para)
-        without_currency = CURRENCY_DOLLAR.sub("D", without_display)
-        singles = without_currency.count("$")
-        if singles % 2 == 1:
+        without_scopes = MATH_SCOPE.sub("", without_display)
+        without_currency = CURRENCY_DOLLAR.sub("D", without_scopes)
+        orphans = without_currency.count("$")
+        if orphans:
             defects.append({
-                "kind": "ODD-DOLLARS", "detail": f"{singles} single '$' in paragraph",
+                "kind": "ODD-DOLLARS",
+                "detail": f"{orphans} unmatched '$' in paragraph",
                 "pos": 0,
                 "context": para.replace("\n", " ")[:100],
             })

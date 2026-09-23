@@ -56,6 +56,13 @@ class TestOddDollars(unittest.TestCase):
         # "$100" est de la devise, pas un delimiteur math (mesure corpus v1)
         self.assertNotIn("ODD-DOLLARS", kinds("le cout depasse $100 par run et $200 cumules"))
 
+    def test_scope_starting_with_digit_spared(self):
+        # v2 bug : le discriminant devise mangeait le dollar OUVRANT des
+        # scopes "$2^n$", "$0..4$" -> compte impair fantome. Les scopes
+        # apparies partent AVANT le passage devise.
+        self.assertNotIn("ODD-DOLLARS", kinds(r"croissances ($n \log n$, $n^2$, $2^n$) mesurées"))
+        self.assertNotIn("ODD-DOLLARS", kinds(r"les indices $0..4$ puis $M_i$ en diagonale"))
+
     def test_dollar_in_fenced_code_spared(self):
         src = "config bash :\n```bash\nK=$(pwd)\necho $HOME\n```\nfin"
         self.assertNotIn("ODD-DOLLARS", kinds(src))
