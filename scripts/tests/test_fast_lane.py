@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, Guard,
 )
 
 
@@ -1252,3 +1252,46 @@ def test_tranche12_link_label_agreement_advisory():
     # dans paths, un deck-only PR comme #15865 (17 liens morts) ne lancerait
     # jamais le garde.
     assert "slides/**/slides.md" in guard.paths
+
+
+def test_tranche13_reading_anchor_advisory_guard_is_wired():
+    """Tranche 13 = garde d'ancrage de lecture (#16695), advisory bloquant a
+    zero FP mesure. Contrat : native, absorbe, non bloquant (#15327), delta vs
+    base, self-test pre-control (lecon #11685), et le detecteur DOIT exister
+    et tirer sur ses controles positifs (un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche).
+    """
+    assert len(TRANCHE13) == 1, (
+        "la tranche 13 documente 1 seul garde (reading-anchor) ; si le nombre "
+        "change, ce test et le registre suivent"
+    )
+    guard = TRANCHE13[0]
+    assert guard.name == "Reading-anchor advisory (lecture sans output, #16695)"
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory (precedent check_output_collapse #15327) : "
+        f"promotion au bloquant seulement apres FP mesure a zero sur un lot reel"
+    )
+    assert guard.needs_base, f"{guard.name} est un delta vs base (cellules AJOUTEES)"
+    assert guard.pre_argv and guard.pre_argv[-1] == "--self-test", (
+        f"{guard.name} doit se pre-controler par --self-test (lecon #11685)"
+    )
+    assert "{base_ref}" in " ".join(guard.argv), (
+        f"{guard.name} doit recevoir la base de la PR"
+    )
+    assert "--fail" in guard.argv and "--json" in guard.argv
+    for needle in (
+        "**.ipynb",
+        "scripts/notebook_tools/check_reading_anchor.py",
+        "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+    # Le detecteur existe ET tire : self-test rc=0 avec controles positifs.
+    r = subprocess.run(
+        ["python", "scripts/notebook_tools/check_reading_anchor.py", "--self-test"],
+        capture_output=True, text=True, cwd=Path(__file__).resolve().parents[2],
+    )
+    assert r.returncode == 0, f"self-test du detecteur en echec : {r.stdout}"
+    assert "positif" in r.stdout and "PASS" in r.stdout
