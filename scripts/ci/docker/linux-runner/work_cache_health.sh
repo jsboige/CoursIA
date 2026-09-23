@@ -94,6 +94,9 @@ wch_read() {
 # conclut "sain" que sur un compte > 0.
 wch_broken_refs() {
   local repo="$1"
+  # #16643 neutralisait le meme rc en ligne (`{ ...; } || true`) ; #16938 le
+  # neutralise A LA SOURCE, ici, une fois pour les trois lectures (cf l'en-tete
+  # l.60-87). Meme effet, un seul point a maintenir.
   wch_read wch_git -C "$repo" for-each-ref 2>&1 >/dev/null \
     | sed -n 's/^warning: ignoring broken ref //p'
 }
@@ -134,6 +137,16 @@ wch_pack_count() {
   wch_read ls "$repo"/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d ' '
 }
 
+# Compte de lignes non vides d'un bloc de texte. `grep -c` rend rc=1 quand le
+# compte est ZERO -- exactement le cas de la ligne de purge, ou `broken` est
+# vide (depot illisible) alors que le compte de refs est nul. Sous `set -e`, un
+# `grep -c` non garde tuerait le conteneur au moment precis ou il traite
+# l'incident (#16643, mesure du 2026-09-18 sur le slot myia-ai-01-wsl-8).
+wch_count_lines() {
+  printf '%s
+' "$1" | grep -c . || true
+}
+
 # Precondition d'integrite AVANT qu'un slot n'accepte un job : detecte les
 # refs cassees, repare (refs/logs vides retires), re-verifie, et purge le
 # clone si le depot reste muet. Rend 0 dans tous les cas -- un garde de sante
@@ -145,7 +158,7 @@ wch_integrity_pass() {
 
   broken="$(wch_broken_refs "$repo")"
   if [ -n "$broken" ]; then
-    n="$(printf '%s\n' "$broken" | grep -c .)"
+    n="$(wch_count_lines "$broken")"
     echo "work_cache: $n ref(s) cassee(s) dans $repo -- reparation (refs/logs vides retires, objects/ hors perimetre)"
     refs_purged="$(wch_drop_empty_refs "$repo")"
     echo "work_cache: $refs_purged fichier(s) de zero octet retire(s) sous .git/refs et .git/logs"
@@ -158,8 +171,10 @@ wch_integrity_pass() {
   # le seul etat honnete est le clone frais, pas un "sain" non prouve.
   broken="$(wch_broken_refs "$repo")"
   n="$(wch_ref_count "$repo")"
-  if [ -n "$broken" ] || [ "$n" -eq 0 ]; then
-    echo "work_cache: $repo IRRECUPERABLE (${n} refs lisibles, encore $(printf '%s\n' "$broken" | grep -c .) cassees) -- purge du clone, le job suivant reclonera"
+  # ${n:-0} : un compte vide ferait echouer `[ -eq ]` en rc=2, et le garde
+  # mourrait une derniere fois juste avant de prononcer la purge.
+  if [ -n "$broken" ] || [ "${n:-0}" -eq 0 ]; then
+    echo "work_cache: $repo IRRECUPERABLE (${n} refs lisibles, encore $(wch_count_lines "$broken") cassees) -- purge du clone, le job suivant reclonera"
     rm -rf -- "$repo"
     return 0
   fi

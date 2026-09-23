@@ -409,6 +409,10 @@ docker-configurations/shared/cache/
 # Outputs temporaires
 outputs/
 output_z_image/
+# Scratch de telechargement de `models download-qwen*` (#17268) : ancre sur la
+# racine du depot, donc ici, et non sous scripts/genai-stack/ ou il atterrissait
+# avant que le chemin soit ancre.
+temp_qwen_models/
 
 # Modèles locaux (trop volumineux)
 models/
