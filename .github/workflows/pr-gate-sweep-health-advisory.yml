@@ -61,13 +61,10 @@ concurrency:
 jobs:
   health:
     name: PR gate sweep health advisory
-    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheurs `schedule` + `push` sur main -- les deux ne portent que des
-    # refs du depot (SAFE_SELF_HOSTED_TRIGGERS), donc aucun code de fork ne peut
-    # l'atteindre et aucune garde same-repo n'est requise (cf en-tete de
-    # check_self_hosted_runner_policy.py). Retour arriere = remettre
-    # `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : balayage cron pur-Python, aucun secret ni
+    # toolchain locale -- routage #14283 inverse, retour sur ubuntu-latest
+    # et sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -109,6 +106,14 @@ jobs:
           # Most recent *successful* run of the sweep, with its creation time.
           # Filtering to conclusion=success keeps a transient failure from
           # tripping the alarm as long as a success happened inside the window.
+          #
+          # Ce filtre ne vaut que parce qu'un sweep qui n'a RIEN balaye ne
+          # conclut plus `success` (fix 2026-09-21, #17230) : le no-op
+          # `[stale-sweep] PR listing failed (upstream)` sortait en 0 et
+          # passait pour un service rendu -- l'age restait sous les 60 min et
+          # cette sonde restait verte pendant que la jambe ne reparait rien.
+          # `success` signifie donc desormais « un passage de reparation a
+          # abouti », et non « le workflow a tourne ».
           RUN=$(gh run list --workflow pr-gate-stale-sweep.yml --status success --limit 1 \
                 --json createdAt,conclusion 2>/dev/null) \
             || { echo "[sweep-health] gh run list failed (upstream) -- skip this check"; exit 0; }
