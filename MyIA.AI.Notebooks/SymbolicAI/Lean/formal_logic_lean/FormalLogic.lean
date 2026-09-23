@@ -20,9 +20,14 @@ Modules consommateurs :
   `ModalLogic` (fork compat 4.33.1) — `K` valide sur tout cadre, contre-modèles
   finis de `T`/`4`/`5` sur cadres témoins génériques, duaux diamant de `T`/`4`
   sur les cadres S4 de Fin74.
+- `FormalLogic.FairBotLoeb` — niveau L3 de l'EPIC #15062 : FairBot × FairBot
+  déduit du théorème de Löb **prouvé** par FFL (`ProvabilityAbstraction.löb_theorem`),
+  sans champ postulé, instancié sur la prouvabilité standard de `𝗣𝗔` ; paire de
+  FairBots de codes distincts par `exclusiveMultifixedpoint`.
 -/
 
 import FormalLogic.Bridge
 import FormalLogic.FolBridge
 import FormalLogic.GLBridge
 import FormalLogic.ModalBridge
+import FormalLogic.FairBotLoeb

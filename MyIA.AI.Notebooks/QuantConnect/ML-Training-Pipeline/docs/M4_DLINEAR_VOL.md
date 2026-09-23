@@ -154,3 +154,82 @@ INC* = 2-3 seeds pass DM but not all 4 (ADA h=1: 3/4, LTC h=1: 2/4).
 
 - Zeng, A., Chen, M., Zhang, L. & Xu, Q. (2023) "Are Transformers Effective for Time Series Forecasting?", AAAI 2023.
 - Corsi, F. (2009) "A Simple Approximate Long-Memory Model of Realized Volatility", Journal of Financial Econometrics 7, 174-196.
+
+## Re-validation hors biais (2026-09-22, Epic #1454)
+
+Les résultats ci-dessus comparent deux MSE **bruts**. Or `MSE = biais² + variance` : un écart de MSE
+peut être en partie la **mauvaise calibration de la baseline**, et non un gain de précision du
+modèle. C'est ce que #10938 a levé sur M4, ce que #12684/#12734 ont formalisé, ce que
+`pr-review-discipline` §C exige depuis (rapport de biais par modèle, DM sur une perte de
+précision), et ce que M5 a appliqué le premier (2026-09-02).
+
+Le harnais persiste désormais, par seed et par config : le biais OOS signé des **deux** modèles, la
+décomposition `MSE = biais² + variance`, l'écart contre une baseline **dé-biaisée**, et un DM sur
+**erreurs recentrées** (`e − mean(e)` de chaque côté — le centrage annule le biais, le DM ne
+compare plus que les variances). La machine à quatre états est **partagée** avec M5 et M6
+(`_aggregate_state` dans `scripts/bias_metrics.py`, extraite pour ce run). Aucune valeur publiée
+ci-dessus n'a été modifiée : les jambes brutes sont recalculées à l'identique pour BTC (Bitstamp,
+2278 jours de RV) et ETH (Binance, 1495 jours) — ancre M5 vérifiée au 6e chiffre : BTC h=1
+`mean_har_bias_oos = −0,226587` reproduit à l'identique par le keeper run — et les colonnes
+ci-dessous s'y ajoutent. **SOL fait exception** : seule ligne tirée de yfinance (source non
+épinglée, fenêtre glissante au jour du run), son échantillon a dérivé — 724 jours de RV contre
+~725 dans la table de provenance ci-dessus, MSE DLinear 0,5534 → 0,5796 (h=1) et 0,2324 → 0,2787
+(h=10), et l'horizon 10 **change de signe** : 2,2 % d'amélioration publiée ci-dessus, 10,2 % de
+dégradation mesurée par ce run. Les lignes SOL ci-dessous sont donc le verdict d'un échantillon
+légèrement différent de celui du doc — dérive **déclarée** et non alignée à la main, ce qui
+figerait un nombre non reproductible au lieu de dire qu'il a bougé.
+
+Keeper run 2026-09-22 (BTC+ETH+SOL, 4 seeds 0/7/42/99, h=1/5/10, 6060 s,
+`scripts/results/m4_dlinear_vol_debiased_3coin.json` ; séries par observation régénérables par
+`python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --coins BTC-USD ETH-USD SOL-USD --out-json …`) :
+
+| Coin | h | biais HAR OOS | biais DLinear OOS | edge vs HAR **dé-biaisée** | seeds BEATS (rec.) | dm_p_median (rec.) | Verdict brut | Verdict hors biais |
+|------|---|--------------:|------------------:|---------------------------:|:------------------:|-------------------:|--------------|--------------------|
+| BTC-USD | 1  | −0,2266 | −0,0052 | **+10,11 %** | 4/4 | 2,27e-09 | BEATS | **BEATS** |
+| BTC-USD | 5  | −0,3432 | +0,0074 | **+7,48 %**  | 4/4 | 9,14e-05 | BEATS | **BEATS** |
+| BTC-USD | 10 | −0,4502 | +0,0009 | **+4,31 %**  | 1/4 | 5,98e-02 | BEATS | **refuted-de-biased** |
+| ETH-USD | 1  | −0,0810 | +0,0300 | **+2,49 %**  | 0/4 | 1,27e-01 | BEATS (doc) | **refuted-de-biased** |
+| ETH-USD | 5  | −0,1290 | +0,0588 | +0,40 %  | 0/4 | 8,68e-01 | INCONCLUSIVE | INCONCLUSIVE |
+| ETH-USD | 10 | −0,1727 | +0,0765 | −0,39 %  | 0/4 | 8,94e-01 | INCONCLUSIVE | INCONCLUSIVE |
+| SOL-USD | 1  | +0,0659 | +0,1045 | **+5,82 %**  | 1/4 | 9,80e-02 | INCONCLUSIVE | **INCONCLUSIVE** |
+| SOL-USD | 5  | +0,0951 | +0,1603 | +1,65 %  | 0/4 | 6,72e-01 | INCONCLUSIVE | INCONCLUSIVE |
+| SOL-USD | 10 | +0,1113 | +0,1897 | −0,93 %  | 0/4 | 8,39e-01 | INCONCLUSIVE | INCONCLUSIVE |
+
+La colonne « Verdict hors biais » **est** le champ `aggregate_verdict_debiased` de l'artefact JSON,
+et non une lecture faite à la main par-dessus : les neuf lignes ci-dessus sont rejouées depuis
+`_aggregate_state` dans `scripts/tests/test_m4_dlinear_bias_replay.py` (23 tests, verts), qui
+rejoue chaque ligne à la fois depuis l'artefact et depuis les nombres recopiés ici. La machine à
+quatre états est celle de M5 (`BEATS` / `NO BEATS` / `refuted-de-biased` / `INCONCLUSIVE`,
+`NO BEATS` l'emporte sur `refuted-de-biased` quand les deux s'appliquent).
+
+**Lecture honnête.** Trois enseignements que la seule jambe brute ne portait pas :
+
+1. **BTC h=1 et h=5 : l'edge est réel, mais il est divisé par ~2.** Brut : −15,3 % et −28,3 %
+   de réduction MSE ; dé-biaisé : +10,1 % et +7,5 % d'edge de précision. HAR sous-estime
+   systématiquement la volatilité BTC (biais OOS −0,23 à −0,45, croissant avec l'horizon),
+   DLinear est quasi non biaisé (−0,005 à +0,007) : une part substantielle de l'avantage brut
+   était la mauvaise calibration de HAR, pas la précision de DLinear. L'edge qui survit au
+   centrage reste significatif (4/4 seeds, `dm_p_median < 1e-04`) — la conclusion « DLinear
+   bat HAR sur BTC » tient, chiffrée plus bas.
+2. **BTC h=10 : réfuté par le centrage** (`refuted-de-biased`). L'edge brut le plus spectaculaire
+   (−38,3 %) est exactement celui où le biais HAR est le plus grand (−0,4502, soit 35,5 % de la
+   MSE HAR en `biais²`, contre 5,8 % à h=1 et 22,6 % à h=5). Dé-biaisée, la médiane des p passe
+   à 5,98e-02 et une seule graine gagne.
+   Le « l'effet croît avec l'horizon » du finding 1 ci-dessus était en réalité « **le biais HAR
+   croît avec l'horizon** » — et DLinear n'y est pour rien.
+3. **ETH h=1 : la signature doc « BEATS » ne survit pas non plus** (`refuted-de-biased` : 0/4
+   graine gagnante sur la jambe recentrée, edge dé-biaisé +2,5 % non significatif). **SOL h=1**
+   est `INCONCLUSIVE` **déjà sur la jambe brute** de ce run (0/4 graine gagnante, DM brut
+   p = 0,158) : le « BEATS » de la table brute ci-dessus provenait du champ `verdict` hérité,
+   calculé contre la baseline **calibrée** — un verdict dé-biaisé présenté sous un en-tête brut.
+   Une fois le biais de HAR (+0,0659, de signe opposé à BTC — HAR *sur*-estime la vol SOL)
+   neutralisé, elle le reste. Aucune conclusion des sections précédentes n'est modifiée rétroactivement :
+   elles sont le verdict de la jambe brute, et cette section est le verdict de la jambe de
+   précision — les deux sont publiées côte à côte, comme sur M5.
+
+**Biais de DLinear, de signe opposé selon la pièce.** DLinear est non biaisé sur BTC
+(|biais| < 0,01) mais **surestime** la volatilité ETH (+0,03 à +0,08) et surtout SOL (+0,10 à
++0,19, croissant avec l'horizon) : entraîné sur des fenêtres incluant le régime haute-vol 2022,
+il projette un niveau que la fin d'échantillon ne confirme pas. Ce biais ne sauve aucun verdict
+— il le plombe : sur SOL, la baseline HAR *surestime aussi*, et leurs biais s'annulent presque,
+ce qui rend la comparaison brute moins défavorable à HAR qu'elle ne devrait.
