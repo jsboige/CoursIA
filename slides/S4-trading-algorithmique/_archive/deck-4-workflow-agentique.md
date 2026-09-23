@@ -10,6 +10,20 @@ mdc: true
 layout: cover
 ---
 
+<!-- Archive header (standard _archive convention, 2026-09-21)
+     - Date archived : 2026-08-06 (LastWriteTime filesystem)
+     - Superseded by : none — closed dead-end (serie S4 fixee a 3 decks par decision pedagogique)
+     - Verdict recorded in : ce README + absence de `deck-4-*.md` dans l'arbre courant
+     -
+     Per-section disposition :
+     - Section "Workflow Agentique VSCode + Claude Code + MCP" : thematique partiellement absorbee dans analysis/ + _tools/, pas dans les decks officiels
+     - Section "Protocole MCP" : documentation dispersee dans _docs/ et extraits, pas de deck dedie
+     - Section "Demo Live : le Cycle Complet" : transformation en atelier pratique (cf _docs/), pas en deck
+     - Section "Configuration : ce qu'il vous faut" : reprise dans deck-3-pratique-lean.md (configuration Lean)
+     - Section "MCP QC : les Outils en Detail" : documentation technique dans _docs/, pas en deck
+     - Raison du dead-end : la serie S4 reste structuree en 3 decks (fondamentaux / strategies / pratique-lean). Le deck-4 aurait complete la serie avec un quatrieme pilier, mais le volume pedagogique deja couvert dans les 3 decks a rendu cette extension redondante. Pas de resurrection prevue.
+-->
+
 # Workflow Agentique pour le Trading
 
 Intelligence Artificielle -- Trading Algorithmique
