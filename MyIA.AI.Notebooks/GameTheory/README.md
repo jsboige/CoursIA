@@ -290,6 +290,7 @@ flowchart TD
 | 15c (C#) | [GameTheory-15c-CooperativeGames-Csharp](GameTheory-15c-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15c : Shapley (permutations), Banzhaf (swing), Core vide (majorité 3-joueurs), Mini-ONU, convexité from-scratch (See #4956) | 40 min |
 | 15d | [GameTheory-15d-Mobius-Coalitions](GameTheory-15d-Mobius-Coalitions.ipynb) | Python | Décomposition de Möbius sur le treillis des coalitions et dividendes d'interaction | 45 min |
 | 15e | [GameTheory-15e-Coalition-Power-SMT](GameTheory-15e-Coalition-Power-SMT.ipynb) | Python | Pouvoir coalitionnel : calcul exhaustif, encodage SMT borné et preuve — prolonge Shapley/Banzhaf par la force du solveur | 50 min |
+| 15f | [GameTheory-15f-Shapley-Groupes](GameTheory-15f-Shapley-Groupes.ipynb) | Python | Valeur de Shapley de groupe (Flores-Molina-Tejada 2019) : évaluer une équipe comme une unité — jeu fusionné, théorème 2, réseau florentin exact et Monte Carlo sur le club de karaté | 50 min |
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG (non-monotonie du revenu, Conitzer-Sandholm), matching | 65 min |
 | 16 (C#) | [GameTheory-16-MechanismDesign-Csharp](GameTheory-16-MechanismDesign-Csharp.ipynb) | .NET (C#) | Twin C# du 16 : **enchères Vickrey 1er/2nd prix + VCG (règle de Clarke) + Gale-Shapley (stable matching) + double auction** from-scratch, BCL .NET 9 (See #4956) | 50 min |
 | 16b | [GameTheory-16b-Automated-Mechanism-Design](GameTheory-16b-Automated-Mechanism-Design.ipynb) | Python | Automated Mechanism Design : synthèse et vérification d'un mécanisme sous contraintes | 35 min |
@@ -334,7 +335,7 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 
 Les huit extensions `3a` à `3h` figurent dans la Partie 1, au voisinage du notebook GT-3 qu'elles prolongent. Elles couvrent respectivement les chemins de swaps, les chambres et murs, le joueur LLM, le plan de déformation, les méta-actions tarifées, le parcours complet, la dérivation quotient et les deux espèces de flèches.
 
-**Durée totale des tableaux** : ~84h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
+**Durée totale des tableaux** : ~86h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
 
 ## Concepts clés
 
@@ -397,6 +398,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
 | 15d | Mobius-Coalitions | Décomposition de Möbius du jeu de coalition et dividendes d'interaction |
 | 15e | Coalition-Power-SMT | Pouvoir coalitionnel : calcul exhaustif, encodage SMT borné et preuve |
+| 15f | Shapley-Groupes | Valeur de Shapley de groupe : le meilleur binôme n'est pas celui des deux meilleurs individus (exact sur 2^15 coalitions, Monte Carlo au-delà) |
 | 16 | MechanismDesign | Principe de révélation, VCG (incl. non-monotonie du revenu), matching, enchères |
 | 16b | Automated-Mechanism-Design | Synthèse d'un mécanisme sous contraintes et vérification de ses propriétés |
 | 16c | Extraction-de-Revenu | La dimension paiement que le designer n'a jamais cherchée : extraction de revenu sous DSIC/IR |
@@ -783,6 +785,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 15c | CooperativeGames-Python | ~25 | 3 | **COMPLET** |
 | 15d | Mobius-Coalitions | 26 | 4 | **NOUVEAU** |
 | 15e | Coalition-Power-SMT | 35 | 3 | **NOUVEAU** |
+| 15f | Shapley-Groupes | 44 | 4 | **NOUVEAU** |
 | 16 | MechanismDesign | ~40 | 3 | **COMPLET** |
 | 16b | Automated-Mechanism-Design | 9 | 3 | **NOUVEAU** |
 | 16c | Extraction-de-Revenu-DSIC-IR | 23 | 3 | **NOUVEAU** |
@@ -936,6 +939,7 @@ GameTheory/
 ├── GameTheory-15c-CooperativeGames-Csharp.ipynb    #   Jumeau C# — Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (parité #4956)
 ├── GameTheory-15d-Mobius-Coalitions.ipynb          # Décomposition de Möbius sur le treillis des coalitions
 ├── GameTheory-15e-Coalition-Power-SMT.ipynb        # Pouvoir coalitionnel : calcul, SMT borné, preuve
+├── GameTheory-15f-Shapley-Groupes.ipynb            # Valeur de Shapley de groupe : évaluer une équipe
 ├── GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb  # Extraction de revenu DSIC/IR
 ├── GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb   # Pilote : joueurs LLM sur mécanisme Othman-Sandholm
 ├── GameTheory-16b-Automated-Mechanism-Design.ipynb # Synthèse automatique de mécanismes
@@ -981,6 +985,7 @@ GameTheory/
 │   ├── core.py                    # Core, Bondareva-Shapley
 │   ├── assistance_games.py        # Jeux d'assistance (veto, etc.)
 │   ├── coalition_games.py         # Jeux de coalition
+│   ├── group_value.py             # Valeur de Shapley de groupe (Flores-Molina-Tejada 2019)
 │   └── french_politics.py         # Politique française (exemples)
 ├── trust_simulation/              # Module Evolution of Trust
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
@@ -1007,16 +1012,27 @@ GameTheory/
 │   ├── stag_hunt_forward_induction.py  # Stag hunt + SPE
 │   └── arrow_simple.lean
 └── tests/
-    ├── test_nash_computation.py
-    ├── test_strategies.py
-    ├── test_lean_definitions.py
+    ├── test_assistance_games.py
+    ├── test_centipede_game.py
     ├── test_cooperative_core.py
     ├── test_extensive_form.py
+    ├── test_fictitious_play.py
+    ├── test_french_politics.py
+    ├── test_group_value.py
     ├── test_kuhn_poker_cfr.py
+    ├── test_lean_definitions.py
+    ├── test_limit_sets.py
+    ├── test_nash_computation.py
     ├── test_phase3.py
+    ├── test_prisoners_dilemma.py
     ├── test_shapley.py
+    ├── test_stackelberg.py
+    ├── test_stackelberg_asymmetric.py
+    ├── test_stag_hunt_forward_induction.py
+    ├── test_strategies.py
     ├── test_topology_2x2.py
     ├── test_trust_simulation.py
+    ├── test_validate_lean_setup.py
     └── test_vcg_auction.py
 ```
 
