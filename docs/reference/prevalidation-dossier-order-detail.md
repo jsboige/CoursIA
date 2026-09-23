@@ -1,6 +1,8 @@
 # Prévalidation — pourquoi l'ordre compte, et ce que la tête vient périmer (#16878)
 
-Détail déporté de la règle [`git-workflow.md`](../../.claude/rules/git-workflow.md) § « `update-branch` et le dossier de prévalidation ». Le sujet : **le dossier de prévalidation atteste une tête, pas une PR** — et l'ordre des gestes qui en découle.
+Détail déporté de la puce « `update-branch` tue AUSSI le dossier de prévalidation » de [`git-workflow.md`](../../.claude/rules/git-workflow.md). Le sujet : **le dossier de prévalidation atteste une tête, pas une PR** — et l'ordre des gestes qui en découle.
+
+**La règle fait foi** pour l'ordre et le gel ; ce document ne les rejoue pas, il donne le **pourquoi** (le mécanisme vérifié à la source, la boucle réelle, et les deux prémisses de l'issue fondatrice qui étaient fausses).
 
 ## 1. La mesure fondatrice — 17 candidates sur 17
 
@@ -79,14 +81,13 @@ L'issue écrit : « **L'autre moitié n'est écrite nulle part** ». C'est **ine
 
 Ce qui manquait n'est donc pas le **fait**, c'est **l'ordre** — et le fait qu'il soit nommé comme la condition qui débloque la boucle. La règle **renvoie** au skill pour le fait plutôt que de le redécrire : deux surfaces qui reformulent la même règle finissent par diverger, c'est précisément le défaut de #16962.
 
-## 5. L'ordre en 4 temps
+## 5. Pourquoi cet ordre — et pas un autre
 
-1. la lane fait `update-branch` **si** elle doit récupérer `main` ;
-2. on attend l'écoulement du plancher, puis on **rejoue la jambe** (`gh run rerun <run_id> --job <job_id>`) — **personne ne re-pousse** (un push de contenu re-arme le plancher depuis la nouvelle tête) ;
-3. **alors seulement** l'adjoint écrit le dossier, à la tête exacte ;
-4. le coordinateur merge aussitôt, et la branche reste **gelée de 3 à 4**.
+L'ordre en 4 temps lui-même est porté par la règle (puce « `update-branch` tue AUSSI le dossier de prévalidation ») ; il n'est **pas** recopié ici, pour la raison du §4.
 
-**Le gel est la pièce qui manquait**, et c'est la seule qui ne se déduit pas du mécanisme : un dossier a besoin d'une **branche silencieuse**. Sans gel, le travail de prévalidation est détruit par le travail de réparation. Le caractère structurel du blocage tient à ce que **chacun fait exactement ce que son rôle prescrit** — la lane rafraîchit, l'adjoint atteste, le coordinateur exige un dossier valide ; aucune des trois ne peut sortir de la boucle seule, parce que le défaut n'est dans aucun des trois gestes mais dans leur **ordre**.
+Ce qui mérite d'être explicité, c'est **pourquoi le gel en est la pièce centrale** : c'est la seule qui ne se déduit pas du mécanisme. Un dossier a besoin d'une **branche silencieuse** — sans gel, le travail de prévalidation est détruit par le travail de réparation, et le gel ne peut pas se déduire de « le dossier atteste une tête », il faut le **décider**.
+
+Le blocage est structurel : **chacun fait exactement ce que son rôle prescrit** — la lane rafraîchit (bon geste), l'adjoint atteste à la tête exacte (sa fonction), le coordinateur exige un dossier valide (le gate). Aucun des trois gestes n'est fautif ; le défaut est dans leur **séquence**, donc aucun des trois ne peut en sortir seul. C'est ce qui rend l'ordre — et non le constat — la livraison.
 
 ## Voir aussi
 
