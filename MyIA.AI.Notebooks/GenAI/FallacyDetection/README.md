@@ -14,7 +14,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 02 | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) | Paysage des datasets annotés en accès réel (≥ 3 exercices) |
 | 03 | [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb) | Écart de couverture taxonomique académique vs Argumentum (≥ 3 exercices) |
 | 04 | [04_coverage_matrix.ipynb](04_coverage_matrix.ipynb) | Matrice de couverture cross-notebooks N×M (sophismes, formalismes, domaines, preuve) + heatmap (≥ 3 exercices) |
-| 05 | [05_dataset_builder.ipynb](05_dataset_builder.ipynb) | Phase 2, tranche A : produit cartésien Scénarii × taxonomies, équilibrage par exposant $lpha$, splits déterministes sans fuite de scénario, prompts sans circularité (3 exercices) |
+| 05 | [05_dataset_builder.ipynb](05_dataset_builder.ipynb) | Phase 2, tranche A : produit cartésien Scénarii × taxonomies, équilibrage par exposant $\alpha$, splits déterministes sans fuite de scénario, prompts sans circularité (3 exercices) |
 
 ## Chaîne des phases
 
@@ -66,7 +66,7 @@ Les deux voies sont complémentaires : le corpus académique **valide** que les 
 
 ### Format des splits de la Phase 2 (`data/phase2/`)
 
-Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python scripts/fallacy_detection/cartesian_dataset_builder.py`) avec les paramètres par défaut ($lpha = 0{,}5$, budgets 12 000 sophismes + 2 000 vertus, graine 0). Une ligne par couple, en UTF-8 et fins de ligne LF :
+Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python scripts/fallacy_detection/cartesian_dataset_builder.py`) avec les paramètres par défaut ($\alpha = 0{,}5$, budgets 12 000 sophismes + 2 000 vertus, graine 0). Une ligne par couple, en UTF-8 et fins de ligne LF :
 
 | Colonne | Contenu |
 |---|---|
