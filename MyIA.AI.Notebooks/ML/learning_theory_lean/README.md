@@ -34,7 +34,14 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    injectif ⟹ clustering par classe) + quantité conservée hyperbolique
    `C = a₂²/(2η_A) − c²/η_x` (`dC/dt = 0`, preuve calculatoire) +
    contenu informationnel `b = log₂(n!/|Aut G|)` (ancres : groupe trivial
-   `b = 0`, groupe à deux éléments `b = 1`) ; R10 *circle of days* : la
+   `b = 0`, groupe à deux éléments `b = 1`) + **Statics sur graphes**
+   (Section III : re-labellage par `Equiv.Perm (Fin n)`, pont
+   `mem_aut_iff` stabilisateur = automorphismes, orbit-stabilizer
+   `card_orbit_mul_card_aut` `|orbite|·|Aut G| = n!`, longueur de
+   description `descLength`/`descLength_eq` `b = log₂(n!/|Aut G|)`) +
+   **Eq. 16** `rel_eqn_autonomous` (forçage common-mode s'annule dans
+   `x₁ − x₂` : séparation autonome) — migrés du module dissous
+   `GenEFT.lean` (#17480) ; R10 *circle of days* : la
    représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) est
    **irréductible** (`circleOfDays_irreducible` — aucune droite stable, le
    discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre
@@ -183,7 +190,7 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
 | `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
 
-### Module `EffectiveTheory` (théorie effective de la représentation, corpus Tegmark #16741)
+### Module `EffectiveTheory` (digestion #16741 — corpus Tegmark R02/R06/R10)
 
 Addition modulaire jouet sur `Fin p` : le modèle `M = (Dec, R)` plonge chaque
 entier `k` en `E k` ; l'entraînement à perte nulle exige `Dec (E i + E j) =
@@ -192,11 +199,12 @@ par la dynamique de ces plongements sous la perte effective `ℓ_eff = ℓ₀/Z�
 
 | Fichier | sorry | Contenu |
 |---------|-------|---------|
-| `EffectiveTheory/Grokking.lean` | 0 | Base #16794 (main) : Déf. 1 + Props 1-2 (`IsDeltaParallelogram`, `prop1_zeroLoss`, `prop2_injectiveDecoder`), dérivabilités (`hasFDerivAt_loss0`, `hasFDerivAt_sumsq0`), identités de l'appendice F (`loss0_grad_sum_zero`, `loss0_grad_dot_self`, `gradSumSq0_apply`), flot effectif (`IsEffectiveFlow`, `flow_deriv_sumsq0_eq_zero`, `flow_deriv_sum_apply` — `dC/dt = (2ℓ₀/Z₀²)·C`, le terme `∂Z₀` omis par la preuve de l'Appendice F), conservations (`flow_sumsq0_constant`, `flow_sum_constant_of_zero_loss`). |
+| `EffectiveTheory/Grokking.lean` | 0 | R02 : Déf. 1 δ-parallélogrammes, Prop. 1 `prop1_zeroLoss` (perte nulle ⟹ `i + j = m + n`), Prop. 2 `prop2_injectiveDecoder` (décodeur injectif ⟹ formation), App. F : identités `loss0_grad_sum_zero` / `loss0_grad_dot_self` (Euler degré 2) + lois de conservation du flot `flow_sumsq0_constant` (`Z₀` inconditionnel), `flow_sum_constant_of_zero_loss` (`C` sur le régime post-grokking). |
 | `EffectiveTheory/GrokkingLemmas.lean` | 0 | **Recadrage #16752** (delta propre du grain, porté du cadre `EuclideanSpace ℝ ι` vers `Fin p → ℝ`) : `C_conserved_l0` (`C = Σ E k` conservée le long du flot de `ℓ₀`, **sans hypothèse** — via l'identité 1 de l'appendice F), `meanZero_invariant` (l'hyperplan centré `C = 0` est invariant le long du flot effectif : `dC/dt = κ·C`, facteur intégrant `exp(−∫κ)`), et lemmes génériques `hasDerivAt_line` / `euler_zero_homogeneous` / `fderiv_of_translateInvariant` / `eq_of_hasDerivAt_zero` / `Z0_conserved` (cadre préhilbertien quelconque, indépendant de `Fin p → ℝ`). |
-| `EffectiveTheory/Repons.lean` | 0 | Base #16794 (main), R06 *GenEFT* : Théorème 1 (décodeur injectif ⟹ clustering par classe) + quantité conservée hyperbolique `C = a₂²/(2η_A) − c²/η_x` (`dC/dt = 0`). |
-| `EffectiveTheory/InfoBits.lean` | 0 | Base #16794 (main), R06 : contenu informationnel `b = log₂(n!/|Aut G|)` + ancres (groupe trivial `b = 0`, groupe à deux éléments `b = 1`). |
-| `EffectiveTheory/CircleOfDays.lean` | 0 | Base #16794 (main), R10 : cercle des jours `C₇ = ZMod 7` (`rotation_cyclicSeven`) irréductible (`circleOfDays_irreducible`). |
+| `EffectiveTheory/Repons.lean` | 0 | R06 : Théorème 1 `clustering_iff_injective_decoder` (décodeur injectif + perte nulle ⟹ clustering par classe exact, témoin `k = i`), Eq. 11 `conservedHyperbola_deriv_zero` (`d/dt (a₂²/2η_A − c²/η_x) = 0`, anéantissement mutuel), **Eq. 16 `rel_eqn_autonomous`** (forçage common-mode s'annule dans `x₁ − x₂` : ressort de Hooke autonome) — ce dernier migré de `GenEFT.lean` (#17480). |
+| `EffectiveTheory/InfoBits.lean` | 0 | R06 : `infoBits G = log₂(n!/|Aut G|)` + ancres (trivial `b = 0`, deux éléments `b = 1`, `C₇` `b = log₂ 840`) ; **Statics graphes (Section III, migrées de `GenEFT.lean` #17480)** : re-labellage `permSmul` + instance `MulAction` de `Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)`, pont `mem_aut_iff` (stabilisateur ↔ automorphismes : adjacence préservée dans les deux sens), orbit-stabilizer `card_orbit_mul_card_aut` (`\|orbite\|·\|Aut G\| = n!`), longueur de description `descLength` + forme quotient `descLength_eq` (`b = log₂(n!/\|Aut G\|)`, éq. 4). |
+| `EffectiveTheory/CircleOfDays.lean` | 0 | R10 : la rotation des jours comme représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) et son **irréductibilité** `circleOfDays_irreducible` (aucune droite stable : le discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre réelle). |
+| `EffectiveTheory.lean` | 0 | Imports parapluie + cartographie du corpus (R02 `88CE88DB` / R06 `B589C4EF` / R10 `7DEAC929`). |
 
 ### i18n FR/EN
 

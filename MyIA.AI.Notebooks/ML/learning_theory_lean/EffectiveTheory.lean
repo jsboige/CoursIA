@@ -31,12 +31,19 @@ R02 / R06 / R10.
    `GrokkingLemmas_en` (#4980).
 3. **`EffectiveTheory.Repons`** (R06, *GenEFT*, arXiv:2402.05916) :
    Théorème 1 (décodeur injectif ⟹ clustering par classe, preuve
-   constructive par contradiction) et la quantité conservée hyperbolique
+   constructive par contradiction), la quantité conservée hyperbolique
    `C = a₂²/(2η_A) − c²/η_x` du système de repons (appendice C,
-   `dC/dt = 0`, preuve calculatoire).
+   `dC/dt = 0`, preuve calculatoire) et l'**autonomie de la séparation**
+   (Eq. 16 : le forçage externe common-mode s'annule dans `x₁ − x₂`).
 4. **`EffectiveTheory.InfoBits`** (R06) : contenu informationnel
    `b = log₂(n!/|Aut G|)` et ses ancres concrètes — groupe trivial
-   (`b = 0`), groupe à deux éléments (`b = 1`, automorphismes triviaux).
+   (`b = 0`), groupe à deux éléments (`b = 1`, automorphismes triviaux) —
+   et les **Statics sur graphes** (Section III) : action de re-labellage de
+   `Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)`, pont `mem_aut_iff`
+   (stabilisateur = automorphismes), orbit-stabilizer
+   `card_orbit_mul_card_aut` (`|orbite| · |Aut G| = n!`) et longueur de
+   description `descLength` / `descLength_eq` (`b = log₂ (n!/|Aut G|)`).
+   Migration du module dissous `GenEFT.lean` (#17480).
 5. **`EffectiveTheory.CircleOfDays`** (R10, *Not All Language Model Features
    Are One-Dimensionally Linear*, arXiv:2405.14860) : le cercle des jours
    comme représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) et son
