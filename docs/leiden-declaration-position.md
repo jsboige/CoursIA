@@ -30,11 +30,11 @@ Cet Epic est une discipline **interne** avant d’être une politique d’acquis
 
 L’Epic #13105 se déploie selon un parcours en trois temps — **apprendre, extraire, prouver** — que la littérature récente de l’interprétabilité mécaniste et de la formalisation permet aujourd’hui de nommer et de relier. Cette Boussole n’est pas un programme nouveau : c’est une lecture transverse de ce que CoursIA fait déjà, articulée pour qu’un lecteur extérieur puisse en suivre le fil sans avoir à reconstituer les épisodes.
 
-**Apprendre.** Le grokking observé par R02 (Nanda et al., 2023, [`arXiv:2201.02177`](https://arxiv.org/abs/2201.02177) — phase tardive où un réseau dépasse la mémorisation et accède à une structure algorithmique) montre qu’un modèle peut converger au-delà de ses performances d’entraînement. Pour CoursIA, ce temps correspond à la phase d’accumulation disciplinée des notebooks, des preuves et des lakes — sans garantie que la performance finale en soit lisible.
+**Apprendre.** Le grokking observé par R02 (Power, Burda, Edwards, Babuschkin et Misra, 2022, [`arXiv:2201.02177`](https://arxiv.org/abs/2201.02177) — phase tardive où un réseau dépasse la mémorisation et accède à une structure algorithmique) montre qu’un modèle peut converger au-delà de ses performances d’entraînement. Pour CoursIA, ce temps correspond à la phase d’accumulation disciplinée des notebooks, des preuves et des lakes — sans garantie que la performance finale en soit lisible.
 
 **Extraire.** R03 (Michaud et al., 2024, [`arXiv:2402.05110`](https://arxiv.org/abs/2402.05110) — *program synthesis via mechanistic interpretability*) montre qu’à partir d’un réseau grokké, on peut extraire un programme lisible. Côté CoursIA, ce geste est porté par les organes d’interprétabilité (harnais SAE Qwen, #10355), par les notebooks d’AST et de circuits, et par les passages qui reconstruisent un algorithme identifiable à partir d’un artefact neuronal. L’extraction n’est pas seulement technique : elle exige de choisir le niveau d’abstraction où le programme devient *lisible par un humain*, et ce choix est pédagogique avant d’être mathématique.
 
-**Prouver.** R15 (Bentkamp et al., 2025, [`arXiv:2502.07565`](https://arxiv.org/abs/2502.07565) — *vericoding*), cité par R14 §3.3.1, démontre que la sortie d’un modèle peut être accompagnée d’une preuve formelle vérifiée par un noyau. La chaîne Tao *Mathematics in the Age of AI* propose précisément ce contrat : génération, vérification, exposition, puis digestion dans un corpus humainement cohérent. Lean-19 Sendov, Lean-20 Analysis I et Lean-21 PFR sont trois premières mailles locales de cette chaîne.
+**Prouver.** R15 (Bursuc, Trimponas, Sato et Nikolić, 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908) — *vericoding*), démontre que la sortie d’un modèle peut être accompagnée d’une preuve formelle vérifiée par un noyau. La chaîne Tao *Mathematics in the Age of AI* propose précisément ce contrat : génération, vérification, exposition, puis digestion dans un corpus humainement cohérent. Lean-18 Sendov, Lean-19 Analysis I et Lean-20 PFR sont trois premières mailles locales de cette chaîne.
 
 **Les deux directions de l’intersection.** La Boussole distingue deux usages distincts de la preuve formelle appliquée à l’IA :
 
@@ -57,7 +57,7 @@ Ces deux directions ne sont pas séparables : un *verifier* qui s’appuie sur d
 - R10 — *Not All Language Model Features Are One-Dimensionally Linear* ([`arXiv:2405.14860`](https://arxiv.org/abs/2405.14860)) · sha8 `7DEAC929`
 - R12 — *Towards Guaranteed Safe AI* ([`arXiv:2405.06624`](https://arxiv.org/abs/2405.06624)), distillation #17216
 - R14 — *Open Problems in Mechanistic Interpretability* ([`arXiv:2501.16496`](https://arxiv.org/abs/2501.16496)) · sha8 `9A50CDC6`
-- R15 — *Vericoding* ([`arXiv:2502.07565`](https://arxiv.org/abs/2502.07565))
+- R15 — *Vericoding* (Bursuc, Trimponas, Sato et Nikolić, 2025, [`arXiv:2509.22908`](https://arxiv.org/abs/2509.22908))
 - Terry Tao, *Mathematics in the Age of AI*, ICM 2026 ([`arXiv:2608.16753`](https://arxiv.org/abs/2608.16753))
 
 ## Principes, pratiques, preuves et engagements
@@ -87,7 +87,7 @@ Cette précision reste incomplète : la [carte de couverture](reference/lean-axi
 
 ### 3. Exposition et digestion
 
-Lean-19 Sendov, Lean-20 Analysis I et Lean-21 PFR illustrent trois formes de digestion : exposer un grand résultat, étudier un workflow de formalisation et relier une méthode entropique à un lake réel. Ces notebooks sont des points de départ, pas des certificats de canonicalisation définitive.
+Lean-18 Sendov, Lean-19 Analysis I et Lean-20 PFR illustrent trois formes de digestion : exposer un grand résultat, étudier un workflow de formalisation et relier une méthode entropique à un lake réel. Ces notebooks sont des points de départ, pas des certificats de canonicalisation définitive.
 
 L’[inventaire de veille Palomar](https://github.com/jsboige/CoursIA/issues/13107) rend cette prudence opérationnelle. Au snapshot du 26 août 2026, le registre comptait 68 résultats actifs et 76 versions. Un seul résultat, Sendov, avait un chevauchement direct avec une digestion CoursIA existante. La plupart des autres reçoivent `VEILLE` ou `AUCUNE ACTION` : être vérifié dans Palomar ne suffit pas à justifier un import, un notebook ou une place dans le curriculum. Cet inventaire n’est pas un backlog ; il ne devient actionnable qu’en réponse à un besoin déjà formulé par un parcours CoursIA.
 
