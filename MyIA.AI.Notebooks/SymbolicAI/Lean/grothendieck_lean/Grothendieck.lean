@@ -1,3 +1,11 @@
+/-
+Invariant d'index (#16154) : cet umbrella est un index de lecture **FR-only**.
+Chaque module FR de `Grothendieck/` y figure ; les siblings `_en` (miroir
+anglais, EPIC #4980) n'y figurent jamais — ils restent construits par les
+`globs := #[`Grothendieck.*`]` du lakefile, qui auto-découvrent les deux
+langues. Un index bilingue de 150 entrées ne serait plus un index. Tenu par
+`scripts/lean/tests/test_grothendieck_umbrella.py`.
+-/
 import Grothendieck.Adjunction
 import Grothendieck.Calibration
 import Grothendieck.CanonicalProps
@@ -11,29 +19,20 @@ import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
 import Grothendieck.CoversAtomicArrow
-import Grothendieck.CoversAtomicArrow_en
 import Grothendieck.CoversBind
 import Grothendieck.CoversCoherentArrow
-import Grothendieck.CoversCoherentArrow_en
 import Grothendieck.CoversCoverageArrow
-import Grothendieck.CoversCoverageArrow_en
 import Grothendieck.CoversEtaleArrow
-import Grothendieck.CoversEtaleArrow_en
 import Grothendieck.CoversExtensiveArrow
-import Grothendieck.CoversExtensiveArrow_en
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPrecoverageArrow
-import Grothendieck.CoversPrecoverageArrow_en
 import Grothendieck.CoversPretopologyArrow
-import Grothendieck.CoversPretopologyArrow_en
 import Grothendieck.CoversPullback
 import Grothendieck.CoversPushforward
 import Grothendieck.CoversRegularArrow
-import Grothendieck.CoversRegularArrow_en
 import Grothendieck.CoversTopologies
 import Grothendieck.CoversZariskiArrow
-import Grothendieck.CoversZariskiArrow_en
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
@@ -41,7 +40,9 @@ import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
 import Grothendieck.Flasque
 import Grothendieck.FlasqueStability
-import Grothendieck.FlasqueStability_en
+import Grothendieck.FlasqueRetract
+import Grothendieck.FlasqueExact
+import Grothendieck.FlasqueQuotient
 import Grothendieck.Fppf
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
@@ -52,48 +53,38 @@ import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
 import Grothendieck.PlusConstruction
-import Grothendieck.PlusConstruction_en
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
 import Grothendieck.PullbackFunctor
 import Grothendieck.PullbackFunctorLaws
 import Grothendieck.SchemesTour
 import Grothendieck.SerreMap
-import Grothendieck.SerreMap_en
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
 import Grothendieck.SheafCohomology.Cech
 import Grothendieck.SheafCohomology.MayerVietoris
 import Grothendieck.SheafCondition
-import Grothendieck.SheafCondition_en
 import Grothendieck.SheafConditionCharacterization
-import Grothendieck.SheafConditionCharacterization_en
 import Grothendieck.SheafConditionInvariance
-import Grothendieck.SheafConditionInvariance_en
 import Grothendieck.SheafHom
 import Grothendieck.Sheafification
 import Grothendieck.SheafTopologySpectrum
-import Grothendieck.SheafTopologySpectrum_en
 import Grothendieck.SieveGenerate
 import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
-import Grothendieck.SitesComparison_en
 import Grothendieck.Skyscraper
-import Grothendieck.Skyscraper_en
 import Grothendieck.Spaces
 import Grothendieck.SpacesMathlib
 import Grothendieck.SpacesSubcanonical
 import Grothendieck.StalkCharacterization
-import Grothendieck.StalkCharacterization_en
 import Grothendieck.StalkGluing
 import Grothendieck.StalkPoints
 import Grothendieck.StalkSeparated
 import Grothendieck.Stalks
 import Grothendieck.Subcanonical
 import Grothendieck.TopologyDictionary
-import Grothendieck.TopologyDictionary_en
 import Grothendieck.TopologyLattice
 import Grothendieck.YonedaLemma
 import Grothendieck.ZariskiSite
@@ -287,12 +278,13 @@ Substance (English):
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
 
-Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : ce fichier root
-aggregator est bilingue inline (FR canonique d'abord, EN en miroir),
-conformément au pattern canonique `CooperativeGames.lean` (PR #5883,
-pilote EPIC), `Utility.lean` (PR #6045), `RepeatedGames.lean` (PR #6048),
-`Minimax.lean` (PR #6101), `SocialChoice.lean` (PR #6106), `Conway.lean`
-(PR #6111). Les modules substantiels vivent dans des fichiers siblings (cf.
-structure lake ci-dessous), auto-découverts par le
-`lean_lib «Grothendieck»` du lakefile (cf. `globs` glob par défaut).
+Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : contrairement aux
+agrégateurs racines bilingues inline (`CooperativeGames.lean` PR #5883,
+pilote EPIC ; `Utility.lean` PR #6045 ; `RepeatedGames.lean` PR #6048 ;
+`Minimax.lean` PR #6101 ; `SocialChoice.lean` PR #6106 ; `Conway.lean`
+PR #6111), ce fichier root aggregator est un index **FR-only** (#16154) :
+il importe chaque module FR et jamais un sibling `_en`. Les modules
+substantiels vivent dans des fichiers siblings (cf. structure lake
+ci-dessous), auto-découverts par le `lean_lib «Grothendieck»` du lakefile
+(cf. `globs` glob par défaut).
 -/
