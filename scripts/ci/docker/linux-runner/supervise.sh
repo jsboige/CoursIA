@@ -44,6 +44,14 @@
 # n'a pas demande, et garde exactement son comportement anterieur. C'est le
 # wrapper de chaque machine qui arme ce qu'elle veut (voir persist/README.md).
 #
+# UNE SEULE BORNE DE RESSOURCE FAIT EXCEPTION, ET ELLE LE DIT DESORMAIS :
+# BUDGET_GB. Elle ne PEUT pas etre neutre -- le garde de memoire compare une
+# somme EN VOL a ce budget, donc un defaut a 0 refuserait tous les slots de
+# toutes les machines. Elle garde son defaut fonctionnel (12) mais S'ANNONCE a
+# chaque demarrage quand aucun wrapper ne la declare, au lieu de gouverner en
+# silence : un budget implicite n'est pas auditable, et l'operateur qui lit
+# l'unite ne le voit nulle part.
+#
 # Les deux valeurs qui ne sont PAS inertes -- backoff et rotation -- ne sont
 # pas des plafonds : elles ne refusent rien et ne ralentissent aucun travail
 # qui aboutit. Elles ne mordent que sur ce qui echoue en boucle ou grossit
@@ -63,6 +71,13 @@
 #   COURSIA_RUNNER_BLKIO_DEVICE         device porteur ; auto-detecte si vide.
 #   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU, toutes familles
 #                                       confondues. 0 = pas de garde.
+#   COURSIA_RUNNER_BUDGET_GB            part de RAM hote que la CI s'autorise,
+#                                       toutes familles confondues. SEULE borne
+#                                       de RESSOURCE non inerte (defaut
+#                                       fonctionnel 12, cf. ci-dessus) : chaque
+#                                       wrapper de machine DOIT l'ecrire, les
+#                                       trois jambes avec le MEME nombre -- le
+#                                       garde somme les familles entre elles.
 #   COURSIA_RUNNER_LOG_MAX_BYTES        rotation des journaux de slot.
 #                                       NON inerte : 32 Mio. 0 = desactive.
 #   COURSIA_RUNNER_BACKOFF_MIN_SEC      backoff exponentiel des boucles de
@@ -412,7 +427,24 @@ export MSYS2_ARG_CONV_EXCL='*'
 # Part de RAM hote que la CI s'autorise, toutes familles confondues. Alignee
 # sur MemoryHigh de la slice : le budget userspace et le seuil de recuperation
 # du noyau annoncent le meme nombre.
-BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-12}"
+#
+# DECLAREE OU SUPPOSEE -- LA DIFFERENCE SE VOIT. Le defaut 12 est conserve
+# parce qu'un defaut a 0 refuserait tous les slots (le garde compare une somme
+# en vol a ce budget, cf. assert_memory_budget), mais il n'est PAS neutre : il
+# gouverne. Tant qu'aucun wrapper ne l'ecrit, la valeur effective n'existe dans
+# aucun fichier lisible par l'operateur -- c'est ce qui a fait refaire l'enquete
+# sur po-2024 (VM 24 032 Mo, budget 12 288 Mo, ecart entre effectifs declares et
+# budget decouvert a la main). On ne change donc pas la valeur : on refuse
+# seulement qu'elle soit SILENCIEUSE.
+BUDGET_GB_DECLARE="${COURSIA_RUNNER_BUDGET_GB:-}"
+BUDGET_GB="${BUDGET_GB_DECLARE:-12}"
+if [ -z "$BUDGET_GB_DECLARE" ]; then
+  echo "[budget] AVERTISSEMENT : COURSIA_RUNNER_BUDGET_GB n'est declare par aucun" >&2
+  echo "        wrapper de machine -- le garde dimensionne sur le defaut $BUDGET_GB Go." >&2
+  echo "        Un budget non declare n'est pas auditable : l'ecrire dans le wrapper" >&2
+  echo "        de la machine (export COURSIA_RUNNER_BUDGET_GB=$BUDGET_GB), les trois" >&2
+  echo "        jambes avec le meme nombre -- pas dans un defaut de shell." >&2
+fi
 # Le garde d'hote ne lit plus AUCUN compteur de NIVEAU. Il demande « la machine
 # est-elle en train de souffrir ? », pas « reste-t-il N Go ? » -- deux questions
 # differentes, et seule la premiere a une reponse mesurable sous Windows.
@@ -1722,6 +1754,17 @@ Le mur agrege serait decoratif tout en paraissant actif. Deployer :
     return 0
   fi
   hi="$(slice_read_raw memory.high)"
+  # Pilote systemd (daemon docker-ce de la distro WSL d'ai-01) : --cgroup-parent
+  # y attend un NOM de slice (`coursia-ci.slice`), dont systemd deduit lui-meme
+  # la hierarchie par les tirets. Le chemin relatif du pilote cgroupfs
+  # (`coursia.slice/coursia-ci.slice`) y est refuse par runc -- « invalid slice
+  # name » -- et chaque slot sort en rc=125 au bout d'une seconde (mesure ai-01
+  # 2026-09-23T13:01Z : 10 slots sur 10). Le nom derive du MEME chemin que la
+  # lecture : la source de verite reste unique.
+  if [ -n "$CI_CGROUP_PARENT" ] \
+     && [ "$(docker info --format '{{.CgroupDriver}}' 2>/dev/null | tr -d '\r')" = "systemd" ]; then
+    CI_CGROUP_PARENT="${CI_SLICE_PATH##*/}"
+  fi
   echo "[slice] mur agrege ACTIF : memory.high=$hi memory.max=$mx octets"
   echo "[slice] ($CI_SLICE_PATH ; conteneurs places via --cgroup-parent=$CI_CGROUP_PARENT)"
 }

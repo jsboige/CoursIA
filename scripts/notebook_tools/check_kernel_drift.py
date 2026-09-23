@@ -198,12 +198,21 @@ def body_has_derive_exemption(body):
     tolerates the unaccented 'derive' (covers authors who type the header
     without the accent, a common shortcut when reviewing on a non-French
     keyboard layout).
+
+    Fix v3 (suffix form, cas vecu #17220): also tolerate a trailing
+    parenthetical qualifier, e.g. '## Diagnostic derive (C.4)' -- the exact
+    form used in the PR body of #17220, whose exemption silently failed to
+    fire because
+    the strict end-of-line anchor rejected the '(C.4)' suffix (measured
+    firsthand 2026-09-21: kernel_diffs downgraded nowhere, guard red on a
+    3.13.7 -> 3.13.15 patch drift that the C.4 section was documenting).
     """
     if not body:
         return False
-    # Case-insensitive header, optional whitespace, optional accent on 'e'.
+    # Case-insensitive header, optional whitespace, optional accent on 'e',
+    # optional trailing parenthetical qualifier such as '(C.4)'.
     pattern = re.compile(
-        r"^##\s*Diagnostic\s*d[ée]rive\s*$",
+        r"^##\s*Diagnostic\s*d[ée]rive(?:\s*\([^)]*\))?\s*$",
         re.MULTILINE | re.IGNORECASE,
     )
     return bool(pattern.search(body))
@@ -260,6 +269,10 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     ordinals match ``float_signatures``' own code-only ordinals.
     Markdown cells are invisible to this map: they neither drift
     themselves nor shift code cells' indices.
+
+    #17232: added code cells are no longer reported unconditionally --
+    only those carrying a non-empty float signature are (see the loop in
+    the id-aligned branch below).
     """
     # If we have notebooks with cell ids, align by id
     if base_nb is not None and head_nb is not None:
@@ -284,9 +297,19 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h:
                 diffs.append(cid)
-        # Added code cells (only in head)
+        # Added code cells (only in head), reported ONLY when they actually
+        # carry a float-array signature (#17232). An added cell with no
+        # signature cannot be a float-repr drift, and reporting it
+        # unconditionally made papermill's `injected-parameters` cell look
+        # like one: papermill replaces that cell on every re-execution and
+        # nbformat 4.5 hands the replacement a fresh cell id, so the
+        # (one id removed, one id added) pair is the normal fingerprint of a
+        # re-execution -- measured on PR #17145, where the added cell had 0
+        # outputs and every common cell had an identical signature.
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
-            diffs.append(cid)
+            h_idx = head_ids[cid]
+            if h_idx < len(head_sig) and head_sig[h_idx]:
+                diffs.append(cid)
         return diffs
     return _diff_signatures_ordinal(base_sig, head_sig)
 

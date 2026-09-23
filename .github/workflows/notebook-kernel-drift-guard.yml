@@ -64,14 +64,29 @@ jobs:
         env:
           BASE_REF: ${{ github.event.inputs.base_ref }}
           PR_BASE: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_BODY_FILE: ${{ runner.temp }}/pr_body
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
           # Write the PR body to a file the script can read (defect 1: exemption check).
           # PR_BODY env must be set ABOVE (github.event.pull_request.body) for the
           # '## Diagnostic dérive' exemption to activate in CI -- without it, body_exempts
           # is False on every run and C.4 acceptance is unreachable.
+          #
+          # Stale-payload fix (2026-09-22, PR #17389): `github.event.pull_request.body`
+          # is the body AT EVENT TIME -- it never moves on rerun, so a body edited to add
+          # the '## Diagnostic dérive' exemption is invisible to every rerun and the
+          # exemption becomes unreachable in CI even with the correct body. Fetch the LIVE
+          # body when the event carries a PR number; fall back to the payload on
+          # workflow_dispatch (no number) or if the API call fails (offline runner).
+          if [ -n "$PR_NUMBER" ]; then
+            LIVE_BODY=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body' 2>/dev/null) || LIVE_BODY=""
+            if [ -n "$LIVE_BODY" ]; then
+              PR_BODY="$LIVE_BODY"
+            fi
+          fi
           if [ -n "$PR_BODY" ]; then
             printf '%s' "$PR_BODY" > "$PR_BODY_FILE"
           fi
