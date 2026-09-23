@@ -313,7 +313,7 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 
 ## Statistiques catalogue à jour
 
-Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 28`, `breakdown: Argument_Analysis=28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé). **Écart disque ↔ catalogue signalé** : le répertoire compte **30** notebooks, dont `Dialogues_Protocolises` et `Observatoire-1-Initiation` absents du catalogue au dernier passage du cron — le cron `catalog-cron.yml` rattrapera ; on ne régénère PAS le catalogue sur cette branche.
+Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 28`, `breakdown: Argument_Analysis=28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé). **Écart disque ↔ catalogue signalé** : le répertoire compte **33** notebooks, dont **cinq** absents du catalogue au dernier passage du cron : `Communication_Channels`, `Dialogues_Protocolises`, `Knowledge_Base`, `Observatoire-1-Initiation` et `Schemes_Walton` — le cron `catalog-cron.yml` rattrapera ; on ne régénère PAS le catalogue sur cette branche.
 
 | Sous-série | Notebooks | Maturité | Contenu clé |
 |------------|-----------|----------|-------------|
@@ -428,7 +428,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)
 
-## Ordre partiel et prérequis — mapping exhaustif (30/30, version consolidée)
+## Ordre partiel et prérequis — mapping exhaustif (33/33, version consolidée)
 
 Cette section pose un **ordre partiel** sur l'ensemble des notebooks du
 répertoire, fondé sur les déclarations de prérequis et les chaînes de
@@ -447,9 +447,12 @@ nommage.
 
 **Mesure du 2026-09-09 sur `main`** : **28 notebooks** `.ipynb` dans le
 répertoire (27 à la racine, 1 sous `groupe-I2-contre-arguments-aspic/`). Depuis
-cette mesure, deux arrivées portent le répertoire à **30** (29 racine + 1 sous
-`groupe-I2-contre-arguments-aspic/`) : `Dated_Graphs` (#13310) puis
-`Observatoire-1-Initiation` (#16431) — mesure re-vérifiée au 2026-09-23. Chaque
+cette mesure, **cinq arrivées** portent le répertoire à **33** (32 racine + 1
+sous `groupe-I2-contre-arguments-aspic/`) : `Observatoire-1-Initiation`
+(#16431), puis les quatre distillats Triple Distillation livrés le
+2026-09-22/23 — `Dialogues_Protocolises`, `Schemes_Walton`, `Knowledge_Base`,
+`Communication_Channels` — mesure re-vérifiée au 2026-09-23 (`git ls-tree` :
+27 → 32 à la racine, aucune disparition). Chaque
 notebook est balisé dans un des trois arcs ou déclaré hors-arc avec sa raison.
 La présente section consolide la version c.1030 (livrée par session antérieure)
 et le mapping exhaustif 28/28 (PR #15371) — les deux contributions sont
@@ -526,12 +529,13 @@ Dung_AF_Semantics ──→ Value_Based_AF
 Toulmin_Model  (indépendant, racine propre)
 ```
 
-### Hors-arc (13/30) — chaque notebook restant, avec sa raison
+### Hors-arc (14/33) — chaque notebook restant, avec sa raison
 
 | Notebook | Raison du hors-arc |
 |----------|--------------------|
 | `Argument_Analysis_Executor.ipynb` | **Transverse (infra)** : point d'entrée batch du pipeline complet (Papermill / MCP) — consomme l'arc 1 (parcours « 0 → 3 → Executor ») |
 | `Argument_Analysis_Multi_Backend_Routing.ipynb` | **Transverse (infra)** : routage multi-backend « décider ou échouer bruyamment », s'applique aux solveurs des arcs 1 et 3 |
+| `Argument_Analysis_Communication_Channels.ipynb` | **Transverse (infra)** : bus de communication multi-agents (contrat de canal fail-loud, routage sans routes mortes, corrélation requête-réponse) — pur stdlib Python, transversal aux arcs 1 et 2 |
 | `Argument_Analysis_Formal_Richness_Matrix.ipynb` | **Transverse (évaluation)** : matrice de richesse formelle (FP-5), classe les verdicts de n'importe quel solveur de la série |
 | `Argument_Analysis_Restitution_3_Actes.ipynb` | **Transverse (restitution)** : scaffold de restitution honnête (evidence + narration LLM *gated*), réutilisable par toute la série |
 | `Argument_Analysis_Recollement_Lectures.ipynb` | **Transverse (consolidation)** : lectures croisées de la série |
@@ -558,18 +562,18 @@ sont des **ordres partiels** :
 3. **L'arc 3 reste ouvert à tout moment** comme référence — `Dung_AF_Semantics`
    est explicitement cité par `2-formal §6`, et `5-jtms` cite Dung 1995 dans
    son introduction. Les **transverses** (`Executor`, `Multi_Backend_Routing`,
-   `Formal_Richness_Matrix`, `Restitution_3_Actes`, `Recollement_*`,
-   `ArgumentProfile`, `UI_configuration`) se croisent avec les arcs sans chaîne
+   `Communication_Channels`, `Formal_Richness_Matrix`, `Restitution_3_Actes`,
+   `Recollement_*`, `ArgumentProfile`, `UI_configuration`) se croisent avec les arcs sans chaîne
    de prérequis stricte — voir « Limites » ci-dessous.
 
 ### Arithmétique (résolution du désaccord 14 vs 15 de #15283)
 
 La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
 balisés » (auteur de la PR). La mesure de référence est le répertoire :
-**30 notebooks sur `main`** au 2026-09-23 — l'arrivée de `Dated_Graphs` puis
-`Observatoire-1-Initiation` a porté l'arc 3 de 5 à 7 — dont **17 balisés** par
-les arcs (6 + 4 + 7) et **13 hors-arc** documentés ci-dessus — la somme fait
-30, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
+**33 notebooks sur `main`** au 2026-09-23 — les cinq arrivées depuis la mesure
+du 2026-09-09 ont porté l'arc 3 de 5 à 9 — dont **19 balisés** par
+les arcs (6 + 4 + 9) et **14 hors-arc** documentés ci-dessus — la somme fait
+33, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
 (`Formal_Richness_Matrix`, `Recollement_*`, …) sont ici nommés un à un avec
 leur raison.
 
@@ -650,7 +654,7 @@ L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voi
 
 ---
 
-**Version 1.2.4** — 2026-09-23 — audit fichier ENTIER §E (issue #17453) : ajout d'`Observatoire-1-Initiation` (livré #16431, epic #16410) dans les tables « Notebooks » et « Ce que chaque notebook apporte » + arc 3 (prérequis `Dated_Graphs`, diagramme mis à jour) ; ajout des 4 notebooks manquants à la table « Notebooks » (`Recollement_Lectures`, `Recollement_Strate6`, `Argumentum_Cards`, `I2_Contre_arguments_ASPIC` — chemin sous-dossier corrigé) ; mapping exhaustif re-mesuré **30/30** (29 racine + 1 sous groupe-I2), arithmétique **17 balisés (6+4+7) + 13 hors-arc** ; table « Statistiques catalogue à jour » ré-alignée sur le marqueur canonique `pedagogical_count: 28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (l'ancienne table sommait à 18 sur un vocabulaire PRODUCTION périmé), écart disque↔catalogue signalé (2 notebooks non catalogués, rattrapage par le cron). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
+**Version 1.2.4** — 2026-09-23 — audit fichier ENTIER §E (issue #17453) : ajout d'`Observatoire-1-Initiation` (livré #16431, epic #16410) dans les tables « Notebooks » et « Ce que chaque notebook apporte » + arc 3 (prérequis `Dated_Graphs`, diagramme mis à jour) ; ajout des 4 notebooks manquants à la table « Notebooks » (`Recollement_Lectures`, `Recollement_Strate6`, `Argumentum_Cards`, `I2_Contre_arguments_ASPIC` — chemin sous-dossier corrigé) ; mapping exhaustif re-mesuré **33/33** (32 racine + 1 sous groupe-I2 — cinq arrivées depuis la mesure du 2026-09-09, re-vérifiées au `git ls-tree`), arithmétique **19 balisés (6+4+9) + 14 hors-arc**, `Communication_Channels` classé hors-arc (transverse infra) ; table « Statistiques catalogue à jour » ré-alignée sur le marqueur canonique `pedagogical_count: 28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (l'ancienne table sommait à 18 sur un vocabulaire PRODUCTION périmé), écart disque↔catalogue signalé (**5** notebooks non catalogués, nommés, rattrapage par le cron). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
 
 **Version 1.2.3** — 2026-09-10 — consolidation sans doublon de la section « Ordre partiel et prérequis » (PR #15371, suite au DM `msg-20260910T134004-9nsqfl` ai-01) : fusion de la livraison c.1030 (kernel/notebook prérequis détaillés, 15/28) avec le mapping exhaustif 28/28, en une seule section augmentée préservant le verdict renum (EPIC #5081, issue #14950) inchangé. Aucun notebook modifié, aucune décision de renum, marqueur `CATALOG-STATUS` byte-identique à `pedagogical_count: 18`. Tell readme-french-first R1 respectée (section rédigée en français). Tell catalog-pr-hygiene R1 respectée (catalogue inchangé).
 
