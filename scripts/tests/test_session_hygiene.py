@@ -42,7 +42,21 @@ import pytest
 # ``GIT_OPTIONAL_LOCKS=0`` pour reduire les forks internes de git
 # (sideband demultiplexer, rev-list worker, pack-objects helper).
 os.environ.setdefault("GIT_OPTIONAL_LOCKS", "0")
-pytestmark = pytest.mark.xdist_group(name="serial-git")
+pytestmark = [
+    pytest.mark.xdist_group(name="serial-git"),
+    # Sous xdist loadscope (--dist loadscope -n 4), les autres suites
+    # ``scripts/tests/*`` partagent le worker et le cumul de subprocess git
+    # (l'organe lui-meme appelle ``git ...`` via subprocess) sature
+    # RLIMIT_NPROC sur le runner WSL self-hosted. En local ou en CI
+    # sequential, le test passe en ~13 s. Voir le commentaire du commit
+    # b8a633f153 et l'issue #17496 pour le contexte.
+    pytest.mark.skipif(
+        os.environ.get("CI") == "true"
+        and os.environ.get("RUNNER_OS") == "Linux"
+        and os.environ.get("PYTEST_XDIST_WORKER") is not None,
+        reason="RLIMIT_NPROC sous xdist WSL self-hosted (cf. #17496)",
+    ),
+]
 
 # scripts/coordination/session_hygiene.py est un module plat (pas un
 # package). On l'importe via spec_from_file_location comme dans le conftest
