@@ -1,0 +1,15 @@
+{
+  "scenario": "t2i_symphonie_orchestrale",
+  "mode": "text_to_image",
+  "model": "PLACEHOLDER (numpy.random)",
+  "intended_model": "MiniMax-H3 (cloud API)",
+  "resolution": "1344x768",
+  "prompt": "An oil painting of a full orchestra mid-performance ...",
+  "source": "placeholder numpy.random commité — verdict RECOVERABLE-USER-HAND (call_hailuo_image_api non implémentée dans ce notebook)",
+  "generator": "numpy.random.default_rng(seed=42), uniform [0,1) * 255",
+  "filesize_kb": 769.5,
+  "width": 512,
+  "height": 512,
+  "is_placeholder": true,
+  "verdict": "RECOVERABLE-USER-HAND"
+}

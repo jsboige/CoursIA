@@ -1,13 +1,16 @@
 {
   "scenario": "i2i_style_transfer_classique",
   "mode": "image_to_image",
-  "model": "MiniMax-H3 (cloud API)",
+  "model": "PLACEHOLDER (numpy.random)",
+  "intended_model": "MiniMax-H3 (cloud API)",
   "resolution": "1344x768",
   "source_fidelity": 0.7,
   "prompt": "Transform this black-and-white studio photograph into a vibrant Baroque oil painting ...",
-  "source": "artefact commité — génération locale démo (mode squelette Papermill)",
+  "source": "placeholder numpy.random commité — verdict RECOVERABLE-USER-HAND (call_hailuo_image_api non implémentée dans ce notebook)",
   "generator": "numpy.random.default_rng(seed=7), uniform [0,1) * 255",
   "filesize_kb": 769.6,
   "width": 512,
-  "height": 512
+  "height": 512,
+  "is_placeholder": true,
+  "verdict": "RECOVERABLE-USER-HAND"
 }
