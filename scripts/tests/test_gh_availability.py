@@ -13,12 +13,20 @@ Executable deux facons :
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 
 import pytest
 
-from . import _gh_availability as gha
+# Import ABSOLU, comme les siblings du repertoire (#17229, reserve Hermes
+# 5267953658) : le docstring annonce `py scripts/tests/test_gh_availability.py`,
+# et un import relatif casse cette invocation (`attempted relative import with
+# no known parent package`). L'alias `gha` est garde volontairement : il evite
+# de reecrire les 26 sites d'appel pour une correction d'un caractere.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import _gh_availability as gha  # noqa: E402
 
 # Message mesure le 21/09/2026 (triage #17201) : c'est le texte exact que
 # `gh api graphql` et les scripts testes propagent.

@@ -16,9 +16,10 @@ ATTENTION — piege de diagnostic : `gh api rate_limit` n'est PAS une sonde
 valide. Il repond `graphql: 5000/5000` alors que les appels GraphQL reels sont
 refuses. Seule une sonde GraphQL reelle discrimine.
 
-Usage :
+Usage (le repertoire de ce fichier doit etre sur `sys.path` -- les appelants
+font `sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))`) :
 
-    from ._gh_availability import skip_if_gh_exhausted
+    from _gh_availability import skip_if_gh_exhausted
     ...
     def test_something(self):
         skip_if_gh_exhausted()
