@@ -107,7 +107,10 @@ NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 # 13410 = campagne densite, gelee par le veto #17040 (mandat user 2026-09-20).
 # #17021 y a ete mergee le 2026-09-22 sur un dossier READY et un B.0 vert :
 # c'est l'incident qui fonde cette liste.
-FROZEN_UMBRELLAS = {"13410": "17040"}
+# 11601 = densite QC round 2 (« 1200->2000+ »), gelee au meme titre le
+# 2026-09-23 (#11601 c.5786602361) : sa cible EST un seuil, ce que le point 4
+# de #17040 interdit.
+FROZEN_UMBRELLAS = {"13410": "17040", "11601": "17040"}
 
 # Codes de retour DOCUMENTES des organes appeles. Tout autre rc est une
 # erreur inattendue -> arret du run, jamais de merge en aveugle.

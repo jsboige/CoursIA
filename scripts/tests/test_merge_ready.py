@@ -243,6 +243,15 @@ def test_frozen_umbrella_prefix_number_not_matched():
     assert mr.frozen_umbrella_exclusion("fix: #13410.", None) is not None
 
 
+def test_frozen_umbrella_qc_density_round2():
+    # #11601 gele le 2026-09-23 sous le meme veto #17040 (#17386 en est la PR ouverte).
+    assert (
+        mr.frozen_umbrella_exclusion("enrich(qc,#11601): densite QC-Py-06b", None)
+        == "frozen:#11601(veto #17040)"
+    )
+    assert mr.frozen_umbrella_exclusion("fix: #116010", None) is None
+
+
 def test_skip_grain_deep(tmp_path):
     runner = ScriptedRunner(views={123: default_view(body=GRAIN_DEEP)})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
