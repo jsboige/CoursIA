@@ -44,10 +44,12 @@ LOG_DIR = (
     / "merge_ready"
     / "logs"
 )
-# Siege coordinateur (ai-01) : un worktree DEDIE sur `main`, pas le checkout
-# principal. D:\CoursIA est le siege interactif, souvent sur une branche de
-# travail : l'organe y executerait le gate et B.0 de CETTE branche, pas ceux
-# de `main`. Le worktree dedie est ramene sur origin/main avant chaque tour
+# Siege coordinateur (ai-01) : un worktree DEDIE a `origin/main`, pas le
+# checkout principal. D:\CoursIA est le siege interactif, souvent sur une
+# branche de travail : l'organe y executerait le gate et B.0 de CETTE branche,
+# pas ceux de `main`. Le worktree dedie ne peut PAS porter la branche `main`
+# (git la refuse a un second worktree tant que le checkout principal la
+# tient) : il est en HEAD DETACHE, ramene sur origin/main avant chaque tour
 # (voir sync_repo). Les autres machines passent --repo explicitement.
 DEFAULT_REPO = Path(r"D:\CoursIA-wt-merge-ready")
 INTERVAL_MINUTES = 20
@@ -163,22 +165,33 @@ def cmd_uninstall() -> int:
 def sync_repo(repo: Path) -> tuple[bool, str]:
     """Ramene le depot de l'organe sur origin/main, ou refuse le tour.
 
-    Refuse (sans rien toucher) si le depot n'est pas sur `main` ou porte des
-    modifications suivies : un tour ne doit jamais executer un gate ou un B.0
-    de branche, ni ecraser un travail local. Sinon fetch + fast-forward.
+    Deux sieges acceptes : la branche `main`, ou un HEAD DETACHE (le worktree
+    dedie d'ai-01, qui ne peut pas porter `main` tant que le checkout
+    principal la tient). Refuse (sans rien toucher) toute autre branche, un
+    depot qui porte des modifications suivies, et un HEAD detache qui n'est
+    pas un ancetre d'origin/main (des commits locaux seraient abandonnes) :
+    un tour ne doit jamais executer un gate ou un B.0 de branche, ni ecraser
+    un travail local. Sinon fetch + avance rapide.
     """
     branch = _run(["git", "-C", str(repo), "rev-parse", "--abbrev-ref", "HEAD"])
     if branch.returncode != 0:
         return False, f"git rev-parse rc={branch.returncode} : {branch.stderr.strip()[:200]}"
-    if branch.stdout.strip() != "main":
-        return False, f"le depot {repo} est sur '{branch.stdout.strip()}', pas sur main"
+    seat = branch.stdout.strip()
+    if seat not in ("main", "HEAD"):
+        return False, f"le depot {repo} est sur '{seat}', pas sur main ni detache"
     dirty = _run(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"])
     if dirty.returncode != 0 or dirty.stdout.strip():
         return False, f"le depot {repo} porte des modifications suivies : tour refuse"
-    for cmd in (
-        ["git", "-C", str(repo), "fetch", "-q", "origin", "main"],
-        ["git", "-C", str(repo), "merge", "--ff-only", "-q", "origin/main"],
-    ):
+    fetch = ["git", "-C", str(repo), "fetch", "-q", "origin", "main"]
+    if seat == "main":
+        steps = (fetch, ["git", "-C", str(repo), "merge", "--ff-only", "-q", "origin/main"])
+    else:
+        steps = (
+            fetch,
+            ["git", "-C", str(repo), "merge-base", "--is-ancestor", "HEAD", "origin/main"],
+            ["git", "-C", str(repo), "checkout", "-q", "--detach", "origin/main"],
+        )
+    for cmd in steps:
         res = _run(cmd)
         if res.returncode != 0:
             return False, f"{' '.join(cmd[3:])} rc={res.returncode} : {res.stderr.strip()[:200]}"
