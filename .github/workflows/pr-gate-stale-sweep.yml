@@ -215,7 +215,25 @@ jobs:
     # (last successful sweep > 1 h, runs on ubuntu-latest so it survives what
     # it watches).
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 15
+    # 25 min, contre 15 jusqu'ici (#15770, datapoint Hermes 2026-09-21 re-mesure
+    # ici sur les runs annules du matin). Le plafond de 900 s etait FRANCHI a
+    # chaque passage : cout mesure par etape --
+    #   etape 3 « Find stale verdicts and re-run their gate » : 10m55s-11m38s
+    #   etape 5 « Flag PRs whose PR gate never ran »          :  3m05s-4m15s
+    #   etapes 4/6/7 : quelques secondes
+    # soit ~15,5-16 min de travail contre un plafond de 15 min. Les deux runs
+    # 35600494259 et 35602445799 montrent l'etape 5 `cancelled` en plein vol :
+    # la population « gate absent » cesse alors d'etre etiquetee -- la raison
+    # meme de son repli dans ce sweep (#14477). Les succes du 20/09 tenaient a
+    # 830-883 s, soit 17 s de marge : un plafond sous le cout mesure du travail
+    # n'est pas un garde-fou, c'est le tueur de l'organe.
+    #
+    # Le cout des etapes 3 et 5 croit avec la taille du pool ouvert (307 PRs
+    # mesurees le 21/09) : c'est pourquoi le levier de fond (un appel API en
+    # moins par PR non candidate) est traite dans l'etape 3 elle-meme, et le
+    # plafond ne fait que rendre la marge explicite. Re-mesurer apres fusion :
+    # l'etape 3 doit redescendre nettement sous ses 11 min.
+    timeout-minutes: 25
     steps:
       - name: Bootstrap gh into the persistent toolcache
         # The coursia-linux image (#14171: ubuntu:24.04 + python3/jq/curl/git)
@@ -332,7 +350,22 @@ jobs:
             # `|| WFMAP=''`: an unguarded assignment failure would kill the
             # step under `bash -e` BEFORE the empty-map fallback below runs
             # (same silent death as run 35188299290, zero runtime output).
-            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
+            #
+            # #15770 -- cet appel n'est fait QUE si la PR porte une jambe
+            # `PR gate`. La carte n'est consommee que par `_fold_key` (repli de
+            # repliement des runs jumeaux, #11808), et le selecteur `continue`
+            # AVANT de l'utiliser des qu'il n'y a aucune jambe `PR gate` -- donc
+            # l'appel est du travail mort pour toute la population non
+            # candidate, qui est la majorite du pool ouvert. C'est le levier de
+            # cout de cette etape (mesure 2026-09-21 : etape 3 = 11 min pour
+            # ~100 PRs x 1-2 appels REST, sur un pool ouvert de 307).
+            # Un payload dont l'appel a echoue ne porte pas de nom de check :
+            # la carte reste vide, exactement le comportement d'avant.
+            if printf '%s' "$BODY" | grep -q '"name":"PR gate"'; then
+              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
+            else
+              WFMAP=''
+            fi
             if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
             printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
