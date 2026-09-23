@@ -1,10 +1,16 @@
-# Ledger de dette `issue-debt`
+# Ledgers partages : `issue-debt` et `gpu-reservation`
 
 Un registre append-only qui porte d'un cycle a l'autre ce que la flotte
 rederivait en relisant dashboards, inbox et GitHub : la **dette d'issue** (ce
-qu'une issue doit encore). Ce dossier contient l'**utilitaire** : schema,
+qu'une issue doit encore), et depuis #16737 l'**occupation GPU** (qui tient quel
+device, jusqu'a quand). Ce dossier contient l'**utilitaire** : schema,
 reducteur, CLI, tests. Il ne connait ni GitHub ni RooSync et **n'ecrit jamais sur
 le systeme de fichiers partage**.
+
+Les deux kinds partagent le reducteur ; un kind **declare** son entite, ses
+champs et sa valeur terminale, et tout le reste est du dispatch sur ces
+declarations (`ENTITY_FIELDS`, `ENTITY_VALIDATORS`, `LEDGER_FIELD_SPECS`,
+`_SUMMARIZERS`).
 
 ## Transport — a lire avant de cabler quoi que ce soit
 
@@ -121,6 +127,34 @@ python scripts/coordination/debt_ledger.py reduce --ledger issue-debt \
 d'etat partage — poster est un appel MCP) ; `reduce` ecrit ses trois artefacts
 sauf `--dry-run`/`--stdout`. Codes de sortie : `0` ok · `1` fatal (ou rejets avec
 `--fail-on-rejections`) · `2` usage.
+
+## `gpu-reservation` — qui tient quel device
+
+Une ligne par couple `(machine, gpu_index)` — cle de ligne `<machine>#gpu<n>`,
+**0-based** (l'index d'un device n'est pas un compteur qui part de un). Le
+dashboard dedie est `CoursIA-gpu-reservation-ledger`.
+
+```bash
+python scripts/coordination/debt_ledger.py append --ledger gpu-reservation \
+    --entity myia-ai-01#gpu2 --actor myia-ai-01:CoursIA \
+    --evidence "nvidia-smi" --confidence high \
+    --fields-json '{"state":"held","holder":"myia-ai-01:CoursIA","workload":"PPO walk-forward",
+                    "started_at":"2026-09-23T09:00:00Z","expected_end":"2026-09-23T13:00:00Z",
+                    "issue":"jsboige/CoursIA#16737"}'
+```
+
+| Champ | Kind | Sens |
+|---|---|---|
+| `state` | enum `held`/`released`/`stale` | `released` est **terminal** (la ligne sort du vivant) |
+| `holder` | lane (`machine:workspace`) | qui tient le device |
+| `workload` | texte | ce qui tourne |
+| `started_at`, `expected_end` | UTC ISO-8601 | meme horloge que `observed_at` (naif refuse, offset normalise en `Z`) |
+| `issue` | `owner/repo#N` | l'issue d'execution servie |
+
+**Ce n'est pas un verrou dur** : c'est un registre qui rend visible qui occupe
+quoi, comme le claim de lane. Le resume porte `state`, `held_by_machine`,
+`holders` et `stale_holds` — de quoi savoir, sans se connecter a la machine, ce
+qui est libre.
 
 ## Metriques et tests
 
