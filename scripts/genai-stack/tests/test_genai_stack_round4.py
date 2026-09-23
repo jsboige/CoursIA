@@ -156,8 +156,10 @@ class TestGetHfToken(unittest.TestCase):
         previous = os.getcwd()
         os.chdir(tempfile.gettempdir())
         try:
-            self.assertIsNotNone(
-                models._get_hf_token(),
+            # Forme non interpolante exigee par le garde assert-secret-egress
+            # (#17276, #17478) : ce test lit le VRAI jeton sur disque.
+            self.assertTrue(
+                models._get_hf_token() is not None,
                 "le jeton doit etre resolu depuis la racine du depot, "
                 "pas depuis le repertoire courant (#17268)",
             )
@@ -196,9 +198,8 @@ class TestGetHfToken(unittest.TestCase):
             os.chdir(elsewhere)
             try:
                 with patch.object(models, "_repo_root", return_value=root):
-                    self.assertEqual(
-                        models._get_hf_token(),
-                        "hf_fabrique_pour_le_test",
+                    self.assertTrue(
+                        models._get_hf_token() == "hf_fabrique_pour_le_test",
                         "le jeton doit etre resolu contre la racine RENDUE PAR "
                         "_repo_root(), jamais contre le repertoire courant "
                         "(#17268)",
