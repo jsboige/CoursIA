@@ -293,49 +293,8 @@ def test_named_second_cible_la_forme_chiffree():
 # --- 3 bis. Bornes connues, epinglees en xfail strict ------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "#17134 : le `\\b` place apres `interpre` fait echouer la reconnaissance de "
-        "« Interpretation » -- le titre d'interpretation dominant du corpus "
-        "(133 paires invisibles dans 78 carnets, mesure 2026-09-21)."
-    ),
-)
-def test_borne_connue_interpretation_nue_est_invisible():
-    """`### Interpretation` est un en-tete d'interpretation au sens de la docstring de l'organe.
-
-    Ce test ECHOUE aujourd'hui. Il rend le defaut visible sans rougir la suite, et
-    passera en XPASS (donc en echec) le jour du fix #17134 : retirer le marqueur
-    alors, pas l'ajuster.
-
-    L'assertion sur `detect` doit etre une **esperance reelle**, pas un
-    placeholder : c'est elle qui portera le XPASS. Deux titres consecutifs tous
-    deux d'interpretation donnent exactement UN finding, de type `generic_pair`
-    (« Interpretation » ne matche pas `NAMED_FIRST_RE`, qui exige `lecture`) --
-    et rien de plus : la variante a deux pas n'est pas atteinte, il n'y a aucune
-    cellule de code ici.
-    """
-    assert is_interpretation_title(cell_title("### Interpretation\nconvergence nette."))
-    findings = detect(nb(
-        md("### Interpretation\nConvergence nette vers l'optimum."),
-        md("### Interpretation\nLe score atteint 0.94."),
-    ))
-    assert len(findings) == 1
-    assert findings[0]["type"] == "generic_pair"
-    assert findings[0]["cells"] == [0, 1]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Borne connue (meme famille que #17134) : `cell_title` s'arrete sur la premiere "
-        "ligne non vide, donc une cellule qui ouvre sur la ligne de separation `***` rend "
-        "un titre vide -- elle est invisible au detecteur meme si son en-tete est une lecture. "
-        "Cas rencontre a chaque repli de conclusion de la campagne #17066."
-    ),
-)
-def test_borne_connue_cellule_ouvrant_sur_separateur_est_invisible():
-    assert cell_title("***\n\n## Lecture du resultat") == "Lecture du resultat"
 
 
 # --- 4. Interface CLI : 0 = clean, 1 = fichier illisible, 2 = findings --------
@@ -588,6 +547,84 @@ def test_fichier_illisible_rc1_sans_traceback(tmp_path, capsys):
     out, err = capsys.readouterr()
     assert rc == 1
     assert "ERREUR lecture" in err
+# --- #17134 : les deux bornes qui rendaient des familles entieres invisibles --
+
+
+@pytest.mark.parametrize("title", [
+    "### Interpretation",              # le titre nu -- forme dominante du corpus
+    "### Interpretation des resultats",
+    "### Interprétation",              # accentue : deaccent() le ramene a la meme racine
+    "### Interprétation : prérequis",
+    "### Interpretation — les ecarts",
+    "### Interpretation:",
+    "### Interpretations croisees",    # pluriel, sans espace apres la racine
+])
+def test_interpretation_est_reconnue(title):
+    """#17134 borne (a) : le `\\b` apres `interpre` faisait echouer TOUTE la
+    famille `Interpretation ...`, parce que la racine est un PREFIXE et non un
+    mot entier. Mesure sur le corpus : 133 `generic_pair` dans 78 carnets
+    etaient invisibles (plus 3 `separated_by_code`)."""
+    assert is_interpretation_title(cell_title(title + "\nconvergence nette."))
+
+
+@pytest.mark.parametrize("title", [
+    "### Introduction",
+    "### Resultats",
+    "### Discussion",
+    "### Exercice 1",
+    "### Mise en place du modele",
+    "### Comparaison des modeles",
+])
+def test_retrait_du_backslash_b_n_elargit_pas(title):
+    """Le correctif retire la frontiere de mot : il ne doit PAS elargir le
+    vocabulaire reconnu. Ces en-tetes ne sont pas des lectures."""
+    assert not is_interpretation_title(cell_title(title + "\nDu texte."))
+
+
+def test_racine_en_milieu_de_titre_non_reconnue():
+    """Le match reste ancre en `^` : une racine au milieu d'un titre n'en fait
+    pas un en-tete de lecture."""
+    for title in ["### Une analyse du resultat", "### Notre interpretation du score",
+                  "### La lecture des courbes"]:
+        assert not is_interpretation_title(cell_title(title + "\nDu texte."))
+
+
+def test_borne_a_bout_en_bout_paire_generique():
+    """Les deux cellules de #17134 : deux `### Interpretation` consecutives."""
+    nb = {"cells": [
+        code("print(model.score)"),
+        md("### Interpretation\nConvergence nette vers l'optimum."),
+        md("### Interpretation\nLe score atteint 0.94, convergence nette."),
+    ]}
+    hits = detect(nb)
+    assert [h["type"] for h in hits] == ["generic_pair"]
+    assert hits[0]["cells"] == [1, 2]
+
+
+def test_cell_title_traverse_la_ligne_de_separation():
+    """#17134 borne (b) : `***` est non vide et ne porte aucun titre. La
+    fonction s'y arretait et rendait "", donc la cellule entiere etait invisible
+    meme quand son en-tete etait une lecture."""
+    assert cell_title("***\n\n## Lecture du resultat") == "Lecture du resultat"
+    assert cell_title("---\n### Analyse") == "Analyse"
+    assert cell_title("***\n***\n\n### Lecture") == "Lecture"
+    # Un titre qui suit la ligne de separation est bien reconnu comme lecture.
+    assert is_interpretation_title(cell_title("***\n\n## Interpretation des ecarts"))
+    # Et une cellule qui ne porte AUCUN titre rend toujours "" (contrat existant).
+    assert cell_title("") == ""
+    assert cell_title("***\n\n***") == ""
+
+
+def test_borne_b_bout_en_bout_paire_generique():
+    """Une cellule qui ouvre sur un separateur participe a la paire."""
+    nb = {"cells": [
+        md("***\n\n## Lecture du resultat\nLa courbe converge apres 200 episodes."),
+        md("### Interprétation des ecarts\nLa courbe converge apres 200 episodes, "
+           "et le modele apprend la valeur."),
+    ]}
+    hits = detect(nb)
+    assert [h["type"] for h in hits] == ["generic_pair"]
+    assert hits[0]["titles"][0] == "Lecture du resultat"
 
 
 # =============================================================================
