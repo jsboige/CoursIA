@@ -35,6 +35,7 @@ import Knots.Basic_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
 import Knots.Conway_en
+import Knots.ReidemeisterInvariance_en
 import Knots.Jones_en
 import Knots.Lidman_en
 import Knots.MathlibPrerequisites_en
