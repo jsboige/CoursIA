@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-r"""debt_ledger.py -- the shared issue-debt ledger (local artifact half).
+r"""debt_ledger.py -- the shared debt ledgers (local artifact half).
+
+Two kinds share this machinery: ``issue-debt`` (one row per issue, keyed
+``owner/repo#N``) and ``gpu-reservation`` (one row per device hold, keyed
+``<machine>#gpu<n>``, #16737). A kind declares its entity, its fields and its
+terminal value; everything below is per-kind dispatch over those declarations.
 
 WHY
 ===
@@ -78,6 +83,7 @@ CLI
 
     python scripts/coordination/debt_ledger.py init   [--ledger both] [--apply]
     python scripts/coordination/debt_ledger.py append --ledger issue-debt ...
+    python scripts/coordination/debt_ledger.py append --ledger gpu-reservation --entity 'po-2023#gpu1' ...
     python scripts/coordination/debt_ledger.py reduce --ledger issue-debt --events journal.json
 
 Dry-run defaults: ``init`` writes nothing without ``--apply`` (it creates state,
@@ -117,13 +123,15 @@ CONFIG_SCHEMA = "debt-ledger-config/v1"
 SCHEMA_DOC_VERSION = "debt-ledger-schema/v1"
 
 ISSUE_DEBT = "issue-debt"
-LEDGERS: tuple[str, ...] = (ISSUE_DEBT,)
+GPU_RESERVATION = "gpu-reservation"
+LEDGERS: tuple[str, ...] = (ISSUE_DEBT, GPU_RESERVATION)
 
 #: The DEDICATED dashboard for this ledger kind: a ledger never shares a
 #: dashboard with another kind, so a condensation of one never truncates the
 #: other's journal.
 LEDGER_WORKSPACES: dict[str, str] = {
     ISSUE_DEBT: "CoursIA-issue-debt-ledger",
+    GPU_RESERVATION: "CoursIA-gpu-reservation-ledger",
 }
 
 #: Tag prefix of a one-line observation envelope posted as dashboard content.
@@ -160,10 +168,13 @@ TERMINAL_ISSUE_STATE: frozenset[str] = frozenset({"closed"})
 #: Entity fields per ledger. ``repo`` is always the first component of the key.
 ENTITY_FIELDS: dict[str, tuple[str, ...]] = {
     ISSUE_DEBT: ("repo", "issue"),
+    GPU_RESERVATION: ("machine", "gpu_index"),
 }
 
 _REPO_RE = re.compile(r"^[\w.-]+/[\w.-]+$")
+_MACHINE_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _ACTOR_RE = re.compile(r"^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$")
+_ISSUE_REF_RE = re.compile(r"^[\w.-]+/[\w.-]+#\d+$")
 
 
 @dataclass(frozen=True)
@@ -218,16 +229,55 @@ ISSUE_DEBT_FIELDS: tuple[FieldSpec, ...] = (
 )
 
 
+GPU_RESERVATION_STATES: tuple[str, ...] = ("held", "released", "stale")
+
+GPU_RESERVATION_FIELDS: tuple[FieldSpec, ...] = (
+    FieldSpec(
+        "state",
+        "enum",
+        values=GPU_RESERVATION_STATES,
+        description="'held' while the workload runs, 'released' when it ends; released is terminal.",
+    ),
+    FieldSpec(
+        "holder",
+        "lane",
+        description="The lane holding the device ('machine:workspace').",
+    ),
+    FieldSpec(
+        "workload",
+        "text",
+        description="What is running on the device, in one line.",
+    ),
+    FieldSpec(
+        "started_at",
+        "utc-timestamp",
+        description="When the hold began (UTC ISO-8601, normalised).",
+    ),
+    FieldSpec(
+        "expected_end",
+        "utc-timestamp",
+        description="When the hold is expected to end; the basis for a stale-hold sweep.",
+    ),
+    FieldSpec(
+        "issue",
+        "issue-ref",
+        description="The execution issue this hold serves ('owner/repo#N'), when one exists.",
+    ),
+)
+
 LEDGER_FIELD_SPECS: dict[str, dict[str, FieldSpec]] = {
     ISSUE_DEBT: {spec.name: spec for spec in ISSUE_DEBT_FIELDS},
+    GPU_RESERVATION: {spec.name: spec for spec in GPU_RESERVATION_FIELDS},
 }
 
 #: Terminal values, per ledger, keyed by the field that carries the verdict.
 TERMINAL_VALUES: dict[str, tuple[str, str]] = {
     ISSUE_DEBT: ("state_class", "closed"),
+    GPU_RESERVATION: ("state", "released"),
 }
 TERMINAL_SETS: dict[str, frozenset[str]] = {
     ISSUE_DEBT: TERMINAL_ISSUE_STATE,
+    GPU_RESERVATION: frozenset({"released"}),
 }
 
 #: Top-level keys allowed in an observation envelope. Anything else is a
@@ -435,16 +485,7 @@ def _require_str(value: Any, where: str) -> str:
     return _collapse(value)
 
 
-def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
-    if not isinstance(raw, dict):
-        raise ObservationError("entity_mismatch", "entity must be an object")
-    expected = set(ENTITY_FIELDS[ledger])
-    unknown = sorted(set(raw) - expected)
-    missing = sorted(expected - set(raw))
-    if unknown:
-        raise ObservationError("entity_mismatch", f"unknown entity key(s): {', '.join(unknown)}")
-    if missing:
-        raise ObservationError("entity_mismatch", f"missing entity key(s): {', '.join(missing)}")
+def _validate_issue_entity(raw: dict[str, Any]) -> dict[str, Any]:
     repo = raw["repo"]
     if not isinstance(repo, str) or not _REPO_RE.match(repo.strip()):
         raise ObservationError("entity_mismatch", f"repo={repo!r} is not 'owner/name'")
@@ -456,8 +497,57 @@ def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
     return entity
 
 
+def _validate_gpu_entity(raw: dict[str, Any]) -> dict[str, Any]:
+    machine = raw["machine"]
+    if not isinstance(machine, str) or not _MACHINE_RE.match(machine.strip()):
+        raise ObservationError("entity_mismatch", f"machine={machine!r} is not a machine name")
+    # 0-based: a device index is not a number you count from one.
+    index = raw["gpu_index"]
+    if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+        raise ObservationError(
+            "entity_mismatch", f"gpu_index={index!r} is not a non-negative int"
+        )
+    return {"machine": machine.strip(), "gpu_index": index}
+
+
+#: One entity validator per ledger -- the entity IS the row identity, so a kind
+#: without its own validator would validate every row against another kind's shape.
+ENTITY_VALIDATORS: dict[str, Any] = {
+    ISSUE_DEBT: _validate_issue_entity,
+    GPU_RESERVATION: _validate_gpu_entity,
+}
+
+#: How the row key reads in the generated schema, per ledger.
+ENTITY_KEY_FORMATS: dict[str, str] = {
+    ISSUE_DEBT: "owner/repo#N",
+    GPU_RESERVATION: "<machine>#gpu<n>",
+}
+
+
+def _validate_entity(raw: Any, ledger: str) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise ObservationError("entity_mismatch", "entity must be an object")
+    expected = set(ENTITY_FIELDS[ledger])
+    unknown = sorted(set(raw) - expected)
+    missing = sorted(expected - set(raw))
+    if unknown:
+        raise ObservationError("entity_mismatch", f"unknown entity key(s): {', '.join(unknown)}")
+    if missing:
+        raise ObservationError("entity_mismatch", f"missing entity key(s): {', '.join(missing)}")
+    validator = ENTITY_VALIDATORS.get(ledger)
+    if validator is None:  # pragma: no cover - every declared ledger has one
+        raise LedgerError("UNKNOWN_ENTITY_KIND", ledger)
+    return validator(raw)
+
+
 def entity_key(entity: dict[str, Any]) -> str:
-    """``owner/repo#N`` -- the row identity. A head is NOT part of the row key."""
+    """The row identity: ``owner/repo#N``, or ``<machine>#gpu<n>``.
+
+    A head is NOT part of the row key. The dispatch is on the entity's own shape,
+    which ``_validate_entity`` has already reduced to exactly one kind's fields.
+    """
+    if "machine" in entity:
+        return f"{entity['machine']}#gpu{entity['gpu_index']}"
     number = entity.get("issue", entity.get("pr"))
     return f"{entity['repo']}#{number}"
 
@@ -567,6 +657,23 @@ def normalize_field_value(spec: FieldSpec, value: Any, entity: dict[str, Any]) -
         return round(float(value), 3)
     if spec.kind == "text":
         return _require_str(value, spec.name)
+    if spec.kind == "lane":
+        if not isinstance(value, str) or not _ACTOR_RE.match(value.strip()):
+            raise ObservationError(
+                "invalid_field_value",
+                f"{spec.name}={value!r} is not a lane ('machine:workspace')",
+            )
+        return value.strip()
+    if spec.kind == "utc-timestamp":
+        # Same clock rules as ``observed_at``: naive and non-UTC stamps are refused,
+        # and the stored value is the normalised UTC rendering.
+        return format_utc(parse_utc_timestamp(value, where=spec.name))
+    if spec.kind == "issue-ref":
+        if not isinstance(value, str) or not _ISSUE_REF_RE.match(value.strip()):
+            raise ObservationError(
+                "invalid_field_value", f"{spec.name}={value!r} is not 'owner/repo#N'"
+            )
+        return value.strip()
     if spec.kind == "dependencies":
         return _validate_dependencies(value, entity)
     if spec.kind == "followup":
@@ -1268,6 +1375,38 @@ def _live_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     return [row for row in rows if not row["historical"]]
 
 
+def _row_counts(rows: Sequence[dict[str, Any]], live: Sequence[dict[str, Any]]) -> dict[str, int]:
+    """The row census every ledger summary carries, whatever its fields mean."""
+    return {
+        "total": len(rows),
+        "live": len(live),
+        "historical": len(rows) - len(live),
+        "incomplete": sum(1 for row in live if row["missing_fields"]),
+        "stale": sum(1 for row in live if row.get("stale")),
+    }
+
+
+def _summarize_gpu_reservation(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    live = _live_rows(rows)
+    held_by_machine: dict[str, int] = {}
+    for row in live:
+        if row["fields"].get("state") == "held":
+            machine = str(row["entity"].get("machine", "?"))
+            held_by_machine[machine] = held_by_machine.get(machine, 0) + 1
+    holders = sorted(
+        {str(row["fields"]["holder"]) for row in live if row["fields"].get("holder")}
+    )
+    return {
+        "rows": _row_counts(rows, live),
+        "state": _counts(row["fields"].get("state") for row in live),
+        "held_by_machine": dict(sorted(held_by_machine.items())),
+        "holders": holders,
+        # A hold whose deadline has passed is the row the weekly sweep must chase:
+        # the state is the producer's to set, this list only surfaces them.
+        "stale_holds": sorted(row["key"] for row in live if row["fields"].get("state") == "stale"),
+    }
+
+
 def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     live = _live_rows(rows)
     eat_by_class: dict[str, float] = {}
@@ -1297,13 +1436,7 @@ def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
             if dependency.get("kind") == "external":
                 external_edges += 1
     return {
-        "rows": {
-            "total": len(rows),
-            "live": len(live),
-            "historical": len(rows) - len(live),
-            "incomplete": sum(1 for row in live if row["missing_fields"]),
-            "stale": sum(1 for row in live if row.get("stale")),
-        },
+        "rows": _row_counts(rows, live),
         "state_class": _counts(row["fields"].get("state_class") for row in live),
         "closeability": _counts(row["fields"].get("closeability") for row in live),
         "closeable_now": sorted(
@@ -1338,6 +1471,13 @@ def _summarize_issue_debt(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+#: One summariser per ledger: the census is shared, the meaning of a field is not.
+_SUMMARIZERS: dict[str, Any] = {
+    ISSUE_DEBT: _summarize_issue_debt,
+    GPU_RESERVATION: _summarize_gpu_reservation,
+}
+
+
 def _summarize(
     ledger: str,
     rows: Sequence[dict[str, Any]],
@@ -1348,7 +1488,7 @@ def _summarize(
     now: datetime,
     replayed: int,
 ) -> dict[str, Any]:
-    detail = _summarize_issue_debt(rows)
+    detail = _SUMMARIZERS[ledger](rows)
     summary: dict[str, Any] = {
         "schema": SUMMARY_SCHEMA,
         "ledger": ledger,
@@ -1414,6 +1554,34 @@ def _status_text(
                 f"eat {float(row['fields'].get('eat_hours', 0) or 0):.2f}h "
                 f"prs {int(row['fields'].get('remaining_atomic_prs', 0) or 0)} "
                 f"close {row['fields'].get('closeability', '?')}"
+            )
+    if ledger == GPU_RESERVATION:
+        lines.append(
+            "state: " + (", ".join(f"{k} {v}" for k, v in summary["state"].items()) or "-")
+        )
+        held = summary["held_by_machine"]
+        lines.append(
+            "held_by_machine: "
+            + (", ".join(f"{k} {v}" for k, v in held.items()) or "-")
+        )
+        lines.append(
+            f"holders: {len(summary['holders'])} | "
+            f"stale holds {len(summary['stale_holds'])} | stale rows {counts['stale']}"
+        )
+        # Live holds first, then by deadline: the row a reader must act on is on top.
+        ranked = sorted(
+            _live_rows(snapshot["rows"]),
+            key=lambda row: (
+                str(row["fields"].get("expected_end") or "~"),
+                row["key"],
+            ),
+        )
+        for row in ranked[:max_rows]:
+            lines.append(
+                f"  {row['key']} {row['fields'].get('state', '?')} "
+                f"holder {row['fields'].get('holder', '?')} "
+                f"-> {row['fields'].get('expected_end', '?')} "
+                f"{row['fields'].get('workload', '')}".rstrip()
             )
     if len(_live_rows(snapshot["rows"])) > max_rows:
         lines.append(f"  ... {len(_live_rows(snapshot['rows'])) - max_rows} more live rows")
@@ -1645,7 +1813,7 @@ def schema_document() -> dict[str, Any]:
             ledger: {
                 "workspace": LEDGER_WORKSPACES[ledger],
                 "entity_keys": list(ENTITY_FIELDS[ledger]),
-                "row_key": "owner/repo#N",
+                "row_key": ENTITY_KEY_FORMATS[ledger],
                 "terminal_values": {TERMINAL_VALUES[ledger][0]: sorted(TERMINAL_SETS[ledger])},
                 "fields": [
                     {
@@ -1654,7 +1822,7 @@ def schema_document() -> dict[str, Any]:
                         "values": list(spec.values),
                         "description": spec.description,
                     }
-                    for spec in ISSUE_DEBT_FIELDS
+                    for spec in LEDGER_FIELD_SPECS[ledger].values()
                 ],
             }
             for ledger in LEDGERS
@@ -1767,11 +1935,17 @@ def _read_json(path: Path) -> Any:
         raise LedgerError("INVALID_JSON", f"{path}: {exc}") from exc
 
 
-def _parse_entity_argument(raw: str) -> tuple[str, int]:
+def _parse_entity_argument(raw: str, ledger: str) -> dict[str, Any]:
+    """Parse ``--entity`` into the ledger's entity object."""
+    if ledger == GPU_RESERVATION:
+        match = re.match(r"^\s*([A-Za-z0-9._-]+)\s*#\s*gpu\s*(\d+)\s*$", raw, re.IGNORECASE)
+        if not match:
+            raise LedgerError("INVALID_ENTITY", f"{raw!r} is not '<machine>#gpu<n>'")
+        return {"machine": match.group(1), "gpu_index": int(match.group(2))}
     match = re.match(r"^\s*([\w.-]+/[\w.-]+)\s*#\s*(\d+)\s*$", raw)
     if not match:
         raise LedgerError("INVALID_ENTITY", f"{raw!r} is not 'owner/repo#N'")
-    return match.group(1), int(match.group(2))
+    return {"repo": match.group(1), "issue": int(match.group(2))}
 
 
 def _loads_object(text: str, *, where: str) -> dict[str, Any]:
@@ -1814,8 +1988,6 @@ def _cli_append(args: argparse.Namespace) -> int:
             raise LedgerError(
                 "MISSING_INPUT", "append needs --observation-file, or --entity with --fields-json"
             )
-        repo, number = _parse_entity_argument(args.entity)
-        entity: dict[str, Any] = {"repo": repo, "issue": number}
         raw = {
             "schema": OBSERVATION_SCHEMA,
             "ledger": args.ledger,
@@ -1823,7 +1995,7 @@ def _cli_append(args: argparse.Namespace) -> int:
             "observed_at": args.observed_at or format_utc(utcnow()),
             "confidence": args.confidence,
             "evidence": args.evidence,
-            "entity": entity,
+            "entity": _parse_entity_argument(args.entity, args.ledger),
             "head_transition": False,
             "fields": _loads_object(args.fields_json, where="--fields-json"),
         }
@@ -1947,7 +2119,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="debt_ledger.py",
         description=(
-            "Reducer for the shared append-only issue-debt ledger. Observations travel "
+            "Reducer for the shared append-only debt ledgers "
+            "(issue-debt, gpu-reservation). Observations travel "
             "as append-only dashboard messages; this tool only ever writes LOCAL "
             "artifacts."
         ),
@@ -1968,7 +2141,9 @@ def build_parser() -> argparse.ArgumentParser:
     append = sub.add_parser("append", parents=[common], help="build one observation envelope")
     append.add_argument("--ledger", choices=list(LEDGERS), required=True)
     append.add_argument("--observation-file", help="read a full observation envelope from JSON")
-    append.add_argument("--entity", help="'owner/repo#N'")
+    append.add_argument(
+        "--entity", help="'owner/repo#N', or '<machine>#gpu<n>' for gpu-reservation"
+    )
     append.add_argument("--actor", default=os.environ.get("COURSIA_LEDGER_ACTOR", "ai-01"))
     append.add_argument("--observed-at", help="UTC ISO-8601; defaults to now")
     append.add_argument("--confidence", choices=list(CONFIDENCE_LEVELS), default="medium")

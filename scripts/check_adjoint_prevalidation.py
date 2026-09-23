@@ -135,6 +135,20 @@ EXIT_READY = 0
 EXIT_NO_DOSSIER = 1
 EXIT_UNKNOWN = 2
 EXIT_BLOCKED_WITH_SUBSTANCE = 3
+# The four contract fields that must sit at their READY value for a dossier to
+# claim the pull request is mergeable (see validate_dossier, which enforces them
+# exactly when `verdict: READY`). Their COMPLEMENT on an intact dossier is the
+# attested reason -- and it is what the gate used to throw away: the rule tells
+# the coordinator to "dispatch from the dossier's stated reason" (#17290) while
+# exit 3 published an `errors: []` that is empty BY CONSTRUCTION, the dossier
+# being intact. Order is the contract's own, so two dossiers blocked for the
+# same reason render identically and the dispatch is groupable.
+BLOCKING_FIELDS = (
+    ("checks", ("latest-wins-green",)),
+    ("b0", ("clear",)),
+    ("scope", ("pass",)),
+    ("domain", ("pass", "not-applicable")),
+)
 # Conclusions that do not refute `checks: latest-wins-green`. `skipped` and
 # `neutral` are not failures; anything else completed (failure, timed_out,
 # cancelled, action_required, startup_failure, stale...) does (#16957).
@@ -293,10 +307,18 @@ def _is_own_later_act(row: dict[str, Any], timestamp_key: str, neutral_after: st
     coordinator is unaware of -- it wrote it. Neutralising exactly those rows is
     what lets the coordinator lift its own reserve and still merge, without
     weakening the gate: a row from any other author still expires the dossier.
+
+    Note (#16883): the coordinator account ``myia-ai-01`` and the shared worker
+    sign-in ``jsboige`` both author coordinator-side actions on this gate's
+    only consumer (cf. lane-claim protocol and the merged-account mandate).
+    A neutralisation scoped to ``COORDINATOR_LOGIN`` alone misses every
+    coordinator action posted under the shared sign-in -- the very loop
+    measured on #16840. We accept either login as the coordinator's voice.
     """
     if not neutral_after:
         return False
-    if _login(row) != COORDINATOR_LOGIN:
+    author = _login(row)
+    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
         return False
     stamp = row.get(timestamp_key) or ""
     return bool(stamp) and stamp > neutral_after
@@ -672,19 +694,41 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
             errors.append("draft pull request cannot be READY")
         if integers.get("threads-unresolved") not in {None, 0}:
             errors.append("READY requires zero unresolved threads")
+        # A pull request that changes zero files has nothing to squash, whatever
+        # its genre, domain or author. This is not a judgement on smallness --
+        # `check_trivial_diff.py` owns that, and deliberately lets a two-line
+        # critical fix through (#15740). It is the absence of a deliverable.
+        # Measured on #16975/#16976 (2026-09-22): both carried an INTACT dossier
+        # declaring `diff-files: 0` and `verdict: READY`, so the gate returned 0
+        # and authorised a merge that would have closed a grain having delivered
+        # nothing (G.3). Only B.0, holding an unrelated morphological reserve,
+        # happened to stop it. A dossier asserting READY over an empty diff is
+        # self-contradictory, which is exactly what "no dossier worth trusting"
+        # means -- hence the existing rc=1 path, not a new one. A BLOCKED dossier
+        # over an empty diff stays intact: it attests, correctly, non-mergeability.
+        if snapshot.get("changedFiles") == 0:
+            errors.append("READY requires a non-empty diff: 0 files changed")
     return errors
 
 
-def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
+def evaluate_with_dossier(
+    snapshot: dict[str, Any],
+) -> tuple[str, list[str], Dossier | None]:
     """Select the newest candidate and return a fail-closed verdict.
 
     Returns one of ``VERDICT_READY`` (intact dossier claiming the PR is
     mergeable), ``VERDICT_BLOCKED`` (intact dossier attesting it is not) or
-    ``""`` (no dossier worth trusting). Separating dossier integrity from PR
-    mergeability is the whole point: making the right to READ depend on the
-    state of MERGEABILITY meant the coordinator could only ever open the pull
-    requests that were already fine -- never the oldest ones, which are old
-    precisely because they are blocked.
+    ``""`` (no dossier worth trusting), plus the dossier that produced the
+    verdict -- ``None`` whenever the verdict is ``""``. Separating dossier
+    integrity from PR mergeability is the whole point: making the right to READ
+    depend on the state of MERGEABILITY meant the coordinator could only ever
+    open the pull requests that were already fine -- never the oldest ones,
+    which are old precisely because they are blocked.
+
+    The third element is what makes the verdict ACTIONABLE. On
+    ``VERDICT_BLOCKED`` the ``errors`` list is empty by construction -- the
+    dossier is intact, that is what exit 3 means -- so the reason the gate read
+    has to travel separately or not at all (#17290).
     """
     comments = snapshot.get("comments") or []
     candidates: list[tuple[Dossier, list[str]]] = []
@@ -699,7 +743,7 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
             candidates.append((dossier, parse_errors))
 
     if not candidates:
-        return "", ["no [ADJOINT PREFLIGHT] dossier comment found"]
+        return "", ["no [ADJOINT PREFLIGHT] dossier comment found"], None
 
     dossier, errors = candidates[-1]
     errors = [*errors, *validate_dossier(dossier, snapshot)]
@@ -716,8 +760,74 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
             "discussion changed after dossier: a fresh adjoint preflight is required"
         )
     if errors:
-        return "", errors
-    return dossier.fields.get("verdict", ""), []
+        return "", errors, None
+    return dossier.fields.get("verdict", ""), [], dossier
+
+
+def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
+    """The verdict and the reason, without the dossier (the historical shape).
+
+    Kept as the callers' view so the gate's contract does not move under them;
+    ``evaluate_with_dossier`` is the same computation plus what #17290 exposes.
+    """
+    verdict, errors, _ = evaluate_with_dossier(snapshot)
+    return verdict, errors
+
+
+def blocking_fields(dossier: Dossier) -> list[str]:
+    """The attested fields that are NOT at their READY value -- the reason.
+
+    A ``BLOCKED`` dossier may legitimately have none of them: `validate_dossier`
+    constrains these four only when the dossier CLAIMS ready, so an honest
+    blocked dossier can declare `checks: latest-wins-green` and carry its reason
+    in prose. This returns ``[]`` then -- it names the fields that block, and
+    never invents one to fill the silence.
+    """
+    fields = dossier.fields
+    return [
+        key for key, ready_values in BLOCKING_FIELDS
+        if fields.get(key, "") not in ready_values
+    ]
+
+
+def dossier_payload(dossier: Dossier) -> dict[str, Any]:
+    """Every field the gate READ, plus where it read it.
+
+    This publishes what `parse_dossier` already parsed: the dossier contract
+    itself is unchanged, no field is added to what an emitting lane must write.
+    """
+    payload: dict[str, Any] = dict(dossier.fields)
+    payload["author"] = dossier.author
+    payload["created_at"] = dossier.created_at
+    payload["comment_index"] = dossier.comment_index
+    return payload
+
+
+def build_result(
+    pr: int,
+    snapshot: dict[str, Any],
+    verdict: str,
+    errors: list[str],
+    dossier: Dossier | None,
+) -> dict[str, Any]:
+    """The ``--json`` payload, built without touching the network.
+
+    The `dossier` block rides ONLY with a verdict the gate accepted. A refused
+    dossier must keep reading as refused: exposing the attested reason must not
+    make a PR whose fingerprint is broken look prevalidated -- the negative
+    control of #17290.
+    """
+    result: dict[str, Any] = {
+        "pr": pr,
+        "head": snapshot["headRefOid"],
+        "ready": verdict == VERDICT_READY,
+        "verdict": verdict or "NO_DOSSIER",
+        "errors": errors,
+    }
+    if dossier is not None and verdict:
+        result["dossier"] = dossier_payload(dossier)
+        result["blocking_fields"] = blocking_fields(dossier)
+    return result
 
 
 def review_threads(pr: int) -> list[dict[str, Any]]:
@@ -824,16 +934,41 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _pr_metadata(pr: int) -> dict[str, Any]:
-    fields = (
-        "number,title,body,state,isDraft,baseRefName,headRefOid,updatedAt,"
-        "changedFiles,additions,deletions,statusCheckRollup"
-    )
-    data = gh_json([
-        "pr", "view", str(pr), "--repo", REPO, "--json", fields,
-    ])
-    if not isinstance(data, dict):
+def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
+    # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
+    # quota only pays for the check rollup below. Keys keep the exact shape
+    # `gh pr view --json` produced, so fingerprints and the identity bracket
+    # stay byte-compatible with dossiers stamped before this change.
+    row = gh_json(["api", f"repos/{REPO}/pulls/{pr}"])
+    if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
+    state = row.get("state") or ""
+    data: dict[str, Any] = {
+        "number": row.get("number"),
+        "title": row.get("title"),
+        "body": row.get("body") or "",
+        # REST renders state lowercase and folds MERGED into "closed";
+        # `gh pr view` rendered uppercase with a distinct MERGED state, and
+        # the fingerprint payload hashes this field verbatim.
+        "state": "MERGED" if row.get("merged") else state.upper(),
+        "isDraft": row.get("draft"),
+        "baseRefName": (row.get("base") or {}).get("ref"),
+        "headRefOid": (row.get("head") or {}).get("sha"),
+        "updatedAt": row.get("updated_at"),
+        "changedFiles": row.get("changed_files"),
+        "additions": row.get("additions"),
+        "deletions": row.get("deletions"),
+    }
+    if with_rollup:
+        # The check rollup has no REST equivalent, so it stays on GraphQL
+        # as a single-field query instead of the former twelve-field one.
+        rollup = gh_json([
+            "pr", "view", str(pr), "--repo", REPO,
+            "--json", "statusCheckRollup",
+        ])
+        if not isinstance(rollup, dict):
+            raise RuntimeError("pull request response is not an object")
+        data["statusCheckRollup"] = rollup.get("statusCheckRollup")
     return data
 
 
@@ -849,7 +984,7 @@ def _metadata_identity(data: dict[str, Any]) -> str:
 
 
 def load_snapshot(pr: int) -> dict[str, Any]:
-    before = _pr_metadata(pr)
+    before = _pr_metadata(pr, with_rollup=True)
     snapshot = dict(before)
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
@@ -859,7 +994,7 @@ def load_snapshot(pr: int) -> dict[str, Any]:
     # caller retries), so the claim verification below never reads a state
     # that was already stale when captured.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
-    after = _pr_metadata(pr)
+    after = _pr_metadata(pr, with_rollup=True)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
     return snapshot
@@ -947,7 +1082,7 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 0
-        verdict, errors = evaluate(snapshot)
+        verdict, errors, dossier = evaluate_with_dossier(snapshot)
     except (
         RuntimeError,
         KeyError,
@@ -967,13 +1102,7 @@ def main() -> int:
         return EXIT_UNKNOWN
 
     ready = verdict == VERDICT_READY
-    result = {
-        "pr": args.pr,
-        "head": snapshot["headRefOid"],
-        "ready": ready,
-        "verdict": verdict or "NO_DOSSIER",
-        "errors": errors,
-    }
+    result = build_result(args.pr, snapshot, verdict, errors, dossier)
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     elif ready:
@@ -984,6 +1113,11 @@ def main() -> int:
             f"{snapshot['headRefOid']} attesting it is NOT mergeable."
         )
         print("  Do not open its surfaces: dispatch from the dossier's stated reason.")
+        attested = ", ".join(
+            f"{key}={dossier.fields.get(key, '')}" for key, _ in BLOCKING_FIELDS
+        )
+        blocked = ",".join(blocking_fields(dossier)) or "none named by the contract"
+        print(f"  attested reason: {attested} (blocking: {blocked})")
     else:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
