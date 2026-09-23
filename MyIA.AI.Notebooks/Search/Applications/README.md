@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 58 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-CSharp, App-7b, App-8-CSharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 59 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-CSharp, App-7b, App-8-CSharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **58 notebooks** | **~45h35** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`, `rustuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **59 notebooks** | **~46h35** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`, `rustuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -33,7 +33,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 Applications/
 ├── Search/     # Applications purement Search (5 notebooks : 3 Python + 2 twins C#)
 ├── CSP/        # Applications CSP (31 notebooks : 18 Python + 13 twins C#)
-└── Hybrid/     # Méthodes hybrides / métaheuristiques (22 notebooks : 17 Python + 5 twins C#)
+└── Hybrid/     # Méthodes hybrides / métaheuristiques (23 notebooks : 18 Python + 5 twins C#)
 ```
 
 ```mermaid
