@@ -1300,19 +1300,32 @@ def test_tranche13_reading_anchor_advisory_guard_is_wired():
 
 
 def test_tranche14_split_reading_guard_is_wired():
-    """Tranche 14 = garde split-reading-cells (#16762/#17031), advisory.
+    """Tranche 14 = garde split-reading-cells (#16762/#17031), cliquet #17044.
 
     Cable a l'origine comme deuxieme TRANCHE13, il ecrasait silencieusement
     le garde reading-anchor de #16704 (redefinition Python) : le postieur
     cede l'index (cf. registre, commentaire TRANCHE14).
+
+    Forme CLIQUET depuis #17044 : ratchet autonome (le script fait son propre
+    diff base...HEAD -- d'ou `{base_ref}` et `needs_base`), self-test en
+    PRE-CONTROLE, et `blocking=True`. La bascule advisory -> bloquant ne tient
+    que parce que le cliquet ne regarde QUE l'ajout : un plancher absolu aurait
+    rougi les 91 findings herites de toute PR touchant un carnet porteur.
     """
     assert len(TRANCHE14) == 1
     guard = TRANCHE14[0]
-    assert guard.name == "Split-reading-cells advisory (per-notebook, non-blocking)"
-    assert not guard.blocking, "advisory : signale les paires scindees, ne rougit jamais"
+    assert guard.name == "Split-reading ratchet (base vs PR)"
+    assert guard.blocking, "cliquet #17044 : l'AJOUT de lecture scindee doit rougir"
+    assert guard.needs_base, f"{guard.name} compare HEAD a la base"
     assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    assert guard.iterates_paths
+    assert "--self-test" in " ".join(guard.pre_argv)
+    assert "{base_ref}" in guard.argv, "ratchet autonome : la lane fournit la base"
     assert "--json" in guard.argv and "--fail-on-findings" in guard.argv
+    # Forme ratchet : plus d'iteration par chemin (le script choisit lui-meme
+    # les carnets du diff), donc plus de {changed_paths} ni de warn_rc.
+    assert not guard.iterates_paths
+    assert "{changed_paths}" not in guard.argv
+    assert not guard.warn_rc
 
 
 def test_both_reading_guards_alive_after_tranche14_split():
@@ -1327,5 +1340,5 @@ def test_both_reading_guards_alive_after_tranche14_split():
     assert TRANCHE13[0].name != TRANCHE14[0].name
     assert {g.name for g in TRANCHE13 + TRANCHE14} == {
         "Reading-anchor advisory (lecture sans output, #16695)",
-        "Split-reading-cells advisory (per-notebook, non-blocking)",
+        "Split-reading ratchet (base vs PR)",
     }
