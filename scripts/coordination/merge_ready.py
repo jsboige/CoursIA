@@ -112,6 +112,12 @@ NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 # de #17040 interdit.
 FROZEN_UMBRELLAS = {"13410": "17040", "11601": "17040"}
 
+# Branches d'une campagne gelee dont les PRs ne citent PAS le parapluie : les
+# relais g-XX de #13410 (`wt/vibe-g62-...`) n'ont #13410 ni dans le titre ni
+# dans le body. 17 d'entre eux etaient ouverts et invisibles au filtre
+# ci-dessus le 2026-09-23 (fermes au titre du veto, solde markdown net > 0).
+FROZEN_BRANCH_PREFIXES = {"wt/vibe-": "13410"}
+
 # Codes de retour DOCUMENTES des organes appeles. Tout autre rc est une
 # erreur inattendue -> arret du run, jamais de merge en aveugle.
 GATE_DOCUMENTED_RC = frozenset({0, 1, 2, 3})  # ready / no-dossier / unknown / blocked
@@ -242,13 +248,19 @@ def scope_exclusion(path: str) -> str | None:
     return None
 
 
-def frozen_umbrella_exclusion(title: str | None, body: str | None) -> str | None:
+def frozen_umbrella_exclusion(
+    title: str | None, body: str | None, head_ref: str | None = None
+) -> str | None:
     """Raison d'exclusion si la PR se reclame d'un parapluie gele, sinon None.
 
     Une reference ``#<numero>`` dans le titre ou le body suffit (fail-closed :
     une PR de redressement qui cite le parapluie sort aussi du perimetre et se
-    merge a la main). ``#134100`` ne vaut pas ``#13410``.
+    merge a la main). ``#134100`` ne vaut pas ``#13410``. Une branche d'une
+    famille gelee (``FROZEN_BRANCH_PREFIXES``) suffit aussi, meme muette.
     """
+    for prefix, umbrella in FROZEN_BRANCH_PREFIXES.items():
+        if (head_ref or "").startswith(prefix):
+            return f"frozen:#{umbrella}(veto #{FROZEN_UMBRELLAS[umbrella]},branch {prefix}*)"
     text = " ".join((title or "", body or ""))
     for umbrella, veto in FROZEN_UMBRELLAS.items():
         if re.search(rf"#{umbrella}(?!\d)", text):
@@ -330,7 +342,7 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
     return numbers
 
 
-PR_VIEW_FIELDS = "number,title,isDraft,body,headRefOid,files,changedFiles,comments"
+PR_VIEW_FIELDS = "number,title,isDraft,body,headRefName,headRefOid,files,changedFiles,comments"
 
 
 def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
@@ -550,7 +562,9 @@ def evaluate_pr(
     reason = grain_exclusion(view.get("body"))
     if reason is not None:
         return skip(reason)
-    reason = frozen_umbrella_exclusion(view.get("title"), view.get("body"))
+    reason = frozen_umbrella_exclusion(
+        view.get("title"), view.get("body"), view.get("headRefName")
+    )
     if reason is not None:
         return skip(reason)
     reason = precheck_dossier(view)

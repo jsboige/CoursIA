@@ -535,3 +535,25 @@ def test_precheck_dossier_illisible_laisse_decider_le_gate(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
     assert lines[-1]["verdict"] == "merged"
+
+
+def test_frozen_branch_prefix_without_umbrella_reference():
+    # Relais g-XX de #13410 : ni le titre ni le body ne citent le parapluie.
+    assert (
+        mr.frozen_umbrella_exclusion(
+            "fix(search,g77): relocate 12 lectures", "Grain: MED/notebook", "wt/vibe-g77-search-26"
+        )
+        == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    )
+    assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, "fix/vibe-check") is None
+    assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, None) is None
+
+
+def test_skip_frozen_branch_before_gate(tmp_path):
+    view = default_view(title="fix(search,g71): lectures reprises")
+    view["headRefName"] = "wt/vibe-g71-search-20"
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
