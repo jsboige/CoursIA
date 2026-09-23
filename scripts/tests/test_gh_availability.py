@@ -7,8 +7,8 @@ de la machine : un garde qui saute toujours serait pire que pas de garde
 saine ne doit JAMAIS etre classee « budget epuise ».
 
 Executable deux facons :
-    py scripts/tests/test_gh_availability.py
-    npx pytest scripts/tests/test_gh_availability.py
+    python scripts/tests/test_gh_availability.py
+    python -m pytest scripts/tests/test_gh_availability.py
 """
 
 from __future__ import annotations
