@@ -18396,7 +18396,7 @@ for n in [2, 4, 6, 8]:
         g.play_round(reinforce=False)
     mi = sc.mutual_information(g.joint_state_signal)
     print(f""n_states={n} -> succès={g.success_rate(800):.3f}  MI={mi:.3f}  plafond log2({n})={np.log2(n):.3f}"")",,,,,,,,f95c599226e62c0a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention.ipynb,f5b39108,markdown,fr,a6759a30fa05a432,"# ICT-27 — Invention de symboles (expérience B, strate 7)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention.ipynb,f5b39108,markdown,fr,744dea3c4c59ddcf,"# ICT-27 — Invention de symboles (expérience B, strate 7)
 
 *Compagnon pédagogique du module `ict.symbol_invention` (#7746, expérience B).*
 
@@ -18423,12 +18423,13 @@ jusqu'à ce qu'un signal par état devienne disponible. C'est le cadre de Skyrms
 3. **Verdict seuil de coût** — l'invention a un prix : introduire un coût
    économique (gate de *rentabilité*) fige le vocabulaire sous l'optimum.
 4. **Verdict diversité** — il n'existe pas *une* bonne convention mais
-   `n_states!` : chaque graine aléatoire converge vers une bijection distincte.
+   `n_states!` : 5 conventions distinctes sur 6 graines — les graines 0 et 5
+   convergent vers la même permutation (2, 3, 0, 1).
 5. **Exercices** — trois bancs à compléter (C.1 : les stubs s'exécutent sans
    erreur).
 
 > Toutes les affirmations chiffrées de ce notebook sont **reproduites** depuis
-> le module, pas affichées en dur — c'est la discipline anti-dérive (#2572).",,,,,,,,a6759a30fa05a432,,,,,,,,
+> le module, pas affichées en dur — c'est la discipline anti-dérive (#2572).",,,,,,,,744dea3c4c59ddcf,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention.ipynb,97d897f6,code,fr,7a4b6122bb4bfddf,"# Setup : import du package ict (via sys.path cwd, cf #973-L) + numpy/matplotlib.
 import sys
 sys.path.insert(0, ""."")
