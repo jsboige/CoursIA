@@ -180,10 +180,35 @@ def differential_features(traces: dict, k: int = 64) -> np.ndarray:
     de les ecarter — une donnee polluee devient une corruption de classement
     invisible (#12560 : facteur 3,3 sur ``overlap_diff64`` des traces 8B).
     S'il reste moins de ``k`` colonnes finies, la sortie est tronquee d'autant.
+
+    Avec **moins de 2 jeux de prompts** la variance inter-jeux est
+    *identiquement nulle* : ``argsort`` sur un vecteur de zeros rend alors un
+    panel determine par l'**ordre des indices**, independant des activations —
+    un classement qui ne classe rien, et silencieux. Le cas est **mesure** et
+    signale par ``RuntimeWarning`` (cf. grille critique d'ICT-21, #16750) :
+    ``case3/confab_faux``, un seul jeu, rend le **meme** panel pour des traces
+    dont le nombre de tokens varie de 152 a 179, et trois jeux de donnees
+    **disjoints** -- dont un a activations nulles -- rendent aussi ce meme
+    panel.
+
+    L'ordre exact rendu n'est **pas** un contrat : sur des scores tous nuls, le
+    departage des ex aequo appartient a l'implementation du tri, et deux
+    versions de numpy ne rendent pas la meme queue de liste (mesure 2026-09-21 :
+    ``[511, 510, 509, ...]`` en numpy 2.4.6 contre ``[511, 510, 161, ...]`` en
+    2.2.6). C'est pourquoi le test associe verifie l'**egalite entre jeux de
+    donnees**, jamais une liste litterale.
     """
     means = mean_activation_by_set(traces)
     stack = np.stack(list(means.values()))               # [n_sets, d_sae]
     score = stack.var(axis=0)
+    if stack.shape[0] < 2:
+        warnings.warn(
+            f"differential_features : {stack.shape[0]} seul(s) jeu(x) de prompts "
+            "-- la variance INTER-JEUX est identiquement nulle, donc le panel "
+            "rendu ne depend PAS des donnees (argsort sur des zeros : ordre des "
+            "indices). Il n'est pas un panel differentiel : utiliser >= 2 jeux, "
+            "ou un autre critere de selection.",
+            RuntimeWarning, stacklevel=2)
     finite = np.isfinite(score)
     if not finite.all():
         warnings.warn(

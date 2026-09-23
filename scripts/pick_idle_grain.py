@@ -123,6 +123,23 @@ gardes divergeaient, une lane pourrait etre autorisee a produire du neuf sur
 une PR que le merge-gate refusera. Voir `red_backlog` et
 `unaddressed_review_points`.
 
+Plafond de WIP par lane (Q41, mandat user 2026-09-22)
+-----------------------------------------------------
+Le garde rouge ne compte que les PRs BLOQUEES : une PR VERTE en attente de
+dossier ou de merge ne l'arme pas (volontaire, #12108 -- pieger la lane sur
+l'attente du coordinateur serait pire). Mais le temps de passage est
+WIP / debit (loi de Little) : c'est l'encours lui-meme qu'il faut plafonner.
+Mesure du jour : 323 PRs ouvertes, dont 91 pour la seule lane
+myia-po-2026:CoursIA. Au-dela de `WIP_CAP_DEFAULT` PRs ouvertes attribuees
+par tag de lane (brouillons compris -- convertir en draft n'echappe pas au
+plafond), la lane ne recoit pas de grain neuf : elle recoit sa file, la plus
+ancienne d'abord, memes convention de sortie et code de retour que le garde
+rouge. Les deux gardes se composent : quand les deux declenchent, les deux
+motifs sont rendus, aucun ne masque l'autre. `--wip-cap N` ajuste le plafond
+(0 le desactive) ; `--ignore-wip` exige `--wip-reason` ecrite -- une
+justification PROPRE au plafond : reutiliser `--admit-reason` leverait du
+meme geste le garde d'admission (claims, DWELL), qu'on n'a pas demande.
+
 Ardoise de lane : la mesure qui rend un faux "rien livre" impossible (L721)
 --------------------------------------------------------------------------
 Mesure du 2026-09-12 : une lane a envoye une escalation URGENT claimant
@@ -145,6 +162,9 @@ Usage
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
     python scripts/pick_idle_grain.py --lane <l> --ignore-red      # rouge non reparable
                                                                    # par cette lane, ECRIT sur la PR
+    python scripts/pick_idle_grain.py --lane <l> --ignore-wip --wip-reason '<motif>'
+                                                                   # plafond de WIP passe outre,
+                                                                   # justification ECRITE exigee (Q41)
 
 Le tirage est **deterministe par (lane, heure UTC, reroll)** : deux lanes
 tirent des candidats differents a la meme minute, et une meme lane qui relance
@@ -1891,6 +1911,23 @@ RED_HOURS_DEFAULT = 24
 # devraient pas produire de nouveaux grains mais etre en train de les traiter".
 RED_COUNT_DEFAULT = 3
 
+# Q41 (mandat user 2026-09-22) : plafond de work-in-progress par lane. Le
+# garde rouge ne voit que les PRs BLOQUEES -- une PR VERTE en attente de
+# dossier ou de merge ne declenche rien (volontaire, #12108 : ne pas pieger
+# la lane sur l'attente du coordinateur). Mais le temps de passage est
+# WIP / debit (loi de Little) : au-dela d'un certain encours, produire du
+# neuf ALLONGE la file au lieu de la faire avancer, et aucun garde rouge ne
+# le voit. Mesure du 2026-09-22 : 323 PRs ouvertes, dont 91 pour la seule
+# lane myia-po-2026:CoursIA. Au-dela de ce plafond, le picker ne rend pas
+# de grain neuf : il rend la file de la lane (reparation/consolidation),
+# la plus ancienne d'abord. Les BROUILLONS comptent -- convertir en draft
+# ne doit pas echapper au plafond (le garde rouge les ignore a bon droit,
+# un brouillon n'a pas de checks a reparer ; le plafond, lui, mesure
+# l'ENCOURS, et un brouillon est de l'encours). Comptage par TAG de lane
+# (`Grain: ... lane <machine:workspace>`), jamais par auteur (L721 / #9485).
+# 0 desactive le garde (meme convention que --dwell-hours 0).
+WIP_CAP_DEFAULT = 15
+
 # CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
 # faux positif qui rend un garde de cascade inutilisable.
@@ -2981,9 +3018,41 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     return out
 
 
+def lane_open_prs(lane: str, prs: list[dict]) -> list[dict]:
+    """PRs ouvertes attribuees a la lane par SON tag, brouillons compris (Q41).
+
+    L'unite d'attribution est le TAG `Grain: ... lane <machine:workspace>`
+    (jamais `--author`, cf L721 / #9485) : meme predicat que le partage
+    mine/others de `red_backlog` -- les deux gardes ne doivent jamais
+    diverger sur ce qui appartient a une lane.
+
+    Les BROUILLONS comptent, contrairement au garde rouge : un brouillon
+    n'a pas de checks a reparer (le rouge l'ignore a bon droit), mais le
+    plafond de WIP mesure l'ENCOURS, et convertir en draft ne doit pas
+    echapper au plafond. Les PRs sans tag lisible, ou taguees sur une autre
+    lane, ne comptent pas.
+
+    Rend oldest first (age decroissant) : c'est la file a drainer, la plus
+    ancienne d'abord. Les causes bloquantes ne sont PAS calculees ici --
+    `red_backlog` les reporte depuis son analyse `red` quand elles existent,
+    sans payer un second etat GraphQL par PR.
+    """
+    out = []
+    for pr in prs:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if (tag or {}).get("lane") != lane:
+            continue
+        out.append({"number": pr["number"], "title": pr["title"],
+                    "age_hours": round(_hours_since(pr["createdAt"])),
+                    "is_draft": bool(pr.get("isDraft"))})
+    out.sort(key=lambda r: -r["age_hours"])
+    return out
+
+
 def red_backlog(lane: str, threshold_hours: float,
                 count_threshold: int = RED_COUNT_DEFAULT,
-                saturation_hours: float | None = None) -> dict:
+                saturation_hours: float | None = None,
+                wip_cap: int = WIP_CAP_DEFAULT) -> dict:
     """PRs de la lane reellement bloquees, avec QUATRE declencheurs de refus.
 
     `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
@@ -3022,6 +3091,13 @@ def red_backlog(lane: str, threshold_hours: float,
     arithmetique (deviner une lane serait pire) -- mais les taire donnerait a
     croire que le garde couvre tout l'ouvert. Il ne le couvre pas : leur tag
     manquant est lui-meme le defaut a corriger.
+
+    Rend enfin le volet WIP (Q41) : `wip_prs` (TOUTES les PRs ouvertes de la
+    lane par tag, brouillons compris, oldest first, causes du garde rouge
+    reportees quand elles existent), `wip_count`, `wip_cap` et
+    `wip_triggered` (compte >= plafond ; plafond 0 = desactive). Le compte
+    reutilise le MEME payload `fetch_open_prs` que le garde rouge -- pas de
+    seconde requete, pas de second avis sur ce qu'est une PR de la lane.
     """
     try:
         prs = fetch_open_prs()
@@ -3032,7 +3108,12 @@ def red_backlog(lane: str, threshold_hours: float,
                 "nits_unavailable": None, "base_inherited": [],
                 "infra_rerun": [], "base_undecided": [],
                 "base_unresolved": [], "dwell_waiting": [],
-                "saturation_hours": sat_threshold}
+                "saturation_hours": sat_threshold,
+                # Q41 : le volet WIP partage la panne du garde rouge -- un
+                # garde qui ne peut pas mesurer ne bloque pas (meme principe
+                # que le rouge ci-dessus), mais le compte rendu le DIT.
+                "wip_prs": [], "wip_count": None, "wip_cap": wip_cap,
+                "wip_triggered": False}
 
     mine, others = [], []
     sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
@@ -3218,6 +3299,15 @@ def red_backlog(lane: str, threshold_hours: float,
     unresolved_by_name: dict[str, set[int]] = {}
     for name, number in unresolved_aggregates:
         unresolved_by_name.setdefault(name, set()).add(number)
+    # Q41 : volet WIP -- meme payload que le garde rouge (pas de seconde
+    # requete), brouillons compris, oldest first. Les causes bloquantes deja
+    # calculees par le garde rouge sont reportees sur les entrees concernees :
+    # la file WIP dit POURQUOI chaque PR attend quand la cause est connue,
+    # sans payer un etat GraphQL supplementaire pour les PRs vertes.
+    wip_prs = lane_open_prs(lane, prs)
+    causes_by_number = {r["number"]: r["causes"] for r in red}
+    for entry in wip_prs:
+        entry["causes"] = causes_by_number.get(entry["number"], [])
     return {"red": red, "aged": aged, "triggers": triggers,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
@@ -3243,7 +3333,13 @@ def red_backlog(lane: str, threshold_hours: float,
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
             # lane ne peut avancer en poussant (pousser le remet a zero).
             "dwell_waiting": dwell_waiting,
-            "nits_unavailable": nits_unavailable}
+            "nits_unavailable": nits_unavailable,
+            # Q41 : plafond de WIP. wip_triggered porte le verdict (compte >=
+            # plafond, plafond 0 = desactive) ; le refus lui-meme reste a
+            # main(), qui connait --ignore-wip.
+            "wip_prs": wip_prs, "wip_count": len(wip_prs),
+            "wip_cap": wip_cap,
+            "wip_triggered": wip_cap > 0 and len(wip_prs) >= wip_cap}
 
 
 def print_base_inherited(backlog: dict) -> None:
@@ -3572,6 +3668,60 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
     print("elle ne se prend pas en silence.")
 
+
+def print_wip_assignment(lane: str, backlog: dict, *, standalone: bool = True) -> None:
+    """Plafond de WIP (Q41) : au-dela, la lane recoit SA file, pas un grain neuf.
+
+    Meme convention de sortie que `print_red_assignment` : en-tete
+    "FILE DE REPARATION", aucune occurrence du mot refus, le chemin REND un
+    travail -- drainer sa file EST le travail du cycle. Le garde rouge ne
+    compte que les PRs bloquees ; le plafond compte l'encours ENTIER parce
+    que le temps de passage est WIP / debit (loi de Little) : au-dela du
+    plafond, un grain neuf rallonge la file au lieu de la faire avancer.
+
+    `standalone=False` quand le garde rouge a deja rendu son assignation :
+    l'en-tete et le paragraphe "ce n'est pas un refus" sont deja sous les
+    yeux, on n'imprime que le motif et la file. Les deux gardes se
+    composent -- aucun ne masque l'autre.
+    """
+    wip = backlog.get("wip_prs") or []
+    cap = backlog.get("wip_cap", WIP_CAP_DEFAULT)
+    count = backlog.get("wip_count")
+    if count is None:
+        count = len(wip)
+    if standalone:
+        print(f"FILE DE REPARATION -- lane {lane} : drainer son WIP avant de piocher.")
+        print(f"Motif : la lane porte {count} PR(s) ouverte(s), plafond de WIP = {cap}.")
+        print()
+        print("Ce n'est PAS un refus de tirage : le travail de ce cycle est nomme")
+        print("ci-dessous. Le garde rouge ne compte que les PRs bloquees ; le")
+        print("plafond compte l'encours ENTIER, brouillons compris -- une PR verte")
+        print("n'a rien casse, mais le temps de passage est WIP / debit (loi de")
+        print("Little) : au-dela du plafond, un grain neuf rallonge la file au")
+        print("lieu de la faire avancer.")
+        print()
+    else:
+        print(f"PLAFOND DE WIP, en plus du rouge : {count} PR(s) ouverte(s), "
+              f"plafond = {cap}.")
+        print("Les deux gardes declenchent -- aucun ne masque l'autre. Drainer la")
+        print("file ci-dessous APRES les rouges ci-dessus.")
+        print()
+    print("File de la lane, la plus ancienne d'abord -- chaque PR fait avancer la")
+    print("file : pousser, repondre aux reviews par ecrit, joindre un dossier de")
+    print("prevalidation, ou demander le merge a l'adjoint/coordinateur.")
+    for item in wip:
+        draft = "  [brouillon]" if item.get("is_draft") else ""
+        print(f"  #{item['number']}  ouverte depuis {item['age_hours']} h{draft}"
+              f"  -- {item['title'][:60]}")
+        for cause in item.get("causes") or []:
+            print(f"       {cause}")
+        if item.get("is_draft") and not (item.get("causes") or []):
+            print("       (brouillon : compte dans l'encours, convertir en draft")
+            print("        n'echappe pas au plafond)")
+    print()
+    print("Le plafond ne se leve pas en silence : si un gel coordinateur tient la")
+    print("file ENTIERE (et non une PR isolee), l'ECRIRE puis relancer avec")
+    print("--ignore-wip --wip-reason '<justification>'.")
 
 
 # --- Secheresse de substance : G-VAR-1 recoit son organe (#13086) ----------
@@ -4138,6 +4288,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
                     help=f"nombre de rouges simultanees qui refuse le tirage "
                          f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
+    ap.add_argument("--wip-cap", type=int, default=WIP_CAP_DEFAULT, metavar="N",
+                    help=f"plafond de WIP par lane (Q41) : au-dela de N PRs "
+                         f"ouvertes attribuees par tag, brouillons compris, la "
+                         f"lane recoit sa file au lieu d'un grain neuf -- le "
+                         f"temps de passage est WIP / debit (loi de Little). "
+                         f"(defaut {WIP_CAP_DEFAULT} ; 0 desactive le garde)")
     ap.add_argument("--saturation-hours", type=float, default=None,
                     help="#12830 : seuil du declencheur file-saturation (defaut "
                          f"= --red-hours, soit {RED_HOURS_DEFAULT} h). Separe de "
@@ -4160,6 +4316,15 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--ignore-wip", action="store_true",
+                    help="passer outre le plafond de WIP (Q41) -- exige "
+                         "--wip-reason '<justification ECRITE>' : contrairement "
+                         "a --ignore-red, le plafond n'a pas de PR particuliere "
+                         "ou poser la justification")
+    ap.add_argument("--wip-reason", default=None, metavar="TEXTE",
+                    help="justification ECRITE de --ignore-wip, a reporter sur "
+                         "l'issue retenue. Distincte de --admit-reason, qui "
+                         "leverait aussi le garde d'admission")
     ap.add_argument("--drought-run", type=int, default=DROUGHT_RUN_DEFAULT,
                     metavar="N",
                     help="merges consecutifs sans genre CONTENU a partir "
@@ -4209,6 +4374,18 @@ def main(argv: list[str] | None = None) -> int:
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
+    # Q41 : l'echappatoire du plafond de WIP est AUDITEE a la difference de
+    # --ignore-red (dont la justification vit sur la PR concernee) : le
+    # plafond n'a pas de PR particuliere ou ecrire, donc la justification
+    # passe --wip-reason ou ne se prend pas. Pas --admit-reason : elle leve
+    # aussi le garde d'admission, et passer le plafond ne doit pas ouvrir en
+    # silence les issues retenues par un claim ou un DWELL.
+    if args.ignore_wip and not args.wip_reason:
+        ap.error("--ignore-wip exige --wip-reason '<justification ECRITE>'")
+    if args.wip_reason and not args.ignore_wip:
+        ap.error("--wip-reason n'a de sens qu'avec --ignore-wip")
+    if args.wip_cap < 0:
+        ap.error("--wip-cap doit etre positif ou nul (0 desactive le garde)")
     if not args.lane and not args.orphans_report and args.admissible is None:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
     for low_name, high_name in (
@@ -4364,23 +4541,46 @@ def main(argv: list[str] | None = None) -> int:
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
+    # Le plafond de WIP (Q41) partage ce moment et ce payload : les deux gardes
+    # se composent, aucun ne masque l'autre.
     backlog = red_backlog(args.lane, args.red_hours, args.red_count,
-                            saturation_hours=args.saturation_hours)
-    if backlog.get("triggers") and not args.ignore_red:
+                            saturation_hours=args.saturation_hours,
+                            wip_cap=args.wip_cap)
+    red_hit = bool(backlog.get("triggers")) and not args.ignore_red
+    wip_hit = bool(backlog.get("wip_triggered")) and not args.ignore_wip
+    if red_hit or wip_hit:
         # Sortie 0, et le mot "refus" ne parait nulle part : ce chemin REND un
         # grain -- la reparation des PRs de la lane -- il n'en prive pas. La
         # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
         # un travail nomme sous l'apparence d'un vide, et se declenchait
         # d'autant plus souvent que la lane etait active.
         if args.json:
+            # Rouge et WIP se composent : le grain reste le premier rouge
+            # quand les deux declenchent (la reparation est la sequence la
+            # plus urgente), sinon c'est la PR la plus ancienne de la file
+            # WIP -- dans les deux cas le consommateur machine lit un grain
+            # et un nom de travail, pas un motif de refus.
+            assignment = None
+            grain = None
+            if red_hit:
+                assignment = "reparer-son-rouge"
+                grain = (backlog.get("red") or [None])[0]
+            if wip_hit:
+                assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
+                grain = grain or (backlog.get("wip_prs") or [None])[0]
             print(json.dumps({"lane": args.lane, "mode": "repair",
-                              "assignment": "reparer-son-rouge",
-                              "grain": (backlog.get("red") or [None])[0],
+                              "assignment": assignment or "drainer-son-wip",
+                              "grain": grain,
                               "red_hours": args.red_hours,
                               "lane_record": lane_record, **backlog},
                              ensure_ascii=False, indent=2))
         else:
-            print_red_assignment(args.lane, backlog, args.red_hours)
+            if red_hit:
+                print_red_assignment(args.lane, backlog, args.red_hours)
+            # standalone : l'en-tete "FILE DE REPARATION" (test pinne) vient
+            # du garde WIP lui-meme s'il est seul, du garde rouge sinon.
+            if wip_hit:
+                print_wip_assignment(args.lane, backlog, standalone=not red_hit)
             # Apres l'assignation : l'en-tete "FILE DE REPARATION" doit rester
             # la premiere ligne lue (test pinne), l'ardoise vient en rappel.
             print_lane_record(lane_record)
@@ -4391,7 +4591,7 @@ def main(argv: list[str] | None = None) -> int:
         print_infra_rerun(backlog)
         print_dwell_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
-        print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
+        print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
     pool = fetch_pool(
@@ -4610,6 +4810,7 @@ def main(argv: list[str] | None = None) -> int:
                           "cause": c} for it, c in withheld],
             "dwell_hours": args.dwell_hours,
             "admit_reason": args.admit_reason,
+            "wip_reason": args.wip_reason,
             "series_measured": series_err is None,
             "series_error": series_err,
             "series_zones": sorted(
@@ -4773,6 +4974,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
               f"a reparer ({numbers}).")
         print("   La justification doit etre ECRITE sur chacune, pas seulement invoquee ici.")
+    if args.ignore_wip and backlog.get("wip_triggered"):
+        print(f"!! --ignore-wip : {backlog.get('wip_count')} PR(s) ouverte(s) "
+              f"(plafond {backlog.get('wip_cap')}) restent au-dessus du plafond.")
+        print(f"   Justification ({args.wip_reason!r}) a reporter sur l'issue")
+        print("   retenue -- le passage outre ne se prend pas en silence.")
     penalized = ", ".join(args.prev_genre)
     print(f"Lane {args.lane} | graine {stamp}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
