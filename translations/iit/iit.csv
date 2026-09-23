@@ -6493,7 +6493,7 @@ Le **Gate 24** (phase 2, GPU) tranchera la question causale : si le clamp sélec
 
 ### Pont causal do-calculus
 
-L'opérateur `do` de Pearl est ici implicite : le Gate 24 **réalise** un `do(workspace = clampé)` — une intervention chirurgicale sur le graphe, contre un `do(autant de features aléatoires = clampées)`. La même armature formelle traverse la série : voir le [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb), qui exécute l'échelle de Pearl et les trois règles sur `dowhy` (identification backdoor/front-door + estimation + réfutation), et relie cette série à Tweety-11, Infer-5 et PyMC-5.
+L'opérateur `do` de Pearl est ici implicite : le Gate 24 **réalise** un `do(workspace = clampé)` — une intervention chirurgicale sur le graphe, contre un `do(autant de features aléatoires = clampées)`. La même armature formelle traverse la série : voir le [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb), qui exécute l'échelle de Pearl et les trois règles sur `dowhy` (identification backdoor/front-door + estimation + réfutation), et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 
 ",,,,,,,,5e4171f2e798f3f2,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,88dc0e55,markdown,fr,e07bc53f76d54469,"## Références
@@ -7424,7 +7424,7 @@ littérature multi-échelle.
 - [ICT-0 — Cadrage](ICT-0-Framing.md) : place de ce notebook dans la feuille de route.
 
 ### Pour aller plus loin
-- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles du do-calculus, paradigme interventionniste) exécutée sur `dowhy`, à mettre en regard de l'émergence causale de Hoel (information effective) de ce notebook.
+- **[Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles du do-calculus, paradigme interventionniste) exécutée sur `dowhy`, à mettre en regard de l'émergence causale de Hoel (information effective) de ce notebook.
 
 - Hoel, E. (2017). *When the map is better than the territory*. **Entropy**.
 - Jansma, A. & Hoel, E. (2025). *Engineering Emergence*. arXiv.
@@ -7804,7 +7804,7 @@ niveau d'echelles au **do-calculus** (la même intervention uniforme `do` levee 
 - [ICT-0 — cadrage de la serie](ICT-0-Framing.md) — feuille de route, articles fondateurs.
 - [ICT-2 — self-sorting morphogenesis](ICT-2-SelfSortingMorphogenesis.ipynb) — le système source.
 - [ICT-5 — emergence causale (pyphi.macro)](ICT-5-CausalEmergence.ipynb) — l'approche bornee complementaire.
-- [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
+- [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 - Erik Hoel, *Causal Emergence 2.0*, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025.",,,,,,,,b16e4e65a781e67c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,ec41a453,markdown,fr,819f82eb1ffc5626,"# ICT-7 — Signatures *scale-free* & criticalite
 
