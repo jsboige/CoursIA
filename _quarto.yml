@@ -675,7 +675,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb"
-    - "MyIA.AI.Notebooks/GenAI/Texte/23_TAL_Du_Mot_Aux_Dependances.ipynb"
+    - "MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/06_PDF_Web_Search.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/07_Code_Interpreter.ipynb"
