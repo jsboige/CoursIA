@@ -26,6 +26,40 @@ Cette distinction motive l’[Epic de digestion et exposition des preuves du cor
 
 Cet Epic est une discipline **interne** avant d’être une politique d’acquisition : il s’applique d’abord aux lakes, preuves et notebooks que CoursIA possède déjà, puis aux futurs résultats produits dans le dépôt. Il ne transforme ni Leiden ni Palomar en mandat d’étendre indéfiniment le périmètre scientifique de CoursIA. Les résultats externes ne sont considérés qu’au compte-gouttes, lorsqu’un besoin pédagogique préexistant les appelle.
 
+## La Boussole : de l’interprétation à la preuve formelle
+
+L’Epic #13105 se déploie selon un parcours en trois temps — **apprendre, extraire, prouver** — que la littérature récente de l’interprétabilité mécaniste et de la formalisation permet aujourd’hui de nommer et de relier. Cette Boussole n’est pas un programme nouveau : c’est une lecture transverse de ce que CoursIA fait déjà, articulée pour qu’un lecteur extérieur puisse en suivre le fil sans avoir à reconstituer les épisodes.
+
+**Apprendre.** Le grokking observé par R02 (Nanda et al., 2023, [`arXiv:2201.02177`](https://arxiv.org/abs/2201.02177) — phase tardive où un réseau dépasse la mémorisation et accède à une structure algorithmique) montre qu’un modèle peut converger au-delà de ses performances d’entraînement. Pour CoursIA, ce temps correspond à la phase d’accumulation disciplinée des notebooks, des preuves et des lakes — sans garantie que la performance finale en soit lisible.
+
+**Extraire.** R03 (Michaud et al., 2024, [`arXiv:2402.05110`](https://arxiv.org/abs/2402.05110) — *program synthesis via mechanistic interpretability*) montre qu’à partir d’un réseau grokké, on peut extraire un programme lisible. Côté CoursIA, ce geste est porté par les organes d’interprétabilité (harnais SAE Qwen, #10355), par les notebooks d’AST et de circuits, et par les passages qui reconstruisent un algorithme identifiable à partir d’un artefact neuronal. L’extraction n’est pas seulement technique : elle exige de choisir le niveau d’abstraction où le programme devient *lisible par un humain*, et ce choix est pédagogique avant d’être mathématique.
+
+**Prouver.** R15 (Bentkamp et al., 2025, [`arXiv:2502.07565`](https://arxiv.org/abs/2502.07565) — *vericoding*), cité par R14 §3.3.1, démontre que la sortie d’un modèle peut être accompagnée d’une preuve formelle vérifiée par un noyau. La chaîne Tao *Mathematics in the Age of AI* propose précisément ce contrat : génération, vérification, exposition, puis digestion dans un corpus humainement cohérent. Lean-19 Sendov, Lean-20 Analysis I et Lean-21 PFR sont trois premières mailles locales de cette chaîne.
+
+**Les deux directions de l’intersection.** La Boussole distingue deux usages distincts de la preuve formelle appliquée à l’IA :
+
+- *Prouver des réseaux* — montrer qu’une propriété d’un modèle tient (robustesse, équité, absence de porte dérobée). R12 (*Towards Guaranteed Safe AI*, Dalrymple et al., 2024, [`arXiv:2405.06624`](https://arxiv.org/abs/2405.06624), distillé dans #17216) trace cette direction et la relie à la triade *world/solver/verifier*.
+- *Utiliser l’IA pour prouver* — outiller la formalisation elle-même. Notre chaîne Epic #13105 vit ici : Lean comme cible, agents et notebooks comme exposants.
+
+Ces deux directions ne sont pas séparables : un *verifier* qui s’appuie sur du Lean gagné par un modèle est exposé aux mêmes questions d’attribution qu’un réseau dont on prouve la correction.
+
+**Questions ouvertes que la Boussole ne tranche pas.**
+
+- *Échelle* — jusqu’où la vérification formelle reste-t-elle lisible quand le modèle et la preuve grandissent ensemble ? La lecture de Sendov ou de PFR tient parce que le périmètre reste borné ; le seuil où la preuve cesse d’être un cours est empirique et non garanti.
+- *Réduction symbolique* — l’extraction par R03 produit un programme MIPS lisible, mais la translation vers une théorie de bibliothèques (Mathlib, PFR) reste un travail humain. L’écart entre *extraction* et *digestion* est précisément le périmètre de l’Epic #13105.
+- *Niveau d’understanding* — qu’est-ce qu’une preuve formelle *comprise* ? La Boussole distingue la validité du noyau (technique) et la lisibilité du récit (pédagogique) ; elle ne prétend pas les confondre.
+- *Prouver l’absence de capacités* — c’est la question inverse de la triade W/S/V, et la plus difficile : on prouve plus facilement la présence d’une capacité (par témoin) que son absence.
+
+**Sources principales de la Boussole** (archivées au gisement partagé, jamais committées) :
+
+- R01 — *AI Feynman 2.0 — Pareto-optimal symbolic regression exploiting graph modularity* ([`arXiv:2006.10782`](https://arxiv.org/abs/2006.10782)) · sha8 `F01E25E3`
+- R03 — *Opening the AI black box — program synthesis via mechanistic interpretability* ([`arXiv:2402.05110`](https://arxiv.org/abs/2402.05110)) · sha8 `690A0E86`
+- R10 — *Not All Language Model Features Are One-Dimensionally Linear* ([`arXiv:2405.14860`](https://arxiv.org/abs/2405.14860)) · sha8 `7DEAC929`
+- R12 — *Towards Guaranteed Safe AI* ([`arXiv:2405.06624`](https://arxiv.org/abs/2405.06624)), distillation #17216
+- R14 — *Open Problems in Mechanistic Interpretability* ([`arXiv:2501.16496`](https://arxiv.org/abs/2501.16496)) · sha8 `9A50CDC6`
+- R15 — *Vericoding* ([`arXiv:2502.07565`](https://arxiv.org/abs/2502.07565))
+- Terry Tao, *Mathematics in the Age of AI*, ICM 2026 ([`arXiv:2608.16753`](https://arxiv.org/abs/2608.16753))
+
 ## Principes, pratiques, preuves et engagements
 
 | Principe de Leiden | Pratique CoursIA actuelle | Preuve consultable | Lacune reconnue | Engagement |
