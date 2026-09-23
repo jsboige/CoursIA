@@ -76,38 +76,15 @@ concurrency:
 jobs:
   sweep:
     name: Update stale PR branches (delegated to the #16149 organ)
-    # Self-hosted Linux pool, comme les autres sweeps gh-driven de ce depot :
-    # mandat user de consommer les runs conteneurises ; la file GitHub-hosted
-    # mesure 1.6-2.2 h sur ce genre de job (#12728).
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397, meme profil que stale-guard-red-sweep.yml) :
+    # balayage cron pur-Python -- `gh` preinstalle + `python3`, aucun secret
+    # ni toolchain locale. Routage #14283 inverse : retour sur ubuntu-latest
+    # et sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout (the pilot lives in the repo)
         uses: actions/checkout@v4
-
-      - name: Bootstrap gh into the persistent toolcache
-        # L'image coursia-linux (#14171) ne livre pas gh ; installation une
-        # fois dans le volume toolcache, reutilisee par chaque sweep suivant.
-        env:
-          GH_BOOTSTRAP_VERSION: "2.80.0"
-        run: |
-          set -uo pipefail
-          if command -v gh >/dev/null 2>&1; then
-            echo "[gh] preinstalled on this runner"
-            gh --version
-            exit 0
-          fi
-          GH_BIN="/opt/hostedtoolcache/bin/gh"
-          if [ ! -x "$GH_BIN" ]; then
-            VER="${GH_BOOTSTRAP_VERSION}"
-            echo "[gh] bootstrapping v${VER} into toolcache (one-time, cached)"
-            curl -fsSL "https://github.com/cli/cli/releases/download/v${VER}/gh_${VER}_linux_amd64.tar.gz" -o /tmp/gh.tgz
-            tar -xzf /tmp/gh.tgz -C /tmp
-            mkdir -p /opt/hostedtoolcache/bin
-            mv "/tmp/gh_${VER}_linux_amd64/bin/gh" "$GH_BIN"
-          fi
-          echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
-          "$GH_BIN" --version
 
       - name: Sweep stale PR branches
         env:

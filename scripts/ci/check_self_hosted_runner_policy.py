@@ -168,7 +168,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
     #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
     #   la PR (l'entree disparait de l'allowlist).
-    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",
@@ -208,7 +207,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
     # population, meme requete ; seule la branche de remediation differe.
     # Ne pas creer un troisieme organe").
-    "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
     # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
     #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
@@ -227,16 +225,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "review-coverage-advisory.yml",
     "slides-build-advisory.yml",
     "slow-lane.yml",
-    "stale-guard-red-sweep.yml",
-    # #16915 (owner myia-po-2026:CoursIA) : pilote de sweep des branches de
-    #   PR en retard -- delegue chaque numero a l'organe update_stale_pr_
-    #   branches.py (#16149, jamais invoque : --pr requis). Cron quotidien
-    #   (schedule + workflow_dispatch) pur-Python + gh bootstrap toolcache,
-    #   meme profil que stale-guard-red-sweep : GH_TOKEN avec pull-requests:
-    #   write (update-branch), plafond --max-updates 3, aucun trigger
-    #   pull_request -> aucune garde same-repo requise (tranche 4 #14283).
-    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
-    "stale-pr-branches-sweep.yml",
     "translation-parity.yml",
     "twin-parity-cron.yml",
     "twin-parity-drift-audit.yml",
@@ -314,7 +302,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
-    "pr-gate-rerun.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
     # registre TRANCHE7 (demande user 2026-09-05, owner myia-po-2023:CoursIA)
