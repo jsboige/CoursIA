@@ -21,6 +21,7 @@ tmp_path subdir so no directory is ever created next to the module file.
 """
 from __future__ import annotations
 
+import ast
 import io
 import importlib.util
 import logging
@@ -331,3 +332,115 @@ def test_get_java_home_returns_env_when_set(monkeypatch):
 def test_get_java_home_none_when_unset(monkeypatch):
     monkeypatch.delenv("JAVA_HOME", raising=False)
     assert jdk.get_java_home() is None
+
+
+# --------------------------------------------------------------------------
+# Guard: PATH stays neutralised around setup_java_environment
+# --------------------------------------------------------------------------
+#
+# `setup_java_environment` prepends `<jdk>/bin` to `os.environ["PATH"]` and
+# NEVER restores it -- deliberate, its docstring says "pour cette session"
+# (the portable-JDK bootstrap is meant to leave the session usable).
+#
+# The four tests above that call it are therefore safe only BY ACCIDENT: each
+# one happens to `monkeypatch.setenv("PATH", ...)` first, so pytest's teardown
+# restores the pre-test value and incidentally rolls back the function's direct
+# write. `monkeypatch` only reverts what IT set; a direct
+# `os.environ["PATH"] = ...` inside the code under test is invisible to it.
+#
+# Drop that one preamble line from any of those tests and the leak becomes
+# silent and SESSION-WIDE: a tmp_path JDK bin dir at the head of PATH for every
+# test module collected afterwards, on the same process. The damage surfaces as
+# unrelated flakes elsewhere -- the failure class #17172 spent a fix on
+# (`scripts/tests/test_merge_dwell.py` resolved `git` through a PATH that a
+# prior test had diverted; that polluter was never pinned). A repo-wide search
+# finds exactly three direct `os.environ["PATH"]` writes, and this is the only
+# one reachable from a test body.
+#
+# So the invariant to pin is not "the function restores PATH" (it does not, by
+# design) but "every test calling it neutralises PATH first". That is a property
+# of the SOURCE, so the guard reads the source -- and is itself controlled below
+# by a synthetic absence case, so a predicate that stopped discriminating would
+# fail here instead of passing vacuously.
+
+
+def _est_appel_setup(noeud: ast.AST) -> bool:
+    """True for a real call to setup_java_environment (not a setattr string)."""
+    if not isinstance(noeud, ast.Call):
+        return False
+    fonction = noeud.func
+    return (
+        isinstance(fonction, ast.Attribute)
+        and fonction.attr == "setup_java_environment"
+    ) or (isinstance(fonction, ast.Name) and fonction.id == "setup_java_environment")
+
+
+def _est_setenv_path(noeud: ast.AST) -> bool:
+    """True for monkeypatch.setenv("PATH", ...)."""
+    if not (isinstance(noeud, ast.Call) and isinstance(noeud.func, ast.Attribute)):
+        return False
+    if noeud.func.attr != "setenv" or not noeud.args:
+        return False
+    premier = noeud.args[0]
+    return isinstance(premier, ast.Constant) and premier.value == "PATH"
+
+
+def _analyse_appelants(arbre: ast.Module) -> list[tuple[str, bool]]:
+    """(test name, PATH neutralised BEFORE the call) for every top-level test
+    that calls setup_java_environment."""
+    resultats: list[tuple[str, bool]] = []
+    for noeud in arbre.body:
+        if not isinstance(noeud, ast.FunctionDef) or not noeud.name.startswith("test_"):
+            continue
+        positions_setenv = [
+            (n.lineno, n.col_offset) for n in ast.walk(noeud) if _est_setenv_path(n)
+        ]
+        positions_appel = [
+            (n.lineno, n.col_offset) for n in ast.walk(noeud) if _est_appel_setup(n)
+        ]
+        if not positions_appel:
+            continue
+        premier_appel = min(positions_appel)
+        resultats.append(
+            (noeud.name, any(p < premier_appel for p in positions_setenv))
+        )
+    return resultats
+
+
+def test_les_appelants_neutralisent_path_avant_lappel():
+    arbre = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    resultats = _analyse_appelants(arbre)
+    assert resultats, (
+        "guard not vacuous: no top-level test of this file calls "
+        "setup_java_environment -- the predicate or the file changed"
+    )
+    fautifs = [nom for nom, neutralise in resultats if not neutralise]
+    assert not fautifs, (
+        "these tests call setup_java_environment without monkeypatch."
+        'setenv("PATH", ...) first: ' + ", ".join(fautifs) + ". The function "
+        "prepends <jdk>/bin to os.environ['PATH'] and never restores it, so "
+        "without that preamble the leak is silent and session-wide (#17172)."
+    )
+
+
+def test_le_predicat_discrimine_labsence_de_preamble():
+    """Negative control: the predicate must be False when the preamble is
+    absent, True when present. Without this, a predicate that always returned
+    True would make the guard above pass while guarding nothing."""
+    sans_preamble = ast.parse(
+        "def test_x(monkeypatch, tmp_path):\n"
+        "    jdk.setup_java_environment(tmp_path)\n"
+    )
+    avec_preamble = ast.parse(
+        "def test_y(monkeypatch, tmp_path):\n"
+        '    monkeypatch.setenv("PATH", "/usr/bin")\n'
+        "    jdk.setup_java_environment(tmp_path)\n"
+    )
+    # A setattr naming the function is NOT a call and must not be counted.
+    setattr_seul = ast.parse(
+        "def test_z(monkeypatch):\n"
+        '    monkeypatch.setattr(jdk, "setup_java_environment", lambda h: True)\n'
+    )
+    assert _analyse_appelants(sans_preamble) == [("test_x", False)]
+    assert _analyse_appelants(avec_preamble) == [("test_y", True)]
+    assert _analyse_appelants(setattr_seul) == []

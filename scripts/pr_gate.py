@@ -582,6 +582,49 @@ def _pending_label(name: str, status: str, conclusion: str) -> str:
     return f"{name} [{status or 'none'}/{conclusion or 'none'}]"
 
 
+def _is_advisory_name(name: str, advisory_jobs: frozenset[str]) -> bool:
+    """Whether `name` is routed to the advisory bucket by `classify`.
+
+    Extracted so `classify` and `unconcluded_with_inflight_successor` cannot
+    drift: the advisory test consults the job name (conventional path) AND,
+    when the job name alone does not match, the workflow-name roster. A second
+    copy of this rule would eventually disagree with the first, and the
+    disagreement would show up as an advisory check holding the gate open.
+    """
+    workflow_label = "advisory" if name in advisory_jobs else ""
+    return bool(is_advisory(name, workflow_label) or workflow_label)
+
+
+def unconcluded_with_inflight_successor(
+    checks: Sequence[dict],
+    self_name: str = DEFAULT_SELF_NAME,
+    advisory_jobs: frozenset[str] = frozenset(),
+) -> list[str]:
+    """Blocking check names that never concluded AND whose successor is coming.
+
+    These are the records that must NOT be read as settled. `wait_and_decide`
+    calls this before its fail-fast branch: a name here is a supersession in
+    progress, not a verdict about the code, so the loop keeps polling (bounded
+    by the existing deadline) until the replacement check-run surfaces.
+
+    Reads the `successor_run_inflight` marker attached by
+    `mark_inflight_successors`; the `dedupe_latest` call mirrors `classify` so
+    both functions judge the SAME entry per name.
+    """
+    names: list[str] = []
+    for check in dedupe_latest(checks):
+        name = check.get("name") or "<unnamed>"
+        if name == self_name or name.startswith(f"{self_name} /"):
+            continue
+        if _is_advisory_name(name, advisory_jobs):
+            continue
+        if (check.get("conclusion") or "").lower() not in CONCLUSION_UNCONCLUDED:
+            continue
+        if check.get("successor_run_inflight"):
+            names.append(name)
+    return sorted(names)
+
+
 def classify(
     checks: Sequence[dict],
     self_name: str = DEFAULT_SELF_NAME,
@@ -648,10 +691,7 @@ def classify(
         # three workflows whose job name does not carry the marker even though
         # the workflow does). Both signals are substring checks against the
         # ADVISORY_MARKER -- case-insensitive.
-        workflow_label = ""
-        if name in advisory_jobs:
-            workflow_label = "advisory"
-        if is_advisory(name, workflow_label) or workflow_label:
+        if _is_advisory_name(name, advisory_jobs):
             if conclusion not in CONCLUSION_OK:
                 state = conclusion or status or "no verdict"
                 advisory.append(f"{name} ({state})")
@@ -928,6 +968,66 @@ def _gh_api(path: str) -> object:
         return json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
+
+
+# --- transient vs permanent API failures (#17262) ---------------------------
+#
+# `_gh_api` is fatal on any failure, and rule 1 says an unreadable state is a
+# failure, never a pass. That stays. What #17262 measured is a narrower defect:
+# the wait loop's whole design is to NOT conclude too early -- 90 polls of 30 s,
+# a delivery canary, and even a re-read at the deadline added by #11751 because
+# a timeout falling between two polls fabricated a false FAIL -- yet a SINGLE
+# transient API error abandoned all 90 polls. `fetch_checks` calls `_gh_api`
+# once per page plus once for `/status`, so any one of them returning a 403
+# killed the entire wait. Four PRs carried that red on 2026-09-21 with no
+# content defect: the gate could not read, and rendered a FAIL
+# indistinguishable from a red check.
+#
+# The classification is deliberately asymmetric. Only a *recognised* transient
+# signature is retried; every permanent signature -- and anything unrecognised
+# -- fails immediately, exactly as before. The default direction of an unknown
+# error is therefore "fatal", which is the rule-1-preserving side.
+PERMANENT_API_MARKERS = (
+    " 404",
+    "not found",
+    "no commit found",
+)
+TRANSIENT_API_MARKERS = (
+    "rate limit",
+    " 403",
+    " 429",
+    " 500",
+    " 502",
+    " 503",
+    " 504",
+    "timed out",
+    "timeout",
+    "non-json",
+    "connection reset",
+    "connection refused",
+    "could not resolve host",
+    "tls handshake",
+    "unexpected eof",
+    "server error",
+)
+
+# Consecutive retries, not a total: the counter is reset by a successful read.
+# A single hiccup is what was measured -- all four PRs died on the first error.
+# A run of this many in a row is an exhausted quota rather than a hiccup, and
+# the gate should stop spending its budget on it.
+MAX_CONSECUTIVE_TRANSIENT_RETRIES = 5
+
+
+def _is_transient_api_error(exc: BaseException) -> bool:
+    """True when re-reading could plausibly succeed.
+
+    Permanent signatures win over transient ones, and an unrecognised error is
+    NOT transient: an unknown failure keeps the historical fatal behaviour.
+    """
+    text = str(exc).lower()
+    if any(marker in text for marker in PERMANENT_API_MARKERS):
+        return False
+    return any(marker in text for marker in TRANSIENT_API_MARKERS)
 
 
 def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
@@ -1219,6 +1319,13 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                     # the field but this projection dropped it.
                     "completed_at": run.get("completed_at"),
                     "id": run.get("id"),
+                    # #17031: the check-run's `details_url` is the ONLY way to
+                    # trace a check back to the workflow run that produced it
+                    # (`/actions/runs/<run_id>/job/<job_id>`). Without it the
+                    # gate cannot ask the single question that separates a
+                    # cancelled-from-famine check from a cancelled-because-
+                    # superseded one -- see `mark_inflight_successors`.
+                    "details_url": run.get("details_url"),
                 }
             )
         if not page_runs:
@@ -1249,7 +1356,112 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                 }
             )
 
+    # #17031: a `cancelled` conclusion is in CONCLUSION_BAD on the premise that
+    # "after de-duplication it can no longer mean superseded". That premise has
+    # one hole, and it is the whole of this fix: `dedupe_latest` compares
+    # CHECK-RUNS, so a supersession whose replacement run has not created its
+    # check-run YET is invisible to it. Measured on PR #17031 -- two
+    # `pull_request` deliveries 2 s apart, the first wave cancelled by the
+    # per-PR `cancel-in-progress` group, and the gate settled at 07:20:46: 26 s
+    # after the second wave was created and 59 s BEFORE the successor check-run
+    # of `Scripts Tests (CPU)` even started. It published a permanent FAIL
+    # naming two cancelled checks whose successors both went green, and that
+    # verdict could only be cleared by a hand re-run.
+    #
+    # The runs list is fetched ONLY when an unconcluded record is present (the
+    # common PR has none), so the extra call is not paid on the happy path.
+    if any(
+        (check.get("conclusion") or "").lower() in CONCLUSION_UNCONCLUDED
+        for check in checks
+    ):
+        mark_inflight_successors(checks, _fetch_workflow_runs(repo, sha))
+
     return checks
+
+
+def _fetch_workflow_runs(repo: str, sha: str) -> list[dict]:
+    """All workflow runs of one head SHA (`actions/runs`, paginated).
+
+    Distinct from `fetch_checks`: `actions/runs` is the WORKFLOW-level view, and
+    it is the only surface that shows a run which exists but whose check-run has
+    not been created yet. Paginated for the same reason as `fetch_checks`: this
+    repository routinely carries >100 runs per head.
+    """
+    runs: list[dict] = []
+    page = 1
+    while True:
+        payload = _gh_api(
+            f"repos/{repo}/actions/runs?head_sha={sha}"
+            f"&per_page=100&page={page}"
+        )
+        if not isinstance(payload, dict):
+            break
+        page_runs = payload.get("workflow_runs", [])
+        runs.extend(page_runs)
+        total = payload.get("total_count")
+        if not page_runs or (total is not None and len(runs) >= total):
+            break
+        page += 1
+    return runs
+
+
+# `/actions/runs/<run_id>/job/<job_id>` -- the trailing `/job/<id>` is optional
+# because the same URL is served without it for a whole-run check.
+_DETAILS_RUN_RE = re.compile(r"/actions/runs/(?P<run_id>\d+)(?:/job/\d+)?")
+
+
+def _run_id_of(check: Mapping) -> str | None:
+    """The workflow run id carried by a check-run's `details_url`, or None.
+
+    Legacy commit statuses have no `details_url`; they yield None and keep the
+    historical behaviour (no successor question asked).
+    """
+    match = _DETAILS_RUN_RE.search(check.get("details_url") or "")
+    return match.group("run_id") if match else None
+
+
+def mark_inflight_successors(checks: list[dict], runs: Sequence[Mapping]) -> None:
+    """Attach `successor_run_inflight` to every unconcluded check that has one.
+
+    Pure (no network) so the decision is unit-testable: `fetch_checks` supplies
+    the two observations and this function derives the marker.
+
+    A check gets the marker when the SAME workflow has a STRICTLY NEWER run on
+    the same head SHA. The comparison is on `created_at`, not on run id: the
+    module docstring of `dedupe_latest` already records that `actions/runs` ids
+    are NOT monotonic across attempts (an attempt=2 of an old run keeps a smaller
+    id while starting later), so id ordering would be exactly the wrong
+    instrument here.
+    """
+    by_id: dict[str, Mapping] = {}
+    newest_by_workflow: dict[object, str] = {}
+    for run in runs:
+        run_id = str(run.get("id") or "")
+        if run_id:
+            by_id[run_id] = run
+        workflow_id = run.get("workflow_id")
+        if workflow_id is None:
+            continue
+        created = str(run.get("created_at") or "")
+        if workflow_id not in newest_by_workflow or (
+            created > newest_by_workflow[workflow_id]
+        ):
+            newest_by_workflow[workflow_id] = created
+
+    for check in checks:
+        check["successor_run_inflight"] = False
+        if (check.get("conclusion") or "").lower() not in CONCLUSION_UNCONCLUDED:
+            continue
+        owner = by_id.get(_run_id_of(check) or "")
+        if owner is None:
+            continue
+        workflow_id = owner.get("workflow_id")
+        if workflow_id is None:
+            continue
+        if newest_by_workflow.get(workflow_id, "") > str(
+            owner.get("created_at") or ""
+        ):
+            check["successor_run_inflight"] = True
 
 
 def wait_and_decide(
@@ -1295,17 +1507,79 @@ def wait_and_decide(
     bad: list[str] = []
     adv_jobs = advisory_jobs or frozenset()
     timeouts = declared_timeouts or {}
+    transient_reads = 0
 
     while True:
-        checks = fetch(repo, sha)
+        try:
+            checks = fetch(repo, sha)
+        except GateError as exc:
+            # #17262 -- a transient hiccup must not cost the gate its remaining
+            # budget. The retry is bounded by the SAME absolute deadline, so
+            # `--timeout-min` is never extended, and by a consecutive-attempt
+            # cap so a persistent outage cannot spend the whole window on
+            # re-reads. A state still unreadable when either bound is reached
+            # re-raises: `main` then renders the rule-1 FAIL, with the cause
+            # and the retry count named instead of a bare API string.
+            if not _is_transient_api_error(exc):
+                raise
+            transient_reads += 1
+            if (
+                transient_reads > MAX_CONSECUTIVE_TRANSIENT_RETRIES
+                or now() >= deadline
+            ):
+                raise GateError(
+                    f"{exc} -- {transient_reads} transient read failure(s) in a "
+                    "row: the check state stayed unreadable (rule 1)"
+                ) from exc
+            print(
+                f"[pr-gate] transient API error, retry {transient_reads}/"
+                f"{MAX_CONSECUTIVE_TRANSIENT_RETRIES} in {poll_sec:.0f}s: {exc}",
+                flush=True,
+            )
+            sleep(poll_sec)
+            # Deliberately NOT touching quiet_streak: a failed read is not a
+            # quiet poll, and counting it as one would let an outage settle the
+            # wait into a PASS -- the one direction rule 1 forbids.
+            continue
+        transient_reads = 0
         pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
         if detail is not None:
             detail["advisory"] = list(advisory)
 
         if bad:
-            # Fail fast: a failure cannot be undone by waiting longer.
-            _report_advisory(advisory)
-            return verdict(pending, bad, settled=True, declared_timeouts=timeouts)
+            # #17031: the fail-fast premise -- "a failure cannot be undone by
+            # waiting longer" -- holds for a REAL red and fails for a check that
+            # never concluded. A supersession cancel is undone by waiting
+            # exactly as long as the replacement run needs to create its
+            # check-run, and that is the one case where the successor is
+            # provably already on its way (see `mark_inflight_successors`).
+            #
+            # This cannot leak a pass: `verdict` exits 1 on EVERY branch (rule
+            # 1, documented on the function itself), and the deadline path
+            # re-reads the check set before deciding. Waiting can only convert
+            # this into a pass when a NEWER check-run for the same job is
+            # genuinely green -- which is precisely what `dedupe_latest` already
+            # treats as the job's verdict.
+            inflight = unconcluded_with_inflight_successor(
+                checks, self_name, adv_jobs
+            )
+            if not inflight:
+                # Fail fast: a failure cannot be undone by waiting longer.
+                _report_advisory(advisory)
+                return verdict(
+                    pending, bad, settled=True, declared_timeouts=timeouts
+                )
+            print(
+                f"[pr-gate] holding: {len(inflight)} cancelled check(s) whose "
+                "replacement run already exists -- waiting for its check-run: "
+                f"{', '.join(inflight[:6])}"
+                f"{' ...' if len(inflight) > 6 else ''}",
+                flush=True,
+            )
+            # Join them to `pending` so the EXISTING settle/deadline machinery
+            # treats them as "not yet decided" rather than as a verdict. No new
+            # branch is introduced: this reuses the wait path verbatim.
+            pending = sorted(set(pending) | set(inflight))
 
         if pending:
             quiet_streak = 0
@@ -1334,6 +1608,12 @@ def wait_and_decide(
             # even though the set is fully green. Re-read the state once more
             # before deciding -- a timeout is a signal to look again, not a
             # verdict in itself (same shape as `select()` with a deadline).
+            # #17262 -- this re-read is deliberately NOT retried, unlike the
+            # loop's own read above. We are at the deadline by construction, so
+            # a retry here could only extend `--timeout-min` (acceptance 3), and
+            # falling back to the previous read is not available either: that
+            # read is exactly the one #11751 proved misleading. A failure here
+            # therefore propagates and `main` renders the rule-1 FAIL.
             final_checks = fetch(repo, sha)
             final_pending, final_bad, final_ok, final_advisory = classify(
                 final_checks, self_name, adv_jobs
