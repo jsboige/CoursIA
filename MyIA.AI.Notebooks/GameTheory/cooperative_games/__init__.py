@@ -65,6 +65,8 @@ from .assistance_games import (
     off_switch_game,
     off_switch_analysis,
     off_switch_metauncertain,
+    off_switch_margin_analysis,
+    off_switch_margin_report,
     AssistanceGame,
     paperclip_vs_coordination_comparison,
     PaperclipGameResult,
