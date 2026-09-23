@@ -25,16 +25,6 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    blocs *résiduels* `h ↦ h + f h` la voit **minorée** par `(1-c) ^ n` (survie,
    ancre `3e-5 < 0,6 ^ 20`) — le raccourci identité (He et al. 2015) rend
    géométriquement improbable ce que la pile plain tue géométriquement.
-4. **Module `Grokking`** — théorie effective du grokking (Liu, Michaud, Tegmark ;
-   arXiv:2205.10343), tranche R02 du corpus Tegmark (#16741, #16752) :
-   parallélogrammes de représentation (Déf. 1, Props 1-2 : perte nulle ⟹
-   parallélogrammes permis ; décodeur injectif ⟹ formation) et lois de conservation
-   de la perte effective `ℓ_eff = ℓ₀/Z₀` (Appendice F) : `Z₀` conservée le long du
-   flot de `ℓ_eff`, `C` conservée le long du flot de `ℓ₀`, et — complément honnête
-   au papier — le terme résiduel `dC/dt = (2ℓ₀/Z₀²)·C` omis par la preuve de
-   l'Appendice F, d'où l'invariance de l'hyperplan centré `C = 0`.
-
-
 4. **Module `EffectiveTheory`** — digestion #16741/arc B (issue #16752) :
    théorie effective de la représentation (corpus Tegmark R02/R06/R10) —
    R02 *Grokking* : δ-parallélogrammes (Déf. 1), Prop. 1 (perte nulle ⟹
@@ -48,7 +38,10 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) est
    **irréductible** (`circleOfDays_irreducible` — aucune droite stable, le
    discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre
-   réelle).
+   réelle). S'y ajoute le module frère **`GrokkingLemmas`** (recadrage
+   #16752) : conservation de `C` le long du flot de `ℓ₀` sans hypothèse,
+   invariance de l'hyperplan centré le long du flot effectif, lemmes
+   génériques de calcul différentiel.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -71,12 +64,14 @@ argument ERM dans `ERM`).
   d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme (`‖wₖ‖² ≤ kR²`) sont
   entièrement prouvés, ainsi que le **serrage** `novikoff_bound_is_sharp` (témoin
   sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
-  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry. Côté Grokking,
-  Props 1-2 (`prop1_zeroLoss`, `prop2_injectiveDecoder`) et les lois de
-  conservation (`Z0_conserved`, `C_conserved_l0`, `deriv_C_along_eff`,
-  `meanZero_invariant`) sont 0-sorry.
+  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry. Côté
+  EffectiveTheory, Props 1-2 (`prop1_zeroLoss`, `prop2_injectiveDecoder`),
+  les identités de l'appendice F (`loss0_grad_sum_zero`,
+  `loss0_grad_dot_self`) et les lois de conservation
+  (`flow_sumsq0_constant`, `flow_deriv_sum_apply` ; côté `GrokkingLemmas` :
+  `C_conserved_l0`, `meanZero_invariant`, `Z0_conserved`) sont 0-sorry.
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
-  `lake build GradientFlow` / `lake build Grokking` (dépend de Mathlib4)
+  `lake build GradientFlow` / `lake build EffectiveTheory` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -188,7 +183,7 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `GradientFlow/Residual.lean` | 0 | Bloc résiduel `residualBlock` (`h ↦ h + f h`, He et al. 2015) + pile `residualStack` : lemme central (`residualStack_deriv_bound` via l'anti-inégalité triangulaire), **minoration** `abs_deriv_residualStack_ge` (`(1-c) ^ n ≤ \|g'\|`), ancre jumelle `three_fifths_pow_twenty_gt` (`3e-5 < 0,6 ^ 20`). |
 | `GradientFlow.lean` | 0 | Imports parapluie + **grille de digestion 10 points** (énoncé, provenance He/Veit, nouveauté, dépendances, trivial/neuf, friction, chemin de découverte, limites, raccord corpus, transmission). |
 
-### Module `Grokking` (théorie effective du grokking, R02 du corpus Tegmark)
+### Module `EffectiveTheory` (théorie effective de la représentation, corpus Tegmark #16741)
 
 Addition modulaire jouet sur `Fin p` : le modèle `M = (Dec, R)` plonge chaque
 entier `k` en `E k` ; l'entraînement à perte nulle exige `Dec (E i + E j) =
@@ -197,25 +192,30 @@ par la dynamique de ces plongements sous la perte effective `ℓ_eff = ℓ₀/Z�
 
 | Fichier | sorry | Contenu |
 |---------|-------|---------|
-| `Grokking/Effective.lean` | 0 | **Déf. 1 + Props 1-2** : `IsParallelogram` (`E i + E j = E m + E n`), `prop1_zeroLoss` (perte nulle + étiquettes injectives ⟹ tout parallélogramme est permis `i + j = m + n`), `prop2_injectiveDecoder` (perte nulle + décodeur injectif + `i + j = m + n` ⟹ formation du parallélogramme), ensemble des quadruples permis `permissible`. Énoncés purement algébriques (groupe abélien `V` quelconque, aucune topologie). |
-| `Grokking/Conservation.lean` | 0 | **Appendice F, lois de conservation** : `loss0_translate`/`loss0_smul` (les deux symétries de ℓ₀ — les identités `∑ ∂ℓ₀/∂E_k = 0` et `= 2ℓ₀` sans calcul de gradient), `euler_zero_homogeneous` + `fderiv_of_translateInvariant` + `eq_of_hasDerivAt_zero` (trois lemmes généraux de calcul différentiel), `Z0_conserved` (Z₀ conservée le long du flot de ℓ_eff, via Euler : ℓ_eff est 0-homogène), `C_conserved_l0` (C conservée le long du flot de ℓ₀, la translation étant une symétrie), **`deriv_C_along_eff`** (le complément honnête : le long du flot de ℓ_eff, `dC/dt = (2ℓ₀/Z₀²)·C` — le terme `∂Z₀` de la règle du quotient, omis par la preuve de l'Appendice F), **`meanZero_invariant`** (corollaire par facteur intégrant : l'hyperplan centré `C = 0` est invariant — la forme exacte de la « conservation de C », vraie telle quelle dans le régime normalisé du texte principal). |
-| `Grokking.lean` | 0 | Imports parapluie + doc de synthèse. |
+| `EffectiveTheory/Grokking.lean` | 0 | Base #16794 (main) : Déf. 1 + Props 1-2 (`IsDeltaParallelogram`, `prop1_zeroLoss`, `prop2_injectiveDecoder`), dérivabilités (`hasFDerivAt_loss0`, `hasFDerivAt_sumsq0`), identités de l'appendice F (`loss0_grad_sum_zero`, `loss0_grad_dot_self`, `gradSumSq0_apply`), flot effectif (`IsEffectiveFlow`, `flow_deriv_sumsq0_eq_zero`, `flow_deriv_sum_apply` — `dC/dt = (2ℓ₀/Z₀²)·C`, le terme `∂Z₀` omis par la preuve de l'Appendice F), conservations (`flow_sumsq0_constant`, `flow_sum_constant_of_zero_loss`). |
+| `EffectiveTheory/GrokkingLemmas.lean` | 0 | **Recadrage #16752** (delta propre du grain, porté du cadre `EuclideanSpace ℝ ι` vers `Fin p → ℝ`) : `C_conserved_l0` (`C = Σ E k` conservée le long du flot de `ℓ₀`, **sans hypothèse** — via l'identité 1 de l'appendice F), `meanZero_invariant` (l'hyperplan centré `C = 0` est invariant le long du flot effectif : `dC/dt = κ·C`, facteur intégrant `exp(−∫κ)`), et lemmes génériques `hasDerivAt_line` / `euler_zero_homogeneous` / `fderiv_of_translateInvariant` / `eq_of_hasDerivAt_zero` / `Z0_conserved` (cadre préhilbertien quelconque, indépendant de `Fin p → ℝ`). |
+| `EffectiveTheory/Repons.lean` | 0 | Base #16794 (main), R06 *GenEFT* : Théorème 1 (décodeur injectif ⟹ clustering par classe) + quantité conservée hyperbolique `C = a₂²/(2η_A) − c²/η_x` (`dC/dt = 0`). |
+| `EffectiveTheory/InfoBits.lean` | 0 | Base #16794 (main), R06 : contenu informationnel `b = log₂(n!/|Aut G|)` + ancres (groupe trivial `b = 0`, groupe à deux éléments `b = 1`). |
+| `EffectiveTheory/CircleOfDays.lean` | 0 | Base #16794 (main), R10 : cercle des jours `C₇ = ZMod 7` (`rotation_cyclicSeven`) irréductible (`circleOfDays_irreducible`). |
 
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
 `PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`,
-`Grokking` ↔ `Grokking_en`, imports
+`GradientFlow` ↔ `GradientFlow_en`,
+`EffectiveTheory.GrokkingLemmas` ↔ `EffectiveTheory.GrokkingLemmas_en`
+(le reste d'`EffectiveTheory` attend son twin, #17481), imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
-l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 21
-fichiers `_en` couvrent l'intégralité des 21 modules feuilles + agrégateurs :
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 22
+fichiers `_en` couvrent PacLearning, Perceptron, GradientFlow et
+`GrokkingLemmas` :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
 `GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
-`Grokking_en.lean`, `Grokking/{Effective,Conservation}_en.lean`.
+`EffectiveTheory/GrokkingLemmas_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -228,7 +228,7 @@ vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
 # Depuis ce répertoire (WSL recommandé)
 lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
-lake build Grokking      # grokking : parallélogrammes + lois de conservation
+lake build EffectiveTheory # corpus Tegmark : grokking + conservation + R06/R10
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -277,6 +277,6 @@ déclaration dans un notebook :
 - **Issue #4051** — création du lake + module Perceptron (roadmap Lean #4038, Tier 2 « first ML theorem »)
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
-- **Issue #16752 / EPIC #16741** — module `Grokking` : tranche R02 du corpus Tegmark (arc « ouverte, responsable, prouvable, explicable »)
+- **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
