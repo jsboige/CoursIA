@@ -208,7 +208,18 @@ jobs:
         run: |
           LIVE=""
           if [ -n "${PR_NUMBER:-}" ]; then
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null || true)
+            # Le CODE DE SORTIE distingue panne et corps vide (#17197) --
+            # PAS la vacuite de la sortie. `gh api` ecrit le DOCUMENT
+            # D'ERREUR sur stdout en rc=1 (mesure 2026-09-21) :
+            #   {"message":"API rate limit exceeded for installation.","status":"403"}
+            # et `--jq` n'y est PAS applique. Tester `-n "$LIVE"` prenait
+            # donc ce document pour le corps de la PR : le repli ci-dessous
+            # ne se declenchait JAMAIS sur panne d'API -- exactement le cas
+            # pour lequel il est ecrit -- et les organes bloquants en
+            # tiraient un verdict de contenu (« Grain tag absent »,
+            # « perimeter assertion contradictoire ») sur un simple quota
+            # epuise. Quatre PRs bloquees ainsi le 2026-09-21.
+            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
           fi
           if [ -n "$LIVE" ]; then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
