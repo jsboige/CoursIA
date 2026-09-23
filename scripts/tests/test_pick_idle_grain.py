@@ -849,6 +849,130 @@ def test_dwell_prime_sur_infra():
                                    "remaining_min": 12}}) == []
 
 
+def _fake_transport(monkeypatch, *, graphql_ok=True, rest_ok=True,
+                    rest_pages=None, pr_graphql_ok=True):
+    """Faux `gh` qui dispatche par TRANSPORT, comme le vrai (#17038).
+
+    `gh issue list` / `gh pr list` = GraphQL ; `gh api repos/...` = REST. Les
+    deux quotas sont distincts, donc les deux pannes se simulent separement --
+    c'est toute la these de l'issue, et un faux qui tomberait en bloc ne
+    pourrait pas la tester.
+    """
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        if cmd[:3] == ["gh", "issue", "list"]:
+            if not graphql_ok:
+                raise pig.subprocess.CalledProcessError(1, cmd)
+            return _FakeCompleted(json.dumps([]))
+        if cmd[:3] == ["gh", "pr", "list"]:
+            if not pr_graphql_ok:
+                raise pig.subprocess.CalledProcessError(1, cmd)
+            return _FakeCompleted(json.dumps([]))
+        if cmd[:2] == ["gh", "api"]:
+            if not rest_ok:
+                raise pig.subprocess.CalledProcessError(1, cmd)
+            page = 1
+            if "page=" in cmd[2]:
+                # `rsplit`, pas `split` : `per_page=` contient `page=`, donc le
+                # premier match rend « 100 » au lieu du numero de page.
+                page = int(cmd[2].rsplit("page=", 1)[1].split("&")[0])
+            return _FakeCompleted(json.dumps((rest_pages or {}).get(page, [])))
+        # Tout autre appel (ardoise de lane, sondes) : liste vide, sans reseau.
+        return _FakeCompleted("[]")
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+_REST_ISSUE = {"number": 111, "title": "grain lu en REST", "labels": [],
+               "body": "Grain: MED/docs -- lane myia-po-2023:CoursIA",
+               "created_at": "2026-08-01T00:00:00Z",
+               "updated_at": "2026-09-01T00:00:00Z"}
+_REST_PR = {"number": 222, "title": "une PR vue par /issues", "labels": [],
+            "body": "", "created_at": "2026-08-01T00:00:00Z",
+            "updated_at": "2026-09-01T00:00:00Z",
+            "pull_request": {"url": "https://example.invalid"}}
+_REST_PULL = {"number": 7, "title": "une PR", "body": "Grain: MED/docs -- lane x",
+              "created_at": "2026-09-01T00:00:00Z", "draft": False,
+              "user": {"login": "jsboige"}, "head": {"ref": "feature/x"}}
+
+
+def test_graphql_mort_bascule_rest_et_rend_des_candidats(monkeypatch, capsys):
+    """#17038 acceptance 4 -- controle POSITIF du fallback de transport.
+
+    Sans ce controle, le fallback n'est pas prouve : il pourrait n'etre qu'un
+    chemin ecrit jamais pris. Ici GraphQL est mort et le tirage rend quand
+    meme des candidats -- le zero ne se produit plus la ou la lecture a
+    reussi par l'autre voie.
+    """
+    _fake_transport(monkeypatch, graphql_ok=False,
+                    rest_pages={1: [_REST_ISSUE, _REST_PR], 2: []})
+    pool, err = pig.fetch_pool()
+    assert err is None, "une voie a servi : le tirage EST mesure"
+    assert [it["number"] for it in pool] == [111], (
+        "l'endpoint REST /issues rend AUSSI les PRs : `pull_request` doit les "
+        "exclure, sinon les PRs entrent dans le pool de grains")
+    assert pool[0]["created_at"] == "2026-08-01T00:00:00Z"
+    assert "bascule REST" in capsys.readouterr().err
+
+
+def test_pr_list_bascule_rest_et_normalise_la_forme(monkeypatch, capsys):
+    """`gh pr list` est GraphQL : meme bascule, et la forme rendue est normalisee.
+
+    REST rend `created_at`/`draft`/`user.login`/`head.ref` la ou `gh` rend
+    `createdAt`/`isDraft`/`author.login`/`headRefName`. Le reste du picker lit
+    la forme `gh` : la traduction se fait dans le fallback.
+    """
+    _fake_transport(monkeypatch, pr_graphql_ok=False,
+                    rest_pages={1: [_REST_PULL], 2: []})
+    prs = pig.fetch_open_prs()
+    assert prs == [{"number": 7, "title": "une PR",
+                    "body": "Grain: MED/docs -- lane x",
+                    "createdAt": "2026-09-01T00:00:00Z", "isDraft": False,
+                    "author": {"login": "jsboige"}, "headRefName": "feature/x"}]
+    assert "bascule REST" in capsys.readouterr().err
+
+
+def test_les_deux_transports_morts_ne_se_disent_pas_pool_vide(monkeypatch):
+    """#17038 acceptance 1+3+5 -- « non mesurable » n'est pas « aucun candidat ».
+
+    C'est le defaut fondateur : l'organe imprimait « le tirage est MAINTENU »
+    sur une lecture morte, et la lane lisait un zero comme un etat du pool --
+    « picker muet », donc « veille ». Le vocabulaire de l'epuisement sur un
+    pool jamais lu est une affirmation sur des donnees qu'on n'a pas.
+    """
+    _fake_transport(monkeypatch, graphql_ok=False, rest_ok=False)
+    pool, err = pig.fetch_pool()
+    assert pool == []
+    assert err and "GraphQL" in err and "REST" in err
+
+    phrase = pig.draw_verdict(err)
+    assert "TIRAGE NON MESURE" in phrase
+    assert "PAS « aucun candidat »" in phrase
+    assert "epuisee" not in phrase.casefold(), (
+        "le vocabulaire de l'epuisement affirme un etat du pool : il est "
+        "interdit sur une lecture qui n'a pas abouti")
+    # Lecture mesuree : rien a dire -- c'est ce qui distingue les deux etats.
+    assert pig.draw_verdict(None) == ""
+    assert pig.RC_POOL_UNMEASURED != 0
+
+
+def test_main_rend_3_quand_les_deux_transports_sont_morts(monkeypatch, capsys):
+    """#17038 acceptance 5 -- un rc DISTINCT, pour que l'appelant fail-closed.
+
+    `0` = tirage mesure (y compris vide), `1` = arret delibere. Confondre les
+    trois fait d'une panne de transport un etat normal.
+    """
+    _fake_transport(monkeypatch, graphql_ok=False, rest_ok=False)
+    rc = pig.main(["--lane", "myia-po-2023:CoursIA", "--admissible", "111",
+                   "--cache", "off"])
+    assert rc == pig.RC_POOL_UNMEASURED == 3
+    out = capsys.readouterr().out
+    assert "TIRAGE NON MESURE" in out
+    assert "EPUISEE" not in out.upper()
+
+
 def test_same_author_failures_are_not_imputed(monkeypatch):
     """Controle negatif : deux PRs de la MEME LANE ne se corroborent pas.
 
@@ -2363,7 +2487,8 @@ def test_13972_pool_genre_prefers_body_over_title(monkeypatch) -> None:
     ]
     fake_proc = _FakeCompleted(json.dumps(payload))
     monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: fake_proc)
-    pool = pig.fetch_pool()
+    pool, transport = pig.fetch_pool()
+    assert transport is None, f"GraphQL a servi : aucune bascule attendue ({transport})"
     by_number = {it["number"]: it for it in pool}
     # #10475 : titre dirait notebook-python, body dit docs -> genre = docs (META)
     assert by_number[10475]["genre"] == "docs", (
