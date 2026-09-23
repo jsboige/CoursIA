@@ -59,10 +59,23 @@ lean_lib «GradientFlow» where
   -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
   globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]
 
+/-- Module `EffectiveTheory` — digestion #16741/arc B (issue #16752) :
+théorie effective de la représentation (Tegmark & co) — R02 parallélogrammes
+du grokking + identités de conservation (App. F), R06 clustering par classe
+(décodeur injectif) + quantité conservée hyperbolique `dC/dt = 0` + contenu
+informationnel `b = log₂(n!/|Aut G|)`, R10 cercle des jours =
+représentation irréductible 2D de `C₇`. Frère de `Perceptron`, `PacLearning`
+et `GradientFlow`. -/
+@[default_target]
+lean_lib «EffectiveTheory» where
+  globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
+
 /-- Module `GenEFT` — tranche R06 du corpus Tegmark (EPIC #16741, claim
-#16752) : description length par orbit-stabilizer (b = log₂ (n!/|Aut|)),
-Theorem 1 (clustering par décodeur injectif) et invariant de compétition
-η_x a₂² − 2 η_A c² (Baek, Liu, Tegmark, arXiv:2402.05916). Frère de
+#16752) : apports propres — description length par orbit-stabilisateur sur
+`SimpleGraph (Fin n)` (b = log₂ (n!/|Aut|)), équation de relation autonome
+`rel_eqn_autonomous` ; le clustering (Théorème 1) et l'invariant de
+compétition sont importés de `EffectiveTheory.Repons` (organ-first, un seul
+organe par énoncé ; Baek, Liu, Tegmark, arXiv:2402.05916). Frère de
 `Perceptron`, `PacLearning` et `GradientFlow`. -/
 @[default_target]
 lean_lib «GenEFT» where

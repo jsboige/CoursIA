@@ -155,3 +155,82 @@ def test_strip_neutralise_le_span_et_garde_le_reste():
     assert "verdict: BLOCKED" not in stripped
     assert "Avant le dossier." in stripped
     assert "Apres le dossier." in stripped
+
+
+# --- #17065 : la QUEUE NARRATIVE du dossier n'est pas une reserve POSEE ---
+#
+# Defaut mesure (2026-09-19, #16862) : le strip #16442 ne retirait que le
+# bloc delimite ; la queue narrative qui suit [/ADJOINT PREFLIGHT] -- que le
+# gate ignore expressement (« Prose FOLLOWING the closing marker is ignored,
+# not refused », check_adjoint_prevalidation.py) -- restait scannee par B.0.
+# La phrase d'attestation OBLIGATOIRE « Aucun merge, APPROVED ou
+# CHANGES_REQUESTED effectue ici » etait comptee comme une reserve posee :
+# le dossier portant `b0: clear` devenait son propre bloquant, et via la
+# delegation du picker (4e cause de repair -> cet organe), 8 lanes sur 8 en
+# mode repair pendant que 313 issues sur 390 restaient admissibles.
+#
+# Forme reelle reconstruite du dossier #16862 (issuecomment 5745712744) :
+# bloc schema v1 READY + queue de verifications firsthand + disposition.
+
+DOSSIER_16862_AVEC_QUEUE = """[ADJOINT PREFLIGHT]
+schema: 1
+lane: myia-po-2027:CoursIA
+pr: 16862
+head: 0ee7c042750692c9015f6ae00fea30379fa665a1
+complete: true
+body: read
+comments-reviewed: 4
+reviews-reviewed: 0
+threads-reviewed: 0
+threads-unresolved: 0
+surfaces-sha256: aadc60f68502db3e049fa3b46ab3d456836cab1bb9f2c1db0a4dff8359c9ff61
+diff-files: 1
+diff-additions: 140
+diff-deletions: 140
+checks: latest-wins-green
+b0: clear
+scope: pass
+domain: pass
+verdict: READY
+[/ADJOINT PREFLIGHT]
+
+Dossier de prevalidation tierce (gate #16907, Phase 4) — premier dossier sur cette PR.
+
+### Verifications firsthand au head exact 0ee7c04275
+
+- **B.0** : rc=0 ; 4 commentaires lus, 0 review, 0 thread inline.
+
+**Disposition : READY pour lecture finale ai-01.** Aucun merge, APPROVED ou CHANGES_REQUESTED effectue ici.
+"""
+
+
+def test_dossier_ouvrant_queue_narrative_nest_pas_un_nit():
+    # Echoue sur le code d'avant #17065 : la queue portait la phrase
+    # d'attestation dont « CHANGES_REQUESTED » etait vivant.
+    assert mod.classify("jsboige", DOSSIER_16862_AVEC_QUEUE) is None
+
+
+def test_dossier_ouvrant_nest_pas_une_levee_queue_comprise():
+    # La queue ne leve rien non plus (symetrie attestation, #16443) : un
+    # dossier dont la queue RACONTE une disposition ne compte pas comme
+    # evenement de levee.
+    queue_levee = DOSSIER_16862_AVEC_QUEUE.replace(
+        "**Disposition : READY pour lecture finale ai-01.**",
+        "La reserve Hermes est levee par reponse ecrite a 22:10Z. **Disposition : READY.**",
+    )
+    stripped = mod._strip_adjoint_dossier(queue_levee)
+    assert stripped == ""
+    assert mod.has_live_lift(stripped) is False
+
+
+def test_reserve_avant_le_dossier_ouvrant_reste_vivante():
+    # Une vraie remarque PRECEDANT le bloc ouvrant reste lue normalement :
+    # l'inertie ne s'etend qu'a la queue, jamais a la tete.
+    prose = "Le fil inline #2 reste a nuancer sur la formulation exacte."
+    assert mod.classify("jsboige", prose + "\n\n" + DOSSIER_16862_AVEC_QUEUE) is not None
+
+
+def test_vraie_reserve_hors_dossier_reste_vivante():
+    # Controle positif du contexte (pas de la liste) : une review qui POSE
+    # un CHANGES_REQUESTED en dehors de tout dossier reste BOT-CONCERN.
+    assert mod.classify("jsboige", "CHANGES_REQUESTED : decide casse en identifiant Lean, cellule 12.") is not None

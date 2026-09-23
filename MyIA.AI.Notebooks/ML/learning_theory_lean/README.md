@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + GenEFT), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory + GenEFT), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -35,6 +35,22 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    injectif clusterise exactement les classes) et l'**invariant de
    compétition** `η_x a₂² − 2 η_A c²` du système réduit, conservé le long des
    trajectoires (cœur quantitatif du Theorem 3 — taux d'apprentissage critiques).
+
+
+4. **Module `EffectiveTheory`** — digestion #16741/arc B (issue #16752) :
+   théorie effective de la représentation (corpus Tegmark R02/R06/R10) —
+   R02 *Grokking* : δ-parallélogrammes (Déf. 1), Prop. 1 (perte nulle ⟹
+   `i + j = m + n`), Prop. 2 (décodeur injectif ⟹ formation) et les deux
+   identités de l'appendice F portant les lois de conservation
+   `C = Σ E k` / `Z₀ = Σ E k²` ; R06 *GenEFT* : Théorème 1 (décodeur
+   injectif ⟹ clustering par classe) + quantité conservée hyperbolique
+   `C = a₂²/(2η_A) − c²/η_x` (`dC/dt = 0`, preuve calculatoire) +
+   contenu informationnel `b = log₂(n!/|Aut G|)` (ancres : groupe trivial
+   `b = 0`, groupe à deux éléments `b = 1`) ; R10 *circle of days* : la
+   représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) est
+   **irréductible** (`circleOfDays_irreducible` — aucune droite stable, le
+   discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre
+   réelle).
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -175,7 +191,7 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 
 | Fichier | sorry | Contenu |
 |---------|-------|---------|
-| `GenEFT.lean` | 0 | **Statics** : action de re-labellage `permSmul` (`Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)`, instance `MulAction`), pont `mem_aut_iff` (stabilisateur ↔ automorphismes : préservation de l'adjacence dans les deux sens), **`card_orbit_mul_card_aut`** (orbit-stabilizer : `\|orbite\| · \|Aut G\| = n!`), longueur de description `descLength` (b = log₂ \|orbite\|) et forme quotient **`descLength_eq`** (b = log₂ (n!/\|Aut G\|), éq. 4 du papier). **Theorem 1** : **`clustering`** — autoencoder de classification à perte nulle (`hLoss`) et décodeur injectif (`hInj`) : mêmes embeddings ↔ mêmes étiquettes (témoin `k := i`, pas de tiers). **Dynamics** : **`competition_invariant`** (éq. 10 — `η_x a₂² − 2 η_A c²` conservé sur le système réduit `da₂/dt = -2η_A c²a₂`, `dc/dt = -η_x a₂²c`) et **`rel_eqn_autonomous`** (éq. 16 — le forçage externe common-mode s'annule dans `x₁ − x₂`, ressort de Hooke autonome). |
+| `GenEFT.lean` | 0 | **Statics** : action de re-labellage `permSmul` (`Equiv.Perm (Fin n)` sur `SimpleGraph (Fin n)`, instance `MulAction`), pont `mem_aut_iff` (stabilisateur ↔ automorphismes : préservation de l'adjacence dans les deux sens), **`card_orbit_mul_card_aut`** (orbit-stabilizer : `\|orbite\| · \|Aut G\| = n!`), longueur de description `descLength` (b = log₂ \|orbite\|) et forme quotient **`descLength_eq`** (b = log₂ (n!/\|Aut G\|), éq. 4 du papier). **Theorem 1** : **`clustering`** — autoencoder de classification à perte nulle (`hLoss`) et décodeur injectif (`hInj`) : mêmes embeddings ↔ mêmes étiquettes — **organ-first** : l'énoncé et sa preuve vivent dans `EffectiveTheory.Repons.clustering_iff_injective_decoder` (main, #16794), `GenEFT` ne fait que rabattre la forme `Bool` des étiquettes sur la forme `ℕ` de l'organe. **Dynamics** : **`competition_invariant`** (éq. 10 — `η_x a₂² − 2 η_A c²` conservé sur le système réduit `da₂/dt = -2η_A c²a₂`, `dc/dt = -η_x a₂²c` — cas générique **délégué** à `EffectiveTheory.Repons.conservedHyperbola_deriv_zero` (l'invariant normalisé `C = a₂²/(2η_A) − c²/η_x`, notre forme = `2η_Aη_x · C`) ; cas dégénérés `η = 0` prouvés sur place) et **`rel_eqn_autonomous`** (éq. 16 — le forçage externe common-mode s'annule dans `x₁ − x₂`, ressort de Hooke autonome). |
 
 ### i18n FR/EN
 

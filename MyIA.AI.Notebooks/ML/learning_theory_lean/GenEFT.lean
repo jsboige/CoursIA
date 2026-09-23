@@ -1,4 +1,5 @@
 import Mathlib
+import EffectiveTheory.Repons
 
 /-!
 # GenEFT — description length, clustering, compétition A vs r
@@ -183,30 +184,22 @@ theorem clustering (label : ι → Bool) (E : ι → V) (dec : V × V → ℝ)
     (hInj : Function.Injective dec)
     (hLoss : ∀ i k, dec (E i, E k) = if label i = label k then 1 else 0) :
     ∀ i j, E i = E j ↔ label i = label j := by
+  have h0 : ∀ i k, dec (E i, E k)
+      = if (label i).toNat = (label k).toNat then 1 else 0 := by
+    intro i k
+    cases li : label i <;> cases lk : label k <;>
+      rw [hLoss i k] <;> simp [li, lk]
+  have htoNat_inj : ∀ a b : Bool, a.toNat = b.toNat → a = b := by
+    intro a b hab
+    cases a <;> cases b <;> simp_all [Bool.toNat]
+  have key := LearningTheory.EffectiveTheory.clustering_iff_injective_decoder
+    E dec (fun i => (label i).toNat) hInj h0
   intro i j
   constructor
-  · -- embeddings égaux, classes supposées différentes : contradiction 1 ≠ 0
-    intro hE
-    by_contra hlab
-    have hii : dec (E i, E i) = 1 := by
-      rw [hLoss i i]; simp
-    have hji : dec (E j, E i) = 0 := by
-      rw [hLoss j i]
-      have : ¬ (label j = label i) := fun h => hlab h.symm
-      simp [this]
-    rw [hE] at hii hji
-    rw [hii] at hji
-    exact absurd hji (by norm_num)
-  · -- même classe : le décodeur répond 1 sur (i, i) et sur (j, i),
-    -- l'injectivité égalise les entrées, donc les embeddings
-    intro hlab
-    have hii : dec (E i, E i) = 1 := by
-      rw [hLoss i i]; simp
-    have hji : dec (E j, E i) = 1 := by
-      rw [hLoss j i]
-      simp [hlab.symm]
-    have hpair : (E i, E i) = (E j, E i) := hInj (by rw [hii, hji])
-    exact (Prod.mk.injEq _ _ _ _).mp hpair |>.1
+  · intro hE
+    exact htoNat_inj (label i) (label j) ((key i j).mpr hE)
+  · intro hlab
+    exact (key i j).mp (congrArg Bool.toNat hlab)
 
 end Clustering
 
@@ -224,22 +217,40 @@ theorem competition_invariant (ηx ηA : ℝ) (a₂ c : ℝ → ℝ)
     (ha : ∀ t, HasDerivAt a₂ (-(2 * ηA) * (c t ^ 2) * a₂ t) t)
     (hc : ∀ t, HasDerivAt c (-(ηx) * (a₂ t ^ 2) * c t) t) (t : ℝ) :
     HasDerivAt (fun t => ηx * a₂ t ^ 2 - 2 * ηA * c t ^ 2) 0 t := by
-  have hsub : HasDerivAt (fun t => ηx * a₂ t ^ 2 - 2 * ηA * c t ^ 2)
-      (ηx * (2 * a₂ t ^ (2 - 1) * (-(2 * ηA) * (c t ^ 2) * a₂ t)) -
-        2 * ηA * (2 * c t ^ (2 - 1) * (-(ηx) * (a₂ t ^ 2) * c t))) t := by
-    have h1 : HasDerivAt (fun t => ηx * a₂ t ^ 2)
-        (ηx * (2 * a₂ t ^ (2 - 1) * (-(2 * ηA) * (c t ^ 2) * a₂ t))) t :=
-      ((ha t).pow 2).const_mul ηx
-    have h2 : HasDerivAt (fun t => 2 * ηA * c t ^ 2)
-        (2 * ηA * (2 * c t ^ (2 - 1) * (-(ηx) * (a₂ t ^ 2) * c t))) t :=
-      ((hc t).pow 2).const_mul (2 * ηA)
-    exact h1.sub h2
-  have hzero : (ηx * (2 * a₂ t ^ (2 - 1) * (-(2 * ηA) * (c t ^ 2) * a₂ t)) -
-        2 * ηA * (2 * c t ^ (2 - 1) * (-(ηx) * (a₂ t ^ 2) * c t))) = 0 := by
-    norm_num
-    ring
-  rw [hzero] at hsub
-  exact hsub
+  rcases eq_or_ne ηx 0 with rfl | hηx
+  · -- ηx = 0 : dc/dt = 0, la quantité se réduit à -2 ηA c², dérivée nulle
+    -- (rfl a substitué ηx := 0 partout : les types ci-dessous s'écrivent avec le littéral)
+    have hfun : (fun t => (0:ℝ) * a₂ t ^ 2 - 2 * ηA * c t ^ 2)
+        = fun t => -(2 * ηA) * c t ^ 2 := by
+      funext s; simp
+    rw [hfun]
+    have hc' : ∀ s, HasDerivAt c 0 s := by
+      intro s; simpa using hc s
+    refine (((hc' t).pow 2).const_mul (-(2 * ηA))).congr_deriv ?_
+    simp
+  rcases eq_or_ne ηA 0 with rfl | hηA
+  · -- ηA = 0 : da₂/dt = 0, la quantité se réduit à ηx a₂², dérivée nulle
+    have hfun : (fun t => ηx * a₂ t ^ 2 - 2 * (0:ℝ) * c t ^ 2)
+        = fun t => ηx * a₂ t ^ 2 := by
+      funext s; simp
+    rw [hfun]
+    have ha' : ∀ s, HasDerivAt a₂ 0 s := by
+      intro s; simpa using ha s
+    refine (((ha' t).pow 2).const_mul ηx).congr_deriv ?_
+    simp
+  -- cas générique (ηx ≠ 0, ηA ≠ 0) : délégation à l'organe — l'invariant
+  -- normalisé C = a₂²/(2ηA) − c²/ηx vit dans EffectiveTheory.Repons ;
+  -- notre forme n'en est que le multiple 2 ηA ηx · C.
+  -- l'organe attend la forme -2 * ηA * ..., la nôtre est -(2 * ηA) * ... (même terme à ring près)
+  have ha' : ∀ t, HasDerivAt a₂ (-2 * ηA * (c t) ^ 2 * a₂ t) t :=
+    fun t => (ha t).congr_deriv (by ring)
+  have hC := LearningTheory.EffectiveTheory.conservedHyperbola_deriv_zero
+    (ηA := ηA) (ηx := ηx) hηA hηx ha' hc t
+  have hfun : (fun s => ηx * a₂ s ^ 2 - 2 * ηA * c s ^ 2)
+      = fun y => 2 * ηA * ηx * (a₂ y ^ 2 / (2 * ηA) - c y ^ 2 / ηx) := by
+    funext s; field_simp
+  rw [hfun]
+  exact ((hC.const_mul (2 * ηA * ηx)).congr_deriv (by simp))
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 

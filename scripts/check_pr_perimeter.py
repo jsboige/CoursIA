@@ -2003,10 +2003,59 @@ def _run_gh_rc(args: list[str]) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
+# Signatures of a TRANSIENT, positively recognised `gh` transport failure.
+#
+# The budget is shared by account, so a fleet burst exhausts it for every
+# caller at once (measured 2026-09-21: four `perimeter review guard` runs on
+# four distinct heads in three hours, all refused). `#17229` measured the
+# `user ID` spelling and the `installation` one, this file's runs the
+# `site ID installation` one -- one regex covers the three.
+#
+# NARROW ON PURPOSE. Only a recognised signature downgrades; any other `gh`
+# failure stays fail-closed (exit 2). A guard that downgrades on "something
+# went wrong" is indistinguishable from a disarmed guard.
+_TRANSIENT_GH_SIGNATURES = (
+    re.compile(r"API rate limit (?:already )?exceeded", re.IGNORECASE),
+)
+
+
+def _is_transient_gh_failure(stderr: str) -> bool:
+    """True when ``stderr`` PROVES a transient transport failure.
+
+    Proves, not suspects: an unrecognised failure must not downgrade, or the
+    fail-closed contract documented on ``_run_gh_rc`` silently disappears.
+    """
+    return any(p.search(stderr or "") for p in _TRANSIENT_GH_SIGNATURES)
+
+
+def _exit_unmeasurable(reason: str) -> None:
+    """Exit with the non-measurable verdict, mirroring ``#14292``.
+
+    An unreadable PR is the ABSENCE of measurement, not a measurement of
+    zero: confronting a body count against a read that never happened can
+    only fabricate a verdict. ``#14576`` ratified exactly this consequence
+    for the EMPTY-list cause (verdict named, exit 0, detection kept visible);
+    a refused read is the same absence by a different cause, so it takes the
+    same consequence. Printing it as "your assertion contradicts your files"
+    (what the workflow wrapper used to do with any non-zero code) sends the
+    author to debug a defect that was never measured.
+    """
+    print("")
+    print(f"PERIMETRE NON MESURABLE: {reason}")
+    print("  -> verdict UNKNOWN, pas une contradiction de perimetre ;")
+    print("     aucune assertion n'a ete confrontee (lecture refusee).")
+    sys.exit(0)
+
+
 def _run_gh(args: list[str]) -> str:
     rc, stdout, stderr = _run_gh_rc(args)
     if rc != 0:
         print(f"gh error: {stderr.strip()[:400]}", file=sys.stderr)
+        if _is_transient_gh_failure(stderr):
+            _exit_unmeasurable(
+                "le budget d'API GitHub est epuise (lecture refusee, "
+                "aucune mesure effectuee)"
+            )
         sys.exit(2)
     return stdout
 
@@ -2035,6 +2084,11 @@ def _pr_diff_text(pr: int) -> str:
         )
         return ""
     print(f"gh error: {(stderr or '').strip()[:400]}", file=sys.stderr)
+    if _is_transient_gh_failure(stderr):
+        _exit_unmeasurable(
+            "le budget d'API GitHub est epuise pendant la lecture du diff "
+            "(aucune mesure effectuee)"
+        )
     sys.exit(2)
 
 
@@ -2116,6 +2170,24 @@ def _base_age_hours(base_ref: str, head: str) -> Optional[int]:
     return max(0, (int(time.time()) - ts)) // 3600
 
 
+def _decode_nul_paths(raw: bytes) -> set[str]:
+    """Decode ``git ... --name-only -z`` output without quotePath escaping.
+
+    Git's line-oriented output quotes non-ASCII paths when ``core.quotePath`` is
+    enabled (the Linux default). Comparing those escaped lines with UTF-8 paths
+    returned by the GitHub API wrongly classifies the files as carried from
+    main. NUL-delimited output preserves the path bytes; invalid UTF-8 is an
+    error so the caller can retain every API path via its fail-safe.
+    """
+    if not raw:
+        return set()
+    return {
+        item.decode("utf-8")
+        for item in raw.split(b"\0")
+        if item
+    }
+
+
 def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     """#13637: partition ``files`` (the API list) into the PR's own contribution
     and the carried files.
@@ -2139,12 +2211,15 @@ def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     if not api_paths:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
     proc = subprocess.run(
-        ["git", "diff", "--name-only", base_ref, head, "--"] + api_paths,
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        ["git", "diff", "--name-only", "-z", base_ref, head, "--"] + api_paths,
+        capture_output=True,
     )
     if proc.returncode != 0:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
-    changed = set(proc.stdout.splitlines())
+    try:
+        changed = _decode_nul_paths(proc.stdout)
+    except UnicodeDecodeError:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
     carried = set(api_paths) - changed
     propres, charries = partition_propres(files, carried)
     return CarriedNote(
