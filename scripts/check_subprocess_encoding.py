@@ -38,6 +38,8 @@ lives inside an f-string expression, where nested double quotes are a
 SyntaxError before Python 3.12.
 """
 
+from __future__ import annotations
+
 import argparse
 import io
 import re
