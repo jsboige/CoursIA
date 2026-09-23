@@ -138,3 +138,72 @@ def test_13779_surfacing_never_blocks():
     res = _run([_c("2026-08-30T09:30:00Z", PREFLIGHT),
                 _c("2026-08-30T11:00:00Z", LATER)])
     assert res["blocked"] is False
+
+
+# --------------------------------------------------------------------------
+# La RESERVE doit voyager DANS la ligne de verdict, pas seulement sous elle.
+#
+# Le bloc « A RELIRE » a beau exister, c'est la ligne `OK` qui circule : elle
+# est citee telle quelle dans les rapports de lane et dans les DM. Un `OK` cite
+# sans son compte certifie alors precisement le silence que l'organe refuse de
+# certifier -- la promesse de #13779 s'arretait a la frontiere du stdout.
+# Mesure fondatrice du 21/09 : deux PRs ou l'organe rendait `OK` (et `rc=0`)
+# portaient leurs reserves vivantes dans le bloc non evalue.
+# --------------------------------------------------------------------------
+
+def test_ok_line_names_the_unevaluated_count():
+    res = _run([_c("2026-08-30T09:30:00Z", PREFLIGHT),
+                _c("2026-08-30T11:00:00Z", LATER)])
+    line = mod._ok_line(13712, res)
+    assert "2 commentaire(s) NON EVALUE(S)" in line, (
+        "la ligne de verdict doit porter le compte non evalue : c'est elle "
+        "qui est citee, pas le bloc imprime en dessous")
+    assert "A RELIRE" in line, "la reserve doit nommer ou lire le detail"
+
+
+def test_ok_line_count_is_the_total_not_the_displayed_subset():
+    """Meme regle que l'en-tete : le TOTAL, jamais le sous-ensemble affiche."""
+    res = _run([_c("2026-08-30T09:%02d:00Z" % m, PREFLIGHT + str(m))
+                for m in (10, 20, 30, 40, 50)]
+               + [_c("2026-08-30T11:00:00Z", LATER)])
+    assert res["unevaluated_total"] == 6
+    assert len(res["unevaluated"]) == 4
+    line = mod._ok_line(13712, res)
+    assert "6 commentaire(s) NON EVALUE(S)" in line
+    assert "4 commentaire(s)" not in line, (
+        "sous-declarer dans la ligne ce qu'on declare en entier en dessous "
+        "serait exactement le defaut #13779, deplace")
+
+
+def test_ok_line_is_byte_identical_when_nothing_is_unevaluated():
+    """Controle positif : rien a relire -> la ligne d'origine, inchangee.
+
+    Sans ce test, une reserve affichee a tort (« 0 commentaire(s) NON
+    EVALUE(S) ») passerait pour un progres.
+    """
+    concern = "Une seule chose a changer avant merge : le point 2 de la section 3."
+    assert mod.classify("jsboige", concern) is not None, (
+        "precondition : sans classement, le commentaire tomberait dans "
+        "`unevaluated` et le test passerait pour la mauvaise raison")
+    res = _run([_c("2026-08-30T09:30:00Z", concern)])
+    assert res["unevaluated_total"] == 0
+    assert res["unevaluated"] == []
+    assert mod._ok_line(13712, res) == "OK  PR #13712 — aucun nit non leve."
+
+
+def test_ok_line_keeps_the_historical_prefix():
+    """Le prefixe d'avant reste un prefixe : aucun consommateur ne casse."""
+    res = _run([_c("2026-08-30T09:30:00Z", PREFLIGHT)])
+    line = mod._ok_line(13712, res)
+    assert line.startswith("OK  PR #13712 — aucun nit non leve"), (
+        "un lecteur (ou un grep) qui reconnaissait la ligne d'origine doit "
+        "toujours la reconnaitre")
+
+
+def test_print_unevaluated_does_not_repeat_the_verdict_line():
+    """Une seule source pour le verdict : le bloc imprime le detail, pas `OK`."""
+    res = _run([_c("2026-08-30T09:30:00Z", PREFLIGHT)])
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        mod._print_unevaluated(res)
+    assert "OK  PR" not in buf.getvalue()
