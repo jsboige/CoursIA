@@ -52,15 +52,18 @@ export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
-# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 12 Go, la moitie
-# de la VM WSL (24 032 Mo). Cette jambe est celle qui a rendu l'ecart visible :
-# ses 2 slots a 6 Go demandent 12 288 Mo, et le garde les refuse tant que les
-# 18 432 Mo des deux autres familles sont en vol (18 432 + 12 288 > 12 288).
-# Le refus etait correct ; ce qui manquait etait que le budget soit ECRIT.
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 42 Go depuis
+# l'agrandissement VM du 2026-09-21 (24 032 -> 40 110 Mo, arbitrage user,
+# mission ai-01 msg-20260921T203652-qxg3en). Cette jambe est celle qui a rendu
+# l'ecart visible : ses 2 slots a 6 Go demandent 12 288 Mo, et le garde les
+# refusait tant que les 18 432 Mo des deux autres familles etaient en vol
+# (18 432 + 12 288 > 12 288) -- sous l'ancien budget 12 Go, les slots lean ne
+# DEMARRAIENT JAMAIS. Le refus etait correct ; ce qui manquait etait un budget
+# couvrant la composition complete (8x1536 + 12x1536 + 2x6144 = 43 008 Mo).
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
 # nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-12}"
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-42}"
 
 cd "$REPO_DIR" || exit 1
 
