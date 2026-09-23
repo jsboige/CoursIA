@@ -19,6 +19,7 @@ repris tels quels ; seule la documentation et les exemples de la section
 | `Hecke/SevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_seven_pid.lean` (tranche 1 de #16557) |
 | `Hecke/ElevenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_eleven_pid.lean` (tranche 2 de #16557) |
 | `Hecke/ThirteenPid.lean` (+ sibling `_en`) | `P2M/Sol/S_IsCyclotomicExtension_Rat_thirteen_pid.lean` (tranche 3 de #16557) |
+| `Hecke/FltRoute.lean` (+ sibling `_en`) | `P2M/Sol/S_ModularForm_S2_Gamma0_2_eq_zero.lean` (exercices 3-4 ; les exercices 1-2 et la documentation sont des additions CoursIA, cible #16556) |
 
 ## Licence
 
@@ -43,6 +44,8 @@ additions CoursIA suivent la même licence.
 | `Hecke/SevenPid_en.lean` / `Hecke/ElevenPid_en.lean` | Siblings anglais (namespace `CyclotomicPID_en`), preuves identiques |
 | `Hecke/ThirteenPid.lean` | `ℤ[ζ₁₃]` principal : lemme `F₂₇`, certificats 13/53/79/131/157, dispatch A-D (docstrings FR) |
 | `Hecke/ThirteenPid_en.lean` | Sibling anglais, preuves identiques |
+| `Hecke/FltRoute.lean` | La route FLT en exercices guidés : S₂(Γ₀(2)) = 0 prouvé (normalisation de Frey `frey_congr_mod_eight`, courbe de Frey `freyCurve`, indice `[SL₂(ℤ):Γ₀(2)] = 3`, percée de la norme `s2_gamma0_2_eq_zero`, théorème-bilan `flt_of_full_route` — étapes 2-5 admises) |
+| `Hecke/FltRoute_en.lean` | Sibling anglais (namespace `FltRoute_en`), preuves identiques |
 | `Hecke.lean` / `Hecke_en.lean` | Agrégateurs racines |
 
 Hors périmètre (grains aval) : produit de Petersson, cusp forms.

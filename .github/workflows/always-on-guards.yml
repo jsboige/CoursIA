@@ -208,7 +208,18 @@ jobs:
         run: |
           LIVE=""
           if [ -n "${PR_NUMBER:-}" ]; then
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null || true)
+            # Le CODE DE SORTIE distingue panne et corps vide (#17197) --
+            # PAS la vacuite de la sortie. `gh api` ecrit le DOCUMENT
+            # D'ERREUR sur stdout en rc=1 (mesure 2026-09-21) :
+            #   {"message":"API rate limit exceeded for installation.","status":"403"}
+            # et `--jq` n'y est PAS applique. Tester `-n "$LIVE"` prenait
+            # donc ce document pour le corps de la PR : le repli ci-dessous
+            # ne se declenchait JAMAIS sur panne d'API -- exactement le cas
+            # pour lequel il est ecrit -- et les organes bloquants en
+            # tiraient un verdict de contenu (« Grain tag absent »,
+            # « perimeter assertion contradictoire ») sur un simple quota
+            # epuise. Quatre PRs bloquees ainsi le 2026-09-21.
+            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
           fi
           if [ -n "$LIVE" ]; then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
@@ -583,18 +594,34 @@ jobs:
           La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
 
           G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur."
-            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            # #17265 -- le rc de `gh` decide, jamais la vacuite de sa sortie :
+            # sous panne de quota `gh` ecrit son document d'erreur sur STDOUT en
+            # rc=1, et un repli DANS la substitution (`|| echo ""`) ne peut pas
+            # effacer un stdout deja ecrit -- EXISTING_ID valait le document, la
+            # branche PATCH etait prise, l'appel echouait, `|| true` l'avalait,
+            # et le commentaire n'etait jamais poste pendant que le ::notice:
+            # affirmait le contraire (les deux bras sont mesures sur la PR).
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null) || EXISTING_ID=""
+            EXISTING_ID=$(printf '%s\n' "$EXISTING_ID" | head -1)
+            POSTED=1
             if [ -n "$EXISTING_ID" ]; then
               gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \
-                -f body="$BODY" 2>/dev/null || true
+                -f body="$BODY" 2>/dev/null || POSTED=0
             else
-              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || POSTED=0
             fi
-            echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
+            if [ "$POSTED" = "1" ]; then
+              echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
+            else
+              echo "::warning::G-VAR-2/3-by-GENRE NON signale sur ${LANE} (echec gh -- quota/API ?) : aucun commentaire n'a ete pose."
+            fi
           else
-            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            # #17265 -- meme correctif : le rc de `gh` decide, pas la vacuite.
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null) || EXISTING_ID=""
+            EXISTING_ID=$(printf '%s\n' "$EXISTING_ID" | head -1)
             if [ -n "$EXISTING_ID" ]; then
-              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null || true
+              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null \
+                || echo "::warning::marqueur perime NON retire sur ${LANE} (echec gh -- quota/API ?) : il sera repris au prochain run."
             fi
             echo "Aucun signal actif pour ${LANE} aujourd'hui (tally ${TALLY})."
           fi
@@ -1169,10 +1196,32 @@ jobs:
         continue-on-error: true
         run: |
           PR="${{ github.event.pull_request.number }}"
-          python scripts/check_pr_perimeter.py "$PR" --scan-thread || {
+          # Meme correctif que perimeter-review-guard.yml (#17273) : le script
+          # a TROIS issues, et `||` les ecrasait toutes dans le message de
+          # contradiction. Un `exit 2` (« je n'ai pas pu mesurer ») etait donc
+          # rendu comme un verdict de contenu -- quatre runs, quatre tetes,
+          # tous refuses par `API rate limit exceeded`, le 2026-09-21. Une
+          # lecture refusee est une NON-MESURE (#14292), pas une contradiction.
+          #
+          #   0 -> mesure faite (ou PERIMETRE NON MESURABLE nomme)
+          #   1 -> contradiction reelle : message et rouge inchanges
+          #   2 -> mesure impossible (echec non reconnu) : fail-closed conserve,
+          #        mais on dit ce qui s'est passe. Une signature transitoire
+          #        RECONNUE sort en 0 depuis l'organe et n'arrive pas ici.
+          #
+          # `continue-on-error: true` absorbe le code, PAS l'annotation : le
+          # message reste ce que lisent le picker et les humains.
+          if python scripts/check_pr_perimeter.py "$PR" --scan-thread; then
+            exit 0
+          else
+            rc=$?
+          fi
+          if [ "$rc" -eq 1 ]; then
             echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
             exit 1
-          }
+          fi
+          echo "::error::le garde n'a PAS pu mesurer le perimetre de la PR $PR (rc=$rc) -- verdict UNKNOWN, ce n'est PAS une contradiction de perimetre. Aucune assertion n'a ete confrontee. Relancer ce job ; si l'echec se repete, la cause est amont (quota d'API partage par compte, cf #17229)."
+          exit 1
 
       # Porte de fast-lane-shadow.yml :: fast-lane. Le moteur emet un
       # check-run nomme par garde absorbe (API Checks) : la granularite
