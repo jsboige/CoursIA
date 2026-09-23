@@ -1258,21 +1258,18 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                     # measured on #15778/#15836/#15877, where the API returns
                     # the field but this projection dropped it.
                     "completed_at": run.get("completed_at"),
-                    # #17364: `details_url` points at the Actions job behind
-                    # the check-run. The runner-death annotation reads the
-                    # job's steps through it; dropping it here would make that
-                    # enrichment inert in production while synthetic fixtures
-                    # (which set it by hand) stay green -- the exact #15905
-                    # shape, twice.
+                    # #17031/#17364: the check-run's `details_url` is the
+                    # ONLY way to trace a check back to the Actions job
+                    # behind it (`/actions/runs/<run_id>/job/<job_id>`).
+                    # #17031 needs it to ask the successor question in
+                    # `mark_inflight_successors` (cancelled-from-famine vs
+                    # cancelled-because-superseded); #17364's runner-death
+                    # annotation reads the job's steps through it. Dropping
+                    # it would make both enrichments inert in production
+                    # while synthetic fixtures (which set it by hand) stay
+                    # green -- the exact #15905 shape, twice.
                     "details_url": run.get("details_url"),
                     "id": run.get("id"),
-                    # #17031: the check-run's `details_url` is the ONLY way to
-                    # trace a check back to the workflow run that produced it
-                    # (`/actions/runs/<run_id>/job/<job_id>`). Without it the
-                    # gate cannot ask the single question that separates a
-                    # cancelled-from-famine check from a cancelled-because-
-                    # superseded one -- see `mark_inflight_successors`.
-                    "details_url": run.get("details_url"),
                 }
             )
         if not page_runs:
