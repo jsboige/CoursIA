@@ -27,6 +27,7 @@ FineTuning/
 ├── FT-00a-LoRA-from-scratch.ipynb             # LoRA sans peft : décomposition, gel, fusion
 ├── FT-00b-LoRA-Hyperparams-from-scratch.ipynb # Ablation rang × alpha, sweet-spots mesurés
 ├── FT-00c-LoRA-SOTA-Comparison.ipynb          # La même adaptation avec peft : la mesure coût/bénéfice
+├── FT-00d-LoRA-QLoRA-SOTA-Comparison.ipynb    # Bloc B.5 : QLoRA = peft + bitsandbytes 4-bit NF4 ; mesure structurelle de la fraction nn.Linear (le piège que bnb ne mord que sur Linear), cas SmallCNN/ResNet-20 dégénérés vs DistilBERT favorable
 ├── FT-01-Introduction-FineTuning.ipynb        # LoRA, full vs partial vs PEFT
 ├── FT-02-QLoRA-Quantization.ipynb             # Quantization 4-bit (NF4) + LoRA
 ├── FT-03-Supervised-FineTuning-SFT.ipynb      # SFT : contrat de format, Qwen3.5-0.8B
@@ -57,6 +58,7 @@ FineTuning/
 | [FT-00a](FT-00a-LoRA-from-scratch.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
 | [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
 | [FT-00c](FT-00c-LoRA-SOTA-Comparison.ipynb) | La même adaptation refaite avec `peft.LoraConfig` : paramètres, exactitude, lignes de code — le coût/bénéfice de l'outil SOTA mesuré | FT-00a | ~15 min | Intermédiaire |
+| [FT-00d](FT-00d-LoRA-QLoRA-SOTA-Comparison.ipynb) | QLoRA = peft + bitsandbytes 4-bit NF4 ; la mesure structurelle first-hand qui montre que bnb ne mord que sur `nn.Linear` (SmallCNN 20 %, ResNet-20 0.2 %, BigMLP 100 %, DistilBERT 70 %) — l'arbre de décision avant d'invoquer QLoRA | FT-00a, FT-00c | ~30 min | Intermédiaire |
 
 ## Technologies couvertes
 
