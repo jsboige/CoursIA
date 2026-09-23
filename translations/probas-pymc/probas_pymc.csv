@@ -6660,7 +6660,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,c0961fd6,markdown,fr
 - **Backdoor et front-door rendent l'effet causal identifiable** a partir de données observationnelles, sous conditions graphiques — formalisees par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
 
 ### Pour aller plus loin — le même do-calculus, d'autres paradigmes
-- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : l'armature formelle unifiee de Pearl (echelle + 3 règles) executee sur l'outil de reference `dowhy` (identification backdoor/front-door + estimation + refutation), qui relie cette serie a Tweety-11, Infer-5 et ICT-5.
+- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiee de Pearl (echelle + 3 règles) executee sur l'outil de reference `dowhy` (identification backdoor/front-door + estimation + refutation), qui relie cette serie a Tweety-11, Infer-5 et ICT-5.
 
 Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.do`). Le **même opérateur** structure trois autres series du depot, chacune dans un paradigme différent :
 

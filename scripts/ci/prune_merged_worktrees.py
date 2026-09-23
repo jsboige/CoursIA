@@ -162,6 +162,7 @@ import re
 import shutil
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -1375,5 +1376,42 @@ def main() -> int:
     return 0
 
 
+def run() -> int:
+    """`main()` avec le contrat d'erreur garanti (#17292).
+
+    `main()` ne rattrape que `RuntimeError` (l.1277-1299) : toute autre
+    exception s'echappait, et Python rend alors **1** en n'ecrivant rien sur
+    stdout. Or `1` est deja le code documente « des refus ont ete observes » :
+    l'appelant ne pouvait donc pas distinguer « l'outil a tourne et refuse » de
+    « l'outil n'a pas pu tourner ». Mesure : c'est exactement le couple
+    (`rc ∈ {0,1}`, stdout vide) qui a rougi `Scripts Tests (CPU)` sur des PRs de
+    plusieurs lanes le 2026-09-21, et que l'E2E lisait comme un
+    `JSONDecodeError: Expecting value: line 1 column 1`.
+
+    Ici une panne inattendue sort par le code d'erreur **documente** du script
+    (2), traceback sur stderr : `1` redevient non ambigu.
+    """
+    try:
+        return main()
+    except BrokenPipeError:
+        # Le consommateur a ferme le pipe (`| head`, `| jq -e` qui sort tot) :
+        # ce n'est PAS un echec de l'outil, et l'ecrire sur stderr serait un
+        # diagnostic faux. On ferme stdout pour que l'interpreteur ne re-tente
+        # pas d'y ecrire au shutdown, puis on sort sans code d'erreur.
+        try:
+            sys.stdout.close()
+        except OSError:
+            pass
+        return 0
+    except Exception:
+        traceback.print_exc()
+        print(
+            "ERROR: echec inattendu, pas une decision de l'outil "
+            "(voir le traceback ci-dessus)",
+            file=sys.stderr,
+        )
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())

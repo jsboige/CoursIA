@@ -39,6 +39,8 @@ References
 """
 from __future__ import annotations
 
+import inspect
+import os
 import warnings
 from typing import Any, Iterable
 
@@ -148,6 +150,44 @@ class TraceContractError(ValueError):
     lèvent ``ValueError``) ; le nom specialise permet un ``except`` cible
     côté notebooks si besoin.
     """
+
+
+# --------------------------------------------------------------------------- #
+# Emission d'avertissements -- localisation relative au depot (#16750)
+# --------------------------------------------------------------------------- #
+def _warn_localise(message: str, category: type[Warning] = UserWarning,
+                   stacklevel: int = 2) -> None:
+    """``warnings.warn`` a localisation **relative au depot** (#16750).
+
+    Meme message, meme categorie, meme ligne et meme registre de
+    deduplication que ``warnings.warn(..., stacklevel=stacklevel)`` ; seule
+    difference : le nom de fichier rendu est le *basename* du module
+    designe, pas son chemin absolu.
+
+    POURQUOI. ``warnings.warn`` fait rendre par le formateur le
+    ``co_filename`` de la trame designee -- que l'import system a rendu
+    **absolu**. Un notebook re-execute portait donc
+    ``D:\\Dev\\<worktree>\\...\\sae_traces.py:129: UserWarning: ...`` : le
+    layout disque de l'executant, que la classe ``MACHINE_PATH`` du gate
+    (``check_output_failure_text.py``) ratchete de 0 a N contre la base de
+    fusion. Le module et la ligne sont l'information utile ; le chemin de
+    l'executant n'en est pas une. Corriger ici rend la fuite
+    structurellement impossible pour les cinq notebooks qui chargent le
+    contrat via :func:`ict.sae_traces.load_traces`, sans toucher une seule
+    sortie commitee (regle 6 : corriger la cause, jamais scrubber).
+    """
+    frame = inspect.currentframe()
+    try:
+        for _ in range(stacklevel):
+            frame = frame.f_back
+        lineno = frame.f_lineno
+        filename = os.path.basename(frame.f_code.co_filename)
+        module = frame.f_globals.get("__name__", __name__)
+        registry = frame.f_globals.setdefault("__warningregistry__", {})
+    finally:
+        del frame
+    warnings.warn_explicit(message, category, filename, lineno,
+                           module=module, registry=registry)
 
 
 # --------------------------------------------------------------------------- #
@@ -264,14 +304,14 @@ def validate_manifest(meta: dict, *, strict: bool = False,
                   or "lens_rank" in out):
                 inst = "jlens"
             if inst is not None:
-                warnings.warn(
+                _warn_localise(
                     f"trace historique chargee sans 'instrument' ni 'lens' "
                     f"legacy ; infere instrument={inst!r} depuis les champs "
                     f"presents dans le manifeste (acceptance #4 retro-compat). "
                     f"Migrer l'extracteur GPU pour poser meta['instrument'] "
                     f"canoniquement -- le contrat v1 prefere la declaration "
                     f"explicite a l'inference.",
-                    UserWarning, stacklevel=2)
+                    UserWarning)
                 out["instrument"] = inst
             elif strict:
                 raise TraceContractError(
@@ -318,7 +358,7 @@ def validate_manifest(meta: dict, *, strict: bool = False,
         # Gate 6 qui declare ``{"lens": "jacobian", "d_sae": 4, "k": k}``
         # sans ``layer``).
         if expected is not None and missing == ["layer"] and not strict:
-            warnings.warn(
+            _warn_localise(
                 f"manifeste sans 'layer' charge par le chargeur "
                 f"expected={expected!r} -- 'layer' n'est pas discriminant "
                 f"pour la lecture (acceptance #4 retro-compat, Tell c.1050 "
@@ -327,7 +367,7 @@ def validate_manifest(meta: dict, *, strict: bool = False,
                 f"champs d'ALIGNMENT_KEYS restent valides). Migrer "
                 f"l'extracteur GPU pour poser meta['layer'] canoniquement "
                 f"-- le contrat v1 prefere la declaration explicite.",
-                UserWarning, stacklevel=2)
+                UserWarning)
         else:
             raise TraceContractError(
                 f"champs obligatoires manquants : {sorted(missing)}. Le "
