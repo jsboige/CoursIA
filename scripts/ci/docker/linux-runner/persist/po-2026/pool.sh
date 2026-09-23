@@ -58,6 +58,7 @@ ensure_host_contract() {
   [ -x "$bin/gh" ]     || { echo "$(date -Is) CONTRAT: gh ABSENT de $bin — poser la release Linux officielle (l'image epingle 2.99.0+SHA256) ; sans lui des gardes sortent en exit 0 SANS poster"; rc=1; }
   [ -n "${PIP_BREAK_SYSTEM_PACKAGES:-}" ] || { echo "$(date -Is) CONTRAT: PIP_BREAK_SYSTEM_PACKAGES non pose"; rc=1; }
   command -v gh >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: gh INVISIBLE du PATH du pool (relance depuis session interactive ?) — existence du fichier ne suffit pas (reserve #17406 c.5784716255)"; rc=1; }
+  command -v patchelf >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: patchelf INVISIBLE ($bin/patchelf) — re-patch RUNPATH du toolcache impossible (ASK secretary c.37 2026-09-23)"; rc=1; }
   mkdir -p "$RUNNER_TOOL_CACHE" 2>/dev/null || { echo "$(date -Is) CONTRAT: RUNNER_TOOL_CACHE non creable ($RUNNER_TOOL_CACHE)"; rc=1; }
   [ "$rc" -eq 0 ] && echo "$(date -Is) contrat d'image: bins/python OK ($( "$bin/gh" --version 2>/dev/null | head -1 )), toolcache=$RUNNER_TOOL_CACHE"
   return $rc
@@ -70,6 +71,24 @@ ensure_bundle() {
   ver=${url##*v}
   curl -sL -o "$BUNDLE" "https://github.com/actions/runner/releases/download/v${ver}/actions-runner-linux-x64-${ver}.tar.gz"
   [ -s "$BUNDLE" ]
+}
+
+# RUNPATH du CPython exporte depuis l'image Docker (ld-loader, 2026-09-23, ASK
+# secretary c.37) : le binaire porte RUNPATH=/opt/hostedtoolcache/Python/.../lib
+# (chemin Docker, ABSENT en WSL natif) — sous un env minimal (gauntlet, anciennes
+# bases anterieures a #17415) le loader meurt en exit 127 stdout vide sur
+# libpython3.11.so.1.0. Le patch $ORIGIN/../lib rend la resolution independante
+# de l'env. Une extraction setup-python le perd : re-application au boot (slots
+# existants) et a chaque tick (extraction survenue depuis le tick precedent) —
+# idempotent, 8 readelf par 30s.
+repatch_toolcache_pythons() {
+  local py
+  while IFS= read -r -d '' py; do
+    if readelf -d "$py" 2>/dev/null | grep -q '/opt/hostedtoolcache'; then
+      patchelf --set-rpath '$ORIGIN/../lib' "$py" 2>/dev/null \
+        && echo "$(date -Is) rpath repatche: $py" || echo "$(date -Is) rpath ECHEC: $py"
+    fi
+  done < <(find "$TOOLCACHE_BASE" -path '*/Python/3.11.16/x64/bin/python3.11' -type f -print0 2>/dev/null)
 }
 
 spawn_slot() { # $1 = slot — bloque jusqu'a la fin du job (ephemere = 1 job)
@@ -96,6 +115,7 @@ ensure_bundle || { echo "$(date -Is) telechargement bundle echoue"; exit 1; }
 # Verifie le contrat AVANT d'ouvrir des slots : un contrat incomplet se lit dans pool.log au demarrage,
 # pas trois heures plus tard dans le rouge d'une PR d'une autre lane.
 ensure_host_contract || echo "$(date -Is) contrat d'image INCOMPLET — les jobs servis par ce pool peuvent rendre des faux rouges ou des verts fabriques"
+repatch_toolcache_pythons
 
 declare -A PIDS
 echo "$(date -Is) pool demarre (POOL_SIZE=$POOL_SIZE)"
@@ -106,5 +126,6 @@ while :; do
       spawn_slot "$i" & PIDS[$i]=$!
     fi
   done
+  repatch_toolcache_pythons
   sleep 30
 done
