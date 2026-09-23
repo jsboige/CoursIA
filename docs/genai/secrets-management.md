@@ -82,6 +82,8 @@ Le câblage depuis #14382 ne fait plus dériver — et ne passe **jamais** par l
 
 `COMFYUI_RAW_TOKEN` (le mot de passe en clair avant hash, utile seulement au login formulaire `COMFYUI_USERNAME`/`COMFYUI_PASSWORD`) **ne transite plus par aucun `.env` géré** — la forme brute ne doit pas vivre dans les `.env` (seule la forme hashée y circule). `auth_manager.py` n'écrit plus `COMFYUI_BEARER_TOKEN`/`COMFYUI_RAW_TOKEN` dans les `.env`.
 
+**`COMFYUI_BEARER_TOKEN` est un nom retiré (pré-#14382).** Il ne vit plus que dans les archives (`docs/archive/`, `scripts/genai-stack/_archive/`), les tests de tolérance legacy (`test_genai_stack_pure.py` préserve sans réécrire ; `verify_running_containers.py` tolère les services déployés avant le recâblage fichier) et les commentaires historiques. Toute occurrence vivante qui le *prescrit* comme nom requis est un bug — le canon est `COMFYUI_API_TOKEN` (alias notebooks `COMFYUI_AUTH_TOKEN`), sweep #16647.
+
 ### Qdrant — convention client vs serveur (cross-repo)
 
 Qdrant expose la **même** clé API sous **deux noms** selon le côté :
