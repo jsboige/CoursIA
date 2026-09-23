@@ -27,11 +27,22 @@ Acceptance issue #17496 :
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+# Le runner WSL self-hosted du CI (myia-ai-01-wsl-4) tombe en RLIMIT_NPROC
+# quand pytest-xdist lance plusieurs sous-processes git en parallele
+# (fork() -> "Resource temporarily unavailable"). Le test lui-meme est
+# lineaire et n'a aucun interet a etre parallelise : on declare la
+# classe ``serial`` pour que pytest-xdist l'isole, et on force
+# ``GIT_OPTIONAL_LOCKS=0`` pour reduire les forks internes de git
+# (sideband demultiplexer, rev-list worker, pack-objects helper).
+os.environ.setdefault("GIT_OPTIONAL_LOCKS", "0")
+pytestmark = pytest.mark.xdist_group(name="serial-git")
 
 # scripts/coordination/session_hygiene.py est un module plat (pas un
 # package). On l'importe via spec_from_file_location comme dans le conftest
@@ -53,7 +64,20 @@ _spec.loader.exec_module(session_hygiene)
 
 def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     """Lance une commande git. Si ``cwd`` est None, le depot nu est cree
-    a partir du cwd courant (utilise pour ``git init --bare``)."""
+    a partir du cwd courant (utilise pour ``git init --bare``).
+
+    Les variables d'environnement suivantes sont forcees pour rester sous
+    RLIMIT_NPROC sur le runner WSL self-hosted (myia-ai-01-wsl-4) :
+      * ``GIT_OPTIONAL_LOCKS=0`` : pas de verrous d'optimisation
+      * ``GIT_PACK_THREADS=1`` : pack-objects sur 1 seul thread
+      * ``GIT_REV_LIST_THREADS=1`` : idem pour ``rev-list``
+    """
+    env = {
+        **os.environ,
+        "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_PACK_THREADS": "1",
+        "GIT_REV_LIST_THREADS": "1",
+    }
     proc = subprocess.run(
         ["git", *args],
         cwd=str(cwd) if cwd else None,
@@ -63,6 +87,7 @@ def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
         errors="replace",
         check=False,
         timeout=30,
+        env=env,
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -92,7 +117,9 @@ def _make_mini_repo(tmp_path: Path, name: str = "repo") -> Path:
     (repo / "README.md").write_text("# Test\n", encoding="utf-8")
     _run("add", "README.md", cwd=repo)
     _run("commit", "-m", "init", "--quiet", cwd=repo)
-    _run("push", "-u", "origin", "main", "--quiet", cwd=repo)
+    _run(
+        "push", "-u", "origin", "main", "--quiet", cwd=repo,
+    )
 
     return repo
 
@@ -105,7 +132,9 @@ def _branch_create(repo: Path, branch: str, file: str, content: str) -> None:
     target.write_text(content, encoding="utf-8")
     _run("add", file, cwd=repo)
     _run("commit", "-m", f"add {file}", "--quiet", cwd=repo)
-    _run("push", "origin", branch, "--quiet", cwd=repo)
+    _run(
+        "push", "origin", branch, "--quiet", cwd=repo,
+    )
 
 
 def _squash_merge(repo: Path, branch: str, file: str) -> None:
@@ -118,7 +147,9 @@ def _squash_merge(repo: Path, branch: str, file: str) -> None:
     _run("checkout", "main", "--quiet", cwd=repo)
     _run("merge", "--squash", branch, "--quiet", cwd=repo)
     _run("commit", "-m", f"squash {branch}", "--quiet", cwd=repo)
-    _run("push", "origin", "main", "--quiet", cwd=repo)
+    _run(
+        "push", "origin", "main", "--quiet", cwd=repo,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -274,7 +305,9 @@ def test_third_pair_pre_consolidation_predicate_reproduces(tmp_path):
     (repo / "bar.md").write_text("bar\n", encoding="utf-8")
     _run("add", "bar.md", cwd=repo)
     _run("commit", "-m", "add bar", "--quiet", cwd=repo)
-    _run("push", "origin", "feature/cover", "--quiet", cwd=repo)
+    _run(
+        "push", "origin", "feature/cover", "--quiet", cwd=repo,
+    )
 
     checks = session_hygiene.check_branch(repo)
     c = checks[0]
