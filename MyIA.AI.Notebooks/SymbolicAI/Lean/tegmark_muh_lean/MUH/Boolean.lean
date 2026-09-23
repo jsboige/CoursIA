@@ -17,10 +17,12 @@ R (Sheffer / NAND), qui satisfait :
 Ce module :
   - définit l'algèbre de Boole comme `Structure` (1 ensemble à 2 éléments,
     4 relations Booléennes — F, T, NOT, AND — Tegmark eq. (A1)),
-  - définit la version « Sheffer » à 1 générateur NAND,
-  - vérifie que les deux encodages sont **équivalents** au sens de Tegmark
-    (même classe de structures finies, c'est-à-dire même univers de relations
-    accessibles par composition). -/
+  - définit la version « Sheffer » à 1 générateur NAND.
+
+**Scope réel** : ce module **ne prouve pas** l'équivalence Sheffer ↔ 4
+  générateurs ; il exhibe les deux encodages comme `Structure` distinctes. La
+  preuve d'équivalence (même univers de relations accessibles par composition)
+  est hors-scope de cette PR — voir #16958 pour le suivi. -/
 
 namespace Boolean
 
