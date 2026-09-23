@@ -60,6 +60,9 @@ if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
   if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
   exit 0
 fi
+# Pilote cgroup du daemon (Test 59) : `docker info --format {{.CgroupDriver}}`.
+# Vide par defaut -- les autres tests gardent le chemin cgroupfs inchange.
+if [ "\$1" = "info" ]; then echo "\${STUB_CGROUP_DRIVER:-}"; exit 0; fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -2737,6 +2740,51 @@ echo "Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce"
     ok "budget declare : aucun avertissement d'implicite"
   fi
   unset COURSIA_RUNNER_BUDGET_GB
+)
+echo ""
+
+echo "Test 59 : pilote systemd -> --cgroup-parent = NOM de slice, pas chemin cgroupfs"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  source_supervise
+  # Meme arborescence que la vraie slice d'ai-01 : coursia.slice/coursia-ci.slice.
+  mkdir -p "$TEST_DIR/cg59/coursia.slice/coursia-ci.slice"
+  echo 51539607552 > "$TEST_DIR/cg59/coursia.slice/coursia-ci.slice/memory.max"
+  echo 42949672960 > "$TEST_DIR/cg59/coursia.slice/coursia-ci.slice/memory.high"
+  CI_SLICE_PATH="$TEST_DIR/cg59/coursia.slice/coursia-ci.slice"
+  REQUIRE_CI_SLICE=1
+
+  # (a) systemd : runc refuse « coursia.slice/coursia-ci.slice » (invalid slice
+  #     name, mesure ai-01 2026-09-23) -- le parent doit etre le nom de la feuille.
+  CI_CGROUP_PARENT="coursia.slice/coursia-ci.slice"
+  STUB_CGROUP_DRIVER=systemd assert_ci_slice > "$TEST_DIR/cg59a.out" 2>&1; rc=$?
+  if [ "$rc" = "0" ] && [ "$CI_CGROUP_PARENT" = "coursia-ci.slice" ]; then
+    ok "pilote systemd : parent = coursia-ci.slice"
+  else
+    ko "pilote systemd : parent attendu coursia-ci.slice, vaut '$CI_CGROUP_PARENT' (rc=$rc)"
+  fi
+
+  # (b) cgroupfs : le chemin relatif a la racine reste celui qui place le conteneur.
+  CI_CGROUP_PARENT="coursia.slice/coursia-ci.slice"
+  STUB_CGROUP_DRIVER=cgroupfs assert_ci_slice > "$TEST_DIR/cg59b.out" 2>&1; rc=$?
+  if [ "$rc" = "0" ] && [ "$CI_CGROUP_PARENT" = "coursia.slice/coursia-ci.slice" ]; then
+    ok "pilote cgroupfs : chemin relatif inchange"
+  else
+    ko "pilote cgroupfs : chemin relatif attendu, vaut '$CI_CGROUP_PARENT' (rc=$rc)"
+  fi
+
+  # (c) slice absente : la neutralisation du placement n'est pas re-armee par le
+  #     pilote -- pas de --cgroup-parent vers un mur qui n'existe pas.
+  CI_SLICE_PATH="$TEST_DIR/cg59/absente.slice"
+  REQUIRE_CI_SLICE=0
+  CI_CGROUP_PARENT="fantome.slice"
+  STUB_CGROUP_DRIVER=systemd assert_ci_slice > "$TEST_DIR/cg59c.out" 2>&1; rc=$?
+  if [ "$rc" = "0" ] && [ -z "$CI_CGROUP_PARENT" ]; then
+    ok "slice absente sous systemd : placement toujours neutralise"
+  else
+    ko "slice absente : parent attendu vide, vaut '$CI_CGROUP_PARENT' (rc=$rc)"
+  fi
 )
 echo ""
 

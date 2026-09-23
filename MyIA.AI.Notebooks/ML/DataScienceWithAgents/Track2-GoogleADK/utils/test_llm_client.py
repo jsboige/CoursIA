@@ -34,7 +34,7 @@ def _cfg(provider, model=None, api_key=None, base_url=None):
     """Build an explicit ProviderConfig (no .env)."""
     return ProviderConfig(
         provider=provider,
-        model=model or "gpt-4o",
+        model=model or "gpt-5.6-sol",
         api_key=api_key,
         base_url=base_url,
     )
@@ -54,11 +54,11 @@ def _fake_response(text="pong"):
 # --- LLMClient.__init__ ----------------------------------------------------
 
 def test_init_explicit_config_sets_model():
-    c = _cfg(ProviderType.OPENAI, model="gpt-4o")
+    c = _cfg(ProviderType.OPENAI, model="gpt-5.6-sol")
     client = LLMClient(config=c)
     assert client.config is c
-    # LiteLLM models are prefixed with the provider key: openai/gpt-4o.
-    assert client.model == "openai/gpt-4o"
+    # LiteLLM models are prefixed with the provider key: openai/gpt-5.6-sol.
+    assert client.model == "openai/gpt-5.6-sol"
 
 
 def test_init_gemini_provider_prefix():
@@ -191,9 +191,9 @@ def test_generate_extra_kwargs_merged(mock_completion):
 @patch("utils.llm_client.completion")
 def test_generate_model_forwarded(mock_completion):
     mock_completion.return_value = _fake_response("ok")
-    client = LLMClient(config=_cfg(ProviderType.OPENAI, model="gpt-4o"))
+    client = LLMClient(config=_cfg(ProviderType.OPENAI, model="gpt-5.6-sol"))
     client.generate("hi")
-    assert mock_completion.call_args.kwargs["model"] == "openai/gpt-4o"
+    assert mock_completion.call_args.kwargs["model"] == "openai/gpt-5.6-sol"
 
 
 # --- chat() ----------------------------------------------------------------
@@ -222,9 +222,9 @@ def test_chat_vllm_api_base(mock_completion):
 # --- __repr__ --------------------------------------------------------------
 
 def test_repr_format():
-    client = LLMClient(config=_cfg(ProviderType.OPENAI, model="gpt-4o"))
+    client = LLMClient(config=_cfg(ProviderType.OPENAI, model="gpt-5.6-sol"))
     r = repr(client)
-    assert r == "LLMClient(provider=openai, model=gpt-4o)"
+    assert r == "LLMClient(provider=openai, model=gpt-5.6-sol)"
 
 
 def test_repr_vllm_provider():

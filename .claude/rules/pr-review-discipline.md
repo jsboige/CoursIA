@@ -20,6 +20,10 @@ Formes **muettes** (mesurées : `classify()` rend `None`) — le token **encagé
 
 Ne pas compter sur le token de blocage **nu** : c'est un **résidu assumé** de l'organe (il éviterait le tag de protocole de lane et la négation « n'est plus … »). Table de vérité complète, mécanique et instance fondatrice : [pr-review-context.md](../../docs/reference/pr-review-context.md).
 
+## Lecture de l'état des checks — à la source, dans les DEUX sens (HARD, #16765)
+
+`statusCheckRollup` est une **liste plate non triée** qui contient toutes les jambes du head, **y compris celles supersedées** par une tentative plus récente (rouges périmés compris — 12/160 PRs mesurées, dont les fondateurs #16232/#16499/#16579 : six rouges tous supersedés sur le même head). **Ne jamais refuser un merge sur le premier rouge de la liste**, ni acquitter sur son premier vert : re-lire à la source `commits/<headRefOid>/check-runs` et plier **dernier `started_at` par nom** — `python scripts/check_run_state.py --pr <N>` fait la lecture (fold canonique `pr_gate.py::dedupe_latest`, contrat dossier `checks: latest-wins-green`). Un `latest` vert n'est **pas** une preuve de mergeabilité : une jambe rouge résiduelle d'une suite distincte a déjà bloqué une PR verte (#11532, CodeQL) — le helper rend ces `residual_reds`, le verdict de merge reste `mergeStateStatus`.
+
 ## Critères CHANGES_REQUESTED obligatoires (HARD)
 
 Un reviewer **DOIT** poster `state: CHANGES_REQUESTED` (pas COMMENTED, pas APPROVED) si **un seul** point est violé. APPROVED malgré violation = **complicité de complaisance**.
