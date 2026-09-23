@@ -87,6 +87,41 @@ def repo_root() -> Path:
     return Path(root)
 
 
+def check_fetch(root: Path) -> list[Check]:
+    """Le fetch est la premiere mesure : s'il echoue, tout ce qui suit compare a un origin/main perime.
+
+    Le helper ``git()`` rend une chaine vide sur echec, ce qui est juste pour une lecture mais
+    faux ici : un fetch rate en silence ferait afficher des verts (``behind``, ``organe:*``)
+    calcules contre une reference d'hier. L'organe denonce le geste qui echoue sans le dire ;
+    il ne peut pas faire la meme chose a sa premiere etape.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "fetch", "origin", "--quiet"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+        rc, err = out.returncode, out.stderr.strip()
+    except (OSError, subprocess.SubprocessError) as exc:
+        rc, err = -1, str(exc)
+    if rc == 0:
+        return [Check("fetch", GREEN, "origin a jour")]
+    first = err.splitlines()[0][:160] if err else f"rc={rc}"
+    return [
+        Check(
+            "fetch",
+            RED,
+            f"git fetch origin a echoue ({first}) : chaque mesure ci-dessous compare a un "
+            "origin/main perime, un vert n'y vaut rien",
+            fix="retablir le reseau ou le credential, puis relancer",
+        )
+    ]
+
+
 def check_branch(root: Path) -> list[Check]:
     """Sur quelle branche est l'arbre, et de combien est-il en retard sur origin/main ?"""
     checks: list[Check] = []
@@ -281,9 +316,8 @@ def main() -> int:
     args = ap.parse_args()
 
     root = repo_root()
-    git("fetch", "origin", "--quiet", cwd=root)
 
-    checks: list[Check] = []
+    checks: list[Check] = check_fetch(root)
     checks += check_branch(root)
     checks += check_main_hostage(root)
     checks += check_organs(root)
@@ -330,4 +364,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as exc:  # 1 est reserve a « au moins un ROUGE » : une panne n'est pas un verdict
+        print(f"session_hygiene: erreur d'execution {exc!r}", file=sys.stderr)
+        sys.exit(2)
