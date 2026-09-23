@@ -12843,7 +12843,7 @@ print(f""ComfyUI URL : {comfyui_url}"")
 print(f""Workflow : {workflow_type}"")
 print(f""VideoHelperSuite : {enable_video_helper}"")",,,,,,,,07ea863a9f12fb20,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,p8bll0kz2f,markdown,fr,91fd5baa8e92df8e,Les variables d'environnement et le token d'authentification ComfyUI sont charges depuis le fichier `.env`. On verifie ensuite la connectivite au service avant de soumettre des workflows.,,,,,,,,91fd5baa8e92df8e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-env,code,fr,d93e066da0ec9312,"# Chargement .env et verification de la connexion ComfyUI
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-env,code,fr,bf5894a84a64097a,"# Chargement .env et verification de la connexion ComfyUI
 # Chargement robuste de la configuration .env
 from dotenv import load_dotenv
 import os
@@ -12864,7 +12864,9 @@ if not env_loaded:
     print(""WARNING: .env non trouve, utilisation variables environnement"")
 
 # Token d'authentification ComfyUI
-comfyui_token = os.environ.get('COMFYUI_AUTH_TOKEN', os.environ.get('COMFYUI_BEARER_TOKEN', ''))
+# COMFYUI_VIDEO_TOKEN d'abord : l'instance video a son propre jeton, les
+# noms generiques portent celui du stack qwen (mesure : 200 vs 401 sur :8189).
+comfyui_token = os.environ.get('COMFYUI_VIDEO_TOKEN', os.environ.get('COMFYUI_API_TOKEN', os.environ.get('COMFYUI_AUTH_TOKEN', '')))
 if comfyui_token:
     print(f""Token ComfyUI : configure"")
 else:
@@ -12939,7 +12941,7 @@ except Exception as e:
     run_workflow = False
 
 print(f""\nComfyUI disponible : {comfyui_available}"")
-print(f""Workflow active : {run_workflow}"")",,,,,,,,d93e066da0ec9312,,,,,,,,
+print(f""Workflow active : {run_workflow}"")",,,,,,,,bf5894a84a64097a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-section1-intro,markdown,fr,8bcaac4894bb6bd8,"## Section 1 : API ComfyUI et soumission de workflows
 
 ComfyUI expose une API REST et WebSocket pour piloter la generation.
@@ -13437,7 +13439,7 @@ print(f""  Chercheur/Dev Python : diffusers (controle total, scripts personnalis
 print(f""  Artiste/Designer : ComfyUI (interface visuelle, workflows partageables)"")
 print(f""  Production : ComfyUI API (GPU distant, file d'attente, monitoring)"")",,,,,,,,ae8f2e1199712c4d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,wr2vd0mz0o,markdown,fr,463b8477de023eb2,"En mode interactif, l'utilisateur peut modifier les paramètres du workflow (prompt, pas de diffusion, resolution) et soumettre une nouvelle generation sans relancer tout le notebook.",,,,,,,,463b8477de023eb2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-interactive,code,fr,f3435e43975d3b7f,"# Mode interactif : modifier les parametres du workflow
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-interactive,code,fr,71bbdd0b71a6786a,"# Mode interactif : modifier les parametres du workflow
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
     print(""="" * 40)
@@ -13493,12 +13495,12 @@ if notebook_mode == ""interactive"" and not skip_widgets:
     except Exception as e:
         error_type = type(e).__name__
         if ""StdinNotImplemented"" in error_type or ""input"" in str(e).lower():
-            print(""\nMode interactif non disponible (execution automatisee)"")
+            print(""\nMode interactif ignore en execution automatisee (mode batch)"")
         else:
             print(f""\nErreur inattendue : {error_type} - {str(e)[:100]}"")
             print(""Passage a la suite du notebook"")
 else:
-    print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,f3435e43975d3b7f,,,,,,,,
+    print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,71bbdd0b71a6786a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,73dhieicnau,markdown,fr,3c4823e3dc619be2,"La conclusion recapitule les différences entre l'approche ComfyUI (workflow graph JSON) et l'approche diffusers (code Python direct), pour guider le choix selon le contexte.",,,,,,,,3c4823e3dc619be2,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,cell-conclusion,markdown,fr,8a074c48aa06750f,"## Bonnes pratiques ComfyUI pour la video
 
@@ -20425,8 +20427,6 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Vid
 **Navigation** : [<< 04-5 H3/v2 cloud](04-5-MiniMax-H3-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
 
 *MiniMax video-01 (v1) — Generation video par service cloud `/v1/video_generation`, modele `video-01` (Hailuo line, muet), plan-couvert UE.*",,,,,,,,179b687ee701a8fc,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,2a6a4d49,code,fr,008a00cf1417db51,"# Parameters
-notebook_mode = ""batch""
-skip_widgets = True
-comfyui_url = ""http://localhost:8189""
-",,,,,,,,008a00cf1417db51,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,bec0f46c,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
