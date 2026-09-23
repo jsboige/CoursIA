@@ -58,7 +58,7 @@ FineTuning/
 | [FT-00a](FT-00a-LoRA-from-scratch.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
 | [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
 | [FT-00c](FT-00c-LoRA-SOTA-Comparison.ipynb) | La même adaptation refaite avec `peft.LoraConfig` : paramètres, exactitude, lignes de code — le coût/bénéfice de l'outil SOTA mesuré | FT-00a | ~15 min | Intermédiaire |
-| [FT-00d](FT-00d-LoRA-QLoRA-SOTA-Comparison.ipynb) | QLoRA = peft + bitsandbytes 4-bit NF4 ; la mesure structurelle first-hand qui montre que bnb ne mord que sur `nn.Linear` (SmallCNN 20 %, BigMLP 100 %, DistilBERT 70 %) — l'arbre de décision avant d'invoquer QLoRA | FT-00a, FT-00c | ~30 min | Intermédiaire |
+| [FT-00d](FT-00d-LoRA-QLoRA-SOTA-Comparison.ipynb) | QLoRA = peft + bitsandbytes 4-bit NF4 ; la mesure structurelle first-hand qui montre que bnb ne mord que sur `nn.Linear` (SmallCNN 19.85 %, BigMLP 100 %, DistilBERT 64.37 % — mesures first-hand) — l'arbre de décision avant d'invoquer QLoRA | FT-00a, FT-00c | ~30 min | Intermédiaire |
 
 ## Technologies couvertes
 
