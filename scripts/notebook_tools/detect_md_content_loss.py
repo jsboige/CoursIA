@@ -54,10 +54,13 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      pas par nombre d'occurrences : une cible de base absente de la tete
      n'est PERDUE que si elle etait vivante en base (une cible morte qui
      disparait est une reparation), si aucun libelle de son lien ne survit
-     en tete (retarget assumee), et si la tete n'a gagne aucune cible
-     nouvelle (barre reconstruite). Dedoublonner un bloc de navigation
-     legacy duplique ne perd aucune cible -> vert (#17392 : 7 instances ->
-     4, 4 cibles -> 3, la cible perdue etait un README inexistant en base).
+     en tete (retarget assumee), et si les cibles nouvelles gagnees en tete
+     ne compensent pas les perdues (e3 bornee 1:1 : une barre qui perd 3
+     cibles vivantes et en gagne 1 n'est pas reconstruite). Dedoublonner
+     un bloc de navigation legacy duplique ne perd aucune cible -> vert
+     (#17392 : 7 instances -> 4, 4 cibles -> 3 ; la cible perdue, VIVANTE,
+     garde son libelle ``Index`` en tete -- excuse e2, arbitrage sur la
+     portee d'e2 en cours cote coordinateur).
 
   5. NE BLOQUE PAS LA REFORMULATION LEGITIME : le detecteur SIGNALE, la PR
      justifie en review (design #4). Sortie exploitable : fichier / cellule /
@@ -315,8 +318,8 @@ def _nav_target_live(target: str, nb_path: Path, ref: str | None) -> bool:
     NON VERIFIABLE (lien externe, ancre pure) est reputee VIVE : le garde
     reste conservateur (il signale) quand il ne peut pas trancher. Une cible
     verifiable et ABSENTE a la base est MORTE : sa disparition en tete est une
-    REPARATION, pas une perte de contenu (#17392 : le footer legacy
-    ``[Index ML](../../../../README.md)`` pointait un README inexistant).
+    REPARATION, pas une perte de contenu (ex. : un footer legacy pointant un
+    README jamais commis).
     """
     path = target.split("#", 1)[0].strip()
     if not path or "://" in path or path.startswith("mailto:"):
@@ -832,9 +835,11 @@ def _compare_motifs(base_counts: dict, head_counts: dict,
       (e2) un libelle de son lien de base survit en tete pointant ailleurs --
            le RETARGET est une re-cible assumee, l'affleurement de navigation
            garde son etiquette ;
-      (e3) la tete a gagne au moins une cible distincte NOUVELLE -- la barre
-           a ete reconstruite, pas videe (re-cible historique notebook ->
-           README de serie, cf. la note de ``NAV_LINK_RE``).
+      (e3) les cibles distinctes NOUVELLES gagnees en tete compensent les
+           perdues (BORNEE 1:1 : N cibles gagnees n'excusent que N cibles
+           perdues -- une seule cible nouvelle n'efface pas une hecatombe ;
+           re-cible historique notebook -> README de serie, cf. la note de
+           ``NAV_LINK_RE``).
 
     Sans contexte de resolution (``nav_base_path=None``, tests unitaires sur
     fixtures sans depot), la liveness est reputee VIVE (conservateur : le
@@ -871,9 +876,13 @@ def _compare_motifs(base_counts: dict, head_counts: dict,
             continue
         if base_map[tgt] & head_texts:
             continue  # (e2) retarget : le libelle survit pointant ailleurs
-        if gained:
-            continue  # (e3) reconstruction : la tete gagne une cible nouvelle
         lost_targets.append(tgt)
+
+    # (e3) reconstruction, BORNEE 1:1 : les cibles nouvelles n'excusent les
+    # perdues qu'a nombre egal ou superieur (une cible nouvelle seule
+    # n'excuse pas plusieurs cibles vivantes perdues).
+    if lost_targets and len(lost_targets) <= len(gained):
+        lost_targets = []
 
     if lost_targets:
         findings.append({
