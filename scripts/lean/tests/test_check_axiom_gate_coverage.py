@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_axiom_gate_coverage import (  # noqa: E402
     calls_gate,
+    classify_deleted,
     deleted_dispatchers,
     filewide_project_paths,
     gate_project_paths,
@@ -233,10 +234,45 @@ class TestDeletedDispatchers:
         if not entries:
             pytest.skip(f"no deleted dispatchers visible at {_REF}")
         for e in entries:
-            assert set(e) == {"dispatcher", "deleted_by", "had_gate"}
+            assert set(e) == {"dispatcher", "deleted_by", "had_gate", "gated_paths"}
             assert isinstance(e["had_gate"], bool)
             assert e["dispatcher"].startswith("lean-")
             assert e["deleted_by"], "a deletion must carry the commit that made it"
+            assert isinstance(e["gated_paths"], list)
+
+
+class TestClassifyDeleted:
+    """Deplacer le gate n'est pas le perdre — et l'illisible reste PERDU."""
+
+    def _d(self, paths):
+        return {"dispatcher": "lean-x.yml", "deleted_by": "0123456789",
+                "had_gate": True, "gated_paths": paths}
+
+    def test_full_recoverage_is_relocation_not_loss(self):
+        d = self._d(["A/a_lean", "B/b_lean"])
+        r = classify_deleted([d], {"A/a_lean", "B/b_lean", "C/c_lean"})
+        assert r["lost"] == [] and r["never"] == []
+        assert [e["dispatcher"] for e in r["relocated"]] == ["lean-x.yml"]
+
+    def test_one_uncovered_path_keeps_it_lost(self):
+        d = self._d(["A/a_lean", "B/b_lean"])
+        r = classify_deleted([d], {"A/a_lean"})
+        assert r["relocated"] == [] and r["never"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_gate_without_project_path_fails_closed(self):
+        """A caller that passed no project-path cannot prove coverage moved."""
+        d = self._d([])
+        r = classify_deleted([d], {"A/a_lean"})
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_never_had_gate_stays_never(self):
+        d = {"dispatcher": "lean-y.yml", "deleted_by": "0123456789",
+             "had_gate": False, "gated_paths": []}
+        r = classify_deleted([d], set())
+        assert r["lost"] == [] and r["relocated"] == []
+        assert [e["dispatcher"] for e in r["never"]] == ["lean-y.yml"]
 
 
 class TestMeasurePartition:
@@ -262,11 +298,12 @@ class TestMeasurePartition:
         for wf, paths in report["gate_callers"].items():
             assert paths, f"{wf} calls the gate but passes no project-path"
 
-    def test_lost_and_never_had_are_disjoint_and_exhaustive(self, report):
+    def test_lost_relocated_and_never_had_are_disjoint_and_exhaustive(self, report):
         lost = {d["dispatcher"] for d in report["lost_gate"]}
+        relocated = {d["dispatcher"] for d in report["gate_relocated"]}
         never = {d["dispatcher"] for d in report["never_had_gate"]}
-        assert not (lost & never)
-        assert len(lost) + len(never) == report["deleted_dispatchers"]
+        assert not (lost & relocated) and not (lost & never) and not (relocated & never)
+        assert len(lost) + len(relocated) + len(never) == report["deleted_dispatchers"]
 
     def test_verdict_is_not_dressed_as_an_acceptance_criterion(self, report):
         assert "not_an_acceptance_criterion" in report
