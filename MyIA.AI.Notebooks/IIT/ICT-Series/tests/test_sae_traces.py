@@ -15,6 +15,7 @@ Couvrent :
 import json
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -117,6 +118,68 @@ def test_differential_features_truncated_when_all_polluted():
     # impaires restent, la sortie ne depasse pas leur nombre.
     assert set(feats.tolist()) <= {1, 3, 5, 7}
     assert np.isfinite(np.stack(list(st.mean_activation_by_set(traces).values())).var(axis=0)[feats]).all()
+
+
+def _single_set_trace(d_sae, k, n_tokens, seed, planted):
+    """Un SEUL jeu de prompts : la configuration ou la variance inter-jeux est
+    identiquement nulle, donc ou ``argsort`` classe des zeros."""
+    rng = np.random.default_rng(seed)
+    ids = rng.integers(0, d_sae, size=(n_tokens, k)).astype(np.int32)
+    vals = rng.uniform(0.1, 1.0, size=(n_tokens, k)).astype(np.float32)
+    ids[:, 0] = planted                       # une feature plantee, tres forte
+    vals[:, 0] = 9.0
+    return {"meta": {"d_sae": d_sae},
+            "prompts": {("unique", 0): {"ids": ids, "vals": vals}}}
+
+
+def test_differential_features_single_set_panel_is_data_independent():
+    """Defaut TROUVE par la grille critique (#16750) et borne ici.
+
+    Avec un seul jeu de prompts, ``stack.shape[0] == 1`` donc ``var(axis=0)``
+    est identiquement nulle : ``argsort`` sur un vecteur de zeros rend l'ordre
+    des INDICES, independant des activations. Le panel n'est pas un panel
+    differentiel — c'est un artefact de l'ordre du dictionnaire, et il est
+    silencieux.
+
+    La preuve n'est pas « le panel a l'air bizarre » (non falsifiable) mais :
+    deux jeux de donnees RADICALEMENT differents rendent le MEME panel, et il
+    egale celui d'activations TOUTES NULLES. Un classement qui ne bouge pas
+    quand on efface les donnees ne classe pas les donnees.
+    """
+    a = _single_set_trace(d_sae=512, k=8, n_tokens=30, seed=0, planted=11)
+    b = _single_set_trace(d_sae=512, k=8, n_tokens=77, seed=1, planted=499)
+    zero = _single_set_trace(d_sae=512, k=8, n_tokens=5, seed=2, planted=0)
+    for e in zero["prompts"].values():
+        e["vals"][:] = 0.0                    # aucune activation, nulle part
+
+    with pytest.warns(RuntimeWarning, match="INTER-JEUX"):
+        pa = st.differential_features(a, k=16)
+    with pytest.warns(RuntimeWarning, match="INTER-JEUX"):
+        pb = st.differential_features(b, k=16)
+    with pytest.warns(RuntimeWarning, match="INTER-JEUX"):
+        pz = st.differential_features(zero, k=16)
+
+    assert pa.tolist() == pz.tolist(), (
+        "effacer toutes les activations ne change pas le panel : le classement "
+        "ne depend pas des donnees")
+    assert pa.tolist() == pb.tolist(), (
+        "deux jeux de donnees disjoints (features plantees, valeurs et "
+        "longueurs distinctes) rendent le meme panel")
+    # et ce panel n'est pas un artefact vide : il est bien de taille k
+    assert pa.shape == (16,)
+
+
+def test_differential_features_two_sets_do_not_warn_degeneracy(synthetic_npz):
+    """Controle NEGATIF du garde : avec >= 2 jeux, aucun avertissement de
+    degenerescence. Un garde qui crie toujours ne garde rien — et il masquerait
+    le vrai signal (#12560, colonnes non finies) sous du bruit."""
+    tr = st.load_traces(synthetic_npz)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        st.differential_features(tr, k=8)
+    assert not [w for w in caught if "INTER-JEUX" in str(w.message)]
+    # le garde ne remplace pas l'autre : sur ces traces saines personne ne parle
+    assert not caught
 
 
 def test_densify_exact(synthetic_npz):
