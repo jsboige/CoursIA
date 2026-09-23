@@ -36,8 +36,10 @@ Divergences documentées (mesurées sur le source, pas supposition) :
 3. `byzantine_consensus` du source désigne les byzantins comme les n PREMIERS
    agents (`agents[:n]`, tranche déterministe), pas un tirage. Porté fidèle.
 4. La voie `update_memory` du `base_agent` source référence `options` hors de
-   sa portée (NameError latent dès que le contexte ne porte pas "options") ;
-   la satisfaction est recalculée ici proprement à partir des préférences.
+   sa portée : NameError dès le deuxième appel, que le contexte porte
+   "options" ou non (l'appel à `update_q` passe `options` sans condition ;
+   mesuré sur le source). La satisfaction est recalculée ici proprement à
+   partir des préférences.
 5. La médiation à probabilités fixes n'est pas portée (pseudo-mécanisme) ;
    seule `detect_conflicts` (paires d'agents à positions différentes) l'est.
 6. `condorcet_method` conserve le repli Borda du source (comportement standard
