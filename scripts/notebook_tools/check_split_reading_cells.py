@@ -30,8 +30,10 @@ Le seuil de recouvrement N'EST PAS un verdict de fusion : la fusion est une
 decision pedagogique par notebook (acceptance #16762). Le recensement dit
 ou regarder ; il ne dit pas quoi couper.
 
-Codes de retour : 0 = aucun finding ; 1 = fichier illisible ; 2 = findings
-(avec --fail-on-findings).
+Codes de retour : 0 = aucun finding ; 1 = cible introuvable ou fichier designe
+illisible ; 2 = findings (avec --fail-on-findings). En mode dossier, un carnet
+illisible est **rapporte sur stderr et saute** : il n'interrompt pas le
+recensement et ne fait pas rougir le scan (cf #17044).
 """
 
 from __future__ import annotations
@@ -162,18 +164,36 @@ def iter_notebooks(root: Path) -> list[Path]:
 def scan_root(root: Path, as_json: bool, fail_on_findings: bool = False) -> int:
     total = 0
     per_kind: Counter[str] = Counter()
+    unreadable: list[str] = []
     rows = []
     for path in iter_notebooks(root):
         try:
             nb = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as e:
+            # #17044 : un carnet illisible ne doit PAS annuler le recensement.
+            # Le `return 1` qui vivait ici rendait l'organe incablable en
+            # cliquet : un seul carnet corrompu -- y compris sans aucun rapport
+            # avec la PR -- rougissait tout le depot ET ne produisait plus
+            # aucun finding (le scan etait perdu, pas seulement degrade).
+            # On le rapporte -- jamais en silence -- et on continue.
             print(f"ERREUR lecture {path}: {e}", file=sys.stderr)
-            return 1
+            unreadable.append(str(path.relative_to(root)))
+            continue
         for f in detect(nb):
             total += 1
             per_kind[f["type"]] += 1
             rel = path.relative_to(root)
             rows.append({"file": str(rel), **f})
+    if unreadable:
+        # Le recensement est PARTIEL : le dire explicitement, sinon un carnet
+        # ignore se lit comme un carnet propre (#17044).
+        print(
+            f"\nATTENTION : {len(unreadable)} carnet(s) illisible(s), NON recenses "
+            f"-- le total ci-dessous est partiel :",
+            file=sys.stderr,
+        )
+        for u in unreadable:
+            print(f"  - {u}", file=sys.stderr)
     if as_json:
         print(json.dumps(rows, ensure_ascii=False, indent=1))
     else:
@@ -183,7 +203,8 @@ def scan_root(root: Path, as_json: bool, fail_on_findings: bool = False) -> int:
                 f"J={r['jaccard']:.2f} C={r['rare_containment']:.2f} "
                 f"rare={r['shared_rare_words']}  «{r['titles'][0]}» + «{r['titles'][1]}»"
             )
-        print(f"\nTotal : {total} ({dict(per_kind)})")
+        suffix = f" -- {len(unreadable)} illisible(s)" if unreadable else ""
+        print(f"\nTotal : {total} ({dict(per_kind)}){suffix}")
     return 2 if (fail_on_findings and total) else 0
 
 
@@ -199,7 +220,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"introuvable : {target}", file=sys.stderr)
         return 1
     if target.is_file():
-        nb = json.loads(target.read_text(encoding="utf-8"))
+        try:
+            nb = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as e:
+            # Contrat documente : 1 = fichier designe illisible. Il etait rendu
+            # par une traceback non rattrapee (JSONDecodeError remontait jusqu'a
+            # l'interpreteur) : on rend le meme code, proprement (#17044).
+            print(f"ERREUR lecture {target}: {e}", file=sys.stderr)
+            return 1
         findings = detect(nb)
         print(json.dumps(findings, ensure_ascii=False, indent=1)
               if args.as_json else "\n".join(
