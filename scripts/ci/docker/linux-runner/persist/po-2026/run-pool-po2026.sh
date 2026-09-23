@@ -23,5 +23,9 @@
 #   NB : le cap annonce etait 16 Go, il est porte a 20 Go. Motif mesure au README
 #   du chantier (correction 5) : un cap juge « ~10x le pic mesure » a deja fait OOM
 #   un rendu Quarto, et le pic de la phase de test est NON MESURE sur cette machine.
+# chmod defensif : un depot de fichier par os.replace/cp sans preservation de mode
+# fait naitre pool.sh en 0644 -> systemd-run « Failed to find executable: Permission
+# denied » et l'erreur est perdue (stdout de la tache planifiee). Mesure 2026-09-23
+# (Q6, deux declenchements task result=1 sans UNE ligne dans pool.log).
 set -e
-exec wsl.exe -d Ubuntu -- bash -lc 'systemctl --user reset-failed coursia-pool-po2026.scope 2>/dev/null; exec systemd-run --user --scope --unit=coursia-pool-po2026 -p CPUQuota=1400% -p MemoryMax=20G /home/jesse/CoursIA-runners-p0/pool.sh'
+exec wsl.exe -d Ubuntu -- bash -lc 'systemctl --user reset-failed coursia-pool-po2026.scope 2>/dev/null; chmod +x /home/jesse/CoursIA-runners-p0/pool.sh; exec systemd-run --user --scope --unit=coursia-pool-po2026 -p CPUQuota=1400% -p MemoryMax=20G /home/jesse/CoursIA-runners-p0/pool.sh'

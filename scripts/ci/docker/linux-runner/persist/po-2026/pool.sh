@@ -8,6 +8,17 @@ REPO="jsboige/CoursIA"
 BASE="$HOME/CoursIA-runners-p0"
 BUNDLE="$BASE/actions-runner.tar.gz"
 LOCK="$BASE/pool.lock"
+# Cache d'outils PERSISTANT, hors de l'arbre ephemere (#17407/Q5, arbitrage ai-01
+# 2026-09-22) : sans lui, setup-python telecharge un CPython nu sous slot-N/_work/_tool/
+# que spawn_slot detruit (rm -rf) au job suivant — les appels par chemin absolu
+# (test_guard_gauntlet.py:102 -> sys.executable) visent alors une cible disparue
+# (exit 127, stdout vide = indiscernable de « le garde n'a rien detecte »). L'image
+# Docker garde ce cache sous /opt/hostedtoolcache (persistant par construction).
+# Par-SLOT : slot-N/toolcache survit au rm -rf de slot-N (chemin distinct) et un
+# numero de slot n'est jamais concurrent avec lui-meme (spawn_slot bloque sur son
+# job) — pas de race d'extraction partagee entre jobs simultanes.
+TOOLCACHE_BASE="$BASE/toolcache"
+export RUNNER_TOOL_CACHE="${RUNNER_TOOL_CACHE:-$TOOLCACHE_BASE/default}"
 mkdir -p "$BASE"
 exec >>"$BASE/pool.log" 2>&1
 
@@ -24,6 +35,13 @@ flock -n 9 || { echo "$(date -Is) pool deja actif ($LOCK)"; exit 0; }
 # PATH (mesure : le PATH de pool.sh se retrouve dans /proc/<pid>/environ des listeners).
 export PIP_BREAK_SYSTEM_PACKAGES=1
 
+# PATH (Q6, 2026-09-23, reserve secretaire c.37 + mesure /proc/<pid>/environ) :
+# la relance du superviseur depuis une session interactive (fenetre Q5) herite le
+# PATH de CETTE session — ~/.local/bin ABSENT des listeners. Le pool rend son
+# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.90.0
+# et python y sont poses).
+export PATH="$HOME/.local/bin:$PATH"
+
 mint_token() { gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token; }
 
 # Contrat de l'image, volet BINAIRES. Le pool ne telecharge PAS `gh` (l'image l'epingle par SHA-256 :
@@ -31,7 +49,7 @@ mint_token() { gh.exe api -X POST "repos/$REPO/actions/runners/registration-toke
 # localement sur (`python` -> python3, idempotent) et CRIE si `gh` manque. Non bloquant a dessein :
 # couper le pool priverait la flotte de capacite pour un defaut qui, lui, produit surtout des verts
 # suspects (les gardes sortent en exit 0 SANS poster, cf. README) — un log qu'on ne peut pas manquer
-# vaut mieux qu'un pool a l'arret. `~/.local/bin` est le 3e repertoire du PATH du runner.
+# vaut mieux qu'un pool a l'arret. `~/.local/bin` est en TETE du PATH du pool par construction (export Q6, 2026-09-23) — plus dependant du contexte de lancement.
 ensure_host_contract() {
   local bin="$HOME/.local/bin" rc=0
   mkdir -p "$bin"
@@ -39,7 +57,9 @@ ensure_host_contract() {
   [ -x "$bin/python" ] || { echo "$(date -Is) CONTRAT: python nu ABSENT de $bin"; rc=1; }
   [ -x "$bin/gh" ]     || { echo "$(date -Is) CONTRAT: gh ABSENT de $bin — poser la release Linux officielle (l'image epingle 2.99.0+SHA256) ; sans lui des gardes sortent en exit 0 SANS poster"; rc=1; }
   [ -n "${PIP_BREAK_SYSTEM_PACKAGES:-}" ] || { echo "$(date -Is) CONTRAT: PIP_BREAK_SYSTEM_PACKAGES non pose"; rc=1; }
-  [ "$rc" -eq 0 ] && echo "$(date -Is) contrat d'image: bins/python OK ($( "$bin/gh" --version 2>/dev/null | head -1 ))"
+  command -v gh >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: gh INVISIBLE du PATH du pool (relance depuis session interactive ?) — existence du fichier ne suffit pas (reserve #17406 c.5784716255)"; rc=1; }
+  mkdir -p "$RUNNER_TOOL_CACHE" 2>/dev/null || { echo "$(date -Is) CONTRAT: RUNNER_TOOL_CACHE non creable ($RUNNER_TOOL_CACHE)"; rc=1; }
+  [ "$rc" -eq 0 ] && echo "$(date -Is) contrat d'image: bins/python OK ($( "$bin/gh" --version 2>/dev/null | head -1 )), toolcache=$RUNNER_TOOL_CACHE"
   return $rc
 }
 
@@ -60,6 +80,10 @@ spawn_slot() { # $1 = slot — bloque jusqu'a la fin du job (ephemere = 1 job)
   if [ ${#tok} -lt 20 ]; then echo "$(date -Is) slot$slot: mint token echoue"; return 1; fi
   rm -rf "$dir"; mkdir -p "$dir"
   tar -xzf "$BUNDLE" -C "$dir" || { echo "$(date -Is) slot$slot: extraction echouee"; return 1; }
+  # Isolation par slot (cf. TOOLCACHE_BASE) : heritee par run.sh -> Runner.Worker ->
+  # setup-python, meme canal que PIP_BREAK_SYSTEM_PACKAGES (mesure /proc/<pid>/environ).
+  RUNNER_TOOL_CACHE="$TOOLCACHE_BASE/slot-$slot"; export RUNNER_TOOL_CACHE
+  mkdir -p "$RUNNER_TOOL_CACHE"
   ( cd "$dir" && \
     ./config.sh --url "https://github.com/$REPO" --token "$tok" \
       --labels "coursia-ephemeral,coursia-linux" --ephemeral \
