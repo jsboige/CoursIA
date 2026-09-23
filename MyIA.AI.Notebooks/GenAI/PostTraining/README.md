@@ -195,7 +195,7 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 | **[RL — rlpt_4 DPO vs PPO](../../RL/rlpt_4_dpo_vs_ppo.ipynb)** | Comparaison offline vs online | DPO/ORPO offline vs GRPO online à budget 40 steps — prérequis empirique pour PT-06 (évaluation comparative). |
 | **[RL — rl_9 offline](../../RL/rl_9_offline_rl.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
 | **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
-| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (18 notebooks), FineTuning = recettes exécutables. |
+| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (19 notebooks), FineTuning = recettes exécutables. |
 
 ## Frontière avec RL/rlpt_* — où ouvre `PT_*`, où ouvre `rlpt_*`
 
