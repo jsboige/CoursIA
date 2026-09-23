@@ -1539,8 +1539,40 @@ STUB
     export STUB_STOP_FILE="$TEST_DIR/state-25/stop"
     export STUB_RUN_COUNT="$TEST_DIR/run25.count"
     export SLEEP_LOG="$TEST_DIR/sleep25.log"
-    timeout --kill-after=2 60 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err25.log"
-  )
+    # `exec` : le pid du sous-shell DEVIENT celui de supervise.sh, sinon le
+    # watchdog du parent surveillerait une coquille vide.
+    exec bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err25.log"
+  ) &
+  sup_pid=$!
+  # Watchdog de PROGRESSION (#17255), et non de duree. Le `timeout 60` d'avant
+  # faisait double emploi : filet anti-blocage ET exigence de VITESSE. Or 70
+  # cycles de travail CPU pur valent ~30 s sur une machine au repos et 60-70 s
+  # sur une machine chargee -- l'assertion `n -eq 70` tombait donc selon la
+  # charge, sans rien dire de supervise.sh. Une machine LENTE n'est pas une
+  # machine BLOQUEE : on borne le SILENCE (plus aucun cycle marque), pas la
+  # duree totale. Les 70 cycles sont forces par le stub (STUB_STOP_AFTER=70),
+  # donc le processus se termine seul : ce watchdog ne rattrape qu'un vrai
+  # blocage, et il le rattrape plus vite que les 60 s d'avant (20 s).
+  #
+  # Le watchdog tourne dans le PARENT, jamais dans le sous-shell : la-bas
+  # `sleep` est le stub de Test 37 -- il ne dort pas (boucle a vide) et il
+  # journalise dans SLEEP_LOG, le fichier meme que compte l'assertion.
+  t37_seen=0; t37_quiet=0
+  while kill -0 "$sup_pid" 2>/dev/null; do
+    sleep 1
+    t37_now="$(wc -l < "$TEST_DIR/sleep25.log" 2>/dev/null || echo 0)"
+    if [ "$t37_now" -gt "$t37_seen" ]; then
+      t37_seen="$t37_now"; t37_quiet=0
+    else
+      t37_quiet=$((t37_quiet + 1))
+      if [ "$t37_quiet" -ge "${T37_HANG_SECS:-20}" ]; then
+        echo "Test 37 : aucun cycle depuis ${t37_quiet}s -- superviseur bloque, kill -9" >&2
+        kill -9 "$sup_pid" 2>/dev/null
+        break
+      fi
+    fi
+  done
+  wait "$sup_pid" 2>/dev/null
   n="$(wc -l < "$TEST_DIR/sleep25.log")"
   if [ "$n" -eq 70 ]; then
     ok "70 cycles effectivement deroules (obtenu $n)"
