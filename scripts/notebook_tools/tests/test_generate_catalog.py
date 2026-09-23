@@ -2123,11 +2123,11 @@ class TestBuildGitMetadataLoud:
         import generate_catalog as gc
 
         stdout = "\n".join([
-            "COMMIT:2026-09-13 10:00:00 +0200|dev@example.org|feat: nb (#123) et (#124)",
+            "COMMIT:aaa111|2026-09-13 10:00:00 +0200|dev@example.org|feat: nb (#123) et (#124)",
             "",
             "MyIA.AI.Notebooks/Serie/n.ipynb",
             "scripts/hors_perimetre.py",
-            "COMMIT:2026-09-01 08:00:00 +0200|autre@example.org|ancien (#99)",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|ancien (#99)",
             "",
             "MyIA.AI.Notebooks/Serie/n.ipynb",
             "MyIA.AI.Notebooks/Serie/m.ipynb",
@@ -2145,6 +2145,14 @@ class TestBuildGitMetadataLoud:
         assert meta["Serie/n.ipynb"]["last_validator"] == "dev@example.org"
         assert meta["Serie/n.ipynb"]["issues_prs"] == ["#123", "#124"]
         assert meta["Serie/m.ipynb"]["last_validation"] == "2026-09-01"
+        # La meme passe alimente le proxy de cout de creation : `git log`
+        # etant antichronologique, le DERNIER commit vu pour un chemin est
+        # le plus ancien -- c'est lui qui date la creation.
+        assert meta["Serie/n.ipynb"]["revisions"] == 2
+        assert meta["Serie/n.ipynb"]["authors"] == 2
+        assert meta["Serie/n.ipynb"]["first_commit"] == "2026-09-01"
+        assert meta["Serie/m.ipynb"]["revisions"] == 1
+        assert meta["Serie/m.ipynb"]["authors"] == 1
 
 
 if __name__ == "__main__":
